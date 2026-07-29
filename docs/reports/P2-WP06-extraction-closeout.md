@@ -85,7 +85,7 @@ Phase 2 closeout report · P2-WP06 report · evidence matrix · portfolio · pha
 
 | Field | Value |
 |---|---|
-| Commit hash | _(recorded after commit)_ |
+| Commit hash | `95039665d604e1d56435214b62ae039da0608742` |
 | Commit message | `docs(platform): close phase 2 extraction` |
 | Final working tree | Clean after push |
 

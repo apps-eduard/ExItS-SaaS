@@ -275,7 +275,7 @@ Close Phase 2 by reconciling evidence from P2-WP01–05, validating freeze/build
 
 | Field | Value |
 |---|---|
-| Hash | _(recorded after commit)_ |
+| Hash | `95039665d604e1d56435214b62ae039da0608742` |
 | Message | `docs(platform): close phase 2 extraction` |
 
 ## Phase exit criteria

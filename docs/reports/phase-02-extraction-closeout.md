@@ -8,7 +8,7 @@
 | Date | 2026-07-29 |
 | Branch | `main` |
 | Recommendation | **Close with documented non-blocking risks** |
-| Closeout commit | _(recorded after commit)_ |
+| Closeout commit | `95039665d604e1d56435214b62ae039da0608742` |
 
 ---
 

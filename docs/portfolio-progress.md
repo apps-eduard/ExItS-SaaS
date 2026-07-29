@@ -14,7 +14,7 @@
 | Current phase | Phase 2 — Platform Extraction and HealthCare Reconnection (**Complete with documented risks**) |
 | Current work package | P2-WP06 — Extraction Closeout (**Ready for Review**) |
 | Overall status | Phase 2 closed with non-blocking risks; foundations only — not auth, persistence, HC integration, or POS |
-| Latest verified commit | _(see P2-WP06 / closeout after commit)_ |
+| Latest verified commit | `95039665d604e1d56435214b62ae039da0608742` |
 | Open blockers | 0 for Phase 2 close; cutover/auth/persistence deferred |
 | Last updated | 2026-07-29 |
 
@@ -53,7 +53,7 @@ Phase 3 / P3-WP01 Product and Plan Catalog (not started)
 | P2-WP03 | Complete | `6e866d7` + `10f99c5` |
 | P2-WP04 | Complete | `3b66095` + `eb9fdfe` |
 | P2-WP05 | Complete | `e001f3d` (+ docs `f22180b`) |
-| P2-WP06 | Ready for Review | _(after commit)_ |
+| P2-WP06 | Ready for Review | `9503966` |
 
 ## Phase 2 closeout snapshot
 
