@@ -109,6 +109,33 @@ public sealed class PlanVersion
             utcNow);
     }
 
+    internal static PlanVersion Rehydrate(
+        PlanVersionId id,
+        PlanId planId,
+        ProductCode productCode,
+        int versionNumber,
+        DateTimeOffset effectiveFromUtc,
+        DateTimeOffset? effectiveToUtc,
+        BillingPeriod billingPeriod,
+        bool trialEligible,
+        PlanVersionStatus status,
+        IEnumerable<FeatureGrantSpec> grants,
+        DateTimeOffset createdAtUtc,
+        DateTimeOffset updatedAtUtc) =>
+        new(
+            id,
+            planId,
+            productCode,
+            versionNumber,
+            effectiveFromUtc,
+            effectiveToUtc,
+            billingPeriod,
+            trialEligible,
+            status,
+            grants,
+            createdAtUtc,
+            updatedAtUtc);
+
     public void ReplaceDraftGrants(IReadOnlyList<FeatureGrantSpec> grants, DateTimeOffset utcNow)
     {
         DomainTime.EnsureUtc(utcNow);

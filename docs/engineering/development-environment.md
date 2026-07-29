@@ -22,7 +22,40 @@ dotnet test ExItS.slnx -c Release --no-build
 dotnet run --project src/Platform/ExItS.Platform.Api/ExItS.Platform.Api.csproj -c Release --urls http://127.0.0.1:5288
 ```
 
-Health checks: `GET /` and `GET /health`. No database required for foundation API.
+Health checks: `GET /` and `GET /health`. Catalog API under `/api/v1/platform/catalog` requires PostgreSQL (P3-WP01).
+
+## Platform PostgreSQL (P3-WP01)
+
+| Item | Value |
+|---|---|
+| Database | `ExItS_Platform` |
+| Schema | `platform` |
+| Local Docker | `postgres:18` on host port **5434** |
+| Config key | `ConnectionStrings:PlatformDatabase` |
+| Migration | `InitialPlatformCatalog` |
+| Auto-migrate at startup | **Disabled** |
+
+```powershell
+docker run -d --name exits-platform-pg-test `
+  -e POSTGRES_PASSWORD=exits_platform_dev_only `
+  -e POSTGRES_DB=ExItS_Platform `
+  -p 5434:5432 postgres:18
+
+dotnet ef database update `
+  --project src/Platform/ExItS.Platform.Infrastructure `
+  --startup-project src/Platform/ExItS.Platform.Api
+
+# Rollback (dev only)
+dotnet ef database update 0 `
+  --project src/Platform/ExItS.Platform.Infrastructure `
+  --startup-project src/Platform/ExItS.Platform.Api
+
+dotnet ef database update InitialPlatformCatalog `
+  --project src/Platform/ExItS.Platform.Infrastructure `
+  --startup-project src/Platform/ExItS.Platform.Api
+```
+
+Prefer `dotnet user-secrets` for non-local credentials. Integration tests use Testcontainers (Docker required).
 
 ## Required SDK and runtimes
 

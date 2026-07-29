@@ -1,7 +1,7 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown documentation files plus root Platform foundation through Phase 2 closeout (P2-WP01–P2-WP06).
-Internal links checked: spot-check P2-WP06
+Markdown documentation files plus root Platform foundation through Phase 2 closeout and P3-WP01 catalog persistence.
+Internal links checked: spot-check P3-WP01
 Broken links: none found in spot-check of new paths
 
 ## Root foundation (tracked)
@@ -13,12 +13,13 @@ global.json
 Directory.Build.props
 Directory.Packages.props
 ExItS.slnx
-src/Platform/ExItS.Platform.Domain/ (Identity, Organizations, Products, Catalog, Subscriptions, Entitlements, Common, Abstractions)
-src/Platform/ExItS.Platform.Application/ (Identity, Organizations, Catalog, Subscriptions; Contracts; Projections; Integration/HealthCare interfaces; MigrationValidation)
-src/Platform/ExItS.Platform.Infrastructure/
-src/Platform/ExItS.Platform.Api/ (Program.cs — `/` + `/health` only)
+src/Platform/ExItS.Platform.Domain/
+src/Platform/ExItS.Platform.Application/ (+ Catalog queries/use cases; Contracts; Projections; MigrationValidation; Integration/HealthCare)
+src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog persistence, migrations)
+src/Platform/ExItS.Platform.Api/ (`/` + `/health` + `/api/v1/platform/catalog`)
 tests/ExItS.Platform.UnitTests/
 tests/ExItS.ArchitectureTests/
+tests/ExItS.Platform.IntegrationTests/
 
 ## Documentation (tracked)
 
@@ -93,6 +94,7 @@ docs/reports/P2-WP03-products-plans-entitlements.md
 docs/reports/P2-WP04-healthcare-contract-adaptation.md
 docs/reports/P2-WP05-regression-and-migration-validation.md
 docs/reports/P2-WP06-extraction-closeout.md
+docs/reports/P3-WP01-product-and-plan-catalog.md
 docs/reports/phase-02-extraction-closeout.md
 docs/reports/phase-00-final-assessment-and-recommendation.md
 docs/reports/phase-01-architecture-approval.md

@@ -34,4 +34,14 @@ ExItS-SaaS/
 
 `HealthCare/` remains frozen and outside root Git. Do not import it without an approved work package.
 
-**Phase 2** is closed with documented risks ([closeout](docs/reports/phase-02-extraction-closeout.md)). Platform foundations exist; authentication, persistence, HealthCare cutover, Platform Admin, and PinoyBusinessPOS are **not** implemented. Next authorized start target: Phase 3 / P3-WP01.
+**Phase 2** is closed with documented risks ([closeout](docs/reports/phase-02-extraction-closeout.md)). **P3-WP01** adds Platform catalog persistence and API (`/api/v1/platform/catalog`) — development-stage, unauthenticated. HealthCare remains frozen. Next: P3-WP02 when authorized.
+
+### Platform database (local)
+
+```powershell
+docker run -d --name exits-platform-pg-test -e POSTGRES_PASSWORD=exits_platform_dev_only -e POSTGRES_DB=ExItS_Platform -p 5434:5432 postgres:18
+dotnet ef database update --project src/Platform/ExItS.Platform.Infrastructure --startup-project src/Platform/ExItS.Platform.Api
+dotnet run --project src/Platform/ExItS.Platform.Api --urls http://127.0.0.1:5288
+```
+
+Connection string key: `ConnectionStrings:PlatformDatabase` (see `appsettings.Development.json`). Do **not** auto-migrate at API startup.

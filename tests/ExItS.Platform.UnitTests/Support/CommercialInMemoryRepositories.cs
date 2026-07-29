@@ -8,6 +8,11 @@ using ExItS.Platform.Domain.Subscriptions;
 
 namespace ExItS.Platform.UnitTests.Support;
 
+internal sealed class NoOpUnitOfWork : IPlatformUnitOfWork
+{
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+}
+
 internal sealed class InMemoryProductRepository : IProductRepository
 {
     private readonly Dictionary<Guid, Product> _byId = new();
@@ -25,6 +30,20 @@ internal sealed class InMemoryProductRepository : IProductRepository
         if (_byCode.TryGetValue(code.Value, out var id) && _byId.TryGetValue(id, out var p))
             return Task.FromResult<Product?>(p);
         return Task.FromResult<Product?>(null);
+    }
+
+    public Task<(IReadOnlyList<Product> Items, int TotalCount)> ListAsync(
+        ProductStatus? status,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _byId.Values.AsEnumerable();
+        if (status is not null)
+            query = query.Where(p => p.Status == status);
+        var ordered = query.OrderBy(p => p.Code.Value, StringComparer.Ordinal).ToList();
+        var page = ordered.Skip(skip).Take(take).ToList();
+        return Task.FromResult<(IReadOnlyList<Product>, int)>((page, ordered.Count));
     }
 
     public Task AddAsync(Product product, CancellationToken cancellationToken = default)
@@ -58,10 +77,27 @@ internal sealed class InMemoryFeatureDefinitionRepository : IFeatureDefinitionRe
         return Task.FromResult(f);
     }
 
+    public Task<IReadOnlyList<FeatureDefinition>> ListByProductAsync(
+        ProductCode productCode,
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<FeatureDefinition> list = _items.Values
+            .Where(f => f.ProductCode == productCode)
+            .OrderBy(f => f.Code.Value, StringComparer.Ordinal)
+            .ToList();
+        return Task.FromResult(list);
+    }
+
     public Task AddAsync(FeatureDefinition feature, CancellationToken cancellationToken = default)
     {
         _items[Key(feature.ProductCode, feature.Code)] = feature;
         AddCount++;
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateAsync(FeatureDefinition feature, CancellationToken cancellationToken = default)
+    {
+        _items[Key(feature.ProductCode, feature.Code)] = feature;
         return Task.CompletedTask;
     }
 }
@@ -88,6 +124,15 @@ internal sealed class InMemoryPlanRepository : IPlanRepository
         return Task.FromResult<Plan?>(null);
     }
 
+    public Task<IReadOnlyList<Plan>> ListByProductAsync(ProductCode productCode, CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<Plan> list = _plans.Values
+            .Where(p => p.ProductCode == productCode)
+            .OrderBy(p => p.Code.Value, StringComparer.Ordinal)
+            .ToList();
+        return Task.FromResult(list);
+    }
+
     public Task AddAsync(Plan plan, CancellationToken cancellationToken = default)
     {
         _plans[plan.Id.Value] = plan;
@@ -106,6 +151,30 @@ internal sealed class InMemoryPlanRepository : IPlanRepository
     {
         _versions.TryGetValue(id.Value, out var v);
         return Task.FromResult(v);
+    }
+
+    public Task<PlanVersion?> GetVersionByPlanAndNumberAsync(PlanId planId, int versionNumber, CancellationToken cancellationToken = default)
+    {
+        var version = _versions.Values.FirstOrDefault(v => v.PlanId == planId && v.VersionNumber == versionNumber);
+        return Task.FromResult(version);
+    }
+
+    public Task<IReadOnlyList<PlanVersion>> ListVersionsAsync(PlanId planId, CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<PlanVersion> list = _versions.Values
+            .Where(v => v.PlanId == planId)
+            .OrderBy(v => v.VersionNumber)
+            .ToList();
+        return Task.FromResult(list);
+    }
+
+    public Task<PlanVersion?> GetLatestPublishedVersionAsync(PlanId planId, CancellationToken cancellationToken = default)
+    {
+        var version = _versions.Values
+            .Where(v => v.PlanId == planId && v.Status == PlanVersionStatus.Published)
+            .OrderByDescending(v => v.VersionNumber)
+            .FirstOrDefault();
+        return Task.FromResult(version);
     }
 
     public Task<int> GetMaxVersionNumberAsync(PlanId planId, CancellationToken cancellationToken = default)
@@ -138,7 +207,22 @@ internal sealed class InMemoryTrialDefinitionRepository : ITrialDefinitionReposi
         return Task.FromResult(t);
     }
 
+    public Task<IReadOnlyList<TrialDefinition>> ListByProductAsync(ProductCode productCode, CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<TrialDefinition> list = _items.Values
+            .Where(t => t.ProductCode == productCode)
+            .OrderBy(t => t.DisplayName, StringComparer.Ordinal)
+            .ToList();
+        return Task.FromResult(list);
+    }
+
     public Task AddAsync(TrialDefinition trial, CancellationToken cancellationToken = default)
+    {
+        _items[trial.Id.Value] = trial;
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateAsync(TrialDefinition trial, CancellationToken cancellationToken = default)
     {
         _items[trial.Id.Value] = trial;
         return Task.CompletedTask;

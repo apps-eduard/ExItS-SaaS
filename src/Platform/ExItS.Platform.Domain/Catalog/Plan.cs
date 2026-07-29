@@ -52,6 +52,16 @@ public sealed class Plan
             utcNow);
     }
 
+    internal static Plan Rehydrate(
+        PlanId id,
+        ProductCode productCode,
+        PlanCode code,
+        string displayName,
+        PlanStatus status,
+        DateTimeOffset createdAtUtc,
+        DateTimeOffset updatedAtUtc) =>
+        new(id, productCode, code, displayName, status, createdAtUtc, updatedAtUtc);
+
     public void Rename(string displayName, DateTimeOffset utcNow)
     {
         DomainTime.EnsureUtc(utcNow);

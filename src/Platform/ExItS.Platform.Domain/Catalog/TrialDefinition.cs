@@ -85,6 +85,29 @@ public sealed class TrialDefinition
             utcNow);
     }
 
+    internal static TrialDefinition Rehydrate(
+        TrialDefinitionId id,
+        ProductCode productCode,
+        PlanId? planId,
+        string displayName,
+        TimeSpan duration,
+        TrialDefinitionStatus status,
+        IEnumerable<FeatureGrantSpec> featureGrants,
+        IEnumerable<FeatureGrantSpec> postExpiryFeatureGrants,
+        DateTimeOffset createdAtUtc,
+        DateTimeOffset updatedAtUtc) =>
+        new(
+            id,
+            productCode,
+            planId,
+            displayName,
+            duration,
+            status,
+            featureGrants,
+            postExpiryFeatureGrants,
+            createdAtUtc,
+            updatedAtUtc);
+
     public void Retire(DateTimeOffset utcNow)
     {
         DomainTime.EnsureUtc(utcNow);

@@ -19,6 +19,7 @@ public sealed class CommercialUseCaseTests
     public async Task CreateProduct_and_plan_publish_version_and_start_trial_snapshot()
     {
         var clock = new FixedClock(T0);
+        var uow = new NoOpUnitOfWork();
         var products = new InMemoryProductRepository();
         var features = new InMemoryFeatureDefinitionRepository();
         var plans = new InMemoryPlanRepository();
@@ -27,7 +28,7 @@ public sealed class CommercialUseCaseTests
         var overrides = new InMemoryFeatureOverrideRepository();
         var snapshots = new InMemoryEntitlementSnapshotRepository();
 
-        var productResult = await new CreateProduct(products, clock)
+        var productResult = await new CreateProduct(products, uow, clock)
             .ExecuteAsync(ProductCode.PinoyBusinessPos, "Pinoy Business POS");
         Assert.True(productResult.IsSuccess);
 
@@ -47,7 +48,7 @@ public sealed class CommercialUseCaseTests
                 T0));
         }
 
-        var planResult = await new CreatePlan(products, plans, clock)
+        var planResult = await new CreatePlan(products, plans, uow, clock)
             .ExecuteAsync(ProductCode.PinoyBusinessPos, "utang-trial", "Utang Trial");
         Assert.True(planResult.IsSuccess);
         planResult.Value!.Activate(T0);
@@ -58,12 +59,12 @@ public sealed class CommercialUseCaseTests
             FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditRepay), true),
             FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditCreate), true)
         };
-        var versionResult = await new PublishPlanVersion(plans, features, clock)
+        var versionResult = await new PublishPlanVersion(plans, features, uow, clock)
             .ExecuteAsync(planResult.Value.Id, 1, BillingPeriod.None, true, grants);
         Assert.True(versionResult.IsSuccess);
         Assert.Equal(1, plans.AddVersionCount);
 
-        var conflictVersion = await new PublishPlanVersion(plans, features, clock)
+        var conflictVersion = await new PublishPlanVersion(plans, features, uow, clock)
             .ExecuteAsync(planResult.Value.Id, 1, BillingPeriod.None, true, grants);
         Assert.False(conflictVersion.IsSuccess);
 
@@ -93,7 +94,7 @@ public sealed class CommercialUseCaseTests
     public async Task CreateProduct_duplicate_does_not_persist_second()
     {
         var products = new InMemoryProductRepository();
-        var create = new CreateProduct(products, new FixedClock(T0));
+        var create = new CreateProduct(products, new NoOpUnitOfWork(), new FixedClock(T0));
         Assert.True((await create.ExecuteAsync("healthcare", "HealthCare")).IsSuccess);
         var dup = await create.ExecuteAsync("HealthCare", "HealthCare Two");
         Assert.Equal(ApplicationErrorCodes.DuplicateProductCode, dup.ErrorCode);
@@ -104,21 +105,22 @@ public sealed class CommercialUseCaseTests
     public async Task Suspend_and_cancel_subscription_use_cases()
     {
         var clock = new FixedClock(T0);
+        var uow = new NoOpUnitOfWork();
         var products = new InMemoryProductRepository();
         var features = new InMemoryFeatureDefinitionRepository();
         var plans = new InMemoryPlanRepository();
         var trials = new InMemoryTrialDefinitionRepository();
         var subscriptions = new InMemorySubscriptionRepository();
 
-        await new CreateProduct(products, clock).ExecuteAsync(ProductCode.PinoyBusinessPos, "POS");
+        await new CreateProduct(products, uow, clock).ExecuteAsync(ProductCode.PinoyBusinessPos, "POS");
         var pc = ProductCode.Create(ProductCode.PinoyBusinessPos);
         await features.AddAsync(FeatureDefinition.Create(
             pc, FeatureCode.Create(FeatureCode.CustomerCreditView), "View", FeatureValueType.Boolean, T0));
 
-        var plan = (await new CreatePlan(products, plans, clock)
+        var plan = (await new CreatePlan(products, plans, uow, clock)
             .ExecuteAsync(ProductCode.PinoyBusinessPos, "utang", "Utang")).Value!;
         plan.Activate(T0);
-        var version = (await new PublishPlanVersion(plans, features, clock)
+        var version = (await new PublishPlanVersion(plans, features, uow, clock)
             .ExecuteAsync(plan.Id, 1, BillingPeriod.Monthly, true,
                 new[] { FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditView), true) }))
             .Value!;

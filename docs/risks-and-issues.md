@@ -15,7 +15,7 @@
 | R-009 | Duplicate offline financial transactions | Critical | Idempotency and append-only ledger | Open |
 | R-010 | Nested `HealthCare/.git` inside ExITS monorepo | High | Root ignores `HealthCare/`; decide import/submodule/subtree later — do not delete nested `.git` | Mitigated (ignore) — integration decision still Open |
 | R-011 | No EF global tenant query filters (service-only isolation) | Critical | Keep service checks; add filters/tests before multi-product sharing | Open — verified P0-WP01 |
-| R-012 | Plans/trials/subscriptions/billing/entitlements missing | High | Domain foundation in P2-WP03; billing collection/persistence still Phase 3 | Open — foundation exists; SaaS billing incomplete |
+| R-012 | Plans/trials/subscriptions/billing/entitlements missing | High | Catalog persistence in P3-WP01; subscription/billing still Phase 3+ | Open — catalog done; billing incomplete |
 | R-013 | Parent repo missing root `.gitignore` | High | Root `.gitignore` added in P0-WP02 | **Mitigated** (P0-WP02) |
 | R-014 | Full `HealthCare.sln` build fails without Android SDK env | Medium | Non-MAUI build path documented; set `ANDROID_HOME` or `AndroidSdkDirectory` on agents that need Mobile | Open — SDK folder present but env unset (P0-WP02) |
 | R-015 | Pre-existing dirty PatientWeb files inside nested HealthCare git | Medium | Do not overwrite; resolve in HealthCare repo or later import WP | Open — still present P0-WP02 |
@@ -36,7 +36,7 @@
 | R-030 | Local port collision for Platform API (5188 busy on assessment machine) | Low | Default launch URL set to **5288** | **Mitigated** (P2-WP01) |
 | R-031 | Identity domain exists without authentication/persistence — misuse if callers assume login works | Medium | Docs + API has no identity routes; P2-WP02 report states auth absent | Open — introduced P2-WP02 |
 | R-032 | Active membership uniqueness only enforced in application until DB unique index | Medium | Documented invariant; add unique constraint in persistence WP | Open — introduced P2-WP02 |
-| R-033 | Commercial catalog codes uniqueness only at application boundary until persistence | Medium | Duplicate checks in use cases; DB unique indexes later | Open — introduced P2-WP03 |
+| R-033 | Commercial catalog codes uniqueness only at application boundary until persistence | Medium | Duplicate checks in use cases; DB unique indexes later | **Mitigated (P3-WP01)** — DB unique constraints + integration tests |
 | R-034 | Entitlement composer policies (suspend/cancel/expiry) may need product-specific tuning | Medium | POS Utang codes explicit; keep composer product-neutral where possible | Open — introduced P2-WP03 |
 | R-035 | PinoyBusinessPOS Utang trial is three calendar months; end-of-month rule undecided; Platform must not use 90-day substitute | High | Document calendar-month policy; keep TrialDefinition configurable; implement calendar math + EOM rule in later catalog/config WP | Open — corrected after P2-WP03 |
 | R-036 | Contract major-version incompatibility between Platform and HealthCare consumers | High | Fail closed on unsupported majors; version negotiation later | Open — introduced P2-WP04 |
@@ -48,6 +48,8 @@
 | R-042 | False-positive email/username mapping treated as safe identity merge | High | Exact identifier match alone warns; explicit approved mapping preferred | Open — introduced P2-WP05 |
 | R-043 | Migration dry-run mistaken for completed production migration | High | Status uses `Validated` not `Migrated`; docs + R-040 related | Open — introduced P2-WP05; reinforced P2-WP06 |
 | R-044 | Incomplete rollback evidence before cutover | Critical | Rollback readiness validator; R-027 restore rehearsal still required | Open — introduced P2-WP05 |
+| R-045 | Catalog API endpoints are unauthenticated (development-stage) | Critical | Document limitation; require auth before production; no fake identity | Open — introduced P3-WP01 |
+| R-046 | Local-dev connection strings / accidental auto-migrate or wrong DB target | High | No Migrate() at startup; isolated Docker port 5434; document workflow | Open — introduced P3-WP01 |
 
 ## Phase 2 closeout note (P2-WP06)
 

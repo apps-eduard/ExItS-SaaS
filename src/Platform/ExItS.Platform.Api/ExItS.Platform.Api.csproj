@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <ProjectReference Include="..\ExItS.Platform.Application\ExItS.Platform.Application.csproj" />
     <ProjectReference Include="..\ExItS.Platform.Infrastructure\ExItS.Platform.Infrastructure.csproj" />
   </ItemGroup>

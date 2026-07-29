@@ -57,6 +57,16 @@ public sealed class FeatureDefinition
             utcNow);
     }
 
+    internal static FeatureDefinition Rehydrate(
+        FeatureCode code,
+        ProductCode productCode,
+        string displayName,
+        FeatureValueType valueType,
+        FeatureDefinitionStatus status,
+        DateTimeOffset createdAtUtc,
+        DateTimeOffset updatedAtUtc) =>
+        new(code, productCode, displayName, valueType, status, createdAtUtc, updatedAtUtc);
+
     public void Retire(DateTimeOffset utcNow)
     {
         DomainTime.EnsureUtc(utcNow);

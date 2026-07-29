@@ -273,19 +273,145 @@ public sealed class LayerDependencyTests
     }
 
     [Fact]
-    public void Api_exposes_no_business_integration_routes_in_Program_source()
+    public void Application_has_no_EfCore_or_Npgsql_dependencies()
+    {
+        var referenced = Application.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty).ToArray();
+        Assert.DoesNotContain(referenced, name =>
+            name.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(referenced, name =>
+            name.Contains("Npgsql", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Only_Infrastructure_may_reference_EfCore_or_Npgsql_at_runtime()
+    {
+        var root = FindRepositoryRoot();
+
+        var domainCsproj = ReadCsproj(root, "ExItS.Platform.Domain");
+        var applicationCsproj = ReadCsproj(root, "ExItS.Platform.Application");
+        var infrastructureCsproj = ReadCsproj(root, "ExItS.Platform.Infrastructure");
+        var apiCsproj = ReadCsproj(root, "ExItS.Platform.Api");
+
+        Assert.DoesNotContain("EntityFrameworkCore", domainCsproj, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Npgsql", domainCsproj, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("EntityFrameworkCore", applicationCsproj, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Npgsql", applicationCsproj, StringComparison.OrdinalIgnoreCase);
+
+        Assert.Contains("Microsoft.EntityFrameworkCore", infrastructureCsproj, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Npgsql.EntityFrameworkCore.PostgreSQL", infrastructureCsproj, StringComparison.OrdinalIgnoreCase);
+
+        Assert.Contains("Microsoft.EntityFrameworkCore.Design", apiCsproj, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Npgsql.EntityFrameworkCore.PostgreSQL", apiCsproj, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(
+            "<PackageReference Include=\"Microsoft.EntityFrameworkCore\"",
+            apiCsproj,
+            StringComparison.OrdinalIgnoreCase);
+
+        var apiSource = Directory.GetFiles(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api"), "*.cs", SearchOption.AllDirectories)
+            .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                        && !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .Select(File.ReadAllText);
+        Assert.DoesNotContain(apiSource, text => text.Contains("PlatformDbContext", StringComparison.Ordinal));
+        Assert.DoesNotContain(apiSource, text => text.Contains("DbContext", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Program_does_not_call_Database_Migrate()
     {
         var root = FindRepositoryRoot();
         var program = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "Program.cs"));
-        Assert.Contains("MapGet(\"/\"".Replace("\\", ""), program); // keep simple
+        Assert.DoesNotContain(".Migrate(", program, StringComparison.Ordinal);
+        Assert.DoesNotContain(".MigrateAsync(", program, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Catalog_endpoints_are_under_platform_catalog_route_prefix()
+    {
+        var root = FindRepositoryRoot();
+        var catalog = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "Catalog", "CatalogEndpoints.cs"));
+        Assert.Contains("/api/v1/platform/catalog", catalog, StringComparison.Ordinal);
+        Assert.DoesNotContain("/api/v1/platform/subscriptions", catalog, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("/payments", catalog, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("gcash", catalog, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Api_has_no_subscription_or_payment_MapGet_routes()
+    {
+        var root = FindRepositoryRoot();
+        var apiRoot = Path.Combine(root, "src", "Platform", "ExItS.Platform.Api");
+        var sources = Directory.GetFiles(apiRoot, "*.cs", SearchOption.AllDirectories)
+            .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                        && !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .Select(File.ReadAllText)
+            .ToArray();
+
+        foreach (var source in sources)
+        {
+            Assert.DoesNotContain("MapGet(\"/api/v1/platform/subscriptions", source, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("MapGet(\"/subscriptions", source, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("MapGet(\"/payments", source, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("MapGet(\"/gcash", source, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public void InitialPlatformCatalog_migration_creates_catalog_tables_only()
+    {
+        var root = FindRepositoryRoot();
+        var migration = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "Platform",
+            "ExItS.Platform.Infrastructure",
+            "Persistence",
+            "Migrations",
+            "20260729171154_InitialPlatformCatalog.cs"));
+
+        Assert.Contains("name: \"products\"", migration, StringComparison.Ordinal);
+        Assert.Contains("name: \"feature_definitions\"", migration, StringComparison.Ordinal);
+        Assert.Contains("name: \"plans\"", migration, StringComparison.Ordinal);
+        Assert.Contains("name: \"plan_versions\"", migration, StringComparison.Ordinal);
+        Assert.Contains("name: \"trial_definitions\"", migration, StringComparison.Ordinal);
+
+        var forbiddenTableNames = new[] { "users", "organizations", "subscriptions", "payments", "patients" };
+        foreach (var table in forbiddenTableNames)
+        {
+            Assert.DoesNotContain($"name: \"{table}\"", migration, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain($"CreateTable(\n                name: \"{table}\"", migration, StringComparison.OrdinalIgnoreCase);
+        }
+
+        Assert.DoesNotContain("Patient", migration, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Api_exposes_catalog_only_without_subscription_or_payment_routes()
+    {
+        var root = FindRepositoryRoot();
+        var program = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "Program.cs"));
+        var catalog = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "Catalog", "CatalogEndpoints.cs"));
+
+        Assert.Contains("MapGet(\"/\"".Replace("\\", ""), program);
         Assert.Contains("/health", program);
+        Assert.Contains("MapCatalogEndpoints", program);
+        Assert.Contains("P3-WP01", program, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("catalog", program, StringComparison.OrdinalIgnoreCase);
+
         Assert.DoesNotContain("entitlement", program, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("projection", program, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("reconciliation", program, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("MapPost", program, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("MapGet(\"/migration", program, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("MapGet(\"/mapping", program, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("MapGet(\"/import", program, StringComparison.OrdinalIgnoreCase);
+
+        var sources = program + catalog;
+        Assert.DoesNotContain("MapPost(\"/api/v1/platform/subscriptions", sources, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("MapPost(\"/subscriptions", sources, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("MapPost(\"/payments", sources, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("MapPost(\"/gcash", sources, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("subscription", sources, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("payment", sources, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("gcash", sources, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -348,6 +474,9 @@ public sealed class LayerDependencyTests
 
         throw new InvalidOperationException("Could not locate repository root.");
     }
+
+    private static string ReadCsproj(string root, string projectName) =>
+        File.ReadAllText(Path.Combine(root, "src", "Platform", projectName, $"{projectName}.csproj"));
 
     private static string Format(TestResult result) =>
         result.IsSuccessful

@@ -5,4 +5,10 @@
     <AssemblyName>ExItS.Platform.Domain</AssemblyName>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="ExItS.Platform.Infrastructure" />
+    <InternalsVisibleTo Include="ExItS.Platform.UnitTests" />
+    <InternalsVisibleTo Include="ExItS.Platform.IntegrationTests" />
+  </ItemGroup>
+
 </Project>

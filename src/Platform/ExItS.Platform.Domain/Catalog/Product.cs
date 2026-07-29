@@ -44,6 +44,15 @@ public sealed class Product
             utcNow);
     }
 
+    internal static Product Rehydrate(
+        ProductId id,
+        ProductCode code,
+        string displayName,
+        ProductStatus status,
+        DateTimeOffset createdAtUtc,
+        DateTimeOffset updatedAtUtc) =>
+        new(id, code, displayName, status, createdAtUtc, updatedAtUtc);
+
     public void Rename(string displayName, DateTimeOffset utcNow)
     {
         DomainTime.EnsureUtc(utcNow);

@@ -21,3 +21,4 @@
 15. **P2-WP03:** Commercial entitlements are not operational settings; snapshots must not contain clinical/retail records; published plan versions are immutable; SaaS payments are not modeled in this foundation.
 16. **P2-WP04:** Outbound contracts exclude credentials and clinical payloads; unsupported contract majors fail closed; Platform organization roles must not be treated as clinical roles; contracts ≠ completed HealthCare integration.
 17. **P2-WP05:** Migration dry-run models exclude credentials/PHI; sensitive metadata probe fails closed; dry-run ≠ production migration; rollback evidence required before cutover (R-027/R-044).
+18. **P3-WP01:** Catalog API is unauthenticated (development-stage only). Do not expose publicly without Platform authentication. Persistence exceptions must not leak provider details.
