@@ -198,7 +198,7 @@ Persist authoritative Platform entitlement snapshots and feature overrides with 
 
 | Field | Value |
 |---|---|
-| Hash | _(to be recorded)_ |
+| Hash | `44dc236a8aab38cce7071d957aa560470911a4db` |
 | Message | `feat(platform): persist entitlement snapshots and grace rules` |
 
 ### P3-WP05 — Billing Closeout

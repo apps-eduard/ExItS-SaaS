@@ -14,7 +14,7 @@
 | Current phase | Phase 3 — Portfolio Billing, Plans and Entitlements |
 | Current work package | P3-WP04 — Entitlement Snapshots and Grace Rules (**Ready for Review**) |
 | Overall status | Phase 2 complete; catalog + subscriptions + payments + entitlement snapshots delivered |
-| Latest verified commit | _(to be recorded)_ |
+| Latest verified commit | `44dc236a8aab38cce7071d957aa560470911a4db` |
 | Open blockers | Unauthenticated APIs (R-045/R-055/R-062); R-022 refresh durations provisional; R-035 calendar EOM; no product delivery |
 | Last updated | 2026-07-29 |
 
@@ -59,7 +59,7 @@ P3-WP05 Billing Closeout (not started)
 | P3-WP01 | Complete (accepted) | `9d01f26` |
 | P3-WP02 | Complete (accepted) | `616d8ad` |
 | P3-WP03 | Complete (accepted) | `934c1d6` |
-| P3-WP04 | Ready for Review | _(to be recorded)_ |
+| P3-WP04 | Ready for Review | `44dc236` |
 | P3-WP05 | Not Started | — |
 
 ## Entitlement snapshot (P3-WP04)

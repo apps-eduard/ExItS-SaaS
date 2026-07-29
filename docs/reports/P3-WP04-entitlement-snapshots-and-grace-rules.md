@@ -135,7 +135,7 @@ dotnet ef database update
 
 | Field | Value |
 |---|---|
-| Feature commit | _(to be recorded)_ |
+| Feature commit | `44dc236a8aab38cce7071d957aa560470911a4db` |
 | Message | `feat(platform): persist entitlement snapshots and grace rules` |
 
 ## 14. Next work package
