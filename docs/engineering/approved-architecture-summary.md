@@ -2,7 +2,7 @@
 
 [Home](../index.md) | [Phase 1 approval](../reports/phase-01-architecture-approval.md) | [Phase 2 readiness](phase-02-readiness-checklist.md) | [ADR-014](../decisions/ADR-014-approve-exits-portfolio-architecture-for-controlled-implementation.md)
 
-**Status:** Authoritative entry point for implementation agents (Phase 1 closed with documented risks).  
+**Status:** Authoritative entry point for implementation agents (Phase 1 closed with documented risks).
 **Date:** 2026-07-29
 
 ---

@@ -75,7 +75,7 @@ Open ODs and R-016/020/022/024–027 non-blocking for P2-WP01 skeleton. No block
 
 | Field | Value |
 |---|---|
-| Commit hash | `PENDING_AFTER_COMMIT` |
+| Commit hash | `01ab65b511721d5dd2173188bc6d962a5feea803` |
 | Commit message | `docs(architecture): approve phase 1 implementation direction` |
 | Branch | `main` |
 | Upstream | `origin/main` gone; not pushed |

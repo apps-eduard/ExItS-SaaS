@@ -2,9 +2,9 @@
 
 [Dashboard](../portfolio-progress.md) | [Approved summary](../engineering/approved-architecture-summary.md) | [Phase 2 readiness](../engineering/phase-02-readiness-checklist.md) | [P1-WP04 closeout](P1-WP04-architecture-approval-closeout.md) | [ADR-014](../decisions/ADR-014-approve-exits-portfolio-architecture-for-controlled-implementation.md)
 
-**Work package:** P1-WP04  
-**Date:** 2026-07-29  
-**Commit:** `PENDING_AFTER_COMMIT`
+**Work package:** P1-WP04
+**Date:** 2026-07-29
+**Commit:** `01ab65b511721d5dd2173188bc6d962a5feea803`
 
 ---
 
@@ -63,7 +63,7 @@ Versioned additive contracts; at-least-once; idempotent consumers; out-of-order 
 
 Platform authoritative; products use local projections; no sync Platform call per transaction. Never-initialized / unknown paid features **fail closed**. Financial/privacy/admin fail closed. Stale durations TBD (R-022). Reconciliation does not overwrite operational records.
 
-**Utang trial expiry — allowed:** view customers/balances/history; Cash or GCash repayment on existing debt; view payment history; renew/upgrade.  
+**Utang trial expiry — allowed:** view customers/balances/history; Cash or GCash repayment on existing debt; view payment history; renew/upgrade.
 **Blocked:** new credit; increase debt; new credit entries. Post-expiry UX OD-07–09 remain open.
 
 ## 9. Payment boundaries

@@ -14,7 +14,7 @@
 | Current phase | Phase 1 — **Close with documented risks** (P1-WP04 in review) |
 | Current work package | P1-WP04 — Architecture Approval Closeout (**Ready for Review**) |
 | Overall status | P1-WP01–03 **Complete**; Cash/GCash **accepted**; architecture **approved with non-blocking risks** |
-| Latest verified commit | `PENDING_AFTER_COMMIT` (`docs(architecture): approve phase 1 implementation direction`) |
+| Latest verified commit | `01ab65b511721d5dd2173188bc6d962a5feea803` (`docs(architecture): approve phase 1 implementation direction`) |
 | Open blockers | 0 for Phase 1 closeout; root remote empty (R-016); P2-WP01 not started |
 | Last updated | 2026-07-29 |
 
@@ -59,7 +59,7 @@ P2-WP01 solution foundation (when authorized) — not started
 | P1-WP01 | **Complete** | `b6a3133` / `a48e7cb` |
 | P1-WP02 | **Complete** | `32534fa` / `0fd9c59`; Cash/GCash `c5472e8` (**accepted**) |
 | P1-WP03 | **Complete** | `b7f99ab` / `dca4f29` |
-| P1-WP04 | Ready for Review | `PENDING_AFTER_COMMIT` |
+| P1-WP04 | Ready for Review | `01ab65b` |
 
 ## Phase 1 exit criteria
 
