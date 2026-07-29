@@ -38,7 +38,7 @@ Report: [P4-WP01-portfolio-navigation-and-product-views.md](../reports/P4-WP01-p
 
 Status: **Complete**
 
-Feature commit: _(recorded after push)_
+Feature commit: `6f1cacb`
 Report: [P4-WP02-organizations-users-and-product-access.md](../reports/P4-WP02-organizations-users-and-product-access.md)
 
 #### Required outcomes

@@ -14,7 +14,7 @@
 | Current phase | Phase 4 — Platform Admin Expansion |
 | Current work package | P4-WP02 — Organizations, Users and Product Access (**Complete**) |
 | Overall status | **P4-WP02 complete** — Platform users, memberships, product access, effective-access evaluation; auth / delivery still deferred |
-| Latest verified commit | _(recorded after feature commit)_ |
+| Latest verified commit | `6f1cacbdb192aade258714a3e131bd78b2b4e177` |
 | Open blockers | Unauthenticated Admin+API; R-022 refresh durations; R-035 calendar EOM; no product delivery; no auth |
 | Last updated | 2026-07-29 |
 
@@ -53,7 +53,7 @@ P4-WP03 Subscriptions, Payments and Trials (not started — do not begin until a
 | WP | Status | Key commit |
 |---|---|---|
 | P4-WP01 | Complete | `aa340e1` |
-| P4-WP02 | Complete | _(recorded after feature commit)_ |
+| P4-WP02 | Complete | `6f1cacb` |
 | P4-WP03 | Not Started | — |
 | P4-WP04 | Not Started | — |
 
