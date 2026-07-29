@@ -14,7 +14,7 @@
 | Current phase | Phase 2 — Platform Extraction and HealthCare Reconnection |
 | Current work package | P2-WP01 — Extraction Baseline Tag and Safety Checks (**Ready for Review**) |
 | Overall status | Phase 1 **Complete with documented risks**; root solution foundation created |
-| Latest verified commit | `PENDING_AFTER_COMMIT` (`chore(platform): establish root solution foundation`) |
+| Latest verified commit | `4827b7f3ff2cba161df749dd47507f16171ff8da` (`chore(platform): establish root solution foundation`) |
 | Open blockers | 0 for P2-WP01 acceptance; root remote empty (R-016); tag/commit not pushed |
 | Last updated | 2026-07-29 |
 
@@ -52,7 +52,7 @@ P2-WP02 identity and organization (not started)
 
 | WP | Status | Key commit |
 |---|---|---|
-| P2-WP01 | Ready for Review | `PENDING_AFTER_COMMIT` |
+| P2-WP01 | Ready for Review | `4827b7f` |
 | P2-WP02 | Not Started | — |
 | P2-WP03–06 | Not Started | — |
 
