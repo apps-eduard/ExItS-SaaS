@@ -56,6 +56,7 @@
 - [P2-WP02 identity/organization report](reports/P2-WP02-identity-organization-boundary.md)
 - [P2-WP03 products/plans/entitlements report](reports/P2-WP03-products-plans-entitlements.md)
 - [P2-WP04 HealthCare contract adaptation report](reports/P2-WP04-healthcare-contract-adaptation.md)
+- [P2-WP05 regression and migration validation report](reports/P2-WP05-regression-and-migration-validation.md)
 - [All phases](phases/README.md)
 - [Risks and issues](risks-and-issues.md)
 - [Decisions](decisions/README.md)

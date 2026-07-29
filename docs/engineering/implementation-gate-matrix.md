@@ -12,7 +12,7 @@ Gates are **future** requirements. Status remains **Planned** until a later WP e
 | G3 Org / membership | Multi-org membership; product-access tests; server-derived scope | Platform eng | Stage 4 | L3 plan reviewed | Planned |
 | G4 Catalog / entitlements | Contract version/idempotency/out-of-order/unsupported major tests | Platform eng | Stage 5 / POS gate | L4 plan reviewed | Planned |
 | G5 Platform Admin native UI | Smoke; a11y; no Ant/Tailwind; theme/i18n basics | Platform UI | Stage 6 prep | L6 plan reviewed | Planned |
-| G6 Mapping dry run | Mapping report; collision report; reversible audit trail | Platform + HC | HC adapter enable | L3/L5 backups verified | Planned |
+| G6 Mapping dry run | Mapping report; collision report; reversible audit trail | Platform + HC | HC adapter enable | L3/L5 backups verified | **Partial (P2-WP05)** — Platform dry-run validators only; HC data/backups not executed |
 | G7 HC regression | 1102 safe suite (or successor); Integration/E2E in supported env | HC eng | Any HC cutover | L5 restore rehearsal pass | Planned |
 | G8 Security / tenant | Cross-org denial; no Platform Admin clinical access; concealment | Security | Production integration | L2–L3 authorized | Planned |
 | G9 Observability | Correlation; migration IDs; projection alerts; no PHI/secrets in logs | Platform eng | Staging cutover | Rollback audited | Planned |

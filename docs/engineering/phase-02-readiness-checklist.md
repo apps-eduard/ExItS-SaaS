@@ -26,6 +26,7 @@ Gates for starting **P2-WP01**. Status reflects Phase 1 closeout (documentation)
 | Identity/org domain boundary | Strong IDs, aggregates, roles, ProductCode, app contracts, tests; no auth/EF | **Met (P2-WP02)** | Yes | Platform eng | **P2-WP02** |
 | Products/plans/entitlements foundation | Catalog, subscriptions, snapshots, composer; no persistence/payments | **Met (P2-WP03)** | Yes | Platform eng | **P2-WP03** |
 | HealthCare contract adaptation (Platform-side) | Envelopes, projections, apply policy, adapter interfaces; HC frozen | **Met (P2-WP04)** | Yes to leave P2-WP04 | Platform eng | **P2-WP04** |
+| Regression / migration dry-run validation | Preflight, simulation, rollback readiness; remote published | **Met (P2-WP05)** | Yes to leave P2-WP05 | Platform eng | **P2-WP05** |
 
 ## P2-WP01 entry criteria
 

@@ -111,3 +111,5 @@ Exact names/roles finalized in Phase 2/9 runbooks — not assigned as people in 
 ## Evidence required before any cutover (not rollback)
 
 Backup verification · Test totals · Migration report · Mapping report · Security tests · Smoke tests · Rollback rehearsal · Written approval record
+
+**P2-WP05:** Platform-side dry-run validators and rollback-evidence checks exist. They do **not** prove database restore rehearsal (R-027) or completed HealthCare migration.

@@ -29,6 +29,8 @@ A controlled monorepo is used initially for coordinated extraction and developme
 
 **P2-WP04:** Platform-side HealthCare contract adaptation (envelopes, projections, apply policy, delivery/reconciliation interfaces). HealthCare remains frozen; no transport/persistence.
 
+**P2-WP05:** Migration dry-run / regression validation models in Application (`MigrationValidation`). Simulation only — no real migration, SQL, or HC access.
+
 ## UI choices
 
 - Existing HealthCare Staff Web: keep Ant Design Blazor (no rewrite in current ExITS MVP work).

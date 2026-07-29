@@ -18,6 +18,8 @@ This document is **policy and shape only**. No C# types, JSON schemas, tables, o
 
 **P2-WP04 note:** Platform Application now includes versioned outbound projection contracts and apply/reconciliation abstractions for HealthCare. This is **not** HealthCare integration complete — no transport, no HC code changes, no DB access.
 
+**P2-WP05 note:** Migration validation/simulation models exist for mapping dry-runs. This is **not** a completed HealthCare migration.
+
 ## 2. Contract principles
 
 1. Platform is system of record for identity, organizations, memberships, catalog, plans, subscriptions, SaaS payments, and entitlements (ADR-011).

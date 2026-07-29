@@ -283,6 +283,54 @@ public sealed class LayerDependencyTests
         Assert.DoesNotContain("projection", program, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("reconciliation", program, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("MapPost", program, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("MapGet(\"/migration", program, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("MapGet(\"/mapping", program, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("MapGet(\"/import", program, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Migration_validation_types_exist_without_persistence_or_sql_or_credentials()
+    {
+        Assert.NotNull(Application.GetType(
+            "ExItS.Platform.Application.MigrationValidation.IMigrationPreflightValidator"));
+        Assert.NotNull(Application.GetType(
+            "ExItS.Platform.Application.MigrationValidation.IMigrationSimulationService"));
+        Assert.NotNull(Application.GetType(
+            "ExItS.Platform.Application.MigrationValidation.IRollbackReadinessValidator"));
+
+        var forbiddenTypeNames = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "Patient", "Doctor", "Nurse", "MedicalNote", "Diagnosis", "Prescription",
+            "DbContext", "MigrationDbContext", "IGenericMigrationRepository"
+        };
+
+        foreach (var type in Application.GetTypes().Where(t =>
+                     t.Namespace?.Contains("MigrationValidation", StringComparison.Ordinal) == true))
+        {
+            Assert.False(forbiddenTypeNames.Contains(type.Name), $"Unexpected type {type.Name}");
+            foreach (var prop in type.GetProperties())
+            {
+                Assert.DoesNotContain(
+                    new[] { "Password", "PasswordHash", "RefreshToken", "MfaSecret", "Patient", "MedicalNote" },
+                    f => prop.Name.Equals(f, StringComparison.OrdinalIgnoreCase)
+                         || prop.Name.Contains(f, StringComparison.OrdinalIgnoreCase));
+            }
+        }
+
+        var root = FindRepositoryRoot();
+        var sqlHits = Directory.GetFiles(Path.Combine(root, "src"), "*.*", SearchOption.AllDirectories)
+            .Where(p => p.EndsWith(".sql", StringComparison.OrdinalIgnoreCase)
+                        || p.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
+            .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}")
+                        && !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}"))
+            .SelectMany(p => File.ReadAllLines(p).Select((line, i) => (p, i, line)))
+            .Where(x => x.line.Contains("CREATE TABLE", StringComparison.OrdinalIgnoreCase)
+                        || x.line.Contains("ALTER TABLE", StringComparison.OrdinalIgnoreCase)
+                        || x.line.Contains("INSERT INTO", StringComparison.OrdinalIgnoreCase))
+            .Take(5)
+            .ToArray();
+
+        Assert.Empty(sqlHits);
     }
 
     private static string FindRepositoryRoot()

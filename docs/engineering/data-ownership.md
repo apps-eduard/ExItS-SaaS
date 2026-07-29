@@ -2,7 +2,7 @@
 
 [Architecture](architecture.md) | [Security](security.md) | [Data authority matrix](data-authority-matrix.md) | [Capability boundary](platform-product-capability-boundary.md) | [Contracts](platform-product-contracts.md) | [Classification](data-classification-matrix.md) | [Extraction sequence](../reuse/extraction-sequence.md) | [ADR-012](../decisions/ADR-012-versioned-platform-contracts-and-local-projections.md) | [ADR-013](../decisions/ADR-013-build-new-platform-before-healthcare-reconnection.md)
 
-**Work package:** P1-WP02 (ownership docs); **P2-WP02** identity; **P2-WP03** commercial; **P2-WP04** outbound HC projection contracts (Platform-side only).
+**Work package:** P1-WP02 (ownership docs); **P2-WP02** identity; **P2-WP03** commercial; **P2-WP04** outbound HC projection contracts (Platform-side only); **P2-WP05** migration dry-run validation (no real migration).
 **Status:** Authoritative ownership + projection rules; identity/commercial domain + contract adaptation foundation in code
 
 Authoritative field-level matrix: [data-authority-matrix.md](data-authority-matrix.md). Contract shapes: [platform-product-contracts.md](platform-product-contracts.md).

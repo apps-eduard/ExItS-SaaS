@@ -11,7 +11,7 @@ app.MapGet("/", () => Results.Json(new
 {
     service = "ExItS.Platform.Api",
     status = "ok",
-    phase = "P2-WP04-healthcare-contract-adaptation"
+    phase = "P2-WP05-regression-migration-validation"
 }));
 
 app.MapHealthChecks("/health");

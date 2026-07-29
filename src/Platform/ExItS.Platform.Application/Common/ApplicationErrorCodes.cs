@@ -26,4 +26,14 @@ public static class ApplicationErrorCodes
     public const string UnsupportedContractVersion = "application.contract.version.unsupported";
     public const string ProjectionConflict = "application.projection.conflict";
     public const string ReconciliationRequired = "application.projection.reconciliation_required";
+
+    public const string MigrationBatchInvalid = "application.migration.batch_invalid";
+    public const string DuplicateIdentityMapping = "application.migration.duplicate_identity";
+    public const string AmbiguousIdentityMapping = "application.migration.ambiguous_identity";
+    public const string OrganizationMappingConflict = "application.migration.organization_conflict";
+    public const string MembershipMappingConflict = "application.migration.membership_conflict";
+    public const string UnsupportedMigrationContract = "application.migration.unsupported_contract";
+    public const string MigrationValidationBlocked = "application.migration.blocked";
+    public const string RollbackEvidenceMissing = "application.migration.rollback_evidence_missing";
+    public const string SensitiveMigrationDataDetected = "application.migration.sensitive_data";
 }

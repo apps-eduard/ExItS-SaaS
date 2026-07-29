@@ -18,7 +18,26 @@ public sealed class RepositorySafetyTests
     {
         var root = FindRepositoryRoot();
         var output = RunGit(root, "check-ignore", "-v", "HealthCare/");
-        Assert.Contains("HealthCare/", output, StringComparison.Ordinal);
+        Assert.Contains("/HealthCare/", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Platform_Integration_HealthCare_sources_are_tracked_not_ignored()
+    {
+        var root = FindRepositoryRoot();
+        var relative =
+            "src/Platform/ExItS.Platform.Application/Integration/HealthCare/HealthCareIntegrationAbstractions.cs"
+                .Replace('/', Path.DirectorySeparatorChar);
+        var full = Path.Combine(root, relative);
+        Assert.True(File.Exists(full), "Expected Integration HealthCare abstraction file.");
+
+        var ignored = RunGit(root, "check-ignore", "-v", relative.Replace('\\', '/'));
+        Assert.True(string.IsNullOrWhiteSpace(ignored),
+            "Platform Integration/HealthCare must not be ignored. Output: " + ignored);
+
+        var tracked = RunGit(root, "ls-files", "--", relative.Replace('\\', '/'));
+        Assert.False(string.IsNullOrWhiteSpace(tracked),
+            "Platform Integration/HealthCare must be tracked by root Git.");
     }
 
     [Fact]

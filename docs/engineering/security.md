@@ -20,3 +20,4 @@
 14. **P2-WP02:** Platform User is not Patient/Customer; Platform Organization is not Clinic/Store; organization membership roles are not product-local roles; no credentials in domain models; user suspension and membership suspension are separate.
 15. **P2-WP03:** Commercial entitlements are not operational settings; snapshots must not contain clinical/retail records; published plan versions are immutable; SaaS payments are not modeled in this foundation.
 16. **P2-WP04:** Outbound contracts exclude credentials and clinical payloads; unsupported contract majors fail closed; Platform organization roles must not be treated as clinical roles; contracts ≠ completed HealthCare integration.
+17. **P2-WP05:** Migration dry-run models exclude credentials/PHI; sensitive metadata probe fails closed; dry-run ≠ production migration; rollback evidence required before cutover (R-027/R-044).

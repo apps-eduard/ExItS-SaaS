@@ -19,12 +19,12 @@
 | R-013 | Parent repo missing root `.gitignore` | High | Root `.gitignore` added in P0-WP02 | **Mitigated** (P0-WP02) |
 | R-014 | Full `HealthCare.sln` build fails without Android SDK env | Medium | Non-MAUI build path documented; set `ANDROID_HOME` or `AndroidSdkDirectory` on agents that need Mobile | Open — SDK folder present but env unset (P0-WP02) |
 | R-015 | Pre-existing dirty PatientWeb files inside nested HealthCare git | Medium | Do not overwrite; resolve in HealthCare repo or later import WP | Open — still present P0-WP02 |
-| R-016 | Root `origin` remote exists but is empty; `origin/main` gone | High | User-authorized first push: `git push -u origin main` (do not force-push); also push `phase-1-approved` when authorized | Open — verified P2-WP01 |
+| R-016 | Root `origin` remote empty; `origin/main` gone | High | User-authorized first push of `main` + `phase-1-approved` | **Closed** (P2-WP05 Part A — remote verified) |
 | R-017 | Accidental HealthCare parent tracking | Critical | Root ignore + architecture `RepositorySafetyTests` + pre-commit checks | **Mitigated** (tests + process) — keep verifying |
 | R-018 | Nested HealthCare local `.env` / lab secrets | High | Remain gitignored; never commit or paste values into portfolio docs | Open — presence known; values not documented |
 | R-019 | Dual UI stacks (HC Ant vs **native** Platform Admin + POS) — brand drift, duplicated visuals, separate a11y/theme work, future HC modernization cost | Medium | Shared semantic tokens, branding, terminology, UI-independent contracts; separate framework impls; no forced HC rewrite in current MVP | Open — **controlled technical separation** (ADR-010) |
 | R-020 | Phase 0 closed while Integration/E2E not re-baselined on this machine | Medium | Run Integration/E2E on approved Ubuntu/Compose agents before extraction (Phase 2 gate) | Open — deferred by design from P0-WP02 |
-| R-021 | Empty root remote delays shared portfolio publication | Medium | User-authorized `git push -u origin main` when ready | Open — R-016 related |
+| R-021 | Empty root remote delays shared portfolio publication | Medium | User-authorized `git push -u origin main` when ready | **Closed** with R-016 (P2-WP05 Part A) |
 | R-022 | Entitlement projection staleness durations / conflict numerics underspecified | High | P1-WP02 defined states, idempotency, fail-closed rules; set exact windows in Phase 3 / 7 | Open — categorical behavior accepted; durations TBD |
 | R-023 | Premature shared library / mega-utility before two consumers | Medium | Shared-code governance in capability boundary §22; prefer contracts/conventions | Open — governance documented P1-WP01 |
 | R-024 | Contract major-version skew between Platform and products | High | Version negotiation, migration windows, quarantine unsupported majors (ADR-012) | Open — policy documented P1-WP02; runtime later |
@@ -44,3 +44,7 @@
 | R-038 | Organization mapping errors (1 Platform org → many clinics) | High | Explicit reversible mapping contracts; no destructive ID rewrite | Open — introduced P2-WP04 |
 | R-039 | Accidental clinical role escalation from Platform org roles | Critical | Contracts exclude clinical roles; docs + architecture tests | Open — introduced P2-WP04 |
 | R-040 | Premature assumption that contracts equal completed HealthCare integration | High | Report states foundation only; HC freeze continues | Open — introduced P2-WP04 |
+| R-041 | Duplicate identity / normalized-identifier collision during future mapping | High | Preflight detects duplicates; ambiguous → manual review | Open — introduced P2-WP05 |
+| R-042 | False-positive email/username mapping treated as safe identity merge | High | Exact identifier match alone warns; explicit approved mapping preferred | Open — introduced P2-WP05 |
+| R-043 | Migration dry-run mistaken for completed production migration | High | Status uses `Validated` not `Migrated`; docs + R-040 related | Open — introduced P2-WP05 |
+| R-044 | Incomplete rollback evidence before cutover | Critical | Rollback readiness validator; R-027 restore rehearsal still required | Open — introduced P2-WP05 |

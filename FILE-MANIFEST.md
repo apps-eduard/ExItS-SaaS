@@ -14,7 +14,7 @@ Directory.Build.props
 Directory.Packages.props
 ExItS.slnx
 src/Platform/ExItS.Platform.Domain/ (Identity, Organizations, Products, Catalog, Subscriptions, Entitlements, Common, Abstractions)
-src/Platform/ExItS.Platform.Application/ (Identity, Organizations, Catalog, Subscriptions; Contracts; Projections; Integration/HealthCare interfaces)
+src/Platform/ExItS.Platform.Application/ (Identity, Organizations, Catalog, Subscriptions; Contracts; Projections; Integration/HealthCare interfaces; MigrationValidation)
 src/Platform/ExItS.Platform.Infrastructure/
 src/Platform/ExItS.Platform.Api/ (Program.cs — `/` + `/health` only)
 tests/ExItS.Platform.UnitTests/
@@ -90,6 +90,7 @@ docs/reports/P2-WP01-extraction-baseline-and-safety.md
 docs/reports/P2-WP02-identity-organization-boundary.md
 docs/reports/P2-WP03-products-plans-entitlements.md
 docs/reports/P2-WP04-healthcare-contract-adaptation.md
+docs/reports/P2-WP05-regression-and-migration-validation.md
 docs/reports/phase-00-final-assessment-and-recommendation.md
 docs/reports/phase-01-architecture-approval.md
 docs/reuse/extraction-rules.md

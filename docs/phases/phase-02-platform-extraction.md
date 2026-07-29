@@ -147,7 +147,7 @@ Create Platform domain/application foundation for products, features, plans, pla
 
 ### P2-WP04 — HealthCare Contract Adaptation
 
-Status: **Ready for Review**
+Status: **Complete**
 
 #### Goal
 
@@ -190,22 +190,47 @@ Create Platform-side versioned contracts, projection apply rules, and HealthCare
 
 ### P2-WP05 — Regression and Migration Validation
 
-Status: Not Started
+Status: **Ready for Review**
 
-#### Required outcomes
+#### Goal
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+Validate Platform regression coverage and HealthCare mapping dry-run readiness without modifying HealthCare or performing a real migration; publish existing remote history first.
+
+#### Outcomes delivered
+
+- Published `main` and `phase-1-approved` to `origin` (no force).
+- Migration batch + identity/organization/membership mapping candidates.
+- Preflight validator, compatibility report, simulation service, rollback-readiness models (no executor).
+- Architecture + unit tests; API phase marker `P2-WP05-regression-migration-validation`.
+- HealthCare remains frozen.
+
+#### Explicit exclusions (honored)
+
+- No HealthCare edits/import/DB/auth; no EF/SQL/real migration/transport/persistence/migration APIs.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (121/0/0).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded (see below).
+- [x] Working tree clean (after hash-record).
+- [x] HealthCare freeze verified.
+- [x] Remote publication verified; P2-WP05 commit pushed after validation.
+
+#### Artifacts
+
+| Artifact | Path |
+|---|---|
+| Report | [P2-WP05 report](../reports/P2-WP05-regression-and-migration-validation.md) |
+
+#### Commit
+
+| Field | Value |
+|---|---|
+| Hash | _(recorded after commit)_ |
+| Message | `test(platform): add regression and migration validation` |
 
 ### P2-WP06 — Extraction Closeout
 
