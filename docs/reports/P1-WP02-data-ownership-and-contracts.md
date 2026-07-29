@@ -91,7 +91,7 @@ OD-01–OD-10 and R-022 (durations), R-024 (version skew), OD-03 (transport). No
 
 | Field | Value |
 |---|---|
-| Commit hash | `PENDING_AFTER_COMMIT` |
+| Commit hash | `32534fa31501217f021e73b36ba27f49c448b36c` |
 | Commit message | `docs(contracts): define data authority and projections` |
 | Branch | `main` |
 | Upstream | `origin/main` gone; not pushed |

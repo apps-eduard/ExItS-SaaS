@@ -77,7 +77,7 @@ Status: **Ready for Review**
 
 | Field | Value |
 |---|---|
-| Hash | `PENDING_AFTER_COMMIT` |
+| Hash | `32534fa31501217f021e73b36ba27f49c448b36c` |
 | Message | `docs(contracts): define data authority and projections` |
 
 ### P1-WP03 — Extraction Sequence and Rollback Plan

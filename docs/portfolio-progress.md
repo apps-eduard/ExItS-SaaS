@@ -14,7 +14,7 @@
 | Current phase | Phase 1 — Platform Boundary and Architecture |
 | Current work package | P1-WP02 — Data Ownership and Contracts (**Ready for Review**) |
 | Overall status | Phase 0 Complete with documented risks; P1-WP01 **Complete**; P1-WP02 ready for review |
-| Latest verified commit | `PENDING_AFTER_COMMIT` (`docs(contracts): define data authority and projections`) |
+| Latest verified commit | `32534fa31501217f021e73b36ba27f49c448b36c` (`docs(contracts): define data authority and projections`) |
 | Open blockers | 0 for P1-WP02 acceptance; root remote empty (user push when authorized) |
 | Last updated | 2026-07-29 |
 
@@ -57,7 +57,7 @@ Extract or adapt ExITS Platform safely
 | WP | Status | Key commit |
 |---|---|---|
 | P1-WP01 | **Complete** | `b6a3133` / hash `a48e7cb` |
-| P1-WP02 | Ready for Review | `PENDING_AFTER_COMMIT` |
+| P1-WP02 | Ready for Review | `32534fa` |
 | P1-WP03 | Not Started | — |
 | P1-WP04 | Not Started | — |
 
