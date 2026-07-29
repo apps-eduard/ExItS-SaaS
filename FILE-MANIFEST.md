@@ -1,7 +1,7 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown documentation files plus root Platform foundation (P2-WP01) and identity/organization domain boundary (P2-WP02).
-Internal links checked: spot-check P2-WP02
+Markdown documentation files plus root Platform foundation (P2-WP01), identity boundary (P2-WP02), and commercial entitlement foundation (P2-WP03).
+Internal links checked: spot-check P2-WP03
 Broken links: none found in spot-check of new paths
 
 ## Root foundation (tracked)
@@ -13,13 +13,12 @@ global.json
 Directory.Build.props
 Directory.Packages.props
 ExItS.slnx
-src/Platform/ExItS.Platform.Domain/ (AssemblyMarker + Identity/Organizations/Products/Common/Abstractions)
-src/Platform/ExItS.Platform.Application/ (AssemblyMarker + Identity/Organizations/Common use cases & repository contracts)
-src/Platform/ExItS.Platform.Infrastructure/ExItS.Platform.Infrastructure.csproj
-src/Platform/ExItS.Platform.Infrastructure/AssemblyMarker.cs
-src/Platform/ExItS.Platform.Api/ (Program.cs, appsettings, launchSettings — `/` + `/health` only)
-tests/ExItS.Platform.UnitTests/ (Foundation + Identity/Organizations/Products/Application tests)
-tests/ExItS.ArchitectureTests/ (LayerDependencyTests + RepositorySafetyTests)
+src/Platform/ExItS.Platform.Domain/ (Identity, Organizations, Products, Catalog, Subscriptions, Entitlements, Common, Abstractions)
+src/Platform/ExItS.Platform.Application/ (Identity, Organizations, Catalog, Subscriptions use cases & repository contracts)
+src/Platform/ExItS.Platform.Infrastructure/
+src/Platform/ExItS.Platform.Api/ (Program.cs — `/` + `/health` only)
+tests/ExItS.Platform.UnitTests/
+tests/ExItS.ArchitectureTests/
 
 ## Documentation (tracked)
 
@@ -89,6 +88,7 @@ docs/reports/P1-WP03-extraction-sequence-and-rollback.md
 docs/reports/P1-WP04-architecture-approval-closeout.md
 docs/reports/P2-WP01-extraction-baseline-and-safety.md
 docs/reports/P2-WP02-identity-organization-boundary.md
+docs/reports/P2-WP03-products-plans-entitlements.md
 docs/reports/phase-00-final-assessment-and-recommendation.md
 docs/reports/phase-01-architecture-approval.md
 docs/reuse/extraction-rules.md

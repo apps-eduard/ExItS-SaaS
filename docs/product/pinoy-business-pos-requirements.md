@@ -131,6 +131,8 @@ Ledger supports: credit entries, partial/full payments, remaining balance, overd
 
 **Blocked after expiry:** create new credit; increase debt; add new credit entries.
 
+**P2-WP03 Platform feature codes (commercial only; no POS entities):** `customer-credit-view`, `customer-credit-repay`, `customer-credit-create`. Trial helper uses explicit `TimeSpan.FromDays(90)` (not ambiguous calendar months).
+
 ### Payment status and audit (conceptual)
 
 Statuses: Completed, Voided, Corrected; Refunded later when refunds exist.

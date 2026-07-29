@@ -25,6 +25,8 @@ A controlled monorepo is used initially for coordinated extraction and developme
 
 **P2-WP02:** Domain identity/organization boundary (`PlatformUser`, `PlatformOrganization`, `OrganizationMembership`, `ProductCode`) plus Application contracts/use cases. No persistence, authentication, or business API routes.
 
+**P2-WP03:** Commercial catalog and entitlement foundation (`Product`, `Plan`, `PlanVersion`, `TrialDefinition`, `Subscription`, `FeatureOverride`, `EntitlementSnapshot`, composer). No persistence, payments, or business API routes.
+
 ## UI choices
 
 - Existing HealthCare Staff Web: keep Ant Design Blazor (no rewrite in current ExITS MVP work).

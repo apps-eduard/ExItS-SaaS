@@ -39,6 +39,8 @@ Everything in Basic Store plus suppliers, purchasing, advanced inventory, cashie
 - EntitlementSnapshot
 - OrganizationFeatureOverride
 
+**P2-WP03:** Domain models exist for Product, Plan, PlanVersion, FeatureDefinition, TrialDefinition, Subscription, FeatureOverride, and EntitlementSnapshot. PaymentTransaction / Invoice / payment collection are **not** implemented.
+
 ## Availability rule
 
 Product APIs use locally stored entitlement snapshots (versioned, time-bounded, fail-safe, with grace and audit). A sale or offline credit must not fail solely because the central Platform service is temporarily unavailable.

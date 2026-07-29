@@ -26,4 +26,5 @@ The dashboard links to the latest accepted report.
 | [phase-01-architecture-approval.md](phase-01-architecture-approval.md) | Phase 1 Architecture Approval | Complete |
 | [P1-WP04-architecture-approval-closeout.md](P1-WP04-architecture-approval-closeout.md) | Architecture Approval Closeout | Complete |
 | [P2-WP01-extraction-baseline-and-safety.md](P2-WP01-extraction-baseline-and-safety.md) | Extraction Baseline Tag and Safety Checks | Complete |
-| [P2-WP02-identity-organization-boundary.md](P2-WP02-identity-organization-boundary.md) | Shared Identity and Organization Boundary | Ready for Review |
+| [P2-WP02-identity-organization-boundary.md](P2-WP02-identity-organization-boundary.md) | Shared Identity and Organization Boundary | Complete |
+| [P2-WP03-products-plans-entitlements.md](P2-WP03-products-plans-entitlements.md) | Products, Plans and Entitlement Foundation | Ready for Review |

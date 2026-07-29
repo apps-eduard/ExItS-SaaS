@@ -21,4 +21,36 @@ public static class DomainErrorCodes
     public const string OrganizationNotActive = "platform.organization.not_active";
     public const string MembershipNotActive = "platform.membership.not_active";
     public const string InvalidOrganizationRole = "platform.membership.role.invalid";
+
+    public const string InvalidProductId = "platform.product.id.invalid";
+    public const string InvalidPlanId = "platform.plan.id.invalid";
+    public const string InvalidPlanVersionId = "platform.plan_version.id.invalid";
+    public const string InvalidTrialDefinitionId = "platform.trial.id.invalid";
+    public const string InvalidSubscriptionId = "platform.subscription.id.invalid";
+    public const string InvalidEntitlementSnapshotId = "platform.entitlement_snapshot.id.invalid";
+    public const string InvalidFeatureOverrideId = "platform.feature_override.id.invalid";
+
+    public const string InvalidFeatureCode = "platform.feature_code.invalid";
+    public const string InvalidPlanCode = "platform.plan_code.invalid";
+    public const string InvalidFeatureValueType = "platform.feature.value_type.invalid";
+    public const string InvalidEntitlementLimit = "platform.entitlement.limit.invalid";
+    public const string InvalidTrialDuration = "platform.trial.duration.invalid";
+    public const string InvalidPlanVersionNumber = "platform.plan_version.number.invalid";
+    public const string InvalidEffectiveRange = "platform.effective_range.invalid";
+    public const string InvalidSnapshotVersion = "platform.entitlement_snapshot.version.invalid";
+    public const string DuplicateFeatureCode = "platform.feature_code.duplicate";
+    public const string ProductMismatch = "platform.product.mismatch";
+    public const string PlanVersionImmutable = "platform.plan_version.immutable";
+    public const string FeatureRetired = "platform.feature.retired";
+    public const string OverrideExpired = "platform.feature_override.expired";
+    public const string OverrideReasonRequired = "platform.feature_override.reason_required";
+    public const string OverrideCreatorRequired = "platform.feature_override.creator_required";
+
+    public const string InvalidProductStatusTransition = "platform.product.status.invalid_transition";
+    public const string InvalidPlanStatusTransition = "platform.plan.status.invalid_transition";
+    public const string InvalidPlanVersionTransition = "platform.plan_version.status.invalid_transition";
+    public const string InvalidTrialStatusTransition = "platform.trial.status.invalid_transition";
+    public const string InvalidSubscriptionTransition = "platform.subscription.status.invalid_transition";
+    public const string InvalidFeatureStatusTransition = "platform.feature.status.invalid_transition";
+    public const string InvalidOverrideStatusTransition = "platform.feature_override.status.invalid_transition";
 }

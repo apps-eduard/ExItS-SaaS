@@ -15,3 +15,4 @@
 - Update dashboard, phase page and completion report.
 - Create one focused commit and report the hash.
 - **P2-WP02:** Domain uses `DomainException` + stable error codes; Application returns `ApplicationResult`; timestamps are UTC `DateTimeOffset` supplied via `IClock` at the use-case boundary (domain methods do not call `DateTime.UtcNow`).
+- **P2-WP03:** Commercial composition is deterministic via `EntitlementSnapshotComposer`; no generic rules engine; published plan versions are immutable.

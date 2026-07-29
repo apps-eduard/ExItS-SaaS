@@ -36,3 +36,5 @@
 | R-030 | Local port collision for Platform API (5188 busy on assessment machine) | Low | Default launch URL set to **5288** | **Mitigated** (P2-WP01) |
 | R-031 | Identity domain exists without authentication/persistence — misuse if callers assume login works | Medium | Docs + API has no identity routes; P2-WP02 report states auth absent | Open — introduced P2-WP02 |
 | R-032 | Active membership uniqueness only enforced in application until DB unique index | Medium | Documented invariant; add unique constraint in persistence WP | Open — introduced P2-WP02 |
+| R-033 | Commercial catalog codes uniqueness only at application boundary until persistence | Medium | Duplicate checks in use cases; DB unique indexes later | Open — introduced P2-WP03 |
+| R-034 | Entitlement composer policies (suspend/cancel/expiry) may need product-specific tuning | Medium | POS Utang codes explicit; keep composer product-neutral where possible | Open — introduced P2-WP03 |

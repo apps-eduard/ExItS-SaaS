@@ -43,6 +43,8 @@ Global identity and users; credentials and session/refresh lifecycle; Platform O
 
 **P2-WP02 code status:** Domain models and Application contracts exist for Platform User, Organization, Membership, organization roles, and `ProductCode` / minimal product access. Credentials, sessions, catalog, plans, subscriptions, and entitlements are **not** implemented yet.
 
+**P2-WP03 code status:** Domain/Application foundation exists for Product, FeatureDefinition, Plan, PlanVersion, TrialDefinition, Subscription, FeatureOverride, EntitlementSnapshot, and deterministic composition. Persistence, SaaS payment collection, invoices, and transport remain **not** implemented.
+
 ## 5. HealthCare ownership
 
 Clinics; clinical workforce (doctor/nurse/receptionist/clinic admin); Patients and patient self-scope; appointments, availability, reminders; medical notes and amendments; clinical permissions and authorization; clinical and HC product audit details; HC product workflows; Staff Web Ant Design UI; PatientWeb and MAUI clinical UX; HC Hangfire jobs (reminders/summaries).

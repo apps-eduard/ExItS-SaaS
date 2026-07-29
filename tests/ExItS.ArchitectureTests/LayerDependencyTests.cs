@@ -1,6 +1,9 @@
 using System.Reflection;
+using ExItS.Platform.Domain.Catalog;
+using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Products;
 using NetArchTest.Rules;
 
 namespace ExItS.ArchitectureTests;
@@ -94,7 +97,8 @@ public sealed class LayerDependencyTests
         var forbidden = new HashSet<string>(StringComparer.Ordinal)
         {
             "Patient", "Clinic", "Store", "Branch", "Sale", "Inventory", "Customer",
-            "Doctor", "Nurse", "Cashier", "StoreManager", "InventoryStaff"
+            "Doctor", "Nurse", "Cashier", "StoreManager", "InventoryStaff",
+            "MedicalNote", "RetailPayment", "CreditPayment", "GCashPayment", "GCashClient"
         };
 
         var typeNames = Domain.GetTypes().Select(t => t.Name).ToArray();
@@ -156,7 +160,54 @@ public sealed class LayerDependencyTests
         Assert.NotNull(Application.GetType("ExItS.Platform.Application.Identity.IPlatformUserRepository"));
         Assert.NotNull(Application.GetType("ExItS.Platform.Application.Organizations.IPlatformOrganizationRepository"));
         Assert.NotNull(Application.GetType("ExItS.Platform.Application.Organizations.IOrganizationMembershipRepository"));
+        Assert.NotNull(Application.GetType("ExItS.Platform.Application.Catalog.IProductRepository"));
+        Assert.NotNull(Application.GetType("ExItS.Platform.Application.Subscriptions.ISubscriptionRepository"));
         Assert.NotNull(typeof(PlatformUser));
+    }
+
+    [Fact]
+    public void Domain_has_no_retail_payment_or_gcash_implementation_types()
+    {
+        var typeNames = Domain.GetTypes().Select(t => t.Name).ToArray();
+        Assert.DoesNotContain(typeNames, n => n.Contains("GCash", StringComparison.OrdinalIgnoreCase)
+            && !n.Contains("CustomerCredit", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(typeNames, n =>
+            n is "RetailPayment" or "Invoice" or "PaymentProcessor" or "BillingInvoice");
+
+        foreach (var assembly in new[] { Domain, Application, Infrastructure, Api })
+        {
+            var referenced = assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty).ToArray();
+            Assert.DoesNotContain(referenced, name =>
+                name.Contains("GCash", StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(referenced, name =>
+                name.Contains("PayMongo", StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    [Fact]
+    public void Published_plan_version_rejects_grant_mutation()
+    {
+        var utc = new DateTimeOffset(2026, 7, 29, 12, 0, 0, TimeSpan.Zero);
+        var plan = Plan.CreateDraft(
+            ProductCode.Create(ProductCode.PinoyBusinessPos),
+            PlanCode.Create("utang"),
+            "Utang",
+            utc);
+        var version = PlanVersion.CreateDraft(
+            plan,
+            1,
+            utc,
+            BillingPeriod.Monthly,
+            true,
+            new[] { FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditView), true) },
+            utc);
+        version.Publish(utc);
+
+        var ex = Assert.Throws<DomainException>(() =>
+            version.ReplaceDraftGrants(
+                new[] { FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditView), false) },
+                utc.AddMinutes(1)));
+        Assert.Equal(DomainErrorCodes.PlanVersionImmutable, ex.ErrorCode);
     }
 
     private static string Format(TestResult result) =>
