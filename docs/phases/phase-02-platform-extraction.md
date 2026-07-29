@@ -99,7 +99,7 @@ Create the first Platform domain and application boundary for global users, plat
 
 | Field | Value |
 |---|---|
-| Hash | _(recorded after commit)_ |
+| Hash | `49f8ae81f9c5b8a60307ac1d9eb67eab8d2f45ba` |
 | Message | `feat(platform): add identity organization domain boundary` |
 
 ### P2-WP03 — Products, Plans and Entitlement Foundation

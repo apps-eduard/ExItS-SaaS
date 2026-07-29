@@ -14,7 +14,7 @@
 | Current phase | Phase 2 — Platform Extraction and HealthCare Reconnection |
 | Current work package | P2-WP02 — Shared Identity and Organization Boundary (**Ready for Review**) |
 | Overall status | Phase 1 complete with risks; P2-WP01 **Complete**; identity/organization domain boundary implemented |
-| Latest verified commit | _(see P2-WP02 report after commit)_ |
+| Latest verified commit | `49f8ae81f9c5b8a60307ac1d9eb67eab8d2f45ba` (`feat(platform): add identity organization domain boundary`) |
 | Open blockers | 0 for P2-WP02 acceptance; root remote empty (R-016); tag/commit not pushed |
 | Last updated | 2026-07-29 |
 
@@ -53,7 +53,7 @@ P2-WP03 products/plans/entitlements (not started)
 | WP | Status | Key commit |
 |---|---|---|
 | P2-WP01 | Complete | `4827b7f` |
-| P2-WP02 | Ready for Review | _(after commit)_ |
+| P2-WP02 | Ready for Review | `49f8ae8` |
 | P2-WP03–06 | Not Started | — |
 
 ## Identity boundary snapshot (P2-WP02)
