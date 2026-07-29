@@ -120,4 +120,4 @@ Do not begin until explicitly authorized.
 
 | Kind | Message / hash |
 |---|---|
-| Feature | `feat(admin): manage subscriptions payments and trials` — _(recorded after push)_ |
+| Feature | `feat(admin): manage subscriptions payments and trials` — `91e88c3216ab400149339fa43f519fbe59551314` |

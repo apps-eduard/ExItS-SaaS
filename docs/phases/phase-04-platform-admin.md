@@ -62,7 +62,7 @@ Report: [P4-WP02-organizations-users-and-product-access.md](../reports/P4-WP02-o
 
 Status: **Complete**
 
-Feature commit: _(recorded after push)_
+Feature commit: `91e88c3`
 Report: [P4-WP03-subscriptions-payments-and-trials.md](../reports/P4-WP03-subscriptions-payments-and-trials.md)
 
 #### Required outcomes

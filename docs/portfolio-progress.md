@@ -14,7 +14,7 @@
 | Current phase | Phase 4 — Platform Admin Expansion |
 | Current work package | P4-WP03 — Subscriptions, Payments and Trials (**Complete**) |
 | Overall status | **P4-WP03 complete** — Admin subscription/trial/manual payment workflows; auth / gateway / delivery still deferred |
-| Latest verified commit | _(feature hash recorded after push)_ |
+| Latest verified commit | `91e88c3216ab400149339fa43f519fbe59551314` |
 | Open blockers | Unauthenticated Admin+API; R-022 refresh durations; R-035 calendar EOM; no product delivery; no auth; no gateway |
 | Last updated | 2026-07-30 |
 
@@ -56,7 +56,7 @@ P4-WP04 Audit, Authorization and Closeout (not started — do not begin until au
 |---|---|---|
 | P4-WP01 | Complete | `aa340e1` |
 | P4-WP02 | Complete | `6f1cacb` |
-| P4-WP03 | Complete | _(recorded after push)_ |
+| P4-WP03 | Complete | `91e88c3` |
 | P4-WP04 | Not Started | — |
 
 ## Permanent workflow rules
