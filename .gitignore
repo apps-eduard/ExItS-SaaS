@@ -2,8 +2,9 @@
 # Temporary Phase 0 model: portfolio docs are tracked; HealthCare/ stays nested and ignored.
 # Do not remove HealthCare/ from this file until an approved repository-integration work package.
 
-# Nested HealthCare copy (independent Git repository during Phase 0)
-HealthCare/
+# Nested HealthCare product repository at repo root only (independent Git during Phase 0+).
+# Leading slash prevents ignoring Platform paths such as Application/Integration/HealthCare/.
+/HealthCare/
 
 # Secrets and local environment
 **/.env

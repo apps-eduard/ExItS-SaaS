@@ -8,9 +8,9 @@ public sealed class RepositorySafetyTests
     public void Root_git_does_not_track_HealthCare_paths()
     {
         var root = FindRepositoryRoot();
-        var tracked = RunGit(root, "ls-files", "HealthCare");
+        var tracked = RunGit(root, "ls-files", "--", "HealthCare/");
         Assert.True(string.IsNullOrWhiteSpace(tracked),
-            "Root Git must not track HealthCare files. Output: " + tracked);
+            "Root Git must not track nested HealthCare/ product files. Output: " + tracked);
     }
 
     [Fact]
