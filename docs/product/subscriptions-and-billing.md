@@ -1,0 +1,44 @@
+# Products, Plans, Trials and Billing
+
+[Home](../index.md) | [Dashboard](../portfolio-progress.md)
+
+## Platform product catalog
+
+- HealthCare
+- PinoyBusinessPOS
+
+## PinoyBusinessPOS plans
+
+### Utang Trial
+
+Three months. Customers, remarks-based credit, payments, ledger and overdue monitoring.
+
+After expiry, existing balances remain visible and payments on existing debt remain allowed. New credit is blocked until activation.
+
+### Utang
+
+Unlimited normal Utang operations, statements, reminders and reports within documented fair-use limits.
+
+### Basic Store
+
+Everything in Utang plus products, simple sales, barcode, product-based Utang, basic inventory, expenses and basic reports.
+
+### Full POS
+
+Everything in Basic Store plus suppliers, purchasing, advanced inventory, cashier shifts, returns/refunds, advanced permissions and reports.
+
+## Platform entities
+
+- Product
+- ProductPlan
+- PlanFeature
+- PlatformOrganization
+- OrganizationProductSubscription
+- PaymentTransaction
+- Invoice (later)
+- EntitlementSnapshot
+- OrganizationFeatureOverride
+
+## Availability rule
+
+Product APIs use locally stored entitlement snapshots. A sale or offline credit must not fail solely because the central Platform service is temporarily unavailable.
