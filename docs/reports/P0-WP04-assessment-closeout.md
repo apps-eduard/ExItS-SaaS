@@ -80,7 +80,7 @@ No blockers for Phase 1 documentation. Open risks mapped in final assessment. De
 
 | Field | Value |
 |---|---|
-| Commit hash | _(filled after commit)_ |
+| Commit hash | `f52316ae60198cb3dfee367a8ec99d550965ea44` |
 | Commit message | `docs(phase0): close assessment and approve next direction` |
 | Final working tree | Clean; HealthCare ignored |
 

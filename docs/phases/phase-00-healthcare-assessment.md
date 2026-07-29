@@ -84,7 +84,7 @@ Status: **Ready for Review** (2026-07-29)
 
 | Field | Value |
 |---|---|
-| Hash | _(filled after commit)_ |
+| Hash | `f52316ae60198cb3dfee367a8ec99d550965ea44` |
 | Message | `docs(phase0): close assessment and approve next direction` |
 
 ## Phase exit criteria

@@ -14,7 +14,7 @@
 | Current phase | Phase 0 — **Closeout ready** → Phase 1 recommended |
 | Current work package | P0-WP04 — Assessment Closeout (**Ready for Review**) |
 | Overall status | Phase 0 recommended **Complete with documented risks** |
-| Latest verified commit | _(P0-WP04 hash after commit)_ |
+| Latest verified commit | `f52316ae60198cb3dfee367a8ec99d550965ea44` (`docs(phase0): close assessment and approve next direction`) |
 | Open blockers | 0 for P1-WP01 docs; root remote empty (user push when authorized) |
 | Last updated | 2026-07-29 |
 
@@ -63,7 +63,7 @@ Utang MVP → Offline → Basic Store → Harden → Full POS
 | P0-WP01 | Complete | `663b5bf` |
 | P0-WP02 | Complete | `6b56e6d` |
 | P0-WP03 | Complete (+ UI correction `e310cf8`) | `5d628dd` / `e310cf8` |
-| P0-WP04 | Ready for Review | _(after closeout commit)_ |
+| P0-WP04 | Ready for Review | `f52316ae60198cb3dfee367a8ec99d550965ea44` |
 
 ## Final Phase 0 decisions (summary)
 

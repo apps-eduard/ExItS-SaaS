@@ -4,6 +4,7 @@
 
 **Work package:** P0-WP04  
 **Date:** 2026-07-29  
+**Closeout commit:** `f52316ae60198cb3dfee367a8ec99d550965ea44`  
 **HealthCare freeze:** Held (read-only; not tracked by root Git)
 
 ---
