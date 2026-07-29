@@ -41,4 +41,6 @@ Everything in Basic Store plus suppliers, purchasing, advanced inventory, cashie
 
 ## Availability rule
 
-Product APIs use locally stored entitlement snapshots. A sale or offline credit must not fail solely because the central Platform service is temporarily unavailable.
+Product APIs use locally stored entitlement snapshots (versioned, time-bounded, fail-safe, with grace and audit). A sale or offline credit must not fail solely because the central Platform service is temporarily unavailable.
+
+PinoyBusinessPOS plans apply to the retail product for Philippine SME stores (initial focus: Sari-Sari and mini groceries; architecture remains generic for broader retail).

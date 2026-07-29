@@ -25,7 +25,9 @@ Clinics, staff, patients, appointments, medical notes, healthcare permissions an
 
 ### PinoyBusinessPOS
 
-Stores, customers, Utang, products, sales, inventory, expenses, suppliers, purchasing and cashier operations.
+Compact, multilingual, offline-capable retail management for Philippine SMEs — initially optimized for Sari-Sari stores and mini groceries, architected for broader small retail (convenience, generic pharmacy inventory, hardware, apparel, office supply, and similar). Owns stores, customers, CustomerCredit/Utang, products, sales, inventory, expenses, suppliers, purchasing and cashier operations.
+
+Domain language stays generic (`Store`, `Customer`, `CustomerCredit`, …). Do not treat the product as Sari-Sari-only.
 
 ## Principles
 

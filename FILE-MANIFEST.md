@@ -1,7 +1,7 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown files: 50
-Internal links checked: spot-check P0-WP03
+Markdown files: 53
+Internal links checked: spot-check P0-WP04
 Broken links: none found in spot-check of new paths
 
 .gitignore
@@ -18,6 +18,7 @@ docs/engineering/authorization-matrix.md
 docs/engineering/data-ownership.md
 docs/engineering/development-environment.md
 docs/engineering/development-standards.md
+docs/engineering/final-portfolio-boundaries.md
 docs/engineering/localization.md
 docs/engineering/offline-sync-design.md
 docs/engineering/platform-product-contracts.md
@@ -50,6 +51,8 @@ docs/reports/P0-WP01-completion.md
 docs/reports/P0-WP01-healthcare-reuse-assessment.md
 docs/reports/P0-WP02-baseline-runtime-map.md
 docs/reports/P0-WP03-ui-reuse-review.md
+docs/reports/P0-WP04-assessment-closeout.md
+docs/reports/phase-00-final-assessment-and-recommendation.md
 docs/reuse/extraction-rules.md
 docs/reuse/healthcare-reuse-assessment.md
 docs/reuse/healthcare-runtime-baseline.md

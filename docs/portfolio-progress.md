@@ -2,28 +2,28 @@
 
 > Primary status page. Cursor must update this file after every completed work package. Percentages are calculated from approved work packages, never estimated.
 
-[Documentation Home](index.md) | [All Phases](phases/README.md)
+[Documentation Home](index.md) | [All Phases](phases/README.md) | [Phase 0 final assessment](reports/phase-00-final-assessment-and-recommendation.md)
 
 ## Current status
 
 | Field | Value |
 |---|---|
 | Portfolio | ExITS SaaS |
-| Existing product | HealthCare SaaS MVP at ignored nested `HealthCare/` |
-| New product | PinoyBusinessPOS |
-| Current phase | Phase 0 — Existing HealthCare Assessment |
-| Current work package | P0-WP03 — Ant Design and UI Reuse Review (**Ready for Review**) |
-| Overall status | In Progress |
-| Latest verified commit | Correction `e310cf87cb03befdd55962b8c858ed19dfe5add1` (`docs(ui): correct platform admin UI decision`); prior P0-WP03 `5d628dd60b3793108cc6645992ed0a014e034e27` |
-| Open blockers | 0; root remote still empty (first push needs user authorization) |
+| Existing product | HealthCare SaaS MVP (ignored nested `HealthCare/`) |
+| New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
+| Current phase | Phase 0 — **Closeout ready** → Phase 1 recommended |
+| Current work package | P0-WP04 — Assessment Closeout (**Ready for Review**) |
+| Overall status | Phase 0 recommended **Complete with documented risks** |
+| Latest verified commit | _(P0-WP04 hash after commit)_ |
+| Open blockers | 0 for P1-WP01 docs; root remote empty (user push when authorized) |
 | Last updated | 2026-07-29 |
 
 ## Delivery sequence
 
 ```text
-Assess completed HealthCare MVP
+Assess completed HealthCare MVP ✓
         ↓
-Approve platform/product boundaries
+Approve platform/product boundaries  ← next (Phase 1)
         ↓
 Extract or adapt ExITS Platform safely
         ↓
@@ -33,22 +33,14 @@ Add portfolio plans, billing and entitlements
         ↓
 Build PinoyBusinessPOS MAUI foundation
         ↓
-Utang MVP
-        ↓
-Offline synchronization
-        ↓
-Basic Store
-        ↓
-MVP hardening and commercial release
-        ↓
-Full POS after MVP
+Utang MVP → Offline → Basic Store → Harden → Full POS
 ```
 
 ## Phase progress
 
 | Phase | Name | Status | Completed | Total | Progress | Link |
 |---:|---|---|---:|---:|---:|---|
-| 0 | Existing HealthCare Assessment | In Progress | 3 | 4 | 75% | [Open](phases/phase-00-healthcare-assessment.md) |
+| 0 | Existing HealthCare Assessment | **Complete*** | 4 | 4 | 100% | [Open](phases/phase-00-healthcare-assessment.md) |
 | 1 | Platform Boundary and Architecture | Not Started | 0 | 4 | 0% | [Open](phases/phase-01-platform-boundary.md) |
 | 2 | Platform Extraction and HealthCare Reconnection | Not Started | 0 | 6 | 0% | [Open](phases/phase-02-platform-extraction.md) |
 | 3 | Portfolio Billing, Plans and Entitlements | Not Started | 0 | 5 | 0% | [Open](phases/phase-03-billing-entitlements.md) |
@@ -60,58 +52,35 @@ Full POS after MVP
 | 9 | MVP Hardening and Release | Not Started | 0 | 6 | 0% | [Open](phases/phase-09-mvp-hardening.md) |
 | 10 | Full POS | Future | 0 | 8 | 0% | [Open](phases/phase-10-full-pos.md) |
 
-Phase 10 is excluded from the first commercial MVP percentage.
+\*Complete pending acceptance of P0-WP04; recommendation is close with documented risks.
 
-**MVP phases 0–9:** 3 / 52 work packages = **5.77%** (3÷52).
+**MVP phases 0–9:** 4 / 52 work packages = **7.69%** (4÷52).
 
-## Completed work packages
+## Completed Phase 0 work packages
 
-### P0-WP01 — Repository and Reuse Inventory — Complete
+| WP | Status | Key commit |
+|---|---|---|
+| P0-WP01 | Complete | `663b5bf` |
+| P0-WP02 | Complete | `6b56e6d` |
+| P0-WP03 | Complete (+ UI correction `e310cf8`) | `5d628dd` / `e310cf8` |
+| P0-WP04 | Ready for Review | _(after closeout commit)_ |
 
-Commit `663b5bf3269ee934d107bacc467d253a4bf28a90`.
+## Final Phase 0 decisions (summary)
 
-### P0-WP02 — Baseline Build, Tests, Runtime and Repository Safety Map — Complete
-
-Commit `6b56e6dfec93f49e43a9c1a92baea1300d148b28`. Root `.gitignore` ignores `HealthCare/`. Tests baseline 1102/0/0.
-
-### P0-WP03 — Ant Design and UI Reuse Review — Ready for Review
-
-- [x] Inventories Staff Web, PatientWeb, Mobile UI stacks.
-- [x] Documents Ant Design 1.6.2 usage and wrappers.
-- [x] Platform Admin **native** CSS/Razor (no Ant); POS same native foundation; HC Staff keeps Ant.
-- [x] Density, theme, localization, motion, a11y, responsive, table/dropdown/date specs.
-- [x] Component catalog + ADR-010.
-- [x] Commit hash recorded.
-- [x] Working tree clean after commit.
-
-Artifacts:
-
-- [UI reuse assessment](reuse/healthcare-ui-reuse-assessment.md)
-- [UI design system](engineering/ui-design-system.md)
-- [Component catalog](engineering/reusable-component-catalog.md)
-- [ADR-010](decisions/ADR-010-separate-ui-implementations-platform-and-pos.md)
-- [P0-WP03 report](reports/P0-WP03-ui-reuse-review.md)
+| Topic | Decision |
+|---|---|
+| Reuse | Controlled extraction of identity/org/permission/audit patterns; clinical stays in HC |
+| Platform Admin UI | **Native** CSS/Razor — no Ant, no Tailwind |
+| HC Staff UI | Retain Ant Design |
+| POS UI | Native MAUI Hybrid foundation shared with Platform Admin conventions |
+| Repository | Keep HC ignored; build Platform in root later **without** importing HC first |
+| Databases | `ExItS_Platform` / `ExItS_HealthCare` / `ExItS_PinoyBusinessPOS` + entitlement snapshots |
+| POS market | Broader SME retail; initial focus Sari-Sari / mini grocery; MVP unchanged |
 
 ## Latest tests
 
-Unchanged from P0-WP02 Windows-safe baseline (**1102 / 0 / 0**). P0-WP03 is documentation-only; HealthCare tests not re-run.
-
-## UI strategy (P0-WP03, corrected)
-
-| Surface | Decision |
-|---|---|
-| HealthCare Staff Web | Retain Ant Design Blazor |
-| HealthCare PatientWeb / MAUI | Retain existing native implementations |
-| **New ExItS Platform Admin** | Native CSS + Razor (Blazor Web App); **no Ant**; **no Tailwind** |
-| PinoyBusinessPOS | Same native foundation (MAUI Hybrid); **no Ant**; **no Tailwind** |
-| Shared | Token names, localization conventions, UI-independent models |
-
-Correction commit: `e310cf87cb03befdd55962b8c858ed19dfe5add1` (`docs(ui): correct platform admin UI decision`)
-
-## Risks
-
-See [risks-and-issues.md](risks-and-issues.md). R-005/R-006 updated for UI strategy.
+P0-WP02 Windows-safe baseline: **1102 passed / 0 failed / 0 skipped**. Not re-run in P0-WP03/P0-WP04 (docs-only).
 
 ## Next approved action
 
-**P0-WP04 — Assessment Closeout and Recommendation** after P0-WP03 acceptance.
+**P1-WP01 — Platform vs Product Capability Boundary** after P0-WP04 acceptance. Do **not** begin until authorized. Do not import HealthCare or create application projects in P0-WP04.

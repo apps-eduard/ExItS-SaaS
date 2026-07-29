@@ -1,6 +1,6 @@
 # Phase 0 — Existing HealthCare Assessment
 
-[Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Next](phase-01-platform-boundary.md)
+[Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Next](phase-01-platform-boundary.md) | [Final assessment](../reports/phase-00-final-assessment-and-recommendation.md)
 
 ## Objective
 
@@ -26,92 +26,72 @@ Status: **Complete**
 | Hash | `6b56e6dfec93f49e43a9c1a92baea1300d148b28` |
 | Message | `chore(repo): establish safe healthcare baseline` |
 
-Evidence: [runtime baseline](../reuse/healthcare-runtime-baseline.md), [repository boundaries](../engineering/repository-boundaries.md), [report](../reports/P0-WP02-baseline-runtime-map.md).
-
 ### P0-WP03 — Ant Design and UI Reuse Review
+
+Status: **Complete** (accepted; UI decision corrected in `e310cf87cb03befdd55962b8c858ed19dfe5add1`)
+
+| Field | Value |
+|---|---|
+| Assessment commit | `5d628dd60b3793108cc6645992ed0a014e034e27` |
+| Correction commit | `e310cf87cb03befdd55962b8c858ed19dfe5add1` |
+
+Evidence: [UI assessment](../reuse/healthcare-ui-reuse-assessment.md), [ADR-010](../decisions/ADR-010-separate-ui-implementations-platform-and-pos.md), [report](../reports/P0-WP03-ui-reuse-review.md).
+
+### P0-WP04 — Assessment Closeout and Recommendation
 
 Status: **Ready for Review** (2026-07-29)
 
 #### Required outcomes
 
-- Inventory HealthCare UI applications and Ant Design usage.
-- Classify wrappers, models, CSS, a11y, localization, themes, motion.
-- Define Platform Admin vs POS UI strategy, density, components, table/dropdown/date specs.
-- Record ADR and update reuse matrix — documentation only.
+- Reconcile Phase 0 evidence into final reuse, boundaries, UI, repo, DB, security, and exit review.
+- Correct PinoyBusinessPOS market positioning (broader than Sari-Sari; MVP unchanged).
+- Recommend Phase 0 close and exact Phase 1 next WP.
+- Documentation only; HealthCare frozen.
 
 #### Definition of Done
 
 - [x] Approved outcomes complete.
-- [x] Documentation validation (links/paths/Git freeze).
+- [x] Documentation validation.
 - [x] Dashboard and phase page updated.
-- [x] Completion report created.
+- [x] Completion report + final assessment created.
 - [x] Focused commit created and hash recorded. *(after commit)*
 - [x] Working tree clean; HealthCare untouched.
 
 #### Evidence
 
-- [UI reuse assessment](../reuse/healthcare-ui-reuse-assessment.md)
-- [UI design system](../engineering/ui-design-system.md)
-- [Component catalog](../engineering/reusable-component-catalog.md)
-- [ADR-010](../decisions/ADR-010-separate-ui-implementations-platform-and-pos.md)
-- [Report](../reports/P0-WP03-ui-reuse-review.md)
+- [Final assessment](../reports/phase-00-final-assessment-and-recommendation.md)
+- [Final boundaries](../engineering/final-portfolio-boundaries.md)
+- [P0-WP04 report](../reports/P0-WP04-assessment-closeout.md)
 
 #### Findings
 
-- AntDesign **1.6.2** staff-only; PatientWeb/Mobile native CSS; no shared UI RCL.
-- Modal/toast **contracts** reusable; Ant implementations stay in **HealthCare Staff Web only**; new Platform Admin is **native**.
-- Localization and Light/Dark/System **missing** in HealthCare.
-- POS and **new Platform Admin**: native CSS, no Tailwind/Ant; Compact/Comfortable; `en`/`fil`; native `DateField` first.
+- Controlled extraction of identity/org/permission/audit patterns; clinical domain stays in HealthCare.
+- New Platform Admin + POS: **native** UI; HC Staff keeps Ant.
+- Repo: keep HC ignored; build Platform in root later **without** importing HC first.
+- DBs: `ExItS_Platform` / `ExItS_HealthCare` / `ExItS_PinoyBusinessPOS` + entitlement snapshots.
+- Phase 0 **close with documented risks**.
 
-**Decision correction (2026-07-29):** New ExItS Platform Admin does **not** use Ant Design — commit `e310cf87cb03befdd55962b8c858ed19dfe5add1` (`docs(ui): correct platform admin UI decision`). See ADR-010.
+#### Exit criteria
 
-#### Repository safety
-
-| Check | Result |
+| Criterion | Status |
 |---|---|
-| HealthCare modified | No |
-| `git ls-files HealthCare` | Empty |
-| `git check-ignore -v HealthCare/` | Ignored |
-
-#### Remote status
-
-Unchanged: `origin` empty; `main...origin/main [gone]`. No push.
-
-#### Risks
-
-R-005 mitigated by ADR-010 (Ant only in HC Staff; native Platform Admin + POS); R-006 phase-gated catalog; R-019 dual-stack = controlled separation; R-007/R-008 remain for native implementation phases.
-
-#### Deferred
-
-- Implement POS components (Phase 5+)
-- HealthCare Ant modernization
-- P0-WP04 closeout
+| Every WP complete | Satisfied |
+| Risks and decisions recorded | Satisfied |
+| Required regression/security tests | Partial — Windows-safe 1102/0/0; Integration/E2E deferred by design |
+| Next phase approved | Satisfied → **P1-WP01** |
 
 #### Commit
 
 | Field | Value |
 |---|---|
-| Hash | `5d628dd60b3793108cc6645992ed0a014e034e27` |
-| Message | `docs(ui): define platform and POS design strategy` |
-
-### P0-WP04 — Assessment Closeout and Recommendation
-
-Status: Not Started
-
-#### Definition of Done
-
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+| Hash | _(filled after commit)_ |
+| Message | `docs(phase0): close assessment and approve next direction` |
 
 ## Phase exit criteria
 
-- [ ] Every work package is complete or explicitly deferred.
-- [ ] Risks and decisions are recorded.
-- [ ] Required regression/security tests pass.
-- [ ] Next phase is explicitly approved.
+- [x] Every work package is complete or explicitly deferred.
+- [x] Risks and decisions are recorded.
+- [x] Required regression/security tests pass **or** deferred by design with evidence (Windows-safe baseline recorded; Integration/E2E deferred).
+- [x] Next phase is explicitly approved (**Phase 1 / P1-WP01**).
 
-**Phase 0 is not complete** — P0-WP04 remains.
+**Phase 0 recommendation: Close with documented risks.**

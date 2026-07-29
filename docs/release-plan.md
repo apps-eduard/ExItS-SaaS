@@ -4,7 +4,7 @@
 
 ## R0 — Assessment baseline
 
-Completed HealthCare MVP inventoried; reuse boundary and baseline tests recorded.
+**Complete (Phase 0).** HealthCare MVP inventoried; reuse, UI, runtime, and closeout recommendations recorded. Open risks documented.
 
 ## R1 — ExITS Platform extraction
 

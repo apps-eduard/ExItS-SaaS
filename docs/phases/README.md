@@ -4,7 +4,7 @@
 
 | Phase | Name | Status | Link |
 |---:|---|---|---|
-| 0 | Existing HealthCare Assessment | In Progress | [Open](phase-00-healthcare-assessment.md) |
+| 0 | Existing HealthCare Assessment | Complete (closeout ready) | [Open](phase-00-healthcare-assessment.md) |
 | 1 | Platform Boundary and Architecture | Not Started | [Open](phase-01-platform-boundary.md) |
 | 2 | Platform Extraction and HealthCare Reconnection | Not Started | [Open](phase-02-platform-extraction.md) |
 | 3 | Portfolio Billing, Plans and Entitlements | Not Started | [Open](phase-03-billing-entitlements.md) |

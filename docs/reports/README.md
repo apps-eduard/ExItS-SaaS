@@ -17,4 +17,6 @@ The dashboard links to the latest accepted report.
 | [P0-WP01-completion.md](P0-WP01-completion.md) | Repository and Reuse Inventory | Complete |
 | [P0-WP01-healthcare-reuse-assessment.md](P0-WP01-healthcare-reuse-assessment.md) | Alias / snapshot for P0-WP01 | Complete |
 | [P0-WP02-baseline-runtime-map.md](P0-WP02-baseline-runtime-map.md) | Baseline Build, Tests, Runtime and Repository Safety Map | Complete |
-| [P0-WP03-ui-reuse-review.md](P0-WP03-ui-reuse-review.md) | Ant Design and UI Reuse Review | Ready for Review |
+| [P0-WP03-ui-reuse-review.md](P0-WP03-ui-reuse-review.md) | Ant Design and UI Reuse Review | Complete |
+| [P0-WP04-assessment-closeout.md](P0-WP04-assessment-closeout.md) | Assessment Closeout and Recommendation | Ready for Review |
+| [phase-00-final-assessment-and-recommendation.md](phase-00-final-assessment-and-recommendation.md) | Phase 0 final assessment | Ready for Review |

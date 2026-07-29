@@ -43,7 +43,7 @@ Do not:
 - Convert HealthCare to a submodule/subtree without an approved WP
 - Commit nested `.env`, `bin/`, `obj/`, or certificates into the root repo
 
-## Future options (no decision yet)
+## Future options (no import during Phase 0)
 
 | Option | Notes |
 |---|---|
@@ -52,7 +52,13 @@ Do not:
 | Separate repository | Continue current model longer; Platform/POS live elsewhere |
 | Git subtree | Single tree with vendor history; harder reverse sync |
 
-**No option is selected in P0-WP02.**
+## Phase 0 closeout recommendation (P0-WP04)
+
+**Recommended immediate direction:** keep the temporary topology. Begin Phase 1 by approving Platform/product boundaries and, when code is authorized, create **new Platform foundations in the root repository without importing HealthCare**. Defer controlled HealthCare monorepo import until after Platform contracts and extraction sequencing are approved (typically Phase 1–2).
+
+Do **not** in Phase 1 start: delete nested `.git`, track `HealthCare/` in root, or create submodules without a dedicated approved work package.
+
+**No option is executed in P0-WP04.**
 
 ## Safety commands
 
@@ -66,4 +72,4 @@ git submodule status
 Get-ChildItem -Recurse -Force -Directory -Filter .git | Select-Object FullName
 ```
 
-Expected Phase 0 result: `HealthCare/` ignored; `git ls-files HealthCare` empty; no HealthCare diff in the root index.
+Expected Phase 0/early Phase 1 result: `HealthCare/` ignored; `git ls-files HealthCare` empty; no HealthCare diff in the root index.
