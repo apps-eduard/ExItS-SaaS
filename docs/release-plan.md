@@ -22,7 +22,7 @@
 
 **Complete with documented risks (Phase 2 / P2-WP06).** Root Platform foundation, identity/org, commercial domain, HC contract boundaries, and migration dry-run validation delivered. HealthCare remains frozen. Auth, persistence, real HC integration/cutover, Admin UI, and POS were **not** delivered. See [phase-02-extraction-closeout.md](reports/phase-02-extraction-closeout.md).
 
-**Next:** Phase 3 — **P3-WP01–03** Complete; **P3-WP04** entitlement snapshots Ready for Review; then **P3-WP05 — Billing Closeout** when authorized.
+**Next:** Phase 3 is **Complete with documented risks** (P3-WP05). Next authorized work: **Phase 4 / P4-WP01 — Portfolio Navigation and Product Views** when authorized.
 
 ## R2 — Platform portfolio administration
 

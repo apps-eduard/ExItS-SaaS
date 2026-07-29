@@ -53,6 +53,8 @@ Everything in Basic Store plus suppliers, purchasing, advanced inventory, cashie
 
 **P3-WP04:** Feature overrides and immutable entitlement snapshots are **persisted**. Composition applies plan/trial grants, overrides, and subscription-state restrictions (including Expired Utang view/repay/create). Snapshot versions are monotonic per organization+product. Refresh-by uses a provisional 24h policy (R-022 open). **No product delivery** — HealthCare/POS local projections remain future work.
 
+**P3-WP05:** Phase 3 commercial foundation **closed with documented risks**. End-to-end catalog → trial → payment activation → snapshots → grace/past-due → terminal/expired Utang path validated. Production auth, delivery, invoices, and gateways remain out of scope.
+
 ## Availability rule
 
 Product APIs use locally stored entitlement snapshots (versioned, time-bounded, fail-safe, with grace and audit). A sale or offline credit must not fail solely because the central Platform service is temporarily unavailable.

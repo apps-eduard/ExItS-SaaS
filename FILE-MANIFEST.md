@@ -1,7 +1,7 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown documentation files plus root Platform foundation through Phase 2 closeout and Phase 3 through P3-WP04 entitlement snapshots.
-Internal links checked: spot-check P3-WP04
+Markdown documentation files plus root Platform foundation through Phase 3 billing closeout (P3-WP05).
+Internal links checked: spot-check P3-WP05
 Broken links: none found in spot-check of new paths
 
 ## Root foundation (tracked)

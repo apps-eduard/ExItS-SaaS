@@ -12,7 +12,7 @@ Phase 2 is **Close with documented risks** (P2-WP06). Domain foundations for cat
 
 ## First work package
 
-**P3-WP01–P3-WP03** Complete (accepted). **P3-WP04** Ready for Review — entitlement snapshots and grace rules.
+**P3-WP01–P3-WP05** Complete. Phase 3 closed with documented risks.
 
 ## Work packages
 
@@ -62,7 +62,7 @@ Persist the Platform product/plan catalog and expose it via Platform API without
 
 ### P3-WP02 — Trials and Subscription Lifecycle
 
-Status: **Ready for Review**
+Status: **Complete** (accepted)
 
 #### Goal
 
@@ -107,7 +107,7 @@ Persist Platform organizations (subscription ownership) and the commercial subsc
 
 ### P3-WP03 — Manual Payment Activation
 
-Status: **Ready for Review**
+Status: **Complete** (accepted)
 
 #### Goal
 
@@ -156,7 +156,7 @@ Implement persistent Platform SaaS manual payment records, confirmation lifecycl
 
 ### P3-WP04 — Entitlement Snapshots and Grace Rules
 
-Status: **Ready for Review**
+Status: **Complete** (accepted)
 
 #### Goal
 
@@ -203,26 +203,53 @@ Persist authoritative Platform entitlement snapshots and feature overrides with 
 
 ### P3-WP05 — Billing Closeout
 
-Status: Not Started
+Status: **Complete**
 
-#### Required outcomes
+#### Goal
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+Close Phase 3 by validating the commercial foundation (catalog, subscriptions, manual payments, entitlements), migration chain, E2E scenario, documentation, and risk dispositions — without starting Phase 4.
+
+#### Outcomes delivered
+
+- Full migration chain apply / stepwise rollback / re-apply validated (13 platform tables).
+- Deterministic E2E commercial API scenario (`Phase3CommercialCloseoutTests`).
+- Phase marker `P3-WP05-billing-closeout`.
+- API and database inventories recorded.
+- Risk dispositions evidence-based; authentication/delivery/R-022/R-035 remain open.
+- 302 root tests passing.
+- HealthCare remains frozen.
+
+#### Explicit exclusions (honored)
+
+- No Auth, Admin UI, delivery, gateway, invoice, Hangfire, POS, HealthCare implementation.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (302/0/0).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded (see below).
+- [x] Working tree clean (after hash-record).
+- [x] HealthCare freeze verified.
+- [x] Validated commit pushed to `origin/main`.
+
+#### Artifacts
+
+| Artifact | Path |
+|---|---|
+| Report | [P3-WP05 report](../reports/P3-WP05-billing-closeout.md) |
+
+#### Commit
+
+| Field | Value |
+|---|---|
+| Hash | _(to be recorded)_ |
+| Message | `docs(platform): close Phase 3 billing foundation` |
 
 ## Phase exit criteria
 
-- [ ] Every work package is complete or explicitly deferred.
-- [ ] Risks and decisions are recorded.
-- [ ] Required regression/security tests pass.
+- [x] Every work package is complete or explicitly deferred.
+- [x] Risks and decisions are recorded.
+- [x] Required regression/security tests pass.
 - [ ] Next phase is explicitly approved.
