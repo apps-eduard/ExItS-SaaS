@@ -21,4 +21,5 @@ The dashboard links to the latest accepted report.
 | [P0-WP04-assessment-closeout.md](P0-WP04-assessment-closeout.md) | Assessment Closeout and Recommendation | Complete (Phase 0 closed with documented risks) |
 | [phase-00-final-assessment-and-recommendation.md](phase-00-final-assessment-and-recommendation.md) | Phase 0 final assessment | Complete (Phase 0 closed with documented risks) |
 | [P1-WP01-platform-product-capability-boundary.md](P1-WP01-platform-product-capability-boundary.md) | Platform vs Product Capability Boundary | Complete |
-| [P1-WP02-data-ownership-and-contracts.md](P1-WP02-data-ownership-and-contracts.md) | Data Ownership and Contracts | Complete (+ POS Cash/GCash MVP payment correction) |
+| [P1-WP02-data-ownership-and-contracts.md](P1-WP02-data-ownership-and-contracts.md) | Data Ownership and Contracts | Complete (+ Cash/GCash MVP payment correction accepted) |
+| [P1-WP03-extraction-sequence-and-rollback.md](P1-WP03-extraction-sequence-and-rollback.md) | Extraction Sequence and Rollback Plan | Ready for Review |

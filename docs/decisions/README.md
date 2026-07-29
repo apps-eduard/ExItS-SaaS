@@ -16,5 +16,6 @@
 | ADR-010 | Separate UI: HC Staff keeps Ant; **new Platform Admin + POS use native CSS/Razor** | **Accepted** — [Open](ADR-010-separate-ui-implementations-platform-and-pos.md) |
 | ADR-011 | Platform authority and product-local projections | **Accepted** — [Open](ADR-011-platform-authority-and-product-local-projections.md) |
 | ADR-012 | Versioned Platform contracts and local product projections | **Accepted** — [Open](ADR-012-versioned-platform-contracts-and-local-projections.md) |
+| ADR-013 | Build new Platform foundation before HealthCare reconnection | **Accepted** — [Open](ADR-013-build-new-platform-before-healthcare-reconnection.md) |
 
 Cursor creates detailed ADR files only when the related phase validates the decision against the repository.

@@ -1,8 +1,8 @@
 # Final Portfolio Boundaries
 
-[Home](../index.md) | [Phase 0 final assessment](../reports/phase-00-final-assessment-and-recommendation.md) | [Capability boundary (P1-WP01)](platform-product-capability-boundary.md) | [Contracts (P1-WP02)](platform-product-contracts.md) | [Data ownership](data-ownership.md) | [ADR-010](../decisions/ADR-010-separate-ui-implementations-platform-and-pos.md) | [ADR-011](../decisions/ADR-011-platform-authority-and-product-local-projections.md) | [ADR-012](../decisions/ADR-012-versioned-platform-contracts-and-local-projections.md)
+[Home](../index.md) | [Phase 0 final assessment](../reports/phase-00-final-assessment-and-recommendation.md) | [Capability boundary (P1-WP01)](platform-product-capability-boundary.md) | [Contracts (P1-WP02)](platform-product-contracts.md) | [Extraction sequence (P1-WP03)](../reuse/extraction-sequence.md) | [Data ownership](data-ownership.md) | [ADR-010](../decisions/ADR-010-separate-ui-implementations-platform-and-pos.md) | [ADR-011](../decisions/ADR-011-platform-authority-and-product-local-projections.md) | [ADR-012](../decisions/ADR-012-versioned-platform-contracts-and-local-projections.md) | [ADR-013](../decisions/ADR-013-build-new-platform-before-healthcare-reconnection.md)
 
-Approved at Phase 0 closeout (P0-WP04). Detailed capability ownership expanded in **P1-WP01**. Contract and projection mechanics expanded in **P1-WP02**. Implementation deferred to later phases.
+Approved at Phase 0 closeout (P0-WP04). Capability ownership: P1-WP01. Contracts: P1-WP02. Extraction sequence: P1-WP03. Implementation deferred to later phases.
 
 | Capability | Platform | HealthCare | PinoyBusinessPOS | Shared Contract | Notes |
 |---|---|---|---|---|---|

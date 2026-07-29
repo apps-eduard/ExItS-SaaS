@@ -91,21 +91,42 @@ Status: **Complete**
 
 ### P1-WP03 — Extraction Sequence and Rollback Plan
 
-Status: Not Started
+Status: **Ready for Review**
 
 #### Required outcomes
 
-- Define extraction sequence and rollback for Platform extraction from HealthCare patterns.
-- Do not begin until P1-WP02 is accepted.
+- Extraction/implementation sequence (new Platform first; HC frozen).
+- Rollback plan with levels, triggers, evidence.
+- Migration risk matrix and implementation gate matrix.
+- ADR-013 Build New Platform Foundation Before HealthCare Reconnection.
+- Markdown-only; no application folders; HealthCare unchanged.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete (docs).
+- [x] Applicable validation (Markdown-only, freeze, links) with evidence.
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded (see below).
+- [x] Working tree clean (after hash-record commit).
+
+#### Artifacts
+
+| Artifact | Path |
+|---|---|
+| Extraction sequence | [extraction-sequence.md](../reuse/extraction-sequence.md) |
+| Rollback plan | [extraction-rollback-plan.md](../engineering/extraction-rollback-plan.md) |
+| Risk matrix | [platform-extraction-risk-matrix.md](../engineering/platform-extraction-risk-matrix.md) |
+| Gate matrix | [implementation-gate-matrix.md](../engineering/implementation-gate-matrix.md) |
+| ADR-013 | [ADR-013](../decisions/ADR-013-build-new-platform-before-healthcare-reconnection.md) |
+| Report | [P1-WP03 report](../reports/P1-WP03-extraction-sequence-and-rollback.md) |
+
+#### Commit
+
+| Field | Value |
+|---|---|
+| Hash | `PENDING_AFTER_COMMIT` |
+| Message | `docs(extraction): define sequence and rollback plan` |
 
 ### P1-WP04 — Architecture Approval Closeout
 
@@ -113,9 +134,8 @@ Status: Not Started
 
 #### Required outcomes
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+- Close Phase 1 architecture approval using P1-WP01–03 evidence.
+- Do not begin until P1-WP03 is accepted.
 
 #### Definition of Done
 

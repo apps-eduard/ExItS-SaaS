@@ -29,3 +29,5 @@
 | R-023 | Premature shared library / mega-utility before two consumers | Medium | Shared-code governance in capability boundary §22; prefer contracts/conventions | Open — governance documented P1-WP01 |
 | R-024 | Contract major-version skew between Platform and products | High | Version negotiation, migration windows, quarantine unsupported majors (ADR-012) | Open — policy documented P1-WP02; runtime later |
 | R-025 | Manual GCash recording errors / duplicate references | Medium | Required normalized reference; warn on duplicates (OD-11); cashier confirmation UX; no secrets stored; sync re-check | Open — documented POS MVP payment correction |
+| R-026 | Premature HealthCare import or wholesale copy before Platform gates | Critical | ADR-013: new Platform first; HC frozen; sequence + rollback plans | **Mitigated** (planning) — watch Stage 1+ |
+| R-027 | Cutover without restore rehearsal / rollback evidence | Critical | Rollback plan L5; gate G6–G7 require rehearsal | Open — enforced at Phase 2 cutover |

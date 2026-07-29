@@ -58,7 +58,7 @@ Do not:
 
 Do **not** in Phase 1 start: delete nested `.git`, track `HealthCare/` in root, or create submodules without a dedicated approved work package.
 
-**No option is executed in P0-WP04.**
+**P1-WP03 confirms:** sequence and rollback are documented in [extraction-sequence.md](../reuse/extraction-sequence.md) and [extraction-rollback-plan.md](extraction-rollback-plan.md) (ADR-013). **No option is executed in P1-WP03.**
 
 ## Safety commands
 

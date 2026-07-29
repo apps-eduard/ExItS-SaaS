@@ -16,7 +16,7 @@
 
 ## R1 — ExITS Platform extraction
 
-Global identity, organizations, products, subscriptions and entitlements separated or adapted without HealthCare regression.
+**Planned (sequence documented in P1-WP03).** Global identity, organizations, products, subscriptions and entitlements built new in root; HealthCare reconnection only after gates. See [extraction-sequence.md](reuse/extraction-sequence.md) and [extraction-rollback-plan.md](engineering/extraction-rollback-plan.md). No extraction executed yet.
 
 ## R2 — Platform portfolio administration
 

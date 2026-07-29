@@ -2,7 +2,7 @@
 
 > Primary status page. Cursor must update this file after every completed work package. Percentages are calculated from approved work packages, never estimated.
 
-[Documentation Home](index.md) | [All Phases](phases/README.md) | [Contracts](engineering/platform-product-contracts.md) | [POS requirements](product/pinoy-business-pos-requirements.md) | [P1-WP02 report](reports/P1-WP02-data-ownership-and-contracts.md)
+[Documentation Home](index.md) | [All Phases](phases/README.md) | [Extraction sequence](reuse/extraction-sequence.md) | [P1-WP03 report](reports/P1-WP03-extraction-sequence-and-rollback.md)
 
 ## Current status
 
@@ -12,10 +12,10 @@
 | Existing product | HealthCare SaaS MVP (ignored nested `HealthCare/`) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 1 — Platform Boundary and Architecture |
-| Current work package | P1-WP02 **Complete** (+ POS Cash/GCash MVP payment correction) |
-| Overall status | Phase 0 Complete with documented risks; P1-WP01 **Complete**; P1-WP02 **Complete**; awaiting authorization for P1-WP03 |
-| Latest verified commit | `c5472e80a3045626672f88ddbe1973cb3f230f8c` (`docs(pos): add cash and gcash MVP payments`) |
-| Open blockers | 0 for starting P1-WP03 docs after authorization; root remote empty |
+| Current work package | P1-WP03 — Extraction Sequence and Rollback Plan (**Ready for Review**) |
+| Overall status | P1-WP01/P1-WP02 **Complete**; Cash/GCash correction **accepted**; P1-WP03 ready for review |
+| Latest verified commit | `PENDING_AFTER_COMMIT` (`docs(extraction): define sequence and rollback plan`) |
+| Open blockers | 0 for P1-WP03 acceptance; root remote empty |
 | Last updated | 2026-07-29 |
 
 ## Delivery sequence
@@ -25,9 +25,11 @@ Assess completed HealthCare MVP ✓
         ↓
 Approve platform/product boundaries ✓ (P1-WP01)
         ↓
-Define data ownership and contracts ✓ (P1-WP02)
+Define data ownership and contracts ✓ (P1-WP02 + Cash/GCash)
         ↓
-Extraction sequence and rollback (P1-WP03)  ← next when authorized
+Extraction sequence and rollback  ← P1-WP03 (in review)
+        ↓
+Architecture approval closeout (P1-WP04)
         ↓
 …
 ```
@@ -48,30 +50,31 @@ Extraction sequence and rollback (P1-WP03)  ← next when authorized
 | 9 | MVP Hardening and Release | Not Started | 0 | 6 | 0% | [Open](phases/phase-09-mvp-hardening.md) |
 | 10 | Full POS | Future | 0 | 8 | 0% | [Open](phases/phase-10-full-pos.md) |
 
-**MVP phases 0–9:** 6 / 52 work packages = **11.54%** (6÷52). Counts P1-WP01 and P1-WP02 Complete.
+**MVP phases 0–9:** 6 / 52 = **11.54%**. P1-WP03 not counted until accepted.
 
 ## Phase 1 work packages
 
 | WP | Status | Key commit |
 |---|---|---|
 | P1-WP01 | **Complete** | `b6a3133` / hash `a48e7cb` |
-| P1-WP02 | **Complete** | `32534fa` / hash `0fd9c59`; payment correction `c5472e8` |
-| P1-WP03 | Not Started | — |
+| P1-WP02 | **Complete** | `32534fa` / hash `0fd9c59`; Cash/GCash `c5472e8` (**accepted**) |
+| P1-WP03 | Ready for Review | `PENDING_AFTER_COMMIT` |
 | P1-WP04 | Not Started | — |
 
-## POS MVP payment correction (post P1-WP02)
+## P1-WP03 decisions (summary)
 
 | Topic | Decision |
 |---|---|
-| Sale methods | `cash`, `gcash`, `customer-credit` |
-| Credit repayment | `cash`, `gcash` |
-| GCash MVP | Manual cashier verification; reference required; no API/webhooks/QR |
-| Boundaries | SaaSPayment ≠ RetailPayment ≠ CreditPayment; Platform GCash ≠ POS GCash |
+| Strategy | Build **new** Platform in root; adapt HC patterns; no wholesale copy (ADR-013) |
+| HealthCare | Remains frozen/ignored until approved reconnection |
+| Stages | 1 foundation → 2 identity → 3 org → 4 catalog/entitlements → 5 Admin UI → 6 HC adapter → 7 POS |
+| POS | May start after readiness gate **without** full HC cutover |
+| Rollback | Levels L0–L6 documented |
 
 ## Latest tests
 
-Docs-only — no runtime tests required. Prior Windows-safe baseline: **1102 passed / 0 failed / 0 skipped** (P0-WP02).
+Docs-only P1-WP03. Prior Windows-safe baseline: **1102 passed / 0 failed / 0 skipped** (P0-WP02).
 
 ## Next approved action
 
-**P1-WP03 — Extraction Sequence and Rollback Plan** when explicitly authorized. Do **not** begin until authorized.
+**P1-WP04 — Architecture Approval Closeout** after P1-WP03 acceptance. Do **not** begin until authorized. No application projects or HealthCare import in P1-WP03.

@@ -1,6 +1,6 @@
 # Target Architecture
 
-[Home](../index.md) | [Dashboard](../portfolio-progress.md) | [Capability boundary](platform-product-capability-boundary.md) | [Contracts](platform-product-contracts.md) | [ADR-011](../decisions/ADR-011-platform-authority-and-product-local-projections.md) | [ADR-012](../decisions/ADR-012-versioned-platform-contracts-and-local-projections.md)
+[Home](../index.md) | [Dashboard](../portfolio-progress.md) | [Capability boundary](platform-product-capability-boundary.md) | [Contracts](platform-product-contracts.md) | [Extraction sequence](../reuse/extraction-sequence.md) | [ADR-011](../decisions/ADR-011-platform-authority-and-product-local-projections.md) | [ADR-012](../decisions/ADR-012-versioned-platform-contracts-and-local-projections.md) | [ADR-013](../decisions/ADR-013-build-new-platform-before-healthcare-reconnection.md)
 
 ## Portfolio architecture
 
@@ -19,7 +19,7 @@
 
 ## Repository direction
 
-A controlled monorepo is used initially for coordinated extraction and development. Product boundaries remain deployable independently.
+A controlled monorepo is used initially for coordinated extraction and development. Product boundaries remain deployable independently. **P1-WP03 / ADR-013:** build new Platform foundations in root Git first; reconnect HealthCare only after gates; POS may start after Platform contract readiness without full HC cutover. Sequence: [extraction-sequence.md](../reuse/extraction-sequence.md).
 
 ## UI choices
 

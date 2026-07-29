@@ -16,6 +16,10 @@
 - [HealthCare runtime baseline](reuse/healthcare-runtime-baseline.md)
 - [HealthCare UI reuse assessment](reuse/healthcare-ui-reuse-assessment.md)
 - [Extraction and migration rules](reuse/extraction-rules.md)
+- [Extraction sequence](reuse/extraction-sequence.md)
+- [Extraction rollback plan](engineering/extraction-rollback-plan.md)
+- [Platform extraction risk matrix](engineering/platform-extraction-risk-matrix.md)
+- [Implementation gate matrix](engineering/implementation-gate-matrix.md)
 
 ## Engineering
 

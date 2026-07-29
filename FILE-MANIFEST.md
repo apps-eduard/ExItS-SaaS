@@ -1,8 +1,8 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown files: 62
-Internal links checked: spot-check POS Cash/GCash MVP payment correction
-Broken links: none found in spot-check of updated paths
+Markdown files: 68
+Internal links checked: spot-check P1-WP03
+Broken links: none found in spot-check of new paths
 
 .gitignore
 README.md
@@ -14,6 +14,7 @@ docs/cursor/first-cursor-command.md
 docs/decisions/ADR-010-separate-ui-implementations-platform-and-pos.md
 docs/decisions/ADR-011-platform-authority-and-product-local-projections.md
 docs/decisions/ADR-012-versioned-platform-contracts-and-local-projections.md
+docs/decisions/ADR-013-build-new-platform-before-healthcare-reconnection.md
 docs/decisions/README.md
 docs/engineering/architecture.md
 docs/engineering/authorization-matrix.md
@@ -24,9 +25,12 @@ docs/engineering/data-ownership.md
 docs/engineering/development-environment.md
 docs/engineering/development-standards.md
 docs/engineering/entitlement-state-matrix.md
+docs/engineering/extraction-rollback-plan.md
 docs/engineering/final-portfolio-boundaries.md
+docs/engineering/implementation-gate-matrix.md
 docs/engineering/localization.md
 docs/engineering/offline-sync-design.md
+docs/engineering/platform-extraction-risk-matrix.md
 docs/engineering/platform-product-capability-boundary.md
 docs/engineering/platform-product-contract-matrix.md
 docs/engineering/platform-product-contracts.md
@@ -62,8 +66,10 @@ docs/reports/P0-WP03-ui-reuse-review.md
 docs/reports/P0-WP04-assessment-closeout.md
 docs/reports/P1-WP01-platform-product-capability-boundary.md
 docs/reports/P1-WP02-data-ownership-and-contracts.md
+docs/reports/P1-WP03-extraction-sequence-and-rollback.md
 docs/reports/phase-00-final-assessment-and-recommendation.md
 docs/reuse/extraction-rules.md
+docs/reuse/extraction-sequence.md
 docs/reuse/healthcare-reuse-assessment.md
 docs/reuse/healthcare-runtime-baseline.md
 docs/reuse/healthcare-ui-reuse-assessment.md
