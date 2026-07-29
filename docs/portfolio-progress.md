@@ -12,10 +12,10 @@
 | Existing product | HealthCare SaaS MVP at ignored nested `HealthCare/` |
 | New product | PinoyBusinessPOS |
 | Current phase | Phase 0 — Existing HealthCare Assessment |
-| Current work package | P0-WP02 — Baseline Build, Tests, Runtime and Repository Safety Map (**Ready for Review**) |
+| Current work package | P0-WP03 — Ant Design and UI Reuse Review (**Ready for Review**) |
 | Overall status | In Progress |
-| Latest verified commit | `6b56e6dfec93f49e43a9c1a92baea1300d148b28` (`chore(repo): establish safe healthcare baseline`) |
-| Open blockers | 0 extraction blockers; root remote empty (first push needs user authorization); Android SDK env wiring incomplete |
+| Latest verified commit | _(P0-WP03 hash after commit)_ |
+| Open blockers | 0; root remote still empty (first push needs user authorization) |
 | Last updated | 2026-07-29 |
 
 ## Delivery sequence
@@ -48,7 +48,7 @@ Full POS after MVP
 
 | Phase | Name | Status | Completed | Total | Progress | Link |
 |---:|---|---|---:|---:|---:|---|
-| 0 | Existing HealthCare Assessment | In Progress | 2 | 4 | 50% | [Open](phases/phase-00-healthcare-assessment.md) |
+| 0 | Existing HealthCare Assessment | In Progress | 3 | 4 | 75% | [Open](phases/phase-00-healthcare-assessment.md) |
 | 1 | Platform Boundary and Architecture | Not Started | 0 | 4 | 0% | [Open](phases/phase-01-platform-boundary.md) |
 | 2 | Platform Extraction and HealthCare Reconnection | Not Started | 0 | 6 | 0% | [Open](phases/phase-02-platform-extraction.md) |
 | 3 | Portfolio Billing, Plans and Entitlements | Not Started | 0 | 5 | 0% | [Open](phases/phase-03-billing-entitlements.md) |
@@ -62,71 +62,52 @@ Full POS after MVP
 
 Phase 10 is excluded from the first commercial MVP percentage.
 
-**MVP phases 0–9:** 2 / 52 work packages = **3.85%** (2÷52).
+**MVP phases 0–9:** 3 / 52 work packages = **5.77%** (3÷52).
 
 ## Completed work packages
 
 ### P0-WP01 — Repository and Reuse Inventory — Complete
 
-Accepted. Assessment commit `663b5bf3269ee934d107bacc467d253a4bf28a90`.
+Commit `663b5bf3269ee934d107bacc467d253a4bf28a90`.
 
-Artifacts: [reuse assessment](reuse/healthcare-reuse-assessment.md), [matrix](reuse/reuse-classification-matrix.md), [report](reports/P0-WP01-completion.md).
+### P0-WP02 — Baseline Build, Tests, Runtime and Repository Safety Map — Complete
 
-### P0-WP02 — Baseline Build, Tests, Runtime and Repository Safety Map — Ready for Review
+Commit `6b56e6dfec93f49e43a9c1a92baea1300d148b28`. Root `.gitignore` ignores `HealthCare/`. Tests baseline 1102/0/0.
 
-- [x] Root `.gitignore` excludes `HealthCare/` and common secrets/build outputs.
-- [x] Nested Git + empty root remote documented.
-- [x] Toolchain inventory recorded.
-- [x] Non-MAUI build verified; full solution XA5300 classified environmental.
-- [x] Windows-safe tests re-run: **1102 passed / 0 failed / 0 skipped**.
-- [x] Runtime, ports, DB, config maps written.
-- [x] Completion report created.
-- [x] Commit hash recorded after focused commit.
-- [x] Working tree clean after commit (ignored HealthCare only).
+### P0-WP03 — Ant Design and UI Reuse Review — Ready for Review
+
+- [x] Inventories Staff Web, PatientWeb, Mobile UI stacks.
+- [x] Documents Ant Design 1.6.2 usage and wrappers.
+- [x] Platform Admin keeps Ant; POS native CSS (no Tailwind/Ant).
+- [x] Density, theme, localization, motion, a11y, responsive, table/dropdown/date specs.
+- [x] Component catalog + ADR-010.
+- [ ] Commit hash recorded.
+- [ ] Working tree clean after commit.
 
 Artifacts:
 
-- [Runtime baseline](reuse/healthcare-runtime-baseline.md)
-- [Repository boundaries](engineering/repository-boundaries.md)
-- [Development environment](engineering/development-environment.md)
-- [P0-WP02 report](reports/P0-WP02-baseline-runtime-map.md)
+- [UI reuse assessment](reuse/healthcare-ui-reuse-assessment.md)
+- [UI design system](engineering/ui-design-system.md)
+- [Component catalog](engineering/reusable-component-catalog.md)
+- [ADR-010](decisions/ADR-010-separate-ui-implementations-platform-and-pos.md)
+- [P0-WP03 report](reports/P0-WP03-ui-reuse-review.md)
 
-## Git boundary status
+## Latest tests
 
-| Item | Status |
+Unchanged from P0-WP02 Windows-safe baseline (**1102 / 0 / 0**). P0-WP03 is documentation-only; HealthCare tests not re-run.
+
+## UI strategy (P0-WP03)
+
+| Surface | Decision |
 |---|---|
-| Root tracks docs only | Yes |
-| `HealthCare/` ignored | Yes (`gitignore:6:HealthCare/`) |
-| HealthCare files in root index | None |
-| Nested `HealthCare/.git` | Present; not removed |
-| Root `origin` | `https://github.com/apps-eduard/ExItS-SaaS.git` (**empty remote**) |
-| Upstream | `main...origin/main [gone]` — first push requires user authorization |
-
-## Latest tests (P0-WP02 re-run)
-
-| Suite | Passed | Failed | Skipped |
-|---:|---:|---:|---:|
-| UnitTests | 566 | 0 | 0 |
-| ArchitectureTests | 20 | 0 | 0 |
-| Web.Tests | 340 | 0 | 0 |
-| PatientWeb.Tests | 13 | 0 | 0 |
-| Mobile.Tests | 163 | 0 | 0 |
-| **Total** | **1102** | **0** | **0** |
-
-Integration/E2E not run (Docker/Playwright environments).
-
-## Build results (P0-WP02)
-
-| Command | Result |
-|---|---|
-| `dotnet restore HealthCare.sln` | Exit 0 (NU1903 warning on DbMigrate Newtonsoft.Json) |
-| Non-MAUI Release builds | Exit 0 |
-| `dotnet build HealthCare.sln -c Release` | Exit 1 — `XA5300` Android SDK directory not found |
+| HealthCare / Platform Admin | Retain Ant Design Blazor |
+| PinoyBusinessPOS | Native CSS + RCL; no Ant; no Tailwind |
+| Shared | Models, token names, localization conventions |
 
 ## Risks
 
-See [risks-and-issues.md](risks-and-issues.md). R-013 mitigated; R-016 open (empty remote).
+See [risks-and-issues.md](risks-and-issues.md). R-005/R-006 updated for UI strategy.
 
 ## Next approved action
 
-**P0-WP03 — Ant Design and UI Reuse Review** after P0-WP02 acceptance. Do not extract Platform or create POS.
+**P0-WP04 — Assessment Closeout and Recommendation** after P0-WP03 acceptance.

@@ -2,7 +2,7 @@
 
 [Reuse Assessment](healthcare-reuse-assessment.md) | [Extraction Rules](extraction-rules.md)
 
-Filled from repository evidence during **P0-WP01** (2026-07-29). Classifications:
+Filled from repository evidence during **P0-WP01** and extended for UI in **P0-WP03** (2026-07-29). Classifications:
 
 - **Reuse** — reusable largely as-is after namespace move
 - **Adapt** — reusable with generalization
@@ -39,6 +39,13 @@ Filled from repository evidence during **P0-WP01** (2026-07-29). Classifications
 | Dropdowns | Ant `Select`; `ClinicPicker`/`OrganizationPicker`/`PatientPicker` | Adapt pickers as pattern | Native select for POS; Ant pickers for Platform Admin | Free-text ID bypass | Picker components |
 | Calendars | Ant `DatePicker`; appointments calendar pages | Keep / Pattern | POS `DateField` native wrapper; no custom engine | Building full calendar early | `AppointmentsCalendar.razor`, DatePicker usage |
 | Dialogs | `IUiModalService` / `AntUiModalService` | Adapt | Interface reusable; Ant impl HC/Platform only | — | `Services/IUiModalService.cs` |
+| CSS / design tokens | `healthcare-ant-enterprise.css`, `hc-portal.css`; Mobile hard-coded | Adapt token *names* / Keep HC CSS | POS `--exits-*` Light/Dark/System; map intent to Ant for Platform Admin | Copying Ant CSS into POS | P0-WP03 UI assessment |
+| Animations / motion | Staff `--hc-motion`, `hc-rise-in`, reduced-motion; Mobile spinner | Pattern only | POS motion table + `prefers-reduced-motion` | Blocking cashier UX | `healthcare-ant-enterprise.css` |
+| Accessibility | Aria labels, pickers listbox; weak `h1:focus` | Adapt strengths / fix gaps in POS | POS a11y checklist mandatory | Assuming Ant equals a11y | UI assessment §6 |
+| Responsive layouts | Staff sider breakpoints; PatientWeb weak media; Mobile scroll nav | Pattern only | Phone cards / tablet split / desktop dense | Wide tables on phones | UI assessment §5 |
+| Design tokens system | Partial `--hc-*` | Missing full system | Density + theme + motion tokens for POS | Treating HC CSS as final | UI assessment §4 |
+| Ant Design Blazor | `HealthCare.Web` only, v1.6.2 | Keep in HC / Platform Admin | Do not add to POS | Framework leak | Web csproj |
+| Tailwind | — | Missing / Do not introduce | Explicitly prohibited for POS | Accidental add | ADR-010 |
 | Test infrastructure | Unit/Integration/Architecture/Web/E2E fixtures | Reuse pattern | Baseline before extraction | Flaky E2E env | `tests/*` |
 | CI/CD | Scripts + Docker only | Missing (Actions) | Add portfolio CI later | No automated gate in monorepo | No `.github` workflows |
 | Docker/deployment | `deploy/docker/*`, Dockerfiles | Adapt | Split Platform vs HC compose later | Shared DB today | compose.yaml files |
@@ -48,3 +55,4 @@ Filled from repository evidence during **P0-WP01** (2026-07-29). Classifications
 - **Clinic** is HealthCare location semantics — do not rename to Store for POS.
 - **Organization usage limits** are the only commercial-adjacent controls found; they are **not** subscriptions.
 - **Hangfire** hosting is reusable infrastructure; reminder/summary jobs are HealthCare-specific.
+- **UI (P0-WP03):** Ant stays in HealthCare/Platform Admin; POS is native CSS only — see [healthcare-ui-reuse-assessment.md](healthcare-ui-reuse-assessment.md) and [ADR-010](../decisions/ADR-010-separate-ui-implementations-platform-and-pos.md).

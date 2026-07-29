@@ -14,6 +14,7 @@
 - [HealthCare reuse assessment](reuse/healthcare-reuse-assessment.md)
 - [Reuse classification matrix](reuse/reuse-classification-matrix.md)
 - [HealthCare runtime baseline](reuse/healthcare-runtime-baseline.md)
+- [HealthCare UI reuse assessment](reuse/healthcare-ui-reuse-assessment.md)
 - [Extraction and migration rules](reuse/extraction-rules.md)
 
 ## Engineering
@@ -26,6 +27,7 @@
 - [Security](engineering/security.md)
 - [Authorization](engineering/authorization-matrix.md)
 - [UI design system](engineering/ui-design-system.md)
+- [Reusable component catalog](engineering/reusable-component-catalog.md)
 - [Localization](engineering/localization.md)
 - [Theme system](engineering/theme-system.md)
 - [Testing strategy](engineering/testing-strategy.md)

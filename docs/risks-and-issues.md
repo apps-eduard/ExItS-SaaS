@@ -8,10 +8,10 @@
 | R-002 | Healthcare-specific rules become generic platform rules | Critical | Classification matrix and architecture review | Open — matrix started in P0-WP01 |
 | R-003 | Platform outage blocks product operations | Critical | Local entitlement projection/snapshot | Open |
 | R-004 | Cross-product or cross-tenant data leakage | Critical | Separate DBs, server context, isolation tests | Open |
-| R-005 | Ant Design coupling spreads into POS | Medium | UI wrappers and separate native POS library | Open — confirmed staff-only AntDesign 1.6.2 |
-| R-006 | Native reusable components become a full UI-framework project | High | Build only phase-needed components | Open |
-| R-007 | English-only strings escape into release | Medium | Resource-completeness tests | Open — HC has no i18n yet |
-| R-008 | Dark theme creates poor contrast | High | Semantic tokens and accessibility tests | Open — HC lacks Light/Dark/System preference |
+| R-005 | Ant Design coupling spreads into POS | Medium | ADR-010: Ant stays HC/Platform Admin; POS native only; catalog review rule | **Mitigated** (strategy) — watch during Phase 5+ |
+| R-006 | Native reusable components become a full UI-framework project | High | Phase-gated catalog (MVP/Utang/Store/Full); build only phase-needed components | Open — catalog defined P0-WP03 |
+| R-007 | English-only strings escape into release | Medium | Resource-completeness tests; POS `en`/`fil` from MVP | Open — HC has no i18n; POS greenfield (P0-WP03) |
+| R-008 | Dark theme creates poor contrast | High | Semantic tokens and accessibility tests; Light/Dark/System for POS | Open — HC lacks product theme switch; POS tokens planned (P0-WP03) |
 | R-009 | Duplicate offline financial transactions | Critical | Idempotency and append-only ledger | Open |
 | R-010 | Nested `HealthCare/.git` inside ExITS monorepo | High | Root ignores `HealthCare/`; decide import/submodule/subtree later — do not delete nested `.git` | Mitigated (ignore) — integration decision still Open |
 | R-011 | No EF global tenant query filters (service-only isolation) | Critical | Keep service checks; add filters/tests before multi-product sharing | Open — verified P0-WP01 |
@@ -22,3 +22,4 @@
 | R-016 | Root `origin` remote exists but is empty; `origin/main` gone | High | User-authorized first push: `git push -u origin main` (do not force-push) | Open — verified P0-WP02 |
 | R-017 | Accidental HealthCare parent tracking | Critical | Root ignore + `git ls-files HealthCare` / `git check-ignore` checks before commit | Mitigated (P0-WP02 process) |
 | R-018 | Nested HealthCare local `.env` / lab secrets | High | Remain gitignored; never commit or paste values into portfolio docs | Open — presence known; values not documented |
+| R-019 | Dual UI stacks (Ant Platform Admin vs native POS) drift in branding | Medium | Shared token names + terminology glossary; periodic design review | Open — accepted tradeoff ADR-010 |
