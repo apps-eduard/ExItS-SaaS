@@ -97,7 +97,7 @@ See `docs/risks-and-issues.md` (P0-* items). Deferred: nested git disposition, r
 
 | Field | Value |
 |---|---|
-| Commit hash | _(filled after commit)_ |
+| Commit hash | `663b5bf3269ee934d107bacc467d253a4bf28a90` |
 | Commit message | `docs(platform): assess healthcare SaaS reuse` |
 | Final working tree | Docs committed; `HealthCare/` intentionally remains untracked (nested git + artifacts) |
 

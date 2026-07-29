@@ -75,7 +75,7 @@ Recorded as R-010…R-014 in [risks-and-issues.md](../risks-and-issues.md).
 
 | Field | Value |
 |---|---|
-| Hash | _(filled after commit)_ |
+| Hash | `663b5bf3269ee934d107bacc467d253a4bf28a90` |
 | Message | `docs(platform): assess healthcare SaaS reuse` |
 
 ### P0-WP02 — Baseline Build, Tests and Runtime Map

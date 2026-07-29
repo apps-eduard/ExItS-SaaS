@@ -14,7 +14,7 @@
 | Current phase | Phase 0 — Existing HealthCare Assessment |
 | Current work package | P0-WP01 — Repository and Reuse Inventory (**Ready for Review**) |
 | Overall status | In Progress |
-| Latest verified commit | _(recorded after docs commit)_ |
+| Latest verified commit | `663b5bf3269ee934d107bacc467d253a4bf28a90` (`docs(platform): assess healthcare SaaS reuse`) |
 | Open blockers | 0 extraction blockers; nested Git + missing Android SDK noted as risks |
 | Last updated | 2026-07-29 |
 
