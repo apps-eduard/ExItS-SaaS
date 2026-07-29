@@ -2,7 +2,7 @@
 
 > Primary status page. Cursor must update this file after every completed work package. Percentages are calculated from approved work packages, never estimated.
 
-[Documentation Home](index.md) | [All Phases](phases/README.md) | [Capability boundary](engineering/platform-product-capability-boundary.md) | [P1-WP01 report](reports/P1-WP01-platform-product-capability-boundary.md)
+[Documentation Home](index.md) | [All Phases](phases/README.md) | [Contracts](engineering/platform-product-contracts.md) | [P1-WP02 report](reports/P1-WP02-data-ownership-and-contracts.md)
 
 ## Current status
 
@@ -12,10 +12,10 @@
 | Existing product | HealthCare SaaS MVP (ignored nested `HealthCare/`) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 1 — Platform Boundary and Architecture |
-| Current work package | P1-WP01 — Platform vs Product Capability Boundary (**Ready for Review**) |
-| Overall status | Phase 0 **Complete with documented risks**; P1-WP01 ready for review |
-| Latest verified commit | `b6a3133732f6d29c68159447eb1ca43ea0b1212b` (`docs(architecture): define platform product boundaries`) |
-| Open blockers | 0 for P1-WP01 acceptance; root remote empty (user push when authorized) |
+| Current work package | P1-WP02 — Data Ownership and Contracts (**Ready for Review**) |
+| Overall status | Phase 0 Complete with documented risks; P1-WP01 **Complete**; P1-WP02 ready for review |
+| Latest verified commit | `PENDING_AFTER_COMMIT` (`docs(contracts): define data authority and projections`) |
+| Open blockers | 0 for P1-WP02 acceptance; root remote empty (user push when authorized) |
 | Last updated | 2026-07-29 |
 
 ## Delivery sequence
@@ -23,17 +23,15 @@
 ```text
 Assess completed HealthCare MVP ✓
         ↓
-Approve platform/product boundaries  ← P1-WP01 (in review)
+Approve platform/product boundaries ✓ (P1-WP01)
+        ↓
+Define data ownership and contracts  ← P1-WP02 (in review)
+        ↓
+Extraction sequence and rollback (P1-WP03)
         ↓
 Extract or adapt ExITS Platform safely
         ↓
-Reconnect and regression-test HealthCare
-        ↓
-Add portfolio plans, billing and entitlements
-        ↓
-Build PinoyBusinessPOS MAUI foundation
-        ↓
-Utang MVP → Offline → Basic Store → Harden → Full POS
+…
 ```
 
 ## Phase progress
@@ -41,7 +39,7 @@ Utang MVP → Offline → Basic Store → Harden → Full POS
 | Phase | Name | Status | Completed | Total | Progress | Link |
 |---:|---|---|---:|---:|---:|---|
 | 0 | Existing HealthCare Assessment | **Complete with documented risks** | 4 | 4 | 100% | [Open](phases/phase-00-healthcare-assessment.md) |
-| 1 | Platform Boundary and Architecture | In Progress | 0 | 4 | 0% | [Open](phases/phase-01-platform-boundary.md) |
+| 1 | Platform Boundary and Architecture | In Progress | 1 | 4 | 25% | [Open](phases/phase-01-platform-boundary.md) |
 | 2 | Platform Extraction and HealthCare Reconnection | Not Started | 0 | 6 | 0% | [Open](phases/phase-02-platform-extraction.md) |
 | 3 | Portfolio Billing, Plans and Entitlements | Not Started | 0 | 5 | 0% | [Open](phases/phase-03-billing-entitlements.md) |
 | 4 | Platform Admin Expansion | Not Started | 0 | 4 | 0% | [Open](phases/phase-04-platform-admin.md) |
@@ -52,35 +50,33 @@ Utang MVP → Offline → Basic Store → Harden → Full POS
 | 9 | MVP Hardening and Release | Not Started | 0 | 6 | 0% | [Open](phases/phase-09-mvp-hardening.md) |
 | 10 | Full POS | Future | 0 | 8 | 0% | [Open](phases/phase-10-full-pos.md) |
 
-**MVP phases 0–9:** 4 / 52 work packages = **7.69%** (4÷52). P1-WP01 not counted until accepted.
+**MVP phases 0–9:** 5 / 52 work packages = **9.62%** (5÷52). Counts P1-WP01 Complete; P1-WP02 not counted until accepted.
 
-## Completed Phase 0 work packages
+## Phase 1 work packages
 
 | WP | Status | Key commit |
 |---|---|---|
-| P0-WP01 | Complete | `663b5bf` |
-| P0-WP02 | Complete | `6b56e6d` |
-| P0-WP03 | Complete (+ UI correction `e310cf8`) | `5d628dd` / `e310cf8` |
-| P0-WP04 | Complete (Phase 0 closed with documented risks) | `f52316a` / hash `374e699` |
+| P1-WP01 | **Complete** | `b6a3133` / hash `a48e7cb` |
+| P1-WP02 | Ready for Review | `PENDING_AFTER_COMMIT` |
+| P1-WP03 | Not Started | — |
+| P1-WP04 | Not Started | — |
 
-## P1-WP01 decisions (summary)
+## P1-WP02 decisions (summary)
 
 | Topic | Decision |
 |---|---|
-| Platform Organization | Global SaaS customer boundary |
-| Multi-product orgs / multi-org users | Yes / Yes (target) |
-| Clinics / stores | Product-local; multiple allowed |
-| Access vs permissions | Platform access; product operational permissions |
-| Subscriptions / entitlements | Platform authoritative; local projections |
-| Cross-DB FKs / clinical in Platform | Prohibited |
-| Customer vs User / SaaS vs retail payment | Separate |
-| Shared code | Only after two verified consumers |
-| ADR | ADR-011 Accepted; ADR-009 Accepted via ADR-011 |
+| Stable IDs | UUID/Guid or immutable codes; no cross-DB FKs |
+| Projections | Identity, org, membership, entitlement — minimal fields |
+| Delivery | At-least-once; idempotent consumers; transport deferred |
+| Entitlement states | Current → Never initialized matrix; fail-closed for financial/privacy |
+| Trial expiry | View + pay existing debt; block new credit (OD-07–09 open) |
+| Payments | SaaSPayment ≠ RetailPayment ≠ CreditPayment |
+| ADR | ADR-012 Accepted |
 
 ## Latest tests
 
-Docs-only P1-WP01 — no runtime tests required. Prior Windows-safe baseline: **1102 passed / 0 failed / 0 skipped** (P0-WP02).
+Docs-only P1-WP02 — no runtime tests required. Prior Windows-safe baseline: **1102 passed / 0 failed / 0 skipped** (P0-WP02).
 
 ## Next approved action
 
-**P1-WP02 — Data Ownership and Contracts** after P1-WP01 acceptance. Do **not** begin until authorized. Do not create application projects or import HealthCare in P1-WP01.
+**P1-WP03 — Extraction Sequence and Rollback Plan** after P1-WP02 acceptance. Do **not** begin until authorized. No application projects or HealthCare import in P1-WP02.

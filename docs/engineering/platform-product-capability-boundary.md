@@ -203,12 +203,15 @@ Exact SLAs **not** promised here.
 
 | ID | Question | Status |
 |---|---|---|
-| OD-01 | Customer ↔ Platform User login linkage | Deferred |
+| OD-01 | Customer ↔ Platform User login linkage | Deferred — see contracts §20 |
 | OD-02 | Break-glass Platform support into product ops | Deferred |
-| OD-03 | Exact entitlement event transport (HTTP poll vs bus) | P1-WP02 / Phase 3 |
+| OD-03 | Exact entitlement event transport (HTTP poll vs bus) | Deferred — P1-WP02 / Phase 3 |
 | OD-04 | MFA | Deferred |
 | OD-05 | When/how to import HealthCare into monorepo | After Platform foundation (Phase 1–2) |
 | OD-06 | Multi-org membership migration from HC single StaffMember | Phase 2 extraction design |
+| OD-07–OD-10 | Trial post-expiry UX details; legal retention | Carried in [contracts §20](platform-product-contracts.md) (P1-WP02) |
+
+P1-WP02 expands contract mechanics in [platform-product-contracts.md](platform-product-contracts.md) and [ADR-012](../decisions/ADR-012-versioned-platform-contracts-and-local-projections.md).
 
 ## 22. Enforcement rules
 

@@ -1,6 +1,6 @@
 # Capability Ownership Matrix
 
-[Capability boundary](platform-product-capability-boundary.md) | [Data authority](data-authority-matrix.md)
+[Capability boundary](platform-product-capability-boundary.md) | [Data authority](data-authority-matrix.md) | [Contracts](platform-product-contracts.md) | [Contract matrix](platform-product-contract-matrix.md)
 
 Primary ownership only. Projection ≠ system of record.
 

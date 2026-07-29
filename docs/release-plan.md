@@ -8,7 +8,11 @@
 
 ## R0.5 — Platform/product capability boundary (Phase 1 docs)
 
-**In review (P1-WP01).** Authoritative ownership, entitlement projections, and prohibited coupling documented (ADR-011). No runtime extraction yet.
+**Complete (P1-WP01 accepted).** Ownership and prohibited coupling documented (ADR-011).
+
+## R0.6 — Data ownership and contracts (Phase 1 docs)
+
+**In review (P1-WP02).** Versioned contracts, projections, entitlement states, classification (ADR-012). No runtime implementation yet.
 
 ## R1 — ExITS Platform extraction
 

@@ -20,4 +20,5 @@ The dashboard links to the latest accepted report.
 | [P0-WP03-ui-reuse-review.md](P0-WP03-ui-reuse-review.md) | Ant Design and UI Reuse Review | Complete |
 | [P0-WP04-assessment-closeout.md](P0-WP04-assessment-closeout.md) | Assessment Closeout and Recommendation | Complete (Phase 0 closed with documented risks) |
 | [phase-00-final-assessment-and-recommendation.md](phase-00-final-assessment-and-recommendation.md) | Phase 0 final assessment | Complete (Phase 0 closed with documented risks) |
-| [P1-WP01-platform-product-capability-boundary.md](P1-WP01-platform-product-capability-boundary.md) | Platform vs Product Capability Boundary | Ready for Review |
+| [P1-WP01-platform-product-capability-boundary.md](P1-WP01-platform-product-capability-boundary.md) | Platform vs Product Capability Boundary | Complete |
+| [P1-WP02-data-ownership-and-contracts.md](P1-WP02-data-ownership-and-contracts.md) | Data Ownership and Contracts | Ready for Review |

@@ -1,6 +1,6 @@
 # Products, Plans, Trials and Billing
 
-[Home](../index.md) | [Dashboard](../portfolio-progress.md) | [Capability boundary](../engineering/platform-product-capability-boundary.md) | [ADR-011](../decisions/ADR-011-platform-authority-and-product-local-projections.md)
+[Home](../index.md) | [Dashboard](../portfolio-progress.md) | [Capability boundary](../engineering/platform-product-capability-boundary.md) | [Contracts](../engineering/platform-product-contracts.md) | [Entitlement states](../engineering/entitlement-state-matrix.md) | [ADR-011](../decisions/ADR-011-platform-authority-and-product-local-projections.md) | [ADR-012](../decisions/ADR-012-versioned-platform-contracts-and-local-projections.md)
 
 ## Platform product catalog
 
@@ -13,7 +13,7 @@
 
 Three months. Customers, remarks-based credit, payments, ledger and overdue monitoring.
 
-After expiry, existing balances remain visible and payments on existing debt remain allowed. New credit is blocked until activation.
+After expiry, existing balances remain visible and payments on existing debt remain allowed. New credit is blocked until activation. Detailed allowed/blocked matrix and open post-expiry UX questions: [platform-product-contracts.md §9](../engineering/platform-product-contracts.md).
 
 ### Utang
 

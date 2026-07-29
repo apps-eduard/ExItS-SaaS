@@ -1,6 +1,6 @@
 # Phase 1 — Platform Boundary and Architecture
 
-[Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Previous](phase-00-healthcare-assessment.md) | [Next](phase-02-platform-extraction.md) | [Capability boundary](../engineering/platform-product-capability-boundary.md)
+[Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Previous](phase-00-healthcare-assessment.md) | [Next](phase-02-platform-extraction.md) | [Contracts](../engineering/platform-product-contracts.md)
 
 ## Objective
 
@@ -14,7 +14,7 @@ Phase 0 is **Complete with documented risks** (P0-WP04 accepted as closeout dire
 
 ### P1-WP01 — Platform vs Product Capability Boundary
 
-Status: **Ready for Review**
+Status: **Complete**
 
 #### Required outcomes
 
@@ -30,18 +30,8 @@ Status: **Ready for Review**
 - [x] Applicable validation (Markdown-only, freeze, links) with evidence.
 - [x] Dashboard and phase page updated.
 - [x] Completion report created.
-- [x] Focused commit created and hash recorded (see below / report).
-- [x] Working tree clean (after hash-record commit).
-
-#### Artifacts
-
-| Artifact | Path |
-|---|---|
-| Capability boundary | [platform-product-capability-boundary.md](../engineering/platform-product-capability-boundary.md) |
-| Ownership matrix | [capability-ownership-matrix.md](../engineering/capability-ownership-matrix.md) |
-| Data authority | [data-authority-matrix.md](../engineering/data-authority-matrix.md) |
-| ADR-011 | [ADR-011](../decisions/ADR-011-platform-authority-and-product-local-projections.md) |
-| Report | [P1-WP01 report](../reports/P1-WP01-platform-product-capability-boundary.md) |
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean.
 
 #### Commit
 
@@ -52,21 +42,43 @@ Status: **Ready for Review**
 
 ### P1-WP02 — Data Ownership and Contracts
 
-Status: Not Started
+Status: **Ready for Review**
 
 #### Required outcomes
 
-- Deepen data ownership and versioned contract specifications from P1-WP01 authority matrices.
-- Do not begin until P1-WP01 is accepted.
+- Versioned Platform–product contract specification.
+- Expanded data ownership and classification.
+- Contract matrix, entitlement state matrix, data classification matrix.
+- ADR-012 Versioned Platform Contracts and Local Product Projections.
+- Markdown-only; HealthCare frozen; no schemas/source folders.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete (docs).
+- [x] Applicable validation (Markdown-only, freeze, links) with evidence.
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded (see below).
+- [x] Working tree clean (after hash-record commit).
+
+#### Artifacts
+
+| Artifact | Path |
+|---|---|
+| Contracts | [platform-product-contracts.md](../engineering/platform-product-contracts.md) |
+| Data ownership | [data-ownership.md](../engineering/data-ownership.md) |
+| Contract matrix | [platform-product-contract-matrix.md](../engineering/platform-product-contract-matrix.md) |
+| Entitlement states | [entitlement-state-matrix.md](../engineering/entitlement-state-matrix.md) |
+| Classification | [data-classification-matrix.md](../engineering/data-classification-matrix.md) |
+| ADR-012 | [ADR-012](../decisions/ADR-012-versioned-platform-contracts-and-local-projections.md) |
+| Report | [P1-WP02 report](../reports/P1-WP02-data-ownership-and-contracts.md) |
+
+#### Commit
+
+| Field | Value |
+|---|---|
+| Hash | `PENDING_AFTER_COMMIT` |
+| Message | `docs(contracts): define data authority and projections` |
 
 ### P1-WP03 — Extraction Sequence and Rollback Plan
 
@@ -74,9 +86,8 @@ Status: Not Started
 
 #### Required outcomes
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+- Define extraction sequence and rollback for Platform extraction from HealthCare patterns.
+- Do not begin until P1-WP02 is accepted.
 
 #### Definition of Done
 

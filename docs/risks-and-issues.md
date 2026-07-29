@@ -6,7 +6,7 @@
 |---|---|---|---|---|
 | R-001 | HealthCare regression during extraction | Critical | Baseline tag, tests, small extraction steps, rollback | Open |
 | R-002 | Healthcare-specific rules become generic platform rules | Critical | Classification matrix and architecture review | Open — matrix started in P0-WP01 |
-| R-003 | Platform outage blocks product operations | Critical | Local entitlement projection/snapshot (ADR-011 / P1-WP01); transport & stale policy detail in P1-WP02 / Phase 3 | Open — direction accepted; implementation deferred |
+| R-003 | Platform outage blocks product operations | Critical | Local projections + state matrix (ADR-011/012, P1-WP02); numeric stale windows still Phase 3/7 | Open — states documented; durations deferred (R-022) |
 | R-004 | Cross-product or cross-tenant data leakage | Critical | Separate DBs, server context, isolation tests | Open |
 | R-005 | Ant Design coupling spreads into POS **or new Platform Admin** | Medium | ADR-010: Ant only in existing HC Staff Web; native stack for Platform Admin + POS | **Mitigated** (strategy) — watch during Phase 4–5+ |
 | R-006 | Native reusable components become a full UI-framework project | High | Phase-gated catalog (MVP/Utang/Store/Full); build only phase-needed components | Open — catalog defined P0-WP03 |
@@ -25,5 +25,6 @@
 | R-019 | Dual UI stacks (HC Ant vs **native** Platform Admin + POS) — brand drift, duplicated visuals, separate a11y/theme work, future HC modernization cost | Medium | Shared semantic tokens, branding, terminology, UI-independent contracts; separate framework impls; no forced HC rewrite in current MVP | Open — **controlled technical separation** (ADR-010) |
 | R-020 | Phase 0 closed while Integration/E2E not re-baselined on this machine | Medium | Run Integration/E2E on approved Ubuntu/Compose agents before extraction (Phase 2 gate) | Open — deferred by design from P0-WP02 |
 | R-021 | Empty root remote delays shared portfolio publication | Medium | User-authorized `git push -u origin main` when ready | Open — R-016 related |
-| R-022 | Entitlement projection staleness / conflict handling underspecified for runtime | High | Specify refresh, fail-safe, idempotency in P1-WP02 / Phase 3; ADR-011 records authority model only | Open — introduced P1-WP01 |
+| R-022 | Entitlement projection staleness durations / conflict numerics underspecified | High | P1-WP02 defined states, idempotency, fail-closed rules; set exact windows in Phase 3 / 7 | Open — categorical behavior accepted; durations TBD |
 | R-023 | Premature shared library / mega-utility before two consumers | Medium | Shared-code governance in capability boundary §22; prefer contracts/conventions | Open — governance documented P1-WP01 |
+| R-024 | Contract major-version skew between Platform and products | High | Version negotiation, migration windows, quarantine unsupported majors (ADR-012) | Open — policy documented P1-WP02; runtime later |
