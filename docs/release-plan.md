@@ -12,11 +12,15 @@
 
 ## R0.6 — Data ownership and contracts (Phase 1 docs)
 
-**In review (P1-WP02).** Versioned contracts, projections, entitlement states, classification (ADR-012). No runtime implementation yet.
+**Complete (P1-WP02 + Cash/GCash accepted).**
+
+## R0.7 — Extraction sequence and architecture approval (Phase 1 closeout)
+
+**In review (P1-WP03 Complete; P1-WP04).** ADR-013/014. Next: P2-WP01 when authorized.
 
 ## R1 — ExITS Platform extraction
 
-**Planned (sequence documented in P1-WP03).** Global identity, organizations, products, subscriptions and entitlements built new in root; HealthCare reconnection only after gates. See [extraction-sequence.md](reuse/extraction-sequence.md) and [extraction-rollback-plan.md](engineering/extraction-rollback-plan.md). No extraction executed yet.
+**Planned.** Begins with **P2-WP01** (narrow root solution foundation + baseline/safety). See [extraction-sequence.md](reuse/extraction-sequence.md). No extraction executed yet.
 
 ## R2 — Platform portfolio administration
 

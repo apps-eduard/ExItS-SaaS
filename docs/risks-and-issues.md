@@ -31,3 +31,4 @@
 | R-025 | Manual GCash recording errors / duplicate references | Medium | Required normalized reference; warn on duplicates (OD-11); cashier confirmation UX; no secrets stored; sync re-check | Open — documented POS MVP payment correction |
 | R-026 | Premature HealthCare import or wholesale copy before Platform gates | Critical | ADR-013: new Platform first; HC frozen; sequence + rollback plans | **Mitigated** (planning) — watch Stage 1+ |
 | R-027 | Cutover without restore rehearsal / rollback evidence | Critical | Rollback plan L5; gate G6–G7 require rehearsal | Open — enforced at Phase 2 cutover |
+| R-028 | Phase 1 closed while Integration/E2E and numeric entitlement windows remain open | Medium | Documented deferred; re-baseline before HC cutover; R-022 for durations | Open — accepted with Phase 1 closeout |

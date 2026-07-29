@@ -1,6 +1,6 @@
 # UI Design System and Reusable Components
 
-[Home](../index.md) | [UI reuse assessment](../reuse/healthcare-ui-reuse-assessment.md) | [Component catalog](reusable-component-catalog.md) | [Localization](localization.md) | [Themes](theme-system.md) | [ADR-010](../decisions/ADR-010-separate-ui-implementations-platform-and-pos.md)
+[Home](../index.md) | [UI reuse assessment](../reuse/healthcare-ui-reuse-assessment.md) | [Component catalog](reusable-component-catalog.md) | [Localization](localization.md) | [Themes](theme-system.md) | [ADR-010](../decisions/ADR-010-separate-ui-implementations-platform-and-pos.md) | [Approved architecture](approved-architecture-summary.md)
 
 Validated against HealthCare evidence in **P0-WP03**. No application UI was implemented in this work package.
 

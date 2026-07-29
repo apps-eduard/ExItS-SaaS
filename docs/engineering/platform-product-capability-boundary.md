@@ -2,8 +2,8 @@
 
 [Home](../index.md) | [Ownership matrix](capability-ownership-matrix.md) | [Data authority](data-authority-matrix.md) | [ADR-011](../decisions/ADR-011-platform-authority-and-product-local-projections.md) | [Final portfolio boundaries](final-portfolio-boundaries.md)
 
-**Work package:** P1-WP01  
-**Status:** Authoritative for Phase 1+ (documentation)  
+**Work package:** P1-WP01 (boundaries); Phase 1 closed via P1-WP04 / ADR-014
+**Status:** Authoritative for Phase 1+ (documentation)
 **Date:** 2026-07-29
 
 ---

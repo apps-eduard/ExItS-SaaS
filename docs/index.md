@@ -23,6 +23,8 @@
 
 ## Engineering
 
+- [Approved architecture summary](engineering/approved-architecture-summary.md)
+- [Phase 2 readiness checklist](engineering/phase-02-readiness-checklist.md)
 - [Target architecture](engineering/architecture.md)
 - [Platform–product capability boundary](engineering/platform-product-capability-boundary.md)
 - [Capability ownership matrix](engineering/capability-ownership-matrix.md)
@@ -49,6 +51,7 @@
 
 - [Portfolio progress](portfolio-progress.md)
 - [Phase 0 final assessment](reports/phase-00-final-assessment-and-recommendation.md)
+- [Phase 1 architecture approval](reports/phase-01-architecture-approval.md)
 - [All phases](phases/README.md)
 - [Risks and issues](risks-and-issues.md)
 - [Decisions](decisions/README.md)

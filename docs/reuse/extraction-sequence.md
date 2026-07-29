@@ -12,7 +12,7 @@
 
 Define the safe, incremental sequence for building the new ExITS Platform from reusable HealthCare **patterns** without modifying, importing, or destabilizing the existing HealthCare application during early phases.
 
-**This document does not authorize implementation.** Stages are future work only.
+**This document does not authorize implementation by itself.** Phase 1 closeout (ADR-014) authorizes **P2-WP01** only when explicitly started. Stages below remain future work.
 
 ## 2. Preconditions
 
@@ -22,6 +22,8 @@ Define the safe, incremental sequence for building the new ExITS Platform from r
 | P1-WP01 capability boundary | Complete |
 | P1-WP02 contracts and projections | Complete |
 | POS Cash / GCash / Utang MVP payments documented | Accepted (`c5472e8`) |
+| P1-WP03 extraction sequence and rollback | Complete |
+| P1-WP04 architecture approval (ADR-014) | Met (Phase 1 closeout) |
 | HealthCare nested, ignored, read-only | Required continuously |
 | Windows-safe HC baseline 1102/0/0 | Recorded (P0-WP02); re-verify before HC cutover |
 | Integration/E2E environment available | Required before HC cutover (R-020) |

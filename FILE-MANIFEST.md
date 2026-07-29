@@ -1,7 +1,7 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown files: 68
-Internal links checked: spot-check P1-WP03
+Markdown files: 73
+Internal links checked: spot-check P1-WP04
 Broken links: none found in spot-check of new paths
 
 .gitignore
@@ -15,8 +15,10 @@ docs/decisions/ADR-010-separate-ui-implementations-platform-and-pos.md
 docs/decisions/ADR-011-platform-authority-and-product-local-projections.md
 docs/decisions/ADR-012-versioned-platform-contracts-and-local-projections.md
 docs/decisions/ADR-013-build-new-platform-before-healthcare-reconnection.md
+docs/decisions/ADR-014-approve-exits-portfolio-architecture-for-controlled-implementation.md
 docs/decisions/README.md
 docs/engineering/architecture.md
+docs/engineering/approved-architecture-summary.md
 docs/engineering/authorization-matrix.md
 docs/engineering/capability-ownership-matrix.md
 docs/engineering/data-authority-matrix.md
@@ -30,6 +32,7 @@ docs/engineering/final-portfolio-boundaries.md
 docs/engineering/implementation-gate-matrix.md
 docs/engineering/localization.md
 docs/engineering/offline-sync-design.md
+docs/engineering/phase-02-readiness-checklist.md
 docs/engineering/platform-extraction-risk-matrix.md
 docs/engineering/platform-product-capability-boundary.md
 docs/engineering/platform-product-contract-matrix.md
@@ -67,7 +70,9 @@ docs/reports/P0-WP04-assessment-closeout.md
 docs/reports/P1-WP01-platform-product-capability-boundary.md
 docs/reports/P1-WP02-data-ownership-and-contracts.md
 docs/reports/P1-WP03-extraction-sequence-and-rollback.md
+docs/reports/P1-WP04-architecture-approval-closeout.md
 docs/reports/phase-00-final-assessment-and-recommendation.md
+docs/reports/phase-01-architecture-approval.md
 docs/reuse/extraction-rules.md
 docs/reuse/extraction-sequence.md
 docs/reuse/healthcare-reuse-assessment.md

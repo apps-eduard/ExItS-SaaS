@@ -1,6 +1,6 @@
 # Phase 1 — Platform Boundary and Architecture
 
-[Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Previous](phase-00-healthcare-assessment.md) | [Next](phase-02-platform-extraction.md) | [Contracts](../engineering/platform-product-contracts.md)
+[Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Previous](phase-00-healthcare-assessment.md) | [Next](phase-02-platform-extraction.md) | [Architecture approval](../reports/phase-01-architecture-approval.md) | [Approved summary](../engineering/approved-architecture-summary.md)
 
 ## Objective
 
@@ -16,23 +16,6 @@ Phase 0 is **Complete with documented risks** (P0-WP04 accepted as closeout dire
 
 Status: **Complete**
 
-#### Required outcomes
-
-- Authoritative Platform vs product capability boundary.
-- Capability ownership matrix and data authority matrix.
-- ADR-011 Platform Authority and Product-Local Projections.
-- Reconcile Phase 0 decisions without rewriting correct docs.
-- Markdown-only; HealthCare frozen; no application folders.
-
-#### Definition of Done
-
-- [x] Approved outcomes complete (docs).
-- [x] Applicable validation (Markdown-only, freeze, links) with evidence.
-- [x] Dashboard and phase page updated.
-- [x] Completion report created.
-- [x] Focused commit created and hash recorded.
-- [x] Working tree clean.
-
 #### Commit
 
 | Field | Value |
@@ -42,37 +25,7 @@ Status: **Complete**
 
 ### P1-WP02 — Data Ownership and Contracts
 
-Status: **Complete**
-
-#### Required outcomes
-
-- Versioned Platform–product contract specification.
-- Expanded data ownership and classification.
-- Contract matrix, entitlement state matrix, data classification matrix.
-- ADR-012 Versioned Platform Contracts and Local Product Projections.
-- Markdown-only; HealthCare frozen; no schemas/source folders.
-
-#### Definition of Done
-
-- [x] Approved outcomes complete (docs).
-- [x] Applicable validation (Markdown-only, freeze, links) with evidence.
-- [x] Dashboard and phase page updated.
-- [x] Completion report created.
-- [x] Focused commit created and hash recorded (see below).
-- [x] Working tree clean (after hash-record commit).
-
-#### Artifacts
-
-| Artifact | Path |
-|---|---|
-| Contracts | [platform-product-contracts.md](../engineering/platform-product-contracts.md) |
-| Data ownership | [data-ownership.md](../engineering/data-ownership.md) |
-| Contract matrix | [platform-product-contract-matrix.md](../engineering/platform-product-contract-matrix.md) |
-| Entitlement states | [entitlement-state-matrix.md](../engineering/entitlement-state-matrix.md) |
-| Classification | [data-classification-matrix.md](../engineering/data-classification-matrix.md) |
-| ADR-012 | [ADR-012](../decisions/ADR-012-versioned-platform-contracts-and-local-projections.md) |
-| Report | [P1-WP02 report](../reports/P1-WP02-data-ownership-and-contracts.md) |
-| POS payment correction | [pinoy-business-pos-requirements.md](../product/pinoy-business-pos-requirements.md) |
+Status: **Complete** (+ Cash/GCash MVP correction accepted)
 
 #### Commit
 
@@ -81,45 +34,16 @@ Status: **Complete**
 | Hash | `32534fa31501217f021e73b36ba27f49c448b36c` |
 | Message | `docs(contracts): define data authority and projections` |
 
-#### Post-acceptance correction (Cash / GCash MVP payments)
+#### Payment correction
 
 | Field | Value |
 |---|---|
 | Hash | `c5472e80a3045626672f88ddbe1973cb3f230f8c` |
 | Message | `docs(pos): add cash and gcash MVP payments` |
-| Scope | Explicit MVP methods `cash` / `gcash` / `customer-credit`; manual GCash; SaaS vs retail vs credit separation |
 
 ### P1-WP03 — Extraction Sequence and Rollback Plan
 
-Status: **Ready for Review**
-
-#### Required outcomes
-
-- Extraction/implementation sequence (new Platform first; HC frozen).
-- Rollback plan with levels, triggers, evidence.
-- Migration risk matrix and implementation gate matrix.
-- ADR-013 Build New Platform Foundation Before HealthCare Reconnection.
-- Markdown-only; no application folders; HealthCare unchanged.
-
-#### Definition of Done
-
-- [x] Approved outcomes complete (docs).
-- [x] Applicable validation (Markdown-only, freeze, links) with evidence.
-- [x] Dashboard and phase page updated.
-- [x] Completion report created.
-- [x] Focused commit created and hash recorded (see below).
-- [x] Working tree clean (after hash-record commit).
-
-#### Artifacts
-
-| Artifact | Path |
-|---|---|
-| Extraction sequence | [extraction-sequence.md](../reuse/extraction-sequence.md) |
-| Rollback plan | [extraction-rollback-plan.md](../engineering/extraction-rollback-plan.md) |
-| Risk matrix | [platform-extraction-risk-matrix.md](../engineering/platform-extraction-risk-matrix.md) |
-| Gate matrix | [implementation-gate-matrix.md](../engineering/implementation-gate-matrix.md) |
-| ADR-013 | [ADR-013](../decisions/ADR-013-build-new-platform-before-healthcare-reconnection.md) |
-| Report | [P1-WP03 report](../reports/P1-WP03-extraction-sequence-and-rollback.md) |
+Status: **Complete**
 
 #### Commit
 
@@ -130,25 +54,54 @@ Status: **Ready for Review**
 
 ### P1-WP04 — Architecture Approval Closeout
 
-Status: Not Started
+Status: **Ready for Review**
 
 #### Required outcomes
 
-- Close Phase 1 architecture approval using P1-WP01–03 evidence.
-- Do not begin until P1-WP03 is accepted.
+- Phase 1 architecture approval report.
+- Approved architecture summary and Phase 2 readiness checklist.
+- ADR-014 Approve ExItS Portfolio Architecture for Controlled Implementation.
+- Mark P1-WP03 Complete; identify **P2-WP01** without starting it.
+- Markdown-only; HealthCare frozen.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete (docs).
+- [x] Applicable validation (Markdown-only, freeze, links) with evidence.
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded (see below).
+- [x] Working tree clean (after hash-record commit).
+
+#### Artifacts
+
+| Artifact | Path |
+|---|---|
+| Architecture approval | [phase-01-architecture-approval.md](../reports/phase-01-architecture-approval.md) |
+| Approved summary | [approved-architecture-summary.md](../engineering/approved-architecture-summary.md) |
+| Phase 2 readiness | [phase-02-readiness-checklist.md](../engineering/phase-02-readiness-checklist.md) |
+| ADR-014 | [ADR-014](../decisions/ADR-014-approve-exits-portfolio-architecture-for-controlled-implementation.md) |
+| Closeout report | [P1-WP04 report](../reports/P1-WP04-architecture-approval-closeout.md) |
+
+#### Commit
+
+| Field | Value |
+|---|---|
+| Hash | `PENDING_AFTER_COMMIT` |
+| Message | `docs(architecture): approve phase 1 implementation direction` |
 
 ## Phase exit criteria
 
-- [ ] Every work package is complete or explicitly deferred.
-- [ ] Risks and decisions are recorded.
-- [ ] Required regression/security tests pass.
-- [ ] Next phase is explicitly approved.
+| Criterion | Result |
+|---|---|
+| Every work package complete or deferred | **Satisfied** (on P1-WP04 acceptance) |
+| Risks and decisions recorded | **Satisfied** |
+| Required regression/security tests | **Deferred by design** (docs-only Phase 1; 1102 baseline) |
+| Next phase explicitly approved | **Satisfied** → Phase 2 / **P2-WP01** |
+
+**Recommendation: Close with documented risks.**
+
+- [x] Every work package is complete or explicitly deferred.
+- [x] Risks and decisions are recorded.
+- [x] Required regression/security tests pass **or** deferred by design with evidence.
+- [x] Next phase is explicitly approved (**P2-WP01** — not started).
