@@ -1,0 +1,55 @@
+---
+description: Permanent ExItS-SaaS repository workflow, safety, Git, build, security, and reporting rules
+alwaysApply: true
+---
+
+# ExItS-SaaS Permanent Workflow Rules
+
+## Repository Safety
+
+- Root `/HealthCare/` is a separate frozen repository. Keep it ignored, untracked by the ExItS root repo, unmoved, unchanged, and outside `ExItS.slnx`.
+- Never modify, move, delete, import, retire, format, reset, clean, or commit inside HealthCare unless a future work package explicitly authorizes it.
+- Platform integration contracts under `src/Platform/.../Integration/HealthCare/` are tracked Platform files — not the frozen HealthCare repository.
+- Do not implement future work packages or adjacent product capability without explicit authorization.
+- Do not implement PinoyBusinessPOS unless explicitly authorized.
+
+## Git Workflow
+
+- Begin with `git status`, branch, upstream (`-vv`), recent log, and `git ls-remote` verification.
+- Stop on unexpected divergence or contamination. Never force-push or rewrite history.
+- Do not reset, rebase, merge, or amend unless explicitly authorized.
+- Before commit: review `git status`, `git diff`, staged diff, and `git diff --check`.
+- Use focused conventional commits (e.g. `feat(admin): ...`, `docs(platform): ...`).
+- Record feature hashes in the phase page, portfolio progress, and completion report.
+- A small documentation hash-record commit is allowed.
+- Push only after restore, Release build, tests, and required validation succeed.
+- Final local and remote `main` must match; final working tree must be clean.
+- Verify HealthCare freeze before and after: `git ls-files -- HealthCare/`, `git check-ignore -v HealthCare/`, `dotnet sln ExItS.slnx list`.
+
+## Build and Test Workflow
+
+- Restore, Release-build, and test the complete `ExItS.slnx`.
+- Record warnings, errors, passed, failed, and skipped totals.
+- Never weaken or remove tests to make a work package pass.
+- Use PostgreSQL/Testcontainers for relational behavior; do not use EF InMemory as proof of PostgreSQL behavior.
+- Validate migration apply, rollback, and re-apply where persistence changes.
+- Never target an unknown or production database.
+- Do not automatically apply production migrations at API startup (`Migrate()` forbidden on production paths).
+
+## Security and Architecture
+
+- Do not commit credentials, secrets, payment credentials, card data, PHI, or production configuration.
+- Preserve Platform/Product database and ownership boundaries; no cross-product DB access or cross-database FKs.
+- Domain remains persistence-independent; Application must not reference Infrastructure.
+- No generic repositories. API/UI DTOs must not expose EF entities.
+- Development-stage unauthenticated APIs must not be described as production-secure.
+- Do not invent fake production authentication.
+- UI projects must not reference Infrastructure, EF Core, or Npgsql.
+- Platform Admin uses native CSS / Razor / Blazor — no Ant Design, no Tailwind.
+
+## Documentation and Reporting
+
+- Update only documents affected by actual work.
+- Keep README, FILE-MANIFEST, phase progress, risks, release plan, and completion reports consistent with code.
+- Do not claim unimplemented capability.
+- Completion reports must include: status; delivered capability; explicit exclusions; persistence/migrations when relevant; API/UI capability; build/test/runtime evidence; security limitations; HealthCare freeze evidence; risks/open decisions; files/docs changed; Git/push evidence; exact next work package.
