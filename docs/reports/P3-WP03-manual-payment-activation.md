@@ -201,7 +201,7 @@ History table: `public.__EFMigrationsHistory`. Partial unique index verified. Po
 
 | Field | Value |
 |---|---|
-| Feature commit | _(to be recorded)_ |
+| Feature commit | `934c1d6a5f3a1a980748e9effb04345c801e8c37` |
 | Message | `feat(platform): implement manual payment activation` |
 | Hash-record commit | _(this docs commit)_ |
 

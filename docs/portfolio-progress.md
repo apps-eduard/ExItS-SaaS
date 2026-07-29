@@ -14,7 +14,7 @@
 | Current phase | Phase 3 — Portfolio Billing, Plans and Entitlements |
 | Current work package | P3-WP03 — Manual Payment Activation (**Ready for Review**) |
 | Overall status | Phase 2 complete; catalog + subscriptions + manual payments delivered |
-| Latest verified commit | _(to be recorded)_ |
+| Latest verified commit | `934c1d6a5f3a1a980748e9effb04345c801e8c37` |
 | Open blockers | Payment/subscription APIs unauthenticated (R-045/R-055); R-035 calendar EOM; amount reconciliation deferred (R-053) |
 | Last updated | 2026-07-29 |
 
@@ -56,7 +56,7 @@ P3-WP04 Entitlement Snapshots and Grace Rules (not started)
 |---|---|---|
 | P3-WP01 | Complete (accepted) | `9d01f26` |
 | P3-WP02 | Complete (accepted) | `616d8ad` |
-| P3-WP03 | Ready for Review | _(to be recorded)_ |
+| P3-WP03 | Ready for Review | `934c1d6` |
 | P3-WP04–05 | Not Started | — |
 
 ## Manual payment snapshot (P3-WP03)

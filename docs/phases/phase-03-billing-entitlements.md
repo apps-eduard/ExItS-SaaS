@@ -151,7 +151,7 @@ Implement persistent Platform SaaS manual payment records, confirmation lifecycl
 
 | Field | Value |
 |---|---|
-| Hash | _(to be recorded)_ |
+| Hash | `934c1d6a5f3a1a980748e9effb04345c801e8c37` |
 | Message | `feat(platform): implement manual payment activation` |
 
 ### P3-WP04 — Entitlement Snapshots and Grace Rules
