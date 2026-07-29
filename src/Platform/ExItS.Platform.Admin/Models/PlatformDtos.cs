@@ -252,3 +252,28 @@ public sealed record ChangeRoleRequest(string Role, string? ActorReference);
 public sealed record MembershipLifecycleRequest(string? Reason, string? ActorReference);
 public sealed record GrantProductAccessRequest(Guid UserId, string ProductCode, string GrantedByActor, string? Reason);
 public sealed record RevokeProductAccessRequest(string RevokedByActor, string? Reason);
+
+public sealed record StartTrialRequest(Guid PlanId, Guid PlanVersionId, Guid TrialDefinitionId);
+public sealed record ActivateSubscriptionRequest(DateTimeOffset PeriodStartUtc, DateTimeOffset PeriodEndUtc);
+public sealed record GracePeriodRequest(DateTimeOffset GracePeriodEndUtc);
+public sealed record ReactivateSubscriptionRequest(DateTimeOffset? PeriodStartUtc, DateTimeOffset? PeriodEndUtc);
+
+public sealed record CreateManualPaymentRequest(
+    Guid OrganizationId,
+    string ProductCode,
+    decimal Amount,
+    string CurrencyCode,
+    string Method,
+    string ExternalReference,
+    DateTimeOffset PaidAtUtc);
+
+public sealed record ConfirmPaymentRequest(string ConfirmedBy);
+public sealed record RejectPaymentRequest(string RejectedBy, string Reason);
+public sealed record VoidPaymentRequest(string VoidedBy, string Reason);
+public sealed record ActivateSubscriptionForPaymentRequest(
+    string ConfirmedBy,
+    Guid SubscriptionId,
+    DateTimeOffset PeriodStartUtc,
+    DateTimeOffset PeriodEndUtc);
+
+public sealed record PaymentActivationResultDto(PaymentDto Payment, SubscriptionDto Subscription);

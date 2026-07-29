@@ -55,6 +55,8 @@ Everything in Basic Store plus suppliers, purchasing, advanced inventory, cashie
 
 **P3-WP05:** Phase 3 commercial foundation **closed with documented risks**. End-to-end catalog → trial → payment activation → snapshots → grace/past-due → terminal/expired Utang path validated. Production auth, delivery, invoices, and gateways remain out of scope.
 
+**P4-WP03:** Platform Admin exposes subscription lifecycle, trial start, and manual SaaS payment workflows over the same Phase 3 persistence and APIs. No new commercial migration. Manual confirmation remains operator judgment (not provider verification). R-035 calendar-month EOM remains open.
+
 ## Availability rule
 
 Product APIs use locally stored entitlement snapshots (versioned, time-bounded, fail-safe, with grace and audit). A sale or offline credit must not fail solely because the central Platform service is temporarily unavailable.

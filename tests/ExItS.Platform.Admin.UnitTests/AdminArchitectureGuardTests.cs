@@ -19,15 +19,13 @@ public sealed class AdminArchitectureGuardTests
     }
 
     [Fact]
-    public void Admin_pages_do_not_include_deferred_commercial_mutation_controls()
+    public void Admin_catalog_and_entitlement_pages_remain_without_deferred_mutations()
     {
         var root = FindRepositoryRoot();
         var pagesDir = Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages");
-        var deferredPages = new[] { "Payments.razor", "Subscriptions.razor", "Products.razor", "Entitlements.razor" };
+        var deferredPages = new[] { "Products.razor", "Entitlements.razor" };
         var forbidden = new[]
         {
-            "Confirm payment", "Reject payment", "Void payment", "Activate subscription",
-            "Enter grace", "Mark past due", "Suspend subscription",
             "Create product", "Publish plan", "Generate snapshot"
         };
 
@@ -39,6 +37,36 @@ public sealed class AdminArchitectureGuardTests
                 Assert.DoesNotContain(phrase, text, StringComparison.OrdinalIgnoreCase);
             }
         }
+    }
+
+    [Fact]
+    public void Admin_subscription_and_payment_pages_expose_lifecycle_without_gateway_or_card_controls()
+    {
+        var root = FindRepositoryRoot();
+        var pagesDir = Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages");
+        var subscriptions = File.ReadAllText(Path.Combine(pagesDir, "Subscriptions.razor"));
+        var payments = File.ReadAllText(Path.Combine(pagesDir, "Payments.razor"));
+
+        Assert.Contains("Start trial", subscriptions, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Enter grace period", subscriptions, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Mark past due", subscriptions, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Suspend subscription", subscriptions, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("development-stage", subscriptions, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("type=\"password\"", subscriptions, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Doctor", subscriptions, StringComparison.OrdinalIgnoreCase);
+
+        Assert.Contains("Confirm payment", payments, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Reject payment", payments, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Void payment", payments, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("not automatic provider verification", payments, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Confirm and activate subscription", payments, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("ConfirmDialog", subscriptions, StringComparison.Ordinal);
+        Assert.Contains("ConfirmDialog", payments, StringComparison.Ordinal);
+        Assert.Contains("terminal", subscriptions, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("@bind=\"_cardNumber\"", payments, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("no payment gateway, webhook", payments, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Stripe", payments, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("PayPal", payments, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -58,7 +86,6 @@ public sealed class AdminArchitectureGuardTests
             var text = File.ReadAllText(Path.Combine(pagesDir, file));
             foreach (var phrase in forbidden)
             {
-                // Allow explanatory warning text that mentions product-local roles as exclusions.
                 if (phrase is "Doctor" or "Nurse" or "Cashier" or "Store Manager" or "Clinic Admin" or "POS Administrator" or "Patient")
                 {
                     Assert.DoesNotContain($"option>{phrase}", text, StringComparison.OrdinalIgnoreCase);
@@ -88,12 +115,6 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("unauthenticated", banner, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("not production-secure", banner, StringComparison.OrdinalIgnoreCase);
 
-        var payments = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Payments.razor"));
-        Assert.Contains("not automatic provider verification", payments, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("never displays card numbers, CVV", payments, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("type=\"password\"", payments, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("@bind=\"_cardNumber\"", payments, StringComparison.OrdinalIgnoreCase);
-
         var entitlements = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Entitlements.razor"));
         Assert.Contains("not proof of delivery", entitlements, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("not evidence that", entitlements, StringComparison.OrdinalIgnoreCase);
@@ -113,6 +134,7 @@ public sealed class AdminArchitectureGuardTests
         Assert.DoesNotContain(referenced, n => n.Contains("AntDesign", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(referenced, n => n.Contains("Tailwind", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(referenced, n => n.Contains("AspNetCore.Identity", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(referenced, n => n.Contains("Stripe", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

@@ -60,22 +60,27 @@ Report: [P4-WP02-organizations-users-and-product-access.md](../reports/P4-WP02-o
 
 ### P4-WP03 — Subscriptions, Payments and Trials
 
-Status: Not Started
+Status: **Complete**
+
+Feature commit: _(recorded after push)_
+Report: [P4-WP03-subscriptions-payments-and-trials.md](../reports/P4-WP03-subscriptions-payments-and-trials.md)
 
 #### Required outcomes
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+- Admin subscription lifecycle, trial start, and manual SaaS payment workflows
+- Reuse Phase 3 domain/application/API behavior (no duplicated lifecycle logic)
+- Confirm-and-activate atomicity; duplicate reference and payment reuse blocked
+- Responsive Admin UI; architecture guards; no gateway/auth/delivery
+- Tests, docs, runtime evidence
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (336 passed).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean (after push).
 
 ### P4-WP04 — Audit, Authorization and Closeout
 

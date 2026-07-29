@@ -42,4 +42,21 @@ public interface IPlatformApiClient
     Task<ApiCallResult<ProductAccessAssignmentDto>> GrantProductAccessAsync(Guid organizationId, GrantProductAccessRequest request, CancellationToken ct = default);
     Task<ApiCallResult<ProductAccessAssignmentDto>> RevokeProductAccessAsync(Guid assignmentId, RevokeProductAccessRequest request, CancellationToken ct = default);
     Task<ApiCallResult<EffectiveProductAccessResultDto>> EvaluateAccessAsync(Guid userId, Guid organizationId, string productCode, CancellationToken ct = default);
+
+    Task<ApiCallResult<PagedResult<SubscriptionDto>>> GetOrganizationSubscriptionsAsync(Guid organizationId, string? status = null, int page = 1, int pageSize = 20, CancellationToken ct = default);
+    Task<ApiCallResult<SubscriptionDto>> GetCurrentSubscriptionAsync(Guid organizationId, string productCode, CancellationToken ct = default);
+    Task<ApiCallResult<SubscriptionDto>> StartTrialAsync(Guid organizationId, StartTrialRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<SubscriptionDto>> ActivateSubscriptionAsync(Guid subscriptionId, ActivateSubscriptionRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<SubscriptionDto>> EnterGracePeriodAsync(Guid subscriptionId, GracePeriodRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<SubscriptionDto>> MarkPastDueAsync(Guid subscriptionId, CancellationToken ct = default);
+    Task<ApiCallResult<SubscriptionDto>> SuspendSubscriptionAsync(Guid subscriptionId, CancellationToken ct = default);
+    Task<ApiCallResult<SubscriptionDto>> ReactivateSubscriptionAsync(Guid subscriptionId, ReactivateSubscriptionRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<SubscriptionDto>> CancelSubscriptionAsync(Guid subscriptionId, CancellationToken ct = default);
+    Task<ApiCallResult<SubscriptionDto>> ExpireSubscriptionAsync(Guid subscriptionId, CancellationToken ct = default);
+
+    Task<ApiCallResult<PaymentDto>> CreateManualPaymentAsync(CreateManualPaymentRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<PaymentDto>> ConfirmPaymentAsync(Guid paymentId, ConfirmPaymentRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<PaymentDto>> RejectPaymentAsync(Guid paymentId, RejectPaymentRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<PaymentDto>> VoidPaymentAsync(Guid paymentId, VoidPaymentRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<PaymentActivationResultDto>> ConfirmPaymentAndActivateAsync(Guid paymentId, ActivateSubscriptionForPaymentRequest request, CancellationToken ct = default);
 }

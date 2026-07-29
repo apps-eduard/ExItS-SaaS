@@ -70,8 +70,8 @@
 | R-064 | Development operator context mistaken for authorization | High | Footer labels “not authorization”; disabled outside Development/Testing | Open — introduced P4-WP01 |
 | R-065 | Admin UI / Platform API contract drift | Medium | Typed client + integration tests for Admin endpoints; keep DTOs aligned | Open — introduced P4-WP01 |
 | R-066 | Partial dashboard counts mistaken for zeros | Medium | PartialFailures list; UI shows “—” for failed sections | **Mitigated** (P4-WP01) — awareness |
-| R-067 | Read-only Admin screens mistaken for operational control | Medium | Explicit “no mutation” copy on deferred commercial pages; P4-WP02 adds scoped user/membership/access mutations only | Open — updated P4-WP02 |
-| R-068 | Manual SaaS payment view mistaken for provider verification | High | Warning copy on payment pages; R-057 awareness | Open — reinforced P4-WP01 |
+| R-067 | Admin screens mistaken for complete operational control | Medium | Explicit exclusions on deferred pages; mutation pages warn about auth/delivery limits | Open — updated P4-WP03 |
+| R-068 | Manual SaaS payment view mistaken for provider verification | High | Warning copy on payment pages; confirm action labels manual verification | Open — reinforced P4-WP03 |
 | R-069 | Entitlement snapshot view mistaken for completed product delivery | High | Warning copy on entitlement pages; R-060 awareness | Open — reinforced P4-WP01 |
 | R-070 | Admin accessibility / large-list performance gaps | Medium | Semantic HTML + pagination; expand a11y tests in later Admin WPs | Open — introduced P4-WP01 |
 | R-071 | Platform API unavailable while Admin is running | Medium | Unavailable error state; configurable base URL + timeouts | **Mitigated** (P4-WP01) — awareness |
@@ -88,6 +88,16 @@
 | R-082 | Missing dedicated audit subsystem for access changes | Medium | Actor/reason/UTC metadata on rows; full audit trail deferred to P4-WP04 | Open — introduced P4-WP02 |
 | R-083 | Admin UI contract drift for access endpoints | Medium | Typed client + integration tests | Open — introduced P4-WP02 |
 | R-084 | Concurrency during concurrent access changes | Medium | PostgreSQL `xmin`; 409 on conflict | Open — introduced P4-WP02 |
+| R-085 | Unauthenticated subscription/payment mutation via Admin | Critical | Development-stage only; same production gate as R-055/R-063; no fake auth | Open — introduced P4-WP03 |
+| R-086 | Manual payment confirmation fraud or operator error | High | Actor/reason/UTC; void path; no automated bank/GCash reconciliation (R-056) | Open — introduced P4-WP03 |
+| R-087 | Admin payment UI mistaken for gateway integration | High | Explicit no-gateway copy; architecture guards forbid Stripe/PayPal/card fields | Open — introduced P4-WP03 |
+| R-088 | Subscription Admin changes mistaken for product provisioning | High | UI warnings; no entitlement delivery routes; fail-closed access evaluation only | Open — introduced P4-WP03 |
+| R-089 | Provisional repeat-trial policy misapplied as automatic approval | Medium | Conflict/warning only; no automatic repeat-trial approval rules | Open — introduced P4-WP03 |
+| R-090 | Concurrent Admin commercial lifecycle mutations | Medium | Domain concurrency + 409 ProblemDetails; UI refreshes after success | Open — introduced P4-WP03 |
+
+## Phase 4 note (P4-WP03)
+
+P4-WP03 delivered Admin subscription lifecycle, trial start, and manual SaaS payment confirmation/activation by reusing Phase 3 APIs. Authentication, gateway/invoice automation, entitlement delivery, R-035 calendar EOM, and production authorization remain open. Next: **P4-WP04 — Audit, Authorization and Closeout** when authorized.
 
 ## Phase 4 note (P4-WP02)
 

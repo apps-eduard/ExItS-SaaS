@@ -100,7 +100,7 @@ app.MapGet("/", () => Results.Json(new
 {
     service = "ExItS.Platform.Api",
     status = "ok",
-    phase = "P4-WP02-organizations-users-product-access"
+    phase = "P4-WP03-subscriptions-payments-trials"
 }));
 
 app.MapHealthChecks("/health");

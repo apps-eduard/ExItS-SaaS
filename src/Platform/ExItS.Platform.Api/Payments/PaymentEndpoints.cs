@@ -250,9 +250,21 @@ internal static class PaymentEndpoints
         id = subscription.Id.Value,
         organizationId = subscription.OrganizationId.Value,
         productCode = subscription.ProductCode.Value,
+        planId = subscription.PlanId.Value,
+        planVersionId = subscription.PlanVersionId.Value,
+        trialDefinitionId = subscription.TrialDefinitionId?.Value,
         status = subscription.Status.ToString(),
+        trialStartUtc = subscription.TrialStartUtc,
+        trialEndUtc = subscription.TrialEndUtc,
         paidPeriodStartUtc = subscription.PaidPeriodStartUtc,
         paidPeriodEndUtc = subscription.PaidPeriodEndUtc,
+        gracePeriodEndUtc = subscription.GracePeriodEndUtc,
+        suspendedAtUtc = subscription.SuspendedAtUtc,
+        pastDueAtUtc = subscription.PastDueAtUtc,
+        cancelledAtUtc = subscription.CancelledAtUtc,
+        expiredAtUtc = subscription.ExpiredAtUtc,
+        createdAtUtc = subscription.CreatedAtUtc,
+        updatedAtUtc = subscription.UpdatedAtUtc,
         version = subscription.Version
     };
 }

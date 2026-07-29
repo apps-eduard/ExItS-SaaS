@@ -67,6 +67,7 @@
 - [P3-WP05 billing closeout report](reports/P3-WP05-billing-closeout.md)
 - [P4-WP01 portfolio navigation and product views report](reports/P4-WP01-portfolio-navigation-and-product-views.md)
 - [P4-WP02 organizations, users and product access report](reports/P4-WP02-organizations-users-and-product-access.md)
+- [P4-WP03 subscriptions, payments and trials report](reports/P4-WP03-subscriptions-payments-and-trials.md)
 - [All phases](phases/README.md)
 - [Risks and issues](risks-and-issues.md)
 - [Decisions](decisions/README.md)

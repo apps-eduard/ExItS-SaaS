@@ -86,6 +86,42 @@ public sealed class PlatformApiClient(HttpClient httpClient) : IPlatformApiClien
     public Task<ApiCallResult<EffectiveProductAccessResultDto>> EvaluateAccessAsync(Guid userId, Guid organizationId, string productCode, CancellationToken ct = default) =>
         GetAsync<EffectiveProductAccessResultDto>($"/api/v1/platform/access/evaluate?{Query(("userId", userId), ("organizationId", organizationId), ("productCode", productCode))}", ct);
 
+    public Task<ApiCallResult<PagedResult<SubscriptionDto>>> GetOrganizationSubscriptionsAsync(Guid organizationId, string? status = null, int page = 1, int pageSize = 20, CancellationToken ct = default) =>
+        GetAsync<PagedResult<SubscriptionDto>>($"/api/v1/platform/organizations/{organizationId}/subscriptions?{Query(("status", status), ("page", page), ("pageSize", pageSize))}", ct);
+    public Task<ApiCallResult<SubscriptionDto>> GetCurrentSubscriptionAsync(Guid organizationId, string productCode, CancellationToken ct = default) =>
+        GetAsync<SubscriptionDto>($"/api/v1/platform/organizations/{organizationId}/subscriptions/current?productCode={Escape(productCode)}", ct);
+    public Task<ApiCallResult<SubscriptionDto>> StartTrialAsync(Guid organizationId, StartTrialRequest request, CancellationToken ct = default) =>
+        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/subscriptions/trials", request, ct);
+    public Task<ApiCallResult<SubscriptionDto>> ActivateSubscriptionAsync(Guid subscriptionId, ActivateSubscriptionRequest request, CancellationToken ct = default) =>
+        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/subscriptions/{subscriptionId}/activate", request, ct);
+    public Task<ApiCallResult<SubscriptionDto>> EnterGracePeriodAsync(Guid subscriptionId, GracePeriodRequest request, CancellationToken ct = default) =>
+        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/subscriptions/{subscriptionId}/grace-period", request, ct);
+    public Task<ApiCallResult<SubscriptionDto>> MarkPastDueAsync(Guid subscriptionId, CancellationToken ct = default) =>
+        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/subscriptions/{subscriptionId}/past-due", null, ct);
+    public Task<ApiCallResult<SubscriptionDto>> SuspendSubscriptionAsync(Guid subscriptionId, CancellationToken ct = default) =>
+        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/subscriptions/{subscriptionId}/suspend", null, ct);
+    public Task<ApiCallResult<SubscriptionDto>> ReactivateSubscriptionAsync(Guid subscriptionId, ReactivateSubscriptionRequest request, CancellationToken ct = default) =>
+        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/subscriptions/{subscriptionId}/reactivate", request, ct);
+    public Task<ApiCallResult<SubscriptionDto>> CancelSubscriptionAsync(Guid subscriptionId, CancellationToken ct = default) =>
+        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/subscriptions/{subscriptionId}/cancel", null, ct);
+    public Task<ApiCallResult<SubscriptionDto>> ExpireSubscriptionAsync(Guid subscriptionId, CancellationToken ct = default) =>
+        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/subscriptions/{subscriptionId}/expire", null, ct);
+
+    public Task<ApiCallResult<PaymentDto>> CreateManualPaymentAsync(CreateManualPaymentRequest request, CancellationToken ct = default) =>
+        SendAsync<PaymentDto>(HttpMethod.Post, "/api/v1/platform/payments/manual", request, ct);
+    public Task<ApiCallResult<PaymentDto>> ConfirmPaymentAsync(Guid paymentId, ConfirmPaymentRequest request, CancellationToken ct = default) =>
+        SendAsync<PaymentDto>(HttpMethod.Post, $"/api/v1/platform/payments/{paymentId}/confirm",
+            request with { ConfirmedBy = string.IsNullOrWhiteSpace(request.ConfirmedBy) ? DevActor : request.ConfirmedBy }, ct);
+    public Task<ApiCallResult<PaymentDto>> RejectPaymentAsync(Guid paymentId, RejectPaymentRequest request, CancellationToken ct = default) =>
+        SendAsync<PaymentDto>(HttpMethod.Post, $"/api/v1/platform/payments/{paymentId}/reject",
+            request with { RejectedBy = string.IsNullOrWhiteSpace(request.RejectedBy) ? DevActor : request.RejectedBy }, ct);
+    public Task<ApiCallResult<PaymentDto>> VoidPaymentAsync(Guid paymentId, VoidPaymentRequest request, CancellationToken ct = default) =>
+        SendAsync<PaymentDto>(HttpMethod.Post, $"/api/v1/platform/payments/{paymentId}/void",
+            request with { VoidedBy = string.IsNullOrWhiteSpace(request.VoidedBy) ? DevActor : request.VoidedBy }, ct);
+    public Task<ApiCallResult<PaymentActivationResultDto>> ConfirmPaymentAndActivateAsync(Guid paymentId, ActivateSubscriptionForPaymentRequest request, CancellationToken ct = default) =>
+        SendAsync<PaymentActivationResultDto>(HttpMethod.Post, $"/api/v1/platform/payments/{paymentId}/activate-subscription",
+            request with { ConfirmedBy = string.IsNullOrWhiteSpace(request.ConfirmedBy) ? DevActor : request.ConfirmedBy }, ct);
+
     private static MembershipLifecycleRequest WithActor(MembershipLifecycleRequest request) =>
         request with { ActorReference = string.IsNullOrWhiteSpace(request.ActorReference) ? DevActor : request.ActorReference };
 

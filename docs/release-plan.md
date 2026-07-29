@@ -22,11 +22,11 @@
 
 **Complete with documented risks (Phase 2 / P2-WP06).** Root Platform foundation, identity/org, commercial domain, HC contract boundaries, and migration dry-run validation delivered. HealthCare remains frozen. Auth, persistence, real HC integration/cutover, Admin UI, and POS were **not** delivered. See [phase-02-extraction-closeout.md](reports/phase-02-extraction-closeout.md).
 
-**Next:** Phase 4 / **P4-WP02** is complete. Next authorized work: **P4-WP03 — Subscriptions, Payments and Trials**.
+**Next:** Phase 4 / **P4-WP03** is complete. Next authorized work: **P4-WP04 — Audit, Authorization and Closeout**.
 
 ## R2 — Platform portfolio administration
 
-HealthCare and PinoyBusinessPOS product plans, subscriptions, trials, manual payment activation and audit. (Phase 3 commercial APIs complete; Phase 4 Admin UI in progress — P4-WP01 read-only shell + P4-WP02 users/memberships/product access delivered.)
+HealthCare and PinoyBusinessPOS product plans, subscriptions, trials, manual payment activation and audit. (Phase 3 commercial APIs complete; Phase 4 Admin UI in progress — P4-WP01–WP03 delivered; P4-WP04 audit/authorization closeout remaining.)
 
 ## R3 — PinoyBusinessPOS Utang pilot
 

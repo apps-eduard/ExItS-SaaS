@@ -40,7 +40,7 @@
 }
 else
 {
-    <PageHeader Title="Organization commercial summary" Breadcrumb="Platform Admin / Organizations / Detail" Description="Subscriptions, manual SaaS payments, and latest entitlement snapshots. Read-only." />
+    <PageHeader Title="Organization commercial summary" Breadcrumb="Platform Admin / Organizations / Detail" Description="Subscriptions, manual SaaS payments, and latest entitlement snapshots. Use subscription and payment pages for lifecycle actions." />
     @if (_detail is null) { <LoadingState Message="Loading organization…" /> }
     else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? "Error")" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }
     else
@@ -52,15 +52,20 @@ else
             <dt>Status</dt><dd><StatusBadge Value="@d.Organization.Status" /></dd>
             <dt>Created (UTC)</dt><dd><UtcTimestamp Value="@d.Organization.CreatedAtUtc" /></dd>
             <dt>Updated (UTC)</dt><dd><UtcTimestamp Value="@d.Organization.UpdatedAtUtc" /></dd>
-            <dt>Access admin</dt>
+            <dt>Commercial admin</dt>
             <dd>
                 <a href="/admin/organizations/@Id/members">Members</a>
                 ·
                 <a href="/admin/organizations/@Id/product-access">Product access</a>
+                ·
+                <a href="/admin/subscriptions">Start trial / subscriptions</a>
+                ·
+                <a href="/admin/payments?organizationId=@Id">Create / view payments</a>
             </dd>
         </dl>
 
         <h2>Subscriptions by product</h2>
+        <p class="muted">Open a subscription to run lifecycle actions. Historical subscriptions remain listed.</p>
         @if (d.Subscriptions.Count == 0) { <EmptyState Message="No subscriptions for this organization." /> }
         else
         {

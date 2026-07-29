@@ -6,7 +6,7 @@ Platform grants **product access**; each product owns **operational permissions*
 
 **P3-WP02 note:** Organization and subscription REST endpoints are development-stage and **unauthenticated**. Do not treat them as production authorization.
 
-**P4-WP01/P4-WP02 note:** Platform Admin UI and user/membership/product-access APIs remain unauthenticated. The development operator footer label is **not** authorization. Production Platform Admin requires real authentication and role checks before any mutation workflows. Product-access assignment is commercial entry eligibility only — never product-local roles.
+**P4-WP01/P4-WP02/P4-WP03 note:** Platform Admin UI and commercial mutation APIs remain unauthenticated. The development operator footer label is **not** authorization. Production Platform Admin requires real authentication and role checks before any mutation workflows. Product-access assignment is commercial entry eligibility only — never product-local roles. Manual payment confirmation is operator judgment, not gateway verification.
 
 ## Platform organization membership roles (P2-WP02)
 

@@ -6,11 +6,38 @@
 
 @if (Id is null)
 {
-    <PageHeader Title="Manual SaaS payments" Breadcrumb="Platform Admin / Payments" Description="Cash, bank transfer, and manual GCash reference records only. Manual confirmation is not automatic provider verification." />
+    <PageHeader Title="Manual SaaS payments" Breadcrumb="Platform Admin / Payments" Description="Cash, bank transfer, and manual GCash reference records only. Development-stage; unauthenticated." />
     <section class="warning" role="note">
-        Manual SaaS payment confirmation records operator attestation only. This UI never displays card numbers, CVV, PIN, OTP, gateway secrets, or GCash credentials.
+        Manual SaaS payment confirmation is operator attestation only — not automatic provider verification.
+        This UI never displays card numbers, CVV, PIN, OTP, gateway secrets, or GCash credentials.
+        There is no payment gateway, webhook, QR, invoice engine, or POS/Utang payment integration here.
     </section>
-    <form class="filters" @onsubmit="Load" @onsubmit:preventDefault>
+
+    <section class="panel">
+        <h2>Create manual SaaS payment</h2>
+        @if (!string.IsNullOrWhiteSpace(_formError) && _showCreate) { <ErrorState Title="Could not create payment" Detail="@_formError" /> }
+        <div class="form-grid">
+            <label>Organization ID <input @bind="_createOrgId" placeholder="GUID" /></label>
+            <label>Product code <input @bind="_createProductCode" /></label>
+            <label>Amount <input @bind="_createAmount" /></label>
+            <label>Currency <input @bind="_createCurrency" placeholder="PHP" /></label>
+            <label>Method
+                <select @bind="_createMethod">
+                    <option>Cash</option>
+                    <option>BankTransfer</option>
+                    <option>GCash</option>
+                </select>
+            </label>
+            <label>External reference <input @bind="_createReference" autocomplete="off" /></label>
+            <label>Paid at (UTC) <input @bind="_createPaidAt" placeholder="yyyy-MM-ddTHH:mm:ssZ" /></label>
+        </div>
+        <div class="actions">
+            <button type="button" @onclick="CreatePaymentAsync" disabled="@_busy">Create manual payment</button>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(_toast) && Id is null) { <p class="toast" role="status">@_toast</p> }
+    </section>
+
+    <form class="filters" @onsubmit="LoadListAsync" @onsubmit:preventDefault>
         <label>Status
             <select @bind="_status">
                 <option value="PendingConfirmation">PendingConfirmation</option>
@@ -29,7 +56,7 @@
     else if (_list.Data!.Items.Count == 0) { <EmptyState Message="No payments match the current filters." /> }
     else
     {
-        <table>
+        <table class="responsive-table">
             <caption class="sr-only">Manual SaaS payments</caption>
             <thead>
                 <tr>
@@ -45,12 +72,12 @@
                 @foreach (var item in _list.Data.Items)
                 {
                     <tr>
-                        <td><a href="/admin/payments/@item.Id">@item.ExternalReference</a></td>
-                        <td>@item.Amount @item.CurrencyCode</td>
-                        <td>@item.Method</td>
-                        <td><StatusBadge Value="@item.Status" /></td>
-                        <td><a href="/admin/organizations/@item.OrganizationId">@item.OrganizationId</a></td>
-                        <td><UtcTimestamp Value="@item.PaidAtUtc" /></td>
+                        <td data-label="Reference"><a href="/admin/payments/@item.Id">@item.ExternalReference</a></td>
+                        <td data-label="Amount">@item.Amount @item.CurrencyCode</td>
+                        <td data-label="Method">@item.Method</td>
+                        <td data-label="Status"><StatusBadge Value="@item.Status" /></td>
+                        <td data-label="Organization"><a href="/admin/organizations/@item.OrganizationId">@item.OrganizationId</a></td>
+                        <td data-label="Paid"><UtcTimestamp Value="@item.PaidAtUtc" /></td>
                     </tr>
                 }
             </tbody>
@@ -60,15 +87,19 @@
 }
 else
 {
-    <PageHeader Title="Payment detail" Breadcrumb="Platform Admin / Payments / Detail" Description="Read-only payment record. Confirm, reject, void, and activate actions are not available in P4-WP01." />
+    <PageHeader Title="Payment detail" Breadcrumb="Platform Admin / Payments / Detail" Description="Manual SaaS payment lifecycle. Development-stage; unauthenticated." />
     <section class="warning" role="note">
-        Manual confirmation is not automatic provider verification. No card or gateway credentials are stored or displayed.
+        Manual confirmation is not automatic provider verification. Confirmed payments may activate an eligible subscription atomically. Confirmed payments cannot be reused. No gateway, card, invoice, POS, or HealthCare payment behavior.
     </section>
+
     @if (_detail is null) { <LoadingState Message="Loading payment…" /> }
     else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? "Error")" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }
     else
     {
         var p = _detail.Data!;
+        @if (!string.IsNullOrWhiteSpace(_toast)) { <p class="toast" role="status">@_toast</p> }
+        @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="Action failed" Detail="@_formError" /> }
+
         <dl>
             <dt>External reference</dt><dd>@p.ExternalReference</dd>
             <dt>Amount</dt><dd>@p.Amount @p.CurrencyCode</dd>
@@ -78,10 +109,7 @@ else
             <dt>Product</dt><dd>@p.ProductCode</dd>
             <dt>Linked subscription</dt>
             <dd>
-                @if (p.SubscriptionId is Guid sid)
-                {
-                    <a href="/admin/subscriptions/@sid">@sid</a>
-                }
+                @if (p.SubscriptionId is Guid sid) { <a href="/admin/subscriptions/@sid">@sid</a> }
                 else { <span>—</span> }
             </dd>
             <dt>Paid at (UTC)</dt><dd><UtcTimestamp Value="@p.PaidAtUtc" /></dd>
@@ -93,8 +121,56 @@ else
             <dt>Voided at (UTC)</dt><dd><UtcTimestamp Value="@p.VoidedAtUtc" /></dd>
             <dt>Voided by</dt><dd>@(p.VoidedBy ?? "—")</dd>
             <dt>Void reason</dt><dd>@(p.VoidReason ?? "—")</dd>
+            <dt>Version</dt><dd>@p.Version</dd>
         </dl>
+
+        <section class="panel">
+            <h2>Payment actions</h2>
+            @if (p.Status == "PendingConfirmation")
+            {
+                <div class="form-grid">
+                    <label>Subscription ID (for confirm-and-activate) <input @bind="_activateSubscriptionId" placeholder="GUID of eligible subscription" /></label>
+                    <label>Period start (UTC) <input @bind="_periodStartText" /></label>
+                    <label>Period end (UTC) <input @bind="_periodEndText" /></label>
+                    <label>Reject / void reason <input @bind="_actionReason" /></label>
+                </div>
+                <div class="actions">
+                    <button type="button" @onclick='() => Ask("Confirm payment", "Confirm this manual payment? This is operator attestation, not provider verification.", ConfirmAsync)' disabled="@_busy">Confirm payment</button>
+                    <button type="button" @onclick="ConfirmAndActivateAsync" disabled="@_busy">Confirm and activate subscription</button>
+                    <button type="button" class="danger" @onclick='() => Ask("Reject payment", "Reject this pending payment?", RejectAsync)' disabled="@_busy">Reject payment</button>
+                </div>
+            }
+            else if (p.Status == "Confirmed")
+            {
+                <div class="form-grid">
+                    <label>Void reason <input @bind="_actionReason" /></label>
+                    <label>Subscription ID (activate if not linked) <input @bind="_activateSubscriptionId" /></label>
+                    <label>Period start (UTC) <input @bind="_periodStartText" /></label>
+                    <label>Period end (UTC) <input @bind="_periodEndText" /></label>
+                </div>
+                <div class="actions">
+                    @if (p.SubscriptionId is null)
+                    {
+                        <button type="button" @onclick="ConfirmAndActivateAsync" disabled="@_busy">Activate subscription with this payment</button>
+                    }
+                    <button type="button" class="danger" @onclick='() => Ask("Void payment", "Void this confirmed payment? Provide a reason. This does not create invoices or credit notes.", VoidAsync)' disabled="@_busy">Void payment</button>
+                </div>
+                @if (p.SubscriptionId is not null)
+                {
+                    <p class="muted">Payment is already linked to a subscription and cannot be reused for another activation.</p>
+                }
+            }
+            else
+            {
+                <p class="muted">No further payment actions for status @p.Status.</p>
+            }
+        </section>
     }
+}
+
+@if (_confirm is not null)
+{
+    <ConfirmDialog Visible="true" Title="@_confirm.Title" Message="@_confirm.Message" OnConfirm="_confirm.Action" OnCancel="ClearConfirm" Busy="_busy" />
 }
 
 @code {
@@ -104,9 +180,27 @@ else
     private string? _organizationIdText;
     private ApiCallResult<PagedResult<PaymentDto>>? _list;
     private ApiCallResult<PaymentDto>? _detail;
+    private bool _showCreate = true;
+    private string _createOrgId = "";
+    private string _createProductCode = "";
+    private string _createAmount = "1000";
+    private string _createCurrency = "PHP";
+    private string _createMethod = "GCash";
+    private string _createReference = "";
+    private string _createPaidAt = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
+    private string _activateSubscriptionId = "";
+    private string _periodStartText = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
+    private string _periodEndText = DateTimeOffset.UtcNow.AddDays(30).ToString("yyyy-MM-ddTHH:mm:ssZ");
+    private string _actionReason = "";
+    private string? _toast;
+    private string? _formError;
+    private bool _busy;
+    private ConfirmState? _confirm;
 
     protected override async Task OnParametersSetAsync()
     {
+        _toast = null;
+        _formError = null;
         if (Id is null)
         {
             var uri = Nav.ToAbsoluteUri(Nav.Uri);
@@ -114,8 +208,9 @@ else
             if (query.TryGetValue("organizationId", out var org) && Guid.TryParse(org, out var orgId))
             {
                 _organizationIdText = orgId.ToString();
+                _createOrgId = orgId.ToString();
             }
-            await Load();
+            await LoadListAsync();
         }
         else
         {
@@ -123,7 +218,7 @@ else
         }
     }
 
-    private async Task Load()
+    private async Task LoadListAsync()
     {
         Guid? orgId = Guid.TryParse(_organizationIdText, out var parsed) ? parsed : null;
         _list = await Api.GetPaymentsAsync(
@@ -131,4 +226,79 @@ else
             string.IsNullOrWhiteSpace(_productCode) ? null : _productCode,
             orgId);
     }
+
+    private async Task CreatePaymentAsync()
+    {
+        _formError = null; _toast = null; _showCreate = true;
+        if (!Guid.TryParse(_createOrgId, out var orgId)) { _formError = "Organization ID must be a valid GUID."; return; }
+        if (!decimal.TryParse(_createAmount, out var amount)) { _formError = "Amount must be a decimal."; return; }
+        if (!DateTimeOffset.TryParse(_createPaidAt, out var paidAt)) { _formError = "Paid at must be a valid UTC timestamp."; return; }
+        _busy = true;
+        var result = await Api.CreateManualPaymentAsync(new CreateManualPaymentRequest(
+            orgId, _createProductCode.Trim(), amount, _createCurrency.Trim(), _createMethod, _createReference.Trim(), paidAt.ToUniversalTime()));
+        _busy = false;
+        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
+        _toast = "Manual payment created.";
+        Nav.NavigateTo($"/admin/payments/{result.Data!.Id}");
+    }
+
+    private void Ask(string title, string message, Func<Task> action) => _confirm = new ConfirmState(title, message, action);
+    private Task ClearConfirm() { _confirm = null; return Task.CompletedTask; }
+
+    private async Task ConfirmAsync()
+    {
+        if (Id is null) return;
+        _busy = true; _formError = null;
+        var result = await Api.ConfirmPaymentAsync(Id.Value, new ConfirmPaymentRequest("dev-admin"));
+        _busy = false; await ClearConfirm();
+        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
+        _toast = "Payment confirmed (manual attestation only).";
+        _detail = ApiCallResult<PaymentDto>.Success(result.Data!);
+    }
+
+    private async Task ConfirmAndActivateAsync()
+    {
+        if (Id is null) return;
+        _formError = null;
+        if (!Guid.TryParse(_activateSubscriptionId, out var subscriptionId)) { _formError = "Subscription ID is required for activation."; return; }
+        if (!DateTimeOffset.TryParse(_periodStartText, out var start) || !DateTimeOffset.TryParse(_periodEndText, out var end))
+        {
+            _formError = "Paid period start/end must be valid UTC timestamps.";
+            return;
+        }
+
+        _busy = true;
+        var result = await Api.ConfirmPaymentAndActivateAsync(Id.Value, new ActivateSubscriptionForPaymentRequest(
+            "dev-admin", subscriptionId, start.ToUniversalTime(), end.ToUniversalTime()));
+        _busy = false;
+        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
+        _toast = $"Payment linked and subscription {result.Data!.Subscription.Status}.";
+        _detail = ApiCallResult<PaymentDto>.Success(result.Data.Payment);
+    }
+
+    private async Task RejectAsync()
+    {
+        if (Id is null) return;
+        if (string.IsNullOrWhiteSpace(_actionReason)) { _formError = "Rejection reason is required."; await ClearConfirm(); return; }
+        _busy = true; _formError = null;
+        var result = await Api.RejectPaymentAsync(Id.Value, new RejectPaymentRequest("dev-admin", _actionReason));
+        _busy = false; await ClearConfirm();
+        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
+        _toast = "Payment rejected.";
+        _detail = ApiCallResult<PaymentDto>.Success(result.Data!);
+    }
+
+    private async Task VoidAsync()
+    {
+        if (Id is null) return;
+        if (string.IsNullOrWhiteSpace(_actionReason)) { _formError = "Void reason is required."; await ClearConfirm(); return; }
+        _busy = true; _formError = null;
+        var result = await Api.VoidPaymentAsync(Id.Value, new VoidPaymentRequest("dev-admin", _actionReason));
+        _busy = false; await ClearConfirm();
+        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
+        _toast = "Payment voided.";
+        _detail = ApiCallResult<PaymentDto>.Success(result.Data!);
+    }
+
+    private sealed record ConfirmState(string Title, string Message, Func<Task> Action);
 }

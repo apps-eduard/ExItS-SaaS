@@ -34,7 +34,7 @@ ExItS-SaaS/
 
 `HealthCare/` remains frozen and outside root Git. Do not import it without an approved work package.
 
-**Phase 4 / P4-WP02** is complete ([report](docs/reports/P4-WP02-organizations-users-and-product-access.md)): Platform users, organization memberships, product-access assignments, effective commercial access evaluation, Admin APIs/UI. Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. APIs and Admin remain development-stage unauthenticated. Product access does not assign product-local roles. HealthCare remains frozen. Next: **P4-WP03 — Subscriptions, Payments and Trials** when authorized.
+**Phase 4 / P4-WP03** is complete ([report](docs/reports/P4-WP03-subscriptions-payments-and-trials.md)): Platform Admin subscription lifecycle, trial start, and manual SaaS payment confirmation/activation. Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. APIs and Admin remain development-stage unauthenticated. Manual confirmation is not provider verification. Subscription changes are not product provisioning. HealthCare remains frozen. Next: **P4-WP04 — Audit, Authorization and Closeout** when authorized.
 
 ### Platform database (local)
 
