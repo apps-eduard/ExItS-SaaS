@@ -6,7 +6,7 @@
 |---|---|
 | Phase | Phase 2 — Platform Extraction and HealthCare Reconnection |
 | Work package | P2-WP05 — Regression and Migration Validation |
-| Status | Ready for Review |
+| Status | Complete |
 | Branch | `main` |
 | Date | 2026-07-29 |
 

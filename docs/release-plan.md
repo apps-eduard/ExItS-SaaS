@@ -16,15 +16,17 @@
 
 ## R0.7 — Extraction sequence and architecture approval (Phase 1 closeout)
 
-**In review (P1-WP03 Complete; P1-WP04).** ADR-013/014. Next: P2-WP01 when authorized.
+**Complete (P1-WP04 / ADR-014).** Architecture approved for controlled implementation.
 
 ## R1 — ExITS Platform extraction
 
-**In progress (P2-WP01).** Root `ExItS.slnx` foundation created. Next: P2-WP02 identity when authorized. See [extraction-sequence.md](reuse/extraction-sequence.md). HealthCare still frozen.
+**Complete with documented risks (Phase 2 / P2-WP06).** Root Platform foundation, identity/org, commercial domain, HC contract boundaries, and migration dry-run validation delivered. HealthCare remains frozen. Auth, persistence, real HC integration/cutover, Admin UI, and POS were **not** delivered. See [phase-02-extraction-closeout.md](reports/phase-02-extraction-closeout.md).
+
+**Next:** Phase 3 / **P3-WP01 — Product and Plan Catalog** when authorized.
 
 ## R2 — Platform portfolio administration
 
-HealthCare and PinoyBusinessPOS product plans, subscriptions, trials, manual payment activation and audit.
+HealthCare and PinoyBusinessPOS product plans, subscriptions, trials, manual payment activation and audit. (Phase 3–4 roadmap.)
 
 ## R3 — PinoyBusinessPOS Utang pilot
 

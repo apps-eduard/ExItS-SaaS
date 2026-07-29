@@ -2,18 +2,18 @@
 
 [Home](../index.md) | [Runtime baseline](../reuse/healthcare-runtime-baseline.md) | [Dashboard](../portfolio-progress.md)
 
-## Current model (Phase 2 foundation started)
+## Current model (Phase 2 closed)
 
 ```text
 ExItS-SaaS root repository
 ├── ExItS.slnx, global.json, Directory.Build.props, Directory.Packages.props
-├── src/Platform/* — new Platform foundation (P2-WP01)
+├── src/Platform/* — Platform foundation through P2-WP05 (contracts + migration validation)
 ├── tests/* — Platform unit + architecture/safety tests
-├── Portfolio documentation — tracked by root Git
-└── HealthCare/ — nested independent repository, ignored by root Git
+├── Portfolio documentation — tracked by root Git (Phase 2 closeout complete)
+└── HealthCare/ — nested independent repository, ignored by root Git (/HealthCare/)
 ```
 
-HealthCare remains temporary-ignored until an approved import WP. **P2-WP01 did not import HealthCare.**
+HealthCare remains temporary-ignored until an approved import WP. **Phase 2 did not import, move, or retire HealthCare.**
 
 ## Root Git responsibility
 

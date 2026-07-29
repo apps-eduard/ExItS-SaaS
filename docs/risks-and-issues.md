@@ -15,7 +15,7 @@
 | R-009 | Duplicate offline financial transactions | Critical | Idempotency and append-only ledger | Open |
 | R-010 | Nested `HealthCare/.git` inside ExITS monorepo | High | Root ignores `HealthCare/`; decide import/submodule/subtree later — do not delete nested `.git` | Mitigated (ignore) — integration decision still Open |
 | R-011 | No EF global tenant query filters (service-only isolation) | Critical | Keep service checks; add filters/tests before multi-product sharing | Open — verified P0-WP01 |
-| R-012 | Plans/trials/subscriptions/billing/entitlements missing | High | Implement on Platform in Phase 3; do not fake via HC limits alone | Open — verified P0-WP01 |
+| R-012 | Plans/trials/subscriptions/billing/entitlements missing | High | Domain foundation in P2-WP03; billing collection/persistence still Phase 3 | Open — foundation exists; SaaS billing incomplete |
 | R-013 | Parent repo missing root `.gitignore` | High | Root `.gitignore` added in P0-WP02 | **Mitigated** (P0-WP02) |
 | R-014 | Full `HealthCare.sln` build fails without Android SDK env | Medium | Non-MAUI build path documented; set `ANDROID_HOME` or `AndroidSdkDirectory` on agents that need Mobile | Open — SDK folder present but env unset (P0-WP02) |
 | R-015 | Pre-existing dirty PatientWeb files inside nested HealthCare git | Medium | Do not overwrite; resolve in HealthCare repo or later import WP | Open — still present P0-WP02 |
@@ -46,5 +46,9 @@
 | R-040 | Premature assumption that contracts equal completed HealthCare integration | High | Report states foundation only; HC freeze continues | Open — introduced P2-WP04 |
 | R-041 | Duplicate identity / normalized-identifier collision during future mapping | High | Preflight detects duplicates; ambiguous → manual review | Open — introduced P2-WP05 |
 | R-042 | False-positive email/username mapping treated as safe identity merge | High | Exact identifier match alone warns; explicit approved mapping preferred | Open — introduced P2-WP05 |
-| R-043 | Migration dry-run mistaken for completed production migration | High | Status uses `Validated` not `Migrated`; docs + R-040 related | Open — introduced P2-WP05 |
+| R-043 | Migration dry-run mistaken for completed production migration | High | Status uses `Validated` not `Migrated`; docs + R-040 related | Open — introduced P2-WP05; reinforced P2-WP06 |
 | R-044 | Incomplete rollback evidence before cutover | Critical | Rollback readiness validator; R-027 restore rehearsal still required | Open — introduced P2-WP05 |
+
+## Phase 2 closeout note (P2-WP06)
+
+Phase 2 **closed with documented non-blocking risks**. Dry-run/contract success does **not** close R-020, R-027, R-031–R-044, or cutover gates. Next: Phase 3 / P3-WP01 when authorized.

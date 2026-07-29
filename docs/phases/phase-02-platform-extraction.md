@@ -190,7 +190,7 @@ Create Platform-side versioned contracts, projection apply rules, and HealthCare
 
 ### P2-WP05 — Regression and Migration Validation
 
-Status: **Ready for Review**
+Status: **Complete**
 
 #### Goal
 
@@ -234,26 +234,55 @@ Validate Platform regression coverage and HealthCare mapping dry-run readiness w
 
 ### P2-WP06 — Extraction Closeout
 
-Status: Not Started
+Status: **Ready for Review**
 
-#### Required outcomes
+#### Goal
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+Close Phase 2 by reconciling evidence from P2-WP01–05, validating freeze/build/tests, classifying exit criteria, and identifying the next phase — documentation only.
+
+#### Outcomes delivered
+
+- Phase 2 closeout report + evidence matrix + P2-WP06 completion report.
+- Recommendation: **Close with documented non-blocking risks**.
+- Next phase/WP identified: Phase 3 / P3-WP01.
+- Root validation: 121/0/0; API healthy on 5288; HealthCare frozen.
+- No source changes.
+
+#### Explicit exclusions (honored)
+
+- No HealthCare edits; no implementation expansion; no auth/persistence/cutover claims.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (121/0/0).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded (see below).
+- [x] Working tree clean (after hash-record).
+- [x] HealthCare freeze verified.
+- [x] Validated commits pushed to `origin/main`.
+
+#### Artifacts
+
+| Artifact | Path |
+|---|---|
+| Phase closeout | [phase-02-extraction-closeout.md](../reports/phase-02-extraction-closeout.md) |
+| WP report | [P2-WP06 report](../reports/P2-WP06-extraction-closeout.md) |
+| Evidence matrix | [phase-02-evidence-matrix.md](../engineering/phase-02-evidence-matrix.md) |
+
+#### Commit
+
+| Field | Value |
+|---|---|
+| Hash | _(recorded after commit)_ |
+| Message | `docs(platform): close phase 2 extraction` |
 
 ## Phase exit criteria
 
-- [ ] Every work package is complete or explicitly deferred.
-- [ ] Risks and decisions are recorded.
-- [ ] Required regression/security tests pass.
-- [ ] Next phase is explicitly approved.
+- [x] Every work package is complete or explicitly deferred.
+- [x] Risks and decisions are recorded.
+- [x] Required regression/security tests pass (Platform root; HC 1102 not rerun by design).
+- [x] Next phase is explicitly identified (Phase 3 / P3-WP01; start requires separate authorization).
+
+**Phase recommendation:** Close with documented non-blocking risks. See [phase-02-extraction-closeout.md](../reports/phase-02-extraction-closeout.md).

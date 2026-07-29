@@ -1,10 +1,18 @@
 # Phase 3 — Portfolio Billing, Plans and Entitlements
 
-[Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Previous](phase-02-platform-extraction.md) | [Next](phase-04-platform-admin.md)
+[Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Previous](phase-02-platform-extraction.md) | [Next](phase-04-platform-admin.md) | [Phase 2 closeout](../reports/phase-02-extraction-closeout.md)
 
 ## Objective
 
 Implement portfolio products, plans, trials, payments and resilient entitlement propagation.
+
+## Phase 2 prerequisite
+
+Phase 2 is **Close with documented risks** (P2-WP06). Domain foundations for catalog/subscriptions/entitlements exist; persistence, SaaS payment collection, and HealthCare cutover do **not**. Do **not** begin Phase 3 until P2-WP06 is accepted and this WP is explicitly authorized.
+
+## First work package
+
+**P3-WP01 — Product and Plan Catalog** (Not Started). Build on Phase 2 catalog foundations toward portfolio billing — scope defined when authorized.
 
 ## Work packages
 

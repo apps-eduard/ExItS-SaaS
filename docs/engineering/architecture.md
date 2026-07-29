@@ -31,6 +31,8 @@ A controlled monorepo is used initially for coordinated extraction and developme
 
 **P2-WP05:** Migration dry-run / regression validation models in Application (`MigrationValidation`). Simulation only — no real migration, SQL, or HC access.
 
+**P2-WP06:** Phase 2 closed with documented risks. No new runtime features.
+
 ## UI choices
 
 - Existing HealthCare Staff Web: keep Ant Design Blazor (no rewrite in current ExITS MVP work).

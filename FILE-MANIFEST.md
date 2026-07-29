@@ -1,7 +1,7 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown documentation files plus root Platform foundation (P2-WP01–P2-WP04).
-Internal links checked: spot-check P2-WP04
+Markdown documentation files plus root Platform foundation through Phase 2 closeout (P2-WP01–P2-WP06).
+Internal links checked: spot-check P2-WP06
 Broken links: none found in spot-check of new paths
 
 ## Root foundation (tracked)
@@ -47,6 +47,7 @@ docs/engineering/final-portfolio-boundaries.md
 docs/engineering/implementation-gate-matrix.md
 docs/engineering/localization.md
 docs/engineering/offline-sync-design.md
+docs/engineering/phase-02-evidence-matrix.md
 docs/engineering/phase-02-readiness-checklist.md
 docs/engineering/platform-extraction-risk-matrix.md
 docs/engineering/platform-product-capability-boundary.md
@@ -91,6 +92,8 @@ docs/reports/P2-WP02-identity-organization-boundary.md
 docs/reports/P2-WP03-products-plans-entitlements.md
 docs/reports/P2-WP04-healthcare-contract-adaptation.md
 docs/reports/P2-WP05-regression-and-migration-validation.md
+docs/reports/P2-WP06-extraction-closeout.md
+docs/reports/phase-02-extraction-closeout.md
 docs/reports/phase-00-final-assessment-and-recommendation.md
 docs/reports/phase-01-architecture-approval.md
 docs/reuse/extraction-rules.md

@@ -113,3 +113,5 @@ Exact names/roles finalized in Phase 2/9 runbooks — not assigned as people in 
 Backup verification · Test totals · Migration report · Mapping report · Security tests · Smoke tests · Rollback rehearsal · Written approval record
 
 **P2-WP05:** Platform-side dry-run validators and rollback-evidence checks exist. They do **not** prove database restore rehearsal (R-027) or completed HealthCare migration.
+
+**P2-WP06:** Phase 2 closed with documented risks. Cutover and legacy HealthCare code retirement remain unauthorized until persistence, auth, adapters, mapping validation, HC regression/E2E, and restore rehearsal gates pass under dedicated future work packages.
