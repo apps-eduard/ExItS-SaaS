@@ -14,7 +14,7 @@
 | Current phase | Phase 1 — Platform Boundary and Architecture |
 | Current work package | P1-WP02 **Complete** (+ POS Cash/GCash MVP payment correction) |
 | Overall status | Phase 0 Complete with documented risks; P1-WP01 **Complete**; P1-WP02 **Complete**; awaiting authorization for P1-WP03 |
-| Latest verified commit | `PENDING_AFTER_COMMIT` (`docs(pos): add cash and gcash MVP payments`) |
+| Latest verified commit | `c5472e80a3045626672f88ddbe1973cb3f230f8c` (`docs(pos): add cash and gcash MVP payments`) |
 | Open blockers | 0 for starting P1-WP03 docs after authorization; root remote empty |
 | Last updated | 2026-07-29 |
 
@@ -55,7 +55,7 @@ Extraction sequence and rollback (P1-WP03)  ← next when authorized
 | WP | Status | Key commit |
 |---|---|---|
 | P1-WP01 | **Complete** | `b6a3133` / hash `a48e7cb` |
-| P1-WP02 | **Complete** | `32534fa` / hash `0fd9c59`; payment correction `PENDING_AFTER_COMMIT` |
+| P1-WP02 | **Complete** | `32534fa` / hash `0fd9c59`; payment correction `c5472e8` |
 | P1-WP03 | Not Started | — |
 | P1-WP04 | Not Started | — |
 

@@ -112,5 +112,5 @@ P1-WP01 Complete. P1-WP02 **Complete** (accepted). Post-acceptance correction do
 | Decision | MVP retail methods `cash`, `gcash`, `customer-credit`; credit repayment `cash`/`gcash`; GCash manual; API deferred |
 | Boundaries | SaaSPayment ≠ RetailPayment ≠ CreditPayment; Platform GCash ≠ POS GCash |
 | Primary doc | [pinoy-business-pos-requirements.md](../product/pinoy-business-pos-requirements.md) |
-| Correction commit | `PENDING_AFTER_COMMIT` (`docs(pos): add cash and gcash MVP payments`) |
+| Correction commit | `c5472e80a3045626672f88ddbe1973cb3f230f8c` (`docs(pos): add cash and gcash MVP payments`) |
 | P1-WP02 original commit | `32534fa31501217f021e73b36ba27f49c448b36c` |

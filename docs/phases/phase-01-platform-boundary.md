@@ -85,7 +85,7 @@ Status: **Complete**
 
 | Field | Value |
 |---|---|
-| Hash | `PENDING_AFTER_COMMIT` |
+| Hash | `c5472e80a3045626672f88ddbe1973cb3f230f8c` |
 | Message | `docs(pos): add cash and gcash MVP payments` |
 | Scope | Explicit MVP methods `cash` / `gcash` / `customer-credit`; manual GCash; SaaS vs retail vs credit separation |
 
