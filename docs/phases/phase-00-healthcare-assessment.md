@@ -63,7 +63,7 @@ Status: **Ready for Review** (2026-07-29)
 - Localization and Light/Dark/System **missing** in HealthCare.
 - POS and **new Platform Admin**: native CSS, no Tailwind/Ant; Compact/Comfortable; `en`/`fil`; native `DateField` first.
 
-**Decision correction (2026-07-29):** New ExItS Platform Admin does **not** use Ant Design — see ADR-010 correction commit.
+**Decision correction (2026-07-29):** New ExItS Platform Admin does **not** use Ant Design — commit `e310cf87cb03befdd55962b8c858ed19dfe5add1` (`docs(ui): correct platform admin UI decision`). See ADR-010.
 
 #### Repository safety
 

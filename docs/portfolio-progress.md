@@ -14,7 +14,7 @@
 | Current phase | Phase 0 — Existing HealthCare Assessment |
 | Current work package | P0-WP03 — Ant Design and UI Reuse Review (**Ready for Review**) |
 | Overall status | In Progress |
-| Latest verified commit | `5d628dd60b3793108cc6645992ed0a014e034e27` (`docs(ui): define platform and POS design strategy`) |
+| Latest verified commit | Correction `e310cf87cb03befdd55962b8c858ed19dfe5add1` (`docs(ui): correct platform admin UI decision`); prior P0-WP03 `5d628dd60b3793108cc6645992ed0a014e034e27` |
 | Open blockers | 0; root remote still empty (first push needs user authorization) |
 | Last updated | 2026-07-29 |
 
@@ -106,7 +106,7 @@ Unchanged from P0-WP02 Windows-safe baseline (**1102 / 0 / 0**). P0-WP03 is docu
 | PinoyBusinessPOS | Same native foundation (MAUI Hybrid); **no Ant**; **no Tailwind** |
 | Shared | Token names, localization conventions, UI-independent models |
 
-Correction commit: _(filled after docs(ui): correct platform admin UI decision)_
+Correction commit: `e310cf87cb03befdd55962b8c858ed19dfe5add1` (`docs(ui): correct platform admin UI decision`)
 
 ## Risks
 

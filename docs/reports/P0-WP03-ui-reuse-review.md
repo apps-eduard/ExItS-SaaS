@@ -97,8 +97,8 @@ Listed in §4.
 
 | Field | Value |
 |---|---|
-| Commit hash | `5d628dd60b3793108cc6645992ed0a014e034e27` |
-| Commit message | `docs(ui): define platform and POS design strategy` |
+| Commit hash | Assessment `5d628dd60b3793108cc6645992ed0a014e034e27`; **correction** `e310cf87cb03befdd55962b8c858ed19dfe5add1` |
+| Commit message | `docs(ui): define platform and POS design strategy` / `docs(ui): correct platform admin UI decision` |
 | Final working tree | Clean; HealthCare ignored |
 
 ## 13. Progress update
