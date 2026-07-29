@@ -178,7 +178,7 @@ Authentication, Platform Admin UI, entitlement delivery to products, invoice/rec
 
 | Field | Value |
 |---|---|
-| Closeout commit | _(to be recorded)_ |
+| Closeout commit | `da08fcd8fa6583e8b451514f89c0d195b9dd876e` |
 | Message | `docs(platform): close Phase 3 billing foundation` |
 | Supporting test commit | `a34fd43c5c6bd7e29935e152a4ba26e90e9b63b9` |
 

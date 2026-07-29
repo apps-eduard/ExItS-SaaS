@@ -14,7 +14,7 @@
 | Current phase | Phase 3 — Portfolio Billing, Plans and Entitlements |
 | Current work package | P3-WP05 — Billing Closeout (**Complete**) |
 | Overall status | **Phase 3 Complete with documented risks** — commercial foundation closed; Admin UI / auth / delivery deferred |
-| Latest verified commit | _(to be recorded)_ |
+| Latest verified commit | `da08fcd8fa6583e8b451514f89c0d195b9dd876e` |
 | Open blockers | Unauthenticated APIs; R-022 refresh durations; R-035 calendar EOM; no product delivery; no auth |
 | Last updated | 2026-07-29 |
 
@@ -62,7 +62,7 @@ Phase 4 / P4-WP01 (not started — do not begin until authorized)
 | P3-WP02 | Complete (accepted) | `616d8ad` |
 | P3-WP03 | Complete (accepted) | `934c1d6` |
 | P3-WP04 | Complete (accepted) | `44dc236` |
-| P3-WP05 | Complete | _(to be recorded)_ |
+| P3-WP05 | Complete | `da08fcd` |
 
 ## Phase 3 closeout snapshot
 

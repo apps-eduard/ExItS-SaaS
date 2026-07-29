@@ -244,7 +244,7 @@ Close Phase 3 by validating the commercial foundation (catalog, subscriptions, m
 
 | Field | Value |
 |---|---|
-| Hash | _(to be recorded)_ |
+| Hash | `da08fcd8fa6583e8b451514f89c0d195b9dd876e` |
 | Message | `docs(platform): close Phase 3 billing foundation` |
 
 ## Phase exit criteria
