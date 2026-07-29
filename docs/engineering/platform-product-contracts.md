@@ -16,6 +16,8 @@ This document is **policy and shape only**. No C# types, JSON schemas, tables, o
 
 **P2-WP03 note:** Platform Domain now includes in-code commercial aggregates and an authoritative snapshot model suitable for later projection. Serialization, transport, and product-local projection storage remain deferred.
 
+**P2-WP04 note:** Platform Application now includes versioned outbound projection contracts and apply/reconciliation abstractions for HealthCare. This is **not** HealthCare integration complete — no transport, no HC code changes, no DB access.
+
 ## 2. Contract principles
 
 1. Platform is system of record for identity, organizations, memberships, catalog, plans, subscriptions, SaaS payments, and entitlements (ADR-011).

@@ -55,6 +55,7 @@
 - [P2-WP01 foundation report](reports/P2-WP01-extraction-baseline-and-safety.md)
 - [P2-WP02 identity/organization report](reports/P2-WP02-identity-organization-boundary.md)
 - [P2-WP03 products/plans/entitlements report](reports/P2-WP03-products-plans-entitlements.md)
+- [P2-WP04 HealthCare contract adaptation report](reports/P2-WP04-healthcare-contract-adaptation.md)
 - [All phases](phases/README.md)
 - [Risks and issues](risks-and-issues.md)
 - [Decisions](decisions/README.md)

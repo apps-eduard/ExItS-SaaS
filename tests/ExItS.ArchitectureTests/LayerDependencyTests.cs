@@ -98,13 +98,17 @@ public sealed class LayerDependencyTests
         {
             "Patient", "Clinic", "Store", "Branch", "Sale", "Inventory", "Customer",
             "Doctor", "Nurse", "Cashier", "StoreManager", "InventoryStaff",
-            "MedicalNote", "RetailPayment", "CreditPayment", "GCashPayment", "GCashClient"
+            "MedicalNote", "RetailPayment", "CreditPayment", "GCashPayment", "GCashClient",
+            "Appointment", "Amendment", "ClinicalRole", "Diagnosis", "Prescription"
         };
 
-        var typeNames = Domain.GetTypes().Select(t => t.Name).ToArray();
-        foreach (var name in typeNames)
+        foreach (var assembly in new[] { Domain, Application })
         {
-            Assert.False(forbidden.Contains(name), $"Domain must not define type '{name}'.");
+            var typeNames = assembly.GetTypes().Select(t => t.Name).ToArray();
+            foreach (var name in typeNames)
+            {
+                Assert.False(forbidden.Contains(name), $"{assembly.GetName().Name} must not define type '{name}'.");
+            }
         }
     }
 
@@ -219,6 +223,82 @@ public sealed class LayerDependencyTests
             trialType.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance),
             m => m.Name.Contains("ThreeMonth", StringComparison.OrdinalIgnoreCase)
                  || m.Name.Contains("Ninety", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Platform_has_no_messaging_or_serialization_framework_dependencies()
+    {
+        foreach (var assembly in new[] { Domain, Application, Infrastructure, Api })
+        {
+            var referenced = assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty).ToArray();
+            Assert.DoesNotContain(referenced, name =>
+                name.Contains("MassTransit", StringComparison.OrdinalIgnoreCase)
+                || name.Contains("RabbitMQ", StringComparison.OrdinalIgnoreCase)
+                || name.Contains("Kafka", StringComparison.OrdinalIgnoreCase)
+                || name.Contains("Azure.Messaging", StringComparison.OrdinalIgnoreCase)
+                || name.Contains("Rebus", StringComparison.OrdinalIgnoreCase)
+                || name.Contains("protobuf", StringComparison.OrdinalIgnoreCase)
+                || name.Contains("Avro", StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    [Fact]
+    public void HealthCare_adapter_interfaces_exist_without_DbContext_or_clinical_types()
+    {
+        Assert.NotNull(Application.GetType(
+            "ExItS.Platform.Application.Integration.HealthCare.IHealthCareUserProjectionDelivery"));
+        Assert.NotNull(Application.GetType(
+            "ExItS.Platform.Application.Integration.HealthCare.IPlatformProjectionReconciliationService"));
+
+        var forbidden = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "Patient", "Doctor", "Nurse", "Appointment", "MedicalNote", "Amendment",
+            "ClinicalRole", "ClinicPermission", "Diagnosis", "Prescription", "ClinicalAuditRecord",
+            "DbContext"
+        };
+
+        foreach (var type in Application.GetTypes().Where(t =>
+                     t.Namespace?.Contains("Integration.HealthCare", StringComparison.Ordinal) == true))
+        {
+            Assert.False(forbidden.Contains(type.Name), $"Unexpected type {type.Name}");
+            foreach (var method in type.GetMethods())
+            {
+                foreach (var p in method.GetParameters())
+                {
+                    Assert.False(forbidden.Contains(p.ParameterType.Name),
+                        $"{type.Name}.{method.Name} exposes {p.ParameterType.Name}");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void Api_exposes_no_business_integration_routes_in_Program_source()
+    {
+        var root = FindRepositoryRoot();
+        var program = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "Program.cs"));
+        Assert.Contains("MapGet(\"/\"".Replace("\\", ""), program); // keep simple
+        Assert.Contains("/health", program);
+        Assert.DoesNotContain("entitlement", program, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("projection", program, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("reconciliation", program, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("MapPost", program, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "ExItS.slnx")))
+            {
+                return dir.FullName;
+            }
+
+            dir = dir.Parent;
+        }
+
+        throw new InvalidOperationException("Could not locate repository root.");
     }
 
     private static string Format(TestResult result) =>

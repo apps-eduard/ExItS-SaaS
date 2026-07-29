@@ -104,7 +104,7 @@ Create the first Platform domain and application boundary for global users, plat
 
 ### P2-WP03 — Products, Plans and Entitlement Foundation
 
-Status: **Ready for Review**
+Status: **Complete**
 
 #### Goal
 
@@ -117,6 +117,7 @@ Create Platform domain/application foundation for products, features, plans, pla
 - POS Utang trial expiry represented via view/repay/create feature codes; trial duration is **configurable** (three-calendar-month POS policy documented; **not** hard-coded as 90 days).
 - Application repos + use cases; tests updated after trial-duration correction.
 - API still `/` + `/health` only.
+
 #### Explicit exclusions (honored)
 
 - No EF/Npgsql/auth/billing invoices/payment/GCash/Admin UI/product APIs/brokers/POS/HealthCare changes.
@@ -146,22 +147,46 @@ Create Platform domain/application foundation for products, features, plans, pla
 
 ### P2-WP04 — HealthCare Contract Adaptation
 
-Status: Not Started
+Status: **Ready for Review**
 
-#### Required outcomes
+#### Goal
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+Create Platform-side versioned contracts, projection apply rules, and HealthCare adapter interfaces for future reconnection — without modifying or importing HealthCare.
+
+#### Outcomes delivered
+
+- `ContractEnvelope` / `ContractVersion` + identity, membership, org-mapping, product-access, subscription, entitlement projections.
+- Projection checkpoint / apply outcomes / applicability evaluator (idempotency, ordering, gap, conflict).
+- HealthCare delivery + reconciliation interfaces (no implementation/transport).
+- Architecture + unit tests; API phase marker `P2-WP04-healthcare-contract-adaptation`.
+- HealthCare remains frozen.
+
+#### Explicit exclusions (honored)
+
+- No HealthCare edits/import/DB/auth changes; no messaging/EF/business API routes/persistence.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (104/0/0).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded (see below).
+- [x] Working tree clean (after hash-record).
+- [x] HealthCare freeze verified.
+
+#### Artifacts
+
+| Artifact | Path |
+|---|---|
+| Report | [P2-WP04 report](../reports/P2-WP04-healthcare-contract-adaptation.md) |
+
+#### Commit
+
+| Field | Value |
+|---|---|
+| Hash | _(recorded after commit)_ |
+| Message | `feat(platform): add healthcare contract adaptation boundary` |
 
 ### P2-WP05 — Regression and Migration Validation
 

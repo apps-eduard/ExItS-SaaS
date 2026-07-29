@@ -39,3 +39,8 @@
 | R-033 | Commercial catalog codes uniqueness only at application boundary until persistence | Medium | Duplicate checks in use cases; DB unique indexes later | Open — introduced P2-WP03 |
 | R-034 | Entitlement composer policies (suspend/cancel/expiry) may need product-specific tuning | Medium | POS Utang codes explicit; keep composer product-neutral where possible | Open — introduced P2-WP03 |
 | R-035 | PinoyBusinessPOS Utang trial is three calendar months; end-of-month rule undecided; Platform must not use 90-day substitute | High | Document calendar-month policy; keep TrialDefinition configurable; implement calendar math + EOM rule in later catalog/config WP | Open — corrected after P2-WP03 |
+| R-036 | Contract major-version incompatibility between Platform and HealthCare consumers | High | Fail closed on unsupported majors; version negotiation later | Open — introduced P2-WP04 |
+| R-037 | Projection version gaps / duplicate / conflict until transport + checkpoint persistence exist | High | Apply policy + reconciliation interfaces; implement transport later | Open — introduced P2-WP04 |
+| R-038 | Organization mapping errors (1 Platform org → many clinics) | High | Explicit reversible mapping contracts; no destructive ID rewrite | Open — introduced P2-WP04 |
+| R-039 | Accidental clinical role escalation from Platform org roles | Critical | Contracts exclude clinical roles; docs + architecture tests | Open — introduced P2-WP04 |
+| R-040 | Premature assumption that contracts equal completed HealthCare integration | High | Report states foundation only; HC freeze continues | Open — introduced P2-WP04 |

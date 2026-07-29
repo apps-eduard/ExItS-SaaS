@@ -24,7 +24,8 @@ Gates for starting **P2-WP01**. Status reflects Phase 1 closeout (documentation)
 | Architecture approval | P1-WP04 / ADR-014 | **Met** (this closeout) | Yes | Portfolio | Done |
 | Solution foundation | Root `ExItS.slnx` / Platform projects exist; Release build + tests | **Met (P2-WP01)** | Yes | Platform eng | **P2-WP01** |
 | Identity/org domain boundary | Strong IDs, aggregates, roles, ProductCode, app contracts, tests; no auth/EF | **Met (P2-WP02)** | Yes | Platform eng | **P2-WP02** |
-| Products/plans/entitlements foundation | Catalog, subscriptions, snapshots, composer; no persistence/payments | **Met (P2-WP03)** | Yes to leave P2-WP03 | Platform eng | **P2-WP03** |
+| Products/plans/entitlements foundation | Catalog, subscriptions, snapshots, composer; no persistence/payments | **Met (P2-WP03)** | Yes | Platform eng | **P2-WP03** |
+| HealthCare contract adaptation (Platform-side) | Envelopes, projections, apply policy, adapter interfaces; HC frozen | **Met (P2-WP04)** | Yes to leave P2-WP04 | Platform eng | **P2-WP04** |
 
 ## P2-WP01 entry criteria
 
