@@ -1,6 +1,6 @@
 # Target Architecture
 
-[Home](../index.md) | [Dashboard](../portfolio-progress.md)
+[Home](../index.md) | [Dashboard](../portfolio-progress.md) | [Capability boundary](platform-product-capability-boundary.md) | [ADR-011](../decisions/ADR-011-platform-authority-and-product-local-projections.md)
 
 ## Portfolio architecture
 
@@ -31,4 +31,4 @@ A controlled monorepo is used initially for coordinated extraction and developme
 
 ## Product availability
 
-Product APIs cache validated entitlement snapshots. Daily HealthCare/POS operations do not synchronously call Platform for every request.
+Product APIs cache validated entitlement snapshots. Daily HealthCare/POS operations do not synchronously call Platform for every request. Authority and projection rules: [ADR-011](../decisions/ADR-011-platform-authority-and-product-local-projections.md) and [capability boundary](platform-product-capability-boundary.md).

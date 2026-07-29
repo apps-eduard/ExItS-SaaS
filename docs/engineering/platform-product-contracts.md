@@ -1,6 +1,6 @@
 # Platform–Product Contracts
 
-[Architecture](architecture.md) | [Data Ownership](data-ownership.md)
+[Architecture](architecture.md) | [Data Ownership](data-ownership.md) | [Capability boundary](platform-product-capability-boundary.md) | [ADR-011](../decisions/ADR-011-platform-authority-and-product-local-projections.md)
 
 ## Platform provides
 

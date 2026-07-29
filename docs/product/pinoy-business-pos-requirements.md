@@ -1,6 +1,6 @@
 # PinoyBusinessPOS Requirements
 
-[Home](../index.md) | [Dashboard](../portfolio-progress.md) | [Final boundaries](../engineering/final-portfolio-boundaries.md)
+[Home](../index.md) | [Dashboard](../portfolio-progress.md) | [Final boundaries](../engineering/final-portfolio-boundaries.md) | [Capability boundary](../engineering/platform-product-capability-boundary.md)
 
 ## Positioning
 

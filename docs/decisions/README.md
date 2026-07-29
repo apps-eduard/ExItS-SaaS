@@ -12,7 +12,8 @@
 | ADR-006 | English and Filipino/Tagalog from POS MVP | Accepted |
 | ADR-007 | Light, dark and system themes | Accepted |
 | ADR-008 | Native date wrapper first; custom calendar only by requirement | Accepted |
-| ADR-009 | Local entitlement snapshots protect product availability | Proposed |
+| ADR-009 | Local entitlement snapshots protect product availability | **Accepted** (confirmed by ADR-011) |
 | ADR-010 | Separate UI: HC Staff keeps Ant; **new Platform Admin + POS use native CSS/Razor** | **Accepted** — [Open](ADR-010-separate-ui-implementations-platform-and-pos.md) |
+| ADR-011 | Platform authority and product-local projections | **Accepted** — [Open](ADR-011-platform-authority-and-product-local-projections.md) |
 
 Cursor creates detailed ADR files only when the related phase validates the decision against the repository.

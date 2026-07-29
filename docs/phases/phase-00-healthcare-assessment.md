@@ -94,4 +94,4 @@ Status: **Ready for Review** (2026-07-29)
 - [x] Required regression/security tests pass **or** deferred by design with evidence (Windows-safe baseline recorded; Integration/E2E deferred).
 - [x] Next phase is explicitly approved (**Phase 1 / P1-WP01**).
 
-**Phase 0 recommendation: Close with documented risks.**
+**Phase 0 status: Complete with documented risks.** (Accepted as closeout direction; P1-WP01 proceeds.)

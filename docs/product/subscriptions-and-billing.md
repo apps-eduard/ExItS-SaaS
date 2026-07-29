@@ -1,6 +1,6 @@
 # Products, Plans, Trials and Billing
 
-[Home](../index.md) | [Dashboard](../portfolio-progress.md)
+[Home](../index.md) | [Dashboard](../portfolio-progress.md) | [Capability boundary](../engineering/platform-product-capability-boundary.md) | [ADR-011](../decisions/ADR-011-platform-authority-and-product-local-projections.md)
 
 ## Platform product catalog
 

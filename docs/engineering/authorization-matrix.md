@@ -1,6 +1,8 @@
 # Authorization Matrix
 
-[Security](security.md) | [Home](../index.md)
+[Security](security.md) | [Home](../index.md) | [Capability boundary §12](platform-product-capability-boundary.md)
+
+Platform grants **product access**; each product owns **operational permissions**. Platform Administrator does not automatically receive unrestricted clinical or POS operational access (break-glass deferred).
 
 ## Platform roles
 

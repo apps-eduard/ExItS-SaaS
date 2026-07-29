@@ -1,7 +1,7 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown files: 53
-Internal links checked: spot-check P0-WP04
+Markdown files: 58
+Internal links checked: spot-check P1-WP01
 Broken links: none found in spot-check of new paths
 
 .gitignore
@@ -12,15 +12,19 @@ docs/cursor/completion-report-template.md
 docs/cursor/cursor-prompt-template.md
 docs/cursor/first-cursor-command.md
 docs/decisions/ADR-010-separate-ui-implementations-platform-and-pos.md
+docs/decisions/ADR-011-platform-authority-and-product-local-projections.md
 docs/decisions/README.md
 docs/engineering/architecture.md
 docs/engineering/authorization-matrix.md
+docs/engineering/capability-ownership-matrix.md
+docs/engineering/data-authority-matrix.md
 docs/engineering/data-ownership.md
 docs/engineering/development-environment.md
 docs/engineering/development-standards.md
 docs/engineering/final-portfolio-boundaries.md
 docs/engineering/localization.md
 docs/engineering/offline-sync-design.md
+docs/engineering/platform-product-capability-boundary.md
 docs/engineering/platform-product-contracts.md
 docs/engineering/repository-boundaries.md
 docs/engineering/reusable-component-catalog.md
@@ -52,6 +56,7 @@ docs/reports/P0-WP01-healthcare-reuse-assessment.md
 docs/reports/P0-WP02-baseline-runtime-map.md
 docs/reports/P0-WP03-ui-reuse-review.md
 docs/reports/P0-WP04-assessment-closeout.md
+docs/reports/P1-WP01-platform-product-capability-boundary.md
 docs/reports/phase-00-final-assessment-and-recommendation.md
 docs/reuse/extraction-rules.md
 docs/reuse/healthcare-reuse-assessment.md

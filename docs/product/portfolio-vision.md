@@ -1,6 +1,6 @@
 # ExITS SaaS Portfolio Vision
 
-[Home](../index.md) | [Dashboard](../portfolio-progress.md)
+[Home](../index.md) | [Dashboard](../portfolio-progress.md) | [Capability boundary](../engineering/platform-product-capability-boundary.md)
 
 ## Vision
 

@@ -1,8 +1,8 @@
 # Final Portfolio Boundaries
 
-[Home](../index.md) | [Phase 0 final assessment](../reports/phase-00-final-assessment-and-recommendation.md) | [Data ownership](data-ownership.md) | [ADR-010](../decisions/ADR-010-separate-ui-implementations-platform-and-pos.md)
+[Home](../index.md) | [Phase 0 final assessment](../reports/phase-00-final-assessment-and-recommendation.md) | [Capability boundary (P1-WP01)](platform-product-capability-boundary.md) | [Data ownership](data-ownership.md) | [ADR-010](../decisions/ADR-010-separate-ui-implementations-platform-and-pos.md) | [ADR-011](../decisions/ADR-011-platform-authority-and-product-local-projections.md)
 
-Approved at Phase 0 closeout (P0-WP04). Implementation deferred to later phases.
+Approved at Phase 0 closeout (P0-WP04). Detailed capability ownership expanded in **P1-WP01** ([platform-product-capability-boundary.md](platform-product-capability-boundary.md)). Implementation deferred to later phases.
 
 | Capability | Platform | HealthCare | PinoyBusinessPOS | Shared Contract | Notes |
 |---|---|---|---|---|---|

@@ -20,6 +20,9 @@
 ## Engineering
 
 - [Target architecture](engineering/architecture.md)
+- [Platform–product capability boundary](engineering/platform-product-capability-boundary.md)
+- [Capability ownership matrix](engineering/capability-ownership-matrix.md)
+- [Data authority matrix](engineering/data-authority-matrix.md)
 - [Final portfolio boundaries](engineering/final-portfolio-boundaries.md)
 - [Repository boundaries](engineering/repository-boundaries.md)
 - [Development environment](engineering/development-environment.md)

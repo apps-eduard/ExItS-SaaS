@@ -4,7 +4,11 @@
 
 ## R0 — Assessment baseline
 
-**Complete (Phase 0).** HealthCare MVP inventoried; reuse, UI, runtime, and closeout recommendations recorded. Open risks documented.
+**Complete with documented risks (Phase 0).** HealthCare MVP inventoried; reuse, UI, runtime, and closeout recommendations recorded. Open risks documented.
+
+## R0.5 — Platform/product capability boundary (Phase 1 docs)
+
+**In review (P1-WP01).** Authoritative ownership, entitlement projections, and prohibited coupling documented (ADR-011). No runtime extraction yet.
 
 ## R1 — ExITS Platform extraction
 
