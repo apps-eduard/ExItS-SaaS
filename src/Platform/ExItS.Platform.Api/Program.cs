@@ -1,12 +1,16 @@
+using ExItS.Platform.Api.Access;
 using ExItS.Platform.Api.Admin;
 using ExItS.Platform.Api.Catalog;
 using ExItS.Platform.Api.Entitlements;
+using ExItS.Platform.Api.Identity;
 using ExItS.Platform.Api.Organizations;
 using ExItS.Platform.Api.Payments;
 using ExItS.Platform.Api.Subscriptions;
+using ExItS.Platform.Application.Access;
 using ExItS.Platform.Application.Admin;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Entitlements;
+using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
@@ -41,6 +45,25 @@ builder.Services.AddScoped<RetireTrialDefinition>();
 builder.Services.AddScoped<OrganizationQueryService>();
 builder.Services.AddScoped<CreatePlatformOrganization>();
 builder.Services.AddScoped<SuspendPlatformOrganization>();
+
+builder.Services.AddScoped<PlatformUserQueryService>();
+builder.Services.AddScoped<CreatePlatformUser>();
+builder.Services.AddScoped<UpdatePlatformUserProfile>();
+builder.Services.AddScoped<SuspendPlatformUser>();
+builder.Services.AddScoped<ReactivatePlatformUser>();
+builder.Services.AddScoped<DeactivatePlatformUser>();
+
+builder.Services.AddScoped<MembershipQueryService>();
+builder.Services.AddScoped<AddOrganizationMembership>();
+builder.Services.AddScoped<ChangeOrganizationRole>();
+builder.Services.AddScoped<SuspendOrganizationMembership>();
+builder.Services.AddScoped<ReactivateOrganizationMembership>();
+builder.Services.AddScoped<RevokeOrganizationMembership>();
+
+builder.Services.AddScoped<ProductAccessQueryService>();
+builder.Services.AddScoped<GrantProductAccess>();
+builder.Services.AddScoped<RevokeProductAccess>();
+builder.Services.AddScoped<EvaluateEffectiveProductAccess>();
 
 builder.Services.AddScoped<SubscriptionQueryService>();
 builder.Services.AddScoped<StartTrialSubscription>();
@@ -77,12 +100,15 @@ app.MapGet("/", () => Results.Json(new
 {
     service = "ExItS.Platform.Api",
     status = "ok",
-    phase = "P4-WP01-portfolio-navigation-product-views"
+    phase = "P4-WP02-organizations-users-product-access"
 }));
 
 app.MapHealthChecks("/health");
 app.MapCatalogEndpoints();
 app.MapOrganizationEndpoints();
+app.MapIdentityEndpoints();
+app.MapMembershipEndpoints();
+app.MapAccessEndpoints();
 app.MapSubscriptionEndpoints();
 app.MapPaymentEndpoints();
 app.MapEntitlementEndpoints();

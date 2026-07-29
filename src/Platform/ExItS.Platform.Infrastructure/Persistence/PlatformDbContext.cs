@@ -1,5 +1,7 @@
+using ExItS.Platform.Infrastructure.Persistence.Access;
 using ExItS.Platform.Infrastructure.Persistence.Catalog;
 using ExItS.Platform.Infrastructure.Persistence.Entitlements;
+using ExItS.Platform.Infrastructure.Persistence.Identity;
 using ExItS.Platform.Infrastructure.Persistence.Organizations;
 using ExItS.Platform.Infrastructure.Persistence.Payments;
 using ExItS.Platform.Infrastructure.Persistence.Subscriptions;
@@ -38,6 +40,9 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<FeatureOverrideRecord> FeatureOverrides => Set<FeatureOverrideRecord>();
     internal DbSet<EntitlementSnapshotRecord> EntitlementSnapshots => Set<EntitlementSnapshotRecord>();
     internal DbSet<EntitlementSnapshotGrantRecord> EntitlementSnapshotGrants => Set<EntitlementSnapshotGrantRecord>();
+    internal DbSet<PlatformUserRecord> PlatformUsers => Set<PlatformUserRecord>();
+    internal DbSet<OrganizationMembershipRecord> OrganizationMemberships => Set<OrganizationMembershipRecord>();
+    internal DbSet<ProductAccessAssignmentRecord> ProductAccessAssignments => Set<ProductAccessAssignmentRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -388,6 +393,116 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany(s => s.Grants)
                 .HasForeignKey(e => e.SnapshotId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PlatformUserRecord>(entity =>
+        {
+            entity.ToTable("platform_users");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Username).HasColumnName("username").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.NormalizedUsername).HasColumnName("normalized_username").HasMaxLength(64).IsRequired();
+            entity.HasIndex(e => e.NormalizedUsername).IsUnique().HasDatabaseName("ux_platform_users_normalized_username");
+            entity.Property(e => e.DisplayName).HasColumnName("display_name").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.NormalizedEmail).HasColumnName("normalized_email").HasMaxLength(320).IsRequired();
+            entity.HasIndex(e => e.NormalizedEmail).IsUnique().HasDatabaseName("ux_platform_users_normalized_email");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.SuspendedAtUtc).HasColumnName("suspended_at_utc");
+            entity.Property(e => e.SuspensionReason).HasColumnName("suspension_reason").HasMaxLength(512);
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+        });
+
+        modelBuilder.Entity<OrganizationMembershipRecord>(entity =>
+        {
+            entity.ToTable("organization_memberships");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.Role).HasColumnName("role").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.SuspendedAtUtc).HasColumnName("suspended_at_utc");
+            entity.Property(e => e.RemovedAtUtc).HasColumnName("removed_at_utc");
+            entity.Property(e => e.Reason).HasColumnName("reason").HasMaxLength(512);
+            entity.Property(e => e.ActorReference).HasColumnName("actor_reference").HasMaxLength(128);
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.UserId, e.OrganizationId })
+                .IsUnique()
+                .HasFilter("status IN ('Active', 'Suspended')")
+                .HasDatabaseName("ux_organization_memberships_current");
+
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ProductAccessAssignmentRecord>(entity =>
+        {
+            entity.ToTable("product_access_assignments");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.MembershipId).HasColumnName("membership_id");
+            entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.GrantedAtUtc).HasColumnName("granted_at_utc");
+            entity.Property(e => e.GrantedByActor).HasColumnName("granted_by_actor").HasMaxLength(128).IsRequired();
+            entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
+            entity.Property(e => e.RevokedByActor).HasColumnName("revoked_by_actor").HasMaxLength(128);
+            entity.Property(e => e.Reason).HasColumnName("reason").HasMaxLength(512);
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.UserId, e.OrganizationId, e.ProductCode })
+                .IsUnique()
+                .HasFilter("status = 'Active'")
+                .HasDatabaseName("ux_product_access_assignments_active");
+
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<OrganizationMembershipRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.MembershipId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<ProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ProductCode)
+                .HasPrincipalKey(p => p.Code)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

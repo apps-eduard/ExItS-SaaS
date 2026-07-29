@@ -16,6 +16,10 @@ public sealed class OrganizationMembership
     public OrganizationRole Role { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
+    public DateTimeOffset? SuspendedAtUtc { get; private set; }
+    public DateTimeOffset? RemovedAtUtc { get; private set; }
+    public string? Reason { get; private set; }
+    public string? ActorReference { get; private set; }
 
     private OrganizationMembership(
         OrganizationMembershipId id,
@@ -24,7 +28,11 @@ public sealed class OrganizationMembership
         MembershipStatus status,
         OrganizationRole role,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc)
+        DateTimeOffset updatedAtUtc,
+        DateTimeOffset? suspendedAtUtc,
+        DateTimeOffset? removedAtUtc,
+        string? reason,
+        string? actorReference)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -33,6 +41,10 @@ public sealed class OrganizationMembership
         Role = role;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
+        SuspendedAtUtc = suspendedAtUtc;
+        RemovedAtUtc = removedAtUtc;
+        Reason = reason;
+        ActorReference = actorReference;
     }
 
     public static OrganizationMembership Create(
@@ -40,7 +52,8 @@ public sealed class OrganizationMembership
         PlatformUserId userId,
         OrganizationRole role,
         DateTimeOffset utcNow,
-        OrganizationMembershipId? id = null)
+        OrganizationMembershipId? id = null,
+        string? actorReference = null)
     {
         ArgumentNullException.ThrowIfNull(organizationId);
         ArgumentNullException.ThrowIfNull(userId);
@@ -54,10 +67,39 @@ public sealed class OrganizationMembership
             MembershipStatus.Active,
             role,
             utcNow,
-            utcNow);
+            utcNow,
+            null,
+            null,
+            null,
+            NormalizeOptional(actorReference));
     }
 
-    public void ChangeRole(OrganizationRole role, DateTimeOffset utcNow)
+    public static OrganizationMembership Rehydrate(
+        OrganizationMembershipId id,
+        PlatformOrganizationId organizationId,
+        PlatformUserId userId,
+        MembershipStatus status,
+        OrganizationRole role,
+        DateTimeOffset createdAtUtc,
+        DateTimeOffset updatedAtUtc,
+        DateTimeOffset? suspendedAtUtc,
+        DateTimeOffset? removedAtUtc,
+        string? reason,
+        string? actorReference) =>
+        new(
+            id,
+            organizationId,
+            userId,
+            status,
+            role,
+            createdAtUtc,
+            updatedAtUtc,
+            suspendedAtUtc,
+            removedAtUtc,
+            reason,
+            actorReference);
+
+    public void ChangeRole(OrganizationRole role, DateTimeOffset utcNow, string? actorReference = null)
     {
         EnsureUtc(utcNow);
         EnsureDefinedRole(role);
@@ -69,16 +111,20 @@ public sealed class OrganizationMembership
         }
 
         Role = role;
+        ActorReference = NormalizeOptional(actorReference) ?? ActorReference;
         UpdatedAtUtc = utcNow;
     }
 
-    public void Suspend(DateTimeOffset utcNow)
+    public void Suspend(DateTimeOffset utcNow, string? reason = null, string? actorReference = null)
     {
         EnsureUtc(utcNow);
         TransitionTo(MembershipStatus.Suspended, utcNow);
+        SuspendedAtUtc = utcNow;
+        Reason = NormalizeOptional(reason) ?? Reason;
+        ActorReference = NormalizeOptional(actorReference) ?? ActorReference;
     }
 
-    public void Reactivate(DateTimeOffset utcNow)
+    public void Reactivate(DateTimeOffset utcNow, string? actorReference = null)
     {
         EnsureUtc(utcNow);
         if (Status == MembershipStatus.Removed)
@@ -89,12 +135,17 @@ public sealed class OrganizationMembership
         }
 
         TransitionTo(MembershipStatus.Active, utcNow);
+        SuspendedAtUtc = null;
+        ActorReference = NormalizeOptional(actorReference) ?? ActorReference;
     }
 
-    public void Remove(DateTimeOffset utcNow)
+    public void Remove(DateTimeOffset utcNow, string? reason = null, string? actorReference = null)
     {
         EnsureUtc(utcNow);
         TransitionTo(MembershipStatus.Removed, utcNow);
+        RemovedAtUtc = utcNow;
+        Reason = NormalizeOptional(reason) ?? Reason;
+        ActorReference = NormalizeOptional(actorReference) ?? ActorReference;
     }
 
     private void TransitionTo(MembershipStatus target, DateTimeOffset utcNow)
@@ -122,6 +173,9 @@ public sealed class OrganizationMembership
         Status = target;
         UpdatedAtUtc = utcNow;
     }
+
+    private static string? NormalizeOptional(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static void EnsureDefinedRole(OrganizationRole role)
     {

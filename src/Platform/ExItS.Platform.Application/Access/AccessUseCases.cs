@@ -1,0 +1,502 @@
+using ExItS.Platform.Application.Catalog;
+using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Entitlements;
+using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Application.Subscriptions;
+using ExItS.Platform.Domain.Abstractions;
+using ExItS.Platform.Domain.Catalog;
+using ExItS.Platform.Domain.Common;
+using ExItS.Platform.Domain.Identity;
+using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Products;
+using ExItS.Platform.Domain.Subscriptions;
+
+namespace ExItS.Platform.Application.Access;
+
+/// <summary>
+/// P4-WP02 decision: new product-access grants and effective commercial access require
+/// subscription status Trialing or Active only (fail closed for GracePeriod, PastDue,
+/// Suspended, Cancelled, Expired).
+/// </summary>
+public static class ProductAccessEligibility
+{
+    public static bool IsSubscriptionEligible(SubscriptionStatus status) =>
+        status is SubscriptionStatus.Trialing or SubscriptionStatus.Active;
+}
+
+public sealed record ProductAccessAssignmentDto(
+    Guid Id,
+    Guid UserId,
+    Guid OrganizationId,
+    Guid MembershipId,
+    string ProductCode,
+    string Status,
+    DateTimeOffset GrantedAtUtc,
+    string GrantedByActor,
+    DateTimeOffset? RevokedAtUtc,
+    string? RevokedByActor,
+    string? Reason,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc);
+
+public sealed record EffectiveProductAccessResult(
+    bool Allowed,
+    string ReasonCode,
+    Guid UserId,
+    Guid OrganizationId,
+    string ProductCode,
+    Guid? MembershipId,
+    Guid? AssignmentId,
+    Guid? SubscriptionId,
+    Guid? SnapshotId,
+    DateTimeOffset EvaluatedAtUtc);
+
+public sealed class ProductAccessQueryService
+{
+    private readonly IProductAccessAssignmentRepository _assignments;
+
+    public ProductAccessQueryService(IProductAccessAssignmentRepository assignments) => _assignments = assignments;
+
+    public async Task<ProductAccessAssignmentDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var assignment = await _assignments.GetByIdAsync(ProductAccessAssignmentId.From(id), cancellationToken)
+            .ConfigureAwait(false);
+        return assignment is null ? null : Map(assignment);
+    }
+
+    public async Task<PagedResult<ProductAccessAssignmentDto>> ListByOrganizationAsync(
+        Guid organizationId,
+        ProductAccessStatus? status,
+        int? page,
+        int? pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (skip, take) = CatalogPagination.Normalize(page, pageSize);
+        var (items, total) = await _assignments
+            .ListByOrganizationAsync(PlatformOrganizationId.From(organizationId), status, skip, take, cancellationToken)
+            .ConfigureAwait(false);
+        return ToPaged(items, total, page, take);
+    }
+
+    public async Task<PagedResult<ProductAccessAssignmentDto>> ListByUserAsync(
+        Guid userId,
+        ProductAccessStatus? status,
+        int? page,
+        int? pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (skip, take) = CatalogPagination.Normalize(page, pageSize);
+        var (items, total) = await _assignments
+            .ListByUserAsync(PlatformUserId.From(userId), status, skip, take, cancellationToken)
+            .ConfigureAwait(false);
+        return ToPaged(items, total, page, take);
+    }
+
+    private static PagedResult<ProductAccessAssignmentDto> ToPaged(
+        IReadOnlyList<ProductAccessAssignment> items,
+        int total,
+        int? page,
+        int take) =>
+        new(items.Select(Map).ToList(), total, Math.Max(page ?? 1, 1), take);
+
+    public static ProductAccessAssignmentDto Map(ProductAccessAssignment assignment) =>
+        new(
+            assignment.Id.Value,
+            assignment.UserId.Value,
+            assignment.OrganizationId.Value,
+            assignment.MembershipId.Value,
+            assignment.ProductCode.Value,
+            assignment.Status.ToString(),
+            assignment.GrantedAtUtc,
+            assignment.GrantedByActor,
+            assignment.RevokedAtUtc,
+            assignment.RevokedByActor,
+            assignment.Reason,
+            assignment.CreatedAtUtc,
+            assignment.UpdatedAtUtc);
+}
+
+public sealed class GrantProductAccess
+{
+    private readonly IPlatformUserRepository _users;
+    private readonly IPlatformOrganizationRepository _organizations;
+    private readonly IOrganizationMembershipRepository _memberships;
+    private readonly IProductRepository _products;
+    private readonly ISubscriptionRepository _subscriptions;
+    private readonly IEntitlementSnapshotRepository _snapshots;
+    private readonly IProductAccessAssignmentRepository _assignments;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public GrantProductAccess(
+        IPlatformUserRepository users,
+        IPlatformOrganizationRepository organizations,
+        IOrganizationMembershipRepository memberships,
+        IProductRepository products,
+        ISubscriptionRepository subscriptions,
+        IEntitlementSnapshotRepository snapshots,
+        IProductAccessAssignmentRepository assignments,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _users = users;
+        _organizations = organizations;
+        _memberships = memberships;
+        _products = products;
+        _subscriptions = subscriptions;
+        _snapshots = snapshots;
+        _assignments = assignments;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<ProductAccessAssignment>> ExecuteAsync(
+        PlatformOrganizationId organizationId,
+        PlatformUserId userId,
+        string productCode,
+        string grantedByActor,
+        string? reason = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var code = ProductCode.Create(productCode);
+            var utcNow = _clock.UtcNow;
+
+            var user = await _users.GetByIdAsync(userId, cancellationToken).ConfigureAwait(false);
+            if (user is null)
+            {
+                return ApplicationResult<ProductAccessAssignment>.Failure(
+                    ApplicationErrorCodes.UserNotFound, "Platform User was not found.");
+            }
+
+            if (user.Status != AccountStatus.Active)
+            {
+                return ApplicationResult<ProductAccessAssignment>.Failure(
+                    DomainErrorCodes.UserNotActive, "Product access requires an active Platform User.");
+            }
+
+            var organization = await _organizations.GetByIdAsync(organizationId, cancellationToken)
+                .ConfigureAwait(false);
+            if (organization is null)
+            {
+                return ApplicationResult<ProductAccessAssignment>.Failure(
+                    ApplicationErrorCodes.OrganizationNotFound, "Platform Organization was not found.");
+            }
+
+            if (organization.Status != OrganizationStatus.Active)
+            {
+                return ApplicationResult<ProductAccessAssignment>.Failure(
+                    DomainErrorCodes.OrganizationNotActive, "Product access requires an active organization.");
+            }
+
+            var membership = await _memberships
+                .FindActiveByUserAndOrganizationAsync(userId, organizationId, cancellationToken)
+                .ConfigureAwait(false);
+            if (membership is null)
+            {
+                return ApplicationResult<ProductAccessAssignment>.Failure(
+                    ApplicationErrorCodes.MembershipNotFound,
+                    "An active organization membership is required before granting product access.");
+            }
+
+            var product = await _products.GetByCodeAsync(code, cancellationToken).ConfigureAwait(false);
+            if (product is null)
+            {
+                return ApplicationResult<ProductAccessAssignment>.Failure(
+                    ApplicationErrorCodes.ProductNotFound, "Product was not found.");
+            }
+
+            if (product.Status != ProductStatus.Active)
+            {
+                return ApplicationResult<ProductAccessAssignment>.Failure(
+                    ApplicationErrorCodes.ProductNotActive, "Product must be active to grant access.");
+            }
+
+            var subscription = await _subscriptions
+                .GetCurrentForOrganizationProductAsync(organizationId, code, cancellationToken)
+                .ConfigureAwait(false);
+            if (subscription is null || !ProductAccessEligibility.IsSubscriptionEligible(subscription.Status))
+            {
+                return ApplicationResult<ProductAccessAssignment>.Failure(
+                    ApplicationErrorCodes.SubscriptionIneligible,
+                    "An eligible Trialing or Active subscription is required to grant product access.");
+            }
+
+            var snapshot = await _snapshots
+                .GetLatestForOrganizationProductAsync(organizationId, code, cancellationToken)
+                .ConfigureAwait(false);
+            if (snapshot is null)
+            {
+                return ApplicationResult<ProductAccessAssignment>.Failure(
+                    ApplicationErrorCodes.EntitlementMissing,
+                    "A current entitlement snapshot is required to grant product access.");
+            }
+
+            if (snapshot.RefreshByUtc < utcNow)
+            {
+                return ApplicationResult<ProductAccessAssignment>.Failure(
+                    ApplicationErrorCodes.EntitlementStale,
+                    "The entitlement snapshot is stale and must be refreshed before granting access.");
+            }
+
+            if (snapshot.ExpiresAtUtc is { } expires && expires <= utcNow)
+            {
+                return ApplicationResult<ProductAccessAssignment>.Failure(
+                    ApplicationErrorCodes.EntitlementDenied,
+                    "The entitlement snapshot has expired.");
+            }
+
+            if (!ProductAccessEligibility.IsSubscriptionEligible(snapshot.SubscriptionStatus))
+            {
+                return ApplicationResult<ProductAccessAssignment>.Failure(
+                    ApplicationErrorCodes.EntitlementDenied,
+                    "The entitlement snapshot subscription status does not permit commercial access.");
+            }
+
+            var existing = await _assignments
+                .FindActiveByUserOrganizationProductAsync(userId, organizationId, code, cancellationToken)
+                .ConfigureAwait(false);
+            if (existing is not null)
+            {
+                return ApplicationResult<ProductAccessAssignment>.Failure(
+                    ApplicationErrorCodes.ProductAccessConflict,
+                    "An active product-access assignment already exists for this user, organization, and product.");
+            }
+
+            var assignment = ProductAccessAssignment.Grant(
+                userId,
+                organizationId,
+                membership.Id,
+                code,
+                grantedByActor,
+                utcNow,
+                reason);
+            await _assignments.AddAsync(assignment, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<ProductAccessAssignment>.Success(assignment);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<ProductAccessAssignment>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class RevokeProductAccess
+{
+    private readonly IProductAccessAssignmentRepository _assignments;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public RevokeProductAccess(
+        IProductAccessAssignmentRepository assignments,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _assignments = assignments;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<ProductAccessAssignment>> ExecuteAsync(
+        ProductAccessAssignmentId assignmentId,
+        string revokedByActor,
+        string? reason = null,
+        CancellationToken cancellationToken = default)
+    {
+        var assignment = await _assignments.GetByIdAsync(assignmentId, cancellationToken).ConfigureAwait(false);
+        if (assignment is null)
+        {
+            return ApplicationResult<ProductAccessAssignment>.Failure(
+                ApplicationErrorCodes.ProductAccessNotFound,
+                "Product access assignment was not found.");
+        }
+
+        try
+        {
+            assignment.Revoke(revokedByActor, reason, _clock.UtcNow);
+            await _assignments.UpdateAsync(assignment, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<ProductAccessAssignment>.Success(assignment);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<ProductAccessAssignment>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class EvaluateEffectiveProductAccess
+{
+    private readonly IPlatformUserRepository _users;
+    private readonly IPlatformOrganizationRepository _organizations;
+    private readonly IOrganizationMembershipRepository _memberships;
+    private readonly IProductRepository _products;
+    private readonly IProductAccessAssignmentRepository _assignments;
+    private readonly ISubscriptionRepository _subscriptions;
+    private readonly IEntitlementSnapshotRepository _snapshots;
+    private readonly IClock _clock;
+
+    public EvaluateEffectiveProductAccess(
+        IPlatformUserRepository users,
+        IPlatformOrganizationRepository organizations,
+        IOrganizationMembershipRepository memberships,
+        IProductRepository products,
+        IProductAccessAssignmentRepository assignments,
+        ISubscriptionRepository subscriptions,
+        IEntitlementSnapshotRepository snapshots,
+        IClock clock)
+    {
+        _users = users;
+        _organizations = organizations;
+        _memberships = memberships;
+        _products = products;
+        _assignments = assignments;
+        _subscriptions = subscriptions;
+        _snapshots = snapshots;
+        _clock = clock;
+    }
+
+    public async Task<EffectiveProductAccessResult> ExecuteAsync(
+        PlatformUserId userId,
+        PlatformOrganizationId organizationId,
+        string productCode,
+        CancellationToken cancellationToken = default)
+    {
+        var utcNow = _clock.UtcNow;
+        var code = ProductCode.Create(productCode);
+
+        EffectiveProductAccessResult Denied(string reason, Guid? membershipId = null, Guid? assignmentId = null, Guid? subscriptionId = null, Guid? snapshotId = null) =>
+            new(false, reason, userId.Value, organizationId.Value, code.Value, membershipId, assignmentId, subscriptionId, snapshotId, utcNow);
+
+        var user = await _users.GetByIdAsync(userId, cancellationToken).ConfigureAwait(false);
+        if (user is null || user.Status != AccountStatus.Active)
+        {
+            return Denied(EffectiveAccessReasonCodes.UserInactive);
+        }
+
+        var organization = await _organizations.GetByIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        if (organization is null || organization.Status != OrganizationStatus.Active)
+        {
+            return Denied(EffectiveAccessReasonCodes.OrganizationInactive);
+        }
+
+        var membership = await _memberships
+            .FindActiveByUserAndOrganizationAsync(userId, organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        if (membership is null)
+        {
+            var current = await _memberships
+                .FindCurrentByUserAndOrganizationAsync(userId, organizationId, cancellationToken)
+                .ConfigureAwait(false);
+            return current is null
+                ? Denied(EffectiveAccessReasonCodes.MembershipMissing)
+                : Denied(EffectiveAccessReasonCodes.MembershipInactive, current.Id.Value);
+        }
+
+        var product = await _products.GetByCodeAsync(code, cancellationToken).ConfigureAwait(false);
+        if (product is null || product.Status != ProductStatus.Active)
+        {
+            return Denied(EffectiveAccessReasonCodes.ProductInactive, membership.Id.Value);
+        }
+
+        var assignment = await _assignments
+            .FindActiveByUserOrganizationProductAsync(userId, organizationId, code, cancellationToken)
+            .ConfigureAwait(false);
+        if (assignment is null)
+        {
+            return Denied(EffectiveAccessReasonCodes.ProductAssignmentMissing, membership.Id.Value);
+        }
+
+        if (assignment.OrganizationId != membership.OrganizationId
+            || assignment.MembershipId != membership.Id
+            || assignment.UserId != membership.UserId)
+        {
+            return Denied(EffectiveAccessReasonCodes.ProductAssignmentInactive, membership.Id.Value, assignment.Id.Value);
+        }
+
+        var subscription = await _subscriptions
+            .GetCurrentForOrganizationProductAsync(organizationId, code, cancellationToken)
+            .ConfigureAwait(false);
+        if (subscription is null || !ProductAccessEligibility.IsSubscriptionEligible(subscription.Status))
+        {
+            return Denied(
+                EffectiveAccessReasonCodes.SubscriptionIneligible,
+                membership.Id.Value,
+                assignment.Id.Value,
+                subscription?.Id.Value);
+        }
+
+        var snapshot = await _snapshots
+            .GetLatestForOrganizationProductAsync(organizationId, code, cancellationToken)
+            .ConfigureAwait(false);
+        if (snapshot is null)
+        {
+            return Denied(
+                EffectiveAccessReasonCodes.EntitlementMissing,
+                membership.Id.Value,
+                assignment.Id.Value,
+                subscription.Id.Value);
+        }
+
+        if (snapshot.RefreshByUtc < utcNow)
+        {
+            return Denied(
+                EffectiveAccessReasonCodes.EntitlementStale,
+                membership.Id.Value,
+                assignment.Id.Value,
+                subscription.Id.Value,
+                snapshot.Id.Value);
+        }
+
+        if (snapshot.ExpiresAtUtc is { } expires && expires <= utcNow)
+        {
+            return Denied(
+                EffectiveAccessReasonCodes.EntitlementDenied,
+                membership.Id.Value,
+                assignment.Id.Value,
+                subscription.Id.Value,
+                snapshot.Id.Value);
+        }
+
+        if (!ProductAccessEligibility.IsSubscriptionEligible(snapshot.SubscriptionStatus))
+        {
+            return Denied(
+                EffectiveAccessReasonCodes.EntitlementDenied,
+                membership.Id.Value,
+                assignment.Id.Value,
+                subscription.Id.Value,
+                snapshot.Id.Value);
+        }
+
+        return new EffectiveProductAccessResult(
+            true,
+            EffectiveAccessReasonCodes.Allowed,
+            userId.Value,
+            organizationId.Value,
+            code.Value,
+            membership.Id.Value,
+            assignment.Id.Value,
+            subscription.Id.Value,
+            snapshot.Id.Value,
+            utcNow);
+    }
+}
+
+public static class EffectiveAccessReasonCodes
+{
+    public const string Allowed = "allowed";
+    public const string UserInactive = "user_inactive";
+    public const string OrganizationInactive = "organization_inactive";
+    public const string MembershipMissing = "membership_missing";
+    public const string MembershipInactive = "membership_inactive";
+    public const string ProductAssignmentMissing = "product_assignment_missing";
+    public const string ProductAssignmentInactive = "product_assignment_inactive";
+    public const string ProductInactive = "product_inactive";
+    public const string SubscriptionIneligible = "subscription_ineligible";
+    public const string EntitlementMissing = "entitlement_missing";
+    public const string EntitlementStale = "entitlement_stale";
+    public const string EntitlementDenied = "entitlement_denied";
+}

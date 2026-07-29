@@ -5,7 +5,7 @@
 
 @if (Id is null)
 {
-    <PageHeader Title="Organizations" Breadcrumb="Platform Admin / Organizations" Description="Read-only Platform Organizations. Membership and users are out of scope for P4-WP01." />
+    <PageHeader Title="Organizations" Breadcrumb="Platform Admin / Organizations" Description="Platform Organizations with commercial summaries, membership, and product-access administration." />
     @if (_list is null) { <LoadingState Message="Loading organizations…" /> }
     else if (!_list.IsSuccess) { <ErrorState Title="@(_list.Error?.Title ?? "Error")" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" /> }
     else if (_list.Data!.Items.Count == 0) { <EmptyState Message="No organizations have been created." /> }
@@ -52,6 +52,12 @@ else
             <dt>Status</dt><dd><StatusBadge Value="@d.Organization.Status" /></dd>
             <dt>Created (UTC)</dt><dd><UtcTimestamp Value="@d.Organization.CreatedAtUtc" /></dd>
             <dt>Updated (UTC)</dt><dd><UtcTimestamp Value="@d.Organization.UpdatedAtUtc" /></dd>
+            <dt>Access admin</dt>
+            <dd>
+                <a href="/admin/organizations/@Id/members">Members</a>
+                ·
+                <a href="/admin/organizations/@Id/product-access">Product access</a>
+            </dd>
         </dl>
 
         <h2>Subscriptions by product</h2>

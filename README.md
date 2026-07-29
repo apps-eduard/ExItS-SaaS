@@ -34,7 +34,7 @@ ExItS-SaaS/
 
 `HealthCare/` remains frozen and outside root Git. Do not import it without an approved work package.
 
-**Phase 4 / P4-WP01** is complete ([report](docs/reports/P4-WP01-portfolio-navigation-and-product-views.md)): read-only Platform Admin Blazor shell (`ExItS.Platform.Admin`) with portfolio navigation and commercial views calling Platform APIs. Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. APIs and Admin remain development-stage unauthenticated. HealthCare remains frozen. Next: **P4-WP02 — Organizations, Users and Product Access** when authorized.
+**Phase 4 / P4-WP02** is complete ([report](docs/reports/P4-WP02-organizations-users-and-product-access.md)): Platform users, organization memberships, product-access assignments, effective commercial access evaluation, Admin APIs/UI. Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. APIs and Admin remain development-stage unauthenticated. Product access does not assign product-local roles. HealthCare remains frozen. Next: **P4-WP03 — Subscriptions, Payments and Trials** when authorized.
 
 ### Platform database (local)
 

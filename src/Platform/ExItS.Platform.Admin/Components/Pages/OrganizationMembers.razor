@@ -1,0 +1,176 @@
+@page "/admin/organizations/{OrganizationId:guid}/members"
+@rendermode InteractiveServer
+@inject IPlatformApiClient Api
+
+<PageHeader Title="Organization members" Breadcrumb="Platform Admin / Organizations / Members" Description="Platform organization membership and roles. Development-stage; unauthenticated." />
+<div class="warning" role="note">
+    Platform organization roles (Owner, Administrator, Member) are not product-local roles.
+    Removing membership revokes product-access assignments for this organization.
+</div>
+
+@if (_org is null) { <LoadingState Message="Loading organization…" /> }
+else if (!_org.IsSuccess) { <ErrorState Title="@(_org.Error?.Title ?? "Error")" Detail="@_org.Error?.Detail" Unavailable="@(_org.Status == ApiCallStatus.Unavailable)" /> }
+else
+{
+    <p><a href="/admin/organizations/@OrganizationId">← @_org.Data!.DisplayName commercial summary</a> · <a href="/admin/organizations/@OrganizationId/product-access">Product access</a></p>
+    @if (!string.IsNullOrWhiteSpace(_toast)) { <p class="toast" role="status">@_toast</p> }
+    @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="Action failed" Detail="@_formError" /> }
+
+    <section class="panel">
+        <h2>Add existing Platform user</h2>
+        <div class="form-grid">
+            <label>User ID <input @bind="_addUserId" placeholder="GUID" /></label>
+            <label>Organization role
+                <select @bind="_addRole">
+                    <option>OrganizationMember</option>
+                    <option>OrganizationAdministrator</option>
+                    <option>OrganizationOwner</option>
+                </select>
+            </label>
+        </div>
+        <div class="actions">
+            <button type="button" @onclick="AddMemberAsync" disabled="@_busy">Add member</button>
+        </div>
+    </section>
+
+    <div class="filters">
+        <label>Status
+            <select @bind="_status">
+                <option value="">All</option>
+                <option>Active</option>
+                <option>Suspended</option>
+                <option>Removed</option>
+            </select>
+        </label>
+        <button type="button" @onclick="ReloadAsync">Apply</button>
+    </div>
+
+    @if (_members is null) { <LoadingState Message="Loading members…" /> }
+    else if (!_members.IsSuccess) { <ErrorState Title="Members unavailable" Detail="@_members.Error?.Detail" /> }
+    else if (_members.Data!.Items.Count == 0) { <EmptyState Message="No memberships for this organization." /> }
+    else
+    {
+        <table class="responsive-table">
+            <thead><tr><th>User</th><th>Role</th><th>Status</th><th>Updated (UTC)</th><th>Actions</th></tr></thead>
+            <tbody>
+            @foreach (var m in _members.Data.Items)
+            {
+                <tr>
+                    <td data-label="User"><a href="/admin/users/@m.UserId">@m.UserId</a></td>
+                    <td data-label="Role">
+                        <select value="@m.Role" @onchange="e => ChangeRoleAsync(m.Id, e.Value?.ToString())" disabled="@(_busy || m.Status == "Removed")">
+                            <option>OrganizationOwner</option>
+                            <option>OrganizationAdministrator</option>
+                            <option>OrganizationMember</option>
+                        </select>
+                    </td>
+                    <td data-label="Status"><StatusBadge Value="@m.Status" /></td>
+                    <td data-label="Updated"><UtcTimestamp Value="@m.UpdatedAtUtc" /></td>
+                    <td data-label="Actions" class="actions">
+                        @if (m.Status == "Active")
+                        {
+                            <button type="button" class="secondary" @onclick='() => Ask("Suspend membership", "Suspend this membership? Effective product access for this organization will be denied.", () => SuspendAsync(m.Id))'>Suspend</button>
+                            <button type="button" class="danger" @onclick='() => Ask("Revoke membership", "Revoke this membership? Active product-access assignments for this organization will be revoked. Historical rows remain.", () => RevokeAsync(m.Id))'>Revoke</button>
+                        }
+                        else if (m.Status == "Suspended")
+                        {
+                            <button type="button" class="secondary" @onclick="() => ReactivateAsync(m.Id)">Reactivate membership</button>
+                            <button type="button" class="danger" @onclick='() => Ask("Revoke membership", "Revoke this membership permanently for this organization?", () => RevokeAsync(m.Id))'>Revoke</button>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+}
+
+@if (_confirm is not null)
+{
+    <ConfirmDialog Visible="true" Title="@_confirm.Title" Message="@_confirm.Message" OnConfirm="_confirm.Action" OnCancel="ClearConfirm" Busy="_busy" />
+}
+
+@code {
+    [Parameter] public Guid OrganizationId { get; set; }
+    private ApiCallResult<OrganizationDto>? _org;
+    private ApiCallResult<PagedResult<OrganizationMembershipDto>>? _members;
+    private string _status = "";
+    private string _addUserId = "";
+    private string _addRole = "OrganizationMember";
+    private string? _toast;
+    private string? _formError;
+    private bool _busy;
+    private ConfirmState? _confirm;
+
+    protected override async Task OnParametersSetAsync() => await ReloadAsync();
+
+    private async Task ReloadAsync()
+    {
+        _org = await Api.GetOrganizationAsync(OrganizationId);
+        _members = await Api.GetOrganizationMembersAsync(OrganizationId, status: string.IsNullOrWhiteSpace(_status) ? null : _status);
+    }
+
+    private async Task AddMemberAsync()
+    {
+        _formError = null; _toast = null;
+        if (!Guid.TryParse(_addUserId, out var userId)) { _formError = "User ID must be a valid GUID."; return; }
+        _busy = true;
+        var result = await Api.AddOrganizationMemberAsync(OrganizationId, new AddMemberRequest(userId, _addRole));
+        _busy = false;
+        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
+        _toast = "Member added.";
+        _addUserId = "";
+        await ReloadAsync();
+    }
+
+    private async Task ChangeRoleAsync(Guid membershipId, string? role)
+    {
+        if (string.IsNullOrWhiteSpace(role)) return;
+        _busy = true; _formError = null;
+        var result = await Api.ChangeMembershipRoleAsync(membershipId, new ChangeRoleRequest(role, "dev-admin"));
+        _busy = false;
+        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
+        _toast = "Role updated.";
+        await ReloadAsync();
+    }
+
+    private void Ask(string title, string message, Func<Task> action) => _confirm = new ConfirmState(title, message, action);
+
+    private async Task SuspendAsync(Guid id)
+    {
+        _busy = true; _formError = null;
+        var result = await Api.SuspendMembershipAsync(id, new MembershipLifecycleRequest("Suspended from Admin", "dev-admin"));
+        _busy = false; _confirm = null;
+        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
+        _toast = "Membership suspended.";
+        await ReloadAsync();
+    }
+
+    private async Task ReactivateAsync(Guid id)
+    {
+        _busy = true; _formError = null;
+        var result = await Api.ReactivateMembershipAsync(id, new MembershipLifecycleRequest(null, "dev-admin"));
+        _busy = false;
+        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
+        _toast = "Membership reactivated after eligibility revalidation.";
+        await ReloadAsync();
+    }
+
+    private async Task RevokeAsync(Guid id)
+    {
+        _busy = true; _formError = null;
+        var result = await Api.RevokeMembershipAsync(id, new MembershipLifecycleRequest("Revoked from Admin", "dev-admin"));
+        _busy = false; _confirm = null;
+        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
+        _toast = "Membership revoked; related product access revoked.";
+        await ReloadAsync();
+    }
+
+    private Task ClearConfirm()
+    {
+        _confirm = null;
+        return Task.CompletedTask;
+    }
+
+    private sealed record ConfirmState(string Title, string Message, Func<Task> Action);
+}

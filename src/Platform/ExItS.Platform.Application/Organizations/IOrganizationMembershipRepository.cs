@@ -12,6 +12,26 @@ public interface IOrganizationMembershipRepository
         PlatformOrganizationId organizationId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Current = Active or Suspended (not Removed).</summary>
+    Task<OrganizationMembership?> FindCurrentByUserAndOrganizationAsync(
+        PlatformUserId userId,
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default);
+
+    Task<(IReadOnlyList<OrganizationMembership> Items, int TotalCount)> ListByOrganizationAsync(
+        PlatformOrganizationId organizationId,
+        MembershipStatus? status,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
+    Task<(IReadOnlyList<OrganizationMembership> Items, int TotalCount)> ListByUserAsync(
+        PlatformUserId userId,
+        MembershipStatus? status,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(OrganizationMembership membership, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(OrganizationMembership membership, CancellationToken cancellationToken = default);

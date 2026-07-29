@@ -6,9 +6,12 @@ public static class DomainErrorCodes
     public const string InvalidPlatformUserId = "platform.user.id.invalid";
     public const string InvalidPlatformOrganizationId = "platform.organization.id.invalid";
     public const string InvalidOrganizationMembershipId = "platform.membership.id.invalid";
+    public const string InvalidProductAccessAssignmentId = "platform.product_access.id.invalid";
+    public const string ActorReferenceRequired = "platform.actor.required";
 
     public const string InvalidDisplayName = "platform.display_name.invalid";
     public const string InvalidEmail = "platform.email.invalid";
+    public const string InvalidUsername = "platform.username.invalid";
     public const string InvalidOrganizationSlug = "platform.organization.slug.invalid";
     public const string InvalidProductCode = "platform.product_code.invalid";
     public const string InvalidUtcTimestamp = "platform.timestamp.invalid";

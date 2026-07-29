@@ -11,7 +11,7 @@
             @Body
         </main>
         <footer class="admin-footer">
-            <p>ExItS Platform Admin — read-only portfolio views (P4-WP01).</p>
+            <p>ExItS Platform Admin — portfolio, users, memberships, and product access (P4-WP02). Development-stage.</p>
             @if ((Env.IsDevelopment() || Env.IsEnvironment("Testing")) && !string.IsNullOrWhiteSpace(OperatorOptions.Value.DisplayName))
             {
                 <p class="muted">Actor context (dev only): @OperatorOptions.Value.DisplayName — not authorization.</p>

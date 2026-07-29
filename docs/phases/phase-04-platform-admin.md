@@ -36,22 +36,27 @@ Report: [P4-WP01-portfolio-navigation-and-product-views.md](../reports/P4-WP01-p
 
 ### P4-WP02 — Organizations, Users and Product Access
 
-Status: Not Started
+Status: **Complete**
+
+Feature commit: _(recorded after push)_
+Report: [P4-WP02-organizations-users-and-product-access.md](../reports/P4-WP02-organizations-users-and-product-access.md)
 
 #### Required outcomes
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+- Platform users, organization memberships, Platform organization roles, product-access assignments
+- Effective commercial access evaluation (Trialing/Active only for new grants)
+- PostgreSQL persistence + migration apply/rollback/re-apply
+- Admin APIs and UI for users/memberships/product access
+- Tests, docs, runtime evidence; no auth / product-local roles / HealthCare / POS
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (331 passed).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean (after push).
 
 ### P4-WP03 — Subscriptions, Payments and Trials
 

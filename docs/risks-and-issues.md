@@ -70,11 +70,28 @@
 | R-064 | Development operator context mistaken for authorization | High | Footer labels “not authorization”; disabled outside Development/Testing | Open — introduced P4-WP01 |
 | R-065 | Admin UI / Platform API contract drift | Medium | Typed client + integration tests for Admin endpoints; keep DTOs aligned | Open — introduced P4-WP01 |
 | R-066 | Partial dashboard counts mistaken for zeros | Medium | PartialFailures list; UI shows “—” for failed sections | **Mitigated** (P4-WP01) — awareness |
-| R-067 | Read-only Admin screens mistaken for operational control | Medium | Explicit “no mutation” copy; architecture guards forbid mutation controls | Open — introduced P4-WP01 |
+| R-067 | Read-only Admin screens mistaken for operational control | Medium | Explicit “no mutation” copy on deferred commercial pages; P4-WP02 adds scoped user/membership/access mutations only | Open — updated P4-WP02 |
 | R-068 | Manual SaaS payment view mistaken for provider verification | High | Warning copy on payment pages; R-057 awareness | Open — reinforced P4-WP01 |
 | R-069 | Entitlement snapshot view mistaken for completed product delivery | High | Warning copy on entitlement pages; R-060 awareness | Open — reinforced P4-WP01 |
 | R-070 | Admin accessibility / large-list performance gaps | Medium | Semantic HTML + pagination; expand a11y tests in later Admin WPs | Open — introduced P4-WP01 |
 | R-071 | Platform API unavailable while Admin is running | Medium | Unavailable error state; configurable base URL + timeouts | **Mitigated** (P4-WP01) — awareness |
+| R-072 | Unauthenticated user/membership/product-access mutation APIs | Critical | Development-stage only; require auth before production; no fake claims | Open — introduced P4-WP02 |
+| R-073 | Development operator acting without authorization on access changes | Critical | Banner/warnings; server-side authorization still required | Open — introduced P4-WP02 |
+| R-074 | Platform organization role confused with product-local role | High | Docs + UI warnings; no product-role columns/selectors; architecture guards | Open — introduced P4-WP02 |
+| R-075 | Product-access assignment mistaken for completed provisioning | High | Explicit commercial-entry wording; no delivery implementation | Open — introduced P4-WP02 |
+| R-076 | Membership revocation propagation gaps | Medium | Cascade revoke of active assignments; effective-access fail-closed | **Mitigated** (P4-WP02) — awareness |
+| R-077 | Subscription/entitlement changes not reflected immediately on assignments | Medium | Effective evaluation re-reads subscription + snapshot; historical rows may remain Active | Open — introduced P4-WP02 |
+| R-078 | Cross-organization access leakage | High | Org-scoped membership/assignment checks; unique constraints; API tests | **Mitigated** (P4-WP02) — awareness |
+| R-079 | Duplicate username/email policy edge cases | Medium | Global unique normalized username/email; 409 conflicts | **Mitigated** (P4-WP02) — awareness |
+| R-080 | Missing invitation workflow | Medium | Deferred; add existing users only | Open — introduced P4-WP02 |
+| R-081 | Missing identity-provider linkage | High | Deferred with authentication WP | Open — introduced P4-WP02 |
+| R-082 | Missing dedicated audit subsystem for access changes | Medium | Actor/reason/UTC metadata on rows; full audit trail deferred to P4-WP04 | Open — introduced P4-WP02 |
+| R-083 | Admin UI contract drift for access endpoints | Medium | Typed client + integration tests | Open — introduced P4-WP02 |
+| R-084 | Concurrency during concurrent access changes | Medium | PostgreSQL `xmin`; 409 on conflict | Open — introduced P4-WP02 |
+
+## Phase 4 note (P4-WP02)
+
+P4-WP02 delivered Platform users, memberships, product-access assignments, and effective commercial access evaluation. Authentication, SSO/AD, product delivery, and production authorization remain open. Next: **P4-WP03 — Subscriptions, Payments and Trials** when authorized.
 
 ## Phase 4 note (P4-WP01)
 

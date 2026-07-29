@@ -192,3 +192,63 @@ public sealed record PortfolioSummaryDto(
     int PendingManualPaymentCount,
     int LatestEntitlementSnapshotCount,
     IReadOnlyList<string> PartialFailures);
+
+public sealed record PlatformUserDto(
+    Guid Id,
+    string Username,
+    string DisplayName,
+    string Email,
+    string Status,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    DateTimeOffset? SuspendedAtUtc,
+    string? SuspensionReason);
+
+public sealed record OrganizationMembershipDto(
+    Guid Id,
+    Guid OrganizationId,
+    Guid UserId,
+    string Role,
+    string Status,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    DateTimeOffset? SuspendedAtUtc,
+    DateTimeOffset? RemovedAtUtc,
+    string? Reason,
+    string? ActorReference);
+
+public sealed record ProductAccessAssignmentDto(
+    Guid Id,
+    Guid UserId,
+    Guid OrganizationId,
+    Guid MembershipId,
+    string ProductCode,
+    string Status,
+    DateTimeOffset GrantedAtUtc,
+    string GrantedByActor,
+    DateTimeOffset? RevokedAtUtc,
+    string? RevokedByActor,
+    string? Reason,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc);
+
+public sealed record EffectiveProductAccessResultDto(
+    bool Allowed,
+    string ReasonCode,
+    Guid UserId,
+    Guid OrganizationId,
+    string ProductCode,
+    Guid? MembershipId,
+    Guid? AssignmentId,
+    Guid? SubscriptionId,
+    Guid? SnapshotId,
+    DateTimeOffset EvaluatedAtUtc);
+
+public sealed record CreatePlatformUserRequest(string Username, string DisplayName, string Email);
+public sealed record UpdatePlatformUserRequest(string DisplayName, string Email);
+public sealed record LifecycleReasonRequest(string? Reason);
+public sealed record AddMemberRequest(Guid UserId, string Role);
+public sealed record ChangeRoleRequest(string Role, string? ActorReference);
+public sealed record MembershipLifecycleRequest(string? Reason, string? ActorReference);
+public sealed record GrantProductAccessRequest(Guid UserId, string ProductCode, string GrantedByActor, string? Reason);
+public sealed record RevokeProductAccessRequest(string RevokedByActor, string? Reason);

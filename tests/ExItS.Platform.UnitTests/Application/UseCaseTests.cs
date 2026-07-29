@@ -13,19 +13,22 @@ public sealed class UseCaseTests
     private static readonly DateTimeOffset T0 = new(2026, 7, 29, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public async Task CreatePlatformUser_succeeds_and_detects_email_conflict()
+    public async Task CreatePlatformUser_succeeds_and_detects_email_and_username_conflict()
     {
         var users = new InMemoryPlatformUserRepository();
+        var uow = new NoOpUnitOfWork();
         var clock = new FixedClock(T0);
-        var create = new CreatePlatformUser(users, clock);
+        var create = new CreatePlatformUser(users, uow, clock);
 
-        var first = await create.ExecuteAsync("Ada Lovelace", "ada@example.com");
+        var first = await create.ExecuteAsync("ada", "Ada Lovelace", "ada@example.com");
         Assert.True(first.IsSuccess);
         Assert.Equal(1, users.AddCount);
 
-        var conflict = await create.ExecuteAsync("Ada Two", "ADA@example.com");
-        Assert.False(conflict.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.EmailConflict, conflict.ErrorCode);
+        var emailConflict = await create.ExecuteAsync("ada2", "Ada Two", "ADA@example.com");
+        Assert.Equal(ApplicationErrorCodes.EmailConflict, emailConflict.ErrorCode);
+
+        var usernameConflict = await create.ExecuteAsync("ADA", "Ada Three", "ada3@example.com");
+        Assert.Equal(ApplicationErrorCodes.UsernameConflict, usernameConflict.ErrorCode);
         Assert.Equal(1, users.AddCount);
     }
 
@@ -33,8 +36,8 @@ public sealed class UseCaseTests
     public async Task CreatePlatformUser_rejects_invalid_domain_input_without_persisting()
     {
         var users = new InMemoryPlatformUserRepository();
-        var create = new CreatePlatformUser(users, new FixedClock(T0));
-        var result = await create.ExecuteAsync("A", "ada@example.com");
+        var create = new CreatePlatformUser(users, new NoOpUnitOfWork(), new FixedClock(T0));
+        var result = await create.ExecuteAsync("ada", "A", "ada@example.com");
         Assert.False(result.IsSuccess);
         Assert.Equal(DomainErrorCodes.InvalidDisplayName, result.ErrorCode);
         Assert.Equal(0, users.AddCount);
@@ -44,14 +47,15 @@ public sealed class UseCaseTests
     public async Task SuspendPlatformUser_handles_missing_and_success()
     {
         var users = new InMemoryPlatformUserRepository();
+        var uow = new NoOpUnitOfWork();
         var clock = new FixedClock(T0);
-        var create = new CreatePlatformUser(users, clock);
-        var suspend = new SuspendPlatformUser(users, clock);
+        var create = new CreatePlatformUser(users, uow, clock);
+        var suspend = new SuspendPlatformUser(users, uow, clock);
 
         var missing = await suspend.ExecuteAsync(PlatformUserId.New());
         Assert.Equal(ApplicationErrorCodes.UserNotFound, missing.ErrorCode);
 
-        var created = await create.ExecuteAsync("Ada Lovelace", "ada@example.com");
+        var created = await create.ExecuteAsync("ada", "Ada Lovelace", "ada@example.com");
         clock.UtcNow = T0.AddMinutes(1);
         var suspended = await suspend.ExecuteAsync(created.Value!.Id);
         Assert.True(suspended.IsSuccess);
@@ -76,11 +80,12 @@ public sealed class UseCaseTests
         var users = new InMemoryPlatformUserRepository();
         var orgs = new InMemoryPlatformOrganizationRepository();
         var memberships = new InMemoryOrganizationMembershipRepository();
+        var uow = new NoOpUnitOfWork();
         var clock = new FixedClock(T0);
 
-        var user = (await new CreatePlatformUser(users, clock).ExecuteAsync("Ada Lovelace", "ada@example.com")).Value!;
-        var org = (await new CreatePlatformOrganization(orgs, new NoOpUnitOfWork(), clock).ExecuteAsync("Acme Group", "acme-group")).Value!;
-        var add = new AddOrganizationMembership(users, orgs, memberships, clock);
+        var user = (await new CreatePlatformUser(users, uow, clock).ExecuteAsync("ada", "Ada Lovelace", "ada@example.com")).Value!;
+        var org = (await new CreatePlatformOrganization(orgs, uow, clock).ExecuteAsync("Acme Group", "acme-group")).Value!;
+        var add = new AddOrganizationMembership(users, orgs, memberships, uow, clock);
 
         var first = await add.ExecuteAsync(org.Id, user.Id, OrganizationRole.OrganizationOwner);
         Assert.True(first.IsSuccess);
@@ -97,10 +102,11 @@ public sealed class UseCaseTests
         var users = new InMemoryPlatformUserRepository();
         var orgs = new InMemoryPlatformOrganizationRepository();
         var memberships = new InMemoryOrganizationMembershipRepository();
+        var uow = new NoOpUnitOfWork();
         var clock = new FixedClock(T0);
-        var org = (await new CreatePlatformOrganization(orgs, new NoOpUnitOfWork(), clock).ExecuteAsync("Acme Group", "acme-group")).Value!;
+        var org = (await new CreatePlatformOrganization(orgs, uow, clock).ExecuteAsync("Acme Group", "acme-group")).Value!;
 
-        var result = await new AddOrganizationMembership(users, orgs, memberships, clock)
+        var result = await new AddOrganizationMembership(users, orgs, memberships, uow, clock)
             .ExecuteAsync(org.Id, PlatformUserId.New(), OrganizationRole.OrganizationMember);
 
         Assert.Equal(ApplicationErrorCodes.UserNotFound, result.ErrorCode);
@@ -113,21 +119,22 @@ public sealed class UseCaseTests
         var users = new InMemoryPlatformUserRepository();
         var orgs = new InMemoryPlatformOrganizationRepository();
         var memberships = new InMemoryOrganizationMembershipRepository();
+        var uow = new NoOpUnitOfWork();
         var clock = new FixedClock(T0);
 
-        var user = (await new CreatePlatformUser(users, clock).ExecuteAsync("Ada Lovelace", "ada@example.com")).Value!;
-        var org = (await new CreatePlatformOrganization(orgs, new NoOpUnitOfWork(), clock).ExecuteAsync("Acme Group", "acme-group")).Value!;
-        var membership = (await new AddOrganizationMembership(users, orgs, memberships, clock)
+        var user = (await new CreatePlatformUser(users, uow, clock).ExecuteAsync("ada", "Ada Lovelace", "ada@example.com")).Value!;
+        var org = (await new CreatePlatformOrganization(orgs, uow, clock).ExecuteAsync("Acme Group", "acme-group")).Value!;
+        var membership = (await new AddOrganizationMembership(users, orgs, memberships, uow, clock)
             .ExecuteAsync(org.Id, user.Id, OrganizationRole.OrganizationMember)).Value!;
 
         clock.UtcNow = T0.AddMinutes(1);
-        var roleChanged = await new ChangeOrganizationRole(memberships, clock)
+        var roleChanged = await new ChangeOrganizationRole(memberships, uow, clock)
             .ExecuteAsync(membership.Id, OrganizationRole.OrganizationAdministrator);
         Assert.True(roleChanged.IsSuccess);
         Assert.Equal(OrganizationRole.OrganizationAdministrator, roleChanged.Value!.Role);
 
         clock.UtcNow = T0.AddMinutes(2);
-        var suspended = await new SuspendOrganizationMembership(memberships, clock)
+        var suspended = await new SuspendOrganizationMembership(memberships, uow, clock)
             .ExecuteAsync(membership.Id);
         Assert.True(suspended.IsSuccess);
         Assert.Equal(MembershipStatus.Suspended, suspended.Value!.Status);

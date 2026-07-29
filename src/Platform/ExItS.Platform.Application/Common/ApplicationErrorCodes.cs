@@ -6,8 +6,16 @@ public static class ApplicationErrorCodes
     public const string OrganizationNotFound = "application.organization.not_found";
     public const string MembershipNotFound = "application.membership.not_found";
     public const string EmailConflict = "application.user.email_conflict";
+    public const string UsernameConflict = "application.user.username_conflict";
     public const string SlugConflict = "application.organization.slug_conflict";
     public const string MembershipConflict = "application.membership.conflict";
+    public const string ProductAccessConflict = "application.product_access.conflict";
+    public const string ProductAccessNotFound = "application.product_access.not_found";
+    public const string CrossOrganizationMismatch = "application.access.cross_organization";
+    public const string SubscriptionIneligible = "application.subscription.ineligible";
+    public const string EntitlementMissing = "application.entitlement.missing";
+    public const string EntitlementStale = "application.entitlement.stale";
+    public const string EntitlementDenied = "application.entitlement.denied";
     public const string DomainViolation = "application.domain_violation";
 
     public const string ProductNotFound = "application.product.not_found";

@@ -1,0 +1,292 @@
+@page "/admin/users"
+@page "/admin/users/{Id:guid}"
+@rendermode InteractiveServer
+@inject IPlatformApiClient Api
+
+@if (Id is null)
+{
+    <PageHeader Title="Platform users" Breadcrumb="Platform Admin / Users" Description="Development-stage Platform user administration. APIs remain unauthenticated; server-side authorization is still required before production." />
+    <div class="warning" role="note">Platform membership is not product operational authorization. No passwords, invitations, or identity-provider linkage in this work package.</div>
+
+    <div class="filters">
+        <label>Search <input @bind="_search" @bind:event="oninput" placeholder="Username, email, or name" /></label>
+        <label>Status
+            <select @bind="_status">
+                <option value="">All</option>
+                <option>Active</option>
+                <option>Suspended</option>
+                <option>Deactivated</option>
+            </select>
+        </label>
+        <button type="button" @onclick="ReloadListAsync">Apply</button>
+        <button type="button" class="secondary" @onclick="() => _showCreate = !_showCreate">@(_showCreate ? "Hide create" : "Create user")</button>
+    </div>
+
+    @if (_showCreate)
+    {
+        <section class="panel" aria-label="Create Platform user">
+            <h2>Create Platform user</h2>
+            @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="Could not create user" Detail="@_formError" /> }
+            <div class="form-grid">
+                <label>Username <input @bind="_newUsername" autocomplete="off" /></label>
+                <label>Display name <input @bind="_newDisplayName" /></label>
+                <label>Email <input @bind="_newEmail" type="email" autocomplete="off" /></label>
+            </div>
+            <div class="actions">
+                <button type="button" @onclick="CreateAsync" disabled="@_busy">Create</button>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_toast)) { <p class="toast" role="status">@_toast</p> }
+        </section>
+    }
+
+    @if (_list is null) { <LoadingState Message="Loading users…" /> }
+    else if (!_list.IsSuccess) { <ErrorState Title="@(_list.Error?.Title ?? "Error")" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" /> }
+    else if (_list.Data!.Items.Count == 0) { <EmptyState Message="No Platform users match the current filters." /> }
+    else
+    {
+        <table class="responsive-table">
+            <caption class="sr-only">Platform users</caption>
+            <thead>
+                <tr>
+                    <th scope="col">User</th>
+                    <th scope="col">Username</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Updated (UTC)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in _list.Data.Items)
+                {
+                    <tr>
+                        <td data-label="User">
+                            <span class="avatar" aria-hidden="true">@Initials(item.DisplayName)</span>
+                            <a href="/admin/users/@item.Id">@item.DisplayName</a>
+                        </td>
+                        <td data-label="Username">@item.Username</td>
+                        <td data-label="Email">@item.Email</td>
+                        <td data-label="Status"><StatusBadge Value="@item.Status" /></td>
+                        <td data-label="Updated"><UtcTimestamp Value="@item.UpdatedAtUtc" /></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <p class="muted">Showing @_list.Data.Items.Count of @_list.Data.TotalCount</p>
+    }
+}
+else
+{
+    <PageHeader Title="Platform user detail" Breadcrumb="Platform Admin / Users / Detail" Description="Profile, memberships, and commercial product-access assignments. Development-stage only." />
+    @if (_detail is null) { <LoadingState Message="Loading user…" /> }
+    else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? "Error")" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }
+    else
+    {
+        var u = _detail.Data!;
+        @if (!string.IsNullOrWhiteSpace(_toast)) { <p class="toast" role="status">@_toast</p> }
+        @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="Action failed" Detail="@_formError" /> }
+
+        <dl>
+            <dt>Username</dt><dd>@u.Username</dd>
+            <dt>Status</dt><dd><StatusBadge Value="@u.Status" /></dd>
+            <dt>Created (UTC)</dt><dd><UtcTimestamp Value="@u.CreatedAtUtc" /></dd>
+            <dt>Updated (UTC)</dt><dd><UtcTimestamp Value="@u.UpdatedAtUtc" /></dd>
+            @if (u.SuspendedAtUtc is not null)
+            {
+                <dt>Suspended (UTC)</dt><dd><UtcTimestamp Value="@u.SuspendedAtUtc.Value" /></dd>
+                <dt>Suspension reason</dt><dd>@(u.SuspensionReason ?? "—")</dd>
+            }
+        </dl>
+
+        <section class="panel">
+            <h2>Edit profile</h2>
+            <div class="form-grid">
+                <label>Display name <input @bind="_editDisplayName" /></label>
+                <label>Email <input @bind="_editEmail" type="email" /></label>
+            </div>
+            <div class="actions">
+                <button type="button" @onclick="SaveProfileAsync" disabled="@_busy">Save profile</button>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Lifecycle</h2>
+            <p class="muted">Suspending a user makes all memberships and product assignments ineffective for commercial access evaluation.</p>
+            <div class="actions">
+                <button type="button" class="secondary" @onclick='() => AskConfirm("Suspend user", "Suspend this Platform user? Effective product access will be denied while suspended.", SuspendAsync)' disabled="@_busy">Suspend user</button>
+                <button type="button" class="secondary" @onclick="ReactivateAsync" disabled="@_busy">Reactivate user</button>
+                <button type="button" class="danger" @onclick='() => AskConfirm("Disable user", "Disable (deactivate) this Platform user permanently for new access? Historical records remain.", DisableAsync)' disabled="@_busy">Disable user</button>
+            </div>
+        </section>
+
+        <h2>Organization memberships</h2>
+        <p class="muted">Platform organization roles only — not Doctor, Nurse, Cashier, or other product-local roles.</p>
+        @if (_memberships is null) { <LoadingState Message="Loading memberships…" /> }
+        else if (!_memberships.IsSuccess) { <ErrorState Title="Memberships unavailable" Detail="@_memberships.Error?.Detail" /> }
+        else if (_memberships.Data!.Items.Count == 0) { <EmptyState Message="This user has no organization memberships." /> }
+        else
+        {
+            <table class="responsive-table">
+                <thead><tr><th>Organization</th><th>Role</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var m in _memberships.Data.Items)
+                {
+                    <tr>
+                        <td data-label="Organization"><a href="/admin/organizations/@m.OrganizationId/members">@m.OrganizationId</a></td>
+                        <td data-label="Role">@m.Role</td>
+                        <td data-label="Status"><StatusBadge Value="@m.Status" /></td>
+                        <td data-label="Open"><a href="/admin/organizations/@m.OrganizationId/members">Manage</a></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+
+        <h2>Product-access assignments</h2>
+        <div class="warning" role="note">Product access means commercial entry eligibility only. It does not assign product-local roles or permissions.</div>
+        @if (_access is null) { <LoadingState Message="Loading product access…" /> }
+        else if (!_access.IsSuccess) { <ErrorState Title="Product access unavailable" Detail="@_access.Error?.Detail" /> }
+        else if (_access.Data!.Items.Count == 0) { <EmptyState Message="No product-access assignments for this user." /> }
+        else
+        {
+            <table class="responsive-table">
+                <thead><tr><th>Product</th><th>Organization</th><th>Status</th><th>Granted (UTC)</th><th>Revoked (UTC)</th></tr></thead>
+                <tbody>
+                @foreach (var a in _access.Data.Items)
+                {
+                    <tr>
+                        <td data-label="Product">@a.ProductCode</td>
+                        <td data-label="Organization"><a href="/admin/organizations/@a.OrganizationId/product-access">@a.OrganizationId</a></td>
+                        <td data-label="Status"><StatusBadge Value="@a.Status" /></td>
+                        <td data-label="Granted"><UtcTimestamp Value="@a.GrantedAtUtc" /></td>
+                        <td data-label="Revoked">@(a.RevokedAtUtc is null ? "—" : null)@if (a.RevokedAtUtc is not null){<UtcTimestamp Value="@a.RevokedAtUtc.Value" />}</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+    }
+}
+
+@if (_confirm is not null)
+{
+    <ConfirmDialog Visible="true" Title="@_confirm.Title" Message="@_confirm.Message" OnConfirm="_confirm.Action" OnCancel="CloseConfirm" Busy="_busy" />
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+    private ApiCallResult<PagedResult<PlatformUserDto>>? _list;
+    private ApiCallResult<PlatformUserDto>? _detail;
+    private ApiCallResult<PagedResult<OrganizationMembershipDto>>? _memberships;
+    private ApiCallResult<PagedResult<ProductAccessAssignmentDto>>? _access;
+    private string _search = "";
+    private string _status = "";
+    private bool _showCreate;
+    private string _newUsername = "";
+    private string _newDisplayName = "";
+    private string _newEmail = "";
+    private string _editDisplayName = "";
+    private string _editEmail = "";
+    private string? _toast;
+    private string? _formError;
+    private bool _busy;
+    private ConfirmState? _confirm;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _toast = null;
+        _formError = null;
+        if (Id is null) await ReloadListAsync();
+        else await ReloadDetailAsync();
+    }
+
+    private async Task ReloadListAsync() =>
+        _list = await Api.GetUsersAsync(status: string.IsNullOrWhiteSpace(_status) ? null : _status, search: string.IsNullOrWhiteSpace(_search) ? null : _search);
+
+    private async Task ReloadDetailAsync()
+    {
+        if (Id is null) return;
+        _detail = await Api.GetUserAsync(Id.Value);
+        if (_detail.IsSuccess)
+        {
+            _editDisplayName = _detail.Data!.DisplayName;
+            _editEmail = _detail.Data.Email;
+        }
+        _memberships = await Api.GetUserMembershipsAsync(Id.Value);
+        _access = await Api.GetUserProductAccessAsync(Id.Value);
+    }
+
+    private async Task CreateAsync()
+    {
+        _busy = true; _formError = null; _toast = null;
+        var result = await Api.CreateUserAsync(new CreatePlatformUserRequest(_newUsername, _newDisplayName, _newEmail));
+        _busy = false;
+        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
+        _toast = "User created.";
+        _showCreate = false;
+        _newUsername = _newDisplayName = _newEmail = "";
+        await ReloadListAsync();
+    }
+
+    private async Task SaveProfileAsync()
+    {
+        if (Id is null) return;
+        _busy = true; _formError = null;
+        var result = await Api.UpdateUserAsync(Id.Value, new UpdatePlatformUserRequest(_editDisplayName, _editEmail));
+        _busy = false;
+        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
+        _toast = "Profile updated.";
+        await ReloadDetailAsync();
+    }
+
+    private void AskConfirm(string title, string message, Func<Task> action) =>
+        _confirm = new ConfirmState(title, message, action);
+
+    private Task CloseConfirm()
+    {
+        _confirm = null;
+        return Task.CompletedTask;
+    }
+
+    private async Task SuspendAsync()
+    {
+        if (Id is null) return;
+        _busy = true; _formError = null;
+        var result = await Api.SuspendUserAsync(Id.Value, "Suspended from Platform Admin");
+        _busy = false; await CloseConfirm();
+        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
+        _toast = "User suspended.";
+        await ReloadDetailAsync();
+    }
+
+    private async Task ReactivateAsync()
+    {
+        if (Id is null) return;
+        _busy = true; _formError = null;
+        var result = await Api.ReactivateUserAsync(Id.Value);
+        _busy = false;
+        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
+        _toast = "User reactivated. Effective access still requires membership, assignment, subscription, and entitlement eligibility.";
+        await ReloadDetailAsync();
+    }
+
+    private async Task DisableAsync()
+    {
+        if (Id is null) return;
+        _busy = true; _formError = null;
+        var result = await Api.DisableUserAsync(Id.Value);
+        _busy = false; await CloseConfirm();
+        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
+        _toast = "User disabled (deactivated).";
+        await ReloadDetailAsync();
+    }
+
+    private static string Initials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0) return "?";
+        if (parts.Length == 1) return parts[0][..Math.Min(2, parts[0].Length)].ToUpperInvariant();
+        return $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[^1][0])}";
+    }
+
+    private sealed record ConfirmState(string Title, string Message, Func<Task> Action);
+}

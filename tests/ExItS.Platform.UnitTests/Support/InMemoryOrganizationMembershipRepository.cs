@@ -29,6 +29,56 @@ internal sealed class InMemoryOrganizationMembershipRepository : IOrganizationMe
         return Task.FromResult(match);
     }
 
+    public Task<OrganizationMembership?> FindCurrentByUserAndOrganizationAsync(
+        PlatformUserId userId,
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var match = _byId.Values
+            .Where(m => m.UserId == userId
+                        && m.OrganizationId == organizationId
+                        && m.Status != MembershipStatus.Removed)
+            .OrderByDescending(m => m.UpdatedAtUtc)
+            .FirstOrDefault();
+        return Task.FromResult(match);
+    }
+
+    public Task<(IReadOnlyList<OrganizationMembership> Items, int TotalCount)> ListByOrganizationAsync(
+        PlatformOrganizationId organizationId,
+        MembershipStatus? status,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _byId.Values.Where(m => m.OrganizationId == organizationId);
+        if (status is not null)
+        {
+            query = query.Where(m => m.Status == status);
+        }
+
+        var ordered = query.OrderByDescending(m => m.CreatedAtUtc).ToList();
+        return Task.FromResult<(IReadOnlyList<OrganizationMembership>, int)>(
+            (ordered.Skip(skip).Take(take).ToList(), ordered.Count));
+    }
+
+    public Task<(IReadOnlyList<OrganizationMembership> Items, int TotalCount)> ListByUserAsync(
+        PlatformUserId userId,
+        MembershipStatus? status,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _byId.Values.Where(m => m.UserId == userId);
+        if (status is not null)
+        {
+            query = query.Where(m => m.Status == status);
+        }
+
+        var ordered = query.OrderByDescending(m => m.CreatedAtUtc).ToList();
+        return Task.FromResult<(IReadOnlyList<OrganizationMembership>, int)>(
+            (ordered.Skip(skip).Take(take).ToList(), ordered.Count));
+    }
+
     public Task AddAsync(OrganizationMembership membership, CancellationToken cancellationToken = default)
     {
         _byId[membership.Id.Value] = membership;

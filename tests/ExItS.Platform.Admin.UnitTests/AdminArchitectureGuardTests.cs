@@ -19,25 +19,65 @@ public sealed class AdminArchitectureGuardTests
     }
 
     [Fact]
-    public void Admin_pages_do_not_include_deferred_mutation_controls()
+    public void Admin_pages_do_not_include_deferred_commercial_mutation_controls()
     {
         var root = FindRepositoryRoot();
         var pagesDir = Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages");
+        var deferredPages = new[] { "Payments.razor", "Subscriptions.razor", "Products.razor", "Entitlements.razor" };
         var forbidden = new[]
         {
             "Confirm payment", "Reject payment", "Void payment", "Activate subscription",
-            "Enter grace", "Mark past due", "Suspend subscription", "Reactivate",
+            "Enter grace", "Mark past due", "Suspend subscription",
             "Create product", "Publish plan", "Generate snapshot"
         };
 
-        foreach (var file in Directory.GetFiles(pagesDir, "*.razor"))
+        foreach (var page in deferredPages)
         {
-            var text = File.ReadAllText(file);
+            var text = File.ReadAllText(Path.Combine(pagesDir, page));
             foreach (var phrase in forbidden)
             {
                 Assert.DoesNotContain(phrase, text, StringComparison.OrdinalIgnoreCase);
             }
         }
+    }
+
+    [Fact]
+    public void Admin_user_and_access_pages_exclude_product_local_roles_and_login()
+    {
+        var root = FindRepositoryRoot();
+        var pagesDir = Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages");
+        var files = new[] { "Users.razor", "OrganizationMembers.razor", "OrganizationProductAccess.razor" };
+        var forbidden = new[]
+        {
+            "Doctor", "Nurse", "Cashier", "Store Manager", "Clinic Admin", "POS Administrator", "Patient",
+            "type=\"password\"", "login", "MFA", "SSO", "Active Directory"
+        };
+
+        foreach (var file in files)
+        {
+            var text = File.ReadAllText(Path.Combine(pagesDir, file));
+            foreach (var phrase in forbidden)
+            {
+                // Allow explanatory warning text that mentions product-local roles as exclusions.
+                if (phrase is "Doctor" or "Nurse" or "Cashier" or "Store Manager" or "Clinic Admin" or "POS Administrator" or "Patient")
+                {
+                    Assert.DoesNotContain($"option>{phrase}", text, StringComparison.OrdinalIgnoreCase);
+                    Assert.DoesNotContain($"value=\"{phrase}\"", text, StringComparison.OrdinalIgnoreCase);
+                    continue;
+                }
+
+                Assert.DoesNotContain(phrase, text, StringComparison.OrdinalIgnoreCase);
+            }
+
+            Assert.Contains("development-stage", text, StringComparison.OrdinalIgnoreCase);
+        }
+
+        var productAccess = File.ReadAllText(Path.Combine(pagesDir, "OrganizationProductAccess.razor"));
+        Assert.Contains("does", productAccess, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("not", productAccess, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("assign", productAccess, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("product-local", productAccess, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("OrganizationOwner", File.ReadAllText(Path.Combine(pagesDir, "OrganizationMembers.razor")), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -72,6 +112,7 @@ public sealed class AdminArchitectureGuardTests
         Assert.DoesNotContain(referenced, n => n.Contains("Npgsql", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(referenced, n => n.Contains("AntDesign", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(referenced, n => n.Contains("Tailwind", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(referenced, n => n.Contains("AspNetCore.Identity", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -79,7 +120,7 @@ public sealed class AdminArchitectureGuardTests
     {
         var root = FindRepositoryRoot();
         var nav = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "AdminNav.razor"));
-        foreach (var href in new[] { "/admin", "/admin/products", "/admin/organizations", "/admin/subscriptions", "/admin/payments", "/admin/entitlements" })
+        foreach (var href in new[] { "/admin", "/admin/products", "/admin/organizations", "/admin/subscriptions", "/admin/payments", "/admin/entitlements", "/admin/users" })
         {
             Assert.Contains($"href=\"{href}\"", nav, StringComparison.Ordinal);
         }

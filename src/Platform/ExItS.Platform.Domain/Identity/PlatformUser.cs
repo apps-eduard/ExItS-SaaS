@@ -5,7 +5,7 @@ using ExItS.Platform.Domain.Common;
 namespace ExItS.Platform.Domain.Identity;
 
 /// <summary>
-/// Platform User aggregate — global authentication identity only.
+/// Platform User aggregate — global identity only.
 /// Does not store passwords, tokens, MFA secrets, or product-local profiles.
 /// </summary>
 public sealed class PlatformUser
@@ -14,47 +14,93 @@ public sealed class PlatformUser
         @"^[\p{L}\p{N}][\p{L}\p{N} .'\-]{0,98}[\p{L}\p{N}.]?$",
         RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
+    private static readonly Regex UsernamePattern = new(
+        @"^[a-z0-9][a-z0-9._-]{1,62}[a-z0-9]$",
+        RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
     public PlatformUserId Id { get; }
+    public string Username { get; private set; }
+    public string NormalizedUsername { get; private set; }
     public string DisplayName { get; private set; }
     public string NormalizedEmail { get; private set; }
     public AccountStatus Status { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
+    public DateTimeOffset? SuspendedAtUtc { get; private set; }
+    public string? SuspensionReason { get; private set; }
 
     private PlatformUser(
         PlatformUserId id,
+        string username,
+        string normalizedUsername,
         string displayName,
         string normalizedEmail,
         AccountStatus status,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc)
+        DateTimeOffset updatedAtUtc,
+        DateTimeOffset? suspendedAtUtc,
+        string? suspensionReason)
     {
         Id = id;
+        Username = username;
+        NormalizedUsername = normalizedUsername;
         DisplayName = displayName;
         NormalizedEmail = normalizedEmail;
         Status = status;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
+        SuspendedAtUtc = suspendedAtUtc;
+        SuspensionReason = suspensionReason;
     }
 
     public static PlatformUser Create(
+        string username,
         string displayName,
         string email,
         DateTimeOffset utcNow,
         PlatformUserId? id = null)
     {
         EnsureUtc(utcNow);
+        var (displayUsername, normalizedUsername) = NormalizeUsername(username);
         var normalizedName = NormalizeDisplayName(displayName);
         var normalizedEmail = NormalizeEmail(email);
 
         return new PlatformUser(
             id ?? PlatformUserId.New(),
+            displayUsername,
+            normalizedUsername,
             normalizedName,
             normalizedEmail,
             AccountStatus.Active,
             utcNow,
-            utcNow);
+            utcNow,
+            null,
+            null);
     }
+
+    /// <summary>Rehydrate from persistence.</summary>
+    public static PlatformUser Rehydrate(
+        PlatformUserId id,
+        string username,
+        string normalizedUsername,
+        string displayName,
+        string normalizedEmail,
+        AccountStatus status,
+        DateTimeOffset createdAtUtc,
+        DateTimeOffset updatedAtUtc,
+        DateTimeOffset? suspendedAtUtc,
+        string? suspensionReason) =>
+        new(
+            id,
+            username,
+            normalizedUsername,
+            displayName,
+            normalizedEmail,
+            status,
+            createdAtUtc,
+            updatedAtUtc,
+            suspendedAtUtc,
+            suspensionReason);
 
     public void UpdateProfile(string displayName, string email, DateTimeOffset utcNow)
     {
@@ -66,10 +112,12 @@ public sealed class PlatformUser
         UpdatedAtUtc = utcNow;
     }
 
-    public void Suspend(DateTimeOffset utcNow)
+    public void Suspend(DateTimeOffset utcNow, string? reason = null)
     {
         EnsureUtc(utcNow);
         TransitionTo(AccountStatus.Suspended, utcNow);
+        SuspendedAtUtc = utcNow;
+        SuspensionReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
     }
 
     public void Reactivate(DateTimeOffset utcNow)
@@ -83,6 +131,8 @@ public sealed class PlatformUser
         }
 
         TransitionTo(AccountStatus.Active, utcNow);
+        SuspendedAtUtc = null;
+        SuspensionReason = null;
     }
 
     public void Deactivate(DateTimeOffset utcNow)
@@ -127,6 +177,27 @@ public sealed class PlatformUser
         }
     }
 
+    internal static (string Display, string Normalized) NormalizeUsername(string username)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidUsername,
+                "Username cannot be blank.");
+        }
+
+        var trimmed = username.Trim();
+        var normalized = trimmed.ToLowerInvariant();
+        if (normalized.Length is < 3 or > 64 || !UsernamePattern.IsMatch(normalized))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidUsername,
+                "Username must be 3–64 characters: lowercase letters, numbers, dots, underscores, or hyphens.");
+        }
+
+        return (trimmed, normalized);
+    }
+
     internal static string NormalizeDisplayName(string displayName)
     {
         if (string.IsNullOrWhiteSpace(displayName))
@@ -147,7 +218,7 @@ public sealed class PlatformUser
         return trimmed;
     }
 
-    internal static string NormalizeEmail(string email)
+    public static string NormalizeEmail(string email)
     {
         if (string.IsNullOrWhiteSpace(email))
         {

@@ -38,3 +38,4 @@ The dashboard links to the latest accepted report.
 | [P3-WP04-entitlement-snapshots-and-grace-rules.md](P3-WP04-entitlement-snapshots-and-grace-rules.md) | Entitlement Snapshots and Grace Rules | Complete |
 | [P3-WP05-billing-closeout.md](P3-WP05-billing-closeout.md) | Billing Closeout | Complete |
 | [P4-WP01-portfolio-navigation-and-product-views.md](P4-WP01-portfolio-navigation-and-product-views.md) | Portfolio Navigation and Product Views | Complete |
+| [P4-WP02-organizations-users-and-product-access.md](P4-WP02-organizations-users-and-product-access.md) | Organizations, Users and Product Access | Complete |

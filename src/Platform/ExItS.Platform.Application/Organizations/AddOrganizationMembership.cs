@@ -1,3 +1,4 @@
+using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Domain.Abstractions;
@@ -12,17 +13,20 @@ public sealed class AddOrganizationMembership
     private readonly IPlatformUserRepository _users;
     private readonly IPlatformOrganizationRepository _organizations;
     private readonly IOrganizationMembershipRepository _memberships;
+    private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public AddOrganizationMembership(
         IPlatformUserRepository users,
         IPlatformOrganizationRepository organizations,
         IOrganizationMembershipRepository memberships,
+        IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _users = users;
         _organizations = organizations;
         _memberships = memberships;
+        _unitOfWork = unitOfWork;
         _clock = clock;
     }
 
@@ -64,19 +68,20 @@ public sealed class AddOrganizationMembership
         }
 
         var existing = await _memberships
-            .FindActiveByUserAndOrganizationAsync(userId, organizationId, cancellationToken)
+            .FindCurrentByUserAndOrganizationAsync(userId, organizationId, cancellationToken)
             .ConfigureAwait(false);
         if (existing is not null)
         {
             return ApplicationResult<OrganizationMembership>.Failure(
                 ApplicationErrorCodes.MembershipConflict,
-                "An active membership already exists for this user and organization.");
+                "A current membership already exists for this user and organization.");
         }
 
         try
         {
             var membership = OrganizationMembership.Create(organizationId, userId, role, _clock.UtcNow);
             await _memberships.AddAsync(membership, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<OrganizationMembership>.Success(membership);
         }
         catch (DomainException ex)

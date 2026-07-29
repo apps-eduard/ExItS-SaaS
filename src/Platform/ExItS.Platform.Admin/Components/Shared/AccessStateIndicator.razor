@@ -1,0 +1,9 @@
+<div class="access-state @(Allowed ? "allowed" : "denied")" role="status">
+    <strong>@(Allowed ? "Allowed" : "Denied")</strong>
+    <span>Reason: @ReasonCode</span>
+</div>
+
+@code {
+    [Parameter] public bool Allowed { get; set; }
+    [Parameter] public string ReasonCode { get; set; } = "";
+}

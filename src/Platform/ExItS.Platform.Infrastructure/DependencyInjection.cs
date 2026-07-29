@@ -1,6 +1,8 @@
+using ExItS.Platform.Application.Access;
 using ExItS.Platform.Application.Admin;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Entitlements;
+using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
@@ -35,6 +37,9 @@ public static class DependencyInjection
         services.AddScoped<IFeatureOverrideRepository, FeatureOverrideRepository>();
         services.AddScoped<IEntitlementSnapshotRepository, EntitlementSnapshotRepository>();
         services.AddScoped<IAdminPortfolioReadStore, AdminPortfolioReadStore>();
+        services.AddScoped<IPlatformUserRepository, PlatformUserRepository>();
+        services.AddScoped<IOrganizationMembershipRepository, OrganizationMembershipRepository>();
+        services.AddScoped<IProductAccessAssignmentRepository, ProductAccessAssignmentRepository>();
         services.AddScoped<IPlatformUnitOfWork, PlatformUnitOfWork>();
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IEntitlementRefreshPolicy, ProvisionalEntitlementRefreshPolicy>();

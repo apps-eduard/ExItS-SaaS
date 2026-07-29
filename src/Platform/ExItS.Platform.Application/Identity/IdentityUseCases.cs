@@ -1,0 +1,270 @@
+using ExItS.Platform.Application.Catalog;
+using ExItS.Platform.Application.Common;
+using ExItS.Platform.Domain.Abstractions;
+using ExItS.Platform.Domain.Common;
+using ExItS.Platform.Domain.Identity;
+
+namespace ExItS.Platform.Application.Identity;
+
+public sealed record PlatformUserDto(
+    Guid Id,
+    string Username,
+    string DisplayName,
+    string Email,
+    string Status,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    DateTimeOffset? SuspendedAtUtc,
+    string? SuspensionReason);
+
+public sealed class PlatformUserQueryService
+{
+    private readonly IPlatformUserRepository _users;
+
+    public PlatformUserQueryService(IPlatformUserRepository users) => _users = users;
+
+    public async Task<PlatformUserDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var user = await _users.GetByIdAsync(PlatformUserId.From(id), cancellationToken).ConfigureAwait(false);
+        return user is null ? null : Map(user);
+    }
+
+    public async Task<PagedResult<PlatformUserDto>> ListAsync(
+        AccountStatus? status,
+        string? search,
+        int? page,
+        int? pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (skip, take) = CatalogPagination.Normalize(page, pageSize);
+        var (items, total) = await _users.ListAsync(status, search, skip, take, cancellationToken).ConfigureAwait(false);
+        return new PagedResult<PlatformUserDto>(
+            items.Select(Map).ToList(),
+            total,
+            Math.Max(page ?? 1, 1),
+            take);
+    }
+
+    public static PlatformUserDto Map(PlatformUser user) =>
+        new(
+            user.Id.Value,
+            user.Username,
+            user.DisplayName,
+            user.NormalizedEmail,
+            user.Status.ToString(),
+            user.CreatedAtUtc,
+            user.UpdatedAtUtc,
+            user.SuspendedAtUtc,
+            user.SuspensionReason);
+}
+
+public sealed class CreatePlatformUser
+{
+    private readonly IPlatformUserRepository _users;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public CreatePlatformUser(IPlatformUserRepository users, IPlatformUnitOfWork unitOfWork, IClock clock)
+    {
+        _users = users;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<PlatformUser>> ExecuteAsync(
+        string username,
+        string displayName,
+        string email,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var user = PlatformUser.Create(username, displayName, email, _clock.UtcNow);
+
+            if (await _users.GetByNormalizedUsernameAsync(user.NormalizedUsername, cancellationToken).ConfigureAwait(false) is not null)
+            {
+                return ApplicationResult<PlatformUser>.Failure(
+                    ApplicationErrorCodes.UsernameConflict,
+                    "A Platform User with this username already exists.");
+            }
+
+            if (await _users.GetByNormalizedEmailAsync(user.NormalizedEmail, cancellationToken).ConfigureAwait(false) is not null)
+            {
+                return ApplicationResult<PlatformUser>.Failure(
+                    ApplicationErrorCodes.EmailConflict,
+                    "A Platform User with this email already exists.");
+            }
+
+            await _users.AddAsync(user, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<PlatformUser>.Success(user);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<PlatformUser>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class UpdatePlatformUserProfile
+{
+    private readonly IPlatformUserRepository _users;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public UpdatePlatformUserProfile(IPlatformUserRepository users, IPlatformUnitOfWork unitOfWork, IClock clock)
+    {
+        _users = users;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<PlatformUser>> ExecuteAsync(
+        PlatformUserId userId,
+        string displayName,
+        string email,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await _users.GetByIdAsync(userId, cancellationToken).ConfigureAwait(false);
+        if (user is null)
+        {
+            return ApplicationResult<PlatformUser>.Failure(ApplicationErrorCodes.UserNotFound, "Platform User was not found.");
+        }
+
+        try
+        {
+            var normalizedEmail = PlatformUser.NormalizeEmail(email);
+            if (!string.Equals(normalizedEmail, user.NormalizedEmail, StringComparison.Ordinal))
+            {
+                var existing = await _users.GetByNormalizedEmailAsync(normalizedEmail, cancellationToken).ConfigureAwait(false);
+                if (existing is not null && existing.Id != user.Id)
+                {
+                    return ApplicationResult<PlatformUser>.Failure(
+                        ApplicationErrorCodes.EmailConflict,
+                        "A Platform User with this email already exists.");
+                }
+            }
+
+            user.UpdateProfile(displayName, email, _clock.UtcNow);
+            await _users.UpdateAsync(user, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<PlatformUser>.Success(user);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<PlatformUser>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class SuspendPlatformUser
+{
+    private readonly IPlatformUserRepository _users;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public SuspendPlatformUser(IPlatformUserRepository users, IPlatformUnitOfWork unitOfWork, IClock clock)
+    {
+        _users = users;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<PlatformUser>> ExecuteAsync(
+        PlatformUserId userId,
+        string? reason = null,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await _users.GetByIdAsync(userId, cancellationToken).ConfigureAwait(false);
+        if (user is null)
+        {
+            return ApplicationResult<PlatformUser>.Failure(ApplicationErrorCodes.UserNotFound, "Platform User was not found.");
+        }
+
+        try
+        {
+            user.Suspend(_clock.UtcNow, reason);
+            await _users.UpdateAsync(user, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<PlatformUser>.Success(user);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<PlatformUser>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class ReactivatePlatformUser
+{
+    private readonly IPlatformUserRepository _users;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public ReactivatePlatformUser(IPlatformUserRepository users, IPlatformUnitOfWork unitOfWork, IClock clock)
+    {
+        _users = users;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<PlatformUser>> ExecuteAsync(
+        PlatformUserId userId,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await _users.GetByIdAsync(userId, cancellationToken).ConfigureAwait(false);
+        if (user is null)
+        {
+            return ApplicationResult<PlatformUser>.Failure(ApplicationErrorCodes.UserNotFound, "Platform User was not found.");
+        }
+
+        try
+        {
+            user.Reactivate(_clock.UtcNow);
+            await _users.UpdateAsync(user, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<PlatformUser>.Success(user);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<PlatformUser>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class DeactivatePlatformUser
+{
+    private readonly IPlatformUserRepository _users;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public DeactivatePlatformUser(IPlatformUserRepository users, IPlatformUnitOfWork unitOfWork, IClock clock)
+    {
+        _users = users;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<PlatformUser>> ExecuteAsync(
+        PlatformUserId userId,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await _users.GetByIdAsync(userId, cancellationToken).ConfigureAwait(false);
+        if (user is null)
+        {
+            return ApplicationResult<PlatformUser>.Failure(ApplicationErrorCodes.UserNotFound, "Platform User was not found.");
+        }
+
+        try
+        {
+            user.Deactivate(_clock.UtcNow);
+            await _users.UpdateAsync(user, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<PlatformUser>.Success(user);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<PlatformUser>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}

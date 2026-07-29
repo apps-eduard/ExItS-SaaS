@@ -25,6 +25,9 @@ internal static class PlatformApiResults
     public static int MapStatusCode(string errorCode) => errorCode switch
     {
         ApplicationErrorCodes.OrganizationNotFound
+            or ApplicationErrorCodes.UserNotFound
+            or ApplicationErrorCodes.MembershipNotFound
+            or ApplicationErrorCodes.ProductAccessNotFound
             or ApplicationErrorCodes.SubscriptionNotFound
             or ApplicationErrorCodes.PlanNotFound
             or ApplicationErrorCodes.PlanVersionNotFound
@@ -36,6 +39,15 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.PaymentNotFound => StatusCodes.Status404NotFound,
 
         ApplicationErrorCodes.SlugConflict
+            or ApplicationErrorCodes.EmailConflict
+            or ApplicationErrorCodes.UsernameConflict
+            or ApplicationErrorCodes.MembershipConflict
+            or ApplicationErrorCodes.ProductAccessConflict
+            or ApplicationErrorCodes.CrossOrganizationMismatch
+            or ApplicationErrorCodes.SubscriptionIneligible
+            or ApplicationErrorCodes.EntitlementMissing
+            or ApplicationErrorCodes.EntitlementStale
+            or ApplicationErrorCodes.EntitlementDenied
             or ApplicationErrorCodes.ActiveSubscriptionConflict
             or ApplicationErrorCodes.ConcurrencyConflict
             or ApplicationErrorCodes.OrganizationNotEligible
@@ -53,6 +65,11 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.FeatureOverrideInvalidTransition
             or ApplicationErrorCodes.EntitlementProductMismatch
             or ApplicationErrorCodes.EntitlementSubscriptionInvalid
+            or DomainErrorCodes.UserNotActive
+            or DomainErrorCodes.OrganizationNotActive
+            or DomainErrorCodes.MembershipNotActive
+            or DomainErrorCodes.InvalidAccountStatusTransition
+            or DomainErrorCodes.InvalidMembershipStatusTransition
             or DomainErrorCodes.PaymentAlreadyConfirmed
             or DomainErrorCodes.PaymentAlreadyUsed
             or DomainErrorCodes.InvalidSaaSPaymentTransition
