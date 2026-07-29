@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>ExItS.Platform.Application</RootNamespace>
+    <AssemblyName>ExItS.Platform.Application</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ExItS.Platform.Domain\ExItS.Platform.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

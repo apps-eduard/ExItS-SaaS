@@ -1,12 +1,37 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown files: 73
-Internal links checked: spot-check P1-WP04
+Markdown documentation files plus root Platform foundation (P2-WP01).
+Internal links checked: spot-check P2-WP01
 Broken links: none found in spot-check of new paths
+
+## Root foundation (tracked)
 
 .gitignore
 README.md
 FILE-MANIFEST.md
+global.json
+Directory.Build.props
+Directory.Packages.props
+ExItS.slnx
+src/Platform/ExItS.Platform.Domain/ExItS.Platform.Domain.csproj
+src/Platform/ExItS.Platform.Domain/AssemblyMarker.cs
+src/Platform/ExItS.Platform.Application/ExItS.Platform.Application.csproj
+src/Platform/ExItS.Platform.Application/AssemblyMarker.cs
+src/Platform/ExItS.Platform.Infrastructure/ExItS.Platform.Infrastructure.csproj
+src/Platform/ExItS.Platform.Infrastructure/AssemblyMarker.cs
+src/Platform/ExItS.Platform.Api/ExItS.Platform.Api.csproj
+src/Platform/ExItS.Platform.Api/Program.cs
+src/Platform/ExItS.Platform.Api/appsettings.json
+src/Platform/ExItS.Platform.Api/appsettings.Development.json
+src/Platform/ExItS.Platform.Api/Properties/launchSettings.json
+tests/ExItS.Platform.UnitTests/ExItS.Platform.UnitTests.csproj
+tests/ExItS.Platform.UnitTests/FoundationTests.cs
+tests/ExItS.ArchitectureTests/ExItS.ArchitectureTests.csproj
+tests/ExItS.ArchitectureTests/LayerDependencyTests.cs
+tests/ExItS.ArchitectureTests/RepositorySafetyTests.cs
+
+## Documentation (tracked)
+
 docs/cursor/README.md
 docs/cursor/completion-report-template.md
 docs/cursor/cursor-prompt-template.md
@@ -71,6 +96,7 @@ docs/reports/P1-WP01-platform-product-capability-boundary.md
 docs/reports/P1-WP02-data-ownership-and-contracts.md
 docs/reports/P1-WP03-extraction-sequence-and-rollback.md
 docs/reports/P1-WP04-architecture-approval-closeout.md
+docs/reports/P2-WP01-extraction-baseline-and-safety.md
 docs/reports/phase-00-final-assessment-and-recommendation.md
 docs/reports/phase-01-architecture-approval.md
 docs/reuse/extraction-rules.md
@@ -80,3 +106,8 @@ docs/reuse/healthcare-runtime-baseline.md
 docs/reuse/healthcare-ui-reuse-assessment.md
 docs/reuse/reuse-classification-matrix.md
 docs/risks-and-issues.md
+
+## Not tracked
+
+HealthCare/ (ignored nested repository)
+**/bin/, **/obj/

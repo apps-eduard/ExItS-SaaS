@@ -52,6 +52,7 @@
 - [Portfolio progress](portfolio-progress.md)
 - [Phase 0 final assessment](reports/phase-00-final-assessment-and-recommendation.md)
 - [Phase 1 architecture approval](reports/phase-01-architecture-approval.md)
+- [P2-WP01 foundation report](reports/P2-WP01-extraction-baseline-and-safety.md)
 - [All phases](phases/README.md)
 - [Risks and issues](risks-and-issues.md)
 - [Decisions](decisions/README.md)

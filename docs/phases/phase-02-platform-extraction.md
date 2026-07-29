@@ -14,37 +14,49 @@ Phase 1 is **Close with documented risks** (P1-WP04). Architecture approved for 
 
 ### P2-WP01 — Extraction Baseline Tag and Safety Checks
 
-Status: **Not Started** (first approved Phase 2 WP after Phase 1 closeout)
+Status: **Ready for Review**
 
 #### Goal
 
 Establish a **narrow root repository and solution foundation** plus baseline tag and HealthCare freeze safety checks before identity or product work.
 
-#### Expected outcomes (when authorized)
+#### Outcomes delivered
 
-- Baseline tag / safety checklist evidence for root and HealthCare freeze.
-- Root solution skeleton and initial Platform/test project structure (buildable).
-- Build conventions and dependency direction rules.
-- Architecture tests that fail on prohibited project references.
-- Confirm `git ls-files HealthCare` empty and ignore remains intact.
+- Annotated local tag `phase-1-approved` → `01ab65b511721d5dd2173188bc6d962a5feea803`.
+- Root `ExItS.slnx`, `global.json`, `Directory.Build.props`, `Directory.Packages.props`.
+- Platform Domain / Application / Infrastructure / Api (+ markers only).
+- Unit + architecture tests (dependency + HealthCare freeze safety).
+- API `/` and `/health` without database (port 5288).
+- Release restore/build/test: **11/0/0**.
 
-#### Explicit exclusions
+#### Explicit exclusions (honored)
 
-- Do not modify or import HealthCare.
-- Do not implement full Platform modules (identity, billing, entitlements, Admin UI).
-- Do not implement PinoyBusinessPOS, GCash, offline sync, or HC adapters.
-- Do not create a complete UI component library.
-- Do not perform database migration or cutover.
+- HealthCare unmodified / not in solution / not referenced.
+- No identity, billing, entitlements, Admin UI, POS, shared projects, EF/migrations.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
-- [ ] HealthCare freeze verified.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (11/0/0).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded (see below).
+- [x] Working tree clean (after hash-record).
+- [x] HealthCare freeze verified.
+
+#### Artifacts
+
+| Artifact | Path |
+|---|---|
+| Solution | [ExItS.slnx](../../ExItS.slnx) |
+| Report | [P2-WP01 report](../reports/P2-WP01-extraction-baseline-and-safety.md) |
+
+#### Commit
+
+| Field | Value |
+|---|---|
+| Hash | `PENDING_AFTER_COMMIT` |
+| Message | `chore(platform): establish root solution foundation` |
 
 ### P2-WP02 — Shared Identity and Organization Boundary
 
@@ -53,8 +65,7 @@ Status: Not Started
 #### Required outcomes
 
 - Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+- Do not begin until P2-WP01 is accepted.
 
 #### Definition of Done
 

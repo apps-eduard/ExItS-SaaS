@@ -15,22 +15,21 @@ Product-specific workflows and data remain inside each product.
 
 - [Documentation home](docs/index.md)
 - [Portfolio progress dashboard](docs/portfolio-progress.md)
-- [HealthCare reuse assessment](docs/reuse/healthcare-reuse-assessment.md)
-- [UI system and reusable components](docs/engineering/ui-design-system.md)
+- [Approved architecture summary](docs/engineering/approved-architecture-summary.md)
+- [Root Platform solution](ExItS.slnx) (`dotnet restore/build/test ExItS.slnx`)
 - [All phases](docs/phases/README.md)
-- [First Cursor command](docs/cursor/first-cursor-command.md)
 
-## Repository intent
+## Repository layout (current)
 
 ```text
-ExITS-SaaS/
-├── HealthCare SaaS/            # copied completed MVP; exact existing name is discovered by Cursor
-├── Platform/                   # created only after assessment and approved extraction plan
-├── Products/
-│   └── PinoyBusinessPOS/       # created after platform boundary is approved
-├── Shared/                     # only genuinely cross-product code
-├── docs/
+ExItS-SaaS/
+├── ExItS.slnx                  # root Platform solution (P2-WP01)
+├── global.json                 # SDK 10.0.302
+├── src/Platform/               # Domain, Application, Infrastructure, Api
+├── tests/                      # Unit + architecture/safety tests
+├── docs/                       # portfolio architecture and tracking
+├── HealthCare/                 # nested independent Git repo — ignored by root
 └── README.md
 ```
 
-The first Cursor task is assessment-only. It must not move, rename, or refactor the completed HealthCare MVP before the reuse boundary is documented and approved.
+`HealthCare/` remains frozen and outside root Git. Do not import it without an approved work package.

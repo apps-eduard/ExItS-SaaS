@@ -1,8 +1,28 @@
 # Development Environment Baseline
 
-[Home](../index.md) | [Runtime baseline](../reuse/healthcare-runtime-baseline.md) | [Repository boundaries](repository-boundaries.md)
+[Home](../index.md) | [Runtime baseline](../reuse/healthcare-runtime-baseline.md) | [Repository boundaries](repository-boundaries.md) | [P2-WP01 report](../reports/P2-WP01-extraction-baseline-and-safety.md)
 
-Verified on the P0-WP02 assessment machine (2026-07-29). Versions elsewhere may differ; re-check before extraction work.
+Verified on the P0-WP02 assessment machine (2026-07-29) and extended for root Platform foundation in **P2-WP01**.
+
+## ExItS root Platform (P2-WP01+)
+
+| Component | Value |
+|---|---|
+| SDK pin | `global.json` → **10.0.302** (`rollForward`: `latestFeature`) |
+| Solution | `ExItS.slnx` (SDK 10 solution format; preferred over `.sln`) |
+| Target framework | `net10.0` via `Directory.Build.props` |
+| Central packages | `Directory.Packages.props` (CPM) |
+| API HTTP | `http://localhost:5288` (launch profile `http`) |
+
+```powershell
+# From ExItS-SaaS root
+dotnet restore ExItS.slnx
+dotnet build ExItS.slnx -c Release
+dotnet test ExItS.slnx -c Release --no-build
+dotnet run --project src/Platform/ExItS.Platform.Api/ExItS.Platform.Api.csproj -c Release --urls http://127.0.0.1:5288
+```
+
+Health checks: `GET /` and `GET /health`. No database required for foundation API.
 
 ## Required SDK and runtimes
 

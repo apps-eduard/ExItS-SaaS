@@ -23,5 +23,6 @@ The dashboard links to the latest accepted report.
 | [P1-WP01-platform-product-capability-boundary.md](P1-WP01-platform-product-capability-boundary.md) | Platform vs Product Capability Boundary | Complete |
 | [P1-WP02-data-ownership-and-contracts.md](P1-WP02-data-ownership-and-contracts.md) | Data Ownership and Contracts | Complete (+ Cash/GCash MVP payment correction accepted) |
 | [P1-WP03-extraction-sequence-and-rollback.md](P1-WP03-extraction-sequence-and-rollback.md) | Extraction Sequence and Rollback Plan | Complete |
-| [phase-01-architecture-approval.md](phase-01-architecture-approval.md) | Phase 1 Architecture Approval | Ready for Review |
-| [P1-WP04-architecture-approval-closeout.md](P1-WP04-architecture-approval-closeout.md) | Architecture Approval Closeout | Ready for Review |
+| [phase-01-architecture-approval.md](phase-01-architecture-approval.md) | Phase 1 Architecture Approval | Complete |
+| [P1-WP04-architecture-approval-closeout.md](P1-WP04-architecture-approval-closeout.md) | Architecture Approval Closeout | Complete |
+| [P2-WP01-extraction-baseline-and-safety.md](P2-WP01-extraction-baseline-and-safety.md) | Extraction Baseline Tag and Safety Checks | Ready for Review |

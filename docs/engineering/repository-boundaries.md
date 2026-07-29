@@ -2,22 +2,25 @@
 
 [Home](../index.md) | [Runtime baseline](../reuse/healthcare-runtime-baseline.md) | [Dashboard](../portfolio-progress.md)
 
-## Current temporary model (Phase 0)
+## Current model (Phase 2 foundation started)
 
 ```text
 ExItS-SaaS root repository
+├── ExItS.slnx, global.json, Directory.Build.props, Directory.Packages.props
+├── src/Platform/* — new Platform foundation (P2-WP01)
+├── tests/* — Platform unit + architecture/safety tests
 ├── Portfolio documentation — tracked by root Git
-├── Root safety files (.gitignore, manifests) — tracked by root Git
 └── HealthCare/ — nested independent repository, ignored by root Git
 ```
 
-This model is temporary until an approved repository-integration decision is recorded.
+HealthCare remains temporary-ignored until an approved import WP. **P2-WP01 did not import HealthCare.**
 
 ## Root Git responsibility
 
-- Owns ExITS portfolio docs, phase tracking, reuse assessments, and engineering standards.
-- Must never accidentally track nested HealthCare application sources, secrets, or build outputs during Phase 0.
-- Root remote: `https://github.com/apps-eduard/ExItS-SaaS.git`.
+- Owns ExITS portfolio docs, phase tracking, reuse assessments, engineering standards, and **new Platform foundation projects**.
+- Must never accidentally track nested HealthCare application sources, secrets, or build outputs.
+- Root remote: `https://github.com/apps-eduard/ExItS-SaaS.git` (still empty / `origin/main` gone as of P2-WP01).
+- Baseline tag: `phase-1-approved` → `01ab65b` (local; not pushed).
 
 ## Nested HealthCare Git responsibility
 

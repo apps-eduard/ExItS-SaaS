@@ -21,6 +21,8 @@
 
 A controlled monorepo is used initially for coordinated extraction and development. Product boundaries remain deployable independently. **P1-WP03 / ADR-013:** build new Platform foundations in root Git first; reconnect HealthCare only after gates; POS may start after Platform contract readiness without full HC cutover. Sequence: [extraction-sequence.md](../reuse/extraction-sequence.md).
 
+**P2-WP01:** root `ExItS.slnx` + `src/Platform/{Domain,Application,Infrastructure,Api}` + architecture/unit tests exist. Dependency direction enforced by tests. No HealthCare project references.
+
 ## UI choices
 
 - Existing HealthCare Staff Web: keep Ant Design Blazor (no rewrite in current ExITS MVP work).

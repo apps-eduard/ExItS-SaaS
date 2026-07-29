@@ -20,7 +20,7 @@
 
 ## R1 — ExITS Platform extraction
 
-**Planned.** Begins with **P2-WP01** (narrow root solution foundation + baseline/safety). See [extraction-sequence.md](reuse/extraction-sequence.md). No extraction executed yet.
+**In progress (P2-WP01).** Root `ExItS.slnx` foundation created. Next: P2-WP02 identity when authorized. See [extraction-sequence.md](reuse/extraction-sequence.md). HealthCare still frozen.
 
 ## R2 — Platform portfolio administration
 

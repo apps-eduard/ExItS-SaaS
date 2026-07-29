@@ -1,0 +1,8 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>ExItS.Platform.Domain</RootNamespace>
+    <AssemblyName>ExItS.Platform.Domain</AssemblyName>
+  </PropertyGroup>
+
+</Project>

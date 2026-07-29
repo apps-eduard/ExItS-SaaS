@@ -19,8 +19,8 @@
 | R-013 | Parent repo missing root `.gitignore` | High | Root `.gitignore` added in P0-WP02 | **Mitigated** (P0-WP02) |
 | R-014 | Full `HealthCare.sln` build fails without Android SDK env | Medium | Non-MAUI build path documented; set `ANDROID_HOME` or `AndroidSdkDirectory` on agents that need Mobile | Open — SDK folder present but env unset (P0-WP02) |
 | R-015 | Pre-existing dirty PatientWeb files inside nested HealthCare git | Medium | Do not overwrite; resolve in HealthCare repo or later import WP | Open — still present P0-WP02 |
-| R-016 | Root `origin` remote exists but is empty; `origin/main` gone | High | User-authorized first push: `git push -u origin main` (do not force-push) | Open — verified P0-WP02 |
-| R-017 | Accidental HealthCare parent tracking | Critical | Root ignore + `git ls-files HealthCare` / `git check-ignore` checks before commit | Mitigated (P0-WP02 process) |
+| R-016 | Root `origin` remote exists but is empty; `origin/main` gone | High | User-authorized first push: `git push -u origin main` (do not force-push); also push `phase-1-approved` when authorized | Open — verified P2-WP01 |
+| R-017 | Accidental HealthCare parent tracking | Critical | Root ignore + architecture `RepositorySafetyTests` + pre-commit checks | **Mitigated** (tests + process) — keep verifying |
 | R-018 | Nested HealthCare local `.env` / lab secrets | High | Remain gitignored; never commit or paste values into portfolio docs | Open — presence known; values not documented |
 | R-019 | Dual UI stacks (HC Ant vs **native** Platform Admin + POS) — brand drift, duplicated visuals, separate a11y/theme work, future HC modernization cost | Medium | Shared semantic tokens, branding, terminology, UI-independent contracts; separate framework impls; no forced HC rewrite in current MVP | Open — **controlled technical separation** (ADR-010) |
 | R-020 | Phase 0 closed while Integration/E2E not re-baselined on this machine | Medium | Run Integration/E2E on approved Ubuntu/Compose agents before extraction (Phase 2 gate) | Open — deferred by design from P0-WP02 |
@@ -29,6 +29,8 @@
 | R-023 | Premature shared library / mega-utility before two consumers | Medium | Shared-code governance in capability boundary §22; prefer contracts/conventions | Open — governance documented P1-WP01 |
 | R-024 | Contract major-version skew between Platform and products | High | Version negotiation, migration windows, quarantine unsupported majors (ADR-012) | Open — policy documented P1-WP02; runtime later |
 | R-025 | Manual GCash recording errors / duplicate references | Medium | Required normalized reference; warn on duplicates (OD-11); cashier confirmation UX; no secrets stored; sync re-check | Open — documented POS MVP payment correction |
-| R-026 | Premature HealthCare import or wholesale copy before Platform gates | Critical | ADR-013: new Platform first; HC frozen; sequence + rollback plans | **Mitigated** (planning) — watch Stage 1+ |
+| R-026 | Premature HealthCare import or wholesale copy before Platform gates | Critical | ADR-013; P2-WP01 foundation only; HC not in solution | **Mitigated** (P2-WP01 evidence) — watch later WPs |
 | R-027 | Cutover without restore rehearsal / rollback evidence | Critical | Rollback plan L5; gate G6–G7 require rehearsal | Open — enforced at Phase 2 cutover |
 | R-028 | Phase 1 closed while Integration/E2E and numeric entitlement windows remain open | Medium | Documented deferred; re-baseline before HC cutover; R-022 for durations | Open — accepted with Phase 1 closeout |
+| R-029 | Solution format / SDK pin drift (`.slnx` + `global.json` 10.0.302) | Low | Pin recorded; CI should use `global.json` when added | Open — introduced P2-WP01 |
+| R-030 | Local port collision for Platform API (5188 busy on assessment machine) | Low | Default launch URL set to **5288** | **Mitigated** (P2-WP01) |

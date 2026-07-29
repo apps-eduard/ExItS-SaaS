@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>ExItS.Platform.Infrastructure</RootNamespace>
+    <AssemblyName>ExItS.Platform.Infrastructure</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ExItS.Platform.Application\ExItS.Platform.Application.csproj" />
+    <ProjectReference Include="..\ExItS.Platform.Domain\ExItS.Platform.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

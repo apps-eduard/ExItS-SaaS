@@ -23,7 +23,7 @@
 | Build order | New Platform in root before HC reconnection | [extraction sequence](../reuse/extraction-sequence.md) · ADR-013 |
 | Rollback | L0–L6 | [rollback plan](extraction-rollback-plan.md) |
 | Shared code | Two consumers + product-neutral only | Phase 1 approval §14 |
-| Next WP | **P2-WP01** (not started) | [Phase 2](../phases/phase-02-platform-extraction.md) |
+| Next WP | **P2-WP02** after P2-WP01 acceptance (not started) | [Phase 2](../phases/phase-02-platform-extraction.md) |
 
 ## Prohibited
 

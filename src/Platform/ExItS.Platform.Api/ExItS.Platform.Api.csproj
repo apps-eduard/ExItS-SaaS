@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>ExItS.Platform.Api</RootNamespace>
+    <AssemblyName>ExItS.Platform.Api</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ExItS.Platform.Application\ExItS.Platform.Application.csproj" />
+    <ProjectReference Include="..\ExItS.Platform.Infrastructure\ExItS.Platform.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Platform/">
+    <Project Path="src/Platform/ExItS.Platform.Api/ExItS.Platform.Api.csproj" />
+    <Project Path="src/Platform/ExItS.Platform.Application/ExItS.Platform.Application.csproj" />
+    <Project Path="src/Platform/ExItS.Platform.Domain/ExItS.Platform.Domain.csproj" />
+    <Project Path="src/Platform/ExItS.Platform.Infrastructure/ExItS.Platform.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ExItS.ArchitectureTests/ExItS.ArchitectureTests.csproj" />
+    <Project Path="tests/ExItS.Platform.UnitTests/ExItS.Platform.UnitTests.csproj" />
+  </Folder>
+</Solution>
