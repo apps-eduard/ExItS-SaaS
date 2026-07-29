@@ -91,7 +91,7 @@ OD-01–OD-13 and R-022/R-024 carried with defaults. R-026/R-027 added. No block
 
 | Field | Value |
 |---|---|
-| Commit hash | `PENDING_AFTER_COMMIT` |
+| Commit hash | `b7f99ab6c25fb69f0820ba8bfe746b261e81fd14` |
 | Commit message | `docs(extraction): define sequence and rollback plan` |
 | Branch | `main` |
 | Upstream | `origin/main` gone; not pushed |

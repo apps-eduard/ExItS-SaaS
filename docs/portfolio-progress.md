@@ -14,7 +14,7 @@
 | Current phase | Phase 1 — Platform Boundary and Architecture |
 | Current work package | P1-WP03 — Extraction Sequence and Rollback Plan (**Ready for Review**) |
 | Overall status | P1-WP01/P1-WP02 **Complete**; Cash/GCash correction **accepted**; P1-WP03 ready for review |
-| Latest verified commit | `PENDING_AFTER_COMMIT` (`docs(extraction): define sequence and rollback plan`) |
+| Latest verified commit | `b7f99ab6c25fb69f0820ba8bfe746b261e81fd14` (`docs(extraction): define sequence and rollback plan`) |
 | Open blockers | 0 for P1-WP03 acceptance; root remote empty |
 | Last updated | 2026-07-29 |
 
@@ -58,7 +58,7 @@ Architecture approval closeout (P1-WP04)
 |---|---|---|
 | P1-WP01 | **Complete** | `b6a3133` / hash `a48e7cb` |
 | P1-WP02 | **Complete** | `32534fa` / hash `0fd9c59`; Cash/GCash `c5472e8` (**accepted**) |
-| P1-WP03 | Ready for Review | `PENDING_AFTER_COMMIT` |
+| P1-WP03 | Ready for Review | `b7f99ab` |
 | P1-WP04 | Not Started | — |
 
 ## P1-WP03 decisions (summary)

@@ -125,7 +125,7 @@ Status: **Ready for Review**
 
 | Field | Value |
 |---|---|
-| Hash | `PENDING_AFTER_COMMIT` |
+| Hash | `b7f99ab6c25fb69f0820ba8bfe746b261e81fd14` |
 | Message | `docs(extraction): define sequence and rollback plan` |
 
 ### P1-WP04 — Architecture Approval Closeout
