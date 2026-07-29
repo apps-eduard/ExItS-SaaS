@@ -141,8 +141,8 @@ Create Platform domain/application foundation for products, features, plans, pla
 
 | Field | Value |
 |---|---|
-| Hash | `6e866d710afc09c8ddca1893a720073dc8dadfa1` |
-| Message | `feat(platform): add products plans entitlement foundation` |
+| Hash | `6e866d710afc09c8ddca1893a720073dc8dadfa1` (foundation); correction `10f99c5f549d2161c1f033be6223ccc26a6e0eaf` |
+| Message | `feat(platform): add products plans entitlement foundation`; `fix(platform): keep trial duration configurable` |
 
 ### P2-WP04 — HealthCare Contract Adaptation
 

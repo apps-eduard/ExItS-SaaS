@@ -14,7 +14,7 @@
 | Current phase | Phase 2 — Platform Extraction and HealthCare Reconnection |
 | Current work package | P2-WP03 — Products, Plans and Entitlement Foundation (**Ready for Review**) |
 | Overall status | P2-WP01–02 **Complete**; commercial catalog/entitlement domain foundation implemented |
-| Latest verified commit | `6e866d710afc09c8ddca1893a720073dc8dadfa1` (`feat(platform): add products plans entitlement foundation`) |
+| Latest verified commit | `10f99c5f549d2161c1f033be6223ccc26a6e0eaf` (`fix(platform): keep trial duration configurable`) |
 | Open blockers | 0 for P2-WP03 acceptance; root remote empty (R-016); not pushed |
 | Last updated | 2026-07-29 |
 
@@ -54,7 +54,7 @@ P2-WP04 HealthCare contract adaptation (not started)
 |---|---|---|
 | P2-WP01 | Complete | `4827b7f` |
 | P2-WP02 | Complete | `49f8ae8` |
-| P2-WP03 | Ready for Review | `6e866d7` |
+| P2-WP03 | Ready for Review | `6e866d7` + `10f99c5` (trial duration fix) |
 | P2-WP04–06 | Not Started | — |
 
 ## Commercial boundary snapshot (P2-WP03)

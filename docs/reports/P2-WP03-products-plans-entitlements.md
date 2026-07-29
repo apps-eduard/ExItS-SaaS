@@ -108,3 +108,10 @@ Reused: `ProductCode` (P2-WP02).
 |---|---|
 | Hash | `6e866d710afc09c8ddca1893a720073dc8dadfa1` |
 | Message | `feat(platform): add products plans entitlement foundation` |
+
+### Trial duration correction
+
+| Field | Value |
+|---|---|
+| Hash | `10f99c5f549d2161c1f033be6223ccc26a6e0eaf` |
+| Message | `fix(platform): keep trial duration configurable` |
