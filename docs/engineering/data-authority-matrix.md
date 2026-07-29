@@ -24,7 +24,8 @@
 | Sale | POS | SaleId | POS | — | POS | POS | POS |
 | Inventory balance | POS | per store+product | POS | — | POS | POS | POS |
 | Supplier | POS | SupplierId | POS | — | POS | POS | POS |
-| POS retail payment | POS | RetailPaymentId | POS | — | POS | POS | POS |
+| POS retail payment | POS | RetailPaymentId | POS | Method: cash \| gcash \| customer-credit; GCash ref when gcash | POS | POS | POS |
+| POS credit payment | POS | CreditPaymentId | POS | Method: cash \| gcash; GCash ref when gcash | POS | POS | POS |
 | Offline device state | POS | DeviceId (later) | POS | — | POS | POS | POS |
 | Entitlement projection row | Product (storage) / Platform (facts) | (OrgId, ProductCode, EntitlementVersion) | Product runtime | Copy of Platform snapshot | Product apply from Platform | Product (+ Platform source) | Product |
 

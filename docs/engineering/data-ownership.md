@@ -96,11 +96,12 @@ Businesses, stores/branches/registers, customers, credit, retail payments, catal
 | Aspect | Rule |
 |---|---|
 | System of record | PinoyBusinessPOS |
-| Stable IDs | POSBusinessId, StoreId, BranchId, RegisterId, POSCustomerId, Credit*/Sale*/etc., DeviceId later |
+| Stable IDs | POSBusinessId, StoreId, BranchId, RegisterId, POSCustomerId, Credit*/Sale*/RetailPaymentId/CreditPaymentId, DeviceId later |
 | Replication | **None** to Platform except correlation metadata |
-| Prohibited | Treating Customer as Platform User; SaaSPayment confusion |
+| Prohibited | Treating Customer as Platform User; SaaSPayment confusion; storing GCash secrets |
 | Update / audit / deletion / retention | POS |
 | Projection | May store PlatformOrganizationId / UserId as values; entitlement projection separate |
+| MVP payment methods | Sale: `cash`, `gcash`, `customer-credit`. Credit repayment: `cash`, `gcash`. GCash = manual verification + required normalized reference. See [pinoy-business-pos-requirements.md](../product/pinoy-business-pos-requirements.md). |
 
 ### Entitlement projection row
 

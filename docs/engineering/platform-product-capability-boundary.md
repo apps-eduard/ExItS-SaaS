@@ -130,11 +130,12 @@ Products may publish known feature identifiers via versioned contracts; Platform
 **Not** Platform entitlements: ordinary product settings (e.g. “require stock confirmation before sale”).
 
 ```text
-Platform payment → org pays ExITS for software
-POS sale payment → retail customer pays store for goods
+Platform payment → org pays ExITS for software (SaaS; may later include Platform GCash)
+POS sale payment → retail customer pays store (cash | gcash | customer-credit)
+POS credit payment → customer pays Utang balance (cash | gcash)
 ```
 
-Separate entities, services, permissions, and audit trails.
+Separate entities, services, permissions, and audit trails. POS MVP GCash is manually verified; direct GCash API integration is deferred. Do not reuse POS retail-payment entities for Platform SaaS billing.
 
 ## 14. Entitlement boundary
 
@@ -151,7 +152,7 @@ High-level behaviors (detail in P1-WP02 / Phase 3): fresh snapshot; temporarily 
 |---|---|
 | Platform | Auth, sessions, org/membership, plan/subscription/payment/entitlement, support/admin |
 | HealthCare | Clinical workflows, patient access, appointments, notes, HC authorization |
-| POS | Credit, sales, voids, refunds, inventory, expenses, shifts, store permissions, sync conflicts |
+| POS | Credit, sales, Cash/GCash retail & credit payments, voids, refunds, inventory, expenses, shifts, store permissions, sync conflicts |
 
 Cross-boundary correlation fields (not combined DBs): CorrelationId, PlatformUserId, PlatformOrganizationId, ProductCode, product-local actor/resource IDs, UTC timestamp, DeviceId (later), request/event id. **No PHI in Platform audit.**
 
@@ -209,7 +210,7 @@ Exact SLAs **not** promised here.
 | OD-04 | MFA | Deferred |
 | OD-05 | When/how to import HealthCare into monorepo | After Platform foundation (Phase 1–2) |
 | OD-06 | Multi-org membership migration from HC single StaffMember | Phase 2 extraction design |
-| OD-07–OD-10 | Trial post-expiry UX details; legal retention | Carried in [contracts §20](platform-product-contracts.md) (P1-WP02) |
+| OD-07–OD-11 | Trial post-expiry UX; legal retention; GCash duplicate hard-block | Carried in [contracts §20](platform-product-contracts.md) / POS requirements |
 
 P1-WP02 expands contract mechanics in [platform-product-contracts.md](platform-product-contracts.md) and [ADR-012](../decisions/ADR-012-versioned-platform-contracts-and-local-projections.md).
 

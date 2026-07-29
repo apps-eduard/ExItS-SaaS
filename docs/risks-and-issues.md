@@ -28,3 +28,4 @@
 | R-022 | Entitlement projection staleness durations / conflict numerics underspecified | High | P1-WP02 defined states, idempotency, fail-closed rules; set exact windows in Phase 3 / 7 | Open — categorical behavior accepted; durations TBD |
 | R-023 | Premature shared library / mega-utility before two consumers | Medium | Shared-code governance in capability boundary §22; prefer contracts/conventions | Open — governance documented P1-WP01 |
 | R-024 | Contract major-version skew between Platform and products | High | Version negotiation, migration windows, quarantine unsupported majors (ADR-012) | Open — policy documented P1-WP02; runtime later |
+| R-025 | Manual GCash recording errors / duplicate references | Medium | Required normalized reference; warn on duplicates (OD-11); cashier confirmation UX; no secrets stored; sync re-check | Open — documented POS MVP payment correction |

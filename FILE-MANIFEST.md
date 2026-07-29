@@ -1,8 +1,8 @@
 # ExITS SaaS Documentation Package Manifest
 
 Markdown files: 62
-Internal links checked: spot-check P1-WP02
-Broken links: none found in spot-check of new paths
+Internal links checked: spot-check POS Cash/GCash MVP payment correction
+Broken links: none found in spot-check of updated paths
 
 .gitignore
 README.md

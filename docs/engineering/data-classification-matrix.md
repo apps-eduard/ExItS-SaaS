@@ -17,6 +17,9 @@
 | POSCustomer / credit remarks | Product-confidential / personal | POS | **No** to Platform | POS | Redact remarks | POS (OD-10) |
 | Sale lines / inventory | Product-confidential | POS | **No** | POS | Aggregate OK; no dumps | POS |
 | RetailPayment / CreditPayment | Financial (retail) | POS | **No** as SaaSPayment | POS | Redact tender details as needed | POS |
+| POS GCash reference number | Financial / internal | POS | **No** to Platform | POS | OK (not a secret); never log PINs/OTPs | POS |
+| GCash credentials / PIN / OTP / tokens | Security-sensitive | — | **Never store** | — | Never | N/A |
+| Platform SaaS GCash (future) | Financial | Platform | Admin / billing only | Platform billing | Redact instrument data | Platform |
 | CorrelationId / EventId | Internal operational | Publisher | Yes | All audit peers | OK | Publisher retention |
 | Support break-glass reason | Internal / sensitive | Platform (when exists) | Limited | Support tools | Controlled | Platform |
 | DeviceId | Internal operational | POS | POS↔POS sync later | POS | OK | POS |

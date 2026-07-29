@@ -13,7 +13,7 @@
 
 Three months. Customers, remarks-based credit, payments, ledger and overdue monitoring.
 
-After expiry, existing balances remain visible and payments on existing debt remain allowed. New credit is blocked until activation. Detailed allowed/blocked matrix and open post-expiry UX questions: [platform-product-contracts.md §9](../engineering/platform-product-contracts.md).
+After expiry, existing balances remain visible and payments on existing debt remain allowed via **Cash** or **GCash** (manual). New credit is blocked until activation. Detailed allowed/blocked matrix and open post-expiry UX questions: [platform-product-contracts.md §9](../engineering/platform-product-contracts.md). MVP payment methods: [pinoy-business-pos-requirements.md](pinoy-business-pos-requirements.md).
 
 ### Utang
 

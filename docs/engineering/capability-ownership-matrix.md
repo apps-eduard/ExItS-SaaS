@@ -22,6 +22,7 @@ Primary ownership only. Projection ≠ system of record.
 | Product catalog / plans / trials | Platform | Own | Consume feature codes | Plan display | Product/Plan DTOs | Product pricing SoR |
 | Subscriptions / grace / suspend | Platform | Own | Enforce via projection | Full commercial snapshot | Subscription status | Product billing ledger |
 | SaaS payments / invoices | Platform | Own | Show status only | Payment status refs | Payment status DTO | POS sale as SaaS payment |
+| POS retail / credit payments (cash, gcash, customer-credit) | POS | — | Own; MVP GCash manual | — | — | Reuse POS entities for Platform GCash; GCash API in MVP |
 | Entitlements / overrides | Platform | Authoritative | Enforce locally | EntitlementSnapshot | Snapshot schema | Sync call every txn |
 | Feature vs local setting | Split | Feature codes | Operational settings | Features only | Feature code list | Settings as entitlements |
 | Platform admin UI | Platform | Native Admin | — | — | Admin APIs | Ant Design Admin |

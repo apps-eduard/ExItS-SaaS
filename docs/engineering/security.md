@@ -15,4 +15,5 @@
 9. Localization cannot expose untranslated internal keys or sensitive debug details.
 10. Theme selection cannot weaken focus visibility or contrast.
 11. Clinical PHI must not flow into Platform audit or entitlement payloads.
-12. SaaS subscription payments are distinct from POS retail sale payments.
+12. SaaS subscription payments are distinct from POS retail sale payments and from POS customer-credit payments.
+13. POS MVP GCash is manually recorded; do not store GCash credentials, PINs, OTPs, or access tokens. Platform SaaS GCash (if added later) uses Platform payment entities only.

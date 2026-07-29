@@ -12,6 +12,7 @@
 | Entitlement snapshot | Platform | Products | Platform | Event or reconcil. pull | EntitlementVersion + SchemaVersion | SnapshotId / EventId | Clinical/POS ops payloads | Never initialized → no paid features |
 | Entitlement update | Platform | Products | Platform | Async event (preferred) | EntitlementVersion | EventId; reject older | Same | Out-of-order → buffer/reconcile |
 | Payment confirmation (SaaS) | Platform | Products (status), Admin | Platform | Event after verify | Payment Version | SaaSPaymentId / EventId | Full payment instrument data | Duplicate confirm → no-op |
+| POS retail / credit payment (cash, gcash) | POS | POS only | POS | Product-local (offline OK) | Product schema later | Local payment id; sync idempotent | GCash secrets; Platform SaaS fields | Manual GCash; ref warn on dup (OD-11) |
 | User suspension | Platform | Products | Platform | Async event + sync on login | IdentityVersion | EventId | — | Fail closed on protected ops when applied |
 | Organization suspension | Platform | Products | Platform | Async event | Org ProjectionVersion | EventId | — | Block entitlement-protected writes |
 | Reconciliation snapshot | Platform | Product admin/runtime | Platform | Sync admin API | Snapshot + schema | Request idempotency key | Same as snapshot | Replace commercial projection only |

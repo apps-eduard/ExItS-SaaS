@@ -170,7 +170,7 @@ Approved **three-month Utang trial** ([subscriptions-and-billing.md](../product/
 ### Allowed after expiry
 
 - View existing customers, balances, historical credit entries, payment history
-- Receive partial/full payment against **existing** debt
+- Receive partial/full payment against **existing** debt via **Cash** or **GCash** (manual GCash; reference required)
 - Export/access data where separately approved
 - Upgrade or renew subscription
 
@@ -178,6 +178,8 @@ Approved **three-month Utang trial** ([subscriptions-and-billing.md](../product/
 
 - Create new customer credit / increase debt / add new credit entries
 - Use features not allowed by expired entitlement
+
+POS retail payment method codes and Cash/GCash field rules: [pinoy-business-pos-requirements.md](../product/pinoy-business-pos-requirements.md).
 
 ### Open (do not guess)
 
@@ -187,6 +189,7 @@ Approved **three-month Utang trial** ([subscriptions-and-billing.md](../product/
 | Edit customer contact info after expiry? | **Open** — OD-08 |
 | Correct erroneous historical entry (elevated + audit)? | **Open** — OD-09 (direction: elevated + audit preferred; finalize in Phase 6) |
 | Offline device with stale entitlement after expiry? | Bound by projection states + Phase 7; stale window duration **not** fixed here (R-022) |
+| Duplicate GCash reference hard-block vs warn-only? | **Open** — OD-11 (warn minimum is approved) |
 
 ## 10. Event envelope
 
@@ -267,11 +270,20 @@ Fields (minimum): SaaSPaymentId, PlatformOrganizationId, ProductCode, Subscripti
 
 ```text
 SaaSPayment     → org pays ExITS for software
-RetailPayment   → retail customer pays store for goods
-CreditPayment   → payment against POS customer credit
+RetailPayment   → retail customer pays store for goods (methods: cash, gcash, customer-credit)
+CreditPayment   → payment against POS customer credit (methods: cash, gcash)
 ```
 
 Separate bounded contexts, entities, permissions, and audit trails.
+
+Platform may later accept **GCash as a SaaS** payment method for subscription billing. That is **not** the same as POS retail GCash and must not reuse POS payment entities.
+
+```text
+Platform GCash → business pays ExITS
+POS GCash      → retail customer pays the store
+```
+
+POS MVP GCash is **manually verified** by cashier/authorized user (no API/webhooks/QR automation in first MVP). See [pinoy-business-pos-requirements.md](../product/pinoy-business-pos-requirements.md).
 
 ## 16. Audit correlation
 
@@ -326,6 +338,7 @@ Transport protocols deferred (OD-03).
 | OD-08 | Edit customer contact after trial expiry | POS product | Phase 6 | No | Allow/deny |
 | OD-09 | Historical credit correction policy | POS product | Phase 6 | No | Elevated + audit rules |
 | OD-10 | Legal retention periods | Compliance | Before commercial launch | No | Periods by data class |
+| OD-11 | Duplicate GCash reference: hard-block vs warn-only | POS product | Phase 6 / 8 | No | Warn minimum approved |
 | R-022 | Exact stale/refresh durations | Platform + products | Phase 3 / 7 | No | Numeric policy |
 
 ## 21. Explicitly prohibited data

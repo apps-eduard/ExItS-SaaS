@@ -6,7 +6,7 @@
 |---|---|
 | Phase | Phase 1 — Platform Boundary and Architecture |
 | Work package | P1-WP02 — Data Ownership and Contracts |
-| Status | Ready for Review |
+| Status | Complete |
 | Branch | `main` |
 | Date | 2026-07-29 |
 
@@ -99,8 +99,18 @@ OD-01–OD-10 and R-022 (durations), R-024 (version skew), OD-03 (transport). No
 
 ## 13. Progress update
 
-P1-WP01 Complete. P1-WP02 Ready for Review. Next: P1-WP03 after acceptance.
+P1-WP01 Complete. P1-WP02 **Complete** (accepted). Post-acceptance correction documents POS MVP Cash/GCash/Customer Credit payments. Next: P1-WP03 after explicit authorization.
 
 ## 14. Next approved work package
 
 **P1-WP03 — Extraction Sequence and Rollback Plan** — do not begin until authorized.
+
+## 15. Post-acceptance correction — POS Cash / GCash MVP payments
+
+| Field | Value |
+|---|---|
+| Decision | MVP retail methods `cash`, `gcash`, `customer-credit`; credit repayment `cash`/`gcash`; GCash manual; API deferred |
+| Boundaries | SaaSPayment ≠ RetailPayment ≠ CreditPayment; Platform GCash ≠ POS GCash |
+| Primary doc | [pinoy-business-pos-requirements.md](../product/pinoy-business-pos-requirements.md) |
+| Correction commit | `PENDING_AFTER_COMMIT` (`docs(pos): add cash and gcash MVP payments`) |
+| P1-WP02 original commit | `32534fa31501217f021e73b36ba27f49c448b36c` |

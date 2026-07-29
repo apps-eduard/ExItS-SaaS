@@ -42,7 +42,7 @@ Status: **Complete**
 
 ### P1-WP02 — Data Ownership and Contracts
 
-Status: **Ready for Review**
+Status: **Complete**
 
 #### Required outcomes
 
@@ -72,6 +72,7 @@ Status: **Ready for Review**
 | Classification | [data-classification-matrix.md](../engineering/data-classification-matrix.md) |
 | ADR-012 | [ADR-012](../decisions/ADR-012-versioned-platform-contracts-and-local-projections.md) |
 | Report | [P1-WP02 report](../reports/P1-WP02-data-ownership-and-contracts.md) |
+| POS payment correction | [pinoy-business-pos-requirements.md](../product/pinoy-business-pos-requirements.md) |
 
 #### Commit
 
@@ -79,6 +80,14 @@ Status: **Ready for Review**
 |---|---|
 | Hash | `32534fa31501217f021e73b36ba27f49c448b36c` |
 | Message | `docs(contracts): define data authority and projections` |
+
+#### Post-acceptance correction (Cash / GCash MVP payments)
+
+| Field | Value |
+|---|---|
+| Hash | `PENDING_AFTER_COMMIT` |
+| Message | `docs(pos): add cash and gcash MVP payments` |
+| Scope | Explicit MVP methods `cash` / `gcash` / `customer-credit`; manual GCash; SaaS vs retail vs credit separation |
 
 ### P1-WP03 — Extraction Sequence and Rollback Plan
 
