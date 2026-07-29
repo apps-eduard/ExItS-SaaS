@@ -12,7 +12,8 @@ Build a **new** native-CSS ExITS Platform Admin (Blazor Web App) for multi-produ
 
 Status: **Complete**
 
-Feature commit: _(recorded after commit)_
+Feature commit: `aa340e1`
+Rules commit: `4399961`
 Report: [P4-WP01-portfolio-navigation-and-product-views.md](../reports/P4-WP01-portfolio-navigation-and-product-views.md)
 
 #### Required outcomes

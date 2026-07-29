@@ -111,8 +111,8 @@ See `docs/risks-and-issues.md`: R-063 (unauthenticated Admin UI), R-064 (dev ope
 | Commit | Message |
 |---|---|
 | `4399961` | `chore(repo): add permanent Cursor workflow rules` |
-| _(feature)_ | `feat(admin): add portfolio navigation and product views` |
-| _(hash-record)_ | docs hash record (if separate) |
+| `aa340e1` | `feat(admin): add portfolio navigation and product views` |
+| _(hash-record)_ | `docs(admin): record P4-WP01 commit hashes` |
 
 Local and remote `main` must match after push; working tree clean.
 

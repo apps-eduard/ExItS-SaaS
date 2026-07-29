@@ -14,7 +14,7 @@
 | Current phase | Phase 4 — Platform Admin Expansion |
 | Current work package | P4-WP01 — Portfolio Navigation and Product Views (**Complete**) |
 | Overall status | **P4-WP01 complete** — read-only Platform Admin shell; auth / mutation Admin / delivery still deferred |
-| Latest verified commit | _(recorded after push)_ |
+| Latest verified commit | `aa340e1050cd42bebe4eb88998e9477539aa540d` |
 | Open blockers | Unauthenticated Admin+API; R-022 refresh durations; R-035 calendar EOM; no product delivery; no auth |
 | Last updated | 2026-07-29 |
 
@@ -50,7 +50,7 @@ P4-WP02 Organizations, Users and Product Access (not started — do not begin un
 
 | WP | Status | Key commit |
 |---|---|---|
-| P4-WP01 | Complete | _(feature hash)_ |
+| P4-WP01 | Complete | `aa340e1` |
 | P4-WP02 | Not Started | — |
 | P4-WP03 | Not Started | — |
 | P4-WP04 | Not Started | — |
