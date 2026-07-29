@@ -8,6 +8,11 @@ public interface IPlatformOrganizationRepository
 
     Task<PlatformOrganization?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default);
 
+    Task<(IReadOnlyList<PlatformOrganization> Items, int TotalCount)> ListAsync(
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(PlatformOrganization organization, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(PlatformOrganization organization, CancellationToken cancellationToken = default);

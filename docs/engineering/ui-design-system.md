@@ -29,7 +29,7 @@ Shared/
 └── ExItS.Ui.Validation
 
 Platform/
-└── (Platform Admin Blazor Web App — native UI; created in later phases)
+└── ExItS.Platform.Admin (Blazor Web App — native UI; created in P4-WP01)
 
 Products/PinoyBusinessPOS/
 ├── PinoyBusinessPOS.Ui

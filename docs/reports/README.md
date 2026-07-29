@@ -37,3 +37,4 @@ The dashboard links to the latest accepted report.
 | [P3-WP03-manual-payment-activation.md](P3-WP03-manual-payment-activation.md) | Manual Payment Activation | Complete |
 | [P3-WP04-entitlement-snapshots-and-grace-rules.md](P3-WP04-entitlement-snapshots-and-grace-rules.md) | Entitlement Snapshots and Grace Rules | Complete |
 | [P3-WP05-billing-closeout.md](P3-WP05-billing-closeout.md) | Billing Closeout | Complete |
+| [P4-WP01-portfolio-navigation-and-product-views.md](P4-WP01-portfolio-navigation-and-product-views.md) | Portfolio Navigation and Product Views | Complete |

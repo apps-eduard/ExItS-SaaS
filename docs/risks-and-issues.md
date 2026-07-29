@@ -66,6 +66,19 @@
 | R-060 | Authoritative snapshot mistaken for completed product delivery | High | Docs + APIs state Platform-only persistence; no broker/delivery routes; closeout E2E asserts 404 on delivery paths | **Mitigated** (P3-WP05) — awareness; delivery still deferred |
 | R-061 | Manual snapshot regeneration gaps without scheduler | Medium | Explicit generate/reconcile commands; no Hangfire yet | Open — introduced P3-WP04 |
 | R-062 | Unauthenticated entitlement/override mutation endpoints | Critical | Same gate as R-045; do not expose beyond development | Open — introduced P3-WP04 |
+| R-063 | Unauthenticated Platform Admin UI | Critical | Banner + docs; require Platform auth before production; no fake login | Open — introduced P4-WP01 |
+| R-064 | Development operator context mistaken for authorization | High | Footer labels “not authorization”; disabled outside Development/Testing | Open — introduced P4-WP01 |
+| R-065 | Admin UI / Platform API contract drift | Medium | Typed client + integration tests for Admin endpoints; keep DTOs aligned | Open — introduced P4-WP01 |
+| R-066 | Partial dashboard counts mistaken for zeros | Medium | PartialFailures list; UI shows “—” for failed sections | **Mitigated** (P4-WP01) — awareness |
+| R-067 | Read-only Admin screens mistaken for operational control | Medium | Explicit “no mutation” copy; architecture guards forbid mutation controls | Open — introduced P4-WP01 |
+| R-068 | Manual SaaS payment view mistaken for provider verification | High | Warning copy on payment pages; R-057 awareness | Open — reinforced P4-WP01 |
+| R-069 | Entitlement snapshot view mistaken for completed product delivery | High | Warning copy on entitlement pages; R-060 awareness | Open — reinforced P4-WP01 |
+| R-070 | Admin accessibility / large-list performance gaps | Medium | Semantic HTML + pagination; expand a11y tests in later Admin WPs | Open — introduced P4-WP01 |
+| R-071 | Platform API unavailable while Admin is running | Medium | Unavailable error state; configurable base URL + timeouts | **Mitigated** (P4-WP01) — awareness |
+
+## Phase 4 note (P4-WP01)
+
+P4-WP01 delivered a **read-only** Platform Admin shell. Authentication, membership Admin, mutation workflows, and product delivery remain open. Next: **P4-WP02 — Organizations, Users and Product Access** when authorized.
 
 ## Phase 3 closeout note (P3-WP05)
 

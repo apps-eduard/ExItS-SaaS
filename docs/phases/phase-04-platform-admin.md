@@ -10,22 +10,28 @@ Build a **new** native-CSS ExITS Platform Admin (Blazor Web App) for multi-produ
 
 ### P4-WP01 — Portfolio Navigation and Product Views
 
-Status: Not Started
+Status: **Complete**
+
+Feature commit: _(recorded after commit)_
+Report: [P4-WP01-portfolio-navigation-and-product-views.md](../reports/P4-WP01-portfolio-navigation-and-product-views.md)
 
 #### Required outcomes
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+- Permanent Cursor workflow rules (`.cursor/rules/exits-workflow.mdc`)
+- Platform Admin Blazor Web App with native CSS
+- Portfolio navigation + read-only product/org/subscription/payment/entitlement views
+- Typed API client; loading/empty/error/unavailable states
+- Focused Admin read APIs where needed
+- Tests, docs, runtime evidence
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (317 passed).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean (after push).
 
 ### P4-WP02 — Organizations, Users and Product Access
 

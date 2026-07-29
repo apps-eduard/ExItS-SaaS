@@ -1,0 +1,18 @@
+<section class="state error" role="alert">
+    <h2>@(Unavailable ? "Platform API unavailable" : Title)</h2>
+    @if (!string.IsNullOrWhiteSpace(Detail))
+    {
+        <p>@Detail</p>
+    }
+    @if (!string.IsNullOrWhiteSpace(CorrelationId))
+    {
+        <p class="muted">Correlation ID: <code>@CorrelationId</code></p>
+    }
+</section>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Request failed";
+    [Parameter] public string? Detail { get; set; }
+    [Parameter] public string? CorrelationId { get; set; }
+    [Parameter] public bool Unavailable { get; set; }
+}

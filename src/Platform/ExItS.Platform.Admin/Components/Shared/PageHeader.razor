@@ -1,0 +1,21 @@
+<header class="page-header">
+    @if (!string.IsNullOrWhiteSpace(Breadcrumb))
+    {
+        <p class="breadcrumb">@Breadcrumb</p>
+    }
+    else
+    {
+        <p class="breadcrumb">Platform Admin</p>
+    }
+    <h1 tabindex="-1">@Title</h1>
+    @if (!string.IsNullOrWhiteSpace(Description))
+    {
+        <p>@Description</p>
+    }
+</header>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public string? Breadcrumb { get; set; }
+}

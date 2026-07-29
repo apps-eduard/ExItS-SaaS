@@ -661,7 +661,8 @@ public sealed class LayerDependencyTests
         Assert.Contains("MapSubscriptionEndpoints", program);
         Assert.Contains("MapPaymentEndpoints", program);
         Assert.Contains("MapEntitlementEndpoints", program);
-        Assert.Contains("P3-WP05", program, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("MapAdminEndpoints", program);
+        Assert.Contains("P4-WP01", program, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("catalog", program, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("subscription", program, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("payment", program, StringComparison.OrdinalIgnoreCase);
@@ -737,6 +738,25 @@ public sealed class LayerDependencyTests
             .ToArray();
 
         Assert.Empty(sqlHits);
+    }
+
+    [Fact]
+    public void Admin_project_is_isolated_from_infrastructure_and_forbidden_ui_frameworks()
+    {
+        var root = FindRepositoryRoot();
+        var adminCsproj = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "ExItS.Platform.Admin.csproj"));
+        Assert.DoesNotContain("ExItS.Platform.Infrastructure", adminCsproj, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("EntityFrameworkCore", adminCsproj, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Npgsql", adminCsproj, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("AntDesign", adminCsproj, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Tailwind", adminCsproj, StringComparison.OrdinalIgnoreCase);
+
+        var adminSources = Directory.GetFiles(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin"), "*.cs", SearchOption.AllDirectories)
+            .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                        && !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .Select(File.ReadAllText);
+        Assert.DoesNotContain(adminSources, text => text.Contains("PlatformDbContext", StringComparison.Ordinal));
+        Assert.DoesNotContain(adminSources, text => text.Contains("DbContext", StringComparison.Ordinal));
     }
 
     private static string FindRepositoryRoot()

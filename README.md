@@ -34,7 +34,7 @@ ExItS-SaaS/
 
 `HealthCare/` remains frozen and outside root Git. Do not import it without an approved work package.
 
-**Phase 3** is closed with documented risks ([P3-WP05 closeout](docs/reports/P3-WP05-billing-closeout.md)): catalog, subscriptions, manual SaaS payments, and entitlement snapshots persist under `/api/v1/platform/...` (development-stage, unauthenticated). No product delivery, gateways, or Admin UI. HealthCare remains frozen. Next: Phase 4 / P4-WP01 when authorized.
+**Phase 4 / P4-WP01** is complete ([report](docs/reports/P4-WP01-portfolio-navigation-and-product-views.md)): read-only Platform Admin Blazor shell (`ExItS.Platform.Admin`) with portfolio navigation and commercial views calling Platform APIs. Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. APIs and Admin remain development-stage unauthenticated. HealthCare remains frozen. Next: **P4-WP02 — Organizations, Users and Product Access** when authorized.
 
 ### Platform database (local)
 

@@ -1,12 +1,13 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown documentation files plus root Platform foundation through Phase 3 billing closeout (P3-WP05).
-Internal links checked: spot-check P3-WP05
+Markdown documentation files plus root Platform foundation through Phase 4 Platform Admin shell (P4-WP01).
+Internal links checked: spot-check P4-WP01
 Broken links: none found in spot-check of new paths
 
 ## Root foundation (tracked)
 
 .gitignore (nested product only: `/HealthCare/`)
+.cursor/rules/exits-workflow.mdc
 README.md
 FILE-MANIFEST.md
 global.json
@@ -14,12 +15,14 @@ Directory.Build.props
 Directory.Packages.props
 ExItS.slnx
 src/Platform/ExItS.Platform.Domain/
-src/Platform/ExItS.Platform.Application/ (+ Catalog queries/use cases; Contracts; Projections; MigrationValidation; Integration/HealthCare)
-src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog + organization/subscription + payment + entitlement persistence, migrations)
-src/Platform/ExItS.Platform.Api/ (`/` + `/health` + catalog + organizations + subscriptions + payments + entitlements APIs)
+src/Platform/ExItS.Platform.Application/ (+ Catalog; Admin portfolio queries; Contracts; Projections; MigrationValidation; Integration/HealthCare)
+src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog + organization/subscription + payment + entitlement persistence, Admin portfolio read store, migrations)
+src/Platform/ExItS.Platform.Api/ (`/` + `/health` + catalog + organizations + subscriptions + payments + entitlements + admin read APIs)
+src/Platform/ExItS.Platform.Admin/ (Blazor Web App — native CSS Platform Admin; typed API client; read-only portfolio views)
 tests/ExItS.Platform.UnitTests/
 tests/ExItS.ArchitectureTests/
 tests/ExItS.Platform.IntegrationTests/
+tests/ExItS.Platform.Admin.UnitTests/
 
 ## Documentation (tracked)
 

@@ -1,0 +1,110 @@
+@page "/admin/subscriptions"
+@page "/admin/subscriptions/{Id:guid}"
+@rendermode InteractiveServer
+@inject IPlatformApiClient Api
+
+@if (Id is null)
+{
+    <PageHeader Title="Subscriptions" Breadcrumb="Platform Admin / Subscriptions" Description="Read-only subscription list. Lifecycle mutation actions are deferred to later Platform Admin work packages." />
+    <form class="filters" @onsubmit="Load" @onsubmit:preventDefault>
+        <label>Status
+            <select @bind="_status">
+                <option value="Active">Active</option>
+                <option value="Trialing">Trialing</option>
+                <option value="GracePeriod">GracePeriod</option>
+                <option value="PastDue">PastDue</option>
+                <option value="Suspended">Suspended</option>
+                <option value="Cancelled">Cancelled</option>
+                <option value="Expired">Expired</option>
+            </select>
+        </label>
+        <label>Product code
+            <input @bind="_productCode" placeholder="optional" />
+        </label>
+        <button type="submit">Apply filters</button>
+    </form>
+
+    @if (_list is null) { <LoadingState Message="Loading subscriptions…" /> }
+    else if (!_list.IsSuccess) { <ErrorState Title="@(_list.Error?.Title ?? "Error")" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" /> }
+    else if (_list.Data!.Items.Count == 0) { <EmptyState Message="No subscriptions match the current filters." /> }
+    else
+    {
+        <table>
+            <caption class="sr-only">Subscriptions</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Product</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Organization</th>
+                    <th scope="col">Updated (UTC)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in _list.Data.Items)
+                {
+                    <tr>
+                        <td><a href="/admin/subscriptions/@item.Id">@item.ProductCode</a></td>
+                        <td><StatusBadge Value="@item.Status" /></td>
+                        <td><a href="/admin/organizations/@item.OrganizationId">@item.OrganizationId</a></td>
+                        <td><UtcTimestamp Value="@item.UpdatedAtUtc" /></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <p class="muted">Showing @_list.Data.Items.Count of @_list.Data.TotalCount</p>
+    }
+}
+else
+{
+    <PageHeader Title="Subscription detail" Breadcrumb="Platform Admin / Subscriptions / Detail" Description="Lifecycle timestamps derived from stored subscription fields. No activate / grace / suspend / cancel controls in P4-WP01." />
+    @if (_detail is null) { <LoadingState Message="Loading subscription…" /> }
+    else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? "Error")" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }
+    else
+    {
+        var s = _detail.Data!;
+        <dl>
+            <dt>Status</dt><dd><StatusBadge Value="@s.Status" /></dd>
+            <dt>Organization</dt><dd><a href="/admin/organizations/@s.OrganizationId">@s.OrganizationId</a></dd>
+            <dt>Product</dt><dd>@s.ProductCode</dd>
+            <dt>Plan id</dt><dd>@s.PlanId</dd>
+            <dt>Plan version id</dt><dd>@s.PlanVersionId</dd>
+            <dt>Trial definition</dt><dd>@(s.TrialDefinitionId?.ToString() ?? "—")</dd>
+            <dt>Trial start (UTC)</dt><dd><UtcTimestamp Value="@s.TrialStartUtc" /></dd>
+            <dt>Trial end (UTC)</dt><dd><UtcTimestamp Value="@s.TrialEndUtc" /></dd>
+            <dt>Paid period start (UTC)</dt><dd><UtcTimestamp Value="@s.PaidPeriodStartUtc" /></dd>
+            <dt>Paid period end (UTC)</dt><dd><UtcTimestamp Value="@s.PaidPeriodEndUtc" /></dd>
+            <dt>Grace period end (UTC)</dt><dd><UtcTimestamp Value="@s.GracePeriodEndUtc" /></dd>
+            <dt>Past due at (UTC)</dt><dd><UtcTimestamp Value="@s.PastDueAtUtc" /></dd>
+            <dt>Suspended at (UTC)</dt><dd><UtcTimestamp Value="@s.SuspendedAtUtc" /></dd>
+            <dt>Cancelled at (UTC)</dt><dd><UtcTimestamp Value="@s.CancelledAtUtc" /></dd>
+            <dt>Expired at (UTC)</dt><dd><UtcTimestamp Value="@s.ExpiredAtUtc" /></dd>
+            <dt>Created (UTC)</dt><dd><UtcTimestamp Value="@s.CreatedAtUtc" /></dd>
+            <dt>Updated (UTC)</dt><dd><UtcTimestamp Value="@s.UpdatedAtUtc" /></dd>
+            <dt>Related</dt>
+            <dd>
+                <a href="/admin/payments?organizationId=@s.OrganizationId">Payments</a>
+                ·
+                <a href="/admin/entitlements/history/@s.OrganizationId/@s.ProductCode">Entitlement history</a>
+            </dd>
+        </dl>
+    }
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+    private string _status = "Active";
+    private string? _productCode;
+    private ApiCallResult<PagedResult<SubscriptionDto>>? _list;
+    private ApiCallResult<SubscriptionDto>? _detail;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id is null) await Load();
+        else _detail = await Api.GetSubscriptionAsync(Id.Value);
+    }
+
+    private async Task Load() =>
+        _list = await Api.GetSubscriptionsAsync(
+            string.IsNullOrWhiteSpace(_status) ? "Active" : _status,
+            string.IsNullOrWhiteSpace(_productCode) ? null : _productCode);
+}

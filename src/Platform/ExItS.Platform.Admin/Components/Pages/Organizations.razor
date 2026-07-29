@@ -1,0 +1,133 @@
+@page "/admin/organizations"
+@page "/admin/organizations/{Id:guid}"
+@rendermode InteractiveServer
+@inject IPlatformApiClient Api
+
+@if (Id is null)
+{
+    <PageHeader Title="Organizations" Breadcrumb="Platform Admin / Organizations" Description="Read-only Platform Organizations. Membership and users are out of scope for P4-WP01." />
+    @if (_list is null) { <LoadingState Message="Loading organizations…" /> }
+    else if (!_list.IsSuccess) { <ErrorState Title="@(_list.Error?.Title ?? "Error")" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" /> }
+    else if (_list.Data!.Items.Count == 0) { <EmptyState Message="No organizations have been created." /> }
+    else
+    {
+        <table>
+            <caption class="sr-only">Organizations</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Display name</th>
+                    <th scope="col">Slug</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Created (UTC)</th>
+                    <th scope="col">Updated (UTC)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in _list.Data.Items)
+                {
+                    <tr>
+                        <td><a href="/admin/organizations/@item.Id">@item.DisplayName</a></td>
+                        <td>@item.Slug</td>
+                        <td><StatusBadge Value="@item.Status" /></td>
+                        <td><UtcTimestamp Value="@item.CreatedAtUtc" /></td>
+                        <td><UtcTimestamp Value="@item.UpdatedAtUtc" /></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <p class="muted">Showing @_list.Data.Items.Count of @_list.Data.TotalCount</p>
+    }
+}
+else
+{
+    <PageHeader Title="Organization commercial summary" Breadcrumb="Platform Admin / Organizations / Detail" Description="Subscriptions, manual SaaS payments, and latest entitlement snapshots. Read-only." />
+    @if (_detail is null) { <LoadingState Message="Loading organization…" /> }
+    else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? "Error")" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }
+    else
+    {
+        var d = _detail.Data!;
+        <dl>
+            <dt>Display name</dt><dd>@d.Organization.DisplayName</dd>
+            <dt>Slug</dt><dd>@d.Organization.Slug</dd>
+            <dt>Status</dt><dd><StatusBadge Value="@d.Organization.Status" /></dd>
+            <dt>Created (UTC)</dt><dd><UtcTimestamp Value="@d.Organization.CreatedAtUtc" /></dd>
+            <dt>Updated (UTC)</dt><dd><UtcTimestamp Value="@d.Organization.UpdatedAtUtc" /></dd>
+        </dl>
+
+        <h2>Subscriptions by product</h2>
+        @if (d.Subscriptions.Count == 0) { <EmptyState Message="No subscriptions for this organization." /> }
+        else
+        {
+            <table>
+                <thead><tr><th>Product</th><th>Status</th><th>Detail</th></tr></thead>
+                <tbody>
+                @foreach (var group in d.Subscriptions.GroupBy(s => s.ProductCode))
+                {
+                    @foreach (var s in group)
+                    {
+                        <tr>
+                            <td>@s.ProductCode</td>
+                            <td><StatusBadge Value="@s.Status" /></td>
+                            <td><a href="/admin/subscriptions/@s.Id">Open subscription</a></td>
+                        </tr>
+                    }
+                }
+                </tbody>
+            </table>
+        }
+
+        <h2>Manual SaaS payment history</h2>
+        @if (d.Payments.Count == 0) { <EmptyState Message="No payments recorded." /> }
+        else
+        {
+            <table>
+                <thead><tr><th>Reference</th><th>Amount</th><th>Method</th><th>Status</th><th>Detail</th></tr></thead>
+                <tbody>
+                @foreach (var p in d.Payments)
+                {
+                    <tr>
+                        <td>@p.ExternalReference</td>
+                        <td>@p.Amount @p.CurrencyCode</td>
+                        <td>@p.Method</td>
+                        <td><StatusBadge Value="@p.Status" /></td>
+                        <td><a href="/admin/payments/@p.Id">Open payment</a></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+
+        <h2>Latest entitlement snapshots</h2>
+        @if (d.LatestEntitlements.Count == 0) { <EmptyState Message="No entitlement snapshots for this organization." /> }
+        else
+        {
+            <table>
+                <thead><tr><th>Product</th><th>Version</th><th>Status</th><th>Generated (UTC)</th><th>History</th></tr></thead>
+                <tbody>
+                @foreach (var e in d.LatestEntitlements)
+                {
+                    <tr>
+                        <td>@e.ProductCode</td>
+                        <td><a href="/admin/entitlements/@e.Id">@e.SnapshotVersion</a></td>
+                        <td><StatusBadge Value="@e.SubscriptionStatus" /></td>
+                        <td><UtcTimestamp Value="@e.GeneratedAtUtc" /></td>
+                        <td><a href="/admin/entitlements/history/@e.OrganizationId/@e.ProductCode">History</a></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+    }
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+    private ApiCallResult<PagedResult<OrganizationDto>>? _list;
+    private ApiCallResult<OrganizationCommercialSummaryDto>? _detail;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id is null) _list = await Api.GetOrganizationsAsync();
+        else _detail = await Api.GetOrganizationCommercialSummaryAsync(Id.Value);
+    }
+}

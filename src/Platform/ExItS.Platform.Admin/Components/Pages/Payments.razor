@@ -1,0 +1,134 @@
+@page "/admin/payments"
+@page "/admin/payments/{Id:guid}"
+@rendermode InteractiveServer
+@inject IPlatformApiClient Api
+@inject NavigationManager Nav
+
+@if (Id is null)
+{
+    <PageHeader Title="Manual SaaS payments" Breadcrumb="Platform Admin / Payments" Description="Cash, bank transfer, and manual GCash reference records only. Manual confirmation is not automatic provider verification." />
+    <section class="warning" role="note">
+        Manual SaaS payment confirmation records operator attestation only. This UI never displays card numbers, CVV, PIN, OTP, gateway secrets, or GCash credentials.
+    </section>
+    <form class="filters" @onsubmit="Load" @onsubmit:preventDefault>
+        <label>Status
+            <select @bind="_status">
+                <option value="PendingConfirmation">PendingConfirmation</option>
+                <option value="Confirmed">Confirmed</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Voided">Voided</option>
+            </select>
+        </label>
+        <label>Product code <input @bind="_productCode" placeholder="optional" /></label>
+        <label>Organization id <input @bind="_organizationIdText" placeholder="optional GUID" /></label>
+        <button type="submit">Apply filters</button>
+    </form>
+
+    @if (_list is null) { <LoadingState Message="Loading payments…" /> }
+    else if (!_list.IsSuccess) { <ErrorState Title="@(_list.Error?.Title ?? "Error")" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" /> }
+    else if (_list.Data!.Items.Count == 0) { <EmptyState Message="No payments match the current filters." /> }
+    else
+    {
+        <table>
+            <caption class="sr-only">Manual SaaS payments</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Reference</th>
+                    <th scope="col">Amount</th>
+                    <th scope="col">Method</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Organization</th>
+                    <th scope="col">Paid (UTC)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in _list.Data.Items)
+                {
+                    <tr>
+                        <td><a href="/admin/payments/@item.Id">@item.ExternalReference</a></td>
+                        <td>@item.Amount @item.CurrencyCode</td>
+                        <td>@item.Method</td>
+                        <td><StatusBadge Value="@item.Status" /></td>
+                        <td><a href="/admin/organizations/@item.OrganizationId">@item.OrganizationId</a></td>
+                        <td><UtcTimestamp Value="@item.PaidAtUtc" /></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <p class="muted">Showing @_list.Data.Items.Count of @_list.Data.TotalCount</p>
+    }
+}
+else
+{
+    <PageHeader Title="Payment detail" Breadcrumb="Platform Admin / Payments / Detail" Description="Read-only payment record. Confirm, reject, void, and activate actions are not available in P4-WP01." />
+    <section class="warning" role="note">
+        Manual confirmation is not automatic provider verification. No card or gateway credentials are stored or displayed.
+    </section>
+    @if (_detail is null) { <LoadingState Message="Loading payment…" /> }
+    else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? "Error")" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }
+    else
+    {
+        var p = _detail.Data!;
+        <dl>
+            <dt>External reference</dt><dd>@p.ExternalReference</dd>
+            <dt>Amount</dt><dd>@p.Amount @p.CurrencyCode</dd>
+            <dt>Method</dt><dd>@p.Method</dd>
+            <dt>Status</dt><dd><StatusBadge Value="@p.Status" /></dd>
+            <dt>Organization</dt><dd><a href="/admin/organizations/@p.OrganizationId">@p.OrganizationId</a></dd>
+            <dt>Product</dt><dd>@p.ProductCode</dd>
+            <dt>Linked subscription</dt>
+            <dd>
+                @if (p.SubscriptionId is Guid sid)
+                {
+                    <a href="/admin/subscriptions/@sid">@sid</a>
+                }
+                else { <span>—</span> }
+            </dd>
+            <dt>Paid at (UTC)</dt><dd><UtcTimestamp Value="@p.PaidAtUtc" /></dd>
+            <dt>Confirmed at (UTC)</dt><dd><UtcTimestamp Value="@p.ConfirmedAtUtc" /></dd>
+            <dt>Confirmed by</dt><dd>@(p.ConfirmedBy ?? "—")</dd>
+            <dt>Rejected at (UTC)</dt><dd><UtcTimestamp Value="@p.RejectedAtUtc" /></dd>
+            <dt>Rejected by</dt><dd>@(p.RejectedBy ?? "—")</dd>
+            <dt>Rejection reason</dt><dd>@(p.RejectionReason ?? "—")</dd>
+            <dt>Voided at (UTC)</dt><dd><UtcTimestamp Value="@p.VoidedAtUtc" /></dd>
+            <dt>Voided by</dt><dd>@(p.VoidedBy ?? "—")</dd>
+            <dt>Void reason</dt><dd>@(p.VoidReason ?? "—")</dd>
+        </dl>
+    }
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+    private string _status = "PendingConfirmation";
+    private string? _productCode;
+    private string? _organizationIdText;
+    private ApiCallResult<PagedResult<PaymentDto>>? _list;
+    private ApiCallResult<PaymentDto>? _detail;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id is null)
+        {
+            var uri = Nav.ToAbsoluteUri(Nav.Uri);
+            var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+            if (query.TryGetValue("organizationId", out var org) && Guid.TryParse(org, out var orgId))
+            {
+                _organizationIdText = orgId.ToString();
+            }
+            await Load();
+        }
+        else
+        {
+            _detail = await Api.GetPaymentAsync(Id.Value);
+        }
+    }
+
+    private async Task Load()
+    {
+        Guid? orgId = Guid.TryParse(_organizationIdText, out var parsed) ? parsed : null;
+        _list = await Api.GetPaymentsAsync(
+            string.IsNullOrWhiteSpace(_status) ? "PendingConfirmation" : _status,
+            string.IsNullOrWhiteSpace(_productCode) ? null : _productCode,
+            orgId);
+    }
+}

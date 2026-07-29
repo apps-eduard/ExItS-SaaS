@@ -1,0 +1,27 @@
+﻿@inherits LayoutComponentBase
+@using Microsoft.Extensions.Options
+@inject IOptions<DevelopmentOperatorOptions> OperatorOptions
+@inject IHostEnvironment Env
+
+<div class="admin-shell">
+    <AdminNav />
+    <div class="admin-content">
+        <main class="admin-main" id="main-content">
+            <DevSecurityBanner />
+            @Body
+        </main>
+        <footer class="admin-footer">
+            <p>ExItS Platform Admin — read-only portfolio views (P4-WP01).</p>
+            @if ((Env.IsDevelopment() || Env.IsEnvironment("Testing")) && !string.IsNullOrWhiteSpace(OperatorOptions.Value.DisplayName))
+            {
+                <p class="muted">Actor context (dev only): @OperatorOptions.Value.DisplayName — not authorization.</p>
+            }
+        </footer>
+    </div>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">Dismiss</span>
+</div>

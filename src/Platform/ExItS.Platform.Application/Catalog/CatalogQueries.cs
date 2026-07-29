@@ -120,6 +120,14 @@ public sealed class CatalogQueryService
         return product is null ? null : MapProduct(product);
     }
 
+    public async Task<ProductDto?> GetProductByCodeAsync(string productCode, CancellationToken cancellationToken = default)
+    {
+        var product = await _products
+            .GetByCodeAsync(ProductCode.Create(productCode), cancellationToken)
+            .ConfigureAwait(false);
+        return product is null ? null : MapProduct(product);
+    }
+
     public async Task<IReadOnlyList<FeatureDefinitionDto>> ListFeaturesByProductAsync(
         string productCode,
         CancellationToken cancellationToken = default)

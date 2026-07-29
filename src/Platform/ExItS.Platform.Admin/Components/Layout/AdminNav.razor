@@ -1,0 +1,24 @@
+@rendermode InteractiveServer
+<nav class="admin-nav" aria-label="Platform Admin navigation">
+    <a class="brand" href="/admin">Platform Admin</a>
+    <button type="button" class="nav-toggle" @onclick="Toggle" aria-expanded="@_open" aria-controls="admin-nav-links">
+        Menu
+    </button>
+    <div id="admin-nav-links" class="nav-links @(_open ? "open" : null)">
+        <div class="nav-section">Overview</div>
+        <NavLink href="/admin" Match="NavLinkMatch.All" @onclick="Close">Dashboard</NavLink>
+        <div class="nav-section">Commercial</div>
+        <NavLink href="/admin/products" @onclick="Close">Products</NavLink>
+        <NavLink href="/admin/organizations" @onclick="Close">Organizations</NavLink>
+        <NavLink href="/admin/subscriptions" @onclick="Close">Subscriptions</NavLink>
+        <NavLink href="/admin/payments" @onclick="Close">Payments</NavLink>
+        <div class="nav-section">Access</div>
+        <NavLink href="/admin/entitlements" @onclick="Close">Entitlements</NavLink>
+    </div>
+</nav>
+
+@code {
+    private bool _open;
+    private void Toggle() => _open = !_open;
+    private void Close() => _open = false;
+}

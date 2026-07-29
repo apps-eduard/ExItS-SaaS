@@ -1,8 +1,10 @@
+using ExItS.Platform.Api.Admin;
 using ExItS.Platform.Api.Catalog;
 using ExItS.Platform.Api.Entitlements;
 using ExItS.Platform.Api.Organizations;
 using ExItS.Platform.Api.Payments;
 using ExItS.Platform.Api.Subscriptions;
+using ExItS.Platform.Application.Admin;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.Organizations;
@@ -64,6 +66,8 @@ builder.Services.AddScoped<RevokeFeatureOverride>();
 builder.Services.AddScoped<GenerateEntitlementSnapshot>();
 builder.Services.AddScoped<ReconcileEntitlementSnapshot>();
 
+builder.Services.AddScoped<AdminPortfolioQueryService>();
+
 var app = builder.Build();
 
 app.UseExceptionHandler();
@@ -73,7 +77,7 @@ app.MapGet("/", () => Results.Json(new
 {
     service = "ExItS.Platform.Api",
     status = "ok",
-    phase = "P3-WP05-billing-closeout"
+    phase = "P4-WP01-portfolio-navigation-product-views"
 }));
 
 app.MapHealthChecks("/health");
@@ -82,6 +86,7 @@ app.MapOrganizationEndpoints();
 app.MapSubscriptionEndpoints();
 app.MapPaymentEndpoints();
 app.MapEntitlementEndpoints();
+app.MapAdminEndpoints();
 
 app.Run();
 

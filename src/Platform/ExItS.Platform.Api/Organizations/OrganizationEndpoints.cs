@@ -16,6 +16,16 @@ internal static class OrganizationEndpoints
     {
         var organizations = app.MapGroup("/api/v1/platform/organizations");
 
+        organizations.MapGet("/", async (
+            int? page,
+            int? pageSize,
+            OrganizationQueryService queries,
+            CancellationToken ct) =>
+        {
+            var result = await queries.ListAsync(page, pageSize, ct).ConfigureAwait(false);
+            return Results.Ok(result);
+        });
+
         organizations.MapPost("/", async (
             CreateOrganizationRequest body,
             CreatePlatformOrganization useCase,

@@ -1,0 +1,12 @@
+@if (Value is null)
+{
+    <span class="muted">—</span>
+}
+else
+{
+    <time datetime="@Value.Value.UtcDateTime.ToString("o")">@Value.Value.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss") UTC</time>
+}
+
+@code {
+    [Parameter] public DateTimeOffset? Value { get; set; }
+}

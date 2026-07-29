@@ -1,0 +1,168 @@
+@page "/admin/products"
+@page "/admin/products/{Id:guid}"
+@rendermode InteractiveServer
+@inject IPlatformApiClient Api
+
+@if (Id is null)
+{
+    <PageHeader Title="Products" Breadcrumb="Platform Admin / Products" Description="Read-only product catalog. No create, rename, activate, or retire actions in this work package." />
+    @if (_list is null)
+    {
+        <LoadingState Message="Loading products…" />
+    }
+    else if (!_list.IsSuccess)
+    {
+        <ErrorState Title="@(_list.Error?.Title ?? "Error")" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" />
+    }
+    else if (_list.Data!.Items.Count == 0)
+    {
+        <EmptyState Message="No products are registered in the Platform catalog." />
+    }
+    else
+    {
+        <table>
+            <caption class="sr-only">Products</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Code</th>
+                    <th scope="col">Display name</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Updated (UTC)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in _list.Data.Items)
+                {
+                    <tr>
+                        <td><a href="/admin/products/@item.Id">@item.Code</a></td>
+                        <td>@item.DisplayName</td>
+                        <td><StatusBadge Value="@item.Status" /></td>
+                        <td><UtcTimestamp Value="@item.UpdatedAtUtc" /></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <p class="muted">Showing @_list.Data.Items.Count of @_list.Data.TotalCount</p>
+    }
+}
+else
+{
+    <PageHeader Title="Product detail" Breadcrumb="Platform Admin / Products / Detail" Description="Features, plans, published plan versions, and trial definitions. Read-only." />
+    @if (_overview is null)
+    {
+        <LoadingState Message="Loading product overview…" />
+    }
+    else if (!_overview.IsSuccess)
+    {
+        <ErrorState Title="@(_overview.Error?.Title ?? "Error")" Detail="@_overview.Error?.Detail" CorrelationId="@_overview.Error?.CorrelationId" Unavailable="@(_overview.Status == ApiCallStatus.Unavailable)" />
+    }
+    else
+    {
+        var o = _overview.Data!;
+        <dl>
+            <dt>Code</dt><dd>@o.Product.Code</dd>
+            <dt>Display name</dt><dd>@o.Product.DisplayName</dd>
+            <dt>Status</dt><dd><StatusBadge Value="@o.Product.Status" /></dd>
+            <dt>Created (UTC)</dt><dd><UtcTimestamp Value="@o.Product.CreatedAtUtc" /></dd>
+            <dt>Updated (UTC)</dt><dd><UtcTimestamp Value="@o.Product.UpdatedAtUtc" /></dd>
+            <dt>Feature count</dt><dd>@o.Features.Count</dd>
+            <dt>Plan count</dt><dd>@o.Plans.Count</dd>
+        </dl>
+
+        <h2>Feature definitions</h2>
+        @if (o.Features.Count == 0) { <EmptyState Message="No feature definitions." /> }
+        else
+        {
+            <table>
+                <thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Status</th></tr></thead>
+                <tbody>
+                @foreach (var f in o.Features)
+                {
+                    <tr><td>@f.FeatureCode</td><td>@f.DisplayName</td><td>@f.ValueType</td><td><StatusBadge Value="@f.Status" /></td></tr>
+                }
+                </tbody>
+            </table>
+        }
+
+        <h2>Plans</h2>
+        @if (o.Plans.Count == 0) { <EmptyState Message="No plans." /> }
+        else
+        {
+            <table>
+                <thead><tr><th>Code</th><th>Name</th><th>Status</th></tr></thead>
+                <tbody>
+                @foreach (var p in o.Plans)
+                {
+                    <tr><td>@p.Code</td><td>@p.DisplayName</td><td><StatusBadge Value="@p.Status" /></td></tr>
+                }
+                </tbody>
+            </table>
+        }
+
+        <h2>Published plan versions</h2>
+        @if (o.PublishedPlanVersions.Count == 0) { <EmptyState Message="No published plan versions." /> }
+        else
+        {
+            <table>
+                <thead><tr><th>Plan</th><th>Version</th><th>Billing</th><th>Trial eligible</th><th>Grants</th></tr></thead>
+                <tbody>
+                @foreach (var v in o.PublishedPlanVersions)
+                {
+                    <tr>
+                        <td>@v.PlanId</td>
+                        <td>@v.VersionNumber</td>
+                        <td>@v.BillingPeriod</td>
+                        <td>@v.TrialEligible</td>
+                        <td>@v.Grants.Count</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+
+        <h2>Trial definitions</h2>
+        @if (o.Trials.Count == 0) { <EmptyState Message="No trial definitions." /> }
+        else
+        {
+            <table>
+                <thead><tr><th>Name</th><th>Duration</th><th>Status</th><th>Grants</th></tr></thead>
+                <tbody>
+                @foreach (var t in o.Trials)
+                {
+                    <tr>
+                        <td>@t.DisplayName</td>
+                        <td>@t.DurationIso</td>
+                        <td><StatusBadge Value="@t.Status" /></td>
+                        <td>@t.FeatureGrants.Count</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+    }
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private ApiCallResult<PagedResult<ProductDto>>? _list;
+    private ApiCallResult<ProductOverviewDto>? _overview;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id is null)
+        {
+            _list = await Api.GetProductsAsync();
+            return;
+        }
+
+        var product = await Api.GetProductAsync(Id.Value);
+        if (!product.IsSuccess || product.Data is null)
+        {
+            _overview = ApiCallResult<ProductOverviewDto>.NotFound(product.Error ?? new PlatformApiException(System.Net.HttpStatusCode.NotFound, "Not found", "Product was not found."));
+            return;
+        }
+
+        _overview = await Api.GetProductOverviewAsync(product.Data.Code);
+    }
+}

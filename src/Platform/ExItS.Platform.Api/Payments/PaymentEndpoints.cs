@@ -118,6 +118,13 @@ internal static class PaymentEndpoints
                         .ConfigureAwait(false));
                 }
 
+                if (organizationId is not null)
+                {
+                    return Results.Ok(await queries
+                        .ListByOrganizationAsync(organizationId.Value, status, page, pageSize, ct)
+                        .ConfigureAwait(false));
+                }
+
                 if (status is not null)
                 {
                     return Results.Ok(await queries
@@ -127,7 +134,7 @@ internal static class PaymentEndpoints
 
                 return PlatformApiResults.Problem(
                     ApplicationErrorCodes.DomainViolation,
-                    "Provide a status, productCode, or reference filter to list payments.",
+                    "Provide a status, productCode, organizationId, or reference filter to list payments.",
                     StatusCodes.Status400BadRequest);
             }
             catch (DomainException ex)

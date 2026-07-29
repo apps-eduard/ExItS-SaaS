@@ -65,6 +65,7 @@
 - [P3-WP03 manual payment activation report](reports/P3-WP03-manual-payment-activation.md)
 - [P3-WP04 entitlement snapshots and grace rules report](reports/P3-WP04-entitlement-snapshots-and-grace-rules.md)
 - [P3-WP05 billing closeout report](reports/P3-WP05-billing-closeout.md)
+- [P4-WP01 portfolio navigation and product views report](reports/P4-WP01-portfolio-navigation-and-product-views.md)
 - [All phases](phases/README.md)
 - [Risks and issues](risks-and-issues.md)
 - [Decisions](decisions/README.md)

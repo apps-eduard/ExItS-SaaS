@@ -6,6 +6,8 @@ Platform grants **product access**; each product owns **operational permissions*
 
 **P3-WP02 note:** Organization and subscription REST endpoints are development-stage and **unauthenticated**. Do not treat them as production authorization.
 
+**P4-WP01 note:** Platform Admin UI is likewise unauthenticated. The development operator footer label is **not** authorization. Production Platform Admin requires real authentication and role checks before any mutation workflows (P4-WP02+).
+
 ## Platform organization membership roles (P2-WP02)
 
 Modeled in Domain as `OrganizationRole`:
