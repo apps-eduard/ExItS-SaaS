@@ -116,7 +116,7 @@ Integration strategy: **Testcontainers PostgreSQL 18** (not EF InMemory).
 
 | Field | Value |
 |---|---|
-| Hash | _(recorded after commit)_ |
+| Hash | `9d01f26095c3c76ffd67aa2b7b5bcf1a19a328f2` |
 | Message | `feat(platform): implement product and plan catalog` |
 
 ## 14. Next work package

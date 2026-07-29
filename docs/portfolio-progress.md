@@ -14,7 +14,7 @@
 | Current phase | Phase 3 — Portfolio Billing, Plans and Entitlements |
 | Current work package | P3-WP01 — Product and Plan Catalog (**Ready for Review**) |
 | Overall status | Phase 2 complete; first Platform catalog persistence + API delivered |
-| Latest verified commit | _(after commit)_ |
+| Latest verified commit | `9d01f26095c3c76ffd67aa2b7b5bcf1a19a328f2` |
 | Open blockers | Catalog API unauthenticated (R-045); R-035 calendar EOM open |
 | Last updated | 2026-07-29 |
 
@@ -50,7 +50,7 @@ P3-WP02 Trials and Subscription Lifecycle (not started)
 
 | WP | Status | Key commit |
 |---|---|---|
-| P3-WP01 | Ready for Review | _(after commit)_ |
+| P3-WP01 | Ready for Review | `9d01f26` |
 | P3-WP02–05 | Not Started | — |
 
 ## Catalog snapshot (P3-WP01)

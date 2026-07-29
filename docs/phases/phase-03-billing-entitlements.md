@@ -57,7 +57,7 @@ Persist the Platform product/plan catalog and expose it via Platform API without
 
 | Field | Value |
 |---|---|
-| Hash | _(recorded after commit)_ |
+| Hash | `9d01f26095c3c76ffd67aa2b7b5bcf1a19a328f2` |
 | Message | `feat(platform): implement product and plan catalog` |
 
 ### P3-WP02 — Trials and Subscription Lifecycle
