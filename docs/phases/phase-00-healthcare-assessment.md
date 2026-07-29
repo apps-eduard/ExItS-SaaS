@@ -123,7 +123,7 @@ R-013 mitigated; R-016 open; R-010 ignore mitigation only; R-014/R-015 remain.
 
 | Field | Value |
 |---|---|
-| Hash | `66f8d9b7d7c26ed0bdfc4d3e0464e7d51bc05f05` |
+| Hash | `6b56e6dfec93f49e43a9c1a92baea1300d148b28` |
 | Message | `chore(repo): establish safe healthcare baseline` |
 
 ### P0-WP03 — Ant Design and UI Reuse Review

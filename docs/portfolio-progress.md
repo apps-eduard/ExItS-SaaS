@@ -14,7 +14,7 @@
 | Current phase | Phase 0 — Existing HealthCare Assessment |
 | Current work package | P0-WP02 — Baseline Build, Tests, Runtime and Repository Safety Map (**Ready for Review**) |
 | Overall status | In Progress |
-| Latest verified commit | `66f8d9b7d7c26ed0bdfc4d3e0464e7d51bc05f05` (`chore(repo): establish safe healthcare baseline`) |
+| Latest verified commit | `6b56e6dfec93f49e43a9c1a92baea1300d148b28` (`chore(repo): establish safe healthcare baseline`) |
 | Open blockers | 0 extraction blockers; root remote empty (first push needs user authorization); Android SDK env wiring incomplete |
 | Last updated | 2026-07-29 |
 

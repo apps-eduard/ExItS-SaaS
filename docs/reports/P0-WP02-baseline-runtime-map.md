@@ -99,7 +99,7 @@ Runtime baseline, repository boundaries, development environment, dashboard, Pha
 
 | Field | Value |
 |---|---|
-| Commit hash | `66f8d9b7d7c26ed0bdfc4d3e0464e7d51bc05f05` |
+| Commit hash | `6b56e6dfec93f49e43a9c1a92baea1300d148b28` |
 | Commit message | `chore(repo): establish safe healthcare baseline` |
 | Final working tree | Clean; `HealthCare/` ignored (not tracked) |
 
