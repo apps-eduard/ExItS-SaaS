@@ -130,4 +130,4 @@ Do not begin until explicitly authorized.
 | Kind | Message / hash |
 |---|---|
 | Feature | `feat(admin): manage users memberships and product access` — `6f1cacbdb192aade258714a3e131bd78b2b4e177` |
-| Docs (optional) | `docs(admin): record P4-WP02 commit hashes` |
+| Docs | `docs(admin): record P4-WP02 commit hashes` — `fa9582b736cb8c1bba0a0510fb98d32cee306a5a` |
