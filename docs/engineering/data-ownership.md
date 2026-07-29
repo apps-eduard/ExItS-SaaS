@@ -80,6 +80,8 @@ Businesses, stores/branches/registers, customers, credit, retail payments, catal
 | Update / audit / deletion | Platform |
 | Projection | Full commercial entitlement snapshot locally |
 
+**P3-WP04:** Platform persists authoritative `feature_overrides` and immutable `entitlement_snapshots` (+ grants). Product-local projection storage and delivery remain product-owned and out of scope.
+
 ### Clinic / patient / appointment / medical note
 
 | Aspect | Rule |

@@ -1,5 +1,6 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Catalog;
@@ -29,6 +30,7 @@ public sealed class CommercialUseCaseTests
         var subscriptions = new InMemorySubscriptionRepository();
         var overrides = new InMemoryFeatureOverrideRepository();
         var snapshots = new InMemoryEntitlementSnapshotRepository();
+        var refreshPolicy = new ProvisionalEntitlementRefreshPolicy();
 
         var org = (await new CreatePlatformOrganization(orgs, uow, clock)
             .ExecuteAsync("Acme Group", "acme-group")).Value!;
@@ -83,13 +85,13 @@ public sealed class CommercialUseCaseTests
         Assert.Equal(1, subscriptions.AddCount);
 
         var snapshot = await new GenerateEntitlementSnapshot(
-                subscriptions, plans, trials, overrides, snapshots, clock)
+                subscriptions, plans, trials, overrides, snapshots, refreshPolicy, uow, clock)
             .ExecuteAsync(start.Value!.Id, expectedNextVersion: 1);
         Assert.True(snapshot.IsSuccess);
         Assert.Equal(1, snapshots.AddCount);
 
         var conflict = await new GenerateEntitlementSnapshot(
-                subscriptions, plans, trials, overrides, snapshots, clock)
+                subscriptions, plans, trials, overrides, snapshots, refreshPolicy, uow, clock)
             .ExecuteAsync(start.Value.Id, expectedNextVersion: 1);
         Assert.Equal(ApplicationErrorCodes.SnapshotVersionConflict, conflict.ErrorCode);
         Assert.Equal(1, snapshots.AddCount);
@@ -226,14 +228,20 @@ public sealed class CommercialUseCaseTests
     public async Task Create_and_revoke_feature_override()
     {
         var clock = new FixedClock(T0);
+        var uow = new NoOpUnitOfWork();
+        var orgs = new InMemoryPlatformOrganizationRepository();
         var features = new InMemoryFeatureDefinitionRepository();
         var overrides = new InMemoryFeatureOverrideRepository();
         var pc = ProductCode.Create(ProductCode.PinoyBusinessPos);
         var fc = FeatureCode.Create(FeatureCode.CustomerCreditCreate);
         await features.AddAsync(FeatureDefinition.Create(pc, fc, "Create", FeatureValueType.Boolean, T0));
 
-        var created = await new CreateFeatureOverride(features, overrides, clock).ExecuteAsync(
-            PlatformOrganizationId.New(),
+        var org = (await new CreatePlatformOrganization(orgs, uow, clock)
+            .ExecuteAsync("Acme Group", "acme-group")).Value!;
+
+        var revokedBy = PlatformUserId.New();
+        var created = await new CreateFeatureOverride(orgs, features, overrides, uow, clock).ExecuteAsync(
+            org.Id,
             pc,
             fc,
             enabled: false,
@@ -242,7 +250,8 @@ public sealed class CommercialUseCaseTests
         Assert.True(created.IsSuccess);
         Assert.Equal(1, overrides.AddCount);
 
-        var revoked = await new RevokeFeatureOverride(overrides, clock).ExecuteAsync(created.Value!.Id);
+        var revoked = await new RevokeFeatureOverride(overrides, uow, clock)
+            .ExecuteAsync(created.Value!.Id, "No longer needed", revokedBy);
         Assert.True(revoked.IsSuccess);
         Assert.Equal(FeatureOverrideStatus.Revoked, revoked.Value!.Status);
     }

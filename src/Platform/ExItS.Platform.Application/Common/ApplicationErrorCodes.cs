@@ -53,4 +53,13 @@ public static class ApplicationErrorCodes
     public const string PaymentProductMismatch = "application.payment.product_mismatch";
     public const string PaymentOrganizationMismatch = "application.payment.organization_mismatch";
     public const string PaymentSubscriptionConflict = "application.payment.subscription_conflict";
+
+    public const string EntitlementSnapshotNotFound = "application.entitlement_snapshot.not_found";
+    public const string EntitlementSnapshotInvalid = "application.entitlement_snapshot.invalid";
+    public const string EntitlementSchemaUnsupported = "application.entitlement_snapshot.schema_unsupported";
+    public const string FeatureOverrideConflict = "application.feature_override.conflict";
+    public const string FeatureOverrideInvalidTransition = "application.feature_override.invalid_transition";
+    public const string EntitlementProductMismatch = "application.entitlement.product_mismatch";
+    public const string EntitlementSubscriptionInvalid = "application.entitlement.subscription_invalid";
+    public const string EntitlementRefreshPolicyMissing = "application.entitlement.refresh_policy_missing";
 }

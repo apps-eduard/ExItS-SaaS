@@ -22,6 +22,9 @@ public sealed class FeatureOverride
     public DateTimeOffset CreatedAtUtc { get; }
     public PlatformUserId CreatedByUserId { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
+    public DateTimeOffset? RevokedAtUtc { get; private set; }
+    public PlatformUserId? RevokedByUserId { get; private set; }
+    public string? RevocationReason { get; private set; }
 
     private FeatureOverride(
         FeatureOverrideId id,
@@ -136,6 +139,46 @@ public sealed class FeatureOverride
             utcNow);
     }
 
+    /// <summary>EF rehydration only. Bypasses creation invariants for a row already persisted.</summary>
+    internal static FeatureOverride Rehydrate(
+        FeatureOverrideId id,
+        PlatformOrganizationId organizationId,
+        ProductCode productCode,
+        FeatureCode featureCode,
+        bool enabled,
+        int? numericLimit,
+        string reason,
+        DateTimeOffset effectiveFromUtc,
+        DateTimeOffset? expiresAtUtc,
+        FeatureOverrideStatus status,
+        DateTimeOffset createdAtUtc,
+        PlatformUserId createdByUserId,
+        DateTimeOffset updatedAtUtc,
+        DateTimeOffset? revokedAtUtc,
+        PlatformUserId? revokedByUserId,
+        string? revocationReason)
+    {
+        var featureOverride = new FeatureOverride(
+            id,
+            organizationId,
+            productCode,
+            featureCode,
+            enabled,
+            numericLimit,
+            reason,
+            effectiveFromUtc,
+            expiresAtUtc,
+            status,
+            createdAtUtc,
+            createdByUserId,
+            updatedAtUtc);
+
+        featureOverride.RevokedAtUtc = revokedAtUtc;
+        featureOverride.RevokedByUserId = revokedByUserId;
+        featureOverride.RevocationReason = revocationReason;
+        return featureOverride;
+    }
+
     public bool IsActiveAt(DateTimeOffset utcNow)
     {
         DomainTime.EnsureUtc(utcNow);
@@ -157,9 +200,23 @@ public sealed class FeatureOverride
         return true;
     }
 
-    public void Revoke(DateTimeOffset utcNow)
+    /// <summary>
+    /// Revokes the override, recording who revoked it and why. Historical overrides are never
+    /// deleted; revocation is a status transition that preserves the full audit trail. Idempotent:
+    /// revoking an already-revoked override is a same-state no-op that keeps the original
+    /// revocation metadata.
+    /// </summary>
+    public void Revoke(string reason, PlatformUserId revokedBy, DateTimeOffset utcNow)
     {
+        ArgumentNullException.ThrowIfNull(revokedBy);
         DomainTime.EnsureUtc(utcNow);
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new DomainException(
+                DomainErrorCodes.OverrideReasonRequired,
+                "Feature override revocation reason is required.");
+        }
+
         if (Status == FeatureOverrideStatus.Revoked)
         {
             return;
@@ -167,5 +224,8 @@ public sealed class FeatureOverride
 
         Status = FeatureOverrideStatus.Revoked;
         UpdatedAtUtc = utcNow;
+        RevokedAtUtc = utcNow;
+        RevokedByUserId = revokedBy;
+        RevocationReason = reason.Trim();
     }
 }

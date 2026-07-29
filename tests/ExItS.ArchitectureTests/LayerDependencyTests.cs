@@ -168,6 +168,8 @@ public sealed class LayerDependencyTests
         Assert.NotNull(Application.GetType("ExItS.Platform.Application.Catalog.IProductRepository"));
         Assert.NotNull(Application.GetType("ExItS.Platform.Application.Subscriptions.ISubscriptionRepository"));
         Assert.NotNull(Application.GetType("ExItS.Platform.Application.Payments.ISaaSPaymentRepository"));
+        Assert.NotNull(Application.GetType("ExItS.Platform.Application.Entitlements.IFeatureOverrideRepository"));
+        Assert.NotNull(Application.GetType("ExItS.Platform.Application.Entitlements.IEntitlementSnapshotRepository"));
         Assert.NotNull(typeof(PlatformUser));
     }
 
@@ -605,6 +607,47 @@ public sealed class LayerDependencyTests
     }
 
     [Fact]
+    public void AddEntitlementSnapshotsAndOverrides_migration_creates_only_the_expected_entitlement_tables()
+    {
+        var root = FindRepositoryRoot();
+        var migrationsDir = Path.Combine(root, "src", "Platform", "ExItS.Platform.Infrastructure", "Persistence", "Migrations");
+        var migrationFile = Directory.GetFiles(migrationsDir, "*_AddEntitlementSnapshotsAndOverrides.cs").SingleOrDefault();
+        Assert.NotNull(migrationFile);
+
+        var migration = File.ReadAllText(migrationFile!);
+        Assert.Contains("name: \"feature_overrides\"", migration, StringComparison.Ordinal);
+        Assert.Contains("name: \"entitlement_snapshots\"", migration, StringComparison.Ordinal);
+        Assert.Contains("name: \"entitlement_snapshot_grants\"", migration, StringComparison.Ordinal);
+        Assert.Contains("ux_entitlement_snapshots_org_product_version", migration, StringComparison.Ordinal);
+        Assert.Contains("ck_feature_overrides_expiry_range", migration, StringComparison.Ordinal);
+        Assert.Contains("ck_feature_overrides_numeric_limit", migration, StringComparison.Ordinal);
+        Assert.Contains("ck_entitlement_snapshots_version_positive", migration, StringComparison.Ordinal);
+        Assert.Contains("ck_entitlement_snapshots_schema_positive", migration, StringComparison.Ordinal);
+        Assert.Contains("ck_entitlement_snapshots_refresh_range", migration, StringComparison.Ordinal);
+        Assert.Contains("ck_entitlement_snapshots_expiry_range", migration, StringComparison.Ordinal);
+
+        // Down must correctly roll back all three new tables (validated live via Docker by the
+        // parent workflow); statically verify the Down section names each one for a symmetric migration.
+        var downIndex = migration.IndexOf("protected override void Down", StringComparison.Ordinal);
+        Assert.True(downIndex >= 0);
+        var downSection = migration[downIndex..];
+        Assert.Contains("name: \"feature_overrides\"", downSection, StringComparison.Ordinal);
+        Assert.Contains("name: \"entitlement_snapshots\"", downSection, StringComparison.Ordinal);
+        Assert.Contains("name: \"entitlement_snapshot_grants\"", downSection, StringComparison.Ordinal);
+
+        var forbiddenTableNames = new[]
+        {
+            "users", "memberships", "payments", "invoices", "hangfire", "gcash_clients", "patients"
+        };
+        foreach (var table in forbiddenTableNames)
+        {
+            Assert.DoesNotContain($"name: \"{table}\"", migration, StringComparison.OrdinalIgnoreCase);
+        }
+
+        Assert.DoesNotContain("Patient", migration, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Api_exposes_catalog_subscription_and_manual_payment_endpoints()
     {
         var root = FindRepositoryRoot();
@@ -617,12 +660,16 @@ public sealed class LayerDependencyTests
         Assert.Contains("MapOrganizationEndpoints", program);
         Assert.Contains("MapSubscriptionEndpoints", program);
         Assert.Contains("MapPaymentEndpoints", program);
-        Assert.Contains("P3-WP03", program, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("MapEntitlementEndpoints", program);
+        Assert.Contains("P3-WP04", program, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("catalog", program, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("subscription", program, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("payment", program, StringComparison.OrdinalIgnoreCase);
 
-        Assert.DoesNotContain("entitlement", program, StringComparison.OrdinalIgnoreCase);
+        // P3-WP04 adds Platform entitlement snapshot/feature-override persistence and development-
+        // stage APIs; product-local projection, delivery, and migration-import concerns remain
+        // out of scope for this phase.
+        Assert.Contains("entitlement", program, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("projection", program, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("reconciliation", program, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("MapGet(\"/migration", program, StringComparison.OrdinalIgnoreCase);

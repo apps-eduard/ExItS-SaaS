@@ -10,6 +10,8 @@ Exact refresh/stale **durations are not fixed** in P1-WP02 (R-022). Behavior is 
 
 **P3-WP02:** Subscription lifecycle states (Trialing/Active/GracePeriod/PastDue/Suspended/Cancelled/Expired) are now **persisted** with one active-like slot per organization+product. Entitlement **projection delivery** remains out of scope.
 
+**P3-WP04:** Authoritative entitlement snapshots and feature overrides are **persisted** on Platform. Composition encodes state-specific grants (including Expired Utang view/repay enabled, create disabled). Refresh-by uses provisional 24h (`IEntitlementRefreshPolicy`); **R-022 numeric stale windows remain open**. Product-local projection states and delivery remain product concerns.
+
 | Projection State | Trusted? | Reads Allowed | Writes Allowed | Restricted Operations | Refresh Action | Audit Requirement |
 |---|---|---|---|---|---|---|
 | Current | Yes | Yes | Per entitlements | None beyond normal authz | Background refresh before RefreshBy | Normal product audit |

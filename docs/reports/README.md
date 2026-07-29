@@ -35,3 +35,4 @@ The dashboard links to the latest accepted report.
 | [P3-WP01-product-and-plan-catalog.md](P3-WP01-product-and-plan-catalog.md) | Product and Plan Catalog | Complete |
 | [P3-WP02-trials-and-subscription-lifecycle.md](P3-WP02-trials-and-subscription-lifecycle.md) | Trials and Subscription Lifecycle | Ready for Review |
 | [P3-WP03-manual-payment-activation.md](P3-WP03-manual-payment-activation.md) | Manual Payment Activation | Ready for Review |
+| [P3-WP04-entitlement-snapshots-and-grace-rules.md](P3-WP04-entitlement-snapshots-and-grace-rules.md) | Entitlement Snapshots and Grace Rules | Ready for Review |

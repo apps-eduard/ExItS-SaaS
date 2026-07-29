@@ -44,6 +44,21 @@ public static class PersistenceExceptionMapper
             return true;
         }
 
+        if (detail.Contains("ux_entitlement_snapshots_org_product_version", StringComparison.OrdinalIgnoreCase)
+            || detail.Contains("entitlement_snapshots", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.SnapshotVersionConflict;
+            message = "An entitlement snapshot with this version already exists for this organization and product.";
+            return true;
+        }
+
+        if (detail.Contains("entitlement_snapshot_grants", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.EntitlementSnapshotInvalid;
+            message = "Duplicate feature code within an entitlement snapshot.";
+            return true;
+        }
+
         if (detail.Contains("organizations", StringComparison.OrdinalIgnoreCase)
             || detail.Contains("(slug)", StringComparison.OrdinalIgnoreCase))
         {

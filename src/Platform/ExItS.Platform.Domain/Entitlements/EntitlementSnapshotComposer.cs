@@ -137,13 +137,27 @@ public sealed class EntitlementSnapshotComposer
         Dictionary<string, EntitlementGrant> map,
         DateTimeOffset utcNow)
     {
-        if (subscription.Status is not (SubscriptionStatus.Suspended or SubscriptionStatus.Cancelled))
+        if (!Enum.IsDefined(subscription.Status))
+        {
+            // Fail closed: an unrecognized status must never silently fall through to full access.
+            throw new DomainException(
+                DomainErrorCodes.UnsupportedSubscriptionStatus,
+                $"Subscription status '{subscription.Status}' is not supported for entitlement composition.");
+        }
+
+        // GracePeriod keeps whatever the base grants (plan/trial) already provide — per the
+        // authorization matrix, grace-period entitlements are "per grace entitlements" and are
+        // not further restricted here. Trialing/Active/Expired are likewise handled entirely by
+        // ResolveBaseGrants and require no further adjustment.
+        if (subscription.Status is not (SubscriptionStatus.PastDue
+                or SubscriptionStatus.Suspended
+                or SubscriptionStatus.Cancelled))
         {
             return;
         }
 
-        // Suspension/cancellation disables commercial write features; view/repay may remain for continuity.
-        // Create-customer-credit is always disabled when suspended/cancelled.
+        // PastDue/Suspended/Cancelled fail closed on new credit; view/repay may remain for continuity.
+        // Create-customer-credit is always disabled once a subscription is no longer current.
         if (map.TryGetValue(FeatureCode.CustomerCreditCreate, out var create))
         {
             map[FeatureCode.CustomerCreditCreate] = new EntitlementGrant(

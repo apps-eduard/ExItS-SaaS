@@ -12,7 +12,7 @@ Phase 2 is **Close with documented risks** (P2-WP06). Domain foundations for cat
 
 ## First work package
 
-**P3-WP01** Complete (accepted). **P3-WP02** Complete (accepted). **P3-WP03** Ready for Review — manual SaaS payment activation.
+**P3-WP01–P3-WP03** Complete (accepted). **P3-WP04** Ready for Review — entitlement snapshots and grace rules.
 
 ## Work packages
 
@@ -156,22 +156,50 @@ Implement persistent Platform SaaS manual payment records, confirmation lifecycl
 
 ### P3-WP04 — Entitlement Snapshots and Grace Rules
 
-Status: Not Started
+Status: **Ready for Review**
 
-#### Required outcomes
+#### Goal
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+Persist authoritative Platform entitlement snapshots and feature overrides with grace/past-due/suspended/cancelled/expired composition rules — without product delivery.
+
+#### Outcomes delivered
+
+- `platform.feature_overrides`, `entitlement_snapshots`, `entitlement_snapshot_grants`; migration `AddEntitlementSnapshotsAndOverrides`.
+- Monotonic snapshot versioning per organization+product; immutable history; reconcile creates new versions.
+- Composer status rules including Expired Utang view/repay/create grants; PastDue/Suspended fail-closed on create.
+- Provisional `IEntitlementRefreshPolicy` (24h); R-022 remains open.
+- APIs under entitlements and feature-overrides routes (development-stage, unauthenticated).
+- 301 root tests; isolated PostgreSQL apply/rollback/re-apply validated.
+- HealthCare remains frozen.
+
+#### Explicit exclusions (honored)
+
+- No product delivery, broker, outbox, Hangfire, HealthCare/POS projection tables.
+- No Admin UI, authentication, payment-gateway changes.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (301/0/0).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded (see below).
+- [x] Working tree clean (after hash-record).
+- [x] HealthCare freeze verified.
+- [x] Validated commit pushed to `origin/main`.
+
+#### Artifacts
+
+| Artifact | Path |
+|---|---|
+| Report | [P3-WP04 report](../reports/P3-WP04-entitlement-snapshots-and-grace-rules.md) |
+
+#### Commit
+
+| Field | Value |
+|---|---|
+| Hash | _(to be recorded)_ |
+| Message | `feat(platform): persist entitlement snapshots and grace rules` |
 
 ### P3-WP05 — Billing Closeout
 

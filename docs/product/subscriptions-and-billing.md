@@ -51,6 +51,8 @@ Everything in Basic Store plus suppliers, purchasing, advanced inventory, cashie
 
 **P3-WP03:** Manual SaaS payment records are **persisted** (`platform.saas_payments`). Manual confirmation lifecycle (PendingConfirmation → Confirmed → Voided; PendingConfirmation → Rejected). Confirmed payment can atomically activate a subscription. Duplicate-reference detection enforced. No payment gateway, webhook, QR, card storage, or automatic verification. Payment amount reconciliation against catalog price is deferred.
 
+**P3-WP04:** Feature overrides and immutable entitlement snapshots are **persisted**. Composition applies plan/trial grants, overrides, and subscription-state restrictions (including Expired Utang view/repay/create). Snapshot versions are monotonic per organization+product. Refresh-by uses a provisional 24h policy (R-022 open). **No product delivery** — HealthCare/POS local projections remain future work.
+
 ## Availability rule
 
 Product APIs use locally stored entitlement snapshots (versioned, time-bounded, fail-safe, with grace and audit). A sale or offline credit must not fail solely because the central Platform service is temporarily unavailable.

@@ -1,4 +1,5 @@
 using ExItS.Platform.Application.Catalog;
+using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Catalog;
@@ -370,6 +371,26 @@ internal sealed class InMemoryFeatureOverrideRepository : IFeatureOverrideReposi
         return Task.FromResult(list);
     }
 
+    public Task<(IReadOnlyList<FeatureOverride> Items, int TotalCount)> ListByOrganizationProductAsync(
+        PlatformOrganizationId organizationId,
+        ProductCode productCode,
+        FeatureOverrideStatus? status,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _items.Values
+            .Where(o => o.OrganizationId == organizationId && o.ProductCode == productCode);
+        if (status is not null)
+        {
+            query = query.Where(o => o.Status == status.Value);
+        }
+
+        var ordered = query.OrderByDescending(o => o.CreatedAtUtc).ToList();
+        IReadOnlyList<FeatureOverride> page = ordered.Skip(skip).Take(take).ToList();
+        return Task.FromResult((page, ordered.Count));
+    }
+
     public Task AddAsync(FeatureOverride featureOverride, CancellationToken cancellationToken = default)
     {
         _items[featureOverride.Id.Value] = featureOverride;
@@ -502,6 +523,36 @@ internal sealed class InMemoryEntitlementSnapshotRepository : IEntitlementSnapsh
     private readonly List<EntitlementSnapshot> _items = new();
     public int AddCount { get; private set; }
 
+    public Task<EntitlementSnapshot?> GetByIdAsync(
+        EntitlementSnapshotId id,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(_items.FirstOrDefault(s => s.Id == id));
+
+    public Task<EntitlementSnapshot?> GetLatestForOrganizationProductAsync(
+        PlatformOrganizationId organizationId,
+        ProductCode productCode,
+        CancellationToken cancellationToken = default)
+    {
+        var latest = _items
+            .Where(s => s.OrganizationId == organizationId && s.ProductCode == productCode)
+            .OrderByDescending(s => s.SnapshotVersion)
+            .FirstOrDefault();
+        return Task.FromResult(latest);
+    }
+
+    public Task<EntitlementSnapshot?> GetByVersionAsync(
+        PlatformOrganizationId organizationId,
+        ProductCode productCode,
+        int snapshotVersion,
+        CancellationToken cancellationToken = default)
+    {
+        var found = _items.FirstOrDefault(s =>
+            s.OrganizationId == organizationId
+            && s.ProductCode == productCode
+            && s.SnapshotVersion == snapshotVersion);
+        return Task.FromResult(found);
+    }
+
     public Task<int?> GetLatestSnapshotVersionAsync(
         PlatformOrganizationId organizationId,
         ProductCode productCode,
@@ -513,6 +564,21 @@ internal sealed class InMemoryEntitlementSnapshotRepository : IEntitlementSnapsh
             .DefaultIfEmpty(null)
             .Max();
         return Task.FromResult(max);
+    }
+
+    public Task<(IReadOnlyList<EntitlementSnapshot> Items, int TotalCount)> ListHistoryAsync(
+        PlatformOrganizationId organizationId,
+        ProductCode productCode,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var ordered = _items
+            .Where(s => s.OrganizationId == organizationId && s.ProductCode == productCode)
+            .OrderByDescending(s => s.SnapshotVersion)
+            .ToList();
+        IReadOnlyList<EntitlementSnapshot> page = ordered.Skip(skip).Take(take).ToList();
+        return Task.FromResult((page, ordered.Count));
     }
 
     public Task AddAsync(EntitlementSnapshot snapshot, CancellationToken cancellationToken = default)

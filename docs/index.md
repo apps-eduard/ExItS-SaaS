@@ -63,6 +63,7 @@
 - [P3-WP01 product and plan catalog report](reports/P3-WP01-product-and-plan-catalog.md)
 - [P3-WP02 trials and subscription lifecycle report](reports/P3-WP02-trials-and-subscription-lifecycle.md)
 - [P3-WP03 manual payment activation report](reports/P3-WP03-manual-payment-activation.md)
+- [P3-WP04 entitlement snapshots and grace rules report](reports/P3-WP04-entitlement-snapshots-and-grace-rules.md)
 - [All phases](phases/README.md)
 - [Risks and issues](risks-and-issues.md)
 - [Decisions](decisions/README.md)

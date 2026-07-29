@@ -1,8 +1,10 @@
 using ExItS.Platform.Api.Catalog;
+using ExItS.Platform.Api.Entitlements;
 using ExItS.Platform.Api.Organizations;
 using ExItS.Platform.Api.Payments;
 using ExItS.Platform.Api.Subscriptions;
 using ExItS.Platform.Application.Catalog;
+using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
@@ -55,6 +57,13 @@ builder.Services.AddScoped<RejectSaaSPayment>();
 builder.Services.AddScoped<VoidSaaSPayment>();
 builder.Services.AddScoped<ConfirmPaymentAndActivateSubscription>();
 
+builder.Services.AddScoped<EntitlementQueryService>();
+builder.Services.AddScoped<FeatureOverrideQueryService>();
+builder.Services.AddScoped<CreateFeatureOverride>();
+builder.Services.AddScoped<RevokeFeatureOverride>();
+builder.Services.AddScoped<GenerateEntitlementSnapshot>();
+builder.Services.AddScoped<ReconcileEntitlementSnapshot>();
+
 var app = builder.Build();
 
 app.UseExceptionHandler();
@@ -64,7 +73,7 @@ app.MapGet("/", () => Results.Json(new
 {
     service = "ExItS.Platform.Api",
     status = "ok",
-    phase = "P3-WP03-manual-payment-activation"
+    phase = "P3-WP04-entitlement-snapshots-grace-rules"
 }));
 
 app.MapHealthChecks("/health");
@@ -72,6 +81,7 @@ app.MapCatalogEndpoints();
 app.MapOrganizationEndpoints();
 app.MapSubscriptionEndpoints();
 app.MapPaymentEndpoints();
+app.MapEntitlementEndpoints();
 
 app.Run();
 

@@ -25,7 +25,7 @@
 | R-019 | Dual UI stacks (HC Ant vs **native** Platform Admin + POS) — brand drift, duplicated visuals, separate a11y/theme work, future HC modernization cost | Medium | Shared semantic tokens, branding, terminology, UI-independent contracts; separate framework impls; no forced HC rewrite in current MVP | Open — **controlled technical separation** (ADR-010) |
 | R-020 | Phase 0 closed while Integration/E2E not re-baselined on this machine | Medium | Run Integration/E2E on approved Ubuntu/Compose agents before extraction (Phase 2 gate) | Open — deferred by design from P0-WP02 |
 | R-021 | Empty root remote delays shared portfolio publication | Medium | User-authorized `git push -u origin main` when ready | **Closed** with R-016 (P2-WP05 Part A) |
-| R-022 | Entitlement projection staleness durations / conflict numerics underspecified | High | P1-WP02 defined states, idempotency, fail-closed rules; set exact windows in Phase 3 / 7 | Open — categorical behavior accepted; durations TBD |
+| R-022 | Entitlement projection staleness durations / conflict numerics underspecified | High | P1-WP02 defined states; P3-WP04 ships provisional 24h refresh policy via `IEntitlementRefreshPolicy` — **not** final | Open — provisional durations only (P3-WP04) |
 | R-023 | Premature shared library / mega-utility before two consumers | Medium | Shared-code governance in capability boundary §22; prefer contracts/conventions | Open — governance documented P1-WP01 |
 | R-024 | Contract major-version skew between Platform and products | High | Version negotiation, migration windows, quarantine unsupported majors (ADR-012) | Open — policy documented P1-WP02; runtime later |
 | R-025 | Manual GCash recording errors / duplicate references | Medium | Required normalized reference; warn on duplicates (OD-11); cashier confirmation UX; no secrets stored; sync re-check | Open — documented POS MVP payment correction |
@@ -61,6 +61,11 @@
 | R-055 | Unauthenticated payment mutation endpoints (production gate) | Critical | Same gate as R-045/R-050; payment confirmation requires auth before production | Open — introduced P3-WP03 |
 | R-056 | No reconciliation engine for manual payments | Medium | Manual payments are recorded and confirmed by operator; no automated bank/GCash reconciliation | Open — introduced P3-WP03 |
 | R-057 | Manual payment mistaken for automatic gateway integration | High | Documentation explicitly states no gateway; architecture tests forbid gateway/webhook/QR types | Open — introduced P3-WP03 |
+| R-058 | Snapshot-version race under concurrent generation | Medium | Unique index on (org, product, version); conflict → 409 | Open — introduced P3-WP04 |
+| R-059 | Feature override misuse without authentication / separation of duties | High | Require authenticated operator with override permission before production | Open — introduced P3-WP04 |
+| R-060 | Authoritative snapshot mistaken for completed product delivery | High | Docs + APIs state Platform-only persistence; no broker/delivery routes | Open — introduced P3-WP04 |
+| R-061 | Manual snapshot regeneration gaps without scheduler | Medium | Explicit generate/reconcile commands; no Hangfire yet | Open — introduced P3-WP04 |
+| R-062 | Unauthenticated entitlement/override mutation endpoints | Critical | Same gate as R-045; do not expose beyond development | Open — introduced P3-WP04 |
 
 ## Phase 2 closeout note (P2-WP06)
 

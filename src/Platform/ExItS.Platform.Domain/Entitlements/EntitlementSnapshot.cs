@@ -27,6 +27,7 @@ public sealed class EntitlementSnapshot
     public DateTimeOffset GeneratedAtUtc { get; }
     public DateTimeOffset EffectiveAtUtc { get; }
     public DateTimeOffset RefreshByUtc { get; }
+    public DateTimeOffset? ExpiresAtUtc { get; }
     public int SourceAggregateVersion { get; }
 
     public IReadOnlyList<EntitlementGrant> Grants => _grants;
@@ -45,6 +46,7 @@ public sealed class EntitlementSnapshot
         DateTimeOffset generatedAtUtc,
         DateTimeOffset effectiveAtUtc,
         DateTimeOffset refreshByUtc,
+        DateTimeOffset? expiresAtUtc,
         int sourceAggregateVersion,
         IEnumerable<EntitlementGrant> grants)
     {
@@ -61,6 +63,7 @@ public sealed class EntitlementSnapshot
         GeneratedAtUtc = generatedAtUtc;
         EffectiveAtUtc = effectiveAtUtc;
         RefreshByUtc = refreshByUtc;
+        ExpiresAtUtc = expiresAtUtc;
         SourceAggregateVersion = sourceAggregateVersion;
         _grants = grants.ToList();
     }
@@ -81,7 +84,8 @@ public sealed class EntitlementSnapshot
         DateTimeOffset refreshByUtc,
         int sourceAggregateVersion,
         IReadOnlyList<EntitlementGrant> grants,
-        EntitlementSnapshotId? id = null)
+        EntitlementSnapshotId? id = null,
+        DateTimeOffset? expiresAtUtc = null)
     {
         ArgumentNullException.ThrowIfNull(organizationId);
         ArgumentNullException.ThrowIfNull(productCode);
@@ -91,6 +95,16 @@ public sealed class EntitlementSnapshot
         DomainTime.EnsureUtc(generatedAtUtc);
         DomainTime.EnsureUtc(effectiveAtUtc);
         DomainTime.EnsureUtc(refreshByUtc);
+        if (expiresAtUtc is not null)
+        {
+            DomainTime.EnsureUtc(expiresAtUtc.Value);
+            if (expiresAtUtc.Value < effectiveAtUtc)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidEffectiveRange,
+                    "Snapshot expiry cannot precede its effective time.");
+            }
+        }
 
         if (snapshotVersion < 1)
         {
@@ -131,7 +145,44 @@ public sealed class EntitlementSnapshot
             generatedAtUtc,
             effectiveAtUtc,
             refreshByUtc,
+            expiresAtUtc,
             sourceAggregateVersion,
             grants);
     }
+
+    /// <summary>EF rehydration only. Bypasses creation invariants for a row already persisted.</summary>
+    internal static EntitlementSnapshot Rehydrate(
+        EntitlementSnapshotId id,
+        PlatformOrganizationId organizationId,
+        ProductCode productCode,
+        SubscriptionId subscriptionId,
+        PlanCode planCode,
+        int planVersionNumber,
+        int snapshotVersion,
+        int schemaVersion,
+        SubscriptionStatus subscriptionStatus,
+        bool inGracePeriod,
+        DateTimeOffset generatedAtUtc,
+        DateTimeOffset effectiveAtUtc,
+        DateTimeOffset refreshByUtc,
+        DateTimeOffset? expiresAtUtc,
+        int sourceAggregateVersion,
+        IEnumerable<EntitlementGrant> grants) =>
+        new(
+            id,
+            organizationId,
+            productCode,
+            subscriptionId,
+            planCode,
+            planVersionNumber,
+            snapshotVersion,
+            schemaVersion,
+            subscriptionStatus,
+            inGracePeriod,
+            generatedAtUtc,
+            effectiveAtUtc,
+            refreshByUtc,
+            expiresAtUtc,
+            sourceAggregateVersion,
+            grants);
 }

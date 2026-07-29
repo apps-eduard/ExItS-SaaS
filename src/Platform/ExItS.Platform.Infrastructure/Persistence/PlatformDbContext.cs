@@ -1,4 +1,5 @@
 using ExItS.Platform.Infrastructure.Persistence.Catalog;
+using ExItS.Platform.Infrastructure.Persistence.Entitlements;
 using ExItS.Platform.Infrastructure.Persistence.Organizations;
 using ExItS.Platform.Infrastructure.Persistence.Payments;
 using ExItS.Platform.Infrastructure.Persistence.Subscriptions;
@@ -34,6 +35,9 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PlatformOrganizationRecord> Organizations => Set<PlatformOrganizationRecord>();
     internal DbSet<SubscriptionRecord> Subscriptions => Set<SubscriptionRecord>();
     internal DbSet<SaaSPaymentRecord> SaaSPayments => Set<SaaSPaymentRecord>();
+    internal DbSet<FeatureOverrideRecord> FeatureOverrides => Set<FeatureOverrideRecord>();
+    internal DbSet<EntitlementSnapshotRecord> EntitlementSnapshots => Set<EntitlementSnapshotRecord>();
+    internal DbSet<EntitlementSnapshotGrantRecord> EntitlementSnapshotGrants => Set<EntitlementSnapshotGrantRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -280,6 +284,110 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.SubscriptionId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<FeatureOverrideRecord>(entity =>
+        {
+            entity.ToTable("feature_overrides", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_feature_overrides_expiry_range",
+                    "expires_at_utc IS NULL OR expires_at_utc > effective_from_utc");
+                tb.HasCheckConstraint(
+                    "ck_feature_overrides_numeric_limit",
+                    "numeric_limit IS NULL OR numeric_limit >= 0");
+            });
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.FeatureCode).HasColumnName("feature_code").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.Enabled).HasColumnName("enabled");
+            entity.Property(e => e.NumericLimit).HasColumnName("numeric_limit");
+            entity.Property(e => e.Reason).HasColumnName("reason").HasMaxLength(1024).IsRequired();
+            entity.Property(e => e.EffectiveFromUtc).HasColumnName("effective_from_utc");
+            entity.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.CreatedByUserId).HasColumnName("created_by_user_id");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
+            entity.Property(e => e.RevokedByUserId).HasColumnName("revoked_by_user_id");
+            entity.Property(e => e.RevocationReason).HasColumnName("revocation_reason").HasMaxLength(1024);
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ProductCode, e.FeatureCode });
+
+            entity.HasOne<Organizations.PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<EntitlementSnapshotRecord>(entity =>
+        {
+            entity.ToTable("entitlement_snapshots", tb =>
+            {
+                tb.HasCheckConstraint("ck_entitlement_snapshots_version_positive", "snapshot_version > 0");
+                tb.HasCheckConstraint("ck_entitlement_snapshots_schema_positive", "schema_version > 0");
+                tb.HasCheckConstraint("ck_entitlement_snapshots_refresh_range", "refresh_by_utc >= generated_at_utc");
+                tb.HasCheckConstraint(
+                    "ck_entitlement_snapshots_expiry_range",
+                    "expires_at_utc IS NULL OR expires_at_utc >= effective_at_utc");
+            });
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.SubscriptionId).HasColumnName("subscription_id");
+            entity.Property(e => e.PlanCode).HasColumnName("plan_code").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.PlanVersionNumber).HasColumnName("plan_version_number");
+            entity.Property(e => e.SnapshotVersion).HasColumnName("snapshot_version");
+            entity.Property(e => e.SchemaVersion).HasColumnName("schema_version");
+            entity.Property(e => e.SubscriptionStatus).HasColumnName("subscription_status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.InGracePeriod).HasColumnName("in_grace_period");
+            entity.Property(e => e.GeneratedAtUtc).HasColumnName("generated_at_utc");
+            entity.Property(e => e.EffectiveAtUtc).HasColumnName("effective_at_utc");
+            entity.Property(e => e.RefreshByUtc).HasColumnName("refresh_by_utc");
+            entity.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
+            entity.Property(e => e.SourceAggregateVersion).HasColumnName("source_aggregate_version");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ProductCode, e.SnapshotVersion })
+                .IsUnique()
+                .HasDatabaseName("ux_entitlement_snapshots_org_product_version");
+
+            entity.HasOne<Organizations.PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<Subscriptions.SubscriptionRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SubscriptionId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<EntitlementSnapshotGrantRecord>(entity =>
+        {
+            entity.ToTable("entitlement_snapshot_grants");
+            entity.HasKey(e => new { e.SnapshotId, e.FeatureCode });
+            entity.Property(e => e.SnapshotId).HasColumnName("snapshot_id");
+            entity.Property(e => e.FeatureCode).HasColumnName("feature_code").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.Enabled).HasColumnName("enabled");
+            entity.Property(e => e.NumericLimit).HasColumnName("numeric_limit");
+            entity.Property(e => e.Source).HasColumnName("source").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.EffectiveAtUtc).HasColumnName("effective_at_utc");
+            entity.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
+
+            entity.HasOne(e => e.Snapshot)
+                .WithMany(s => s.Grants)
+                .HasForeignKey(e => e.SnapshotId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

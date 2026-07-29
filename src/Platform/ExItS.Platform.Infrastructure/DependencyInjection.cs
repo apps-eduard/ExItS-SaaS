@@ -1,4 +1,5 @@
 using ExItS.Platform.Application.Catalog;
+using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
@@ -30,8 +31,11 @@ public static class DependencyInjection
         services.AddScoped<IPlatformOrganizationRepository, PlatformOrganizationRepository>();
         services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
         services.AddScoped<ISaaSPaymentRepository, SaaSPaymentRepository>();
+        services.AddScoped<IFeatureOverrideRepository, FeatureOverrideRepository>();
+        services.AddScoped<IEntitlementSnapshotRepository, EntitlementSnapshotRepository>();
         services.AddScoped<IPlatformUnitOfWork, PlatformUnitOfWork>();
         services.AddSingleton<IClock, SystemClock>();
+        services.AddSingleton<IEntitlementRefreshPolicy, ProvisionalEntitlementRefreshPolicy>();
 
         return services;
     }

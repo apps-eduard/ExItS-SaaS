@@ -51,6 +51,7 @@ public static class DomainErrorCodes
     public const string InvalidPlanVersionTransition = "platform.plan_version.status.invalid_transition";
     public const string InvalidTrialStatusTransition = "platform.trial.status.invalid_transition";
     public const string InvalidSubscriptionTransition = "platform.subscription.status.invalid_transition";
+    public const string UnsupportedSubscriptionStatus = "platform.subscription.status.unsupported";
     public const string InvalidFeatureStatusTransition = "platform.feature.status.invalid_transition";
     public const string InvalidOverrideStatusTransition = "platform.feature_override.status.invalid_transition";
 

@@ -30,6 +30,9 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.PlanVersionNotFound
             or ApplicationErrorCodes.ProductNotFound
             or ApplicationErrorCodes.TrialNotFound
+            or ApplicationErrorCodes.FeatureNotFound
+            or ApplicationErrorCodes.FeatureOverrideNotFound
+            or ApplicationErrorCodes.EntitlementSnapshotNotFound
             or ApplicationErrorCodes.PaymentNotFound => StatusCodes.Status404NotFound,
 
         ApplicationErrorCodes.SlugConflict
@@ -45,17 +48,27 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.PaymentProductMismatch
             or ApplicationErrorCodes.PaymentOrganizationMismatch
             or ApplicationErrorCodes.PaymentSubscriptionConflict
+            or ApplicationErrorCodes.SnapshotVersionConflict
+            or ApplicationErrorCodes.FeatureOverrideConflict
+            or ApplicationErrorCodes.FeatureOverrideInvalidTransition
+            or ApplicationErrorCodes.EntitlementProductMismatch
+            or ApplicationErrorCodes.EntitlementSubscriptionInvalid
             or DomainErrorCodes.PaymentAlreadyConfirmed
             or DomainErrorCodes.PaymentAlreadyUsed
-            or DomainErrorCodes.InvalidSaaSPaymentTransition => StatusCodes.Status409Conflict,
+            or DomainErrorCodes.InvalidSaaSPaymentTransition
+            or DomainErrorCodes.UnsupportedSubscriptionStatus => StatusCodes.Status409Conflict,
 
         ApplicationErrorCodes.PaymentAmountInvalid
             or ApplicationErrorCodes.PaymentCurrencyInvalid
+            or ApplicationErrorCodes.EntitlementSnapshotInvalid
+            or ApplicationErrorCodes.EntitlementSchemaUnsupported
+            or ApplicationErrorCodes.EntitlementRefreshPolicyMissing
             or DomainErrorCodes.PaymentAmountInvalid
             or DomainErrorCodes.PaymentCurrencyInvalid
             or DomainErrorCodes.PaymentReferenceRequired
             or DomainErrorCodes.PaymentReasonRequired => StatusCodes.Status400BadRequest,
 
+        _ when errorCode.Contains("not_found", StringComparison.OrdinalIgnoreCase) => StatusCodes.Status404NotFound,
         _ when errorCode.Contains("conflict", StringComparison.OrdinalIgnoreCase) => StatusCodes.Status409Conflict,
         _ when errorCode.Contains("invalid_transition", StringComparison.OrdinalIgnoreCase) => StatusCodes.Status409Conflict,
         _ when errorCode.Contains("not_eligible", StringComparison.OrdinalIgnoreCase) => StatusCodes.Status409Conflict,
