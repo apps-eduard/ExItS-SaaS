@@ -64,13 +64,14 @@ P2-WP04 HealthCare contract adaptation (not started)
 | Domain | Product, Feature, Plan, PlanVersion, Trial, Subscription, Override, Snapshot |
 | Composer | `EntitlementSnapshotComposer` (deterministic; override precedence) |
 | POS Utang features | `customer-credit-view`, `customer-credit-repay`, `customer-credit-create` |
+| Trial duration | Configurable in Platform; POS requirement = **three calendar months** (not 90 days; EOM rule open) |
 | API business routes | None (still `/` + `/health`) |
-| Tests | 82 passed / 0 failed / 0 skipped |
+| Tests | 86 passed / 0 failed / 0 skipped |
 | API port | `http://127.0.0.1:5288` |
 
 ## Latest tests
 
-Root Release: **82 passed / 0 failed / 0 skipped**. HealthCare not rebuilt (frozen).
+Root Release: **86 passed / 0 failed / 0 skipped**. HealthCare not rebuilt (frozen).
 
 ## Next approved action
 

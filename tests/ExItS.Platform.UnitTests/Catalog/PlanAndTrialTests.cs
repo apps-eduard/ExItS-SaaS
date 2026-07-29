@@ -1,6 +1,8 @@
+using System.Reflection;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Products;
+using ExItS.Platform.UnitTests.Support;
 
 namespace ExItS.Platform.UnitTests.Catalog;
 
@@ -59,9 +61,9 @@ public sealed class PlanAndTrialTests
     }
 
     [Fact]
-    public void TrialDefinition_requires_positive_duration_and_supports_pos_utang()
+    public void TrialDefinition_accepts_configured_positive_duration_and_rejects_non_positive()
     {
-        Assert.Throws<DomainException>(() =>
+        var zero = Assert.Throws<DomainException>(() =>
             TrialDefinition.Create(
                 ProductCode.Create(ProductCode.PinoyBusinessPos),
                 "Trial",
@@ -69,9 +71,30 @@ public sealed class PlanAndTrialTests
                 Array.Empty<FeatureGrantSpec>(),
                 Array.Empty<FeatureGrantSpec>(),
                 T0));
+        Assert.Equal(DomainErrorCodes.InvalidTrialDuration, zero.ErrorCode);
 
-        var trial = TrialDefinition.CreatePinoyBusinessPosUtangTrial(T0);
-        Assert.Equal(TimeSpan.FromDays(90), trial.Duration);
+        var negative = Assert.Throws<DomainException>(() =>
+            TrialDefinition.Create(
+                ProductCode.Create(ProductCode.PinoyBusinessPos),
+                "Trial",
+                TimeSpan.FromDays(-1),
+                Array.Empty<FeatureGrantSpec>(),
+                Array.Empty<FeatureGrantSpec>(),
+                T0));
+        Assert.Equal(DomainErrorCodes.InvalidTrialDuration, negative.ErrorCode);
+
+        var fourteenDays = UtangTrialTestFactory.CreateConfigured(T0, TimeSpan.FromDays(14));
+        Assert.Equal(TimeSpan.FromDays(14), fourteenDays.Duration);
+
+        var thirtyDays = UtangTrialTestFactory.CreateConfigured(T0, TimeSpan.FromDays(30));
+        Assert.Equal(TimeSpan.FromDays(30), thirtyDays.Duration);
+        Assert.NotEqual(fourteenDays.Duration, thirtyDays.Duration);
+    }
+
+    [Fact]
+    public void TrialDefinition_post_expiry_utang_feature_grants_do_not_require_fixed_duration()
+    {
+        var trial = UtangTrialTestFactory.CreateConfigured(T0, TimeSpan.FromDays(7));
         Assert.Contains(trial.FeatureGrants, g =>
             g.FeatureCode.Value == FeatureCode.CustomerCreditCreate && g.Enabled);
         Assert.Contains(trial.PostExpiryFeatureGrants, g =>
@@ -80,5 +103,19 @@ public sealed class PlanAndTrialTests
             g.FeatureCode.Value == FeatureCode.CustomerCreditView && g.Enabled);
         Assert.Contains(trial.PostExpiryFeatureGrants, g =>
             g.FeatureCode.Value == FeatureCode.CustomerCreditRepay && g.Enabled);
+    }
+
+    [Fact]
+    public void Domain_TrialDefinition_has_no_pinoy_business_pos_duration_helper()
+    {
+        var helpers = typeof(TrialDefinition).GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(m => m.Name.Contains("Pinoy", StringComparison.OrdinalIgnoreCase)
+                        || m.Name.Contains("Utang", StringComparison.OrdinalIgnoreCase)
+                        || m.Name.Contains("ThreeMonth", StringComparison.OrdinalIgnoreCase)
+                        || m.Name.Contains("90", StringComparison.Ordinal))
+            .Select(m => m.Name)
+            .ToArray();
+
+        Assert.Empty(helpers);
     }
 }

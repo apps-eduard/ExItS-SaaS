@@ -114,10 +114,9 @@ Create Platform domain/application foundation for products, features, plans, pla
 
 - Catalog aggregates + `FeatureCode` / `FeatureDefinition` / `PlanVersion` immutability.
 - Subscription lifecycle + `EntitlementSnapshotComposer`.
-- POS Utang trial expiry represented via view/repay/create feature codes (90-day explicit duration).
-- Application repos + use cases; **82/0/0** tests.
+- POS Utang trial expiry represented via view/repay/create feature codes; trial duration is **configurable** (three-calendar-month POS policy documented; **not** hard-coded as 90 days).
+- Application repos + use cases; tests updated after trial-duration correction.
 - API still `/` + `/health` only.
-
 #### Explicit exclusions (honored)
 
 - No EF/Npgsql/auth/billing invoices/payment/GCash/Admin UI/product APIs/brokers/POS/HealthCare changes.
@@ -125,7 +124,7 @@ Create Platform domain/application foundation for products, features, plans, pla
 #### Definition of Done
 
 - [x] Approved outcomes complete.
-- [x] Applicable tests pass with exact evidence (82/0/0).
+- [x] Applicable tests pass with exact evidence (82/0/0 foundation; **86/0/0** after trial-duration correction).
 - [x] Dashboard and phase page updated.
 - [x] Completion report created.
 - [x] Focused commit created and hash recorded (see below).

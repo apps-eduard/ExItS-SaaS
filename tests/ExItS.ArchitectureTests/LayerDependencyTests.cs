@@ -210,6 +210,17 @@ public sealed class LayerDependencyTests
         Assert.Equal(DomainErrorCodes.PlanVersionImmutable, ex.ErrorCode);
     }
 
+    [Fact]
+    public void Domain_has_no_product_specific_trial_duration_helpers()
+    {
+        var trialType = typeof(TrialDefinition);
+        Assert.Null(trialType.GetMethod("CreatePinoyBusinessPosUtangTrial"));
+        Assert.DoesNotContain(
+            trialType.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance),
+            m => m.Name.Contains("ThreeMonth", StringComparison.OrdinalIgnoreCase)
+                 || m.Name.Contains("Ninety", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static string Format(TestResult result) =>
         result.IsSuccessful
             ? string.Empty

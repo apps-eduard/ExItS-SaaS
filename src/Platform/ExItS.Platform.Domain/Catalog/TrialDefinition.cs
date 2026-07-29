@@ -5,7 +5,9 @@ namespace ExItS.Platform.Domain.Catalog;
 
 /// <summary>
 /// Reusable trial definition. Not an organization's active trial subscription.
-/// Duration is an explicit TimeSpan; no ambiguous calendar-month arithmetic.
+/// Duration is supplied by approved configuration or application input (positive TimeSpan).
+/// Product-specific calendar policies (e.g. PinoyBusinessPOS three calendar months) are not
+/// hard-coded here and must be applied by a later configuration work package.
 /// </summary>
 public sealed class TrialDefinition
 {
@@ -81,36 +83,6 @@ public sealed class TrialDefinition
             postExpiryFeatureGrants,
             utcNow,
             utcNow);
-    }
-
-    /// <summary>
-    /// Approved PinoyBusinessPOS Utang trial configuration helper (90 days explicit).
-    /// Does not embed POS entities.
-    /// </summary>
-    public static TrialDefinition CreatePinoyBusinessPosUtangTrial(DateTimeOffset utcNow, PlanId? planId = null)
-    {
-        var product = ProductCode.Create(ProductCode.PinoyBusinessPos);
-        var active = new[]
-        {
-            FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditView), true),
-            FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditRepay), true),
-            FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditCreate), true)
-        };
-        var postExpiry = new[]
-        {
-            FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditView), true),
-            FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditRepay), true),
-            FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditCreate), false)
-        };
-
-        return Create(
-            product,
-            "Utang Trial",
-            TimeSpan.FromDays(90),
-            active,
-            postExpiry,
-            utcNow,
-            planId);
     }
 
     public void Retire(DateTimeOffset utcNow)

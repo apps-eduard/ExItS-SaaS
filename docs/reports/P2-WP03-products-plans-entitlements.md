@@ -24,10 +24,20 @@ Implemented Platform Domain and Application foundation for the commercial catalo
 | Grants, overrides, snapshots | Met | Domain Entitlements |
 | Published plan version immutable | Met | Domain + architecture test |
 | POS Utang trial expiry feature representation | Met | `customer-credit-view/repay/create` + post-expiry grants |
+| Trial duration not hard-coded as 90 days | Met | Configurable `TrialDefinition.Create`; POS = three calendar months (documented; calendar math deferred) |
 | Explicit repos + use cases; no generic repo | Met | Application Catalog/Subscriptions |
 | No EF/auth/payment/business API | Met | packages + API routes |
-| Tests pass | Met | **82** passed / 0 failed / 0 skipped |
+| Tests pass | Met | See latest totals after trial-duration correction |
 | HealthCare freeze | Met | ignored, untracked, not in solution |
+
+## Trial duration correction
+
+- Removed Domain helper `CreatePinoyBusinessPosUtangTrial` / `TimeSpan.FromDays(90)`.
+- Product requirement remains **three calendar months** from trial start (UTC).
+- **Ninety days is not an approved substitute.**
+- End-of-month behavior remains **open** for a later work package.
+- Generic Platform trial duration remains a positive configured `TimeSpan` from application/configuration input.
+- Entitlement post-expiry Utang behavior unchanged (view + repay allowed; create blocked).
 
 ## 4. Types created
 
@@ -66,9 +76,9 @@ Reused: `ProductCode` (P2-WP02).
 
 | Suite | Passed | Failed | Skipped |
 |---|---:|---:|---:|
-| ExItS.Platform.UnitTests | 67 | 0 | 0 |
-| ExItS.ArchitectureTests | 15 | 0 | 0 |
-| **Total** | **82** | **0** | **0** |
+| ExItS.Platform.UnitTests | 70 | 0 | 0 |
+| ExItS.ArchitectureTests | 16 | 0 | 0 |
+| **Total** | **86** | **0** | **0** |
 
 | Command | Exit |
 |---|---:|
@@ -83,6 +93,7 @@ Reused: `ProductCode` (P2-WP02).
 ## 10. Risks
 
 - R-022 entitlement duration windows still open (categorical behavior implemented).
+- R-035 three-calendar-month POS trial; end-of-month rule undecided; no 90-day substitute.
 - No persistence uniqueness yet for product/plan codes.
 - Billing/payment still absent by design.
 - R-016 remote empty; not pushed.

@@ -6,6 +6,8 @@ Exact refresh/stale **durations are not fixed** in P1-WP02 (R-022). Behavior is 
 
 **P2-WP03:** Authoritative `EntitlementSnapshot` + `EntitlementSnapshotComposer` exist in Platform Domain/Application. Product-local projection states (Never initialized, Invalid, Unsupported version, etc.) remain product concerns. Snapshot composition encodes Trialing/Active/Grace/Suspended/Cancelled/Expired commercial feature grants; RefreshBy is set with a default 24h window pending R-022 numeric policy.
 
+**Trial length:** PinoyBusinessPOS Utang trial product requirement is **three calendar months** (not 90 days). Platform Domain stores only a configured positive duration / resulting UTC trial end on the subscription; calendar-month computation is not implemented in the generic aggregate.
+
 | Projection State | Trusted? | Reads Allowed | Writes Allowed | Restricted Operations | Refresh Action | Audit Requirement |
 |---|---|---|---|---|---|---|
 | Current | Yes | Yes | Per entitlements | None beyond normal authz | Background refresh before RefreshBy | Normal product audit |

@@ -38,3 +38,4 @@
 | R-032 | Active membership uniqueness only enforced in application until DB unique index | Medium | Documented invariant; add unique constraint in persistence WP | Open — introduced P2-WP02 |
 | R-033 | Commercial catalog codes uniqueness only at application boundary until persistence | Medium | Duplicate checks in use cases; DB unique indexes later | Open — introduced P2-WP03 |
 | R-034 | Entitlement composer policies (suspend/cancel/expiry) may need product-specific tuning | Medium | POS Utang codes explicit; keep composer product-neutral where possible | Open — introduced P2-WP03 |
+| R-035 | PinoyBusinessPOS Utang trial is three calendar months; end-of-month rule undecided; Platform must not use 90-day substitute | High | Document calendar-month policy; keep TrialDefinition configurable; implement calendar math + EOM rule in later catalog/config WP | Open — corrected after P2-WP03 |

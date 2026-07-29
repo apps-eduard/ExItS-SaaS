@@ -5,14 +5,17 @@ using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Domain.Subscriptions;
+using ExItS.Platform.UnitTests.Support;
 
 namespace ExItS.Platform.UnitTests.Subscriptions;
 
 public sealed class SubscriptionAndEntitlementTests
 {
     private static readonly DateTimeOffset T0 = new(2026, 7, 29, 12, 0, 0, TimeSpan.Zero);
+    private static readonly TimeSpan ConfiguredTrialDuration = TimeSpan.FromDays(14);
 
-    private static (Plan plan, PlanVersion version, TrialDefinition trial) CreatePosCatalog()
+    private static (Plan plan, PlanVersion version, TrialDefinition trial) CreatePosCatalog(
+        TimeSpan? trialDuration = null)
     {
         var plan = Plan.CreateDraft(
             ProductCode.Create(ProductCode.PinoyBusinessPos),
@@ -20,15 +23,13 @@ public sealed class SubscriptionAndEntitlementTests
             "Utang Trial",
             T0);
         plan.Activate(T0);
-        var grants = new[]
-        {
-            FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditView), true),
-            FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditRepay), true),
-            FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditCreate), true)
-        };
+        var grants = UtangTrialTestFactory.ActiveGrants();
         var version = PlanVersion.CreateDraft(plan, 1, T0, BillingPeriod.None, true, grants, T0);
         version.Publish(T0);
-        var trial = TrialDefinition.CreatePinoyBusinessPosUtangTrial(T0, plan.Id);
+        var trial = UtangTrialTestFactory.CreateConfigured(
+            T0,
+            trialDuration ?? ConfiguredTrialDuration,
+            plan.Id);
         return (plan, version, trial);
     }
 
@@ -39,6 +40,8 @@ public sealed class SubscriptionAndEntitlementTests
         var org = PlatformOrganizationId.New();
         var sub = Subscription.StartTrial(org, plan, version, trial, T0);
         Assert.Equal(SubscriptionStatus.Trialing, sub.Status);
+        Assert.Equal(T0, sub.TrialStartUtc);
+        Assert.Equal(T0.Add(ConfiguredTrialDuration), sub.TrialEndUtc);
 
         sub.ActivateFromTrial(T0, T0.AddDays(30), T0.AddMinutes(1));
         Assert.Equal(SubscriptionStatus.Active, sub.Status);
@@ -50,6 +53,17 @@ public sealed class SubscriptionAndEntitlementTests
         Assert.Equal(SubscriptionStatus.Active, sub.Status);
         sub.Cancel(T0.AddMinutes(6));
         Assert.Throws<DomainException>(() => sub.Reactivate(T0.AddMinutes(7)));
+    }
+
+    [Fact]
+    public void Subscription_trial_end_follows_configured_duration_not_fixed_ninety_days()
+    {
+        var duration = TimeSpan.FromDays(21);
+        var (plan, version, trial) = CreatePosCatalog(duration);
+        var sub = Subscription.StartTrial(PlatformOrganizationId.New(), plan, version, trial, T0);
+        Assert.Equal(duration, trial.Duration);
+        Assert.Equal(T0.Add(duration), sub.TrialEndUtc);
+        Assert.NotEqual(T0.AddDays(90), sub.TrialEndUtc);
     }
 
     [Fact]
@@ -105,8 +119,9 @@ public sealed class SubscriptionAndEntitlementTests
     [Fact]
     public void EntitlementSnapshot_trial_expiry_blocks_new_credit_keeps_view_and_repay()
     {
-        var (plan, version, trial) = CreatePosCatalog();
+        var (plan, version, trial) = CreatePosCatalog(TimeSpan.FromDays(10));
         var sub = Subscription.StartTrial(PlatformOrganizationId.New(), plan, version, trial, T0);
+        Assert.Equal(T0.AddDays(10), sub.TrialEndUtc);
         sub.Expire(T0.AddMinutes(1));
 
         var snapshot = new EntitlementSnapshotComposer().Compose(

@@ -131,7 +131,9 @@ Ledger supports: credit entries, partial/full payments, remaining balance, overd
 
 **Blocked after expiry:** create new credit; increase debt; add new credit entries.
 
-**P2-WP03 Platform feature codes (commercial only; no POS entities):** `customer-credit-view`, `customer-credit-repay`, `customer-credit-create`. Trial helper uses explicit `TimeSpan.FromDays(90)` (not ambiguous calendar months).
+**P2-WP03 Platform feature codes (commercial only; no POS entities):** `customer-credit-view`, `customer-credit-repay`, `customer-credit-create`.
+
+**Trial duration policy:** The product requirement is a **three-calendar-month** Utang trial (`Trial expiration = trial start timestamp plus three calendar months`). The generic Platform `TrialDefinition` accepts a configured positive duration only — **90 days is not an approved substitute**. Calendar-month arithmetic and end-of-month behavior (e.g. start 31 Jan → 30 Apr vs another approved rule) remain assigned to a later product/catalog configuration work package and are not implemented in Platform Domain.
 
 ### Payment status and audit (conceptual)
 

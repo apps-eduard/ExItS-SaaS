@@ -167,7 +167,13 @@ Limits may represent max users/stores/branches/registers/clinics, feature availa
 
 ## 9. Trial-expiration behavior
 
-Approved **three-month Utang trial** ([subscriptions-and-billing.md](../product/subscriptions-and-billing.md)):
+Approved **three-calendar-month Utang trial** ([subscriptions-and-billing.md](../product/subscriptions-and-billing.md)):
+
+```text
+Trial expiration = trial start timestamp plus three calendar months
+```
+
+Generic Platform trial duration remains configurable; **90 days is not an approved substitute**. End-of-month calendar arithmetic is deferred to a later configuration WP (open: Jan 31 + 3 months → Apr 30 vs other approved rule).
 
 ### Allowed after expiry
 

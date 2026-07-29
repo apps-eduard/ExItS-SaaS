@@ -67,12 +67,13 @@ public sealed class CommercialUseCaseTests
             .ExecuteAsync(planResult.Value.Id, 1, BillingPeriod.None, true, grants);
         Assert.False(conflictVersion.IsSuccess);
 
-        var trial = TrialDefinition.CreatePinoyBusinessPosUtangTrial(T0, planResult.Value.Id);
+        var trial = UtangTrialTestFactory.CreateConfigured(T0, TimeSpan.FromDays(14), planResult.Value.Id);
         await trials.AddAsync(trial);
 
         var start = await new StartTrialSubscription(plans, trials, subscriptions, clock)
             .ExecuteAsync(PlatformOrganizationId.New(), planResult.Value.Id, versionResult.Value!.Id, trial.Id);
         Assert.True(start.IsSuccess);
+        Assert.Equal(T0.AddDays(14), start.Value!.TrialEndUtc);
         Assert.Equal(1, subscriptions.AddCount);
 
         var snapshot = await new GenerateEntitlementSnapshot(
@@ -121,7 +122,7 @@ public sealed class CommercialUseCaseTests
             .ExecuteAsync(plan.Id, 1, BillingPeriod.Monthly, true,
                 new[] { FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditView), true) }))
             .Value!;
-        var trial = TrialDefinition.CreatePinoyBusinessPosUtangTrial(T0, plan.Id);
+        var trial = UtangTrialTestFactory.CreateConfigured(T0, TimeSpan.FromDays(14), plan.Id);
         await trials.AddAsync(trial);
         var sub = (await new StartTrialSubscription(plans, trials, subscriptions, clock)
             .ExecuteAsync(PlatformOrganizationId.New(), plan.Id, version.Id, trial.Id)).Value!;
