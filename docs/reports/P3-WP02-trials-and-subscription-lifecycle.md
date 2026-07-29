@@ -168,9 +168,9 @@ History table: `public.__EFMigrationsHistory`. Partial unique index verified. No
 
 | Field | Value |
 |---|---|
-| Feature commit | _(recorded after commit)_ |
+| Feature commit | `616d8ad1a76f02b6494b905549908c1a15e7f812` |
 | Message | `feat(platform): implement trial and subscription lifecycle` |
-| Hash-record commit | _(if needed)_ |
+| Hash-record commit | _(this docs commit)_ |
 
 ## 16. Next work package
 

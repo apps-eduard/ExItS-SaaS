@@ -14,7 +14,7 @@
 | Current phase | Phase 3 — Portfolio Billing, Plans and Entitlements |
 | Current work package | P3-WP02 — Trials and Subscription Lifecycle (**Ready for Review**) |
 | Overall status | Phase 2 complete; catalog + subscription lifecycle persistence + API delivered |
-| Latest verified commit | _(feature hash recorded after commit)_ |
+| Latest verified commit | `616d8ad1a76f02b6494b905549908c1a15e7f812` |
 | Open blockers | Org/subscription APIs unauthenticated (R-045); R-035 calendar EOM open; activation ≠ payment (R-047) |
 | Last updated | 2026-07-29 |
 
@@ -53,7 +53,7 @@ P3-WP03 Manual Payment Activation (not started)
 | WP | Status | Key commit |
 |---|---|---|
 | P3-WP01 | Complete (accepted) | `9d01f26` |
-| P3-WP02 | Ready for Review | _(pending)_ |
+| P3-WP02 | Ready for Review | `616d8ad` |
 | P3-WP03–05 | Not Started | — |
 
 ## Subscription lifecycle snapshot (P3-WP02)

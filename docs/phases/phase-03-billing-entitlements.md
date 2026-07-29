@@ -102,7 +102,7 @@ Persist Platform organizations (subscription ownership) and the commercial subsc
 
 | Field | Value |
 |---|---|
-| Hash | _(recorded after commit)_ |
+| Hash | `616d8ad1a76f02b6494b905549908c1a15e7f812` |
 | Message | `feat(platform): implement trial and subscription lifecycle` |
 
 ### P3-WP03 — Manual Payment Activation
