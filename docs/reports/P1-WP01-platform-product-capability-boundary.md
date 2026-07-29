@@ -108,11 +108,11 @@ No blockers for P1-WP01 acceptance.
 
 | Field | Value |
 |---|---|
-| Commit hash | `PENDING_AFTER_COMMIT` |
+| Commit hash | `b6a3133732f6d29c68159447eb1ca43ea0b1212b` |
 | Commit message | `docs(architecture): define platform product boundaries` |
 | Branch | `main` |
 | Upstream | `origin/main` gone (remote empty); not pushed |
-| Final working tree | Clean after commit (and hash-record if used) |
+| Final working tree | Clean after hash-record commit |
 
 ## 13. Progress update
 

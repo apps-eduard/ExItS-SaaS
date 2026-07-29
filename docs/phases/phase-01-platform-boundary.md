@@ -31,7 +31,7 @@ Status: **Ready for Review**
 - [x] Dashboard and phase page updated.
 - [x] Completion report created.
 - [x] Focused commit created and hash recorded (see below / report).
-- [ ] Working tree clean (after hash-record if needed).
+- [x] Working tree clean (after hash-record commit).
 
 #### Artifacts
 
@@ -47,7 +47,7 @@ Status: **Ready for Review**
 
 | Field | Value |
 |---|---|
-| Hash | `PENDING_AFTER_COMMIT` |
+| Hash | `b6a3133732f6d29c68159447eb1ca43ea0b1212b` |
 | Message | `docs(architecture): define platform product boundaries` |
 
 ### P1-WP02 — Data Ownership and Contracts

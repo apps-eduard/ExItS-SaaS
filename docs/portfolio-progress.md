@@ -14,7 +14,7 @@
 | Current phase | Phase 1 — Platform Boundary and Architecture |
 | Current work package | P1-WP01 — Platform vs Product Capability Boundary (**Ready for Review**) |
 | Overall status | Phase 0 **Complete with documented risks**; P1-WP01 ready for review |
-| Latest verified commit | `PENDING_AFTER_COMMIT` (`docs(architecture): define platform product boundaries`) |
+| Latest verified commit | `b6a3133732f6d29c68159447eb1ca43ea0b1212b` (`docs(architecture): define platform product boundaries`) |
 | Open blockers | 0 for P1-WP01 acceptance; root remote empty (user push when authorized) |
 | Last updated | 2026-07-29 |
 
