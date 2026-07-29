@@ -25,7 +25,7 @@ Run Git status, inspect existing implementation/tests and preserve unrelated cha
 - Preserve HealthCare regression safety.
 - Enforce platform/product/database boundaries.
 - Enforce tenant isolation and server authorization.
-- Keep Ant Design confined to approved existing Platform/HealthCare applications.
+- Keep Ant Design confined to **existing HealthCare Staff Web** only (not new Platform Admin or POS).
 - Use native CSS/CSS isolation for POS UI.
 - Localize all new user-facing POS strings in English and Filipino.
 - Support light/dark/system themes for new POS UI.

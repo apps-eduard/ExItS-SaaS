@@ -117,7 +117,7 @@ No `.github` workflows under `HealthCare/` or the ExITS root.
 | Reuse with modification | JWT/refresh Identity, permission handlers, Organization + limits, SecurityEvents, org audit, BFF pattern, ProblemDetails, Hangfire hosting, Ant wrappers |
 | Pattern only | Tenant access service (no EF filters), platform tenant banner, staff membership (single-org) |
 | Keep in HealthCare | Clinic, Patient, Appointment, MedicalNote, clinical roles, PatientWeb, Mobile clinical UX |
-| Do not reuse | Dev seed credentials, `/auth/dev/*` token peek, DevelopmentAccountEmailSender as production email, AntDesign into POS |
+| Do not reuse | Dev seed credentials, `/auth/dev/*` token peek, DevelopmentAccountEmailSender as production email, AntDesign into POS **or new Platform Admin** |
 | Missing | Plans, Trials, Subscriptions, Billing, Entitlements, MFA, localization, theme service, multi-org membership |
 
 Full row-level matrix: [reuse-classification-matrix.md](reuse-classification-matrix.md).
@@ -170,7 +170,7 @@ Verified existing capabilities that can become ExITS Platform (after extraction 
 | Localization | **Missing** — no `.resx` / `IStringLocalizer` found |
 | Accessibility | Partial (AriaLabel on many controls; E2E responsive smoke) |
 
-**POS implication:** Do not depend on AntDesign for PinoyBusinessPOS. Reuse **behavior/models** (pagination DTOs, status presentation patterns, modal/confirm *interfaces*), implement native Razor + CSS isolation per `docs/engineering/ui-design-system.md`.
+**POS / Platform Admin implication:** Do not depend on AntDesign for PinoyBusinessPOS or the **new** ExITS Platform Admin. Reuse **behavior/models** (pagination DTOs, status presentation patterns, modal/confirm *interfaces*), implement native Razor + CSS isolation per `docs/engineering/ui-design-system.md`.
 
 ---
 
@@ -192,14 +192,14 @@ PinoyBusinessPOS must introduce localization and theme services greenfield (or S
 
 | POS need | HealthCare today | Classification |
 |---|---|---|
-| Design tokens / theme service | Ant enterprise CSS | Pattern only for Platform Admin; **missing** for POS |
-| Button / form fields | Direct AntDesign | Should not reuse into POS |
-| DateField | Ant `DatePicker` in staff pages | Pattern only; POS uses native date input wrapper |
-| Tables | Ad hoc | Inform compact table design; rebuild native |
-| Modal / Confirm | `IUiModalService` abstraction | **Reusable behavior/model**; Ant impl stays in HC/Platform Admin |
+| Design tokens / theme service | Ant enterprise CSS | Pattern only (token *names*); **missing** full system for new Platform Admin & POS |
+| Button / form fields | Direct AntDesign | Should not reuse into Platform Admin or POS |
+| DateField | Ant `DatePicker` in staff pages | Pattern only; Platform Admin & POS use native date input wrapper |
+| Tables | Ad hoc | Inform compact table design; rebuild native for Platform Admin & POS |
+| Modal / Confirm | `IUiModalService` abstraction | **Reusable behavior/model**; Ant impl stays in **HC Staff only** |
 | Toast | `IUserNotificationService` | Same as modal |
-| App shell / nav | Ant Layout/Menu | HC-specific |
-| Localization integration | Missing | Required for POS |
+| App shell / nav | Ant Layout/Menu | HC-specific; rebuild native for Platform Admin |
+| Localization integration | Missing | Required for Platform Admin & POS |
 
 ---
 
@@ -257,7 +257,7 @@ See [§ Tests](../reports/P0-WP01-completion.md#7-tests-and-validation) and port
 | P0-R04 | No EF global query filters — isolation is service-only | Critical |
 | P0-R05 | Single StaffMember per user — insufficient for multi-product orgs | High |
 | P0-R06 | Billing/entitlements entirely missing | High |
-| P0-R07 | AntDesign coupling in staff UI — must not leak into POS | Medium |
+| P0-R07 | AntDesign coupling in staff UI — must not leak into POS **or new Platform Admin** | Medium |
 | P0-R08 | Android SDK missing on assessment machine — Mobile host not buildable | Medium |
 | P0-R09 | Pre-existing dirty files inside nested HealthCare git (PatientWeb) | Medium |
 | P0-R10 | Parent repo lacks root `.gitignore` — risk of committing secrets/bin if HealthCare is added naively | High |
@@ -272,7 +272,7 @@ See [§ Tests](../reports/P0-WP01-completion.md#7-tests-and-validation) and port
 4. **Phase 1** — Approve Platform/product boundaries and contracts.
 5. **Phase 2** — Extract Platform identity/orgs/permissions with HC regression; **do not** move clinical schema.
 6. **Phase 3** — Add Products/Plans/Trials/Subscriptions/Entitlements greenfield on Platform.
-7. Keep AntDesign in HealthCare + future Platform Admin; build native POS component library separately.
+7. Keep AntDesign in **HealthCare Staff Web only**; build a **shared native** component foundation for **new Platform Admin** and POS.
 
 ---
 
@@ -280,7 +280,7 @@ See [§ Tests](../reports/P0-WP01-completion.md#7-tests-and-validation) and port
 
 - Patient, ClinicPatient, medical notes, appointments, doctor availability as POS domain
 - Patient self-scope as a generic platform tenant rule
-- AntDesign components inside PinoyBusinessPOS
+- AntDesign components inside PinoyBusinessPOS **or new Platform Admin**
 - Development seed passwords / quick-login / `/auth/dev/*` endpoints
 - `DevelopmentAccountEmailSender` as production mailer
 - Copying HealthCare EF migrations into POS or Platform
@@ -301,7 +301,7 @@ See [§ Tests](../reports/P0-WP01-completion.md#7-tests-and-validation) and port
 ```text
 Platform-owned
   Users, auth sessions/refresh, Organizations (global), Products/Plans/Subscriptions (new),
-  platform audit, platform admin APIs/UI (AntDesign OK)
+  platform audit, platform admin APIs/UI (**native CSS/Razor — not AntDesign**)
 
 HealthCare-owned
   Clinics, staff clinical membership projection, patients, appointments, notes,
@@ -325,5 +325,5 @@ Shared engineering infrastructure
 | `PagedResponse<T>` | Shared source or contract package later |
 | `IUiModalService` | Copied pattern; Ant vs native implementations per product |
 | TenantAccessService | Copied pattern + product enforcement |
-| AntDesign wrappers | Product-specific (HC / Platform Admin only) |
+| AntDesign wrappers | Product-specific (**HealthCare Staff Web only**) |
 | Localization resources | Product-specific with shared key conventions |

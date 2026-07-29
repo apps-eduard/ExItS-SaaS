@@ -2,7 +2,7 @@
 
 [UI design system](ui-design-system.md) | [UI reuse assessment](../reuse/healthcare-ui-reuse-assessment.md)
 
-Documentation-only catalog for future PinoyBusinessPOS native Razor components (and shared models). **Nothing here is implemented in P0-WP03.**
+Documentation-only catalog for future **ExItS Platform Admin** and **PinoyBusinessPOS** native Razor components (and shared models). **Nothing here is implemented in P0-WP03.** Ant Design remains only inside existing HealthCare Staff Web.
 
 Phase labels:
 
@@ -119,4 +119,4 @@ Phase labels:
 
 ## Build rule
 
-Before creating a component in a later phase, search HealthCare and classify: reusable model, pattern only, product-specific, or unsuitable — then implement in the **POS native** library (or Ant wrapper for Platform Admin only).
+Before creating a component in a later phase, search HealthCare and classify: reusable model, pattern only, product-specific, or unsuitable — then implement in the **native** Platform Admin / POS libraries. Never add Ant Design wrappers to the new Platform Admin.

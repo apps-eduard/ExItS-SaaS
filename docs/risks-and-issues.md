@@ -8,7 +8,7 @@
 | R-002 | Healthcare-specific rules become generic platform rules | Critical | Classification matrix and architecture review | Open — matrix started in P0-WP01 |
 | R-003 | Platform outage blocks product operations | Critical | Local entitlement projection/snapshot | Open |
 | R-004 | Cross-product or cross-tenant data leakage | Critical | Separate DBs, server context, isolation tests | Open |
-| R-005 | Ant Design coupling spreads into POS | Medium | ADR-010: Ant stays HC/Platform Admin; POS native only; catalog review rule | **Mitigated** (strategy) — watch during Phase 5+ |
+| R-005 | Ant Design coupling spreads into POS **or new Platform Admin** | Medium | ADR-010: Ant only in existing HC Staff Web; native stack for Platform Admin + POS | **Mitigated** (strategy) — watch during Phase 4–5+ |
 | R-006 | Native reusable components become a full UI-framework project | High | Phase-gated catalog (MVP/Utang/Store/Full); build only phase-needed components | Open — catalog defined P0-WP03 |
 | R-007 | English-only strings escape into release | Medium | Resource-completeness tests; POS `en`/`fil` from MVP | Open — HC has no i18n; POS greenfield (P0-WP03) |
 | R-008 | Dark theme creates poor contrast | High | Semantic tokens and accessibility tests; Light/Dark/System for POS | Open — HC lacks product theme switch; POS tokens planned (P0-WP03) |
@@ -22,4 +22,4 @@
 | R-016 | Root `origin` remote exists but is empty; `origin/main` gone | High | User-authorized first push: `git push -u origin main` (do not force-push) | Open — verified P0-WP02 |
 | R-017 | Accidental HealthCare parent tracking | Critical | Root ignore + `git ls-files HealthCare` / `git check-ignore` checks before commit | Mitigated (P0-WP02 process) |
 | R-018 | Nested HealthCare local `.env` / lab secrets | High | Remain gitignored; never commit or paste values into portfolio docs | Open — presence known; values not documented |
-| R-019 | Dual UI stacks (Ant Platform Admin vs native POS) drift in branding | Medium | Shared token names + terminology glossary; periodic design review | Open — accepted tradeoff ADR-010 |
+| R-019 | Dual UI stacks (HC Ant vs **native** Platform Admin + POS) — brand drift, duplicated visuals, separate a11y/theme work, future HC modernization cost | Medium | Shared semantic tokens, branding, terminology, UI-independent contracts; separate framework impls; no forced HC rewrite in current MVP | Open — **controlled technical separation** (ADR-010 correction) |

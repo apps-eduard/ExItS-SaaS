@@ -4,7 +4,7 @@
 
 ## Objective
 
-Extend the existing Ant Design Platform Admin for multi-product operations.
+Build a **new** native-CSS ExITS Platform Admin (Blazor Web App) for multi-product operations. Do **not** extend HealthCare Staff Web Ant Design as the long-term Platform Admin UI.
 
 ## Work packages
 

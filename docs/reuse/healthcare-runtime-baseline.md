@@ -204,5 +204,5 @@ Not run: IntegrationTests (Testcontainers), EndToEndTests (Playwright + E2E Comp
 
 - Keep ignoring or deliberately importing HealthCare only after an approved strategy (see [repository-boundaries.md](../engineering/repository-boundaries.md)).
 - Split DB ownership later (`ExItS_Platform` / `ExItS_HealthCare`); do not move Identity without session/issuer plan.
-- Platform Admin may keep AntDesign BFF patterns; POS must not inherit AntDesign or HC ports.
+- New Platform Admin and POS use a **shared native** UI foundation (not AntDesign). HealthCare Staff Web may keep its BFF + Ant patterns in place; new apps must not inherit AntDesign or HC ports.
 - Establish CI that runs non-MAUI build + Windows-safe tests before extraction.

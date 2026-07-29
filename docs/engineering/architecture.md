@@ -23,9 +23,10 @@ A controlled monorepo is used initially for coordinated extraction and developme
 
 ## UI choices
 
-- Existing HealthCare UI: keep Ant Design Blazor unless a separate approved migration exists.
-- ExITS Platform Admin: keep/adapt existing Ant Design Blazor to reduce rewrite risk.
-- PinoyBusinessPOS: native CSS, CSS isolation and product-specific reusable Razor components.
+- Existing HealthCare Staff Web: keep Ant Design Blazor (no rewrite in current ExITS MVP work).
+- Existing HealthCare PatientWeb / MAUI: keep their current native implementations.
+- **New ExITS Platform Admin:** Blazor Web App with **native CSS** / CSS isolation / Razor components — **no Ant Design**, **no Tailwind**.
+- PinoyBusinessPOS: same native CSS foundation (MAUI Blazor Hybrid); shared token/localization/model conventions with Platform Admin.
 - Shared layer: models, validation, formatting, localization keys, design-token semantics and contracts; not one framework-dependent component library.
 
 ## Product availability

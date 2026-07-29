@@ -43,4 +43,4 @@ Use semantic variables rather than page-specific colors:
 }
 ```
 
-Platform Admin maps the same semantic intent into Ant Design theme tokens rather than sharing CSS implementation.
+New ExITS Platform Admin and PinoyBusinessPOS share the same semantic CSS custom-property approach (`--exits-*`). Existing HealthCare Staff Web keeps its Ant/`--hc-*` styling without a forced migration.

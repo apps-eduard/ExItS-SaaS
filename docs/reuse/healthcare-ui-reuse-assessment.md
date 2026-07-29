@@ -12,9 +12,9 @@
 
 | Application | Framework | Component Library | Styling | Primary Actors | Reuse Value |
 |---|---|---|---|---|---|
-| `HealthCare.Web` | Blazor Interactive Server | **AntDesign 1.6.2** | Ant CSS + `healthcare-ant-enterprise.css` (`--hc-*`) + `app.css` | Platform Admin, Org/Clinic Admin, Doctor, Nurse, Receptionist | High for **Platform Admin interim** (Ant stays); pattern source for POS models only |
-| `HealthCare.PatientWeb` | Blazor Interactive Server | **None** (plain HTML) | `hc-portal.css` tokens + `app.css` | Patients | High as **native CSS pattern** for POS; not a shared library |
-| `HealthCare.Mobile` | MAUI Blazor Hybrid (`net10.0-android`) | **None** | `wwwroot/app.css` + `MainLayout.razor.css` (hard-coded colors) | Patient, Doctor | Medium — state components (`LoadingState`, `EmptyState`, …) as **pattern**; no Ant |
+| `HealthCare.Web` | Blazor Interactive Server | **AntDesign 1.6.2** | Ant CSS + `healthcare-ant-enterprise.css` (`--hc-*`) + `app.css` | Org/Clinic Admin, Doctor, Nurse, Receptionist, HC platform-admin **role** in this app | Keep Ant **in HealthCare only**; pattern/models for **new** Platform Admin & POS (not Ant UI) |
+| `HealthCare.PatientWeb` | Blazor Interactive Server | **None** (plain HTML) | `hc-portal.css` tokens + `app.css` | Patients | High as **native CSS pattern** for new Platform Admin & POS |
+| `HealthCare.Mobile` | MAUI Blazor Hybrid (`net10.0-android`) | **None** | `wwwroot/app.css` + `MainLayout.razor.css` (hard-coded colors) | Patient, Doctor | Medium — state components as **pattern**; no Ant |
 | Shared Razor UI RCL | — | — | — | — | **Missing** — no cross-app UI library |
 
 Evidence: `HealthCare.Web.csproj` (`AntDesign` 1.6.2); `Program.cs` `AddAntDesign()`; PatientWeb/Mobile csproj lack Ant packages; no UI RCL projects in solution.
@@ -49,12 +49,12 @@ Evidence: `HealthCare.Web.csproj` (`AntDesign` 1.6.2); `Program.cs` `AddAntDesig
 
 | Usage | Classification |
 |---|---|
-| Staff shell Layout/Sider/Menu | Keep in HealthCare / Suitable for Platform Admin |
-| Button/Input/Select/DatePicker/Alert/Card | Keep in HealthCare / Suitable for Platform Admin |
-| `AntUiModalService` / `AntUserNotificationService` | Ant-dependent wrappers — keep for HC/Platform Admin; **behavior contract** reusable |
-| Custom `.hc-table` / `.hc-pager` | Reusable **behavior/model** only for POS |
+| Staff shell Layout/Sider/Menu | Keep in HealthCare only |
+| Button/Input/Select/DatePicker/Alert/Card | Keep in HealthCare only |
+| `AntUiModalService` / `AntUserNotificationService` | Ant impl stays in HC; **behavior contracts** reusable for native Platform Admin & POS |
+| Custom `.hc-table` / `.hc-pager` | Reusable **behavior/model** for native Platform Admin & POS |
 | Clinical pages (patients, appointments, notes UX) | HealthCare-specific |
-| Copying Ant into POS | **Do not reuse** / too tightly coupled |
+| Copying Ant into new Platform Admin or POS | **Do not reuse** / too tightly coupled |
 
 ---
 
@@ -62,19 +62,19 @@ Evidence: `HealthCare.Web.csproj` (`AntDesign` 1.6.2); `Program.cs` `AddAntDesig
 
 | Abstraction | Path | Framework Dependency | Reuse Recommendation | Required Changes |
 |---|---|---|---|---|
-| `IUiModalService` | `HealthCare.Web/Services/IUiModalService.cs` | Contract (Ant impl) | Reusable **behavior contract**; native POS impl later | Split contract to shared models; Ant impl stays HC/Platform |
-| `AntUiModalService` | `…/AntUiModalService.cs` | Ant Design | Keep in HC / Platform Admin | Do not use in POS |
-| `IUserNotificationService` | `…/IUserNotificationService.cs` | Contract | Same as modal | Native toast for POS |
-| `AntUserNotificationService` | `…/AntUserNotificationService.cs` | Ant Design | Keep in HC / Platform Admin | — |
+| `IUiModalService` | `HealthCare.Web/Services/IUiModalService.cs` | Contract (Ant impl) | Reusable **behavior contract**; native impl for Platform Admin & POS | Shared contract; Ant impl stays in HC only |
+| `AntUiModalService` | `…/AntUiModalService.cs` | Ant Design | Keep in HealthCare only | Do not use in Platform Admin or POS |
+| `IUserNotificationService` | `…/IUserNotificationService.cs` | Contract | Same as modal | Native toast for Platform Admin & POS |
+| `AntUserNotificationService` | `…/AntUserNotificationService.cs` | Ant Design | Keep in HealthCare only | — |
 | `PagedResponse<T>` | `HealthCare.Contracts/Common/PagedResponse.cs` | None | **Reuse** as shared model | Move/copy to Shared UI models later |
-| `StatusTone` + `StatusBadge` | `Design/StatusTone.cs`, `StatusBadge.razor` | Ant `Tag` in badge | Tone enum reusable; badge Ant-bound | Native badge for POS |
-| `ClinicPicker` / `OrganizationPicker` / `PatientPicker` | `Components/*/` | Ant Select + HC APIs | **Pattern only** (searchable picker UX) | Native `SelectField`; no free-text IDs |
-| `PlatformTenantBanner` | `Components/Organizations/` | Ant + HC | Platform Admin pattern | Adapt for multi-product later |
-| `PermissionState` / `WebPermissions` | `Auth/` | None (strings) | Pattern for UI gating | Product-specific permission catalogs |
-| `HcPageHeader`, `EmptyState`, `ErrorState`, `PageLoading` | Web Shared | Mixed Ant | Pattern for chrome/states | Native equivalents for POS |
+| `StatusTone` + `StatusBadge` | `Design/StatusTone.cs`, `StatusBadge.razor` | Ant `Tag` in badge | Tone enum reusable; badge Ant-bound | Native badge for Platform Admin & POS |
+| `ClinicPicker` / `OrganizationPicker` / `PatientPicker` | `Components/*/` | Ant Select + HC APIs | **Pattern only** (searchable picker UX) | Native `SelectField`; no free-text IDs; no clinical PatientPicker in Platform Admin |
+| `PlatformTenantBanner` | `Components/Organizations/` | Ant + HC | UX lesson for org context | Rebuild natively for Platform Admin; no Ant |
+| `PermissionState` / `WebPermissions` | `Auth/` | None (strings) | Pattern for UI gating | Platform-specific permission catalogs (not HC clinical) |
+| `HcPageHeader`, `EmptyState`, `ErrorState`, `PageLoading` | Web Shared | Mixed Ant | Pattern for chrome/states | Native equivalents for Platform Admin & POS |
 | Mobile `LoadingState` / `EmptyState` / `ErrorState` / `OfflineState` | Mobile Components | None | Strong **native CSS** pattern | Localize; theme tokens |
-| Localization abstractions | — | — | **Missing** | Build for POS (`en`/`fil`) |
-| Theme / density providers | — | — | **Missing** | Build for POS |
+| Localization abstractions | — | — | **Missing** | Build for Platform Admin & POS (`en`/`fil`) |
+| Theme / density providers | — | — | **Missing** | Build for Platform Admin & POS |
 
 **UI-independent models:** `PagedResponse<T>`, `StatusTone`, permission string catalogs, filter/query request shapes.  
 **Ant-dependent wrappers:** modal/toast services, `StatusBadge` Tag mapping, staff shell.  
@@ -136,12 +136,12 @@ Staff: `hc-rise-in`, `--hc-motion` (~200ms), reduced-motion disable. Mobile: spi
 
 ## 10. Keep / adapt / do-not-reuse
 
-| Keep in HealthCare (+ Platform Admin Ant) | Adapt as models/patterns | Do not reuse into POS |
+| Keep in HealthCare only | Adapt as models/patterns for **new** Platform Admin & POS | Do not reuse (Ant / clinical UI) |
 |---|---|---|
-| AntDesign 1.6.2 staff UI | `PagedResponse`, filter/paging UX | Ant components / Ant CSS |
-| Modal/toast Ant implementations | Picker search UX (no free-text IDs) | Clinical appointment calendar as POS calendar |
-| Clinical pages & PatientWeb product flows | Status tone semantics | Staff Ant layouts |
-| `--hc-*` for HC branding | PatientWeb/Mobile state components | Hard-coded Mobile colors as final POS tokens |
+| AntDesign 1.6.2 staff UI | `PagedResponse`, filter/paging UX | Ant components / Ant CSS / Ant layouts / Ant services |
+| Modal/toast Ant implementations | Modal/notification **contracts**; picker search UX | Clinical appointment calendar; HC clinical navigation |
+| Clinical pages & PatientWeb product flows | Status tone semantics; page-state patterns | Staff Ant shell as Platform Admin shell |
+| `--hc-*` for HC branding | PatientWeb/Mobile native CSS lessons | Hard-coded Mobile colors as final `--exits-*` tokens |
 
 ---
 
@@ -159,9 +159,11 @@ Staff: `hc-rise-in`, `--hc-motion` (~200ms), reduced-motion disable. Mobile: spi
 
 ## 12. Final recommendation
 
-1. **Retain Ant Design Blazor** for existing HealthCare Staff Web and interim ExITS Platform Admin.
-2. **Do not introduce Ant Design or Tailwind** into PinoyBusinessPOS.
-3. Build a **native CSS + CSS isolation** POS component library with shared **models/tokens/localization conventions**.
-4. Treat PatientWeb/Mobile state patterns and staff picker/paging contracts as UX lessons, not copy-paste Ant.
+1. **Retain Ant Design Blazor** only for **existing HealthCare Staff Web** (no HC UI rewrite in current ExITS work).
+2. **New ExITS Platform Admin** uses **native CSS + Razor components** (Blazor Web App) — **no Ant Design**, **no Tailwind**.
+3. **PinoyBusinessPOS** shares that **native** foundation (MAUI Blazor Hybrid) — **no Ant Design**, **no Tailwind**.
+4. Reuse from HealthCare only framework-independent patterns and contracts; never Ant implementations or clinical UI.
 5. MVP date control = native `DateField` wrapper; defer rich calendar.
-6. Implement Compact + Comfortable density, `en`/`fil`, Light/Dark/System, purposeful motion with reduced-motion — in POS (and later Platform mapping), **not** by rewriting HealthCare now.
+6. Implement Compact/Comfortable, `en`/`fil`, Light/Dark/System, motion, a11y in the **new** native stack — not by rewriting HealthCare.
+
+**Correction (2026-07-29):** Earlier P0-WP03 text that said interim Platform Admin retains Ant Design is superseded by [ADR-010](../decisions/ADR-010-separate-ui-implementations-platform-and-pos.md).

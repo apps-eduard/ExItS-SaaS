@@ -78,7 +78,7 @@ Commit `6b56e6dfec93f49e43a9c1a92baea1300d148b28`. Root `.gitignore` ignores `He
 
 - [x] Inventories Staff Web, PatientWeb, Mobile UI stacks.
 - [x] Documents Ant Design 1.6.2 usage and wrappers.
-- [x] Platform Admin keeps Ant; POS native CSS (no Tailwind/Ant).
+- [x] Platform Admin **native** CSS/Razor (no Ant); POS same native foundation; HC Staff keeps Ant.
 - [x] Density, theme, localization, motion, a11y, responsive, table/dropdown/date specs.
 - [x] Component catalog + ADR-010.
 - [x] Commit hash recorded.
@@ -96,13 +96,17 @@ Artifacts:
 
 Unchanged from P0-WP02 Windows-safe baseline (**1102 / 0 / 0**). P0-WP03 is documentation-only; HealthCare tests not re-run.
 
-## UI strategy (P0-WP03)
+## UI strategy (P0-WP03, corrected)
 
 | Surface | Decision |
 |---|---|
-| HealthCare / Platform Admin | Retain Ant Design Blazor |
-| PinoyBusinessPOS | Native CSS + RCL; no Ant; no Tailwind |
-| Shared | Models, token names, localization conventions |
+| HealthCare Staff Web | Retain Ant Design Blazor |
+| HealthCare PatientWeb / MAUI | Retain existing native implementations |
+| **New ExItS Platform Admin** | Native CSS + Razor (Blazor Web App); **no Ant**; **no Tailwind** |
+| PinoyBusinessPOS | Same native foundation (MAUI Hybrid); **no Ant**; **no Tailwind** |
+| Shared | Token names, localization conventions, UI-independent models |
+
+Correction commit: _(filled after docs(ui): correct platform admin UI decision)_
 
 ## Risks
 

@@ -10,5 +10,5 @@
 6. Shared libraries must be generic by evidence, not by name alone.
 7. Each product keeps its own API, database, migrations and deployment.
 8. Platform outages must not block ordinary product transactions.
-9. Ant Design Blazor may remain in HealthCare and Platform Admin; it is not required in POS.
+9. Ant Design Blazor remains only in existing HealthCare Staff Web. New ExITS Platform Admin and PinoyBusinessPOS use native CSS/Razor — Ant is not required and must not be introduced there.
 10. Extraction proceeds in focused work packages with rollback instructions.

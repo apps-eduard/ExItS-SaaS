@@ -59,9 +59,11 @@ Status: **Ready for Review** (2026-07-29)
 #### Findings
 
 - AntDesign **1.6.2** staff-only; PatientWeb/Mobile native CSS; no shared UI RCL.
-- Modal/toast contracts reusable; Ant implementations stay HC/Platform Admin.
+- Modal/toast **contracts** reusable; Ant implementations stay in **HealthCare Staff Web only**; new Platform Admin is **native**.
 - Localization and Light/Dark/System **missing** in HealthCare.
-- POS: native CSS, no Tailwind/Ant; Compact/Comfortable; `en`/`fil`; native `DateField` first.
+- POS and **new Platform Admin**: native CSS, no Tailwind/Ant; Compact/Comfortable; `en`/`fil`; native `DateField` first.
+
+**Decision correction (2026-07-29):** New ExItS Platform Admin does **not** use Ant Design — see ADR-010 correction commit.
 
 #### Repository safety
 
@@ -77,7 +79,7 @@ Unchanged: `origin` empty; `main...origin/main [gone]`. No push.
 
 #### Risks
 
-R-005 mitigated by ADR-010 (watch dual stacks); R-006 phase-gated catalog; R-007/R-008 remain for POS implementation phases.
+R-005 mitigated by ADR-010 (Ant only in HC Staff; native Platform Admin + POS); R-006 phase-gated catalog; R-019 dual-stack = controlled separation; R-007/R-008 remain for native implementation phases.
 
 #### Deferred
 

@@ -10,12 +10,14 @@ Validated against HealthCare evidence in **P0-WP03**. No application UI was impl
 
 | Product | UI stack | Notes |
 |---|---|---|
-| HealthCare Staff Web / interim Platform Admin | **Ant Design Blazor** (keep) | Do not rewrite now; new platform screens follow existing Ant language |
-| HealthCare PatientWeb | Native CSS (keep) | Product-specific; pattern source for POS |
-| PinoyBusinessPOS | **Native CSS + CSS isolation + Razor components** | **No Ant Design**, **No Tailwind**, minimal JS |
-| Shared | Models, token **names**, localization keys, validation/formatting | Not one framework-switching component |
+| HealthCare Staff Web | **Ant Design Blazor** (retain) | No rewrite/modernization in current ExITS work |
+| HealthCare PatientWeb | Native CSS (retain) | Product-specific; pattern source for new native apps |
+| HealthCare MAUI | Existing native CSS (retain) | No rewrite in current work |
+| **New ExItS Platform Admin** | **Native CSS + CSS isolation + Razor components** | Blazor Web App; **no Ant Design**; **no Tailwind** |
+| PinoyBusinessPOS | **Same native foundation** (MAUI Blazor Hybrid) | Shared tokens/localization/models with Platform Admin; **no Ant**; **no Tailwind** |
+| Shared | Models, token **names**, localization keys, validation/formatting | Not one framework-switching component; **not** Ant |
 
-Visual consistency comes from shared semantic principles, terminology, and branding — **not** one component framework everywhere.
+Visual consistency across **new** Platform Admin and POS comes from shared semantic tokens, typography, spacing, theme/localization/accessibility/motion standards, and UI-independent models — **not** from Ant Design.
 
 ### Proposed project boundaries (not created in P0-WP03)
 
@@ -26,12 +28,15 @@ Shared/
 ├── ExItS.Ui.DesignTokens
 └── ExItS.Ui.Validation
 
+Platform/
+└── (Platform Admin Blazor Web App — native UI; created in later phases)
+
 Products/PinoyBusinessPOS/
 ├── PinoyBusinessPOS.Ui
 └── PinoyBusinessPOS.Maui
 ```
 
-POS hosts: .NET MAUI Blazor Hybrid targeting Android, Windows, and future iOS; responsive phone/tablet/desktop layouts.
+Platform Admin: Blazor Web App. POS: .NET MAUI Blazor Hybrid (Android, Windows, future iOS). Both use the native shared conventions above.
 
 ---
 
@@ -81,7 +86,7 @@ density-compact-* / density-comfortable-*
 motion-fast / motion-base / motion-slow
 ```
 
-Map the same **intent** into Ant Design theme tokens for Platform Admin; POS uses CSS custom properties (`--exits-*`) per [theme-system.md](theme-system.md).
+New Platform Admin and POS both use CSS custom properties (`--exits-*`) per [theme-system.md](theme-system.md). Existing HealthCare Staff Web may keep its Ant/`--hc-*` styling unchanged.
 
 ---
 
@@ -178,7 +183,7 @@ Reusable native table must support: compact + comfortable density; sort; search;
 
 | Surface | Table needs |
 |---|---|
-| Platform Admin | Dense org/subscription/audit tables (Ant wrappers OK) |
+| Platform Admin | Dense org/subscription/audit tables (**native** CompactDataTable) |
 | Utang customers / ledger | Compact desktop + card mobile; money/date display |
 | Products / inventory / sales | Dense Windows; touch-friendly filters |
 | Subscriptions | Admin compact tables |
@@ -219,8 +224,8 @@ Naming in earlier drafts (`ExTextField`, …) remains the documentation conventi
 
 ## Explicit non-goals
 
-- No Tailwind in POS or Platform Admin by default.
-- No Ant Design in PinoyBusinessPOS.
+- No Tailwind in POS or **new** Platform Admin.
+- No Ant Design in PinoyBusinessPOS or **new** Platform Admin.
 - No single component that switches Ant vs native at runtime.
-- No HealthCare UI rewrite in Phase 0.
+- No HealthCare UI rewrite in current ExITS MVP work.
 - No implementation of tokens/components in P0-WP03.
