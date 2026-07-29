@@ -89,7 +89,7 @@ R-005 mitigated by ADR-010 (watch dual stacks); R-006 phase-gated catalog; R-007
 
 | Field | Value |
 |---|---|
-| Hash | _(filled after commit)_ |
+| Hash | `5d628dd60b3793108cc6645992ed0a014e034e27` |
 | Message | `docs(ui): define platform and POS design strategy` |
 
 ### P0-WP04 — Assessment Closeout and Recommendation

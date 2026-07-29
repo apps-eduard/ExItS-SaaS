@@ -89,7 +89,7 @@ Listed in §4.
 
 | Field | Value |
 |---|---|
-| Commit hash | _(filled after commit)_ |
+| Commit hash | `5d628dd60b3793108cc6645992ed0a014e034e27` |
 | Commit message | `docs(ui): define platform and POS design strategy` |
 | Final working tree | Clean; HealthCare ignored |
 

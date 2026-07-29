@@ -14,7 +14,7 @@
 | Current phase | Phase 0 — Existing HealthCare Assessment |
 | Current work package | P0-WP03 — Ant Design and UI Reuse Review (**Ready for Review**) |
 | Overall status | In Progress |
-| Latest verified commit | _(P0-WP03 hash after commit)_ |
+| Latest verified commit | `5d628dd60b3793108cc6645992ed0a014e034e27` (`docs(ui): define platform and POS design strategy`) |
 | Open blockers | 0; root remote still empty (first push needs user authorization) |
 | Last updated | 2026-07-29 |
 
@@ -81,8 +81,8 @@ Commit `6b56e6dfec93f49e43a9c1a92baea1300d148b28`. Root `.gitignore` ignores `He
 - [x] Platform Admin keeps Ant; POS native CSS (no Tailwind/Ant).
 - [x] Density, theme, localization, motion, a11y, responsive, table/dropdown/date specs.
 - [x] Component catalog + ADR-010.
-- [ ] Commit hash recorded.
-- [ ] Working tree clean after commit.
+- [x] Commit hash recorded.
+- [x] Working tree clean after commit.
 
 Artifacts:
 
