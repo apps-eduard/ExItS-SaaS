@@ -24,6 +24,8 @@ public sealed class Subscription
     public DateTimeOffset? GracePeriodEndUtc { get; private set; }
     public DateTimeOffset? SuspendedAtUtc { get; private set; }
     public DateTimeOffset? CancelledAtUtc { get; private set; }
+    public DateTimeOffset? PastDueAtUtc { get; private set; }
+    public DateTimeOffset? ExpiredAtUtc { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
     public int Version { get; private set; }
@@ -160,6 +162,59 @@ public sealed class Subscription
             version: 1);
     }
 
+    internal static Subscription Rehydrate(
+        SubscriptionId id,
+        PlatformOrganizationId organizationId,
+        ProductCode productCode,
+        PlanId planId,
+        PlanVersionId planVersionId,
+        TrialDefinitionId? trialDefinitionId,
+        SubscriptionStatus status,
+        DateTimeOffset? trialStartUtc,
+        DateTimeOffset? trialEndUtc,
+        DateTimeOffset? paidPeriodStartUtc,
+        DateTimeOffset? paidPeriodEndUtc,
+        DateTimeOffset? gracePeriodEndUtc,
+        DateTimeOffset? suspendedAtUtc,
+        DateTimeOffset? cancelledAtUtc,
+        DateTimeOffset? pastDueAtUtc,
+        DateTimeOffset? expiredAtUtc,
+        DateTimeOffset createdAtUtc,
+        DateTimeOffset updatedAtUtc,
+        int version)
+    {
+        var subscription = new Subscription(
+            id,
+            organizationId,
+            productCode,
+            planId,
+            planVersionId,
+            trialDefinitionId,
+            status,
+            trialStartUtc,
+            trialEndUtc,
+            paidPeriodStartUtc,
+            paidPeriodEndUtc,
+            createdAtUtc,
+            updatedAtUtc,
+            version);
+
+        subscription.GracePeriodEndUtc = gracePeriodEndUtc;
+        subscription.SuspendedAtUtc = suspendedAtUtc;
+        subscription.CancelledAtUtc = cancelledAtUtc;
+        subscription.PastDueAtUtc = pastDueAtUtc;
+        subscription.ExpiredAtUtc = expiredAtUtc;
+        return subscription;
+    }
+
+    /// <summary>Statuses representing a subscription that still occupies the one-active-like-per-organization-product slot.</summary>
+    public static bool IsActiveLike(SubscriptionStatus status) =>
+        status is SubscriptionStatus.Trialing
+            or SubscriptionStatus.Active
+            or SubscriptionStatus.GracePeriod
+            or SubscriptionStatus.PastDue
+            or SubscriptionStatus.Suspended;
+
     public void ActivateFromTrial(DateTimeOffset periodStartUtc, DateTimeOffset periodEndUtc, DateTimeOffset utcNow)
     {
         DomainTime.EnsureUtc(utcNow);
@@ -181,11 +236,23 @@ public sealed class Subscription
     {
         DomainTime.EnsureUtc(utcNow);
         DomainTime.EnsureUtc(gracePeriodEndUtc);
+
+        if (PaidPeriodEndUtc is not null && gracePeriodEndUtc < PaidPeriodEndUtc.Value)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidEffectiveRange,
+                "Grace period end cannot precede the current paid period end.");
+        }
+
         TransitionTo(SubscriptionStatus.GracePeriod, utcNow);
         GracePeriodEndUtc = gracePeriodEndUtc;
     }
 
-    public void MarkPastDue(DateTimeOffset utcNow) => TransitionTo(SubscriptionStatus.PastDue, utcNow);
+    public void MarkPastDue(DateTimeOffset utcNow)
+    {
+        TransitionTo(SubscriptionStatus.PastDue, utcNow);
+        PastDueAtUtc = utcNow;
+    }
 
     public void Suspend(DateTimeOffset utcNow)
     {
@@ -193,7 +260,15 @@ public sealed class Subscription
         SuspendedAtUtc = utcNow;
     }
 
-    public void Reactivate(DateTimeOffset utcNow)
+    /// <summary>
+    /// Reactivates a subscription. Reactivating from GracePeriod or PastDue requires a new, valid
+    /// paid period range (the prior period has lapsed). Reactivating from Suspended may optionally
+    /// supply a paid period range; if omitted, the previously recorded paid period is retained.
+    /// </summary>
+    public void Reactivate(
+        DateTimeOffset utcNow,
+        DateTimeOffset? periodStartUtc = null,
+        DateTimeOffset? periodEndUtc = null)
     {
         if (Status is SubscriptionStatus.Cancelled or SubscriptionStatus.Expired)
         {
@@ -202,7 +277,36 @@ public sealed class Subscription
                 "Cancelled or expired subscriptions cannot be reactivated; create a new subscription.");
         }
 
+        var requiresPeriod = Status is SubscriptionStatus.GracePeriod or SubscriptionStatus.PastDue;
+        if (requiresPeriod && (periodStartUtc is null || periodEndUtc is null))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidEffectiveRange,
+                "Reactivating from grace period or past due requires a new paid period range.");
+        }
+
+        if (periodStartUtc is not null && periodEndUtc is not null)
+        {
+            DomainTime.EnsureUtc(periodStartUtc.Value);
+            DomainTime.EnsureUtc(periodEndUtc.Value);
+            if (periodEndUtc.Value <= periodStartUtc.Value)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidEffectiveRange,
+                    "Paid period end must be after start.");
+            }
+        }
+
         TransitionTo(SubscriptionStatus.Active, utcNow);
+
+        if (periodStartUtc is not null && periodEndUtc is not null)
+        {
+            PaidPeriodStartUtc = periodStartUtc;
+            PaidPeriodEndUtc = periodEndUtc;
+        }
+
+        GracePeriodEndUtc = null;
+        PastDueAtUtc = null;
         SuspendedAtUtc = null;
     }
 
@@ -212,7 +316,11 @@ public sealed class Subscription
         CancelledAtUtc = utcNow;
     }
 
-    public void Expire(DateTimeOffset utcNow) => TransitionTo(SubscriptionStatus.Expired, utcNow);
+    public void Expire(DateTimeOffset utcNow)
+    {
+        TransitionTo(SubscriptionStatus.Expired, utcNow);
+        ExpiredAtUtc = utcNow;
+    }
 
     private void TransitionTo(SubscriptionStatus target, DateTimeOffset utcNow)
     {

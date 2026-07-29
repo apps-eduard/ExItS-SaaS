@@ -10,6 +10,8 @@
 | Product | Platform | ProductCode | All | Name, status | Platform | Platform | Platform |
 | Plan | Platform | PlanCode + PlanVersion | Products | Limits/features list | Platform | Platform | Platform |
 | Subscription | Platform | SubscriptionId | Products | Status, period, plan | Platform | Platform | Platform |
+
+> **P3-WP02:** Organization (minimal ownership fields) and Subscription rows are persisted. SaaS payment rows are **not**. Entitlement snapshot tables are **not**.
 | Entitlement | Platform | EntitlementVersion + org+product | Products | Feature map, limits, grace | Platform | Platform | Platform |
 | SaaS payment | Platform | SaaSPaymentId | Admin, org billing UI | Status, reference | Platform | Platform | Platform |
 | Clinic | HealthCare | ClinicId | HC only | — | HealthCare | HealthCare | HealthCare |

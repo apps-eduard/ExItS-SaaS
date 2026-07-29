@@ -8,6 +8,8 @@ Exact refresh/stale **durations are not fixed** in P1-WP02 (R-022). Behavior is 
 
 **Trial length:** PinoyBusinessPOS Utang trial product requirement is **three calendar months** (not 90 days). Platform Domain stores only a configured positive duration / resulting UTC trial end on the subscription; calendar-month computation is not implemented in the generic aggregate.
 
+**P3-WP02:** Subscription lifecycle states (Trialing/Active/GracePeriod/PastDue/Suspended/Cancelled/Expired) are now **persisted** with one active-like slot per organization+product. Entitlement **projection delivery** remains out of scope.
+
 | Projection State | Trusted? | Reads Allowed | Writes Allowed | Restricted Operations | Refresh Action | Audit Requirement |
 |---|---|---|---|---|---|---|
 | Current | Yes | Yes | Per entitlements | None beyond normal authz | Background refresh before RefreshBy | Normal product audit |

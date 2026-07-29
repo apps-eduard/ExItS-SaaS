@@ -1,5 +1,6 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Entitlements;
@@ -20,6 +21,7 @@ public sealed class CommercialUseCaseTests
     {
         var clock = new FixedClock(T0);
         var uow = new NoOpUnitOfWork();
+        var orgs = new InMemoryPlatformOrganizationRepository();
         var products = new InMemoryProductRepository();
         var features = new InMemoryFeatureDefinitionRepository();
         var plans = new InMemoryPlanRepository();
@@ -27,6 +29,9 @@ public sealed class CommercialUseCaseTests
         var subscriptions = new InMemorySubscriptionRepository();
         var overrides = new InMemoryFeatureOverrideRepository();
         var snapshots = new InMemoryEntitlementSnapshotRepository();
+
+        var org = (await new CreatePlatformOrganization(orgs, uow, clock)
+            .ExecuteAsync("Acme Group", "acme-group")).Value!;
 
         var productResult = await new CreateProduct(products, uow, clock)
             .ExecuteAsync(ProductCode.PinoyBusinessPos, "Pinoy Business POS");
@@ -71,8 +76,8 @@ public sealed class CommercialUseCaseTests
         var trial = UtangTrialTestFactory.CreateConfigured(T0, TimeSpan.FromDays(14), planResult.Value.Id);
         await trials.AddAsync(trial);
 
-        var start = await new StartTrialSubscription(plans, trials, subscriptions, clock)
-            .ExecuteAsync(PlatformOrganizationId.New(), planResult.Value.Id, versionResult.Value!.Id, trial.Id);
+        var start = await new StartTrialSubscription(orgs, products, plans, trials, subscriptions, uow, clock)
+            .ExecuteAsync(org.Id, planResult.Value.Id, versionResult.Value!.Id, trial.Id);
         Assert.True(start.IsSuccess);
         Assert.Equal(T0.AddDays(14), start.Value!.TrialEndUtc);
         Assert.Equal(1, subscriptions.AddCount);
@@ -106,11 +111,15 @@ public sealed class CommercialUseCaseTests
     {
         var clock = new FixedClock(T0);
         var uow = new NoOpUnitOfWork();
+        var orgs = new InMemoryPlatformOrganizationRepository();
         var products = new InMemoryProductRepository();
         var features = new InMemoryFeatureDefinitionRepository();
         var plans = new InMemoryPlanRepository();
         var trials = new InMemoryTrialDefinitionRepository();
         var subscriptions = new InMemorySubscriptionRepository();
+
+        var org = (await new CreatePlatformOrganization(orgs, uow, clock)
+            .ExecuteAsync("Acme Group", "acme-group")).Value!;
 
         await new CreateProduct(products, uow, clock).ExecuteAsync(ProductCode.PinoyBusinessPos, "POS");
         var pc = ProductCode.Create(ProductCode.PinoyBusinessPos);
@@ -126,13 +135,91 @@ public sealed class CommercialUseCaseTests
             .Value!;
         var trial = UtangTrialTestFactory.CreateConfigured(T0, TimeSpan.FromDays(14), plan.Id);
         await trials.AddAsync(trial);
-        var sub = (await new StartTrialSubscription(plans, trials, subscriptions, clock)
-            .ExecuteAsync(PlatformOrganizationId.New(), plan.Id, version.Id, trial.Id)).Value!;
+        var sub = (await new StartTrialSubscription(orgs, products, plans, trials, subscriptions, uow, clock)
+            .ExecuteAsync(org.Id, plan.Id, version.Id, trial.Id)).Value!;
 
-        Assert.True((await new SuspendSubscription(subscriptions, clock).ExecuteAsync(sub.Id)).IsSuccess);
+        Assert.True((await new SuspendSubscription(subscriptions, uow, clock).ExecuteAsync(sub.Id)).IsSuccess);
         Assert.Equal(SubscriptionStatus.Suspended, sub.Status);
-        Assert.True((await new CancelSubscription(subscriptions, clock).ExecuteAsync(sub.Id)).IsSuccess);
+        Assert.True((await new CancelSubscription(subscriptions, uow, clock).ExecuteAsync(sub.Id)).IsSuccess);
         Assert.Equal(SubscriptionStatus.Cancelled, sub.Status);
+    }
+
+    [Fact]
+    public async Task StartTrialSubscription_rejects_missing_or_ineligible_organization()
+    {
+        var clock = new FixedClock(T0);
+        var uow = new NoOpUnitOfWork();
+        var orgs = new InMemoryPlatformOrganizationRepository();
+        var products = new InMemoryProductRepository();
+        var features = new InMemoryFeatureDefinitionRepository();
+        var plans = new InMemoryPlanRepository();
+        var trials = new InMemoryTrialDefinitionRepository();
+        var subscriptions = new InMemorySubscriptionRepository();
+
+        await new CreateProduct(products, uow, clock).ExecuteAsync(ProductCode.PinoyBusinessPos, "POS");
+        var pc = ProductCode.Create(ProductCode.PinoyBusinessPos);
+        await features.AddAsync(FeatureDefinition.Create(
+            pc, FeatureCode.Create(FeatureCode.CustomerCreditView), "View", FeatureValueType.Boolean, T0));
+        var plan = (await new CreatePlan(products, plans, uow, clock)
+            .ExecuteAsync(ProductCode.PinoyBusinessPos, "utang", "Utang")).Value!;
+        plan.Activate(T0);
+        var version = (await new PublishPlanVersion(plans, features, uow, clock)
+            .ExecuteAsync(plan.Id, 1, BillingPeriod.Monthly, true,
+                new[] { FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditView), true) }))
+            .Value!;
+        var trial = UtangTrialTestFactory.CreateConfigured(T0, TimeSpan.FromDays(14), plan.Id);
+        await trials.AddAsync(trial);
+
+        var startTrial = new StartTrialSubscription(orgs, products, plans, trials, subscriptions, uow, clock);
+
+        var missingOrg = await startTrial.ExecuteAsync(PlatformOrganizationId.New(), plan.Id, version.Id, trial.Id);
+        Assert.Equal(ApplicationErrorCodes.OrganizationNotFound, missingOrg.ErrorCode);
+
+        var org = (await new CreatePlatformOrganization(orgs, uow, clock)
+            .ExecuteAsync("Acme Group", "acme-group")).Value!;
+        org.Suspend(clock.UtcNow);
+        await orgs.UpdateAsync(org);
+
+        var suspendedOrg = await startTrial.ExecuteAsync(org.Id, plan.Id, version.Id, trial.Id);
+        Assert.Equal(ApplicationErrorCodes.OrganizationNotEligible, suspendedOrg.ErrorCode);
+        Assert.Equal(0, subscriptions.AddCount);
+    }
+
+    [Fact]
+    public async Task StartTrialSubscription_rejects_second_active_like_subscription_for_same_product()
+    {
+        var clock = new FixedClock(T0);
+        var uow = new NoOpUnitOfWork();
+        var orgs = new InMemoryPlatformOrganizationRepository();
+        var products = new InMemoryProductRepository();
+        var features = new InMemoryFeatureDefinitionRepository();
+        var plans = new InMemoryPlanRepository();
+        var trials = new InMemoryTrialDefinitionRepository();
+        var subscriptions = new InMemorySubscriptionRepository();
+
+        var org = (await new CreatePlatformOrganization(orgs, uow, clock)
+            .ExecuteAsync("Acme Group", "acme-group")).Value!;
+        await new CreateProduct(products, uow, clock).ExecuteAsync(ProductCode.PinoyBusinessPos, "POS");
+        var pc = ProductCode.Create(ProductCode.PinoyBusinessPos);
+        await features.AddAsync(FeatureDefinition.Create(
+            pc, FeatureCode.Create(FeatureCode.CustomerCreditView), "View", FeatureValueType.Boolean, T0));
+        var plan = (await new CreatePlan(products, plans, uow, clock)
+            .ExecuteAsync(ProductCode.PinoyBusinessPos, "utang", "Utang")).Value!;
+        plan.Activate(T0);
+        var version = (await new PublishPlanVersion(plans, features, uow, clock)
+            .ExecuteAsync(plan.Id, 1, BillingPeriod.Monthly, true,
+                new[] { FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditView), true) }))
+            .Value!;
+        var trial = UtangTrialTestFactory.CreateConfigured(T0, TimeSpan.FromDays(14), plan.Id);
+        await trials.AddAsync(trial);
+
+        var startTrial = new StartTrialSubscription(orgs, products, plans, trials, subscriptions, uow, clock);
+        var first = await startTrial.ExecuteAsync(org.Id, plan.Id, version.Id, trial.Id);
+        Assert.True(first.IsSuccess);
+
+        var second = await startTrial.ExecuteAsync(org.Id, plan.Id, version.Id, trial.Id);
+        Assert.Equal(ApplicationErrorCodes.ActiveSubscriptionConflict, second.ErrorCode);
+        Assert.Equal(1, subscriptions.AddCount);
     }
 
     [Fact]

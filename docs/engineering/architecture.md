@@ -31,7 +31,9 @@ A controlled monorepo is used initially for coordinated extraction and developme
 
 **P2-WP05:** Migration dry-run / regression validation models in Application (`MigrationValidation`). Simulation only — no real migration, SQL, or HC access.
 
-**P3-WP01:** Platform catalog persistence (`PlatformDbContext`, schema `platform`) + `/api/v1/platform/catalog` API. Subscriptions/payments/Admin not implemented. Catalog endpoints are unauthenticated (development-stage).
+**P3-WP01:** Platform catalog persistence (`PlatformDbContext`, schema `platform`) + `/api/v1/platform/catalog` API. Catalog endpoints are unauthenticated (development-stage).
+
+**P3-WP02:** Platform organization + subscription persistence; lifecycle API under `/api/v1/platform/organizations` and `/subscriptions`. Paid activation is commercial-only (no payment collection). Payments/Admin/entitlement delivery not implemented. Routes remain unauthenticated (development-stage).
 
 ## UI choices
 

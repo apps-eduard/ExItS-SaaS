@@ -22,7 +22,7 @@
 
 **Complete with documented risks (Phase 2 / P2-WP06).** Root Platform foundation, identity/org, commercial domain, HC contract boundaries, and migration dry-run validation delivered. HealthCare remains frozen. Auth, persistence, real HC integration/cutover, Admin UI, and POS were **not** delivered. See [phase-02-extraction-closeout.md](reports/phase-02-extraction-closeout.md).
 
-**Next:** Phase 3 / **P3-WP01** catalog persistence delivered (in review); then **P3-WP02 — Trials and Subscription Lifecycle** when authorized.
+**Next:** Phase 3 — **P3-WP01** catalog Complete; **P3-WP02** subscription lifecycle Ready for Review; then **P3-WP03 — Manual Payment Activation** when authorized.
 
 ## R2 — Platform portfolio administration
 

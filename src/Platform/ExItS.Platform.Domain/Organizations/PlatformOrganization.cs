@@ -56,6 +56,15 @@ public sealed class PlatformOrganization
             utcNow);
     }
 
+    internal static PlatformOrganization Rehydrate(
+        PlatformOrganizationId id,
+        string displayName,
+        string slug,
+        OrganizationStatus status,
+        DateTimeOffset createdAtUtc,
+        DateTimeOffset updatedAtUtc) =>
+        new(id, displayName, slug, status, createdAtUtc, updatedAtUtc);
+
     public void Rename(string displayName, DateTimeOffset utcNow)
     {
         EnsureUtc(utcNow);

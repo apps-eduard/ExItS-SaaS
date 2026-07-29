@@ -4,6 +4,8 @@
 
 Platform grants **product access**; each product owns **operational permissions**. Platform Administrator does not automatically receive unrestricted clinical or POS operational access (break-glass deferred).
 
+**P3-WP02 note:** Organization and subscription REST endpoints are development-stage and **unauthenticated**. Do not treat them as production authorization.
+
 ## Platform organization membership roles (P2-WP02)
 
 Modeled in Domain as `OrganizationRole`:

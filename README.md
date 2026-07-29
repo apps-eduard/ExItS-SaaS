@@ -34,7 +34,7 @@ ExItS-SaaS/
 
 `HealthCare/` remains frozen and outside root Git. Do not import it without an approved work package.
 
-**Phase 2** is closed with documented risks ([closeout](docs/reports/phase-02-extraction-closeout.md)). **P3-WP01** adds Platform catalog persistence and API (`/api/v1/platform/catalog`) — development-stage, unauthenticated. HealthCare remains frozen. Next: P3-WP02 when authorized.
+**Phase 2** is closed with documented risks ([closeout](docs/reports/phase-02-extraction-closeout.md)). **P3-WP01** catalog + **P3-WP02** organization/subscription lifecycle APIs (`/api/v1/platform/catalog`, `/organizations`, `/subscriptions`) — development-stage, unauthenticated; activation is **not** payment processing. HealthCare remains frozen. Next: P3-WP03 when authorized.
 
 ### Platform database (local)
 

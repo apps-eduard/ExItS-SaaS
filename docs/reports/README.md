@@ -32,4 +32,5 @@ The dashboard links to the latest accepted report.
 | [P2-WP05-regression-and-migration-validation.md](P2-WP05-regression-and-migration-validation.md) | Regression and Migration Validation | Complete |
 | [P2-WP06-extraction-closeout.md](P2-WP06-extraction-closeout.md) | Extraction Closeout | Ready for Review |
 | [phase-02-extraction-closeout.md](phase-02-extraction-closeout.md) | Phase 2 Extraction Closeout | Complete |
-| [P3-WP01-product-and-plan-catalog.md](P3-WP01-product-and-plan-catalog.md) | Product and Plan Catalog | Ready for Review |
+| [P3-WP01-product-and-plan-catalog.md](P3-WP01-product-and-plan-catalog.md) | Product and Plan Catalog | Complete |
+| [P3-WP02-trials-and-subscription-lifecycle.md](P3-WP02-trials-and-subscription-lifecycle.md) | Trials and Subscription Lifecycle | Ready for Review |

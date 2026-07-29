@@ -1,4 +1,6 @@
 using ExItS.Platform.Application.Catalog;
+using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Infrastructure.Persistence;
 using ExItS.Platform.Infrastructure.Persistence.Repositories;
@@ -24,6 +26,8 @@ public static class DependencyInjection
         services.AddScoped<IFeatureDefinitionRepository, FeatureDefinitionRepository>();
         services.AddScoped<IPlanRepository, PlanRepository>();
         services.AddScoped<ITrialDefinitionRepository, TrialDefinitionRepository>();
+        services.AddScoped<IPlatformOrganizationRepository, PlatformOrganizationRepository>();
+        services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
         services.AddScoped<IPlatformUnitOfWork, PlatformUnitOfWork>();
         services.AddSingleton<IClock, SystemClock>();
 

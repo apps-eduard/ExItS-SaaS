@@ -1,5 +1,9 @@
 using ExItS.Platform.Api.Catalog;
+using ExItS.Platform.Api.Organizations;
+using ExItS.Platform.Api.Subscriptions;
 using ExItS.Platform.Application.Catalog;
+using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,6 +32,20 @@ builder.Services.AddScoped<PublishPlanVersion>();
 builder.Services.AddScoped<CreateTrialDefinition>();
 builder.Services.AddScoped<RetireTrialDefinition>();
 
+builder.Services.AddScoped<OrganizationQueryService>();
+builder.Services.AddScoped<CreatePlatformOrganization>();
+builder.Services.AddScoped<SuspendPlatformOrganization>();
+
+builder.Services.AddScoped<SubscriptionQueryService>();
+builder.Services.AddScoped<StartTrialSubscription>();
+builder.Services.AddScoped<ActivateSubscription>();
+builder.Services.AddScoped<EnterSubscriptionGracePeriod>();
+builder.Services.AddScoped<MarkSubscriptionPastDue>();
+builder.Services.AddScoped<SuspendSubscription>();
+builder.Services.AddScoped<ReactivateSubscription>();
+builder.Services.AddScoped<CancelSubscription>();
+builder.Services.AddScoped<ExpireSubscription>();
+
 var app = builder.Build();
 
 app.UseExceptionHandler();
@@ -37,11 +55,13 @@ app.MapGet("/", () => Results.Json(new
 {
     service = "ExItS.Platform.Api",
     status = "ok",
-    phase = "P3-WP01-product-plan-catalog"
+    phase = "P3-WP02-trials-subscription-lifecycle"
 }));
 
 app.MapHealthChecks("/health");
 app.MapCatalogEndpoints();
+app.MapOrganizationEndpoints();
+app.MapSubscriptionEndpoints();
 
 app.Run();
 

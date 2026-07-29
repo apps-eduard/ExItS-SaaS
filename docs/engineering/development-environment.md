@@ -22,9 +22,9 @@ dotnet test ExItS.slnx -c Release --no-build
 dotnet run --project src/Platform/ExItS.Platform.Api/ExItS.Platform.Api.csproj -c Release --urls http://127.0.0.1:5288
 ```
 
-Health checks: `GET /` and `GET /health`. Catalog API under `/api/v1/platform/catalog` requires PostgreSQL (P3-WP01).
+Health checks: `GET /` and `GET /health`. Catalog, organization, and subscription APIs under `/api/v1/platform/*` require PostgreSQL (P3-WP01/02). Development-stage routes are unauthenticated.
 
-## Platform PostgreSQL (P3-WP01)
+## Platform PostgreSQL (P3-WP01 / P3-WP02)
 
 | Item | Value |
 |---|---|

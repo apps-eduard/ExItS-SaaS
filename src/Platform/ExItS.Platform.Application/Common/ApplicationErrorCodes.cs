@@ -23,6 +23,11 @@ public static class ApplicationErrorCodes
     public const string DuplicateFeatureCode = "application.feature.code_conflict";
     public const string SnapshotVersionConflict = "application.entitlement_snapshot.version_conflict";
 
+    public const string ActiveSubscriptionConflict = "application.subscription.active_conflict";
+    public const string ConcurrencyConflict = "application.concurrency_conflict";
+    public const string OrganizationNotEligible = "application.organization.not_eligible";
+    public const string ProductNotActive = "application.product.not_active";
+
     public const string UnsupportedContractVersion = "application.contract.version.unsupported";
     public const string ProjectionConflict = "application.projection.conflict";
     public const string ReconciliationRequired = "application.projection.reconciliation_required";

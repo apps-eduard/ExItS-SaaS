@@ -10,7 +10,7 @@ Statuses reflect Phase 2 closeout. Distinguish **code/domain foundation** from *
 | G1 Solution foundation | Solution builds; architecture dependency tests; no HC import | Platform eng | Stage 2 | L1 plan | **Met** (P2-WP01) |
 | G2 Identity foundation | Login/refresh/revoke/suspend tests; no credential leakage | Platform eng | Stage 3 | L2 plan reviewed | **Partial** — domain foundation only (no login) |
 | G3 Org / membership | Multi-org membership; product-access tests; server-derived scope | Platform eng | Stage 4 | L3 plan reviewed | **Partial** — domain foundation only (no persistence) |
-| G4 Catalog / entitlements | Contract version/idempotency/out-of-order/unsupported major tests | Platform eng | Stage 5 / POS gate | L4 plan reviewed | **Partial** — catalog persistence + contracts (P3-WP01); subscription/billing entitlement delivery not started |
+| G4 Catalog / entitlements | Contract version/idempotency/out-of-order/unsupported major tests | Platform eng | Stage 5 / POS gate | L4 plan reviewed | **Partial** — catalog + subscription lifecycle (P3-WP01/02); payment activation + entitlement delivery not started |
 | G5 Platform Admin native UI | Smoke; a11y; no Ant/Tailwind; theme/i18n basics | Platform UI | Stage 6 prep | L6 plan reviewed | **Not started** |
 | G6 Mapping dry run | Mapping report; collision report; reversible audit trail | Platform + HC | HC adapter enable | L3/L5 backups verified | **Partial (P2-WP05)** — Platform dry-run only |
 | G7 HC regression | 1102 safe suite (or successor); Integration/E2E in supported env | HC eng | Any HC cutover | L5 restore rehearsal pass | **Not started** (1102 not rerun in Phase 2) |

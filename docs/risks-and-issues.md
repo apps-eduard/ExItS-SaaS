@@ -15,7 +15,7 @@
 | R-009 | Duplicate offline financial transactions | Critical | Idempotency and append-only ledger | Open |
 | R-010 | Nested `HealthCare/.git` inside ExITS monorepo | High | Root ignores `HealthCare/`; decide import/submodule/subtree later — do not delete nested `.git` | Mitigated (ignore) — integration decision still Open |
 | R-011 | No EF global tenant query filters (service-only isolation) | Critical | Keep service checks; add filters/tests before multi-product sharing | Open — verified P0-WP01 |
-| R-012 | Plans/trials/subscriptions/billing/entitlements missing | High | Catalog persistence in P3-WP01; subscription/billing still Phase 3+ | Open — catalog done; billing incomplete |
+| R-012 | Plans/trials/subscriptions/billing/entitlements missing | High | Catalog + subscription lifecycle in P3-WP01/02; payment collection + entitlement delivery still Phase 3+ | Open — subscriptions persist; billing incomplete |
 | R-013 | Parent repo missing root `.gitignore` | High | Root `.gitignore` added in P0-WP02 | **Mitigated** (P0-WP02) |
 | R-014 | Full `HealthCare.sln` build fails without Android SDK env | Medium | Non-MAUI build path documented; set `ANDROID_HOME` or `AndroidSdkDirectory` on agents that need Mobile | Open — SDK folder present but env unset (P0-WP02) |
 | R-015 | Pre-existing dirty PatientWeb files inside nested HealthCare git | Medium | Do not overwrite; resolve in HealthCare repo or later import WP | Open — still present P0-WP02 |
@@ -48,8 +48,12 @@
 | R-042 | False-positive email/username mapping treated as safe identity merge | High | Exact identifier match alone warns; explicit approved mapping preferred | Open — introduced P2-WP05 |
 | R-043 | Migration dry-run mistaken for completed production migration | High | Status uses `Validated` not `Migrated`; docs + R-040 related | Open — introduced P2-WP05; reinforced P2-WP06 |
 | R-044 | Incomplete rollback evidence before cutover | Critical | Rollback readiness validator; R-027 restore rehearsal still required | Open — introduced P2-WP05 |
-| R-045 | Catalog API endpoints are unauthenticated (development-stage) | Critical | Document limitation; require auth before production; no fake identity | Open — introduced P3-WP01 |
+| R-045 | Catalog/organization/subscription API endpoints are unauthenticated (development-stage) | Critical | Document limitation; require auth before production; no fake identity | Open — introduced P3-WP01; expanded P3-WP02 |
 | R-046 | Local-dev connection strings / accidental auto-migrate or wrong DB target | High | No Migrate() at startup; isolated Docker port 5434; document workflow | Open — introduced P3-WP01 |
+| R-047 | Manual/commercial ActivateSubscription mistaken for payment verification | High | Docs + API comments state activation ≠ payment; no payment tables/routes; P3-WP03 owns payment activation | Open — introduced P3-WP02 |
+| R-048 | Missed trial/paid/grace expiration without background scheduler | Medium | Explicit Expire/PastDue/Grace commands + lifecycle evaluator; no Hangfire yet | Open — introduced P3-WP02 |
+| R-049 | Repeat-trial eligibility policy undecided (one-trial-ever vs allow after Cancelled/Expired) | Medium | Safe default: allow when no active-like slot; document open decision | Open — introduced P3-WP02 |
+| R-050 | Unsecured subscription lifecycle mutation endpoints before production | Critical | Same gate as R-045; do not expose beyond development | Open — introduced P3-WP02 |
 
 ## Phase 2 closeout note (P2-WP06)
 

@@ -2,7 +2,7 @@
 
 > Primary status page. Cursor must update this file after every completed work package. Percentages are calculated from approved work packages, never estimated.
 
-[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P3-WP01 report](reports/P3-WP01-product-and-plan-catalog.md)
+[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P3-WP02 report](reports/P3-WP02-trials-and-subscription-lifecycle.md)
 
 ## Current status
 
@@ -12,10 +12,10 @@
 | Existing product | HealthCare SaaS MVP (ignored nested `HealthCare/`) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 3 — Portfolio Billing, Plans and Entitlements |
-| Current work package | P3-WP01 — Product and Plan Catalog (**Ready for Review**) |
-| Overall status | Phase 2 complete; first Platform catalog persistence + API delivered |
-| Latest verified commit | `9d01f26095c3c76ffd67aa2b7b5bcf1a19a328f2` |
-| Open blockers | Catalog API unauthenticated (R-045); R-035 calendar EOM open |
+| Current work package | P3-WP02 — Trials and Subscription Lifecycle (**Ready for Review**) |
+| Overall status | Phase 2 complete; catalog + subscription lifecycle persistence + API delivered |
+| Latest verified commit | _(feature hash recorded after commit)_ |
+| Open blockers | Org/subscription APIs unauthenticated (R-045); R-035 calendar EOM open; activation ≠ payment (R-047) |
 | Last updated | 2026-07-29 |
 
 ## Delivery sequence
@@ -23,9 +23,11 @@
 ```text
 Phase 2 ✓
         ↓
-P3-WP01 Product and Plan Catalog  ← in review
+P3-WP01 Product and Plan Catalog ✓
         ↓
-P3-WP02 Trials and Subscription Lifecycle (not started)
+P3-WP02 Trials and Subscription Lifecycle  ← in review
+        ↓
+P3-WP03 Manual Payment Activation (not started)
 ```
 
 ## Phase progress
@@ -44,29 +46,32 @@ P3-WP02 Trials and Subscription Lifecycle (not started)
 | 9 | MVP Hardening and Release | Not Started | 0 | 6 | 0% | [Open](phases/phase-09-mvp-hardening.md) |
 | 10 | Full POS | Future | 0 | 8 | 0% | [Open](phases/phase-10-full-pos.md) |
 
-**MVP phases 0–9:** 14 / 52 = **26.92%** (P3-WP01 not counted until accepted).
+**MVP phases 0–9:** 14 / 52 = **26.92%** (P3-WP01/02 not counted until accepted).
 
 ## Phase 3 work packages
 
 | WP | Status | Key commit |
 |---|---|---|
-| P3-WP01 | Ready for Review | `9d01f26` |
-| P3-WP02–05 | Not Started | — |
+| P3-WP01 | Complete (accepted) | `9d01f26` |
+| P3-WP02 | Ready for Review | _(pending)_ |
+| P3-WP03–05 | Not Started | — |
 
-## Catalog snapshot (P3-WP01)
+## Subscription lifecycle snapshot (P3-WP02)
 
 | Item | Value |
 |---|---|
-| Persistence | EF Core 10.0.4 + Npgsql 10.0.2 · `platform` schema |
-| Migration | `InitialPlatformCatalog` |
-| API | `/api/v1/platform/catalog/*` (unauthenticated / development-stage) |
-| Tests | 140 passed / 0 failed / 0 skipped |
+| Persistence | Organizations + subscriptions · `platform` schema |
+| Migration | `AddPlatformOrganizationsAndSubscriptions` |
+| Active-like uniqueness | Partial unique index per org + product |
+| API | `/api/v1/platform/organizations/*`, `/api/v1/platform/subscriptions/*` (unauthenticated / development-stage) |
+| Payments | **Not implemented** — activation is commercial lifecycle only |
+| Tests | 185 passed / 0 failed / 0 skipped |
 | HealthCare | Frozen |
 
 ## Latest tests
 
-Root Release: **140 passed / 0 failed / 0 skipped** (100 unit + 27 architecture + 13 integration). HealthCare not rebuilt.
+Root Release: **185 passed / 0 failed / 0 skipped** (127 unit + 32 architecture + 26 integration). HealthCare not rebuilt.
 
 ## Next approved action
 
-**P3-WP02 — Trials and Subscription Lifecycle** after P3-WP01 acceptance. Do **not** begin until authorized.
+**P3-WP03 — Manual Payment Activation** after P3-WP02 acceptance. Do **not** begin until authorized.

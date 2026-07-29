@@ -61,6 +61,7 @@
 - [Phase 2 extraction closeout](reports/phase-02-extraction-closeout.md)
 - [Phase 2 evidence matrix](engineering/phase-02-evidence-matrix.md)
 - [P3-WP01 product and plan catalog report](reports/P3-WP01-product-and-plan-catalog.md)
+- [P3-WP02 trials and subscription lifecycle report](reports/P3-WP02-trials-and-subscription-lifecycle.md)
 - [All phases](phases/README.md)
 - [Risks and issues](risks-and-issues.md)
 - [Decisions](decisions/README.md)

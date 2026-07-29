@@ -12,13 +12,13 @@ Phase 2 is **Close with documented risks** (P2-WP06). Domain foundations for cat
 
 ## First work package
 
-**P3-WP01 — Product and Plan Catalog** (Ready for Review). Persistent products/features/plans/versions/trials + catalog API.
+**P3-WP01** Complete (accepted). **P3-WP02** Ready for Review — organization ownership + trial/subscription lifecycle persistence and API.
 
 ## Work packages
 
 ### P3-WP01 — Product and Plan Catalog
 
-Status: **Ready for Review**
+Status: **Complete** (accepted)
 
 #### Goal
 
@@ -29,7 +29,7 @@ Persist the Platform product/plan catalog and expose it via Platform API without
 - EF Core + Npgsql; `PlatformDbContext`; schema `platform`; migration `InitialPlatformCatalog`.
 - Repository + unit-of-work implementations; expanded catalog commands/queries.
 - Catalog REST API under `/api/v1/platform/catalog` (development-stage, unauthenticated).
-- Integration tests via Testcontainers PostgreSQL; 140 root tests passing.
+- Integration tests via Testcontainers PostgreSQL; 140 root tests passing at acceptance.
 - HealthCare remains frozen.
 
 #### Explicit exclusions (honored)
@@ -62,22 +62,48 @@ Persist the Platform product/plan catalog and expose it via Platform API without
 
 ### P3-WP02 — Trials and Subscription Lifecycle
 
-Status: Not Started
+Status: **Ready for Review**
 
-#### Required outcomes
+#### Goal
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+Persist Platform organizations (subscription ownership) and the commercial subscription lifecycle (trial through cancel/expire) without payment collection.
+
+#### Outcomes delivered
+
+- `platform.organizations` + `platform.subscriptions`; migration `AddPlatformOrganizationsAndSubscriptions`.
+- Partial unique index for one active-like subscription per organization + product.
+- Trial start/expire; paid activation without payment processing; grace/past-due/suspend/reactivate/cancel/expire.
+- APIs under `/api/v1/platform/organizations` and `/api/v1/platform/subscriptions` (development-stage, unauthenticated).
+- 185 root tests passing; isolated PostgreSQL apply/rollback/re-apply validated.
+- HealthCare remains frozen.
+
+#### Explicit exclusions (honored)
+
+- No auth/JWT, invoices, GCash, entitlement delivery, Hangfire, Admin UI, HC adapter, POS, `FromDays(90)`.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (185/0/0).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded (see below).
+- [x] Working tree clean (after hash-record).
+- [x] HealthCare freeze verified.
+- [x] Validated commit pushed to `origin/main`.
+
+#### Artifacts
+
+| Artifact | Path |
+|---|---|
+| Report | [P3-WP02 report](../reports/P3-WP02-trials-and-subscription-lifecycle.md) |
+
+#### Commit
+
+| Field | Value |
+|---|---|
+| Hash | _(recorded after commit)_ |
+| Message | `feat(platform): implement trial and subscription lifecycle` |
 
 ### P3-WP03 — Manual Payment Activation
 

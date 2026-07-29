@@ -4,6 +4,7 @@ using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Products;
+using ExItS.Platform.Domain.Subscriptions;
 using NetArchTest.Rules;
 
 namespace ExItS.ArchitectureTests;
@@ -336,7 +337,7 @@ public sealed class LayerDependencyTests
     }
 
     [Fact]
-    public void Api_has_no_subscription_or_payment_MapGet_routes()
+    public void Api_has_no_payment_or_gcash_MapGet_routes()
     {
         var root = FindRepositoryRoot();
         var apiRoot = Path.Combine(root, "src", "Platform", "ExItS.Platform.Api");
@@ -348,10 +349,104 @@ public sealed class LayerDependencyTests
 
         foreach (var source in sources)
         {
-            Assert.DoesNotContain("MapGet(\"/api/v1/platform/subscriptions", source, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("MapGet(\"/subscriptions", source, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("MapGet(\"/payments", source, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("MapGet(\"/gcash", source, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("MapPost(\"/payments", source, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("MapPost(\"/gcash", source, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public void Subscription_and_organization_endpoints_are_under_platform_route_prefix()
+    {
+        var root = FindRepositoryRoot();
+        var subscriptionEndpoints = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Api", "Subscriptions", "SubscriptionEndpoints.cs"));
+        var organizationEndpoints = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Api", "Organizations", "OrganizationEndpoints.cs"));
+
+        Assert.Contains("/api/v1/platform/subscriptions", subscriptionEndpoints, StringComparison.Ordinal);
+        Assert.Contains(
+            "/api/v1/platform/organizations/{organizationId:guid}/subscriptions",
+            subscriptionEndpoints,
+            StringComparison.Ordinal);
+        Assert.Contains("/api/v1/platform/organizations", organizationEndpoints, StringComparison.Ordinal);
+
+        foreach (var source in new[] { subscriptionEndpoints, organizationEndpoints })
+        {
+            Assert.DoesNotContain("MapGet(\"/payments", source, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("MapPost(\"/payments", source, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("MapGet(\"/gcash", source, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("MapPost(\"/gcash", source, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Hangfire.", source, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void Src_never_uses_a_hardcoded_ninety_day_TimeSpan()
+    {
+        var root = FindRepositoryRoot();
+        var srcFiles = Directory.GetFiles(Path.Combine(root, "src"), "*.cs", SearchOption.AllDirectories)
+            .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                        && !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"));
+
+        foreach (var file in srcFiles)
+        {
+            var text = File.ReadAllText(file);
+            Assert.DoesNotContain("FromDays(90)", text, StringComparison.Ordinal);
+        }
+    }
+
+    [Theory]
+    [InlineData(SubscriptionStatus.Cancelled)]
+    [InlineData(SubscriptionStatus.Expired)]
+    public void Cancelled_and_Expired_subscription_statuses_reject_every_transition(SubscriptionStatus terminalStatus)
+    {
+        var utc = new DateTimeOffset(2026, 7, 29, 12, 0, 0, TimeSpan.Zero);
+        var plan = Plan.CreateDraft(
+            ProductCode.Create(ProductCode.PinoyBusinessPos),
+            PlanCode.Create("utang-terminal"),
+            "Utang Terminal",
+            utc);
+        plan.Activate(utc);
+        var version = PlanVersion.CreateDraft(
+            plan,
+            1,
+            utc,
+            BillingPeriod.Monthly,
+            true,
+            new[] { FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditView), true) },
+            utc);
+        version.Publish(utc);
+
+        var subscription = Subscription.ActivatePaid(
+            PlatformOrganizationId.New(), plan, version, utc, utc.AddDays(30), utc);
+
+        if (terminalStatus == SubscriptionStatus.Cancelled)
+        {
+            subscription.Cancel(utc.AddMinutes(1));
+        }
+        else
+        {
+            subscription.Expire(utc.AddMinutes(1));
+        }
+
+        Assert.Equal(terminalStatus, subscription.Status);
+        Assert.Throws<DomainException>(() => subscription.ActivateFromTrial(utc, utc.AddDays(1), utc.AddMinutes(2)));
+        Assert.Throws<DomainException>(() => subscription.EnterGracePeriod(utc.AddDays(60), utc.AddMinutes(2)));
+        Assert.Throws<DomainException>(() => subscription.MarkPastDue(utc.AddMinutes(2)));
+        Assert.Throws<DomainException>(() => subscription.Suspend(utc.AddMinutes(2)));
+        Assert.Throws<DomainException>(() => subscription.Reactivate(utc.AddMinutes(2)));
+
+        // Re-issuing the same terminal transition is a same-state no-op, not a rejected transition;
+        // only the *other* terminal transition is actually disallowed from this state.
+        if (terminalStatus == SubscriptionStatus.Cancelled)
+        {
+            Assert.Throws<DomainException>(() => subscription.Expire(utc.AddMinutes(2)));
+        }
+        else
+        {
+            Assert.Throws<DomainException>(() => subscription.Cancel(utc.AddMinutes(2)));
         }
     }
 
@@ -385,7 +480,38 @@ public sealed class LayerDependencyTests
     }
 
     [Fact]
-    public void Api_exposes_catalog_only_without_subscription_or_payment_routes()
+    public void AddPlatformOrganizationsAndSubscriptions_migration_creates_only_organizations_and_subscriptions_tables()
+    {
+        var root = FindRepositoryRoot();
+        var migration = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "Platform",
+            "ExItS.Platform.Infrastructure",
+            "Persistence",
+            "Migrations",
+            "20260729173841_AddPlatformOrganizationsAndSubscriptions.cs"));
+
+        Assert.Contains("name: \"organizations\"", migration, StringComparison.Ordinal);
+        Assert.Contains("name: \"subscriptions\"", migration, StringComparison.Ordinal);
+        Assert.Contains("ux_subscriptions_one_active_like", migration, StringComparison.Ordinal);
+
+        var forbiddenTableNames = new[]
+        {
+            "users", "memberships", "payments", "invoices", "entitlement_snapshots",
+            "hangfire", "gcash_clients", "patients"
+        };
+        foreach (var table in forbiddenTableNames)
+        {
+            Assert.DoesNotContain($"name: \"{table}\"", migration, StringComparison.OrdinalIgnoreCase);
+        }
+
+        Assert.DoesNotContain("Patient", migration, StringComparison.Ordinal);
+        Assert.DoesNotContain("Hangfire", migration, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Api_exposes_catalog_and_subscription_lifecycle_without_payment_routes()
     {
         var root = FindRepositoryRoot();
         var program = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "Program.cs"));
@@ -394,8 +520,11 @@ public sealed class LayerDependencyTests
         Assert.Contains("MapGet(\"/\"".Replace("\\", ""), program);
         Assert.Contains("/health", program);
         Assert.Contains("MapCatalogEndpoints", program);
-        Assert.Contains("P3-WP01", program, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("MapOrganizationEndpoints", program);
+        Assert.Contains("MapSubscriptionEndpoints", program);
+        Assert.Contains("P3-WP02", program, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("catalog", program, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("subscription", program, StringComparison.OrdinalIgnoreCase);
 
         Assert.DoesNotContain("entitlement", program, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("projection", program, StringComparison.OrdinalIgnoreCase);
@@ -405,13 +534,11 @@ public sealed class LayerDependencyTests
         Assert.DoesNotContain("MapGet(\"/import", program, StringComparison.OrdinalIgnoreCase);
 
         var sources = program + catalog;
-        Assert.DoesNotContain("MapPost(\"/api/v1/platform/subscriptions", sources, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("MapPost(\"/subscriptions", sources, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("MapPost(\"/payments", sources, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("MapPost(\"/gcash", sources, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("subscription", sources, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("payment", sources, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("gcash", sources, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("invoice", sources, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("hangfire", sources, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("gcashclient", sources, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

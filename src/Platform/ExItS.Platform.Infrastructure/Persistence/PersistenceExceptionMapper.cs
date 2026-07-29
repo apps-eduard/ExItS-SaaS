@@ -25,6 +25,25 @@ public static class PersistenceExceptionMapper
             return false;
         }
 
+        // Check subscription- and organization-specific constraints first: their detail text can
+        // also contain "product_code" / generic substrings that would otherwise be caught by the
+        // broader catalog checks below.
+        if (detail.Contains("ux_subscriptions_one_active_like", StringComparison.OrdinalIgnoreCase)
+            || detail.Contains("subscriptions", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.ActiveSubscriptionConflict;
+            message = "An active-like subscription already exists for this organization and product.";
+            return true;
+        }
+
+        if (detail.Contains("organizations", StringComparison.OrdinalIgnoreCase)
+            || detail.Contains("(slug)", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.SlugConflict;
+            message = "A Platform Organization with this slug already exists.";
+            return true;
+        }
+
         if (detail.Contains("products", StringComparison.OrdinalIgnoreCase)
             || detail.Contains("product_code", StringComparison.OrdinalIgnoreCase)
             || detail.Contains("(code)", StringComparison.OrdinalIgnoreCase))

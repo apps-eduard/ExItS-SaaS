@@ -13,20 +13,25 @@ public sealed class MigrationTests(PostgreSqlFixture fixture)
         "plan_versions",
         "plan_version_feature_grants",
         "trial_definitions",
-        "trial_definition_feature_grants"
+        "trial_definition_feature_grants",
+        "organizations",
+        "subscriptions"
     ];
 
     private static readonly string[] ForbiddenTables =
     [
         "users",
-        "organizations",
-        "subscriptions",
+        "memberships",
         "payments",
+        "invoices",
+        "entitlement_snapshots",
+        "hangfire",
+        "gcash_clients",
         "patients"
     ];
 
     [Fact]
-    public async Task InitialPlatformCatalog_creates_expected_platform_schema_tables_only()
+    public async Task Platform_migrations_create_expected_schema_tables_only()
     {
         await using var connection = new NpgsqlConnection(fixture.ConnectionString);
         await connection.OpenAsync();

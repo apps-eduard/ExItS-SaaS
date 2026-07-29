@@ -47,6 +47,8 @@ Everything in Basic Store plus suppliers, purchasing, advanced inventory, cashie
 
 **P2-WP03:** Domain models exist for Product, Plan, PlanVersion, FeatureDefinition, TrialDefinition, Subscription, FeatureOverride, and EntitlementSnapshot. PaymentTransaction / Invoice / payment collection are **not** implemented.
 
+**P3-WP02:** PlatformOrganization (minimal) and Subscription are **persisted**. Commercial `ActivateSubscription` does **not** collect or verify payment. Invoices/GCash/payment gateways remain out of scope.
+
 ## Availability rule
 
 Product APIs use locally stored entitlement snapshots (versioned, time-bounded, fail-safe, with grace and audit). A sale or offline credit must not fail solely because the central Platform service is temporarily unavailable.

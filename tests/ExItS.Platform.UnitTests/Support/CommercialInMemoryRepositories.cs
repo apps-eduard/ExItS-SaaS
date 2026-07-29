@@ -241,6 +241,95 @@ internal sealed class InMemorySubscriptionRepository : ISubscriptionRepository
         return Task.FromResult(s);
     }
 
+    public Task<Subscription?> GetCurrentForOrganizationProductAsync(
+        PlatformOrganizationId organizationId,
+        ProductCode productCode,
+        CancellationToken cancellationToken = default)
+    {
+        var current = _items.Values
+            .Where(s => s.OrganizationId == organizationId && s.ProductCode == productCode)
+            .OrderByDescending(s => Subscription.IsActiveLike(s.Status))
+            .ThenByDescending(s => s.UpdatedAtUtc)
+            .FirstOrDefault();
+
+        return Task.FromResult(current);
+    }
+
+    public Task<(IReadOnlyList<Subscription> Items, int TotalCount)> ListByOrganizationAsync(
+        PlatformOrganizationId organizationId,
+        SubscriptionStatus? status,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _items.Values.Where(s => s.OrganizationId == organizationId);
+        if (status is not null)
+        {
+            query = query.Where(s => s.Status == status.Value);
+        }
+
+        var ordered = query.OrderByDescending(s => s.CreatedAtUtc).ToList();
+        IReadOnlyList<Subscription> page = ordered.Skip(skip).Take(take).ToList();
+        return Task.FromResult((page, ordered.Count));
+    }
+
+    public Task<(IReadOnlyList<Subscription> Items, int TotalCount)> ListByProductAsync(
+        ProductCode productCode,
+        SubscriptionStatus? status,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _items.Values.Where(s => s.ProductCode == productCode);
+        if (status is not null)
+        {
+            query = query.Where(s => s.Status == status.Value);
+        }
+
+        var ordered = query.OrderByDescending(s => s.CreatedAtUtc).ToList();
+        IReadOnlyList<Subscription> page = ordered.Skip(skip).Take(take).ToList();
+        return Task.FromResult((page, ordered.Count));
+    }
+
+    public Task<(IReadOnlyList<Subscription> Items, int TotalCount)> ListExpiringTrialsAsync(
+        DateTimeOffset asOfUtc,
+        DateTimeOffset throughUtc,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var ordered = _items.Values
+            .Where(s => s.Status == SubscriptionStatus.Trialing
+                        && s.TrialEndUtc is not null
+                        && s.TrialEndUtc.Value >= asOfUtc
+                        && s.TrialEndUtc.Value <= throughUtc)
+            .OrderBy(s => s.TrialEndUtc)
+            .ToList();
+        IReadOnlyList<Subscription> page = ordered.Skip(skip).Take(take).ToList();
+        return Task.FromResult((page, ordered.Count));
+    }
+
+    public Task<(IReadOnlyList<Subscription> Items, int TotalCount)> ListByStatusAsync(
+        SubscriptionStatus status,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var ordered = _items.Values.Where(s => s.Status == status).OrderByDescending(s => s.UpdatedAtUtc).ToList();
+        IReadOnlyList<Subscription> page = ordered.Skip(skip).Take(take).ToList();
+        return Task.FromResult((page, ordered.Count));
+    }
+
+    public Task<bool> ExistsActiveLikeAsync(
+        PlatformOrganizationId organizationId,
+        ProductCode productCode,
+        CancellationToken cancellationToken = default)
+    {
+        var exists = _items.Values.Any(s =>
+            s.OrganizationId == organizationId && s.ProductCode == productCode && Subscription.IsActiveLike(s.Status));
+        return Task.FromResult(exists);
+    }
+
     public Task AddAsync(Subscription subscription, CancellationToken cancellationToken = default)
     {
         _items[subscription.Id.Value] = subscription;

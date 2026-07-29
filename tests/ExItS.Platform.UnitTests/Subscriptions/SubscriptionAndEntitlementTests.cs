@@ -46,7 +46,7 @@ public sealed class SubscriptionAndEntitlementTests
         sub.ActivateFromTrial(T0, T0.AddDays(30), T0.AddMinutes(1));
         Assert.Equal(SubscriptionStatus.Active, sub.Status);
 
-        sub.EnterGracePeriod(T0.AddDays(7), T0.AddMinutes(2));
+        sub.EnterGracePeriod(T0.AddDays(37), T0.AddMinutes(2));
         sub.MarkPastDue(T0.AddMinutes(3));
         sub.Suspend(T0.AddMinutes(4));
         sub.Reactivate(T0.AddMinutes(5));

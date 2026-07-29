@@ -121,19 +121,23 @@ public sealed class CatalogApiTests(PostgreSqlFixture fixture) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Program_and_catalog_routes_exclude_subscription_payment_and_gcash()
+    public async Task Program_and_catalog_routes_exclude_payment_and_gcash()
     {
         var root = FindRepositoryRoot();
         var program = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "Program.cs"));
         var catalog = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "Catalog", "CatalogEndpoints.cs"));
         var sources = program + catalog;
 
-        Assert.DoesNotContain("subscriptions", sources, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("payment", sources, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("gcash", sources, StringComparison.OrdinalIgnoreCase);
 
+        // Subscription endpoints now legitimately exist (P3-WP02); a bare list request without
+        // any filter is a client error, not a 404 — the route itself is mapped and reachable.
         var response = await _client.GetAsync("/api/v1/platform/subscriptions");
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var unknownRoute = await _client.GetAsync("/api/v1/platform/payments");
+        Assert.Equal(HttpStatusCode.NotFound, unknownRoute.StatusCode);
     }
 
     private static string FindRepositoryRoot()

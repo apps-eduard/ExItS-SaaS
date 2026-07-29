@@ -63,7 +63,7 @@ public sealed class UseCaseTests
     public async Task CreatePlatformOrganization_detects_slug_conflict()
     {
         var orgs = new InMemoryPlatformOrganizationRepository();
-        var create = new CreatePlatformOrganization(orgs, new FixedClock(T0));
+        var create = new CreatePlatformOrganization(orgs, new NoOpUnitOfWork(), new FixedClock(T0));
         Assert.True((await create.ExecuteAsync("Acme Group", "acme-group")).IsSuccess);
         var conflict = await create.ExecuteAsync("Acme Two", "ACME-GROUP");
         Assert.Equal(ApplicationErrorCodes.SlugConflict, conflict.ErrorCode);
@@ -79,7 +79,7 @@ public sealed class UseCaseTests
         var clock = new FixedClock(T0);
 
         var user = (await new CreatePlatformUser(users, clock).ExecuteAsync("Ada Lovelace", "ada@example.com")).Value!;
-        var org = (await new CreatePlatformOrganization(orgs, clock).ExecuteAsync("Acme Group", "acme-group")).Value!;
+        var org = (await new CreatePlatformOrganization(orgs, new NoOpUnitOfWork(), clock).ExecuteAsync("Acme Group", "acme-group")).Value!;
         var add = new AddOrganizationMembership(users, orgs, memberships, clock);
 
         var first = await add.ExecuteAsync(org.Id, user.Id, OrganizationRole.OrganizationOwner);
@@ -98,7 +98,7 @@ public sealed class UseCaseTests
         var orgs = new InMemoryPlatformOrganizationRepository();
         var memberships = new InMemoryOrganizationMembershipRepository();
         var clock = new FixedClock(T0);
-        var org = (await new CreatePlatformOrganization(orgs, clock).ExecuteAsync("Acme Group", "acme-group")).Value!;
+        var org = (await new CreatePlatformOrganization(orgs, new NoOpUnitOfWork(), clock).ExecuteAsync("Acme Group", "acme-group")).Value!;
 
         var result = await new AddOrganizationMembership(users, orgs, memberships, clock)
             .ExecuteAsync(org.Id, PlatformUserId.New(), OrganizationRole.OrganizationMember);
@@ -116,7 +116,7 @@ public sealed class UseCaseTests
         var clock = new FixedClock(T0);
 
         var user = (await new CreatePlatformUser(users, clock).ExecuteAsync("Ada Lovelace", "ada@example.com")).Value!;
-        var org = (await new CreatePlatformOrganization(orgs, clock).ExecuteAsync("Acme Group", "acme-group")).Value!;
+        var org = (await new CreatePlatformOrganization(orgs, new NoOpUnitOfWork(), clock).ExecuteAsync("Acme Group", "acme-group")).Value!;
         var membership = (await new AddOrganizationMembership(users, orgs, memberships, clock)
             .ExecuteAsync(org.Id, user.Id, OrganizationRole.OrganizationMember)).Value!;
 
