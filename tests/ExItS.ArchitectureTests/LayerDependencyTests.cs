@@ -661,17 +661,16 @@ public sealed class LayerDependencyTests
         Assert.Contains("MapSubscriptionEndpoints", program);
         Assert.Contains("MapPaymentEndpoints", program);
         Assert.Contains("MapEntitlementEndpoints", program);
-        Assert.Contains("P3-WP04", program, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("P3-WP05", program, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("catalog", program, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("subscription", program, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("payment", program, StringComparison.OrdinalIgnoreCase);
 
-        // P3-WP04 adds Platform entitlement snapshot/feature-override persistence and development-
-        // stage APIs; product-local projection, delivery, and migration-import concerns remain
-        // out of scope for this phase.
+        // P3-WP05 closeout: Platform entitlement snapshot/feature-override persistence and
+        // development-stage APIs remain; product-local projection, delivery, and migration-import
+        // concerns remain out of scope.
         Assert.Contains("entitlement", program, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("projection", program, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("reconciliation", program, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("MapGet(\"/migration", program, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("MapGet(\"/mapping", program, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("MapGet(\"/import", program, StringComparison.OrdinalIgnoreCase);
