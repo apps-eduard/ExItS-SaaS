@@ -22,7 +22,8 @@ Gates for starting **P2-WP01**. Status reflects Phase 1 closeout (documentation)
 | Git remote | `origin` empty / `main` gone | **Open** (R-016) | No for local work | Portfolio | User-authorized push |
 | Open risks recorded | Risk register + ODs | **Met** | — | Portfolio | Ongoing |
 | Architecture approval | P1-WP04 / ADR-014 | **Met** (this closeout) | Yes | Portfolio | Done |
-| Solution foundation | Root `ExItS.slnx` / Platform projects exist; Release build + 11 tests | **Met (P2-WP01)** | Yes to leave P2-WP01 | Platform eng | **P2-WP01** |
+| Solution foundation | Root `ExItS.slnx` / Platform projects exist; Release build + tests | **Met (P2-WP01)** | Yes | Platform eng | **P2-WP01** |
+| Identity/org domain boundary | Strong IDs, aggregates, roles, ProductCode, app contracts, tests; no auth/EF | **Met (P2-WP02)** | Yes to leave P2-WP02 | Platform eng | **P2-WP02** |
 
 ## P2-WP01 entry criteria
 

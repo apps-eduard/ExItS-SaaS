@@ -14,7 +14,7 @@ Phase 1 is **Close with documented risks** (P1-WP04). Architecture approved for 
 
 ### P2-WP01 — Extraction Baseline Tag and Safety Checks
 
-Status: **Ready for Review**
+Status: **Complete**
 
 #### Goal
 
@@ -27,7 +27,7 @@ Establish a **narrow root repository and solution foundation** plus baseline tag
 - Platform Domain / Application / Infrastructure / Api (+ markers only).
 - Unit + architecture tests (dependency + HealthCare freeze safety).
 - API `/` and `/health` without database (port 5288).
-- Release restore/build/test: **11/0/0**.
+- Release restore/build/test: **11/0/0** at closeout (superseded by later WPs).
 
 #### Explicit exclusions (honored)
 
@@ -60,21 +60,47 @@ Establish a **narrow root repository and solution foundation** plus baseline tag
 
 ### P2-WP02 — Shared Identity and Organization Boundary
 
-Status: Not Started
+Status: **Ready for Review**
 
-#### Required outcomes
+#### Goal
 
-- Implement only the approved scope described by the architecture and product documents.
-- Do not begin until P2-WP01 is accepted.
+Create the first Platform domain and application boundary for global users, platform organizations, memberships, platform organization roles, product-access concepts, statuses, stable IDs, invariants, contracts, and tests — without authentication or persistence.
+
+#### Outcomes delivered
+
+- Strongly typed `PlatformUserId`, `PlatformOrganizationId`, `OrganizationMembershipId`.
+- Aggregates: `PlatformUser`, `PlatformOrganization`, `OrganizationMembership`.
+- Statuses, `OrganizationRole`, `ProductCode`, minimal `ProductAccess`.
+- Application repositories + use cases; `DomainException` + `ApplicationResult`.
+- Unit + expanded architecture tests (**61/0/0**).
+- API still `/` and `/health` only (port 5288); no DB.
+
+#### Explicit exclusions (honored)
+
+- No login/JWT/Identity/EF/Npgsql/migrations/business API/catalog/plans/subs/entitlements/Admin UI/POS/HealthCare changes.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (61/0/0).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded (see below).
+- [x] Working tree clean (after hash-record).
+- [x] HealthCare freeze verified.
+
+#### Artifacts
+
+| Artifact | Path |
+|---|---|
+| Report | [P2-WP02 report](../reports/P2-WP02-identity-organization-boundary.md) |
+
+#### Commit
+
+| Field | Value |
+|---|---|
+| Hash | _(recorded after commit)_ |
+| Message | `feat(platform): add identity organization domain boundary` |
 
 ### P2-WP03 — Products, Plans and Entitlement Foundation
 

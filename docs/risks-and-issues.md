@@ -34,3 +34,5 @@
 | R-028 | Phase 1 closed while Integration/E2E and numeric entitlement windows remain open | Medium | Documented deferred; re-baseline before HC cutover; R-022 for durations | Open — accepted with Phase 1 closeout |
 | R-029 | Solution format / SDK pin drift (`.slnx` + `global.json` 10.0.302) | Low | Pin recorded; CI should use `global.json` when added | Open — introduced P2-WP01 |
 | R-030 | Local port collision for Platform API (5188 busy on assessment machine) | Low | Default launch URL set to **5288** | **Mitigated** (P2-WP01) |
+| R-031 | Identity domain exists without authentication/persistence — misuse if callers assume login works | Medium | Docs + API has no identity routes; P2-WP02 report states auth absent | Open — introduced P2-WP02 |
+| R-032 | Active membership uniqueness only enforced in application until DB unique index | Medium | Documented invariant; add unique constraint in persistence WP | Open — introduced P2-WP02 |

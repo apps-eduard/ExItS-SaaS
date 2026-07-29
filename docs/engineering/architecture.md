@@ -23,6 +23,8 @@ A controlled monorepo is used initially for coordinated extraction and developme
 
 **P2-WP01:** root `ExItS.slnx` + `src/Platform/{Domain,Application,Infrastructure,Api}` + architecture/unit tests exist. Dependency direction enforced by tests. No HealthCare project references.
 
+**P2-WP02:** Domain identity/organization boundary (`PlatformUser`, `PlatformOrganization`, `OrganizationMembership`, `ProductCode`) plus Application contracts/use cases. No persistence, authentication, or business API routes.
+
 ## UI choices
 
 - Existing HealthCare Staff Web: keep Ant Design Blazor (no rewrite in current ExITS MVP work).

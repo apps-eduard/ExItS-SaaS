@@ -4,6 +4,18 @@
 
 Platform grants **product access**; each product owns **operational permissions**. Platform Administrator does not automatically receive unrestricted clinical or POS operational access (break-glass deferred).
 
+## Platform organization membership roles (P2-WP02)
+
+Modeled in Domain as `OrganizationRole`:
+
+| Role | Scope |
+|---|---|
+| OrganizationOwner | Platform organization ownership |
+| OrganizationAdministrator | Platform organization administration |
+| OrganizationMember | Platform organization participation |
+
+These do **not** grant product-local permissions (Doctor, Cashier, etc.). Platform system roles (Platform Admin / Support) remain separate from organization membership roles.
+
 ## Platform roles
 
 | Capability | Platform Admin | Billing Admin | Support Agent |

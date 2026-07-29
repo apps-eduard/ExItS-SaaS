@@ -41,6 +41,8 @@ Define the authoritative capability boundary between ExITS Platform, HealthCare,
 
 Global identity and users; credentials and session/refresh lifecycle; Platform Organizations and memberships; product catalog; plans/trials/subscriptions; SaaS payments and billing status; entitlements and organization feature overrides; Platform Admin (native UI); Platform support ops; Platform audit and security events; subscription lifecycle jobs; Platform notifications (trial/payment/security).
 
+**P2-WP02 code status:** Domain models and Application contracts exist for Platform User, Organization, Membership, organization roles, and `ProductCode` / minimal product access. Credentials, sessions, catalog, plans, subscriptions, and entitlements are **not** implemented yet.
+
 ## 5. HealthCare ownership
 
 Clinics; clinical workforce (doctor/nurse/receptionist/clinic admin); Patients and patient self-scope; appointments, availability, reminders; medical notes and amendments; clinical permissions and authorization; clinical and HC product audit details; HC product workflows; Staff Web Ant Design UI; PatientWeb and MAUI clinical UX; HC Hangfire jobs (reminders/summaries).

@@ -12,12 +12,13 @@
 
 ## Platform tests
 
-- Authentication/session
+- Authentication/session *(not yet — deferred past P2-WP02)*
 - Organization isolation
 - Product subscription lifecycle
 - Entitlement snapshot/version/idempotency
 - Platform role authorization
 - Billing audit
+- **P2-WP02 (implemented):** domain ID/value-object tests; Platform User / Organization / Membership transition tests; ProductCode tests; application use-case tests with in-memory doubles; architecture layer, freeze, forbidden-type, and no-generic-repository tests
 
 ## POS tests
 

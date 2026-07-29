@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Platform\ExItS.Platform.Application\ExItS.Platform.Application.csproj" />
     <ProjectReference Include="..\..\src\Platform\ExItS.Platform.Domain\ExItS.Platform.Domain.csproj" />
   </ItemGroup>
 

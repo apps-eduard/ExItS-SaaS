@@ -17,3 +17,4 @@
 11. Clinical PHI must not flow into Platform audit or entitlement payloads.
 12. SaaS subscription payments are distinct from POS retail sale payments and from POS customer-credit payments.
 13. POS MVP GCash is manually recorded; do not store GCash credentials, PINs, OTPs, or access tokens. Platform SaaS GCash (if added later) uses Platform payment entities only.
+14. **P2-WP02:** Platform User is not Patient/Customer; Platform Organization is not Clinic/Store; organization membership roles are not product-local roles; no credentials in domain models; user suspension and membership suspension are separate.

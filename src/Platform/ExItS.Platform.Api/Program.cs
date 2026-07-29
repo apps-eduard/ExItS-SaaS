@@ -11,7 +11,7 @@ app.MapGet("/", () => Results.Json(new
 {
     service = "ExItS.Platform.Api",
     status = "ok",
-    phase = "P2-WP01-foundation"
+    phase = "P2-WP02-identity-organization"
 }));
 
 app.MapHealthChecks("/health");

@@ -1,7 +1,7 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown documentation files plus root Platform foundation (P2-WP01).
-Internal links checked: spot-check P2-WP01
+Markdown documentation files plus root Platform foundation (P2-WP01) and identity/organization domain boundary (P2-WP02).
+Internal links checked: spot-check P2-WP02
 Broken links: none found in spot-check of new paths
 
 ## Root foundation (tracked)
@@ -13,22 +13,13 @@ global.json
 Directory.Build.props
 Directory.Packages.props
 ExItS.slnx
-src/Platform/ExItS.Platform.Domain/ExItS.Platform.Domain.csproj
-src/Platform/ExItS.Platform.Domain/AssemblyMarker.cs
-src/Platform/ExItS.Platform.Application/ExItS.Platform.Application.csproj
-src/Platform/ExItS.Platform.Application/AssemblyMarker.cs
+src/Platform/ExItS.Platform.Domain/ (AssemblyMarker + Identity/Organizations/Products/Common/Abstractions)
+src/Platform/ExItS.Platform.Application/ (AssemblyMarker + Identity/Organizations/Common use cases & repository contracts)
 src/Platform/ExItS.Platform.Infrastructure/ExItS.Platform.Infrastructure.csproj
 src/Platform/ExItS.Platform.Infrastructure/AssemblyMarker.cs
-src/Platform/ExItS.Platform.Api/ExItS.Platform.Api.csproj
-src/Platform/ExItS.Platform.Api/Program.cs
-src/Platform/ExItS.Platform.Api/appsettings.json
-src/Platform/ExItS.Platform.Api/appsettings.Development.json
-src/Platform/ExItS.Platform.Api/Properties/launchSettings.json
-tests/ExItS.Platform.UnitTests/ExItS.Platform.UnitTests.csproj
-tests/ExItS.Platform.UnitTests/FoundationTests.cs
-tests/ExItS.ArchitectureTests/ExItS.ArchitectureTests.csproj
-tests/ExItS.ArchitectureTests/LayerDependencyTests.cs
-tests/ExItS.ArchitectureTests/RepositorySafetyTests.cs
+src/Platform/ExItS.Platform.Api/ (Program.cs, appsettings, launchSettings — `/` + `/health` only)
+tests/ExItS.Platform.UnitTests/ (Foundation + Identity/Organizations/Products/Application tests)
+tests/ExItS.ArchitectureTests/ (LayerDependencyTests + RepositorySafetyTests)
 
 ## Documentation (tracked)
 
@@ -97,6 +88,7 @@ docs/reports/P1-WP02-data-ownership-and-contracts.md
 docs/reports/P1-WP03-extraction-sequence-and-rollback.md
 docs/reports/P1-WP04-architecture-approval-closeout.md
 docs/reports/P2-WP01-extraction-baseline-and-safety.md
+docs/reports/P2-WP02-identity-organization-boundary.md
 docs/reports/phase-00-final-assessment-and-recommendation.md
 docs/reports/phase-01-architecture-approval.md
 docs/reuse/extraction-rules.md

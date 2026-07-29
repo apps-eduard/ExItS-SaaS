@@ -2,7 +2,7 @@
 
 > Primary status page. Cursor must update this file after every completed work package. Percentages are calculated from approved work packages, never estimated.
 
-[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P2-WP01 report](reports/P2-WP01-extraction-baseline-and-safety.md)
+[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P2-WP02 report](reports/P2-WP02-identity-organization-boundary.md)
 
 ## Current status
 
@@ -12,10 +12,10 @@
 | Existing product | HealthCare SaaS MVP (ignored nested `HealthCare/`) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 2 — Platform Extraction and HealthCare Reconnection |
-| Current work package | P2-WP01 — Extraction Baseline Tag and Safety Checks (**Ready for Review**) |
-| Overall status | Phase 1 **Complete with documented risks**; root solution foundation created |
-| Latest verified commit | `4827b7f3ff2cba161df749dd47507f16171ff8da` (`chore(platform): establish root solution foundation`) |
-| Open blockers | 0 for P2-WP01 acceptance; root remote empty (R-016); tag/commit not pushed |
+| Current work package | P2-WP02 — Shared Identity and Organization Boundary (**Ready for Review**) |
+| Overall status | Phase 1 complete with risks; P2-WP01 **Complete**; identity/organization domain boundary implemented |
+| Latest verified commit | _(see P2-WP02 report after commit)_ |
+| Open blockers | 0 for P2-WP02 acceptance; root remote empty (R-016); tag/commit not pushed |
 | Last updated | 2026-07-29 |
 
 ## Delivery sequence
@@ -23,11 +23,11 @@
 ```text
 Phase 1 architecture approval ✓
         ↓
-P2-WP01 root solution foundation  ← in review
+P2-WP01 root solution foundation ✓
         ↓
-P2-WP02 identity and organization (not started)
+P2-WP02 identity and organization  ← in review
         ↓
-…
+P2-WP03 products/plans/entitlements (not started)
 ```
 
 ## Phase progress
@@ -36,7 +36,7 @@ P2-WP02 identity and organization (not started)
 |---:|---|---|---:|---:|---:|---|
 | 0 | Existing HealthCare Assessment | **Complete with documented risks** | 4 | 4 | 100% | [Open](phases/phase-00-healthcare-assessment.md) |
 | 1 | Platform Boundary and Architecture | **Complete with documented risks** | 4 | 4 | 100% | [Open](phases/phase-01-platform-boundary.md) |
-| 2 | Platform Extraction and HealthCare Reconnection | In Progress | 0 | 6 | 0% | [Open](phases/phase-02-platform-extraction.md) |
+| 2 | Platform Extraction and HealthCare Reconnection | In Progress | 1 | 6 | 16.67% | [Open](phases/phase-02-platform-extraction.md) |
 | 3 | Portfolio Billing, Plans and Entitlements | Not Started | 0 | 5 | 0% | [Open](phases/phase-03-billing-entitlements.md) |
 | 4 | Platform Admin Expansion | Not Started | 0 | 4 | 0% | [Open](phases/phase-04-platform-admin.md) |
 | 5 | PinoyBusinessPOS MAUI Foundation | Not Started | 0 | 5 | 0% | [Open](phases/phase-05-pos-maui-foundation.md) |
@@ -46,31 +46,30 @@ P2-WP02 identity and organization (not started)
 | 9 | MVP Hardening and Release | Not Started | 0 | 6 | 0% | [Open](phases/phase-09-mvp-hardening.md) |
 | 10 | Full POS | Future | 0 | 8 | 0% | [Open](phases/phase-10-full-pos.md) |
 
-**MVP phases 0–9:** 8 / 52 = **15.38%** (Phase 0+1 complete; P2-WP01 not counted until accepted).
+**MVP phases 0–9:** 9 / 52 = **17.31%** (Phase 0+1 + P2-WP01 complete; P2-WP02 not counted until accepted).
 
 ## Phase 2 work packages
 
 | WP | Status | Key commit |
 |---|---|---|
-| P2-WP01 | Ready for Review | `4827b7f` |
-| P2-WP02 | Not Started | — |
+| P2-WP01 | Complete | `4827b7f` |
+| P2-WP02 | Ready for Review | _(after commit)_ |
 | P2-WP03–06 | Not Started | — |
 
-## Foundation snapshot (P2-WP01)
+## Identity boundary snapshot (P2-WP02)
 
 | Item | Value |
 |---|---|
-| Solution | `ExItS.slnx` |
-| SDK | `10.0.302` (`global.json`, rollForward latestFeature) |
-| Projects | Domain, Application, Infrastructure, Api, UnitTests, ArchitectureTests |
-| Tests | 11 passed / 0 failed / 0 skipped |
-| Tag | `phase-1-approved` → `01ab65b` (local) |
+| Domain | Platform User, Organization, Membership, ProductCode, ProductAccess |
+| Application | Explicit repositories + 6 use cases (no persistence) |
+| API business routes | None (still `/` + `/health`) |
+| Tests | 61 passed / 0 failed / 0 skipped |
 | API port | `http://127.0.0.1:5288` |
 
 ## Latest tests
 
-Root Release: **11 passed / 0 failed / 0 skipped**. HealthCare not rebuilt (frozen).
+Root Release: **61 passed / 0 failed / 0 skipped**. HealthCare not rebuilt (frozen).
 
 ## Next approved action
 
-**P2-WP02 — Shared Identity and Organization Boundary** after P2-WP01 acceptance. Do **not** begin until authorized.
+**P2-WP03 — Products, Plans and Entitlement Foundation** after P2-WP02 acceptance. Do **not** begin until authorized.
