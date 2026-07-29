@@ -71,7 +71,7 @@ Passwords, refresh tokens, MFA, cookies, Patient/MedicalNote/Diagnosis/Prescript
 
 ## 9. HealthCare freeze
 
-`git ls-files HealthCare` empty; ignored; not in solution; not moved; unchanged. Contracts ≠ completed integration.
+Root nested product remains ignored via `/HealthCare/` (anchored). `git ls-files -- HealthCare/` empty; not in solution; not moved; unchanged. Platform `Application/Integration/HealthCare/` is tracked (not the nested product). Contracts ≠ completed integration.
 
 ## 10. Risks
 
@@ -86,9 +86,13 @@ Passwords, refresh tokens, MFA, cookies, Patient/MedicalNote/Diagnosis/Prescript
 
 **P2-WP05 — Regression and Migration Validation** (do not begin until authorized).
 
-## 12. Commit
+## 12. Commits
 
 | Field | Value |
 |---|---|
-| Hash | _(recorded after commit)_ |
+| Hash (foundation) | `3b660956bfe5f5ce522c09c9cd19c614fb6602ef` |
 | Message | `feat(platform): add healthcare contract adaptation boundary` |
+| Hash (gitignore follow-up) | `eb9fdfeab80e1e602587b810b91cb79e71e491e4` |
+| Message | `fix(platform): scope HealthCare gitignore to repo root` |
+
+**Note:** Unanchored `HealthCare/` previously ignored Platform `Integration/HealthCare/` sources; follow-up scopes ignore to repo-root `/HealthCare/` and tracks adapter/reconciliation interface files.

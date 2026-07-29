@@ -185,8 +185,8 @@ Create Platform-side versioned contracts, projection apply rules, and HealthCare
 
 | Field | Value |
 |---|---|
-| Hash | _(recorded after commit)_ |
-| Message | `feat(platform): add healthcare contract adaptation boundary` |
+| Hash | `3b660956bfe5f5ce522c09c9cd19c614fb6602ef` (foundation); follow-up `eb9fdfeab80e1e602587b810b91cb79e71e491e4` |
+| Message | `feat(platform): add healthcare contract adaptation boundary`; `fix(platform): scope HealthCare gitignore to repo root` |
 
 ### P2-WP05 — Regression and Migration Validation
 

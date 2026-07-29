@@ -1,12 +1,12 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown documentation files plus root Platform foundation (P2-WP01), identity boundary (P2-WP02), and commercial entitlement foundation (P2-WP03).
-Internal links checked: spot-check P2-WP03
+Markdown documentation files plus root Platform foundation (P2-WP01–P2-WP04).
+Internal links checked: spot-check P2-WP04
 Broken links: none found in spot-check of new paths
 
 ## Root foundation (tracked)
 
-.gitignore
+.gitignore (nested product only: `/HealthCare/`)
 README.md
 FILE-MANIFEST.md
 global.json
@@ -14,7 +14,7 @@ Directory.Build.props
 Directory.Packages.props
 ExItS.slnx
 src/Platform/ExItS.Platform.Domain/ (Identity, Organizations, Products, Catalog, Subscriptions, Entitlements, Common, Abstractions)
-src/Platform/ExItS.Platform.Application/ (Identity, Organizations, Catalog, Subscriptions use cases & repository contracts)
+src/Platform/ExItS.Platform.Application/ (Identity, Organizations, Catalog, Subscriptions; Contracts; Projections; Integration/HealthCare interfaces)
 src/Platform/ExItS.Platform.Infrastructure/
 src/Platform/ExItS.Platform.Api/ (Program.cs — `/` + `/health` only)
 tests/ExItS.Platform.UnitTests/

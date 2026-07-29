@@ -33,7 +33,7 @@ HealthCare remains temporary-ignored until an approved import WP. **P2-WP01 did 
 
 Root `.gitignore` excludes at least:
 
-- `HealthCare/`
+- `/HealthCare/` (repo-root nested product only — not Platform `Application/Integration/HealthCare/` contracts)
 - `**/.env` / `**/.env.*` (with `!.env.example` / `!**/.env.example`)
 - `**/bin/`, `**/obj/`, TestResults, coverage, IDE folders
 - Local DB and certificate patterns
@@ -75,4 +75,4 @@ git submodule status
 Get-ChildItem -Recurse -Force -Directory -Filter .git | Select-Object FullName
 ```
 
-Expected Phase 0/early Phase 1 result: `HealthCare/` ignored; `git ls-files HealthCare` empty; no HealthCare diff in the root index.
+Expected Phase 0/early Phase 1 result: nested `/HealthCare/` ignored; `git ls-files -- HealthCare/` empty; no HealthCare product diff in the root index. Platform contract paths under `Integration/HealthCare/` may be tracked.

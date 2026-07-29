@@ -14,7 +14,7 @@
 | Current phase | Phase 2 — Platform Extraction and HealthCare Reconnection |
 | Current work package | P2-WP04 — HealthCare Contract Adaptation (**Ready for Review**) |
 | Overall status | P2-WP01–03 **Complete** (incl. trial-duration fix); HC contract adaptation foundation implemented |
-| Latest verified commit | _(see P2-WP04 report after commit)_ |
+| Latest verified commit | `3b66095` (contracts) + `eb9fdfe` (gitignore scope / Integration track) |
 | Open blockers | 0 for P2-WP04 acceptance; root remote empty (R-016); not pushed |
 | Last updated | 2026-07-29 |
 
@@ -53,7 +53,7 @@ P2-WP05 regression/migration validation (not started)
 | P2-WP01 | Complete | `4827b7f` |
 | P2-WP02 | Complete | `49f8ae8` |
 | P2-WP03 | Complete | `6e866d7` + `10f99c5` |
-| P2-WP04 | Ready for Review | _(after commit)_ |
+| P2-WP04 | Ready for Review | `3b66095` + `eb9fdfe` |
 | P2-WP05–06 | Not Started | — |
 
 ## Contract adaptation snapshot (P2-WP04)
