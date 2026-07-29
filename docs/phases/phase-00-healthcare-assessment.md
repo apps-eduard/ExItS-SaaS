@@ -10,66 +10,16 @@ Understand the completed HealthCare MVP and classify safe reuse before any struc
 
 ### P0-WP01 — Repository and Reuse Inventory
 
-Status: **Ready for Review** (2026-07-29)
-
-#### Required outcomes
-
-- Discover the existing repository structure without assumptions.
-- Inventory reusable and product-specific capabilities.
-- Record Ant Design usage and coupling.
-- Record exact build/test baseline if safe and available.
-- Update the reuse matrix and completion report.
+Status: **Complete** (accepted 2026-07-29)
 
 #### Definition of Done
 
 - [x] Approved outcomes complete.
-- [x] Applicable tests pass with exact evidence. *(Windows-safe suite 1102 passed; Integration/E2E deferred per HC README.)*
+- [x] Applicable tests pass with exact evidence.
 - [x] Dashboard and phase page updated.
 - [x] Completion report created.
-- [x] Focused commit created and hash recorded. *(see below)*
-- [ ] Working tree clean of *unintended* changes. *(`HealthCare/` intentionally untracked.)*
-
-#### Evidence
-
-- Assessment: [docs/reuse/healthcare-reuse-assessment.md](../reuse/healthcare-reuse-assessment.md)
-- Matrix: [docs/reuse/reuse-classification-matrix.md](../reuse/reuse-classification-matrix.md)
-- Report: [docs/reports/P0-WP01-completion.md](../reports/P0-WP01-completion.md)
-- Alias: [docs/reports/P0-WP01-healthcare-reuse-assessment.md](../reports/P0-WP01-healthcare-reuse-assessment.md)
-
-#### Commands run
-
-```powershell
-git status
-git branch --show-current
-dotnet --version
-dotnet restore HealthCare.sln
-dotnet build HealthCare.sln -c Release
-# non-MAUI builds OK; Mobile fails XA5300 without Android SDK
-dotnet test tests/HealthCare.UnitTests/HealthCare.UnitTests.csproj --no-build -c Release
-dotnet test tests/HealthCare.ArchitectureTests/HealthCare.ArchitectureTests.csproj --no-build -c Release
-dotnet test tests/HealthCare.Web.Tests/HealthCare.Web.Tests.csproj --no-build -c Release
-dotnet test tests/HealthCare.PatientWeb.Tests/HealthCare.PatientWeb.Tests.csproj --no-build -c Release
-dotnet test tests/HealthCare.Mobile.Tests/HealthCare.Mobile.Tests.csproj --no-build -c Release
-```
-
-#### Findings
-
-- HealthCare is a completed .NET 10 modular monolith with reusable identity/org/permission/audit/BFF patterns.
-- Plans/trials/subscriptions/billing/entitlements are **missing**.
-- AntDesign 1.6.2 is staff-Web-only; PatientWeb uses native CSS.
-- Nested `HealthCare/.git` and local `.env` files require careful monorepo onboarding.
-- Verdict: **controlled platform extraction** after Phase 0 closeout — not wholesale move.
-
-#### Risks
-
-Recorded as R-010…R-014 in [risks-and-issues.md](../risks-and-issues.md).
-
-#### Deferred actions
-
-- Integration + E2E baselines (P0-WP02 / Ubuntu guidance).
-- Nested Git disposition and root `.gitignore` (docs/ops decision; no silent delete).
-- Android SDK for full solution build.
-- Do **not** extract Platform code in this WP.
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean of unintended tracked changes (`HealthCare/` intentionally outside root tracking).
 
 #### Commit
 
@@ -78,34 +28,107 @@ Recorded as R-010…R-014 in [risks-and-issues.md](../risks-and-issues.md).
 | Hash | `663b5bf3269ee934d107bacc467d253a4bf28a90` |
 | Message | `docs(platform): assess healthcare SaaS reuse` |
 
+Evidence: [reuse assessment](../reuse/healthcare-reuse-assessment.md), [matrix](../reuse/reuse-classification-matrix.md), [report](../reports/P0-WP01-completion.md).
+
 ### P0-WP02 — Baseline Build, Tests and Runtime Map
 
-Status: Not Started
+Status: **Ready for Review** (2026-07-29)
 
 #### Required outcomes
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+- Protect nested HealthCare from accidental root commits.
+- Document Git topology and remote/upstream status.
+- Re-verify restore/build/test baseline without changing HealthCare.
+- Produce runtime, port, database, and environment maps.
+- Update dashboard and Phase 0 evidence.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (1102/0/0).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded. *(after commit)*
+- [x] Working tree clean (ignored HealthCare only). *(after commit)*
+
+#### Evidence
+
+- [Runtime baseline](../reuse/healthcare-runtime-baseline.md)
+- [Repository boundaries](../engineering/repository-boundaries.md)
+- [Development environment](../engineering/development-environment.md)
+- [Completion report](../reports/P0-WP02-baseline-runtime-map.md)
+- Root `.gitignore` excludes `HealthCare/`
+
+#### Commands run
+
+```powershell
+git status --short --branch
+git remote -v
+git branch -vv
+git ls-remote --heads origin
+gh repo view apps-eduard/ExItS-SaaS --json isEmpty,url
+git check-ignore -v HealthCare/
+git ls-files HealthCare
+dotnet --info / --list-sdks / --list-runtimes
+dotnet workload list
+docker --version; docker compose version; git --version
+cd HealthCare
+dotnet restore HealthCare.sln
+dotnet build HealthCare.sln -c Release
+# non-MAUI project builds
+dotnet test tests/HealthCare.UnitTests/... --no-build -c Release
+dotnet test tests/HealthCare.ArchitectureTests/... --no-build -c Release
+dotnet test tests/HealthCare.Web.Tests/... --no-build -c Release
+dotnet test tests/HealthCare.PatientWeb.Tests/... --no-build -c Release
+dotnet test tests/HealthCare.Mobile.Tests/... --no-build -c Release
+```
+
+#### Findings
+
+- Root `.gitignore` safely ignores nested HealthCare.
+- Remote `origin` exists but repository is **empty**; `origin/main` gone until first authorized push.
+- Non-MAUI builds OK; full solution fails `XA5300` (Android SDK env).
+- Windows-safe tests: **1102 passed / 0 failed / 0 skipped**.
+- Runtime ports: API 5080, Staff 5018, Patient 5020, Postgres 5432.
+
+#### Repository safety result
+
+| Check | Result |
+|---|---|
+| `git check-ignore -v HealthCare/` | `.gitignore:6:HealthCare/` |
+| `git ls-files HealthCare` | empty |
+| `git diff -- HealthCare/` | empty |
+| HealthCare files modified by this WP | none |
+
+#### Remote status
+
+- `origin` → `https://github.com/apps-eduard/ExItS-SaaS.git`
+- Remote empty (`isEmpty: true`)
+- Local: `main...origin/main [gone]`
+- User action when ready: `git push -u origin main` (not performed in this WP)
+
+#### Risks
+
+R-013 mitigated; R-016 open; R-010 ignore mitigation only; R-014/R-015 remain.
+
+#### Deferred
+
+- Authorized first push to create remote `main`
+- Integration/E2E baselines
+- Android env wiring for Mobile host
+- Nested HC dirty PatientWeb resolution
+- P0-WP03 UI review
+
+#### Commit
+
+| Field | Value |
+|---|---|
+| Hash | `66f8d9b7d7c26ed0bdfc4d3e0464e7d51bc05f05` |
+| Message | `chore(repo): establish safe healthcare baseline` |
 
 ### P0-WP03 — Ant Design and UI Reuse Review
 
 Status: Not Started
-
-#### Required outcomes
-
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
 
 #### Definition of Done
 
@@ -119,12 +142,6 @@ Status: Not Started
 ### P0-WP04 — Assessment Closeout and Recommendation
 
 Status: Not Started
-
-#### Required outcomes
-
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
 
 #### Definition of Done
 
@@ -142,4 +159,4 @@ Status: Not Started
 - [ ] Required regression/security tests pass.
 - [ ] Next phase is explicitly approved.
 
-**Phase 0 is not complete** — only P0-WP01 is ready for review.
+**Phase 0 is not complete** — P0-WP02 ready for review; P0-WP03/P0-WP04 remain.

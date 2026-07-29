@@ -14,5 +14,6 @@ The dashboard links to the latest accepted report.
 
 | Report | Work package | Status |
 |---|---|---|
-| [P0-WP01-completion.md](P0-WP01-completion.md) | Repository and Reuse Inventory | Ready for Review |
-| [P0-WP01-healthcare-reuse-assessment.md](P0-WP01-healthcare-reuse-assessment.md) | Alias / snapshot for P0-WP01 | Ready for Review |
+| [P0-WP01-completion.md](P0-WP01-completion.md) | Repository and Reuse Inventory | Complete |
+| [P0-WP01-healthcare-reuse-assessment.md](P0-WP01-healthcare-reuse-assessment.md) | Alias / snapshot for P0-WP01 | Complete |
+| [P0-WP02-baseline-runtime-map.md](P0-WP02-baseline-runtime-map.md) | Baseline Build, Tests, Runtime and Repository Safety Map | Ready for Review |

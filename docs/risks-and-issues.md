@@ -13,9 +13,12 @@
 | R-007 | English-only strings escape into release | Medium | Resource-completeness tests | Open — HC has no i18n yet |
 | R-008 | Dark theme creates poor contrast | High | Semantic tokens and accessibility tests | Open — HC lacks Light/Dark/System preference |
 | R-009 | Duplicate offline financial transactions | Critical | Idempotency and append-only ledger | Open |
-| R-010 | Nested `HealthCare/.git` inside ExITS monorepo | High | Decide: subtree import vs remove nested metadata with approval; do not commit blindly | Open — found P0-WP01 |
+| R-010 | Nested `HealthCare/.git` inside ExITS monorepo | High | Root ignores `HealthCare/`; decide import/submodule/subtree later — do not delete nested `.git` | Mitigated (ignore) — integration decision still Open |
 | R-011 | No EF global tenant query filters (service-only isolation) | Critical | Keep service checks; add filters/tests before multi-product sharing | Open — verified P0-WP01 |
 | R-012 | Plans/trials/subscriptions/billing/entitlements missing | High | Implement on Platform in Phase 3; do not fake via HC limits alone | Open — verified P0-WP01 |
-| R-013 | Parent repo has no root `.gitignore`; risk committing `.env`/bin/obj | High | Add root ignore before tracking HealthCare sources | Open — found P0-WP01 |
-| R-014 | Full `HealthCare.sln` build fails without Android SDK (Mobile) | Medium | Document non-MAUI build path; install SDK on CI agents that need Mobile | Open — baseline P0-WP01 |
-| R-015 | Pre-existing dirty PatientWeb files inside nested HealthCare git | Medium | Do not overwrite; resolve in HealthCare repo or later import WP | Open — observed P0-WP01 |
+| R-013 | Parent repo missing root `.gitignore` | High | Root `.gitignore` added in P0-WP02 | **Mitigated** (P0-WP02) |
+| R-014 | Full `HealthCare.sln` build fails without Android SDK env | Medium | Non-MAUI build path documented; set `ANDROID_HOME` or `AndroidSdkDirectory` on agents that need Mobile | Open — SDK folder present but env unset (P0-WP02) |
+| R-015 | Pre-existing dirty PatientWeb files inside nested HealthCare git | Medium | Do not overwrite; resolve in HealthCare repo or later import WP | Open — still present P0-WP02 |
+| R-016 | Root `origin` remote exists but is empty; `origin/main` gone | High | User-authorized first push: `git push -u origin main` (do not force-push) | Open — verified P0-WP02 |
+| R-017 | Accidental HealthCare parent tracking | Critical | Root ignore + `git ls-files HealthCare` / `git check-ignore` checks before commit | Mitigated (P0-WP02 process) |
+| R-018 | Nested HealthCare local `.env` / lab secrets | High | Remain gitignored; never commit or paste values into portfolio docs | Open — presence known; values not documented |

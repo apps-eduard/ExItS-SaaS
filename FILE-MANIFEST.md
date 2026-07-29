@@ -1,10 +1,12 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown files: 42
-Internal links checked: not re-validated in P0-WP01 automation
+Markdown files: 46
+Internal links checked: not re-validated in P0-WP02 automation
 Broken links: unknown (manual spot-check of new links only)
 
+.gitignore
 README.md
+FILE-MANIFEST.md
 docs/cursor/README.md
 docs/cursor/completion-report-template.md
 docs/cursor/cursor-prompt-template.md
@@ -13,10 +15,12 @@ docs/decisions/README.md
 docs/engineering/architecture.md
 docs/engineering/authorization-matrix.md
 docs/engineering/data-ownership.md
+docs/engineering/development-environment.md
 docs/engineering/development-standards.md
 docs/engineering/localization.md
 docs/engineering/offline-sync-design.md
 docs/engineering/platform-product-contracts.md
+docs/engineering/repository-boundaries.md
 docs/engineering/security.md
 docs/engineering/testing-strategy.md
 docs/engineering/theme-system.md
@@ -42,7 +46,9 @@ docs/release-plan.md
 docs/reports/README.md
 docs/reports/P0-WP01-completion.md
 docs/reports/P0-WP01-healthcare-reuse-assessment.md
+docs/reports/P0-WP02-baseline-runtime-map.md
 docs/reuse/extraction-rules.md
 docs/reuse/healthcare-reuse-assessment.md
+docs/reuse/healthcare-runtime-baseline.md
 docs/reuse/reuse-classification-matrix.md
 docs/risks-and-issues.md

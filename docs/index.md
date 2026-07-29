@@ -13,11 +13,14 @@
 
 - [HealthCare reuse assessment](reuse/healthcare-reuse-assessment.md)
 - [Reuse classification matrix](reuse/reuse-classification-matrix.md)
+- [HealthCare runtime baseline](reuse/healthcare-runtime-baseline.md)
 - [Extraction and migration rules](reuse/extraction-rules.md)
 
 ## Engineering
 
 - [Target architecture](engineering/architecture.md)
+- [Repository boundaries](engineering/repository-boundaries.md)
+- [Development environment](engineering/development-environment.md)
 - [Platform-product contracts](engineering/platform-product-contracts.md)
 - [Data ownership](engineering/data-ownership.md)
 - [Security](engineering/security.md)

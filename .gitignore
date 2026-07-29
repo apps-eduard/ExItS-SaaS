@@ -1,0 +1,48 @@
+# ExITS SaaS — root repository ignore rules
+# Temporary Phase 0 model: portfolio docs are tracked; HealthCare/ stays nested and ignored.
+# Do not remove HealthCare/ from this file until an approved repository-integration work package.
+
+# Nested HealthCare copy (independent Git repository during Phase 0)
+HealthCare/
+
+# Secrets and local environment
+**/.env
+**/.env.*
+!**/.env.example
+!.env.example
+
+# .NET / build outputs
+**/bin/
+**/obj/
+**/TestResults/
+**/artifacts/
+**/coverage/
+**/CoverageResults/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# IDE / editor
+**/.vs/
+**/.idea/
+**/.vscode/
+*.DotSettings.user
+
+# Local databases and certificates
+*.db
+*.sqlite
+*.sqlite3
+*.mdf
+*.ldf
+*.pfx
+*.p12
+*.key
+*.pem
+!**/certs/*.example.pem
+
+# OS / misc
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.log
