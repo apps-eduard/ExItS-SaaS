@@ -15,7 +15,8 @@ public sealed class MigrationTests(PostgreSqlFixture fixture)
         "trial_definitions",
         "trial_definition_feature_grants",
         "organizations",
-        "subscriptions"
+        "subscriptions",
+        "saas_payments"
     ];
 
     private static readonly string[] ForbiddenTables =

@@ -167,7 +167,101 @@ public sealed class LayerDependencyTests
         Assert.NotNull(Application.GetType("ExItS.Platform.Application.Organizations.IOrganizationMembershipRepository"));
         Assert.NotNull(Application.GetType("ExItS.Platform.Application.Catalog.IProductRepository"));
         Assert.NotNull(Application.GetType("ExItS.Platform.Application.Subscriptions.ISubscriptionRepository"));
+        Assert.NotNull(Application.GetType("ExItS.Platform.Application.Payments.ISaaSPaymentRepository"));
         Assert.NotNull(typeof(PlatformUser));
+    }
+
+    [Fact]
+    public void Domain_and_Application_have_no_pos_retail_or_utang_payment_types()
+    {
+        var forbidden = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "SalePayment", "CreditPayment", "UtangPayment", "RetailPayment"
+        };
+
+        foreach (var assembly in new[] { Domain, Application })
+        {
+            foreach (var type in assembly.GetTypes())
+            {
+                Assert.False(forbidden.Contains(type.Name), $"{assembly.GetName().Name} must not define type '{type.Name}'.");
+            }
+        }
+    }
+
+    [Fact]
+    public void Platform_assemblies_have_no_payment_gateway_webhook_or_qrcode_types()
+    {
+        var forbiddenFragments = new[] { "PaymentGateway", "Webhook", "QrCode", "QRCode", "CardVault", "CardToken" };
+
+        foreach (var assembly in new[] { Domain, Application, Infrastructure, Api })
+        {
+            foreach (var type in assembly.GetTypes())
+            {
+                foreach (var fragment in forbiddenFragments)
+                {
+                    Assert.False(
+                        type.Name.Contains(fragment, StringComparison.OrdinalIgnoreCase),
+                        $"{assembly.GetName().Name} must not define type '{type.Name}' (matches forbidden fragment '{fragment}').");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void Platform_assemblies_have_no_payment_provider_sdk_references()
+    {
+        var forbiddenReferenceFragments = new[]
+        {
+            "Stripe", "PayMongo", "Xendit", "Adyen", "Braintree", "PayPal", "Square", "GCash"
+        };
+
+        foreach (var assembly in new[] { Domain, Application, Infrastructure, Api })
+        {
+            var referenced = assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty).ToArray();
+            foreach (var fragment in forbiddenReferenceFragments)
+            {
+                Assert.DoesNotContain(referenced, name => name.Contains(fragment, StringComparison.OrdinalIgnoreCase));
+            }
+        }
+    }
+
+    [Fact]
+    public void SaaS_payment_types_use_the_SaaSPayment_prefix()
+    {
+        var paymentNamespaceTypes = Domain.GetTypes()
+            .Where(t => t.Namespace == "ExItS.Platform.Domain.Payments" && (t.IsPublic || t.IsNestedPublic))
+            .ToArray();
+
+        Assert.NotEmpty(paymentNamespaceTypes);
+        foreach (var type in paymentNamespaceTypes.Where(t => t.Name != nameof(ExItS.Platform.Domain.Payments.CurrencyCode)))
+        {
+            Assert.StartsWith("SaaSPayment", type.Name, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void AddManualSaaSPayments_migration_creates_only_the_saas_payments_table()
+    {
+        var root = FindRepositoryRoot();
+        var migrationsDir = Path.Combine(root, "src", "Platform", "ExItS.Platform.Infrastructure", "Persistence", "Migrations");
+        var migrationFile = Directory.GetFiles(migrationsDir, "*_AddManualSaaSPayments.cs").SingleOrDefault();
+        Assert.NotNull(migrationFile);
+
+        var migration = File.ReadAllText(migrationFile!);
+        Assert.Contains("name: \"saas_payments\"", migration, StringComparison.Ordinal);
+        Assert.Contains("ux_saas_payments_reference", migration, StringComparison.Ordinal);
+        Assert.Contains("ck_saas_payments_positive_amount", migration, StringComparison.Ordinal);
+
+        var forbiddenTableNames = new[]
+        {
+            "pos_payments", "utang_payments", "retail_payments", "invoices", "webhooks", "qr_codes", "patients", "payments"
+        };
+        foreach (var table in forbiddenTableNames)
+        {
+            Assert.DoesNotContain($"name: \"{table}\"", migration, StringComparison.OrdinalIgnoreCase);
+        }
+
+        Assert.DoesNotContain("Patient", migration, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -511,7 +605,7 @@ public sealed class LayerDependencyTests
     }
 
     [Fact]
-    public void Api_exposes_catalog_and_subscription_lifecycle_without_payment_routes()
+    public void Api_exposes_catalog_subscription_and_manual_payment_endpoints()
     {
         var root = FindRepositoryRoot();
         var program = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "Program.cs"));
@@ -522,9 +616,11 @@ public sealed class LayerDependencyTests
         Assert.Contains("MapCatalogEndpoints", program);
         Assert.Contains("MapOrganizationEndpoints", program);
         Assert.Contains("MapSubscriptionEndpoints", program);
-        Assert.Contains("P3-WP02", program, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("MapPaymentEndpoints", program);
+        Assert.Contains("P3-WP03", program, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("catalog", program, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("subscription", program, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("payment", program, StringComparison.OrdinalIgnoreCase);
 
         Assert.DoesNotContain("entitlement", program, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("projection", program, StringComparison.OrdinalIgnoreCase);
@@ -533,12 +629,23 @@ public sealed class LayerDependencyTests
         Assert.DoesNotContain("MapGet(\"/mapping", program, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("MapGet(\"/import", program, StringComparison.OrdinalIgnoreCase);
 
-        var sources = program + catalog;
-        Assert.DoesNotContain("payment", sources, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("gcash", sources, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("invoice", sources, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("hangfire", sources, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("gcashclient", sources, StringComparison.OrdinalIgnoreCase);
+        // Program.cs may legitimately mention "payment" (manual SaaS payment activation is in
+        // scope for this phase) but must not pull in gateway/webhook/QR/card/invoice concerns.
+        Assert.DoesNotContain("gcash", program, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("invoice", program, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("hangfire", program, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("gcashclient", program, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("webhook", program, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("qrcode", program, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("gateway", program, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("card", program, StringComparison.OrdinalIgnoreCase);
+
+        // Catalog remains entirely payment-free, matching P3-WP01 scope.
+        Assert.DoesNotContain("payment", catalog, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("gcash", catalog, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("invoice", catalog, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("hangfire", catalog, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("gcashclient", catalog, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

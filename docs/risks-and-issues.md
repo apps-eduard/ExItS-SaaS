@@ -54,6 +54,13 @@
 | R-048 | Missed trial/paid/grace expiration without background scheduler | Medium | Explicit Expire/PastDue/Grace commands + lifecycle evaluator; no Hangfire yet | Open — introduced P3-WP02 |
 | R-049 | Repeat-trial eligibility policy undecided (one-trial-ever vs allow after Cancelled/Expired) | Medium | Safe default: allow when no active-like slot; document open decision | Open — introduced P3-WP02 |
 | R-050 | Unsecured subscription lifecycle mutation endpoints before production | Critical | Same gate as R-045; do not expose beyond development | Open — introduced P3-WP02 |
+| R-051 | Manual payment confirmation fraud/error without separation of duties | High | Require authenticated operator with payment-confirm permission; audit actor + timestamp; separation of duties | Open — introduced P3-WP03 |
+| R-052 | Duplicate external reference scope is provisional (method + org) | Medium | Document provisional scope; review when multi-method or multi-org patterns emerge | Open — introduced P3-WP03 |
+| R-053 | Payment amount not auto-reconciled against catalog plan price | High | Record manual amount; require explicit confirmation; defer automated price validation | Open — introduced P3-WP03 |
+| R-054 | Void/reversal has no invoice or credit-note linkage | Medium | Void records reason + actor; no invoice/credit-note engine yet | Open — introduced P3-WP03 |
+| R-055 | Unauthenticated payment mutation endpoints (production gate) | Critical | Same gate as R-045/R-050; payment confirmation requires auth before production | Open — introduced P3-WP03 |
+| R-056 | No reconciliation engine for manual payments | Medium | Manual payments are recorded and confirmed by operator; no automated bank/GCash reconciliation | Open — introduced P3-WP03 |
+| R-057 | Manual payment mistaken for automatic gateway integration | High | Documentation explicitly states no gateway; architecture tests forbid gateway/webhook/QR types | Open — introduced P3-WP03 |
 
 ## Phase 2 closeout note (P2-WP06)
 

@@ -1,8 +1,10 @@
 using ExItS.Platform.Api.Catalog;
 using ExItS.Platform.Api.Organizations;
+using ExItS.Platform.Api.Payments;
 using ExItS.Platform.Api.Subscriptions;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Infrastructure;
 
@@ -46,6 +48,13 @@ builder.Services.AddScoped<ReactivateSubscription>();
 builder.Services.AddScoped<CancelSubscription>();
 builder.Services.AddScoped<ExpireSubscription>();
 
+builder.Services.AddScoped<SaaSPaymentQueryService>();
+builder.Services.AddScoped<CreateManualSaaSPayment>();
+builder.Services.AddScoped<ConfirmSaaSPayment>();
+builder.Services.AddScoped<RejectSaaSPayment>();
+builder.Services.AddScoped<VoidSaaSPayment>();
+builder.Services.AddScoped<ConfirmPaymentAndActivateSubscription>();
+
 var app = builder.Build();
 
 app.UseExceptionHandler();
@@ -55,13 +64,14 @@ app.MapGet("/", () => Results.Json(new
 {
     service = "ExItS.Platform.Api",
     status = "ok",
-    phase = "P3-WP02-trials-subscription-lifecycle"
+    phase = "P3-WP03-manual-payment-activation"
 }));
 
 app.MapHealthChecks("/health");
 app.MapCatalogEndpoints();
 app.MapOrganizationEndpoints();
 app.MapSubscriptionEndpoints();
+app.MapPaymentEndpoints();
 
 app.Run();
 

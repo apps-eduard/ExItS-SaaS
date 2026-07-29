@@ -1,5 +1,6 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Infrastructure;
@@ -44,6 +45,13 @@ internal static class CommercialTestServices
         services.AddScoped<CancelSubscription>();
         services.AddScoped<ExpireSubscription>();
         services.AddScoped<SubscriptionQueryService>();
+
+        services.AddScoped<CreateManualSaaSPayment>();
+        services.AddScoped<ConfirmSaaSPayment>();
+        services.AddScoped<RejectSaaSPayment>();
+        services.AddScoped<VoidSaaSPayment>();
+        services.AddScoped<ConfirmPaymentAndActivateSubscription>();
+        services.AddScoped<SaaSPaymentQueryService>();
 
         services.AddSingleton<IClock>(new FixedUtcClock(utcNow ?? new DateTimeOffset(2026, 7, 29, 12, 0, 0, TimeSpan.Zero)));
 

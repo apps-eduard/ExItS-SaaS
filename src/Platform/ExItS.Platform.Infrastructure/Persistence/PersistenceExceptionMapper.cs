@@ -25,9 +25,17 @@ public static class PersistenceExceptionMapper
             return false;
         }
 
-        // Check subscription- and organization-specific constraints first: their detail text can
-        // also contain "product_code" / generic substrings that would otherwise be caught by the
-        // broader catalog checks below.
+        // Check payment-, subscription-, and organization-specific constraints first: their detail
+        // text can also contain "product_code" / generic substrings that would otherwise be caught
+        // by the broader catalog checks below.
+        if (detail.Contains("ux_saas_payments_reference", StringComparison.OrdinalIgnoreCase)
+            || detail.Contains("saas_payments", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.PaymentReferenceConflict;
+            message = "A payment with this reference already exists for this organization and method.";
+            return true;
+        }
+
         if (detail.Contains("ux_subscriptions_one_active_like", StringComparison.OrdinalIgnoreCase)
             || detail.Contains("subscriptions", StringComparison.OrdinalIgnoreCase))
         {

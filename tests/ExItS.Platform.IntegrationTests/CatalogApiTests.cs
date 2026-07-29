@@ -121,22 +121,31 @@ public sealed class CatalogApiTests(PostgreSqlFixture fixture) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Program_and_catalog_routes_exclude_payment_and_gcash()
+    public async Task Catalog_routes_exclude_payment_and_gcash_while_the_program_stays_free_of_gateway_concerns()
     {
         var root = FindRepositoryRoot();
         var program = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "Program.cs"));
         var catalog = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "Catalog", "CatalogEndpoints.cs"));
-        var sources = program + catalog;
 
-        Assert.DoesNotContain("payment", sources, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("gcash", sources, StringComparison.OrdinalIgnoreCase);
+        // Catalog remains entirely payment-free (P3-WP01 scope).
+        Assert.DoesNotContain("payment", catalog, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("gcash", catalog, StringComparison.OrdinalIgnoreCase);
 
-        // Subscription endpoints now legitimately exist (P3-WP02); a bare list request without
-        // any filter is a client error, not a 404 — the route itself is mapped and reachable.
+        // Program.cs legitimately wires up manual SaaS payment activation (P3-WP03) but must stay
+        // free of gateway/webhook/QR/card concerns.
+        Assert.DoesNotContain("gcash", program, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("webhook", program, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("gateway", program, StringComparison.OrdinalIgnoreCase);
+
+        // Subscription and payment endpoints now legitimately exist (P3-WP02/P3-WP03); a bare list
+        // request without any filter is a client error, not a 404 — the routes are mapped and reachable.
         var response = await _client.GetAsync("/api/v1/platform/subscriptions");
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        var unknownRoute = await _client.GetAsync("/api/v1/platform/payments");
+        var paymentsRoute = await _client.GetAsync("/api/v1/platform/payments");
+        Assert.Equal(HttpStatusCode.BadRequest, paymentsRoute.StatusCode);
+
+        var unknownRoute = await _client.GetAsync("/api/v1/platform/does-not-exist");
         Assert.Equal(HttpStatusCode.NotFound, unknownRoute.StatusCode);
     }
 

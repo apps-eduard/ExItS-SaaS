@@ -41,4 +41,16 @@ public static class ApplicationErrorCodes
     public const string MigrationValidationBlocked = "application.migration.blocked";
     public const string RollbackEvidenceMissing = "application.migration.rollback_evidence_missing";
     public const string SensitiveMigrationDataDetected = "application.migration.sensitive_data";
+
+    public const string PaymentNotFound = "application.payment.not_found";
+    public const string PaymentReferenceConflict = "application.payment.reference_conflict";
+    public const string PaymentAlreadyConfirmed = "application.payment.already_confirmed";
+    public const string PaymentNotConfirmed = "application.payment.not_confirmed";
+    public const string PaymentAlreadyUsed = "application.payment.already_used";
+    public const string PaymentInvalidTransition = "application.payment.invalid_transition";
+    public const string PaymentAmountInvalid = "application.payment.amount_invalid";
+    public const string PaymentCurrencyInvalid = "application.payment.currency_invalid";
+    public const string PaymentProductMismatch = "application.payment.product_mismatch";
+    public const string PaymentOrganizationMismatch = "application.payment.organization_mismatch";
+    public const string PaymentSubscriptionConflict = "application.payment.subscription_conflict";
 }

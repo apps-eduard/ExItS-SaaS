@@ -53,4 +53,13 @@ public static class DomainErrorCodes
     public const string InvalidSubscriptionTransition = "platform.subscription.status.invalid_transition";
     public const string InvalidFeatureStatusTransition = "platform.feature.status.invalid_transition";
     public const string InvalidOverrideStatusTransition = "platform.feature_override.status.invalid_transition";
+
+    public const string InvalidSaaSPaymentId = "platform.saas_payment.id.invalid";
+    public const string InvalidSaaSPaymentTransition = "platform.saas_payment.status.invalid_transition";
+    public const string PaymentAlreadyConfirmed = "platform.saas_payment.already_confirmed";
+    public const string PaymentAlreadyUsed = "platform.saas_payment.already_used";
+    public const string PaymentAmountInvalid = "platform.saas_payment.amount.invalid";
+    public const string PaymentCurrencyInvalid = "platform.saas_payment.currency.invalid";
+    public const string PaymentReferenceRequired = "platform.saas_payment.reference.required";
+    public const string PaymentReasonRequired = "platform.saas_payment.reason.required";
 }

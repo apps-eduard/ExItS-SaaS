@@ -49,6 +49,8 @@ Everything in Basic Store plus suppliers, purchasing, advanced inventory, cashie
 
 **P3-WP02:** PlatformOrganization (minimal) and Subscription are **persisted**. Commercial `ActivateSubscription` does **not** collect or verify payment. Invoices/GCash/payment gateways remain out of scope.
 
+**P3-WP03:** Manual SaaS payment records are **persisted** (`platform.saas_payments`). Manual confirmation lifecycle (PendingConfirmation → Confirmed → Voided; PendingConfirmation → Rejected). Confirmed payment can atomically activate a subscription. Duplicate-reference detection enforced. No payment gateway, webhook, QR, card storage, or automatic verification. Payment amount reconciliation against catalog price is deferred.
+
 ## Availability rule
 
 Product APIs use locally stored entitlement snapshots (versioned, time-bounded, fail-safe, with grace and audit). A sale or offline credit must not fail solely because the central Platform service is temporarily unavailable.

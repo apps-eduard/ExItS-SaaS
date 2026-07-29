@@ -1,5 +1,6 @@
 using ExItS.Platform.Infrastructure.Persistence.Catalog;
 using ExItS.Platform.Infrastructure.Persistence.Organizations;
+using ExItS.Platform.Infrastructure.Persistence.Payments;
 using ExItS.Platform.Infrastructure.Persistence.Subscriptions;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,6 +33,7 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<TrialDefinitionFeatureGrantRecord> TrialDefinitionFeatureGrants => Set<TrialDefinitionFeatureGrantRecord>();
     internal DbSet<PlatformOrganizationRecord> Organizations => Set<PlatformOrganizationRecord>();
     internal DbSet<SubscriptionRecord> Subscriptions => Set<SubscriptionRecord>();
+    internal DbSet<SaaSPaymentRecord> SaaSPayments => Set<SaaSPaymentRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -226,6 +228,57 @@ public sealed class PlatformDbContext : DbContext
             entity.HasOne<Catalog.TrialDefinitionRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.TrialDefinitionId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<SaaSPaymentRecord>(entity =>
+        {
+            entity.ToTable("saas_payments", tb =>
+            {
+                tb.HasCheckConstraint("ck_saas_payments_positive_amount", "amount > 0");
+            });
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.SubscriptionId).HasColumnName("subscription_id");
+            entity.Property(e => e.Amount).HasColumnName("amount").HasColumnType("decimal(18,4)");
+            entity.Property(e => e.CurrencyCode).HasColumnName("currency_code").HasMaxLength(3).IsFixedLength().IsRequired();
+            entity.Property(e => e.Method).HasColumnName("method").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.ExternalReference).HasColumnName("external_reference").HasMaxLength(512).IsRequired();
+            entity.Property(e => e.NormalizedReference).HasColumnName("normalized_reference").HasMaxLength(512).IsRequired();
+            entity.Property(e => e.PaidAtUtc).HasColumnName("paid_at_utc");
+            entity.Property(e => e.ConfirmedAtUtc).HasColumnName("confirmed_at_utc");
+            entity.Property(e => e.ConfirmedBy).HasColumnName("confirmed_by").HasMaxLength(256);
+            entity.Property(e => e.RejectedAtUtc).HasColumnName("rejected_at_utc");
+            entity.Property(e => e.RejectedBy).HasColumnName("rejected_by").HasMaxLength(256);
+            entity.Property(e => e.RejectionReason).HasColumnName("rejection_reason").HasMaxLength(1024);
+            entity.Property(e => e.VoidedAtUtc).HasColumnName("voided_at_utc");
+            entity.Property(e => e.VoidedBy).HasColumnName("voided_by").HasMaxLength(256);
+            entity.Property(e => e.VoidReason).HasColumnName("void_reason").HasMaxLength(1024);
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.AggregateVersion).HasColumnName("aggregate_version");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.Method, e.NormalizedReference, e.OrganizationId })
+                .IsUnique()
+                .HasDatabaseName("ux_saas_payments_reference")
+                .HasFilter("status NOT IN ('Rejected', 'Voided')");
+
+            entity.HasOne<Organizations.PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<Subscriptions.SubscriptionRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SubscriptionId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }

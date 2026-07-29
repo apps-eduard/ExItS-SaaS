@@ -1,8 +1,10 @@
 using ExItS.Platform.Application.Catalog;
+using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Entitlements;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Payments;
 using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Domain.Subscriptions;
 
@@ -378,6 +380,119 @@ internal sealed class InMemoryFeatureOverrideRepository : IFeatureOverrideReposi
     public Task UpdateAsync(FeatureOverride featureOverride, CancellationToken cancellationToken = default)
     {
         _items[featureOverride.Id.Value] = featureOverride;
+        return Task.CompletedTask;
+    }
+}
+
+internal sealed class InMemorySaaSPaymentRepository : ISaaSPaymentRepository
+{
+    private readonly Dictionary<Guid, SaaSPayment> _items = new();
+    public int AddCount { get; private set; }
+    public int UpdateCount { get; private set; }
+
+    public Task<SaaSPayment?> GetByIdAsync(SaaSPaymentId id, CancellationToken cancellationToken = default)
+    {
+        _items.TryGetValue(id.Value, out var p);
+        return Task.FromResult(p);
+    }
+
+    public Task<bool> ExistsByNormalizedReferenceAsync(
+        SaaSPaymentMethod method,
+        string normalizedReference,
+        PlatformOrganizationId orgId,
+        CancellationToken cancellationToken = default)
+    {
+        var exists = _items.Values.Any(p =>
+            p.Method == method
+            && p.NormalizedReference == normalizedReference
+            && p.OrganizationId == orgId
+            && p.Status is not (SaaSPaymentStatus.Rejected or SaaSPaymentStatus.Voided));
+        return Task.FromResult(exists);
+    }
+
+    public Task<SaaSPayment?> GetByNormalizedReferenceAsync(
+        SaaSPaymentMethod method,
+        string normalizedReference,
+        PlatformOrganizationId orgId,
+        CancellationToken cancellationToken = default)
+    {
+        var found = _items.Values.FirstOrDefault(p =>
+            p.Method == method && p.NormalizedReference == normalizedReference && p.OrganizationId == orgId);
+        return Task.FromResult(found);
+    }
+
+    public Task<(IReadOnlyList<SaaSPayment> Items, int TotalCount)> ListByOrganizationAsync(
+        PlatformOrganizationId orgId,
+        SaaSPaymentStatus? status,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _items.Values.Where(p => p.OrganizationId == orgId);
+        if (status is not null)
+        {
+            query = query.Where(p => p.Status == status.Value);
+        }
+
+        var ordered = query.OrderByDescending(p => p.CreatedAtUtc).ToList();
+        IReadOnlyList<SaaSPayment> page = ordered.Skip(skip).Take(take).ToList();
+        return Task.FromResult((page, ordered.Count));
+    }
+
+    public Task<(IReadOnlyList<SaaSPayment> Items, int TotalCount)> ListByProductAsync(
+        ProductCode productCode,
+        SaaSPaymentStatus? status,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _items.Values.Where(p => p.ProductCode == productCode);
+        if (status is not null)
+        {
+            query = query.Where(p => p.Status == status.Value);
+        }
+
+        var ordered = query.OrderByDescending(p => p.CreatedAtUtc).ToList();
+        IReadOnlyList<SaaSPayment> page = ordered.Skip(skip).Take(take).ToList();
+        return Task.FromResult((page, ordered.Count));
+    }
+
+    public Task<(IReadOnlyList<SaaSPayment> Items, int TotalCount)> ListByStatusAsync(
+        SaaSPaymentStatus status,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var ordered = _items.Values.Where(p => p.Status == status).OrderByDescending(p => p.CreatedAtUtc).ToList();
+        IReadOnlyList<SaaSPayment> page = ordered.Skip(skip).Take(take).ToList();
+        return Task.FromResult((page, ordered.Count));
+    }
+
+    public Task<(IReadOnlyList<SaaSPayment> Items, int TotalCount)> ListBySubscriptionAsync(
+        SubscriptionId subscriptionId,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var ordered = _items.Values
+            .Where(p => p.SubscriptionId == subscriptionId)
+            .OrderByDescending(p => p.CreatedAtUtc)
+            .ToList();
+        IReadOnlyList<SaaSPayment> page = ordered.Skip(skip).Take(take).ToList();
+        return Task.FromResult((page, ordered.Count));
+    }
+
+    public Task AddAsync(SaaSPayment payment, CancellationToken cancellationToken = default)
+    {
+        _items[payment.Id.Value] = payment;
+        AddCount++;
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateAsync(SaaSPayment payment, CancellationToken cancellationToken = default)
+    {
+        _items[payment.Id.Value] = payment;
+        UpdateCount++;
         return Task.CompletedTask;
     }
 }
