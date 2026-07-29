@@ -229,7 +229,7 @@ Validate Platform regression coverage and HealthCare mapping dry-run readiness w
 
 | Field | Value |
 |---|---|
-| Hash | _(recorded after commit)_ |
+| Hash | `e001f3d654cc91976bfd2d4de890c8244ce04c7e` |
 | Message | `test(platform): add regression and migration validation` |
 
 ### P2-WP06 — Extraction Closeout

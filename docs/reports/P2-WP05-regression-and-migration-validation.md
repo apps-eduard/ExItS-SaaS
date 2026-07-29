@@ -83,5 +83,5 @@ Published existing local history to `origin`, then implemented **validation-only
 
 | Field | Value |
 |---|---|
-| Hash (feature) | _(recorded after commit)_ |
+| Hash (feature) | `e001f3d654cc91976bfd2d4de890c8244ce04c7e` |
 | Message | `test(platform): add regression and migration validation` |

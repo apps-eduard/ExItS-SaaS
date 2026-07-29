@@ -14,7 +14,7 @@
 | Current phase | Phase 2 — Platform Extraction and HealthCare Reconnection |
 | Current work package | P2-WP05 — Regression and Migration Validation (**Ready for Review**) |
 | Overall status | P2-WP01–04 **Complete**; migration dry-run validation implemented; remote published |
-| Latest verified commit | _(see P2-WP05 report after commit)_ |
+| Latest verified commit | `e001f3d654cc91976bfd2d4de890c8244ce04c7e` |
 | Open blockers | 0 for P2-WP05 acceptance; R-016 closed (remote verified) |
 | Last updated | 2026-07-29 |
 
@@ -54,7 +54,7 @@ P2-WP06 extraction closeout (not started)
 | P2-WP02 | Complete | `49f8ae8` |
 | P2-WP03 | Complete | `6e866d7` + `10f99c5` |
 | P2-WP04 | Complete | `3b66095` + `eb9fdfe` |
-| P2-WP05 | Ready for Review | _(after commit)_ |
+| P2-WP05 | Ready for Review | `e001f3d` |
 | P2-WP06 | Not Started | — |
 
 ## Migration validation snapshot (P2-WP05)
