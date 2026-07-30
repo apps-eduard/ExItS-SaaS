@@ -46,8 +46,9 @@
 - Repayments and unified ledger (P6-WP03) — overpayment protection, serializable balance checks, ledger read model; Testcontainers PostgreSQL
 - Due dates and overdue monitoring (P6-WP04) — append-only due-date history, FIFO aging read model, overdue rules, migration apply/rollback; Testcontainers PostgreSQL
 - Statements, repayment receipts, and trial/continuity capability matrix (P6-WP05) — projection statements/receipts (`RCPT-{guid:N}`); `UtangCapabilityPolicy`; Platform POS continuity entry; commercial header gates; OD-07/08/09; Testcontainers where relational; no new receipt migration
+- Catalog and barcode (P8-WP01) — domain SKU/barcode/UOM/price; checksum; `store-catalog-view` / `store-catalog-manage` continuity; migration `AddPosCatalogAndBarcodes`; org-isolated catalog API; MAUI guards; online-only (no offline queue/cache); Testcontainers PostgreSQL
 - Tenant isolation
-- Subscription feature enforcement (P6-WP05 matrix + grants)
+- Subscription feature enforcement (P6-WP05 matrix + grants; P8-WP01 catalog grants)
 - Offline queue and idempotency *(Phase 7)*
 - Inventory movements
 - Cashier permissions
@@ -69,5 +70,6 @@
 - **P7-WP03:** encrypted local customer/credit projection store; row-level AES-GCM; no plaintext PII/amounts in SQLite; operation dependency ordering (CreditCreate after CustomerCreate); balance projection (confirmed + pending); conflict/discard-local paths; session-gated offline mutations; customer/credit idempotency integration (Testcontainers)
 - **P7-WP04:** encrypted local repayment projection store (schema v4); pending repayment/projected balance; local overpayment guard; repayment dependency ordering; credit/repayment reverse requires ServerConfirmed; duplicate PendingReversal blocked; due-date pending/discard; rejected repayment balance correction; `RebuildOptimisticBalancesAsync`; no statement/receipt offline op types; repayment idempotency + sync endpoint integration (Testcontainers)
 - **P7-WP05:** local schema migration chain v1→v4; capability deny → BlockedByAccess; RecoveryRequired sync priority; plaintext pending-field guards; rebuild-after-credit-confirm; Production diagnostics gating preserved
+- **P8-WP01:** catalog domain SKU/barcode/UOM/price rules; barcode checksum; capability/continuity for `store-catalog-view` / `store-catalog-manage`; PostgreSQL migration apply/rollback/re-apply (Testcontainers); catalog API org isolation; MAUI page guards; online-only architecture (no offline queue/cache on catalog paths)
 
 All reports use exact command output; totals are never estimated.

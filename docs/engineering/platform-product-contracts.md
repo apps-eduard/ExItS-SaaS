@@ -186,17 +186,17 @@ Platform product-access evaluation may allow PinoyBusinessPOS **entry** for cont
 | Subscription state | POS entry |
 |---|---|
 | Trialing / Active / GracePeriod | Allow |
-| PastDue / Cancelled / Expired | Allow with restricted continuity features (requires view or repay grant) |
+| PastDue / Cancelled / Expired | Allow with restricted continuity features (requires credit view/repay or catalog view/manage grant) |
 | Suspended | **Deny** |
 | Missing, stale, unknown, invalid | **Deny** |
 
-Feature codes (server-side authority): `customer-credit-view`, `customer-credit-repay`, `customer-credit-create`.
+Feature codes (server-side authority): `customer-credit-view`, `customer-credit-repay`, `customer-credit-create`, `store-catalog-view`, `store-catalog-manage`.
 
 ### Authoritative capability matrix (P6-WP05)
 
 | Capability | Trialing | Active | GracePeriod | PastDue | Cancelled | Expired | Suspended | Grant |
 |---|---:|---:|---:|---:|---:|---:|---:|---|
-| Enter POS | Allow | Allow | Allow | Allow | Allow | Allow | Deny | Continuity: view or repay |
+| Enter POS | Allow | Allow | Allow | Allow | Allow | Allow | Deny | Continuity: credit view/repay or catalog view/manage |
 | View customers and Utang history | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `customer-credit-view` |
 | Create customer — OD-07 | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `customer-credit-create` |
 | Edit customer contact/profile — OD-08 | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `customer-credit-create` |
@@ -208,12 +208,22 @@ Feature codes (server-side authority): `customer-credit-view`, `customer-credit-
 | View/generate statement | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `customer-credit-view` |
 | View/generate repayment receipt | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `customer-credit-view` |
 
+### Catalog capability matrix (P8-WP01)
+
+| Capability | Trialing | Active | GracePeriod | PastDue | Cancelled | Expired | Suspended | Grant |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| View catalog / categories / SKU-barcode lookup | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `store-catalog-view` |
+| Create/update/deactivate/reactivate catalog | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `store-catalog-manage` |
+
+Catalog is **online-only** (no offline cache or queued mutations). Entry alone does not grant catalog capability; Suspended / missing / stale / unknown deny. Continuity permits view when `store-catalog-view` is granted; mutations remain Trialing/Active/GracePeriod + manage.
+
 ### Allowed after expiry (continuity)
 
 - View existing customers, balances, historical credit entries, payment history
 - Receive partial/full payment against **existing** debt via **Cash** or **GCash** (manual GCash; reference required)
 - Reverse credit (audited correction; cannot increase debt) — OD-09
 - View/generate statements and repayment receipts when `customer-credit-view` is granted
+- View catalog / categories / SKU-barcode lookup when `store-catalog-view` is granted (P8-WP01; online-only)
 - Export/access data where separately approved
 - Upgrade or renew subscription
 
@@ -223,6 +233,7 @@ Feature codes (server-side authority): `customer-credit-view`, `customer-credit-
 - Create new customer credit / increase debt / add new credit entries
 - Reverse repayment (OD-09 — would increase outstanding)
 - Set/change/clear due dates
+- Create/update/deactivate/reactivate catalog (`store-catalog-manage` denied in continuity)
 - Use features not allowed by expired entitlement or missing grants
 - Suspended / missing / stale / unknown / invalid: deny all protected capabilities
 

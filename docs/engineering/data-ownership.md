@@ -38,7 +38,7 @@ Clinics, staff assignments, patients, appointments, medical notes, clinical auth
 
 **P6-WP05 (statements, receipts, trial rules):** Same database/schema — **no new tables/migrations**. Customer statements and repayment receipts are read-model projections. Receipt reference `RCPT-{guid:N}` is deterministic from repayment id. Commercial capability matrix and Platform continuity entry for PinoyBusinessPOS only (Suspended denies; PastDue/Cancelled/Expired continuity). Outstanding formula unchanged.
 
-Later POS ownership (not yet implemented): businesses, stores/branches/registers, retail payments, catalog, sales, inventory, expenses, suppliers, offline mutation queue / business-data cache (P7-WP02+), POS audit, **entitlement projection rows**.
+**P8-WP01 (catalog and barcode):** Same database/schema — tables `pos.product_categories`, `pos.products` (migration `AddPosCatalogAndBarcodes`). OrganizationId is a Platform organization GUID value only (no cross-database FK). Soft Active/Inactive; no hard delete. Optional SKU/barcode uniqueness reserved while inactive. Server PostgreSQL is system of record; **no offline catalog cache or queue**.
 
 **P7-WP01 local device ownership (foundation only):** per-user/org/product SQLite files under the MAUI sandbox hold schema/context metadata only (`local_schema_info`, `local_context_info`). DeviceId lives in SecureStorage, not SQLite. No tokens, entitlements, customers, or financial rows locally.
 
@@ -51,6 +51,8 @@ Later POS ownership (not yet implemented): businesses, stores/branches/registers
 **P7-WP05 closeout:** pending due-date/reversal reasons live in encrypted projection JSON (legacy plaintext columns NULLed). Conflict JSON stores safe metadata only. Context isolation and OD-10 retention unchanged. Full-database encryption remains deferred.
 
 **OD-10 (resolved for pending ops):** Pending operations remain encrypted across logout and access loss, isolated to their original context, and are never processed until that context is reauthorized. They are not silently deleted. No time-based retention period is invented.
+
+Later POS ownership (not yet implemented): businesses, stores/branches/registers, retail payments, sales, inventory, expenses, suppliers, offline catalog cache (deferred), POS audit, **entitlement projection rows**.
 
 ---
 

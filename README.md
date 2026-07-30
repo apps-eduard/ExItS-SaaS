@@ -38,9 +38,11 @@ ExItS-SaaS/
 
 **Phase 6** is **complete** with documented risks ([P6-WP06 closeout](docs/reports/P6-WP06-utang-mvp-closeout.md)). Utang MVP (customers, credit, repayments/ledger, due dates/overdue, statements/receipts, trial/continuity rules) is closed.
 
-**Phase 7** is **complete** with documented risks ([P7-WP05 closeout](docs/reports/P7-WP05-offline-closeout.md)). Offline subsystem (DeviceId/SQLite isolation, encrypted queue + idempotency, customer/credit/payment sync, recovery/UX closeout) is closed. **Not production-ready** while R-109, R-022, full-DB encryption, production auth/roles, and production background scheduling remain open.
+**Phase 7** is **complete** with documented risks ([P7-WP05 closeout](docs/reports/P7-WP05-offline-closeout.md)). Offline subsystem (DeviceId/SQLite isolation, encrypted queue + idempotency, customer/credit/payment sync, recovery/UX closeout) is closed.
 
-Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Next: **Phase 8 — Basic Store** when authorized.
+**Phase 8** is **in progress** — P8-WP01 Catalog and Barcode **complete** with documented risks ([report](docs/reports/P8-WP01-catalog-and-barcode.md)); online-only org catalog with SKU/barcode, UOM, price, and `store-catalog-view` / `store-catalog-manage`. Sales/inventory not started. **Not production-ready** while R-109, R-022, full-DB encryption, production auth/roles, and production background scheduling remain open.
+
+Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Next: **P8-WP02 — Simple Sales** when authorized.
 
 ### Platform database (local)
 

@@ -147,7 +147,7 @@ Cash and manually confirmed GCash may be recorded offline with stable local IDs.
 
 ## Basic Store
 
-- Product catalog and barcode
+- Product catalog and barcode — **P8-WP01 delivered** (online-only org catalog; feature codes `store-catalog-view` / `store-catalog-manage`; migration `AddPosCatalogAndBarcodes`). See [P8-WP01 report](../reports/P8-WP01-catalog-and-barcode.md).
 - Simple sales with MVP payment methods (`cash`, `gcash`, `customer-credit`)
 - Product-based Utang
 - Basic inventory

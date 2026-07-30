@@ -1,7 +1,7 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown documentation files plus root Platform foundation through Phase 6 Utang MVP closeout (P6-WP06; Phase 6 complete with documented risks).
-Internal links checked: spot-check P6-WP06
+Markdown documentation files plus root Platform foundation through Phase 8 Basic Store start (P8-WP01 Catalog and Barcode complete with documented risks; Phase 8 in progress).
+Internal links checked: spot-check P8-WP01
 Broken links: none found in spot-check of new paths
 
 ## Root foundation (tracked)
@@ -20,13 +20,13 @@ src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog + organi
 src/Platform/ExItS.Platform.Api/ (`/` + `/health` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs; `PlatformAuthz`; phase marker retained from P5)
 src/Platform/ExItS.Platform.Admin/ (Blazor Web App — redesigned native CSS shell; typed API client; portfolio + users/memberships/product-access + subscription/payment/trial + audit views; themes; AdminResources en/fil-PH)
 src/Shared/ExItS.DesignSystem/ (semantic tokens; forms/data/feedback overlays; DesignSystem/Validation/Error resources en/fil-PH; Blazor primitives; `IDensityPreferenceStore`)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ (POSCustomer + CreditEntry + CreditDueDateChange + Repayment aggregates; FIFO aging helpers)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth; Customers; Credit; due dates/overdue; Payments/ledger; Statements/receipts; Commercial/UtangCapabilityPolicy)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migrations `AddPosCustomers`, `AddPosCreditEntries`, `AddPosRepayments`, `AddPosCreditDueDates`; no receipt migration)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + customers + credit + repayments/ledger + due dates/overdue + statements/receipts; commercial header gates; phase marker `P6-WP06-utang-mvp-closeout`)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client; PosCommercialHeaderHandler; PosCustomerClient with credit/repayment/ledger/due-date/overdue/statement/receipt methods)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.LocalStore/ (Microsoft.Data.Sqlite foundation + generic encrypted offline_operations outbox + encrypted customer/credit/repayment projections — P7-WP01/P7-WP02/P7-WP03/P7-WP04)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers + credit + repayments + ledger + overdue/due dates + statement/receipt preview/share; onboarding/auth; sync-status shell; offline foundation diagnostics; PosResources en/fil-PH)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ (POSCustomer + CreditEntry + CreditDueDateChange + Repayment + CatalogProduct + ProductCategory aggregates; FIFO aging helpers)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth; Customers; Credit; due dates/overdue; Payments/ledger; Statements/receipts; Catalog; Commercial/UtangCapabilityPolicy)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migrations `AddPosCustomers`, `AddPosCreditEntries`, `AddPosRepayments`, `AddPosCreditDueDates`, `AddPosCatalogAndBarcodes`; no receipt migration)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + customers + credit + repayments/ledger + due dates/overdue + statements/receipts + catalog; commercial header gates; phase marker `P8-WP01-catalog-and-barcode`)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client; PosCommercialHeaderHandler; PosCustomerClient; PosCatalogClient online-only)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.LocalStore/ (Microsoft.Data.Sqlite foundation + generic encrypted offline_operations outbox + encrypted customer/credit/repayment projections — P7-WP01/P7-WP02/P7-WP03/P7-WP04; no catalog offline cache)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers + credit + repayments + ledger + overdue/due dates + statement/receipt preview/share + catalog/barcode; onboarding/auth; sync-status shell; offline foundation diagnostics; PosResources en/fil-PH)
 tests/ExItS.Platform.UnitTests/
 tests/ExItS.ArchitectureTests/
 tests/ExItS.Platform.IntegrationTests/
@@ -139,6 +139,7 @@ tests/ExItS.PinoyBusinessPOS.UnitTests/Offline/PaymentOfflineStoreTests.cs
 tests/ExItS.PinoyBusinessPOS.IntegrationTests/PosPaymentOfflineIdempotencyApiTests.cs
 docs/reports/P7-WP04-payment-sync-and-recovery.md
 docs/reports/P7-WP05-offline-closeout.md
+docs/reports/P8-WP01-catalog-and-barcode.md
 docs/reports/phase-02-extraction-closeout.md
 docs/reports/phase-00-final-assessment-and-recommendation.md
 docs/reports/phase-01-architecture-approval.md
