@@ -87,7 +87,7 @@ Status: **Complete with documented risks**
 
 Phase marker: `P7-WP04-payment-sync-and-recovery`
 
-Feature commit: _(recorded after push)_
+Feature commit: `9c862b4bcd1604a351334120823bdf1e4a2014cb`
 
 #### Approved scope
 
@@ -107,8 +107,8 @@ Feature commit: _(recorded after push)_
 - [x] Applicable tests pass with exact evidence (601 passed / 0 failed / 0 skipped).
 - [x] Dashboard and phase page updated.
 - [x] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean.
 
 ### P7-WP05 — Offline Closeout
 

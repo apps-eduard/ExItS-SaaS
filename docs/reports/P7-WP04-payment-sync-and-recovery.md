@@ -6,7 +6,7 @@ Phase marker: `P7-WP04-payment-sync-and-recovery`
 
 **Complete with documented risks.** Offline `RepaymentCreate`, `RepaymentReverse`, `CreditReverse`, `CreditDueDateSet`, and `CreditDueDateClear` via the generic queue; encrypted local repayment and due-date projections; dependency-safe FIFO; crash/uncertain-outcome recovery via idempotency replay; confirmed / pending credit / pending repayment / projected outstanding. **No** offline statements, receipts, customer deactivate/reactivate, automatic conflict merge, or production background scheduling. P7-WP05 was not started.
 
-Feature commit: _(recorded after push)_
+Feature commit: `9c862b4bcd1604a351334120823bdf1e4a2014cb`
 
 ## Delivered capability
 
@@ -96,7 +96,7 @@ Updated Phase 7, offline-sync design, portfolio, FILE-MANIFEST, README, security
 
 | Field | Value |
 |---|---|
-| Commit hash | _(recorded after push)_ |
+| Commit hash | `9c862b4bcd1604a351334120823bdf1e4a2014cb` |
 | Final working tree | uncommitted (per task instruction) |
 
 ## HealthCare freeze

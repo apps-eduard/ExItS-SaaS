@@ -14,7 +14,7 @@
 | Current phase | Phase 7 — Offline Synchronization (**In Progress**) |
 | Current work package | P7-WP04 — Payment Sync and Recovery (**Complete** with documented risks) |
 | Overall status | **P7-WP04 complete** — encrypted payment offline sync (repayments, reversals, due dates); no offline statements/receipts; next P7-WP05 when authorized |
-| Latest verified commit | _(recorded after push)_ (P7-WP04) |
+| Latest verified commit | `9c862b4bcd1604a351334120823bdf1e4a2014cb` (P7-WP04) |
 | Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations / no offline entitlement grace; R-035 calendar EOM; no payment gateway; no interactive Android emulator (R-109); commercial/actor headers Development-stage only; org timezone undefined for due dates; OD-11 open; no POS operational roles; SQLitePCLRaw NU1903 (R-129 — **WP03 chose row-level AES-GCM**; SQLCipher still deferred) |
 | Last updated | 2026-07-30 |
 
@@ -57,7 +57,7 @@ P7-WP05 — Offline Closeout (not started — do not begin until authorized)
 | P7-WP01 | Complete with risks | a82a4be07e90ddfad59b741f6822022369cda68e |
 | P7-WP02 | Complete with risks | aa1f92eba97bc77775f59de8209b42c9d7a475cc |
 | P7-WP03 | Complete with risks | 3763ca0fe406067eb539b3d8adca21447f813dcf |
-| P7-WP04 | Complete with risks | _(recorded after push)_ |
+| P7-WP04 | Complete with risks | 9c862b4bcd1604a351334120823bdf1e4a2014cb |
 | P7-WP05 | Not Started | — |
 
 ## Permanent workflow rules
