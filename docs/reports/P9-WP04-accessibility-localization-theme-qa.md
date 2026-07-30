@@ -137,4 +137,5 @@ Unchanged: ignored, untracked, outside `ExItS.slnx`.
 |---|---|
 | Feature commit | f7b3aecec614eea8b1de601cd08e843f4aea91f8 |
 | Docs commit | a28adb46b95e8a38651a0b8f32119a06f102aae2 |
+| Docs hash-record commit | a35be7d003ef498a6e425128cdd1877d80f83237 |
 | Exact next WP | **P9-WP05 — Pilot and Deployment** |
