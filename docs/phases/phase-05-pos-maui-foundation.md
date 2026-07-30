@@ -34,8 +34,8 @@ Report: [P5-WP01-maui-solution-and-api-client.md](../reports/P5-WP01-maui-soluti
 - [x] Applicable tests pass with exact evidence.
 - [x] Dashboard and phase page updated.
 - [x] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Focused commit created and hash recorded (`3015925`).
+- [x] Working tree clean (after push).
 
 ### P5-WP02 — Native UI Tokens, Themes and Compact Layout
 

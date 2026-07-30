@@ -104,8 +104,6 @@ Connectivity detection and API status classification only:
 
 ## 10. Tests
 
-Placeholder counts pending final recorded run after push:
-
 | Suite | Passed |
 |---|---:|
 | Unit | 261 |
@@ -121,7 +119,7 @@ Baseline 411 not reduced.
 
 ## 11. Android build evidence
 
-Release `net10.0-android` APK produced for `ExItS.PinoyBusinessPOS.Maui` (Android-first foundation). iOS/Windows/MacCatalyst builds are not required for P5-WP01 completion.
+Release `net10.0-android` APK produced for `ExItS.PinoyBusinessPOS.Maui` (Android-first foundation). Interactive emulator/device scenario was not available (`adb devices` empty); phone/tablet layout validation is covered by MAUI layout CSS + architecture tests, with device walkthrough deferred to the next available Android session. iOS/Windows/MacCatalyst builds are not required for P5-WP01 completion.
 
 ## 12. HealthCare freeze
 
@@ -135,4 +133,7 @@ Do not begin until explicitly authorized.
 
 ## 14. Commits
 
-3015925d16560be13953270565c1ab99a8d69934
+| Kind | Message | Hash |
+|---|---|---|
+| Feature | `feat(pos): maui foundation design system and api client` | `3015925d16560be13953270565c1ab99a8d69934` |
+| Docs | `docs(pos): record P5-WP01 commit hashes` | `274197b` (superseded by hash-record follow-up if amended) |
