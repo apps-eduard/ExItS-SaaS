@@ -93,4 +93,4 @@ Do not begin until explicitly authorized.
 | Kind | Message | Hash |
 |---|---|---|
 | Feature | `feat(pos): reusable mvp design-system components and showcase` | `763b0dc7cd73ab21ada2d101d115423c23d90cfa` |
-| Docs hash record | *(recorded after docs commit)* | — |
+| Docs hash record | `docs(pos): record P5-WP04 commit hashes` | `1eb776d276f400591cf6f21416422e15d4250b38` |
