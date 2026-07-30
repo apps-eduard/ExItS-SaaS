@@ -142,6 +142,92 @@ html, body {
     height: var(--exits-touch-target-min);
 }
 
+.pos-sync-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: var(--exits-touch-target-min);
+    max-width: 9.5rem;
+    padding: 0.2rem 0.55rem;
+    border: 1px solid var(--exits-border);
+    border-radius: var(--exits-density-radius, var(--exits-radius-sm));
+    background: var(--exits-surface);
+    color: var(--exits-text);
+    cursor: pointer;
+}
+
+.pos-sync-status__icon {
+    display: inline-flex;
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+}
+
+.pos-sync-status__icon svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.pos-sync-status__label {
+    font-size: var(--exits-text-xs);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pos-sync-status__marker {
+    display: inline-block;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: var(--exits-text-muted);
+    flex-shrink: 0;
+    box-shadow: 0 0 0 2px var(--exits-surface);
+}
+
+.pos-sync-status--online .pos-sync-status__marker,
+.pos-sync-status__marker--online { background: var(--exits-success); }
+
+.pos-sync-status--offline .pos-sync-status__marker,
+.pos-sync-status__marker--offline { background: var(--exits-text-muted); }
+
+.pos-sync-status--reconnect .pos-sync-status__marker,
+.pos-sync-status__marker--reconnect { background: var(--exits-warning); }
+
+.pos-sync-status--pending .pos-sync-status__marker,
+.pos-sync-status__marker--pending { background: var(--exits-warning); }
+
+.pos-sync-status--syncing .pos-sync-status__marker,
+.pos-sync-status__marker--syncing { background: var(--exits-info, var(--exits-primary)); }
+
+.pos-sync-status--failed .pos-sync-status__marker,
+.pos-sync-status__marker--failed { background: var(--exits-danger); }
+
+.pos-sync-panel {
+    margin: 0 var(--exits-space-3);
+    padding: var(--exits-space-3);
+    border: 1px solid var(--exits-border);
+    border-radius: var(--exits-density-radius, var(--exits-radius-sm));
+    background: var(--exits-surface-elevated);
+}
+
+.pos-sync-panel__row {
+    display: flex;
+    align-items: center;
+    gap: var(--exits-space-2);
+    margin-bottom: var(--exits-space-2);
+}
+
+.pos-sync-panel__close {
+    margin-top: var(--exits-space-2);
+    background: transparent;
+    border: 0;
+    color: var(--exits-primary);
+    font: inherit;
+    cursor: pointer;
+    min-height: var(--exits-touch-target-min);
+}
+
 .pos-status-dot {
     display: inline-block;
     width: 0.65rem;
@@ -154,6 +240,12 @@ html, body {
 .pos-status-dot--online { background: var(--exits-success); }
 .pos-status-dot--offline { background: var(--exits-danger); }
 .pos-status-dot--unknown { background: var(--exits-text-muted); }
+
+@media (min-width: 768px) {
+    .pos-sync-status {
+        max-width: 14rem;
+    }
+}
 
 .pos-content {
     flex: 1 1 auto;

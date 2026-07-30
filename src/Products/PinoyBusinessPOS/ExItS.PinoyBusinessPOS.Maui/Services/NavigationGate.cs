@@ -7,10 +7,15 @@ namespace ExItS.PinoyBusinessPOS.Maui.Services;
 public sealed class NavigationGate(
     IAuthenticationService auth,
     ICurrentUserContext currentUser,
-    IOnboardingPreferenceStore preferences)
+    IOnboardingPreferenceStore preferences,
+    IProtectedShellAccessPolicy accessPolicy,
+    IPosSyncStatusService syncStatus)
 {
     public async Task<string> ResolveStartRouteAsync(CancellationToken ct = default)
     {
+        await accessPolicy.InitializeAsync(ct).ConfigureAwait(false);
+        await syncStatus.InitializeAsync(ct).ConfigureAwait(false);
+
         if (!await preferences.GetOnboardingCompletedAsync(ct).ConfigureAwait(false))
         {
             var step = await preferences.GetOnboardingStepAsync(ct).ConfigureAwait(false);
@@ -28,6 +33,16 @@ public sealed class NavigationGate(
         }
 
         var restore = await auth.RestoreSessionAsync(ct).ConfigureAwait(false);
+        syncStatus.Refresh();
+
+        if (accessPolicy.RequiresReconnectToVerifyAccess)
+        {
+            syncStatus.SetReconnectRequired(true);
+            return "/reconnect";
+        }
+
+        syncStatus.SetReconnectRequired(false);
+
         if (!restore.Succeeded || currentUser.Session is null)
         {
             return "/signin";
@@ -38,11 +53,14 @@ public sealed class NavigationGate(
             return "/organization-select";
         }
 
+        if (!accessPolicy.CanEnterProtectedShell)
+        {
+            syncStatus.SetReconnectRequired(true);
+            return "/reconnect";
+        }
+
         return "/home";
     }
 
-    public bool CanEnterProtectedShell =>
-        currentUser.IsAuthenticated
-        && currentUser.Session?.OrganizationId is not null
-        && currentUser.HasPosAccess;
+    public bool CanEnterProtectedShell => accessPolicy.CanEnterProtectedShell;
 }

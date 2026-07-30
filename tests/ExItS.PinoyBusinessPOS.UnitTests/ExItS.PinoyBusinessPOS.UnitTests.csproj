@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.Application\ExItS.PinoyBusinessPOS.Application.csproj" />
     <ProjectReference Include="..\..\src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.Domain\ExItS.PinoyBusinessPOS.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.LocalStore\ExItS.PinoyBusinessPOS.LocalStore.csproj" />
   </ItemGroup>
 
   <ItemGroup>

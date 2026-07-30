@@ -5,6 +5,7 @@
 @inject DensityController DensityCtl
 @inject CultureController CultureCtl
 @inject PosStatusState Status
+@inject IPosSyncStatusService SyncStatus
 @inject IAppInfoService AppInfo
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
@@ -20,13 +21,30 @@
         </div>
         <div class="pos-topbar__status">
             <Badge Tone="@(IsDevelopment ? BadgeTone.Warning : BadgeTone.Neutral)">@EnvironmentLabel</Badge>
-            <span class="pos-topbar__connectivity" title="@ConnectivityTitle" aria-label="@ConnectivityTitle">
-                <span class="pos-status-dot pos-status-dot--@ConnectivityDotClass" aria-hidden="true"></span>
-                <span class="exds-sr-only">@ConnectivityTitle</span>
-            </span>
+            <button type="button"
+                    class="pos-sync-status pos-sync-status--@SyncToneClass"
+                    title="@SyncTitle"
+                    aria-label="@SyncAccessibleLabel"
+                    @onclick="ToggleSyncPanel">
+                <span class="pos-sync-status__marker" aria-hidden="true"></span>
+                <span class="pos-sync-status__icon" aria-hidden="true">@IconGlyphs.Get(SyncIconName)</span>
+                <span class="pos-sync-status__label">@SyncShortLabel</span>
+            </button>
             <IconButton IconName="settings" AriaLabel="@L["Nav_Settings"]" OnClick="GoToSettings" />
         </div>
     </header>
+
+    @if (_syncPanelOpen)
+    {
+        <div class="pos-sync-panel" role="status" aria-live="polite">
+            <div class="pos-sync-panel__row">
+                <span class="pos-sync-status__marker pos-sync-status__marker--@SyncToneClass" aria-hidden="true"></span>
+                <strong>@SyncTitle</strong>
+            </div>
+            <p class="pos-muted">@SyncDetail</p>
+            <button type="button" class="pos-sync-panel__close" @onclick="CloseSyncPanel">@L["Common_Close"]</button>
+        </div>
+    }
 
     <main class="pos-content" id="pos-main">
         @Body
@@ -58,6 +76,7 @@
 
 @code {
     private int _cultureEpoch;
+    private bool _syncPanelOpen;
 
     protected override void OnInitialized()
     {
@@ -65,6 +84,7 @@
         DensityCtl.Changed += OnChangedAsync;
         CultureCtl.Changed += OnChangedAsync;
         Status.Changed += OnChangedAsync;
+        SyncStatus.Changed += OnChangedAsync;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -79,6 +99,7 @@
         await CultureCtl.InitializeAsync();
         _cultureEpoch = CultureCtl.Epoch;
         await Status.InitializeAsync();
+        await SyncStatus.InitializeAsync();
         StateHasChanged();
     }
 
@@ -86,19 +107,63 @@
 
     private string EnvironmentLabel => IsDevelopment ? L["Env_Development"] : L["Env_Production"];
 
-    private string ConnectivityDotClass => Status.Connectivity switch
+    private PosSyncStatusKind SyncKind => SyncStatus.Current.Kind;
+
+    private string SyncToneClass => SyncKind switch
     {
-        ConnectivityStatus.Online => "online",
-        ConnectivityStatus.Offline => "offline",
-        _ => "unknown",
+        PosSyncStatusKind.Online => "online",
+        PosSyncStatusKind.Offline => "offline",
+        PosSyncStatusKind.ReconnectRequired => "reconnect",
+        PosSyncStatusKind.PendingSync => "pending",
+        PosSyncStatusKind.Syncing => "syncing",
+        PosSyncStatusKind.SyncFailed => "failed",
+        _ => "offline",
     };
 
-    private string ConnectivityTitle => Status.Connectivity switch
+    private string SyncIconName => SyncKind switch
     {
-        ConnectivityStatus.Online => L["Connectivity_Online"],
-        ConnectivityStatus.Offline => L["Connectivity_Offline"],
-        _ => L["Connectivity_Unknown"],
+        PosSyncStatusKind.Online => "check",
+        PosSyncStatusKind.Offline => "cloud-off",
+        PosSyncStatusKind.ReconnectRequired => "warning",
+        PosSyncStatusKind.PendingSync => "inbox",
+        PosSyncStatusKind.Syncing => "refresh",
+        PosSyncStatusKind.SyncFailed => "error",
+        _ => "info",
     };
+
+    private string SyncShortLabel => SyncKind switch
+    {
+        PosSyncStatusKind.Online => L["SyncStatus_OnlineShort"],
+        PosSyncStatusKind.Offline => L["SyncStatus_OfflineShort"],
+        PosSyncStatusKind.ReconnectRequired => L["SyncStatus_ReconnectShort"],
+        _ => L["SyncStatus_OfflineShort"],
+    };
+
+    private string SyncTitle => SyncKind switch
+    {
+        PosSyncStatusKind.Online => L["SyncStatus_Online"],
+        PosSyncStatusKind.Offline => L["SyncStatus_Offline"],
+        PosSyncStatusKind.ReconnectRequired => L["SyncStatus_Reconnect"],
+        PosSyncStatusKind.PendingSync => L["SyncStatus_Pending"],
+        PosSyncStatusKind.Syncing => L["SyncStatus_Syncing"],
+        PosSyncStatusKind.SyncFailed => L["SyncStatus_Failed"],
+        PosSyncStatusKind.LastSynced => L["SyncStatus_LastSynced"],
+        _ => L["SyncStatus_Offline"],
+    };
+
+    private string SyncAccessibleLabel => $"{L["SyncStatus_Label"]}: {SyncTitle}";
+
+    private string SyncDetail => SyncKind switch
+    {
+        PosSyncStatusKind.Online => L["SyncStatus_OnlineDetail"],
+        PosSyncStatusKind.Offline => L["SyncStatus_OfflineDetail"],
+        PosSyncStatusKind.ReconnectRequired => L["SyncStatus_ReconnectMessage"],
+        _ => L["SyncStatus_OfflineDetail"],
+    };
+
+    private void ToggleSyncPanel() => _syncPanelOpen = !_syncPanelOpen;
+
+    private void CloseSyncPanel() => _syncPanelOpen = false;
 
     private void GoToSettings() => Nav.NavigateTo("/settings");
 
@@ -114,5 +179,6 @@
         DensityCtl.Changed -= OnChangedAsync;
         CultureCtl.Changed -= OnChangedAsync;
         Status.Changed -= OnChangedAsync;
+        SyncStatus.Changed -= OnChangedAsync;
     }
 }

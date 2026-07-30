@@ -35,7 +35,11 @@
 **Complete (P6-WP01–P6-WP06).** Organization-isolated customers, remarks-based credit, repayments/ledger, due dates/overdue monitoring, projection statements/receipts, and trial/continuity capability rules delivered and closed. Not production-ready. See [P6-WP06 closeout](reports/P6-WP06-utang-mvp-closeout.md).
 MAUI app, bilingual UI, themes, customers, Utang, payments, overdue monitoring and basic cloud operation.
 
-**Next:** **Phase 7 — Offline Sync** when approved.
+**Next:** **P7-WP02 — Offline Queue and Idempotency** when approved.
+
+## R3.5 — Offline foundation (Phase 7 / P7-WP01)
+
+**Complete with documented risks (P7-WP01).** DeviceId, SQLite foundation, isolation, sync-status shell (Online/Offline/Reconnect), Dev diagnostics. No offline business ops. See [P7-WP01 report](reports/P7-WP01-sqlite-and-device-identity.md).
 
 ## R4 — Commercial MVP
 

@@ -25,7 +25,8 @@ src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth; Custo
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migrations `AddPosCustomers`, `AddPosCreditEntries`, `AddPosRepayments`, `AddPosCreditDueDates`; no receipt migration)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + customers + credit + repayments/ledger + due dates/overdue + statements/receipts; commercial header gates; phase marker `P6-WP06-utang-mvp-closeout`)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client; PosCommercialHeaderHandler; PosCustomerClient with credit/repayment/ledger/due-date/overdue/statement/receipt methods)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers + credit + repayments + ledger + overdue/due dates + statement/receipt preview/share; onboarding/auth; PosResources en/fil-PH)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.LocalStore/ (Microsoft.Data.Sqlite foundation; per-user/org/product isolation; schema v1 metadata only — P7-WP01)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers + credit + repayments + ledger + overdue/due dates + statement/receipt preview/share; onboarding/auth; sync-status shell; offline foundation diagnostics; PosResources en/fil-PH)
 tests/ExItS.Platform.UnitTests/
 tests/ExItS.ArchitectureTests/
 tests/ExItS.Platform.IntegrationTests/

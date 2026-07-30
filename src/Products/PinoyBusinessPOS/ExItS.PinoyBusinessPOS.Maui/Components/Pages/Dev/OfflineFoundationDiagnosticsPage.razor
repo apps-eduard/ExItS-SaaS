@@ -1,0 +1,72 @@
+@page "/dev/offline-foundation"
+@inject IAppInfoService AppInfo
+@inject IStringLocalizer<PosResources> L
+@inject NavigationManager Nav
+@inject OfflineFoundationDiagnostics Diagnostics
+
+@if (!Diagnostics.IsAvailable)
+{
+    <Page>
+        <ErrorState Title="@L["DevOffline_UnavailableTitle"]" Message="@L["DevOffline_UnavailableMessage"]" RetryLabel="@L["Deferred_BackToHome"]" OnRetry="GoHome" />
+    </Page>
+}
+else
+{
+    <Page>
+        <PageHeader Title="@L["DevOffline_Title"]" Subtitle="@L["DevOffline_Subtitle"]" />
+        <Alert Tone="AlertTone.Info" Title="@L["DevOffline_NoticeTitle"]" Message="@L["DevOffline_NoticeMessage"]" />
+
+        @if (_snapshot is null)
+        {
+            <InlineMessage Tone="InlineMessageTone.Info">@L["Common_Loading"]</InlineMessage>
+        }
+        else
+        {
+            <SectionHeader Title="@L["DevOffline_IdentityTitle"]" />
+            <Stack Gap="2">
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_DeviceId"]: @_snapshot.DeviceIdShort</InlineMessage>
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_InitStatus"]: @_snapshot.InitStatus</InlineMessage>
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_SchemaVersion"]: @(_snapshot.SchemaVersion?.ToString() ?? "—")</InlineMessage>
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_DatabaseFile"]: @(_snapshot.DatabaseFileName ?? "—")</InlineMessage>
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_ContextHash"]: @(ShortHash(_snapshot.ContextHash))</InlineMessage>
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_UserId"]: @(ShortId(_snapshot.UserId))</InlineMessage>
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_OrganizationId"]: @(ShortId(_snapshot.OrganizationId))</InlineMessage>
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_ProductCode"]: @(_snapshot.ProductCode ?? "—")</InlineMessage>
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_LastOpened"]: @FormatTime(_snapshot.LastOpenedAtUtc)</InlineMessage>
+            </Stack>
+        }
+
+        <FormActions>
+            <Button Variant="ButtonVariant.Ghost" OnClick="GoHome">@L["Deferred_BackToHome"]</Button>
+            <Button OnClick="RefreshAsync">@L["Customers_Refresh"]</Button>
+        </FormActions>
+    </Page>
+}
+
+@code {
+    private OfflineFoundationDiagnosticsSnapshot? _snapshot;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Diagnostics.IsAvailable)
+        {
+            _snapshot = await Diagnostics.CaptureAsync();
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        _snapshot = await Diagnostics.CaptureAsync();
+    }
+
+    private void GoHome() => Nav.NavigateTo("/home");
+
+    private static string ShortHash(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? "—" : value.Length <= 12 ? value : $"{value[..12]}…";
+
+    private static string ShortId(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? "—" : value.Length <= 8 ? value : $"{value[..8]}…";
+
+    private static string FormatTime(DateTimeOffset? value) =>
+        value?.ToString("u") ?? "—";
+}

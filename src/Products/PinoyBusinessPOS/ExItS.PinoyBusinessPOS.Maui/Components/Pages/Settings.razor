@@ -93,6 +93,10 @@
                     <span>@L["Home_EnvironmentLabel"]</span>
                     <span class="pos-muted">@EnvironmentLabel</span>
                 </Stack>
+                @if (IsDevOrTesting)
+                {
+                    <Button Variant="ButtonVariant.Secondary" OnClick="GoDevOffline">@L["Settings_DevOfflineLink"]</Button>
+                }
             </Stack>
         </Card>
     </Section>
@@ -126,6 +130,10 @@
 
     private bool IsDevelopment => string.Equals(AppInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase);
 
+    private bool IsDevOrTesting =>
+        IsDevelopment
+        || string.Equals(AppInfo.EnvironmentName, "Testing", StringComparison.OrdinalIgnoreCase);
+
     private string EnvironmentLabel => IsDevelopment ? L["Env_Development"] : L["Env_Production"];
 
     private string ApiHost
@@ -151,6 +159,8 @@
     }
 
     private void GoSwitchOrg() => Nav.NavigateTo("/organization-select");
+
+    private void GoDevOffline() => Nav.NavigateTo("/dev/offline-foundation");
 
     private void OpenLogout() => _logoutOpen = true;
 

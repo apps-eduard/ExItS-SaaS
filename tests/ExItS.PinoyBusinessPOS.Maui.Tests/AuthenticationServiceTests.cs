@@ -175,7 +175,8 @@ public sealed class AuthenticationServiceTests
             prefs,
             access,
             events,
-            time);
+            localContext: null,
+            timeProvider: time);
     }
 
     private static PlatformUserDto User(Guid id, string status) =>

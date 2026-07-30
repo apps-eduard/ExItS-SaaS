@@ -36,9 +36,11 @@ ExItS-SaaS/
 
 `HealthCare/` remains frozen and outside root Git. Do not import it without an approved work package.
 
-**Phase 6** is **complete** with documented risks ([P6-WP06 closeout](docs/reports/P6-WP06-utang-mvp-closeout.md)). Utang MVP (customers, credit, repayments/ledger, due dates/overdue, statements/receipts, trial/continuity rules) is closed. Production auth, POS operational roles, sales/inventory, and offline sync remain open. 
+**Phase 6** is **complete** with documented risks ([P6-WP06 closeout](docs/reports/P6-WP06-utang-mvp-closeout.md)). Utang MVP (customers, credit, repayments/ledger, due dates/overdue, statements/receipts, trial/continuity rules) is closed.
 
-Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Next: **Phase 7 — Offline Sync** when authorized.
+**Phase 7** is **in progress**. [P7-WP01](docs/reports/P7-WP01-sqlite-and-device-identity.md) delivered SQLite foundation + DeviceId (no offline business ops). Production auth, POS operational roles, sales/inventory remain open.
+
+Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Next: **P7-WP02 — Offline Queue and Idempotency** when authorized.
 
 ### Platform database (local)
 

@@ -1,0 +1,58 @@
+@page "/reconnect"
+@inject IStringLocalizer<PosResources> L
+@inject NavigationGate Gate
+@inject IAuthenticationService Auth
+@inject IPosSyncStatusService SyncStatus
+@inject NavigationManager Nav
+@inject IProtectedShellAccessPolicy AccessPolicy
+
+<Page>
+    <PageHeader Title="@L["SyncStatus_ReconnectTitle"]" Subtitle="@L["SyncStatus_ReconnectMessage"]" />
+    <Alert Tone="AlertTone.Warning" Title="@L["SyncStatus_Reconnect"]" Message="@L["SyncStatus_ReconnectMessage"]" />
+    <FormActions>
+        <Button OnClick="RetryAsync" Disabled="_busy">@L["Common_Retry"]</Button>
+        <Button Variant="ButtonVariant.Ghost" OnClick="SignOutAsync" Disabled="_busy">@L["Auth_Logout"]</Button>
+    </FormActions>
+</Page>
+
+@code {
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AccessPolicy.InitializeAsync();
+        SyncStatus.SetReconnectRequired(true);
+        SyncStatus.Refresh();
+    }
+
+    private async Task RetryAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await AccessPolicy.InitializeAsync();
+            var route = await Gate.ResolveStartRouteAsync();
+            if (!string.Equals(route, "/reconnect", StringComparison.Ordinal))
+            {
+                SyncStatus.SetReconnectRequired(false);
+                Nav.NavigateTo(route);
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SignOutAsync()
+    {
+        await Auth.LogoutAsync();
+        SyncStatus.SetReconnectRequired(false);
+        Nav.NavigateTo("/signin");
+    }
+}

@@ -11,7 +11,7 @@
 | 4 | Platform Admin Expansion | **Complete with documented risks** | [Open](phase-04-platform-admin.md) |
 | 5 | PinoyBusinessPOS MAUI Foundation | **In Progress** (P5-WP01 complete) | [Open](phase-05-pos-maui-foundation.md) |
 | 6 | Utang MVP | Not Started | [Open](phase-06-utang-mvp.md) |
-| 7 | Offline Synchronization | Not Started | [Open](phase-07-offline-sync.md) |
+| 7 | Offline Synchronization | In Progress (P7-WP01 complete) | [Open](phase-07-offline-sync.md) |
 | 8 | Basic Store | Not Started | [Open](phase-08-basic-store.md) |
 | 9 | MVP Hardening and Release | Not Started | [Open](phase-09-mvp-hardening.md) |
 | 10 | Full POS | Future | [Open](phase-10-full-pos.md) |

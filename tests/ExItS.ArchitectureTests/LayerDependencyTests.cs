@@ -734,7 +734,10 @@ public sealed class LayerDependencyTests
             .Where(p => p.EndsWith(".sql", StringComparison.OrdinalIgnoreCase)
                         || p.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
             .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}")
-                        && !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}"))
+                        && !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                        // P7-WP01: approved Microsoft.Data.Sqlite foundation lives only in LocalStore.
+                        && !p.Contains($"{Path.DirectorySeparatorChar}ExItS.PinoyBusinessPOS.LocalStore{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+                        && !p.Contains($"{Path.DirectorySeparatorChar}Migrations{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
             .SelectMany(p => File.ReadAllLines(p).Select((line, i) => (p, i, line)))
             .Where(x => x.line.Contains("CREATE TABLE", StringComparison.OrdinalIgnoreCase)
                         || x.line.Contains("ALTER TABLE", StringComparison.OrdinalIgnoreCase)

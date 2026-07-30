@@ -14,6 +14,11 @@ public static class SecureTokenKeys
     public const string ExpiresAtUtc = "pos.session.expiresAtUtc";
     public const string SubscriptionStatus = "pos.session.subscriptionStatus";
     public const string FeatureGrants = "pos.session.featureGrants";
+
+    /// <summary>
+    /// Durable installation DeviceId. Not a session key — must survive logout and ClearAllSessionKeysAsync.
+    /// </summary>
+    public const string DeviceId = "pos.device.id";
 }
 
 public static class PreferenceKeys

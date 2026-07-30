@@ -5,6 +5,8 @@ using ExItS.PinoyBusinessPOS.ApiClient;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
+using ExItS.PinoyBusinessPOS.Application.Offline;
+using ExItS.PinoyBusinessPOS.LocalStore;
 using ExItS.PinoyBusinessPOS.Maui.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,11 +17,10 @@ namespace ExItS.PinoyBusinessPOS.Maui;
 public static class MauiProgram
 {
     /// <summary>
-    /// Development-stage notice (P6-WP05): authentication uses the approved Development/Testing
+    /// Development-stage notice (P7-WP01): authentication uses the approved Development/Testing
     /// Platform identity mechanism only (<c>X-Dev-Platform-User-Id</c>). Production JWT/MFA/SSO
-    /// authentication is not implemented. Remarks-based credit, repayments, unified ledger, due dates,
-    /// overdue monitoring, statements, and repayment receipts are available; interest, credit limits,
-    /// sales, inventory, and offline sync are not.
+    /// authentication is not implemented. Local SQLite foundation and DeviceId are available;
+    /// offline business operations, sync queue, and entitlement cache are not.
     /// </summary>
     public static MauiApp CreateMauiApp()
     {
@@ -89,10 +90,16 @@ public static class MauiProgram
         services.AddSingleton<ICurrentUserContext, CurrentUserContext>();
         services.AddSingleton<IAuthEventSink, LoggingAuthEventSink>();
         services.AddSingleton<IProductAccessResolver, ProductAccessResolver>();
+        services.AddSingleton<ILocalStoreRootPathProvider, MauiLocalStoreRootPathProvider>();
+        services.AddPinoyBusinessPosLocalStore();
+        services.AddSingleton<ProtectedShellAccessPolicy>();
+        services.AddSingleton<IProtectedShellAccessPolicy>(sp => sp.GetRequiredService<ProtectedShellAccessPolicy>());
+        services.AddSingleton<IPosSyncStatusService, PosSyncStatusService>();
         services.AddSingleton<IAuthenticationService, AuthenticationService>();
         services.AddSingleton<IUtangCapabilityEvaluator, UtangCapabilityEvaluator>();
         services.AddSingleton<IDocumentHandoffService, MauiDocumentHandoffService>();
         services.AddSingleton<NavigationGate>();
+        services.AddSingleton<OfflineFoundationDiagnostics>();
 
         services.AddSingleton<ThemeController>();
         services.AddSingleton<DensityController>();

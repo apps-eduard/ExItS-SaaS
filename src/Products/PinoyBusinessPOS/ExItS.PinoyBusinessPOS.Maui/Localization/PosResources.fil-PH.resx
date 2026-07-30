@@ -506,4 +506,36 @@
   <data name="Customers_ReactivateMessage" xml:space="preserve"><value>Magiging active ulit ang customer para sa organization na ito.</value></data>
   <data name="Customers_DeactivatedSuccess" xml:space="preserve"><value>Na-deactivate ang customer.</value></data>
   <data name="Customers_ReactivatedSuccess" xml:space="preserve"><value>Na-reactivate ang customer.</value></data>
+  <data name="SyncStatus_Label" xml:space="preserve"><value>Katayuan ng sync</value></data>
+  <data name="SyncStatus_Online" xml:space="preserve"><value>Online</value></data>
+  <data name="SyncStatus_OnlineShort" xml:space="preserve"><value>Online</value></data>
+  <data name="SyncStatus_OnlineDetail" xml:space="preserve"><value>May koneksyon. Na-verify ang access online.</value></data>
+  <data name="SyncStatus_Offline" xml:space="preserve"><value>Offline</value></data>
+  <data name="SyncStatus_OfflineShort" xml:space="preserve"><value>Offline</value></data>
+  <data name="SyncStatus_OfflineDetail" xml:space="preserve"><value>Walang network. Kailangan ng online check bago pumasok sa protektadong POS.</value></data>
+  <data name="SyncStatus_Reconnect" xml:space="preserve"><value>Mag-reconnect para i-verify ang access</value></data>
+  <data name="SyncStatus_ReconnectShort" xml:space="preserve"><value>Reconnect</value></data>
+  <data name="SyncStatus_ReconnectTitle" xml:space="preserve"><value>Kailangan mag-reconnect</value></data>
+  <data name="SyncStatus_ReconnectMessage" xml:space="preserve"><value>Mag-reconnect para i-verify ang access bago magpatuloy. Hindi sapat ang local data para i-unlock ang POS.</value></data>
+  <data name="SyncStatus_Pending" xml:space="preserve"><value>Pending Sync</value></data>
+  <data name="SyncStatus_Syncing" xml:space="preserve"><value>Sini-sync</value></data>
+  <data name="SyncStatus_Failed" xml:space="preserve"><value>Nabigo ang Sync</value></data>
+  <data name="SyncStatus_LastSynced" xml:space="preserve"><value>Huling Sync</value></data>
+  <data name="DevOffline_Title" xml:space="preserve"><value>Offline foundation diagnostics</value></data>
+  <data name="DevOffline_Subtitle" xml:space="preserve"><value>Development/Testing lamang. Walang token o business payload.</value></data>
+  <data name="DevOffline_NoticeTitle" xml:space="preserve"><value>Foundation diagnostics</value></data>
+  <data name="DevOffline_NoticeMessage" xml:space="preserve"><value>Ipinapakita ang DeviceId, local context metadata, at schema status. Hindi available sa Production.</value></data>
+  <data name="DevOffline_UnavailableTitle" xml:space="preserve"><value>Hindi available ang diagnostics</value></data>
+  <data name="DevOffline_UnavailableMessage" xml:space="preserve"><value>Available lang ang offline foundation diagnostics sa Development o Testing builds.</value></data>
+  <data name="DevOffline_IdentityTitle" xml:space="preserve"><value>Local foundation</value></data>
+  <data name="DevOffline_DeviceId" xml:space="preserve"><value>DeviceId</value></data>
+  <data name="DevOffline_InitStatus" xml:space="preserve"><value>Initialization</value></data>
+  <data name="DevOffline_SchemaVersion" xml:space="preserve"><value>Schema version</value></data>
+  <data name="DevOffline_DatabaseFile" xml:space="preserve"><value>Database file</value></data>
+  <data name="DevOffline_ContextHash" xml:space="preserve"><value>Context hash</value></data>
+  <data name="DevOffline_UserId" xml:space="preserve"><value>User</value></data>
+  <data name="DevOffline_OrganizationId" xml:space="preserve"><value>Organization</value></data>
+  <data name="DevOffline_ProductCode" xml:space="preserve"><value>Product</value></data>
+  <data name="DevOffline_LastOpened" xml:space="preserve"><value>Huling binuksan (UTC)</value></data>
+  <data name="Settings_DevOfflineLink" xml:space="preserve"><value>Offline foundation diagnostics</value></data>
 </root>

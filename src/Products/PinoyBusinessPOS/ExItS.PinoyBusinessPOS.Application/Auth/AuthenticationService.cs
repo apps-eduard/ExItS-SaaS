@@ -16,10 +16,12 @@ public sealed class AuthenticationService(
     IOnboardingPreferenceStore preferences,
     IPlatformAccessClient accessClient,
     IAuthEventSink events,
+    ILocalContextManager? localContext = null,
     TimeProvider? timeProvider = null) : IAuthenticationService
 {
     private static readonly TimeSpan SessionLifetime = TimeSpan.FromHours(12);
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
+    private readonly ILocalContextManager? _localContext = localContext;
 
     public bool IsDevelopmentAuthenticationEnabled =>
         string.Equals(appInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase)
@@ -115,6 +117,8 @@ public sealed class AuthenticationService(
             return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
         }
 
+        // Close any leftover in-memory local context; reopen only after online access validation.
+        await CloseLocalContextAsync(ct).ConfigureAwait(false);
         return await RebuildSessionAsync(shell.UserId, shell.IssuedAtUtc, shell.ExpiresAtUtc, ct).ConfigureAwait(false);
     }
 
@@ -219,6 +223,7 @@ public sealed class AuthenticationService(
         }
 
         currentUser.Set(updated);
+        await OpenLocalContextAsync(updated.UserId, organizationId, ct).ConfigureAwait(false);
         events.Record("organization_selected", Dict(
             ("userId", session.UserId.ToString("D")),
             ("organizationId", organizationId.ToString("D"))));
@@ -234,6 +239,24 @@ public sealed class AuthenticationService(
         var userResult = await accessClient.GetUserAsync(userId, ct).ConfigureAwait(false);
         if (!userResult.IsSuccess || userResult.Data is null)
         {
+            // Offline / transport failure: keep durable session secrets but deny protected access
+            // until online revalidation. Do not open local context from SQLite alone.
+            if (userResult.Status is ApiCallStatus.Offline or ApiCallStatus.Timeout or ApiCallStatus.Cancelled)
+            {
+                var offlineSession = await BuildUnvalidatedShellAsync(userId, issuedAt, expiresAt, ct)
+                    .ConfigureAwait(false);
+                if (offlineSession is not null)
+                {
+                    currentUser.Set(offlineSession);
+                    await CloseLocalContextAsync(ct).ConfigureAwait(false);
+                    return new AuthResult(
+                        false,
+                        AuthFailureReason.Offline,
+                        offlineSession,
+                        SafeMessageKey: "SyncStatus_Reconnect");
+                }
+            }
+
             await ClearLocalAsync(ct).ConfigureAwait(false);
             return MapTransport(userResult.Status) with { FailureReason = AuthFailureReason.RefreshFailed };
         }
@@ -305,11 +328,98 @@ public sealed class AuthenticationService(
         }
 
         currentUser.Set(session);
+        if (hasAccess && organizationId is Guid validatedOrg)
+        {
+            await OpenLocalContextAsync(userId, validatedOrg, ct).ConfigureAwait(false);
+        }
+        else
+        {
+            await CloseLocalContextAsync(ct).ConfigureAwait(false);
+        }
+
         return new AuthResult(true, AuthFailureReason.None, session);
+    }
+
+    private async Task<AuthSession?> BuildUnvalidatedShellAsync(
+        Guid userId,
+        DateTimeOffset issuedAt,
+        DateTimeOffset expiresAt,
+        CancellationToken ct)
+    {
+        try
+        {
+            var (shell, _) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
+            if (shell is null || shell.UserId != userId)
+            {
+                return new AuthSession(
+                    userId,
+                    DisplayName: string.Empty,
+                    Username: string.Empty,
+                    Email: string.Empty,
+                    OrganizationId: await preferences.GetSelectedOrganizationIdAsync(ct).ConfigureAwait(false),
+                    OrganizationDisplayName: null,
+                    issuedAt,
+                    expiresAt,
+                    HasPosAccess: false,
+                    AccessReasonCode: "reconnect_required");
+            }
+
+            return shell with
+            {
+                HasPosAccess = false,
+                AccessReasonCode = "reconnect_required",
+                SubscriptionStatus = null,
+                EnabledFeatureCodes = null
+            };
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private async Task OpenLocalContextAsync(Guid userId, Guid organizationId, CancellationToken ct)
+    {
+        if (_localContext is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _localContext
+                .OpenAsync(userId, organizationId, PosProductCodes.PinoyBusinessPos, ct)
+                .ConfigureAwait(false);
+        }
+        catch
+        {
+            events.Record("local_context_open_failure", Dict(
+                ("userId", userId.ToString("D")),
+                ("organizationId", organizationId.ToString("D"))));
+        }
+    }
+
+    private async Task CloseLocalContextAsync(CancellationToken ct)
+    {
+        if (_localContext is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _localContext.CloseAsync(ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            events.Record("local_context_close_failure", EmptyProps());
+        }
     }
 
     private async Task ClearLocalAsync(CancellationToken ct)
     {
+        await CloseLocalContextAsync(ct).ConfigureAwait(false);
+
         try
         {
             await sessionStore.ClearAsync(ct).ConfigureAwait(false);

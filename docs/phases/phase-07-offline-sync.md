@@ -6,36 +6,61 @@
 
 Deliver safe offline-first operation and synchronization.
 
+## Status
+
+**In Progress** — P7-WP01 complete with documented risks. Do **not** begin P7-WP02 until explicitly authorized.
+
+Authoritative design: [offline-sync-design.md](../engineering/offline-sync-design.md)
+
+Report: [P7-WP01-sqlite-and-device-identity.md](../reports/P7-WP01-sqlite-and-device-identity.md)
+
 ## Work packages
 
 ### P7-WP01 — SQLite and Device Identity
 
-Status: Not Started
+Status: **Complete with documented risks**
 
-#### Required outcomes
+Phase marker: `P7-WP01-sqlite-and-device-identity`
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+Feature commit: _(recorded after push)_
+
+#### Approved scope (foundation only)
+
+- SQLite local-store infrastructure and schema migrations (`Microsoft.Data.Sqlite`)
+- Per-user / per-organization / per-product database isolation (hashed filenames)
+- Durable DeviceId via SecureStorage (`IDeviceIdentityProvider`)
+- Local-context open/close lifecycle after online access validation
+- Persistent sync-status shell indicator (Online / Offline / Reconnect only)
+- Development/Testing diagnostics `/dev/offline-foundation`
+- Tests, Android Release APK, documentation, Git evidence
+
+**Does not enable offline business operations.**
+
+#### Explicit exclusions (P7-WP02+)
+
+Offline queue/outbox, idempotency processing, business-data cache, offline mutations, sync workers, conflict resolution, server device registration, entitlement snapshot cache, offline grace window, pending-op retention (OD-10), SQLCipher for business data, sales/inventory/gateways.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (563 passed / 0 failed / 0 skipped).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
 - [ ] Focused commit created and hash recorded.
 - [ ] Working tree clean.
 
 ### P7-WP02 — Offline Queue and Idempotency
 
-Status: Not Started
+Status: Not Started — **do not begin**
 
 #### Required outcomes
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+- Offline mutation queue/outbox with explicit sync states
+- Idempotency keys and duplicate-safe processing
+- Retryable vs permanent failure handling
+- Wire Pending Sync / Syncing / Sync Failed / Last Synced shell states
+- Add required tests and documentation evidence
+- Preserve security, tenant isolation and product boundaries
 
 #### Definition of Done
 

@@ -111,7 +111,7 @@
 | R-105 | Platform API unavailable / misconfigured base URL on device | High | `ApiResult` Unavailable/Offline/Timeout classification; Settings diagnostics; emulator default `10.0.2.2`; no silent success | Open — introduced P5-WP01 |
 | R-106 | Future secure token storage misuse or plaintext secrets | Critical | `ISecureTokenStore` stub unused (`NullSecureTokenStore`); no credentials persisted; require platform secure storage before auth WP | Open — introduced P5-WP01 |
 | R-107 | Phone / tablet layout regressions as shell grows | Medium | Bottom nav + tablet/landscape CSS; compact default with ≥44px targets; continue validating as features land | Open — updated P5-WP02 |
-| R-108 | Offline connectivity foundation mistaken for offline business capability | High | Explicit UI/docs: no sync queue, SQLite, or offline sales; Phase 7 owns sync; R-108 awareness in shell copy | Open — introduced P5-WP01 |
+| R-108 | Offline connectivity / foundation mistaken for offline business capability | High | P7-WP01 delivers DeviceId + empty foundation SQLite only; UI/docs still exclude queue, business cache, offline sales; Pending Sync states deferred to P7-WP02 | Open — updated P7-WP01 |
 | R-109 | Interactive Android emulator/device validation unavailable | High | Release APK/build evidence recorded; do not claim interactive validation; attach emulator before claiming UX sign-off | Open — introduced P5-WP02 |
 | R-110 | Compact density reducing touch usability | High | Compact keeps `--exits-touch-target-min` at 2.75rem; Comfortable available; regression tests for touch-target token | Open — introduced P5-WP02 |
 | R-111 | Design-system / MAUI-web visual divergence after token polish | Medium | Shared `--exits-*` names; Admin still on `--color-*`; keep conventions aligned in docs | Open — introduced P5-WP02; related R-099/R-100 |
@@ -132,11 +132,15 @@
 | R-126 | Duplicate mobile MVP rule too strict/loose for real stores | Medium | Document MVP active-mobile uniqueness; refine later | Open — introduced P6-WP01 |
 | R-127 | Derived outstanding mistaken for stored balance / repayment ledger | High | Document sum-of-active-entries only; no edit/delete; repayments deferred to P6-WP03 | Mitigated in P6-WP03 — outstanding = active credits − active repayments; ledger is read-only; FIFO aging in P6-WP04 also derived |
 | R-128 | Dev actor header mistaken for production audit identity | High | Document `X-Dev-Platform-User-Id` as Development/Testing-only; production JWT still required (R-091) | Open — introduced P6-WP03; also used for due-date set/clear in P6-WP04 |
+| R-129 | Transitive SQLitePCLRaw NU1903 advisory on Microsoft.Data.Sqlite 10.0.4 | Medium | Track package upgrade when Microsoft ships fixed transitive; foundation stores no business secrets in WP01; sandbox + SecureStorage for secrets | Open — introduced P7-WP01 |
+
+## Phase 7 note (P7-WP01)
+
+P7-WP01 delivered SQLite foundation, DeviceId, local-context isolation, sync-status shell (Online/Offline/Reconnect), and Dev diagnostics. **No offline business operations.** R-109 remains open. OD-10 and R-022 remain open. Next: **P7-WP02 — Offline Queue and Idempotency** when authorized.
 
 ## Phase 6 note (P6-WP06 closeout)
 
-Phase 6 Utang MVP is **closed**. P6-WP06 reconciled WP01–WP05, hardened Production commercial-header fail-closed behavior, localized statement/receipt share strings, and added full lifecycle + migration-chain tests. **OD-07 / OD-08 / OD-09 remain resolved** (P6-WP05). Commercial/actor headers remain Development/Testing-stage only — **not production-secure**. R-109 remains open (no interactive Android validation). Not production-ready. Next: **Phase 7 — Offline Sync** when authorized.
-
+Phase 6 Utang MVP is **closed**. P6-WP06 reconciled WP01–WP05, hardened Production commercial-header fail-closed behavior, localized statement/receipt share strings, and added full lifecycle + migration-chain tests. **OD-07 / OD-08 / OD-09 remain resolved** (P6-WP05). Commercial/actor headers remain Development/Testing-stage only — **not production-secure**. R-109 remains open (no interactive Android validation). Not production-ready.
 ## Phase 6 note (P6-WP04)
 
 P6-WP04 delivered optional credit due dates (`current_due_date` + append-only `credit_due_date_changes`), FIFO aging as a read model, and overdue monitoring APIs/MAUI. Effective business date is server UTC calendar day only (org timezone not defined). Superseded as “next WP” by P6-WP05.

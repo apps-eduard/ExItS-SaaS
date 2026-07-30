@@ -13,6 +13,7 @@
     <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ExItS.PinoyBusinessPOS.Application.csproj" />
     <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ExItS.PinoyBusinessPOS.Domain.csproj" />
     <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ExItS.PinoyBusinessPOS.Infrastructure.csproj" />
+    <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.LocalStore/ExItS.PinoyBusinessPOS.LocalStore.csproj" />
     <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ExItS.PinoyBusinessPOS.Maui.csproj" />
   </Folder>
   <Folder Name="/src/Shared/">

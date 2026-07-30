@@ -38,7 +38,9 @@ Clinics, staff assignments, patients, appointments, medical notes, clinical auth
 
 **P6-WP05 (statements, receipts, trial rules):** Same database/schema — **no new tables/migrations**. Customer statements and repayment receipts are read-model projections. Receipt reference `RCPT-{guid:N}` is deterministic from repayment id. Commercial capability matrix and Platform continuity entry for PinoyBusinessPOS only (Suspended denies; PastDue/Cancelled/Expired continuity). Outstanding formula unchanged.
 
-Later POS ownership (not yet implemented): businesses, stores/branches/registers, retail payments, catalog, sales, inventory, expenses, suppliers, offline device state, POS audit, **entitlement projection rows**.
+Later POS ownership (not yet implemented): businesses, stores/branches/registers, retail payments, catalog, sales, inventory, expenses, suppliers, offline mutation queue / business-data cache (P7-WP02+), POS audit, **entitlement projection rows**.
+
+**P7-WP01 local device ownership (foundation only):** per-user/org/product SQLite files under the MAUI sandbox hold schema/context metadata only (`local_schema_info`, `local_context_info`). DeviceId lives in SecureStorage, not SQLite. No tokens, entitlements, customers, or financial rows locally.
 
 ---
 

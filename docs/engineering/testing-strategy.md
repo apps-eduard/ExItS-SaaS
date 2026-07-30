@@ -64,5 +64,6 @@
 - **P5-WP02:** density + theme boot persistence paths; DesignSystem compact touch-target token
 - **P5-WP03:** EN↔fil-PH parity; no hard-coded NotFound English; formatting helpers
 - **P5-WP04:** form/data/money/confirm markers; showcase unavailable outside Development/Testing
+- **P7-WP01:** DeviceId stability; hashed per-user/org/product SQLite paths; schema foundation-only; concurrent open safety; logout/org-switch close; offline protected-shell denial; sync-status Online/Offline/Reconnect only; Dev diagnostics gating; no DesignSystem/Razor SQLite access; no queue/idempotency
 
 All reports use exact command output; totals are never estimated.

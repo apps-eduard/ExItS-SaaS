@@ -65,6 +65,7 @@
     <ProjectReference Include="..\..\..\Shared\ExItS.DesignSystem\ExItS.DesignSystem.csproj" />
     <ProjectReference Include="..\ExItS.PinoyBusinessPOS.ApiClient\ExItS.PinoyBusinessPOS.ApiClient.csproj" />
     <ProjectReference Include="..\ExItS.PinoyBusinessPOS.Application\ExItS.PinoyBusinessPOS.Application.csproj" />
+    <ProjectReference Include="..\ExItS.PinoyBusinessPOS.LocalStore\ExItS.PinoyBusinessPOS.LocalStore.csproj" />
   </ItemGroup>
 
   <ItemGroup>
