@@ -11,12 +11,13 @@ using ExItS.PinoyBusinessPOS.Domain.Sales;
 namespace ExItS.PinoyBusinessPOS.Api.Sales;
 
 /// <summary>
-/// Organization-scoped simple retail sales endpoints (P8-WP02). Development-stage only: organization
+/// Organization-scoped simple retail sales endpoints. Development-stage only: organization
 /// scope comes from <c>X-Pos-Organization-Id</c>, the actor from <c>X-Dev-Platform-User-Id</c>, and
 /// cross-organization access returns 404 (fail closed).
 ///
-/// Totals are always computed server-side from the live catalog. No inventory deduction, Utang sale,
-/// discount, tax, refund, split tender, or gateway surface exists here.
+/// Totals are always computed server-side from the live catalog. Product-Based Utang checkout also
+/// creates a linked remarks credit. No inventory deduction, discount, tax, refund, split tender,
+/// or gateway surface exists here.
 /// </summary>
 internal static class SaleEndpoints
 {
@@ -63,29 +64,71 @@ internal static class SaleEndpoints
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
-            if (!TryAuthorize(request, access, UtangCapability.CreateSale, out var organizationId, out var problem))
+            var isUtang = SalePaymentMethods.TryParse(body.PaymentMethod, out var method)
+                && method == SalePaymentMethod.Utang;
+
+            if (isUtang)
             {
-                return problem!;
+                if (!TryAuthorize(request, access, UtangCapability.CreateSale, out var organizationId, out var problem)
+                    || !PosCommercialScope.TryAuthorize(access, UtangCapability.CreateCredit, out problem))
+                {
+                    return problem!;
+                }
+
+                if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+                {
+                    return problem!;
+                }
+
+                return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                        request,
+                        organizationId,
+                        OfflineOperationTypes.SaleCheckout,
+                        idempotency,
+                        ct2 => useCase.ExecuteAsync(
+                            organizationId,
+                            body.Lines,
+                            body.PaymentMethod,
+                            actorId,
+                            body.AmountTendered,
+                            body.GCashReference,
+                            body.SaleId,
+                            body.CustomerId,
+                            body.DueDate,
+                            body.CreditEntryId,
+                            ct2),
+                        SaleQueryService.Map,
+                        dto => Results.Created($"/api/v1/pos/sales/{dto.SaleId:D}", dto),
+                        ct)
+                    .ConfigureAwait(false);
             }
 
-            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            if (!TryAuthorize(request, access, UtangCapability.CreateSale, out var cashOrgId, out var cashProblem))
             {
-                return problem!;
+                return cashProblem!;
+            }
+
+            if (!PosOrganizationScope.TryGetActorId(request, out var cashActorId, out cashProblem))
+            {
+                return cashProblem!;
             }
 
             return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                     request,
-                    organizationId,
+                    cashOrgId,
                     OfflineOperationTypes.SaleCheckout,
                     idempotency,
                     ct2 => useCase.ExecuteAsync(
-                        organizationId,
+                        cashOrgId,
                         body.Lines,
                         body.PaymentMethod,
-                        actorId,
+                        cashActorId,
                         body.AmountTendered,
                         body.GCashReference,
                         body.SaleId,
+                        body.CustomerId,
+                        body.DueDate,
+                        body.CreditEntryId,
                         ct2),
                     SaleQueryService.Map,
                     dto => Results.Created($"/api/v1/pos/sales/{dto.SaleId:D}", dto),
@@ -119,6 +162,7 @@ internal static class SaleEndpoints
             Guid saleId,
             VoidSaleRequest body,
             VoidSale useCase,
+            SaleQueryService queries,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -128,6 +172,15 @@ internal static class SaleEndpoints
             }
 
             if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            // Peek payment method under VoidSale auth so Utang voids can require ReverseCredit too.
+            var existing = await queries.GetByIdAsync(organizationId, saleId, ct).ConfigureAwait(false);
+            if (existing is not null
+                && string.Equals(existing.PaymentMethod, PosSaleOptions.UtangPaymentMethod, StringComparison.Ordinal)
+                && !PosCommercialScope.TryAuthorize(access, UtangCapability.ReverseCredit, out problem))
             {
                 return problem!;
             }

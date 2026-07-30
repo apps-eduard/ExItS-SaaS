@@ -10,7 +10,8 @@ public sealed record PosCreditEntryDto(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset? ReversedAtUtc,
     string? ReversalReason,
-    DateOnly? CurrentDueDate);
+    DateOnly? CurrentDueDate,
+    Guid? SourceSaleId = null);
 
 public sealed record SetPosCreditDueDateRequest(
     DateOnly? DueDate,

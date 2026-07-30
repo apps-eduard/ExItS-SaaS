@@ -722,6 +722,7 @@
   <data name="Sales_Status_Voided" xml:space="preserve"><value>Kanselado</value></data>
   <data name="Sales_Payment_Cash" xml:space="preserve"><value>Cash</value></data>
   <data name="Sales_Payment_ManualGCash" xml:space="preserve"><value>GCash (manual)</value></data>
+  <data name="Sales_Payment_Utang" xml:space="preserve"><value>Utang</value></data>
   <data name="Sales_Col_SaleNumber" xml:space="preserve"><value>Numero ng benta</value></data>
   <data name="Sales_Col_RecordedAt" xml:space="preserve"><value>Naitala</value></data>
   <data name="Sales_Col_Payment" xml:space="preserve"><value>Bayad</value></data>
@@ -737,6 +738,10 @@
   <data name="Sales_NotFoundMessage" xml:space="preserve"><value>Hindi available ang bentang ito para sa tindahan mo.</value></data>
   <data name="Sales_DetailSubtitle" xml:space="preserve"><value>Detalye ng benta</value></data>
   <data name="Sales_DetailSection" xml:space="preserve"><value>Benta</value></data>
+  <data name="Sales_Detail_LinkedCustomer" xml:space="preserve"><value>Customer</value></data>
+  <data name="Sales_Detail_LinkedCredit" xml:space="preserve"><value>Naka-link na credit</value></data>
+  <data name="Sales_Detail_LinkedDueDate" xml:space="preserve"><value>Due date</value></data>
+  <data name="Sales_Detail_OutstandingAfter" xml:space="preserve"><value>Outstanding pagkatapos ng bentang ito</value></data>
   <data name="Sales_LinesSection" xml:space="preserve"><value>Mga item</value></data>
   <data name="Sales_Field_PaymentMethod" xml:space="preserve"><value>Paraan ng bayad</value></data>
   <data name="Sales_Field_Subtotal" xml:space="preserve"><value>Subtotal</value></data>
@@ -757,6 +762,7 @@
   <data name="Sales_Void" xml:space="preserve"><value>Kanselahin ang benta</value></data>
   <data name="Sales_VoidTitle" xml:space="preserve"><value>Kanselahin ang bentang ito?</value></data>
   <data name="Sales_VoidMessage" xml:space="preserve"><value>Hindi na kasama sa kabuuan ang kanseladong benta. Hindi ito nagsasauli ng pera at hindi nagbabago ng stock. Maglagay ng dahilan.</value></data>
+  <data name="Sales_VoidUtangMessage" xml:space="preserve"><value>Kapag kinansela ang Utang na benta, maba-reverse din ang naka-link na credit. Walang isasauling cash at hindi magbabago ang stock. Maglagay ng dahilan.</value></data>
   <data name="Sales_VoidedSuccess" xml:space="preserve"><value>Kinansela ang benta.</value></data>
   <data name="Sales_Checkout_Title" xml:space="preserve"><value>Bagong benta</value></data>
   <data name="Sales_Checkout_Subtitle" xml:space="preserve"><value>I-scan o hanapin ang produkto, pagkatapos tanggapin ang bayad.</value></data>
@@ -781,5 +787,17 @@
   <data name="Sales_Checkout_Confirm" xml:space="preserve"><value>Itala ang benta</value></data>
   <data name="Sales_Checkout_ConfirmTitle" xml:space="preserve"><value>Itala ang bentang ito?</value></data>
   <data name="Sales_Checkout_ConfirmMessage" xml:space="preserve"><value>{0} item para sa preview na kabuuang PHP {1}. Ang server ang kumukumpirma ng huling kabuuan.</value></data>
+  <data name="Sales_Checkout_ConfirmUtangMessage" xml:space="preserve"><value>{0} item na PHP {1} ang idadagdag bilang Utang kay {2}. Tutugma ang naka-link na credit sa kabuuan ng benta. Walang kinokolektang cash.</value></data>
+  <data name="Sales_Checkout_UtangSection" xml:space="preserve"><value>Utang checkout</value></data>
+  <data name="Sales_Checkout_UtangWarning" xml:space="preserve"><value>Idadagdag ng Utang ang kabuuan ng benta sa outstanding ng customer. Walang cash o GCash na kinokolekta sa checkout.</value></data>
+  <data name="Sales_Checkout_SelectCustomer" xml:space="preserve"><value>Pumili ng customer</value></data>
+  <data name="Sales_Checkout_CustomerSearch" xml:space="preserve"><value>Maghanap ng customer</value></data>
+  <data name="Sales_Checkout_Outstanding" xml:space="preserve"><value>Kasalukuyang outstanding</value></data>
+  <data name="Sales_Checkout_AmountToUtang" xml:space="preserve"><value>Halagang idadagdag bilang Utang</value></data>
+  <data name="Sales_Checkout_DueDateOptional" xml:space="preserve"><value>Due date (opsyonal)</value></data>
+  <data name="Sales_Checkout_CustomerRequired" xml:space="preserve"><value>Pumili muna ng active customer bago magtala ng Utang.</value></data>
+  <data name="Sales_Checkout_ZeroTotalUtang" xml:space="preserve"><value>Hindi pwedeng magtala ng Utang kung zero ang kabuuan. Magdagdag muna ng produkto.</value></data>
   <data name="Sales_Checkout_OfflineMessage" xml:space="preserve"><value>Kailangan ng koneksyon ang checkout. Mag-reconnect bago magtala ng benta.</value></data>
+  <data name="Credit_LinkedSale" xml:space="preserve"><value>Naka-link na benta</value></data>
+  <data name="Credit_ReverseViaSaleVoid" xml:space="preserve"><value>Galing ang credit na ito sa product sale. Kanselahin ang benta para i-reverse. Hindi pinapayagan ang standalone reverse.</value></data>
 </root>

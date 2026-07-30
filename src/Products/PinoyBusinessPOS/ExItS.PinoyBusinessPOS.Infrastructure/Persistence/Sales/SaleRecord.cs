@@ -12,6 +12,8 @@ internal sealed class SaleRecord
     public decimal? AmountTendered { get; set; }
     public decimal? ChangeAmount { get; set; }
     public string? GcashReference { get; set; }
+    public Guid? CustomerId { get; set; }
+    public Guid? LinkedCreditEntryId { get; set; }
     public DateTimeOffset RecordedAtUtc { get; set; }
     public Guid RecordedBy { get; set; }
     public DateTimeOffset? VoidedAtUtc { get; set; }

@@ -28,6 +28,8 @@ public static class ApplicationErrorCodes
     public const string SaleProductNotFound = "pos.sale.product.not_found";
     public const string SaleProductNotActive = "pos.sale.product.not_active";
     public const string SaleNumberConflict = "pos.sale.number.conflict";
+    public const string CreditReversalRequiresSaleVoid = "pos.credit_entry.reversal.requires_sale_void";
+    public const string SaleVoidBlockedBySubsequentUtangActivity = "pos.sale.void.blocked_by_subsequent_utang";
 }
 
 public sealed class PersistenceConflictException : Exception

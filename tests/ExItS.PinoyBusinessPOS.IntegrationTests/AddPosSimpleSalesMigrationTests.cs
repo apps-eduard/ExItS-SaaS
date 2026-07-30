@@ -69,6 +69,9 @@ public sealed class AddPosSimpleSalesMigrationTests(PosPostgreSqlFixture fixture
         await using (var context = new PosDbContext(options))
         {
             await context.Database.MigrateAsync();
+            var target = (await context.Database.GetAppliedMigrationsAsync())
+                .Single(m => m.Contains(TargetMigration, StringComparison.Ordinal));
+            await context.Database.MigrateAsync(target);
         }
 
         var indexes = await QueryNamesAsync(
@@ -125,6 +128,7 @@ public sealed class AddPosSimpleSalesMigrationTests(PosPostgreSqlFixture fixture
         Assert.DoesNotContain("tax_amount", saleColumns);
         Assert.DoesNotContain("discount_amount", saleColumns);
         Assert.DoesNotContain("customer_id", saleColumns);
+        Assert.DoesNotContain("linked_credit_entry_id", saleColumns);
         Assert.DoesNotContain("credit_entry_id", saleColumns);
         Assert.DoesNotContain("refunded_amount", saleColumns);
 

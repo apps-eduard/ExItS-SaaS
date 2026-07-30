@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 
@@ -340,12 +341,14 @@ public sealed class SaleDomainTests
     [Fact]
     public void Payment_method_codes_are_stable_and_parseable()
     {
-        Assert.Equal(new[] { "Cash", "ManualGCash" }, SalePaymentMethods.Codes.ToArray());
+        Assert.Equal(new[] { "Cash", "ManualGCash", "Utang" }, SalePaymentMethods.Codes.ToArray());
         Assert.Equal("Cash", SalePaymentMethods.ToCode(SalePaymentMethod.Cash));
         Assert.Equal("ManualGCash", SalePaymentMethods.ToCode(SalePaymentMethod.ManualGCash));
+        Assert.Equal("Utang", SalePaymentMethods.ToCode(SalePaymentMethod.Utang));
         Assert.Equal(SalePaymentMethod.ManualGCash, SalePaymentMethods.Parse("manualgcash"));
+        Assert.Equal(SalePaymentMethod.Utang, SalePaymentMethods.Parse("utang"));
 
-        var error = Assert.Throws<DomainException>(() => SalePaymentMethods.Parse("Utang"));
+        var error = Assert.Throws<DomainException>(() => SalePaymentMethods.Parse("SplitTender"));
         Assert.Equal(DomainErrorCodes.InvalidSalePaymentMethod, error.ErrorCode);
     }
 
@@ -369,16 +372,100 @@ public sealed class SaleDomainTests
     }
 
     [Fact]
-    public void Sale_exposes_no_inventory_utang_tax_or_discount_state()
+    public void Utang_checkout_records_customer_and_linked_credit_without_tender()
+    {
+        var customerId = POSCustomerId.New();
+        var creditEntryId = CreditEntryId.New();
+
+        var sale = Sale.Checkout(
+            Org,
+            SaleNumbers.Format(new DateOnly(2026, 7, 30), 1),
+            SalePaymentMethod.Utang,
+            [Draft(50m, 2m)],
+            Actor,
+            Now,
+            amountTendered: null,
+            customerId: customerId,
+            linkedCreditEntryId: creditEntryId);
+
+        Assert.Equal(SalePaymentMethod.Utang, sale.PaymentMethod);
+        Assert.Equal(100m, sale.Total);
+        Assert.Equal(customerId, sale.CustomerId);
+        Assert.Equal(creditEntryId, sale.LinkedCreditEntryId);
+        Assert.Null(sale.AmountTendered);
+        Assert.Null(sale.ChangeAmount);
+        Assert.Null(sale.GCashReference);
+    }
+
+    [Fact]
+    public void Utang_checkout_rejects_zero_total()
+    {
+        var error = Assert.Throws<DomainException>(() => Sale.Checkout(
+            Org,
+            SaleNumbers.Format(new DateOnly(2026, 7, 30), 1),
+            SalePaymentMethod.Utang,
+            [Draft(0m, 1m)],
+            Actor,
+            Now,
+            customerId: POSCustomerId.New(),
+            linkedCreditEntryId: CreditEntryId.New()));
+        Assert.Equal(DomainErrorCodes.SaleUtangTotalMustBePositive, error.ErrorCode);
+    }
+
+    [Fact]
+    public void Utang_checkout_requires_customer_and_linked_credit_ids()
+    {
+        var missingCustomer = Assert.Throws<DomainException>(() => Sale.Checkout(
+            Org,
+            SaleNumbers.Format(new DateOnly(2026, 7, 30), 1),
+            SalePaymentMethod.Utang,
+            [Draft(50m, 1m)],
+            Actor,
+            Now,
+            linkedCreditEntryId: CreditEntryId.New()));
+        Assert.Equal(DomainErrorCodes.SaleUtangCustomerRequired, missingCustomer.ErrorCode);
+
+        var missingCredit = Assert.Throws<DomainException>(() => Sale.Checkout(
+            Org,
+            SaleNumbers.Format(new DateOnly(2026, 7, 30), 1),
+            SalePaymentMethod.Utang,
+            [Draft(50m, 1m)],
+            Actor,
+            Now,
+            customerId: POSCustomerId.New()));
+        Assert.Equal(DomainErrorCodes.SaleUtangLinkageInvalid, missingCredit.ErrorCode);
+    }
+
+    [Fact]
+    public void Utang_checkout_rejects_a_tendered_amount()
+    {
+        var error = Assert.Throws<DomainException>(() => Sale.Checkout(
+            Org,
+            SaleNumbers.Format(new DateOnly(2026, 7, 30), 1),
+            SalePaymentMethod.Utang,
+            [Draft(50m, 1m)],
+            Actor,
+            Now,
+            amountTendered: 50m,
+            customerId: POSCustomerId.New(),
+            linkedCreditEntryId: CreditEntryId.New()));
+        Assert.Equal(DomainErrorCodes.InvalidSaleAmountTendered, error.ErrorCode);
+    }
+
+    [Fact]
+    public void Sale_exposes_no_inventory_tax_or_discount_state()
     {
         var names = typeof(Sale).GetProperties().Select(p => p.Name)
             .Concat(typeof(SaleLine).GetProperties().Select(p => p.Name))
             .ToList();
 
+        Assert.Contains("CustomerId", names);
+        Assert.Contains("LinkedCreditEntryId", names);
+
         foreach (var forbidden in new[]
                  {
                      "Stock", "QuantityOnHand", "Inventory", "Tax", "Vat", "Discount",
-                     "Refund", "CustomerId", "CreditEntryId", "Utang", "Tip", "Fee"
+                     "Refund", "Tip", "Fee"
                  })
         {
             Assert.DoesNotContain(names, n => n.Contains(forbidden, StringComparison.OrdinalIgnoreCase));

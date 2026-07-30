@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Sales;
@@ -11,9 +12,10 @@ namespace ExItS.PinoyBusinessPOS.Domain.Sales;
 /// <see cref="MidpointRounding.AwayFromZero"/> (see <see cref="SaleMoney"/>), matching the
 /// <c>CreditEntry</c>/<c>Repayment</c> convention so peso amounts reconcile across the product.
 ///
-/// Out of scope by design: stock/inventory deduction, Utang/customer credit sales, split or partial
-/// tender, discounts, tax/VAT, fees, tips, refunds/returns/exchanges, line voids, fiscal invoices,
-/// payment gateways, GCash verification, and offline sale capture.
+/// Payment methods: Cash, ManualGCash, and Product-Based Utang (linked remarks credit). Out of scope
+/// by design: stock/inventory deduction, split or partial tender, discounts, tax/VAT, fees, tips,
+/// refunds/returns/exchanges, line voids, fiscal invoices, payment gateways, GCash verification,
+/// credit limits, and offline sale capture.
 /// </summary>
 public sealed class Sale
 {
@@ -32,16 +34,22 @@ public sealed class Sale
     public decimal Subtotal { get; }
     public decimal Total { get; }
 
-    /// <summary>Cash tendered by the customer. Always null for <see cref="SalePaymentMethod.ManualGCash"/>.</summary>
+    /// <summary>Cash tendered by the customer. Always null for ManualGCash and Utang.</summary>
     public decimal? AmountTendered { get; }
 
-    /// <summary>Change owed back to the customer. Always null for <see cref="SalePaymentMethod.ManualGCash"/>.</summary>
+    /// <summary>Change owed back to the customer. Always null for ManualGCash and Utang.</summary>
     public decimal? ChangeAmount { get; }
 
     /// <summary>
     /// Optional manually typed GCash reference. Never verified against any gateway or GCash API.
     /// </summary>
     public string? GCashReference { get; }
+
+    /// <summary>Customer for Product-Based Utang; null for Cash and ManualGCash.</summary>
+    public POSCustomerId? CustomerId { get; }
+
+    /// <summary>Linked credit entry for Product-Based Utang; null for Cash and ManualGCash.</summary>
+    public CreditEntryId? LinkedCreditEntryId { get; }
 
     public DateTimeOffset RecordedAtUtc { get; }
     public Guid RecordedBy { get; }
@@ -65,6 +73,8 @@ public sealed class Sale
         decimal? amountTendered,
         decimal? changeAmount,
         string? gcashReference,
+        POSCustomerId? customerId,
+        CreditEntryId? linkedCreditEntryId,
         DateTimeOffset recordedAtUtc,
         Guid recordedBy,
         DateTimeOffset? voidedAtUtc,
@@ -83,6 +93,8 @@ public sealed class Sale
         AmountTendered = amountTendered;
         ChangeAmount = changeAmount;
         GCashReference = gcashReference;
+        CustomerId = customerId;
+        LinkedCreditEntryId = linkedCreditEntryId;
         RecordedAtUtc = recordedAtUtc;
         RecordedBy = recordedBy;
         VoidedAtUtc = voidedAtUtc;
@@ -105,7 +117,9 @@ public sealed class Sale
         DateTimeOffset utcNow,
         decimal? amountTendered = null,
         string? gcashReference = null,
-        SaleId? id = null)
+        SaleId? id = null,
+        POSCustomerId? customerId = null,
+        CreditEntryId? linkedCreditEntryId = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(recordedBy);
@@ -142,6 +156,8 @@ public sealed class Sale
         // No tax, discount, fee, or tip adjustments exist in this scope, so total equals subtotal.
         var total = subtotal;
 
+        ValidatePaymentLinkage(paymentMethod, customerId, linkedCreditEntryId, total);
+
         var (tendered, change) = NormalizeTender(paymentMethod, total, amountTendered);
         var reference = NormalizeGCashReference(paymentMethod, gcashReference);
 
@@ -156,6 +172,8 @@ public sealed class Sale
             tendered,
             change,
             reference,
+            customerId,
+            linkedCreditEntryId,
             utcNow,
             recordedBy,
             null,
@@ -182,7 +200,9 @@ public sealed class Sale
         Guid? voidedBy,
         string? voidReason,
         DateTimeOffset updatedAtUtc,
-        IEnumerable<SaleLine> lines) =>
+        IEnumerable<SaleLine> lines,
+        POSCustomerId? customerId = null,
+        CreditEntryId? linkedCreditEntryId = null) =>
         new(
             id,
             organizationId,
@@ -194,6 +214,8 @@ public sealed class Sale
             amountTendered,
             changeAmount,
             gcashReference,
+            customerId,
+            linkedCreditEntryId,
             recordedAtUtc,
             recordedBy,
             voidedAtUtc,
@@ -203,8 +225,9 @@ public sealed class Sale
             lines.OrderBy(l => l.LineNumber).ToList());
 
     /// <summary>
-    /// Voids a completed sale. Voiding is the only correction available: it does not refund money,
-    /// return stock, or reverse any Utang record. Only Completed to Voided is permitted.
+    /// Voids a completed sale. Voiding is the only correction available: it does not refund money
+    /// or return stock. For Utang sales the application layer reverses the linked credit in the same
+    /// transaction; this domain method only marks the sale voided. Only Completed to Voided is permitted.
     /// </summary>
     public void Void(string reason, Guid voidedBy, DateTimeOffset utcNow)
     {
@@ -230,20 +253,22 @@ public sealed class Sale
 
     /// <summary>
     /// Cash sales require a tender at least equal to the total and derive change from it.
-    /// Manual GCash sales are recorded for the exact total, so tender and change stay null.
+    /// Manual GCash and Utang sales are recorded for the exact total, so tender and change stay null.
     /// </summary>
     public static (decimal? AmountTendered, decimal? ChangeAmount) NormalizeTender(
         SalePaymentMethod paymentMethod,
         decimal total,
         decimal? amountTendered)
     {
-        if (paymentMethod == SalePaymentMethod.ManualGCash)
+        if (paymentMethod is SalePaymentMethod.ManualGCash or SalePaymentMethod.Utang)
         {
             if (amountTendered is not null)
             {
                 throw new DomainException(
                     DomainErrorCodes.InvalidSaleAmountTendered,
-                    "Manual GCash sales are recorded for the exact total and must not carry a tendered amount.");
+                    paymentMethod == SalePaymentMethod.Utang
+                        ? "Utang sales are recorded for the exact total and must not carry a tendered amount."
+                        : "Manual GCash sales are recorded for the exact total and must not carry a tendered amount.");
             }
 
             return (null, null);
@@ -335,5 +360,45 @@ public sealed class Sale
         }
 
         return trimmed;
+    }
+
+    private static void ValidatePaymentLinkage(
+        SalePaymentMethod paymentMethod,
+        POSCustomerId? customerId,
+        CreditEntryId? linkedCreditEntryId,
+        decimal total)
+    {
+        if (paymentMethod == SalePaymentMethod.Utang)
+        {
+            if (customerId is null)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.SaleUtangCustomerRequired,
+                    "Product-Based Utang requires a customer.");
+            }
+
+            if (linkedCreditEntryId is null)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.SaleUtangLinkageInvalid,
+                    "Product-Based Utang requires a linked credit entry id.");
+            }
+
+            if (total <= 0m)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.SaleUtangTotalMustBePositive,
+                    "Product-Based Utang total must be greater than zero.");
+            }
+
+            return;
+        }
+
+        if (customerId is not null || linkedCreditEntryId is not null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.SaleCashMustNotLinkCredit,
+                "Cash and Manual GCash sales must not link a customer or credit entry.");
+        }
     }
 }

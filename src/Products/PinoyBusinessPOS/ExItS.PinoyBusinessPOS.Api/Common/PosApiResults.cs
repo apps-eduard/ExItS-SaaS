@@ -52,7 +52,9 @@ internal static class PosApiResults
             or DomainErrorCodes.ProductNotActive
             or ApplicationErrorCodes.SaleNumberConflict
             or ApplicationErrorCodes.SaleProductNotActive
-            or DomainErrorCodes.InvalidSaleStatusTransition => StatusCodes.Status409Conflict,
+            or DomainErrorCodes.InvalidSaleStatusTransition
+            or ApplicationErrorCodes.CreditReversalRequiresSaleVoid
+            or ApplicationErrorCodes.SaleVoidBlockedBySubsequentUtangActivity => StatusCodes.Status409Conflict,
 
         ApplicationErrorCodes.SaleProductNotFound => StatusCodes.Status400BadRequest,
 

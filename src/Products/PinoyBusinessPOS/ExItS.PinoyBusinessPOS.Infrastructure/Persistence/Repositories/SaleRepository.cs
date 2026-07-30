@@ -134,13 +134,19 @@ internal sealed class SaleRepository : ISaleRepository
         PosOrganizationId organizationId,
         DateOnly businessDateUtc,
         Func<string, Sale> createSale,
+        Func<Sale, CancellationToken, Task>? afterSaleCreated = null,
         CancellationToken cancellationToken = default)
     {
         // When called under PosIdempotencyService (or any ambient transaction), reuse that
         // transaction so we do not nest BeginTransaction on the same connection.
         if (_db.Database.CurrentTransaction is not null)
         {
-            return await CompleteCheckoutAsync(organizationId, businessDateUtc, createSale, cancellationToken)
+            return await CompleteCheckoutAsync(
+                    organizationId,
+                    businessDateUtc,
+                    createSale,
+                    afterSaleCreated,
+                    cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -156,6 +162,7 @@ internal sealed class SaleRepository : ISaleRepository
                         organizationId,
                         businessDateUtc,
                         createSale,
+                        afterSaleCreated,
                         cancellationToken)
                     .ConfigureAwait(false);
                 await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
@@ -180,6 +187,7 @@ internal sealed class SaleRepository : ISaleRepository
         PosOrganizationId organizationId,
         DateOnly businessDateUtc,
         Func<string, Sale> createSale,
+        Func<Sale, CancellationToken, Task>? afterSaleCreated,
         CancellationToken cancellationToken)
     {
         try
@@ -192,6 +200,11 @@ internal sealed class SaleRepository : ISaleRepository
             foreach (var line in sale.Lines)
             {
                 _db.SaleLines.Add(SaleEntityMapper.ToRecord(line));
+            }
+
+            if (afterSaleCreated is not null)
+            {
+                await afterSaleCreated(sale, cancellationToken).ConfigureAwait(false);
             }
 
             await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

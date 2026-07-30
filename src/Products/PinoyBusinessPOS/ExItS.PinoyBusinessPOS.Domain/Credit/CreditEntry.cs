@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Credit;
 
@@ -7,6 +8,7 @@ namespace ExItS.PinoyBusinessPOS.Domain.Credit;
 /// Organization-owned remarks-based credit entry. Append-only after create:
 /// amount and remarks cannot be edited; corrections use explicit reversal with a reason.
 /// Optional calendar due date is denormalized for reads; history is append-only.
+/// When created via Product-Based Utang, <see cref="SourceSaleId"/> links to the originating sale.
 /// </summary>
 public sealed class CreditEntry
 {
@@ -25,6 +27,9 @@ public sealed class CreditEntry
     public string? ReversalReason { get; private set; }
     public DateOnly? CurrentDueDate { get; private set; }
 
+    /// <summary>Originating Product-Based Utang sale when this credit was created at checkout; otherwise null.</summary>
+    public SaleId? SourceSaleId { get; }
+
     private CreditEntry(
         CreditEntryId id,
         PosOrganizationId organizationId,
@@ -35,7 +40,8 @@ public sealed class CreditEntry
         DateTimeOffset createdAtUtc,
         DateTimeOffset? reversedAtUtc,
         string? reversalReason,
-        DateOnly? currentDueDate)
+        DateOnly? currentDueDate,
+        SaleId? sourceSaleId)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -47,6 +53,7 @@ public sealed class CreditEntry
         ReversedAtUtc = reversedAtUtc;
         ReversalReason = reversalReason;
         CurrentDueDate = currentDueDate;
+        SourceSaleId = sourceSaleId;
     }
 
     public static CreditEntry Create(
@@ -55,7 +62,8 @@ public sealed class CreditEntry
         decimal amount,
         string remarks,
         DateTimeOffset utcNow,
-        CreditEntryId? id = null)
+        CreditEntryId? id = null,
+        SaleId? sourceSaleId = null)
     {
         EnsureUtc(utcNow);
         return new CreditEntry(
@@ -68,7 +76,8 @@ public sealed class CreditEntry
             utcNow,
             null,
             null,
-            null);
+            null,
+            sourceSaleId);
     }
 
     public static CreditEntry Rehydrate(
@@ -81,7 +90,8 @@ public sealed class CreditEntry
         DateTimeOffset createdAtUtc,
         DateTimeOffset? reversedAtUtc,
         string? reversalReason,
-        DateOnly? currentDueDate) =>
+        DateOnly? currentDueDate,
+        SaleId? sourceSaleId = null) =>
         new(
             id,
             organizationId,
@@ -92,7 +102,8 @@ public sealed class CreditEntry
             createdAtUtc,
             reversedAtUtc,
             reversalReason,
-            currentDueDate);
+            currentDueDate,
+            sourceSaleId);
 
     public void Reverse(string reason, DateTimeOffset utcNow)
     {

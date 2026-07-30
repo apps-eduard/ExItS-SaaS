@@ -32,13 +32,15 @@ public interface ISaleRepository
 
     /// <summary>
     /// Reserves the next organization- and business-date-scoped sale number, builds the sale through
-    /// <paramref name="createSale"/>, then persists the sale, its lines, and the bumped sequence in a
-    /// single transaction. Concurrent checkouts therefore never share a sale number.
+    /// <paramref name="createSale"/>, optionally runs <paramref name="afterSaleCreated"/> (e.g. to
+    /// attach a Product-Based Utang credit) before a single SaveChanges, then persists everything in
+    /// one transaction. Concurrent checkouts therefore never share a sale number.
     /// </summary>
     Task<Sale> CheckoutAsync(
         PosOrganizationId organizationId,
         DateOnly businessDateUtc,
         Func<string, Sale> createSale,
+        Func<Sale, CancellationToken, Task>? afterSaleCreated = null,
         CancellationToken cancellationToken = default);
 
     Task UpdateAsync(Sale sale, CancellationToken cancellationToken = default);

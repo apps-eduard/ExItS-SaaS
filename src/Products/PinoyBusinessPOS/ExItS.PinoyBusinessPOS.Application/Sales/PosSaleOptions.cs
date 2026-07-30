@@ -21,6 +21,7 @@ public static class PosSaleOptions
     public const string VoidedStatus = nameof(SaleStatus.Voided);
     public const string CashPaymentMethod = nameof(SalePaymentMethod.Cash);
     public const string ManualGCashPaymentMethod = nameof(SalePaymentMethod.ManualGCash);
+    public const string UtangPaymentMethod = nameof(SalePaymentMethod.Utang);
 
     public const int GCashReferenceMaxLength = Sale.GCashReferenceMaxLength;
     public const int VoidReasonMaxLength = Sale.VoidReasonMaxLength;

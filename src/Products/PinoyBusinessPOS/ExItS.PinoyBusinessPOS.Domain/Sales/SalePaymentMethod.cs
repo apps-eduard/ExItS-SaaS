@@ -5,12 +5,14 @@ namespace ExItS.PinoyBusinessPOS.Domain.Sales;
 /// <summary>
 /// Payment methods for a simple retail sale. Exactly one per sale — no split or partial tender.
 /// <c>ManualGCash</c> is a manually confirmed transfer: no gateway, QR, or verification is performed.
+/// <c>Utang</c> records an online Product-Based Utang checkout (sale + linked remarks credit).
 /// Member names are the stable persistence codes; localized labels live in UI resource files only.
 /// </summary>
 public enum SalePaymentMethod
 {
     Cash = 0,
-    ManualGCash = 1
+    ManualGCash = 1,
+    Utang = 2
 }
 
 public static class SalePaymentMethods
@@ -21,7 +23,8 @@ public static class SalePaymentMethods
     public static IReadOnlyList<string> Codes { get; } =
     [
         nameof(SalePaymentMethod.Cash),
-        nameof(SalePaymentMethod.ManualGCash)
+        nameof(SalePaymentMethod.ManualGCash),
+        nameof(SalePaymentMethod.Utang)
     ];
 
     public static string ToCode(SalePaymentMethod method) => method.ToString();

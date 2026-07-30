@@ -22,14 +22,21 @@ public sealed class SalePageGuardTests
         Assert.Contains("SaleCartService", checkout, StringComparison.Ordinal);
         Assert.Contains("Cart.SetQuantity", checkout, StringComparison.Ordinal);
         Assert.Contains("Cart.Remove", checkout, StringComparison.Ordinal);
+        Assert.Contains("IPosCustomerClient", checkout, StringComparison.Ordinal);
+        Assert.Contains("PosSaleOptions.UtangPaymentMethod", checkout, StringComparison.Ordinal);
         Assert.Contains("Sales_GCash_ManualWarning", checkout, StringComparison.Ordinal);
+        Assert.Contains("Sales_Checkout_UtangWarning", checkout, StringComparison.Ordinal);
         Assert.Contains("Sales_Field_ChangeAmount", checkout, StringComparison.Ordinal);
         Assert.Contains("ConfirmDialog", checkout, StringComparison.Ordinal);
+        Assert.Contains("GetCreditSummaryAsync", checkout, StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(sales, "SaleDetail.razor"));
         Assert.Contains("@page \"/sales/{SaleId:guid}\"", detail, StringComparison.Ordinal);
         Assert.Contains("VoidSaleAsync", detail, StringComparison.Ordinal);
         Assert.Contains("ShowReason=\"true\"", detail, StringComparison.Ordinal);
+        Assert.Contains("Sales_VoidUtangMessage", detail, StringComparison.Ordinal);
+        Assert.Contains("Sales_Detail_LinkedCustomer", detail, StringComparison.Ordinal);
+        Assert.Contains("UtangCapability.ReverseCredit", detail, StringComparison.Ordinal);
 
         Assert.True(File.Exists(Path.Combine(sales, "SalesUiOptions.cs")));
     }
@@ -50,9 +57,11 @@ public sealed class SalePageGuardTests
 
         var checkout = File.ReadAllText(Path.Combine(SalesPagesDirectory(), "SaleCheckout.razor"));
         Assert.Contains("UtangCapability.CreateSale", checkout, StringComparison.Ordinal);
+        Assert.Contains("UtangCapability.CreateCredit", checkout, StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(SalesPagesDirectory(), "SaleDetail.razor"));
         Assert.Contains("UtangCapability.VoidSale", detail, StringComparison.Ordinal);
+        Assert.Contains("UtangCapability.ReverseCredit", detail, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -75,7 +84,7 @@ public sealed class SalePageGuardTests
     }
 
     [Fact]
-    public void Sales_pages_have_no_stock_discount_tax_utang_refund_or_receipt_print_surface()
+    public void Sales_pages_have_no_stock_discount_tax_refund_or_offline_utang_queue_surface()
     {
         foreach (var file in Directory.EnumerateFiles(SalesPagesDirectory(), "*"))
         {
@@ -84,7 +93,7 @@ public sealed class SalePageGuardTests
                      {
                          "StockOnHand", "QuantityOnHand", "Reorder", "TaxRate", "DiscountRate",
                          "DiscountAmount", "Refund", "SplitTender", "PrintReceipt", "PaymentGateway",
-                         "CreditEntry", "UtangBalance", "Installment"
+                         "UtangBalance", "Installment", "IOfflineOperationQueue", "SaleCheckoutOffline"
                      })
             {
                 Assert.DoesNotContain(forbidden, text, StringComparison.OrdinalIgnoreCase);
@@ -154,6 +163,7 @@ public sealed class SalePageGuardTests
                      "Sales_Status_Voided",
                      "Sales_Payment_Cash",
                      "Sales_Payment_ManualGCash",
+                     "Sales_Payment_Utang",
                      "Sales_Field_AmountTendered",
                      "Sales_Field_ChangeAmount",
                      "Sales_Field_GCashReference",
@@ -161,10 +171,27 @@ public sealed class SalePageGuardTests
                      "Sales_GCash_ConfirmReceived",
                      "Sales_Void",
                      "Sales_VoidMessage",
+                     "Sales_VoidUtangMessage",
                      "Sales_Checkout_Title",
                      "Sales_Checkout_ConfirmMessage",
+                     "Sales_Checkout_ConfirmUtangMessage",
+                     "Sales_Checkout_UtangSection",
+                     "Sales_Checkout_UtangWarning",
+                     "Sales_Checkout_SelectCustomer",
+                     "Sales_Checkout_CustomerSearch",
+                     "Sales_Checkout_Outstanding",
+                     "Sales_Checkout_AmountToUtang",
+                     "Sales_Checkout_DueDateOptional",
+                     "Sales_Checkout_CustomerRequired",
+                     "Sales_Checkout_ZeroTotalUtang",
                      "Sales_Checkout_QuantityWhole",
-                     "Sales_Checkout_OfflineMessage"
+                     "Sales_Checkout_OfflineMessage",
+                     "Sales_Detail_LinkedCustomer",
+                     "Sales_Detail_LinkedCredit",
+                     "Sales_Detail_LinkedDueDate",
+                     "Sales_Detail_OutstandingAfter",
+                     "Credit_LinkedSale",
+                     "Credit_ReverseViaSaleVoid"
                  })
         {
             Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);

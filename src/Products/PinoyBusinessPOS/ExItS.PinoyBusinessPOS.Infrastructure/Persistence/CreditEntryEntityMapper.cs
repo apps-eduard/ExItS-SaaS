@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit;
 
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
@@ -17,7 +18,8 @@ internal static class CreditEntryEntityMapper
             record.CreatedAtUtc,
             record.ReversedAtUtc,
             record.ReversalReason,
-            record.CurrentDueDate);
+            record.CurrentDueDate,
+            record.SourceSaleId is null ? null : SaleId.From(record.SourceSaleId.Value));
 
     public static CreditEntryRecord ToRecord(CreditEntry entry) =>
         new()
@@ -31,7 +33,8 @@ internal static class CreditEntryEntityMapper
             CreatedAtUtc = entry.CreatedAtUtc,
             ReversedAtUtc = entry.ReversedAtUtc,
             ReversalReason = entry.ReversalReason,
-            CurrentDueDate = entry.CurrentDueDate
+            CurrentDueDate = entry.CurrentDueDate,
+            SourceSaleId = entry.SourceSaleId?.Value
         };
 
     public static void ApplyToRecord(CreditEntry entry, CreditEntryRecord record)

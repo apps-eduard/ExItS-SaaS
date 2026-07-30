@@ -29,7 +29,12 @@ public sealed record PosSaleDto(
     Guid? VoidedBy,
     string? VoidReason,
     DateTimeOffset UpdatedAtUtc,
-    List<PosSaleLineDto> Lines);
+    List<PosSaleLineDto> Lines,
+    Guid? CustomerId = null,
+    Guid? LinkedCreditEntryId = null,
+    string? CustomerDisplayName = null,
+    DateOnly? LinkedCreditDueDate = null,
+    decimal? CustomerOutstandingAfter = null);
 
 /// <summary>
 /// One requested checkout line. Only the product identity and quantity are accepted — name, unit of
@@ -40,14 +45,18 @@ public sealed record CheckoutSaleLineRequest(Guid ProductId, decimal Quantity);
 
 /// <summary>
 /// Checkout request. The cart itself is never persisted server-side; it exists only in the client
-/// session until this single request records the sale.
+/// session until this single request records the sale. Product-Based Utang supplies CustomerId and
+/// optional DueDate / CreditEntryId; Cash and ManualGCash must omit those.
 /// </summary>
 public sealed record CheckoutSaleRequest(
     List<CheckoutSaleLineRequest> Lines,
     string PaymentMethod,
     decimal? AmountTendered = null,
     string? GCashReference = null,
-    Guid? SaleId = null);
+    Guid? SaleId = null,
+    Guid? CustomerId = null,
+    DateOnly? DueDate = null,
+    Guid? CreditEntryId = null);
 
 public sealed record VoidSaleRequest(string Reason);
 

@@ -30,7 +30,11 @@ else
 {
     var sale = _sale;
     var isCompleted = sale.Status == PosSaleOptions.CompletedStatus;
-    var canVoid = Capabilities.IsAllowed(UtangCapability.VoidSale) && isCompleted && !_isOffline;
+    var isUtang = sale.PaymentMethod == PosSaleOptions.UtangPaymentMethod;
+    var canVoid = Capabilities.IsAllowed(UtangCapability.VoidSale)
+        && isCompleted
+        && !_isOffline
+        && (!isUtang || Capabilities.IsAllowed(UtangCapability.ReverseCredit));
 <Page>
     <PageHeader Title="@sale.SaleNumber" Subtitle="@L["Sales_DetailSubtitle"]">
         <Actions>
@@ -96,6 +100,42 @@ else
                     <div class="pos-muted">@L["Sales_GCash_ManualWarning"]</div>
                 </div>
             }
+            @if (isUtang)
+            {
+                @if (sale.CustomerId is not null)
+                {
+                    <div>
+                        <span class="pos-muted">@L["Sales_Detail_LinkedCustomer"]</span>
+                        <div class="pos-value-md">
+                            <a class="pos-link" href="@($"/customers/{sale.CustomerId.Value:D}")">
+                                @(string.IsNullOrWhiteSpace(sale.CustomerDisplayName) ? sale.CustomerId.Value.ToString("D") : sale.CustomerDisplayName)
+                            </a>
+                        </div>
+                    </div>
+                }
+                @if (sale.CustomerId is not null && sale.LinkedCreditEntryId is not null)
+                {
+                    <div>
+                        <span class="pos-muted">@L["Sales_Detail_LinkedCredit"]</span>
+                        <div class="pos-value-md">
+                            <a class="pos-link" href="@($"/customers/{sale.CustomerId.Value:D}/credit/{sale.LinkedCreditEntryId.Value:D}")">
+                                @sale.LinkedCreditEntryId.Value.ToString("D")
+                            </a>
+                        </div>
+                    </div>
+                }
+                <div>
+                    <span class="pos-muted">@L["Sales_Detail_LinkedDueDate"]</span>
+                    <div class="pos-value-md">@(sale.LinkedCreditDueDate?.ToString("d") ?? L["DueDate_None"])</div>
+                </div>
+                @if (sale.CustomerOutstandingAfter is not null)
+                {
+                    <div>
+                        <span class="pos-muted">@L["Sales_Detail_OutstandingAfter"]</span>
+                        <div class="pos-value-md"><MoneyDisplay Amount="@sale.CustomerOutstandingAfter.Value" CurrencyCode="PHP" /></div>
+                    </div>
+                }
+            }
             @if (!isCompleted)
             {
                 <div>
@@ -135,7 +175,7 @@ else
     <ConfirmDialog Visible="@_confirmVoid"
                    VisibleChanged="v => _confirmVoid = v"
                    Title="@L["Sales_VoidTitle"]"
-                   Message="@L["Sales_VoidMessage"]"
+                   Message="@(isUtang ? L["Sales_VoidUtangMessage"] : L["Sales_VoidMessage"])"
                    Danger="true"
                    ShowReason="true"
                    Reason="@_voidReason"

@@ -12,5 +12,6 @@ internal sealed class CreditEntryRecord
     public DateTimeOffset? ReversedAtUtc { get; set; }
     public string? ReversalReason { get; set; }
     public DateOnly? CurrentDueDate { get; set; }
+    public Guid? SourceSaleId { get; set; }
     public uint Xmin { get; set; }
 }

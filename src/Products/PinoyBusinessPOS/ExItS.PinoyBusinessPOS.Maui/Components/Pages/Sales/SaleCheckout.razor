@@ -4,6 +4,7 @@
 @inject NavigationGate Gate
 @inject IPosSaleClient Sales
 @inject IPosCatalogClient Catalog
+@inject IPosCustomerClient Customers
 @inject SaleCartService Cart
 @inject ICurrentUserContext CurrentUser
 @inject IUtangCapabilityEvaluator Capabilities
@@ -17,9 +18,12 @@
 }
 else
 {
-    var canCreate = Capabilities.IsAllowed(UtangCapability.CreateSale);
-    var blocked = !canCreate || _isOffline;
+    var isUtang = _paymentMethod == PosSaleOptions.UtangPaymentMethod;
     var isGCash = _paymentMethod == PosSaleOptions.ManualGCashPaymentMethod;
+    var canCreateCash = Capabilities.IsAllowed(UtangCapability.CreateSale);
+    var canCreateUtang = canCreateCash && Capabilities.IsAllowed(UtangCapability.CreateCredit);
+    var paymentSelectBlocked = _isOffline || !canCreateCash;
+    var blocked = _isOffline || (isUtang ? !canCreateUtang : !canCreateCash);
 <Page>
     <PageHeader Title="@L["Sales_Checkout_Title"]" Subtitle="@L["Sales_Checkout_Subtitle"]">
         <Actions>
@@ -31,7 +35,7 @@ else
     {
         <Alert Tone="AlertTone.Warning" Title="@L["Sales_OfflineTitle"]" Message="@L["Sales_Checkout_OfflineMessage"]" />
     }
-    else if (!canCreate)
+    else if (isUtang ? !canCreateUtang : !canCreateCash)
     {
         <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
     }
@@ -123,9 +127,69 @@ else
                     ValueChanged="OnPaymentMethodChanged"
                     Options="@SalesUiOptions.PaymentMethods(L)"
                     Required="true"
-                    Disabled="@blocked" />
+                    Disabled="@paymentSelectBlocked" />
 
-            @if (isGCash)
+            @if (isUtang)
+            {
+                <Alert Tone="AlertTone.Warning" Title="@L["Sales_Checkout_UtangSection"]" Message="@L["Sales_Checkout_UtangWarning"]" />
+                <TextInput Label="@L["Sales_Checkout_CustomerSearch"]"
+                           Value="@_customerSearch"
+                           ValueChanged="v => _customerSearch = v"
+                           Hint="@L["Sales_Checkout_SelectCustomer"]"
+                           Disabled="@(blocked || _searchingCustomers)" />
+                <FormActions>
+                    <Button Variant="ButtonVariant.Secondary"
+                            IsLoading="@_searchingCustomers"
+                            Disabled="@blocked"
+                            OnClick="SearchCustomersAsync">@L["Sales_Checkout_Search"]</Button>
+                </FormActions>
+
+                @if (_customerMatches.Count > 0)
+                {
+                    <Stack Gap="2">
+                        @foreach (var match in _customerMatches)
+                        {
+                            <div class="pos-row">
+                                <span class="pos-value-md">@match.DisplayName</span>
+                                <span class="pos-muted">@(string.IsNullOrWhiteSpace(match.MobileNumber) ? L["Customers_NoMobile"] : match.MobileNumber)</span>
+                                <Button Variant="ButtonVariant.Secondary"
+                                        Disabled="@blocked"
+                                        OnClick="() => SelectCustomerAsync(match)">@L["Sales_Checkout_SelectCustomer"]</Button>
+                            </div>
+                        }
+                    </Stack>
+                }
+
+                @if (_selectedCustomer is not null)
+                {
+                    <div>
+                        <span class="pos-muted">@L["Sales_Checkout_SelectCustomer"]</span>
+                        <div class="pos-value-md">@_selectedCustomer.DisplayName</div>
+                    </div>
+                    <div>
+                        <span class="pos-muted">@L["Sales_Checkout_Outstanding"]</span>
+                        <div class="pos-value-md">
+                            @if (_selectedOutstanding is null)
+                            {
+                                <Spinner />
+                            }
+                            else
+                            {
+                                <MoneyDisplay Amount="@_selectedOutstanding.Value" CurrencyCode="PHP" />
+                            }
+                        </div>
+                    </div>
+                    <div>
+                        <span class="pos-muted">@L["Sales_Checkout_AmountToUtang"]</span>
+                        <div class="pos-value-md"><MoneyDisplay Amount="@Cart.Subtotal" CurrencyCode="PHP" /></div>
+                    </div>
+                    <DateInput Label="@L["Sales_Checkout_DueDateOptional"]"
+                               Value="@_dueDate"
+                               ValueChanged="v => _dueDate = v"
+                               Disabled="@blocked" />
+                }
+            }
+            else if (isGCash)
             {
                 <Alert Tone="AlertTone.Warning" Title="@L["Sales_GCash_ManualTitle"]" Message="@L["Sales_GCash_ManualWarning"]" />
                 <TextInput Label="@L["Sales_Field_GCashReference"]"
@@ -180,10 +244,12 @@ else
     private bool _ready;
     private bool _isOffline;
     private bool _lookingUp;
+    private bool _searchingCustomers;
     private bool _saving;
     private bool _confirm;
     private bool _gcashConfirmed;
     private string? _lookupText;
+    private string? _customerSearch;
     private string _paymentMethod = PosSaleOptions.CashPaymentMethod;
     private decimal? _amountTendered;
     private string? _gcashReference;
@@ -191,7 +257,11 @@ else
     private string? _gcashError;
     private string? _errorTitle;
     private string? _errorMessage;
+    private DateOnly? _dueDate;
+    private PosCustomerListItemDto? _selectedCustomer;
+    private decimal? _selectedOutstanding;
     private IReadOnlyList<PosCatalogProductDto> _matches = Array.Empty<PosCatalogProductDto>();
+    private IReadOnlyList<PosCustomerListItemDto> _customerMatches = Array.Empty<PosCustomerListItemDto>();
 
     /// <summary>
     /// Stable per-attempt sale identifier. Re-sending the same identifier after a failed or unclear
@@ -199,15 +269,33 @@ else
     /// </summary>
     private Guid _attemptSaleId = Guid.NewGuid();
 
+    /// <summary>Stable per-attempt credit entry id for Product-Based Utang checkout idempotency.</summary>
+    private Guid _attemptCreditEntryId = Guid.NewGuid();
+
     private decimal ChangePreview =>
         _amountTendered is null || _amountTendered.Value < Cart.Subtotal
             ? 0m
             : PosSaleOptions.RoundMoney(_amountTendered.Value - Cart.Subtotal);
 
-    private string ConfirmMessage => string.Format(
-        L["Sales_Checkout_ConfirmMessage"],
-        Cart.LineCount,
-        Cart.Subtotal.ToString("N2"));
+    private string ConfirmMessage
+    {
+        get
+        {
+            if (_paymentMethod == PosSaleOptions.UtangPaymentMethod)
+            {
+                return string.Format(
+                    L["Sales_Checkout_ConfirmUtangMessage"],
+                    Cart.LineCount,
+                    Cart.Subtotal.ToString("N2"),
+                    _selectedCustomer?.DisplayName ?? string.Empty);
+            }
+
+            return string.Format(
+                L["Sales_Checkout_ConfirmMessage"],
+                Cart.LineCount,
+                Cart.Subtotal.ToString("N2"));
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -231,18 +319,44 @@ else
 
     private void OnPaymentMethodChanged(string? value)
     {
-        _paymentMethod = string.IsNullOrWhiteSpace(value) ? PosSaleOptions.CashPaymentMethod : value;
+        var next = string.IsNullOrWhiteSpace(value) ? PosSaleOptions.CashPaymentMethod : value;
+        var leavingUtang = _paymentMethod == PosSaleOptions.UtangPaymentMethod
+            && next != PosSaleOptions.UtangPaymentMethod;
+        _paymentMethod = next;
         _tenderError = null;
         _gcashError = null;
+        _errorTitle = null;
+        _errorMessage = null;
+
+        if (leavingUtang)
+        {
+            ClearCustomerSelection();
+        }
+
         if (_paymentMethod == PosSaleOptions.ManualGCashPaymentMethod)
         {
             _amountTendered = null;
+        }
+        else if (_paymentMethod == PosSaleOptions.UtangPaymentMethod)
+        {
+            _amountTendered = null;
+            _gcashReference = null;
+            _gcashConfirmed = false;
         }
         else
         {
             _gcashReference = null;
             _gcashConfirmed = false;
         }
+    }
+
+    private void ClearCustomerSelection()
+    {
+        _selectedCustomer = null;
+        _selectedOutstanding = null;
+        _customerMatches = Array.Empty<PosCustomerListItemDto>();
+        _customerSearch = null;
+        _dueDate = null;
     }
 
     private void AddToCart(PosCatalogProductDto product)
@@ -321,6 +435,52 @@ else
         _lookingUp = false;
     }
 
+    private async Task SearchCustomersAsync()
+    {
+        _searchingCustomers = true;
+        _errorTitle = null;
+        _errorMessage = null;
+
+        var result = await Customers.ListAsync(_customerSearch, "Active", page: 1, pageSize: 10);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _customerMatches = result.Data.Items;
+            if (_customerMatches.Count == 0)
+            {
+                _errorTitle = L["Sales_Checkout_CustomerRequired"];
+                _errorMessage = L["Sales_Checkout_SelectCustomer"];
+            }
+        }
+        else
+        {
+            _customerMatches = Array.Empty<PosCustomerListItemDto>();
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _searchingCustomers = false;
+    }
+
+    private async Task SelectCustomerAsync(PosCustomerListItemDto customer)
+    {
+        _selectedCustomer = customer;
+        _customerMatches = Array.Empty<PosCustomerListItemDto>();
+        _customerSearch = customer.DisplayName;
+        _selectedOutstanding = null;
+        StateHasChanged();
+
+        var summary = await Customers.GetCreditSummaryAsync(customer.CustomerId);
+        if (summary.IsSuccess && summary.Data is not null)
+        {
+            _selectedOutstanding = summary.Data.OutstandingAmount;
+        }
+        else
+        {
+            _selectedOutstanding = 0m;
+        }
+    }
+
     private void OpenConfirm()
     {
         _tenderError = null;
@@ -328,7 +488,23 @@ else
         _errorTitle = null;
         _errorMessage = null;
 
-        if (_paymentMethod == PosSaleOptions.ManualGCashPaymentMethod)
+        if (_paymentMethod == PosSaleOptions.UtangPaymentMethod)
+        {
+            if (_selectedCustomer is null)
+            {
+                _errorTitle = L["Sales_ErrorTitle"];
+                _errorMessage = L["Sales_Checkout_CustomerRequired"];
+                return;
+            }
+
+            if (Cart.Subtotal <= 0m)
+            {
+                _errorTitle = L["Sales_ErrorTitle"];
+                _errorMessage = L["Sales_Checkout_ZeroTotalUtang"];
+                return;
+            }
+        }
+        else if (_paymentMethod == PosSaleOptions.ManualGCashPaymentMethod)
         {
             if (!_gcashConfirmed)
             {
@@ -366,7 +542,16 @@ else
 
         // Checkout is online-only: no sale is ever queued or stored locally.
         _isOffline = !await Connectivity.IsConnectedAsync();
-        if (_isOffline || !Capabilities.IsAllowed(UtangCapability.CreateSale) || !Cart.IsCheckoutReady)
+        var isUtang = _paymentMethod == PosSaleOptions.UtangPaymentMethod;
+        var canCreate = isUtang
+            ? Capabilities.IsAllowed(UtangCapability.CreateSale) && Capabilities.IsAllowed(UtangCapability.CreateCredit)
+            : Capabilities.IsAllowed(UtangCapability.CreateSale);
+        if (_isOffline || !canCreate || !Cart.IsCheckoutReady)
+        {
+            return;
+        }
+
+        if (isUtang && (_selectedCustomer is null || Cart.Subtotal <= 0m))
         {
             return;
         }
@@ -375,9 +560,12 @@ else
         var request = new CheckoutSaleRequest(
             Cart.ToCheckoutLines(),
             _paymentMethod,
-            _paymentMethod == PosSaleOptions.CashPaymentMethod ? _amountTendered : null,
+            isUtang || _paymentMethod == PosSaleOptions.ManualGCashPaymentMethod ? null : _amountTendered,
             _paymentMethod == PosSaleOptions.ManualGCashPaymentMethod ? _gcashReference : null,
-            _attemptSaleId);
+            _attemptSaleId,
+            isUtang ? _selectedCustomer!.CustomerId : null,
+            isUtang ? _dueDate : null,
+            isUtang ? _attemptCreditEntryId : null);
 
         var result = await Sales.CheckoutAsync(request);
         _saving = false;
@@ -385,7 +573,9 @@ else
         if (result.IsSuccess && result.Data is not null)
         {
             Cart.Clear();
+            ClearCustomerSelection();
             _attemptSaleId = Guid.NewGuid();
+            _attemptCreditEntryId = Guid.NewGuid();
             Nav.NavigateTo($"/sales/{result.Data.SaleId:D}");
             return;
         }

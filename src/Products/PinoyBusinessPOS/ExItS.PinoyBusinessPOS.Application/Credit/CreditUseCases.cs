@@ -18,7 +18,8 @@ public sealed record CreditEntryDto(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset? ReversedAtUtc,
     string? ReversalReason,
-    DateOnly? CurrentDueDate);
+    DateOnly? CurrentDueDate,
+    Guid? SourceSaleId = null);
 
 public sealed record CreditSyncPageDto(
     List<CreditEntryDto> Items,
@@ -136,7 +137,8 @@ public sealed class CreditEntryQueryService
             entry.CreatedAtUtc,
             entry.ReversedAtUtc,
             entry.ReversalReason,
-            entry.CurrentDueDate);
+            entry.CurrentDueDate,
+            entry.SourceSaleId?.Value);
 }
 
 public sealed class CreateCreditEntry
@@ -270,6 +272,13 @@ public sealed class ReverseCreditEntry
                 "Credit entry was not found.");
         }
 
+        if (entry.SourceSaleId is not null)
+        {
+            return ApplicationResult<CreditEntry>.Failure(
+                ApplicationErrorCodes.CreditReversalRequiresSaleVoid,
+                "This credit was created by a Product-Based Utang sale. Void the sale to reverse it.");
+        }
+
         try
         {
             return await _unitOfWork
@@ -284,6 +293,13 @@ public sealed class ReverseCreditEntry
                         return ApplicationResult<CreditEntry>.Failure(
                             ApplicationErrorCodes.CreditEntryNotFound,
                             "Credit entry was not found.");
+                    }
+
+                    if (current.SourceSaleId is not null)
+                    {
+                        return ApplicationResult<CreditEntry>.Failure(
+                            ApplicationErrorCodes.CreditReversalRequiresSaleVoid,
+                            "This credit was created by a Product-Based Utang sale. Void the sale to reverse it.");
                     }
 
                     if (current.Status == CreditEntryStatus.Active)

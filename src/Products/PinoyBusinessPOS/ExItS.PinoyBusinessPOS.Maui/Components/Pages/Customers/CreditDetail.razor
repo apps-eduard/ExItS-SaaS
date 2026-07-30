@@ -106,12 +106,26 @@ else
                 <span class="pos-muted">@L["Credit_Field_Remarks"]</span>
                 <div class="pos-value-md pos-wrap">@entry.Remarks</div>
             </div>
+            @if (entry.SourceSaleId is not null)
+            {
+                <div>
+                    <span class="pos-muted">@L["Credit_LinkedSale"]</span>
+                    <div class="pos-value-md">
+                        <a class="pos-link" href="@($"/sales/{entry.SourceSaleId.Value:D}")">@entry.SourceSaleId.Value.ToString("D")</a>
+                    </div>
+                </div>
+            }
             <div>
                 <span class="pos-muted">@L["Payment_RecordedAt"]</span>
                 <div class="pos-value-md">@entry.CreatedAtUtc.ToLocalTime().ToString("g")</div>
             </div>
         </Stack>
     </Section>
+
+    @if (entry.SourceSaleId is not null && entry.Status == "Active")
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Credit_Reverse"]" Message="@L["Credit_ReverseViaSaleVoid"]" />
+    }
 
     @if (entry.Status == "Active" && _entityState != LocalEntitySyncState.PendingReversal)
     {
@@ -135,7 +149,10 @@ else
                     {
                         <Button Variant="ButtonVariant.Secondary" Disabled="@(!canMutateDueDate || _acting)" OnClick="() => _confirmClear = true">@L["DueDate_Clear"]</Button>
                     }
-                    <Button Variant="ButtonVariant.Danger" Disabled="@(!canReverseCredit || _acting)" OnClick="() => _confirmReverse = true">@L["Credit_Reverse"]</Button>
+                    @if (entry.SourceSaleId is null)
+                    {
+                        <Button Variant="ButtonVariant.Danger" Disabled="@(!canReverseCredit || _acting)" OnClick="() => _confirmReverse = true">@L["Credit_Reverse"]</Button>
+                    }
                 </FormActions>
             </Stack>
         </Section>
@@ -266,6 +283,7 @@ else
                 if (item is not null)
                 {
                     ApplyAgedCredit(item);
+                    await EnrichSourceSaleIdAsync();
                     if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
                     {
                         await MergeLocalStateAsync();
@@ -372,10 +390,36 @@ else
             aged.CreatedAtUtc,
             null,
             null,
-            aged.CurrentDueDate);
+            aged.CurrentDueDate,
+            SourceSaleId: null);
         _dueStatus = aged.DueStatus;
         _dueStatusLabel = DueStatusLabel(aged.DueStatus);
         _dueDate = aged.CurrentDueDate;
+    }
+
+    private async Task EnrichSourceSaleIdAsync()
+    {
+        if (_entry is null)
+        {
+            return;
+        }
+
+        var entries = await Customers.ListCreditEntriesAsync(CustomerId, page: 1, pageSize: 200);
+        if (!entries.IsSuccess || entries.Data is null)
+        {
+            return;
+        }
+
+        var match = entries.Data.Items.FirstOrDefault(i => i.CreditEntryId == CreditEntryId);
+        if (match is null)
+        {
+            return;
+        }
+
+        _entry = match with
+        {
+            CurrentDueDate = _entry.CurrentDueDate ?? match.CurrentDueDate
+        };
     }
 
     private async Task LoadHistoryAsync()

@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Sales;
@@ -46,7 +47,9 @@ internal static class SaleEntityMapper
             record.VoidedBy,
             record.VoidReason,
             record.UpdatedAtUtc,
-            lines);
+            lines,
+            record.CustomerId is null ? null : POSCustomerId.From(record.CustomerId.Value),
+            record.LinkedCreditEntryId is null ? null : CreditEntryId.From(record.LinkedCreditEntryId.Value));
     }
 
     public static SaleRecord ToRecord(Sale sale) =>
@@ -62,6 +65,8 @@ internal static class SaleEntityMapper
             AmountTendered = sale.AmountTendered,
             ChangeAmount = sale.ChangeAmount,
             GcashReference = sale.GCashReference,
+            CustomerId = sale.CustomerId?.Value,
+            LinkedCreditEntryId = sale.LinkedCreditEntryId?.Value,
             RecordedAtUtc = sale.RecordedAtUtc,
             RecordedBy = sale.RecordedBy,
             VoidedAtUtc = sale.VoidedAtUtc,

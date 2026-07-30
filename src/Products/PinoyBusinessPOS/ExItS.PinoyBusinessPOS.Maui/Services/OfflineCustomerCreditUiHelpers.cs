@@ -46,7 +46,8 @@ internal static class OfflineCustomerCreditUiHelpers
             credit.CreatedAtUtc,
             ReversedAtUtc: null,
             ReversalReason: null,
-            CurrentDueDate: credit.CurrentDueDate);
+            CurrentDueDate: credit.CurrentDueDate,
+            SourceSaleId: null);
 
     internal static PosRepaymentDto ToRepayment(LocalRepaymentProjection repayment) =>
         new(

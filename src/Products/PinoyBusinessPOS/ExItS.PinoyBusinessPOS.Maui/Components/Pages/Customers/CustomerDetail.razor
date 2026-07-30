@@ -244,6 +244,13 @@ else
                         </div>
                         <div class="pos-wrap">@entry.Remarks</div>
                         <div class="pos-muted">@entry.CreatedAtUtc.ToLocalTime().ToString("g")</div>
+                        @if (entry.SourceSaleId is not null)
+                        {
+                            <div class="pos-muted">
+                                @L["Credit_LinkedSale"]:
+                                <a class="pos-link" href="@($"/sales/{entry.SourceSaleId.Value:D}")">@entry.SourceSaleId.Value.ToString("D")</a>
+                            </div>
+                        }
                         @if (entry.Status == "Reversed")
                         {
                             <div class="pos-muted pos-wrap">@L["Credit_ReversalReason"]: @entry.ReversalReason</div>
@@ -252,8 +259,15 @@ else
                         {
                             <FormActions>
                                 <Button Variant="ButtonVariant.Secondary" OnClick="() => GoCreditDetail(entry.CreditEntryId)">@L["DueDate_OpenCredit"]</Button>
-                                <Button Variant="ButtonVariant.Danger" Disabled="@(!canReverseCredit)" OnClick="() => BeginReverseCredit(entry)">@L["Credit_Reverse"]</Button>
+                                @if (entry.SourceSaleId is null)
+                                {
+                                    <Button Variant="ButtonVariant.Danger" Disabled="@(!canReverseCredit)" OnClick="() => BeginReverseCredit(entry)">@L["Credit_Reverse"]</Button>
+                                }
                             </FormActions>
+                            @if (entry.SourceSaleId is not null)
+                            {
+                                <Alert Tone="AlertTone.Info" Title="@L["Credit_Reverse"]" Message="@L["Credit_ReverseViaSaleVoid"]" />
+                            }
                         }
                     </div>
                 }

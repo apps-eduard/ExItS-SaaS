@@ -105,6 +105,7 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.CurrentDueDate)
                 .HasColumnName("current_due_date")
                 .HasColumnType("date");
+            entity.Property(e => e.SourceSaleId).HasColumnName("source_sale_id");
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")
@@ -120,11 +121,24 @@ public sealed class PosDbContext : DbContext
             entity.HasIndex(e => new { e.OrganizationId, e.CurrentDueDate })
                 .HasDatabaseName("ix_credit_entries_org_current_due_date");
 
+            entity.HasIndex(e => e.SourceSaleId)
+                .IsUnique()
+                .HasDatabaseName("ux_credit_entries_source_sale_id")
+                .HasFilter("source_sale_id IS NOT NULL");
+
             entity.HasOne<POSCustomerRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_credit_entries_customers");
+
+            // FK to sales only (not the reverse) avoids circular insert failures when checkout
+            // writes sale.linked_credit_entry_id and credit.source_sale_id in one transaction.
+            entity.HasOne<SaleRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SourceSaleId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_credit_entries_source_sale");
         });
 
         modelBuilder.Entity<CreditDueDateChangeRecord>(entity =>
@@ -389,10 +403,11 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_sales_void_consistency",
                     "(status = 'Completed' AND voided_at_utc IS NULL AND voided_by IS NULL AND void_reason IS NULL) OR (status = 'Voided' AND voided_at_utc IS NOT NULL AND voided_by IS NOT NULL AND void_reason IS NOT NULL)");
-                // Cash sales carry tender and change and no GCash reference; manual GCash sales carry neither.
+                // Cash: tender + change, no GCash/customer/credit. ManualGCash: no tender/change/customer/credit.
+                // Utang: no tender/change/GCash; customer + linked credit required; total > 0.
                 tb.HasCheckConstraint(
                     "ck_sales_tender_consistency",
-                    "(payment_method = 'Cash' AND amount_tendered IS NOT NULL AND change_amount IS NOT NULL AND amount_tendered >= total AND gcash_reference IS NULL) OR (payment_method = 'ManualGCash' AND amount_tendered IS NULL AND change_amount IS NULL)");
+                    "(payment_method = 'Cash' AND amount_tendered IS NOT NULL AND change_amount IS NOT NULL AND amount_tendered >= total AND gcash_reference IS NULL AND customer_id IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method = 'ManualGCash' AND amount_tendered IS NULL AND change_amount IS NULL AND customer_id IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method = 'Utang' AND amount_tendered IS NULL AND change_amount IS NULL AND gcash_reference IS NULL AND customer_id IS NOT NULL AND linked_credit_entry_id IS NOT NULL AND total > 0)");
             });
 
             entity.HasKey(e => e.Id);
@@ -414,6 +429,8 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.GcashReference)
                 .HasColumnName("gcash_reference")
                 .HasMaxLength(Sale.GCashReferenceMaxLength);
+            entity.Property(e => e.CustomerId).HasColumnName("customer_id");
+            entity.Property(e => e.LinkedCreditEntryId).HasColumnName("linked_credit_entry_id");
             entity.Property(e => e.RecordedAtUtc).HasColumnName("recorded_at_utc");
             entity.Property(e => e.RecordedBy).HasColumnName("recorded_by").IsRequired();
             entity.Property(e => e.VoidedAtUtc).HasColumnName("voided_at_utc");
@@ -441,6 +458,22 @@ public sealed class PosDbContext : DbContext
 
             entity.HasIndex(e => new { e.OrganizationId, e.PaymentMethod })
                 .HasDatabaseName("ix_sales_org_payment_method");
+
+            entity.HasIndex(e => e.LinkedCreditEntryId)
+                .IsUnique()
+                .HasDatabaseName("ux_sales_linked_credit_entry_id")
+                .HasFilter("linked_credit_entry_id IS NOT NULL");
+
+            entity.HasIndex(e => e.CustomerId)
+                .HasDatabaseName("ix_sales_customer_id");
+
+            // No FK from linked_credit_entry_id → credit_entries (circular with source_sale_id).
+            // Application + unique filter index enforce one-to-one linkage.
+            entity.HasOne<POSCustomerRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_sales_customers");
         });
 
         modelBuilder.Entity<SaleLineRecord>(entity =>

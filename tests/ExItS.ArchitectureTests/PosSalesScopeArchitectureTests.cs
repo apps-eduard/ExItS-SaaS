@@ -1,9 +1,9 @@
 namespace ExItS.ArchitectureTests;
 
 /// <summary>
-/// Guards the P8-WP02 boundary: simple sales may record cash and manual GCash checkouts and void
-/// them, but must not introduce inventory deduction, Utang sales, offline sale capture, tax,
-/// discounts, refunds, split tender, or payment gateways reserved for later work packages.
+/// Guards the Product-Based Utang / simple-sales boundary: sales may record Cash, ManualGCash, and
+/// online Utang checkouts (with linked credit) and void them, but must not introduce inventory
+/// deduction, offline sale capture, tax, discounts, refunds, split tender, or payment gateways.
 /// </summary>
 public sealed class PosSalesScopeArchitectureTests
 {
@@ -28,8 +28,6 @@ public sealed class PosSalesScopeArchitectureTests
         "PaymentGateway",
         "PaymentIntent",
         "GCashApi",
-        "CreditEntryId",
-        "UtangSale",
         "PurchaseOrder",
         "SupplierId"
     ];
@@ -85,19 +83,18 @@ public sealed class PosSalesScopeArchitectureTests
     }
 
     [Fact]
-    public void Checkout_never_touches_credit_repayment_or_customer_repositories()
+    public void Checkout_utang_path_may_use_credit_and_customer_repositories()
     {
         var useCases = File.ReadAllText(Path.Combine(
             PosProject("ExItS.PinoyBusinessPOS.Application"), "Sales", "SaleUseCases.cs"));
 
-        foreach (var forbidden in new[]
-                 {
-                     "ICreditEntryRepository", "IRepaymentRepository", "IPOSCustomerRepository",
-                     "CreditEntry.", "Repayment.", "POSCustomer."
-                 })
-        {
-            Assert.DoesNotContain(forbidden, useCases, StringComparison.Ordinal);
-        }
+        Assert.Contains("ICreditEntryRepository", useCases, StringComparison.Ordinal);
+        Assert.Contains("IPOSCustomerRepository", useCases, StringComparison.Ordinal);
+        Assert.Contains("SalePaymentMethod.Utang", useCases, StringComparison.Ordinal);
+
+        // Offline sale queue / repayment mutation from checkout remain out of scope.
+        Assert.DoesNotContain("IOfflineOperationDispatcher", useCases, StringComparison.Ordinal);
+        Assert.DoesNotContain("IRepaymentRepository", useCases, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -132,6 +129,30 @@ public sealed class PosSalesScopeArchitectureTests
             PosProject("ExItS.PinoyBusinessPOS.Maui"), "MauiProgram.cs"));
         Assert.DoesNotContain("SaleCheckoutOfflineDispatcher", mauiProgram, StringComparison.Ordinal);
         Assert.DoesNotContain("SaleOfflineDispatcher", mauiProgram, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Product_based_utang_has_no_offline_queue_path()
+    {
+        var apiClient = PosProject("ExItS.PinoyBusinessPOS.ApiClient");
+        foreach (var file in Directory.EnumerateFiles(apiClient, "*Offline*.cs", SearchOption.AllDirectories))
+        {
+            var text = File.ReadAllText(file);
+            Assert.DoesNotContain("UtangPaymentMethod", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("SalePaymentMethod.Utang", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("ProductBasedUtang", text, StringComparison.Ordinal);
+        }
+
+        var checkout = File.ReadAllText(Path.Combine(
+            PosProject("ExItS.PinoyBusinessPOS.Maui"),
+            "Components",
+            "Pages",
+            "Sales",
+            "SaleCheckout.razor"));
+        Assert.Contains("PosSaleOptions.UtangPaymentMethod", checkout, StringComparison.Ordinal);
+        Assert.DoesNotContain("IOfflineOperationQueue", checkout, StringComparison.Ordinal);
+        Assert.DoesNotContain("Enqueue", checkout, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("online-only", checkout, StringComparison.OrdinalIgnoreCase);
     }
 
     private static IEnumerable<string> SalesSourceFiles()
