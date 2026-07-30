@@ -90,6 +90,11 @@ Android Release APK: `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/
 
 POS Domain/Application/Infrastructure/Api/ApiClient/Maui customers; phase-06 roadmap; portfolio; README; FILE-MANIFEST; engineering docs (architecture, data ownership, security, authorization, localization, UI, testing); risks; release-plan; this report.
 
+## Git evidence
+
+- Feature commit: `674ad0660b0bd11bca75f2e90e329c4579ff592a`
+- Phase marker: `P6-WP01-customers`
+
 ## Exact next work package
 
 **P6-WP02 — Remarks-Based Credit** — do **not** begin until explicitly authorized.

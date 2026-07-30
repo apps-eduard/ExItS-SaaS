@@ -125,6 +125,7 @@ docs/reports/P5-WP02-native-ui-tokens-themes-and-compact-layout.md
 docs/reports/P5-WP03-english-and-filipino-localization.md
 docs/reports/P5-WP04-reusable-mvp-components.md
 docs/reports/P5-WP05-authentication-onboarding-and-closeout.md
+docs/reports/P6-WP01-customers.md
 docs/reports/phase-02-extraction-closeout.md
 docs/reports/phase-00-final-assessment-and-recommendation.md
 docs/reports/phase-01-architecture-approval.md

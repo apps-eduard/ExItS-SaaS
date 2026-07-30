@@ -16,7 +16,7 @@ Deliver the customer-facing Utang product.
 
 Status: **Complete with documented risks**
 
-Feature commit: _(recorded after push)_
+Feature commit: `674ad0660b0bd11bca75f2e90e329c4579ff592a`
 Report: [P6-WP01-customers.md](../reports/P6-WP01-customers.md)
 
 #### Approved scope (clarified)

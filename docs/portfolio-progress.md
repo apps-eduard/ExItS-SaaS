@@ -14,7 +14,7 @@
 | Current phase | Phase 6 — Utang MVP (**In Progress**) |
 | Current work package | P6-WP01 — Customers (**Complete with documented risks**) |
 | Overall status | **P6-WP01 complete** — customers-only; next P6-WP02 when authorized |
-| Latest verified commit | _(feature hash after push)_ |
+| Latest verified commit | 674ad0660b0bd11bca75f2e90e329c4579ff592a |
 | Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations; R-035 calendar EOM; no credit/ledger yet; no payment gateway; no interactive Android emulator (R-109); OD-07/OD-08 open |
 | Last updated | 2026-07-30 |
 
@@ -50,7 +50,7 @@ P6-WP02 — Remarks-Based Credit (not started — do not begin until authorized)
 
 | WP | Status | Key commit |
 |---|---|---|
-| P6-WP01 | Complete with risks | _(after push)_ |
+| P6-WP01 | Complete with risks | 674ad0660b0bd11bca75f2e90e329c4579ff592a |
 | P6-WP02 | Not Started | — |
 | P6-WP03 | Not Started | — |
 | P6-WP04 | Not Started | — |
