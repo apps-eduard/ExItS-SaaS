@@ -1,7 +1,7 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown documentation files plus root Platform foundation through Phase 6 P6-WP01 customers (organization-isolated POS customer management).
-Internal links checked: spot-check P6-WP01
+Markdown documentation files plus root Platform foundation through Phase 6 P6-WP02 remarks-based credit (organization-owned credit entries; derived outstanding; explicit reversal).
+Internal links checked: spot-check P6-WP02
 Broken links: none found in spot-check of new paths
 
 ## Root foundation (tracked)
@@ -20,12 +20,12 @@ src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog + organi
 src/Platform/ExItS.Platform.Api/ (`/` + `/health` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs; `PlatformAuthz`; phase marker retained from P5)
 src/Platform/ExItS.Platform.Admin/ (Blazor Web App — redesigned native CSS shell; typed API client; portfolio + users/memberships/product-access + subscription/payment/trial + audit views; themes; AdminResources en/fil-PH)
 src/Shared/ExItS.DesignSystem/ (semantic tokens; forms/data/feedback overlays; DesignSystem/Validation/Error resources en/fil-PH; Blazor primitives; `IDensityPreferenceStore`)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ (POSCustomer aggregate)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth; Customers use cases/DTOs)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migration `AddPosCustomers`)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + `/api/v1/pos/customers*`; phase marker `P6-WP01-customers`)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client; PosCustomerClient; org header handler)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers list/create/detail/edit; onboarding/auth; PosResources en/fil-PH)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ (POSCustomer + CreditEntry aggregates)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth; Customers; Credit use cases/DTOs)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migrations `AddPosCustomers`, `AddPosCreditEntries`)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + `/api/v1/pos/customers*` + credit routes; phase marker `P6-WP02-remarks-based-credit`)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client; PosCustomerClient with credit methods; org header handler)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers + credit create/history/reverse; onboarding/auth; PosResources en/fil-PH)
 tests/ExItS.Platform.UnitTests/
 tests/ExItS.ArchitectureTests/
 tests/ExItS.Platform.IntegrationTests/
@@ -126,6 +126,7 @@ docs/reports/P5-WP03-english-and-filipino-localization.md
 docs/reports/P5-WP04-reusable-mvp-components.md
 docs/reports/P5-WP05-authentication-onboarding-and-closeout.md
 docs/reports/P6-WP01-customers.md
+docs/reports/P6-WP02-remarks-based-credit.md
 docs/reports/phase-02-extraction-closeout.md
 docs/reports/phase-00-final-assessment-and-recommendation.md
 docs/reports/phase-01-architecture-approval.md

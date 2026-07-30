@@ -128,12 +128,13 @@
 | R-122 | Stale commercial access after session restore or org switch | High | Re-evaluate on restore/select; clear org preference on deny; fail closed | Open — introduced P5-WP05 |
 | R-123 | Commercial POS access confused with operational roles | High | Explicit UI/docs: no Cashier/Manager/Admin assignment; product-local roles deferred | Open — introduced P5-WP05 |
 | R-124 | POS customer API organization header mistaken for production authz | Critical | Document Dev/Testing-only scope; production JWT still required (R-091); fail closed cross-org 404 | Open — introduced P6-WP01 |
-| R-125 | Customer notes misused as credit/utang records | High | UI deferred-credit copy; notes hint forbids credit meaning; credit WP deferred | Open — introduced P6-WP01 |
+| R-125 | Customer notes misused as credit/utang records | High | Notes hint forbids credit meaning; dedicated `credit_entries` + UI copy | Open — introduced P6-WP01; mitigated further in P6-WP02 |
 | R-126 | Duplicate mobile MVP rule too strict/loose for real stores | Medium | Document MVP active-mobile uniqueness; refine later | Open — introduced P6-WP01 |
+| R-127 | Derived outstanding mistaken for stored balance / repayment ledger | High | Document sum-of-active-entries only; no edit/delete; repayments deferred to P6-WP03 | Open — introduced P6-WP02 |
 
-## Phase 6 note (P6-WP01)
+## Phase 6 note (P6-WP02)
 
-P6-WP01 delivered organization-isolated POS customers (separate `ExItS_PinoyBusinessPOS` / `pos.customers`). **Not delivered:** remarks-based credit, balances, ledger, repayments, due dates, statements. OD-07/OD-08 remain open. Next: **P6-WP02 — Remarks-Based Credit** when authorized.
+P6-WP02 delivered organization-owned remarks-based credit entries (`pos.credit_entries`) with derived outstanding and explicit reversal. **Not delivered:** repayments, payment allocation, full payment ledger, due dates, statements, receipts. OD-07/OD-08 remain open. Next: **P6-WP03 — Payments and Ledger** when authorized.
 
 ## Phase 5 note (P5-WP05 closeout)
 

@@ -8,7 +8,7 @@ Deliver the customer-facing Utang product.
 
 ## Status
 
-**In Progress** — P6-WP01 **Complete with documented risks**. Do **not** begin P6-WP02 until explicitly authorized.
+**In Progress** — P6-WP01 and P6-WP02 complete. Do **not** begin P6-WP03 until explicitly authorized.
 
 ## Work packages
 
@@ -55,26 +55,44 @@ Credit accounts, remarks-based credit, balances, ledger, repayments, due dates, 
 
 ### P6-WP02 — Remarks-Based Credit
 
-Status: Not Started — **do not begin**
+Status: **Complete with documented risks**
 
-#### Required outcomes
+Feature commit: `ead6942187ca9a9c507dcf706bbece2e507a8645`
+Report: [P6-WP02-remarks-based-credit.md](../reports/P6-WP02-remarks-based-credit.md)
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+#### Approved scope
+
+Organization-owned remarks-based customer credit entries only:
+
+- Positive decimal amount
+- Required plain-text remarks
+- Active customer required to create credit
+- Append-only history (no edit/delete of recorded credit)
+- Explicit reversal with required reason
+- Derived outstanding amount from **active** credit entries only
+- Customer credit summary and history
+- POS API + MAUI workflows
+- PostgreSQL migration `AddPosCreditEntries`
+- Organization isolation
+- Tests, documentation, Android evidence
+- Phase marker `P6-WP02-remarks-based-credit`
+
+#### Explicit exclusions (later WPs)
+
+Repayments, payment allocation, full payment ledger, due dates, statements, receipts, interest, penalties, credit limits, sales, inventory, gateways, QR/cards, offline sync. Platform SaaS payments remain separate. OD-07/OD-08 remain open.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence.
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean.
 
 ### P6-WP03 — Payments and Ledger
 
-Status: Not Started
+Status: Not Started — **do not begin**
 
 #### Required outcomes
 

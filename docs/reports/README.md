@@ -47,3 +47,4 @@ The dashboard links to the latest accepted report.
 | [P5-WP04-reusable-mvp-components.md](P5-WP04-reusable-mvp-components.md) | Reusable MVP Components | Complete |
 | [P5-WP05-authentication-onboarding-and-closeout.md](P5-WP05-authentication-onboarding-and-closeout.md) | Authentication, Onboarding and Closeout | Complete (Phase 5 closed with documented risks) |
 | [P6-WP01-customers.md](P6-WP01-customers.md) | Customers | Complete with documented risks |
+| [P6-WP02-remarks-based-credit.md](P6-WP02-remarks-based-credit.md) | Remarks-Based Credit | Complete with documented risks |

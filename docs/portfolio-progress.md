@@ -2,7 +2,7 @@
 
 > Primary status page. Cursor must update this file after every completed work package. Percentages are calculated from approved work packages, never estimated.
 
-[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P6-WP01 report](reports/P6-WP01-customers.md)
+[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P6-WP02 report](reports/P6-WP02-remarks-based-credit.md)
 
 ## Current status
 
@@ -12,10 +12,10 @@
 | Existing product | HealthCare SaaS MVP (ignored nested `HealthCare/`) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 6 — Utang MVP (**In Progress**) |
-| Current work package | P6-WP01 — Customers (**Complete with documented risks**) |
-| Overall status | **P6-WP01 complete** — customers-only; next P6-WP02 when authorized |
-| Latest verified commit | 674ad0660b0bd11bca75f2e90e329c4579ff592a |
-| Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations; R-035 calendar EOM; no credit/ledger yet; no payment gateway; no interactive Android emulator (R-109); OD-07/OD-08 open |
+| Current work package | P6-WP02 — Remarks-Based Credit (**Complete with documented risks**) |
+| Overall status | **P6-WP02 complete** — remarks-based credit; next P6-WP03 when authorized |
+| Latest verified commit | ead6942187ca9a9c507dcf706bbece2e507a8645 |
+| Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations; R-035 calendar EOM; no repayments/ledger yet; no payment gateway; no interactive Android emulator (R-109); OD-07/OD-08 open |
 | Last updated | 2026-07-30 |
 
 ## Delivery sequence
@@ -25,7 +25,9 @@ Phase 5 ✓
         ↓
 P6-WP01 ✓ Customers (complete with risks)
         ↓
-P6-WP02 — Remarks-Based Credit (not started — do not begin until authorized)
+P6-WP02 ✓ Remarks-Based Credit (complete with risks)
+        ↓
+P6-WP03 — Payments and Ledger (not started — do not begin until authorized)
 ```
 
 ## Phase progress
@@ -38,20 +40,20 @@ P6-WP02 — Remarks-Based Credit (not started — do not begin until authorized)
 | 3 | Portfolio Billing, Plans and Entitlements | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-03-billing-entitlements.md) |
 | 4 | Platform Admin Expansion | **Complete with documented risks** | 4 | 4 | 100% | [Open](phases/phase-04-platform-admin.md) |
 | 5 | PinoyBusinessPOS MAUI Foundation | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-05-pos-maui-foundation.md) |
-| 6 | Utang MVP | **In Progress** | 1 | 6 | 16.67% | [Open](phases/phase-06-utang-mvp.md) |
+| 6 | Utang MVP | **In Progress** | 2 | 6 | 33.33% | [Open](phases/phase-06-utang-mvp.md) |
 | 7 | Offline Synchronization | Not Started | 0 | 5 | 0% | [Open](phases/phase-07-offline-sync.md) |
 | 8 | Basic Store | Not Started | 0 | 7 | 0% | [Open](phases/phase-08-basic-store.md) |
 | 9 | MVP Hardening and Release | Not Started | 0 | 6 | 0% | [Open](phases/phase-09-mvp-hardening.md) |
 | 10 | Full POS | Future | 0 | 8 | 0% | [Open](phases/phase-10-full-pos.md) |
 
-**MVP phases 0–9:** 29 / 52 = **55.77%**.
+**MVP phases 0–9:** 30 / 52 = **57.69%**.
 
 ## Phase 6 work packages
 
 | WP | Status | Key commit |
 |---|---|---|
 | P6-WP01 | Complete with risks | 674ad0660b0bd11bca75f2e90e329c4579ff592a |
-| P6-WP02 | Not Started | — |
+| P6-WP02 | Complete with risks | ead6942187ca9a9c507dcf706bbece2e507a8645 |
 | P6-WP03 | Not Started | — |
 | P6-WP04 | Not Started | — |
 | P6-WP05 | Not Started | — |
@@ -81,7 +83,7 @@ P6-WP02 — Remarks-Based Credit (not started — do not begin until authorized)
 | DesignSystem | 28 | 0 | 0 |
 | ApiClient | 17 | 0 | 0 |
 | Maui | 27 | 0 | 0 |
-| POS unit | 8 | 0 | 0 |
-| POS integration | 4 | 0 | 0 |
+| POS unit | 14 | 0 | 0 |
+| POS integration | 6 | 0 | 0 |
 | Platform integration | 84 | 0 | 0 |
-| **Total** | **497** | **0** | **0** |
+| **Total** | **505** | **0** | **0** |
