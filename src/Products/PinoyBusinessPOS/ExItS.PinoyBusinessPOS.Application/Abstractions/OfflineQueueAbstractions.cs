@@ -73,7 +73,7 @@ public sealed record OfflineQueueCounts(
 {
     public int UnsyncedWork => Pending + Syncing + RetryableFailure + PermanentFailure + Conflict + BlockedByAccess;
 
-    public int PendingSyncDisplay => Pending + RetryableFailure + BlockedByAccess;
+    public int PendingSyncDisplay => Pending + RetryableFailure;
 }
 
 /// <summary>Encrypts/decrypts offline operation payloads. Key lives only in SecureStorage.</summary>
@@ -134,6 +134,11 @@ public interface IOfflineOperationQueue
 public interface IOfflineAccessRevalidator
 {
     Task<OfflineAccessRevalidationResult> RevalidateAsync(CancellationToken ct = default);
+
+    /// <summary>Revalidates operation-specific capability for a claimed queue item before dispatch.</summary>
+    Task<OfflineAccessRevalidationResult> RevalidateOperationAsync(
+        string operationType,
+        CancellationToken ct = default);
 }
 
 public sealed record OfflineAccessRevalidationResult(

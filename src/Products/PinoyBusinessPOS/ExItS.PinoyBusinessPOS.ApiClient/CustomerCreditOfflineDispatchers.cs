@@ -190,7 +190,7 @@ public sealed class CustomerCreateOfflineDispatcher(
     private static string? SerializeConflict(ApiError? error) =>
         error is null
             ? null
-            : JsonSerializer.Serialize(new { error.Title, error.Detail, error.ErrorCode, error.StatusCode }, JsonOptions);
+            : JsonSerializer.Serialize(new { statusCode = error.StatusCode, errorCode = error.ErrorCode }, JsonOptions);
 }
 
 /// <summary>Dispatches offline customer update operations to the POS API.</summary>
@@ -335,6 +335,8 @@ public sealed class CreditCreateOfflineDispatcher(
                         .SetConfirmedOutstandingAsync(payload.CustomerId, summary.Data.OutstandingAmount, ct)
                         .ConfigureAwait(false);
                 }
+
+                await localStore.RebuildOptimisticBalancesAsync(payload.CustomerId, ct).ConfigureAwait(false);
             }
 
             return new OfflineDispatchResult(

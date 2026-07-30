@@ -3,7 +3,7 @@ using ExItS.PinoyBusinessPOS.Application.Abstractions;
 namespace ExItS.PinoyBusinessPOS.Application.Offline;
 
 /// <summary>
-/// Truthful sync-status resolver for P7-WP02: Online/Offline/Reconnect plus queue-driven states.
+/// Truthful sync-status resolver for P7-WP02+: Online/Offline/Reconnect plus queue-driven states.
 /// </summary>
 public sealed class PosSyncStatusService : IPosSyncStatusService, IDisposable
 {
@@ -12,6 +12,7 @@ public sealed class PosSyncStatusService : IPosSyncStatusService, IDisposable
     private readonly IOfflineOperationQueue? _queue;
     private ConnectivityStatus _connectivityStatus = ConnectivityStatus.Unknown;
     private bool _reconnectRequired;
+    private bool _recoveryRequired;
 
     public PosSyncStatusService(
         IConnectivityService connectivity,
@@ -49,6 +50,17 @@ public sealed class PosSyncStatusService : IPosSyncStatusService, IDisposable
         Refresh();
     }
 
+    public void SetRecoveryRequired(bool required)
+    {
+        if (_recoveryRequired == required)
+        {
+            return;
+        }
+
+        _recoveryRequired = required;
+        Refresh();
+    }
+
     public void Refresh()
     {
         _ = RefreshAsync();
@@ -83,6 +95,21 @@ public sealed class PosSyncStatusService : IPosSyncStatusService, IDisposable
             }
         }
 
+        var queueNeedsRecovery = counts is not null
+            && (counts.Conflict > 0 || counts.PermanentFailure > 0 || counts.BlockedByAccess > 0);
+
+        if (_recoveryRequired || queueNeedsRecovery)
+        {
+            var pendingCount = counts is null
+                ? (int?)null
+                : counts.PendingSyncDisplay + counts.PermanentFailure + counts.Conflict + counts.BlockedByAccess;
+            Current = new PosSyncStatusSnapshot(
+                PosSyncStatusKind.RecoveryRequired,
+                PendingCount: pendingCount,
+                SafeDetailKey: _recoveryRequired ? "SyncStatus_KeyUnavailable" : "SyncStatus_RecoveryRequired");
+            return;
+        }
+
         if (counts is not null)
         {
             if (counts.Syncing > 0)
@@ -91,20 +118,20 @@ public sealed class PosSyncStatusService : IPosSyncStatusService, IDisposable
                 return;
             }
 
-            if (counts.PermanentFailure > 0 || counts.Conflict > 0)
+            if (counts.RetryableFailure > 0)
             {
                 Current = new PosSyncStatusSnapshot(
                     PosSyncStatusKind.SyncFailed,
-                    PendingCount: counts.PendingSyncDisplay + counts.PermanentFailure + counts.Conflict,
+                    PendingCount: counts.PendingSyncDisplay,
                     SafeDetailKey: "SyncStatus_Failed");
                 return;
             }
 
-            if (counts.PendingSyncDisplay > 0 || counts.RetryableFailure > 0)
+            if (counts.Pending > 0)
             {
                 Current = new PosSyncStatusSnapshot(
                     PosSyncStatusKind.PendingSync,
-                    PendingCount: counts.Pending + counts.RetryableFailure + counts.BlockedByAccess);
+                    PendingCount: counts.Pending);
                 return;
             }
 

@@ -495,6 +495,15 @@ public sealed class LocalEncryptedCustomerCreditStore(
             command.CustomerId,
             command.Reason), JsonOptions);
 
+        var updatedRepayment = repayment with
+        {
+            EntityState = LocalEntitySyncState.PendingReversal,
+            PendingOperationId = command.OperationId,
+            PendingReversalReason = command.Reason
+        };
+        var encrypted = await EncryptRepaymentFieldsAsync(active, command.RepaymentId, updatedRepayment, ct)
+            .ConfigureAwait(false);
+
         await PersistWithQueueAsync(
             active,
             command.OperationId,
@@ -514,12 +523,17 @@ public sealed class LocalEncryptedCustomerCreditStore(
                     UPDATE local_repayment_projection
                     SET entity_state = $state,
                         pending_operation_id = $pending,
-                        pending_reversal_reason = $reason
+                        pending_reversal_reason = NULL,
+                        ciphertext = $ciphertext,
+                        nonce = $nonce,
+                        tag = $tag
                     WHERE repayment_id = $id;
                     """;
                 cmd.Parameters.AddWithValue("$state", LocalEntitySyncState.PendingReversal.ToString());
                 cmd.Parameters.AddWithValue("$pending", command.OperationId.ToString("D"));
-                cmd.Parameters.AddWithValue("$reason", command.Reason);
+                cmd.Parameters.AddWithValue("$ciphertext", encrypted.Ciphertext);
+                cmd.Parameters.AddWithValue("$nonce", encrypted.Nonce);
+                cmd.Parameters.AddWithValue("$tag", encrypted.Tag);
                 cmd.Parameters.AddWithValue("$id", command.RepaymentId.ToString("D"));
                 await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
             },
@@ -566,6 +580,16 @@ public sealed class LocalEncryptedCustomerCreditStore(
             command.IsClear,
             expectedUpdatedAt.Value.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)), JsonOptions);
 
+        var updatedCredit = credit with
+        {
+            EntityState = LocalEntitySyncState.PendingUpdate,
+            PendingOperationId = command.OperationId,
+            PendingDueDate = command.IsClear ? null : command.NewDueDate,
+            PendingDueDateReason = command.Reason,
+            PendingDueDateClear = command.IsClear
+        };
+        var encrypted = await EncryptCreditFieldsAsync(active, command.CreditEntryId, updatedCredit, ct).ConfigureAwait(false);
+
         await PersistWithQueueAsync(
             active,
             command.OperationId,
@@ -585,20 +609,19 @@ public sealed class LocalEncryptedCustomerCreditStore(
                     UPDATE local_credit_projection
                     SET entity_state = $state,
                         pending_operation_id = $pending,
-                        pending_due_date = $pendingDue,
-                        pending_due_date_reason = $reason,
-                        pending_due_date_clear = $isClear
+                        ciphertext = $ciphertext,
+                        nonce = $nonce,
+                        tag = $tag,
+                        pending_due_date = NULL,
+                        pending_due_date_reason = NULL,
+                        pending_due_date_clear = 0
                     WHERE credit_entry_id = $id;
                     """;
                 cmd.Parameters.AddWithValue("$state", LocalEntitySyncState.PendingUpdate.ToString());
                 cmd.Parameters.AddWithValue("$pending", command.OperationId.ToString("D"));
-                cmd.Parameters.AddWithValue(
-                    "$pendingDue",
-                    command.IsClear || command.NewDueDate is null
-                        ? DBNull.Value
-                        : command.NewDueDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
-                cmd.Parameters.AddWithValue("$reason", command.Reason);
-                cmd.Parameters.AddWithValue("$isClear", command.IsClear ? 1 : 0);
+                cmd.Parameters.AddWithValue("$ciphertext", encrypted.Ciphertext);
+                cmd.Parameters.AddWithValue("$nonce", encrypted.Nonce);
+                cmd.Parameters.AddWithValue("$tag", encrypted.Tag);
                 cmd.Parameters.AddWithValue("$id", command.CreditEntryId.ToString("D"));
                 await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
             },
@@ -820,11 +843,22 @@ public sealed class LocalEncryptedCustomerCreditStore(
     public async Task DiscardLocalPendingCreditDueDateAsync(Guid creditEntryId, CancellationToken ct = default)
     {
         var active = RequireActiveContext();
+        await EnsureEncryptionKeyAsync(ct).ConfigureAwait(false);
         var credit = await GetCreditAsync(creditEntryId, ct).ConfigureAwait(false);
         if (credit is null || credit.EntityState != LocalEntitySyncState.PendingUpdate)
         {
             return;
         }
+
+        var clearedCredit = credit with
+        {
+            EntityState = LocalEntitySyncState.ServerConfirmed,
+            PendingOperationId = null,
+            PendingDueDate = null,
+            PendingDueDateReason = null,
+            PendingDueDateClear = false
+        };
+        var encrypted = await EncryptCreditFieldsAsync(active, creditEntryId, clearedCredit, ct).ConfigureAwait(false);
 
         await _gate.WaitAsync(ct).ConfigureAwait(false);
         try
@@ -839,6 +873,9 @@ public sealed class LocalEncryptedCustomerCreditStore(
                 UPDATE local_credit_projection
                 SET entity_state = $state,
                     pending_operation_id = NULL,
+                    ciphertext = $ciphertext,
+                    nonce = $nonce,
+                    tag = $tag,
                     pending_due_date = NULL,
                     pending_due_date_reason = NULL,
                     pending_due_date_clear = 0,
@@ -846,6 +883,9 @@ public sealed class LocalEncryptedCustomerCreditStore(
                 WHERE credit_entry_id = $id;
                 """;
             cmd.Parameters.AddWithValue("$state", LocalEntitySyncState.ServerConfirmed.ToString());
+            cmd.Parameters.AddWithValue("$ciphertext", encrypted.Ciphertext);
+            cmd.Parameters.AddWithValue("$nonce", encrypted.Nonce);
+            cmd.Parameters.AddWithValue("$tag", encrypted.Tag);
             cmd.Parameters.AddWithValue("$failure", "discarded_by_user");
             cmd.Parameters.AddWithValue("$id", creditEntryId.ToString("D"));
             await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
@@ -911,11 +951,20 @@ public sealed class LocalEncryptedCustomerCreditStore(
     public async Task DiscardLocalPendingRepaymentReversalAsync(Guid repaymentId, CancellationToken ct = default)
     {
         var active = RequireActiveContext();
+        await EnsureEncryptionKeyAsync(ct).ConfigureAwait(false);
         var repayment = await GetRepaymentAsync(repaymentId, ct).ConfigureAwait(false);
         if (repayment is null || repayment.EntityState != LocalEntitySyncState.PendingReversal)
         {
             return;
         }
+
+        var clearedRepayment = repayment with
+        {
+            EntityState = LocalEntitySyncState.ServerConfirmed,
+            PendingOperationId = null,
+            PendingReversalReason = null
+        };
+        var encrypted = await EncryptRepaymentFieldsAsync(active, repaymentId, clearedRepayment, ct).ConfigureAwait(false);
 
         await _gate.WaitAsync(ct).ConfigureAwait(false);
         try
@@ -931,10 +980,16 @@ public sealed class LocalEncryptedCustomerCreditStore(
                 SET entity_state = $state,
                     pending_operation_id = NULL,
                     pending_reversal_reason = NULL,
+                    ciphertext = $ciphertext,
+                    nonce = $nonce,
+                    tag = $tag,
                     safe_failure_code = $failure
                 WHERE repayment_id = $id;
                 """;
             cmd.Parameters.AddWithValue("$state", LocalEntitySyncState.ServerConfirmed.ToString());
+            cmd.Parameters.AddWithValue("$ciphertext", encrypted.Ciphertext);
+            cmd.Parameters.AddWithValue("$nonce", encrypted.Nonce);
+            cmd.Parameters.AddWithValue("$tag", encrypted.Tag);
             cmd.Parameters.AddWithValue("$failure", "discarded_by_user");
             cmd.Parameters.AddWithValue("$id", repaymentId.ToString("D"));
             await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
@@ -1922,7 +1977,11 @@ public sealed class LocalEncryptedCustomerCreditStore(
         var plaintext = JsonSerializer.SerializeToUtf8Bytes(new CreditFieldPayload(
             FormatDecimal(credit.Amount),
             credit.Remarks,
-            credit.Status), JsonOptions);
+            credit.Status,
+            FormatDueDate(credit.CurrentDueDate),
+            FormatDueDate(credit.PendingDueDate),
+            credit.PendingDueDateReason,
+            credit.PendingDueDateClear ? true : null), JsonOptions);
         var aad = OfflinePayloadBinding.BuildCreditAssociatedData(active.Identity.ContextHash, creditEntryId);
         return await payloadProtector.EncryptAsync(plaintext, aad, ct).ConfigureAwait(false);
     }
@@ -1936,7 +1995,8 @@ public sealed class LocalEncryptedCustomerCreditStore(
         var plaintext = JsonSerializer.SerializeToUtf8Bytes(new RepaymentFieldPayload(
             FormatDecimal(repayment.Amount),
             repayment.Remarks,
-            repayment.Status), JsonOptions);
+            repayment.Status,
+            repayment.PendingReversalReason), JsonOptions);
         var aad = OfflinePayloadBinding.BuildRepaymentAssociatedData(active.Identity.ContextHash, repaymentId);
         return await payloadProtector.EncryptAsync(plaintext, aad, ct).ConfigureAwait(false);
     }
@@ -1993,6 +2053,17 @@ public sealed class LocalEncryptedCustomerCreditStore(
 
         var pendingOrdinal = reader.GetOrdinal("pending_operation_id");
         var dependsOrdinal = reader.GetOrdinal("depends_on_operation_id");
+        var currentDueDate = ParseDueDate(fields.CurrentDueDate) ?? ReadOptionalDueDate(reader, "current_due_date");
+        var pendingDueDate = fields.PendingDueDate is not null
+            ? ParseDueDate(fields.PendingDueDate)
+            : ReadOptionalDueDate(reader, "pending_due_date");
+        var pendingDueDateReason = fields.PendingDueDateReason
+            ?? (reader.IsDBNull(reader.GetOrdinal("pending_due_date_reason"))
+                ? null
+                : reader.GetString(reader.GetOrdinal("pending_due_date_reason")));
+        var pendingDueDateClear = fields.PendingDueDateClear
+            ?? (!reader.IsDBNull(reader.GetOrdinal("pending_due_date_clear"))
+                && reader.GetInt32(reader.GetOrdinal("pending_due_date_clear")) != 0);
         return new LocalCreditProjection(
             creditEntryId,
             Guid.Parse(reader.GetString(reader.GetOrdinal("customer_id"))),
@@ -2005,10 +2076,10 @@ public sealed class LocalEncryptedCustomerCreditStore(
             reader.IsDBNull(pendingOrdinal) ? null : Guid.Parse(reader.GetString(pendingOrdinal)),
             reader.IsDBNull(dependsOrdinal) ? null : Guid.Parse(reader.GetString(dependsOrdinal)),
             reader.IsDBNull(reader.GetOrdinal("safe_failure_code")) ? null : reader.GetString(reader.GetOrdinal("safe_failure_code")),
-            ReadOptionalDueDate(reader, "current_due_date"),
-            ReadOptionalDueDate(reader, "pending_due_date"),
-            reader.IsDBNull(reader.GetOrdinal("pending_due_date_reason")) ? null : reader.GetString(reader.GetOrdinal("pending_due_date_reason")),
-            !reader.IsDBNull(reader.GetOrdinal("pending_due_date_clear")) && reader.GetInt32(reader.GetOrdinal("pending_due_date_clear")) != 0,
+            currentDueDate,
+            pendingDueDate,
+            pendingDueDateReason,
+            pendingDueDateClear,
             reader.IsDBNull(reader.GetOrdinal("conflict_server_json")) ? null : reader.GetString(reader.GetOrdinal("conflict_server_json")));
     }
 
@@ -2030,6 +2101,10 @@ public sealed class LocalEncryptedCustomerCreditStore(
 
         var pendingOrdinal = reader.GetOrdinal("pending_operation_id");
         var dependsOrdinal = reader.GetOrdinal("depends_on_operation_id");
+        var pendingReversalReason = fields.PendingReversalReason
+            ?? (reader.IsDBNull(reader.GetOrdinal("pending_reversal_reason"))
+                ? null
+                : reader.GetString(reader.GetOrdinal("pending_reversal_reason")));
         return new LocalRepaymentProjection(
             repaymentId,
             Guid.Parse(reader.GetString(reader.GetOrdinal("customer_id"))),
@@ -2042,7 +2117,7 @@ public sealed class LocalEncryptedCustomerCreditStore(
             reader.IsDBNull(pendingOrdinal) ? null : Guid.Parse(reader.GetString(pendingOrdinal)),
             reader.IsDBNull(dependsOrdinal) ? null : Guid.Parse(reader.GetString(dependsOrdinal)),
             reader.IsDBNull(reader.GetOrdinal("safe_failure_code")) ? null : reader.GetString(reader.GetOrdinal("safe_failure_code")),
-            reader.IsDBNull(reader.GetOrdinal("pending_reversal_reason")) ? null : reader.GetString(reader.GetOrdinal("pending_reversal_reason")));
+            pendingReversalReason);
     }
 
     private async Task<decimal> DecryptBalanceColumnAsync(
@@ -2160,6 +2235,12 @@ public sealed class LocalEncryptedCustomerCreditStore(
 
         return DateOnly.Parse(reader.GetString(ordinal), CultureInfo.InvariantCulture);
     }
+
+    private static string? FormatDueDate(DateOnly? value) =>
+        value?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    private static DateOnly? ParseDueDate(string? value) =>
+        value is null ? null : DateOnly.Parse(value, CultureInfo.InvariantCulture);
 
     private static void ValidatePositiveAmount(decimal amount)
     {
@@ -2312,9 +2393,20 @@ public sealed class LocalEncryptedCustomerCreditStore(
         string? Address,
         string? Notes);
 
-    private sealed record CreditFieldPayload(string Amount, string Remarks, string Status);
+    private sealed record CreditFieldPayload(
+        string Amount,
+        string Remarks,
+        string Status,
+        string? CurrentDueDate = null,
+        string? PendingDueDate = null,
+        string? PendingDueDateReason = null,
+        bool? PendingDueDateClear = null);
 
-    private sealed record RepaymentFieldPayload(string Amount, string? Remarks, string Status);
+    private sealed record RepaymentFieldPayload(
+        string Amount,
+        string? Remarks,
+        string Status,
+        string? PendingReversalReason = null);
 
     private sealed record CustomerCreatePayload(
         Guid CustomerId,

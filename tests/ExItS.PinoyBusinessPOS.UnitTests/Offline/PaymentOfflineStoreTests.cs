@@ -398,6 +398,163 @@ public sealed class PaymentOfflineStoreTests
     }
 
     [Fact]
+    public async Task ServerConfirmed_credit_after_pending_create_rebuilds_balance_without_double_count()
+    {
+        await using var harness = await Harness.CreateAsync();
+        var customerId = Guid.NewGuid();
+        var creditId = Guid.NewGuid();
+        var creditOpId = Guid.NewGuid();
+        const decimal amount = 25m;
+
+        await harness.Store.SetConfirmedOutstandingAsync(customerId, 100m, CancellationToken.None);
+        await harness.Store.PersistCreditCreateAndEnqueueAsync(
+            new LocalCreditCreateCommand(
+                creditId,
+                customerId,
+                creditOpId,
+                creditOpId.ToString("N"),
+                amount,
+                "Offline utang",
+                null),
+            CancellationToken.None);
+
+        var withPending = await harness.Store.GetBalanceAsync(customerId);
+        Assert.Equal(100m, withPending.ConfirmedOutstanding);
+        Assert.Equal(amount, withPending.PendingCredit);
+        Assert.Equal(125m, withPending.ProjectedOutstanding);
+
+        var now = DateTimeOffset.UtcNow;
+        await harness.Store.UpsertServerCreditAsync(
+            new LocalCreditProjection(
+                creditId,
+                customerId,
+                harness.OrgId,
+                amount,
+                "Offline utang",
+                "Active",
+                now,
+                LocalEntitySyncState.ServerConfirmed,
+                null,
+                null,
+                null),
+            CancellationToken.None);
+
+        await harness.Store.SetConfirmedOutstandingAsync(customerId, 125m, CancellationToken.None);
+        await harness.Store.RebuildOptimisticBalancesAsync(customerId, CancellationToken.None);
+
+        var afterConfirm = await harness.Store.GetBalanceAsync(customerId);
+        Assert.Equal(125m, afterConfirm.ConfirmedOutstanding);
+        Assert.Equal(0m, afterConfirm.PendingCredit);
+        Assert.Equal(125m, afterConfirm.ProjectedOutstanding);
+    }
+
+    [Fact]
+    public async Task PersistCreditDueDate_does_not_store_plaintext_reason_in_sqlite_column()
+    {
+        await using var harness = await Harness.CreateAsync();
+        var customerId = Guid.NewGuid();
+        var creditId = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+        const string reason = "Customer asked for extension";
+
+        await harness.Store.UpsertServerCreditAsync(
+            new LocalCreditProjection(
+                creditId,
+                customerId,
+                harness.OrgId,
+                40m,
+                "Utang",
+                "Active",
+                now,
+                LocalEntitySyncState.ServerConfirmed,
+                null,
+                null,
+                null,
+                CurrentDueDate: null),
+            CancellationToken.None);
+
+        var opId = Guid.NewGuid();
+        await harness.Store.PersistCreditDueDateAndEnqueueAsync(
+            new LocalCreditDueDateCommand(
+                creditId,
+                customerId,
+                opId,
+                opId.ToString("N"),
+                new DateOnly(2026, 8, 15),
+                reason,
+                IsClear: false,
+                ExpectedConcurrencyToken: now.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)),
+            CancellationToken.None);
+
+        var credit = await harness.Store.GetCreditAsync(creditId);
+        Assert.Equal(reason, credit!.PendingDueDateReason);
+
+        await using var raw = new SqliteConnection($"Data Source={harness.DbPath}");
+        await raw.OpenAsync();
+        await using var cmd = raw.CreateCommand();
+        cmd.CommandText =
+            """
+            SELECT pending_due_date_reason FROM local_credit_projection
+            WHERE credit_entry_id = $id;
+            """;
+        cmd.Parameters.AddWithValue("$id", creditId.ToString("D"));
+        var columnValue = await cmd.ExecuteScalarAsync();
+        Assert.True(columnValue is null or DBNull);
+        AssertNoPlaintextInTextColumns(raw, "local_credit_projection", reason);
+    }
+
+    [Fact]
+    public async Task PersistRepaymentReverse_does_not_store_plaintext_reason_in_sqlite_column()
+    {
+        await using var harness = await Harness.CreateAsync();
+        var customerId = Guid.NewGuid();
+        var repaymentId = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+        const string reason = "Posted to wrong customer";
+
+        await harness.Store.UpsertServerRepaymentAsync(
+            new LocalRepaymentProjection(
+                repaymentId,
+                customerId,
+                harness.OrgId,
+                50m,
+                "Partial",
+                "Active",
+                now,
+                LocalEntitySyncState.ServerConfirmed,
+                null,
+                null,
+                null),
+            CancellationToken.None);
+
+        var opId = Guid.NewGuid();
+        await harness.Store.PersistRepaymentReverseAndEnqueueAsync(
+            new LocalRepaymentReverseCommand(
+                repaymentId,
+                customerId,
+                opId,
+                opId.ToString("N"),
+                reason),
+            CancellationToken.None);
+
+        var repayment = await harness.Store.GetRepaymentAsync(repaymentId);
+        Assert.Equal(reason, repayment!.PendingReversalReason);
+
+        await using var raw = new SqliteConnection($"Data Source={harness.DbPath}");
+        await raw.OpenAsync();
+        await using var cmd = raw.CreateCommand();
+        cmd.CommandText =
+            """
+            SELECT pending_reversal_reason FROM local_repayment_projection
+            WHERE repayment_id = $id;
+            """;
+        cmd.Parameters.AddWithValue("$id", repaymentId.ToString("D"));
+        var columnValue = await cmd.ExecuteScalarAsync();
+        Assert.True(columnValue is null or DBNull);
+        AssertNoPlaintextInTextColumns(raw, "local_repayment_projection", reason);
+    }
+
+    [Fact]
     public async Task Schema_v4_has_local_repayment_projection_and_no_repayments_table()
     {
         await using var harness = await Harness.CreateAsync();

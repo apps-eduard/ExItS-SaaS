@@ -203,6 +203,9 @@ html, body {
 .pos-sync-status--failed .pos-sync-status__marker,
 .pos-sync-status__marker--failed { background: var(--exits-danger); }
 
+.pos-sync-status--recovery .pos-sync-status__marker,
+.pos-sync-status__marker--recovery { background: var(--exits-danger); }
+
 .pos-sync-panel {
     margin: 0 var(--exits-space-3);
     padding: var(--exits-space-3);

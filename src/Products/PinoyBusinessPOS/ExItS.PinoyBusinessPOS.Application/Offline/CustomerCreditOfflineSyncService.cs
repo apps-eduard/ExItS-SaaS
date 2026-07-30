@@ -208,9 +208,14 @@ public sealed class CustomerCreditOfflineSyncService(
             {
                 if (local is not null && contextManager.ActiveContext?.Status == LocalContextInitStatus.Ready)
                 {
-                    var serverJson = result.Data is not null
-                        ? JsonSerializer.Serialize(result.Data, JsonOptions)
-                        : result.Error?.Detail;
+                    // Never persist Error.Detail into conflict_server_json (may contain PHI/PII).
+                    string? serverJson = result.Data is not null
+                        ? JsonSerializer.Serialize(new
+                        {
+                            status = result.Data.Status,
+                            updatedAtUtc = result.Data.UpdatedAtUtc.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)
+                        }, JsonOptions)
+                        : null;
                     await store.MarkCustomerStateAsync(
                             customerId,
                             LocalEntitySyncState.Conflict,
@@ -287,6 +292,8 @@ public sealed class CustomerCreditOfflineSyncService(
                         await store.SetConfirmedOutstandingAsync(customerId, summary.Data.OutstandingAmount, ct)
                             .ConfigureAwait(false);
                     }
+
+                    await store.RebuildOptimisticBalancesAsync(customerId, ct).ConfigureAwait(false);
                 }
 
                 return new ApiResultLikeCredit(true, false, projection, null, null);
@@ -958,22 +965,22 @@ public sealed class CustomerCreditOfflineSyncService(
                 break;
             }
 
+            var customerIds = new HashSet<Guid>();
             foreach (var item in result.Data.Items)
             {
                 await store.UpsertServerCreditAsync(MapCredit(item, LocalEntitySyncState.ServerConfirmed), ct)
                     .ConfigureAwait(false);
+                customerIds.Add(item.CustomerId);
                 var stamp = item.ReversedAtUtc ?? item.CreatedAtUtc;
                 if (maxUtc is null || stamp > maxUtc)
                 {
                     maxUtc = stamp;
                 }
+            }
 
-                var summary = await api.GetCreditSummaryAsync(item.CustomerId, ct).ConfigureAwait(false);
-                if (summary.IsSuccess && summary.Data is not null)
-                {
-                    await store.SetConfirmedOutstandingAsync(item.CustomerId, summary.Data.OutstandingAmount, ct)
-                        .ConfigureAwait(false);
-                }
+            foreach (var customerId in customerIds)
+            {
+                await RefreshCustomerFinancialsFromServerAsync(customerId, ct).ConfigureAwait(false);
             }
 
             if (result.Data.Items.Count < result.Data.PageSize || result.Data.Items.Count == 0)
@@ -1052,17 +1059,22 @@ public sealed class CustomerCreditOfflineSyncService(
                 break;
             }
 
+            var customerIds = new HashSet<Guid>();
             foreach (var item in result.Data.Items)
             {
                 await store.UpsertServerRepaymentAsync(MapRepayment(item, LocalEntitySyncState.ServerConfirmed), ct)
                     .ConfigureAwait(false);
+                customerIds.Add(item.CustomerId);
                 var stamp = item.ReversedAtUtc ?? item.RecordedAtUtc;
                 if (maxUtc is null || stamp > maxUtc)
                 {
                     maxUtc = stamp;
                 }
+            }
 
-                await RefreshCustomerFinancialsFromServerAsync(item.CustomerId, ct).ConfigureAwait(false);
+            foreach (var customerId in customerIds)
+            {
+                await RefreshCustomerFinancialsFromServerAsync(customerId, ct).ConfigureAwait(false);
             }
 
             if (result.Data.Items.Count < result.Data.PageSize || result.Data.Items.Count == 0)

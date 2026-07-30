@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
+using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 
 namespace ExItS.PinoyBusinessPOS.Application.Offline;
@@ -30,6 +31,7 @@ public sealed class OfflineQueueProcessor(
 
         if (!await payloadProtector.IsKeyAvailableAsync(ct).ConfigureAwait(false))
         {
+            syncStatus.SetRecoveryRequired(true);
             syncStatus.Refresh();
             return new OfflineProcessBatchResult(0, 0, 0, "SyncStatus_KeyUnavailable");
         }
@@ -67,6 +69,7 @@ public sealed class OfflineQueueProcessor(
         }
 
         syncStatus.SetReconnectRequired(false);
+        syncStatus.SetRecoveryRequired(false);
 
         var processed = 0;
         var succeeded = 0;
@@ -82,79 +85,98 @@ public sealed class OfflineQueueProcessor(
 
             try
             {
-                var loaded = await queue.TryLoadEncryptedAsync(envelope.OperationId, ct).ConfigureAwait(false);
-                if (loaded is null)
+                var opAccess = await accessRevalidator
+                    .RevalidateOperationAsync(envelope.OperationType, ct)
+                    .ConfigureAwait(false);
+                if (!opAccess.Allowed)
                 {
                     failed++;
                     await queue.MarkFailureAsync(
                             envelope.OperationId,
-                            OfflineFailureClass.Permanent,
-                            "payload_missing",
-                            null,
-                            nextAttemptUtc: null,
+                            OfflineFailureClass.AccessBlocked,
+                            opAccess.ReasonCode ?? "capability_denied",
+                            "Access or capability denied",
+                            nextAttemptUtc: _clock.GetUtcNow().AddMinutes(5),
                             attemptCount: envelope.AttemptCount,
                             ct)
                         .ConfigureAwait(false);
                 }
                 else
                 {
-                    var contextHash = contextManager.ActiveContext!.Identity.ContextHash;
-                    var aad = OfflinePayloadBinding.BuildAssociatedData(
-                        contextHash,
-                        envelope.OperationId,
-                        envelope.OperationType);
-
-                    byte[] plaintext;
-                    try
-                    {
-                        plaintext = await payloadProtector.DecryptAsync(loaded.Value.Encrypted, aad, ct)
-                            .ConfigureAwait(false);
-                    }
-                    catch
+                    var loaded = await queue.TryLoadEncryptedAsync(envelope.OperationId, ct).ConfigureAwait(false);
+                    if (loaded is null)
                     {
                         failed++;
                         await queue.MarkFailureAsync(
                                 envelope.OperationId,
                                 OfflineFailureClass.Permanent,
-                                "payload_decrypt_failed",
+                                "payload_missing",
                                 null,
                                 nextAttemptUtc: null,
                                 attemptCount: envelope.AttemptCount,
                                 ct)
                             .ConfigureAwait(false);
-                        plaintext = [];
                     }
-
-                    if (plaintext.Length > 0)
+                    else
                     {
-                        var dispatcher = dispatchers.FirstOrDefault(d => d.CanHandle(envelope.OperationType));
-                        if (dispatcher is null)
+                        var contextHash = contextManager.ActiveContext!.Identity.ContextHash;
+                        var aad = OfflinePayloadBinding.BuildAssociatedData(
+                            contextHash,
+                            envelope.OperationId,
+                            envelope.OperationType);
+
+                        byte[] plaintext;
+                        try
+                        {
+                            plaintext = await payloadProtector.DecryptAsync(loaded.Value.Encrypted, aad, ct)
+                                .ConfigureAwait(false);
+                        }
+                        catch
                         {
                             failed++;
                             await queue.MarkFailureAsync(
                                     envelope.OperationId,
                                     OfflineFailureClass.Permanent,
-                                    "handler_missing",
-                                    envelope.OperationType,
+                                    "payload_decrypt_failed",
+                                    null,
                                     nextAttemptUtc: null,
                                     attemptCount: envelope.AttemptCount,
                                     ct)
                                 .ConfigureAwait(false);
+                            plaintext = [];
                         }
-                        else
+
+                        if (plaintext.Length > 0)
                         {
-                            var result = await dispatcher.DispatchAsync(envelope, plaintext, ct).ConfigureAwait(false);
-                            if (result.Succeeded)
+                            var dispatcher = dispatchers.FirstOrDefault(d => d.CanHandle(envelope.OperationType));
+                            if (dispatcher is null)
                             {
-                                succeeded++;
-                                await queue.MarkSucceededAsync(envelope.OperationId, result.ServerReference, ct)
+                                failed++;
+                                await queue.MarkFailureAsync(
+                                        envelope.OperationId,
+                                        OfflineFailureClass.Permanent,
+                                        "handler_missing",
+                                        envelope.OperationType,
+                                        nextAttemptUtc: null,
+                                        attemptCount: envelope.AttemptCount,
+                                        ct)
                                     .ConfigureAwait(false);
-                                await queue.SetLastSyncedUtcAsync(_clock.GetUtcNow(), ct).ConfigureAwait(false);
                             }
                             else
                             {
-                                failed++;
-                                await ApplyFailureAsync(envelope, result, ct).ConfigureAwait(false);
+                                var result = await dispatcher.DispatchAsync(envelope, plaintext, ct).ConfigureAwait(false);
+                                if (result.Succeeded)
+                                {
+                                    succeeded++;
+                                    await queue.MarkSucceededAsync(envelope.OperationId, result.ServerReference, ct)
+                                        .ConfigureAwait(false);
+                                    await queue.SetLastSyncedUtcAsync(_clock.GetUtcNow(), ct).ConfigureAwait(false);
+                                }
+                                else
+                                {
+                                    failed++;
+                                    await ApplyFailureAsync(envelope, result, ct).ConfigureAwait(false);
+                                }
                             }
                         }
                     }
@@ -217,7 +239,8 @@ public sealed class OfflineQueueProcessor(
 public sealed class OfflineAccessRevalidator(
     ICurrentUserContext currentUser,
     IProtectedShellAccessPolicy accessPolicy,
-    IConnectivityService connectivity) : IOfflineAccessRevalidator
+    IConnectivityService connectivity,
+    IUtangCapabilityEvaluator? capabilities = null) : IOfflineAccessRevalidator
 {
     public async Task<OfflineAccessRevalidationResult> RevalidateAsync(CancellationToken ct = default)
     {
@@ -241,6 +264,85 @@ public sealed class OfflineAccessRevalidator(
         }
 
         return new OfflineAccessRevalidationResult(true, null);
+    }
+
+    public async Task<OfflineAccessRevalidationResult> RevalidateOperationAsync(
+        string operationType,
+        CancellationToken ct = default)
+    {
+        var baseAccess = await RevalidateAsync(ct).ConfigureAwait(false);
+        if (!baseAccess.Allowed)
+        {
+            return baseAccess;
+        }
+
+        if (capabilities is null
+            || string.Equals(operationType, OfflineOperationTypes.DevOfflineProbe, StringComparison.Ordinal))
+        {
+            return baseAccess;
+        }
+
+        if (!TryMapCapability(operationType, out var capability))
+        {
+            // Unknown business operation types fail closed.
+            return new OfflineAccessRevalidationResult(false, "capability_unknown");
+        }
+
+        if (!capabilities.IsAllowed(capability))
+        {
+            return new OfflineAccessRevalidationResult(false, "capability_denied");
+        }
+
+        return new OfflineAccessRevalidationResult(true, null);
+    }
+
+    private static bool TryMapCapability(string operationType, out UtangCapability capability)
+    {
+        capability = default;
+        if (string.Equals(operationType, OfflineOperationTypes.CustomerCreate, StringComparison.Ordinal))
+        {
+            capability = UtangCapability.CreateCustomer;
+            return true;
+        }
+
+        if (string.Equals(operationType, OfflineOperationTypes.CustomerUpdate, StringComparison.Ordinal))
+        {
+            capability = UtangCapability.EditCustomer;
+            return true;
+        }
+
+        if (string.Equals(operationType, OfflineOperationTypes.CreditCreate, StringComparison.Ordinal))
+        {
+            capability = UtangCapability.CreateCredit;
+            return true;
+        }
+
+        if (string.Equals(operationType, OfflineOperationTypes.RepaymentCreate, StringComparison.Ordinal))
+        {
+            capability = UtangCapability.RecordRepayment;
+            return true;
+        }
+
+        if (string.Equals(operationType, OfflineOperationTypes.RepaymentReverse, StringComparison.Ordinal))
+        {
+            capability = UtangCapability.ReverseRepayment;
+            return true;
+        }
+
+        if (string.Equals(operationType, OfflineOperationTypes.CreditReverse, StringComparison.Ordinal))
+        {
+            capability = UtangCapability.ReverseCredit;
+            return true;
+        }
+
+        if (string.Equals(operationType, OfflineOperationTypes.CreditDueDateSet, StringComparison.Ordinal)
+            || string.Equals(operationType, OfflineOperationTypes.CreditDueDateClear, StringComparison.Ordinal))
+        {
+            capability = UtangCapability.MutateDueDate;
+            return true;
+        }
+
+        return false;
     }
 }
 

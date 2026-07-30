@@ -526,6 +526,9 @@
   <data name="SyncStatus_Failed" xml:space="preserve"><value>Sync Failed</value></data>
   <data name="SyncStatus_FailedShort" xml:space="preserve"><value>Failed</value></data>
   <data name="SyncStatus_FailedDetail" xml:space="preserve"><value>Some operations need review. Pending work was retained.</value></data>
+  <data name="SyncStatus_RecoveryRequired" xml:space="preserve"><value>Recovery required</value></data>
+  <data name="SyncStatus_RecoveryRequiredShort" xml:space="preserve"><value>Recovery</value></data>
+  <data name="SyncStatus_RecoveryRequiredDetail" xml:space="preserve"><value>Some operations need recovery. Pending work was retained and was not discarded.</value></data>
   <data name="SyncStatus_LastSynced" xml:space="preserve"><value>Last Synced</value></data>
   <data name="SyncStatus_LastSyncedShort" xml:space="preserve"><value>Synced</value></data>
   <data name="SyncStatus_LastSyncedAt" xml:space="preserve"><value>Last Synced {0}</value></data>

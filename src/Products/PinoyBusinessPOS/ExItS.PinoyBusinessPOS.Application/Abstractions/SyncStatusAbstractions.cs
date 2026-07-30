@@ -12,7 +12,9 @@ public enum PosSyncStatusKind
     Syncing = 3,
     SyncFailed = 4,
     LastSynced = 5,
-    ReconnectRequired = 6
+    ReconnectRequired = 6,
+    /// <summary>Conflict, permanent failure, blocked-by-access, or encryption-key recovery required.</summary>
+    RecoveryRequired = 7
 }
 
 /// <summary>Immutable view of the shell sync/connectivity status.</summary>
@@ -36,6 +38,9 @@ public interface IPosSyncStatusService
 
     /// <summary>Marks that protected access requires online revalidation (fail-closed).</summary>
     void SetReconnectRequired(bool required);
+
+    /// <summary>Marks encryption-key or other recovery-required condition (fail-closed; work retained).</summary>
+    void SetRecoveryRequired(bool required);
 
     void Refresh();
 }

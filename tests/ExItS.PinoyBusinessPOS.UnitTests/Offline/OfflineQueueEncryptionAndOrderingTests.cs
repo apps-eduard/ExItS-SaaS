@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
+using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.LocalStore;
 using Microsoft.Data.Sqlite;
@@ -135,6 +136,143 @@ public sealed class OfflineQueueEncryptionAndOrderingTests
         var counts = await harness.Queue.GetCountsAsync();
         Assert.Equal(1, counts.Pending);
         Assert.True(await harness.Queue.HasUnsyncedWorkAsync());
+    }
+
+    [Fact]
+    public async Task Capability_deny_marks_BlockedByAccess_and_does_not_dispatch()
+    {
+        await using var harness = await Harness.CreateAsync();
+        var opId = Guid.NewGuid();
+        await harness.Queue.EnqueueAsync(new OfflineEnqueueRequest(
+            opId,
+            OfflineOperationTypes.CreditCreate,
+            1,
+            "credit-cap-deny",
+            Encoding.UTF8.GetBytes("""{"customerId":"00000000-0000-0000-0000-000000000001","amount":"10"}""")));
+
+        // View-only grants: CreateCredit must fail closed.
+        harness.CurrentUser.Set(new AuthSession(
+            harness.UserId, "U", "u", "u@example.com", harness.OrgId, "Org",
+            DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddHours(1),
+            HasPosAccess: true,
+            AccessReasonCode: "allowed",
+            SubscriptionStatus: PosSubscriptionStatuses.Active,
+            EnabledFeatureCodes: [PosFeatureCodes.CustomerCreditView]));
+
+        var connectivity = new FakeConnectivity(online: true);
+        var accessPolicy = new ProtectedShellAccessPolicy(harness.CurrentUser, connectivity);
+        await accessPolicy.InitializeAsync();
+        Assert.True(accessPolicy.CanEnterProtectedShell);
+
+        var sync = new PosSyncStatusService(connectivity, accessPolicy, harness.Queue);
+        await sync.InitializeAsync();
+
+        var dispatcher = new RecordingDispatcher(OfflineOperationTypes.CreditCreate);
+        var processor = new OfflineQueueProcessor(
+            harness.Queue,
+            harness.Protector,
+            new OfflineAccessRevalidator(
+                harness.CurrentUser,
+                accessPolicy,
+                connectivity,
+                new UtangCapabilityEvaluator(harness.CurrentUser)),
+            new OfflineRetryClassifier(harness.Clock),
+            [dispatcher],
+            harness.Manager,
+            sync,
+            harness.Clock);
+
+        var result = await processor.ProcessAvailableAsync();
+
+        Assert.Equal(1, result.Processed);
+        Assert.Equal(0, result.Succeeded);
+        Assert.Equal(1, result.Failed);
+        Assert.Equal(0, dispatcher.CallCount);
+
+        var counts = await harness.Queue.GetCountsAsync();
+        Assert.Equal(0, counts.Succeeded);
+        Assert.Equal(1, counts.BlockedByAccess);
+        Assert.Equal(0, counts.Pending);
+    }
+
+    [Fact]
+    public async Task Suspended_capability_deny_marks_BlockedByAccess()
+    {
+        await using var harness = await Harness.CreateAsync();
+        var opId = Guid.NewGuid();
+        await harness.Queue.EnqueueAsync(new OfflineEnqueueRequest(
+            opId,
+            OfflineOperationTypes.CreditCreate,
+            1,
+            "credit-suspended",
+            Encoding.UTF8.GetBytes("""{"customerId":"00000000-0000-0000-0000-000000000001","amount":"10"}""")));
+
+        harness.CurrentUser.Set(new AuthSession(
+            harness.UserId, "U", "u", "u@example.com", harness.OrgId, "Org",
+            DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddHours(1),
+            HasPosAccess: true,
+            AccessReasonCode: "allowed",
+            SubscriptionStatus: PosSubscriptionStatuses.Suspended,
+            EnabledFeatureCodes: UtangCapabilityPolicy.DefaultDevelopmentGrants));
+
+        var connectivity = new FakeConnectivity(online: true);
+        var accessPolicy = new ProtectedShellAccessPolicy(harness.CurrentUser, connectivity);
+        await accessPolicy.InitializeAsync();
+
+        var sync = new PosSyncStatusService(connectivity, accessPolicy, harness.Queue);
+        await sync.InitializeAsync();
+
+        var dispatcher = new RecordingDispatcher(OfflineOperationTypes.CreditCreate);
+        var processor = new OfflineQueueProcessor(
+            harness.Queue,
+            harness.Protector,
+            new OfflineAccessRevalidator(
+                harness.CurrentUser,
+                accessPolicy,
+                connectivity,
+                new UtangCapabilityEvaluator(harness.CurrentUser)),
+            new OfflineRetryClassifier(harness.Clock),
+            [dispatcher],
+            harness.Manager,
+            sync,
+            harness.Clock);
+
+        var result = await processor.ProcessAvailableAsync();
+
+        Assert.Equal(1, result.Processed);
+        Assert.Equal(0, result.Succeeded);
+        Assert.Equal(0, dispatcher.CallCount);
+
+        var counts = await harness.Queue.GetCountsAsync();
+        Assert.Equal(1, counts.BlockedByAccess);
+        Assert.Equal(0, counts.Succeeded);
+    }
+
+    private sealed class RecordingDispatcher(string operationType) : IOfflineOperationDispatcher
+    {
+        public int CallCount { get; private set; }
+
+        public bool CanHandle(string type) =>
+            string.Equals(type, operationType, StringComparison.Ordinal);
+
+        public Task<OfflineDispatchResult> DispatchAsync(
+            OfflineOperationEnvelope envelope,
+            ReadOnlyMemory<byte> plaintextPayload,
+            CancellationToken ct = default)
+        {
+            CallCount++;
+            return Task.FromResult(new OfflineDispatchResult(
+                true, OfflineFailureClass.None, null, null, "should-not-run"));
+        }
+    }
+
+    private sealed class FakeConnectivity(bool online) : IConnectivityService
+    {
+#pragma warning disable CS0067 // Required by IConnectivityService; unused in these tests.
+        public event EventHandler<ConnectivityStatus>? ConnectivityChanged;
+#pragma warning restore CS0067
+
+        public Task<bool> IsConnectedAsync(CancellationToken ct = default) => Task.FromResult(online);
     }
 
     private sealed class Harness : IAsyncDisposable

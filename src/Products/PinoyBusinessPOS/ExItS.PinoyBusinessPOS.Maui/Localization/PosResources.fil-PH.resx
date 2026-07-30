@@ -526,6 +526,9 @@
   <data name="SyncStatus_Failed" xml:space="preserve"><value>Nabigo ang Sync</value></data>
   <data name="SyncStatus_FailedShort" xml:space="preserve"><value>Nabigo</value></data>
   <data name="SyncStatus_FailedDetail" xml:space="preserve"><value>May operation na kailangan i-review. Napanatili ang pending work.</value></data>
+  <data name="SyncStatus_RecoveryRequired" xml:space="preserve"><value>Kailangan ng recovery</value></data>
+  <data name="SyncStatus_RecoveryRequiredShort" xml:space="preserve"><value>Recovery</value></data>
+  <data name="SyncStatus_RecoveryRequiredDetail" xml:space="preserve"><value>May operation na kailangan ng recovery. Napanatili ang pending work at hindi ito tinanggal.</value></data>
   <data name="SyncStatus_LastSynced" xml:space="preserve"><value>Huling Sync</value></data>
   <data name="SyncStatus_LastSyncedShort" xml:space="preserve"><value>Na-sync</value></data>
   <data name="SyncStatus_LastSyncedAt" xml:space="preserve"><value>Huling Sync {0}</value></data>

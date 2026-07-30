@@ -50,7 +50,7 @@
             {
                 <p class="pos-sync-panel__recovery"><strong>@L["Offline_RecoveryRequired"]</strong></p>
             }
-            @if (SyncKind is PosSyncStatusKind.PendingSync or PosSyncStatusKind.SyncFailed or PosSyncStatusKind.Offline)
+            @if (SyncKind is PosSyncStatusKind.PendingSync or PosSyncStatusKind.SyncFailed or PosSyncStatusKind.RecoveryRequired or PosSyncStatusKind.Offline)
             {
                 <button type="button" class="pos-sync-panel__close" disabled="@_retryBusy" @onclick="RetrySyncAsync">@L["SyncStatus_RetryNow"]</button>
             }
@@ -162,6 +162,7 @@
         PosSyncStatusKind.PendingSync => "pending",
         PosSyncStatusKind.Syncing => "syncing",
         PosSyncStatusKind.SyncFailed => "failed",
+        PosSyncStatusKind.RecoveryRequired => "recovery",
         _ => "offline",
     };
 
@@ -173,6 +174,7 @@
         PosSyncStatusKind.PendingSync => "inbox",
         PosSyncStatusKind.Syncing => "refresh",
         PosSyncStatusKind.SyncFailed => "error",
+        PosSyncStatusKind.RecoveryRequired => "warning",
         _ => "info",
     };
 
@@ -185,6 +187,7 @@
         PosSyncStatusKind.Syncing => L["SyncStatus_SyncingShort"],
         PosSyncStatusKind.SyncFailed => L["SyncStatus_FailedShort"],
         PosSyncStatusKind.LastSynced => L["SyncStatus_LastSyncedShort"],
+        PosSyncStatusKind.RecoveryRequired => L["SyncStatus_RecoveryRequiredShort"],
         _ => L["SyncStatus_OfflineShort"],
     };
 
@@ -197,6 +200,7 @@
         PosSyncStatusKind.Syncing => L["SyncStatus_Syncing"],
         PosSyncStatusKind.SyncFailed => L["SyncStatus_Failed"],
         PosSyncStatusKind.LastSynced => FormatLastSynced(),
+        PosSyncStatusKind.RecoveryRequired => L["SyncStatus_RecoveryRequired"],
         _ => L["SyncStatus_Offline"],
     };
 
@@ -211,6 +215,9 @@
         PosSyncStatusKind.Syncing => L["SyncStatus_SyncingDetail"],
         PosSyncStatusKind.SyncFailed => L["SyncStatus_FailedDetail"],
         PosSyncStatusKind.LastSynced => FormatLastSynced(),
+        PosSyncStatusKind.RecoveryRequired => SyncStatus.Current.SafeDetailKey is "SyncStatus_KeyUnavailable"
+            ? L["SyncStatus_KeyUnavailable"]
+            : L["SyncStatus_RecoveryRequiredDetail"],
         _ => L["SyncStatus_OfflineDetail"],
     };
 

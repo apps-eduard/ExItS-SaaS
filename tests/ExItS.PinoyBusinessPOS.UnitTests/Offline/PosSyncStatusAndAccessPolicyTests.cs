@@ -96,6 +96,134 @@ public sealed class PosSyncStatusAndAccessPolicyTests
         Assert.False(policy.RequiresReconnectToVerifyAccess);
     }
 
+    [Fact]
+    public async Task RecoveryRequired_when_queue_has_Conflict()
+    {
+        var sync = await CreateSyncWithQueueAsync(new OfflineQueueCounts(0, 0, 0, 0, 0, Conflict: 1, 0));
+        Assert.Equal(PosSyncStatusKind.RecoveryRequired, sync.Current.Kind);
+        Assert.Equal("SyncStatus_RecoveryRequired", sync.Current.SafeDetailKey);
+    }
+
+    [Fact]
+    public async Task RecoveryRequired_when_queue_has_PermanentFailure()
+    {
+        var sync = await CreateSyncWithQueueAsync(new OfflineQueueCounts(0, 0, 0, 0, PermanentFailure: 2, 0, 0));
+        Assert.Equal(PosSyncStatusKind.RecoveryRequired, sync.Current.Kind);
+        Assert.Equal("SyncStatus_RecoveryRequired", sync.Current.SafeDetailKey);
+    }
+
+    [Fact]
+    public async Task RecoveryRequired_when_queue_has_BlockedByAccess()
+    {
+        var sync = await CreateSyncWithQueueAsync(new OfflineQueueCounts(0, 0, 0, 0, 0, 0, BlockedByAccess: 1));
+        Assert.Equal(PosSyncStatusKind.RecoveryRequired, sync.Current.Kind);
+        Assert.Equal("SyncStatus_RecoveryRequired", sync.Current.SafeDetailKey);
+    }
+
+    [Fact]
+    public async Task RecoveryRequired_via_SetRecoveryRequired_uses_KeyUnavailable_detail()
+    {
+        var connectivity = new FakeConnectivity(online: true);
+        var current = new CurrentUserContext();
+        current.Set(CreateSession());
+        var policy = new ProtectedShellAccessPolicy(current, connectivity);
+        await policy.InitializeAsync();
+        var sync = new PosSyncStatusService(connectivity, policy, new FakeQueue(new OfflineQueueCounts(0, 0, 0, 0, 0, 0, 0)));
+        await sync.InitializeAsync();
+
+        Assert.Equal(PosSyncStatusKind.Online, sync.Current.Kind);
+
+        sync.SetRecoveryRequired(true);
+        await Task.Delay(20);
+
+        Assert.Equal(PosSyncStatusKind.RecoveryRequired, sync.Current.Kind);
+        Assert.Equal("SyncStatus_KeyUnavailable", sync.Current.SafeDetailKey);
+    }
+
+    [Fact]
+    public async Task SyncFailed_for_RetryableFailure_only()
+    {
+        var sync = await CreateSyncWithQueueAsync(new OfflineQueueCounts(0, 0, 0, RetryableFailure: 3, 0, 0, 0));
+        Assert.Equal(PosSyncStatusKind.SyncFailed, sync.Current.Kind);
+        Assert.Equal("SyncStatus_Failed", sync.Current.SafeDetailKey);
+        Assert.Equal(3, sync.Current.PendingCount);
+    }
+
+    [Fact]
+    public async Task PendingSync_when_Pending_only()
+    {
+        var sync = await CreateSyncWithQueueAsync(new OfflineQueueCounts(Pending: 2, 0, 0, 0, 0, 0, 0));
+        Assert.Equal(PosSyncStatusKind.PendingSync, sync.Current.Kind);
+        Assert.Equal(2, sync.Current.PendingCount);
+    }
+
+    [Fact]
+    public void PendingSyncDisplay_excludes_BlockedByAccess()
+    {
+        var counts = new OfflineQueueCounts(Pending: 2, 0, 0, RetryableFailure: 1, 0, 0, BlockedByAccess: 5);
+        Assert.Equal(3, counts.PendingSyncDisplay);
+        Assert.Equal(8, counts.UnsyncedWork);
+    }
+
+    [Fact]
+    public async Task Reconnect_still_wins_over_RecoveryRequired()
+    {
+        var connectivity = new FakeConnectivity(online: true);
+        var current = new CurrentUserContext();
+        current.Set(CreateSession());
+        var policy = new ProtectedShellAccessPolicy(current, connectivity);
+        await policy.InitializeAsync();
+        var queue = new FakeQueue(new OfflineQueueCounts(0, 0, 0, 0, PermanentFailure: 1, Conflict: 1, BlockedByAccess: 1));
+        var sync = new PosSyncStatusService(connectivity, policy, queue);
+        await sync.InitializeAsync();
+
+        Assert.Equal(PosSyncStatusKind.RecoveryRequired, sync.Current.Kind);
+
+        sync.SetReconnectRequired(true);
+        await Task.Delay(20);
+
+        Assert.Equal(PosSyncStatusKind.ReconnectRequired, sync.Current.Kind);
+    }
+
+    [Fact]
+    public async Task Reconnect_wins_over_SetRecoveryRequired_key_flag()
+    {
+        var connectivity = new FakeConnectivity(online: true);
+        var current = new CurrentUserContext();
+        current.Set(CreateSession());
+        var policy = new ProtectedShellAccessPolicy(current, connectivity);
+        await policy.InitializeAsync();
+        var sync = new PosSyncStatusService(connectivity, policy);
+        await sync.InitializeAsync();
+
+        sync.SetRecoveryRequired(true);
+        await Task.Delay(20);
+        Assert.Equal(PosSyncStatusKind.RecoveryRequired, sync.Current.Kind);
+
+        sync.SetReconnectRequired(true);
+        await Task.Delay(20);
+        Assert.Equal(PosSyncStatusKind.ReconnectRequired, sync.Current.Kind);
+    }
+
+    private static async Task<PosSyncStatusService> CreateSyncWithQueueAsync(OfflineQueueCounts counts)
+    {
+        var connectivity = new FakeConnectivity(online: true);
+        var current = new CurrentUserContext();
+        current.Set(CreateSession());
+        var policy = new ProtectedShellAccessPolicy(current, connectivity);
+        await policy.InitializeAsync();
+        var sync = new PosSyncStatusService(connectivity, policy, new FakeQueue(counts));
+        await sync.InitializeAsync();
+        return sync;
+    }
+
+    private static AuthSession CreateSession() =>
+        new(
+            Guid.NewGuid(), "User", "user", "u@example.com",
+            Guid.NewGuid(), "Org",
+            DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddHours(1),
+            HasPosAccess: true, AccessReasonCode: "allowed");
+
     private sealed class FakeConnectivity(bool online) : IConnectivityService
     {
         private bool _online = online;
@@ -109,5 +237,48 @@ public sealed class PosSyncStatusAndAccessPolicyTests
             _online = value;
             ConnectivityChanged?.Invoke(this, value ? ConnectivityStatus.Online : ConnectivityStatus.Offline);
         }
+    }
+
+    private sealed class FakeQueue(OfflineQueueCounts counts) : IOfflineOperationQueue
+    {
+        public Task EnqueueAsync(OfflineEnqueueRequest request, CancellationToken ct = default) =>
+            throw new NotSupportedException();
+
+        public Task RecoverAbandonedSyncingAsync(CancellationToken ct = default) => Task.CompletedTask;
+
+        public Task<OfflineOperationEnvelope?> TryClaimNextAsync(string claimToken, CancellationToken ct = default) =>
+            Task.FromResult<OfflineOperationEnvelope?>(null);
+
+        public Task MarkSucceededAsync(Guid operationId, string? serverReference, CancellationToken ct = default) =>
+            Task.CompletedTask;
+
+        public Task MarkFailureAsync(
+            Guid operationId,
+            OfflineFailureClass failureClass,
+            string failureCode,
+            string? failureSummary,
+            DateTimeOffset? nextAttemptUtc,
+            int attemptCount,
+            CancellationToken ct = default) =>
+            Task.CompletedTask;
+
+        public Task<OfflineQueueCounts> GetCountsAsync(CancellationToken ct = default) =>
+            Task.FromResult(counts);
+
+        public Task<IReadOnlyList<OfflineOperationEnvelope>> ListSafeMetadataAsync(int take, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<OfflineOperationEnvelope>>([]);
+
+        public Task<bool> HasUnsyncedWorkAsync(CancellationToken ct = default) =>
+            Task.FromResult(counts.UnsyncedWork > 0);
+
+        public Task SetLastSyncedUtcAsync(DateTimeOffset utc, CancellationToken ct = default) => Task.CompletedTask;
+
+        public Task<DateTimeOffset?> GetLastSyncedUtcAsync(CancellationToken ct = default) =>
+            Task.FromResult<DateTimeOffset?>(null);
+
+        public Task<(OfflineOperationEnvelope Envelope, EncryptedPayload Encrypted)?> TryLoadEncryptedAsync(
+            Guid operationId,
+            CancellationToken ct = default) =>
+            Task.FromResult<(OfflineOperationEnvelope Envelope, EncryptedPayload Encrypted)?>(null);
     }
 }
