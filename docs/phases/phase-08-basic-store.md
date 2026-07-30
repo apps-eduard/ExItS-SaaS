@@ -8,7 +8,7 @@ Deliver the Basic Store paid plan.
 
 ## Status
 
-**In Progress** — P8-WP01 and P8-WP02 complete with documented risks. Do **not** begin P8-WP03 until explicitly authorized.
+**In Progress** — P8-WP01 through P8-WP03 complete with documented risks. Do **not** begin P8-WP04 until explicitly authorized.
 
 Feature commit (P8-WP01): `5573822ca116ab46f1a5cdce407e1d7b4f58f796`
 
@@ -130,26 +130,46 @@ Inventory/stock deduction, suppliers/purchasing, Utang/customer-credit sales, sp
 
 ### P8-WP03 — Product-Based Utang
 
-Status: Not Started — do not begin until authorized
+Status: **Complete with documented risks**
 
-#### Required outcomes
+Phase marker: `P8-WP03-product-based-utang`
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+Feature commit: `cd58f5c7dc1b9d31497429ef1d025546a0def09c`
+
+Report: [P8-WP03-product-based-utang.md](../reports/P8-WP03-product-based-utang.md)
+
+#### Approved scope (clarified)
+
+Atomic **Product-Based Utang** checkout that preserves immutable sale history and immutable customer credit history:
+
+- One completed retail sale + sale lines + one linked remarks-based credit entry in a single transaction
+- Sale payment method `Utang`; requires active same-org customer and active catalog products
+- Credit amount equals authoritative sale total; system remarks `Product sale {SaleNumber}`; stable `SaleId` / `CreditEntryId` cross-reference
+- Reuse existing customer, credit aggregate, ledger, due dates, overdue, statements, org isolation, server idempotency
+- Optional initial due date via existing audited due-date mechanism (reason: `Set during Product-Based Utang checkout`)
+- Zero-total Utang checkout rejected (no debt)
+- Atomic void: void sale + reverse linked credit together; block standalone reversal of linked credit; reject void if subsequent Utang activity prevents safe reversal
+- Requires `store-sales-create` + `customer-credit-create` (void: `store-sales-void` + credit-correction / `ReverseCredit`); continuity denies create/void
+- Migration `AddProductBasedUtang` (nullable `customer_id` / `linked_credit_entry_id` on sales; `source_sale_id` on credit entries; Utang payment method)
+- Extend `POST /api/v1/pos/sales` and MAUI `/sales/new` for Utang + customer + optional due date
+- Online-only; tests, docs, Android evidence
+
+#### Explicit exclusions (P8-WP04+)
+
+Inventory/stock deduction, Cash/GCash+Utang split, deposits/partial at checkout, discounts/tax/VAT/fees/tips, credit limits/approvals/interest/penalties, installments, refunds/returns/exchanges, offline Product-Based Utang, receipt printing/tax invoices, POS operational roles.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (775 / 0 / 0; baseline 759).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded (`cd58f5c7dc1b9d31497429ef1d025546a0def09c`).
+- [x] Working tree clean.
 
 ### P8-WP04 — Basic Inventory
 
-Status: Not Started
+Status: Not Started — do not begin until authorized
 
 #### Required outcomes
 

@@ -42,6 +42,8 @@ Clinics, staff assignments, patients, appointments, medical notes, clinical auth
 
 **P8-WP02 (simple sales):** Same database/schema — tables `pos.sales`, `pos.sale_lines`, `pos.sale_number_sequences` (migration `AddPosSimpleSales`). Sale lines snapshot catalog identity/price at checkout; product FK is restrictive. **No inventory balances or stock movements.** Online-only — cart is in-memory MAUI state only.
 
+**P8-WP03 (Product-Based Utang):** Same database/schema — migration `AddProductBasedUtang` adds `sales.customer_id`, `sales.linked_credit_entry_id`, `credit_entries.source_sale_id`, and payment method `Utang`. One atomic sale + linked remarks credit; credit amount equals sale total. Linked credit reverse only via sale void. **No inventory.** Online-only.
+
 **P7-WP01 local device ownership (foundation only):** per-user/org/product SQLite files under the MAUI sandbox hold schema/context metadata only (`local_schema_info`, `local_context_info`). DeviceId lives in SecureStorage, not SQLite. No tokens, entitlements, customers, or financial rows locally.
 
 **P7-WP02 local queue ownership:** same isolated SQLite files also hold encrypted `offline_operations` outbox rows and `local_sync_meta`. Payloads are ciphertext-only; encryption key is SecureStorage-only. Server owns `pos.idempotency_records` for replay proofs (not duplicated business transactions).

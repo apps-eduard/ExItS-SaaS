@@ -48,6 +48,7 @@
 - Statements, repayment receipts, and trial/continuity capability matrix (P6-WP05) — projection statements/receipts (`RCPT-{guid:N}`); `UtangCapabilityPolicy`; Platform POS continuity entry; commercial header gates; OD-07/08/09; Testcontainers where relational; no new receipt migration
 - Catalog and barcode (P8-WP01) — domain SKU/barcode/UOM/price; checksum; `store-catalog-view` / `store-catalog-manage` continuity; migration `AddPosCatalogAndBarcodes`; org-isolated catalog API; MAUI guards; online-only (no offline queue/cache); Testcontainers PostgreSQL
 - Simple sales (P8-WP02) — sale/line domain; qty/UOM; AwayFromZero rounding; Cash/ManualGCash; void; sale-number sequence; idempotent checkout; `store-sales-*` continuity; migration `AddPosSimpleSales`; MAUI checkout/history; online-only
+- Product-Based Utang (P8-WP03) — Utang payment; atomic sale+credit; optional due date; void+reverse; standalone reverse blocked; migration `AddProductBasedUtang`; dual capability gates; online-only
 - Tenant isolation
 - Subscription feature enforcement (P6-WP05 matrix + grants; P8-WP01 catalog grants)
 - Offline queue and idempotency *(Phase 7)*
@@ -73,5 +74,6 @@
 - **P7-WP05:** local schema migration chain v1→v4; capability deny → BlockedByAccess; RecoveryRequired sync priority; plaintext pending-field guards; rebuild-after-credit-confirm; Production diagnostics gating preserved
 - **P8-WP01:** catalog domain SKU/barcode/UOM/price rules; barcode checksum; capability/continuity for `store-catalog-view` / `store-catalog-manage`; PostgreSQL migration apply/rollback/re-apply (Testcontainers); catalog API org isolation; MAUI page guards; online-only architecture (no offline queue/cache on catalog paths)
 - **P8-WP02:** sale domain qty/rounding/cash/gcash/void; capability matrix for `store-sales-view` / `store-sales-create` / `store-sales-void`; migration apply/rollback-to-`AddPosCatalogAndBarcodes`/re-apply; checkout idempotency replay/mismatch; org isolation; MAUI page guards; architecture exclusions (no stock/offline sale queue)
+- **P8-WP03:** Product-Based Utang domain/API (active customer, zero-total reject, atomic sale+credit, due date, void+reverse, standalone reverse block, repayment void conflict); migration apply/rollback-to-`AddPosSimpleSales`/re-apply; MAUI Utang checkout/detail guards; no offline Utang queue
 
 All reports use exact command output; totals are never estimated.

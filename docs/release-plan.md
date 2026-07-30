@@ -51,13 +51,13 @@ MAUI app, bilingual UI, themes, customers, Utang, payments, overdue monitoring a
 
 **Not production-ready** while R-109, R-022, full-database encryption, production auth/roles, and production background scheduling remain open.
 
-## R3.6 — Basic Store started (Phase 8 / P8-WP01–P8-WP02)
+## R3.6 — Basic Store started (Phase 8 / P8-WP01–P8-WP03)
 
-**Phase 8 in progress** — P8-WP01 Catalog and Barcode and P8-WP02 Simple Sales **complete** with documented risks. See [P8-WP02 report](reports/P8-WP02-simple-sales.md).
+**Phase 8 in progress** — P8-WP01 Catalog and Barcode, P8-WP02 Simple Sales, and P8-WP03 Product-Based Utang **complete** with documented risks. See [P8-WP03 report](reports/P8-WP03-product-based-utang.md).
 
-Online-only org catalog (P8-WP01) plus simple Cash/ManualGCash sales (P8-WP02): server-authoritative totals, AwayFromZero 2-dp rounding, sale numbers, idempotent checkout, explicit void. Features `store-catalog-*` / `store-sales-*`. Migrations `AddPosCatalogAndBarcodes`, `AddPosSimpleSales`. **No inventory deduction, Utang sales, tax/discounts, refunds, or offline sales.** R-109 remains open.
+Online-only catalog + Cash/ManualGCash + atomic Product-Based Utang (sale + linked credit). Features `store-catalog-*` / `store-sales-*` + credit create for Utang. Migrations through `AddProductBasedUtang`. **No inventory deduction, split tender, credit limits, offline Utang, tax/discounts, or refunds.** R-109 remains open.
 
-**Next:** **P8-WP03 — Product-Based Utang** when approved.
+**Next:** **P8-WP04 — Basic Inventory** when approved.
 
 ## R4 — Commercial MVP
 

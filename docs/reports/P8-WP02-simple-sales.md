@@ -85,4 +85,4 @@ Root `HealthCare/` remains ignored, untracked, outside `ExItS.slnx`.
 
 ## Exact next work package
 
-**P8-WP03 — Product-Based Utang** (do not begin until explicitly authorized).
+**P8-WP03 — Product-Based Utang** completed separately; next authorized WP is **P8-WP04 — Basic Inventory**.

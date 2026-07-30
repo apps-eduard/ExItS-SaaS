@@ -208,17 +208,19 @@ Feature codes (server-side authority): `customer-credit-view`, `customer-credit-
 | View/generate statement | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `customer-credit-view` |
 | View/generate repayment receipt | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `customer-credit-view` |
 
-### Catalog and sales capability matrix (P8-WP01 / P8-WP02)
+### Catalog and sales capability matrix (P8-WP01 / P8-WP02 / P8-WP03)
 
 | Capability | Trialing | Active | GracePeriod | PastDue | Cancelled | Expired | Suspended | Grant |
 |---|---:|---:|---:|---:|---:|---:|---:|---|
 | View catalog / categories / SKU-barcode lookup | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `store-catalog-view` |
 | Manage catalog (create/update/lifecycle) | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `store-catalog-manage` |
 | View sales history / detail | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `store-sales-view` |
-| Create sale (checkout) | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `store-sales-create` |
-| Void sale | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `store-sales-void` |
+| Create sale (Cash / ManualGCash) | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `store-sales-create` |
+| Create Product-Based Utang sale | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `store-sales-create` **and** `customer-credit-create` |
+| Void Cash / ManualGCash sale | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `store-sales-void` |
+| Void Product-Based Utang sale | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `store-sales-void` **and** `ReverseCredit` (`customer-credit-view`) |
 
-Catalog and simple sales are **online-only** (no offline cache or queued mutations). Entry alone does not grant capability; Suspended / missing / stale / unknown deny. Continuity permits view when the matching view grant is present; mutations remain Trialing/Active/GracePeriod + create/manage/void grants.
+Catalog, simple sales, and Product-Based Utang are **online-only** (no offline cache or queued sale/Utang mutations). Entry alone does not grant capability; Suspended / missing / stale / unknown deny. Continuity permits view when the matching view grant is present; mutations remain Trialing/Active/GracePeriod + required grants. Product-Based Utang create/void require **both** sales and credit capabilities.
 
 ### Allowed after expiry (continuity)
 
@@ -239,6 +241,7 @@ Catalog and simple sales are **online-only** (no offline cache or queued mutatio
 - Set/change/clear due dates
 - Create/update/deactivate/reactivate catalog (`store-catalog-manage` denied in continuity)
 - Create or void sales (`store-sales-create` / `store-sales-void` denied in continuity)
+- Create Product-Based Utang (`customer-credit-create` also denied in continuity)
 - Use features not allowed by expired entitlement or missing grants
 - Suspended / missing / stale / unknown / invalid: deny all protected capabilities
 
