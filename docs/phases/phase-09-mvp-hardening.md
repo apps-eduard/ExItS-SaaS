@@ -115,7 +115,7 @@ Status: **Complete** with documented risks
 Report: [P9-WP03-backup-and-restore.md](../reports/P9-WP03-backup-and-restore.md)
 
 Feature commit: 3bbb0c716da60bd7d87a191c35bd0eced1bde380
-Docs commit: 20ac81ac1cedc281a5c8e2d27ea8e8194e33a461
+Docs commit: b0e032181de4502ea70e8cc4c3a69d06997af7a6
 
 Phase marker: `P9-WP03-backup-and-restore`
 
@@ -163,7 +163,7 @@ Status: **Complete** with documented risks
 Report: [P9-WP04-accessibility-localization-theme-qa.md](../reports/P9-WP04-accessibility-localization-theme-qa.md)
 
 Feature commit: f7b3aecec614eea8b1de601cd08e843f4aea91f8
-Docs commit: a28adb46b95e8a38651a0b8f32119a06f102aae2
+Docs commit: b0e032181de4502ea70e8cc4c3a69d06997af7a6
 
 Phase marker: `P9-WP04-accessibility-localization-theme-qa`
 
@@ -209,7 +209,7 @@ Status: **Complete** with documented risks
 Report: [P9-WP05-pilot-and-deployment.md](../reports/P9-WP05-pilot-and-deployment.md)
 
 Feature commit: 9c1bbd0557e252758a772b985c907233da3f5214
-Docs commit: 58b3c7413d5ccb29f0e0ee62007671217f7ff7f5
+Docs commit: b0e032181de4502ea70e8cc4c3a69d06997af7a6
 
 Phase marker: `P9-WP05-pilot-and-deployment`
 

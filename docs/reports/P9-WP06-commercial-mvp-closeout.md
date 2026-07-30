@@ -18,7 +18,7 @@ Final environment decisions:
 
 Feature commit: f6117c59e9c63d629af5805cf2d4ae7f8ea61225
 
-Docs commit: _(pending)_
+Docs commit: b0e032181de4502ea70e8cc4c3a69d06997af7a6
 
 ## Phase 9 closeout decision
 
