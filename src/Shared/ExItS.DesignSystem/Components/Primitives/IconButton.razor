@@ -1,0 +1,38 @@
+@namespace ExItS.DesignSystem.Components.Primitives
+@using ExItS.DesignSystem.Components.Internal
+
+<button type="button"
+        class="exds-icon-btn"
+        aria-label="@AriaLabel"
+        title="@(Title ?? AriaLabel)"
+        disabled="@Disabled"
+        @onclick="HandleClickAsync"
+        @attributes="AdditionalAttributes">
+    @IconGlyphs.Get(IconName)
+</button>
+
+@code {
+    /// <summary>Accessible name; required since this button renders no visible text.</summary>
+    [Parameter, EditorRequired] public string AriaLabel { get; set; } = "";
+
+    /// <summary>One of: home, products, sales, customers, more, settings, refresh, close, menu, check, warning.</summary>
+    [Parameter, EditorRequired] public string IconName { get; set; } = "";
+
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private async Task HandleClickAsync(MouseEventArgs args)
+    {
+        if (Disabled)
+        {
+            return;
+        }
+
+        if (OnClick.HasDelegate)
+        {
+            await OnClick.InvokeAsync(args);
+        }
+    }
+}

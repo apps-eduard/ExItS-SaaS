@@ -1,0 +1,60 @@
+@namespace ExItS.DesignSystem.Components.Primitives
+
+<div class="exds-field @(IsInvalid ? "exds-field--invalid" : null)">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <Label For="@_id" Required="@Required">@Label</Label>
+    }
+    <select id="@_id"
+            class="exds-field__control"
+            disabled="@Disabled"
+            value="@Value"
+            aria-invalid="@(IsInvalid ? "true" : "false")"
+            @onchange="HandleChange"
+            @attributes="AdditionalAttributes">
+        @if (Options is not null)
+        {
+            @foreach (var option in Options)
+            {
+                <option value="@option.Value">@option.Text</option>
+            }
+        }
+        else
+        {
+            @ChildContent
+        }
+    </select>
+    @if (IsInvalid && !string.IsNullOrEmpty(ErrorText))
+    {
+        <span class="exds-field__error" role="alert">@ErrorText</span>
+    }
+    else if (!string.IsNullOrEmpty(Hint))
+    {
+        <span class="exds-field__hint">@Hint</span>
+    }
+</div>
+
+@code {
+    private readonly string _id = $"exds-select-{Guid.NewGuid():N}";
+
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public IReadOnlyList<SelectOption>? Options { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public bool IsInvalid { get; set; }
+    [Parameter] public string? ErrorText { get; set; }
+    [Parameter] public string? Hint { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private async Task HandleChange(ChangeEventArgs args)
+    {
+        Value = args.Value?.ToString();
+        if (ValueChanged.HasDelegate)
+        {
+            await ValueChanged.InvokeAsync(Value);
+        }
+    }
+}

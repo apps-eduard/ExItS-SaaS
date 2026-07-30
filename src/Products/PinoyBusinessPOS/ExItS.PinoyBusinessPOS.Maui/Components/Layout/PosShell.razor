@@ -1,0 +1,111 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@using ExItS.DesignSystem.Components.Internal
+@inject ThemeController ThemeCtl
+@inject CultureController CultureCtl
+@inject PosStatusState Status
+@inject IAppInfoService AppInfo
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<div class="exds-root pos-shell" @key="_cultureEpoch">
+    <header class="pos-topbar">
+        <div class="pos-topbar__brand">
+            <span class="pos-topbar__logo" aria-hidden="true">ES</span>
+            <span class="pos-topbar__title">@L["Brand_Name"]</span>
+        </div>
+        <div class="pos-topbar__status">
+            <Badge Tone="@(IsDevelopment ? BadgeTone.Warning : BadgeTone.Neutral)">@EnvironmentLabel</Badge>
+            <span class="pos-topbar__connectivity" title="@ConnectivityTitle">
+                <span class="pos-status-dot pos-status-dot--@ConnectivityDotClass" aria-hidden="true"></span>
+                <span class="exds-sr-only">@ConnectivityTitle</span>
+            </span>
+            <IconButton IconName="settings" AriaLabel="@L["Nav_Settings"]" OnClick="GoToSettings" />
+        </div>
+    </header>
+
+    <main class="pos-content">
+        @Body
+    </main>
+
+    <nav class="pos-bottom-nav" aria-label="Primary">
+        <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/home" Match="NavLinkMatch.All">
+            <span class="pos-nav-item__icon">@IconGlyphs.Get("home")</span>
+            <span class="pos-nav-item__label">@L["Nav_Home"]</span>
+        </NavLink>
+        <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/products">
+            <span class="pos-nav-item__icon">@IconGlyphs.Get("products")</span>
+            <span class="pos-nav-item__label">@L["Nav_Products"]</span>
+        </NavLink>
+        <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/sales">
+            <span class="pos-nav-item__icon">@IconGlyphs.Get("sales")</span>
+            <span class="pos-nav-item__label">@L["Nav_Sales"]</span>
+        </NavLink>
+        <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/customers">
+            <span class="pos-nav-item__icon">@IconGlyphs.Get("customers")</span>
+            <span class="pos-nav-item__label">@L["Nav_Customers"]</span>
+        </NavLink>
+        <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/more">
+            <span class="pos-nav-item__icon">@IconGlyphs.Get("more")</span>
+            <span class="pos-nav-item__label">@L["Nav_More"]</span>
+        </NavLink>
+    </nav>
+</div>
+
+@code {
+    private int _cultureEpoch;
+
+    protected override void OnInitialized()
+    {
+        ThemeCtl.Changed += OnChangedAsync;
+        CultureCtl.Changed += OnChangedAsync;
+        Status.Changed += OnChangedAsync;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await ThemeCtl.InitializeAsync();
+        await CultureCtl.InitializeAsync();
+        _cultureEpoch = CultureCtl.Epoch;
+        await Status.InitializeAsync();
+        StateHasChanged();
+    }
+
+    private bool IsDevelopment => string.Equals(AppInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase);
+
+    private string EnvironmentLabel => IsDevelopment ? L["Env_Development"] : L["Env_Production"];
+
+    private string ConnectivityDotClass => Status.Connectivity switch
+    {
+        ConnectivityStatus.Online => "online",
+        ConnectivityStatus.Offline => "offline",
+        _ => "unknown",
+    };
+
+    private string ConnectivityTitle => Status.Connectivity switch
+    {
+        ConnectivityStatus.Online => L["Connectivity_Online"],
+        ConnectivityStatus.Offline => L["Connectivity_Offline"],
+        _ => L["Connectivity_Unknown"],
+    };
+
+    private void GoToSettings() => Nav.NavigateTo("/settings");
+
+    private async Task OnChangedAsync()
+    {
+        _cultureEpoch = CultureCtl.Epoch;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ThemeCtl.Changed -= OnChangedAsync;
+        CultureCtl.Changed -= OnChangedAsync;
+        Status.Changed -= OnChangedAsync;
+    }
+}

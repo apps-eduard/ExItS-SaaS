@@ -1,6 +1,6 @@
 # Platform Admin Terminology Guide — English ↔ Tagalog (fil-PH)
 
-[UI design system](ui-design-system.md) | [Localization](localization.md) | [Theme system](theme-system.md)
+[UI design system](ui-design-system.md) | [Localization](localization.md) | [Theme system](theme-system.md) | [POS terminology](pos-terminology-guide.md)
 
 Short glossary for `ExItS.Platform.Admin` shell/shared-component copy (`Localization/AdminResources.resx`
 and `AdminResources.fil-PH.resx`, P4-WP04). Business pages (Users, Organizations, Subscriptions,

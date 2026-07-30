@@ -27,14 +27,16 @@
 - **P4-WP01 (implemented):** Platform Admin unit/architecture guards (no Infrastructure/EF/Ant/Tailwind; no deferred commercial mutation controls); typed API client tests; Admin portfolio read API integration tests; Admin UI runtime smoke
 - **P4-WP02 (implemented):** Platform user/membership/product-access unit tests; effective-access evaluation; PostgreSQL migration apply/rollback/re-apply; identity/access API integration tests; Admin guards for no product-local role selectors / no login screens
 - **P4-WP03 (implemented):** Existing subscription/payment domain + API integration coverage retained; Admin typed-client mutation route tests; architecture guards for lifecycle/payment controls without gateway/card/POS/HealthCare dependencies; no new commercial migration
-- **P4-WP04 (implemented):** Platform role-assignment + permission catalog unit tests; audit domain/application tests; PostgreSQL migration apply/rollback/re-apply for `AddPlatformAuthorizationAndAudit`; API authorization + denied-audit integration tests; Admin architecture/localization resource tests; themes/i18n smoke via Admin unit coverage; total Platform root **411** passed (261 unit / 39 architecture / 27 Admin unit / 84 integration)
+- **P4-WP04 (implemented):** Platform role-assignment + permission catalog unit tests; audit domain/application tests; PostgreSQL migration apply/rollback/re-apply for `AddPlatformAuthorizationAndAudit`; API authorization + denied-audit integration tests; Admin architecture/localization resource tests; themes/i18n smoke via Admin unit coverage
+- **P5-WP01 (implemented):** DesignSystem architecture/token/component/localization tests; PosApiClient status classification + offline short-circuit + safe GET retry tests; Maui foundation guards (Android TFM, no Bootstrap/EF/Ant/Tailwind/HC, no sales/sync entry); POS architecture boundary tests; total Platform root **443** passed (261 unit / 41 architecture / 27 Admin unit / 7 DesignSystem / 17 ApiClient / 6 Maui / 84 integration)
 
 ## POS tests
 
-- Customer credit/payment ledger
+- **P5-WP01 (foundation):** Maui shell/route/localization guards; ApiClient connectivity/result classification; DesignSystem shared primitives
+- Customer credit/payment ledger *(later)*
 - Tenant isolation
 - Subscription feature enforcement
-- Offline queue and idempotency
+- Offline queue and idempotency *(Phase 7 — not P5-WP01)*
 - Inventory movements
 - Cashier permissions
 
@@ -46,5 +48,6 @@
 - Compact desktop and touch layouts
 - Table empty/loading/error states
 - Date field culture formatting
+- **P5-WP01:** DesignSystem + PosResources en/fil-PH foundation coverage; theme preference persistence smoke via Maui/Settings paths
 
 All reports use exact command output; totals are never estimated.

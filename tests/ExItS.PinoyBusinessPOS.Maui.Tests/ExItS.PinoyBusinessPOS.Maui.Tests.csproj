@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>ExItS.PinoyBusinessPOS.Maui.Tests</RootNamespace>
+    <AssemblyName>ExItS.PinoyBusinessPOS.Maui.Tests</AssemblyName>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Test MAUI foundation logic without loading the Android host project. -->
+    <ProjectReference Include="..\..\src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.Application\ExItS.PinoyBusinessPOS.Application.csproj" />
+    <ProjectReference Include="..\..\src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.ApiClient\ExItS.PinoyBusinessPOS.ApiClient.csproj" />
+    <ProjectReference Include="..\..\src\Shared\ExItS.DesignSystem\ExItS.DesignSystem.csproj" />
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

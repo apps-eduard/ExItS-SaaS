@@ -41,3 +41,4 @@ The dashboard links to the latest accepted report.
 | [P4-WP02-organizations-users-and-product-access.md](P4-WP02-organizations-users-and-product-access.md) | Organizations, Users and Product Access | Complete |
 | [P4-WP03-subscriptions-payments-and-trials.md](P4-WP03-subscriptions-payments-and-trials.md) | Subscriptions, Payments and Trials | Complete |
 | [P4-WP04-audit-authorization-and-closeout.md](P4-WP04-audit-authorization-and-closeout.md) | Audit, Authorization and Closeout | Complete (Phase 4 closed with documented risks) |
+| [P5-WP01-maui-solution-and-api-client.md](P5-WP01-maui-solution-and-api-client.md) | MAUI Solution and API Client | Complete |

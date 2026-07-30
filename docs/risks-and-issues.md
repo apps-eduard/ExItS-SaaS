@@ -102,10 +102,24 @@
 | R-096 | Audit table growth without retention / archival policy | Medium | Append-only by design; define retention/archival before production volume | Open — introduced P4-WP04 |
 | R-097 | Sensitive data written into Platform audit payloads | Critical | Forbidden fields (passwords, tokens, card/GCash secrets, PHI, raw payloads, exception dumps); safe summary only | **Mitigated** (P4-WP04) — by design; keep reviewing new writers |
 | R-098 | Development operator full-access misuse outside controlled hosts | Critical | `GrantDevelopmentOperatorFullAccess` only on Development/Testing; optional `X-Dev-Platform-User-Id` for role-based principal; never enable in production | Open — introduced P4-WP04; production blocker |
+| R-099 | Shared DesignSystem / UI coupling between Admin and POS | Medium | Keep DesignSystem UI-stack-agnostic (tokens + primitives); product shells own chrome; avoid Admin CSS in Maui and vice versa | Open — introduced P5-WP01 |
+| R-100 | MAUI Blazor Hybrid vs Platform Admin web visual/behavior divergence | Medium | Shared `--exits-*` semantic tokens and terminology guides; separate implementations per ADR-010; expand visual regression later | Open — introduced P5-WP01 |
+| R-101 | Android API-level / device compatibility gaps | High | Android-first TFM; Release APK evidence; expand device matrix before production; iOS/Windows not in P5-WP01 scope | Open — introduced P5-WP01 |
+| R-102 | POS theme contrast / focus visibility regressions | High | Semantic tokens; visible focus; a11y review in P5-WP02; honor `prefers-reduced-motion` | Open — introduced P5-WP01; related R-008 / R-095 |
+| R-103 | Tagalog (fil-PH) gaps or awkward store copy | Medium | `PosResources` + `DesignSystemResources` en/fil-PH; [pos-terminology-guide.md](engineering/pos-terminology-guide.md); resource tests; English fallback | Open — introduced P5-WP01 |
+| R-104 | Unsafe HTTP retries causing duplicate side effects | High | GET-only single retry on Unavailable/Timeout; mutations must not auto-retry without idempotency | **Mitigated** (P5-WP01) — by design; keep reviewing new client methods |
+| R-105 | Platform API unavailable / misconfigured base URL on device | High | `ApiResult` Unavailable/Offline/Timeout classification; Settings diagnostics; emulator default `10.0.2.2`; no silent success | Open — introduced P5-WP01 |
+| R-106 | Future secure token storage misuse or plaintext secrets | Critical | `ISecureTokenStore` stub unused in P5-WP01 (`NullSecureTokenStore`); no credentials persisted; require platform secure storage before auth WP | Open — introduced P5-WP01 |
+| R-107 | Phone / tablet layout regressions as shell grows | Medium | Bottom nav + deferred pages; compact/comfortable density tokens; validate in P5-WP02 compact layout WP | Open — introduced P5-WP01 |
+| R-108 | Offline connectivity foundation mistaken for offline business capability | High | Explicit UI/docs: no sync queue, SQLite, or offline sales; Phase 7 owns sync; R-108 awareness in shell copy | Open — introduced P5-WP01 |
+
+## Phase 5 note (P5-WP01)
+
+Phase 5 is **In Progress**. P5-WP01 delivered Android-first MAUI Blazor Hybrid shell, shared DesignSystem, System/Light/Dark theme preference, EN/fil-PH resources, and typed API client with connectivity/health classification. **Not delivered:** authentication, sales/inventory, offline sync, product database, compact-layout polish (P5-WP02). Production Platform auth blockers from Phase 4 remain OPEN. Next: **P5-WP02 — Native UI Tokens, Themes and Compact Layout** when authorized.
 
 ## Phase 4 closeout note (P4-WP04)
 
-Phase 4 is **Complete with documented risks**. P4-WP04 delivered Platform system-role authorization (server-side), append-only audit, Admin redesign, System/Light/Dark themes, and EN/fil-PH Admin resources. **Production blockers remain OPEN:** R-045/R-050/R-055/R-062/R-063/R-072/R-085/R-091/R-098 (and related unauthenticated mutation gates). Gateways, invoices, entitlement delivery, R-022, and R-035 remain open. Next: **Phase 5 / P5-WP01 — MAUI Solution and API Client** when authorized.
+Phase 4 is **Complete with documented risks**. P4-WP04 delivered Platform system-role authorization (server-side), append-only audit, Admin redesign, System/Light/Dark themes, and EN/fil-PH Admin resources. **Production blockers remain OPEN:** R-045/R-050/R-055/R-062/R-063/R-072/R-085/R-091/R-098 (and related unauthenticated mutation gates). Gateways, invoices, entitlement delivery, R-022, and R-035 remain open. Superseded as “next WP” by Phase 5 / P5-WP01 (now complete).
 
 ## Phase 4 note (P4-WP03)
 

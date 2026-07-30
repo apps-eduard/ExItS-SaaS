@@ -1,0 +1,17 @@
+@namespace ExItS.DesignSystem.Components.Primitives
+
+<span class="exds-badge @ToneClass">@ChildContent</span>
+
+@code {
+    [Parameter] public BadgeTone Tone { get; set; } = BadgeTone.Neutral;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string ToneClass => Tone switch
+    {
+        BadgeTone.Primary => "exds-badge--primary",
+        BadgeTone.Success => "exds-badge--success",
+        BadgeTone.Warning => "exds-badge--warning",
+        BadgeTone.Danger => "exds-badge--danger",
+        _ => "exds-badge--neutral",
+    };
+}

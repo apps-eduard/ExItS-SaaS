@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>ExItS.DesignSystem</RootNamespace>
+    <AssemblyName>ExItS.DesignSystem</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+    <PackageReference Include="Microsoft.Extensions.Localization" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- No code-generator: DesignSystemResources.cs is a hand-written empty marker class used
+         only as the generic argument for IStringLocalizer<DesignSystemResources>. The .resx
+         files are embedded via the SDK's default globbing (no Designer.cs), which avoids a
+         class-name collision with the marker class in the same namespace. -->
+    <EmbeddedResource Update="Localization\DesignSystemResources.fil-PH.resx">
+      <DependentUpon>DesignSystemResources.resx</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>

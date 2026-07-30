@@ -1,0 +1,64 @@
+@namespace ExItS.DesignSystem.Components.Overlay
+
+<div class="exds-tabs">
+    <div class="exds-tabs__list" role="tablist">
+        @foreach (var tab in _pages)
+        {
+            <button type="button"
+                    class="exds-tabs__tab"
+                    role="tab"
+                    id="@TabId(tab)"
+                    aria-selected="@(ReferenceEquals(tab, _active) ? "true" : "false")"
+                    aria-controls="@PanelId(tab)"
+                    @onclick="() => Activate(tab)">
+                @tab.Title
+            </button>
+        }
+    </div>
+    @foreach (var tab in _pages)
+    {
+        <div class="exds-tabs__panel"
+             role="tabpanel"
+             id="@PanelId(tab)"
+             aria-labelledby="@TabId(tab)"
+             hidden="@(!ReferenceEquals(tab, _active))">
+            @tab.ChildContent
+        </div>
+    }
+</div>
+<CascadingValue Value="this" IsFixed="true">
+    @ChildContent
+</CascadingValue>
+
+@code {
+    private readonly List<TabPage> _pages = new();
+    private TabPage? _active;
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public EventCallback<string> OnTabChanged { get; set; }
+
+    internal void AddPage(TabPage tab)
+    {
+        _pages.Add(tab);
+        _active ??= tab;
+        StateHasChanged();
+    }
+
+    private async Task Activate(TabPage tab)
+    {
+        if (ReferenceEquals(tab, _active))
+        {
+            return;
+        }
+
+        _active = tab;
+        StateHasChanged();
+        if (OnTabChanged.HasDelegate)
+        {
+            await OnTabChanged.InvokeAsync(tab.Title);
+        }
+    }
+
+    private string TabId(TabPage tab) => $"exds-tab-{_pages.IndexOf(tab)}-{GetHashCode()}";
+    private string PanelId(TabPage tab) => $"exds-panel-{_pages.IndexOf(tab)}-{GetHashCode()}";
+}

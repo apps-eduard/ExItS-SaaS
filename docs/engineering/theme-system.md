@@ -54,3 +54,13 @@ Admin implements **System / Light / Dark**:
 - `theme-boot.js` prevents incorrect-theme flash before first paint
 - Theme change does not full-reload the Blazor app
 - Focus visibility and contrast remain production risks (R-095 / R-008) until a11y hardening
+
+## PinoyBusinessPOS themes (P5-WP01)
+
+POS MAUI implements **System / Light / Dark** on the shared DesignSystem token set:
+
+- Semantic `--exits-*` tokens in `ExItS.DesignSystem/wwwroot/exits-design-system.css`
+- Settings theme selector; preference in MAUI Preferences + `localStorage` mirror
+- `Maui/wwwroot/theme-boot.js` reduces incorrect-theme flash
+- Density attributes (`compact` / `comfortable`) defined in DesignSystem; compact layout expansion is **P5-WP02**
+- Contrast/focus remain open (R-102 / R-008)

@@ -1,0 +1,80 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <!-- Android-first foundation. iOS/Windows/MacCatalyst are not required for P5-WP01 completion. -->
+    <TargetFrameworks>net10.0-android</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>ExItS.PinoyBusinessPOS.Maui</RootNamespace>
+    <AssemblyName>ExItS.PinoyBusinessPOS.Maui</AssemblyName>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultCssItems>false</EnableDefaultCssItems>
+    <Nullable>enable</Nullable>
+    <ApplicationTitle>ExItS POS</ApplicationTitle>
+    <ApplicationId>com.exits.pinoybusinesspos</ApplicationId>
+    <ApplicationDisplayVersion>0.5.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+    <SupportedOSPlatformVersion>24.0</SupportedOSPlatformVersion>
+    <!-- Maui packages use SDK MauiVersion; skip CPM version requirement for them. -->
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <!-- The Android workload's own default (set in Microsoft.Android.Sdk.DefaultProperties.targets,
+         conditioned only on AndroidApplication=='true') is NOT visible to NuGet's lightweight
+         restore-graph evaluation pass, which only "peeks through" Configuration/TargetFramework
+         conditions on properties declared directly in the project file. Without an explicit,
+         unconditioned RuntimeIdentifiers here, restore silently omits the per-RID target sections
+         from project.assets.json, and the build later fails with NETSDK1047. -->
+    <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <!-- The Android workload's default-properties targets only default AndroidLinkMode to "None"
+         for Debug; for Release it is left empty, which makes PublishTrimmed default to true even
+         for a plain `dotnet build` (not just publish/archive). That in turn self-contains the app
+         and auto-references Microsoft.NET.ILLink.Tasks, whose restore graph pulls host (win-x64)
+         runtime packs (AspNetCore.App/NETCore.App.Runtime.Mono/WindowsDesktop.App) that this
+         development environment/offline cache cannot resolve. Trimming and AOT are publish/
+         archive-time concerns for a real release pipeline (with the appropriate workload/pack
+         available); pin both off here so `dotnet build -c Release` stays fast and reliable, and
+         opt back in explicitly (e.g. -p:AndroidLinkMode=SdkOnly -p:RunAOTCompilation=true) when
+         producing an actual release archive. -->
+    <AndroidLinkMode>None</AndroidLinkMode>
+    <RunAOTCompilation>false</RunAOTCompilation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#166534" />
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#166534" BaseSize="128,128" />
+    <MauiImage Include="Resources\Images\*" />
+    <MauiFont Include="Resources\Fonts\*" />
+    <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Localization" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\ExItS.DesignSystem\ExItS.DesignSystem.csproj" />
+    <ProjectReference Include="..\ExItS.PinoyBusinessPOS.ApiClient\ExItS.PinoyBusinessPOS.ApiClient.csproj" />
+    <ProjectReference Include="..\ExItS.PinoyBusinessPOS.Application\ExItS.PinoyBusinessPOS.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- No code-generator: PosResources.cs is a hand-written empty marker class used only as
+         the generic argument for IStringLocalizer<PosResources>. The .resx files are embedded
+         via the SDK's default globbing (no Designer.cs). -->
+    <EmbeddedResource Update="Localization\PosResources.fil-PH.resx">
+      <DependentUpon>PosResources.resx</DependentUpon>
+    </EmbeddedResource>
+    <!-- Bundled default configuration, embedded so it can be read synchronously during
+         CreateMauiApp (Raw MauiAsset content is only accessible via the async FileSystem API). -->
+    <EmbeddedResource Include="wwwroot\appsettings.json" LogicalName="appsettings.json" />
+  </ItemGroup>
+
+</Project>

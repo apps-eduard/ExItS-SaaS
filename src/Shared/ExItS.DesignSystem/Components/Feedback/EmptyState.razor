@@ -1,0 +1,20 @@
+@namespace ExItS.DesignSystem.Components.Feedback
+@using ExItS.DesignSystem.Components.Internal
+@inject IStringLocalizer<DesignSystemResources> L
+
+<div class="exds-empty-state" role="status">
+    <span class="exds-empty-state__icon">@IconGlyphs.Get(IconName)</span>
+    <p class="exds-empty-state__title">@(Title ?? L["Empty_DefaultTitle"])</p>
+    <p class="exds-empty-state__message">@(Message ?? L["Empty_DefaultMessage"])</p>
+    @if (Actions is not null)
+    {
+        <div class="exds-empty-state__actions">@Actions</div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public string IconName { get; set; } = "inbox";
+    [Parameter] public RenderFragment? Actions { get; set; }
+}

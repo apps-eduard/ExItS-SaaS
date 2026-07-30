@@ -122,7 +122,7 @@ app.MapGet("/", () => Results.Json(new
 {
     service = "ExItS.Platform.Api",
     status = "ok",
-    phase = "P4-WP04-audit-authorization-closeout"
+    phase = "P5-WP01-maui-solution-api-client"
 }));
 
 app.MapHealthChecks("/health");

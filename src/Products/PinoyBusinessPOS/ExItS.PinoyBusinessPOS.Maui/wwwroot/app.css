@@ -1,0 +1,253 @@
+/*
+ * ExItS PinoyBusinessPOS — mobile POS shell chrome.
+ * Design tokens (--exits-*) come from exits-design-system.css; this file only lays out the
+ * app-level shell (top bar, scroll region, bottom navigation) and boot/error screens that exist
+ * outside the design system's component set.
+ */
+
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow-x: hidden;
+    font-family: var(--exits-font-sans, "Segoe UI", system-ui, sans-serif);
+    background: var(--exits-bg, #f5f7f8);
+}
+
+#app {
+    min-height: 100%;
+}
+
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* ============================== Boot screen ============================== */
+
+.pos-boot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--exits-bg, #f5f7f8);
+    color: var(--exits-text, #17202a);
+}
+
+.pos-boot__mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.75rem;
+    background: #166534;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 1rem;
+    letter-spacing: 0.02em;
+}
+
+.pos-boot__label {
+    font-weight: 700;
+    color: var(--exits-text-muted, #5f6b76);
+}
+
+/* ============================== App shell ============================== */
+
+.pos-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--exits-bg);
+    color: var(--exits-text);
+    overflow-x: hidden;
+}
+
+.pos-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--exits-space-3);
+    padding: calc(var(--exits-space-3) + env(safe-area-inset-top)) calc(var(--exits-space-4) + env(safe-area-inset-right)) var(--exits-space-3) calc(var(--exits-space-4) + env(safe-area-inset-left));
+    background: var(--exits-surface-elevated);
+    border-bottom: 1px solid var(--exits-border);
+}
+
+.pos-topbar__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--exits-space-2);
+    min-width: 0;
+}
+
+.pos-topbar__logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--exits-radius-sm);
+    background: var(--exits-primary);
+    color: var(--exits-primary-contrast);
+    font-weight: 800;
+    font-size: 0.75rem;
+}
+
+.pos-topbar__title {
+    font-weight: 700;
+    font-size: var(--exits-text-lg);
+    color: var(--exits-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pos-topbar__status {
+    display: flex;
+    align-items: center;
+    gap: var(--exits-space-2);
+    flex-shrink: 0;
+}
+
+.pos-topbar__connectivity {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--exits-touch-target-min);
+    height: var(--exits-touch-target-min);
+}
+
+.pos-status-dot {
+    display: inline-block;
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 50%;
+    background: var(--exits-text-muted);
+}
+
+.pos-status-dot--online { background: var(--exits-success); }
+.pos-status-dot--offline { background: var(--exits-danger); }
+.pos-status-dot--unknown { background: var(--exits-text-muted); }
+
+.pos-content {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
+}
+
+.pos-bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    display: flex;
+    background: var(--exits-surface-elevated);
+    border-top: 1px solid var(--exits-border);
+    padding: 0 calc(env(safe-area-inset-left)) env(safe-area-inset-bottom) calc(env(safe-area-inset-right));
+}
+
+.pos-nav-item {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    min-height: var(--exits-touch-target-min);
+    padding: 0.4rem 0.25rem;
+    color: var(--exits-text-muted);
+    text-decoration: none;
+    font-size: var(--exits-text-xs);
+    font-weight: 600;
+    transition: color var(--exits-motion-fast) var(--exits-ease);
+}
+
+.pos-nav-item svg {
+    width: 1.35rem;
+    height: 1.35rem;
+}
+
+.pos-nav-item--active {
+    color: var(--exits-primary);
+}
+
+.pos-nav-item__label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* ============================== Content helpers ============================== */
+
+.pos-muted {
+    color: var(--exits-text-muted);
+    font-size: var(--exits-text-sm);
+}
+
+.pos-value-lg {
+    font-size: var(--exits-text-lg);
+    font-weight: 700;
+    color: var(--exits-text);
+}
+
+/* ============================== Blazor error UI ============================== */
+
+#blazor-error-ui {
+    color-scheme: light only;
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem calc(0.7rem + env(safe-area-inset-bottom)) 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1400;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
+
+.blazor-error-boundary {
+    background: #fbe7e5;
+    border: 1px solid #b42318;
+    border-radius: var(--exits-radius-md, 0.625rem);
+    padding: 1rem 1rem 1rem 1rem;
+    color: #b42318;
+}
+
+.blazor-error-boundary::after {
+    content: "An error has occurred.";
+}
+
+.status-bar-safe-area {
+    display: none;
+}
+
+@supports (-webkit-touch-callout: none) {
+    .status-bar-safe-area {
+        display: flex;
+        position: sticky;
+        top: 0;
+        height: env(safe-area-inset-top);
+        background-color: var(--exits-surface-elevated, #f7f7f7);
+        width: 100%;
+        z-index: 1;
+    }
+}

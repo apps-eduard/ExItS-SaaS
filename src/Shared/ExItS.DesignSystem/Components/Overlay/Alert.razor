@@ -1,0 +1,40 @@
+@namespace ExItS.DesignSystem.Components.Overlay
+@using ExItS.DesignSystem.Components.Internal
+
+<div class="exds-alert @ToneClass" role="@(Tone is AlertTone.Danger or AlertTone.Warning ? "alert" : "status")">
+    <span class="exds-alert__icon">@IconGlyphs.Get(ToneIcon)</span>
+    <div class="exds-alert__content">
+        @if (!string.IsNullOrEmpty(Title))
+        {
+            <p class="exds-alert__title">@Title</p>
+        }
+        @if (!string.IsNullOrEmpty(Message))
+        {
+            <p class="exds-alert__message">@Message</p>
+        }
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter] public AlertTone Tone { get; set; } = AlertTone.Info;
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string ToneClass => Tone switch
+    {
+        AlertTone.Success => "exds-alert--success",
+        AlertTone.Warning => "exds-alert--warning",
+        AlertTone.Danger => "exds-alert--danger",
+        _ => "exds-alert--info",
+    };
+
+    private string ToneIcon => Tone switch
+    {
+        AlertTone.Success => "check",
+        AlertTone.Warning => "warning",
+        AlertTone.Danger => "warning",
+        _ => "info",
+    };
+}

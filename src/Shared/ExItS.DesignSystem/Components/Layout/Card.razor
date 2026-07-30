@@ -1,0 +1,13 @@
+@namespace ExItS.DesignSystem.Components.Layout
+
+<div class="exds-card @(Elevated ? "exds-card--elevated" : null) @(Interactive ? "exds-card--interactive" : null)"
+     @attributes="AdditionalAttributes">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public bool Elevated { get; set; }
+    [Parameter] public bool Interactive { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+}

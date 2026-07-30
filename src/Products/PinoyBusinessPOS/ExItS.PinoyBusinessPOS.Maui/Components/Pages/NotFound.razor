@@ -1,0 +1,11 @@
+﻿@page "/not-found"
+@layout ExItS.PinoyBusinessPOS.Maui.Components.Layout.PosShell
+
+<Page>
+    <PageHeader Title="404" Subtitle="Sorry, the content you are looking for does not exist." />
+    <Button Variant="ButtonVariant.Secondary" OnClick='() => Nav.NavigateTo("/home")'>Back to home</Button>
+</Page>
+
+@code {
+    [Inject] private NavigationManager Nav { get; set; } = default!;
+}

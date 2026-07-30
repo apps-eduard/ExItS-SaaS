@@ -1,0 +1,45 @@
+@namespace ExItS.DesignSystem.Components.Feedback
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.DesignSystem.Components.Primitives
+@inject IStringLocalizer<DesignSystemResources> L
+
+<div class="exds-search-box">
+    <span class="exds-search-box__icon">@IconGlyphs.Get("search")</span>
+    <input type="search"
+           class="exds-field__control"
+           placeholder="@(Placeholder ?? L["Search_Placeholder"])"
+           value="@Value"
+           aria-label="@(Placeholder ?? L["Search_Placeholder"])"
+           disabled="@Disabled"
+           @oninput="HandleInput" />
+    @if (!string.IsNullOrEmpty(Value))
+    {
+        <IconButton AriaLabel="@ClearLabel" IconName="close" OnClick="Clear" />
+    }
+</div>
+
+@code {
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public string ClearLabel { get; set; } = "Clear search";
+    [Parameter] public bool Disabled { get; set; }
+
+    private async Task HandleInput(ChangeEventArgs args)
+    {
+        Value = args.Value?.ToString();
+        if (ValueChanged.HasDelegate)
+        {
+            await ValueChanged.InvokeAsync(Value);
+        }
+    }
+
+    private async Task Clear()
+    {
+        Value = null;
+        if (ValueChanged.HasDelegate)
+        {
+            await ValueChanged.InvokeAsync(Value);
+        }
+    }
+}

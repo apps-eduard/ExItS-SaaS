@@ -1,0 +1,44 @@
+@namespace ExItS.DesignSystem.Components.Overlay
+@using ExItS.DesignSystem.Components.Primitives
+
+<div class="exds-drawer__backdrop @(Visible ? "exds-drawer__backdrop--open" : null)" aria-hidden="true" @onclick="Close"></div>
+<div class="exds-drawer @(Side == DrawerSide.Left ? "exds-drawer--left" : null) @(Visible ? "exds-drawer--open" : null)"
+     role="dialog"
+     aria-modal="true"
+     aria-hidden="@(!Visible)"
+     aria-label="@Title"
+     tabindex="-1"
+     @onkeydown="HandleKeyDown">
+    <div class="exds-drawer__header">
+        <h2 class="exds-drawer__title">@Title</h2>
+        <IconButton AriaLabel="@CloseLabel" IconName="close" OnClick="Close" />
+    </div>
+    <div class="exds-drawer__body">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public DrawerSide Side { get; set; } = DrawerSide.Right;
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string CloseLabel { get; set; } = "Close";
+
+    private async Task Close()
+    {
+        if (OnClose.HasDelegate)
+        {
+            await OnClose.InvokeAsync();
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+        {
+            await Close();
+        }
+    }
+}

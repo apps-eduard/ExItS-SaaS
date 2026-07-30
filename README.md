@@ -23,10 +23,12 @@ Product-specific workflows and data remain inside each product.
 
 ```text
 ExItS-SaaS/
-├── ExItS.slnx                  # root Platform solution (P2-WP01)
+├── ExItS.slnx                  # root Platform + POS foundation solution
 ├── global.json                 # SDK 10.0.302
-├── src/Platform/               # Domain, Application, Infrastructure, Api
-├── tests/                      # Unit + architecture/safety tests
+├── src/Platform/               # Domain, Application, Infrastructure, Api, Admin
+├── src/Shared/                 # ExItS.DesignSystem
+├── src/Products/PinoyBusinessPOS/  # Application, ApiClient, Maui (Android-first)
+├── tests/                      # Unit + architecture + Admin + DesignSystem + POS tests
 ├── docs/                       # portfolio architecture and tracking
 ├── HealthCare/                 # nested independent Git repo — ignored by root
 └── README.md
@@ -34,7 +36,7 @@ ExItS-SaaS/
 
 `HealthCare/` remains frozen and outside root Git. Do not import it without an approved work package.
 
-**Phase 4** is **closed with documented risks** ([P4-WP04 report](docs/reports/P4-WP04-audit-authorization-and-closeout.md)): Platform Admin redesign, audit trail, system-role authorization (server-side), themes, and EN/fil-PH localization. Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. Production authentication (JWT/MFA/SSO/AD) remains open — development operator is not production auth. Manual confirmation is not provider verification. Subscription changes are not product provisioning. HealthCare remains frozen. Next: **Phase 5 / P5-WP01 — MAUI Solution and API Client** when authorized.
+**Phase 5** is **in progress**. **P5-WP01** is **complete** ([P5-WP01 report](docs/reports/P5-WP01-maui-solution-and-api-client.md)): Android-first MAUI Blazor Hybrid shell, shared DesignSystem, themes, EN/fil-PH resources, and typed API client with connectivity/health classification. No auth, sales, inventory, or offline sync yet. Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. Phase 4 production authentication (JWT/MFA/SSO/AD) remains open. HealthCare remains frozen. Next: **P5-WP02 — Native UI Tokens, Themes and Compact Layout** when authorized.
 
 ### Platform database (local)
 

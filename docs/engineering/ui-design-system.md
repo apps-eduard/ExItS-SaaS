@@ -23,24 +23,26 @@ Visual consistency across **new** Platform Admin and POS comes from shared seman
 
 Commercial Admin shell: collapsible sidebar (checkbox CSS), mobile drawer, sticky header, environment chip, shared design-system components (page header, filters, empty/loading/error, audit timeline, theme/language selectors), responsive tables/cards (≈320–1920px). Permission-aware nav is UI convenience only. Keyboard-usable controls; `prefers-reduced-motion` respected. No Ant Design; no Tailwind.
 
-### Proposed project boundaries (not created in P0-WP03)
+### Shared DesignSystem library (P5-WP01)
+
+`src/Shared/ExItS.DesignSystem` is a `net10.0` Razor class library with semantic `--exits-*` tokens, System/Light/Dark theme hooks, compact/comfortable density attributes, shared Blazor primitives (inputs, layout, feedback/empty/error), and `DesignSystemResources` (`en` + `fil-PH`). No Ant Design, Tailwind, Bootstrap, EF Core, or Platform/product Infrastructure references. Consumed by PinoyBusinessPOS MAUI; Platform Admin continues native Admin CSS tokens (`--color-*`) while sharing semantic conventions and terminology.
+
+### Proposed project boundaries (updated P5-WP01)
 
 ```text
 Shared/
-├── ExItS.Ui.Models
-├── ExItS.Ui.Localization
-├── ExItS.Ui.DesignTokens
-└── ExItS.Ui.Validation
+└── ExItS.DesignSystem          # tokens, primitives, DesignSystemResources (P5-WP01)
 
 Platform/
-└── ExItS.Platform.Admin (Blazor Web App — native UI; P4-WP01 shell + P4-WP02 users/memberships/product access + P4-WP03 subscriptions/payments/trials + P4-WP04 audit/authorization redesign, themes, i18n)
+└── ExItS.Platform.Admin (Blazor Web App — native UI; P4-WP01–04)
 
 Products/PinoyBusinessPOS/
-├── PinoyBusinessPOS.Ui
-└── PinoyBusinessPOS.Maui
+├── ExItS.PinoyBusinessPOS.Application
+├── ExItS.PinoyBusinessPOS.ApiClient
+└── ExItS.PinoyBusinessPOS.Maui   # Android-first MAUI Blazor Hybrid (P5-WP01)
 ```
 
-Platform Admin: Blazor Web App. POS: .NET MAUI Blazor Hybrid (Android, Windows, future iOS). Both use the native shared conventions above.
+Platform Admin: Blazor Web App. POS: .NET MAUI Blazor Hybrid (Android-first; future iOS/Windows). Both use native shared conventions above.
 
 ---
 
@@ -114,6 +116,8 @@ Required modes: **Light**, **Dark**, **System**.
 
 **P4-WP04:** Platform Admin implements System / Light / Dark via semantic CSS tokens, header selector, `localStorage` persistence, and `theme-boot.js` flash prevention. HealthCare today: light canvas tokens + dark **sider only** — not a product theme system.
 
+**P5-WP01:** PinoyBusinessPOS MAUI implements System / Light / Dark via DesignSystem `--exits-*` tokens, Settings selector, MAUI Preferences + `localStorage` mirror, and `theme-boot.js`. Density tokens exist; compact layout polish is P5-WP02.
+
 ---
 
 ## Localization
@@ -127,6 +131,8 @@ Initial languages: **English (`en`)** and **Filipino (`fil` / `fil-PH`)**.
 - Do **not** claim all Philippine languages.
 
 **P4-WP04:** Platform Admin ships `AdminResources` (`en` + `fil-PH`) for shell/nav/shared components; see [localization.md](localization.md) and [admin-terminology-guide.md](admin-terminology-guide.md). HealthCare today: **no** localization foundation (do not add during Phase 0).
+
+**P5-WP01:** PinoyBusinessPOS ships `PosResources` + DesignSystem `DesignSystemResources` (`en` + `fil-PH`); see [localization.md](localization.md) and [pos-terminology-guide.md](pos-terminology-guide.md).
 
 ---
 

@@ -1,0 +1,112 @@
+@page "/settings"
+@implements IDisposable
+@inject ThemeController ThemeCtl
+@inject CultureController CultureCtl
+@inject PosStatusState Status
+@inject IAppInfoService AppInfo
+@inject IOptions<PosApiOptions> ApiOptions
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Settings_Title"]" Subtitle="@L["Settings_Subtitle"]" />
+
+    <Alert Tone="AlertTone.Warning" Title="@L["Settings_DevNoticeTitle"]" Message="@L["Settings_DevNoticeMessage"]" />
+
+    <Section Title="@L["Settings_AppearanceSectionTitle"]">
+        <Card>
+            <Stack Gap="5">
+                <Select Label="@L["Settings_ThemeLabel"]" Value="@ThemeCtl.Current.ToString()" ValueChanged="OnThemeChangedAsync" Options="ThemeOptions" />
+                <Select Label="@L["Settings_LanguageLabel"]" Value="@CultureCtl.Current" ValueChanged="OnCultureChangedAsync" Options="CultureOptions" />
+            </Stack>
+        </Card>
+    </Section>
+
+    <Section Title="@L["Settings_ApiSectionTitle"]">
+        <Card>
+            <Stack Gap="3">
+                <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center">
+                    <span>@L["Settings_ApiHostLabel"]</span>
+                    <span class="pos-muted">@ApiHost</span>
+                </Stack>
+                <Button Variant="ButtonVariant.Secondary" IsLoading="Status.IsCheckingApi" OnClick="TestConnectionAsync">
+                    @L["Api_TestConnection"]
+                </Button>
+                @if (_testResultMessage is not null)
+                {
+                    <Alert Tone="@(_testSucceeded ? AlertTone.Success : AlertTone.Danger)" Message="@_testResultMessage" />
+                }
+            </Stack>
+        </Card>
+    </Section>
+
+    <Section Title="@L["Settings_AboutSectionTitle"]">
+        <Card>
+            <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center">
+                <span>@L["Settings_AppVersionLabel"]</span>
+                <span class="pos-muted">@AppInfo.Version</span>
+            </Stack>
+        </Card>
+    </Section>
+</Page>
+
+@code {
+    private bool _testSucceeded;
+    private string? _testResultMessage;
+
+    private IReadOnlyList<SelectOption> ThemeOptions =>
+    [
+        new(nameof(ThemePreference.System), L["Settings_Theme_System"]),
+        new(nameof(ThemePreference.Light), L["Settings_Theme_Light"]),
+        new(nameof(ThemePreference.Dark), L["Settings_Theme_Dark"]),
+    ];
+
+    private IReadOnlyList<SelectOption> CultureOptions =>
+    [
+        new(MauiCulturePreferenceStore.English, L["Settings_Language_English"]),
+        new(MauiCulturePreferenceStore.Filipino, L["Settings_Language_Filipino"]),
+    ];
+
+    private string ApiHost
+    {
+        get
+        {
+            var baseUrl = ApiOptions.Value.BaseUrl;
+            return Uri.TryCreate(baseUrl, UriKind.Absolute, out var uri) ? uri.Authority : baseUrl;
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        Status.Changed += OnChangedAsync;
+    }
+
+    private async Task OnThemeChangedAsync(string? value)
+    {
+        if (Enum.TryParse<ThemePreference>(value, out var preference))
+        {
+            await ThemeCtl.SetThemeAsync(preference);
+        }
+    }
+
+    private async Task OnCultureChangedAsync(string? value)
+    {
+        if (!string.IsNullOrEmpty(value))
+        {
+            await CultureCtl.SetCultureAsync(value);
+        }
+    }
+
+    private async Task TestConnectionAsync()
+    {
+        _testResultMessage = null;
+        await Status.RefreshApiHealthAsync();
+        _testSucceeded = Status.ApiStatus == ApiCallStatus.Success;
+        _testResultMessage = _testSucceeded
+            ? string.Format(L["Api_TestSuccess"], Status.ApiHealthText ?? "OK")
+            : L["Api_TestFailure"];
+    }
+
+    private async Task OnChangedAsync() => await InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Status.Changed -= OnChangedAsync;
+}

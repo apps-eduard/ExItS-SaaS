@@ -1,0 +1,14 @@
+@namespace ExItS.DesignSystem.Components.Primitives
+
+@if (Orientation == DividerOrientation.Vertical)
+{
+    <span class="exds-divider--vertical" role="separator" aria-orientation="vertical"></span>
+}
+else
+{
+    <hr class="exds-divider" role="separator" aria-orientation="horizontal" />
+}
+
+@code {
+    [Parameter] public DividerOrientation Orientation { get; set; } = DividerOrientation.Horizontal;
+}

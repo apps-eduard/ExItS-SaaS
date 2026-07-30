@@ -1,0 +1,32 @@
+@namespace ExItS.DesignSystem.Components.Feedback
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.DesignSystem.Components.Primitives
+@inject IStringLocalizer<DesignSystemResources> L
+
+<div class="exds-error-state" role="alert">
+    <span class="exds-error-state__icon">@IconGlyphs.Get(IconName)</span>
+    <p class="exds-error-state__title">@(Title ?? L["Error_DefaultTitle"])</p>
+    <p class="exds-error-state__message">@(Message ?? L["Error_DefaultMessage"])</p>
+    @if (OnRetry.HasDelegate)
+    {
+        <div class="exds-error-state__actions">
+            <Button Variant="ButtonVariant.Secondary" OnClick="HandleRetryAsync">@(RetryLabel ?? L["Error_Retry"])</Button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public string? RetryLabel { get; set; }
+    [Parameter] public string IconName { get; set; } = "error";
+    [Parameter] public EventCallback OnRetry { get; set; }
+
+    private async Task HandleRetryAsync()
+    {
+        if (OnRetry.HasDelegate)
+        {
+            await OnRetry.InvokeAsync();
+        }
+    }
+}

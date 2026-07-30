@@ -1,0 +1,91 @@
+@namespace ExItS.DesignSystem.Components.Overlay
+@using ExItS.DesignSystem.Components.Internal
+@implements IDisposable
+
+<div class="exds-toast-host" aria-live="polite" aria-atomic="true">
+    @foreach (var toast in _toasts)
+    {
+        <div class="exds-toast @ToneClass(toast.Tone)" role="status">
+            <span class="exds-toast__icon">@IconGlyphs.Get(ToneIcon(toast.Tone))</span>
+            <span class="exds-toast__message">@toast.Message</span>
+            <button type="button" class="exds-icon-btn exds-toast__close" aria-label="@CloseLabel" @onclick="() => Dismiss(toast)">
+                @IconGlyphs.Get("close")
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    private readonly List<ToastEntry> _toasts = new();
+    private readonly Dictionary<Guid, CancellationTokenSource> _timers = new();
+
+    [Parameter] public string CloseLabel { get; set; } = "Dismiss";
+    [Parameter] public int DefaultDurationMs { get; set; } = 4000;
+
+    /// <summary>Enqueues a toast. Obtain a reference to this host with <c>@@ref</c> to call it.</summary>
+    public void Show(string message, ToastTone tone = ToastTone.Info, int? durationMs = null)
+    {
+        var entry = new ToastEntry(Guid.NewGuid(), message, tone);
+        _toasts.Add(entry);
+        StateHasChanged();
+
+        var cts = new CancellationTokenSource();
+        _timers[entry.Id] = cts;
+        _ = DismissAfterAsync(entry, durationMs ?? DefaultDurationMs, cts.Token);
+    }
+
+    private async Task DismissAfterAsync(ToastEntry entry, int durationMs, CancellationToken ct)
+    {
+        try
+        {
+            await Task.Delay(durationMs, ct);
+            Dismiss(entry);
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
+
+    private void Dismiss(ToastEntry entry)
+    {
+        if (_timers.Remove(entry.Id, out var cts))
+        {
+            cts.Cancel();
+            cts.Dispose();
+        }
+
+        if (_toasts.Remove(entry))
+        {
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private static string ToneClass(ToastTone tone) => tone switch
+    {
+        ToastTone.Success => "exds-toast--success",
+        ToastTone.Warning => "exds-toast--warning",
+        ToastTone.Danger => "exds-toast--danger",
+        _ => "",
+    };
+
+    private static string ToneIcon(ToastTone tone) => tone switch
+    {
+        ToastTone.Success => "check",
+        ToastTone.Warning => "warning",
+        ToastTone.Danger => "warning",
+        _ => "info",
+    };
+
+    public void Dispose()
+    {
+        foreach (var cts in _timers.Values)
+        {
+            cts.Cancel();
+            cts.Dispose();
+        }
+
+        _timers.Clear();
+    }
+
+    private sealed record ToastEntry(Guid Id, string Message, ToastTone Tone);
+}

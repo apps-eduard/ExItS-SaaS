@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="Brand_Name" xml:space="preserve"><value>ExItS POS</value></data>
+  <data name="Brand_Tagline" xml:space="preserve"><value>Point-of-sale foundation for Filipino small businesses</value></data>
+
+  <data name="Nav_Home" xml:space="preserve"><value>Home</value></data>
+  <data name="Nav_Products" xml:space="preserve"><value>Products</value></data>
+  <data name="Nav_Sales" xml:space="preserve"><value>Sales</value></data>
+  <data name="Nav_Customers" xml:space="preserve"><value>Customers</value></data>
+  <data name="Nav_More" xml:space="preserve"><value>More</value></data>
+  <data name="Nav_Settings" xml:space="preserve"><value>Settings</value></data>
+
+  <data name="Env_BannerCompact" xml:space="preserve"><value>Development-stage</value></data>
+  <data name="Env_BannerDetail" xml:space="preserve"><value>Development-stage security warning: this app and the POS API it talks to are currently unauthenticated. This build is not production-secure.</value></data>
+  <data name="Env_Development" xml:space="preserve"><value>Development</value></data>
+  <data name="Env_Production" xml:space="preserve"><value>Production</value></data>
+
+  <data name="Connectivity_Label" xml:space="preserve"><value>Network</value></data>
+  <data name="Connectivity_Online" xml:space="preserve"><value>Online</value></data>
+  <data name="Connectivity_Offline" xml:space="preserve"><value>Offline</value></data>
+  <data name="Connectivity_Unknown" xml:space="preserve"><value>Checking…</value></data>
+
+  <data name="Api_Label" xml:space="preserve"><value>API</value></data>
+  <data name="Api_Checking" xml:space="preserve"><value>Checking API availability…</value></data>
+  <data name="Api_Available" xml:space="preserve"><value>Available</value></data>
+  <data name="Api_Unavailable" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="Api_Offline" xml:space="preserve"><value>No network connectivity</value></data>
+  <data name="Api_Retry" xml:space="preserve"><value>Retry</value></data>
+  <data name="Api_TestConnection" xml:space="preserve"><value>Test connection</value></data>
+  <data name="Api_Testing" xml:space="preserve"><value>Testing…</value></data>
+  <data name="Api_Environment" xml:space="preserve"><value>API environment</value></data>
+  <data name="Api_TestSuccess" xml:space="preserve"><value>Connected. API reported status: {0}</value></data>
+  <data name="Api_TestFailure" xml:space="preserve"><value>Could not reach the API.</value></data>
+
+  <data name="Home_Title" xml:space="preserve"><value>ExItS PinoyBusinessPOS</value></data>
+  <data name="Home_Subtitle" xml:space="preserve"><value>Point-of-sale foundation — connectivity and platform status.</value></data>
+  <data name="Home_AppSectionTitle" xml:space="preserve"><value>App</value></data>
+  <data name="Home_StatusSectionTitle" xml:space="preserve"><value>System status</value></data>
+  <data name="Home_VersionLabel" xml:space="preserve"><value>Version</value></data>
+  <data name="Home_EnvironmentLabel" xml:space="preserve"><value>Environment</value></data>
+  <data name="Home_SettingsLink" xml:space="preserve"><value>Open settings</value></data>
+  <data name="Home_ApiHealthy" xml:space="preserve"><value>The POS API is reachable and healthy.</value></data>
+  <data name="Home_ApiUnhealthy" xml:space="preserve"><value>The POS API responded with an unexpected status.</value></data>
+  <data name="Home_NoFeaturesTitle" xml:space="preserve"><value>Foundation build</value></data>
+  <data name="Home_NoFeaturesMessage" xml:space="preserve"><value>Sales, products, and customer features ship in a later work package. This build establishes the app shell, connectivity, theme, and language foundation only.</value></data>
+
+  <data name="Settings_Title" xml:space="preserve"><value>Settings</value></data>
+  <data name="Settings_Subtitle" xml:space="preserve"><value>Appearance, language, and connection diagnostics.</value></data>
+  <data name="Settings_AppearanceSectionTitle" xml:space="preserve"><value>Appearance</value></data>
+  <data name="Settings_ThemeLabel" xml:space="preserve"><value>Theme</value></data>
+  <data name="Settings_Theme_System" xml:space="preserve"><value>System</value></data>
+  <data name="Settings_Theme_Light" xml:space="preserve"><value>Light</value></data>
+  <data name="Settings_Theme_Dark" xml:space="preserve"><value>Dark</value></data>
+  <data name="Settings_LanguageLabel" xml:space="preserve"><value>Language</value></data>
+  <data name="Settings_Language_English" xml:space="preserve"><value>English</value></data>
+  <data name="Settings_Language_Filipino" xml:space="preserve"><value>Tagalog</value></data>
+  <data name="Settings_ApiSectionTitle" xml:space="preserve"><value>API connection</value></data>
+  <data name="Settings_ApiEndpointLabel" xml:space="preserve"><value>Endpoint (development only)</value></data>
+  <data name="Settings_ApiHostLabel" xml:space="preserve"><value>Host</value></data>
+  <data name="Settings_AboutSectionTitle" xml:space="preserve"><value>About</value></data>
+  <data name="Settings_AppVersionLabel" xml:space="preserve"><value>App version</value></data>
+  <data name="Settings_DevNoticeTitle" xml:space="preserve"><value>Development-stage build</value></data>
+  <data name="Settings_DevNoticeMessage" xml:space="preserve"><value>This app has no authentication, no sales/inventory data entry, and no synchronization yet. It is a foundation build for later work packages.</value></data>
+
+  <data name="Deferred_Title" xml:space="preserve"><value>Coming in a later work package</value></data>
+  <data name="Deferred_Message" xml:space="preserve"><value>{0} is not part of this foundation build. It will be delivered in a future work package.</value></data>
+  <data name="Deferred_BackToHome" xml:space="preserve"><value>Back to home</value></data>
+
+  <data name="Common_Retry" xml:space="preserve"><value>Retry</value></data>
+  <data name="Common_Close" xml:space="preserve"><value>Close</value></data>
+</root>

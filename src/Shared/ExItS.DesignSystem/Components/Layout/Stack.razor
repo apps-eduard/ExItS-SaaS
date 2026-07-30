@@ -1,0 +1,37 @@
+@namespace ExItS.DesignSystem.Components.Layout
+
+<div class="exds-stack @DirectionClass @AlignClass @JustifyClass @(Wrap ? "exds-stack--wrap" : null)"
+     style="gap:@GapValue;"
+     @attributes="AdditionalAttributes">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public StackDirection Direction { get; set; } = StackDirection.Column;
+    [Parameter] public StackAlign Align { get; set; } = StackAlign.Stretch;
+    [Parameter] public StackJustify Justify { get; set; } = StackJustify.Start;
+    [Parameter] public string Gap { get; set; } = "4";
+    [Parameter] public bool Wrap { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string DirectionClass => Direction == StackDirection.Row ? "exds-stack--row" : "exds-stack--column";
+
+    private string AlignClass => Align switch
+    {
+        StackAlign.Start => "exds-stack--align-start",
+        StackAlign.Center => "exds-stack--align-center",
+        StackAlign.End => "exds-stack--align-end",
+        _ => "exds-stack--align-stretch",
+    };
+
+    private string JustifyClass => Justify switch
+    {
+        StackJustify.Center => "exds-stack--justify-center",
+        StackJustify.End => "exds-stack--justify-end",
+        StackJustify.Between => "exds-stack--justify-between",
+        _ => "exds-stack--justify-start",
+    };
+
+    private string GapValue => $"var(--exits-space-{Gap}, {Gap})";
+}

@@ -51,13 +51,13 @@ public sealed class RepositorySafetyTests
     }
 
     [Fact]
-    public void No_product_or_shared_source_projects_exist_yet()
+    public void PinoyBusinessPOS_and_DesignSystem_projects_exist_while_HealthCare_remains_outside_solution()
     {
         var root = FindRepositoryRoot();
+        Assert.True(Directory.Exists(Path.Combine(root, "src", "Products", "PinoyBusinessPOS")));
+        Assert.True(Directory.Exists(Path.Combine(root, "src", "Shared", "ExItS.DesignSystem")));
         Assert.False(Directory.Exists(Path.Combine(root, "Shared")));
         Assert.False(Directory.Exists(Path.Combine(root, "Products")));
-        Assert.False(Directory.Exists(Path.Combine(root, "src", "Products")));
-        Assert.False(Directory.Exists(Path.Combine(root, "src", "Shared")));
 
         var csprojs = Directory.GetFiles(root, "*.csproj", SearchOption.AllDirectories)
             .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}HealthCare{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
@@ -66,9 +66,9 @@ public sealed class RepositorySafetyTests
             .Select(Path.GetFileNameWithoutExtension)
             .ToArray();
 
-        Assert.DoesNotContain(csprojs, name => name is not null && name.Contains("PinoyBusinessPOS", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(csprojs, name => name is not null && name.Equals("ExItS.PinoyBusinessPOS.Maui", StringComparison.Ordinal));
+        Assert.Contains(csprojs, name => name is not null && name.Equals("ExItS.DesignSystem", StringComparison.Ordinal));
         Assert.DoesNotContain(csprojs, name => name is not null && name.Contains("HealthCare", StringComparison.OrdinalIgnoreCase));
-        Assert.DoesNotContain(csprojs, name => name is not null && name.Contains("Blazor", StringComparison.OrdinalIgnoreCase));
     }
 
     private static string FindRepositoryRoot()

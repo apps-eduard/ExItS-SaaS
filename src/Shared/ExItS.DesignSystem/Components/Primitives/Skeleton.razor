@@ -1,0 +1,13 @@
+@namespace ExItS.DesignSystem.Components.Primitives
+
+<span class="exds-skeleton @(Circle ? "exds-skeleton--circle" : "exds-skeleton--text")"
+      style="@Style"
+      aria-hidden="true"></span>
+
+@code {
+    [Parameter] public string Width { get; set; } = "100%";
+    [Parameter] public string Height { get; set; } = "0.9em";
+    [Parameter] public bool Circle { get; set; }
+
+    private string Style => $"width:{Width};height:{Height};";
+}

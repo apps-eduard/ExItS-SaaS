@@ -1,0 +1,21 @@
+@namespace ExItS.DesignSystem.Components.Layout
+
+<div class="exds-grid" style="@GridStyle" @attributes="AdditionalAttributes">
+    @ChildContent
+</div>
+
+@code {
+    /// <summary>Number of columns at the widest breakpoint (desktop). Responsively collapses via auto-fit/minmax.</summary>
+    [Parameter] public int Columns { get; set; } = 3;
+
+    /// <summary>Minimum column width used for the responsive auto-fit track (e.g. "16rem").</summary>
+    [Parameter] public string MinColumnWidth { get; set; } = "16rem";
+
+    [Parameter] public string Gap { get; set; } = "4";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string GridStyle =>
+        $"gap:var(--exits-space-{Gap}, {Gap});grid-template-columns:repeat(auto-fit, minmax(min({MinColumnWidth}, 100%), 1fr));" +
+        $"--exds-grid-columns:{Columns};";
+}

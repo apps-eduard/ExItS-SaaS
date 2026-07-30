@@ -1,0 +1,96 @@
+﻿@page "/"
+@page "/home"
+@implements IDisposable
+@inject PosStatusState Status
+@inject IAppInfoService AppInfo
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Home_Title"]" Subtitle="@L["Home_Subtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoToSettings">@L["Home_SettingsLink"]</Button>
+        </Actions>
+    </PageHeader>
+
+    <Section Title="@L["Home_AppSectionTitle"]">
+        <Card>
+            <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="3">
+                <Stack Gap="1">
+                    <span class="pos-value-lg">@AppInfo.AppName</span>
+                    <span class="pos-muted">@L["Home_VersionLabel"]: @AppInfo.Version</span>
+                    <span class="pos-muted">@L["Home_EnvironmentLabel"]: @EnvironmentLabel</span>
+                </Stack>
+                <Badge Tone="@(IsDevelopment ? BadgeTone.Warning : BadgeTone.Neutral)">@EnvironmentLabel</Badge>
+            </Stack>
+        </Card>
+    </Section>
+
+    <Section Title="@L["Home_StatusSectionTitle"]">
+        <Stack Gap="4">
+            <Card>
+                <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center">
+                    <span>@L["Connectivity_Label"]</span>
+                    <Badge Tone="@ConnectivityTone">@ConnectivityLabel</Badge>
+                </Stack>
+            </Card>
+
+            @if (Status.IsCheckingApi)
+            {
+                <Card>
+                    <Stack Direction="StackDirection.Row" Gap="2" Align="StackAlign.Center">
+                        <Spinner />
+                        <span>@L["Api_Checking"]</span>
+                    </Stack>
+                </Card>
+            }
+            else if (Status.ApiStatus == ApiCallStatus.Success)
+            {
+                <Alert Tone="AlertTone.Success" Title="@L["Api_Available"]" Message="@L["Home_ApiHealthy"]" />
+            }
+            else if (Status.ApiStatus == ApiCallStatus.Offline)
+            {
+                <ErrorState IconName="warning" Title="@L["Connectivity_Offline"]" Message="@L["Api_Offline"]" RetryLabel="@L["Common_Retry"]" OnRetry="RetryAsync" />
+            }
+            else if (Status.ApiStatus is not null)
+            {
+                <ErrorState Title="@L["Api_Unavailable"]" Message="@L["Home_ApiUnhealthy"]" RetryLabel="@L["Common_Retry"]" OnRetry="RetryAsync" />
+            }
+        </Stack>
+    </Section>
+
+    <EmptyState IconName="inbox" Title="@L["Home_NoFeaturesTitle"]" Message="@L["Home_NoFeaturesMessage"]" />
+</Page>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Status.Changed += OnChangedAsync;
+    }
+
+    private bool IsDevelopment => string.Equals(AppInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase);
+
+    private string EnvironmentLabel => IsDevelopment ? L["Env_Development"] : L["Env_Production"];
+
+    private BadgeTone ConnectivityTone => Status.Connectivity switch
+    {
+        ConnectivityStatus.Online => BadgeTone.Success,
+        ConnectivityStatus.Offline => BadgeTone.Danger,
+        _ => BadgeTone.Neutral,
+    };
+
+    private string ConnectivityLabel => Status.Connectivity switch
+    {
+        ConnectivityStatus.Online => L["Connectivity_Online"],
+        ConnectivityStatus.Offline => L["Connectivity_Offline"],
+        _ => L["Connectivity_Unknown"],
+    };
+
+    private Task RetryAsync() => Status.RefreshApiHealthAsync();
+
+    private void GoToSettings() => Nav.NavigateTo("/settings");
+
+    private async Task OnChangedAsync() => await InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Status.Changed -= OnChangedAsync;
+}

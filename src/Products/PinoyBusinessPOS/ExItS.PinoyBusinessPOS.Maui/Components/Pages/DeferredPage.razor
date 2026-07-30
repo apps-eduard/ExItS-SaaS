@@ -1,0 +1,40 @@
+@page "/products"
+@page "/sales"
+@page "/customers"
+@page "/more"
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@FeatureName" Subtitle="@L["Deferred_Title"]" />
+
+    <EmptyState IconName="@IconName" Title="@L["Deferred_Title"]" Message="@string.Format(L["Deferred_Message"], FeatureName)">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoHome">@L["Deferred_BackToHome"]</Button>
+        </Actions>
+    </EmptyState>
+</Page>
+
+@code {
+    private string RelativePath => Nav.ToBaseRelativePath(Nav.Uri).Trim('/');
+
+    private string FeatureName => RelativePath switch
+    {
+        "products" => L["Nav_Products"],
+        "sales" => L["Nav_Sales"],
+        "customers" => L["Nav_Customers"],
+        "more" => L["Nav_More"],
+        _ => string.Empty,
+    };
+
+    private string IconName => RelativePath switch
+    {
+        "products" => "products",
+        "sales" => "sales",
+        "customers" => "customers",
+        "more" => "more",
+        _ => "inbox",
+    };
+
+    private void GoHome() => Nav.NavigateTo("/home");
+}

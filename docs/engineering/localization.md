@@ -41,6 +41,22 @@ src/Platform/ExItS.Platform.Admin/Localization/
 
 ASP.NET Core request localization + cookie/localStorage language preference. Shell, navigation, and shared components use `IStringLocalizer<AdminResources>`. Business page copy may remain English in P4-WP04. Glossary: [admin-terminology-guide.md](admin-terminology-guide.md).
 
+### PinoyBusinessPOS resources (P5-WP01)
+
+```text
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/Localization/
+├── PosResources.resx            # English (default)
+├── PosResources.fil-PH.resx     # Filipino/Tagalog
+└── PosResources.cs
+
+src/Shared/ExItS.DesignSystem/Localization/
+├── DesignSystemResources.resx
+├── DesignSystemResources.fil-PH.resx
+└── DesignSystemResources.cs
+```
+
+MAUI registers `en` + `fil-PH`; culture preference persisted. Shell/Home/Settings/deferred copy uses `IStringLocalizer<PosResources>`; shared empty/error/offline strings use DesignSystem resources. UI label for `fil-PH` is “Tagalog”. Glossary: [pos-terminology-guide.md](pos-terminology-guide.md). Dedicated localization WP (P5-WP03) remains for completeness hardening.
+
 ## Translation quality
 
 Use natural store language, not literal technical translation. Maintain a glossary for Utang, balance, payment, due date, stock, sale, refund and cashier terms.

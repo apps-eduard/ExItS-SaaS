@@ -1,0 +1,18 @@
+@namespace ExItS.DesignSystem.Components.Overlay
+
+@code {
+    [CascadingParameter] private Tabs? Parent { get; set; }
+
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (Parent is null)
+        {
+            throw new InvalidOperationException($"{nameof(TabPage)} must be used inside a {nameof(Tabs)} component.");
+        }
+
+        Parent.AddPage(this);
+    }
+}

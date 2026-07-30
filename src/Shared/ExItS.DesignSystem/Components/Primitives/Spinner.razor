@@ -1,0 +1,9 @@
+@namespace ExItS.DesignSystem.Components.Primitives
+@inject IStringLocalizer<DesignSystemResources> L
+
+<span class="exds-spinner @(Size == SpinnerSize.Lg ? "exds-spinner--lg" : null)" role="status" aria-label="@(Label ?? L["Loading_Label"])"></span>
+
+@code {
+    [Parameter] public SpinnerSize Size { get; set; } = SpinnerSize.Sm;
+    [Parameter] public string? Label { get; set; }
+}

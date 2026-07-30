@@ -1,0 +1,52 @@
+@namespace ExItS.DesignSystem.Components.Primitives
+
+<div class="exds-field @(IsInvalid ? "exds-field--invalid" : null)">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <Label For="@_id" Required="@Required">@Label</Label>
+    }
+    <input id="@_id"
+           type="@Type"
+           class="exds-field__control"
+           placeholder="@Placeholder"
+           disabled="@Disabled"
+           value="@Value"
+           aria-invalid="@(IsInvalid ? "true" : "false")"
+           aria-describedby="@(IsInvalid && !string.IsNullOrEmpty(ErrorText) ? _errorId : null)"
+           @oninput="HandleInput"
+           @attributes="AdditionalAttributes" />
+    @if (IsInvalid && !string.IsNullOrEmpty(ErrorText))
+    {
+        <span id="@_errorId" class="exds-field__error" role="alert">@ErrorText</span>
+    }
+    else if (!string.IsNullOrEmpty(Hint))
+    {
+        <span class="exds-field__hint">@Hint</span>
+    }
+</div>
+
+@code {
+    private readonly string _id = $"exds-input-{Guid.NewGuid():N}";
+    private string _errorId => $"{_id}-error";
+
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public string Type { get; set; } = "text";
+    [Parameter] public bool IsInvalid { get; set; }
+    [Parameter] public string? ErrorText { get; set; }
+    [Parameter] public string? Hint { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private async Task HandleInput(ChangeEventArgs args)
+    {
+        Value = args.Value?.ToString();
+        if (ValueChanged.HasDelegate)
+        {
+            await ValueChanged.InvokeAsync(Value);
+        }
+    }
+}

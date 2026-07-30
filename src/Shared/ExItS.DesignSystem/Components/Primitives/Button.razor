@@ -1,0 +1,56 @@
+@namespace ExItS.DesignSystem.Components.Primitives
+
+<button type="@Type"
+        class="@CssClass"
+        disabled="@(Disabled || IsLoading)"
+        @onclick="HandleClickAsync"
+        @attributes="AdditionalAttributes">
+    @if (IsLoading)
+    {
+        <span class="exds-btn__spinner" aria-hidden="true"><Spinner /></span>
+    }
+    @ChildContent
+</button>
+
+@code {
+    [Parameter] public ButtonVariant Variant { get; set; } = ButtonVariant.Primary;
+    [Parameter] public ButtonSize Size { get; set; } = ButtonSize.Md;
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string Type { get; set; } = "button";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string CssClass => string.Join(' ', new[]
+    {
+        "exds-btn",
+        Variant switch
+        {
+            ButtonVariant.Secondary => "exds-btn--secondary",
+            ButtonVariant.Danger => "exds-btn--danger",
+            ButtonVariant.Ghost => "exds-btn--ghost",
+            _ => "exds-btn--primary",
+        },
+        Size switch
+        {
+            ButtonSize.Sm => "exds-btn--sm",
+            ButtonSize.Lg => "exds-btn--lg",
+            _ => "exds-btn--md",
+        },
+        IsLoading ? "exds-btn--loading" : null,
+    }.Where(c => c is not null))!;
+
+    private async Task HandleClickAsync(MouseEventArgs args)
+    {
+        if (Disabled || IsLoading)
+        {
+            return;
+        }
+
+        if (OnClick.HasDelegate)
+        {
+            await OnClick.InvokeAsync(args);
+        }
+    }
+}

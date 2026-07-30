@@ -1,0 +1,11 @@
+@namespace ExItS.DesignSystem.Components.Primitives
+
+<label class="exds-label @(Required ? "exds-label--required" : null)" for="@For">
+    @ChildContent
+</label>
+
+@code {
+    [Parameter] public string? For { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

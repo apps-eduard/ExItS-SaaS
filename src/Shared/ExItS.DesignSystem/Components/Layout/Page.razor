@@ -1,0 +1,12 @@
+@namespace ExItS.DesignSystem.Components.Layout
+
+<div class="exds-root">
+    <div class="exds-page" @attributes="AdditionalAttributes">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+}
