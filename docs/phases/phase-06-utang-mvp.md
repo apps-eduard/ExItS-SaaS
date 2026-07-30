@@ -241,7 +241,7 @@ Interest, penalties, credit limits, sales, inventory, gateways, tax invoices, of
 - [x] Dashboard and phase page updated.
 - [x] Completion report created.
 - [x] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Working tree clean.
 
 ## Phase exit criteria
 

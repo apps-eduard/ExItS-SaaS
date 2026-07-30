@@ -14,7 +14,7 @@
 | Current phase | Phase 6 — Utang MVP (**Complete** with documented risks) |
 | Current work package | P6-WP06 — Utang MVP Closeout (**Complete**) |
 | Overall status | **Phase 6 complete** — Utang MVP closed; next Phase 7 when authorized |
-| Latest verified commit | `9f33420f5f77bade398db6d59728ad9def895683` (P6-WP06 feature; tip pending docs finalize) |
+| Latest verified commit | `bb70a1bd3cbe5875b1f824cfad533c2c54a2de06` (P6-WP06 docs; feature `9f33420f5f77bade398db6d59728ad9def895683`) |
 | Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations; R-035 calendar EOM; no payment gateway; no interactive Android emulator (R-109); commercial/actor headers Development-stage only; org timezone undefined for due dates; OD-11 open; no POS operational roles |
 | Last updated | 2026-07-30 |
 

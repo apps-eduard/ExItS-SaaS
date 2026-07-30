@@ -158,9 +158,9 @@ Baseline 541 preserved and exceeded (+3 closeout tests). Release Android APK: `s
 | Field | Value |
 |---|---|
 | Feature commit | `9f33420f5f77bade398db6d59728ad9def895683` |
-| Docs commit | TBD |
+| Docs commit | `bb70a1bd3cbe5875b1f824cfad533c2c54a2de06` |
 | Phase marker | `P6-WP06-utang-mvp-closeout` |
-| Final working tree | TBD |
+| Final working tree | Clean; matches `origin/main` after push |
 
 ## Exact next authorized work package
 
