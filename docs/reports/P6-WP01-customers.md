@@ -4,7 +4,7 @@ Phase marker: `P6-WP01-customers`
 
 ## Status
 
-**Complete with documented risks.** Organization-isolated PinoyBusinessPOS customer management only. Credit, ledger, repayments, sales, inventory, and offline sync remain excluded (later Phase 6 WPs). OD-07 and OD-08 remain open.
+**Complete with documented risks.** Organization-isolated PinoyBusinessPOS customer management only. Credit, ledger, repayments, sales, inventory, and offline sync remain excluded (later Phase 6 WPs). OD-07 and OD-08 remained open at delivery of this WP; later resolved in P6-WP05.
 
 ## Delivered capability
 
@@ -82,7 +82,7 @@ Android Release APK: `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/
 ## Risks / open decisions
 
 - R-109: no interactive Android emulator validation
-- OD-07 / OD-08 remain open
+- Later resolved in P6-WP05 (see that report). Remained open at delivery of this WP.
 - Production auth still missing (R-091)
 - Trial-expiry credit editing rules not applicable (no credit yet)
 

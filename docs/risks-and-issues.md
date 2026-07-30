@@ -133,9 +133,9 @@
 | R-127 | Derived outstanding mistaken for stored balance / repayment ledger | High | Document sum-of-active-entries only; no edit/delete; repayments deferred to P6-WP03 | Mitigated in P6-WP03 — outstanding = active credits − active repayments; ledger is read-only; FIFO aging in P6-WP04 also derived |
 | R-128 | Dev actor header mistaken for production audit identity | High | Document `X-Dev-Platform-User-Id` as Development/Testing-only; production JWT still required (R-091) | Open — introduced P6-WP03; also used for due-date set/clear in P6-WP04 |
 
-## Phase 6 note (P6-WP05)
+## Phase 6 note (P6-WP06 closeout)
 
-P6-WP05 delivered projection statements and repayment receipts (`RCPT-{guid:N}`), centralized `UtangCapabilityPolicy`, Platform continuity entry for PinoyBusinessPOS only (`ProductAccessEligibility.CanEnterPinoyBusinessPos`), and Development-stage commercial headers. **Product entry vs feature authorization are separate** — Suspended denies; PastDue/Cancelled/Expired are continuity-only. **OD-07 / OD-08 / OD-09 resolved** (deny customer create/edit in continuity; credit reverse allowed; repayment reverse full states only). **No new receipt migration.** Commercial headers are not production-secure. R-109 remains open (no interactive Android validation). Feature commit: `271c518cb8c4051502d6370ec71e6498fbbfd6b5`. Next: **P6-WP06 — Utang MVP Closeout** when authorized.
+Phase 6 Utang MVP is **closed**. P6-WP06 reconciled WP01–WP05, hardened Production commercial-header fail-closed behavior, localized statement/receipt share strings, and added full lifecycle + migration-chain tests. **OD-07 / OD-08 / OD-09 remain resolved** (P6-WP05). Commercial/actor headers remain Development/Testing-stage only — **not production-secure**. R-109 remains open (no interactive Android validation). Not production-ready. Next: **Phase 7 — Offline Sync** when authorized.
 
 ## Phase 6 note (P6-WP04)
 

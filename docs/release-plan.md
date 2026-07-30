@@ -22,8 +22,6 @@
 
 **Complete with documented risks (Phase 2 / P2-WP06).** Root Platform foundation, identity/org, commercial domain, HC contract boundaries, and migration dry-run validation delivered. HealthCare remains frozen. Auth, persistence, real HC integration/cutover, Admin UI, and POS were **not** delivered. See [phase-02-extraction-closeout.md](reports/phase-02-extraction-closeout.md).
 
-**Next:** P6-WP05 **Statements, Receipts and Trial Rules** is complete with documented risks (`271c518cb8c4051502d6370ec71e6498fbbfd6b5`). Next authorized work: **P6-WP06 — Utang MVP Closeout** when approved.
-
 ## R2 — Platform portfolio administration
 
 **Complete with documented risks (Phase 4 / P4-WP04).** HealthCare and PinoyBusinessPOS product plans, subscriptions, trials, manual payment activation, Platform Admin UI, audit, and system-role authorization delivered for development. Production authentication, gateways, invoices, and entitlement delivery remain open. See [P4-WP04 report](reports/P4-WP04-audit-authorization-and-closeout.md).
@@ -34,8 +32,10 @@
 
 ## R3 — PinoyBusinessPOS Utang pilot
 
-**In progress (P6-WP01–P6-WP05 complete).** Organization-isolated customers, remarks-based credit, repayments/ledger, due dates/overdue monitoring, projection statements/receipts, and trial/continuity capability rules delivered. Closeout remains P6-WP06.
+**Complete (P6-WP01–P6-WP06).** Organization-isolated customers, remarks-based credit, repayments/ledger, due dates/overdue monitoring, projection statements/receipts, and trial/continuity capability rules delivered and closed. Not production-ready. See [P6-WP06 closeout](reports/P6-WP06-utang-mvp-closeout.md).
 MAUI app, bilingual UI, themes, customers, Utang, payments, overdue monitoring and basic cloud operation.
+
+**Next:** **Phase 7 — Offline Sync** when approved.
 
 ## R4 — Commercial MVP
 

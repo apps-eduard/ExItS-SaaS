@@ -51,3 +51,4 @@ The dashboard links to the latest accepted report.
 | [P6-WP03-payments-and-ledger.md](P6-WP03-payments-and-ledger.md) | Payments and Ledger | Complete with documented risks |
 | [P6-WP04-due-dates-and-overdue-monitoring.md](P6-WP04-due-dates-and-overdue-monitoring.md) | Due Dates and Overdue Monitoring | Complete with documented risks |
 | [P6-WP05-statements-receipts-and-trial-rules.md](P6-WP05-statements-receipts-and-trial-rules.md) | Statements, Receipts and Trial Rules | Complete with documented risks |
+| [P6-WP06-utang-mvp-closeout.md](P6-WP06-utang-mvp-closeout.md) | Utang MVP Closeout | Complete with documented risks (Phase 6 closed) |

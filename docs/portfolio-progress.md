@@ -2,7 +2,7 @@
 
 > Primary status page. Cursor must update this file after every completed work package. Percentages are calculated from approved work packages, never estimated.
 
-[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P6-WP05 report](reports/P6-WP05-statements-receipts-and-trial-rules.md)
+[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P6-WP06 report](reports/P6-WP06-utang-mvp-closeout.md)
 
 ## Current status
 
@@ -11,11 +11,11 @@
 | Portfolio | ExITS SaaS |
 | Existing product | HealthCare SaaS MVP (ignored nested `HealthCare/`) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 6 — Utang MVP (**In Progress**) |
-| Current work package | P6-WP05 — Statements, Receipts and Trial Rules (**Complete**) |
-| Overall status | **P6-WP05 complete** — statements, receipts, capability matrix, POS continuity entry; next P6-WP06 when authorized |
-| Latest verified commit | `a7ddb2f90df0c180809d75eb7d56e13a9a88772e` (P6-WP05 tip; feature `271c518cb8c4051502d6370ec71e6498fbbfd6b5`) |
-| Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations; R-035 calendar EOM; no payment gateway; no interactive Android emulator (R-109); commercial headers Development-stage only; org timezone undefined for due dates; OD-11 open |
+| Current phase | Phase 6 — Utang MVP (**Complete** with documented risks) |
+| Current work package | P6-WP06 — Utang MVP Closeout (**Complete**) |
+| Overall status | **Phase 6 complete** — Utang MVP closed; next Phase 7 when authorized |
+| Latest verified commit | `9f33420f5f77bade398db6d59728ad9def895683` (P6-WP06 feature; tip pending docs finalize) |
+| Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations; R-035 calendar EOM; no payment gateway; no interactive Android emulator (R-109); commercial/actor headers Development-stage only; org timezone undefined for due dates; OD-11 open; no POS operational roles |
 | Last updated | 2026-07-30 |
 
 ## Delivery sequence
@@ -31,9 +31,11 @@ P6-WP03 ✓ Payments and Ledger (complete with risks)
         ↓
 P6-WP04 ✓ Due Dates and Overdue Monitoring (complete with risks)
         ↓
-P6-WP05 — Statements, Receipts and Trial Rules (complete — do not begin WP06 until authorized)
+P6-WP05 ✓ Statements, Receipts and Trial Rules (complete with risks)
         ↓
-P6-WP06 — Utang MVP Closeout (not started)
+P6-WP06 ✓ Utang MVP Closeout (Phase 6 closed)
+        ↓
+Phase 7 — Offline Sync (not started — do not begin until authorized)
 ```
 
 ## Phase progress
@@ -46,13 +48,13 @@ P6-WP06 — Utang MVP Closeout (not started)
 | 3 | Portfolio Billing, Plans and Entitlements | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-03-billing-entitlements.md) |
 | 4 | Platform Admin Expansion | **Complete with documented risks** | 4 | 4 | 100% | [Open](phases/phase-04-platform-admin.md) |
 | 5 | PinoyBusinessPOS MAUI Foundation | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-05-pos-maui-foundation.md) |
-| 6 | Utang MVP | **In Progress** | 4 | 6 | 66.67% | [Open](phases/phase-06-utang-mvp.md) |
+| 6 | Utang MVP | **Complete with documented risks** | 6 | 6 | 100% | [Open](phases/phase-06-utang-mvp.md) |
 | 7 | Offline Synchronization | Not Started | 0 | 5 | 0% | [Open](phases/phase-07-offline-sync.md) |
 | 8 | Basic Store | Not Started | 0 | 7 | 0% | [Open](phases/phase-08-basic-store.md) |
 | 9 | MVP Hardening and Release | Not Started | 0 | 6 | 0% | [Open](phases/phase-09-mvp-hardening.md) |
 | 10 | Full POS | Future | 0 | 8 | 0% | [Open](phases/phase-10-full-pos.md) |
 
-**MVP phases 0–9:** 32 / 52 = **61.54%**.
+**MVP phases 0–9:** 34 / 52 = **65.38%**.
 
 ## Phase 6 work packages
 
@@ -62,8 +64,8 @@ P6-WP06 — Utang MVP Closeout (not started)
 | P6-WP02 | Complete with risks | ead6942187ca9a9c507dcf706bbece2e507a8645 |
 | P6-WP03 | Complete with risks | de39091f6110acbc721ac78da51a92acefd6775a |
 | P6-WP04 | Complete with risks | 9947d95cba27c8311091f95ea51c79be1de0acb9 |
-| P6-WP05 | Complete | `271c518cb8c4051502d6370ec71e6498fbbfd6b5` |
-| P6-WP06 | Not Started | — |
+| P6-WP05 | Complete with risks | 271c518cb8c4051502d6370ec71e6498fbbfd6b5 |
+| P6-WP06 | Complete with risks | 9f33420f5f77bade398db6d59728ad9def895683 |
 
 ## Phase 5 work packages
 
@@ -83,6 +85,6 @@ P6-WP06 — Utang MVP Closeout (not started)
 
 | Suite | Passed | Failed | Skipped |
 |---|---:|---:|---:|
-| Full solution (P6-WP05) | 541 | 0 | 0 |
+| Full solution (P6-WP06) | 544 | 0 | 0 |
 
-Prior verified baseline (P6-WP04): **521** passed / 0 failed / 0 skipped.
+Prior verified baseline (P6-WP05): **541** passed / 0 failed / 0 skipped.

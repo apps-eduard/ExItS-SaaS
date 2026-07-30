@@ -8,7 +8,7 @@ Deliver the customer-facing Utang product.
 
 ## Status
 
-**In Progress** — P6-WP01 through P6-WP05 complete. Do **not** begin P6-WP06 until explicitly authorized.
+**Complete** — P6-WP01 through P6-WP06 complete. Phase 6 Utang MVP closed with documented risks. Do **not** begin Phase 7 until explicitly authorized.
 
 ## Work packages
 
@@ -42,7 +42,7 @@ Display names need not be unique. When mobile is present, prevent duplicate **ac
 
 #### Explicit exclusions (later WPs)
 
-Credit accounts, remarks-based credit, balances, ledger, repayments, due dates, statements, receipts, credit limits, interest/penalties, sales, inventory, offline sync. OD-07/OD-08 remain open.
+Credit accounts, remarks-based credit, balances, ledger, repayments, due dates, statements, receipts, credit limits, interest/penalties, sales, inventory, offline sync. OD-07/OD-08/OD-09 resolved in P6-WP05.
 
 #### Definition of Done
 
@@ -79,7 +79,7 @@ Organization-owned remarks-based customer credit entries only:
 
 #### Explicit exclusions (later WPs)
 
-Repayments, payment allocation, full payment ledger, due dates, statements, receipts, interest, penalties, credit limits, sales, inventory, gateways, QR/cards, offline sync. Platform SaaS payments remain separate. OD-07/OD-08 remain open.
+Repayments, payment allocation, full payment ledger, due dates, statements, receipts, interest, penalties, credit limits, sales, inventory, gateways, QR/cards, offline sync. Platform SaaS payments remain separate. OD-07/OD-08/OD-09 resolved in P6-WP05.
 
 #### Definition of Done
 
@@ -116,7 +116,7 @@ Organization-owned customer repayments and a unified read-only Utang ledger:
 
 #### Explicit exclusions (later WPs)
 
-Due dates, statements, printable receipts, trial-expiry behavior, interest, penalties, credit limits, write-offs, installments, sales, inventory, gateways, QR/cards, offline sync. Platform SaaS payments remain separate. OD-07/OD-08 remain open.
+Due dates, statements, printable receipts, trial-expiry behavior, interest, penalties, credit limits, write-offs, installments, sales, inventory, gateways, QR/cards, offline sync. Platform SaaS payments remain separate. OD-07/OD-08/OD-09 resolved in P6-WP05.
 
 #### Definition of Done
 
@@ -152,7 +152,7 @@ Due dates on credit entries and derived overdue monitoring:
 
 #### Explicit exclusions (later WPs)
 
-Statements, printable receipts, trial-expiry rules, interest, penalties, credit limits, write-offs, installments, sales, inventory, gateways, QR/cards, offline sync, payment-allocation persistence. Platform SaaS payments remain separate. OD-07/OD-08 remain open.
+Statements, printable receipts, trial-expiry rules, interest, penalties, credit limits, write-offs, installments, sales, inventory, gateways, QR/cards, offline sync, payment-allocation persistence. Platform SaaS payments remain separate. OD-07/OD-08/OD-09 resolved in P6-WP05.
 
 #### Definition of Done
 
@@ -199,26 +199,53 @@ Interest, penalties, credit limits, sales, inventory, gateways, tax invoices, of
 
 ### P6-WP06 — Utang MVP Closeout
 
-Status: Not Started — **do not begin**
+Status: **Complete with documented risks**
 
-#### Required outcomes
+Feature commit: `9f33420f5f77bade398db6d59728ad9def895683`
+Report: [P6-WP06-utang-mvp-closeout.md](../reports/P6-WP06-utang-mvp-closeout.md)
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+#### Goal
+
+Close Phase 6 Utang MVP by reconciling delivered capability, hardening confirmed closeout defects, and documenting evidence — without starting Phase 7.
+
+#### Closeout outcomes
+
+**Reconcile**
+
+- OD-07 / OD-08 / OD-09 recorded as resolved in P6-WP05; historical WP report drift corrected
+- P6-WP01–P6-WP05 delivered capability reconciled against architecture and exclusions
+- HealthCare freeze and Platform / product boundaries confirmed
+
+**Harden**
+
+- Production commercial headers ignored (fail closed outside Development/Testing)
+- fil-PH statement/receipt localization and localized share/disclaimer text
+- Full Utang lifecycle API test and Phase 6 migration-chain test
+- Full solution **544** passed / 0 failed / 0 skipped; Android Release APK built
+- Organization isolation, commercial capability gates, and architecture boundaries preserved
+
+**Document**
+
+- Completion report and phase exit criteria
+- Phase marker `P6-WP06-utang-mvp-closeout`
+- Phase 7 not started
+
+#### Explicit exclusions
+
+Interest, penalties, credit limits, sales, inventory, gateways, tax invoices, offline sync (Phase 7), payment-allocation persistence, production authentication. Platform SaaS payments remain separate. Not production-ready.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (full solution **544** passed / 0 failed / 0 skipped).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded.
 - [ ] Working tree clean.
 
 ## Phase exit criteria
 
-- [ ] Every work package is complete or explicitly deferred.
-- [ ] Risks and decisions are recorded.
-- [ ] Required regression/security tests pass.
-- [ ] Next phase is explicitly approved.
+- [x] Every work package is complete or explicitly deferred.
+- [x] Risks and decisions are recorded.
+- [x] Required regression/security tests pass.
+- [ ] Next phase is explicitly approved (Phase 7 — Offline Sync when authorized).

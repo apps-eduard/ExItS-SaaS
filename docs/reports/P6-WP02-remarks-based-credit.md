@@ -4,7 +4,7 @@ Phase marker: `P6-WP02-remarks-based-credit`
 
 ## Status
 
-**Complete with documented risks.** Organization-owned remarks-based customer credit entries with derived outstanding and explicit reversal. Repayments, payment allocation, full payment ledger, due dates, statements, receipts, interest, penalties, credit limits, sales, inventory, gateways, QR/cards, and offline sync remain excluded (later Phase 6 WPs). Platform SaaS payments remain separate. OD-07 and OD-08 remain open. **P6-WP03 was not started.**
+**Complete with documented risks.** Organization-owned remarks-based customer credit entries with derived outstanding and explicit reversal. Repayments, payment allocation, full payment ledger, due dates, statements, receipts, interest, penalties, credit limits, sales, inventory, gateways, QR/cards, and offline sync remain excluded (later Phase 6 WPs). Platform SaaS payments remain separate. OD-07 and OD-08 remained open at delivery of this WP; later resolved in P6-WP05. **P6-WP03 was not started.**
 
 ## Delivered capability
 
@@ -88,7 +88,7 @@ Android Release APK: `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/
 - R-124: POS org header mistaken for production authz
 - R-125: customer notes must still not be treated as credit (credit uses dedicated entries)
 - R-127: outstanding is derived from active entries only — must not be mistaken for a mutable stored balance or repayment ledger
-- OD-07 / OD-08 remain open
+- Later resolved in P6-WP05 (see that report). Remained open at delivery of this WP.
 
 ## Files / docs changed
 

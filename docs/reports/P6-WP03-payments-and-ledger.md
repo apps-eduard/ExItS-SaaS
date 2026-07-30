@@ -4,7 +4,7 @@ Phase marker: `P6-WP03-payments-and-ledger`
 
 ## Status
 
-**Complete with documented risks.** Organization-owned customer repayments with overpayment protection and a unified read-only Utang ledger. Outstanding is derived as active credits − active repayments. Due dates, statements, printable receipts, trial-expiry behavior, interest, penalties, credit limits, write-offs, installments, sales, inventory, gateways, QR/cards, and offline sync remain excluded. Platform SaaS payments remain separate. OD-07 and OD-08 remain open. **P6-WP04 was not started.**
+**Complete with documented risks.** Organization-owned customer repayments with overpayment protection and a unified read-only Utang ledger. Outstanding is derived as active credits − active repayments. Due dates, statements, printable receipts, trial-expiry behavior, interest, penalties, credit limits, write-offs, installments, sales, inventory, gateways, QR/cards, and offline sync remain excluded. Platform SaaS payments remain separate. OD-07 and OD-08 remained open at delivery of this WP; later resolved in P6-WP05. **P6-WP04 was not started.**
 
 ## Delivered capability
 
@@ -100,7 +100,7 @@ Android Release APK: `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/
 - R-124: POS org header mistaken for production authz
 - R-127: derived outstanding mistaken for stored balance
 - R-128: repayment actor header (`X-Dev-Platform-User-Id`) mistaken for production audit identity
-- OD-07 / OD-08 remain open
+- Later resolved in P6-WP05 (see that report). Remained open at delivery of this WP.
 
 ## Files / docs changed
 

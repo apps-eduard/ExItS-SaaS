@@ -115,7 +115,7 @@ Android Release APK path unchanged under MAUI `bin/Release/net10.0-android/`. No
 - R-127: derived outstanding / aging mistaken for stored balance or allocations
 - R-128: repayment/due-date actor header mistaken for production audit identity
 - Org timezone undefined: effective business date is server UTC calendar day only
-- OD-07 / OD-08 remain open
+- Later resolved in P6-WP05 (see that report). Remained open at delivery of this WP.
 
 ## Files / docs changed
 

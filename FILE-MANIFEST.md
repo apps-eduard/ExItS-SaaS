@@ -1,7 +1,7 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown documentation files plus root Platform foundation through Phase 6 P6-WP05 statements, receipts, and trial/continuity rules (feature `271c518cb8c4051502d6370ec71e6498fbbfd6b5`).
-Internal links checked: spot-check P6-WP05
+Markdown documentation files plus root Platform foundation through Phase 6 Utang MVP closeout (P6-WP06; Phase 6 complete with documented risks).
+Internal links checked: spot-check P6-WP06
 Broken links: none found in spot-check of new paths
 
 ## Root foundation (tracked)
@@ -23,7 +23,7 @@ src/Shared/ExItS.DesignSystem/ (semantic tokens; forms/data/feedback overlays; D
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ (POSCustomer + CreditEntry + CreditDueDateChange + Repayment aggregates; FIFO aging helpers)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth; Customers; Credit; due dates/overdue; Payments/ledger; Statements/receipts; Commercial/UtangCapabilityPolicy)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migrations `AddPosCustomers`, `AddPosCreditEntries`, `AddPosRepayments`, `AddPosCreditDueDates`; no receipt migration)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + customers + credit + repayments/ledger + due dates/overdue + statements/receipts; commercial header gates; phase marker `P6-WP05-statements-receipts-and-trial-rules`)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + customers + credit + repayments/ledger + due dates/overdue + statements/receipts; commercial header gates; phase marker `P6-WP06-utang-mvp-closeout`)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client; PosCommercialHeaderHandler; PosCustomerClient with credit/repayment/ledger/due-date/overdue/statement/receipt methods)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers + credit + repayments + ledger + overdue/due dates + statement/receipt preview/share; onboarding/auth; PosResources en/fil-PH)
 tests/ExItS.Platform.UnitTests/
@@ -130,6 +130,7 @@ docs/reports/P6-WP02-remarks-based-credit.md
 docs/reports/P6-WP03-payments-and-ledger.md
 docs/reports/P6-WP04-due-dates-and-overdue-monitoring.md
 docs/reports/P6-WP05-statements-receipts-and-trial-rules.md
+docs/reports/P6-WP06-utang-mvp-closeout.md
 docs/reports/phase-02-extraction-closeout.md
 docs/reports/phase-00-final-assessment-and-recommendation.md
 docs/reports/phase-01-architecture-approval.md
