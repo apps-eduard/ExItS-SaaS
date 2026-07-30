@@ -4,7 +4,7 @@ Phase marker: `P8-WP05-expenses`
 
 ## Status
 
-**Complete with documented risks.** Organization-isolated store expense categories and immutable expense entries (Cash / ManualGCash), explicit void corrections, and derived period summaries. **No** AP, payroll, GL, tax OCR, offline expenses, or P&L. P8-WP06 was not started.
+**Complete with documented risks.** Organization-isolated store expense categories and immutable expense entries (Cash / ManualGCash), explicit void corrections, and derived period summaries. **No** AP, payroll, GL, tax OCR, offline expenses, or P&L. P8-WP06 was completed separately.
 
 Feature commit: `ca956921fbfcfad8499f01acb9d9726fff2d81d4`
 
@@ -96,4 +96,4 @@ Root `HealthCare/` remains ignored, untracked, outside `ExItS.slnx`.
 
 ## Exact next work package
 
-**P8-WP06 — Dashboard and Reports** (do not begin until explicitly authorized).
+**P8-WP06 — Dashboard and Reports** completed separately; next authorized WP is **P8-WP07 — Basic Store Closeout**.
