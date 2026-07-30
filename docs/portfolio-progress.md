@@ -14,7 +14,7 @@
 | Current phase | Phase 9 — MVP Hardening and Release (**In Progress**) |
 | Current work package | P9-WP05 — Pilot and Deployment (**Complete** with documented risks) |
 | Overall status | **Phase 9 in progress** — P9-WP01–P9-WP05 complete with documented risks; Ready for controlled internal technical pilot; **not** Production-ready; next P9-WP06 when authorized |
-| Latest verified commit | _(feature commit recorded after push)_ |
+| Latest verified commit | 9c1bbd0557e252758a772b985c907233da3f5214 |
 | Open blockers | Missing production auth (JWT/MFA/SSO/AD) (R-091); R-022 refresh durations / no offline entitlement grace; R-035 calendar EOM; no payment gateway; no interactive Android emulator (R-109) including TalkBack/theme interactive QA; Production HTTPS/MAUI cleartext replacement gate; SQLitePCLRaw NU1903 (R-129); unsynced local MAUI data not recoverable from server backups; PITR deferred; Production off-host encrypted backup scheduling environment-owned; catalog/sales/inventory/expenses/reports online-only by design; report export deferred; no POS operational roles; full MVP-scale load/soak not proven in CI |
 | Last updated | 2026-07-31 |
 
@@ -60,7 +60,7 @@ P9-WP06 ○ Commercial MVP Closeout (not started — do not begin until authoriz
 | P9-WP02 | Complete with risks | 46a4ac7bacfad0736fba4741817958862fadf9e2 |
 | P9-WP03 | Complete with risks | 3bbb0c716da60bd7d87a191c35bd0eced1bde380 |
 | P9-WP04 | Complete with risks | f7b3aecec614eea8b1de601cd08e843f4aea91f8 |
-| P9-WP05 | Complete with risks | _(recorded after feature commit)_ |
+| P9-WP05 | Complete with risks | 9c1bbd0557e252758a772b985c907233da3f5214 |
 | P9-WP06 | Not Started | — |
 
 ## Phase 8 work packages

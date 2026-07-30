@@ -8,7 +8,7 @@ Phase marker: `P9-WP05-pilot-and-deployment`
 
 Final readiness state: **Ready for controlled internal technical pilot** (StagingPilot). **Blocked** for restricted external pilot and Production while R-091, R-109, R-129, Production TLS, POS operational roles, Manual GCash verification, online-only limits, and PITR deferral remain open.
 
-Feature commit: _(recorded after feature commit)_
+Feature commit: 9c1bbd0557e252758a772b985c907233da3f5214
 
 Docs commit: _(recorded after docs hash-record)_
 
