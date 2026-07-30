@@ -1,12 +1,12 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown documentation files plus root Platform foundation through Phase 9 MVP Hardening (P9-WP01–P9-WP02 complete with documented risks; Phase 9 in progress).
-Internal links checked: spot-check P9-WP02
+Markdown documentation files plus root Platform foundation through Phase 9 MVP Hardening (P9-WP01–P9-WP03 complete with documented risks; Phase 9 in progress).
+Internal links checked: spot-check P9-WP03
 Broken links: none found in spot-check of new paths
 
 ## Root foundation (tracked)
 
-.gitignore (nested product only: `/HealthCare/`)
+.gitignore (nested product only: `/HealthCare/`; also ignores `*.dump` / encrypted backup artifacts)
 .cursor/rules/exits-workflow.mdc
 README.md
 FILE-MANIFEST.md
@@ -17,15 +17,18 @@ ExItS.slnx
 src/Platform/ExItS.Platform.Domain/ (+ Authorization; Audit)
 src/Platform/ExItS.Platform.Application/ (+ Catalog; Admin portfolio queries; Authorization; Audit; Contracts; Projections; MigrationValidation; Integration/HealthCare)
 src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog + organization/subscription + payment + entitlement + role-assignment + audit persistence, Admin portfolio read store, migrations including `AddPlatformAuthorizationAndAudit`; `Health/PlatformDatabaseReadyHealthCheck`)
-src/Platform/ExItS.Platform.Api/ (`/` + `/health` + `/health/ready` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs; `PlatformAuthz`; Production security pipeline; phase marker `P9-WP02-performance-and-reliability`)
+src/Platform/ExItS.Platform.Api/ (`/` + `/health` + `/health/ready` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs; `PlatformAuthz`; Production security pipeline; phase marker `P9-WP03-backup-and-restore`)
 src/Platform/ExItS.Platform.Admin/ (Blazor Web App — redesigned native CSS shell; typed API client; portfolio + users/memberships/product-access + subscription/payment/trial + audit views; themes; AdminResources en/fil-PH)
 src/Shared/ExItS.DesignSystem/ (semantic tokens; forms/data/feedback overlays; DesignSystem/Validation/Error resources en/fil-PH; Blazor primitives; `IDensityPreferenceStore`)
+src/Shared/ExItS.BackupRestore/ (PostgreSQL logical backup/restore helpers: manifests, SHA-256, retention, AES-GCM protect, restore validation)
+tools/ExItS.BackupRestore.Cli/ (non-interactive backup/verify/restore/encrypt/retention CLI)
+ops/backup/ (PowerShell operators scripts + disabled schedule notes + config.example.env)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ (POSCustomer + CreditEntry + CreditDueDateChange + Repayment + CatalogProduct + ProductCategory aggregates; FIFO aging helpers)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth; Customers; Credit; due dates/overdue; Payments/ledger; Statements/receipts; Catalog; Commercial/UtangCapabilityPolicy; Reporting batch lookups)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migrations through `AddPosExpenses`, `AddPosPerformanceIndexes`; `Health/PosDatabaseReadyHealthCheck`)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + `/health/ready` + customers + credit + repayments/ledger + due dates/overdue + statements/receipts + catalog + sales + inventory + expenses + dashboard/reports; commercial header gates; Production security pipeline; phase marker `P9-WP02-performance-and-reliability`)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + `/health/ready` + customers + credit + repayments/ledger + due dates/overdue + statements/receipts + catalog + sales + inventory + expenses + dashboard/reports; commercial header gates; Production security pipeline; phase marker `P9-WP03-backup-and-restore`)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client; PosCommercialHeaderHandler; PosCustomerClient; PosSaleClient/PosExpenseClient idempotency headers; PosCatalogClient online-only)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.LocalStore/ (Microsoft.Data.Sqlite foundation + generic encrypted offline_operations outbox + BlockedByAccess reclaim + encrypted customer/credit/repayment projections — P7-WP01/P7-WP02/P7-WP03/P7-WP04; no catalog offline cache)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.LocalStore/ (Microsoft.Data.Sqlite foundation + generic encrypted offline_operations outbox + BlockedByAccess reclaim + encrypted customer/credit/repayment projections — P7-WP01/P7-WP02/P7-WP03/P7-WP04; no catalog offline cache; **not** part of server backup sets)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers + credit + repayments + ledger + overdue/due dates + statement/receipt preview/share + catalog/barcode + sales + inventory + expenses + dashboard/reports; onboarding/auth; sync-status shell; offline foundation diagnostics; PosResources en/fil-PH)
 tests/ExItS.Platform.UnitTests/
 tests/ExItS.ArchitectureTests/
@@ -36,6 +39,7 @@ tests/ExItS.PinoyBusinessPOS.ApiClient.Tests/
 tests/ExItS.PinoyBusinessPOS.Maui.Tests/
 tests/ExItS.PinoyBusinessPOS.UnitTests/
 tests/ExItS.PinoyBusinessPOS.IntegrationTests/
+tests/ExItS.BackupRestore.Tests/
 
 ## Documentation (tracked)
 
@@ -148,6 +152,8 @@ docs/reports/P8-WP06-dashboard-and-reports.md
 docs/reports/P8-WP07-basic-store-closeout.md
 docs/reports/P9-WP01-security-and-privacy-hardening.md
 docs/reports/P9-WP02-performance-and-reliability.md
+docs/reports/P9-WP03-backup-and-restore.md
+docs/operations/backup-restore/README.md
 docs/reports/phase-02-extraction-closeout.md
 docs/reports/phase-00-final-assessment-and-recommendation.md
 docs/reports/phase-01-architecture-approval.md

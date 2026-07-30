@@ -77,6 +77,14 @@ Liveness/readiness health; reporting N+1 batching; justified performance indexes
 
 **Next:** **P9-WP03 — Backup and Restore** when approved.
 
+## R3.9 — Backup and restore (Phase 9 / P9-WP03)
+
+**P9-WP03 complete with documented risks.** See [P9-WP03 report](reports/P9-WP03-backup-and-restore.md).
+
+Independent Platform/POS `pg_dump` logical backups with manifests, checksums, restore safeguards, retention dry-run, encryption integration point, runbooks, and Testcontainers recovery drills. PITR deferred. Local SQLite not authoritative. **Not production-ready** (R-091, R-109, R-129; Production off-host encrypted scheduling environment-owned).
+
+**Next:** **P9-WP04 — Accessibility, Localization and Theme QA** when approved.
+
 ## R4 — Commercial MVP
 
 Offline synchronization, Basic Store and production hardening.

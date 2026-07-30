@@ -4,7 +4,7 @@
 
 ## Status
 
-**In Progress** — P9-WP01 and P9-WP02 complete with documented risks. Do **not** begin P9-WP03 until explicitly authorized. **Not production-ready.**
+**In Progress** — P9-WP01–P9-WP03 complete with documented risks. Do **not** begin P9-WP04 until explicitly authorized. **Not production-ready.**
 
 ## Objective
 
@@ -110,26 +110,54 @@ Deliver:
 
 ### P9-WP03 — Backup and Restore
 
-Status: Not Started (do not begin until authorized)
+Status: **Complete** with documented risks
 
-#### Required outcomes
+Report: [P9-WP03-backup-and-restore.md](../reports/P9-WP03-backup-and-restore.md)
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+Feature commit: 3bbb0c716da60bd7d87a191c35bd0eced1bde380
+
+Phase marker: `P9-WP03-backup-and-restore`
+
+#### Approved scope (clarified)
+
+Create a safe, repeatable, documented backup-and-restore capability for the delivered MVP. Prove **recoverability**, not merely that dump files can be created. **No new business features.** Preserve P9-WP01 security and P9-WP02 health/reliability. Platform and POS databases remain separate and independently restorable.
+
+Deliver:
+
+- PostgreSQL-native logical backups (`pg_dump`) per database with manifests and SHA-256 checksums
+- Safe restore into new/empty databases with explicit destructive confirmation for overwrite
+- Structural and business-integrity validation after restore
+- Retention cleanup (dry-run by default; never delete latest valid)
+- Encryption-at-rest guidance and safe integration point (keys never beside artifacts; no secrets in repo)
+- Operational runbooks and recovery-drill evidence
+- Provisional RPO/RTO engineering targets (not SLAs)
+- Local/offline SQLite limitations documented (not authoritative; R-129)
+- PITR explicitly deferred unless WAL evidenced
+- Automated tests (Testcontainers/disposable DBs)
+
+#### Explicit exclusions
+
+- New business features; HealthCare changes
+- Combining Platform+POS into one non-independently-restorable artifact
+- Committing dumps, secrets, tokens, or keys
+- Claiming production DR/PITR beyond tested scenarios
+- External paid backup services
+- Mobile SQLite as server backup source
+- P9-WP04 or later
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (preserve 915 baseline; suite now 931 / 0 / 0).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created (`docs/reports/P9-WP03-backup-and-restore.md`).
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean.
+- [x] Exact next WP recorded: **P9-WP04 — Accessibility, Localization and Theme QA** (do not begin).
 
 ### P9-WP04 — Accessibility, Localization and Theme QA
 
-Status: Not Started
+Status: Not Started (do not begin until authorized)
 
 #### Required outcomes
 

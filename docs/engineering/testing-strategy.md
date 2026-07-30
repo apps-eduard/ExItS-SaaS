@@ -55,6 +55,7 @@
 - Basic Store closeout (P8-WP07) ? consolidated `store-*` capability matrix; Phase 8 migration-chain apply/rollback/re-apply; deferred-scope architecture guards; full suite 882 / 0 / 0
 - Security hardening (P9-WP01) ? Production header/route guards; startup fail-closed; CORS; rate limits; safe ProblemDetails; secret-pattern architecture tests
 - Performance/reliability (P9-WP02) ? `/health` vs `/health/ready`; reporting batch queries; performance indexes migrate; offline BlockedByAccess reclaim; scaled CI latency smoke; full suite 915 / 0 / 0
+- Backup/restore (P9-WP03) ? independent Platform/POS `pg_dump` drills; manifests/SHA-256; destructive restore guards; retention dry-run; no dumps committed; full suite 931 / 0 / 0
 - Tenant isolation
 - Subscription feature enforcement (P6-WP05 matrix + grants; P8-WP01?P8-WP07 store grants)
 - Offline queue and idempotency *(Phase 7)*
@@ -87,5 +88,6 @@
 - **P8-WP07:** consolidated store capability matrix; Phase 8 migration chain; deferred-scope architecture guards
 - **P9-WP01:** Production header/route guards; startup fail-closed; CORS/rate-limit/HTTPS pipeline source guards; empty base connection strings
 - **P9-WP02:** Liveness/readiness; performance index migration; reporting N+1 guards; sale idempotency headers; offline reclaim; provisional budget smoke
+- **P9-WP03:** Manifest/retention/redaction/encrypt unit tests; Platform+POS Testcontainers backup?empty restore drills; checksum/kind/overwrite guards; architecture no-dump/HealthCare guards
 
 All reports use exact command output; totals are never estimated.
