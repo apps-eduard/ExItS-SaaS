@@ -196,7 +196,11 @@ public sealed class PosUtangMvpCloseoutApiTests(PosPostgreSqlFixture fixture)
         using var response = await client.SendAsync(request);
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         var problem = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
-        Assert.Equal(ApplicationErrorCodes.CommercialAccessUnknown, problem.GetProperty("errorCode").GetString());
+        var code = problem.GetProperty("errorCode").GetString();
+        Assert.True(
+            code is ApplicationErrorCodes.CommercialAccessUnknown
+                or ApplicationErrorCodes.DevelopmentHeadersUnavailable,
+            $"Unexpected Production fail-closed errorCode: {code}");
     }
 
     private static async Task AssertOutstandingAsync(HttpClient client, Guid orgId, Guid customerId, decimal expected)
@@ -271,12 +275,25 @@ public sealed class PosUtangMvpCloseoutApiTests(PosPostgreSqlFixture fixture)
         {
             builder.UseEnvironment(environmentName);
             builder.UseSetting("ConnectionStrings:PosDatabase", connectionString);
+            builder.UseSetting("Security:EnforceHttps", "false");
+            if (string.Equals(environmentName, "Production", StringComparison.OrdinalIgnoreCase))
+            {
+                builder.UseSetting("AllowedHosts", "localhost;test");
+            }
+
             builder.ConfigureAppConfiguration((_, config) =>
             {
-                config.AddInMemoryCollection(new Dictionary<string, string?>
+                var values = new Dictionary<string, string?>
                 {
-                    ["ConnectionStrings:PosDatabase"] = connectionString
-                });
+                    ["ConnectionStrings:PosDatabase"] = connectionString,
+                    ["Security:EnforceHttps"] = "false"
+                };
+                if (string.Equals(environmentName, "Production", StringComparison.OrdinalIgnoreCase))
+                {
+                    values["AllowedHosts"] = "localhost;test";
+                }
+
+                config.AddInMemoryCollection(values);
             });
         }
     }

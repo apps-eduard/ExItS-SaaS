@@ -21,8 +21,7 @@ internal static class PosCommercialScope
         IPosCommercialAccessAccessor accessor,
         IHostEnvironment environment)
     {
-        var isDevLike = environment.IsDevelopment()
-                        || string.Equals(environment.EnvironmentName, "Testing", StringComparison.OrdinalIgnoreCase);
+        var isDevLike = PosDevelopmentEnvironment.IsApprovedDevelopmentEnvironment(environment);
 
         // Outside Development/Testing, commercial headers are ignored and access fails closed.
         // Not production authentication — Platform-backed commercial evaluation is required later.

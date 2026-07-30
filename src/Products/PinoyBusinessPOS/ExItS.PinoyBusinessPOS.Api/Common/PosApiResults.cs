@@ -86,7 +86,8 @@ internal static class PosApiResults
             or ApplicationErrorCodes.ReportRangeTooLarge => StatusCodes.Status400BadRequest,
 
         ApplicationErrorCodes.CommercialAccessUnknown
-            or ApplicationErrorCodes.CommercialCapabilityDenied => StatusCodes.Status403Forbidden,
+            or ApplicationErrorCodes.CommercialCapabilityDenied
+            or ApplicationErrorCodes.DevelopmentHeadersUnavailable => StatusCodes.Status403Forbidden,
 
         ApplicationErrorCodes.ReceiptNotFound => StatusCodes.Status404NotFound,
 

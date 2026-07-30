@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  P5-WP01 development-stage network security config.
+  Development/emulator network security config (P5-WP01; reviewed P9-WP01).
 
   The POS API has no TLS certificate in local/emulator development, so cleartext (plain HTTP)
   traffic is allowed only to the Android emulator's host-loopback alias (10.0.2.2) and to
   localhost/127.0.0.1 for physical-device-over-adb-reverse scenarios. All other cleartext traffic
-  remains blocked by the platform default. This file must be replaced with a certificate-pinned,
-  HTTPS-only policy before any production release.
+  remains blocked by the platform default.
+
+  Production release gate (open): replace this file with an HTTPS-only policy (no cleartext domains)
+  and point MAUI base URLs at TLS endpoints before any production release. Interactive device
+  validation remains open (R-109).
 -->
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">

@@ -3,6 +3,7 @@ using ExItS.PinoyBusinessPOS.Api.Common;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
 using ExItS.PinoyBusinessPOS.Application.Offline;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ExItS.PinoyBusinessPOS.Api.Offline;
 
@@ -14,20 +15,19 @@ internal static class DevOfflineProbeEndpoints
 {
     public static IEndpointRouteBuilder MapDevOfflineProbeEndpoints(this IEndpointRouteBuilder app)
     {
+        // Route is only registered in approved Development/Testing environments.
+        var environment = app.ServiceProvider.GetRequiredService<IHostEnvironment>();
+        if (!PosDevelopmentEnvironment.IsApprovedDevelopmentEnvironment(environment))
+        {
+            return app;
+        }
+
         app.MapPost("/api/v1/pos/dev/offline-probe", async (
             HttpRequest request,
             DevOfflineProbeRequest body,
             IPosIdempotencyService idempotency,
-            IHostEnvironment environment,
             CancellationToken ct) =>
         {
-            var isDevLike = environment.IsDevelopment()
-                || string.Equals(environment.EnvironmentName, "Testing", StringComparison.OrdinalIgnoreCase);
-            if (!isDevLike)
-            {
-                return Results.NotFound();
-            }
-
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
             {
                 return problem!;
@@ -83,7 +83,8 @@ internal static class DevOfflineProbeEndpoints
                 outcome.OutcomeCode,
                 outcome.ServerReference,
                 outcome.OutcomeBodyJson));
-        });
+        })
+        .RequireRateLimiting(PosSecurityPipeline.SensitivePolicyName);
 
         return app;
     }

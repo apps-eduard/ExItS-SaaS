@@ -13,6 +13,7 @@ public static class ApplicationErrorCodes
     public const string DomainViolation = "pos.domain_violation";
     public const string CommercialAccessUnknown = "pos.commercial.access_unknown";
     public const string CommercialCapabilityDenied = "pos.commercial.capability_denied";
+    public const string DevelopmentHeadersUnavailable = "pos.development_headers.unavailable";
     public const string StatementInvalidPeriod = "pos.statement.invalid_period";
     public const string ReceiptNotFound = "pos.receipt.not_found";
 

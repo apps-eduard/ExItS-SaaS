@@ -17,6 +17,13 @@ internal static class PosOrganizationScope
         organizationId = default;
         problem = null;
 
+        var environment = request.HttpContext.RequestServices.GetRequiredService<IHostEnvironment>();
+        if (!PosDevelopmentEnvironment.IsApprovedDevelopmentEnvironment(environment))
+        {
+            problem = PosDevelopmentEnvironment.DevelopmentHeadersUnavailable();
+            return false;
+        }
+
         if (!request.Headers.TryGetValue(PosOrganizationHeaders.OrganizationHeaderName, out var values)
             || string.IsNullOrWhiteSpace(values.FirstOrDefault()))
         {
@@ -43,6 +50,13 @@ internal static class PosOrganizationScope
     {
         actorId = default;
         problem = null;
+
+        var environment = request.HttpContext.RequestServices.GetRequiredService<IHostEnvironment>();
+        if (!PosDevelopmentEnvironment.IsApprovedDevelopmentEnvironment(environment))
+        {
+            problem = PosDevelopmentEnvironment.DevelopmentHeadersUnavailable();
+            return false;
+        }
 
         if (!request.Headers.TryGetValue(PosOrganizationHeaders.ActorHeaderName, out var values)
             || string.IsNullOrWhiteSpace(values.FirstOrDefault()))

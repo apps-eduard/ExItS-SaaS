@@ -20,11 +20,15 @@ using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Infrastructure;
+using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+PlatformSecurityPipeline.ValidateProductionConfigurationOrThrow(builder);
+
 builder.Services.AddProblemDetails();
 builder.Services.AddHealthChecks();
+builder.AddPlatformSecurity();
 builder.Services.AddPlatformPersistence(builder.Configuration);
 
 // Development-stage only: DevelopmentOperator actors receive full Platform permissions so existing
@@ -115,17 +119,17 @@ builder.Services.AddScoped<PlatformAuthz>();
 
 var app = builder.Build();
 
-app.UseExceptionHandler();
+app.UsePlatformSecurity();
 app.UseStatusCodePages();
 
 app.MapGet("/", () => Results.Json(new
 {
     service = "ExItS.Platform.Api",
     status = "ok",
-    phase = "P5-WP05-authentication-onboarding-closeout"
+    phase = "P9-WP01-security-and-privacy-hardening"
 }));
 
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health").DisableRateLimiting();
 app.MapCatalogEndpoints();
 app.MapOrganizationEndpoints();
 app.MapIdentityEndpoints();
