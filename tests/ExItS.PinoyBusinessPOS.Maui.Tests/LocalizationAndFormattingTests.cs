@@ -13,7 +13,8 @@ public sealed class LocalizationAndFormattingTests
         "Settings_Language_English", "Settings_Language_Filipino",
         "Deferred_Title", "NotFound_Title", "Preference_SaveFailed",
         "Common_Retry", "Common_Connected", "Api_TestConnection",
-        "DevShowcase_Title", "DevShowcase_UnavailableTitle"
+        "DevShowcase_Title", "DevShowcase_UnavailableTitle",
+        "SignIn_Title", "Auth_Logout", "Access_DeniedTitle", "Welcome_Title"
     ];
 
     [Fact]

@@ -1,0 +1,69 @@
+@page "/signin"
+@layout Layout.AuthShell
+@inject IAuthenticationService Auth
+@inject IOnboardingPreferenceStore Prefs
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["SignIn_Title"]" Subtitle="@L["SignIn_Subtitle"]" />
+
+    @if (!Auth.IsDevelopmentAuthenticationEnabled)
+    {
+        <ErrorState Title="@L["Auth_ProductionUnavailableTitle"]" Message="@L["Auth_ProductionUnavailable"]" />
+    }
+    else
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["SignIn_DevTitle"]" Message="@L["SignIn_DevMessage"]" />
+        <FormValidationSummary Messages="_errors" />
+        <FormGroup Title="@L["SignIn_FormTitle"]">
+            <TextInput Label="@L["SignIn_UserIdLabel"]"
+                       Hint="@L["SignIn_UserIdHint"]"
+                       @bind-Value="_userIdText"
+                       IsInvalid="@_invalid"
+                       ErrorText="@(_invalid ? L["Auth_InvalidCredentials"].Value : null)"
+                       Disabled="_busy" />
+        </FormGroup>
+        <FormActions>
+            <Button IsLoading="_busy" Disabled="_busy" OnClick="SignInAsync">@L["SignIn_Submit"]</Button>
+        </FormActions>
+    }
+</Page>
+
+@code {
+    private string? _userIdText;
+    private bool _busy;
+    private bool _invalid;
+    private List<string> _errors = [];
+
+    private async Task SignInAsync()
+    {
+        _errors = [];
+        _invalid = false;
+        if (!Guid.TryParse(_userIdText?.Trim(), out var userId))
+        {
+            _invalid = true;
+            _errors.Add(L["Auth_InvalidCredentials"]);
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Auth.SignInAsync(new SignInRequest(userId));
+            if (!result.Succeeded)
+            {
+                _invalid = true;
+                _errors.Add(L[result.SafeMessageKey ?? "Auth_InvalidCredentials"]);
+                return;
+            }
+
+            await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.OrganizationSelect));
+            Nav.NavigateTo("/organization-select");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

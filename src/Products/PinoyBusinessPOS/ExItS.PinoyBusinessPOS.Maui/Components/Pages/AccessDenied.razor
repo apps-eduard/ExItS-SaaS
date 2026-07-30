@@ -1,0 +1,30 @@
+@page "/access-denied"
+@layout Layout.AuthShell
+@inject IAuthenticationService Auth
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <ErrorState Title="@L["Access_DeniedTitle"]" Message="@(_message ?? L["Access_Denied"].Value)" RetryLabel="@L["Auth_Logout"]" OnRetry="LogoutAsync" />
+    <FormActions>
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoOrg">@L["OrgSelect_Title"]</Button>
+    </FormActions>
+</Page>
+
+@code {
+    [SupplyParameterFromQuery] public string? reason { get; set; }
+    private string? _message;
+
+    protected override void OnParametersSet()
+    {
+        _message = string.IsNullOrWhiteSpace(reason) ? null : L[reason].Value;
+    }
+
+    private void GoOrg() => Nav.NavigateTo("/organization-select");
+
+    private async Task LogoutAsync()
+    {
+        await Auth.LogoutAsync();
+        Nav.NavigateTo("/signin");
+    }
+}

@@ -192,4 +192,75 @@
   <data name="DevShowcase_EmptyHint" xml:space="preserve"><value>No sample rows match the current search.</value></data>
   <data name="DevShowcase_AccordionTitle" xml:space="preserve"><value>Accordion sample</value></data>
   <data name="DevShowcase_AccordionBody" xml:space="preserve"><value>Secondary detail can live in an accordion without crowding the main view.</value></data>
+
+  <data name="Env_Testing" xml:space="preserve"><value>Testing</value></data>
+  <data name="Boot_Loading" xml:space="preserve"><value>Starting…</value></data>
+  <data name="Common_Continue" xml:space="preserve"><value>Continue</value></data>
+  <data name="Common_Back" xml:space="preserve"><value>Back</value></data>
+  <data name="Welcome_Title" xml:space="preserve"><value>Welcome</value></data>
+  <data name="Welcome_Subtitle" xml:space="preserve"><value>Set up PinoyBusinessPOS for this device.</value></data>
+  <data name="Welcome_NoticeTitle" xml:space="preserve"><value>Foundation build</value></data>
+  <data name="Welcome_NoticeMessage" xml:space="preserve"><value>Sales, inventory, customers, and Utang are not included yet. This flow covers preferences, sign-in, and commercial access only.</value></data>
+  <data name="Welcome_Continue" xml:space="preserve"><value>Get started</value></data>
+  <data name="Onboarding_LanguageTitle" xml:space="preserve"><value>Language</value></data>
+  <data name="Onboarding_LanguageSubtitle" xml:space="preserve"><value>Choose English or Tagalog.</value></data>
+  <data name="Onboarding_ThemeTitle" xml:space="preserve"><value>Theme</value></data>
+  <data name="Onboarding_ThemeSubtitle" xml:space="preserve"><value>System, Light, or Dark.</value></data>
+  <data name="Onboarding_DensityTitle" xml:space="preserve"><value>Density</value></data>
+  <data name="Onboarding_DensitySubtitle" xml:space="preserve"><value>Compact is the POS default.</value></data>
+  <data name="Onboarding_DevTitle" xml:space="preserve"><value>Development environment</value></data>
+  <data name="Onboarding_DevSubtitle" xml:space="preserve"><value>Confirm that this is a non-production build.</value></data>
+  <data name="Onboarding_DevNoticeTitle" xml:space="preserve"><value>Not production authentication</value></data>
+  <data name="Onboarding_DevNoticeMessage" xml:space="preserve"><value>This build uses the approved Development/Testing Platform identity mechanism. Production JWT, MFA, and SSO are not implemented.</value></data>
+  <data name="Onboarding_DevConfirmLabel" xml:space="preserve"><value>I understand this is Development/Testing only</value></data>
+  <data name="SignIn_Title" xml:space="preserve"><value>Sign in</value></data>
+  <data name="SignIn_Subtitle" xml:space="preserve"><value>Use your Platform user identity for this device.</value></data>
+  <data name="SignIn_DevTitle" xml:space="preserve"><value>Development/Testing identity</value></data>
+  <data name="SignIn_DevMessage" xml:space="preserve"><value>Enter an active Platform User Id. No password is collected. This is not production authentication.</value></data>
+  <data name="SignIn_FormTitle" xml:space="preserve"><value>Platform user</value></data>
+  <data name="SignIn_UserIdLabel" xml:space="preserve"><value>Platform User Id</value></data>
+  <data name="SignIn_UserIdHint" xml:space="preserve"><value>GUID from Platform Admin users directory</value></data>
+  <data name="SignIn_Submit" xml:space="preserve"><value>Sign in</value></data>
+  <data name="OrgSelect_Title" xml:space="preserve"><value>Select organization</value></data>
+  <data name="OrgSelect_Subtitle" xml:space="preserve"><value>Only organizations with active PinoyBusinessPOS commercial access are listed.</value></data>
+  <data name="OrgSelect_Hint" xml:space="preserve"><value>Organization selection is a preference. Access is revalidated by the Platform.</value></data>
+  <data name="OrgSelect_Choose" xml:space="preserve"><value>Use this organization</value></data>
+  <data name="OrgSelect_NoneEligible" xml:space="preserve"><value>No eligible organization was found for PinoyBusinessPOS commercial access.</value></data>
+  <data name="AccessConfirm_Title" xml:space="preserve"><value>Commercial access confirmed</value></data>
+  <data name="AccessConfirm_Subtitle" xml:space="preserve"><value>PinoyBusinessPOS entry is allowed for the selected organization.</value></data>
+  <data name="AccessConfirm_UserLabel" xml:space="preserve"><value>User</value></data>
+  <data name="AccessConfirm_OrgLabel" xml:space="preserve"><value>Organization</value></data>
+  <data name="AccessConfirm_Allowed" xml:space="preserve"><value>Access allowed</value></data>
+  <data name="AccessConfirm_Enter" xml:space="preserve"><value>Enter Home</value></data>
+  <data name="AccessConfirm_RoleBoundaryTitle" xml:space="preserve"><value>Commercial access only</value></data>
+  <data name="AccessConfirm_RoleBoundaryMessage" xml:space="preserve"><value>This does not assign Cashier, Store Manager, or POS Administrator roles. Product-local roles come in a later phase.</value></data>
+  <data name="Auth_Logout" xml:space="preserve"><value>Sign out</value></data>
+  <data name="Auth_LogoutConfirmTitle" xml:space="preserve"><value>Sign out?</value></data>
+  <data name="Auth_LogoutConfirmMessage" xml:space="preserve"><value>Secure session data on this device will be cleared.</value></data>
+  <data name="Auth_ProductionUnavailable" xml:space="preserve"><value>Production authentication is not available in this build.</value></data>
+  <data name="Auth_ProductionUnavailableTitle" xml:space="preserve"><value>Sign-in unavailable</value></data>
+  <data name="Auth_InvalidCredentials" xml:space="preserve"><value>The Platform user could not be signed in.</value></data>
+  <data name="Auth_Offline" xml:space="preserve"><value>You appear to be offline. Sign-in requires connectivity.</value></data>
+  <data name="Auth_Timeout" xml:space="preserve"><value>The sign-in request timed out.</value></data>
+  <data name="Auth_ApiUnavailable" xml:space="preserve"><value>The Platform API is unavailable.</value></data>
+  <data name="Auth_Cancelled" xml:space="preserve"><value>The request was cancelled.</value></data>
+  <data name="Auth_SecureStorageFailure" xml:space="preserve"><value>Secure storage failed. Session data was not saved.</value></data>
+  <data name="Auth_SessionExpired" xml:space="preserve"><value>Your session expired. Please sign in again.</value></data>
+  <data name="Auth_SessionExpiredTitle" xml:space="preserve"><value>Session expired</value></data>
+  <data name="Access_Denied" xml:space="preserve"><value>PinoyBusinessPOS commercial access was denied.</value></data>
+  <data name="Access_DeniedTitle" xml:space="preserve"><value>Access denied</value></data>
+  <data name="Access_UserInactive" xml:space="preserve"><value>The Platform user is not active.</value></data>
+  <data name="Access_OrganizationInactive" xml:space="preserve"><value>The organization is not active.</value></data>
+  <data name="Access_MembershipMissing" xml:space="preserve"><value>No active membership was found.</value></data>
+  <data name="Access_MembershipInactive" xml:space="preserve"><value>Membership is not active.</value></data>
+  <data name="Access_AssignmentMissing" xml:space="preserve"><value>Product access assignment is missing.</value></data>
+  <data name="Access_AssignmentRevoked" xml:space="preserve"><value>Product access assignment is revoked or inactive.</value></data>
+  <data name="Access_ProductInactive" xml:space="preserve"><value>The product is not active.</value></data>
+  <data name="Access_SubscriptionIneligible" xml:space="preserve"><value>Subscription is not Trialing or Active.</value></data>
+  <data name="Access_EntitlementMissing" xml:space="preserve"><value>Required entitlement is missing.</value></data>
+  <data name="Access_EntitlementStale" xml:space="preserve"><value>Entitlement snapshot is stale.</value></data>
+  <data name="Access_EntitlementDenied" xml:space="preserve"><value>Entitlement state denies access.</value></data>
+  <data name="Home_SessionTitle" xml:space="preserve"><value>Signed in</value></data>
+  <data name="Settings_SessionSectionTitle" xml:space="preserve"><value>Session</value></data>
+  <data name="Settings_SwitchOrganization" xml:space="preserve"><value>Switch organization</value></data>
 </root>

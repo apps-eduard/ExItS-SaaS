@@ -1,0 +1,28 @@
+@page "/onboarding/dev-confirm"
+@layout Layout.AuthShell
+@inject IOnboardingPreferenceStore Prefs
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Onboarding_DevTitle"]" Subtitle="@L["Onboarding_DevSubtitle"]" />
+    <Alert Tone="AlertTone.Warning" Title="@L["Onboarding_DevNoticeTitle"]" Message="@L["Onboarding_DevNoticeMessage"]" />
+    <Checkbox @bind-Value="_confirmed">@L["Onboarding_DevConfirmLabel"]</Checkbox>
+    <FormActions>
+        <Button Variant="ButtonVariant.Ghost" OnClick="Back">@L["Common_Back"]</Button>
+        <Button Disabled="!_confirmed" OnClick="ContinueAsync">@L["Common_Continue"]</Button>
+    </FormActions>
+</Page>
+
+@code {
+    private bool _confirmed;
+
+    private void Back() => Nav.NavigateTo("/onboarding/density");
+
+    private async Task ContinueAsync()
+    {
+        await Prefs.SetDevEnvironmentConfirmedAsync(true);
+        await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.SignIn));
+        Nav.NavigateTo("/signin");
+    }
+}

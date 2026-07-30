@@ -3,6 +3,7 @@ using System.Reflection;
 using ExItS.DesignSystem.Abstractions;
 using ExItS.PinoyBusinessPOS.ApiClient;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
+using ExItS.PinoyBusinessPOS.Application.Auth;
 using ExItS.PinoyBusinessPOS.Maui.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,9 +14,9 @@ namespace ExItS.PinoyBusinessPOS.Maui;
 public static class MauiProgram
 {
     /// <summary>
-    /// Development-stage notice (P5-WP04): this app ships no authentication, no sales/inventory
-    /// data entry, and no offline synchronization. It establishes the Android app shell,
-    /// design tokens, density, localization, reusable MVP components, and a Dev-only showcase.
+    /// Development-stage notice (P5-WP05): authentication uses the approved Development/Testing
+    /// Platform identity mechanism only (<c>X-Dev-Platform-User-Id</c>). Production JWT/MFA/SSO
+    /// authentication is not implemented. No sales, inventory, Utang, or offline sync.
     /// </summary>
     public static MauiApp CreateMauiApp()
     {
@@ -48,12 +49,6 @@ public static class MauiProgram
         return builder.Build();
     }
 
-    /// <summary>
-    /// Merges bundled default configuration (in-memory) with the embedded
-    /// <c>wwwroot/appsettings.json</c> resource. In-memory defaults guarantee a working
-    /// <c>PosApi:BaseUrl</c> even if the embedded resource is ever missing; the JSON resource is
-    /// the editable source of truth for local overrides.
-    /// </summary>
     private static void ConfigureAppConfiguration(ConfigurationManager configuration)
     {
         configuration.AddInMemoryCollection(new Dictionary<string, string?>
@@ -81,12 +76,16 @@ public static class MauiProgram
         services.AddSingleton<IThemePreferenceStore, MauiThemePreferenceStore>();
         services.AddSingleton<IDensityPreferenceStore, MauiDensityPreferenceStore>();
         services.AddSingleton<ICulturePreferenceStore, MauiCulturePreferenceStore>();
+        services.AddSingleton<IOnboardingPreferenceStore, MauiOnboardingPreferenceStore>();
         services.AddSingleton<IConnectivityService, MauiConnectivityService>();
         services.AddSingleton<IAppInfoService>(_ => new MauiAppInfoService(environmentName));
-
-        // NOT USED IN P5-WP02 — see NullSecureTokenStore remarks. Registered only so DI can
-        // satisfy ISecureTokenStore if a future component requests it.
-        services.AddSingleton<ISecureTokenStore, NullSecureTokenStore>();
+        services.AddSingleton<ISecureTokenStore, MauiSecureTokenStore>();
+        services.AddSingleton<ISessionStore, SecureSessionStore>();
+        services.AddSingleton<ICurrentUserContext, CurrentUserContext>();
+        services.AddSingleton<IAuthEventSink, LoggingAuthEventSink>();
+        services.AddSingleton<IProductAccessResolver, ProductAccessResolver>();
+        services.AddSingleton<IAuthenticationService, AuthenticationService>();
+        services.AddSingleton<NavigationGate>();
 
         services.AddSingleton<ThemeController>();
         services.AddSingleton<DensityController>();

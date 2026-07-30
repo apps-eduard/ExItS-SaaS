@@ -123,10 +123,14 @@
 | R-117 | Responsive data table/card pattern regressions on phone/tablet | Medium | Single `ResponsiveDataList` pattern; CSS switch at 768px; DesignSystem tests for markers | Open — introduced P5-WP04 |
 | R-118 | MoneyDisplay misuse for pricing/FX/business calculations | Medium | Display-only decimal+currency code; no conversion; architecture/docs forbid business math | Open — introduced P5-WP04 |
 | R-119 | Dev component showcase reachable outside Development/Testing | Medium | Gated by `IAppInfoService.EnvironmentName`; Release=Production unavailable; not in bottom nav | Open — introduced P5-WP04 |
+| R-120 | Development identity mistaken for production authentication | Critical | Sign-in disabled outside Dev/Testing; UI labels non-production; R-091 remains OPEN | Open — introduced P5-WP05 |
+| R-121 | Token/session leakage via Preferences, logs, or UI | Critical | SecureStorage only for session secrets; event sink forbids token/password keys; no password capture | Open — introduced P5-WP05; related R-106 |
+| R-122 | Stale commercial access after session restore or org switch | High | Re-evaluate on restore/select; clear org preference on deny; fail closed | Open — introduced P5-WP05 |
+| R-123 | Commercial POS access confused with operational roles | High | Explicit UI/docs: no Cashier/Manager/Admin assignment; product-local roles deferred | Open — introduced P5-WP05 |
 
-## Phase 5 note (P5-WP04)
+## Phase 5 note (P5-WP05 closeout)
 
-Phase 5 is **In Progress**. P5-WP04 delivered reusable DesignSystem MVP components (forms, validation, confirmation, feedback, responsive data, money display) and a Development/Testing-only showcase. **Not delivered:** authentication, sales/inventory, offline sync, interactive emulator validation (R-109). Production Platform auth blockers from Phase 4 remain OPEN. Next: **P5-WP05 — Authentication, Onboarding and Closeout** when authorized.
+Phase 5 is **Complete with documented risks**. P5-WP05 delivered Development/Testing authentication, secure session handling, onboarding, organization selection, and commercial POS access gating. **Not delivered / still open:** production JWT/MFA/SSO (R-091), POS operational roles, sales/inventory/Utang, offline sync, interactive emulator validation (R-109). Next: **Phase 6 — Utang MVP** when authorized.
 
 ## Phase 4 closeout note (P4-WP04)
 

@@ -3,6 +3,7 @@
 @page "/customers"
 @page "/more"
 @inject NavigationManager Nav
+@inject NavigationGate Gate
 @inject IStringLocalizer<PosResources> L
 
 <Page>
@@ -16,6 +17,14 @@
 </Page>
 
 @code {
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+        }
+    }
+
     private string RelativePath => Nav.ToBaseRelativePath(Nav.Uri).Trim('/');
 
     private string FeatureName => RelativePath switch

@@ -1,0 +1,68 @@
+@namespace ExItS.PinoyBusinessPOS.Maui.Components.Layout
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject ThemeController ThemeCtl
+@inject DensityController DensityCtl
+@inject CultureController CultureCtl
+@inject IAppInfoService AppInfo
+@inject IStringLocalizer<PosResources> L
+
+<div class="exds-root pos-shell pos-shell--auth" data-layout="phone" @key="_cultureEpoch">
+    <header class="pos-topbar">
+        <div class="pos-topbar__brand">
+            <span class="pos-topbar__logo" aria-hidden="true">ES</span>
+            <div class="pos-topbar__titles">
+                <span class="pos-topbar__title">@L["Brand_Name"]</span>
+                <span class="pos-topbar__subtitle pos-muted">@L["Brand_Tagline"]</span>
+            </div>
+        </div>
+        <div class="pos-topbar__status">
+            <Badge Tone="@(IsDevOrTesting ? BadgeTone.Warning : BadgeTone.Neutral)">@EnvironmentLabel</Badge>
+        </div>
+    </header>
+    <main class="pos-content" id="pos-main">
+        @Body
+    </main>
+</div>
+
+@code {
+    private int _cultureEpoch;
+
+    protected override void OnInitialized()
+    {
+        ThemeCtl.Changed += OnChangedAsync;
+        DensityCtl.Changed += OnChangedAsync;
+        CultureCtl.Changed += OnChangedAsync;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await ThemeCtl.InitializeAsync();
+        await DensityCtl.InitializeAsync();
+        await CultureCtl.InitializeAsync();
+        _cultureEpoch = CultureCtl.Epoch;
+        StateHasChanged();
+    }
+
+    private bool IsDevOrTesting =>
+        string.Equals(AppInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(AppInfo.EnvironmentName, "Testing", StringComparison.OrdinalIgnoreCase);
+
+    private string EnvironmentLabel => IsDevOrTesting
+        ? (string.Equals(AppInfo.EnvironmentName, "Testing", StringComparison.OrdinalIgnoreCase) ? L["Env_Testing"] : L["Env_Development"])
+        : L["Env_Production"];
+
+    private async Task OnChangedAsync()
+    {
+        _cultureEpoch = CultureCtl.Epoch;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ThemeCtl.Changed -= OnChangedAsync;
+        DensityCtl.Changed -= OnChangedAsync;
+        CultureCtl.Changed -= OnChangedAsync;
+    }
+}

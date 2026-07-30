@@ -1,0 +1,125 @@
+@page "/organization-select"
+@layout Layout.AuthShell
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IProductAccessResolver Access
+@inject IOnboardingPreferenceStore Prefs
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["OrgSelect_Title"]" Subtitle="@L["OrgSelect_Subtitle"]" />
+
+    @if (_loading)
+    {
+        <Stack Align="StackAlign.Center" Gap="3">
+            <Spinner />
+            <span>@L["Common_Loading"]</span>
+        </Stack>
+    }
+    else if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else if (_organizations.Count == 0)
+    {
+        <ErrorState Title="@L["Access_DeniedTitle"]" Message="@L["OrgSelect_NoneEligible"]" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+        <FormActions>
+            <Button Variant="ButtonVariant.Ghost" OnClick="LogoutAsync">@L["Auth_Logout"]</Button>
+        </FormActions>
+    }
+    else
+    {
+        <InlineMessage Tone="InlineMessageTone.Info">@L["OrgSelect_Hint"]</InlineMessage>
+        <Stack Gap="3">
+            @foreach (var org in _organizations)
+            {
+                <Card>
+                    <Stack Gap="2">
+                        <span class="pos-value-md">@org.DisplayName</span>
+                        <span class="pos-muted">@org.OrganizationId</span>
+                        <Button Disabled="_busy" OnClick="() => SelectAsync(org.OrganizationId)">@L["OrgSelect_Choose"]</Button>
+                    </Stack>
+                </Card>
+            }
+        </Stack>
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
+        }
+    }
+</Page>
+
+@code {
+    private bool _loading = true;
+    private bool _busy;
+    private bool _authenticated;
+    private string? _error;
+    private IReadOnlyList<EligibleOrganization> _organizations = [];
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            if (!CurrentUser.IsAuthenticated)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                if (!restore.Succeeded)
+                {
+                    _authenticated = false;
+                    return;
+                }
+            }
+
+            _authenticated = CurrentUser.IsAuthenticated;
+            if (!_authenticated || CurrentUser.Session is null)
+            {
+                return;
+            }
+
+            _organizations = await Access.ListEligibleOrganizationsAsync(CurrentUser.Session.UserId);
+            if (_organizations.Count == 1)
+            {
+                await SelectAsync(_organizations[0].OrganizationId);
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SelectAsync(Guid organizationId)
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = await Auth.SelectOrganizationAsync(organizationId);
+            if (!result.Succeeded)
+            {
+                _error = L[result.SafeMessageKey ?? "Access_Denied"];
+                return;
+            }
+
+            await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.AccessConfirm));
+            Nav.NavigateTo("/onboarding/access-confirm");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+
+    private async Task LogoutAsync()
+    {
+        await Auth.LogoutAsync();
+        Nav.NavigateTo("/signin");
+    }
+}

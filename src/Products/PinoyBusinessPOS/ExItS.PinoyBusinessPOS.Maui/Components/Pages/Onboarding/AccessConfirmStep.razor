@@ -1,0 +1,43 @@
+@page "/onboarding/access-confirm"
+@layout Layout.AuthShell
+@inject ICurrentUserContext CurrentUser
+@inject IOnboardingPreferenceStore Prefs
+@inject IAuthenticationService Auth
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["AccessConfirm_Title"]" Subtitle="@L["AccessConfirm_Subtitle"]" />
+
+    @if (CurrentUser.Session is null || !CurrentUser.HasPosAccess)
+    {
+        <ErrorState Title="@L["Access_DeniedTitle"]" Message="@L["Access_Denied"]" RetryLabel="@L["OrgSelect_Title"]" OnRetry="GoOrgSelect" />
+    }
+    else
+    {
+        <Card Elevated="true">
+            <Stack Gap="2">
+                <span class="pos-muted">@L["AccessConfirm_UserLabel"]</span>
+                <span class="pos-value-md">@CurrentUser.Session.DisplayName</span>
+                <span class="pos-muted">@L["AccessConfirm_OrgLabel"]</span>
+                <span class="pos-value-md">@CurrentUser.Session.OrganizationDisplayName</span>
+                <Badge Tone="BadgeTone.Success">@L["AccessConfirm_Allowed"]</Badge>
+            </Stack>
+        </Card>
+        <Alert Tone="AlertTone.Info" Title="@L["AccessConfirm_RoleBoundaryTitle"]" Message="@L["AccessConfirm_RoleBoundaryMessage"]" />
+        <FormActions>
+            <Button OnClick="EnterAsync">@L["AccessConfirm_Enter"]</Button>
+        </FormActions>
+    }
+</Page>
+
+@code {
+    private void GoOrgSelect() => Nav.NavigateTo("/organization-select");
+
+    private async Task EnterAsync()
+    {
+        await Prefs.SetOnboardingCompletedAsync(true);
+        await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.Complete));
+        Nav.NavigateTo("/home");
+    }
+}

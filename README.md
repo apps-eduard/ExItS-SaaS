@@ -36,7 +36,7 @@ ExItS-SaaS/
 
 `HealthCare/` remains frozen and outside root Git. Do not import it without an approved work package.
 
-**Phase 5** is **in progress**. **P5-WP04** is **complete** ([P5-WP04 report](docs/reports/P5-WP04-reusable-mvp-components.md)): reusable DesignSystem MVP components, responsive data pattern, and Development/Testing-only showcase. No auth, sales, inventory, or offline sync yet. Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. Phase 4 production authentication (JWT/MFA/SSO/AD) remains open. HealthCare remains frozen. Next: **P5-WP05 — Authentication, Onboarding and Closeout** when authorized.
+**Phase 5** is **complete with documented risks** ([P5-WP05 report](docs/reports/P5-WP05-authentication-onboarding-and-closeout.md)): MAUI foundation, DesignSystem, localization, reusable components, and Development/Testing authentication/onboarding. Production auth, POS operational roles, sales/inventory/Utang, and offline sync remain open. Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Next: **Phase 6 — Utang MVP** when authorized.
 
 ### Platform database (local)
 

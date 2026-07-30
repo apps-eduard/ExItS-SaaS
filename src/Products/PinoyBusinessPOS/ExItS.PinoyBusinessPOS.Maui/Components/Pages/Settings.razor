@@ -7,12 +7,43 @@
 @inject IAppInfoService AppInfo
 @inject IOptions<PosApiOptions> ApiOptions
 @inject ApiStatusLocalizer ApiLocalizer
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject NavigationGate Gate
+@inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
 <Page>
     <PageHeader Title="@L["Settings_Title"]" Subtitle="@L["Settings_Subtitle"]" />
 
     <Alert Tone="AlertTone.Warning" Title="@L["Settings_DevNoticeTitle"]" Message="@L["Settings_DevNoticeMessage"]" />
+
+    @if (CurrentUser.Session is not null)
+    {
+        <Section Title="@L["Settings_SessionSectionTitle"]">
+            <Card>
+                <Stack Gap="3">
+                    <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="2">
+                        <span>@L["AccessConfirm_UserLabel"]</span>
+                        <span class="pos-muted pos-wrap">@CurrentUser.Session.DisplayName</span>
+                    </Stack>
+                    <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="2">
+                        <span>@L["AccessConfirm_OrgLabel"]</span>
+                        <span class="pos-muted pos-wrap">@CurrentUser.Session.OrganizationDisplayName</span>
+                    </Stack>
+                    <Button Variant="ButtonVariant.Secondary" OnClick="GoSwitchOrg">@L["Settings_SwitchOrganization"]</Button>
+                    <Button Variant="ButtonVariant.Danger" OnClick="OpenLogout">@L["Auth_Logout"]</Button>
+                </Stack>
+            </Card>
+        </Section>
+        <ConfirmDialog @bind-Visible="_logoutOpen"
+                       Title="@L["Auth_LogoutConfirmTitle"]"
+                       Message="@L["Auth_LogoutConfirmMessage"]"
+                       Danger="true"
+                       IsLoading="_logoutBusy"
+                       OnConfirm="LogoutAsync"
+                       OnCancel="() => _logoutOpen = false" />
+    }
 
     @if (_preferenceError is not null)
     {
@@ -71,6 +102,8 @@
     private bool _testSucceeded;
     private string? _testResultMessage;
     private string? _preferenceError;
+    private bool _logoutOpen;
+    private bool _logoutBusy;
 
     private IReadOnlyList<SelectOption> ThemeOptions =>
     [
@@ -104,9 +137,36 @@
         }
     }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         Status.Changed += OnChangedAsync;
+        if (!Gate.CanEnterProtectedShell)
+        {
+            var route = await Gate.ResolveStartRouteAsync();
+            if (!string.Equals(route, "/settings", StringComparison.OrdinalIgnoreCase))
+            {
+                Nav.NavigateTo(route, replace: true);
+            }
+        }
+    }
+
+    private void GoSwitchOrg() => Nav.NavigateTo("/organization-select");
+
+    private void OpenLogout() => _logoutOpen = true;
+
+    private async Task LogoutAsync()
+    {
+        _logoutBusy = true;
+        try
+        {
+            await Auth.LogoutAsync();
+            _logoutOpen = false;
+            Nav.NavigateTo("/signin", replace: true);
+        }
+        finally
+        {
+            _logoutBusy = false;
+        }
     }
 
     private async Task OnThemeChangedAsync(string? value)

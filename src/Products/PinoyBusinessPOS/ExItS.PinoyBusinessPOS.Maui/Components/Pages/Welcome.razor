@@ -1,0 +1,21 @@
+@page "/welcome"
+@layout Layout.AuthShell
+@inject IOnboardingPreferenceStore Prefs
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Welcome_Title"]" Subtitle="@L["Welcome_Subtitle"]" />
+    <Alert Tone="AlertTone.Info" Title="@L["Welcome_NoticeTitle"]" Message="@L["Welcome_NoticeMessage"]" />
+    <FormActions>
+        <Button OnClick="ContinueAsync">@L["Welcome_Continue"]</Button>
+    </FormActions>
+</Page>
+
+@code {
+    private async Task ContinueAsync()
+    {
+        await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.Language));
+        Nav.NavigateTo("/onboarding/language");
+    }
+}

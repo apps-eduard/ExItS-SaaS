@@ -1,0 +1,50 @@
+@page "/onboarding/language"
+@layout Layout.AuthShell
+@inject CultureController CultureCtl
+@inject IOnboardingPreferenceStore Prefs
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Onboarding_LanguageTitle"]" Subtitle="@L["Onboarding_LanguageSubtitle"]" />
+    <FormGroup>
+        <Select Label="@L["Settings_LanguageLabel"]"
+                Value="@_culture"
+                ValueChanged="OnCultureChanged"
+                Options="_options" />
+    </FormGroup>
+    <FormActions>
+        <Button OnClick="ContinueAsync">@L["Common_Continue"]</Button>
+    </FormActions>
+</Page>
+
+@code {
+    private string? _culture = "en";
+    private IReadOnlyList<SelectOption> _options = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CultureCtl.InitializeAsync();
+        _culture = CultureCtl.Current;
+        _options =
+        [
+            new("en", L["Settings_Language_English"]),
+            new("fil-PH", L["Settings_Language_Filipino"]),
+        ];
+    }
+
+    private async Task OnCultureChanged(string? value)
+    {
+        _culture = value;
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            await CultureCtl.SetCultureAsync(value);
+        }
+    }
+
+    private async Task ContinueAsync()
+    {
+        await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.Theme));
+        Nav.NavigateTo("/onboarding/theme");
+    }
+}

@@ -64,10 +64,39 @@ public sealed class MauiFoundationGuardTests
         Assert.True(File.Exists(Path.Combine(services, "MauiThemePreferenceStore.cs")));
         Assert.True(File.Exists(Path.Combine(services, "MauiDensityPreferenceStore.cs")));
         Assert.True(File.Exists(Path.Combine(services, "MauiCulturePreferenceStore.cs")));
+        Assert.True(File.Exists(Path.Combine(services, "MauiSecureTokenStore.cs")));
+        Assert.True(File.Exists(Path.Combine(services, "MauiOnboardingPreferenceStore.cs")));
+        Assert.False(File.Exists(Path.Combine(services, "NullSecureTokenStore.cs")));
         Assert.True(File.Exists(Path.Combine(services, "MauiConnectivityService.cs")));
         Assert.True(File.Exists(Path.Combine(services, "MauiAppInfoService.cs")));
         Assert.True(File.Exists(Path.Combine(services, "DensityController.cs")));
         Assert.True(File.Exists(Path.Combine(services, "ThemeController.cs")));
+        Assert.True(File.Exists(Path.Combine(services, "NavigationGate.cs")));
+    }
+
+    [Fact]
+    public void Auth_routes_and_secure_storage_foundation_exist()
+    {
+        var root = FindRepoRoot();
+        var pages = Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui", "Components", "Pages");
+        Assert.True(File.Exists(Path.Combine(pages, "Boot.razor")));
+        Assert.True(File.Exists(Path.Combine(pages, "Welcome.razor")));
+        Assert.True(File.Exists(Path.Combine(pages, "SignIn.razor")));
+        Assert.True(File.Exists(Path.Combine(pages, "OrganizationSelect.razor")));
+        Assert.True(File.Exists(Path.Combine(pages, "AccessDenied.razor")));
+
+        var secure = File.ReadAllText(Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui", "Services", "MauiSecureTokenStore.cs"));
+        Assert.Contains("SecureStorage", secure, StringComparison.Ordinal);
+        Assert.DoesNotContain("Preferences", secure, StringComparison.Ordinal);
+
+        var authService = File.ReadAllText(Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Application", "Auth", "AuthenticationService.cs"));
+        Assert.Contains("IsDevelopmentAuthenticationEnabled", authService, StringComparison.Ordinal);
+        Assert.DoesNotContain("Cashier", authService, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Store Manager", authService, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("password", authService, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

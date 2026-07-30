@@ -1,0 +1,70 @@
+using ExItS.PinoyBusinessPOS.Application.Auth;
+
+namespace ExItS.PinoyBusinessPOS.Application.Abstractions;
+
+/// <summary>
+/// Platform-secure key/value store for authentication session secrets (e.g. MAUI SecureStorage).
+/// Never store passwords. Never use Preferences/localStorage for tokens.
+/// </summary>
+public interface ISecureTokenStore
+{
+    Task<string?> GetAsync(string key, CancellationToken ct = default);
+    Task SetAsync(string key, string value, CancellationToken ct = default);
+    Task ClearAsync(string key, CancellationToken ct = default);
+    Task ClearAllSessionKeysAsync(CancellationToken ct = default);
+}
+
+/// <summary>Non-secret preference store for onboarding progress and selected organization.</summary>
+public interface IOnboardingPreferenceStore
+{
+    Task<bool> GetOnboardingCompletedAsync(CancellationToken ct = default);
+    Task SetOnboardingCompletedAsync(bool completed, CancellationToken ct = default);
+    Task<string?> GetOnboardingStepAsync(CancellationToken ct = default);
+    Task SetOnboardingStepAsync(string step, CancellationToken ct = default);
+    Task<Guid?> GetSelectedOrganizationIdAsync(CancellationToken ct = default);
+    Task SetSelectedOrganizationIdAsync(Guid? organizationId, CancellationToken ct = default);
+    Task<bool> GetDevEnvironmentConfirmedAsync(CancellationToken ct = default);
+    Task SetDevEnvironmentConfirmedAsync(bool confirmed, CancellationToken ct = default);
+    Task ClearOrganizationPreferenceAsync(CancellationToken ct = default);
+}
+
+public interface ISessionStore
+{
+    Task SaveAsync(AuthSession session, string sessionMarker, CancellationToken ct = default);
+    Task<(AuthSession? Session, string? Marker)> LoadAsync(CancellationToken ct = default);
+    Task ClearAsync(CancellationToken ct = default);
+}
+
+public interface ICurrentUserContext
+{
+    AuthSession? Session { get; }
+    bool IsAuthenticated { get; }
+    bool HasPosAccess { get; }
+    void Set(AuthSession? session);
+    void Clear();
+    event Func<Task>? Changed;
+}
+
+public interface IProductAccessResolver
+{
+    Task<AuthResult> EvaluateAsync(Guid userId, Guid organizationId, CancellationToken ct = default);
+    Task<IReadOnlyList<EligibleOrganization>> ListEligibleOrganizationsAsync(Guid userId, CancellationToken ct = default);
+}
+
+public interface IAuthenticationService
+{
+    /// <summary>True only in Development/Testing when the approved non-production identity mechanism is enabled.</summary>
+    bool IsDevelopmentAuthenticationEnabled { get; }
+
+    Task<AuthResult> SignInAsync(SignInRequest request, CancellationToken ct = default);
+    Task<AuthResult> RestoreSessionAsync(CancellationToken ct = default);
+    Task<AuthResult> RefreshSessionAsync(CancellationToken ct = default);
+    Task LogoutAsync(CancellationToken ct = default);
+    Task<AuthResult> SelectOrganizationAsync(Guid organizationId, CancellationToken ct = default);
+}
+
+/// <summary>Local security-event sink. Does not replace Platform audit authority.</summary>
+public interface IAuthEventSink
+{
+    void Record(string eventName, IReadOnlyDictionary<string, string?> safeProperties);
+}

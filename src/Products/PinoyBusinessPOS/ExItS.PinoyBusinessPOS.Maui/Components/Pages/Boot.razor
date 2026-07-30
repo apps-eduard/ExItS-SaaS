@@ -1,0 +1,20 @@
+@page "/"
+@layout Layout.AuthShell
+@inject NavigationGate Gate
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <Stack Align="StackAlign.Center" Gap="4">
+        <Spinner Size="SpinnerSize.Lg" />
+        <p class="pos-muted">@L["Boot_Loading"]</p>
+    </Stack>
+</Page>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var route = await Gate.ResolveStartRouteAsync();
+        Nav.NavigateTo(route, replace: true);
+    }
+}

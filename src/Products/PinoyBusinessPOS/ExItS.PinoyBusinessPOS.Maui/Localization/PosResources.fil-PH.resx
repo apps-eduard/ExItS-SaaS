@@ -192,4 +192,75 @@
   <data name="DevShowcase_EmptyHint" xml:space="preserve"><value>Walang sample row na tumutugma sa kasalukuyang search.</value></data>
   <data name="DevShowcase_AccordionTitle" xml:space="preserve"><value>Sample accordion</value></data>
   <data name="DevShowcase_AccordionBody" xml:space="preserve"><value>Maaaring ilagay ang secondary detail sa accordion nang hindi ginugulo ang pangunahing view.</value></data>
+
+  <data name="Env_Testing" xml:space="preserve"><value>Testing</value></data>
+  <data name="Boot_Loading" xml:space="preserve"><value>Nagsisimula…</value></data>
+  <data name="Common_Continue" xml:space="preserve"><value>Magpatuloy</value></data>
+  <data name="Common_Back" xml:space="preserve"><value>Bumalik</value></data>
+  <data name="Welcome_Title" xml:space="preserve"><value>Maligayang pagdating</value></data>
+  <data name="Welcome_Subtitle" xml:space="preserve"><value>I-set up ang PinoyBusinessPOS para sa device na ito.</value></data>
+  <data name="Welcome_NoticeTitle" xml:space="preserve"><value>Foundation build</value></data>
+  <data name="Welcome_NoticeMessage" xml:space="preserve"><value>Hindi pa kasama ang sales, inventory, customers, at Utang. Saklaw ng flow na ito ang preferences, sign-in, at commercial access lang.</value></data>
+  <data name="Welcome_Continue" xml:space="preserve"><value>Magsimula</value></data>
+  <data name="Onboarding_LanguageTitle" xml:space="preserve"><value>Wika</value></data>
+  <data name="Onboarding_LanguageSubtitle" xml:space="preserve"><value>Pumili ng English o Tagalog.</value></data>
+  <data name="Onboarding_ThemeTitle" xml:space="preserve"><value>Theme</value></data>
+  <data name="Onboarding_ThemeSubtitle" xml:space="preserve"><value>System, Light, o Dark.</value></data>
+  <data name="Onboarding_DensityTitle" xml:space="preserve"><value>Density</value></data>
+  <data name="Onboarding_DensitySubtitle" xml:space="preserve"><value>Compact ang default para sa POS.</value></data>
+  <data name="Onboarding_DevTitle" xml:space="preserve"><value>Development environment</value></data>
+  <data name="Onboarding_DevSubtitle" xml:space="preserve"><value>Kumpirmahin na non-production ang build na ito.</value></data>
+  <data name="Onboarding_DevNoticeTitle" xml:space="preserve"><value>Hindi production authentication</value></data>
+  <data name="Onboarding_DevNoticeMessage" xml:space="preserve"><value>Ginagamit ng build na ito ang approved Development/Testing Platform identity. Hindi pa implemented ang production JWT, MFA, at SSO.</value></data>
+  <data name="Onboarding_DevConfirmLabel" xml:space="preserve"><value>Naiintindihan kong Development/Testing lang ito</value></data>
+  <data name="SignIn_Title" xml:space="preserve"><value>Mag-sign in</value></data>
+  <data name="SignIn_Subtitle" xml:space="preserve"><value>Gamitin ang Platform user identity para sa device na ito.</value></data>
+  <data name="SignIn_DevTitle" xml:space="preserve"><value>Development/Testing identity</value></data>
+  <data name="SignIn_DevMessage" xml:space="preserve"><value>Ilagay ang active Platform User Id. Walang password na kinukuha. Hindi ito production authentication.</value></data>
+  <data name="SignIn_FormTitle" xml:space="preserve"><value>Platform user</value></data>
+  <data name="SignIn_UserIdLabel" xml:space="preserve"><value>Platform User Id</value></data>
+  <data name="SignIn_UserIdHint" xml:space="preserve"><value>GUID mula sa Platform Admin users directory</value></data>
+  <data name="SignIn_Submit" xml:space="preserve"><value>Mag-sign in</value></data>
+  <data name="OrgSelect_Title" xml:space="preserve"><value>Pumili ng organization</value></data>
+  <data name="OrgSelect_Subtitle" xml:space="preserve"><value>Mga organization lang na may active PinoyBusinessPOS commercial access ang ipinapakita.</value></data>
+  <data name="OrgSelect_Hint" xml:space="preserve"><value>Preference ang pagpili ng organization. Muli-validate ng Platform ang access.</value></data>
+  <data name="OrgSelect_Choose" xml:space="preserve"><value>Gamitin ang organization na ito</value></data>
+  <data name="OrgSelect_NoneEligible" xml:space="preserve"><value>Walang eligible organization para sa PinoyBusinessPOS commercial access.</value></data>
+  <data name="AccessConfirm_Title" xml:space="preserve"><value>Nakumpirma ang commercial access</value></data>
+  <data name="AccessConfirm_Subtitle" xml:space="preserve"><value>Pinapayagan ang PinoyBusinessPOS entry para sa napiling organization.</value></data>
+  <data name="AccessConfirm_UserLabel" xml:space="preserve"><value>User</value></data>
+  <data name="AccessConfirm_OrgLabel" xml:space="preserve"><value>Organization</value></data>
+  <data name="AccessConfirm_Allowed" xml:space="preserve"><value>Pinapayagan ang access</value></data>
+  <data name="AccessConfirm_Enter" xml:space="preserve"><value>Pumasok sa Home</value></data>
+  <data name="AccessConfirm_RoleBoundaryTitle" xml:space="preserve"><value>Commercial access lang</value></data>
+  <data name="AccessConfirm_RoleBoundaryMessage" xml:space="preserve"><value>Hindi nito ina-assign ang Cashier, Store Manager, o POS Administrator. Ang product-local roles ay sa susunod na phase.</value></data>
+  <data name="Auth_Logout" xml:space="preserve"><value>Mag-sign out</value></data>
+  <data name="Auth_LogoutConfirmTitle" xml:space="preserve"><value>Mag-sign out?</value></data>
+  <data name="Auth_LogoutConfirmMessage" xml:space="preserve"><value>Maki-clear ang secure session data sa device na ito.</value></data>
+  <data name="Auth_ProductionUnavailable" xml:space="preserve"><value>Hindi available ang production authentication sa build na ito.</value></data>
+  <data name="Auth_ProductionUnavailableTitle" xml:space="preserve"><value>Hindi available ang sign-in</value></data>
+  <data name="Auth_InvalidCredentials" xml:space="preserve"><value>Hindi ma-sign in ang Platform user.</value></data>
+  <data name="Auth_Offline" xml:space="preserve"><value>Offline ka. Kailangan ng connectivity para mag-sign in.</value></data>
+  <data name="Auth_Timeout" xml:space="preserve"><value>Nag-timeout ang sign-in request.</value></data>
+  <data name="Auth_ApiUnavailable" xml:space="preserve"><value>Hindi available ang Platform API.</value></data>
+  <data name="Auth_Cancelled" xml:space="preserve"><value>Kinansela ang request.</value></data>
+  <data name="Auth_SecureStorageFailure" xml:space="preserve"><value>Nabigo ang secure storage. Hindi na-save ang session data.</value></data>
+  <data name="Auth_SessionExpired" xml:space="preserve"><value>Nag-expire ang session. Mag-sign in ulit.</value></data>
+  <data name="Auth_SessionExpiredTitle" xml:space="preserve"><value>Nag-expire ang session</value></data>
+  <data name="Access_Denied" xml:space="preserve"><value>Tinanggihan ang PinoyBusinessPOS commercial access.</value></data>
+  <data name="Access_DeniedTitle" xml:space="preserve"><value>Walang access</value></data>
+  <data name="Access_UserInactive" xml:space="preserve"><value>Hindi active ang Platform user.</value></data>
+  <data name="Access_OrganizationInactive" xml:space="preserve"><value>Hindi active ang organization.</value></data>
+  <data name="Access_MembershipMissing" xml:space="preserve"><value>Walang active membership.</value></data>
+  <data name="Access_MembershipInactive" xml:space="preserve"><value>Hindi active ang membership.</value></data>
+  <data name="Access_AssignmentMissing" xml:space="preserve"><value>Walang product access assignment.</value></data>
+  <data name="Access_AssignmentRevoked" xml:space="preserve"><value>Revoked o inactive ang product access assignment.</value></data>
+  <data name="Access_ProductInactive" xml:space="preserve"><value>Hindi active ang product.</value></data>
+  <data name="Access_SubscriptionIneligible" xml:space="preserve"><value>Hindi Trialing o Active ang subscription.</value></data>
+  <data name="Access_EntitlementMissing" xml:space="preserve"><value>Nawawala ang required entitlement.</value></data>
+  <data name="Access_EntitlementStale" xml:space="preserve"><value>Luma ang entitlement snapshot.</value></data>
+  <data name="Access_EntitlementDenied" xml:space="preserve"><value>Tinatanggihan ng entitlement state ang access.</value></data>
+  <data name="Home_SessionTitle" xml:space="preserve"><value>Naka-sign in</value></data>
+  <data name="Settings_SessionSectionTitle" xml:space="preserve"><value>Session</value></data>
+  <data name="Settings_SwitchOrganization" xml:space="preserve"><value>Palitan ang organization</value></data>
 </root>

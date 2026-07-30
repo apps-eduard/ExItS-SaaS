@@ -1,18 +1,30 @@
-﻿@page "/"
-@page "/home"
+﻿@page "/home"
 @implements IDisposable
 @inject PosStatusState Status
 @inject IAppInfoService AppInfo
 @inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject ICurrentUserContext CurrentUser
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
 
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
 <Page>
     <PageHeader Title="@L["Home_Title"]" Subtitle="@L["Home_Subtitle"]">
         <Actions>
             <Button Variant="ButtonVariant.Secondary" OnClick="GoToSettings">@L["Home_SettingsLink"]</Button>
         </Actions>
     </PageHeader>
+
+    @if (CurrentUser.Session is not null)
+    {
+        <Alert Tone="AlertTone.Info" Title="@L["Home_SessionTitle"]" Message="@SessionSummary" />
+    }
 
     <Section Title="@L["Home_AppSectionTitle"]">
         <Card Elevated="true">
@@ -78,12 +90,31 @@
 
     <EmptyState IconName="inbox" Title="@L["Home_NoFeaturesTitle"]" Message="@L["Home_NoFeaturesMessage"]" />
 </Page>
+}
 
 @code {
-    protected override void OnInitialized()
+    private bool _ready;
+
+    protected override async Task OnInitializedAsync()
     {
         Status.Changed += OnChangedAsync;
+        if (!Gate.CanEnterProtectedShell)
+        {
+            var route = await Gate.ResolveStartRouteAsync();
+            if (route != "/home")
+            {
+                Nav.NavigateTo(route, replace: true);
+                return;
+            }
+        }
+
+        _ready = true;
     }
+
+    private string SessionSummary =>
+        CurrentUser.Session is null
+            ? string.Empty
+            : $"{CurrentUser.Session.DisplayName} · {CurrentUser.Session.OrganizationDisplayName}";
 
     private bool IsDevelopment => string.Equals(AppInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase);
 
