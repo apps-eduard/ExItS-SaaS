@@ -135,6 +135,10 @@
 | R-129 | Transitive SQLitePCLRaw NU1903 advisory on Microsoft.Data.Sqlite 10.0.4 | Medium | Track package upgrade when Microsoft ships fixed transitive; P7-WP03 mitigated by row-level AES-GCM instead of SQLCipher; advisory remains open on Microsoft.Data.Sqlite transitive | Open — introduced P7-WP01; WP03 avoided SQLCipher |
 
 
+## Phase 9 note (P9-WP04)
+
+P9-WP04 hardened accessibility/localization/theme QA: Admin page chrome localized EN/fil-PH; StatusBadge text+marker; skip links; Dialog/ConfirmDialog labelled-by + focus; MoneyDisplay accessible labels; DesignSystem contrast token tests; culture fallback and resource parity guards. Interactive TalkBack/device theme walkthrough remains R-109. RTL unsupported. **Not production-ready.** Next: **P9-WP05 — Pilot and Deployment** when authorized.
+
 ## Phase 9 note (P9-WP03)
 
 P9-WP03 delivered independent Platform and POS PostgreSQL logical backup/restore (`ExItS.BackupRestore`, CLI, `ops/backup` scripts), manifests/SHA-256, destructive-restore guards, retention dry-run (never deletes latest complete), AES-256-GCM protect helper, runbooks, and Testcontainers recovery drills. PITR explicitly deferred. Local MAUI SQLite/SecureStorage excluded from server backups (unsynced local loss is a release risk). R-091 / R-109 / R-129 remain open. **Not production-ready.** Next: **P9-WP04 — Accessibility, Localization and Theme QA** when authorized.

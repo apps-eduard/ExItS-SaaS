@@ -56,6 +56,7 @@
 - Security hardening (P9-WP01) ? Production header/route guards; startup fail-closed; CORS; rate limits; safe ProblemDetails; secret-pattern architecture tests
 - Performance/reliability (P9-WP02) ? `/health` vs `/health/ready`; reporting batch queries; performance indexes migrate; offline BlockedByAccess reclaim; scaled CI latency smoke; full suite 915 / 0 / 0
 - Backup/restore (P9-WP03) ? independent Platform/POS `pg_dump` drills; manifests/SHA-256; destructive restore guards; retention dry-run; no dumps committed; full suite 931 / 0 / 0
+- Accessibility/localization/theme QA (P9-WP04) ? Admin EN/fil chrome; dialog a11y; skip links; contrast tokens; culture fallback; resource parity; R-109 honest matrix; full suite 950 / 0 / 0
 - Tenant isolation
 - Subscription feature enforcement (P6-WP05 matrix + grants; P8-WP01?P8-WP07 store grants)
 - Offline queue and idempotency *(Phase 7)*
@@ -89,5 +90,6 @@
 - **P9-WP01:** Production header/route guards; startup fail-closed; CORS/rate-limit/HTTPS pipeline source guards; empty base connection strings
 - **P9-WP02:** Liveness/readiness; performance index migration; reporting N+1 guards; sale idempotency headers; offline reclaim; provisional budget smoke
 - **P9-WP03:** Manifest/retention/redaction/encrypt unit tests; Platform+POS Testcontainers backup?empty restore drills; checksum/kind/overwrite guards; architecture no-dump/HealthCare guards
+- **P9-WP04:** EN/fil resource parity; Admin page-header localization guards; DesignSystem contrast; dialog aria-labelledby; skip links; culture/theme preference fallback; MoneyDisplay accessible labels
 
 All reports use exact command output; totals are never estimated.

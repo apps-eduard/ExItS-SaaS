@@ -42,9 +42,9 @@ ExItS-SaaS/
 
 **Phase 8** is **complete** with documented risks ([P8-WP07 closeout](docs/reports/P8-WP07-basic-store-closeout.md)). Online-only Basic Store MVP is closed.
 
-**Phase 9** is **in progress** — P9-WP01–P9-WP03 are **complete** with documented risks ([P9-WP01](docs/reports/P9-WP01-security-and-privacy-hardening.md), [P9-WP02](docs/reports/P9-WP02-performance-and-reliability.md), [P9-WP03](docs/reports/P9-WP03-backup-and-restore.md)). **Not production-ready** while R-091, R-109, R-129, Production HTTPS/MAUI cleartext replacement, unsynced local-data recoverability limits, and related blockers remain open. Next authorized WP: **P9-WP04 — Accessibility, Localization and Theme QA** (do not begin until authorized).
+**Phase 9** is **in progress** — P9-WP01–P9-WP04 are **complete** with documented risks ([P9-WP01](docs/reports/P9-WP01-security-and-privacy-hardening.md), [P9-WP02](docs/reports/P9-WP02-performance-and-reliability.md), [P9-WP03](docs/reports/P9-WP03-backup-and-restore.md), [P9-WP04](docs/reports/P9-WP04-accessibility-localization-theme-qa.md)). **Not production-ready** while R-091, R-109, R-129, Production HTTPS/MAUI cleartext replacement, and related blockers remain open. Next authorized WP: **P9-WP05 — Pilot and Deployment** (do not begin until authorized).
 
-Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Do not begin P9-WP04 until authorized.
+Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Do not begin P9-WP05 until authorized.
 
 ### Platform database (local)
 

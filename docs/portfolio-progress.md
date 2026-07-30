@@ -2,7 +2,7 @@
 
 > Primary status page. Cursor must update this file after every completed work package. Percentages are calculated from approved work packages, never estimated.
 
-[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P9-WP03 report](reports/P9-WP03-backup-and-restore.md)
+[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P9-WP04 report](reports/P9-WP04-accessibility-localization-theme-qa.md)
 
 ## Current status
 
@@ -12,10 +12,10 @@
 | Existing product | HealthCare SaaS MVP (ignored nested `HealthCare/`) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 9 — MVP Hardening and Release (**In Progress**) |
-| Current work package | P9-WP03 — Backup and Restore (**Complete** with documented risks) |
-| Overall status | **Phase 9 in progress** — P9-WP01–P9-WP03 complete with documented risks; not production-ready; next P9-WP04 when authorized |
-| Latest verified commit | 3bbb0c716da60bd7d87a191c35bd0eced1bde380 |
-| Open blockers | Missing production auth (JWT/MFA/SSO/AD) (R-091); R-022 refresh durations / no offline entitlement grace; R-035 calendar EOM; no payment gateway; no interactive Android emulator (R-109); Production HTTPS/MAUI cleartext replacement gate; SQLitePCLRaw NU1903 (R-129); unsynced local MAUI data not recoverable from server backups; PITR deferred; Production off-host encrypted backup scheduling environment-owned; catalog/sales/inventory/expenses/reports online-only by design; report export deferred; no POS operational roles; full MVP-scale load/soak not proven in CI |
+| Current work package | P9-WP04 — Accessibility, Localization and Theme QA (**Complete** with documented risks) |
+| Overall status | **Phase 9 in progress** — P9-WP01–P9-WP04 complete with documented risks; not production-ready; next P9-WP05 when authorized |
+| Latest verified commit | f7b3aecec614eea8b1de601cd08e843f4aea91f8 |
+| Open blockers | Missing production auth (JWT/MFA/SSO/AD) (R-091); R-022 refresh durations / no offline entitlement grace; R-035 calendar EOM; no payment gateway; no interactive Android emulator (R-109) including TalkBack/theme interactive QA; Production HTTPS/MAUI cleartext replacement gate; SQLitePCLRaw NU1903 (R-129); unsynced local MAUI data not recoverable from server backups; PITR deferred; Production off-host encrypted backup scheduling environment-owned; catalog/sales/inventory/expenses/reports online-only by design; report export deferred; no POS operational roles; full MVP-scale load/soak not proven in CI |
 | Last updated | 2026-07-31 |
 
 ## Delivery sequence
@@ -27,7 +27,9 @@ P9-WP02 ✓ Performance and Reliability (complete with risks)
         ↓
 P9-WP03 ✓ Backup and Restore (complete with risks)
         ↓
-P9-WP04 ○ Accessibility, Localization and Theme QA (not started — do not begin until authorized)
+P9-WP04 ✓ Accessibility, Localization and Theme QA (complete with risks)
+        ↓
+P9-WP05 ○ Pilot and Deployment (not started — do not begin until authorized)
 ```
 
 ## Phase progress
@@ -43,10 +45,10 @@ P9-WP04 ○ Accessibility, Localization and Theme QA (not started — do not beg
 | 6 | Utang MVP | **Complete with documented risks** | 6 | 6 | 100% | [Open](phases/phase-06-utang-mvp.md) |
 | 7 | Offline Synchronization | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-07-offline-sync.md) |
 | 8 | Basic Store | **Complete with documented risks** | 7 | 7 | 100% | [Open](phases/phase-08-basic-store.md) |
-| 9 | MVP Hardening and Release | **In Progress** | 3 | 6 | 50% | [Open](phases/phase-09-mvp-hardening.md) |
+| 9 | MVP Hardening and Release | **In Progress** | 4 | 6 | ~67% | [Open](phases/phase-09-mvp-hardening.md) |
 | 10 | Full POS | Future | 0 | 8 | 0% | [Open](phases/phase-10-full-pos.md) |
 
-**MVP phases 0–9:** 48 / 52 = **92.31%**.
+**MVP phases 0–9:** 49 / 52 = **94.23%**.
 
 ## Phase 9 work packages
 
@@ -55,7 +57,7 @@ P9-WP04 ○ Accessibility, Localization and Theme QA (not started — do not beg
 | P9-WP01 | Complete with risks | de4fac64739f5b368a6b1f2490223fa032201b65 |
 | P9-WP02 | Complete with risks | 46a4ac7bacfad0736fba4741817958862fadf9e2 |
 | P9-WP03 | Complete with risks | 3bbb0c716da60bd7d87a191c35bd0eced1bde380 |
-| P9-WP04 | Not Started | — |
+| P9-WP04 | Complete with risks | f7b3aecec614eea8b1de601cd08e843f4aea91f8 |
 | P9-WP05 | Not Started | — |
 | P9-WP06 | Not Started | — |
 
@@ -70,3 +72,7 @@ P9-WP04 ○ Accessibility, Localization and Theme QA (not started — do not beg
 | P8-WP05 | Complete with risks | ca956921fbfcfad8499f01acb9d9726fff2d81d4 |
 | P8-WP06 | Complete with risks | a0028f36a0d8e2ea76c3101b2b65ba82bfd4fd02 |
 | P8-WP07 | Complete with risks | 0bc5ebb999c0708e6ac76b04a30d522037eec3cb |
+
+## Permanent workflow rules
+
+Follow `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Do not begin unauthorized work packages.

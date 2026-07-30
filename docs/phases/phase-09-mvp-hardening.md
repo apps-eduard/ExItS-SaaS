@@ -4,7 +4,7 @@
 
 ## Status
 
-**In Progress** — P9-WP01–P9-WP03 complete with documented risks. Do **not** begin P9-WP04 until explicitly authorized. **Not production-ready.**
+**In Progress** — P9-WP01–P9-WP04 complete with documented risks. Do **not** begin P9-WP05 until explicitly authorized. **Not production-ready.**
 
 ## Objective
 
@@ -158,22 +158,48 @@ Deliver:
 
 ### P9-WP04 — Accessibility, Localization and Theme QA
 
-Status: Not Started (do not begin until authorized)
+Status: **Complete** with documented risks
 
-#### Required outcomes
+Report: [P9-WP04-accessibility-localization-theme-qa.md](../reports/P9-WP04-accessibility-localization-theme-qa.md)
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+Feature commit: f7b3aecec614eea8b1de601cd08e843f4aea91f8
+
+Phase marker: `P9-WP04-accessibility-localization-theme-qa`
+
+#### Approved scope (clarified)
+
+Perform a complete accessibility, localization, responsive-layout, and theme-quality review across delivered Platform and PinoyBusinessPOS MVP. **QA and hardening only — no new business features.** Preserve P9-WP01–P9-WP03 security, isolation, idempotency, immutability, and reliability controls. HealthCare remains frozen.
+
+Deliver:
+
+- Accessibility review and fixes (WCAG 2.2 AA engineering target; no formal certification claim)
+- English and Filipino (`fil-PH`) localization reconciliation
+- System, Light, and Dark theme validation and token-consistency fixes
+- Phone/tablet responsive-layout validation
+- Keyboard, focus, screen-reader, and touch-target checks
+- Reduced-motion and contrast review
+- Localization and theme regression tests
+- Documented remaining limitations and release blockers
+- Manual QA matrix (EN/fil × Light/Dark/System)
+- Android Release evidence or honest R-109 limitation
+
+#### Explicit exclusions
+
+- New business workflows; production auth; POS operational roles
+- Tax, refund, accounting, gateway, receipt printing, report export
+- New languages beyond existing locales; new UI framework; full visual redesign
+- RTL implementation (document as unsupported unless already present)
+- P9-WP05 or later
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (preserve 931 baseline).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created (`docs/reports/P9-WP04-accessibility-localization-theme-qa.md`).
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean.
+- [x] Exact next WP recorded: **P9-WP05 — Pilot and Deployment** (do not begin).
 
 ### P9-WP05 — Pilot and Deployment
 

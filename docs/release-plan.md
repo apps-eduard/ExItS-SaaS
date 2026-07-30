@@ -85,6 +85,14 @@ Independent Platform/POS `pg_dump` logical backups with manifests, checksums, re
 
 **Next:** **P9-WP04 — Accessibility, Localization and Theme QA** when approved.
 
+## R3.10 — Accessibility, localization and theme QA (Phase 9 / P9-WP04)
+
+**P9-WP04 complete with documented risks.** See [P9-WP04 report](reports/P9-WP04-accessibility-localization-theme-qa.md).
+
+Admin EN/fil localization of primary chrome; DesignSystem dialog a11y; skip links; contrast token checks; culture fallback; theme persistence guards; manual matrix with R-109 honesty. **Not production-ready** (R-091, R-109, R-129).
+
+**Next:** **P9-WP05 — Pilot and Deployment** when approved.
+
 ## R4 — Commercial MVP
 
 Offline synchronization, Basic Store and production hardening.
