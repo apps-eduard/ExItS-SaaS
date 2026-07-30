@@ -1,0 +1,40 @@
+using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Domain.Common;
+
+namespace ExItS.PinoyBusinessPOS.Api.Common;
+
+/// <summary>Development-stage organization scope header for POS APIs.</summary>
+public static class PosOrganizationHeaders
+{
+    public const string OrganizationHeaderName = "X-Pos-Organization-Id";
+}
+
+internal static class PosOrganizationScope
+{
+    public static bool TryGetOrganizationId(HttpRequest request, out Guid organizationId, out IResult? problem)
+    {
+        organizationId = default;
+        problem = null;
+
+        if (!request.Headers.TryGetValue(PosOrganizationHeaders.OrganizationHeaderName, out var values)
+            || string.IsNullOrWhiteSpace(values.FirstOrDefault()))
+        {
+            problem = PosApiResults.Problem(
+                ApplicationErrorCodes.OrganizationRequired,
+                $"Header '{PosOrganizationHeaders.OrganizationHeaderName}' is required.",
+                StatusCodes.Status400BadRequest);
+            return false;
+        }
+
+        if (!Guid.TryParse(values.First(), out organizationId) || organizationId == Guid.Empty)
+        {
+            problem = PosApiResults.Problem(
+                DomainErrorCodes.InvalidOrganizationId,
+                "Organization id must be a non-empty GUID.",
+                StatusCodes.Status400BadRequest);
+            return false;
+        }
+
+        return true;
+    }
+}

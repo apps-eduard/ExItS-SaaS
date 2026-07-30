@@ -11,4 +11,10 @@ public static class DomainErrorCodes
     public const string InvalidUtcTimestamp = "pos.timestamp.invalid";
     public const string InvalidCustomerStatusTransition = "pos.customer.status.invalid_transition";
     public const string CustomerNotActive = "pos.customer.not_active";
+
+    public const string InvalidCreditEntryId = "pos.credit_entry.id.invalid";
+    public const string InvalidCreditAmount = "pos.credit_entry.amount.invalid";
+    public const string InvalidCreditRemarks = "pos.credit_entry.remarks.invalid";
+    public const string InvalidCreditReversalReason = "pos.credit_entry.reversal_reason.invalid";
+    public const string InvalidCreditEntryStatusTransition = "pos.credit_entry.status.invalid_transition";
 }

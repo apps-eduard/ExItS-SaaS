@@ -297,8 +297,39 @@
   <data name="Customers_AddressHint" xml:space="preserve"><value>Opsiyonal na maikling deskripsyon ng lokasyon.</value></data>
   <data name="Customers_NotesHint" xml:space="preserve"><value>Para sa pagkilala lang — hindi credit record.</value></data>
   <data name="Customers_DisplayNameRequired" xml:space="preserve"><value>Kailangan ang display name.</value></data>
-  <data name="Customers_CreditDeferredTitle" xml:space="preserve"><value>Darating pa ang credit</value></data>
-  <data name="Customers_CreditDeferredMessage" xml:space="preserve"><value>Hindi pa available ang remarks-based credit at balance sa work package na ito.</value></data>
+  <data name="Customers_CreditDeferredTitle" xml:space="preserve"><value>Darating pa ang bayad</value></data>
+  <data name="Customers_CreditDeferredMessage" xml:space="preserve"><value>Available na ang remarks-based credit sa customer detail. Hindi pa available ang repayments at ledger allocation sa work package na ito.</value></data>
+  <data name="Customers_RepaymentDeferredTitle" xml:space="preserve"><value>Darating pa ang bayad</value></data>
+  <data name="Customers_RepaymentDeferredMessage" xml:space="preserve"><value>Ang outstanding ay kabuuan ng active credit entries lang. Hindi pa available ang repayments, payment allocation, at ledger journals.</value></data>
+  <data name="Credit_SectionTitle" xml:space="preserve"><value>Credit ng customer</value></data>
+  <data name="Credit_Outstanding" xml:space="preserve"><value>Outstanding</value></data>
+  <data name="Credit_ActiveCount" xml:space="preserve"><value>{0} active</value></data>
+  <data name="Credit_TotalCount" xml:space="preserve"><value>{0} kabuuang entry</value></data>
+  <data name="Credit_Add" xml:space="preserve"><value>Magdagdag ng credit</value></data>
+  <data name="Credit_AddTitle" xml:space="preserve"><value>Magdagdag ng credit entry</value></data>
+  <data name="Credit_AddSubtitle" xml:space="preserve"><value>Itala ang positive remarks-based credit para sa customer na ito.</value></data>
+  <data name="Credit_EntrySection" xml:space="preserve"><value>Credit entry</value></data>
+  <data name="Credit_Field_Amount" xml:space="preserve"><value>Halaga</value></data>
+  <data name="Credit_Field_Remarks" xml:space="preserve"><value>Remarks</value></data>
+  <data name="Credit_Field_ReversalReason" xml:space="preserve"><value>Dahilan ng reversal</value></data>
+  <data name="Credit_AmountHint" xml:space="preserve"><value>Positive na halaga hanggang dalawang decimal (PHP).</value></data>
+  <data name="Credit_RemarksHint" xml:space="preserve"><value>Kinakailangang plain-text na paliwanag kung bakit binigyan ng credit.</value></data>
+  <data name="Credit_AmountInvalid" xml:space="preserve"><value>Maglagay ng positive na halaga na may hanggang dalawang decimal.</value></data>
+  <data name="Credit_RemarksRequired" xml:space="preserve"><value>Kailangan ang remarks.</value></data>
+  <data name="Credit_ReversalReasonRequired" xml:space="preserve"><value>Kailangan ang dahilan ng reversal.</value></data>
+  <data name="Credit_Save" xml:space="preserve"><value>Itala ang credit</value></data>
+  <data name="Credit_HistoryTitle" xml:space="preserve"><value>Kasaysayan ng credit</value></data>
+  <data name="Credit_HistoryLoading" xml:space="preserve"><value>Nilo-load ang kasaysayan…</value></data>
+  <data name="Credit_HistoryEmptyTitle" xml:space="preserve"><value>Wala pang credit entry</value></data>
+  <data name="Credit_HistoryEmptyMessage" xml:space="preserve"><value>Magtala ng credit upang magsimula ang append-only history ng customer.</value></data>
+  <data name="Credit_Reverse" xml:space="preserve"><value>I-reverse</value></data>
+  <data name="Credit_ReverseTitle" xml:space="preserve"><value>I-reverse ang credit entry?</value></data>
+  <data name="Credit_ReverseMessage" xml:space="preserve"><value>Mananatili ang orihinal na entry sa history. Aalisin ng reversal ang halaga sa outstanding. Hindi na ito mababalik.</value></data>
+  <data name="Credit_ReversalReason" xml:space="preserve"><value>Dahilan ng reversal</value></data>
+  <data name="Credit_ReversedSuccess" xml:space="preserve"><value>Na-reverse ang credit entry.</value></data>
+  <data name="Credit_InactiveTitle" xml:space="preserve"><value>Hindi active ang customer</value></data>
+  <data name="Credit_InactiveMessage" xml:space="preserve"><value>Bagong credit ay para lang sa active customer. Maaari pa ring tingnan o i-reverse ang existing history.</value></data>
+  <data name="Credit_ErrorTitle" xml:space="preserve"><value>Hindi natuloy ang credit action</value></data>
   <data name="Customers_ConflictTitle" xml:space="preserve"><value>Duplicate mobile</value></data>
   <data name="Customers_ConflictMessage" xml:space="preserve"><value>May active customer na na may ganitong mobile number sa organization na ito.</value></data>
   <data name="Customers_ErrorTitle" xml:space="preserve"><value>Hindi ma-save</value></data>

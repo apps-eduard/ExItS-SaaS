@@ -1,0 +1,131 @@
+@page "/customers/{CustomerId:guid}/credit/new"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCustomerClient Customers
+@inject ICurrentUserContext CurrentUser
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+<Page>
+    <PageHeader Title="@L["Credit_AddTitle"]" Subtitle="@L["Credit_AddSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
+        </Actions>
+    </PageHeader>
+
+    <Alert Tone="AlertTone.Info" Title="@L["Customers_RepaymentDeferredTitle"]" Message="@L["Customers_RepaymentDeferredMessage"]" />
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Credit_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Credit_EntrySection"]">
+        <Stack Gap="3">
+            <TextInput Label="@L["Credit_Field_Amount"]"
+                       Value="@_amountText"
+                       ValueChanged="v => _amountText = v"
+                       Required="true"
+                       Hint="@L["Credit_AmountHint"]"
+                       IsInvalid="@(!string.IsNullOrEmpty(_amountError))"
+                       ErrorText="@_amountError"
+                       Disabled="@_saving" />
+
+            <TextArea Label="@L["Credit_Field_Remarks"]"
+                      Value="@_remarks"
+                      ValueChanged="v => _remarks = v"
+                      Required="true"
+                      Hint="@L["Credit_RemarksHint"]"
+                      IsInvalid="@(!string.IsNullOrEmpty(_remarksError))"
+                      ErrorText="@_remarksError"
+                      Rows="4"
+                      Disabled="@_saving" />
+        </Stack>
+    </Section>
+
+    <FormActions>
+        <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="GoBack">@L["Customers_Cancel"]</Button>
+        <Button Variant="ButtonVariant.Primary" IsLoading="@_saving" OnClick="SaveAsync">@L["Credit_Save"]</Button>
+    </FormActions>
+</Page>
+}
+
+@code {
+    [Parameter] public Guid CustomerId { get; set; }
+
+    private bool _ready;
+    private bool _saving;
+    private string? _amountText;
+    private string? _remarks;
+    private string? _amountError;
+    private string? _remarksError;
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        _amountError = null;
+        _remarksError = null;
+        _errorTitle = null;
+        _errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(_amountText) || !decimal.TryParse(_amountText.Trim(), out var amount) || amount <= 0)
+        {
+            _amountError = L["Credit_AmountInvalid"];
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_remarks))
+        {
+            _remarksError = L["Credit_RemarksRequired"];
+            return;
+        }
+
+        _saving = true;
+        var result = await Customers.CreateCreditEntryAsync(
+            CustomerId,
+            new CreatePosCreditEntryRequest(amount, _remarks!));
+        _saving = false;
+
+        if (result.IsSuccess)
+        {
+            Nav.NavigateTo($"/customers/{CustomerId:D}");
+            return;
+        }
+
+        if (result.Status == ApiCallStatus.Conflict)
+        {
+            _errorTitle = L["Credit_InactiveTitle"];
+            _errorMessage = result.Error?.Detail ?? L["Credit_InactiveMessage"];
+        }
+        else if (result.Status == ApiCallStatus.Validation)
+        {
+            _errorTitle = L["Credit_ErrorTitle"];
+            _errorMessage = result.Error?.Detail ?? L["Credit_AmountInvalid"];
+        }
+        else
+        {
+            _errorTitle = L["Credit_ErrorTitle"];
+            _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        }
+    }
+
+    private void GoBack() => Nav.NavigateTo($"/customers/{CustomerId:D}");
+}

@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
@@ -21,6 +22,7 @@ public static class DependencyInjection
             options.UseNpgsql(connectionString));
 
         services.AddScoped<IPOSCustomerRepository, POSCustomerRepository>();
+        services.AddScoped<ICreditEntryRepository, CreditEntryRepository>();
         services.AddScoped<IPosUnitOfWork, PosUnitOfWork>();
         services.AddSingleton<IClock, SystemClock>();
 

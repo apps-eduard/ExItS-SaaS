@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 
 namespace ExItS.PinoyBusinessPOS.ApiClient;
@@ -57,6 +58,45 @@ public sealed class PosCustomerClient(HttpClient httpClient, IConnectivityServic
 
     public Task<ApiResult<PosCustomerDetailDto>> ReactivateAsync(Guid customerId, CancellationToken ct = default) =>
         SendAsync<PosCustomerDetailDto>(HttpMethod.Post, $"/api/v1/pos/customers/{customerId:D}/reactivate", null, ct);
+
+    public Task<ApiResult<PosCustomerCreditSummaryDto>> GetCreditSummaryAsync(Guid customerId, CancellationToken ct = default) =>
+        SendAsync<PosCustomerCreditSummaryDto>(
+            HttpMethod.Get,
+            $"/api/v1/pos/customers/{customerId:D}/credit-summary",
+            null,
+            ct);
+
+    public Task<ApiResult<PosCreditEntryPagedResult>> ListCreditEntriesAsync(
+        Guid customerId,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default) =>
+        SendAsync<PosCreditEntryPagedResult>(
+            HttpMethod.Get,
+            $"/api/v1/pos/customers/{customerId:D}/credit-entries?page={page}&pageSize={pageSize}",
+            null,
+            ct);
+
+    public Task<ApiResult<PosCreditEntryDto>> CreateCreditEntryAsync(
+        Guid customerId,
+        CreatePosCreditEntryRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<PosCreditEntryDto>(
+            HttpMethod.Post,
+            $"/api/v1/pos/customers/{customerId:D}/credit-entries",
+            request,
+            ct);
+
+    public Task<ApiResult<PosCreditEntryDto>> ReverseCreditEntryAsync(
+        Guid customerId,
+        Guid entryId,
+        ReversePosCreditEntryRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<PosCreditEntryDto>(
+            HttpMethod.Post,
+            $"/api/v1/pos/customers/{customerId:D}/credit-entries/{entryId:D}/reverse",
+            request,
+            ct);
 
     private async Task<ApiResult<TResponse>> SendAsync<TResponse>(
         HttpMethod method,

@@ -1,0 +1,225 @@
+using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Abstractions;
+using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.Credit;
+using ExItS.PinoyBusinessPOS.Domain.Customers;
+
+namespace ExItS.PinoyBusinessPOS.Application.Credit;
+
+public sealed record CreditEntryDto(
+    Guid CreditEntryId,
+    Guid OrganizationId,
+    Guid CustomerId,
+    decimal Amount,
+    string Remarks,
+    string Status,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset? ReversedAtUtc,
+    string? ReversalReason);
+
+public sealed record CustomerCreditSummaryDto(
+    Guid CustomerId,
+    Guid OrganizationId,
+    decimal OutstandingAmount,
+    int ActiveEntryCount,
+    int TotalEntryCount);
+
+public sealed class CreditEntryQueryService
+{
+    private readonly ICreditEntryRepository _entries;
+
+    public CreditEntryQueryService(ICreditEntryRepository entries) => _entries = entries;
+
+    public async Task<CreditEntryDto?> GetByIdAsync(
+        Guid organizationId,
+        Guid customerId,
+        Guid entryId,
+        CancellationToken cancellationToken = default)
+    {
+        var entry = await _entries
+            .GetByIdAsync(
+                PosOrganizationId.From(organizationId),
+                POSCustomerId.From(customerId),
+                CreditEntryId.From(entryId),
+                cancellationToken)
+            .ConfigureAwait(false);
+        return entry is null ? null : Map(entry);
+    }
+
+    public async Task<PagedResult<CreditEntryDto>> ListByCustomerAsync(
+        Guid organizationId,
+        Guid customerId,
+        int? page,
+        int? pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (skip, take) = PosPagination.Normalize(page, pageSize);
+        var (items, total) = await _entries
+            .ListByCustomerAsync(
+                PosOrganizationId.From(organizationId),
+                POSCustomerId.From(customerId),
+                skip,
+                take,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return new PagedResult<CreditEntryDto>(
+            items.Select(Map).ToList(),
+            total,
+            Math.Max(page ?? 1, 1),
+            take);
+    }
+
+    public async Task<CustomerCreditSummaryDto> GetSummaryAsync(
+        Guid organizationId,
+        Guid customerId,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = PosOrganizationId.From(organizationId);
+        var custId = POSCustomerId.From(customerId);
+        var outstanding = await _entries.SumActiveAmountAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
+        var activeCount = await _entries.CountActiveAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
+        var (_, total) = await _entries.ListByCustomerAsync(orgId, custId, 0, 1, cancellationToken).ConfigureAwait(false);
+
+        return new CustomerCreditSummaryDto(customerId, organizationId, outstanding, activeCount, total);
+    }
+
+    public static CreditEntryDto Map(CreditEntry entry) =>
+        new(
+            entry.Id.Value,
+            entry.OrganizationId.Value,
+            entry.CustomerId.Value,
+            entry.Amount,
+            entry.Remarks,
+            entry.Status.ToString(),
+            entry.CreatedAtUtc,
+            entry.ReversedAtUtc,
+            entry.ReversalReason);
+}
+
+public sealed class CreateCreditEntry
+{
+    private readonly IPOSCustomerRepository _customers;
+    private readonly ICreditEntryRepository _entries;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public CreateCreditEntry(
+        IPOSCustomerRepository customers,
+        ICreditEntryRepository entries,
+        IPosUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _customers = customers;
+        _entries = entries;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<CreditEntry>> ExecuteAsync(
+        Guid organizationId,
+        Guid customerId,
+        decimal amount,
+        string remarks,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = PosOrganizationId.From(organizationId);
+        var custId = POSCustomerId.From(customerId);
+        var customer = await _customers.GetByIdAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
+        if (customer is null)
+        {
+            return ApplicationResult<CreditEntry>.Failure(
+                ApplicationErrorCodes.CustomerNotFound,
+                "Customer was not found.");
+        }
+
+        if (customer.Status != CustomerStatus.Active)
+        {
+            return ApplicationResult<CreditEntry>.Failure(
+                DomainErrorCodes.CustomerNotActive,
+                "Credit can only be recorded for an active customer.");
+        }
+
+        try
+        {
+            var entry = CreditEntry.Create(orgId, custId, amount, remarks, _clock.UtcNow);
+            await _entries.AddAsync(entry, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<CreditEntry>.Success(entry);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<CreditEntry>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<CreditEntry>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class ReverseCreditEntry
+{
+    private readonly IPOSCustomerRepository _customers;
+    private readonly ICreditEntryRepository _entries;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public ReverseCreditEntry(
+        IPOSCustomerRepository customers,
+        ICreditEntryRepository entries,
+        IPosUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _customers = customers;
+        _entries = entries;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<CreditEntry>> ExecuteAsync(
+        Guid organizationId,
+        Guid customerId,
+        Guid entryId,
+        string reason,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = PosOrganizationId.From(organizationId);
+        var custId = POSCustomerId.From(customerId);
+
+        var customer = await _customers.GetByIdAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
+        if (customer is null)
+        {
+            return ApplicationResult<CreditEntry>.Failure(
+                ApplicationErrorCodes.CustomerNotFound,
+                "Customer was not found.");
+        }
+
+        var entry = await _entries
+            .GetByIdAsync(orgId, custId, CreditEntryId.From(entryId), cancellationToken)
+            .ConfigureAwait(false);
+        if (entry is null)
+        {
+            return ApplicationResult<CreditEntry>.Failure(
+                ApplicationErrorCodes.CreditEntryNotFound,
+                "Credit entry was not found.");
+        }
+
+        try
+        {
+            entry.Reverse(reason, _clock.UtcNow);
+            await _entries.UpdateAsync(entry, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<CreditEntry>.Success(entry);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<CreditEntry>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<CreditEntry>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}

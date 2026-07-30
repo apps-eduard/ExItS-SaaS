@@ -1,0 +1,145 @@
+using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Credit;
+using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Abstractions;
+using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.Credit;
+using ExItS.PinoyBusinessPOS.Domain.Customers;
+
+namespace ExItS.PinoyBusinessPOS.UnitTests.Credit;
+
+public sealed class CreditEntryUseCaseTests
+{
+    private static readonly Guid OrgId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    private static readonly DateTimeOffset Now = DateTimeOffset.Parse("2026-07-30T10:00:00Z");
+
+    [Fact]
+    public async Task Create_requires_active_customer_and_sums_outstanding_from_active_only()
+    {
+        var customers = new InMemoryCustomerRepository();
+        var entries = new InMemoryCreditRepository();
+        var clock = new FixedClock(Now);
+        var customer = POSCustomer.Create(PosOrganizationId.From(OrgId), "Rosa", Now);
+        await customers.AddAsync(customer);
+
+        var create = new CreateCreditEntry(customers, entries, new ImmediateUnitOfWork(), clock);
+        var first = await create.ExecuteAsync(OrgId, customer.Id.Value, 100m, "Goods", default);
+        Assert.True(first.IsSuccess);
+        var second = await create.ExecuteAsync(OrgId, customer.Id.Value, 40m, "More goods", default);
+        Assert.True(second.IsSuccess);
+
+        customer.Deactivate(Now.AddMinutes(1));
+        await customers.UpdateAsync(customer);
+        var inactive = await create.ExecuteAsync(OrgId, customer.Id.Value, 10m, "Should fail", default);
+        Assert.False(inactive.IsSuccess);
+        Assert.Equal(DomainErrorCodes.CustomerNotActive, inactive.ErrorCode);
+
+        var reverse = new ReverseCreditEntry(customers, entries, new ImmediateUnitOfWork(), new FixedClock(Now.AddMinutes(2)));
+        var reversed = await reverse.ExecuteAsync(OrgId, customer.Id.Value, first.Value!.Id.Value, "Mistake", default);
+        Assert.True(reversed.IsSuccess);
+
+        var queries = new CreditEntryQueryService(entries);
+        var summary = await queries.GetSummaryAsync(OrgId, customer.Id.Value);
+        Assert.Equal(40m, summary.OutstandingAmount);
+        Assert.Equal(1, summary.ActiveEntryCount);
+        Assert.Equal(2, summary.TotalEntryCount);
+    }
+
+    private sealed class FixedClock(DateTimeOffset utcNow) : IClock
+    {
+        public DateTimeOffset UtcNow { get; } = utcNow;
+    }
+
+    private sealed class ImmediateUnitOfWork : IPosUnitOfWork
+    {
+        public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
+
+    private sealed class InMemoryCustomerRepository : IPOSCustomerRepository
+    {
+        private readonly List<POSCustomer> _items = [];
+
+        public Task<POSCustomer?> GetByIdAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(c => c.Id == customerId && c.OrganizationId == organizationId));
+
+        public Task<POSCustomer?> FindActiveByNormalizedMobileAsync(PosOrganizationId organizationId, string normalizedMobile, CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(c =>
+                c.OrganizationId == organizationId
+                && c.Status == CustomerStatus.Active
+                && c.NormalizedMobile == normalizedMobile));
+
+        public Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListAsync(
+            PosOrganizationId organizationId,
+            CustomerStatus? status,
+            string? search,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default)
+        {
+            var list = _items.Where(c => c.OrganizationId == organizationId).ToList();
+            return Task.FromResult(((IReadOnlyList<POSCustomer>)list.Skip(skip).Take(take).ToList(), list.Count));
+        }
+
+        public Task AddAsync(POSCustomer customer, CancellationToken cancellationToken = default)
+        {
+            _items.Add(customer);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(POSCustomer customer, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
+
+    private sealed class InMemoryCreditRepository : ICreditEntryRepository
+    {
+        private readonly List<CreditEntry> _items = [];
+
+        public Task<CreditEntry?> GetByIdAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CreditEntryId entryId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(e =>
+                e.Id == entryId && e.CustomerId == customerId && e.OrganizationId == organizationId));
+
+        public Task<(IReadOnlyList<CreditEntry> Items, int TotalCount)> ListByCustomerAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default)
+        {
+            var list = _items
+                .Where(e => e.OrganizationId == organizationId && e.CustomerId == customerId)
+                .OrderByDescending(e => e.CreatedAtUtc)
+                .ToList();
+            return Task.FromResult(((IReadOnlyList<CreditEntry>)list.Skip(skip).Take(take).ToList(), list.Count));
+        }
+
+        public Task<decimal> SumActiveAmountAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items
+                .Where(e => e.OrganizationId == organizationId
+                            && e.CustomerId == customerId
+                            && e.Status == CreditEntryStatus.Active)
+                .Sum(e => e.Amount));
+
+        public Task<int> CountActiveAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.Count(e =>
+                e.OrganizationId == organizationId
+                && e.CustomerId == customerId
+                && e.Status == CreditEntryStatus.Active));
+
+        public Task AddAsync(CreditEntry entry, CancellationToken cancellationToken = default)
+        {
+            _items.Add(entry);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(CreditEntry entry, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
+}

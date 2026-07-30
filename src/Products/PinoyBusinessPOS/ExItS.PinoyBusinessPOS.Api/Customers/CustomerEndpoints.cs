@@ -6,15 +6,10 @@ using ExItS.PinoyBusinessPOS.Domain.Customers;
 
 namespace ExItS.PinoyBusinessPOS.Api.Customers;
 
-public static class PosOrganizationHeaders
-{
-    public const string OrganizationHeaderName = "X-Pos-Organization-Id";
-}
-
 /// <summary>
 /// Organization-scoped POS customer endpoints. Development-stage only: organization scope is
 /// taken from <c>X-Pos-Organization-Id</c>. Cross-organization access returns 404 (fail closed).
-/// Profile and lifecycle only - no credit accounts or balances.
+/// Profile and lifecycle only - credit endpoints live under CreditEndpoints.
 /// </summary>
 internal static class CustomerEndpoints
 {
@@ -31,7 +26,7 @@ internal static class CustomerEndpoints
             POSCustomerQueryService queries,
             CancellationToken ct) =>
         {
-            if (!TryGetOrganizationId(request, out var organizationId, out var problem))
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
             {
                 return problem!;
             }
@@ -62,7 +57,7 @@ internal static class CustomerEndpoints
             CreatePOSCustomer useCase,
             CancellationToken ct) =>
         {
-            if (!TryGetOrganizationId(request, out var organizationId, out var problem))
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
             {
                 return problem!;
             }
@@ -82,7 +77,7 @@ internal static class CustomerEndpoints
             POSCustomerQueryService queries,
             CancellationToken ct) =>
         {
-            if (!TryGetOrganizationId(request, out var organizationId, out var problem))
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
             {
                 return problem!;
             }
@@ -103,7 +98,7 @@ internal static class CustomerEndpoints
             UpdatePOSCustomer useCase,
             CancellationToken ct) =>
         {
-            if (!TryGetOrganizationId(request, out var organizationId, out var problem))
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
             {
                 return problem!;
             }
@@ -121,7 +116,7 @@ internal static class CustomerEndpoints
             DeactivatePOSCustomer useCase,
             CancellationToken ct) =>
         {
-            if (!TryGetOrganizationId(request, out var organizationId, out var problem))
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
             {
                 return problem!;
             }
@@ -136,7 +131,7 @@ internal static class CustomerEndpoints
             ReactivatePOSCustomer useCase,
             CancellationToken ct) =>
         {
-            if (!TryGetOrganizationId(request, out var organizationId, out var problem))
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
             {
                 return problem!;
             }
@@ -146,33 +141,6 @@ internal static class CustomerEndpoints
         });
 
         return app;
-    }
-
-    private static bool TryGetOrganizationId(HttpRequest request, out Guid organizationId, out IResult? problem)
-    {
-        organizationId = default;
-        problem = null;
-
-        if (!request.Headers.TryGetValue(PosOrganizationHeaders.OrganizationHeaderName, out var values)
-            || string.IsNullOrWhiteSpace(values.FirstOrDefault()))
-        {
-            problem = PosApiResults.Problem(
-                ApplicationErrorCodes.OrganizationRequired,
-                $"Header '{PosOrganizationHeaders.OrganizationHeaderName}' is required.",
-                StatusCodes.Status400BadRequest);
-            return false;
-        }
-
-        if (!Guid.TryParse(values.First(), out organizationId) || organizationId == Guid.Empty)
-        {
-            problem = PosApiResults.Problem(
-                DomainErrorCodes.InvalidOrganizationId,
-                "Organization id must be a non-empty GUID.",
-                StatusCodes.Status400BadRequest);
-            return false;
-        }
-
-        return true;
     }
 }
 
