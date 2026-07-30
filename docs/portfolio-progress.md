@@ -11,9 +11,9 @@
 | Portfolio | ExITS SaaS |
 | Existing product | HealthCare SaaS MVP (ignored nested `HealthCare/`) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 10 — Full POS (**Authorized — first WP identified; scope pending**) |
-| Current work package | P10-WP01 — Suppliers (**title confirmed; approved scope not clarified — implementation blocked**) |
-| Overall status | **Phase 9 closed.** First Phase 10 WP is **P10-WP01 — Suppliers**. Detailed approved scope missing; stopped for authorization. See [P10-WP01 scope ambiguity](reports/P10-WP01-scope-ambiguity.md). |
+| Current phase | Phase 10 — Full POS |
+| Current work package | P10-WP01 — Suppliers (**Complete** — Option A) |
+| Overall status | **P10-WP01 complete.** Supplier master data only. Next: **P10-WP02 — Purchasing** (do not begin until authorized). |
 | Latest verified commit | 9c1b86b4488005e81bb9d78b1dafaea66a8e6e4d |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; POS operational roles; Manual GCash unverified; online-only Basic Store limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/refund/accounting/purchasing deferred to Phase 10+ |
 | Last updated | 2026-07-31 |
@@ -33,7 +33,7 @@ P9-WP05 ✓ Pilot and Deployment (complete with risks)
         ↓
 P9-WP06 ✓ Commercial MVP Closeout (complete with risks — Phase 9 closed)
         ↓
-P10-WP01 ○ Suppliers (title confirmed; approved scope pending — do not implement)
+P10-WP01 ✓ Suppliers (Option A — master data only)
         ↓
 P10-WP02 ○ Purchasing (not started)
 ```
@@ -52,7 +52,7 @@ P10-WP02 ○ Purchasing (not started)
 | 7 | Offline Synchronization | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-07-offline-sync.md) |
 | 8 | Basic Store | **Complete with documented risks** | 7 | 7 | 100% | [Open](phases/phase-08-basic-store.md) |
 | 9 | MVP Hardening and Release | **Complete with documented risks** | 6 | 6 | 100% | [Open](phases/phase-09-mvp-hardening.md) |
-| 10 | Full POS | **Authorized — P10-WP01 scope pending** | 0 | 8 | 0% | [Open](phases/phase-10-full-pos.md) |
+| 10 | Full POS | **In Progress** | 1 | 7 | 12% | [Open](phases/phase-10-full-pos.md) |
 
 **MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 
@@ -60,7 +60,7 @@ P10-WP02 ○ Purchasing (not started)
 
 | WP | Status | Key commit |
 |---|---|---|
-| P10-WP01 — Suppliers | Title confirmed; scope pending | — |
+| P10-WP01 — Suppliers | Complete (Option A) | 6f92dd43b2f66709891d82079f9d3fbd0b5c450e |
 | P10-WP02 — Purchasing | Not Started | — |
 | P10-WP03 — Advanced Inventory | Not Started | — |
 | P10-WP04 — Cashier Shifts | Not Started | — |
@@ -82,4 +82,4 @@ P10-WP02 ○ Purchasing (not started)
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Do not begin unauthorized work packages. Do not implement **P10-WP01 — Suppliers** until approved scope is explicitly authorized.
+Follow `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Do not begin **P10-WP02 — Purchasing** until explicitly authorized.

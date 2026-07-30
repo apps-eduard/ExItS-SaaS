@@ -4,9 +4,7 @@
 
 ## Status
 
-**Authorized to begin — first work package identified; approved implementation scope not yet clarified.** Do **not** implement Phase 10 functionality until `P10-WP01` approved scope is explicitly authorized.
-
-Phase 9 accepted closed at `9c1b86b4488005e81bb9d78b1dafaea66a8e6e4d`.
+**In Progress** — P10-WP01 authorized (Option A — supplier master data only). Do **not** begin P10-WP02 until explicitly authorized. HealthCare remains frozen.
 
 ## Objective
 
@@ -31,7 +29,7 @@ PinoyBusinessPOS
 | Number | **P10-WP01** (formally numbered) |
 | Title | **Suppliers** |
 | Exact name | **P10-WP01 — Suppliers** |
-| Implementation status | **Blocked pending approved-scope clarification** |
+| Implementation status | **Complete** (Option A) |
 
 Product/architecture references that name suppliers as POS-owned Full POS capability:
 
@@ -48,48 +46,42 @@ Decision record: [P10-WP01-scope-ambiguity.md](../reports/P10-WP01-scope-ambigui
 
 ### P10-WP01 — Suppliers
 
-Status: **Not Started** — title confirmed; **approved scope not clarified** (implementation forbidden until authorized)
+Status: **In Progress** (authorized — Option A)
+
+Phase marker: `P10-WP01-suppliers`
+
+Ambiguity resolution: Option **A — Supplier master data only** authorized (prior tip `97e17c248ddd1c0af588eafaa41ac7ab6910ec2f`).
 
 #### Approved scope (clarified)
 
-**Not yet authorized.** Do not invent supplier domain behavior, schema, APIs, or UI from assumptions.
+Organization-owned supplier master data for PinoyBusinessPOS. **Reference/master data only.** No purchasing, receiving, payables, costing, stock, or financial transactions.
 
-Pending authorization must define at least:
+Deliver:
 
-- Supplier aggregate fields and lifecycle (create/update/deactivate/archive)
-- Organization isolation and authorization grant codes
-- Relationship to purchasing / POs / receiving (in or out of this WP)
-- Whether AP/payables, contacts-only master data, or both
-- Online vs offline behavior
-- Explicit exclusions (tax, refunds, advanced inventory, shifts, multi-register, Platform coupling, HealthCare)
-- Tests and documentation evidence requirements
+- Supplier aggregate with Active/Inactive lifecycle (no hard delete)
+- Server-generated org-scoped `SUP-<sequence>` SupplierCode (immutable)
+- Organization-scoped duplicate prevention (active normalized name; optional tax/email/mobile likelihood conflicts)
+- Search/filter, detail, create/edit, activate/deactivate
+- Feature grants `store-suppliers-view` / `store-suppliers-manage` with commercial-state matrix
+- Migration `AddPosSuppliers` in schema `pos`
+- Typed API + MAUI screens + tests + documentation
 
-#### Proposed scope options (for authorization — not selected)
+#### Explicit exclusions
 
-| Option | Summary |
-|---|---|
-| A — Supplier master data only | Org-scoped supplier records (identity/contact/status); **no** POs, receiving, or stock effects. Purchasing remains `P10-WP02`. |
-| B — Suppliers + purchase-order stubs | Master data plus non-receiving PO draft/list without inventory posting. |
-| C — Combined suppliers & purchasing slice | Merge early purchasing into WP01 (conflicts with existing `P10-WP02 — Purchasing` split). |
-| D — Defer suppliers; reorder Phase 10 | Re-sequence if product priority differs (requires roadmap rewrite authorization). |
-
-#### Explicit exclusions (provisional until scope approved)
-
-- Purchasing/PO receiving unless option C is authorized
-- Advanced inventory, shifts, returns/refunds, multi-register
-- Tax/VAT, accounting/GL, payroll
-- Production authentication (R-091) and POS operational roles unless separately authorized
-- HealthCare changes; Platform database ownership of suppliers
+- Purchase orders (including drafts), receiving, supplier invoices, AP, payments/balances
+- Stock increases, product cost/history, purchase returns, supplier credits, purchasing reports
+- Attachments, import/export, offline supplier mutations
+- POS operational roles; P10-WP02 or later
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete (after scope authorization).
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (preserve 1001 baseline; suite now 1047 / 0 / 0).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created (`docs/reports/P10-WP01-suppliers.md`).
+- [x] Focused commit created and hash recorded (`6f92dd43b2f66709891d82079f9d3fbd0b5c450e`).
 - [ ] Working tree clean.
-- [ ] Exact next WP recorded (do not begin until authorized).
+- [x] Exact next WP recorded: **P10-WP02 — Purchasing** (do not begin).
 
 ### P10-WP02 — Purchasing
 

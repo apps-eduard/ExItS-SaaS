@@ -44,7 +44,7 @@ ExItS-SaaS/
 
 **Phase 8** is **complete** with documented risks ([P8-WP07 closeout](docs/reports/P8-WP07-basic-store-closeout.md)). Online-only Basic Store MVP is closed.
 
-**Phase 9** is **complete with documented risks** ([P9-WP01](docs/reports/P9-WP01-security-and-privacy-hardening.md)–[P9-WP06](docs/reports/P9-WP06-commercial-mvp-closeout.md)). Commercial MVP release candidate evidenced: controlled internal technical pilot **Ready with documented non-blocking risks**; restricted external pilot and Production **Blocked**. Phase 10 first WP is **P10-WP01 — Suppliers** (title confirmed; approved scope pending — [ambiguity record](docs/reports/P10-WP01-scope-ambiguity.md)). Do not implement until scope is authorized.
+**Phase 9** is **complete with documented risks** ([P9-WP01](docs/reports/P9-WP01-security-and-privacy-hardening.md)–[P9-WP06](docs/reports/P9-WP06-commercial-mvp-closeout.md)). **P10-WP01 — Suppliers** (Option A — master data only) is **complete** ([report](docs/reports/P10-WP01-suppliers.md)). Exact next: **P10-WP02 — Purchasing** (do not begin until authorized).
 
 Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen.
 

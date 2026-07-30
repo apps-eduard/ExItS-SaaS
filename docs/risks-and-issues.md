@@ -137,7 +137,7 @@
 
 ## Phase 9 note (P9-WP06 closeout)
 
-P9-WP06 closed Phase 9 with an honest Commercial MVP readiness board: Development/Testing/CI and controlled internal technical pilot are **Ready with documented non-blocking risks**; restricted external pilot and Production remain **Blocked** (R-091, R-109, R-129, TLS-PROD, MAUI-HTTPS, POS-ROLES). No risks closed merely to improve the result. Phase 10 first WP **P10-WP01 — Suppliers** is titled on the roadmap; approved implementation scope is **not** clarified — stopped for authorization ([P10-WP01-scope-ambiguity.md](reports/P10-WP01-scope-ambiguity.md)).
+P9-WP06 closed Phase 9 with an honest Commercial MVP readiness board: Development/Testing/CI and controlled internal technical pilot are **Ready with documented non-blocking risks**; restricted external pilot and Production remain **Blocked** (R-091, R-109, R-129, TLS-PROD, MAUI-HTTPS, POS-ROLES). No risks closed merely to improve the result. **P10-WP01 — Suppliers** (Option A — master data only) is complete; next authorized package is **P10-WP02 — Purchasing** (not started). Ambiguity resolution: [P10-WP01-scope-ambiguity.md](reports/P10-WP01-scope-ambiguity.md); completion: [P10-WP01-suppliers.md](reports/P10-WP01-suppliers.md).
 
 ## Phase 9 note (P9-WP05)
 
