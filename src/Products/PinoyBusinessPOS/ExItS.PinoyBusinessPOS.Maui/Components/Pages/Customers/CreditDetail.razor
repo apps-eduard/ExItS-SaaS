@@ -6,6 +6,10 @@
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
+@inject ICustomerCreditOfflineSyncService Sync
+@inject ILocalCustomerCreditStore Store
+@inject IConnectivityService Connectivity
+@inject ILocalContextManager LocalContext
 
 @if (!_ready)
 {
@@ -25,8 +29,8 @@ else if (_entry is null)
 else
 {
     var entry = _entry;
-    var canMutateDueDate = Capabilities.IsAllowed(UtangCapability.MutateDueDate);
-    var canReverseCredit = Capabilities.IsAllowed(UtangCapability.ReverseCredit);
+    var canMutateDueDate = Capabilities.IsAllowed(UtangCapability.MutateDueDate) && Sync.CanMutateOffline;
+    var canReverseCredit = Capabilities.IsAllowed(UtangCapability.ReverseCredit) && Sync.CanMutateOffline;
 <Page>
     <PageHeader Title="@L["Credit_DetailTitle"]" Subtitle="@L["Credit_DetailSubtitle"]">
         <Actions>
@@ -39,12 +43,21 @@ else
         <Alert Tone="AlertTone.Success" Title="@L["Customers_SuccessTitle"]" Message="@_banner" />
     }
 
+    @if (_entityState == LocalEntitySyncState.Conflict)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Offline_DueDateConflictTitle"]" Message="@L["Offline_DueDateConflictMessage"]" />
+        <FormActions>
+            <Button Variant="ButtonVariant.Primary" IsLoading="@_refreshing" OnClick="RefreshFromServerAsync">@L["Offline_RefreshFromServer"]</Button>
+            <Button Variant="ButtonVariant.Danger" IsLoading="@_discarding" OnClick="DiscardLocalDueDateAsync">@L["Offline_DiscardLocalRequest"]</Button>
+        </FormActions>
+    }
+
     @if (!string.IsNullOrEmpty(_errorMessage))
     {
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Credit_ErrorTitle"])" Message="@_errorMessage" />
     }
 
-    @if (!canMutateDueDate || !canReverseCredit)
+    @if (!Capabilities.IsAllowed(UtangCapability.MutateDueDate) || !Capabilities.IsAllowed(UtangCapability.ReverseCredit))
     {
         <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
     }
@@ -53,7 +66,13 @@ else
         <Stack Gap="3">
             <div>
                 <span class="pos-muted">@L["Credit_Field_Amount"]</span>
-                <div class="pos-value-md"><MoneyDisplay Amount="@entry.Amount" CurrencyCode="PHP" /></div>
+                <div class="pos-value-md">
+                    <MoneyDisplay Amount="@entry.Amount" CurrencyCode="PHP" />
+                    @if (_entityState is { } state && OfflineCustomerCreditUiHelpers.EntityBadge(state) is { } badge)
+                    {
+                        <Badge Tone="@badge.Tone">@L[badge.LabelKey]</Badge>
+                    }
+                </div>
             </div>
             <div>
                 <span class="pos-muted">@L["Customers_Field_Status"]</span>
@@ -67,6 +86,22 @@ else
                 <span class="pos-muted">@L["DueDate_Current"]</span>
                 <div class="pos-value-md">@(entry.CurrentDueDate is null ? L["DueDate_None"] : FormatDate(entry.CurrentDueDate.Value))</div>
             </div>
+            @if (_hasPendingDueDateChange)
+            {
+                <div>
+                    <span class="pos-muted">@L["Offline_EntityPending"]</span>
+                    <div class="pos-value-md">
+                        @if (_pendingDueDateClear)
+                        {
+                            @L["DueDate_Clear"]
+                        }
+                        else if (_pendingDueDate is not null)
+                        {
+                            @FormatDate(_pendingDueDate.Value)
+                        }
+                    </div>
+                </div>
+            }
             <div>
                 <span class="pos-muted">@L["Credit_Field_Remarks"]</span>
                 <div class="pos-value-md pos-wrap">@entry.Remarks</div>
@@ -78,7 +113,7 @@ else
         </Stack>
     </Section>
 
-    @if (entry.Status == "Active")
+    @if (entry.Status == "Active" && _entityState != LocalEntitySyncState.PendingReversal)
     {
         <Section Title="@L["DueDate_ActionsTitle"]">
             <Stack Gap="3">
@@ -86,53 +121,56 @@ else
                            Value="@_dueDate"
                            ValueChanged="v => _dueDate = v"
                            Hint="@L["DueDate_DateHint"]"
-                           Disabled="@(!canMutateDueDate)" />
+                           Disabled="@(!canMutateDueDate || _acting)" />
                 <TextArea Label="@L["DueDate_Field_Reason"]"
                           Value="@_reason"
                           ValueChanged="v => _reason = v"
                           Required="true"
                           Hint="@L["DueDate_ReasonHint"]"
                           Rows="3"
-                          Disabled="@(!canMutateDueDate)" />
+                          Disabled="@(!canMutateDueDate || _acting)" />
                 <FormActions>
-                    <Button Variant="ButtonVariant.Primary" Disabled="@(!canMutateDueDate)" OnClick="() => _confirmSet = true">@L["DueDate_Set"]</Button>
+                    <Button Variant="ButtonVariant.Primary" Disabled="@(!canMutateDueDate || _acting)" OnClick="() => _confirmSet = true">@L["DueDate_Set"]</Button>
                     @if (entry.CurrentDueDate is not null)
                     {
-                        <Button Variant="ButtonVariant.Secondary" Disabled="@(!canMutateDueDate)" OnClick="() => _confirmClear = true">@L["DueDate_Clear"]</Button>
+                        <Button Variant="ButtonVariant.Secondary" Disabled="@(!canMutateDueDate || _acting)" OnClick="() => _confirmClear = true">@L["DueDate_Clear"]</Button>
                     }
-                    <Button Variant="ButtonVariant.Danger" Disabled="@(!canReverseCredit)" OnClick="() => _confirmReverse = true">@L["Credit_Reverse"]</Button>
+                    <Button Variant="ButtonVariant.Danger" Disabled="@(!canReverseCredit || _acting)" OnClick="() => _confirmReverse = true">@L["Credit_Reverse"]</Button>
                 </FormActions>
             </Stack>
         </Section>
     }
 
-    <Section Title="@L["DueDate_HistoryTitle"]">
-        @if (_historyLoading)
-        {
-            <Spinner /><span>@L["DueDate_HistoryLoading"]</span>
-        }
-        else if (_history.Count == 0)
-        {
-            <EmptyState Title="@L["DueDate_HistoryEmptyTitle"]" Message="@L["DueDate_HistoryEmptyMessage"]" />
-        }
-        else
-        {
-            <Stack Gap="3">
-                @foreach (var change in _history)
-                {
-                    <div class="pos-credit-entry">
-                        <div class="pos-value-md">
-                            @(change.PreviousDueDate is null ? L["DueDate_None"] : FormatDate(change.PreviousDueDate.Value))
-                            →
-                            @(change.NewDueDate is null ? L["DueDate_None"] : FormatDate(change.NewDueDate.Value))
+    @if (!_fromLocal)
+    {
+        <Section Title="@L["DueDate_HistoryTitle"]">
+            @if (_historyLoading)
+            {
+                <Spinner /><span>@L["DueDate_HistoryLoading"]</span>
+            }
+            else if (_history.Count == 0)
+            {
+                <EmptyState Title="@L["DueDate_HistoryEmptyTitle"]" Message="@L["DueDate_HistoryEmptyMessage"]" />
+            }
+            else
+            {
+                <Stack Gap="3">
+                    @foreach (var change in _history)
+                    {
+                        <div class="pos-credit-entry">
+                            <div class="pos-value-md">
+                                @(change.PreviousDueDate is null ? L["DueDate_None"] : FormatDate(change.PreviousDueDate.Value))
+                                →
+                                @(change.NewDueDate is null ? L["DueDate_None"] : FormatDate(change.NewDueDate.Value))
+                            </div>
+                            <div class="pos-wrap">@change.Reason</div>
+                            <div class="pos-muted">@change.ChangedAtUtc.ToLocalTime().ToString("g")</div>
                         </div>
-                        <div class="pos-wrap">@change.Reason</div>
-                        <div class="pos-muted">@change.ChangedAtUtc.ToLocalTime().ToString("g")</div>
-                    </div>
-                }
-            </Stack>
-        }
-    </Section>
+                    }
+                </Stack>
+            }
+        </Section>
+    }
 
     <ConfirmDialog Visible="@_confirmSet"
                    VisibleChanged="v => _confirmSet = v"
@@ -174,13 +212,19 @@ else
     private bool _loading = true;
     private bool _historyLoading;
     private bool _acting;
+    private bool _refreshing;
+    private bool _discarding;
     private bool _confirmSet;
     private bool _confirmClear;
     private bool _confirmReverse;
+    private bool _fromLocal;
+    private bool _hasPendingDueDateChange;
+    private bool _pendingDueDateClear;
     private PosCreditEntryDto? _entry;
-    private PosAgedCreditDto? _aged;
+    private LocalEntitySyncState? _entityState;
     private List<PosCreditDueDateChangeDto> _history = [];
     private DateOnly? _dueDate;
+    private DateOnly? _pendingDueDate;
     private string? _reason;
     private string? _reversalReason;
     private string? _errorTitle;
@@ -206,41 +250,132 @@ else
         _loading = true;
         _errorTitle = null;
         _errorMessage = null;
+        _fromLocal = false;
+        _hasPendingDueDateChange = false;
+        _pendingDueDateClear = false;
+        _pendingDueDate = null;
         StateHasChanged();
 
-        var aged = await Customers.ListAgedCreditsAsync(CustomerId, filter: "all", page: 1, pageSize: 200);
-        if (aged.IsSuccess && aged.Data is not null)
+        var online = await Connectivity.IsConnectedAsync();
+        if (online)
         {
-            _aged = aged.Data.Items.FirstOrDefault(i => i.CreditEntryId == CreditEntryId);
-        }
+            var aged = await Customers.ListAgedCreditsAsync(CustomerId, filter: "all", page: 1, pageSize: 200);
+            if (aged.IsSuccess && aged.Data is not null)
+            {
+                var item = aged.Data.Items.FirstOrDefault(i => i.CreditEntryId == CreditEntryId);
+                if (item is not null)
+                {
+                    ApplyAgedCredit(item);
+                    if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
+                    {
+                        await MergeLocalStateAsync();
+                    }
 
-        if (_aged is not null)
+                    _entityState ??= LocalEntitySyncState.ServerConfirmed;
+                }
+                else if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
+                {
+                    await LoadFromLocalAsync();
+                }
+                else
+                {
+                    _entry = null;
+                    _errorTitle = L["Credit_NotFoundTitle"];
+                    _errorMessage = L["Credit_NotFoundMessage"];
+                }
+            }
+            else if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
+            {
+                await LoadFromLocalAsync();
+            }
+            else
+            {
+                _entry = null;
+                var described = ApiLocalizer.Describe(aged.Status, aged.Error);
+                _errorTitle = described.Title;
+                _errorMessage = aged.Error?.Detail ?? described.Message;
+            }
+
+            if (!_fromLocal && _entry is not null)
+            {
+                await LoadHistoryAsync();
+            }
+        }
+        else if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
         {
-            _entry = new PosCreditEntryDto(
-                _aged.CreditEntryId,
-                _aged.OrganizationId,
-                _aged.CustomerId,
-                _aged.Amount,
-                _aged.Remarks,
-                _aged.Status,
-                _aged.CreatedAtUtc,
-                null,
-                null,
-                _aged.CurrentDueDate);
-            _dueStatus = _aged.DueStatus;
-            _dueStatusLabel = DueStatusLabel(_aged.DueStatus);
-            _dueDate = _aged.CurrentDueDate;
+            await LoadFromLocalAsync();
         }
         else
         {
             _entry = null;
-            var described = ApiLocalizer.Describe(aged.Status, aged.Error);
-            _errorTitle = described.Title;
-            _errorMessage = aged.Error?.Detail ?? described.Message;
+            _errorTitle = L["SyncStatus_Offline"];
+            _errorMessage = L["Api_Offline"];
         }
 
-        await LoadHistoryAsync();
         _loading = false;
+    }
+
+    private async Task LoadFromLocalAsync()
+    {
+        var local = await Store.GetCreditAsync(CreditEntryId);
+        if (local is null || local.CustomerId != CustomerId)
+        {
+            _entry = null;
+            _errorTitle = L["Credit_NotFoundTitle"];
+            _errorMessage = L["Credit_NotFoundMessage"];
+            return;
+        }
+
+        _entry = OfflineCustomerCreditUiHelpers.ToCreditEntry(local);
+        _entityState = local.EntityState;
+        _dueDate = local.PendingDueDate ?? local.CurrentDueDate;
+        _dueStatus = ResolveDueStatus(local);
+        _dueStatusLabel = DueStatusLabel(_dueStatus);
+        ApplyPendingDueDate(local);
+        _fromLocal = true;
+    }
+
+    private async Task MergeLocalStateAsync()
+    {
+        var local = await Store.GetCreditAsync(CreditEntryId);
+        if (local is null)
+        {
+            _entityState = LocalEntitySyncState.ServerConfirmed;
+            return;
+        }
+
+        _entityState = local.EntityState;
+        ApplyPendingDueDate(local);
+        if (local.EntityState is LocalEntitySyncState.PendingUpdate or LocalEntitySyncState.Conflict)
+        {
+            _dueDate = local.PendingDueDate ?? _entry?.CurrentDueDate;
+        }
+    }
+
+    private void ApplyPendingDueDate(LocalCreditProjection local)
+    {
+        _hasPendingDueDateChange = local.EntityState == LocalEntitySyncState.PendingUpdate
+            && (local.PendingDueDate is not null || local.PendingDueDateClear);
+        _pendingDueDateClear = local.PendingDueDateClear;
+        _pendingDueDate = local.PendingDueDate;
+    }
+
+    private void ApplyAgedCredit(PosAgedCreditDto aged)
+    {
+        _entry = new PosCreditEntryDto(
+            aged.CreditEntryId,
+            aged.OrganizationId,
+            aged.CustomerId,
+            aged.Amount,
+            aged.Remarks,
+            aged.Status,
+            aged.CreatedAtUtc,
+            null,
+            null,
+            aged.CurrentDueDate);
+        _dueStatus = aged.DueStatus;
+        _dueStatusLabel = DueStatusLabel(aged.DueStatus);
+        _dueDate = aged.CurrentDueDate;
     }
 
     private async Task LoadHistoryAsync()
@@ -278,29 +413,7 @@ else
             return;
         }
 
-        _acting = true;
-        var result = await Customers.SetCreditDueDateAsync(
-            CreditEntryId,
-            new SetPosCreditDueDateRequest(_dueDate, _reason!));
-        _acting = false;
-        _confirmSet = false;
-
-        if (result.IsSuccess && result.Data is not null)
-        {
-            _banner = L["DueDate_SavedSuccess"];
-            _reason = null;
-            await LoadAsync();
-        }
-        else if (result.Status == ApiCallStatus.Conflict)
-        {
-            _errorTitle = L["DueDate_ConflictTitle"];
-            _errorMessage = result.Error?.Detail ?? L["DueDate_ConflictMessage"];
-        }
-        else
-        {
-            _errorTitle = L["DueDate_ErrorTitle"];
-            _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
-        }
+        await ApplyDueDateChangeAsync(_dueDate);
     }
 
     private async Task ClearDueDateAsync()
@@ -313,31 +426,130 @@ else
             return;
         }
 
+        await ApplyDueDateChangeAsync(null);
+    }
+
+    private async Task ApplyDueDateChangeAsync(DateOnly? dueDate)
+    {
         _acting = true;
-        var result = await Customers.ClearCreditDueDateAsync(CreditEntryId, _reason!);
+        var result = await Sync.SetCreditDueDateAsync(CreditEntryId, dueDate, _reason!);
         _acting = false;
+        _confirmSet = false;
         _confirmClear = false;
 
-        if (result.IsSuccess)
+        if (result.Succeeded && result.Credit is not null)
         {
-            _banner = L["DueDate_ClearedSuccess"];
+            _banner = result.PendingLocal ? L["Offline_SavedPendingSync"] : (dueDate is null ? L["DueDate_ClearedSuccess"] : L["DueDate_SavedSuccess"]);
             _reason = null;
             await LoadAsync();
+            return;
         }
-        else if (result.Status == ApiCallStatus.Conflict)
+
+        if (string.Equals(result.ErrorCode, ApplicationErrorCodes.ConcurrencyConflict, StringComparison.Ordinal))
         {
-            _errorTitle = L["DueDate_ConflictTitle"];
-            _errorMessage = result.Error?.Detail ?? L["DueDate_ConflictMessage"];
+            _errorTitle = L["Offline_DueDateConflictTitle"];
+            _errorMessage = result.ErrorMessage ?? L["Offline_DueDateConflictMessage"];
+            await LoadAsync();
+        }
+        else if (string.Equals(result.ErrorCode, "offline_mutations_unavailable", StringComparison.Ordinal))
+        {
+            _errorTitle = L["SyncStatus_Offline"];
+            _errorMessage = L["Offline_MutationsUnavailable"];
         }
         else
         {
             _errorTitle = L["DueDate_ErrorTitle"];
-            _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+            _errorMessage = result.ErrorMessage ?? L["DueDate_ReasonRequired"];
         }
     }
 
-    private static string FormatDate(DateOnly date) =>
-        date.ToString("d");
+    private async Task ReverseCreditAsync()
+    {
+        if (!Capabilities.IsAllowed(UtangCapability.ReverseCredit) || string.IsNullOrWhiteSpace(_reversalReason))
+        {
+            return;
+        }
+
+        _acting = true;
+        var result = await Sync.ReverseCreditAsync(CustomerId, CreditEntryId, _reversalReason!);
+        _acting = false;
+        _confirmReverse = false;
+
+        if (result.Succeeded)
+        {
+            _banner = result.PendingLocal ? L["Offline_SavedPendingSync"] : L["Credit_ReversedSuccess"];
+            _reversalReason = null;
+            await LoadAsync();
+        }
+        else if (string.Equals(result.ErrorCode, "offline_mutations_unavailable", StringComparison.Ordinal))
+        {
+            _errorTitle = L["SyncStatus_Offline"];
+            _errorMessage = L["Offline_MutationsUnavailable"];
+        }
+        else
+        {
+            _errorTitle = L["Credit_ErrorTitle"];
+            _errorMessage = result.ErrorMessage ?? L["Credit_ReverseMessage"];
+        }
+    }
+
+    private async Task RefreshFromServerAsync()
+    {
+        _refreshing = true;
+        try
+        {
+            await Sync.RefreshCustomerFinancialsFromServerAsync(CustomerId);
+            _banner = L["Offline_RefreshFromServer"];
+            await LoadAsync();
+        }
+        finally
+        {
+            _refreshing = false;
+        }
+    }
+
+    private async Task DiscardLocalDueDateAsync()
+    {
+        _discarding = true;
+        try
+        {
+            await Store.DiscardLocalPendingCreditDueDateAsync(CreditEntryId);
+            _banner = L["Offline_DiscardLocalRequest"];
+            await LoadAsync();
+        }
+        finally
+        {
+            _discarding = false;
+        }
+    }
+
+    private static string FormatDate(DateOnly date) => date.ToString("d");
+
+    private static string ResolveDueStatus(LocalCreditProjection credit)
+    {
+        if (credit.Status == "Reversed")
+        {
+            return "Reversed";
+        }
+
+        if (credit.CurrentDueDate is null)
+        {
+            return "NoDueDate";
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        if (credit.CurrentDueDate < today)
+        {
+            return "Overdue";
+        }
+
+        if (credit.CurrentDueDate == today)
+        {
+            return "DueToday";
+        }
+
+        return credit.CurrentDueDate <= today.AddDays(7) ? "DueSoon" : "Upcoming";
+    }
 
     private string DueStatusLabel(string status) => status switch
     {
@@ -359,34 +571,6 @@ else
         "Reversed" => BadgeTone.Neutral,
         _ => BadgeTone.Neutral
     };
-
-    private async Task ReverseCreditAsync()
-    {
-        if (!Capabilities.IsAllowed(UtangCapability.ReverseCredit) || string.IsNullOrWhiteSpace(_reversalReason))
-        {
-            return;
-        }
-
-        _acting = true;
-        var result = await Customers.ReverseCreditEntryAsync(
-            CustomerId,
-            CreditEntryId,
-            new ReversePosCreditEntryRequest(_reversalReason!));
-        _acting = false;
-        _confirmReverse = false;
-
-        if (result.IsSuccess)
-        {
-            _banner = L["Credit_ReversedSuccess"];
-            _reversalReason = null;
-            await LoadAsync();
-        }
-        else
-        {
-            _errorTitle = L["Credit_ErrorTitle"];
-            _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
-        }
-    }
 
     private void GoBack() => Nav.NavigateTo($"/customers/{CustomerId:D}");
 }

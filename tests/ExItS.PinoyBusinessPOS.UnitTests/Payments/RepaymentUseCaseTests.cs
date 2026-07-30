@@ -185,6 +185,26 @@ public sealed class RepaymentUseCaseTests
             return Task.FromResult(((IReadOnlyList<Repayment>)list.Skip(skip).Take(take).ToList(), list.Count));
         }
 
+        public Task<(IReadOnlyList<Repayment> Items, int TotalCount)> ListCreatedSinceAsync(
+            PosOrganizationId organizationId,
+            DateTimeOffset? sinceUtc,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default)
+        {
+            var list = _items.Where(e => e.OrganizationId == organizationId).AsEnumerable();
+            if (sinceUtc is not null)
+            {
+                var since = sinceUtc.Value.ToUniversalTime();
+                list = list.Where(e =>
+                    e.RecordedAtUtc > since
+                    || (e.ReversedAtUtc is not null && e.ReversedAtUtc > since));
+            }
+
+            var ordered = list.OrderBy(e => e.RecordedAtUtc).ThenBy(e => e.Id).ToList();
+            return Task.FromResult(((IReadOnlyList<Repayment>)ordered.Skip(skip).Take(take).ToList(), ordered.Count));
+        }
+
         public Task<decimal> SumActiveAmountAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
             Task.FromResult(_items.Where(e => e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == RepaymentStatus.Active).Sum(e => e.Amount));
 

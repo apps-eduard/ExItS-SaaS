@@ -1,7 +1,9 @@
 using ExItS.PinoyBusinessPOS.Api.Common;
+using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
+using ExItS.PinoyBusinessPOS.Application.Offline;
 
 namespace ExItS.PinoyBusinessPOS.Api.Credit;
 
@@ -21,6 +23,7 @@ internal static class DueDateEndpoints
             Guid creditEntryId,
             SetCreditDueDateRequest body,
             SetCreditDueDate useCase,
+            IPosIdempotencyService idempotency,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -39,18 +42,35 @@ internal static class DueDateEndpoints
                 return actorProblem!;
             }
 
-            var result = await useCase
-                .ExecuteAsync(organizationId, creditEntryId, body.DueDate, body.Reason, actorId, ct)
-                .ConfigureAwait(false);
+            var operationType = body.DueDate is null
+                ? OfflineOperationTypes.CreditDueDateClear
+                : OfflineOperationTypes.CreditDueDateSet;
 
-            return PosApiResults.FromResult(result, e => Results.Ok(CreditEntryQueryService.Map(e)));
+            return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                    request,
+                    organizationId,
+                    operationType,
+                    idempotency,
+                    ct2 => useCase.ExecuteAsync(
+                        organizationId,
+                        creditEntryId,
+                        body.DueDate,
+                        body.Reason,
+                        actorId,
+                        body.ExpectedCurrentDueDate,
+                        body.CheckExpectedDueDate,
+                        ct2),
+                    CreditEntryQueryService.Map,
+                    Results.Ok,
+                    ct)
+                .ConfigureAwait(false);
         });
 
         creditGroup.MapDelete("/due-date", async (
             HttpRequest request,
             Guid creditEntryId,
-            string? reason,
             SetCreditDueDate useCase,
+            IPosIdempotencyService idempotency,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -69,11 +89,36 @@ internal static class DueDateEndpoints
                 return actorProblem!;
             }
 
-            var result = await useCase
-                .ExecuteAsync(organizationId, creditEntryId, null, reason ?? string.Empty, actorId, ct)
-                .ConfigureAwait(false);
+            var reason = request.Query["reason"].FirstOrDefault() ?? string.Empty;
+            DateOnly? expectedCurrentDueDate = null;
+            if (DateOnly.TryParse(request.Query["expectedCurrentDueDate"].FirstOrDefault(), out var parsedExpected))
+            {
+                expectedCurrentDueDate = parsedExpected;
+            }
 
-            return PosApiResults.FromResult(result, e => Results.Ok(CreditEntryQueryService.Map(e)));
+            var checkExpectedDueDate = string.Equals(
+                request.Query["checkExpectedDueDate"].FirstOrDefault(),
+                "true",
+                StringComparison.OrdinalIgnoreCase);
+
+            return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                    request,
+                    organizationId,
+                    OfflineOperationTypes.CreditDueDateClear,
+                    idempotency,
+                    ct2 => useCase.ExecuteAsync(
+                        organizationId,
+                        creditEntryId,
+                        null,
+                        reason,
+                        actorId,
+                        expectedCurrentDueDate,
+                        checkExpectedDueDate,
+                        ct2),
+                    CreditEntryQueryService.Map,
+                    Results.Ok,
+                    ct)
+                .ConfigureAwait(false);
         });
 
         creditGroup.MapGet("/due-date-history", async (
@@ -208,4 +253,8 @@ internal static class DueDateEndpoints
     }
 }
 
-public sealed record SetCreditDueDateRequest(DateOnly? DueDate, string Reason);
+public sealed record SetCreditDueDateRequest(
+    DateOnly? DueDate,
+    string Reason,
+    DateOnly? ExpectedCurrentDueDate = null,
+    bool CheckExpectedDueDate = false);

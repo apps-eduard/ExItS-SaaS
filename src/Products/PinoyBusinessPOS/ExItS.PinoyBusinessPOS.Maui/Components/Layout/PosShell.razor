@@ -8,6 +8,7 @@
 @inject IPosSyncStatusService SyncStatus
 @inject IOfflineQueueProcessor QueueProcessor
 @inject ICustomerCreditOfflineSyncService CustomerCreditSync
+@inject IOfflineOperationQueue OfflineQueue
 @inject IConnectivityService Connectivity
 @inject IAppInfoService AppInfo
 @inject NavigationManager Nav
@@ -45,9 +46,17 @@
                 <strong>@SyncTitle</strong>
             </div>
             <p class="pos-muted">@SyncDetail</p>
+            @if (_recoveryRequired)
+            {
+                <p class="pos-sync-panel__recovery"><strong>@L["Offline_RecoveryRequired"]</strong></p>
+            }
             @if (SyncKind is PosSyncStatusKind.PendingSync or PosSyncStatusKind.SyncFailed or PosSyncStatusKind.Offline)
             {
                 <button type="button" class="pos-sync-panel__close" disabled="@_retryBusy" @onclick="RetrySyncAsync">@L["SyncStatus_RetryNow"]</button>
+            }
+            @if (_canRefreshFromServer)
+            {
+                <button type="button" class="pos-sync-panel__close" disabled="@_refreshBusy" @onclick="RefreshFromServerAsync">@L["Offline_RefreshFromServer"]</button>
             }
             <button type="button" class="pos-sync-panel__close" @onclick="CloseSyncPanel">@L["Common_Close"]</button>
         </div>
@@ -85,6 +94,9 @@
     private int _cultureEpoch;
     private bool _syncPanelOpen;
     private bool _retryBusy;
+    private bool _refreshBusy;
+    private bool _recoveryRequired;
+    private bool _canRefreshFromServer;
 
     protected override void OnInitialized()
     {
@@ -108,7 +120,32 @@
         _cultureEpoch = CultureCtl.Epoch;
         await Status.InitializeAsync();
         await SyncStatus.InitializeAsync();
+        await RefreshQueueIndicatorsAsync();
         StateHasChanged();
+    }
+
+    private async Task RefreshQueueIndicatorsAsync()
+    {
+        try
+        {
+            var counts = await OfflineQueue.GetCountsAsync();
+            _recoveryRequired = counts.Conflict > 0 || counts.PermanentFailure > 0 || counts.BlockedByAccess > 0;
+            _canRefreshFromServer = await Connectivity.IsConnectedAsync();
+        }
+        catch
+        {
+            _recoveryRequired = false;
+            _canRefreshFromServer = false;
+        }
+    }
+
+    private void ToggleSyncPanel()
+    {
+        _syncPanelOpen = !_syncPanelOpen;
+        if (_syncPanelOpen)
+        {
+            _ = RefreshQueueIndicatorsAsync();
+        }
     }
 
     private bool IsDevelopment => string.Equals(AppInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase);
@@ -188,9 +225,31 @@
         return string.Format(L["SyncStatus_LastSyncedAt"].Value, at.Value.ToLocalTime().ToString("g"));
     }
 
-    private void ToggleSyncPanel() => _syncPanelOpen = !_syncPanelOpen;
-
     private void CloseSyncPanel() => _syncPanelOpen = false;
+
+    private async Task RefreshFromServerAsync()
+    {
+        if (_refreshBusy)
+        {
+            return;
+        }
+
+        _refreshBusy = true;
+        try
+        {
+            if (await Connectivity.IsConnectedAsync())
+            {
+                await CustomerCreditSync.ReconcileOnReconnectAsync();
+            }
+
+            SyncStatus.Refresh();
+            await RefreshQueueIndicatorsAsync();
+        }
+        finally
+        {
+            _refreshBusy = false;
+        }
+    }
 
     private async Task RetrySyncAsync()
     {
@@ -212,6 +271,7 @@
             }
 
             SyncStatus.Refresh();
+            await RefreshQueueIndicatorsAsync();
         }
         finally
         {
@@ -224,6 +284,7 @@
     private async Task OnChangedAsync()
     {
         _cultureEpoch = CultureCtl.Epoch;
+        await RefreshQueueIndicatorsAsync();
         await InvokeAsync(StateHasChanged);
     }
 

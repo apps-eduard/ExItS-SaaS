@@ -95,10 +95,13 @@ public sealed class LocalEncryptedCustomerCreditStore(
                 INSERT INTO local_credit_projection (
                     credit_entry_id, customer_id, organization_id, entity_state,
                     pending_operation_id, depends_on_operation_id, created_utc,
-                    ciphertext, nonce, tag, safe_failure_code)
+                    ciphertext, nonce, tag, safe_failure_code,
+                    current_due_date, pending_due_date, pending_due_date_reason,
+                    pending_due_date_clear, conflict_server_json)
                 VALUES (
                     $id, $customer, $org, $state, NULL, NULL, $created,
-                    $ciphertext, $nonce, $tag, NULL)
+                    $ciphertext, $nonce, $tag, NULL,
+                    $currentDue, NULL, NULL, 0, NULL)
                 ON CONFLICT(credit_entry_id) DO UPDATE SET
                     customer_id = excluded.customer_id,
                     organization_id = excluded.organization_id,
@@ -108,9 +111,59 @@ public sealed class LocalEncryptedCustomerCreditStore(
                     ciphertext = excluded.ciphertext,
                     nonce = excluded.nonce,
                     tag = excluded.tag,
-                    safe_failure_code = NULL;
+                    safe_failure_code = NULL,
+                    current_due_date = excluded.current_due_date,
+                    pending_due_date = NULL,
+                    pending_due_date_reason = NULL,
+                    pending_due_date_clear = 0,
+                    conflict_server_json = NULL;
                 """;
             BindCreditProjection(cmd, credit, encrypted, now, dependsOnOperationId: null);
+            BindCreditDueDateColumns(cmd, credit.CurrentDueDate, null, null, false, null);
+            await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    public async Task UpsertServerRepaymentAsync(LocalRepaymentProjection repayment, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(repayment);
+        var active = RequireActiveContext();
+        await EnsureEncryptionKeyAsync(ct).ConfigureAwait(false);
+        var encrypted = await EncryptRepaymentFieldsAsync(active, repayment.RepaymentId, repayment, ct).ConfigureAwait(false);
+        var recordedUtc = FormatUtc(repayment.RecordedAtUtc);
+
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await using var connection = await OpenConnectionAsync(active, ct).ConfigureAwait(false);
+            await using var cmd = connection.CreateCommand();
+            cmd.CommandText =
+                """
+                INSERT INTO local_repayment_projection (
+                    repayment_id, customer_id, organization_id, entity_state,
+                    pending_operation_id, depends_on_operation_id, recorded_utc,
+                    ciphertext, nonce, tag, safe_failure_code, pending_reversal_reason)
+                VALUES (
+                    $id, $customer, $org, $state, NULL, NULL, $recorded,
+                    $ciphertext, $nonce, $tag, NULL, NULL)
+                ON CONFLICT(repayment_id) DO UPDATE SET
+                    customer_id = excluded.customer_id,
+                    organization_id = excluded.organization_id,
+                    entity_state = excluded.entity_state,
+                    pending_operation_id = NULL,
+                    depends_on_operation_id = NULL,
+                    recorded_utc = excluded.recorded_utc,
+                    ciphertext = excluded.ciphertext,
+                    nonce = excluded.nonce,
+                    tag = excluded.tag,
+                    safe_failure_code = NULL,
+                    pending_reversal_reason = NULL;
+                """;
+            BindRepaymentProjection(cmd, repayment, encrypted, recordedUtc, dependsOnOperationId: null);
             await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
         }
         finally
@@ -312,6 +365,246 @@ public sealed class LocalEncryptedCustomerCreditStore(
             ct).ConfigureAwait(false);
     }
 
+    public async Task PersistRepaymentCreateAndEnqueueAsync(LocalRepaymentCreateCommand command, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        ValidatePositiveAmount(command.Amount);
+        var active = RequireActiveContext();
+        ValidateSessionOrg(active);
+        await EnsureEncryptionKeyAsync(ct).ConfigureAwait(false);
+
+        var balance = await GetBalanceAsync(command.CustomerId, ct).ConfigureAwait(false);
+        var available = balance.ConfirmedOutstanding + balance.PendingCredit - balance.PendingRepayment;
+        if (command.Amount > available)
+        {
+            throw new InvalidOperationException("local_overpayment");
+        }
+
+        var now = _clock.GetUtcNow();
+        var repayment = new LocalRepaymentProjection(
+            command.RepaymentId,
+            command.CustomerId,
+            active.Identity.OrganizationId,
+            command.Amount,
+            command.Remarks,
+            "Active",
+            now,
+            LocalEntitySyncState.PendingCreate,
+            command.OperationId,
+            ResolveRepaymentDependency(command),
+            null);
+
+        var encrypted = await EncryptRepaymentFieldsAsync(active, command.RepaymentId, repayment, ct).ConfigureAwait(false);
+        var payloadJson = JsonSerializer.SerializeToUtf8Bytes(new RepaymentCreatePayload(
+            command.RepaymentId,
+            command.CustomerId,
+            FormatDecimal(command.Amount),
+            command.Remarks), JsonOptions);
+
+        var dependsOn = ResolveRepaymentDependency(command);
+        await PersistWithQueueAsync(
+            active,
+            command.OperationId,
+            OfflineOperationTypes.RepaymentCreate,
+            1,
+            command.IdempotencyKey,
+            payloadJson,
+            entityId: command.RepaymentId,
+            dependsOn,
+            concurrencyToken: null,
+            async (connection, tx, deviceId, payloadHash, queueEncrypted, queueNow) =>
+            {
+                await InsertRepaymentProjectionAsync(
+                    connection,
+                    tx,
+                    repayment,
+                    encrypted,
+                    FormatUtc(now),
+                    queueNow,
+                    ct).ConfigureAwait(false);
+                await AddPendingRepaymentBalanceAsync(connection, tx, active, command.CustomerId, command.Amount, ct)
+                    .ConfigureAwait(false);
+            },
+            ct).ConfigureAwait(false);
+    }
+
+    public async Task PersistCreditReverseAndEnqueueAsync(LocalCreditReverseCommand command, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        var active = RequireActiveContext();
+        ValidateSessionOrg(active);
+        await EnsureEncryptionKeyAsync(ct).ConfigureAwait(false);
+
+        var credit = await GetCreditAsync(command.CreditEntryId, ct).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("credit_not_found");
+        if (credit.EntityState != LocalEntitySyncState.ServerConfirmed)
+        {
+            throw new InvalidOperationException("credit_not_reversible");
+        }
+
+        var payloadJson = JsonSerializer.SerializeToUtf8Bytes(new CreditReversePayload(
+            command.CreditEntryId,
+            command.CustomerId,
+            command.Reason), JsonOptions);
+
+        await PersistWithQueueAsync(
+            active,
+            command.OperationId,
+            OfflineOperationTypes.CreditReverse,
+            1,
+            command.IdempotencyKey,
+            payloadJson,
+            entityId: command.CreditEntryId,
+            dependsOn: null,
+            concurrencyToken: null,
+            async (connection, tx, _, _, _, queueNow) =>
+            {
+                await using var cmd = connection.CreateCommand();
+                cmd.Transaction = tx;
+                cmd.CommandText =
+                    """
+                    UPDATE local_credit_projection
+                    SET entity_state = $state,
+                        pending_operation_id = $pending
+                    WHERE credit_entry_id = $id;
+                    """;
+                cmd.Parameters.AddWithValue("$state", LocalEntitySyncState.PendingReversal.ToString());
+                cmd.Parameters.AddWithValue("$pending", command.OperationId.ToString("D"));
+                cmd.Parameters.AddWithValue("$id", command.CreditEntryId.ToString("D"));
+                await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            },
+            ct).ConfigureAwait(false);
+    }
+
+    public async Task PersistRepaymentReverseAndEnqueueAsync(LocalRepaymentReverseCommand command, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        var active = RequireActiveContext();
+        ValidateSessionOrg(active);
+        await EnsureEncryptionKeyAsync(ct).ConfigureAwait(false);
+
+        var repayment = await GetRepaymentAsync(command.RepaymentId, ct).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("repayment_not_found");
+        if (repayment.EntityState != LocalEntitySyncState.ServerConfirmed)
+        {
+            throw new InvalidOperationException("repayment_not_reversible");
+        }
+
+        var payloadJson = JsonSerializer.SerializeToUtf8Bytes(new RepaymentReversePayload(
+            command.RepaymentId,
+            command.CustomerId,
+            command.Reason), JsonOptions);
+
+        await PersistWithQueueAsync(
+            active,
+            command.OperationId,
+            OfflineOperationTypes.RepaymentReverse,
+            1,
+            command.IdempotencyKey,
+            payloadJson,
+            entityId: command.RepaymentId,
+            dependsOn: null,
+            concurrencyToken: null,
+            async (connection, tx, _, _, _, _) =>
+            {
+                await using var cmd = connection.CreateCommand();
+                cmd.Transaction = tx;
+                cmd.CommandText =
+                    """
+                    UPDATE local_repayment_projection
+                    SET entity_state = $state,
+                        pending_operation_id = $pending,
+                        pending_reversal_reason = $reason
+                    WHERE repayment_id = $id;
+                    """;
+                cmd.Parameters.AddWithValue("$state", LocalEntitySyncState.PendingReversal.ToString());
+                cmd.Parameters.AddWithValue("$pending", command.OperationId.ToString("D"));
+                cmd.Parameters.AddWithValue("$reason", command.Reason);
+                cmd.Parameters.AddWithValue("$id", command.RepaymentId.ToString("D"));
+                await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            },
+            ct).ConfigureAwait(false);
+    }
+
+    public async Task PersistCreditDueDateAndEnqueueAsync(LocalCreditDueDateCommand command, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        var active = RequireActiveContext();
+        ValidateSessionOrg(active);
+        await EnsureEncryptionKeyAsync(ct).ConfigureAwait(false);
+
+        var credit = await GetCreditAsync(command.CreditEntryId, ct).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("credit_not_found");
+        if (credit.EntityState != LocalEntitySyncState.ServerConfirmed)
+        {
+            throw new InvalidOperationException("credit_not_due_date_eligible");
+        }
+
+        DateTimeOffset? expectedUpdatedAt = null;
+        if (command.ExpectedConcurrencyToken is not null
+            && DateTimeOffset.TryParse(
+                command.ExpectedConcurrencyToken,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.RoundtripKind,
+                out var parsed))
+        {
+            expectedUpdatedAt = parsed;
+        }
+        else
+        {
+            expectedUpdatedAt = credit.CreatedAtUtc;
+        }
+
+        var operationType = command.IsClear
+            ? OfflineOperationTypes.CreditDueDateClear
+            : OfflineOperationTypes.CreditDueDateSet;
+        var payloadJson = JsonSerializer.SerializeToUtf8Bytes(new CreditDueDatePayload(
+            command.CreditEntryId,
+            command.CustomerId,
+            command.IsClear ? null : command.NewDueDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            command.Reason,
+            command.IsClear,
+            expectedUpdatedAt.Value.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)), JsonOptions);
+
+        await PersistWithQueueAsync(
+            active,
+            command.OperationId,
+            operationType,
+            1,
+            command.IdempotencyKey,
+            payloadJson,
+            entityId: command.CreditEntryId,
+            dependsOn: null,
+            concurrencyToken: command.ExpectedConcurrencyToken,
+            async (connection, tx, _, _, _, _) =>
+            {
+                await using var cmd = connection.CreateCommand();
+                cmd.Transaction = tx;
+                cmd.CommandText =
+                    """
+                    UPDATE local_credit_projection
+                    SET entity_state = $state,
+                        pending_operation_id = $pending,
+                        pending_due_date = $pendingDue,
+                        pending_due_date_reason = $reason,
+                        pending_due_date_clear = $isClear
+                    WHERE credit_entry_id = $id;
+                    """;
+                cmd.Parameters.AddWithValue("$state", LocalEntitySyncState.PendingUpdate.ToString());
+                cmd.Parameters.AddWithValue("$pending", command.OperationId.ToString("D"));
+                cmd.Parameters.AddWithValue(
+                    "$pendingDue",
+                    command.IsClear || command.NewDueDate is null
+                        ? DBNull.Value
+                        : command.NewDueDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+                cmd.Parameters.AddWithValue("$reason", command.Reason);
+                cmd.Parameters.AddWithValue("$isClear", command.IsClear ? 1 : 0);
+                cmd.Parameters.AddWithValue("$id", command.CreditEntryId.ToString("D"));
+                await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            },
+            ct).ConfigureAwait(false);
+    }
+
     public async Task MarkCustomerStateAsync(
         Guid customerId,
         LocalEntitySyncState state,
@@ -409,6 +702,63 @@ public sealed class LocalEncryptedCustomerCreditStore(
         }
     }
 
+    public async Task MarkRepaymentStateAsync(
+        Guid repaymentId,
+        LocalEntitySyncState state,
+        string? safeFailureCode = null,
+        CancellationToken ct = default)
+    {
+        var active = RequireActiveContext();
+        await EnsureEncryptionKeyAsync(ct).ConfigureAwait(false);
+
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await using var connection = await OpenConnectionAsync(active, ct).ConfigureAwait(false);
+            await using var tx = (SqliteTransaction)await connection.BeginTransactionAsync(ct).ConfigureAwait(false);
+
+            LocalRepaymentProjection? before = null;
+            if (state == LocalEntitySyncState.Rejected)
+            {
+                before = await TryReadRepaymentProjectionAsync(connection, tx, active, repaymentId, ct)
+                    .ConfigureAwait(false);
+            }
+
+            await using var cmd = connection.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText =
+                """
+                UPDATE local_repayment_projection
+                SET entity_state = $state,
+                    pending_operation_id = CASE WHEN $clearPending = 1 THEN NULL ELSE pending_operation_id END,
+                    safe_failure_code = $failure,
+                    pending_reversal_reason = CASE WHEN $clearPending = 1 THEN NULL ELSE pending_reversal_reason END
+                WHERE repayment_id = $id;
+                """;
+            cmd.Parameters.AddWithValue("$state", state.ToString());
+            cmd.Parameters.AddWithValue(
+                "$clearPending",
+                state is LocalEntitySyncState.ServerConfirmed or LocalEntitySyncState.Conflict
+                    or LocalEntitySyncState.Rejected ? 1 : 0);
+            cmd.Parameters.AddWithValue("$failure", (object?)safeFailureCode ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$id", repaymentId.ToString("D"));
+            await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+
+            if (state == LocalEntitySyncState.Rejected
+                && before?.EntityState == LocalEntitySyncState.PendingCreate)
+            {
+                await SubtractPendingRepaymentBalanceAsync(connection, tx, active, before.CustomerId, before.Amount, ct)
+                    .ConfigureAwait(false);
+            }
+
+            await tx.CommitAsync(ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
     public async Task DiscardLocalCustomerUpdateAsync(
         Guid customerId,
         LocalCustomerProjection serverVersion,
@@ -416,6 +766,245 @@ public sealed class LocalEncryptedCustomerCreditStore(
     {
         ArgumentNullException.ThrowIfNull(serverVersion);
         await UpsertServerCustomerAsync(serverVersion, ct).ConfigureAwait(false);
+    }
+
+    public async Task DiscardLocalPendingRepaymentAsync(Guid repaymentId, CancellationToken ct = default)
+    {
+        var active = RequireActiveContext();
+        await EnsureEncryptionKeyAsync(ct).ConfigureAwait(false);
+
+        var repayment = await GetRepaymentAsync(repaymentId, ct).ConfigureAwait(false);
+        if (repayment is null || repayment.EntityState != LocalEntitySyncState.PendingCreate)
+        {
+            return;
+        }
+
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await using var connection = await OpenConnectionAsync(active, ct).ConfigureAwait(false);
+            await using var tx = (SqliteTransaction)await connection.BeginTransactionAsync(ct).ConfigureAwait(false);
+
+            await using var cmd = connection.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText =
+                """
+                UPDATE local_repayment_projection
+                SET entity_state = $state,
+                    pending_operation_id = NULL,
+                    safe_failure_code = $failure
+                WHERE repayment_id = $id;
+                """;
+            cmd.Parameters.AddWithValue("$state", LocalEntitySyncState.Rejected.ToString());
+            cmd.Parameters.AddWithValue("$failure", "discarded_by_user");
+            cmd.Parameters.AddWithValue("$id", repaymentId.ToString("D"));
+            await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+
+            await SubtractPendingRepaymentBalanceAsync(
+                connection, tx, active, repayment.CustomerId, repayment.Amount, ct).ConfigureAwait(false);
+
+            if (repayment.PendingOperationId is Guid opId)
+            {
+                await MarkQueueOperationPermanentFailureAsync(connection, tx, opId, "discarded_by_user", ct)
+                    .ConfigureAwait(false);
+            }
+
+            await tx.CommitAsync(ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    public async Task DiscardLocalPendingCreditDueDateAsync(Guid creditEntryId, CancellationToken ct = default)
+    {
+        var active = RequireActiveContext();
+        var credit = await GetCreditAsync(creditEntryId, ct).ConfigureAwait(false);
+        if (credit is null || credit.EntityState != LocalEntitySyncState.PendingUpdate)
+        {
+            return;
+        }
+
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await using var connection = await OpenConnectionAsync(active, ct).ConfigureAwait(false);
+            await using var tx = (SqliteTransaction)await connection.BeginTransactionAsync(ct).ConfigureAwait(false);
+
+            await using var cmd = connection.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText =
+                """
+                UPDATE local_credit_projection
+                SET entity_state = $state,
+                    pending_operation_id = NULL,
+                    pending_due_date = NULL,
+                    pending_due_date_reason = NULL,
+                    pending_due_date_clear = 0,
+                    safe_failure_code = $failure
+                WHERE credit_entry_id = $id;
+                """;
+            cmd.Parameters.AddWithValue("$state", LocalEntitySyncState.ServerConfirmed.ToString());
+            cmd.Parameters.AddWithValue("$failure", "discarded_by_user");
+            cmd.Parameters.AddWithValue("$id", creditEntryId.ToString("D"));
+            await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+
+            if (credit.PendingOperationId is Guid opId)
+            {
+                await MarkQueueOperationPermanentFailureAsync(connection, tx, opId, "discarded_by_user", ct)
+                    .ConfigureAwait(false);
+            }
+
+            await tx.CommitAsync(ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    public async Task DiscardLocalPendingCreditReversalAsync(Guid creditEntryId, CancellationToken ct = default)
+    {
+        var active = RequireActiveContext();
+        var credit = await GetCreditAsync(creditEntryId, ct).ConfigureAwait(false);
+        if (credit is null || credit.EntityState != LocalEntitySyncState.PendingReversal)
+        {
+            return;
+        }
+
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await using var connection = await OpenConnectionAsync(active, ct).ConfigureAwait(false);
+            await using var tx = (SqliteTransaction)await connection.BeginTransactionAsync(ct).ConfigureAwait(false);
+
+            await using var cmd = connection.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText =
+                """
+                UPDATE local_credit_projection
+                SET entity_state = $state,
+                    pending_operation_id = NULL,
+                    safe_failure_code = $failure
+                WHERE credit_entry_id = $id;
+                """;
+            cmd.Parameters.AddWithValue("$state", LocalEntitySyncState.ServerConfirmed.ToString());
+            cmd.Parameters.AddWithValue("$failure", "discarded_by_user");
+            cmd.Parameters.AddWithValue("$id", creditEntryId.ToString("D"));
+            await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+
+            if (credit.PendingOperationId is Guid opId)
+            {
+                await MarkQueueOperationPermanentFailureAsync(connection, tx, opId, "discarded_by_user", ct)
+                    .ConfigureAwait(false);
+            }
+
+            await tx.CommitAsync(ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    public async Task DiscardLocalPendingRepaymentReversalAsync(Guid repaymentId, CancellationToken ct = default)
+    {
+        var active = RequireActiveContext();
+        var repayment = await GetRepaymentAsync(repaymentId, ct).ConfigureAwait(false);
+        if (repayment is null || repayment.EntityState != LocalEntitySyncState.PendingReversal)
+        {
+            return;
+        }
+
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await using var connection = await OpenConnectionAsync(active, ct).ConfigureAwait(false);
+            await using var tx = (SqliteTransaction)await connection.BeginTransactionAsync(ct).ConfigureAwait(false);
+
+            await using var cmd = connection.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText =
+                """
+                UPDATE local_repayment_projection
+                SET entity_state = $state,
+                    pending_operation_id = NULL,
+                    pending_reversal_reason = NULL,
+                    safe_failure_code = $failure
+                WHERE repayment_id = $id;
+                """;
+            cmd.Parameters.AddWithValue("$state", LocalEntitySyncState.ServerConfirmed.ToString());
+            cmd.Parameters.AddWithValue("$failure", "discarded_by_user");
+            cmd.Parameters.AddWithValue("$id", repaymentId.ToString("D"));
+            await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+
+            if (repayment.PendingOperationId is Guid opId)
+            {
+                await MarkQueueOperationPermanentFailureAsync(connection, tx, opId, "discarded_by_user", ct)
+                    .ConfigureAwait(false);
+            }
+
+            await tx.CommitAsync(ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    public async Task RebuildOptimisticBalancesAsync(Guid customerId, CancellationToken ct = default)
+    {
+        var active = RequireActiveContext();
+        await EnsureEncryptionKeyAsync(ct).ConfigureAwait(false);
+
+        var credits = await ListCreditsAsync(customerId, ct).ConfigureAwait(false);
+        var repayments = await ListRepaymentsAsync(customerId, ct).ConfigureAwait(false);
+        var pendingCredit = credits
+            .Where(c => c.EntityState == LocalEntitySyncState.PendingCreate)
+            .Sum(c => c.Amount);
+        var pendingRepayment = repayments
+            .Where(r => r.EntityState == LocalEntitySyncState.PendingCreate)
+            .Sum(r => r.Amount);
+
+        var pendingCreditEncrypted = await EncryptDecimalForBalanceAsync(active, customerId, pendingCredit, ct)
+            .ConfigureAwait(false);
+        var pendingRepayEncrypted = await EncryptDecimalForPendingRepayAsync(active, customerId, pendingRepayment, ct)
+            .ConfigureAwait(false);
+
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await using var connection = await OpenConnectionAsync(active, ct).ConfigureAwait(false);
+            await using var cmd = connection.CreateCommand();
+            cmd.CommandText =
+                """
+                INSERT INTO local_customer_balance (
+                    customer_id, confirmed_ciphertext, confirmed_nonce, confirmed_tag,
+                    pending_ciphertext, pending_nonce, pending_tag,
+                    pending_repay_ciphertext, pending_repay_nonce, pending_repay_tag)
+                VALUES ($id, NULL, NULL, NULL, $pc, $pn, $pt, $prc, $prn, $prt)
+                ON CONFLICT(customer_id) DO UPDATE SET
+                    pending_ciphertext = excluded.pending_ciphertext,
+                    pending_nonce = excluded.pending_nonce,
+                    pending_tag = excluded.pending_tag,
+                    pending_repay_ciphertext = excluded.pending_repay_ciphertext,
+                    pending_repay_nonce = excluded.pending_repay_nonce,
+                    pending_repay_tag = excluded.pending_repay_tag;
+                """;
+            cmd.Parameters.AddWithValue("$id", customerId.ToString("D"));
+            cmd.Parameters.AddWithValue("$pc", pendingCreditEncrypted.Ciphertext);
+            cmd.Parameters.AddWithValue("$pn", pendingCreditEncrypted.Nonce);
+            cmd.Parameters.AddWithValue("$pt", pendingCreditEncrypted.Tag);
+            cmd.Parameters.AddWithValue("$prc", pendingRepayEncrypted.Ciphertext);
+            cmd.Parameters.AddWithValue("$prn", pendingRepayEncrypted.Nonce);
+            cmd.Parameters.AddWithValue("$prt", pendingRepayEncrypted.Tag);
+            await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            _gate.Release();
+        }
     }
 
     public async Task<LocalCustomerProjection?> GetCustomerAsync(Guid customerId, CancellationToken ct = default)
@@ -517,7 +1106,9 @@ public sealed class LocalEncryptedCustomerCreditStore(
         cmd.CommandText =
             """
             SELECT credit_entry_id, customer_id, organization_id, entity_state, pending_operation_id,
-                   depends_on_operation_id, created_utc, ciphertext, nonce, tag, safe_failure_code
+                   depends_on_operation_id, created_utc, ciphertext, nonce, tag, safe_failure_code,
+                   current_due_date, pending_due_date, pending_due_date_reason,
+                   pending_due_date_clear, conflict_server_json
             FROM local_credit_projection
             WHERE customer_id = $customer AND organization_id = $org
             ORDER BY created_utc ASC;
@@ -535,6 +1126,88 @@ public sealed class LocalEncryptedCustomerCreditStore(
         return list;
     }
 
+    public async Task<LocalCreditProjection?> GetCreditAsync(Guid creditEntryId, CancellationToken ct = default)
+    {
+        var active = RequireActiveContext();
+        await EnsureEncryptionKeyAsync(ct).ConfigureAwait(false);
+
+        await using var connection = await OpenConnectionAsync(active, ct).ConfigureAwait(false);
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText =
+            """
+            SELECT credit_entry_id, customer_id, organization_id, entity_state, pending_operation_id,
+                   depends_on_operation_id, created_utc, ciphertext, nonce, tag, safe_failure_code,
+                   current_due_date, pending_due_date, pending_due_date_reason,
+                   pending_due_date_clear, conflict_server_json
+            FROM local_credit_projection
+            WHERE credit_entry_id = $id AND organization_id = $org;
+            """;
+        cmd.Parameters.AddWithValue("$id", creditEntryId.ToString("D"));
+        cmd.Parameters.AddWithValue("$org", active.Identity.OrganizationId.ToString("D"));
+        await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        if (!await reader.ReadAsync(ct).ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        return await ReadCreditProjectionAsync(active, reader, ct).ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlyList<LocalRepaymentProjection>> ListRepaymentsAsync(Guid customerId, CancellationToken ct = default)
+    {
+        var active = RequireActiveContext();
+        await EnsureEncryptionKeyAsync(ct).ConfigureAwait(false);
+
+        await using var connection = await OpenConnectionAsync(active, ct).ConfigureAwait(false);
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText =
+            """
+            SELECT repayment_id, customer_id, organization_id, entity_state, pending_operation_id,
+                   depends_on_operation_id, recorded_utc, ciphertext, nonce, tag, safe_failure_code,
+                   pending_reversal_reason
+            FROM local_repayment_projection
+            WHERE customer_id = $customer AND organization_id = $org
+            ORDER BY recorded_utc ASC;
+            """;
+        cmd.Parameters.AddWithValue("$customer", customerId.ToString("D"));
+        cmd.Parameters.AddWithValue("$org", active.Identity.OrganizationId.ToString("D"));
+
+        var list = new List<LocalRepaymentProjection>();
+        await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        while (await reader.ReadAsync(ct).ConfigureAwait(false))
+        {
+            list.Add(await ReadRepaymentProjectionAsync(active, reader, ct).ConfigureAwait(false));
+        }
+
+        return list;
+    }
+
+    public async Task<LocalRepaymentProjection?> GetRepaymentAsync(Guid repaymentId, CancellationToken ct = default)
+    {
+        var active = RequireActiveContext();
+        await EnsureEncryptionKeyAsync(ct).ConfigureAwait(false);
+
+        await using var connection = await OpenConnectionAsync(active, ct).ConfigureAwait(false);
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText =
+            """
+            SELECT repayment_id, customer_id, organization_id, entity_state, pending_operation_id,
+                   depends_on_operation_id, recorded_utc, ciphertext, nonce, tag, safe_failure_code,
+                   pending_reversal_reason
+            FROM local_repayment_projection
+            WHERE repayment_id = $id AND organization_id = $org;
+            """;
+        cmd.Parameters.AddWithValue("$id", repaymentId.ToString("D"));
+        cmd.Parameters.AddWithValue("$org", active.Identity.OrganizationId.ToString("D"));
+        await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        if (!await reader.ReadAsync(ct).ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        return await ReadRepaymentProjectionAsync(active, reader, ct).ConfigureAwait(false);
+    }
+
     public async Task<LocalCustomerBalanceProjection> GetBalanceAsync(Guid customerId, CancellationToken ct = default)
     {
         var active = RequireActiveContext();
@@ -545,7 +1218,8 @@ public sealed class LocalEncryptedCustomerCreditStore(
         cmd.CommandText =
             """
             SELECT confirmed_ciphertext, confirmed_nonce, confirmed_tag,
-                   pending_ciphertext, pending_nonce, pending_tag
+                   pending_ciphertext, pending_nonce, pending_tag,
+                   pending_repay_ciphertext, pending_repay_nonce, pending_repay_tag
             FROM local_customer_balance
             WHERE customer_id = $id;
             """;
@@ -553,21 +1227,24 @@ public sealed class LocalEncryptedCustomerCreditStore(
         await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
         if (!await reader.ReadAsync(ct).ConfigureAwait(false))
         {
-            return new LocalCustomerBalanceProjection(customerId, 0m, 0m, 0m);
+            return new LocalCustomerBalanceProjection(customerId, 0m, 0m, 0m, 0m);
         }
 
         var confirmed = await DecryptBalanceColumnAsync(
             active, customerId, reader, "confirmed_ciphertext", "confirmed_nonce", "confirmed_tag", ct)
             .ConfigureAwait(false);
-        var pending = await DecryptBalanceColumnAsync(
+        var pendingCredit = await DecryptBalanceColumnAsync(
             active, customerId, reader, "pending_ciphertext", "pending_nonce", "pending_tag", ct)
+            .ConfigureAwait(false);
+        var pendingRepayment = await DecryptPendingRepayColumnAsync(active, customerId, reader, ct)
             .ConfigureAwait(false);
 
         return new LocalCustomerBalanceProjection(
             customerId,
             confirmed,
-            pending,
-            confirmed + pending);
+            pendingCredit,
+            pendingRepayment,
+            Math.Max(0m, confirmed + pendingCredit - pendingRepayment));
     }
 
     public async Task SetDownloadCheckpointAsync(string stream, DateTimeOffset checkpointUtc, CancellationToken ct = default)
@@ -631,6 +1308,12 @@ public sealed class LocalEncryptedCustomerCreditStore(
             cmd.CommandText =
                 """
                 UPDATE local_credit_projection
+                SET entity_state = $state,
+                    safe_failure_code = $code
+                WHERE depends_on_operation_id = $dep
+                  AND entity_state IN ($pendingCreate, $pendingUpdate, $syncing);
+
+                UPDATE local_repayment_projection
                 SET entity_state = $state,
                     safe_failure_code = $code
                 WHERE depends_on_operation_id = $dep
@@ -918,6 +1601,199 @@ public sealed class LocalEncryptedCustomerCreditStore(
         await upsert.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
     }
 
+    private async Task AddPendingRepaymentBalanceAsync(
+        SqliteConnection connection,
+        SqliteTransaction tx,
+        LocalContextSnapshot active,
+        Guid customerId,
+        decimal amount,
+        CancellationToken ct)
+    {
+        decimal currentPending = 0m;
+        await using var select = connection.CreateCommand();
+        select.Transaction = tx;
+        select.CommandText =
+            """
+            SELECT pending_repay_ciphertext, pending_repay_nonce, pending_repay_tag
+            FROM local_customer_balance
+            WHERE customer_id = $id;
+            """;
+        select.Parameters.AddWithValue("$id", customerId.ToString("D"));
+        await using var balanceReader = await select.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        if (await balanceReader.ReadAsync(ct).ConfigureAwait(false)
+            && !balanceReader.IsDBNull(balanceReader.GetOrdinal("pending_repay_ciphertext")))
+        {
+            var plaintext = await DecryptPendingRepayBytesAsync(
+                active,
+                customerId,
+                (byte[])balanceReader["pending_repay_ciphertext"],
+                (byte[])balanceReader["pending_repay_nonce"],
+                (byte[])balanceReader["pending_repay_tag"],
+                ct).ConfigureAwait(false);
+            currentPending = ParseDecimal(plaintext);
+        }
+
+        var newPending = currentPending + amount;
+        var encrypted = await EncryptDecimalForPendingRepayAsync(active, customerId, newPending, ct).ConfigureAwait(false);
+
+        await using var upsert = connection.CreateCommand();
+        upsert.Transaction = tx;
+        upsert.CommandText =
+            """
+            INSERT INTO local_customer_balance (
+                customer_id, confirmed_ciphertext, confirmed_nonce, confirmed_tag,
+                pending_ciphertext, pending_nonce, pending_tag,
+                pending_repay_ciphertext, pending_repay_nonce, pending_repay_tag)
+            VALUES ($id, NULL, NULL, NULL, NULL, NULL, NULL, $ciphertext, $nonce, $tag)
+            ON CONFLICT(customer_id) DO UPDATE SET
+                pending_repay_ciphertext = excluded.pending_repay_ciphertext,
+                pending_repay_nonce = excluded.pending_repay_nonce,
+                pending_repay_tag = excluded.pending_repay_tag;
+            """;
+        upsert.Parameters.AddWithValue("$id", customerId.ToString("D"));
+        upsert.Parameters.AddWithValue("$ciphertext", encrypted.Ciphertext);
+        upsert.Parameters.AddWithValue("$nonce", encrypted.Nonce);
+        upsert.Parameters.AddWithValue("$tag", encrypted.Tag);
+        await upsert.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+    }
+
+    private async Task SubtractPendingRepaymentBalanceAsync(
+        SqliteConnection connection,
+        SqliteTransaction tx,
+        LocalContextSnapshot active,
+        Guid customerId,
+        decimal amount,
+        CancellationToken ct)
+    {
+        decimal currentPending = 0m;
+        await using var select = connection.CreateCommand();
+        select.Transaction = tx;
+        select.CommandText =
+            """
+            SELECT pending_repay_ciphertext, pending_repay_nonce, pending_repay_tag
+            FROM local_customer_balance
+            WHERE customer_id = $id;
+            """;
+        select.Parameters.AddWithValue("$id", customerId.ToString("D"));
+        await using var balanceReader = await select.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        if (await balanceReader.ReadAsync(ct).ConfigureAwait(false)
+            && !balanceReader.IsDBNull(balanceReader.GetOrdinal("pending_repay_ciphertext")))
+        {
+            var plaintext = await DecryptPendingRepayBytesAsync(
+                active,
+                customerId,
+                (byte[])balanceReader["pending_repay_ciphertext"],
+                (byte[])balanceReader["pending_repay_nonce"],
+                (byte[])balanceReader["pending_repay_tag"],
+                ct).ConfigureAwait(false);
+            currentPending = ParseDecimal(plaintext);
+        }
+
+        var newPending = Math.Max(0m, currentPending - amount);
+        var encrypted = await EncryptDecimalForPendingRepayAsync(active, customerId, newPending, ct).ConfigureAwait(false);
+
+        await using var upsert = connection.CreateCommand();
+        upsert.Transaction = tx;
+        upsert.CommandText =
+            """
+            INSERT INTO local_customer_balance (
+                customer_id, confirmed_ciphertext, confirmed_nonce, confirmed_tag,
+                pending_ciphertext, pending_nonce, pending_tag,
+                pending_repay_ciphertext, pending_repay_nonce, pending_repay_tag)
+            VALUES ($id, NULL, NULL, NULL, NULL, NULL, NULL, $ciphertext, $nonce, $tag)
+            ON CONFLICT(customer_id) DO UPDATE SET
+                pending_repay_ciphertext = excluded.pending_repay_ciphertext,
+                pending_repay_nonce = excluded.pending_repay_nonce,
+                pending_repay_tag = excluded.pending_repay_tag;
+            """;
+        upsert.Parameters.AddWithValue("$id", customerId.ToString("D"));
+        upsert.Parameters.AddWithValue("$ciphertext", encrypted.Ciphertext);
+        upsert.Parameters.AddWithValue("$nonce", encrypted.Nonce);
+        upsert.Parameters.AddWithValue("$tag", encrypted.Tag);
+        await upsert.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+    }
+
+    private static async Task InsertRepaymentProjectionAsync(
+        SqliteConnection connection,
+        SqliteTransaction tx,
+        LocalRepaymentProjection repayment,
+        EncryptedPayload encrypted,
+        string recordedUtc,
+        string _,
+        CancellationToken ct)
+    {
+        await using var cmd = connection.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText =
+            """
+            INSERT INTO local_repayment_projection (
+                repayment_id, customer_id, organization_id, entity_state,
+                pending_operation_id, depends_on_operation_id, recorded_utc,
+                ciphertext, nonce, tag, safe_failure_code, pending_reversal_reason)
+            VALUES (
+                $id, $customer, $org, $state, $pending, $depends, $recorded,
+                $ciphertext, $nonce, $tag, NULL, NULL);
+            """;
+        BindRepaymentProjection(cmd, repayment, encrypted, recordedUtc, repayment.DependsOnOperationId?.ToString("D"));
+        await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+    }
+
+    private async Task<LocalRepaymentProjection?> TryReadRepaymentProjectionAsync(
+        SqliteConnection connection,
+        SqliteTransaction tx,
+        LocalContextSnapshot active,
+        Guid repaymentId,
+        CancellationToken ct)
+    {
+        await using var cmd = connection.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText =
+            """
+            SELECT repayment_id, customer_id, organization_id, entity_state, pending_operation_id,
+                   depends_on_operation_id, recorded_utc, ciphertext, nonce, tag, safe_failure_code,
+                   pending_reversal_reason
+            FROM local_repayment_projection
+            WHERE repayment_id = $id;
+            """;
+        cmd.Parameters.AddWithValue("$id", repaymentId.ToString("D"));
+        await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        if (!await reader.ReadAsync(ct).ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        return await ReadRepaymentProjectionAsync(active, reader, ct).ConfigureAwait(false);
+    }
+
+    private static async Task MarkQueueOperationPermanentFailureAsync(
+        SqliteConnection connection,
+        SqliteTransaction tx,
+        Guid operationId,
+        string failureCode,
+        CancellationToken ct)
+    {
+        var now = DateTimeOffset.UtcNow.UtcDateTime.ToString("O", CultureInfo.InvariantCulture);
+        await using var cmd = connection.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText =
+            """
+            UPDATE offline_operations
+            SET queue_state = $state,
+                failure_code = $code,
+                failure_summary = $summary,
+                claimed_by = NULL,
+                claimed_utc = NULL,
+                last_attempt_utc = $now
+            WHERE operation_id = $id;
+            """;
+        cmd.Parameters.AddWithValue("$state", nameof(OfflineQueueState.PermanentFailure));
+        cmd.Parameters.AddWithValue("$code", failureCode);
+        cmd.Parameters.AddWithValue("$summary", "discarded_by_user");
+        cmd.Parameters.AddWithValue("$now", now);
+        cmd.Parameters.AddWithValue("$id", operationId.ToString("D"));
+        await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+    }
+
     private async Task<LocalCreditProjection?> TryReadCreditProjectionAsync(
         SqliteConnection connection,
         SqliteTransaction tx,
@@ -930,7 +1806,9 @@ public sealed class LocalEncryptedCustomerCreditStore(
         cmd.CommandText =
             """
             SELECT credit_entry_id, customer_id, organization_id, entity_state, pending_operation_id,
-                   depends_on_operation_id, created_utc, ciphertext, nonce, tag, safe_failure_code
+                   depends_on_operation_id, created_utc, ciphertext, nonce, tag, safe_failure_code,
+                   current_due_date, pending_due_date, pending_due_date_reason,
+                   pending_due_date_clear, conflict_server_json
             FROM local_credit_projection
             WHERE credit_entry_id = $id;
             """;
@@ -990,6 +1868,51 @@ public sealed class LocalEncryptedCustomerCreditStore(
         return await payloadProtector.EncryptAsync(plaintext, aad, ct).ConfigureAwait(false);
     }
 
+    private async Task<EncryptedPayload> EncryptDecimalForPendingRepayAsync(
+        LocalContextSnapshot active,
+        Guid customerId,
+        decimal value,
+        CancellationToken ct)
+    {
+        var aad = OfflinePayloadBinding.BuildPendingRepayAssociatedData(active.Identity.ContextHash, customerId);
+        var plaintext = Encoding.UTF8.GetBytes(FormatDecimal(value));
+        return await payloadProtector.EncryptAsync(plaintext, aad, ct).ConfigureAwait(false);
+    }
+
+    private async Task<byte[]> DecryptPendingRepayBytesAsync(
+        LocalContextSnapshot active,
+        Guid customerId,
+        byte[] ciphertext,
+        byte[] nonce,
+        byte[] tag,
+        CancellationToken ct)
+    {
+        var aad = OfflinePayloadBinding.BuildPendingRepayAssociatedData(active.Identity.ContextHash, customerId);
+        return await payloadProtector.DecryptAsync(new EncryptedPayload(ciphertext, nonce, tag), aad, ct)
+            .ConfigureAwait(false);
+    }
+
+    private async Task<decimal> DecryptPendingRepayColumnAsync(
+        LocalContextSnapshot active,
+        Guid customerId,
+        SqliteDataReader reader,
+        CancellationToken ct)
+    {
+        if (reader.IsDBNull(reader.GetOrdinal("pending_repay_ciphertext")))
+        {
+            return 0m;
+        }
+
+        var bytes = await DecryptPendingRepayBytesAsync(
+            active,
+            customerId,
+            (byte[])reader["pending_repay_ciphertext"],
+            (byte[])reader["pending_repay_nonce"],
+            (byte[])reader["pending_repay_tag"],
+            ct).ConfigureAwait(false);
+        return ParseDecimal(bytes);
+    }
+
     private async Task<EncryptedPayload> EncryptCreditFieldsAsync(
         LocalContextSnapshot active,
         Guid creditEntryId,
@@ -1001,6 +1924,20 @@ public sealed class LocalEncryptedCustomerCreditStore(
             credit.Remarks,
             credit.Status), JsonOptions);
         var aad = OfflinePayloadBinding.BuildCreditAssociatedData(active.Identity.ContextHash, creditEntryId);
+        return await payloadProtector.EncryptAsync(plaintext, aad, ct).ConfigureAwait(false);
+    }
+
+    private async Task<EncryptedPayload> EncryptRepaymentFieldsAsync(
+        LocalContextSnapshot active,
+        Guid repaymentId,
+        LocalRepaymentProjection repayment,
+        CancellationToken ct)
+    {
+        var plaintext = JsonSerializer.SerializeToUtf8Bytes(new RepaymentFieldPayload(
+            FormatDecimal(repayment.Amount),
+            repayment.Remarks,
+            repayment.Status), JsonOptions);
+        var aad = OfflinePayloadBinding.BuildRepaymentAssociatedData(active.Identity.ContextHash, repaymentId);
         return await payloadProtector.EncryptAsync(plaintext, aad, ct).ConfigureAwait(false);
     }
 
@@ -1067,7 +2004,45 @@ public sealed class LocalEncryptedCustomerCreditStore(
             Enum.Parse<LocalEntitySyncState>(reader.GetString(reader.GetOrdinal("entity_state")), ignoreCase: true),
             reader.IsDBNull(pendingOrdinal) ? null : Guid.Parse(reader.GetString(pendingOrdinal)),
             reader.IsDBNull(dependsOrdinal) ? null : Guid.Parse(reader.GetString(dependsOrdinal)),
-            reader.IsDBNull(reader.GetOrdinal("safe_failure_code")) ? null : reader.GetString(reader.GetOrdinal("safe_failure_code")));
+            reader.IsDBNull(reader.GetOrdinal("safe_failure_code")) ? null : reader.GetString(reader.GetOrdinal("safe_failure_code")),
+            ReadOptionalDueDate(reader, "current_due_date"),
+            ReadOptionalDueDate(reader, "pending_due_date"),
+            reader.IsDBNull(reader.GetOrdinal("pending_due_date_reason")) ? null : reader.GetString(reader.GetOrdinal("pending_due_date_reason")),
+            !reader.IsDBNull(reader.GetOrdinal("pending_due_date_clear")) && reader.GetInt32(reader.GetOrdinal("pending_due_date_clear")) != 0,
+            reader.IsDBNull(reader.GetOrdinal("conflict_server_json")) ? null : reader.GetString(reader.GetOrdinal("conflict_server_json")));
+    }
+
+    private async Task<LocalRepaymentProjection> ReadRepaymentProjectionAsync(
+        LocalContextSnapshot active,
+        SqliteDataReader reader,
+        CancellationToken ct)
+    {
+        var repaymentId = Guid.Parse(reader.GetString(reader.GetOrdinal("repayment_id")));
+        var ciphertext = (byte[])reader["ciphertext"];
+        var nonce = (byte[])reader["nonce"];
+        var tag = (byte[])reader["tag"];
+        var aad = OfflinePayloadBinding.BuildRepaymentAssociatedData(active.Identity.ContextHash, repaymentId);
+        var plaintext = await payloadProtector
+            .DecryptAsync(new EncryptedPayload(ciphertext, nonce, tag), aad, ct)
+            .ConfigureAwait(false);
+        var fields = JsonSerializer.Deserialize<RepaymentFieldPayload>(plaintext, JsonOptions)
+            ?? throw new InvalidOperationException("repayment_payload_invalid");
+
+        var pendingOrdinal = reader.GetOrdinal("pending_operation_id");
+        var dependsOrdinal = reader.GetOrdinal("depends_on_operation_id");
+        return new LocalRepaymentProjection(
+            repaymentId,
+            Guid.Parse(reader.GetString(reader.GetOrdinal("customer_id"))),
+            Guid.Parse(reader.GetString(reader.GetOrdinal("organization_id"))),
+            ParseDecimal(fields.Amount),
+            fields.Remarks,
+            fields.Status,
+            DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal("recorded_utc")), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
+            Enum.Parse<LocalEntitySyncState>(reader.GetString(reader.GetOrdinal("entity_state")), ignoreCase: true),
+            reader.IsDBNull(pendingOrdinal) ? null : Guid.Parse(reader.GetString(pendingOrdinal)),
+            reader.IsDBNull(dependsOrdinal) ? null : Guid.Parse(reader.GetString(dependsOrdinal)),
+            reader.IsDBNull(reader.GetOrdinal("safe_failure_code")) ? null : reader.GetString(reader.GetOrdinal("safe_failure_code")),
+            reader.IsDBNull(reader.GetOrdinal("pending_reversal_reason")) ? null : reader.GetString(reader.GetOrdinal("pending_reversal_reason")));
     }
 
     private async Task<decimal> DecryptBalanceColumnAsync(
@@ -1135,6 +2110,73 @@ public sealed class LocalEncryptedCustomerCreditStore(
         cmd.Parameters.AddWithValue("$tag", encrypted.Tag);
     }
 
+    private static void BindCreditDueDateColumns(
+        SqliteCommand cmd,
+        DateOnly? currentDueDate,
+        DateOnly? pendingDueDate,
+        string? pendingDueDateReason,
+        bool pendingDueDateClear,
+        string? conflictServerJson)
+    {
+        cmd.Parameters.AddWithValue(
+            "$currentDue",
+            currentDueDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? (object)DBNull.Value);
+        cmd.Parameters.AddWithValue(
+            "$pendingDue",
+            pendingDueDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? (object)DBNull.Value);
+        cmd.Parameters.AddWithValue("$reason", (object?)pendingDueDateReason ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$isClear", pendingDueDateClear ? 1 : 0);
+        cmd.Parameters.AddWithValue("$conflict", (object?)conflictServerJson ?? DBNull.Value);
+    }
+
+    private static void BindRepaymentProjection(
+        SqliteCommand cmd,
+        LocalRepaymentProjection repayment,
+        EncryptedPayload encrypted,
+        string recordedUtc,
+        string? dependsOnOperationId)
+    {
+        cmd.Parameters.AddWithValue("$id", repayment.RepaymentId.ToString("D"));
+        cmd.Parameters.AddWithValue("$customer", repayment.CustomerId.ToString("D"));
+        cmd.Parameters.AddWithValue("$org", repayment.OrganizationId.ToString("D"));
+        cmd.Parameters.AddWithValue("$state", repayment.EntityState.ToString());
+        cmd.Parameters.AddWithValue(
+            "$pending",
+            repayment.PendingOperationId is Guid pending ? pending.ToString("D") : DBNull.Value);
+        cmd.Parameters.AddWithValue("$depends", (object?)dependsOnOperationId ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$recorded", recordedUtc);
+        cmd.Parameters.AddWithValue("$ciphertext", encrypted.Ciphertext);
+        cmd.Parameters.AddWithValue("$nonce", encrypted.Nonce);
+        cmd.Parameters.AddWithValue("$tag", encrypted.Tag);
+    }
+
+    private static DateOnly? ReadOptionalDueDate(SqliteDataReader reader, string column)
+    {
+        var ordinal = reader.GetOrdinal(column);
+        if (reader.IsDBNull(ordinal))
+        {
+            return null;
+        }
+
+        return DateOnly.Parse(reader.GetString(ordinal), CultureInfo.InvariantCulture);
+    }
+
+    private static void ValidatePositiveAmount(decimal amount)
+    {
+        if (amount <= 0)
+        {
+            throw new InvalidOperationException("invalid_amount");
+        }
+
+        if (amount != decimal.Round(amount, 2, MidpointRounding.AwayFromZero))
+        {
+            throw new InvalidOperationException("invalid_amount_precision");
+        }
+    }
+
+    private static Guid? ResolveRepaymentDependency(LocalRepaymentCreateCommand command) =>
+        command.DependsOnCustomerCreateOperationId ?? command.DependsOnCreditCreateOperationId;
+
     private static IReadOnlyList<LocalCustomerProjection> FilterCustomers(
         IReadOnlyList<LocalCustomerProjection> customers,
         string? search)
@@ -1167,7 +2209,9 @@ public sealed class LocalEncryptedCustomerCreditStore(
                 .ConfigureAwait(false);
             var credits = await ReadEntityStateCountsAsync(connection, "local_credit_projection", ct)
                 .ConfigureAwait(false);
-            return new LocalEntityStateCounts(customers, credits);
+            var repayments = await ReadEntityStateCountsAsync(connection, "local_repayment_projection", ct)
+                .ConfigureAwait(false);
+            return new LocalEntityStateCounts(customers, credits, repayments);
         }
         catch
         {
@@ -1270,6 +2314,8 @@ public sealed class LocalEncryptedCustomerCreditStore(
 
     private sealed record CreditFieldPayload(string Amount, string Remarks, string Status);
 
+    private sealed record RepaymentFieldPayload(string Amount, string? Remarks, string Status);
+
     private sealed record CustomerCreatePayload(
         Guid CustomerId,
         string DisplayName,
@@ -1290,4 +2336,28 @@ public sealed class LocalEncryptedCustomerCreditStore(
         Guid CustomerId,
         string Amount,
         string Remarks);
+
+    private sealed record RepaymentCreatePayload(
+        Guid RepaymentId,
+        Guid CustomerId,
+        string Amount,
+        string? Remarks);
+
+    private sealed record CreditReversePayload(
+        Guid CreditEntryId,
+        Guid CustomerId,
+        string Reason);
+
+    private sealed record RepaymentReversePayload(
+        Guid RepaymentId,
+        Guid CustomerId,
+        string Reason);
+
+    private sealed record CreditDueDatePayload(
+        Guid CreditEntryId,
+        Guid CustomerId,
+        string? DueDate,
+        string Reason,
+        bool IsClear,
+        string ExpectedUpdatedAtUtc);
 }

@@ -169,6 +169,11 @@ internal sealed class PosUnitOfWork : IPosUnitOfWork
         Func<CancellationToken, Task<T>> action,
         CancellationToken cancellationToken = default)
     {
+        if (_db.Database.CurrentTransaction is not null)
+        {
+            return await action(cancellationToken).ConfigureAwait(false);
+        }
+
         var strategy = _db.Database.CreateExecutionStrategy();
         return await strategy.ExecuteAsync(async () =>
         {

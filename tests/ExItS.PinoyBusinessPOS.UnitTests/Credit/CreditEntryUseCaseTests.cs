@@ -207,6 +207,14 @@ public sealed class CreditEntryUseCaseTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult(((IReadOnlyList<Repayment>)Array.Empty<Repayment>(), 0));
 
+        public Task<(IReadOnlyList<Repayment> Items, int TotalCount)> ListCreatedSinceAsync(
+            PosOrganizationId organizationId,
+            DateTimeOffset? sinceUtc,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(((IReadOnlyList<Repayment>)Array.Empty<Repayment>(), 0));
+
         public Task<decimal> SumActiveAmountAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,

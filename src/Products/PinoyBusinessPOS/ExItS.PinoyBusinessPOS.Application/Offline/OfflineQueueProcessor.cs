@@ -251,4 +251,9 @@ public static class OfflineOperationTypes
     public const string CustomerCreate = "customer.create";
     public const string CustomerUpdate = "customer.update";
     public const string CreditCreate = "credit.create";
+    public const string RepaymentCreate = "repayment.create";
+    public const string RepaymentReverse = "repayment.reverse";
+    public const string CreditReverse = "credit.reverse";
+    public const string CreditDueDateSet = "credit.due-date.set";
+    public const string CreditDueDateClear = "credit.due-date.clear";
 }

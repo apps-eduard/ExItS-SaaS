@@ -579,4 +579,14 @@
   <data name="DevOffline_LocalProjectionsTitle" xml:space="preserve"><value>Local customer/credit counts</value></data>
   <data name="DevOffline_CustomersLabel" xml:space="preserve"><value>customers</value></data>
   <data name="DevOffline_CreditsLabel" xml:space="preserve"><value>credits</value></data>
+  <data name="DevOffline_RepaymentsLabel" xml:space="preserve"><value>repayments</value></data>
+  <data name="Offline_PendingRepayment" xml:space="preserve"><value>Pending repayment</value></data>
+  <data name="Offline_EntityPendingReversal" xml:space="preserve"><value>Pending reversal</value></data>
+  <data name="Offline_EntityBlockedByAccess" xml:space="preserve"><value>Blocked by access</value></data>
+  <data name="Offline_RecoveryRequired" xml:space="preserve"><value>Recovery required</value></data>
+  <data name="Offline_RefreshFromServer" xml:space="preserve"><value>Refresh from server</value></data>
+  <data name="Offline_DiscardLocalRequest" xml:space="preserve"><value>Discard local request</value></data>
+  <data name="Offline_OverpaymentLocal" xml:space="preserve"><value>Amount exceeds projected outstanding including pending local changes.</value></data>
+  <data name="Offline_DueDateConflictTitle" xml:space="preserve"><value>Due date conflict</value></data>
+  <data name="Offline_DueDateConflictMessage" xml:space="preserve"><value>The server due date differs from your local change. Refresh from server or discard the local request.</value></data>
 </root>

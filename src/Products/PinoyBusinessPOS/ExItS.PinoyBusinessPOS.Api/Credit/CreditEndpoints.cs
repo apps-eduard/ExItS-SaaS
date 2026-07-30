@@ -158,6 +158,7 @@ internal static class CreditEndpoints
             Guid entryId,
             ReverseCreditEntryRequest body,
             ReverseCreditEntry useCase,
+            IPosIdempotencyService idempotency,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -171,11 +172,16 @@ internal static class CreditEndpoints
                 return problem!;
             }
 
-            var result = await useCase
-                .ExecuteAsync(organizationId, customerId, entryId, body.Reason, ct)
+            return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                    request,
+                    organizationId,
+                    OfflineOperationTypes.CreditReverse,
+                    idempotency,
+                    ct2 => useCase.ExecuteAsync(organizationId, customerId, entryId, body.Reason, ct2),
+                    CreditEntryQueryService.Map,
+                    Results.Ok,
+                    ct)
                 .ConfigureAwait(false);
-
-            return PosApiResults.FromResult(result, e => Results.Ok(CreditEntryQueryService.Map(e)));
         });
 
         return app;

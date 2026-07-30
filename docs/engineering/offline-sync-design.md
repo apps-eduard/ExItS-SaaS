@@ -80,7 +80,7 @@ Customer/credit/repayment offline workflows, business-data cache, automatic fina
 
 ### Scope
 
-Encrypted local customer + credit read models; offline `CustomerCreate`, `CustomerUpdate`, and `CreditCreate` via the **same** generic queue; download/reconcile; optimistic concurrency conflicts without silent merge; confirmed vs projected outstanding. **No** offline repayments, reversals, due-date changes, statements/receipts, or production sync scheduling.
+Encrypted local customer + credit read models; offline `CustomerCreate`, `CustomerUpdate`, and `CreditCreate` via the **same** generic queue; download/reconcile; optimistic concurrency conflicts without silent merge; confirmed vs projected outstanding (credit pending only in WP03). Repayment offline workflows delivered in P7-WP04.
 
 ### Offline authorization (session continuity)
 
@@ -118,10 +118,50 @@ Local-only data never appears ServerConfirmed. Client-generated IDs remain stabl
 
 Optimistic concurrency uses last confirmed server `UpdatedAtUtc`. On conflict: retain local + server versions; mark Conflict; user may discard local or review server and retry deliberately. No silent overwrite/merge. Deactivate/reactivate remain online-only.
 
-### Explicit deferrals (P7-WP04+)
+### Explicit deferrals (P7-WP04 — superseded; see P7-WP04 decisions below)
 
-Offline repayments, credit/repayment reversals, due-date changes, statements/receipts, automatic conflict merging, production background sync scheduling, sales/inventory/gateways/QR/cards, SQLCipher, offline entitlement grace (R-022).
+Offline repayments, credit/repayment reversals, due-date changes — **delivered in P7-WP04**. Still deferred: statements/receipts, automatic conflict merging, production background sync scheduling, sales/inventory/gateways/QR/cards, SQLCipher, offline entitlement grace (R-022).
+
+## P7-WP04 decisions (authoritative)
+
+### Scope
+
+Offline `RepaymentCreate`, `RepaymentReverse`, `CreditReverse`, `CreditDueDateSet`, `CreditDueDateClear` via the **same** generic queue; encrypted local repayment/due-date/ledger projections; dependency-safe FIFO; crash and uncertain-outcome recovery via idempotency replay; confirmed / pending credit / pending repayment / projected outstanding. **No** offline statements, receipts, customer deactivate/reactivate, automatic conflict merge, or production background scheduling.
+
+### Operation types (generic queue only)
+
+| Constant | Value |
+|---|---|
+| `RepaymentCreate` | `repayment.create` |
+| `RepaymentReverse` | `repayment.reverse` |
+| `CreditReverse` | `credit.reverse` |
+| `CreditDueDateSet` | `credit.due-date.set` |
+| `CreditDueDateClear` | `credit.due-date.clear` |
+
+### Dependencies
+
+- Repayment for locally created customer → successful `CustomerCreate`
+- Repayment against locally created credit → successful `CreditCreate` (when applicable)
+- Reversal / due-date → original entry is `ServerConfirmed`
+- Later reversal or due-date must not overtake the original create
+- Permanent dependency failure → dependents Conflict/blocked; retained for review; never submitted independently
+
+### Balance projection
+
+`Projected outstanding = confirmed outstanding + pending credit − pending repayment` (never below zero locally). No editable balance column. Rejected ops remove optimistic effects and retain history.
+
+### Recovery
+
+Recover abandoned `Syncing` after restart; rebuild optimistic projections from confirmed data + unresolved queue; never assume timeout failed — use idempotency replay; refresh ledger/balances after confirmed/rejected/conflicted financial ops; never silent discard or last-write-wins. Safe actions: Retry, Review, Refresh from server, Discard local only when never server-confirmed with explicit user confirm.
+
+### Capability enforcement
+
+Server remains authoritative. Local acceptance while access was valid does not authorize later processing. `RecordRepayment`, `ReverseCredit`, `ReverseRepayment` (trial matrix), `MutateDueDate` gates apply on process and online paths.
+
+### Explicit deferrals (P7-WP05+)
+
+Offline statements/receipts, customer deactivate/reactivate offline, automatic financial conflict resolution, production sync scheduling, sales/inventory/gateways/QR/cards, SQLCipher, R-022 grace, time-based retention purge.
 
 ## Later phase (preview)
 
-**P7-WP04 — Payment Sync and Recovery** follows Customer and Credit Sync.
+**P7-WP05 — Offline Closeout** follows Payment Sync and Recovery.

@@ -9,6 +9,13 @@ using ExItS.PinoyBusinessPOS.Domain.Payments;
 
 namespace ExItS.PinoyBusinessPOS.Application.Payments;
 
+public sealed record RepaymentSyncPageDto(
+    List<RepaymentDto> Items,
+    int TotalCount,
+    int Page,
+    int PageSize,
+    DateTimeOffset? NextCheckpointUtc);
+
 public sealed record RepaymentDto(
     Guid RepaymentId,
     Guid OrganizationId,
@@ -136,6 +143,32 @@ public sealed class RepaymentQueryService
             take);
     }
 
+    public async Task<RepaymentSyncPageDto> ListForSyncAsync(
+        Guid organizationId,
+        DateTimeOffset? sinceUtc,
+        int? page,
+        int? pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (skip, take) = PosPagination.Normalize(page, pageSize);
+        var (items, total) = await _repayments
+            .ListCreatedSinceAsync(PosOrganizationId.From(organizationId), sinceUtc, skip, take, cancellationToken)
+            .ConfigureAwait(false);
+
+        var mapped = items.Select(Map).ToList();
+        DateTimeOffset? nextCheckpoint = null;
+        foreach (var repayment in mapped)
+        {
+            var candidate = repayment.ReversedAtUtc ?? repayment.RecordedAtUtc;
+            if (nextCheckpoint is null || candidate > nextCheckpoint)
+            {
+                nextCheckpoint = candidate;
+            }
+        }
+
+        return new RepaymentSyncPageDto(mapped, total, Math.Max(page ?? 1, 1), take, nextCheckpoint);
+    }
+
     public static RepaymentDto Map(Repayment repayment) =>
         new(
             repayment.Id.Value,
@@ -210,6 +243,7 @@ public sealed class CreateRepayment
         decimal amount,
         string? remarks,
         Guid recordedBy,
+        Guid? clientRepaymentId = null,
         CancellationToken cancellationToken = default)
     {
         var orgId = PosOrganizationId.From(organizationId);
@@ -220,6 +254,24 @@ public sealed class CreateRepayment
             return ApplicationResult<Repayment>.Failure(
                 ApplicationErrorCodes.CustomerNotFound,
                 "Customer was not found.");
+        }
+
+        if (clientRepaymentId is not null)
+        {
+            var existing = await _repayments
+                .GetByIdAsync(orgId, RepaymentId.From(clientRepaymentId.Value), cancellationToken)
+                .ConfigureAwait(false);
+            if (existing is not null)
+            {
+                if (existing.CustomerId != custId)
+                {
+                    return ApplicationResult<Repayment>.Failure(
+                        ApplicationErrorCodes.ConcurrencyConflict,
+                        "Repayment id is already assigned to another customer.");
+                }
+
+                return ApplicationResult<Repayment>.Success(existing);
+            }
         }
 
         // Inactive-customer policy (P6-WP03): allow repayment against existing debt.
@@ -244,7 +296,16 @@ public sealed class CreateRepayment
                             "Repayment amount exceeds the current outstanding balance.");
                     }
 
-                    var repayment = Repayment.Create(orgId, custId, normalized, remarks, recordedBy, _clock.UtcNow);
+                    var repayment = clientRepaymentId is null
+                        ? Repayment.Create(orgId, custId, normalized, remarks, recordedBy, _clock.UtcNow)
+                        : Repayment.Create(
+                            orgId,
+                            custId,
+                            normalized,
+                            remarks,
+                            recordedBy,
+                            _clock.UtcNow,
+                            id: RepaymentId.From(clientRepaymentId.Value));
                     await _repayments.AddAsync(repayment, ct).ConfigureAwait(false);
                     await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
                     return ApplicationResult<Repayment>.Success(repayment);

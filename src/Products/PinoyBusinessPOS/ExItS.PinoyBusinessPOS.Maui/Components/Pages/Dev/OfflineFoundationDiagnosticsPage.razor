@@ -51,7 +51,7 @@ else
                 <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_FailureCode"]: @(_snapshot.SampleFailureCode ?? "—")</InlineMessage>
             </Stack>
 
-            @if (_snapshot.LocalCustomerEntityCounts is not null || _snapshot.LocalCreditEntityCounts is not null)
+            @if (_snapshot.LocalCustomerEntityCounts is not null || _snapshot.LocalCreditEntityCounts is not null || _snapshot.LocalRepaymentEntityCounts is not null)
             {
                 <SectionHeader Title="@L["DevOffline_LocalProjectionsTitle"]" />
                 <Stack Gap="2">
@@ -59,13 +59,14 @@ else
                     {
                         var customerCount = _snapshot.LocalCustomerEntityCounts?.GetValueOrDefault(state) ?? 0;
                         var creditCount = _snapshot.LocalCreditEntityCounts?.GetValueOrDefault(state) ?? 0;
-                        if (customerCount == 0 && creditCount == 0)
+                        var repaymentCount = _snapshot.LocalRepaymentEntityCounts?.GetValueOrDefault(state) ?? 0;
+                        if (customerCount == 0 && creditCount == 0 && repaymentCount == 0)
                         {
                             continue;
                         }
 
                         <InlineMessage Tone="InlineMessageTone.Info">
-                            @state: @L["DevOffline_CustomersLabel"] @customerCount · @L["DevOffline_CreditsLabel"] @creditCount
+                            @state: @L["DevOffline_CustomersLabel"] @customerCount · @L["DevOffline_CreditsLabel"] @creditCount · @L["DevOffline_RepaymentsLabel"] @repaymentCount
                         </InlineMessage>
                     }
                 </Stack>

@@ -49,6 +49,11 @@ else
         <Alert Tone="AlertTone.Success" Title="@L["Customers_SuccessTitle"]" Message="@_banner" />
     }
 
+    @if (_showRecoveryBanner)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Offline_RecoveryRequired"]" Message="@L["Offline_ConflictMessage"]" />
+    }
+
     @if (_entityState == LocalEntitySyncState.Conflict)
     {
         <Alert Tone="AlertTone.Warning" Title="@L["Offline_ConflictTitle"]" Message="@L["Offline_ConflictMessage"]" />
@@ -117,6 +122,12 @@ else
                     </div>
                 </div>
                 <div>
+                    <span class="pos-muted">@L["Offline_PendingRepayment"]</span>
+                    <div class="pos-value-md">
+                        <MoneyDisplay Amount="@_localBalance.PendingRepayment" CurrencyCode="PHP" />
+                    </div>
+                </div>
+                <div>
                     <span class="pos-muted">@L["Offline_ProjectedOutstanding"]</span>
                     <div class="pos-value-md">
                         <MoneyDisplay Amount="@_localBalance.ProjectedOutstanding" CurrencyCode="PHP" />
@@ -161,15 +172,15 @@ else
                     <Button Variant="ButtonVariant.Secondary" Disabled="@(!canCreateCredit)" OnClick="GoAddCredit">@L["Credit_Add"]</Button>
                 }
                 <Button Variant="ButtonVariant.Primary"
-                        Disabled="@(_isOffline || _utang is null && !_showLocalBalance || (_utang?.OutstandingAmount ?? _localBalance?.ProjectedOutstanding ?? 0m) <= 0m || !Capabilities.IsAllowed(UtangCapability.RecordRepayment))"
+                        Disabled="@((!Sync.CanMutateOffline && _isOffline) || (_utang is null && !_showLocalBalance) || (_utang?.OutstandingAmount ?? _localBalance?.ProjectedOutstanding ?? 0m) <= 0m || !Capabilities.IsAllowed(UtangCapability.RecordRepayment))"
                         OnClick="GoAddPayment">@L["Payment_Record"]</Button>
                 <Button Variant="ButtonVariant.Secondary" Disabled="@_isOffline" OnClick="GoLedger">@L["Ledger_Open"]</Button>
                 <Button Variant="ButtonVariant.Secondary" Disabled="@_isOffline" OnClick="GoOverdue">@L["Overdue_OpenDetail"]</Button>
                 <Button Variant="ButtonVariant.Secondary" Disabled="@(!canStatement || _isOffline)" OnClick="GoStatement">@L["Statement_Open"]</Button>
             </FormActions>
-            @if (_isOffline)
+            @if (_isOffline && !Sync.CanMutateOffline)
             {
-                <Alert Tone="AlertTone.Info" Title="@L["SyncStatus_Offline"]" Message="@L["Offline_CreditOnlineOnly"]" />
+                <Alert Tone="AlertTone.Info" Title="@L["SyncStatus_Offline"]" Message="@L["Offline_MutationsUnavailable"]" />
             }
             @if (customer.Status != "Active")
             {
@@ -203,6 +214,12 @@ else
                         </div>
                         <div class="pos-wrap">@entry.Remarks</div>
                         <div class="pos-muted">@entry.CreatedAtUtc.ToLocalTime().ToString("g")</div>
+                        @if (entry.Status == "Active")
+                        {
+                            <FormActions>
+                                <Button Variant="ButtonVariant.Secondary" OnClick="() => GoCreditDetail(entry.CreditEntryId)">@L["DueDate_OpenCredit"]</Button>
+                            </FormActions>
+                        }
                     </div>
                 }
             </Stack>
@@ -244,6 +261,43 @@ else
         }
     </Section>
 
+    @if (_isOffline || _localRepayments.Count > 0)
+    {
+        <Section Title="@L["Utang_PaymentsTotal"]">
+            @if (_repaymentsLoading)
+            {
+                <Spinner /><span>@L["Payment_Loading"]</span>
+            }
+            else if (_localRepayments.Count == 0)
+            {
+                <EmptyState Title="@L["Payment_NotFoundTitle"]" Message="@L["Payment_NotFoundMessage"]" />
+            }
+            else
+            {
+                <Stack Gap="3">
+                    @foreach (var repayment in _localRepayments)
+                    {
+                        <div class="pos-credit-entry">
+                            <div class="pos-value-md">
+                                <MoneyDisplay Amount="@repayment.Amount" CurrencyCode="PHP" />
+                                <Badge Tone="@(repayment.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@repayment.Status</Badge>
+                                @if (OfflineCustomerCreditUiHelpers.EntityBadge(repayment.EntityState) is { } badge)
+                                {
+                                    <Badge Tone="@badge.Tone">@L[badge.LabelKey]</Badge>
+                                }
+                            </div>
+                            <div class="pos-wrap">@(string.IsNullOrWhiteSpace(repayment.Remarks) ? L["Customers_NoValue"] : repayment.Remarks)</div>
+                            <div class="pos-muted">@repayment.RecordedAtUtc.ToLocalTime().ToString("g")</div>
+                            <FormActions>
+                                <Button Variant="ButtonVariant.Secondary" OnClick="() => GoRepaymentDetail(repayment.RepaymentId)">@L["Payment_View"]</Button>
+                            </FormActions>
+                        </div>
+                    }
+                </Stack>
+            }
+        </Section>
+    }
+
     <FormActions>
         @if (customer.Status == "Active")
         {
@@ -255,7 +309,7 @@ else
         }
     </FormActions>
 
-    @if (_isOffline)
+    @if (_isOffline && !Sync.CanMutateOffline)
     {
         <Alert Tone="AlertTone.Info" Title="@L["SyncStatus_Offline"]" Message="@L["Offline_MutationsUnavailable"]" />
     }
@@ -301,6 +355,7 @@ else
     private bool _ready;
     private bool _loading = true;
     private bool _entriesLoading;
+    private bool _repaymentsLoading;
     private bool _acting;
     private bool _confirmDeactivate;
     private bool _confirmReactivate;
@@ -308,12 +363,14 @@ else
     private bool _isOffline;
     private bool _showLocalBalance;
     private bool _fromLocalCredits;
+    private bool _showRecoveryBanner;
     private PosCustomerDetailDto? _customer;
     private LocalEntitySyncState? _entityState;
     private PosCustomerUtangSummaryDto? _utang;
     private LocalCustomerBalanceProjection? _localBalance;
     private List<PosCreditEntryDto> _entries = [];
     private List<LocalCreditProjection> _localCreditEntries = [];
+    private List<LocalRepaymentProjection> _localRepayments = [];
     private PosCreditEntryDto? _reverseCreditTarget;
     private string? _creditReversalReason;
     private string? _errorTitle;
@@ -347,6 +404,8 @@ else
         _showLocalBalance = false;
         _fromLocalCredits = false;
         _localCreditEntries = [];
+        _localRepayments = [];
+        _showRecoveryBanner = false;
         _entries = [];
         StateHasChanged();
 
@@ -407,9 +466,18 @@ else
         _localBalance = await LocalStore.GetBalanceAsync(CustomerId);
         _showLocalBalance = true;
         _localCreditEntries = (await LocalStore.ListCreditsAsync(CustomerId)).ToList();
+        _localRepayments = (await LocalStore.ListRepaymentsAsync(CustomerId)).ToList();
         _fromLocalCredits = true;
+        _showRecoveryBanner = CountRecoveryStates(_localCreditEntries) + CountRecoveryStates(_localRepayments) > 0;
         _entriesLoading = false;
+        _repaymentsLoading = false;
     }
+
+    private static int CountRecoveryStates(IEnumerable<LocalCreditProjection> items) =>
+        items.Count(i => i.EntityState is LocalEntitySyncState.Conflict or LocalEntitySyncState.Rejected or LocalEntitySyncState.BlockedByAccess);
+
+    private static int CountRecoveryStates(IEnumerable<LocalRepaymentProjection> items) =>
+        items.Count(i => i.EntityState is LocalEntitySyncState.Conflict or LocalEntitySyncState.Rejected or LocalEntitySyncState.BlockedByAccess);
 
     private async Task LoadUtangAsync()
     {
@@ -444,8 +512,14 @@ else
                 }
             }
         }
+        else if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
+        {
+            _localRepayments = (await LocalStore.ListRepaymentsAsync(CustomerId)).ToList();
+            _showRecoveryBanner = CountRecoveryStates(_localCreditEntries) + CountRecoveryStates(_localRepayments) > 0;
+        }
 
         _entriesLoading = false;
+        _repaymentsLoading = false;
     }
 
     private async Task DeactivateAsync()
@@ -563,4 +637,5 @@ else
     private void GoOverdue() => Nav.NavigateTo($"/customers/{CustomerId:D}/overdue");
     private void GoStatement() => Nav.NavigateTo($"/customers/{CustomerId:D}/statement");
     private void GoCreditDetail(Guid entryId) => Nav.NavigateTo($"/customers/{CustomerId:D}/credit/{entryId:D}");
+    private void GoRepaymentDetail(Guid repaymentId) => Nav.NavigateTo($"/customers/{CustomerId:D}/repayments/{repaymentId:D}");
 }

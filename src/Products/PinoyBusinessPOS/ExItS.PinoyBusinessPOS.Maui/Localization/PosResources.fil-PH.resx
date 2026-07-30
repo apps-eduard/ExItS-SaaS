@@ -579,4 +579,14 @@
   <data name="DevOffline_LocalProjectionsTitle" xml:space="preserve"><value>Local customer/credit counts</value></data>
   <data name="DevOffline_CustomersLabel" xml:space="preserve"><value>customers</value></data>
   <data name="DevOffline_CreditsLabel" xml:space="preserve"><value>credits</value></data>
+  <data name="DevOffline_RepaymentsLabel" xml:space="preserve"><value>repayments</value></data>
+  <data name="Offline_PendingRepayment" xml:space="preserve"><value>Pending na repayment</value></data>
+  <data name="Offline_EntityPendingReversal" xml:space="preserve"><value>Pending reversal</value></data>
+  <data name="Offline_EntityBlockedByAccess" xml:space="preserve"><value>Blocked by access</value></data>
+  <data name="Offline_RecoveryRequired" xml:space="preserve"><value>Kailangan ng recovery</value></data>
+  <data name="Offline_RefreshFromServer" xml:space="preserve"><value>I-refresh mula sa server</value></data>
+  <data name="Offline_DiscardLocalRequest" xml:space="preserve"><value>I-discard ang local request</value></data>
+  <data name="Offline_OverpaymentLocal" xml:space="preserve"><value>Lampas sa projected outstanding kasama ang pending local changes.</value></data>
+  <data name="Offline_DueDateConflictTitle" xml:space="preserve"><value>Conflict sa due date</value></data>
+  <data name="Offline_DueDateConflictMessage" xml:space="preserve"><value>Magkaiba ang due date sa server at local change mo. I-refresh mula sa server o i-discard ang local request.</value></data>
 </root>

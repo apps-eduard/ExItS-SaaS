@@ -81,7 +81,8 @@ public sealed class OfflineFoundationDiagnostics(
             LastSyncedAtUtc: lastSynced,
             SampleFailureCode: sample.FirstOrDefault(o => o.FailureCode is not null)?.FailureCode,
             LocalCustomerEntityCounts: entityCounts.Customers,
-            LocalCreditEntityCounts: entityCounts.Credits);
+            LocalCreditEntityCounts: entityCounts.Credits,
+            LocalRepaymentEntityCounts: entityCounts.Repayments);
     }
 }
 
@@ -109,7 +110,8 @@ public sealed record OfflineFoundationDiagnosticsSnapshot(
     DateTimeOffset? LastSyncedAtUtc = null,
     string? SampleFailureCode = null,
     IReadOnlyDictionary<LocalEntitySyncState, int>? LocalCustomerEntityCounts = null,
-    IReadOnlyDictionary<LocalEntitySyncState, int>? LocalCreditEntityCounts = null)
+    IReadOnlyDictionary<LocalEntitySyncState, int>? LocalCreditEntityCounts = null,
+    IReadOnlyDictionary<LocalEntitySyncState, int>? LocalRepaymentEntityCounts = null)
 {
     public static OfflineFoundationDiagnosticsSnapshot Unavailable { get; } = new(false);
 }

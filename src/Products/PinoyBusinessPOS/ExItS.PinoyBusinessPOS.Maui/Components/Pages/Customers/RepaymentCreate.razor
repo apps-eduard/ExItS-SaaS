@@ -3,8 +3,13 @@
 @inject NavigationGate Gate
 @inject IPosCustomerClient Customers
 @inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
+@inject ICustomerCreditOfflineSyncService Sync
+@inject ILocalCustomerCreditStore Store
+@inject IConnectivityService Connectivity
+@inject ILocalContextManager LocalContext
 
 @if (!_ready)
 {
@@ -12,6 +17,7 @@
 }
 else
 {
+    var canRecord = Capabilities.IsAllowed(UtangCapability.RecordRepayment);
 <Page>
     <PageHeader Title="@L["Payment_AddTitle"]" Subtitle="@L["Payment_AddSubtitle"]">
         <Actions>
@@ -19,9 +25,35 @@ else
         </Actions>
     </PageHeader>
 
-    <Alert Tone="AlertTone.Info" Title="@L["Utang_DeferredTitle"]" Message="@L["Utang_DeferredMessage"]" />
+    @if (!canRecord)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+    }
 
-    @if (_utang is not null)
+    @if (_showLocalBalance && _localBalance is not null)
+    {
+        <Section Title="@L["Payment_OutstandingSection"]">
+            <Stack Gap="3">
+                <div>
+                    <span class="pos-muted">@L["Offline_ConfirmedOutstanding"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@_localBalance.ConfirmedOutstanding" CurrencyCode="PHP" /></div>
+                </div>
+                <div>
+                    <span class="pos-muted">@L["Offline_PendingCredit"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@_localBalance.PendingCredit" CurrencyCode="PHP" /></div>
+                </div>
+                <div>
+                    <span class="pos-muted">@L["Offline_PendingRepayment"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@_localBalance.PendingRepayment" CurrencyCode="PHP" /></div>
+                </div>
+                <div>
+                    <span class="pos-muted">@L["Offline_ProjectedOutstanding"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@_localBalance.ProjectedOutstanding" CurrencyCode="PHP" /></div>
+                </div>
+            </Stack>
+        </Section>
+    }
+    else if (_utang is not null)
     {
         <Section Title="@L["Payment_OutstandingSection"]">
             <div class="pos-value-md"><MoneyDisplay Amount="@_utang.OutstandingAmount" CurrencyCode="PHP" /></div>
@@ -42,14 +74,14 @@ else
                        Hint="@L["Payment_AmountHint"]"
                        IsInvalid="@(!string.IsNullOrEmpty(_amountError))"
                        ErrorText="@_amountError"
-                       Disabled="@_saving" />
+                       Disabled="@(_saving || !canRecord)" />
 
             <TextArea Label="@L["Payment_Field_Remarks"]"
                       Value="@_remarks"
                       ValueChanged="v => _remarks = v"
                       Hint="@L["Payment_RemarksHint"]"
                       Rows="3"
-                      Disabled="@_saving" />
+                      Disabled="@(_saving || !canRecord)" />
         </Stack>
     </Section>
 
@@ -57,7 +89,7 @@ else
         <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="GoBack">@L["Customers_Cancel"]</Button>
         <Button Variant="ButtonVariant.Primary"
                 IsLoading="@_saving"
-                Disabled="@(_utang is null || _utang.OutstandingAmount <= 0m)"
+                Disabled="@(!canRecord || !_hasRepayableBalance)"
                 OnClick="() => _confirm = true">@L["Payment_Save"]</Button>
     </FormActions>
 
@@ -77,7 +109,10 @@ else
     private bool _ready;
     private bool _saving;
     private bool _confirm;
+    private bool _showLocalBalance;
+    private bool _hasRepayableBalance;
     private PosCustomerUtangSummaryDto? _utang;
+    private LocalCustomerBalanceProjection? _localBalance;
     private string? _amountText;
     private string? _remarks;
     private string? _amountError;
@@ -93,16 +128,51 @@ else
         }
 
         _ready = true;
-        var summary = await Customers.GetUtangSummaryAsync(CustomerId);
-        if (summary.IsSuccess)
+        await LoadBalanceAsync();
+    }
+
+    private async Task LoadBalanceAsync()
+    {
+        _showLocalBalance = false;
+        _localBalance = null;
+        _utang = null;
+        _hasRepayableBalance = false;
+
+        var online = await Connectivity.IsConnectedAsync();
+        if (online)
         {
-            _utang = summary.Data;
+            var summary = await Customers.GetUtangSummaryAsync(CustomerId);
+            if (summary.IsSuccess && summary.Data is not null)
+            {
+                _utang = summary.Data;
+                _hasRepayableBalance = _utang.OutstandingAmount > 0;
+            }
+            else if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
+            {
+                await LoadLocalBalanceAsync();
+            }
+            else
+            {
+                _errorTitle = L["Payment_ErrorTitle"];
+                _errorMessage = summary.Error?.Detail ?? ApiLocalizer.Describe(summary.Status, summary.Error).Message;
+            }
+        }
+        else if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
+        {
+            await LoadLocalBalanceAsync();
         }
         else
         {
-            _errorTitle = L["Payment_ErrorTitle"];
-            _errorMessage = summary.Error?.Detail ?? ApiLocalizer.Describe(summary.Status, summary.Error).Message;
+            _errorTitle = L["SyncStatus_Offline"];
+            _errorMessage = L["Api_Offline"];
         }
+    }
+
+    private async Task LoadLocalBalanceAsync()
+    {
+        _localBalance = await Store.GetBalanceAsync(CustomerId);
+        _showLocalBalance = true;
+        _hasRepayableBalance = _localBalance.ProjectedOutstanding > 0;
     }
 
     private async Task SaveAsync()
@@ -112,37 +182,69 @@ else
         _errorMessage = null;
         _confirm = false;
 
+        if (!Capabilities.IsAllowed(UtangCapability.RecordRepayment))
+        {
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(_amountText) || !decimal.TryParse(_amountText.Trim(), out var amount) || amount <= 0)
         {
             _amountError = L["Payment_AmountInvalid"];
             return;
         }
 
-        if (_utang is not null && amount > _utang.OutstandingAmount)
+        if (!OfflineCustomerCreditUiHelpers.HasAtMostTwoDecimalPlaces(amount))
         {
-            _amountError = L["Payment_Overpayment"];
+            _amountError = L["Payment_AmountInvalid"];
+            return;
+        }
+
+        var projected = _localBalance?.ProjectedOutstanding ?? _utang?.OutstandingAmount;
+        if (projected is not null && amount > projected.Value)
+        {
+            _amountError = _showLocalBalance ? L["Offline_OverpaymentLocal"] : L["Payment_Overpayment"];
             return;
         }
 
         _saving = true;
-        var result = await Customers.CreateRepaymentAsync(CustomerId, new CreatePosRepaymentRequest(amount, _remarks));
+        var result = await Sync.CreateRepaymentAsync(CustomerId, amount, _remarks);
         _saving = false;
 
-        if (result.IsSuccess)
+        if (result.Succeeded)
         {
-            Nav.NavigateTo($"/customers/{CustomerId:D}/ledger");
+            var route = result.PendingLocal
+                ? $"/customers/{CustomerId:D}?pending=1"
+                : $"/customers/{CustomerId:D}";
+            Nav.NavigateTo(route);
             return;
         }
 
-        _errorTitle = L["Payment_ErrorTitle"];
-        _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
-        if (result.Status == ApiCallStatus.Conflict)
+        if (string.Equals(result.ErrorCode, "local_overpayment", StringComparison.Ordinal))
         {
-            var refreshed = await Customers.GetUtangSummaryAsync(CustomerId);
-            if (refreshed.IsSuccess)
-            {
-                _utang = refreshed.Data;
-            }
+            _amountError = L["Offline_OverpaymentLocal"];
+            return;
+        }
+
+        if (string.Equals(result.ErrorCode, "offline_mutations_unavailable", StringComparison.Ordinal))
+        {
+            _errorTitle = L["SyncStatus_Offline"];
+            _errorMessage = L["Offline_MutationsUnavailable"];
+        }
+        else if (string.Equals(result.ErrorCode, "zero_outstanding", StringComparison.Ordinal))
+        {
+            _errorTitle = L["Payment_ErrorTitle"];
+            _errorMessage = result.ErrorMessage ?? L["Payment_Overpayment"];
+            await LoadBalanceAsync();
+        }
+        else if (string.Equals(result.ErrorCode, ApplicationErrorCodes.CustomerNotFound, StringComparison.Ordinal))
+        {
+            _errorTitle = L["Customers_NotFoundTitle"];
+            _errorMessage = result.ErrorMessage ?? L["Customers_NotFoundMessage"];
+        }
+        else
+        {
+            _errorTitle = L["Payment_ErrorTitle"];
+            _errorMessage = result.ErrorMessage ?? L["Payment_AmountInvalid"];
         }
     }
 

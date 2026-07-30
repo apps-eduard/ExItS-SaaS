@@ -216,6 +216,7 @@ public sealed class CustomerCreditOfflineStoreTests
         var withPending = await harness.Store.GetBalanceAsync(customerId);
         Assert.Equal(100m, withPending.ConfirmedOutstanding);
         Assert.Equal(25m, withPending.PendingCredit);
+        Assert.Equal(0m, withPending.PendingRepayment);
         Assert.Equal(125m, withPending.ProjectedOutstanding);
 
         await harness.Store.MarkCreditStateAsync(
@@ -226,6 +227,7 @@ public sealed class CustomerCreditOfflineStoreTests
         var afterReject = await harness.Store.GetBalanceAsync(customerId);
         Assert.Equal(100m, afterReject.ConfirmedOutstanding);
         Assert.Equal(0m, afterReject.PendingCredit);
+        Assert.Equal(0m, afterReject.PendingRepayment);
         Assert.Equal(100m, afterReject.ProjectedOutstanding);
     }
 
@@ -286,7 +288,7 @@ public sealed class CustomerCreditOfflineStoreTests
         var migrator = new LocalDatabaseMigrator();
         var result = await migrator.MigrateAsync(connection, identity);
         Assert.True(result.Succeeded);
-        Assert.Equal(3, result.SchemaVersion);
+        Assert.Equal(4, result.SchemaVersion);
 
         await using var sqlite = new SqliteConnection($"Data Source={path}");
         await sqlite.OpenAsync();
@@ -295,7 +297,7 @@ public sealed class CustomerCreditOfflineStoreTests
         {
             versionCmd.CommandText = "SELECT MAX(schema_version) FROM local_schema_info;";
             var version = Convert.ToInt64(await versionCmd.ExecuteScalarAsync(), CultureInfo.InvariantCulture);
-            Assert.Equal(3, version);
+            Assert.Equal(4, version);
         }
 
         await using (var tablesCmd = sqlite.CreateCommand())

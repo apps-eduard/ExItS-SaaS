@@ -4,17 +4,18 @@ using ExItS.PinoyBusinessPOS.Application.Abstractions;
 namespace ExItS.PinoyBusinessPOS.LocalStore;
 
 /// <summary>
-/// Local schema migrations. v1 foundation metadata; v2 generic encrypted outbox; v3 encrypted business cache.
+/// Local schema migrations. v1 foundation metadata; v2 generic encrypted outbox; v3 encrypted business cache; v4 payment projections.
 /// </summary>
 public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : ILocalDatabaseMigrator
 {
     public const int FoundationSchemaVersion = 1;
     public const int QueueSchemaVersion = 2;
     public const int BusinessCacheSchemaVersion = 3;
+    public const int PaymentCacheSchemaVersion = 4;
 
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
 
-    public int CurrentSchemaVersion => BusinessCacheSchemaVersion;
+    public int CurrentSchemaVersion => PaymentCacheSchemaVersion;
 
     public async Task<LocalMigrationResult> MigrateAsync(
         ILocalDatabaseConnection connection,
@@ -212,6 +213,85 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
                 current = BusinessCacheSchemaVersion;
             }
 
+            if (current < PaymentCacheSchemaVersion)
+            {
+                await connection.ExecuteAsync(
+                    """
+                    ALTER TABLE local_customer_balance ADD COLUMN pending_repay_ciphertext BLOB NULL;
+                    """,
+                    ct).ConfigureAwait(false);
+                await connection.ExecuteAsync(
+                    """
+                    ALTER TABLE local_customer_balance ADD COLUMN pending_repay_nonce BLOB NULL;
+                    """,
+                    ct).ConfigureAwait(false);
+                await connection.ExecuteAsync(
+                    """
+                    ALTER TABLE local_customer_balance ADD COLUMN pending_repay_tag BLOB NULL;
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_repayment_projection (
+                        repayment_id TEXT NOT NULL PRIMARY KEY,
+                        customer_id TEXT NOT NULL,
+                        organization_id TEXT NOT NULL,
+                        entity_state TEXT NOT NULL,
+                        pending_operation_id TEXT NULL,
+                        depends_on_operation_id TEXT NULL,
+                        recorded_utc TEXT NOT NULL,
+                        ciphertext BLOB NOT NULL,
+                        nonce BLOB NOT NULL,
+                        tag BLOB NOT NULL,
+                        safe_failure_code TEXT NULL,
+                        pending_reversal_reason TEXT NULL
+                    );
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE INDEX IF NOT EXISTS ix_local_repay_customer
+                    ON local_repayment_projection(customer_id);
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    ALTER TABLE local_credit_projection ADD COLUMN current_due_date TEXT NULL;
+                    """,
+                    ct).ConfigureAwait(false);
+                await connection.ExecuteAsync(
+                    """
+                    ALTER TABLE local_credit_projection ADD COLUMN pending_due_date TEXT NULL;
+                    """,
+                    ct).ConfigureAwait(false);
+                await connection.ExecuteAsync(
+                    """
+                    ALTER TABLE local_credit_projection ADD COLUMN pending_due_date_reason TEXT NULL;
+                    """,
+                    ct).ConfigureAwait(false);
+                await connection.ExecuteAsync(
+                    """
+                    ALTER TABLE local_credit_projection ADD COLUMN pending_due_date_clear INTEGER NOT NULL DEFAULT 0;
+                    """,
+                    ct).ConfigureAwait(false);
+                await connection.ExecuteAsync(
+                    """
+                    ALTER TABLE local_credit_projection ADD COLUMN conflict_server_json TEXT NULL;
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    $"""
+                    INSERT INTO local_schema_info (schema_version, applied_at_utc)
+                    VALUES ({PaymentCacheSchemaVersion}, '{now}');
+                    """,
+                    ct).ConfigureAwait(false);
+                current = PaymentCacheSchemaVersion;
+            }
+
             var existing = await connection
                 .QueryScalarAsync<long>(
                     $"""
@@ -264,7 +344,7 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
                 return new LocalMigrationResult(false, (int)current, "forbidden_tables_present");
             }
 
-            return new LocalMigrationResult(true, BusinessCacheSchemaVersion);
+            return new LocalMigrationResult(true, PaymentCacheSchemaVersion);
         }
         catch (OperationCanceledException)
         {

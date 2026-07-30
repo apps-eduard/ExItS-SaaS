@@ -106,6 +106,10 @@ public sealed class OfflineFoundationGuardTests
         var migrator = File.ReadAllText(Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
             "ExItS.PinoyBusinessPOS.LocalStore", "LocalDatabaseMigrator.cs"));
         Assert.Contains("local_customer_projection", migrator, StringComparison.Ordinal);
+        Assert.Contains("local_repayment_projection", migrator, StringComparison.Ordinal);
+        Assert.Contains("v4 payment projections", migrator, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("CREATE TABLE repayments", migrator, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("CREATE TABLE IF NOT EXISTS repayments", migrator, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

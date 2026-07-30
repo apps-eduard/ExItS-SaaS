@@ -8,11 +8,11 @@ Deliver safe offline-first operation and synchronization.
 
 ## Status
 
-**In Progress** — P7-WP01, P7-WP02, and P7-WP03 complete with documented risks. Do **not** begin P7-WP04 until explicitly authorized.
+**In Progress** — P7-WP01, P7-WP02, P7-WP03, and P7-WP04 complete with documented risks. Do **not** begin P7-WP05 until explicitly authorized.
 
 Authoritative design: [offline-sync-design.md](../engineering/offline-sync-design.md)
 
-Reports: [P7-WP01](../reports/P7-WP01-sqlite-and-device-identity.md) · [P7-WP02](../reports/P7-WP02-offline-queue-and-idempotency.md) · [P7-WP03](../reports/P7-WP03-customer-and-credit-sync.md)
+Reports: [P7-WP01](../reports/P7-WP01-sqlite-and-device-identity.md) · [P7-WP02](../reports/P7-WP02-offline-queue-and-idempotency.md) · [P7-WP03](../reports/P7-WP03-customer-and-credit-sync.md) · [P7-WP04](../reports/P7-WP04-payment-sync-and-recovery.md)
 
 ## Work packages
 
@@ -83,11 +83,36 @@ Feature commit: `3763ca0fe406067eb539b3d8adca21447f813dcf`
 
 ### P7-WP04 — Payment Sync and Recovery
 
-Status: Not Started
+Status: **Complete with documented risks**
+
+Phase marker: `P7-WP04-payment-sync-and-recovery`
+
+Feature commit: _(recorded after push)_
+
+#### Approved scope
+
+- Encrypted local repayment projections (schema v4)
+- Offline `RepaymentCreate`, `RepaymentReverse`, `CreditReverse`, `CreditDueDateSet`, `CreditDueDateClear` via generic queue
+- Row-level AES-GCM (SQLCipher deferred; R-129 mitigated by not adding SQLCipher)
+- Download/reconcile repayments; confirmed / pending credit / pending repayment / projected outstanding
+- Local overpayment guard; dependency-safe FIFO; recovery/rebuild optimistic balances
+- Same in-process session offline auth gate (R-022 open; no time-based grace)
+- OD-10 retention retained; no time-based purge
+
+**Does not enable offline statements/receipts or production sync scheduling.**
+
+#### Definition of Done
+
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (601 passed / 0 failed / 0 skipped).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [ ] Focused commit created and hash recorded.
+- [ ] Working tree clean.
 
 ### P7-WP05 — Offline Closeout
 
-Status: Not Started
+Status: Not Started — do not begin until authorized
 
 ## Phase exit criteria
 

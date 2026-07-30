@@ -3,6 +3,7 @@ using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Payments;
 
 namespace ExItS.PinoyBusinessPOS.Api.Offline;
 
@@ -46,6 +47,31 @@ internal static class CustomerCreditSyncEndpoints
             int? page,
             int? pageSize,
             CreditEntryQueryService queries,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewCustomersAndHistory, out problem))
+            {
+                return problem!;
+            }
+
+            var result = await queries
+                .ListForSyncAsync(organizationId, sinceUtc, page, pageSize, ct)
+                .ConfigureAwait(false);
+            return Results.Ok(result);
+        });
+
+        group.MapGet("/repayments", async (
+            HttpRequest request,
+            DateTimeOffset? sinceUtc,
+            int? page,
+            int? pageSize,
+            RepaymentQueryService queries,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {

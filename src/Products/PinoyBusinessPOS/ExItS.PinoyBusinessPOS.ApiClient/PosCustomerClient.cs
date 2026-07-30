@@ -115,11 +115,13 @@ public sealed class PosCustomerClient(HttpClient httpClient, IConnectivityServic
         Guid customerId,
         Guid entryId,
         ReversePosCreditEntryRequest request,
+        PosMutationIdempotencyHeaders? idempotency = null,
         CancellationToken ct = default) =>
         SendAsync<PosCreditEntryDto>(
             HttpMethod.Post,
             $"/api/v1/pos/customers/{customerId:D}/credit-entries/{entryId:D}/reverse",
             request,
+            BuildIdempotencyHeaders(idempotency),
             ct);
 
     public Task<ApiResult<PosCustomerUtangSummaryDto>> GetUtangSummaryAsync(Guid customerId, CancellationToken ct = default) =>
@@ -154,11 +156,13 @@ public sealed class PosCustomerClient(HttpClient httpClient, IConnectivityServic
     public Task<ApiResult<PosRepaymentDto>> CreateRepaymentAsync(
         Guid customerId,
         CreatePosRepaymentRequest request,
+        PosMutationIdempotencyHeaders? idempotency = null,
         CancellationToken ct = default) =>
         SendAsync<PosRepaymentDto>(
             HttpMethod.Post,
             $"/api/v1/pos/customers/{customerId:D}/repayments",
             request,
+            BuildIdempotencyHeaders(idempotency),
             ct);
 
     public Task<ApiResult<PosRepaymentDto>> GetRepaymentAsync(Guid repaymentId, CancellationToken ct = default) =>
@@ -167,32 +171,52 @@ public sealed class PosCustomerClient(HttpClient httpClient, IConnectivityServic
     public Task<ApiResult<PosRepaymentDto>> ReverseRepaymentAsync(
         Guid repaymentId,
         ReversePosRepaymentRequest request,
+        PosMutationIdempotencyHeaders? idempotency = null,
         CancellationToken ct = default) =>
         SendAsync<PosRepaymentDto>(
             HttpMethod.Post,
             $"/api/v1/pos/repayments/{repaymentId:D}/reverse",
             request,
+            BuildIdempotencyHeaders(idempotency),
             ct);
 
     public Task<ApiResult<PosCreditEntryDto>> SetCreditDueDateAsync(
         Guid creditEntryId,
         SetPosCreditDueDateRequest request,
+        PosMutationIdempotencyHeaders? idempotency = null,
         CancellationToken ct = default) =>
         SendAsync<PosCreditEntryDto>(
             HttpMethod.Put,
             $"/api/v1/pos/credit/{creditEntryId:D}/due-date",
             request,
+            BuildIdempotencyHeaders(idempotency),
             ct);
 
     public Task<ApiResult<PosCreditEntryDto>> ClearCreditDueDateAsync(
         Guid creditEntryId,
-        string reason,
-        CancellationToken ct = default) =>
-        SendAsync<PosCreditEntryDto>(
+        ClearPosCreditDueDateRequest request,
+        PosMutationIdempotencyHeaders? idempotency = null,
+        CancellationToken ct = default)
+    {
+        var query = new StringBuilder($"/api/v1/pos/credit/{creditEntryId:D}/due-date?");
+        query.Append("reason=").Append(Uri.EscapeDataString(request.Reason));
+        if (request.CheckExpectedDueDate)
+        {
+            query.Append("&checkExpectedDueDate=true");
+            if (request.ExpectedCurrentDueDate is not null)
+            {
+                query.Append("&expectedCurrentDueDate=")
+                    .Append(Uri.EscapeDataString(request.ExpectedCurrentDueDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
+            }
+        }
+
+        return SendAsync<PosCreditEntryDto>(
             HttpMethod.Delete,
-            $"/api/v1/pos/credit/{creditEntryId:D}/due-date?reason={Uri.EscapeDataString(reason)}",
+            query.ToString(),
             null,
+            BuildIdempotencyHeaders(idempotency),
             ct);
+    }
 
     public Task<ApiResult<PosCreditDueDateHistoryPagedResult>> ListCreditDueDateHistoryAsync(
         Guid creditEntryId,
@@ -342,6 +366,23 @@ public sealed class PosCustomerClient(HttpClient httpClient, IConnectivityServic
         }
 
         return SendAsync<PosCreditSyncPageResult>(HttpMethod.Get, query.ToString(), null, ct);
+    }
+
+    public Task<ApiResult<PosRepaymentSyncPageResult>> SyncRepaymentsAsync(
+        DateTimeOffset? sinceUtc = null,
+        int page = 1,
+        int pageSize = 100,
+        CancellationToken ct = default)
+    {
+        var query = new StringBuilder("/api/v1/pos/sync/repayments?");
+        query.Append("page=").Append(page);
+        query.Append("&pageSize=").Append(pageSize);
+        if (sinceUtc is not null)
+        {
+            query.Append("&sinceUtc=").Append(Uri.EscapeDataString(sinceUtc.Value.ToString("O")));
+        }
+
+        return SendAsync<PosRepaymentSyncPageResult>(HttpMethod.Get, query.ToString(), null, ct);
     }
 
     private async Task<ApiResult<TResponse>> SendAsync<TResponse>(

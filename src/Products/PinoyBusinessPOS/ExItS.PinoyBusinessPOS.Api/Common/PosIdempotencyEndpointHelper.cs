@@ -106,6 +106,8 @@ internal static class PosIdempotencyEndpointHelper
     {
         Application.Customers.POSCustomerDto c => c.CustomerId.ToString("D"),
         Application.Credit.CreditEntryDto e => e.CreditEntryId.ToString("D"),
+        Application.Payments.RepaymentDto r => r.RepaymentId.ToString("D"),
+        Application.Payments.PosRepaymentDto p => p.RepaymentId.ToString("D"),
         _ => null
     };
 }

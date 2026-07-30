@@ -17,9 +17,9 @@ namespace ExItS.PinoyBusinessPOS.Maui;
 public static class MauiProgram
 {
     /// <summary>
-    /// Development-stage notice (P7-WP02): authentication uses the approved Development/Testing
+    /// Development-stage notice (P7-WP04): authentication uses the approved Development/Testing
     /// Platform identity mechanism only. Local SQLite foundation, DeviceId, encrypted offline queue,
-    /// and Dev probe sync are available; real offline customer/credit workflows are not.
+    /// customer/credit/repayment offline workflows, and Dev probe sync are available.
     /// </summary>
     public static MauiApp CreateMauiApp()
     {
@@ -114,8 +114,12 @@ public static class MauiProgram
         services.AddSingleton<IOfflineOperationDispatcher, CustomerCreateOfflineDispatcher>();
         services.AddSingleton<IOfflineOperationDispatcher, CustomerUpdateOfflineDispatcher>();
         services.AddSingleton<IOfflineOperationDispatcher, CreditCreateOfflineDispatcher>();
+        services.AddSingleton<IOfflineOperationDispatcher, RepaymentCreateOfflineDispatcher>();
+        services.AddSingleton<IOfflineOperationDispatcher, RepaymentReverseOfflineDispatcher>();
+        services.AddSingleton<IOfflineOperationDispatcher, CreditReverseOfflineDispatcher>();
+        services.AddSingleton<IOfflineOperationDispatcher, CreditDueDateSetOfflineDispatcher>();
         services.AddSingleton<ICustomerCreditOfflineSyncService, CustomerCreditOfflineSyncService>();
         services.AddSingleton<PosStatusState>();
-        // Phase marker: P7-WP03-customer-and-credit-sync
+        // Phase marker: P7-WP04-payment-sync-and-recovery
     }
 }

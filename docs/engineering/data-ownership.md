@@ -46,6 +46,8 @@ Later POS ownership (not yet implemented): businesses, stores/branches/registers
 
 **P7-WP03 local encrypted customer/credit projections:** same isolated SQLite files also hold encrypted local customer and credit read-model rows (row-level AES-GCM; no plaintext PII or financial amounts). Server PostgreSQL (`pos.customers`, `pos.credit_entries`, etc.) remains system of record. Local rows are projections + pending offline mutations only; never authoritative over server state. Outstanding is derived — confirmed vs pending effects distinguished; no editable balance column.
 
+**P7-WP04 local encrypted repayment projections:** same isolated SQLite files also hold encrypted `local_repayment_projection` rows (schema v4). Server PostgreSQL `pos.repayments` remains system of record — no local mirror table named `repayments`. Repayment amount/remarks encrypted at row level. Projected outstanding = confirmed + pending credit − pending repayment (never below zero locally). Offline statements/receipts remain online read-model projections only (not queued offline).
+
 **OD-10 (resolved for pending ops):** Pending operations remain encrypted across logout and access loss, isolated to their original context, and are never processed until that context is reauthorized. They are not silently deleted. No time-based retention period is invented.
 
 ---

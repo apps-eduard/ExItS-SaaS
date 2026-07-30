@@ -7,6 +7,7 @@ using ExItS.PinoyBusinessPOS.Application.Auth;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Credit;
+using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 
 namespace ExItS.PinoyBusinessPOS.Application.Offline;
@@ -53,6 +54,7 @@ public sealed class CustomerCreditOfflineSyncService(
 
         await DownloadCustomersAsync(ct).ConfigureAwait(false);
         await DownloadCreditsAsync(ct).ConfigureAwait(false);
+        await DownloadRepaymentsAsync(ct).ConfigureAwait(false);
         syncStatus.Refresh();
     }
 
@@ -69,6 +71,17 @@ public sealed class CustomerCreditOfflineSyncService(
 
         syncStatus.SetReconnectRequired(false);
         await DownloadIncrementalAsync(ct).ConfigureAwait(false);
+        if (currentUser.Session?.OrganizationId is Guid
+            && contextManager.ActiveContext?.Status == LocalContextInitStatus.Ready)
+        {
+            // Rebuild optimistic projections for known local customers before queue processing.
+            var customers = await store.ListCustomersAsync(null, 0, 500, ct).ConfigureAwait(false);
+            foreach (var customer in customers)
+            {
+                await store.RebuildOptimisticBalancesAsync(customer.CustomerId, ct).ConfigureAwait(false);
+            }
+        }
+
         await queueProcessor.ProcessAvailableAsync(ct).ConfigureAwait(false);
         await DownloadIncrementalAsync(ct).ConfigureAwait(false);
         syncStatus.Refresh();
@@ -335,6 +348,481 @@ public sealed class CustomerCreditOfflineSyncService(
     public Task ApplyCreditRejectedAsync(Guid creditEntryId, string safeFailureCode, CancellationToken ct = default) =>
         store.MarkCreditStateAsync(creditEntryId, LocalEntitySyncState.Rejected, safeFailureCode, ct);
 
+    public Task ApplyRepaymentRejectedAsync(Guid repaymentId, string safeFailureCode, CancellationToken ct = default) =>
+        store.MarkRepaymentStateAsync(repaymentId, LocalEntitySyncState.Rejected, safeFailureCode, ct);
+
+    public async Task<ApiResultLikeRepayment> CreateRepaymentAsync(
+        Guid customerId,
+        decimal amount,
+        string? remarks,
+        CancellationToken ct = default)
+    {
+        if (amount <= 0 || amount != decimal.Round(amount, 2, MidpointRounding.AwayFromZero))
+        {
+            return new ApiResultLikeRepayment(false, false, null, "invalid_amount", "Amount must be positive with at most two decimal places.");
+        }
+
+        var customer = contextManager.ActiveContext?.Status == LocalContextInitStatus.Ready
+            ? await store.GetCustomerAsync(customerId, ct).ConfigureAwait(false)
+            : null;
+
+        if (contextManager.ActiveContext?.Status == LocalContextInitStatus.Ready)
+        {
+            var balance = await store.GetBalanceAsync(customerId, ct).ConfigureAwait(false);
+            if (balance.ConfirmedOutstanding <= 0 && balance.ProjectedOutstanding <= 0)
+            {
+                return new ApiResultLikeRepayment(false, false, null, "zero_outstanding", "No outstanding balance to repay.");
+            }
+
+            if (amount > balance.ProjectedOutstanding)
+            {
+                return new ApiResultLikeRepayment(false, false, null, "local_overpayment", "Amount exceeds projected outstanding.");
+            }
+        }
+
+        var online = await connectivity.IsConnectedAsync(ct).ConfigureAwait(false);
+        if (online && (customer is null || customer.EntityState == LocalEntitySyncState.ServerConfirmed))
+        {
+            var repaymentId = Guid.NewGuid();
+            var request = new CreatePosRepaymentRequest(amount, remarks, repaymentId);
+            var payload = JsonSerializer.Serialize(new
+            {
+                repaymentId,
+                customerId,
+                amount = amount.ToString("0.00", CultureInfo.InvariantCulture),
+                remarks
+            }, JsonOptions);
+            var opId = Guid.NewGuid();
+            var headers = new PosMutationIdempotencyHeaders(
+                opId.ToString("N"),
+                Sha256Hex(payload),
+                opId,
+                OfflineOperationTypes.RepaymentCreate);
+
+            var result = await api.CreateRepaymentAsync(customerId, request, headers, ct).ConfigureAwait(false);
+            if (result.IsSuccess && result.Data is not null)
+            {
+                var projection = MapRepayment(result.Data, LocalEntitySyncState.ServerConfirmed);
+                if (contextManager.ActiveContext?.Status == LocalContextInitStatus.Ready)
+                {
+                    await store.UpsertServerRepaymentAsync(projection, ct).ConfigureAwait(false);
+                    await RefreshCustomerFinancialsFromServerAsync(customerId, ct).ConfigureAwait(false);
+                }
+
+                return new ApiResultLikeRepayment(true, false, projection, null, null);
+            }
+
+            if (ShouldFallbackOffline(result.Status) && CanMutateOffline)
+            {
+                return await EnqueueRepaymentCreateAsync(customerId, amount, remarks, customer, ct).ConfigureAwait(false);
+            }
+
+            return new ApiResultLikeRepayment(false, false, null, result.Error?.ErrorCode, result.Error?.Detail);
+        }
+
+        if (!CanMutateOffline)
+        {
+            return new ApiResultLikeRepayment(false, false, null, "offline_mutations_unavailable", "Reconnect to verify access");
+        }
+
+        if (customer is null)
+        {
+            return new ApiResultLikeRepayment(false, false, null, ApplicationErrorCodes.CustomerNotFound, "Customer was not found locally.");
+        }
+
+        return await EnqueueRepaymentCreateAsync(customerId, amount, remarks, customer, ct).ConfigureAwait(false);
+    }
+
+    public async Task<ApiResultLikeCredit> ReverseCreditAsync(
+        Guid customerId,
+        Guid creditEntryId,
+        string reason,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            return new ApiResultLikeCredit(false, false, null, "reason_required", "Reversal reason is required.");
+        }
+
+        var credit = contextManager.ActiveContext?.Status == LocalContextInitStatus.Ready
+            ? await store.GetCreditAsync(creditEntryId, ct).ConfigureAwait(false)
+            : null;
+
+        if (credit is not null && credit.EntityState != LocalEntitySyncState.ServerConfirmed)
+        {
+            return new ApiResultLikeCredit(false, false, credit, "credit_not_confirmed", "Credit must be server-confirmed before reversal.");
+        }
+
+        if (credit?.EntityState == LocalEntitySyncState.PendingReversal)
+        {
+            return new ApiResultLikeCredit(false, false, credit, "reversal_already_pending", "A reversal is already pending for this credit.");
+        }
+
+        var online = await connectivity.IsConnectedAsync(ct).ConfigureAwait(false);
+        if (online)
+        {
+            var opId = Guid.NewGuid();
+            var payload = JsonSerializer.Serialize(new { creditEntryId, customerId, reason }, JsonOptions);
+            var headers = new PosMutationIdempotencyHeaders(
+                opId.ToString("N"),
+                Sha256Hex(payload),
+                opId,
+                OfflineOperationTypes.CreditReverse);
+
+            var result = await api.ReverseCreditEntryAsync(
+                    customerId,
+                    creditEntryId,
+                    new ReversePosCreditEntryRequest(reason),
+                    headers,
+                    ct)
+                .ConfigureAwait(false);
+
+            if (result.IsSuccess && result.Data is not null)
+            {
+                var projection = MapCredit(result.Data, LocalEntitySyncState.ServerConfirmed);
+                if (contextManager.ActiveContext?.Status == LocalContextInitStatus.Ready)
+                {
+                    await store.UpsertServerCreditAsync(projection, ct).ConfigureAwait(false);
+                    await RefreshCustomerFinancialsFromServerAsync(customerId, ct).ConfigureAwait(false);
+                }
+
+                return new ApiResultLikeCredit(true, false, projection, null, null);
+            }
+
+            if (ShouldFallbackOffline(result.Status) && CanMutateOffline && credit is not null)
+            {
+                return await EnqueueCreditReverseAsync(customerId, creditEntryId, reason, ct).ConfigureAwait(false);
+            }
+
+            return new ApiResultLikeCredit(false, false, credit, result.Error?.ErrorCode, result.Error?.Detail);
+        }
+
+        if (!CanMutateOffline || credit is null)
+        {
+            return new ApiResultLikeCredit(false, false, null, "offline_mutations_unavailable", "Reconnect to verify access");
+        }
+
+        return await EnqueueCreditReverseAsync(customerId, creditEntryId, reason, ct).ConfigureAwait(false);
+    }
+
+    public async Task<ApiResultLikeRepayment> ReverseRepaymentAsync(
+        Guid repaymentId,
+        string reason,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            return new ApiResultLikeRepayment(false, false, null, "reason_required", "Reversal reason is required.");
+        }
+
+        LocalRepaymentProjection? repayment = null;
+        if (contextManager.ActiveContext?.Status == LocalContextInitStatus.Ready)
+        {
+            repayment = await store.GetRepaymentAsync(repaymentId, ct).ConfigureAwait(false);
+        }
+
+        if (repayment is not null && repayment.EntityState != LocalEntitySyncState.ServerConfirmed)
+        {
+            return new ApiResultLikeRepayment(false, false, repayment, "repayment_not_confirmed", "Repayment must be server-confirmed before reversal.");
+        }
+
+        if (repayment?.EntityState == LocalEntitySyncState.PendingReversal)
+        {
+            return new ApiResultLikeRepayment(false, false, repayment, "reversal_already_pending", "A reversal is already pending for this repayment.");
+        }
+
+        var online = await connectivity.IsConnectedAsync(ct).ConfigureAwait(false);
+        if (online)
+        {
+            var opId = Guid.NewGuid();
+            var customerId = repayment?.CustomerId ?? Guid.Empty;
+            var payload = JsonSerializer.Serialize(new { repaymentId, customerId, reason }, JsonOptions);
+            var headers = new PosMutationIdempotencyHeaders(
+                opId.ToString("N"),
+                Sha256Hex(payload),
+                opId,
+                OfflineOperationTypes.RepaymentReverse);
+
+            var result = await api.ReverseRepaymentAsync(
+                    repaymentId,
+                    new ReversePosRepaymentRequest(reason),
+                    headers,
+                    ct)
+                .ConfigureAwait(false);
+
+            if (result.IsSuccess && result.Data is not null)
+            {
+                var projection = MapRepayment(result.Data, LocalEntitySyncState.ServerConfirmed);
+                if (contextManager.ActiveContext?.Status == LocalContextInitStatus.Ready)
+                {
+                    await store.UpsertServerRepaymentAsync(projection, ct).ConfigureAwait(false);
+                    await RefreshCustomerFinancialsFromServerAsync(result.Data.CustomerId, ct).ConfigureAwait(false);
+                }
+
+                return new ApiResultLikeRepayment(true, false, projection, null, null);
+            }
+
+            if (ShouldFallbackOffline(result.Status) && CanMutateOffline && repayment is not null)
+            {
+                return await EnqueueRepaymentReverseAsync(repayment, reason, ct).ConfigureAwait(false);
+            }
+
+            return new ApiResultLikeRepayment(false, false, repayment, result.Error?.ErrorCode, result.Error?.Detail);
+        }
+
+        if (!CanMutateOffline || repayment is null)
+        {
+            return new ApiResultLikeRepayment(false, false, null, "offline_mutations_unavailable", "Reconnect to verify access");
+        }
+
+        return await EnqueueRepaymentReverseAsync(repayment, reason, ct).ConfigureAwait(false);
+    }
+
+    public async Task<ApiResultLikeCredit> SetCreditDueDateAsync(
+        Guid creditEntryId,
+        DateOnly? dueDate,
+        string reason,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            return new ApiResultLikeCredit(false, false, null, "reason_required", "Change reason is required.");
+        }
+
+        var credit = contextManager.ActiveContext?.Status == LocalContextInitStatus.Ready
+            ? await store.GetCreditAsync(creditEntryId, ct).ConfigureAwait(false)
+            : null;
+
+        if (credit is not null && credit.EntityState is not (LocalEntitySyncState.ServerConfirmed or LocalEntitySyncState.PendingUpdate or LocalEntitySyncState.Conflict))
+        {
+            if (credit.EntityState != LocalEntitySyncState.ServerConfirmed)
+            {
+                return new ApiResultLikeCredit(false, false, credit, "credit_not_confirmed", "Credit must be server-confirmed before due-date changes.");
+            }
+        }
+
+        var isClear = dueDate is null;
+        var online = await connectivity.IsConnectedAsync(ct).ConfigureAwait(false);
+        if (online)
+        {
+            var opId = Guid.NewGuid();
+            var opType = isClear ? OfflineOperationTypes.CreditDueDateClear : OfflineOperationTypes.CreditDueDateSet;
+            var payload = JsonSerializer.Serialize(new
+            {
+                creditEntryId,
+                customerId = credit?.CustomerId,
+                dueDate = dueDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                reason,
+                isClear,
+                expectedCurrentDueDate = credit?.CurrentDueDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+            }, JsonOptions);
+            var headers = new PosMutationIdempotencyHeaders(opId.ToString("N"), Sha256Hex(payload), opId, opType);
+
+            ApiResult<PosCreditEntryDto> result;
+            if (isClear)
+            {
+                result = await api.ClearCreditDueDateAsync(
+                        creditEntryId,
+                        new ClearPosCreditDueDateRequest(reason, credit?.CurrentDueDate),
+                        headers,
+                        ct)
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                result = await api.SetCreditDueDateAsync(
+                        creditEntryId,
+                        new SetPosCreditDueDateRequest(dueDate, reason, credit?.CurrentDueDate),
+                        headers,
+                        ct)
+                    .ConfigureAwait(false);
+            }
+
+            if (result.IsSuccess && result.Data is not null)
+            {
+                var projection = MapCredit(result.Data, LocalEntitySyncState.ServerConfirmed);
+                if (contextManager.ActiveContext?.Status == LocalContextInitStatus.Ready)
+                {
+                    await store.UpsertServerCreditAsync(projection, ct).ConfigureAwait(false);
+                }
+
+                return new ApiResultLikeCredit(true, false, projection, null, null);
+            }
+
+            if (result.Status == ApiCallStatus.Conflict && credit is not null
+                && contextManager.ActiveContext?.Status == LocalContextInitStatus.Ready)
+            {
+                await store.MarkCreditStateAsync(
+                        creditEntryId,
+                        LocalEntitySyncState.Conflict,
+                        ApplicationErrorCodes.ConcurrencyConflict,
+                        ct)
+                    .ConfigureAwait(false);
+                return new ApiResultLikeCredit(
+                    false,
+                    false,
+                    credit,
+                    ApplicationErrorCodes.ConcurrencyConflict,
+                    result.Error?.Detail ?? "Due date was changed elsewhere.");
+            }
+
+            if (ShouldFallbackOffline(result.Status) && CanMutateOffline && credit is not null)
+            {
+                return await EnqueueDueDateAsync(credit, dueDate, reason, isClear, ct).ConfigureAwait(false);
+            }
+
+            return new ApiResultLikeCredit(false, false, credit, result.Error?.ErrorCode, result.Error?.Detail);
+        }
+
+        if (!CanMutateOffline || credit is null || credit.EntityState != LocalEntitySyncState.ServerConfirmed)
+        {
+            return new ApiResultLikeCredit(false, false, null, "offline_mutations_unavailable", "Reconnect to verify access");
+        }
+
+        return await EnqueueDueDateAsync(credit, dueDate, reason, isClear, ct).ConfigureAwait(false);
+    }
+
+    public async Task RefreshCustomerFinancialsFromServerAsync(Guid customerId, CancellationToken ct = default)
+    {
+        if (contextManager.ActiveContext?.Status != LocalContextInitStatus.Ready)
+        {
+            return;
+        }
+
+        var online = await connectivity.IsConnectedAsync(ct).ConfigureAwait(false);
+        if (!online)
+        {
+            await store.RebuildOptimisticBalancesAsync(customerId, ct).ConfigureAwait(false);
+            return;
+        }
+
+        var summary = await api.GetCreditSummaryAsync(customerId, ct).ConfigureAwait(false);
+        if (summary.IsSuccess && summary.Data is not null)
+        {
+            await store.SetConfirmedOutstandingAsync(customerId, summary.Data.OutstandingAmount, ct).ConfigureAwait(false);
+        }
+
+        await store.RebuildOptimisticBalancesAsync(customerId, ct).ConfigureAwait(false);
+        syncStatus.Refresh();
+    }
+
+    private async Task<ApiResultLikeRepayment> EnqueueRepaymentCreateAsync(
+        Guid customerId,
+        decimal amount,
+        string? remarks,
+        LocalCustomerProjection? customer,
+        CancellationToken ct)
+    {
+        Guid? dependsOnCustomer = null;
+        Guid? dependsOnCredit = null;
+        if (customer?.EntityState is LocalEntitySyncState.PendingCreate or LocalEntitySyncState.Syncing
+            && customer.PendingOperationId is Guid pendingCustomerOp)
+        {
+            dependsOnCustomer = pendingCustomerOp;
+        }
+
+        var credits = await store.ListCreditsAsync(customerId, ct).ConfigureAwait(false);
+        var pendingCredit = credits.FirstOrDefault(c =>
+            c.EntityState is LocalEntitySyncState.PendingCreate or LocalEntitySyncState.Syncing
+            && c.PendingOperationId is not null);
+        if (pendingCredit?.PendingOperationId is Guid pendingCreditOp && dependsOnCustomer is null)
+        {
+            dependsOnCredit = pendingCreditOp;
+        }
+
+        var repaymentId = Guid.NewGuid();
+        var operationId = Guid.NewGuid();
+        try
+        {
+            await store.PersistRepaymentCreateAndEnqueueAsync(
+                    new LocalRepaymentCreateCommand(
+                        repaymentId,
+                        customerId,
+                        operationId,
+                        operationId.ToString("N"),
+                        amount,
+                        remarks,
+                        dependsOnCustomer,
+                        dependsOnCredit),
+                    ct)
+                .ConfigureAwait(false);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("local_overpayment", StringComparison.Ordinal))
+        {
+            return new ApiResultLikeRepayment(false, false, null, "local_overpayment", "Amount exceeds projected outstanding.");
+        }
+
+        syncStatus.Refresh();
+        var created = await store.GetRepaymentAsync(repaymentId, ct).ConfigureAwait(false);
+        return new ApiResultLikeRepayment(true, true, created, null, null);
+    }
+
+    private async Task<ApiResultLikeCredit> EnqueueCreditReverseAsync(
+        Guid customerId,
+        Guid creditEntryId,
+        string reason,
+        CancellationToken ct)
+    {
+        var operationId = Guid.NewGuid();
+        await store.PersistCreditReverseAndEnqueueAsync(
+                new LocalCreditReverseCommand(
+                    creditEntryId,
+                    customerId,
+                    operationId,
+                    operationId.ToString("N"),
+                    reason),
+                ct)
+            .ConfigureAwait(false);
+        syncStatus.Refresh();
+        var credit = await store.GetCreditAsync(creditEntryId, ct).ConfigureAwait(false);
+        return new ApiResultLikeCredit(true, true, credit, null, null);
+    }
+
+    private async Task<ApiResultLikeRepayment> EnqueueRepaymentReverseAsync(
+        LocalRepaymentProjection repayment,
+        string reason,
+        CancellationToken ct)
+    {
+        var operationId = Guid.NewGuid();
+        await store.PersistRepaymentReverseAndEnqueueAsync(
+                new LocalRepaymentReverseCommand(
+                    repayment.RepaymentId,
+                    repayment.CustomerId,
+                    operationId,
+                    operationId.ToString("N"),
+                    reason),
+                ct)
+            .ConfigureAwait(false);
+        syncStatus.Refresh();
+        var updated = await store.GetRepaymentAsync(repayment.RepaymentId, ct).ConfigureAwait(false);
+        return new ApiResultLikeRepayment(true, true, updated, null, null);
+    }
+
+    private async Task<ApiResultLikeCredit> EnqueueDueDateAsync(
+        LocalCreditProjection credit,
+        DateOnly? dueDate,
+        string reason,
+        bool isClear,
+        CancellationToken ct)
+    {
+        var operationId = Guid.NewGuid();
+        await store.PersistCreditDueDateAndEnqueueAsync(
+                new LocalCreditDueDateCommand(
+                    credit.CreditEntryId,
+                    credit.CustomerId,
+                    operationId,
+                    operationId.ToString("N"),
+                    dueDate,
+                    reason,
+                    isClear,
+                    credit.CurrentDueDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
+                ct)
+            .ConfigureAwait(false);
+        syncStatus.Refresh();
+        var updated = await store.GetCreditAsync(credit.CreditEntryId, ct).ConfigureAwait(false);
+        return new ApiResultLikeCredit(true, true, updated, null, null);
+    }
+
     private async Task<ApiResultLikeCustomer> EnqueueCustomerCreateAsync(
         string displayName,
         string? mobileNumber,
@@ -534,7 +1022,62 @@ public sealed class CustomerCreditOfflineSyncService(
             state,
             null,
             null,
+            null,
+            dto.CurrentDueDate);
+
+    private static LocalRepaymentProjection MapRepayment(PosRepaymentDto dto, LocalEntitySyncState state) =>
+        new(
+            dto.RepaymentId,
+            dto.CustomerId,
+            dto.OrganizationId,
+            dto.Amount,
+            dto.Remarks,
+            dto.Status,
+            dto.RecordedAtUtc,
+            state,
+            null,
+            null,
             null);
+
+    private async Task DownloadRepaymentsAsync(CancellationToken ct)
+    {
+        var since = await store.GetDownloadCheckpointAsync("repayments", ct).ConfigureAwait(false);
+        var page = 1;
+        DateTimeOffset? maxUtc = since;
+        while (true)
+        {
+            var result = await api.SyncRepaymentsAsync(since, page, 100, ct).ConfigureAwait(false);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                break;
+            }
+
+            foreach (var item in result.Data.Items)
+            {
+                await store.UpsertServerRepaymentAsync(MapRepayment(item, LocalEntitySyncState.ServerConfirmed), ct)
+                    .ConfigureAwait(false);
+                var stamp = item.ReversedAtUtc ?? item.RecordedAtUtc;
+                if (maxUtc is null || stamp > maxUtc)
+                {
+                    maxUtc = stamp;
+                }
+
+                await RefreshCustomerFinancialsFromServerAsync(item.CustomerId, ct).ConfigureAwait(false);
+            }
+
+            if (result.Data.Items.Count < result.Data.PageSize || result.Data.Items.Count == 0)
+            {
+                break;
+            }
+
+            page++;
+        }
+
+        if (maxUtc is not null)
+        {
+            await store.SetDownloadCheckpointAsync("repayments", maxUtc.Value, ct).ConfigureAwait(false);
+        }
+    }
 
     private static string Sha256Hex(string text) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text))).ToLowerInvariant();

@@ -225,6 +225,8 @@ public sealed class SetCreditDueDate
         DateOnly? newDueDate,
         string reason,
         Guid changedBy,
+        DateOnly? expectedCurrentDueDate = null,
+        bool checkExpectedDueDate = false,
         CancellationToken cancellationToken = default)
     {
         var orgId = PosOrganizationId.From(organizationId);
@@ -249,6 +251,14 @@ public sealed class SetCreditDueDate
                     return ApplicationResult<CreditEntry>.Failure(
                         ApplicationErrorCodes.CreditEntryNotFound,
                         "Credit entry was not found.");
+                }
+
+                // CurrentDueDate is the practical concurrency token for due-date mutations (entries lack UpdatedAtUtc).
+                if (checkExpectedDueDate && current.CurrentDueDate != expectedCurrentDueDate)
+                {
+                    return ApplicationResult<CreditEntry>.Failure(
+                        ApplicationErrorCodes.ConcurrencyConflict,
+                        "Credit due date was changed by another session.");
                 }
 
                 var change = CreditDueDateChange.Create(

@@ -1,7 +1,9 @@
 using ExItS.PinoyBusinessPOS.Api.Common;
+using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 
@@ -122,6 +124,7 @@ internal static class RepaymentEndpoints
             Guid customerId,
             CreateRepaymentRequest body,
             CreateRepayment useCase,
+            IPosIdempotencyService idempotency,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -140,13 +143,25 @@ internal static class RepaymentEndpoints
                 return problem!;
             }
 
-            var result = await useCase
-                .ExecuteAsync(organizationId, customerId, body.Amount, body.Remarks, actorId, ct)
+            return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                    request,
+                    organizationId,
+                    OfflineOperationTypes.RepaymentCreate,
+                    idempotency,
+                    ct2 => useCase.ExecuteAsync(
+                        organizationId,
+                        customerId,
+                        body.Amount,
+                        body.Remarks,
+                        actorId,
+                        body.RepaymentId,
+                        ct2),
+                    RepaymentQueryService.Map,
+                    dto => Results.Created(
+                        $"/api/v1/pos/repayments/{dto.RepaymentId:D}",
+                        dto),
+                    ct)
                 .ConfigureAwait(false);
-
-            return PosApiResults.FromResult(result, r => Results.Created(
-                $"/api/v1/pos/repayments/{r.Id.Value:D}",
-                RepaymentQueryService.Map(r)));
         });
 
         var repaymentGroup = app.MapGroup("/api/v1/pos/repayments");
@@ -182,6 +197,7 @@ internal static class RepaymentEndpoints
             Guid repaymentId,
             ReverseRepaymentRequest body,
             ReverseRepayment useCase,
+            IPosIdempotencyService idempotency,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -200,17 +216,22 @@ internal static class RepaymentEndpoints
                 return problem!;
             }
 
-            var result = await useCase
-                .ExecuteAsync(organizationId, repaymentId, body.Reason, actorId, ct)
+            return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                    request,
+                    organizationId,
+                    OfflineOperationTypes.RepaymentReverse,
+                    idempotency,
+                    ct2 => useCase.ExecuteAsync(organizationId, repaymentId, body.Reason, actorId, ct2),
+                    RepaymentQueryService.Map,
+                    Results.Ok,
+                    ct)
                 .ConfigureAwait(false);
-
-            return PosApiResults.FromResult(result, r => Results.Ok(RepaymentQueryService.Map(r)));
         });
 
         return app;
     }
 }
 
-public sealed record CreateRepaymentRequest(decimal Amount, string? Remarks);
+public sealed record CreateRepaymentRequest(decimal Amount, string? Remarks, Guid? RepaymentId = null);
 
 public sealed record ReverseRepaymentRequest(string Reason);

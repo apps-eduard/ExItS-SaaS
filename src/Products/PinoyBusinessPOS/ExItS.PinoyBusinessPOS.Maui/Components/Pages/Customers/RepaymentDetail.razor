@@ -6,6 +6,10 @@
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
+@inject ICustomerCreditOfflineSyncService Sync
+@inject ILocalCustomerCreditStore Store
+@inject IConnectivityService Connectivity
+@inject ILocalContextManager LocalContext
 
 @if (!_ready)
 {
@@ -25,8 +29,10 @@ else if (_repayment is null)
 else
 {
     var repayment = _repayment;
-    var canReverse = Capabilities.IsAllowed(UtangCapability.ReverseRepayment);
-    var canReceipt = Capabilities.IsAllowed(UtangCapability.ViewGenerateReceipt);
+    var canReverse = Capabilities.IsAllowed(UtangCapability.ReverseRepayment)
+        && Sync.CanMutateOffline
+        && _entityState == LocalEntitySyncState.ServerConfirmed;
+    var canReceipt = Capabilities.IsAllowed(UtangCapability.ViewGenerateReceipt) && !_fromLocal;
 <Page>
     <PageHeader Title="@L["Payment_DetailTitle"]" Subtitle="@L["Payment_DetailSubtitle"]">
         <Actions>
@@ -46,7 +52,7 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Payment_ErrorTitle"])" Message="@_errorMessage" />
     }
 
-    @if (!canReverse || !canReceipt)
+    @if (!Capabilities.IsAllowed(UtangCapability.ReverseRepayment) || !Capabilities.IsAllowed(UtangCapability.ViewGenerateReceipt))
     {
         <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
     }
@@ -55,7 +61,13 @@ else
         <Stack Gap="3">
             <div>
                 <span class="pos-muted">@L["Payment_Field_Amount"]</span>
-                <div class="pos-value-md"><MoneyDisplay Amount="@repayment.Amount" CurrencyCode="PHP" /></div>
+                <div class="pos-value-md">
+                    <MoneyDisplay Amount="@repayment.Amount" CurrencyCode="PHP" />
+                    @if (_entityState is { } state && OfflineCustomerCreditUiHelpers.EntityBadge(state) is { } badge)
+                    {
+                        <Badge Tone="@badge.Tone">@L[badge.LabelKey]</Badge>
+                    }
+                </div>
             </div>
             <div>
                 <span class="pos-muted">@L["Customers_Field_Status"]</span>
@@ -109,7 +121,9 @@ else
     private bool _loading = true;
     private bool _acting;
     private bool _confirmReverse;
+    private bool _fromLocal;
     private PosRepaymentDto? _repayment;
+    private LocalEntitySyncState? _entityState;
     private string? _reversalReason;
     private string? _errorTitle;
     private string? _errorMessage;
@@ -130,22 +144,70 @@ else
     private async Task LoadAsync()
     {
         _loading = true;
-        var result = await Customers.GetRepaymentAsync(RepaymentId);
-        if (result.IsSuccess && result.Data is not null && result.Data.CustomerId == CustomerId)
+        _fromLocal = false;
+        _entityState = null;
+
+        var online = await Connectivity.IsConnectedAsync();
+        if (online)
         {
-            _repayment = result.Data;
-            _errorTitle = null;
-            _errorMessage = null;
+            var result = await Customers.GetRepaymentAsync(RepaymentId);
+            if (result.IsSuccess && result.Data is not null && result.Data.CustomerId == CustomerId)
+            {
+                _repayment = result.Data;
+                _errorTitle = null;
+                _errorMessage = null;
+                if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
+                {
+                    var local = await Store.GetRepaymentAsync(RepaymentId);
+                    _entityState = local?.EntityState ?? LocalEntitySyncState.ServerConfirmed;
+                }
+                else
+                {
+                    _entityState = LocalEntitySyncState.ServerConfirmed;
+                }
+            }
+            else if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
+            {
+                await LoadFromLocalAsync();
+            }
+            else
+            {
+                _repayment = null;
+                var described = ApiLocalizer.Describe(result.Status, result.Error);
+                _errorTitle = described.Title;
+                _errorMessage = result.Error?.Detail ?? described.Message;
+            }
+        }
+        else if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
+        {
+            await LoadFromLocalAsync();
         }
         else
         {
             _repayment = null;
-            var described = ApiLocalizer.Describe(result.Status, result.Error);
-            _errorTitle = described.Title;
-            _errorMessage = result.Error?.Detail ?? described.Message;
+            _errorTitle = L["SyncStatus_Offline"];
+            _errorMessage = L["Api_Offline"];
         }
 
         _loading = false;
+    }
+
+    private async Task LoadFromLocalAsync()
+    {
+        var local = await Store.GetRepaymentAsync(RepaymentId);
+        if (local is null || local.CustomerId != CustomerId)
+        {
+            _repayment = null;
+            _errorTitle = L["Payment_NotFoundTitle"];
+            _errorMessage = L["Payment_NotFoundMessage"];
+            return;
+        }
+
+        _repayment = OfflineCustomerCreditUiHelpers.ToRepayment(local);
+        _entityState = local.EntityState;
+        _fromLocal = true;
+        _errorTitle = null;
+        _errorMessage = null;
     }
 
     private async Task ReverseAsync()
@@ -156,20 +218,33 @@ else
         }
 
         _acting = true;
-        var result = await Customers.ReverseRepaymentAsync(RepaymentId, new ReversePosRepaymentRequest(_reversalReason!));
+        var result = await Sync.ReverseRepaymentAsync(RepaymentId, _reversalReason!);
         _acting = false;
         _confirmReverse = false;
 
-        if (result.IsSuccess && result.Data is not null)
+        if (result.Succeeded && result.Repayment is not null)
         {
-            _repayment = result.Data;
-            _banner = L["Payment_ReversedSuccess"];
+            _repayment = OfflineCustomerCreditUiHelpers.ToRepayment(result.Repayment);
+            _entityState = result.Repayment.EntityState;
+            _banner = result.PendingLocal ? L["Offline_SavedPendingSync"] : L["Payment_ReversedSuccess"];
             _reversalReason = null;
+        }
+        else if (string.Equals(result.ErrorCode, "offline_mutations_unavailable", StringComparison.Ordinal))
+        {
+            _errorTitle = L["SyncStatus_Offline"];
+            _errorMessage = L["Offline_MutationsUnavailable"];
+        }
+        else if (string.Equals(result.ErrorCode, "repayment_not_confirmed", StringComparison.Ordinal)
+            || string.Equals(result.ErrorCode, "reversal_already_pending", StringComparison.Ordinal))
+        {
+            _errorTitle = L["Payment_ErrorTitle"];
+            _errorMessage = result.ErrorMessage ?? L["Payment_ReverseMessage"];
+            await LoadAsync();
         }
         else
         {
             _errorTitle = L["Payment_ErrorTitle"];
-            _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+            _errorMessage = result.ErrorMessage ?? L["Payment_ReverseMessage"];
         }
     }
 

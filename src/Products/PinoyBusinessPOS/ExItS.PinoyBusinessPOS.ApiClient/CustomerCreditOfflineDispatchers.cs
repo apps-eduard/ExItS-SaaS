@@ -360,7 +360,8 @@ public sealed class CreditCreateOfflineDispatcher(
             LocalEntitySyncState.ServerConfirmed,
             null,
             null,
-            null);
+            null,
+            dto.CurrentDueDate);
 
     private static async Task<OfflineDispatchResult> HandleCreditFailureAsync(
         ILocalCustomerCreditStore? localStore,

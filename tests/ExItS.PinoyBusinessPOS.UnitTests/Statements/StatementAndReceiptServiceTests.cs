@@ -274,6 +274,26 @@ public sealed class StatementAndReceiptServiceTests
             return Task.FromResult(((IReadOnlyList<Repayment>)list.Skip(skip).Take(take).ToList(), list.Count));
         }
 
+        public Task<(IReadOnlyList<Repayment> Items, int TotalCount)> ListCreatedSinceAsync(
+            PosOrganizationId organizationId,
+            DateTimeOffset? sinceUtc,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default)
+        {
+            var list = _items.Where(r => r.OrganizationId == organizationId).AsEnumerable();
+            if (sinceUtc is not null)
+            {
+                var since = sinceUtc.Value.ToUniversalTime();
+                list = list.Where(r =>
+                    r.RecordedAtUtc > since
+                    || (r.ReversedAtUtc is not null && r.ReversedAtUtc > since));
+            }
+
+            var ordered = list.OrderBy(r => r.RecordedAtUtc).ThenBy(r => r.Id).ToList();
+            return Task.FromResult(((IReadOnlyList<Repayment>)ordered.Skip(skip).Take(take).ToList(), ordered.Count));
+        }
+
         public Task<decimal> SumActiveAmountAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
             Task.FromResult(_items.Where(r => r.OrganizationId == organizationId && r.CustomerId == customerId && r.Status == RepaymentStatus.Active).Sum(r => r.Amount));
 

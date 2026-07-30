@@ -14,4 +14,10 @@ public static class OfflinePayloadBinding
 
     public static string BuildBalanceAssociatedData(string contextHash, Guid customerId) =>
         $"local-balance|{contextHash}|{customerId:D}";
+
+    public static string BuildPendingRepayAssociatedData(string contextHash, Guid customerId) =>
+        $"local-pending-repay|{contextHash}|{customerId:D}";
+
+    public static string BuildRepaymentAssociatedData(string contextHash, Guid repaymentId) =>
+        $"local-repayment|{contextHash}|{repaymentId:D}";
 }

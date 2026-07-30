@@ -44,7 +44,7 @@ public sealed record PosLedgerEntryDto(
     Guid? ReversedBy,
     decimal? RunningBalance);
 
-public sealed record CreatePosRepaymentRequest(decimal Amount, string? Remarks);
+public sealed record CreatePosRepaymentRequest(decimal Amount, string? Remarks, Guid? RepaymentId = null);
 
 public sealed record ReversePosRepaymentRequest(string Reason);
 
@@ -53,6 +53,13 @@ public sealed record PosRepaymentPagedResult(
     int TotalCount,
     int Page,
     int PageSize);
+
+public sealed record PosRepaymentSyncPageResult(
+    List<PosRepaymentDto> Items,
+    int TotalCount,
+    int Page,
+    int PageSize,
+    DateTimeOffset? NextCheckpointUtc);
 
 public sealed record PosLedgerPagedResult(
     List<PosLedgerEntryDto> Items,

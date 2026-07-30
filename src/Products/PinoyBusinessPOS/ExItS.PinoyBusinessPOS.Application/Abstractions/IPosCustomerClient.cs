@@ -50,6 +50,7 @@ public interface IPosCustomerClient
         Guid customerId,
         Guid entryId,
         ReversePosCreditEntryRequest request,
+        PosMutationIdempotencyHeaders? idempotency = null,
         CancellationToken ct = default);
 
     Task<ApiResult<PosCustomerUtangSummaryDto>> GetUtangSummaryAsync(Guid customerId, CancellationToken ct = default);
@@ -69,6 +70,7 @@ public interface IPosCustomerClient
     Task<ApiResult<PosRepaymentDto>> CreateRepaymentAsync(
         Guid customerId,
         CreatePosRepaymentRequest request,
+        PosMutationIdempotencyHeaders? idempotency = null,
         CancellationToken ct = default);
 
     Task<ApiResult<PosRepaymentDto>> GetRepaymentAsync(Guid repaymentId, CancellationToken ct = default);
@@ -76,16 +78,19 @@ public interface IPosCustomerClient
     Task<ApiResult<PosRepaymentDto>> ReverseRepaymentAsync(
         Guid repaymentId,
         ReversePosRepaymentRequest request,
+        PosMutationIdempotencyHeaders? idempotency = null,
         CancellationToken ct = default);
 
     Task<ApiResult<PosCreditEntryDto>> SetCreditDueDateAsync(
         Guid creditEntryId,
         SetPosCreditDueDateRequest request,
+        PosMutationIdempotencyHeaders? idempotency = null,
         CancellationToken ct = default);
 
     Task<ApiResult<PosCreditEntryDto>> ClearCreditDueDateAsync(
         Guid creditEntryId,
-        string reason,
+        ClearPosCreditDueDateRequest request,
+        PosMutationIdempotencyHeaders? idempotency = null,
         CancellationToken ct = default);
 
     Task<ApiResult<PosCreditDueDateHistoryPagedResult>> ListCreditDueDateHistoryAsync(
@@ -138,6 +143,12 @@ public interface IPosCustomerClient
         CancellationToken ct = default);
 
     Task<ApiResult<PosCreditSyncPageResult>> SyncCreditEntriesAsync(
+        DateTimeOffset? sinceUtc = null,
+        int page = 1,
+        int pageSize = 100,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosRepaymentSyncPageResult>> SyncRepaymentsAsync(
         DateTimeOffset? sinceUtc = null,
         int page = 1,
         int pageSize = 100,

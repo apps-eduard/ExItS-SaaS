@@ -47,6 +47,36 @@ internal sealed class RepaymentRepository : IRepaymentRepository
         return (records.Select(RepaymentEntityMapper.ToDomain).ToList(), total);
     }
 
+    public async Task<(IReadOnlyList<Repayment> Items, int TotalCount)> ListCreatedSinceAsync(
+        PosOrganizationId organizationId,
+        DateTimeOffset? sinceUtc,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _db.Repayments.AsNoTracking()
+            .Where(e => e.OrganizationId == organizationId.Value);
+
+        if (sinceUtc is not null)
+        {
+            var since = sinceUtc.Value.ToUniversalTime();
+            query = query.Where(e =>
+                e.RecordedAtUtc > since
+                || (e.ReversedAtUtc != null && e.ReversedAtUtc > since));
+        }
+
+        var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
+        var records = await query
+            .OrderBy(e => e.RecordedAtUtc)
+            .ThenBy(e => e.Id)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return (records.Select(RepaymentEntityMapper.ToDomain).ToList(), total);
+    }
+
     public async Task<decimal> SumActiveAmountAsync(
         PosOrganizationId organizationId,
         POSCustomerId customerId,

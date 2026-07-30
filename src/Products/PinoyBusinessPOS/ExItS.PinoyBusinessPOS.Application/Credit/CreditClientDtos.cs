@@ -12,9 +12,16 @@ public sealed record PosCreditEntryDto(
     string? ReversalReason,
     DateOnly? CurrentDueDate);
 
-public sealed record SetPosCreditDueDateRequest(DateOnly? DueDate, string Reason);
+public sealed record SetPosCreditDueDateRequest(
+    DateOnly? DueDate,
+    string Reason,
+    DateOnly? ExpectedCurrentDueDate = null,
+    bool CheckExpectedDueDate = false);
 
-public sealed record ClearPosCreditDueDateRequest(string Reason);
+public sealed record ClearPosCreditDueDateRequest(
+    string Reason,
+    DateOnly? ExpectedCurrentDueDate = null,
+    bool CheckExpectedDueDate = false);
 
 public sealed record PosCreditDueDateChangeDto(
     Guid ChangeId,

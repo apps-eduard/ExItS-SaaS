@@ -17,6 +17,13 @@ public interface IRepaymentRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    Task<(IReadOnlyList<Repayment> Items, int TotalCount)> ListCreatedSinceAsync(
+        PosOrganizationId organizationId,
+        DateTimeOffset? sinceUtc,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
     Task<decimal> SumActiveAmountAsync(
         PosOrganizationId organizationId,
         POSCustomerId customerId,

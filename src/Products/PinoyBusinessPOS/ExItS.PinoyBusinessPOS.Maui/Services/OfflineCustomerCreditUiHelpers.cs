@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Credit;
+using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.DesignSystem.Components.Primitives;
 
 namespace ExItS.PinoyBusinessPOS.Maui.Services;
@@ -45,7 +46,21 @@ internal static class OfflineCustomerCreditUiHelpers
             credit.CreatedAtUtc,
             ReversedAtUtc: null,
             ReversalReason: null,
-            CurrentDueDate: null);
+            CurrentDueDate: credit.CurrentDueDate);
+
+    internal static PosRepaymentDto ToRepayment(LocalRepaymentProjection repayment) =>
+        new(
+            repayment.RepaymentId,
+            repayment.OrganizationId,
+            repayment.CustomerId,
+            repayment.Amount,
+            repayment.Remarks,
+            repayment.Status,
+            repayment.RecordedAtUtc,
+            RecordedBy: Guid.Empty,
+            ReversedAtUtc: null,
+            ReversalReason: repayment.PendingReversalReason,
+            ReversedBy: null);
 
     internal static (BadgeTone Tone, string LabelKey)? EntityBadge(LocalEntitySyncState state) =>
         state switch
@@ -53,8 +68,11 @@ internal static class OfflineCustomerCreditUiHelpers
             LocalEntitySyncState.ServerConfirmed => null,
             LocalEntitySyncState.PendingCreate or LocalEntitySyncState.PendingUpdate or LocalEntitySyncState.Syncing
                 => (BadgeTone.Warning, "Offline_EntityPending"),
+            LocalEntitySyncState.PendingReversal
+                => (BadgeTone.Warning, "Offline_EntityPendingReversal"),
             LocalEntitySyncState.Conflict => (BadgeTone.Danger, "Offline_EntityConflict"),
             LocalEntitySyncState.Rejected => (BadgeTone.Danger, "Offline_EntityRejected"),
+            LocalEntitySyncState.BlockedByAccess => (BadgeTone.Danger, "Offline_EntityBlockedByAccess"),
             _ => (BadgeTone.Neutral, "Offline_EntityPending"),
         };
 
