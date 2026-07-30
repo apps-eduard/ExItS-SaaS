@@ -4,7 +4,7 @@
 
 ## Status
 
-**In Progress** — P10-WP02 Purchasing **complete** (feat `c0f8130`, docs `bc6dc747`). Part A workspace cleanup at `fd77f88`. Do **not** begin P10-WP03 until explicitly authorized.
+**In Progress** — **P10-WP03 — Advanced Inventory** authorized (prior tip `9336002` / WP02 complete including gap-fix). Part A HealthCare cleanup remains closed at `fd77f88`. Do **not** begin P10-WP04.
 
 ## Objective
 
@@ -120,13 +120,29 @@ Organization-isolated purchasing for PinoyBusinessPOS using P10-WP01 suppliers:
 
 ### P10-WP03 — Advanced Inventory
 
-Status: Not Started
+Status: **In Progress** (authorized)
 
-#### Required outcomes
+Prior tip: `933600283f8032783dfca2c01ae09f0af781abd9` (P10-WP02 complete including gap-fix; report also cites hash-record `8f6781a`). Baseline: **1067 / 0 / 0**. Part A HealthCare cleanup remains closed at `fd77f8892c363e48c40b4b35a6c9f4430af2d090`.
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+#### Required outcomes (approved)
+
+Extend the existing immutable inventory subsystem (preserve movement-derived on-hand; one account per tracked product):
+
+- Inventory stock counts (`StockCount` aggregate: Draft → InProgress → Completed; Draft/InProgress → Cancelled)
+- Immutable stock-count variance adjustments (new movement type(s); never rewrite history)
+- Reorder configuration (ReorderLevel ≥ 0; optional ReorderQuantity > 0; auditable; tracked products only)
+- Derived stock states: InStock, LowStock, OutOfStock, ReorderSuggested (no auto PO; no forecasting)
+- Low-stock and reorder suggestions surfaces
+- Enhanced inventory movement history
+- Inventory reconciliation (on-hand vs movement sum; no second balance authority)
+- Organization-scoped authorization (reuse / extend inventory grants)
+- PostgreSQL migration, typed API, MAUI stock-count and reorder screens, tests, docs
+
+Preserve existing movement sources: Opening, ManualIncrease, ManualDecrease, SaleDeduction, SaleVoidRestore, PurchaseReceipt.
+
+#### Explicit exclusions
+
+Warehouses, branches, transfers, costing, valuation, batches, serials, expiry, purchase returns, accounting, automatic purchase-order creation, demand forecasting, P10-WP04+.
 
 #### Definition of Done
 
@@ -136,6 +152,7 @@ Status: Not Started
 - [ ] Completion report created.
 - [ ] Focused commit created and hash recorded.
 - [ ] Working tree clean.
+- [ ] Exact next WP recorded: **P10-WP04 — Cashier Shifts** (do not begin).
 
 ### P10-WP04 — Cashier Shifts
 
