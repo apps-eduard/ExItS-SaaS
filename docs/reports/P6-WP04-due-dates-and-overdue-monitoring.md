@@ -124,7 +124,7 @@ POS Domain/Application/Infrastructure/Api/ApiClient/Maui due-date + overdue slic
 ## Git evidence
 
 - Feature commit: `9947d95cba27c8311091f95ea51c79be1de0acb9`
-- Docs commit: `PLACEHOLDER_DOCS_HASH`
+- Docs commit: `345bfdd1f98d953b2f6c54eb454a4a28d0f17ef5`
 - Phase marker: `P6-WP04-due-dates-and-overdue-monitoring`
 - Hashes recorded after authorized commit/push; HealthCare freeze re-verified at that time
 
