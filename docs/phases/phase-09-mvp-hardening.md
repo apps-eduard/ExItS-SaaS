@@ -209,6 +209,7 @@ Status: **Complete** with documented risks
 Report: [P9-WP05-pilot-and-deployment.md](../reports/P9-WP05-pilot-and-deployment.md)
 
 Feature commit: 9c1bbd0557e252758a772b985c907233da3f5214
+Docs commit: 58b3c7413d5ccb29f0e0ee62007671217f7ff7f5
 
 Phase marker: `P9-WP05-pilot-and-deployment`
 

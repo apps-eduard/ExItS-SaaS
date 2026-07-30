@@ -10,7 +10,7 @@ Final readiness state: **Ready for controlled internal technical pilot** (Stagin
 
 Feature commit: 9c1bbd0557e252758a772b985c907233da3f5214
 
-Docs commit: _(recorded after docs hash-record)_
+Docs commit: 58b3c7413d5ccb29f0e0ee62007671217f7ff7f5
 
 ## Delivered
 
