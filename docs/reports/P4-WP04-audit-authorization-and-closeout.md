@@ -116,5 +116,5 @@ Do not begin until explicitly authorized.
 
 | Kind | Message / hash |
 |---|---|
-| Feature | `feat(admin): audit authorization themes and closeout` — _(recorded after push)_ |
-| Docs | `docs(admin): close Phase 4 with P4-WP04 evidence` — _(recorded after push)_ |
+| Feature | `feat(admin): audit authorization themes and closeout` — `74ed46ddca283f552f6269650e348634ddf3f0d6` |
+| Docs | `docs(admin): record P4-WP04 commit hashes` — _(pending)_ |

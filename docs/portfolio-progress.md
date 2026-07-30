@@ -14,7 +14,7 @@
 | Current phase | Phase 4 — Platform Admin Expansion (**Complete with documented risks**) |
 | Current work package | P4-WP04 — Audit, Authorization and Closeout (**Complete**) |
 | Overall status | **Phase 4 closed** — Admin audit, Platform authorization, themes, i18n; production auth / gateway / delivery still deferred |
-| Latest verified commit | _(recorded after push)_ |
+| Latest verified commit | 74ed46ddca283f552f6269650e348634ddf3f0d6 |
 | Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations; R-035 calendar EOM; no product delivery; no payment gateway |
 | Last updated | 2026-07-30 |
 
@@ -59,7 +59,7 @@ Phase 5 / P5-WP01 — MAUI Solution and API Client (not started — do not begin
 | P4-WP01 | Complete | `aa340e1` |
 | P4-WP02 | Complete | `6f1cacb` |
 | P4-WP03 | Complete | `91e88c3` |
-| P4-WP04 | Complete | _(recorded after push)_ |
+| P4-WP04 | Complete | `74ed46d` |
 
 ## Permanent workflow rules
 

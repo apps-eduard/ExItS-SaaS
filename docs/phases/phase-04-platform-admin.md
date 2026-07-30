@@ -90,7 +90,7 @@ Report: [P4-WP03-subscriptions-payments-and-trials.md](../reports/P4-WP03-subscr
 
 Status: **Complete**
 
-Feature commit: _(recorded after push)_
+Feature commit: `74ed46d`
 Report: [P4-WP04-audit-authorization-and-closeout.md](../reports/P4-WP04-audit-authorization-and-closeout.md)
 
 #### Required outcomes
@@ -111,7 +111,7 @@ Report: [P4-WP04-audit-authorization-and-closeout.md](../reports/P4-WP04-audit-a
 - [x] Applicable tests pass with exact evidence (411 passed: 261/39/27/84).
 - [x] Dashboard and phase page updated.
 - [x] Completion report created.
-- [x] Focused commit hash placeholder recorded (`_(recorded after push)_`).
+- [x] Focused commit created and hash recorded.
 - [ ] Working tree clean (after commit/push — pending).
 
 ## Phase exit criteria
