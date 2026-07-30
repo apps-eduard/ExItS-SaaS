@@ -14,7 +14,7 @@
 | Current phase | Phase 7 — Offline Synchronization (**In Progress**) |
 | Current work package | P7-WP01 — SQLite and Device Identity (**Complete** with documented risks) |
 | Overall status | **P7-WP01 complete** — foundation only; next P7-WP02 when authorized |
-| Latest verified commit | _(recorded after push)_ |
+| Latest verified commit | `a82a4be07e90ddfad59b741f6822022369cda68e` (P7-WP01) |
 | Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations; R-035 calendar EOM; no payment gateway; no interactive Android emulator (R-109); commercial/actor headers Development-stage only; org timezone undefined for due dates; OD-10/OD-11 open; no POS operational roles; SQLitePCLRaw NU1903 (R-110); DB encryption decision before business-data offline WP |
 | Last updated | 2026-07-30 |
 
@@ -52,7 +52,7 @@ P7-WP03 … P7-WP05
 
 | WP | Status | Key commit |
 |---|---|---|
-| P7-WP01 | Complete with risks | _(recorded after push)_ |
+| P7-WP01 | Complete with risks | a82a4be07e90ddfad59b741f6822022369cda68e |
 | P7-WP02 | Not Started | — |
 | P7-WP03 | Not Started | — |
 | P7-WP04 | Not Started | — |

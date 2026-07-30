@@ -22,7 +22,7 @@ Status: **Complete with documented risks**
 
 Phase marker: `P7-WP01-sqlite-and-device-identity`
 
-Feature commit: _(recorded after push)_
+Feature commit: `a82a4be07e90ddfad59b741f6822022369cda68e`
 
 #### Approved scope (foundation only)
 
@@ -46,10 +46,8 @@ Offline queue/outbox, idempotency processing, business-data cache, offline mutat
 - [x] Applicable tests pass with exact evidence (563 passed / 0 failed / 0 skipped).
 - [x] Dashboard and phase page updated.
 - [x] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
-
-### P7-WP02 — Offline Queue and Idempotency
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean.
 
 Status: Not Started — **do not begin**
 

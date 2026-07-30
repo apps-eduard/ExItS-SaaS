@@ -6,7 +6,7 @@ Phase marker: `P7-WP01-sqlite-and-device-identity`
 
 **Complete with documented risks.** Foundation-only offline local store: durable DeviceId, per-user/org/product SQLite isolation, schema migrations, local-context lifecycle, permanent sync-status shell (Online / Offline / Reconnect), and Development/Testing diagnostics. **Does not enable offline business operations.** P7-WP02 was not started.
 
-Feature commit: _(recorded after push)_
+Feature commit: `a82a4be07e90ddfad59b741f6822022369cda68e`
 
 ## Delivered capability
 
