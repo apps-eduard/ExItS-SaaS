@@ -91,5 +91,5 @@ R-091 (production auth), R-098 (dev identity), R-106 (secure storage), R-109 (em
 
 | Kind | Message | Hash |
 |---|---|---|
-| Feature | *(recorded after commit)* | — |
-| Docs hash record | *(recorded after docs commit)* | — |
+| Feature | `feat(pos): authentication onboarding and phase 5 closeout` | `81eaa892cb6ac1ffb1b201b69dc7e390e5536586` |
+| Docs hash record | `docs(pos): record P5-WP05 commit hashes and phase 5 closeout` | `b93322a125654ff0538b2dd712e4615a73b82cdc` |
