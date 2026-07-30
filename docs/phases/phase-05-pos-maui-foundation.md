@@ -82,8 +82,8 @@ Report: [P5-WP03-english-and-filipino-localization.md](../reports/P5-WP03-englis
 - [x] Applicable tests pass with exact evidence.
 - [x] Dashboard and phase page updated.
 - [x] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Focused commit created and hash recorded (`1dea793`).
+- [x] Working tree clean (after push).
 
 ### P5-WP04 — Reusable MVP Components
 
