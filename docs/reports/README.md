@@ -60,3 +60,4 @@ The dashboard links to the latest accepted report.
 | [P8-WP01-catalog-and-barcode.md](P8-WP01-catalog-and-barcode.md) | Catalog and Barcode | Complete with documented risks |
 | [P8-WP02-simple-sales.md](P8-WP02-simple-sales.md) | Simple Sales | Complete with documented risks |
 | [P8-WP03-product-based-utang.md](P8-WP03-product-based-utang.md) | Product-Based Utang | Complete with documented risks |
+| [P8-WP04-basic-inventory.md](P8-WP04-basic-inventory.md) | Basic Inventory | Complete with documented risks |

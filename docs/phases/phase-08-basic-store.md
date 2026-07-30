@@ -8,7 +8,7 @@ Deliver the Basic Store paid plan.
 
 ## Status
 
-**In Progress** — P8-WP01 through P8-WP03 complete with documented risks. Do **not** begin P8-WP04 until explicitly authorized.
+**In Progress** — P8-WP01 through P8-WP04 complete with documented risks. Do **not** begin P8-WP05 until explicitly authorized.
 
 Feature commit (P8-WP01): `5573822ca116ab46f1a5cdce407e1d7b4f58f796`
 
@@ -169,26 +169,48 @@ Inventory/stock deduction, Cash/GCash+Utang split, deposits/partial at checkout,
 
 ### P8-WP04 — Basic Inventory
 
-Status: Not Started — do not begin until authorized
+Status: **Complete with documented risks**
 
-#### Required outcomes
+Phase marker: `P8-WP04-basic-inventory`
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+Feature commit: `64f05e7fd5ab868beb62c7cce88ad7a15e21c7b8`
+
+Report: [P8-WP04-basic-inventory.md](../reports/P8-WP04-basic-inventory.md)
+
+#### Approved scope (clarified)
+
+Organization-isolated **basic inventory** for catalog products and completed sales:
+
+- One inventory account per org/product (`IsTracked`, optional `ReorderLevel`); on-hand derived from immutable stock movements (optional denormalized projection transactionally protected)
+- Movement types: OpeningStock, ManualIncrease, ManualDecrease, SaleDeduction, SaleVoidRestoration
+- Optional enable tracking + opening stock (zero valid; no duplicate opening); disable only when on-hand is zero
+- Manual Stock In / Stock Out with required reason; Stock Out cannot go negative; no set-quantity command
+- Atomic stock deduction on Cash / ManualGCash / Utang checkout for tracked products; untracked allowed without movement
+- Atomic stock restoration on sale void (including Product-Based Utang void coordinating sale + credit + stock)
+- UOM quantity precision reused from catalog; block UOM change after inventory activity
+- Low stock when tracked and OnHand ≤ ReorderLevel (no auto-reorder)
+- Features: `store-inventory-view` / `store-inventory-manage`; continuity view-only; Suspended deny
+- Stock deduction is part of authorized checkout (not a bypassable client inventory grant)
+- Migration `AddPosBasicInventory` (`pos.inventory_accounts`, `pos.stock_movements`)
+- API `/api/v1/pos/inventory/*`; MAUI `/inventory*`
+- Online-only; tests, docs, Android evidence
+
+#### Explicit exclusions (P8-WP05+)
+
+Suppliers/purchasing/POs/receiving, warehouses/branches/bins, transfers, batches/lots/serials/expiry, cost/valuation/profit, returns/exchanges/refunds/damaged goods, stock reservation, auto-reorder, barcode labels, offline inventory/sync, negative-stock override, POS operational roles.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (805 / 0 / 0; baseline 775).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded (`64f05e7fd5ab868beb62c7cce88ad7a15e21c7b8`).
+- [x] Working tree clean.
 
 ### P8-WP05 — Expenses
 
-Status: Not Started
+Status: Not Started — do not begin until authorized
 
 #### Required outcomes
 

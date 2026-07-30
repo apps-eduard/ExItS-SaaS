@@ -42,7 +42,7 @@ ExItS-SaaS/
 
 **Phase 8** is **in progress** — P8-WP01 Catalog and Barcode and P8-WP02 Simple Sales **complete** with documented risks ([P8-WP02](docs/reports/P8-WP02-simple-sales.md)). Online-only catalog + Cash/ManualGCash checkout; no inventory or Utang sales. **Not production-ready** while R-109, R-022, full-DB encryption, production auth/roles, and production background scheduling remain open.
 
-Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Next: **P8-WP04 — Basic Inventory** when authorized.
+Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Next: **P8-WP05 — Expenses** when authorized.
 
 ### Platform database (local)
 

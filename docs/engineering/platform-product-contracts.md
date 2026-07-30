@@ -219,8 +219,10 @@ Feature codes (server-side authority): `customer-credit-view`, `customer-credit-
 | Create Product-Based Utang sale | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `store-sales-create` **and** `customer-credit-create` |
 | Void Cash / ManualGCash sale | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `store-sales-void` |
 | Void Product-Based Utang sale | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `store-sales-void` **and** `ReverseCredit` (`customer-credit-view`) |
+| View inventory / movements / low-stock | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `store-inventory-view` |
+| Enable/disable tracking / adjust stock | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `store-inventory-manage` |
 
-Catalog, simple sales, and Product-Based Utang are **online-only** (no offline cache or queued sale/Utang mutations). Entry alone does not grant capability; Suspended / missing / stale / unknown deny. Continuity permits view when the matching view grant is present; mutations remain Trialing/Active/GracePeriod + required grants. Product-Based Utang create/void require **both** sales and credit capabilities.
+Catalog, sales, Product-Based Utang, and basic inventory are **online-only**. Entry alone does not grant capability; Suspended / missing / stale / unknown deny. Continuity permits view when the matching view grant is present; mutations remain Trialing/Active/GracePeriod + required grants. Sale stock deduction is part of checkout authorization (sales capabilities), not a separate client inventory grant.
 
 ### Allowed after expiry (continuity)
 
@@ -230,6 +232,7 @@ Catalog, simple sales, and Product-Based Utang are **online-only** (no offline c
 - View/generate statements and repayment receipts when `customer-credit-view` is granted
 - View catalog / categories / SKU-barcode lookup when `store-catalog-view` is granted (P8-WP01; online-only)
 - View sales history when `store-sales-view` is granted (P8-WP02; online-only)
+- View inventory when `store-inventory-view` is granted (P8-WP04; online-only)
 - Export/access data where separately approved
 - Upgrade or renew subscription
 
@@ -242,6 +245,7 @@ Catalog, simple sales, and Product-Based Utang are **online-only** (no offline c
 - Create/update/deactivate/reactivate catalog (`store-catalog-manage` denied in continuity)
 - Create or void sales (`store-sales-create` / `store-sales-void` denied in continuity)
 - Create Product-Based Utang (`customer-credit-create` also denied in continuity)
+- Enable/disable inventory or adjust stock (`store-inventory-manage` denied in continuity)
 - Use features not allowed by expired entitlement or missing grants
 - Suspended / missing / stale / unknown / invalid: deny all protected capabilities
 

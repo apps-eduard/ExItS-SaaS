@@ -134,9 +134,13 @@
 | R-128 | Dev actor header mistaken for production audit identity | High | Document `X-Dev-Platform-User-Id` as Development/Testing-only; production JWT still required (R-091) | Open — introduced P6-WP03; also used for due-date set/clear in P6-WP04 |
 | R-129 | Transitive SQLitePCLRaw NU1903 advisory on Microsoft.Data.Sqlite 10.0.4 | Medium | Track package upgrade when Microsoft ships fixed transitive; P7-WP03 mitigated by row-level AES-GCM instead of SQLCipher; advisory remains open on Microsoft.Data.Sqlite transitive | Open — introduced P7-WP01; WP03 avoided SQLCipher |
 
+## Phase 8 note (P8-WP04)
+
+P8-WP04 delivered basic inventory (`pos.inventory_accounts`, `pos.stock_movements`; migration `AddPosBasicInventory`). Optional tracking, opening/manual adjustments, atomic sale deduction and void restoration for Cash/ManualGCash/Utang, low-stock monitoring. Features `store-inventory-view` / `store-inventory-manage`. **No suppliers, warehouses, costing, offline inventory, or negative override.** R-109 remains open. **Not production-ready.** Next: **P8-WP05 — Expenses** when authorized.
+
 ## Phase 8 note (P8-WP03)
 
-P8-WP03 delivered atomic Product-Based Utang: one completed sale + linked remarks credit (`AddProductBasedUtang`; `sales.customer_id` / `linked_credit_entry_id`, `credit_entries.source_sale_id`). Payment method `Utang`; create requires `store-sales-create` + `customer-credit-create`; void requires `store-sales-void` + `ReverseCredit`; standalone linked-credit reverse blocked. **No inventory, split tender, offline Utang, limits, or refunds.** R-109 remains open. **Not production-ready.** Next: **P8-WP04 — Basic Inventory** when authorized.
+P8-WP03 delivered atomic Product-Based Utang: one completed sale + linked remarks credit (`AddProductBasedUtang`; `sales.customer_id` / `linked_credit_entry_id`, `credit_entries.source_sale_id`). Payment method `Utang`; create requires `store-sales-create` + `customer-credit-create`; void requires `store-sales-void` + `ReverseCredit`; standalone linked-credit reverse blocked. Superseded as “next WP” by P8-WP04.
 
 ## Phase 8 note (P8-WP02)
 
