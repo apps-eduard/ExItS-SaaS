@@ -228,7 +228,7 @@ Updated Phase 8, portfolio, README, FILE-MANIFEST, release-plan, risks, contract
 | Field | Value |
 |---|---|
 | Feature commit | 0bc5ebb999c0708e6ac76b04a30d522037eec3cb |
-| Docs hash-record commit | _(fill after docs commit)_ |
+| Docs hash-record commit | edf80ed370b000a0caaf1786ec4fde8208b1afb3 |
 | Final working tree | clean after push |
 
 ## Exact next authorized phase / work package
