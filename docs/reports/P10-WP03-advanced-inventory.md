@@ -14,12 +14,12 @@ Docs commit: `8af7a14`
 | Area | Delivered |
 |---|---|
 | Reorder | `ReorderQuantity` on `InventoryAccount`; `InventoryReorderChange` audit; `SetReorderConfiguration`; PUT `/api/v1/pos/inventory/{productId}/reorder` |
-| Stock states | Derived `InStock`, `LowStock`, `OutOfStock`, `ReorderSuggested`; GET `/reorder-suggestions` |
-| Stock counts | `StockCount` Draft → InProgress → Completed; Draft/InProgress → Cancelled; `CNT-YYYYMMDD-NNNNNN` advisory lock |
+| Stock states | Primary `InStock` / `LowStock` / `OutOfStock`; separate `IsReorderSuggested` + `SuggestedOrderQuantity`; GET `/reorder-suggestions` |
+| Stock counts | `StockCount` with `CountDate`; Draft → InProgress → Completed; Draft/InProgress → Cancelled; `CNT-YYYYMMDD-NNNNNN` advisory lock |
 | Count lines | `SystemOnHandSnapshot`, `CountedQuantity`, `Variance`; start/complete/cancel; idempotent complete |
 | Movements | `StockCountVarianceIncrease` / `StockCountVarianceDecrease`; `SourceType` `StockCount`; unique index; no negative on-hand |
 | Queries | Enhanced movement filters; GET reconciliation (on-hand vs movement sum) |
-| Persistence | Migration `AddPosAdvancedInventory` after `EnrichPosGoodsReceiptFields` |
+| Persistence | Migrations `AddPosAdvancedInventory`, `EnrichPosStockCountDate` |
 | API / client | `/api/v1/pos/inventory/...`; `PosInventoryClient` extended |
 | MAUI | `/inventory/{id}/reorder`; `/inventory/counts` list/create/detail |
 | Authorization | Reuses `ViewInventory` / `ManageInventory`; online-only |
@@ -32,11 +32,11 @@ Warehouses, branches, transfers, costing, valuation, batches, serials, expiry, p
 
 | Suite | Passed | Failed | Skipped |
 |---:|---:|---:|---:|
-| Full `ExItS.slnx` Release (test projects; MAUI app build skipped — no Android SDK on agent) | **1073** | **0** | **0** |
+| Full `ExItS.slnx` Release (test projects) | **1079** | **0** | **0** |
 
-Prior baseline: **1067 / 0 / 0** (post P10-WP02 gap-fix docs).
+Prior baseline: **1067 / 0 / 0** (post P10-WP02). Feature tip `5c62133` reported **1073**; gap-fix below raises suite to **1079**.
 
-Release build of `ExItS.slnx` succeeds for all non-Android targets; Android SDK unavailable locally (R-109 unchanged).
+Release build of POS API succeeds; MAUI `net10.0-android` compiles after CreateStockCount named `Notes` fix. R-129 (NU1903) unchanged.
 
 ## Portfolio independence
 

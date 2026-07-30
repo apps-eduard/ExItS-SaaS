@@ -167,6 +167,7 @@ public sealed class InventoryQueryService
         var reorderQty = account?.ReorderQuantity;
         var isLow = account?.IsLowStock ?? false;
         var isReorderSuggested = account?.IsReorderSuggested ?? false;
+        var suggestedQty = account?.SuggestedOrderQuantity;
         var stockStatus = account is null
             ? InventoryStockStatuses.ToCode(InventoryStockStatus.InStock)
             : InventoryStockStatuses.ToCode(account.StockStatus);
@@ -184,6 +185,7 @@ public sealed class InventoryQueryService
             stockStatus,
             isLow,
             isReorderSuggested,
+            suggestedQty,
             latestMovementAtUtc,
             movementCount,
             account?.CreatedAtUtc ?? product.CreatedAtUtc,

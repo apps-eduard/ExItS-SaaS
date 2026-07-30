@@ -47,7 +47,9 @@ public sealed class PosAdvancedInventoryApiTests(PosPostgreSqlFixture fixture)
         var configured = await reorderResponse.Content.ReadFromJsonAsync<PosInventoryAccountDto>(JsonOptions);
         Assert.Equal(10m, configured!.ReorderLevel);
         Assert.Equal(25m, configured.ReorderQuantity);
-        Assert.Equal(nameof(InventoryStockStatus.ReorderSuggested), configured.StockStatus);
+        Assert.Equal(nameof(InventoryStockStatus.LowStock), configured.StockStatus);
+        Assert.True(configured.IsReorderSuggested);
+        Assert.Equal(25m, configured.SuggestedOrderQuantity);
 
         using var adjust = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/adjustments", org);
         adjust.Content = JsonContent.Create(new AdjustInventoryRequest("Out", 1m, "Sample"), options: JsonOptions);

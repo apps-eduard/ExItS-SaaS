@@ -84,7 +84,9 @@ public sealed class InventoryAccountDomainTests
 
         account.SetReorderLevel(2m, UnitOfMeasure.Piece, Utc.AddMinutes(2));
         Assert.Equal(2m, account.ReorderLevel);
-        Assert.True(account.IsLowStock);
+        Assert.Equal(InventoryStockStatus.OutOfStock, account.StockStatus);
+        Assert.False(account.IsLowStock);
+        Assert.True(account.IsReorderSuggested);
     }
 
     [Fact]

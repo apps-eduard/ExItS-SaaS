@@ -13,7 +13,11 @@ public static class InventoryStockStatuses
 {
     public static string ToCode(InventoryStockStatus status) => status.ToString();
 
-    public static InventoryStockStatus Derive(bool isTracked, decimal onHand, decimal? reorderLevel, decimal? reorderQuantity)
+    /// <summary>
+    /// Primary availability state. <see cref="InventoryStockStatus.ReorderSuggested"/> is not used here —
+    /// use <see cref="IsReorderSuggested"/> as a separate derived flag (it overlaps OutOfStock/LowStock).
+    /// </summary>
+    public static InventoryStockStatus Derive(bool isTracked, decimal onHand, decimal? reorderLevel)
     {
         if (!isTracked)
         {
@@ -22,30 +26,38 @@ public static class InventoryStockStatuses
 
         if (onHand == 0m)
         {
-            if (IsReorderSuggested(onHand, reorderLevel, reorderQuantity))
-            {
-                return InventoryStockStatus.ReorderSuggested;
-            }
-
             return InventoryStockStatus.OutOfStock;
         }
 
         if (reorderLevel is not null && onHand <= reorderLevel.Value)
         {
-            if (IsReorderSuggested(onHand, reorderLevel, reorderQuantity))
-            {
-                return InventoryStockStatus.ReorderSuggested;
-            }
-
             return InventoryStockStatus.LowStock;
         }
 
         return InventoryStockStatus.InStock;
     }
 
-    public static bool IsReorderSuggested(decimal onHand, decimal? reorderLevel, decimal? reorderQuantity) =>
-        reorderLevel is not null
-        && reorderQuantity is not null
-        && reorderQuantity.Value > 0m
-        && onHand <= reorderLevel.Value;
+    /// <summary>True when a reorder level is configured and on-hand is at or below that level.</summary>
+    public static bool IsReorderSuggested(decimal onHand, decimal? reorderLevel) =>
+        reorderLevel is not null && onHand <= reorderLevel.Value;
+
+    /// <summary>
+    /// Suggested order quantity: configured <paramref name="reorderQuantity"/> when set;
+    /// otherwise shortage to reach <paramref name="reorderLevel"/> (never negative).
+    /// </summary>
+    public static decimal? SuggestedOrderQuantity(decimal onHand, decimal? reorderLevel, decimal? reorderQuantity)
+    {
+        if (!IsReorderSuggested(onHand, reorderLevel))
+        {
+            return null;
+        }
+
+        if (reorderQuantity is not null && reorderQuantity.Value > 0m)
+        {
+            return reorderQuantity.Value;
+        }
+
+        var shortage = reorderLevel!.Value - onHand;
+        return shortage > 0m ? shortage : null;
+    }
 }

@@ -13,6 +13,7 @@ internal static class StockCountEntityMapper
             PosOrganizationId.From(record.OrganizationId),
             record.CountNumber,
             StockCountStatuses.Parse(record.Status),
+            record.CountDate,
             record.Notes,
             record.StartedAtUtc,
             record.StartedBy,
@@ -41,6 +42,7 @@ internal static class StockCountEntityMapper
             OrganizationId = count.OrganizationId.Value,
             CountNumber = count.CountNumber,
             Status = StockCountStatuses.ToCode(count.Status),
+            CountDate = count.CountDate,
             Notes = count.Notes,
             StartedAtUtc = count.StartedAtUtc,
             StartedBy = count.StartedBy,
@@ -68,6 +70,7 @@ internal static class StockCountEntityMapper
     {
         record.CountNumber = count.CountNumber;
         record.Status = StockCountStatuses.ToCode(count.Status);
+        record.CountDate = count.CountDate;
         record.Notes = count.Notes;
         record.StartedAtUtc = count.StartedAtUtc;
         record.StartedBy = count.StartedBy;

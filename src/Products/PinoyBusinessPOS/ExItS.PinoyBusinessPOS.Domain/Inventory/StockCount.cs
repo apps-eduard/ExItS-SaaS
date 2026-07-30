@@ -20,6 +20,7 @@ public sealed class StockCount
     public PosOrganizationId OrganizationId { get; }
     public string? CountNumber { get; private set; }
     public StockCountStatus Status { get; private set; }
+    public DateOnly CountDate { get; private set; }
     public string? Notes { get; private set; }
     public DateTimeOffset? StartedAtUtc { get; private set; }
     public Guid? StartedBy { get; private set; }
@@ -37,6 +38,7 @@ public sealed class StockCount
         PosOrganizationId organizationId,
         string? countNumber,
         StockCountStatus status,
+        DateOnly countDate,
         string? notes,
         DateTimeOffset? startedAtUtc,
         Guid? startedBy,
@@ -52,6 +54,7 @@ public sealed class StockCount
         OrganizationId = organizationId;
         CountNumber = countNumber;
         Status = status;
+        CountDate = countDate;
         Notes = notes;
         StartedAtUtc = startedAtUtc;
         StartedBy = startedBy;
@@ -68,6 +71,7 @@ public sealed class StockCount
         PosOrganizationId organizationId,
         IReadOnlyList<StockCountLineDraft> lines,
         DateTimeOffset utcNow,
+        DateOnly? countDate = null,
         string? notes = null,
         StockCountId? id = null)
     {
@@ -82,6 +86,7 @@ public sealed class StockCount
             organizationId,
             countNumber: null,
             StockCountStatus.Draft,
+            countDate ?? DateOnly.FromDateTime(utcNow.UtcDateTime),
             NormalizeNotes(notes),
             startedAtUtc: null,
             startedBy: null,
@@ -97,11 +102,17 @@ public sealed class StockCount
     public void UpdateDraft(
         IReadOnlyList<StockCountLineDraft> lines,
         DateTimeOffset utcNow,
+        DateOnly? countDate = null,
         string? notes = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureDraft();
         EnsureLines(lines);
+        if (countDate is not null)
+        {
+            CountDate = countDate.Value;
+        }
+
         Notes = NormalizeNotes(notes);
         ReplaceDraftLines(lines);
         UpdatedAtUtc = utcNow;
@@ -322,6 +333,7 @@ public sealed class StockCount
         PosOrganizationId organizationId,
         string? countNumber,
         StockCountStatus status,
+        DateOnly countDate,
         string? notes,
         DateTimeOffset? startedAtUtc,
         Guid? startedBy,
@@ -337,6 +349,7 @@ public sealed class StockCount
             organizationId,
             countNumber,
             status,
+            countDate,
             notes,
             startedAtUtc,
             startedBy,

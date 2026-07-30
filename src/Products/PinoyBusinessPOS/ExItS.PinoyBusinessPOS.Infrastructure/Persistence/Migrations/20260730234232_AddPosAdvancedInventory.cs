@@ -240,6 +240,14 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                 schema: "pos",
                 table: "stock_movements");
 
+            // Remove advanced-inventory movements before narrowing check constraints (shared test DB may retain rows).
+            migrationBuilder.Sql(
+                """
+                DELETE FROM pos.stock_movements
+                WHERE movement_type IN ('StockCountVarianceIncrease', 'StockCountVarianceDecrease')
+                   OR source_type = 'StockCount';
+                """);
+
             migrationBuilder.DropCheckConstraint(
                 name: "ck_stock_movements_movement_type",
                 schema: "pos",

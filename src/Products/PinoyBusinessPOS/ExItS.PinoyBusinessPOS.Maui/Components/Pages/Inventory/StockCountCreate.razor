@@ -112,7 +112,7 @@ else
         _busy = true;
         var request = new CreateStockCountRequest(
             _lines.Select(l => new CreateStockCountLineRequest(l.ProductId)).ToList(),
-            string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim());
+            Notes: string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim());
         var result = await Inventory.CreateStockCountAsync(request);
         _busy = false;
         if (result.Status == ApiCallStatus.Success && result.Data is not null)

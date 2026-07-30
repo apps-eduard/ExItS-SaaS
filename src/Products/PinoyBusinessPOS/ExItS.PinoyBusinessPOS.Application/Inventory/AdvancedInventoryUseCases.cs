@@ -222,6 +222,7 @@ public sealed class StockCountQueryService
             count.OrganizationId.Value,
             count.CountNumber,
             StockCountStatuses.ToCode(count.Status),
+            count.CountDate,
             count.Notes,
             count.StartedAtUtc,
             count.StartedBy,
@@ -268,7 +269,7 @@ public sealed class CreateStockCount
             var drafts = await StockCountLineDraftBuilder
                 .BuildAsync(orgId, request.Lines, _inventory, _products, cancellationToken)
                 .ConfigureAwait(false);
-            var count = StockCount.CreateDraft(orgId, drafts, _clock.UtcNow, request.Notes);
+            var count = StockCount.CreateDraft(orgId, drafts, _clock.UtcNow, request.CountDate, request.Notes);
             await _counts.AddAsync(count, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<StockCount>.Success(count);
@@ -360,7 +361,7 @@ public sealed class UpdateStockCountDraft
             var drafts = await StockCountLineDraftBuilder
                 .BuildAsync(orgId, request.Lines, _inventory, _products, cancellationToken)
                 .ConfigureAwait(false);
-            count.UpdateDraft(drafts, _clock.UtcNow, request.Notes);
+            count.UpdateDraft(drafts, _clock.UtcNow, request.CountDate, request.Notes);
             await _counts.UpdateAsync(count, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<StockCount>.Success(count);

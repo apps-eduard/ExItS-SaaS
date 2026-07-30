@@ -13,6 +13,7 @@ public sealed record PosInventoryAccountDto(
     string StockStatus,
     bool IsLowStock,
     bool IsReorderSuggested,
+    decimal? SuggestedOrderQuantity,
     DateTimeOffset? LatestMovementAtUtc,
     int MovementCount,
     DateTimeOffset CreatedAtUtc,
@@ -67,6 +68,7 @@ public sealed record PosStockCountDto(
     Guid OrganizationId,
     string? CountNumber,
     string Status,
+    DateOnly CountDate,
     string? Notes,
     DateTimeOffset? StartedAtUtc,
     Guid? StartedBy,
@@ -82,10 +84,12 @@ public sealed record CreateStockCountLineRequest(Guid ProductId, decimal? Counte
 
 public sealed record CreateStockCountRequest(
     IReadOnlyList<CreateStockCountLineRequest> Lines,
+    DateOnly? CountDate = null,
     string? Notes = null);
 
 public sealed record UpdateStockCountRequest(
     IReadOnlyList<CreateStockCountLineRequest> Lines,
+    DateOnly? CountDate = null,
     string? Notes = null);
 
 public sealed record StockMovementFilter(

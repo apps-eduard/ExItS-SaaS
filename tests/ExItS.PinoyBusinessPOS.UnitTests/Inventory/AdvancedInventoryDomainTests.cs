@@ -21,8 +21,23 @@ public sealed class AdvancedInventoryDomainTests
         account.SetReorderConfiguration(10m, 20m, UnitOfMeasure.Piece, Utc.AddMinutes(1));
         account.ApplyMovementEffect(-3m);
 
-        Assert.Equal(InventoryStockStatus.ReorderSuggested, account.StockStatus);
+        Assert.Equal(InventoryStockStatus.LowStock, account.StockStatus);
+        Assert.True(account.IsLowStock);
         Assert.True(account.IsReorderSuggested);
+        Assert.Equal(20m, account.SuggestedOrderQuantity);
+    }
+
+    [Fact]
+    public void Out_of_stock_with_reorder_level_is_out_of_stock_and_reorder_suggested()
+    {
+        var account = InventoryAccount.CreateUntracked(Org, Product, Utc);
+        account.Enable(0m, UnitOfMeasure.Piece, Actor, Utc, hasOpeningStockAlready: false);
+        account.SetReorderConfiguration(5m, null, UnitOfMeasure.Piece, Utc.AddMinutes(1));
+
+        Assert.Equal(InventoryStockStatus.OutOfStock, account.StockStatus);
+        Assert.False(account.IsLowStock);
+        Assert.True(account.IsReorderSuggested);
+        Assert.Equal(5m, account.SuggestedOrderQuantity);
     }
 
     [Fact]

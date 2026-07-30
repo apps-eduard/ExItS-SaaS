@@ -6,6 +6,7 @@ internal sealed class StockCountRecord
     public Guid OrganizationId { get; set; }
     public string? CountNumber { get; set; }
     public string Status { get; set; } = string.Empty;
+    public DateOnly CountDate { get; set; }
     public string? Notes { get; set; }
     public DateTimeOffset? StartedAtUtc { get; set; }
     public Guid? StartedBy { get; set; }

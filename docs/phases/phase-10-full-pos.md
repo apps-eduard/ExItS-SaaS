@@ -4,7 +4,7 @@
 
 ## Status
 
-**In Progress** — **P10-WP03 — Advanced Inventory** authorized (prior tip `9336002` / WP02 complete including gap-fix). Part A HealthCare cleanup remains closed at `fd77f88`. Do **not** begin P10-WP04.
+**In Progress** — **P10-WP03 — Advanced Inventory** complete at tip (see completion report). Part A HealthCare cleanup remains closed at `fd77f88`. Do **not** begin P10-WP04.
 
 ## Objective
 
