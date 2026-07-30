@@ -14,7 +14,7 @@
 | Current phase | Phase 5 — PinoyBusinessPOS MAUI Foundation (**Complete with documented risks**) |
 | Current work package | P5-WP05 — Authentication, Onboarding and Closeout (**Complete**) |
 | Overall status | **Phase 5 complete with risks** — Dev/Testing auth + onboarding; next Phase 6 when authorized |
-| Latest verified commit | *(feature hash after push)* |
+| Latest verified commit | 81eaa892cb6ac1ffb1b201b69dc7e390e5536586 |
 | Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations; R-035 calendar EOM; no product delivery; no payment gateway; POS foundation not offline business; no interactive Android emulator attached (R-109); no POS operational roles |
 | Last updated | 2026-07-30 |
 
@@ -54,7 +54,7 @@ Phase 6 — Utang MVP (not started — do not begin until authorized)
 | P5-WP02 | Complete | 3d3cba840ffff20dc07ae7237d7f81c3873a502e |
 | P5-WP03 | Complete | 1dea793407adaa9e8a27c19f45727bc90d866f60 |
 | P5-WP04 | Complete | 763b0dc7cd73ab21ada2d101d115423c23d90cfa |
-| P5-WP05 | Complete | *(feature hash after push)* |
+| P5-WP05 | Complete | 81eaa892cb6ac1ffb1b201b69dc7e390e5536586 |
 
 ## Phase 4 work packages
 
