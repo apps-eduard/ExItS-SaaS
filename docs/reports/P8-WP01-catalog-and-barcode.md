@@ -126,7 +126,7 @@ Root `HealthCare/` remains ignored, untracked, outside `ExItS.slnx`.
 | Field | Value |
 |---|---|
 | Feature commit | `5573822ca116ab46f1a5cdce407e1d7b4f58f796` |
-| Docs hash-record commit | *(recorded in follow-up docs commit)* |
+| Docs hash-record commit | `51963b92e3841aad3321fbcd41b6c525671a5f1f` |
 | Phase marker | `P8-WP01-catalog-and-barcode` |
 | Final working tree | clean after push |
 
