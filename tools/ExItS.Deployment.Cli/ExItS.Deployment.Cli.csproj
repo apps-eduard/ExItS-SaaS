@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>ExItS.Deployment.Cli</RootNamespace>
+    <AssemblyName>ExItS.Deployment.Cli</AssemblyName>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Shared\ExItS.Deployment\ExItS.Deployment.csproj" />
+  </ItemGroup>
+</Project>

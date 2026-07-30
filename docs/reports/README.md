@@ -68,3 +68,4 @@ The dashboard links to the latest accepted report.
 | [P9-WP02-performance-and-reliability.md](P9-WP02-performance-and-reliability.md) | Performance and Reliability | Complete with documented risks |
 | [P9-WP03-backup-and-restore.md](P9-WP03-backup-and-restore.md) | Backup and Restore | Complete with documented risks |
 | [P9-WP04-accessibility-localization-theme-qa.md](P9-WP04-accessibility-localization-theme-qa.md) | Accessibility, Localization and Theme QA | Complete with documented risks |
+| [P9-WP05-pilot-and-deployment.md](P9-WP05-pilot-and-deployment.md) | Pilot and Deployment | Complete with documented risks |

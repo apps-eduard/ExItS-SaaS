@@ -25,8 +25,8 @@ public sealed class BackupRestoreArchitectureTests
         var root = RepoRoot();
         var pos = File.ReadAllText(Path.Combine(root, "src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/Program.cs"));
         var platform = File.ReadAllText(Path.Combine(root, "src/Platform/ExItS.Platform.Api/Program.cs"));
-        Assert.Contains("P9-WP04-accessibility-localization-theme-qa", pos, StringComparison.Ordinal);
-        Assert.Contains("P9-WP04-accessibility-localization-theme-qa", platform, StringComparison.Ordinal);
+        Assert.Contains("P9-WP05-pilot-and-deployment", pos, StringComparison.Ordinal);
+        Assert.Contains("P9-WP05-pilot-and-deployment", platform, StringComparison.Ordinal);
     }
 
     [Fact]

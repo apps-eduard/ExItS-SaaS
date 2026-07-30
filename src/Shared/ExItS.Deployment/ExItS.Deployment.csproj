@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>ExItS.Deployment</RootNamespace>
+    <AssemblyName>ExItS.Deployment</AssemblyName>
+    <Description>Pilot/deployment configuration validation, gates, and readiness assessment (P9-WP05).</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+</Project>

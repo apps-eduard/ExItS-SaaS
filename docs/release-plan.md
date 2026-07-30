@@ -93,6 +93,14 @@ Admin EN/fil localization of primary chrome; DesignSystem dialog a11y; skip link
 
 **Next:** **P9-WP05 — Pilot and Deployment** when approved.
 
+## R3.11 — Pilot and deployment (Phase 9 / P9-WP05)
+
+**P9-WP05 complete with documented risks.** See [P9-WP05 report](reports/P9-WP05-pilot-and-deployment.md).
+
+Non-production deployment packaging, config validation, backup-before-migrate, smoke/runbooks, pilot entry/exit, honest readiness (**Ready for controlled internal technical pilot**; Production blocked). **Not production-ready** (R-091, R-109, R-129, Production TLS).
+
+**Next:** **P9-WP06 — Commercial MVP Closeout** when approved.
+
 ## R4 — Commercial MVP
 
 Offline synchronization, Basic Store and production hardening.

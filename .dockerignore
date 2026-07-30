@@ -1,0 +1,22 @@
+# Keep image contexts lean and free of secrets / frozen HealthCare content.
+**/bin/
+**/obj/
+**/.git/
+**/.vs/
+**/HealthCare/
+**/node_modules/
+**/*.user
+**/.env
+**/.env.*
+!**/.env.example
+**/artifacts/
+**/TestResults/
+**/*.dump
+**/*.manifest.json
+ops/backup/artifacts/
+docs/
+tests/
+tools/
+.cursor/
+*.md
+!deploy/docker/**

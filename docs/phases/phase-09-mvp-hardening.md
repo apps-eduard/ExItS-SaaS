@@ -4,7 +4,7 @@
 
 ## Status
 
-**In Progress** — P9-WP01–P9-WP04 complete with documented risks. Do **not** begin P9-WP05 until explicitly authorized. **Not production-ready.**
+**In Progress** — P9-WP01–P9-WP05 complete with documented risks. Do **not** begin P9-WP06 until explicitly authorized. **Not production-ready.** Ready for controlled internal technical pilot only.
 
 ## Objective
 
@@ -204,22 +204,48 @@ Deliver:
 
 ### P9-WP05 — Pilot and Deployment
 
-Status: Not Started
+Status: **Complete** with documented risks
 
-#### Required outcomes
+Report: [P9-WP05-pilot-and-deployment.md](../reports/P9-WP05-pilot-and-deployment.md)
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+Feature commit: _(recorded after feature commit)_
+
+Phase marker: `P9-WP05-pilot-and-deployment`
+
+#### Approved scope (clarified)
+
+Prepare and validate a controlled deployment and pilot process for ExItS Platform and PinoyBusinessPOS MVP. **No new business features.** Preserve P9-WP01–P9-WP04 controls. HealthCare remains frozen.
+
+Deliver:
+
+- Repeatable deployment automation and packaging (compose/templates; no Kubernetes unless already approved)
+- Environment matrix (Development / Testing-CI / Staging-Pilot / Production) with isolation rules
+- Configuration and secret templates (placeholders only; no real secrets)
+- Database migration + rollback procedures with backup-before-deployment
+- Pilot provisioning criteria, entry/exit, support and incident runbooks
+- Smoke tests and deployment rehearsal evidence (non-production)
+- Android Release packaging instructions; R-109 if no interactive device
+- Honest release-readiness decision (do **not** claim Production while R-091/R-109/R-129/TLS remain open)
+
+Pilot may only be: controlled non-production, internal technical, or clearly restricted environment. Do not expose public Production with Dev/Testing identity headers.
+
+#### Explicit exclusions
+
+- Production authentication (R-091 remains open unless separately authorized)
+- New POS business workflows; tax/VAT/refunds/accounting/purchasing/payroll
+- Payment gateway / verified GCash; report export; new offline business ops; PITR
+- HealthCare deployment; closing R-091/R-109/R-129 without genuine evidence
+- P9-WP06 or later / next phase
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (987 / 0 / 0; baseline 950).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created (`docs/reports/P9-WP05-pilot-and-deployment.md`).
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean.
+- [x] Exact next WP recorded: **P9-WP06 — Commercial MVP Closeout** (do not begin).
 
 ### P9-WP06 — Commercial MVP Closeout
 
