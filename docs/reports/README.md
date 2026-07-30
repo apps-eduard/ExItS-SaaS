@@ -56,3 +56,4 @@ The dashboard links to the latest accepted report.
 | [P7-WP02-offline-queue-and-idempotency.md](P7-WP02-offline-queue-and-idempotency.md) | Offline Queue and Idempotency | Complete with documented risks |
 | [P7-WP03-customer-and-credit-sync.md](P7-WP03-customer-and-credit-sync.md) | Customer and Credit Sync | Complete with documented risks |
 | [P7-WP04-payment-sync-and-recovery.md](P7-WP04-payment-sync-and-recovery.md) | Payment Sync and Recovery | Complete with documented risks |
+| [P7-WP05-offline-closeout.md](P7-WP05-offline-closeout.md) | Offline Closeout | Complete with documented risks (Phase 7 closed) |

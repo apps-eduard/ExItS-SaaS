@@ -37,7 +37,9 @@ MAUI app, bilingual UI, themes, customers, Utang, payments, overdue monitoring a
 
 **Next:** **P7-WP02 — Offline Queue and Idempotency** when approved.
 
-## R3.5 — Offline foundation (Phase 7 / P7-WP01–P7-WP04)
+## R3.5 — Offline foundation (Phase 7 / P7-WP01–P7-WP05)
+
+**Phase 7 complete with documented risks** — offline subsystem closed. See [P7-WP05 report](reports/P7-WP05-offline-closeout.md).
 
 **P7-WP01 complete** — DeviceId, SQLite foundation, isolation, sync-status shell base, Dev diagnostics.
 
@@ -47,7 +49,9 @@ MAUI app, bilingual UI, themes, customers, Utang, payments, overdue monitoring a
 
 **P7-WP04 complete with documented risks** — encrypted local repayment projections; offline repayments, reversals, and due-date changes; projected balance with pending repayment; no offline statements/receipts. See [P7-WP04 report](reports/P7-WP04-payment-sync-and-recovery.md).
 
-**Next:** **P7-WP05 — Offline Closeout** when approved.
+**Not production-ready** while R-109, R-022, full-database encryption, production auth/roles, and production background scheduling remain open.
+
+**Next:** **Phase 8 — Basic Store** when approved.
 
 ## R4 — Commercial MVP
 

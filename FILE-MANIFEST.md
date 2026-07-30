@@ -138,6 +138,7 @@ docs/reports/P7-WP03-customer-and-credit-sync.md
 tests/ExItS.PinoyBusinessPOS.UnitTests/Offline/PaymentOfflineStoreTests.cs
 tests/ExItS.PinoyBusinessPOS.IntegrationTests/PosPaymentOfflineIdempotencyApiTests.cs
 docs/reports/P7-WP04-payment-sync-and-recovery.md
+docs/reports/P7-WP05-offline-closeout.md
 docs/reports/phase-02-extraction-closeout.md
 docs/reports/phase-00-final-assessment-and-recommendation.md
 docs/reports/phase-01-architecture-approval.md

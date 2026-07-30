@@ -48,6 +48,8 @@ Later POS ownership (not yet implemented): businesses, stores/branches/registers
 
 **P7-WP04 local encrypted repayment projections:** same isolated SQLite files also hold encrypted `local_repayment_projection` rows (schema v4). Server PostgreSQL `pos.repayments` remains system of record — no local mirror table named `repayments`. Repayment amount/remarks encrypted at row level. Projected outstanding = confirmed + pending credit − pending repayment (never below zero locally). Offline statements/receipts remain online read-model projections only (not queued offline).
 
+**P7-WP05 closeout:** pending due-date/reversal reasons live in encrypted projection JSON (legacy plaintext columns NULLed). Conflict JSON stores safe metadata only. Context isolation and OD-10 retention unchanged. Full-database encryption remains deferred.
+
 **OD-10 (resolved for pending ops):** Pending operations remain encrypted across logout and access loss, isolated to their original context, and are never processed until that context is reauthorized. They are not silently deleted. No time-based retention period is invented.
 
 ---

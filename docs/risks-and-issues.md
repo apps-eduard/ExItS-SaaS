@@ -134,9 +134,13 @@
 | R-128 | Dev actor header mistaken for production audit identity | High | Document `X-Dev-Platform-User-Id` as Development/Testing-only; production JWT still required (R-091) | Open — introduced P6-WP03; also used for due-date set/clear in P6-WP04 |
 | R-129 | Transitive SQLitePCLRaw NU1903 advisory on Microsoft.Data.Sqlite 10.0.4 | Medium | Track package upgrade when Microsoft ships fixed transitive; P7-WP03 mitigated by row-level AES-GCM instead of SQLCipher; advisory remains open on Microsoft.Data.Sqlite transitive | Open — introduced P7-WP01; WP03 avoided SQLCipher |
 
+## Phase 7 note (P7-WP05 closeout)
+
+Phase 7 Offline Synchronization is **closed**. P7-WP05 reconciled WP01–WP04, hardened confirmed defects (projection rebuild, encryption of pending due-date/reversal fields, safe conflict JSON, per-operation capability revalidation, RecoveryRequired UX), and documented the recovery matrix. R-109 remains open. R-022 remains open. R-129 / full-DB encryption remains an explicit production gate. OD-10 retained. **Not production-ready.** Next: **Phase 8 — Basic Store** when authorized.
+
 ## Phase 7 note (P7-WP04)
 
-P7-WP04 delivered encrypted local repayment projections and offline `RepaymentCreate`, `RepaymentReverse`, `CreditReverse`, `CreditDueDateSet`, and `CreditDueDateClear` via the generic queue. Row-level AES-GCM chosen; SQLCipher deferred (R-129 not worsened). **No offline statements/receipts.** R-109 remains open. R-022 remains open. OD-10 retained. Next: **P7-WP05 — Offline Closeout** when authorized.
+P7-WP04 delivered encrypted local repayment projections and offline `RepaymentCreate`, `RepaymentReverse`, `CreditReverse`, `CreditDueDateSet`, and `CreditDueDateClear` via the generic queue. Row-level AES-GCM chosen; SQLCipher deferred (R-129 not worsened). **No offline statements/receipts.** R-109 remains open. R-022 remains open. OD-10 retained. Superseded as “next WP” by P7-WP05.
 
 ## Phase 7 note (P7-WP03)
 

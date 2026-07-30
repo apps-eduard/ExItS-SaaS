@@ -160,8 +160,12 @@ Server remains authoritative. Local acceptance while access was valid does not a
 
 ### Explicit deferrals (P7-WP05+)
 
-Offline statements/receipts, customer deactivate/reactivate offline, automatic financial conflict resolution, production sync scheduling, sales/inventory/gateways/QR/cards, SQLCipher, R-022 grace, time-based retention purge.
+Offline statements/receipts, customer deactivate/reactivate offline, automatic financial conflict resolution, production sync scheduling, sales/inventory/gateways/QR/cards, SQLCipher / full-database encryption, R-022 grace, time-based retention purge. Phase 8 Basic Store is out of scope.
+
+## P7-WP05 decisions (authoritative closeout)
+
+Phase 7 closed as one subsystem. Confirmed defects hardened: rebuild after credit confirm; pending due-date/reversal reasons in encrypted JSON; safe conflict metadata; per-operation capability revalidation → `BlockedByAccess`; `RecoveryRequired` sync state including key-unavailable; download customer-summary batching. Recovery matrix documented in [P7-WP05 report](../reports/P7-WP05-offline-closeout.md). **Not production-ready** while R-109, R-022, R-129/full-DB encryption, production auth/roles, and production background scheduling remain open.
 
 ## Later phase (preview)
 
-**P7-WP05 — Offline Closeout** follows Payment Sync and Recovery.
+**Phase 8 — Basic Store** follows Phase 7 closeout (do not begin until authorized).
