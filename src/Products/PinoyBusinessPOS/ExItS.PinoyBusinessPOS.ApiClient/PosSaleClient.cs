@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.Sales;
 
 namespace ExItS.PinoyBusinessPOS.ApiClient;
@@ -42,22 +43,34 @@ public sealed class PosSaleClient(HttpClient httpClient, IConnectivityService? c
         AppendOptional(query, "saleNumber", saleNumber);
         AppendOptional(query, "fromDate", fromDateUtc?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
         AppendOptional(query, "toDate", toDateUtc?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
-        return SendAsync<PosSalePagedResult>(HttpMethod.Get, query.ToString(), null, ct);
+        return SendAsync<PosSalePagedResult>(HttpMethod.Get, query.ToString(), null, null, ct);
     }
 
     public Task<ApiResult<PosSaleDto>> GetSaleAsync(Guid saleId, CancellationToken ct = default) =>
-        SendAsync<PosSaleDto>(HttpMethod.Get, $"{SalesPath}/{saleId:D}", null, ct);
+        SendAsync<PosSaleDto>(HttpMethod.Get, $"{SalesPath}/{saleId:D}", null, null, ct);
 
     public Task<ApiResult<PosSaleDto>> CheckoutAsync(
         CheckoutSaleRequest request,
-        CancellationToken ct = default) =>
-        SendAsync<PosSaleDto>(HttpMethod.Post, SalesPath, request, ct);
+        CancellationToken ct = default)
+    {
+        IReadOnlyDictionary<string, string>? headers = null;
+        if (request.SaleId is Guid saleId && saleId != Guid.Empty)
+        {
+            var json = JsonSerializer.Serialize(request, JsonOptions);
+            headers = PosMutationIdempotencyHelper.BuildHeaders(
+                saleId,
+                json,
+                OfflineOperationTypes.SaleCheckout);
+        }
+
+        return SendAsync<PosSaleDto>(HttpMethod.Post, SalesPath, request, headers, ct);
+    }
 
     public Task<ApiResult<PosSaleDto>> VoidSaleAsync(
         Guid saleId,
         VoidSaleRequest request,
         CancellationToken ct = default) =>
-        SendAsync<PosSaleDto>(HttpMethod.Post, $"{SalesPath}/{saleId:D}/void", request, ct);
+        SendAsync<PosSaleDto>(HttpMethod.Post, $"{SalesPath}/{saleId:D}/void", request, null, ct);
 
     private static void AppendOptional(StringBuilder query, string name, string? value)
     {
@@ -71,6 +84,7 @@ public sealed class PosSaleClient(HttpClient httpClient, IConnectivityService? c
         HttpMethod method,
         string path,
         object? body,
+        IReadOnlyDictionary<string, string>? headers,
         CancellationToken ct)
     {
         if (connectivityService is not null && !await connectivityService.IsConnectedAsync(ct).ConfigureAwait(false))
@@ -88,6 +102,14 @@ public sealed class PosSaleClient(HttpClient httpClient, IConnectivityService? c
             if (body is not null)
             {
                 request.Content = JsonContent.Create(body, options: JsonOptions);
+            }
+
+            if (headers is not null)
+            {
+                foreach (var pair in headers)
+                {
+                    request.Headers.TryAddWithoutValidation(pair.Key, pair.Value);
+                }
             }
 
             using var response = await httpClient.SendAsync(request, ct).ConfigureAwait(false);

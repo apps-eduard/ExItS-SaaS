@@ -24,6 +24,11 @@ public interface IProductCategoryRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<ProductCategory>> ListByIdsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<ProductCategoryId> categoryIds,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(ProductCategory category, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(ProductCategory category, CancellationToken cancellationToken = default);

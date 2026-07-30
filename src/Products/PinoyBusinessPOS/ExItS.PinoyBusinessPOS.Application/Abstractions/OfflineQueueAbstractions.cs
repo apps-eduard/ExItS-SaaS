@@ -101,6 +101,12 @@ public interface IOfflineOperationQueue
 
     Task RecoverAbandonedSyncingAsync(CancellationToken ct = default);
 
+    /// <summary>
+    /// Moves BlockedByAccess rows back to Pending when access is restored so they can be reclaimed.
+    /// Does not delete operations.
+    /// </summary>
+    Task ReclaimBlockedByAccessAsync(CancellationToken ct = default);
+
     Task<OfflineOperationEnvelope?> TryClaimNextAsync(string claimToken, CancellationToken ct = default);
 
     Task MarkSucceededAsync(Guid operationId, string? serverReference, CancellationToken ct = default);

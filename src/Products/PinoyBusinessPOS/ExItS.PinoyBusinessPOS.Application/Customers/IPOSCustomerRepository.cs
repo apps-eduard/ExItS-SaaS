@@ -29,6 +29,11 @@ public interface IPOSCustomerRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<POSCustomer>> ListByIdsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<POSCustomerId> customerIds,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(POSCustomer customer, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(POSCustomer customer, CancellationToken cancellationToken = default);

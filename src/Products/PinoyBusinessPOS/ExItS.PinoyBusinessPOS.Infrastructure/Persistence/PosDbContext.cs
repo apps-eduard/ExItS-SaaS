@@ -80,6 +80,9 @@ public sealed class PosDbContext : DbContext
             entity.HasIndex(e => new { e.OrganizationId, e.DisplayName })
                 .HasDatabaseName("ix_customers_org_display_name");
 
+            entity.HasIndex(e => new { e.OrganizationId, e.UpdatedAtUtc })
+                .HasDatabaseName("ix_customers_org_updated");
+
             entity.HasIndex(e => e.OrganizationId)
                 .HasDatabaseName("ix_customers_organization_id");
         });
@@ -532,6 +535,9 @@ public sealed class PosDbContext : DbContext
                 .IsUnique()
                 .HasDatabaseName("ux_sale_lines_sale_line_number");
 
+            entity.HasIndex(e => new { e.OrganizationId, e.ProductId })
+                .HasDatabaseName("ix_sale_lines_org_product");
+
             // Cascade guards against orphan lines. Sales are never deleted, so this never fires in
             // normal operation; it only removes the possibility of dangling line rows.
             entity.HasOne<SaleRecord>()
@@ -651,6 +657,9 @@ public sealed class PosDbContext : DbContext
 
             entity.HasIndex(e => new { e.OrganizationId, e.ProductId, e.RecordedAtUtc })
                 .HasDatabaseName("ix_stock_movements_org_product_recorded");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.RecordedAtUtc })
+                .HasDatabaseName("ix_stock_movements_org_recorded");
 
             // One unique index covers SaleDeduction and SaleVoidRestoration (movement_type is part of the key).
             // EF cannot model two filtered uniques on the identical column set.

@@ -117,6 +117,25 @@ internal sealed class POSCustomerRepository : IPOSCustomerRepository
         return (records.Select(CustomerEntityMapper.ToDomain).ToList(), total);
     }
 
+    public async Task<IReadOnlyList<POSCustomer>> ListByIdsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<POSCustomerId> customerIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (customerIds.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = customerIds.Select(c => c.Value).Distinct().ToList();
+        var records = await _db.Customers.AsNoTracking()
+            .Where(c => c.OrganizationId == organizationId.Value && ids.Contains(c.Id))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return records.Select(CustomerEntityMapper.ToDomain).ToList();
+    }
+
     public Task AddAsync(POSCustomer customer, CancellationToken cancellationToken = default)
     {
         _db.Customers.Add(CustomerEntityMapper.ToRecord(customer));

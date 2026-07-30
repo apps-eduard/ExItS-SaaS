@@ -20,6 +20,7 @@ using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Infrastructure;
+using ExItS.Platform.Infrastructure.Health;
 using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,7 +28,7 @@ var builder = WebApplication.CreateBuilder(args);
 PlatformSecurityPipeline.ValidateProductionConfigurationOrThrow(builder);
 
 builder.Services.AddProblemDetails();
-builder.Services.AddHealthChecks();
+builder.Services.AddPlatformHealthChecks();
 builder.AddPlatformSecurity();
 builder.Services.AddPlatformPersistence(builder.Configuration);
 
@@ -126,10 +127,10 @@ app.MapGet("/", () => Results.Json(new
 {
     service = "ExItS.Platform.Api",
     status = "ok",
-    phase = "P9-WP01-security-and-privacy-hardening"
+    phase = "P9-WP02-performance-and-reliability"
 }));
 
-app.MapHealthChecks("/health").DisableRateLimiting();
+app.MapPlatformHealthEndpoints();
 app.MapCatalogEndpoints();
 app.MapOrganizationEndpoints();
 app.MapIdentityEndpoints();

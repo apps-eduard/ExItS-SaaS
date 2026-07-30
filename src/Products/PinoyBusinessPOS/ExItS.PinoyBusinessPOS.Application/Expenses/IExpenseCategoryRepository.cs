@@ -24,6 +24,11 @@ public interface IExpenseCategoryRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<ExpenseCategory>> ListByIdsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<ExpenseCategoryId> categoryIds,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(ExpenseCategory category, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(ExpenseCategory category, CancellationToken cancellationToken = default);

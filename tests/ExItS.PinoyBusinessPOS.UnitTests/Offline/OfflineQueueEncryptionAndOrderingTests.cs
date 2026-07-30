@@ -196,6 +196,98 @@ public sealed class OfflineQueueEncryptionAndOrderingTests
     }
 
     [Fact]
+    public async Task ReclaimBlockedByAccess_returns_rows_to_Pending_without_discard()
+    {
+        await using var harness = await Harness.CreateAsync();
+        var opId = Guid.NewGuid();
+        await harness.Queue.EnqueueAsync(new OfflineEnqueueRequest(
+            opId,
+            OfflineOperationTypes.DevOfflineProbe,
+            1,
+            "reclaim",
+            Encoding.UTF8.GetBytes("x")));
+
+        var claimed = await harness.Queue.TryClaimNextAsync("claim-block");
+        Assert.NotNull(claimed);
+        await harness.Queue.MarkFailureAsync(
+            opId,
+            OfflineFailureClass.AccessBlocked,
+            "access_blocked",
+            "Reconnect",
+            nextAttemptUtc: harness.Clock.GetUtcNow().AddMinutes(5),
+            attemptCount: claimed!.AttemptCount);
+
+        var blocked = await harness.Queue.GetCountsAsync();
+        Assert.Equal(1, blocked.BlockedByAccess);
+        Assert.Equal(0, blocked.Pending);
+
+        await harness.Queue.ReclaimBlockedByAccessAsync();
+
+        var reclaimed = await harness.Queue.GetCountsAsync();
+        Assert.Equal(0, reclaimed.BlockedByAccess);
+        Assert.Equal(1, reclaimed.Pending);
+        Assert.True(await harness.Queue.HasUnsyncedWorkAsync());
+
+        var again = await harness.Queue.TryClaimNextAsync("claim-after-reclaim");
+        Assert.Equal(opId, again!.OperationId);
+    }
+
+    [Fact]
+    public async Task ProcessAvailable_reclaims_BlockedByAccess_when_access_restored()
+    {
+        await using var harness = await Harness.CreateAsync();
+        var opId = Guid.NewGuid();
+        await harness.Queue.EnqueueAsync(new OfflineEnqueueRequest(
+            opId,
+            OfflineOperationTypes.DevOfflineProbe,
+            1,
+            "reclaim-process",
+            Encoding.UTF8.GetBytes("probe")));
+
+        var claimed = await harness.Queue.TryClaimNextAsync("pre-block");
+        await harness.Queue.MarkFailureAsync(
+            opId,
+            OfflineFailureClass.AccessBlocked,
+            "access_blocked",
+            null,
+            harness.Clock.GetUtcNow().AddMinutes(5),
+            claimed!.AttemptCount);
+
+        harness.CurrentUser.Set(new AuthSession(
+            harness.UserId, "U", "u", "u@example.com", harness.OrgId, "Org",
+            DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddHours(1),
+            HasPosAccess: true,
+            AccessReasonCode: "allowed",
+            SubscriptionStatus: PosSubscriptionStatuses.Active,
+            EnabledFeatureCodes: UtangCapabilityPolicy.DefaultDevelopmentGrants));
+
+        var connectivity = new FakeConnectivity(online: true);
+        var accessPolicy = new ProtectedShellAccessPolicy(harness.CurrentUser, connectivity);
+        await accessPolicy.InitializeAsync();
+        var sync = new PosSyncStatusService(connectivity, accessPolicy, harness.Queue);
+        await sync.InitializeAsync();
+        var dispatcher = new RecordingDispatcher(OfflineOperationTypes.DevOfflineProbe);
+        var processor = new OfflineQueueProcessor(
+            harness.Queue,
+            harness.Protector,
+            new OfflineAccessRevalidator(
+                harness.CurrentUser,
+                accessPolicy,
+                connectivity,
+                new UtangCapabilityEvaluator(harness.CurrentUser)),
+            new OfflineRetryClassifier(harness.Clock),
+            [dispatcher],
+            harness.Manager,
+            sync,
+            harness.Clock);
+
+        var result = await processor.ProcessAvailableAsync();
+        Assert.Equal(1, result.Succeeded);
+        Assert.Equal(1, dispatcher.CallCount);
+        Assert.Equal(0, (await harness.Queue.GetCountsAsync()).BlockedByAccess);
+    }
+
+    [Fact]
     public async Task Suspended_capability_deny_marks_BlockedByAccess()
     {
         await using var harness = await Harness.CreateAsync();

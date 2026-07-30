@@ -206,16 +206,16 @@ public sealed class DashboardQueryService
             return (0m, 0m);
         }
 
+        var repaymentTotals = await _repayments
+            .SumActiveAmountsByOrganizationAsync(orgId, cancellationToken)
+            .ConfigureAwait(false);
         var effective = CreditFifoAging.EffectiveBusinessDateUtc(_clock.UtcNow);
         decimal outstanding = 0m;
         decimal overdue = 0m;
 
         foreach (var group in credits.GroupBy(c => c.CustomerId.Value))
         {
-            var custId = POSCustomerId.From(group.Key);
-            var activeRepayments = await _repayments
-                .SumActiveAmountAsync(orgId, custId, cancellationToken)
-                .ConfigureAwait(false);
+            repaymentTotals.TryGetValue(group.Key, out var activeRepayments);
             var activeCredits = ReportMath.RoundMoney(group.Sum(c => c.Amount));
             var customerOutstanding = ReportMath.RoundMoney(activeCredits - activeRepayments);
             if (customerOutstanding > 0m)
@@ -332,15 +332,8 @@ public sealed class SalesReportService
             .Select(p => p.CategoryId!)
             .Distinct()
             .ToList();
-        var categoryNames = new Dictionary<Guid, string>();
-        foreach (var id in categoryIds)
-        {
-            var cat = await _categories.GetByIdAsync(orgId, id, cancellationToken).ConfigureAwait(false);
-            if (cat is not null)
-            {
-                categoryNames[id.Value] = cat.Name;
-            }
-        }
+        var categories = await _categories.ListByIdsAsync(orgId, categoryIds, cancellationToken).ConfigureAwait(false);
+        var categoryNames = categories.ToDictionary(c => c.Id.Value, c => c.Name);
 
         var completedLines = completed.SelectMany(s => s.Lines).ToList();
         if (categoryId is not null)
@@ -502,18 +495,21 @@ public sealed class UtangReportService
         decimal outstandingTotal = 0m;
         decimal overdueTotal = 0m;
 
+        var customerIds = activeCredits.Select(c => c.CustomerId).Distinct().ToList();
+        var customers = await _customers.ListByIdsAsync(orgId, customerIds, cancellationToken).ConfigureAwait(false);
+        var customersById = customers.ToDictionary(c => c.Id.Value);
+        var repaymentTotals = await _repayments
+            .SumActiveAmountsByOrganizationAsync(orgId, cancellationToken)
+            .ConfigureAwait(false);
+
         foreach (var group in activeCredits.GroupBy(c => c.CustomerId.Value))
         {
-            var custId = POSCustomerId.From(group.Key);
-            var customer = await _customers.GetByIdAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
-            if (customer is null)
+            if (!customersById.TryGetValue(group.Key, out var customer))
             {
                 continue;
             }
 
-            var activeRepayments = await _repayments
-                .SumActiveAmountAsync(orgId, custId, cancellationToken)
-                .ConfigureAwait(false);
+            repaymentTotals.TryGetValue(group.Key, out var activeRepayments);
             var activeCreditTotal = ReportMath.RoundMoney(group.Sum(c => c.Amount));
             var outstanding = ReportMath.RoundMoney(activeCreditTotal - activeRepayments);
             var aged = CreditFifoAging.AgeCredits(group.ToList(), activeRepayments, effective);
@@ -827,11 +823,11 @@ public sealed class ExpensesReportService
         var voided = list.Where(e => e.Status == ExpenseStatus.Voided).ToList();
 
         var categoryIds = list.Select(e => e.CategoryId).Distinct().ToList();
-        var categoryNames = new Dictionary<Guid, string?>();
+        var categories = await _categories.ListByIdsAsync(orgId, categoryIds, cancellationToken).ConfigureAwait(false);
+        var categoryNames = categories.ToDictionary(c => c.Id.Value, c => (string?)c.Name);
         foreach (var id in categoryIds)
         {
-            var cat = await _categories.GetByIdAsync(orgId, id, cancellationToken).ConfigureAwait(false);
-            categoryNames[id.Value] = cat?.Name;
+            categoryNames.TryAdd(id.Value, null);
         }
 
         var byCategory = recorded

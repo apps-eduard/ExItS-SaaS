@@ -540,6 +540,11 @@ else
     {
         _confirm = false;
 
+        if (_saving)
+        {
+            return;
+        }
+
         // Checkout is online-only: no sale is ever queued or stored locally.
         _isOffline = !await Connectivity.IsConnectedAsync();
         var isUtang = _paymentMethod == PosSaleOptions.UtangPaymentMethod;

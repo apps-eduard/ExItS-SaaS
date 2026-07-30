@@ -102,6 +102,16 @@ public sealed class CreditEntryUseCaseTests
             CancellationToken cancellationToken = default) =>
             ListAsync(organizationId, null, null, skip, take, cancellationToken);
 
+        public Task<IReadOnlyList<POSCustomer>> ListByIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<POSCustomerId> customerIds,
+            CancellationToken cancellationToken = default)
+        {
+            var ids = customerIds.Select(c => c.Value).ToHashSet();
+            return Task.FromResult<IReadOnlyList<POSCustomer>>(
+                _items.Where(c => c.OrganizationId == organizationId && ids.Contains(c.Id.Value)).ToList());
+        }
+
         public Task AddAsync(POSCustomer customer, CancellationToken cancellationToken = default)
         {
             _items.Add(customer);
@@ -233,6 +243,11 @@ public sealed class CreditEntryUseCaseTests
             POSCustomerId customerId,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(0m);
+
+        public Task<IReadOnlyDictionary<Guid, decimal>> SumActiveAmountsByOrganizationAsync(
+            PosOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, decimal>>(new Dictionary<Guid, decimal>());
 
         public Task<int> CountActiveAsync(
             PosOrganizationId organizationId,

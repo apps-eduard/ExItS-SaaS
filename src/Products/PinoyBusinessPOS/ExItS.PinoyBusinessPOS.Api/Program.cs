@@ -19,6 +19,7 @@ using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Application.Statements;
 using ExItS.PinoyBusinessPOS.Infrastructure;
+using ExItS.PinoyBusinessPOS.Infrastructure.Health;
 using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,7 +27,7 @@ var builder = WebApplication.CreateBuilder(args);
 PosProductionSecurityGuard.ValidateOrThrow(builder);
 
 builder.Services.AddProblemDetails();
-builder.Services.AddHealthChecks();
+builder.Services.AddPosHealthChecks();
 builder.AddPosSecurity();
 builder.Services.AddPosPersistence(builder.Configuration);
 
@@ -85,7 +86,7 @@ var app = builder.Build();
 app.UsePosSecurity();
 app.UseMiddleware<PosCommercialAccessMiddleware>();
 
-app.MapHealthChecks("/health").DisableRateLimiting();
+app.MapPosHealthEndpoints();
 app.MapCustomerEndpoints();
 app.MapCreditEndpoints();
 app.MapCustomerCreditSyncEndpoints();
@@ -99,7 +100,7 @@ app.MapExpenseEndpoints();
 app.MapReportingEndpoints();
 app.MapDevOfflineProbeEndpoints();
 
-// Phase marker: P9-WP01-security-and-privacy-hardening
+// Phase marker: P9-WP02-performance-and-reliability
 
 app.Run();
 

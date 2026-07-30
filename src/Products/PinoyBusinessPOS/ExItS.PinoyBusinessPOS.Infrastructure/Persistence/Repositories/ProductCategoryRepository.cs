@@ -76,6 +76,25 @@ internal sealed class ProductCategoryRepository : IProductCategoryRepository
         return (records.Select(CatalogEntityMapper.ToDomain).ToList(), total);
     }
 
+    public async Task<IReadOnlyList<ProductCategory>> ListByIdsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<ProductCategoryId> categoryIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (categoryIds.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = categoryIds.Select(c => c.Value).Distinct().ToList();
+        var records = await _db.ProductCategories.AsNoTracking()
+            .Where(c => c.OrganizationId == organizationId.Value && ids.Contains(c.Id))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return records.Select(CatalogEntityMapper.ToDomain).ToList();
+    }
+
     public Task AddAsync(ProductCategory category, CancellationToken cancellationToken = default)
     {
         _db.ProductCategories.Add(CatalogEntityMapper.ToRecord(category));

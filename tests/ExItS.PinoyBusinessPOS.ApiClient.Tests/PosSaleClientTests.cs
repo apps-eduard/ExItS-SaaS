@@ -68,6 +68,47 @@ public sealed class PosSaleClientTests
     }
 
     [Fact]
+    public async Task Checkout_with_sale_id_sends_idempotency_headers()
+    {
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.Created)
+        {
+            Content = new StringContent(SalePayload, Encoding.UTF8, "application/json")
+        });
+        var client = CreateClient(handler);
+        var saleId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+
+        var result = await client.CheckoutAsync(new CheckoutSaleRequest(
+            [new CheckoutSaleLineRequest(Guid.NewGuid(), 1m)],
+            PosSaleOptions.CashPaymentMethod,
+            50m,
+            SaleId: saleId));
+
+        Assert.True(result.IsSuccess);
+        Assert.True(handler.LastRequest!.Headers.Contains("Idempotency-Key"));
+        Assert.True(handler.LastRequest.Headers.Contains("X-Pos-Payload-Hash"));
+        Assert.Equal(saleId.ToString("N"), handler.LastRequest.Headers.GetValues("Idempotency-Key").Single());
+        Assert.Equal("sale.checkout", handler.LastRequest.Headers.GetValues("X-Pos-Operation-Type").Single());
+    }
+
+    [Fact]
+    public async Task Checkout_without_sale_id_omits_idempotency_headers()
+    {
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.Created)
+        {
+            Content = new StringContent(SalePayload, Encoding.UTF8, "application/json")
+        });
+        var client = CreateClient(handler);
+
+        var result = await client.CheckoutAsync(new CheckoutSaleRequest(
+            [new CheckoutSaleLineRequest(Guid.NewGuid(), 1m)],
+            PosSaleOptions.CashPaymentMethod,
+            50m));
+
+        Assert.True(result.IsSuccess);
+        Assert.False(handler.LastRequest!.Headers.Contains("Idempotency-Key"));
+    }
+
+    [Fact]
     public async Task List_sales_sends_every_filter_as_a_query_parameter()
     {
         var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)

@@ -114,6 +114,21 @@ internal sealed class RepaymentRepository : IRepaymentRepository
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyDictionary<Guid, decimal>> SumActiveAmountsByOrganizationAsync(
+        PosOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var active = RepaymentStatus.Active.ToString();
+        var rows = await _db.Repayments.AsNoTracking()
+            .Where(e => e.OrganizationId == organizationId.Value && e.Status == active)
+            .GroupBy(e => e.CustomerId)
+            .Select(g => new { CustomerId = g.Key, Total = g.Sum(e => e.Amount) })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return rows.ToDictionary(r => r.CustomerId, r => r.Total);
+    }
+
     public async Task<int> CountActiveAsync(
         PosOrganizationId organizationId,
         POSCustomerId customerId,

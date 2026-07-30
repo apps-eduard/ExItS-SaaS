@@ -68,6 +68,9 @@ public sealed class OfflineQueueProcessor(
             return new OfflineProcessBatchResult(blocked, 0, blocked, "SyncStatus_Reconnect");
         }
 
+        // Access restored: return previously blocked work to Pending (never discard).
+        await queue.ReclaimBlockedByAccessAsync(ct).ConfigureAwait(false);
+
         syncStatus.SetReconnectRequired(false);
         syncStatus.SetRecoveryRequired(false);
 

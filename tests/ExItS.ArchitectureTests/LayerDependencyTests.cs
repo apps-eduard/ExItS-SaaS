@@ -655,7 +655,7 @@ public sealed class LayerDependencyTests
         var catalog = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "Catalog", "CatalogEndpoints.cs"));
 
         Assert.Contains("MapGet(\"/\"".Replace("\\", ""), program);
-        Assert.Contains("/health", program);
+        Assert.Contains("MapPlatformHealthEndpoints", program);
         Assert.Contains("MapCatalogEndpoints", program);
         Assert.Contains("MapOrganizationEndpoints", program);
         Assert.Contains("MapIdentityEndpoints", program);
@@ -667,7 +667,7 @@ public sealed class LayerDependencyTests
         Assert.Contains("MapAdminEndpoints", program);
         Assert.Contains("MapAuthorizationEndpoints", program);
         Assert.Contains("MapAuditEndpoints", program);
-        Assert.Contains("P9-WP01", program, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("P9-WP02", program, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("catalog", program, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("subscription", program, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("payment", program, StringComparison.OrdinalIgnoreCase);

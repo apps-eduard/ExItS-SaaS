@@ -138,6 +138,16 @@ public sealed class CreatePOSCustomerUseCaseTests
             return Task.FromResult(((IReadOnlyList<POSCustomer>)list.Skip(skip).Take(take).ToList(), list.Count));
         }
 
+        public Task<IReadOnlyList<POSCustomer>> ListByIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<POSCustomerId> customerIds,
+            CancellationToken cancellationToken = default)
+        {
+            var ids = customerIds.Select(c => c.Value).ToHashSet();
+            return Task.FromResult<IReadOnlyList<POSCustomer>>(
+                _items.Where(c => c.OrganizationId == organizationId && ids.Contains(c.Id.Value)).ToList());
+        }
+
         public Task AddAsync(POSCustomer customer, CancellationToken cancellationToken = default)
         {
             _items.Add(customer);

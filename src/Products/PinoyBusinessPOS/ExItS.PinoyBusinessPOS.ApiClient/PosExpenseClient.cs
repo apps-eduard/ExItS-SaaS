@@ -6,6 +6,7 @@ using System.Text.Json;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Expenses;
+using ExItS.PinoyBusinessPOS.Application.Offline;
 
 namespace ExItS.PinoyBusinessPOS.ApiClient;
 
@@ -37,28 +38,28 @@ public sealed class PosExpenseClient(HttpClient httpClient, IConnectivityService
         query.Append("&pageSize=").Append(pageSize.ToString(CultureInfo.InvariantCulture));
         AppendOptional(query, "status", status);
         AppendOptional(query, "search", search);
-        return SendAsync<PosExpenseCategoryPagedResult>(HttpMethod.Get, query.ToString(), null, ct);
+        return SendAsync<PosExpenseCategoryPagedResult>(HttpMethod.Get, query.ToString(), null, null, ct);
     }
 
     public Task<ApiResult<PosExpenseCategoryDto>> GetCategoryAsync(Guid categoryId, CancellationToken ct = default) =>
-        SendAsync<PosExpenseCategoryDto>(HttpMethod.Get, $"{CategoriesPath}/{categoryId:D}", null, ct);
+        SendAsync<PosExpenseCategoryDto>(HttpMethod.Get, $"{CategoriesPath}/{categoryId:D}", null, null, ct);
 
     public Task<ApiResult<PosExpenseCategoryDto>> CreateCategoryAsync(
         CreatePosExpenseCategoryRequest request,
         CancellationToken ct = default) =>
-        SendAsync<PosExpenseCategoryDto>(HttpMethod.Post, CategoriesPath, request, ct);
+        SendAsync<PosExpenseCategoryDto>(HttpMethod.Post, CategoriesPath, request, null, ct);
 
     public Task<ApiResult<PosExpenseCategoryDto>> UpdateCategoryAsync(
         Guid categoryId,
         UpdatePosExpenseCategoryRequest request,
         CancellationToken ct = default) =>
-        SendAsync<PosExpenseCategoryDto>(HttpMethod.Put, $"{CategoriesPath}/{categoryId:D}", request, ct);
+        SendAsync<PosExpenseCategoryDto>(HttpMethod.Put, $"{CategoriesPath}/{categoryId:D}", request, null, ct);
 
     public Task<ApiResult<PosExpenseCategoryDto>> DeactivateCategoryAsync(Guid categoryId, CancellationToken ct = default) =>
-        SendAsync<PosExpenseCategoryDto>(HttpMethod.Post, $"{CategoriesPath}/{categoryId:D}/deactivate", null, ct);
+        SendAsync<PosExpenseCategoryDto>(HttpMethod.Post, $"{CategoriesPath}/{categoryId:D}/deactivate", null, null, ct);
 
     public Task<ApiResult<PosExpenseCategoryDto>> ReactivateCategoryAsync(Guid categoryId, CancellationToken ct = default) =>
-        SendAsync<PosExpenseCategoryDto>(HttpMethod.Post, $"{CategoriesPath}/{categoryId:D}/reactivate", null, ct);
+        SendAsync<PosExpenseCategoryDto>(HttpMethod.Post, $"{CategoriesPath}/{categoryId:D}/reactivate", null, null, ct);
 
     public Task<ApiResult<PosExpensePagedResult>> ListExpensesAsync(
         string? status = null,
@@ -84,20 +85,32 @@ public sealed class PosExpenseClient(HttpClient httpClient, IConnectivityService
             query.Append("&categoryId=").Append(categoryId.Value.ToString("D"));
         }
 
-        return SendAsync<PosExpensePagedResult>(HttpMethod.Get, query.ToString(), null, ct);
+        return SendAsync<PosExpensePagedResult>(HttpMethod.Get, query.ToString(), null, null, ct);
     }
 
     public Task<ApiResult<PosExpenseDto>> GetExpenseAsync(Guid expenseId, CancellationToken ct = default) =>
-        SendAsync<PosExpenseDto>(HttpMethod.Get, $"{ExpensesPath}/{expenseId:D}", null, ct);
+        SendAsync<PosExpenseDto>(HttpMethod.Get, $"{ExpensesPath}/{expenseId:D}", null, null, ct);
 
-    public Task<ApiResult<PosExpenseDto>> RecordExpenseAsync(RecordExpenseRequest request, CancellationToken ct = default) =>
-        SendAsync<PosExpenseDto>(HttpMethod.Post, ExpensesPath, request, ct);
+    public Task<ApiResult<PosExpenseDto>> RecordExpenseAsync(RecordExpenseRequest request, CancellationToken ct = default)
+    {
+        IReadOnlyDictionary<string, string>? headers = null;
+        if (request.ExpenseId is Guid expenseId && expenseId != Guid.Empty)
+        {
+            var json = JsonSerializer.Serialize(request, JsonOptions);
+            headers = PosMutationIdempotencyHelper.BuildHeaders(
+                expenseId,
+                json,
+                OfflineOperationTypes.ExpenseCreate);
+        }
+
+        return SendAsync<PosExpenseDto>(HttpMethod.Post, ExpensesPath, request, headers, ct);
+    }
 
     public Task<ApiResult<PosExpenseDto>> VoidExpenseAsync(
         Guid expenseId,
         VoidExpenseRequest request,
         CancellationToken ct = default) =>
-        SendAsync<PosExpenseDto>(HttpMethod.Post, $"{ExpensesPath}/{expenseId:D}/void", request, ct);
+        SendAsync<PosExpenseDto>(HttpMethod.Post, $"{ExpensesPath}/{expenseId:D}/void", request, null, ct);
 
     public Task<ApiResult<PosExpenseSummaryDto>> GetSummaryAsync(
         DateOnly? fromDate = null,
@@ -118,7 +131,7 @@ public sealed class PosExpenseClient(HttpClient httpClient, IConnectivityService
         var path = parts.Count == 0
             ? $"{ExpensesPath}/summary"
             : $"{ExpensesPath}/summary?{string.Join("&", parts)}";
-        return SendAsync<PosExpenseSummaryDto>(HttpMethod.Get, path, null, ct);
+        return SendAsync<PosExpenseSummaryDto>(HttpMethod.Get, path, null, null, ct);
     }
 
     private static void AppendOptional(StringBuilder query, string name, string? value)
@@ -133,6 +146,7 @@ public sealed class PosExpenseClient(HttpClient httpClient, IConnectivityService
         HttpMethod method,
         string path,
         object? body,
+        IReadOnlyDictionary<string, string>? headers,
         CancellationToken ct)
     {
         if (connectivityService is not null && !await connectivityService.IsConnectedAsync(ct).ConfigureAwait(false))
@@ -150,6 +164,14 @@ public sealed class PosExpenseClient(HttpClient httpClient, IConnectivityService
             if (body is not null)
             {
                 request.Content = JsonContent.Create(body, options: JsonOptions);
+            }
+
+            if (headers is not null)
+            {
+                foreach (var pair in headers)
+                {
+                    request.Headers.TryAddWithoutValidation(pair.Key, pair.Value);
+                }
             }
 
             using var response = await httpClient.SendAsync(request, ct).ConfigureAwait(false);

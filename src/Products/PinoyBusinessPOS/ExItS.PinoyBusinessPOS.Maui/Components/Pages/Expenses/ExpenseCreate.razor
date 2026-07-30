@@ -232,6 +232,11 @@ else
             return;
         }
 
+        if (_saving)
+        {
+            return;
+        }
+
         _saving = true;
         var request = new RecordExpenseRequest(
             categoryId,
@@ -250,11 +255,21 @@ else
 
         if (result.IsSuccess && result.Data is not null)
         {
+            _attemptExpenseId = Guid.NewGuid();
             Nav.NavigateTo($"/expenses/{result.Data.ExpenseId:D}");
             return;
         }
 
-        _attemptExpenseId = Guid.NewGuid();
+        // Keep attempt id on timeout/unavailable/offline so ambiguous retries stay idempotent.
+        if (result.Status is ApiCallStatus.Validation
+            or ApiCallStatus.Unauthorized
+            or ApiCallStatus.Forbidden
+            or ApiCallStatus.NotFound
+            or ApiCallStatus.Conflict)
+        {
+            _attemptExpenseId = Guid.NewGuid();
+        }
+
         var described = ApiLocalizer.Describe(result.Status, result.Error);
         _errorTitle = described.Title;
         _errorMessage = result.Error?.Detail ?? described.Message;

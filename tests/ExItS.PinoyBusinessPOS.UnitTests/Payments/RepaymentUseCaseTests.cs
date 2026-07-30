@@ -105,6 +105,16 @@ public sealed class RepaymentUseCaseTests
             CancellationToken cancellationToken = default) =>
             ListAsync(organizationId, null, null, skip, take, cancellationToken);
 
+        public Task<IReadOnlyList<POSCustomer>> ListByIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<POSCustomerId> customerIds,
+            CancellationToken cancellationToken = default)
+        {
+            var ids = customerIds.Select(c => c.Value).ToHashSet();
+            return Task.FromResult<IReadOnlyList<POSCustomer>>(
+                _items.Where(c => c.OrganizationId == organizationId && ids.Contains(c.Id.Value)).ToList());
+        }
+
         public Task AddAsync(POSCustomer customer, CancellationToken cancellationToken = default)
         {
             _items.Add(customer);
@@ -220,6 +230,15 @@ public sealed class RepaymentUseCaseTests
 
         public Task<decimal> SumActiveAmountAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
             Task.FromResult(_items.Where(e => e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == RepaymentStatus.Active).Sum(e => e.Amount));
+
+        public Task<IReadOnlyDictionary<Guid, decimal>> SumActiveAmountsByOrganizationAsync(
+            PosOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, decimal>>(
+                _items
+                    .Where(e => e.OrganizationId == organizationId && e.Status == RepaymentStatus.Active)
+                    .GroupBy(e => e.CustomerId.Value)
+                    .ToDictionary(g => g.Key, g => g.Sum(e => e.Amount)));
 
         public Task<int> CountActiveAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
             Task.FromResult(_items.Count(e => e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == RepaymentStatus.Active));

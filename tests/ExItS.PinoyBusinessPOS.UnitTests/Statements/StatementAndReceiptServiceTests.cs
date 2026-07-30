@@ -194,6 +194,16 @@ public sealed class StatementAndReceiptServiceTests
             int take,
             CancellationToken cancellationToken = default) =>
             ListAsync(organizationId, null, null, skip, take, cancellationToken);
+
+        public Task<IReadOnlyList<POSCustomer>> ListByIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<POSCustomerId> customerIds,
+            CancellationToken cancellationToken = default)
+        {
+            var ids = customerIds.Select(c => c.Value).ToHashSet();
+            return Task.FromResult<IReadOnlyList<POSCustomer>>(
+                _items.Values.Where(c => c.OrganizationId == organizationId && ids.Contains(c.Id.Value)).ToList());
+        }
     }
 
     private sealed class InMemoryCredits : ICreditEntryRepository
@@ -309,6 +319,15 @@ public sealed class StatementAndReceiptServiceTests
 
         public Task<decimal> SumActiveAmountAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
             Task.FromResult(_items.Where(r => r.OrganizationId == organizationId && r.CustomerId == customerId && r.Status == RepaymentStatus.Active).Sum(r => r.Amount));
+
+        public Task<IReadOnlyDictionary<Guid, decimal>> SumActiveAmountsByOrganizationAsync(
+            PosOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, decimal>>(
+                _items
+                    .Where(r => r.OrganizationId == organizationId && r.Status == RepaymentStatus.Active)
+                    .GroupBy(r => r.CustomerId.Value)
+                    .ToDictionary(g => g.Key, g => g.Sum(r => r.Amount)));
 
         public Task<int> CountActiveAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
             Task.FromResult(_items.Count(r => r.OrganizationId == organizationId && r.CustomerId == customerId && r.Status == RepaymentStatus.Active));

@@ -76,6 +76,25 @@ internal sealed class ExpenseCategoryRepository : IExpenseCategoryRepository
         return (records.Select(ExpenseEntityMapper.ToDomain).ToList(), total);
     }
 
+    public async Task<IReadOnlyList<ExpenseCategory>> ListByIdsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<ExpenseCategoryId> categoryIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (categoryIds.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = categoryIds.Select(c => c.Value).Distinct().ToList();
+        var records = await _db.ExpenseCategories.AsNoTracking()
+            .Where(c => c.OrganizationId == organizationId.Value && ids.Contains(c.Id))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return records.Select(ExpenseEntityMapper.ToDomain).ToList();
+    }
+
     public Task AddAsync(ExpenseCategory category, CancellationToken cancellationToken = default)
     {
         _db.ExpenseCategories.Add(ExpenseEntityMapper.ToRecord(category));

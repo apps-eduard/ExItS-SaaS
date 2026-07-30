@@ -246,6 +246,8 @@ public sealed class PosSyncStatusAndAccessPolicyTests
 
         public Task RecoverAbandonedSyncingAsync(CancellationToken ct = default) => Task.CompletedTask;
 
+        public Task ReclaimBlockedByAccessAsync(CancellationToken ct = default) => Task.CompletedTask;
+
         public Task<OfflineOperationEnvelope?> TryClaimNextAsync(string claimToken, CancellationToken ct = default) =>
             Task.FromResult<OfflineOperationEnvelope?>(null);
 
