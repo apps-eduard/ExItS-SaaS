@@ -58,6 +58,7 @@
 - Backup/restore (P9-WP03) ? independent Platform/POS `pg_dump` drills; manifests/SHA-256; destructive restore guards; retention dry-run; no dumps committed; full suite 931 / 0 / 0
 - Accessibility/localization/theme QA (P9-WP04) ? Admin EN/fil chrome; dialog a11y; skip links; contrast tokens; culture fallback; resource parity; R-109 honest matrix; full suite 950 / 0 / 0
 - Pilot/deployment (P9-WP05) ? deployment config validation; backup-before-migrate gate; Production confirmation; smoke catalog; readiness evaluator; architecture compose/script guards; full suite recorded in P9-WP05 report
+- Commercial MVP closeout (P9-WP06) ? environment readiness board; risk classification; capability inventory; Phase 9 reconciliation guards; full suite 1001 / 0 / 0
 - Tenant isolation
 - Subscription feature enforcement (P6-WP05 matrix + grants; P8-WP01?P8-WP07 store grants)
 - Offline queue and idempotency *(Phase 7)*
@@ -93,5 +94,6 @@
 - **P9-WP03:** Manifest/retention/redaction/encrypt unit tests; Platform+POS Testcontainers backup?empty restore drills; checksum/kind/overwrite guards; architecture no-dump/HealthCare guards
 - **P9-WP04:** EN/fil resource parity; Admin page-header localization guards; DesignSystem contrast; dialog aria-labelledby; skip links; culture/theme preference fallback; MoneyDisplay accessible labels
 - **P9-WP05:** Deployment config/env isolation; Production blocker honesty; backup gate; migration order; secret redaction; package version; smoke catalog; rollback advisor; HealthCare exclusion; compose/ops guards
+- **P9-WP06:** Closeout readiness board; risk register classifications; capability inventory; database ownership; Phase 9 control reconciliation; no deferred-feature claims
 
 All reports use exact command output; totals are never estimated.

@@ -100,7 +100,7 @@ app.MapExpenseEndpoints();
 app.MapReportingEndpoints();
 app.MapDevOfflineProbeEndpoints();
 
-// Phase marker: P9-WP05-pilot-and-deployment
+// Phase marker: P9-WP06-commercial-mvp-closeout
 
 app.Run();
 

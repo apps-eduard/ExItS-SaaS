@@ -101,6 +101,14 @@ Non-production deployment packaging, config validation, backup-before-migrate, s
 
 **Next:** **P9-WP06 — Commercial MVP Closeout** when approved.
 
+## R3.12 — Commercial MVP closeout (Phase 9 / P9-WP06)
+
+**P9-WP06 complete with documented risks. Phase 9 closed.** See [P9-WP06 report](reports/P9-WP06-commercial-mvp-closeout.md).
+
+Environment board: Dev/Testing/internal pilot Ready with documented risks; restricted external pilot and Production **Blocked**. Risk register classifies R-091/R-109/R-129/TLS/MAUI-HTTPS/POS-ROLES as release blockers. **Not production-ready.**
+
+**Next:** **Phase 10 — Full POS** when approved.
+
 ## R4 — Commercial MVP
 
 Offline synchronization, Basic Store and production hardening.

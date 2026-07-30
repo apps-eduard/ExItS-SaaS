@@ -194,7 +194,7 @@ public sealed class PackageVersionAndSmokeTests
     [Fact]
     public void Phase_marker_is_p9_wp05()
     {
-        Assert.Equal("P9-WP05-pilot-and-deployment", DeploymentConstants.PhaseMarker);
+        Assert.Equal("P9-WP06-commercial-mvp-closeout", DeploymentConstants.PhaseMarker);
     }
 }
 
@@ -277,7 +277,7 @@ public sealed class AndroidAndCompatibilityTests
     [Fact]
     public void Platform_and_pos_share_same_phase_marker_constant()
     {
-        Assert.Equal(DeploymentConstants.PhaseMarker, "P9-WP05-pilot-and-deployment");
+        Assert.Equal(DeploymentConstants.PhaseMarker, "P9-WP06-commercial-mvp-closeout");
     }
 
     [Fact]

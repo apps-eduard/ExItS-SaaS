@@ -19,6 +19,8 @@ try
         "rollback-advise" => RunRollbackAdvise(args),
         "package-version" => RunPackageVersion(args),
         "phase-marker" => RunPhaseMarker(),
+        "closeout-board" => RunCloseoutBoard(),
+        "closeout-risks" => RunCloseoutRisks(),
         _ => Fail("Unknown command.")
     };
 }
@@ -32,11 +34,13 @@ static void PrintUsage()
 {
     Console.Error.WriteLine(
         """
-        ExItS.Deployment.Cli (P9-WP05)
+        ExItS.Deployment.Cli (P9-WP06)
         Commands:
           validate-config --env <Development|Testing|StagingPilot|Production> [options]
           backup-gate --platform-verified <bool> --pos-verified <bool> --platform-set <id> --pos-set <id>
           readiness --tests-passed <bool> --android-release <bool> --pilot-config <bool> --backups <bool> --migration <bool> --smoke <bool>
+          closeout-board
+          closeout-risks
           redact <text>
           smoke-catalog
           migration-order
@@ -220,5 +224,25 @@ static int RunPackageVersion(string[] args)
 static int RunPhaseMarker()
 {
     Console.WriteLine(DeploymentConstants.PhaseMarker);
+    return 0;
+}
+
+static int RunCloseoutBoard()
+{
+    foreach (var decision in CommercialMvpReadinessBoard.Assess())
+    {
+        Console.WriteLine($"{decision.Environment}|{decision.State}|blockers={string.Join(',', decision.BlockingIds)}");
+    }
+
+    return 0;
+}
+
+static int RunCloseoutRisks()
+{
+    foreach (var risk in CommercialMvpRiskRegister.Current)
+    {
+        Console.WriteLine($"{risk.Id}|{risk.Classification}|{risk.Title}");
+    }
+
     return 0;
 }

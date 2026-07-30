@@ -135,9 +135,13 @@
 | R-129 | Transitive SQLitePCLRaw NU1903 advisory on Microsoft.Data.Sqlite 10.0.4 | Medium | Track package upgrade when Microsoft ships fixed transitive; P7-WP03 mitigated by row-level AES-GCM instead of SQLCipher; advisory remains open on Microsoft.Data.Sqlite transitive | Open — introduced P7-WP01; WP03 avoided SQLCipher |
 
 
+## Phase 9 note (P9-WP06 closeout)
+
+P9-WP06 closed Phase 9 with an honest Commercial MVP readiness board: Development/Testing/CI and controlled internal technical pilot are **Ready with documented non-blocking risks**; restricted external pilot and Production remain **Blocked** (R-091, R-109, R-129, TLS-PROD, MAUI-HTTPS, POS-ROLES). No risks closed merely to improve the result. Next: **Phase 10 — Full POS** when authorized.
+
 ## Phase 9 note (P9-WP05)
 
-P9-WP05 delivered non-production pilot/deployment packaging (`deploy/docker`, `ops/deploy`), `ExItS.Deployment` config/backup/readiness gates, smoke contracts, runbooks, and rehearsal automation. Readiness: **Ready for controlled internal technical pilot**; Production and restricted external pilot remain **Blocked**. R-091 / R-109 / R-129 / Production TLS remain open. **Not production-ready.** Next: **P9-WP06 — Commercial MVP Closeout** when authorized.
+P9-WP05 delivered non-production pilot/deployment packaging (`deploy/docker`, `ops/deploy`), `ExItS.Deployment` config/backup/readiness gates, smoke contracts, runbooks, and rehearsal automation. Readiness: **Ready for controlled internal technical pilot**; Production and restricted external pilot remain **Blocked**. R-091 / R-109 / R-129 / Production TLS remain open. **Not production-ready.** Superseded as "next WP" by P9-WP06.
 
 ## Phase 9 note (P9-WP04)
 

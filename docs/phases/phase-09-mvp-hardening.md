@@ -4,7 +4,7 @@
 
 ## Status
 
-**In Progress** — P9-WP01–P9-WP05 complete with documented risks. Do **not** begin P9-WP06 until explicitly authorized. **Not production-ready.** Ready for controlled internal technical pilot only.
+**Complete with documented risks** — P9-WP01–P9-WP06 complete. Phase 9 Commercial MVP hardening closed. Controlled internal technical pilot Ready with documented non-blocking risks; restricted external pilot and Production **Blocked**. Do **not** begin Phase 10 until explicitly authorized.
 
 ## Objective
 
@@ -250,26 +250,51 @@ Pilot may only be: controlled non-production, internal technical, or clearly res
 
 ### P9-WP06 — Commercial MVP Closeout
 
-Status: Not Started
+Status: **Complete** with documented risks
 
-#### Required outcomes
+Report: [P9-WP06-commercial-mvp-closeout.md](../reports/P9-WP06-commercial-mvp-closeout.md)
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+Feature commit: _(recorded after feature commit)_
+
+Phase marker: `P9-WP06-commercial-mvp-closeout`
+
+#### Approved scope (clarified)
+
+Close Phase 9 and produce the final Commercial MVP readiness decision for ExItS Platform and PinoyBusinessPOS. Reconcile P9-WP01–P9-WP05 plus prior Platform/POS MVP capabilities as one release-candidate evidence package. **No new business functionality** unless correcting a confirmed release-critical defect already inside approved MVP scope. HealthCare remains frozen.
+
+Deliver:
+
+- Environment-specific readiness decisions (Development / Testing-CI / controlled internal technical pilot / restricted external pilot / Production)
+- Risk/blocker classification (release blocker / pilot blocker / accepted commercial limitation / deferred enhancement / operational dependency)
+- Phase 9 reconciliation confirming P9-WP01–P9-WP05 controls remain intact
+- Commercial MVP capability inventory (Platform + PinoyBusinessPOS)
+- Commercial model and database-ownership reconciliation
+- Final regression evidence and honest Phase 9 exit decision
+
+Required decision states only: **Ready** | **Ready with documented non-blocking risks** | **Blocked**.
+
+Do **not** mark restricted external pilot or Production as Ready while R-091, R-109, R-129, Production TLS, or other mandatory blockers remain open. Do not close risks merely to improve readiness.
+
+#### Explicit exclusions
+
+- New POS business workflows; tax/VAT/refunds/returns/accounting/purchasing/suppliers/payroll
+- Payment gateway / verified GCash; report export; PITR; SQLCipher migration without approved decision
+- Fake production authentication; closing R-091/R-109/R-129 without genuine evidence
+- HealthCare changes; Phase 10 / Full POS work
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (1001 / 0 / 0; baseline 987).
+- [x] Dashboard and phase page updated; Phase 9 closed with documented risks.
+- [x] Completion report created (`docs/reports/P9-WP06-commercial-mvp-closeout.md`).
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean.
+- [x] Exact next phase recorded: **Phase 10 — Full POS** (do not begin until authorized).
 
 ## Phase exit criteria
 
-- [ ] Every work package is complete or explicitly deferred.
-- [ ] Risks and decisions are recorded.
-- [ ] Required regression/security tests pass.
-- [ ] Next phase is explicitly approved.
+- [x] Every work package is complete or explicitly deferred.
+- [x] Risks and decisions are recorded.
+- [x] Required regression/security tests pass.
+- [x] Next phase is explicitly approved for later start only: **Phase 10 — Full POS** (do not begin until authorized).

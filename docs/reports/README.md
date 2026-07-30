@@ -69,3 +69,4 @@ The dashboard links to the latest accepted report.
 | [P9-WP03-backup-and-restore.md](P9-WP03-backup-and-restore.md) | Backup and Restore | Complete with documented risks |
 | [P9-WP04-accessibility-localization-theme-qa.md](P9-WP04-accessibility-localization-theme-qa.md) | Accessibility, Localization and Theme QA | Complete with documented risks |
 | [P9-WP05-pilot-and-deployment.md](P9-WP05-pilot-and-deployment.md) | Pilot and Deployment | Complete with documented risks |
+| [P9-WP06-commercial-mvp-closeout.md](P9-WP06-commercial-mvp-closeout.md) | Commercial MVP Closeout | Complete with documented risks (Phase 9 closed) |

@@ -2,7 +2,7 @@
 
 > Primary status page. Cursor must update this file after every completed work package. Percentages are calculated from approved work packages, never estimated.
 
-[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P9-WP05 report](reports/P9-WP05-pilot-and-deployment.md)
+[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P9-WP06 report](reports/P9-WP06-commercial-mvp-closeout.md)
 
 ## Current status
 
@@ -11,11 +11,11 @@
 | Portfolio | ExITS SaaS |
 | Existing product | HealthCare SaaS MVP (ignored nested `HealthCare/`) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 9 — MVP Hardening and Release (**In Progress**) |
-| Current work package | P9-WP05 — Pilot and Deployment (**Complete** with documented risks) |
-| Overall status | **Phase 9 in progress** — P9-WP01–P9-WP05 complete with documented risks; Ready for controlled internal technical pilot; **not** Production-ready; next P9-WP06 when authorized |
-| Latest verified commit | 9c1bbd0557e252758a772b985c907233da3f5214 |
-| Open blockers | Missing production auth (JWT/MFA/SSO/AD) (R-091); R-022 refresh durations / no offline entitlement grace; R-035 calendar EOM; no payment gateway; no interactive Android emulator (R-109) including TalkBack/theme interactive QA; Production HTTPS/MAUI cleartext replacement gate; SQLitePCLRaw NU1903 (R-129); unsynced local MAUI data not recoverable from server backups; PITR deferred; Production off-host encrypted backup scheduling environment-owned; catalog/sales/inventory/expenses/reports online-only by design; report export deferred; no POS operational roles; full MVP-scale load/soak not proven in CI |
+| Current phase | Phase 9 — MVP Hardening and Release (**Complete with documented risks**) |
+| Current work package | P9-WP06 — Commercial MVP Closeout (**Complete** with documented risks) |
+| Overall status | **Phase 9 closed** — Commercial MVP release candidate evidenced; controlled internal technical pilot Ready with documented risks; restricted external pilot and Production **Blocked**; next Phase 10 when authorized |
+| Latest verified commit | _(feature commit recorded after push)_ |
+| Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; POS operational roles; Manual GCash unverified; online-only Basic Store limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/refund/accounting/purchasing deferred to Phase 10+ |
 | Last updated | 2026-07-31 |
 
 ## Delivery sequence
@@ -31,7 +31,9 @@ P9-WP04 ✓ Accessibility, Localization and Theme QA (complete with risks)
         ↓
 P9-WP05 ✓ Pilot and Deployment (complete with risks)
         ↓
-P9-WP06 ○ Commercial MVP Closeout (not started — do not begin until authorized)
+P9-WP06 ✓ Commercial MVP Closeout (complete with risks — Phase 9 closed)
+        ↓
+Phase 10 ○ Full POS (not started — do not begin until authorized)
 ```
 
 ## Phase progress
@@ -47,10 +49,10 @@ P9-WP06 ○ Commercial MVP Closeout (not started — do not begin until authoriz
 | 6 | Utang MVP | **Complete with documented risks** | 6 | 6 | 100% | [Open](phases/phase-06-utang-mvp.md) |
 | 7 | Offline Synchronization | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-07-offline-sync.md) |
 | 8 | Basic Store | **Complete with documented risks** | 7 | 7 | 100% | [Open](phases/phase-08-basic-store.md) |
-| 9 | MVP Hardening and Release | **In Progress** | 5 | 6 | ~83% | [Open](phases/phase-09-mvp-hardening.md) |
+| 9 | MVP Hardening and Release | **Complete with documented risks** | 6 | 6 | 100% | [Open](phases/phase-09-mvp-hardening.md) |
 | 10 | Full POS | Future | 0 | 8 | 0% | [Open](phases/phase-10-full-pos.md) |
 
-**MVP phases 0–9:** 50 / 52 = **96.15%**.
+**MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 
 ## Phase 9 work packages
 
@@ -61,20 +63,8 @@ P9-WP06 ○ Commercial MVP Closeout (not started — do not begin until authoriz
 | P9-WP03 | Complete with risks | 3bbb0c716da60bd7d87a191c35bd0eced1bde380 |
 | P9-WP04 | Complete with risks | f7b3aecec614eea8b1de601cd08e843f4aea91f8 |
 | P9-WP05 | Complete with risks | 9c1bbd0557e252758a772b985c907233da3f5214 |
-| P9-WP06 | Not Started | — |
-
-## Phase 8 work packages
-
-| WP | Status | Key commit |
-|---|---|---|
-| P8-WP01 | Complete with risks | 5573822ca116ab46f1a5cdce407e1d7b4f58f796 |
-| P8-WP02 | Complete with risks | 72a6fa9b1bb6f48610563d01ee10e608e99806e1 |
-| P8-WP03 | Complete with risks | cd58f5c7dc1b9d31497429ef1d025546a0def09c |
-| P8-WP04 | Complete with risks | 64f05e7fd5ab868beb62c7cce88ad7a15e21c7b8 |
-| P8-WP05 | Complete with risks | ca956921fbfcfad8499f01acb9d9726fff2d81d4 |
-| P8-WP06 | Complete with risks | a0028f36a0d8e2ea76c3101b2b65ba82bfd4fd02 |
-| P8-WP07 | Complete with risks | 0bc5ebb999c0708e6ac76b04a30d522037eec3cb |
+| P9-WP06 | Complete with risks | _(recorded after feature commit)_ |
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Do not begin unauthorized work packages.
+Follow `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Do not begin unauthorized work packages. Do not begin Phase 10 until explicitly authorized.

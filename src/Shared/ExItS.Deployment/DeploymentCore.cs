@@ -22,7 +22,7 @@ public enum ReleaseReadinessState
 
 public static class DeploymentConstants
 {
-    public const string PhaseMarker = "P9-WP05-pilot-and-deployment";
+    public const string PhaseMarker = "P9-WP06-commercial-mvp-closeout";
     public const string ToolVersion = "1.0.0";
     public const string KnownDevPasswordMarker = "exits_platform_dev_only";
     public const string ProductionConfirmationToken = "DEPLOY_PRODUCTION_CONFIRMED";
