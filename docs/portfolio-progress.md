@@ -14,7 +14,7 @@
 | Current phase | Phase 7 — Offline Synchronization (**In Progress**) |
 | Current work package | P7-WP02 — Offline Queue and Idempotency (**Complete** with documented risks) |
 | Overall status | **P7-WP02 complete** — queue/idempotency infrastructure only; next P7-WP03 when authorized |
-| Latest verified commit | _(recorded after push)_ |
+| Latest verified commit | `aa1f92eba97bc77775f59de8209b42c9d7a475cc` (P7-WP02) |
 | Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations; R-035 calendar EOM; no payment gateway; no interactive Android emulator (R-109); commercial/actor headers Development-stage only; org timezone undefined for due dates; OD-11 open; no POS operational roles; SQLitePCLRaw NU1903 (R-129); DB encryption decision before business-data offline WP |
 | Last updated | 2026-07-30 |
 
@@ -51,7 +51,7 @@ P7-WP03 — Customer and Credit Sync (not started — do not begin until authori
 | WP | Status | Key commit |
 |---|---|---|
 | P7-WP01 | Complete with risks | a82a4be07e90ddfad59b741f6822022369cda68e |
-| P7-WP02 | Complete with risks | _(recorded after push)_ |
+| P7-WP02 | Complete with risks | aa1f92eba97bc77775f59de8209b42c9d7a475cc |
 | P7-WP03 | Not Started | — |
 | P7-WP04 | Not Started | — |
 | P7-WP05 | Not Started | — |

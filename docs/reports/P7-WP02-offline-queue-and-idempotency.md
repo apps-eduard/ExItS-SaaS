@@ -6,7 +6,7 @@ Phase marker: `P7-WP02-offline-queue-and-idempotency`
 
 **Complete with documented risks.** Generic encrypted SQLite outbox, FIFO processor, AES-GCM payload protection, server idempotency, access revalidation, operational sync indicator, and Dev/Testing probe. **No real offline customer/credit/repayment workflows.** P7-WP03 was not started.
 
-Feature commit: _(recorded after push)_
+Feature commit: `aa1f92eba97bc77775f59de8209b42c9d7a475cc`
 
 ## Delivered capability
 

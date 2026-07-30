@@ -30,7 +30,7 @@ Status: **Complete with documented risks**
 
 Phase marker: `P7-WP02-offline-queue-and-idempotency`
 
-Feature commit: _(recorded after push)_
+Feature commit: `aa1f92eba97bc77775f59de8209b42c9d7a475cc`
 
 #### Approved scope (infrastructure only)
 
@@ -50,8 +50,8 @@ Feature commit: _(recorded after push)_
 - [x] Applicable tests pass with exact evidence (573 passed / 0 failed / 0 skipped).
 - [x] Dashboard and phase page updated.
 - [x] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean.
 
 ### P7-WP03 — Customer and Credit Sync
 
