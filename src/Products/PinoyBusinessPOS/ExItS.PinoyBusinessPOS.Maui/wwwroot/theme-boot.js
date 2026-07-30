@@ -1,12 +1,11 @@
-// P5-WP01: applies the persisted theme + culture (mirrored from MAUI Preferences into
-// localStorage by ThemeController/CultureController) before CSS/render, to avoid a flash of the
-// wrong theme or language on WebView (re)load. Must be loaded synchronously in <head>, before
-// exits-design-system.css and app.css. Preferences.Default is not reachable from JS before the
-// WebView boots, so the very first load always falls back to "system" until Blazor's first
-// render calls exitsPosTheme.applyTheme/applyCulture with the real persisted value.
+// P5-WP02: applies persisted theme, density, and culture (mirrored from MAUI Preferences into
+// WebView storage by ThemeController/DensityController/CultureController) before CSS/render,
+// to avoid a flash of the wrong theme or density on WebView (re)load. Must be loaded
+// synchronously in <head>, before exits-design-system.css and app.css.
 (function () {
     "use strict";
     var THEME_KEY = "exits-pos-theme";
+    var DENSITY_KEY = "exits-pos-density";
     var CULTURE_KEY = "exits-pos-culture";
 
     try {
@@ -20,6 +19,17 @@
         }
     } catch (e) {
         document.documentElement.setAttribute("data-theme", "system");
+    }
+
+    try {
+        var density = window.localStorage.getItem(DENSITY_KEY);
+        if (density === "Comfortable") {
+            document.documentElement.setAttribute("data-density", "comfortable");
+        } else {
+            document.documentElement.setAttribute("data-density", "compact");
+        }
+    } catch (e) {
+        document.documentElement.setAttribute("data-density", "compact");
     }
 
     try {
@@ -38,6 +48,15 @@ window.exitsPosTheme = {
         document.documentElement.setAttribute("data-theme", normalized);
         try {
             window.localStorage.setItem("exits-pos-theme", theme);
+        } catch (e) {
+            /* ignore */
+        }
+    },
+    applyDensity: function (density) {
+        var normalized = density === "Comfortable" ? "comfortable" : "compact";
+        document.documentElement.setAttribute("data-density", normalized);
+        try {
+            window.localStorage.setItem("exits-pos-density", density);
         } catch (e) {
             /* ignore */
         }

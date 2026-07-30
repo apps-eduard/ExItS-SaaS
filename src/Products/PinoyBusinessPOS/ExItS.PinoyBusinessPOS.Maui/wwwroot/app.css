@@ -10,7 +10,7 @@ html, body {
     margin: 0;
     overflow-x: hidden;
     font-family: var(--exits-font-sans, "Segoe UI", system-ui, sans-serif);
-    background: var(--exits-bg, #f5f7f8);
+    background: var(--exits-bg, #f3f6f4);
 }
 
 #app {
@@ -31,8 +31,8 @@ html, body {
     gap: 0.75rem;
     min-height: 100vh;
     min-height: 100dvh;
-    background: var(--exits-bg, #f5f7f8);
-    color: var(--exits-text, #17202a);
+    background: var(--exits-bg, #f3f6f4);
+    color: var(--exits-text, #14201a);
 }
 
 .pos-boot__mark {
@@ -41,9 +41,9 @@ html, body {
     justify-content: center;
     width: 3rem;
     height: 3rem;
-    border-radius: 0.75rem;
-    background: #166534;
-    color: #ffffff;
+    border-radius: var(--exits-radius-md, 0.5rem);
+    background: var(--exits-primary, #166534);
+    color: var(--exits-primary-contrast, #ffffff);
     font-weight: 800;
     font-size: 1rem;
     letter-spacing: 0.02em;
@@ -51,7 +51,7 @@ html, body {
 
 .pos-boot__label {
     font-weight: 700;
-    color: var(--exits-text-muted, #5f6b76);
+    color: var(--exits-text-muted, #5a6b62);
 }
 
 /* ============================== App shell ============================== */
@@ -69,14 +69,16 @@ html, body {
 .pos-topbar {
     position: sticky;
     top: 0;
-    z-index: 20;
+    z-index: var(--exits-z-sticky, 20);
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--exits-space-3);
-    padding: calc(var(--exits-space-3) + env(safe-area-inset-top)) calc(var(--exits-space-4) + env(safe-area-inset-right)) var(--exits-space-3) calc(var(--exits-space-4) + env(safe-area-inset-left));
+    min-height: calc(var(--exits-density-row-height, 2.75rem) + env(safe-area-inset-top));
+    padding: calc(var(--exits-space-2) + env(safe-area-inset-top)) calc(var(--exits-space-3) + env(safe-area-inset-right)) var(--exits-space-2) calc(var(--exits-space-3) + env(safe-area-inset-left));
     background: var(--exits-surface-elevated);
     border-bottom: 1px solid var(--exits-border);
+    box-shadow: var(--exits-shadow-sm);
 }
 
 .pos-topbar__brand {
@@ -93,20 +95,36 @@ html, body {
     flex-shrink: 0;
     width: 2rem;
     height: 2rem;
-    border-radius: var(--exits-radius-sm);
+    border-radius: var(--exits-density-radius, var(--exits-radius-sm));
     background: var(--exits-primary);
     color: var(--exits-primary-contrast);
     font-weight: 800;
     font-size: 0.75rem;
 }
 
+.pos-topbar__titles {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 0.05rem;
+}
+
 .pos-topbar__title {
     font-weight: 700;
-    font-size: var(--exits-text-lg);
+    font-size: var(--exits-text-md);
     color: var(--exits-text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.pos-topbar__subtitle {
+    display: none;
+    font-size: var(--exits-text-xs);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 28rem;
 }
 
 .pos-topbar__status {
@@ -130,6 +148,7 @@ html, body {
     height: 0.65rem;
     border-radius: 50%;
     background: var(--exits-text-muted);
+    box-shadow: 0 0 0 2px var(--exits-surface);
 }
 
 .pos-status-dot--online { background: var(--exits-success); }
@@ -141,7 +160,7 @@ html, body {
     min-width: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
 }
 
 .pos-bottom-nav {
@@ -149,10 +168,11 @@ html, body {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 30;
+    z-index: var(--exits-z-nav, 30);
     display: flex;
     background: var(--exits-surface-elevated);
     border-top: 1px solid var(--exits-border);
+    box-shadow: 0 -1px 0 color-mix(in srgb, var(--exits-border) 60%, transparent);
     padding: 0 calc(env(safe-area-inset-left)) env(safe-area-inset-bottom) calc(env(safe-area-inset-right));
 }
 
@@ -162,30 +182,40 @@ html, body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.15rem;
+    gap: 0.1rem;
     min-height: var(--exits-touch-target-min);
-    padding: 0.4rem 0.25rem;
+    padding: 0.35rem 0.2rem;
     color: var(--exits-text-muted);
     text-decoration: none;
     font-size: var(--exits-text-xs);
     font-weight: 600;
-    transition: color var(--exits-motion-fast) var(--exits-ease);
+    transition: color var(--exits-motion-fast) var(--exits-ease),
+        background-color var(--exits-motion-fast) var(--exits-ease);
+    border-top: 2px solid transparent;
 }
 
 .pos-nav-item svg {
-    width: 1.35rem;
-    height: 1.35rem;
+    width: var(--exits-density-icon-size, 1.125rem);
+    height: var(--exits-density-icon-size, 1.125rem);
 }
 
 .pos-nav-item--active {
     color: var(--exits-primary);
+    border-top-color: var(--exits-primary);
+    background: color-mix(in srgb, var(--exits-primary-soft) 55%, transparent);
 }
 
 .pos-nav-item__label {
-    white-space: nowrap;
+    white-space: normal;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
+    text-align: center;
+    line-height: 1.15;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow-wrap: anywhere;
 }
 
 /* ============================== Content helpers ============================== */
@@ -195,26 +225,108 @@ html, body {
     font-size: var(--exits-text-sm);
 }
 
+.pos-wrap {
+    overflow-wrap: anywhere;
+    text-align: right;
+}
+
 .pos-value-lg {
     font-size: var(--exits-text-lg);
     font-weight: 700;
     color: var(--exits-text);
 }
 
+.pos-value-md {
+    font-size: var(--exits-density-font-size);
+    font-weight: 700;
+    color: var(--exits-text);
+}
+
+.pos-status-grid {
+    display: grid;
+    gap: var(--exits-density-space-unit, var(--exits-space-3));
+    grid-template-columns: 1fr;
+    margin-bottom: var(--exits-space-4);
+}
+
+/* ============================== Tablet / landscape ============================== */
+
+@media (min-width: 768px) {
+    .pos-shell[data-layout="phone"],
+    .pos-shell {
+        --pos-shell-max: 72rem;
+    }
+
+    .pos-topbar__subtitle {
+        display: block;
+    }
+
+    .pos-topbar__title {
+        font-size: var(--exits-text-lg);
+    }
+
+    .pos-content > .exds-page {
+        max-width: var(--exits-content-max, 56rem);
+    }
+
+    .pos-status-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .pos-bottom-nav {
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(42rem, 100%);
+        border-left: 1px solid var(--exits-border);
+        border-right: 1px solid var(--exits-border);
+        border-radius: var(--exits-radius-lg) var(--exits-radius-lg) 0 0;
+    }
+
+    .pos-nav-item__label {
+        white-space: nowrap;
+        -webkit-line-clamp: 1;
+    }
+}
+
+@media (min-width: 1024px) and (orientation: landscape) {
+    .pos-status-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .pos-bottom-nav {
+        width: min(48rem, 100%);
+    }
+}
+
+@media (max-height: 480px) and (orientation: landscape) {
+    .pos-topbar__subtitle {
+        display: none;
+    }
+
+    .pos-nav-item__label {
+        display: none;
+    }
+
+    .pos-content {
+        padding-bottom: calc(3.25rem + env(safe-area-inset-bottom));
+    }
+}
+
 /* ============================== Blazor error UI ============================== */
 
 #blazor-error-ui {
     color-scheme: light only;
-    background: lightyellow;
+    background: var(--exits-warning-bg, lightyellow);
+    color: var(--exits-warning, #92400e);
     bottom: 0;
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--exits-shadow-md, 0 -1px 2px rgba(0, 0, 0, 0.2));
     box-sizing: border-box;
     display: none;
     left: 0;
     padding: 0.6rem 1.25rem calc(0.7rem + env(safe-area-inset-bottom)) 1.25rem;
     position: fixed;
     width: 100%;
-    z-index: 1400;
+    z-index: var(--exits-z-toast, 1400);
 }
 
 #blazor-error-ui .dismiss {
@@ -225,11 +337,11 @@ html, body {
 }
 
 .blazor-error-boundary {
-    background: #fbe7e5;
-    border: 1px solid #b42318;
-    border-radius: var(--exits-radius-md, 0.625rem);
-    padding: 1rem 1rem 1rem 1rem;
-    color: #b42318;
+    background: var(--exits-danger-bg, #fbe7e5);
+    border: 1px solid var(--exits-danger, #b42318);
+    border-radius: var(--exits-radius-md, 0.5rem);
+    padding: 1rem;
+    color: var(--exits-danger, #b42318);
 }
 
 .blazor-error-boundary::after {

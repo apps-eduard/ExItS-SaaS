@@ -13,9 +13,9 @@ namespace ExItS.PinoyBusinessPOS.Maui;
 public static class MauiProgram
 {
     /// <summary>
-    /// Development-stage notice (P5-WP01): this app ships no authentication, no sales/inventory
+    /// Development-stage notice (P5-WP02): this app ships no authentication, no sales/inventory
     /// data entry, and no offline synchronization. It establishes the Android app shell,
-    /// connectivity/health surfacing, theme, and language foundation only.
+    /// design tokens, density, connectivity/health surfacing, theme, and language foundation only.
     /// </summary>
     public static MauiApp CreateMauiApp()
     {
@@ -79,15 +79,17 @@ public static class MauiProgram
 #endif
 
         services.AddSingleton<IThemePreferenceStore, MauiThemePreferenceStore>();
+        services.AddSingleton<IDensityPreferenceStore, MauiDensityPreferenceStore>();
         services.AddSingleton<ICulturePreferenceStore, MauiCulturePreferenceStore>();
         services.AddSingleton<IConnectivityService, MauiConnectivityService>();
         services.AddSingleton<IAppInfoService>(_ => new MauiAppInfoService(environmentName));
 
-        // NOT USED IN P5-WP01 — see NullSecureTokenStore remarks. Registered only so DI can
+        // NOT USED IN P5-WP02 — see NullSecureTokenStore remarks. Registered only so DI can
         // satisfy ISecureTokenStore if a future component requests it.
         services.AddSingleton<ISecureTokenStore, NullSecureTokenStore>();
 
         services.AddSingleton<ThemeController>();
+        services.AddSingleton<DensityController>();
         services.AddSingleton<CultureController>();
 
         services.AddPosApiClient(configuration);

@@ -55,12 +55,12 @@ Admin implements **System / Light / Dark**:
 - Theme change does not full-reload the Blazor app
 - Focus visibility and contrast remain production risks (R-095 / R-008) until a11y hardening
 
-## PinoyBusinessPOS themes (P5-WP01)
+## PinoyBusinessPOS themes and density (P5-WP01 / P5-WP02)
 
-POS MAUI implements **System / Light / Dark** on the shared DesignSystem token set:
+POS MAUI implements **System / Light / Dark** and **Compact / Comfortable** on the shared DesignSystem token set:
 
-- Semantic `--exits-*` tokens in `ExItS.DesignSystem/wwwroot/exits-design-system.css`
-- Settings theme selector; preference in MAUI Preferences + `localStorage` mirror
-- `Maui/wwwroot/theme-boot.js` reduces incorrect-theme flash
-- Density attributes (`compact` / `comfortable`) defined in DesignSystem; compact layout expansion is **P5-WP02**
-- Contrast/focus remain open (R-102 / R-008)
+- Semantic `--exits-*` tokens in `ExItS.DesignSystem/wwwroot/exits-design-system.css` (surfaces, primary/secondary/accent, status, disabled, z-index, motion/easing, breakpoints)
+- Settings theme + density selectors; preferences in MAUI Preferences + WebView storage mirror
+- `Maui/wwwroot/theme-boot.js` applies theme and density before first paint
+- **Compact is the POS default**; `--exits-touch-target-min` stays **2.75rem (44px)** in both densities
+- Contrast/focus remain open risks (R-102 / R-008 / R-110)

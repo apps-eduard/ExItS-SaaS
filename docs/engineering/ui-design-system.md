@@ -23,9 +23,9 @@ Visual consistency across **new** Platform Admin and POS comes from shared seman
 
 Commercial Admin shell: collapsible sidebar (checkbox CSS), mobile drawer, sticky header, environment chip, shared design-system components (page header, filters, empty/loading/error, audit timeline, theme/language selectors), responsive tables/cards (≈320–1920px). Permission-aware nav is UI convenience only. Keyboard-usable controls; `prefers-reduced-motion` respected. No Ant Design; no Tailwind.
 
-### Shared DesignSystem library (P5-WP01)
+### Shared DesignSystem library (P5-WP01 / P5-WP02)
 
-`src/Shared/ExItS.DesignSystem` is a `net10.0` Razor class library with semantic `--exits-*` tokens, System/Light/Dark theme hooks, compact/comfortable density attributes, shared Blazor primitives (inputs, layout, feedback/empty/error), and `DesignSystemResources` (`en` + `fil-PH`). No Ant Design, Tailwind, Bootstrap, EF Core, or Platform/product Infrastructure references. Consumed by PinoyBusinessPOS MAUI; Platform Admin continues native Admin CSS tokens (`--color-*`) while sharing semantic conventions and terminology.
+`src/Shared/ExItS.DesignSystem` is a `net10.0` Razor class library with semantic `--exits-*` tokens (including secondary, accent, info, disabled, z-index, easing, breakpoints), System/Light/Dark theme hooks, Compact/Comfortable density (Compact default for POS), shared Blazor primitives, and `DesignSystemResources` (`en` + `fil-PH`). Density preference is an abstraction (`IDensityPreferenceStore`); hosts implement storage. No Ant Design, Tailwind, Bootstrap CSS framework imports, EF Core, or Platform/product Infrastructure references. Consumed by PinoyBusinessPOS MAUI; Platform Admin continues native Admin CSS tokens (`--color-*`) while sharing semantic conventions and terminology.
 
 ### Proposed project boundaries (updated P5-WP01)
 
@@ -48,15 +48,17 @@ Platform Admin: Blazor Web App. POS: .NET MAUI Blazor Hybrid (Android-first; fut
 
 ## Density modes
 
-### Compact
+Density is applied via `[data-density="compact|comfortable"]`. Components read `--exits-control-height`, `--exits-density-*`, and `--exits-touch-target-min` — they are **not** duplicated per density.
 
-Use for: Platform administration, Windows POS, dense reports, inventory, subscription tables.
+### Compact (POS default)
 
-Goals: high information density, reduced whitespace, fast scanning — without tiny text or inaccessible targets.
+Use for: PinoyBusinessPOS cashier shell, dense scanning, future inventory lists.
+
+Goals: high information density and reduced whitespace while keeping touch targets ≥ **44px** (`--exits-touch-target-min: 2.75rem`).
 
 ### Comfortable
 
-Use for: phones, tablets, forms, customer/Utang workflows, touch-heavy cashier steps.
+Use for: optional larger padding on phones/tablets, forms, future customer/Utang workflows.
 
 ### Proposed token values (documentation only — not implemented)
 

@@ -50,6 +50,7 @@ public sealed class MauiFoundationGuardTests
 
         var settings = File.ReadAllText(Path.Combine(pages, "Pages", "Settings.razor"));
         Assert.Contains("Theme", settings, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Density", settings, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Language", settings, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("password", settings, StringComparison.OrdinalIgnoreCase);
     }
@@ -61,13 +62,46 @@ public sealed class MauiFoundationGuardTests
         var services = Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
             "ExItS.PinoyBusinessPOS.Maui", "Services");
         Assert.True(File.Exists(Path.Combine(services, "MauiThemePreferenceStore.cs")));
+        Assert.True(File.Exists(Path.Combine(services, "MauiDensityPreferenceStore.cs")));
         Assert.True(File.Exists(Path.Combine(services, "MauiCulturePreferenceStore.cs")));
         Assert.True(File.Exists(Path.Combine(services, "MauiConnectivityService.cs")));
         Assert.True(File.Exists(Path.Combine(services, "MauiAppInfoService.cs")));
+        Assert.True(File.Exists(Path.Combine(services, "DensityController.cs")));
+        Assert.True(File.Exists(Path.Combine(services, "ThemeController.cs")));
     }
 
     [Fact]
-    public void Localization_resources_cover_nav_and_deferred_copy()
+    public void Theme_boot_applies_theme_and_density_before_paint()
+    {
+        var boot = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui", "wwwroot", "theme-boot.js"));
+        Assert.Contains("applyTheme", boot, StringComparison.Ordinal);
+        Assert.Contains("applyDensity", boot, StringComparison.Ordinal);
+        Assert.Contains("data-density", boot, StringComparison.Ordinal);
+        Assert.Contains("compact", boot, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Shell_and_app_css_define_phone_and_tablet_layout_markers()
+    {
+        var root = FindRepoRoot();
+        var shell = File.ReadAllText(Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui", "Components", "Layout", "PosShell.razor"));
+        Assert.Contains("pos-bottom-nav", shell, StringComparison.Ordinal);
+        Assert.Contains("pos-nav-item--active", shell, StringComparison.Ordinal);
+        Assert.Contains("data-layout=\"phone\"", shell, StringComparison.Ordinal);
+        Assert.Contains("DensityCtl", shell, StringComparison.Ordinal);
+
+        var css = File.ReadAllText(Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui", "wwwroot", "app.css"));
+        Assert.Contains("min-width: 768px", css, StringComparison.Ordinal);
+        Assert.Contains("orientation: landscape", css, StringComparison.Ordinal);
+        Assert.Contains("safe-area-inset", css, StringComparison.Ordinal);
+        Assert.Contains("pos-status-grid", css, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Localization_resources_cover_nav_density_and_deferred_copy()
     {
         var root = FindRepoRoot();
         var loc = Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
@@ -77,6 +111,9 @@ public sealed class MauiFoundationGuardTests
         var en = File.ReadAllText(Path.Combine(loc, "PosResources.resx"));
         Assert.Contains("Nav_Home", en, StringComparison.Ordinal);
         Assert.Contains("Settings_", en, StringComparison.Ordinal);
+        Assert.Contains("Settings_DensityLabel", en, StringComparison.Ordinal);
+        Assert.Contains("Settings_Density_Compact", en, StringComparison.Ordinal);
+        Assert.Contains("Nav_Primary", en, StringComparison.Ordinal);
     }
 
     [Fact]

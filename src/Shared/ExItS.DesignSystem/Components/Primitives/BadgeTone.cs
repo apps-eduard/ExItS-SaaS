@@ -7,4 +7,5 @@ public enum BadgeTone
     Success,
     Warning,
     Danger,
+    Info,
 }

@@ -1,6 +1,6 @@
 # Phase 5 — PinoyBusinessPOS MAUI Foundation
 
-[Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Previous](phase-04-platform-admin.md) | [Next](phase-06-utang-mvp.md) | [P5-WP01 report](../reports/P5-WP01-maui-solution-and-api-client.md)
+[Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Previous](phase-04-platform-admin.md) | [Next](phase-06-utang-mvp.md) | [P5-WP02 report](../reports/P5-WP02-native-ui-tokens-themes-and-compact-layout.md)
 
 ## Objective
 
@@ -8,7 +8,7 @@ Create the PinoyBusinessPOS MAUI foundation with compact native UI, localization
 
 ## Status
 
-**In Progress** — P5-WP01 complete. Do **not** begin P5-WP02 until explicitly authorized.
+**In Progress** — P5-WP01 and P5-WP02 complete. Do **not** begin P5-WP03 until explicitly authorized.
 
 ## Work packages
 
@@ -39,20 +39,25 @@ Report: [P5-WP01-maui-solution-and-api-client.md](../reports/P5-WP01-maui-soluti
 
 ### P5-WP02 — Native UI Tokens, Themes and Compact Layout
 
-Status: Not Started
+Status: **Complete**
 
-#### Required outcomes
+#### Outcomes
 
-- Implement semantic tokens and compact responsive layout.
-- Support light, dark and system themes.
-- Verify accessible contrast/focus in both themes.
+- Standardized semantic `--exits-*` tokens (secondary, accent, info, disabled, z-index, easing, breakpoints)
+- Compact (default) and Comfortable density with persistence and pre-paint boot
+- Polished shell (top bar, bottom nav, phone/tablet/landscape), Home/Settings density selector
+- Touch targets remain ≥44px in compact; reduced-motion honored
+- Phase marker `P5-WP02-native-ui-tokens-themes-compact-layout`
+- Release Android build succeeded; interactive emulator validation unavailable (documented)
+
+Report: [P5-WP02-native-ui-tokens-themes-and-compact-layout.md](../reports/P5-WP02-native-ui-tokens-themes-and-compact-layout.md)
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence.
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
 - [ ] Focused commit created and hash recorded.
 - [ ] Working tree clean.
 

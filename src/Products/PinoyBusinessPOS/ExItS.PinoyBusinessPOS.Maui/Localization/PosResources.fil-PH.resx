@@ -68,6 +68,7 @@
   <data name="Nav_Customers" xml:space="preserve"><value>Kustomer</value></data>
   <data name="Nav_More" xml:space="preserve"><value>Iba pa</value></data>
   <data name="Nav_Settings" xml:space="preserve"><value>Mga Setting</value></data>
+  <data name="Nav_Primary" xml:space="preserve"><value>Pangunahing navigasyon</value></data>
 
   <data name="Env_BannerCompact" xml:space="preserve"><value>Development-stage</value></data>
   <data name="Env_BannerDetail" xml:space="preserve"><value>Babala: development-stage pa ang app at POS API na ito, walang authentication. Hindi ito production-secure.</value></data>
@@ -104,12 +105,15 @@
   <data name="Home_NoFeaturesMessage" xml:space="preserve"><value>Ang benta, produkto, at kustomer ay darating sa susunod na work package. Ang build na ito ay para lamang sa app shell, koneksyon, tema, at wika.</value></data>
 
   <data name="Settings_Title" xml:space="preserve"><value>Mga Setting</value></data>
-  <data name="Settings_Subtitle" xml:space="preserve"><value>Itsura, wika, at pagsusuri ng koneksyon.</value></data>
+  <data name="Settings_Subtitle" xml:space="preserve"><value>Itsura, density, wika, at pagsusuri ng koneksyon.</value></data>
   <data name="Settings_AppearanceSectionTitle" xml:space="preserve"><value>Itsura</value></data>
   <data name="Settings_ThemeLabel" xml:space="preserve"><value>Tema</value></data>
   <data name="Settings_Theme_System" xml:space="preserve"><value>System</value></data>
   <data name="Settings_Theme_Light" xml:space="preserve"><value>Maliwanag</value></data>
   <data name="Settings_Theme_Dark" xml:space="preserve"><value>Madilim</value></data>
+  <data name="Settings_DensityLabel" xml:space="preserve"><value>Densidad</value></data>
+  <data name="Settings_Density_Compact" xml:space="preserve"><value>Compact</value></data>
+  <data name="Settings_Density_Comfortable" xml:space="preserve"><value>Komportable</value></data>
   <data name="Settings_LanguageLabel" xml:space="preserve"><value>Wika</value></data>
   <data name="Settings_Language_English" xml:space="preserve"><value>English</value></data>
   <data name="Settings_Language_Filipino" xml:space="preserve"><value>Tagalog</value></data>

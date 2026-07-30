@@ -1,6 +1,7 @@
 @page "/settings"
 @implements IDisposable
 @inject ThemeController ThemeCtl
+@inject DensityController DensityCtl
 @inject CultureController CultureCtl
 @inject PosStatusState Status
 @inject IAppInfoService AppInfo
@@ -16,6 +17,7 @@
         <Card>
             <Stack Gap="5">
                 <Select Label="@L["Settings_ThemeLabel"]" Value="@ThemeCtl.Current.ToString()" ValueChanged="OnThemeChangedAsync" Options="ThemeOptions" />
+                <Select Label="@L["Settings_DensityLabel"]" Value="@DensityCtl.Current.ToString()" ValueChanged="OnDensityChangedAsync" Options="DensityOptions" />
                 <Select Label="@L["Settings_LanguageLabel"]" Value="@CultureCtl.Current" ValueChanged="OnCultureChangedAsync" Options="CultureOptions" />
             </Stack>
         </Card>
@@ -24,9 +26,13 @@
     <Section Title="@L["Settings_ApiSectionTitle"]">
         <Card>
             <Stack Gap="3">
-                <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center">
+                <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="2">
                     <span>@L["Settings_ApiHostLabel"]</span>
-                    <span class="pos-muted">@ApiHost</span>
+                    <span class="pos-muted pos-wrap">@ApiHost</span>
+                </Stack>
+                <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="2">
+                    <span>@L["Api_Environment"]</span>
+                    <Badge Tone="@(IsDevelopment ? BadgeTone.Warning : BadgeTone.Neutral)">@EnvironmentLabel</Badge>
                 </Stack>
                 <Button Variant="ButtonVariant.Secondary" IsLoading="Status.IsCheckingApi" OnClick="TestConnectionAsync">
                     @L["Api_TestConnection"]
@@ -41,9 +47,15 @@
 
     <Section Title="@L["Settings_AboutSectionTitle"]">
         <Card>
-            <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center">
-                <span>@L["Settings_AppVersionLabel"]</span>
-                <span class="pos-muted">@AppInfo.Version</span>
+            <Stack Gap="3">
+                <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="2">
+                    <span>@L["Settings_AppVersionLabel"]</span>
+                    <span class="pos-muted">@AppInfo.Version</span>
+                </Stack>
+                <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="2">
+                    <span>@L["Home_EnvironmentLabel"]</span>
+                    <span class="pos-muted">@EnvironmentLabel</span>
+                </Stack>
             </Stack>
         </Card>
     </Section>
@@ -60,11 +72,21 @@
         new(nameof(ThemePreference.Dark), L["Settings_Theme_Dark"]),
     ];
 
+    private IReadOnlyList<SelectOption> DensityOptions =>
+    [
+        new(nameof(DensityMode.Compact), L["Settings_Density_Compact"]),
+        new(nameof(DensityMode.Comfortable), L["Settings_Density_Comfortable"]),
+    ];
+
     private IReadOnlyList<SelectOption> CultureOptions =>
     [
         new(MauiCulturePreferenceStore.English, L["Settings_Language_English"]),
         new(MauiCulturePreferenceStore.Filipino, L["Settings_Language_Filipino"]),
     ];
+
+    private bool IsDevelopment => string.Equals(AppInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase);
+
+    private string EnvironmentLabel => IsDevelopment ? L["Env_Development"] : L["Env_Production"];
 
     private string ApiHost
     {
@@ -85,6 +107,14 @@
         if (Enum.TryParse<ThemePreference>(value, out var preference))
         {
             await ThemeCtl.SetThemeAsync(preference);
+        }
+    }
+
+    private async Task OnDensityChangedAsync(string? value)
+    {
+        if (Enum.TryParse<DensityMode>(value, out var density))
+        {
+            await DensityCtl.SetDensityAsync(density);
         }
     }
 

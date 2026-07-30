@@ -105,17 +105,21 @@
 | R-099 | Shared DesignSystem / UI coupling between Admin and POS | Medium | Keep DesignSystem UI-stack-agnostic (tokens + primitives); product shells own chrome; avoid Admin CSS in Maui and vice versa | Open — introduced P5-WP01 |
 | R-100 | MAUI Blazor Hybrid vs Platform Admin web visual/behavior divergence | Medium | Shared `--exits-*` semantic tokens and terminology guides; separate implementations per ADR-010; expand visual regression later | Open — introduced P5-WP01 |
 | R-101 | Android API-level / device compatibility gaps | High | Android-first TFM; Release APK evidence; expand device matrix before production; iOS/Windows not in P5-WP01 scope | Open — introduced P5-WP01 |
-| R-102 | POS theme contrast / focus visibility regressions | High | Semantic tokens; visible focus; a11y review in P5-WP02; honor `prefers-reduced-motion` | Open — introduced P5-WP01; related R-008 / R-095 |
-| R-103 | Tagalog (fil-PH) gaps or awkward store copy | Medium | `PosResources` + `DesignSystemResources` en/fil-PH; [pos-terminology-guide.md](engineering/pos-terminology-guide.md); resource tests; English fallback | Open — introduced P5-WP01 |
+| R-102 | POS theme contrast / focus visibility regressions | High | Semantic tokens; visible focus; density-aware controls; honor `prefers-reduced-motion`; continue a11y hardening | Open — updated P5-WP02; related R-008 / R-095 |
+| R-103 | Tagalog (fil-PH) gaps or awkward store copy | Medium | `PosResources` + `DesignSystemResources` en/fil-PH; [pos-terminology-guide.md](engineering/pos-terminology-guide.md); resource tests; English fallback; wrap-friendly shell CSS | Open — updated P5-WP02 |
 | R-104 | Unsafe HTTP retries causing duplicate side effects | High | GET-only single retry on Unavailable/Timeout; mutations must not auto-retry without idempotency | **Mitigated** (P5-WP01) — by design; keep reviewing new client methods |
 | R-105 | Platform API unavailable / misconfigured base URL on device | High | `ApiResult` Unavailable/Offline/Timeout classification; Settings diagnostics; emulator default `10.0.2.2`; no silent success | Open — introduced P5-WP01 |
-| R-106 | Future secure token storage misuse or plaintext secrets | Critical | `ISecureTokenStore` stub unused in P5-WP01 (`NullSecureTokenStore`); no credentials persisted; require platform secure storage before auth WP | Open — introduced P5-WP01 |
-| R-107 | Phone / tablet layout regressions as shell grows | Medium | Bottom nav + deferred pages; compact/comfortable density tokens; validate in P5-WP02 compact layout WP | Open — introduced P5-WP01 |
+| R-106 | Future secure token storage misuse or plaintext secrets | Critical | `ISecureTokenStore` stub unused (`NullSecureTokenStore`); no credentials persisted; require platform secure storage before auth WP | Open — introduced P5-WP01 |
+| R-107 | Phone / tablet layout regressions as shell grows | Medium | Bottom nav + tablet/landscape CSS; compact default with ≥44px targets; continue validating as features land | Open — updated P5-WP02 |
 | R-108 | Offline connectivity foundation mistaken for offline business capability | High | Explicit UI/docs: no sync queue, SQLite, or offline sales; Phase 7 owns sync; R-108 awareness in shell copy | Open — introduced P5-WP01 |
+| R-109 | Interactive Android emulator/device validation unavailable | High | Release APK/build evidence recorded; do not claim interactive validation; attach emulator before claiming UX sign-off | Open — introduced P5-WP02 |
+| R-110 | Compact density reducing touch usability | High | Compact keeps `--exits-touch-target-min` at 2.75rem; Comfortable available; regression tests for touch-target token | Open — introduced P5-WP02 |
+| R-111 | Design-system / MAUI-web visual divergence after token polish | Medium | Shared `--exits-*` names; Admin still on `--color-*`; keep conventions aligned in docs | Open — introduced P5-WP02; related R-099/R-100 |
+| R-112 | UI foundation mistaken for implemented POS business features | High | Deferred routes + Home empty-state copy; docs exclude sales/inventory/Utang; no fake metrics | Open — introduced P5-WP02 |
 
-## Phase 5 note (P5-WP01)
+## Phase 5 note (P5-WP02)
 
-Phase 5 is **In Progress**. P5-WP01 delivered Android-first MAUI Blazor Hybrid shell, shared DesignSystem, System/Light/Dark theme preference, EN/fil-PH resources, and typed API client with connectivity/health classification. **Not delivered:** authentication, sales/inventory, offline sync, product database, compact-layout polish (P5-WP02). Production Platform auth blockers from Phase 4 remain OPEN. Next: **P5-WP02 — Native UI Tokens, Themes and Compact Layout** when authorized.
+Phase 5 is **In Progress**. P5-WP02 delivered standardized design tokens, Compact/Comfortable density persistence (Compact default), shell phone/tablet/landscape polish, and Home/Settings refinements. **Not delivered:** authentication, sales/inventory, offline sync, interactive emulator validation (R-109), full resource-completeness (P5-WP03). Production Platform auth blockers from Phase 4 remain OPEN. Next: **P5-WP03 — English and Filipino Localization** when authorized.
 
 ## Phase 4 closeout note (P4-WP04)
 

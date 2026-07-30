@@ -122,7 +122,7 @@ app.MapGet("/", () => Results.Json(new
 {
     service = "ExItS.Platform.Api",
     status = "ok",
-    phase = "P5-WP01-maui-solution-api-client"
+    phase = "P5-WP02-native-ui-tokens-themes-compact-layout"
 }));
 
 app.MapHealthChecks("/health");

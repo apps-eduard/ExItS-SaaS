@@ -26,12 +26,15 @@ public sealed class DesignSystemArchitectureTests
     }
 
     [Fact]
-    public void Theme_and_culture_preference_stores_are_abstractions_only()
+    public void Theme_density_and_culture_preference_stores_are_abstractions_only()
     {
         Assert.True(typeof(IThemePreferenceStore).IsInterface);
         Assert.True(typeof(ICulturePreferenceStore).IsInterface);
+        Assert.True(typeof(IDensityPreferenceStore).IsInterface);
         Assert.Equal(new[] { ThemePreference.System, ThemePreference.Light, ThemePreference.Dark },
             Enum.GetValues<ThemePreference>());
+        Assert.Equal(new[] { DensityMode.Compact, DensityMode.Comfortable },
+            Enum.GetValues<DensityMode>());
     }
 
     [Fact]
@@ -40,8 +43,13 @@ public sealed class DesignSystemArchitectureTests
         var css = ReadDesignSystemCss();
         foreach (var token in new[]
                  {
-                     "--exits-bg", "--exits-surface", "--exits-text", "--exits-primary",
-                     "--exits-danger", "--exits-shadow-sm", "--exits-radius-md", "--exits-motion-fast"
+                     "--exits-bg", "--exits-surface", "--exits-surface-elevated", "--exits-text",
+                     "--exits-text-muted", "--exits-border", "--exits-primary", "--exits-secondary",
+                     "--exits-accent", "--exits-danger", "--exits-info", "--exits-focus",
+                     "--exits-disabled-bg", "--exits-disabled-text", "--exits-shadow-sm",
+                     "--exits-radius-md", "--exits-motion-fast", "--exits-ease", "--exits-ease-out",
+                     "--exits-z-drawer", "--exits-z-dialog", "--exits-bp-tablet",
+                     "--exits-touch-target-min", "--exits-control-height"
                  })
         {
             Assert.Contains(token, css, StringComparison.Ordinal);
@@ -49,7 +57,10 @@ public sealed class DesignSystemArchitectureTests
 
         Assert.Contains("[data-theme=\"dark\"]", css, StringComparison.Ordinal);
         Assert.Contains("[data-theme=\"system\"]", css, StringComparison.Ordinal);
+        Assert.Contains("[data-density=\"compact\"]", css, StringComparison.Ordinal);
+        Assert.Contains("[data-density=\"comfortable\"]", css, StringComparison.Ordinal);
         Assert.Contains("prefers-reduced-motion", css, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("min-width: 768px", css, StringComparison.Ordinal);
         Assert.DoesNotContain("#512BD4", css, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("@import url(\"bootstrap", css, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("bootstrap.min.css", css, StringComparison.OrdinalIgnoreCase);
@@ -121,6 +132,21 @@ public sealed class DesignSystemArchitectureTests
     }
 
     [Fact]
+    public void Components_use_semantic_tokens_not_hard_coded_page_colors()
+    {
+        var root = FindRepoRoot();
+        var componentsDir = Path.Combine(root, "src", "Shared", "ExItS.DesignSystem", "Components");
+        foreach (var file in Directory.EnumerateFiles(componentsDir, "*.razor", SearchOption.AllDirectories))
+        {
+            var text = File.ReadAllText(file);
+            Assert.DoesNotContain("#166534", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("#512BD4", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("style=\"color:", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("style=\"background:", text, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
     public void Button_supports_loading_and_disabled_states()
     {
         var button = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Shared", "ExItS.DesignSystem",
@@ -128,6 +154,17 @@ public sealed class DesignSystemArchitectureTests
         Assert.Contains("IsLoading", button, StringComparison.Ordinal);
         Assert.Contains("Disabled", button, StringComparison.Ordinal);
         Assert.Contains("exds-", button, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Css_keeps_touch_targets_for_compact_density()
+    {
+        var css = ReadDesignSystemCss();
+        Assert.Contains("--exits-touch-target-min: 2.75rem", css, StringComparison.Ordinal);
+        var compactIndex = css.IndexOf("[data-density=\"compact\"]", StringComparison.Ordinal);
+        Assert.True(compactIndex >= 0);
+        var compactSlice = css.Substring(compactIndex, Math.Min(500, css.Length - compactIndex));
+        Assert.Contains("--exits-touch-target-min: 2.75rem", compactSlice, StringComparison.Ordinal);
     }
 
     private static string ReadDesignSystemCss()

@@ -36,7 +36,7 @@ ExItS-SaaS/
 
 `HealthCare/` remains frozen and outside root Git. Do not import it without an approved work package.
 
-**Phase 5** is **in progress**. **P5-WP01** is **complete** ([P5-WP01 report](docs/reports/P5-WP01-maui-solution-and-api-client.md)): Android-first MAUI Blazor Hybrid shell, shared DesignSystem, themes, EN/fil-PH resources, and typed API client with connectivity/health classification. No auth, sales, inventory, or offline sync yet. Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. Phase 4 production authentication (JWT/MFA/SSO/AD) remains open. HealthCare remains frozen. Next: **P5-WP02 — Native UI Tokens, Themes and Compact Layout** when authorized.
+**Phase 5** is **in progress**. **P5-WP02** is **complete** ([P5-WP02 report](docs/reports/P5-WP02-native-ui-tokens-themes-and-compact-layout.md)): design tokens, Compact/Comfortable density, shell phone/tablet polish. P5-WP01 foundation remains. No auth, sales, inventory, or offline sync yet. Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. Phase 4 production authentication (JWT/MFA/SSO/AD) remains open. HealthCare remains frozen. Next: **P5-WP03 — English and Filipino Localization** when authorized.
 
 ### Platform database (local)
 

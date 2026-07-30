@@ -2,21 +2,25 @@
 @implements IDisposable
 @using ExItS.DesignSystem.Components.Internal
 @inject ThemeController ThemeCtl
+@inject DensityController DensityCtl
 @inject CultureController CultureCtl
 @inject PosStatusState Status
 @inject IAppInfoService AppInfo
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
-<div class="exds-root pos-shell" @key="_cultureEpoch">
+<div class="exds-root pos-shell" data-layout="phone" @key="_cultureEpoch">
     <header class="pos-topbar">
         <div class="pos-topbar__brand">
             <span class="pos-topbar__logo" aria-hidden="true">ES</span>
-            <span class="pos-topbar__title">@L["Brand_Name"]</span>
+            <div class="pos-topbar__titles">
+                <span class="pos-topbar__title">@L["Brand_Name"]</span>
+                <span class="pos-topbar__subtitle pos-muted">@L["Brand_Tagline"]</span>
+            </div>
         </div>
         <div class="pos-topbar__status">
             <Badge Tone="@(IsDevelopment ? BadgeTone.Warning : BadgeTone.Neutral)">@EnvironmentLabel</Badge>
-            <span class="pos-topbar__connectivity" title="@ConnectivityTitle">
+            <span class="pos-topbar__connectivity" title="@ConnectivityTitle" aria-label="@ConnectivityTitle">
                 <span class="pos-status-dot pos-status-dot--@ConnectivityDotClass" aria-hidden="true"></span>
                 <span class="exds-sr-only">@ConnectivityTitle</span>
             </span>
@@ -24,29 +28,29 @@
         </div>
     </header>
 
-    <main class="pos-content">
+    <main class="pos-content" id="pos-main">
         @Body
     </main>
 
-    <nav class="pos-bottom-nav" aria-label="Primary">
+    <nav class="pos-bottom-nav" aria-label="@L["Nav_Primary"]">
         <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/home" Match="NavLinkMatch.All">
-            <span class="pos-nav-item__icon">@IconGlyphs.Get("home")</span>
+            <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("home")</span>
             <span class="pos-nav-item__label">@L["Nav_Home"]</span>
         </NavLink>
         <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/products">
-            <span class="pos-nav-item__icon">@IconGlyphs.Get("products")</span>
+            <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
             <span class="pos-nav-item__label">@L["Nav_Products"]</span>
         </NavLink>
         <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/sales">
-            <span class="pos-nav-item__icon">@IconGlyphs.Get("sales")</span>
+            <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
             <span class="pos-nav-item__label">@L["Nav_Sales"]</span>
         </NavLink>
         <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/customers">
-            <span class="pos-nav-item__icon">@IconGlyphs.Get("customers")</span>
+            <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
             <span class="pos-nav-item__label">@L["Nav_Customers"]</span>
         </NavLink>
         <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/more">
-            <span class="pos-nav-item__icon">@IconGlyphs.Get("more")</span>
+            <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("more")</span>
             <span class="pos-nav-item__label">@L["Nav_More"]</span>
         </NavLink>
     </nav>
@@ -58,6 +62,7 @@
     protected override void OnInitialized()
     {
         ThemeCtl.Changed += OnChangedAsync;
+        DensityCtl.Changed += OnChangedAsync;
         CultureCtl.Changed += OnChangedAsync;
         Status.Changed += OnChangedAsync;
     }
@@ -70,6 +75,7 @@
         }
 
         await ThemeCtl.InitializeAsync();
+        await DensityCtl.InitializeAsync();
         await CultureCtl.InitializeAsync();
         _cultureEpoch = CultureCtl.Epoch;
         await Status.InitializeAsync();
@@ -105,6 +111,7 @@
     public void Dispose()
     {
         ThemeCtl.Changed -= OnChangedAsync;
+        DensityCtl.Changed -= OnChangedAsync;
         CultureCtl.Changed -= OnChangedAsync;
         Status.Changed -= OnChangedAsync;
     }
