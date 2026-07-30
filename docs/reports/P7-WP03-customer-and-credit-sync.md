@@ -6,7 +6,7 @@ Phase marker: `P7-WP03-customer-and-credit-sync`
 
 **Complete with documented risks.** Encrypted local customer + credit read models; offline `CustomerCreate`, `CustomerUpdate`, and `CreditCreate` via the generic queue; download/reconcile; optimistic concurrency conflicts; confirmed vs projected outstanding. **No offline repayments.** P7-WP04 was not started.
 
-Feature commit: `_(recorded after push)_`
+Feature commit: `3763ca0fe406067eb539b3d8adca21447f813dcf`
 
 ## Delivered capability
 
@@ -96,7 +96,7 @@ Updated Phase 7, offline-sync design, portfolio, FILE-MANIFEST, README, security
 
 | Field | Value |
 |---|---|
-| Commit hash | `_(recorded after push)_` |
+| Commit hash | `3763ca0fe406067eb539b3d8adca21447f813dcf` |
 | Final working tree | clean after push |
 
 ## HealthCare freeze
