@@ -46,7 +46,7 @@ app.MapDueDateEndpoints();
 app.MapRepaymentEndpoints();
 app.MapStatementEndpoints();
 
-// Phase marker: P6-WP05-statements-receipts-and-trial-rules
+// Phase marker: P6-WP06-utang-mvp-closeout
 
 app.Run();
 

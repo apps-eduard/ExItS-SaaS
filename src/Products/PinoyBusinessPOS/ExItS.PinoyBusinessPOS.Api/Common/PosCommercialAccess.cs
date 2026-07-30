@@ -21,6 +21,17 @@ internal static class PosCommercialScope
         IPosCommercialAccessAccessor accessor,
         IHostEnvironment environment)
     {
+        var isDevLike = environment.IsDevelopment()
+                        || string.Equals(environment.EnvironmentName, "Testing", StringComparison.OrdinalIgnoreCase);
+
+        // Outside Development/Testing, commercial headers are ignored and access fails closed.
+        // Not production authentication — Platform-backed commercial evaluation is required later.
+        if (!isDevLike)
+        {
+            accessor.Current = PosCommercialAccess.Unknown;
+            return;
+        }
+
         var hasStatus = request.Headers.TryGetValue(PosCommercialHeaders.SubscriptionStatusHeaderName, out var statusValues)
                         && !string.IsNullOrWhiteSpace(statusValues.FirstOrDefault());
         var hasGrants = request.Headers.TryGetValue(PosCommercialHeaders.FeatureGrantsHeaderName, out var grantValues)
@@ -28,11 +39,7 @@ internal static class PosCommercialScope
 
         if (!hasStatus && !hasGrants)
         {
-            var isDevLike = environment.IsDevelopment()
-                            || string.Equals(environment.EnvironmentName, "Testing", StringComparison.OrdinalIgnoreCase);
-            accessor.Current = isDevLike
-                ? PosCommercialAccess.DevelopmentDefault
-                : PosCommercialAccess.Unknown;
+            accessor.Current = PosCommercialAccess.DevelopmentDefault;
             return;
         }
 

@@ -225,18 +225,18 @@ else
         _sharing = false;
     }
 
-    private static string FormatShareText(PosCustomerStatementDto statement)
+    private string FormatShareText(PosCustomerStatementDto statement)
     {
         var sb = new System.Text.StringBuilder();
         sb.AppendLine(statement.CustomerDisplayName);
         sb.AppendLine($"{statement.PeriodStart:yyyy-MM-dd} – {statement.PeriodEnd:yyyy-MM-dd}");
-        sb.AppendLine($"Opening: {statement.OpeningBalance:0.00} {statement.CurrencyCode}");
-        sb.AppendLine($"Closing: {statement.ClosingBalance:0.00} {statement.CurrencyCode}");
-        sb.AppendLine($"Outstanding: {statement.OutstandingBalance:0.00} {statement.CurrencyCode}");
+        sb.AppendLine($"{L["Statement_Share_Opening"]}: {statement.OpeningBalance:0.00} {statement.CurrencyCode}");
+        sb.AppendLine($"{L["Statement_Share_Closing"]}: {statement.ClosingBalance:0.00} {statement.CurrencyCode}");
+        sb.AppendLine($"{L["Statement_Share_Outstanding"]}: {statement.OutstandingBalance:0.00} {statement.CurrencyCode}");
         sb.AppendLine();
         foreach (var line in statement.Lines)
         {
-            sb.AppendLine($"{line.RecordedAtUtc:u} | {line.EntryType} | {line.Amount:0.00} | {line.Status} | bal {line.RunningBalance:0.00}");
+            sb.AppendLine($"{line.RecordedAtUtc:u} | {line.EntryType} | {line.Amount:0.00} | {line.Status} | {L["Statement_Share_Balance"]} {line.RunningBalance:0.00}");
             if (!string.IsNullOrWhiteSpace(line.Remarks))
             {
                 sb.AppendLine(line.Remarks);

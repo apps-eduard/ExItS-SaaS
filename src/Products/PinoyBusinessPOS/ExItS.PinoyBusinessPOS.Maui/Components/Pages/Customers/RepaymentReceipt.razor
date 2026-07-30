@@ -100,7 +100,7 @@ else
                     <div class="pos-value-md pos-wrap">@(receipt.ReversalReason ?? L["Customers_NoValue"])</div>
                 </div>
             }
-            <div class="pos-muted pos-wrap">@L["Receipt_Disclaimer"]: @receipt.Disclaimer</div>
+            <div class="pos-muted pos-wrap">@L["Receipt_Disclaimer"]: @L["Receipt_DisclaimerBody"]</div>
         </Stack>
     </Section>
 
@@ -196,7 +196,7 @@ else
         _sharing = false;
     }
 
-    private static string FormatShareText(PosRepaymentReceiptDto receipt)
+    private string FormatShareText(PosRepaymentReceiptDto receipt)
     {
         var sb = new System.Text.StringBuilder();
         sb.AppendLine(receipt.ReceiptReference);
@@ -211,10 +211,10 @@ else
 
         if (receipt.IsReversed)
         {
-            sb.AppendLine($"REVERSED: {receipt.ReversalReason}");
+            sb.AppendLine($"{L["Receipt_Share_Reversed"]}: {receipt.ReversalReason}");
         }
 
-        sb.AppendLine(receipt.Disclaimer);
+        sb.AppendLine(L["Receipt_DisclaimerBody"]);
         return sb.ToString();
     }
 
