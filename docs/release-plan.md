@@ -107,7 +107,7 @@ Non-production deployment packaging, config validation, backup-before-migrate, s
 
 Environment board: Dev/Testing/internal pilot Ready with documented risks; restricted external pilot and Production **Blocked**. Risk register classifies R-091/R-109/R-129/TLS/MAUI-HTTPS/POS-ROLES as release blockers. **Not production-ready.**
 
-**Next:** **P10-WP02 — Purchasing** when explicitly authorized. P10-WP01 (Option A — supplier master data) is complete — see [P10-WP01-suppliers](reports/P10-WP01-suppliers.md).
+**Next:** **P10-WP03 — Advanced Inventory** when explicitly authorized. P10-WP02 (purchasing) is complete — see [P10-WP02-purchasing](reports/P10-WP02-purchasing.md).
 
 ## R4 — Commercial MVP
 

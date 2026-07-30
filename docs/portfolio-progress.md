@@ -12,9 +12,9 @@
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 10 — Full POS |
-| Current work package | P10-WP02 — Purchasing (**authorized / in progress**) |
-| Overall status | **P10-WP01 complete.** P10-WP02 Purchasing authorized. Nested HealthCare folder removed from ExItS workspace. |
-| Latest verified commit | 9c1b86b4488005e81bb9d78b1dafaea66a8e6e4d |
+| Current work package | P10-WP02 — Purchasing (**complete**) |
+| Overall status | **P10-WP02 complete.** P10-WP03 Advanced Inventory authorized next — do not begin until explicit authorization. |
+| Latest verified commit | c0f8130ef99e958bceaee98024a69339b7e8e41a |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; POS operational roles; Manual GCash unverified; online-only Basic Store limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/refund/accounting/purchasing deferred to Phase 10+ |
 | Last updated | 2026-07-31 |
 
@@ -35,7 +35,9 @@ P9-WP06 ✓ Commercial MVP Closeout (complete with risks — Phase 9 closed)
         ↓
 P10-WP01 ✓ Suppliers (Option A — master data only)
         ↓
-P10-WP02 ○ Purchasing (not started)
+P10-WP02 ✓ Purchasing
+        ↓
+P10-WP03 ○ Advanced Inventory (not started)
 ```
 
 ## Phase progress
@@ -52,7 +54,7 @@ P10-WP02 ○ Purchasing (not started)
 | 7 | Offline Synchronization | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-07-offline-sync.md) |
 | 8 | Basic Store | **Complete with documented risks** | 7 | 7 | 100% | [Open](phases/phase-08-basic-store.md) |
 | 9 | MVP Hardening and Release | **Complete with documented risks** | 6 | 6 | 100% | [Open](phases/phase-09-mvp-hardening.md) |
-| 10 | Full POS | **In Progress** | 1 | 7 | 12% | [Open](phases/phase-10-full-pos.md) |
+| 10 | Full POS | **In Progress** | 2 | 7 | 29% | [Open](phases/phase-10-full-pos.md) |
 
 **MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 
@@ -61,7 +63,7 @@ P10-WP02 ○ Purchasing (not started)
 | WP | Status | Key commit |
 |---|---|---|
 | P10-WP01 — Suppliers | Complete (Option A) | 6f92dd43b2f66709891d82079f9d3fbd0b5c450e |
-| P10-WP02 — Purchasing | Not Started | — |
+| P10-WP02 — Purchasing | Complete | c0f8130ef99e958bceaee98024a69339b7e8e41a |
 | P10-WP03 — Advanced Inventory | Not Started | — |
 | P10-WP04 — Cashier Shifts | Not Started | — |
 | P10-WP05 — Returns and Refunds | Not Started | — |

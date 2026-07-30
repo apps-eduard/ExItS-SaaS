@@ -60,8 +60,9 @@
 - Pilot/deployment (P9-WP05) ? deployment config validation; backup-before-migrate gate; Production confirmation; smoke catalog; readiness evaluator; architecture compose/script guards; full suite recorded in P9-WP05 report
 - Commercial MVP closeout (P9-WP06) ? environment readiness board; risk classification; capability inventory; Phase 9 reconciliation guards; full suite 1001 / 0 / 0
 - Suppliers master data (P10-WP01 Option A) ? domain/lifecycle; `SUP-NNNNNN` codes; duplicate guards; capability matrix; `AddPosSuppliers` migrate apply/rollback/re-apply; API org isolation; MAUI online-only page guards; architecture purchasing exclusions; full suite **1047 / 0 / 0**
+- Purchasing (P10-WP02) ? PO/GRN lifecycle; `PO-`/`GRN-` numbers; over-receipt denial; idempotent submit/receive; `PurchaseReceipt` inventory hook; `store-purchasing-view`/`manage` matrix; `AddPosPurchasing` migrate apply/rollback/re-apply; API org isolation; MAUI online-only page guards; architecture scope guards; full suite **1067 / 0 / 0**
 - Tenant isolation
-- Subscription feature enforcement (P6-WP05 matrix + grants; P8-WP01?P8-WP07 store grants; P10-WP01 supplier grants)
+- Subscription feature enforcement (P6-WP05 matrix + grants; P8-WP01?P8-WP07 store grants; P10-WP01 supplier grants; P10-WP02 purchasing grants)
 - Offline queue and idempotency *(Phase 7)*
 - Inventory movements
 - Cashier permissions
@@ -97,5 +98,4 @@
 - **P9-WP05:** Deployment config/env isolation; Production blocker honesty; backup gate; migration order; secret redaction; package version; smoke catalog; rollback advisor; HealthCare exclusion; compose/ops guards
 - **P9-WP06:** Closeout readiness board; risk register classifications; capability inventory; database ownership; Phase 9 control reconciliation; no deferred-feature claims
 - **P10-WP01:** Supplier domain/lifecycle; server `SUP-NNNNNN` codes; active-name + optional identifier conflicts; `store-suppliers-view`/`manage` matrix; `AddPosSuppliers` apply/rollback/re-apply; API isolation; MAUI online-only guards; no purchasing/offline/HealthCare coupling
-
-All reports use exact command output; totals are never estimated.
+- **P10-WP02:** PO/GRN domain lifecycle; `PO-`/`GRN-` numbers; duplicate line products; over-receipt denial; idempotent submit/receive headers; `PurchaseReceipt` stock hook; `store-purchasing-view`/`manage` matrix; `AddPosPurchasing` apply/rollback/re-apply; API isolation; MAUI online-only guards; no AP/offline/COGS coupling

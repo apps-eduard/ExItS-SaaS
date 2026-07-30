@@ -4,7 +4,7 @@
 
 ## Status
 
-**In Progress** — P10-WP02 Purchasing authorized. Nested HealthCare product folder removed from the ExItS workspace (Part A). Do **not** begin P10-WP03 until explicitly authorized.
+**In Progress** — P10-WP02 Purchasing **complete** (feat `c0f8130`, docs `f9dca785`). Part A workspace cleanup at `fd77f88`. Do **not** begin P10-WP03 until explicitly authorized.
 
 ## Objective
 
@@ -85,22 +85,38 @@ Deliver:
 
 ### P10-WP02 — Purchasing
 
-Status: Not Started
+Status: **Complete**
 
-#### Required outcomes
+Phase marker: `P10-WP02-purchasing`
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+#### Approved scope (clarified)
+
+Organization-isolated purchasing for PinoyBusinessPOS using P10-WP01 suppliers:
+
+- Purchase orders (Draft → Ordered → PartiallyReceived → Received / Cancelled)
+- PO lines with quantity, unit purchase cost (operational only — not valuation/COGS)
+- Server `PO-YYYYMMDD-NNNNNN` / `GRN-YYYYMMDD-NNNNNN` numbers
+- Immutable goods receipts with partial/complete receiving
+- Atomic inventory `PurchaseReceipt` movements for tracked products
+- Feature grants `store-purchasing-view` / `store-purchasing-manage`
+- Migration `AddPosPurchasing`, typed API, MAUI, tests, docs
+- Online-only; no unplanned receiving without a PO
+
+#### Explicit exclusions
+
+- Accounts payable, supplier payments/balances, accounting, tax, purchase returns
+- Inventory valuation / COGS from purchase cost
+- Offline purchasing mutations; POS operational roles; P10-WP03+
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (baseline 1047 → suite now 1067 / 0 / 0).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created (`docs/reports/P10-WP02-purchasing.md`).
+- [x] Focused commit created and hash recorded (`c0f8130ef99e958bceaee98024a69339b7e8e41a`; docs `f9dca785ec993ce1392437a3fdc908322476e06b`).
+- [x] Working tree clean (after push).
+- [x] Exact next WP recorded: **P10-WP03 — Advanced Inventory** (do not begin).
 
 ### P10-WP03 — Advanced Inventory
 

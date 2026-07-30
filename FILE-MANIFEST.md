@@ -1,7 +1,7 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown documentation files plus root Platform foundation through Phase 10 Full POS (**P10-WP01 Suppliers Option A complete**; Phase 9 MVP Hardening complete with documented risks).
-Internal links checked: spot-check P10-WP01
+Markdown documentation files plus root Platform foundation through Phase 10 Full POS (**P10-WP02 Purchasing complete**; P10-WP01 Suppliers Option A complete; Phase 9 MVP Hardening complete with documented risks).
+Internal links checked: spot-check P10-WP02
 Broken links: none found in spot-check of new paths
 
 ## Root foundation (tracked)
@@ -18,23 +18,23 @@ ExItS.slnx
 src/Platform/ExItS.Platform.Domain/ (+ Authorization; Audit; FeatureCode includes `store-suppliers-view` / `store-suppliers-manage`)
 src/Platform/ExItS.Platform.Application/ (+ Catalog; Admin portfolio queries; Authorization; Audit; Contracts; Projections; MigrationValidation; Integration/HealthCare)
 src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog + organization/subscription + payment + entitlement + role-assignment + audit persistence, Admin portfolio read store, migrations including `AddPlatformAuthorizationAndAudit`; `Health/PlatformDatabaseReadyHealthCheck`)
-src/Platform/ExItS.Platform.Api/ (`/` + `/health` + `/health/ready` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs; `PlatformAuthz`; Production security pipeline; phase marker `P10-WP01-suppliers`)
+src/Platform/ExItS.Platform.Api/ (`/` + `/health` + `/health/ready` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs; `PlatformAuthz`; Production security pipeline; phase marker `P10-WP02-purchasing`)
 src/Platform/ExItS.Platform.Admin/ (Blazor Web App — redesigned native CSS shell; typed API client; portfolio + users/memberships/product-access + subscription/payment/trial + audit views; themes; AdminResources en/fil-PH)
 src/Shared/ExItS.DesignSystem/ (semantic tokens; forms/data/feedback overlays; DesignSystem/Validation/Error resources en/fil-PH; Blazor primitives; `IDensityPreferenceStore`)
 src/Shared/ExItS.BackupRestore/ (PostgreSQL logical backup/restore helpers: manifests, SHA-256, retention, AES-GCM protect, restore validation)
-src/Shared/ExItS.Deployment/ (pilot/deployment config validation, backup gates, readiness, rollback advisor, Commercial MVP closeout board — P9-WP05/P9-WP06; phase marker `P10-WP01-suppliers`)
+src/Shared/ExItS.Deployment/ (pilot/deployment config validation, backup gates, readiness, rollback advisor, Commercial MVP closeout board — P9-WP05/P9-WP06; phase marker `P10-WP02-purchasing`)
 tools/ExItS.BackupRestore.Cli/ (non-interactive backup/verify/restore/encrypt/retention CLI)
 tools/ExItS.Deployment.Cli/ (validate-config / backup-gate / readiness / smoke-catalog CLI)
 ops/backup/ (PowerShell operators scripts + disabled schedule notes + config.example.env)
 ops/deploy/ (pilot deploy orchestration, smoke, pre-deploy backup, env templates)
 deploy/docker/ (NON-PRODUCTION pilot compose, Dockerfiles, nginx)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ (POSCustomer + CreditEntry + CreditDueDateChange + Repayment + CatalogProduct + ProductCategory + **Supplier** aggregates; FIFO aging helpers)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth; Customers; Credit; due dates/overdue; Payments/ledger; Statements/receipts; Catalog; **Suppliers**; Commercial/UtangCapabilityPolicy; Reporting batch lookups)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migrations through `AddPosPerformanceIndexes`, **`AddPosSuppliers`**; `Health/PosDatabaseReadyHealthCheck`)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + `/health/ready` + customers + credit + repayments/ledger + due dates/overdue + statements/receipts + catalog + sales + inventory + expenses + **suppliers** + dashboard/reports; commercial header gates; Production security pipeline; phase marker `P10-WP01-suppliers`)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client; PosCommercialHeaderHandler; PosCustomerClient; PosSaleClient/PosExpenseClient idempotency headers; PosCatalogClient online-only; **PosSupplierClient** online-only)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ (POSCustomer + CreditEntry + CreditDueDateChange + Repayment + CatalogProduct + ProductCategory + Supplier + **PurchaseOrder/GoodsReceipt** aggregates; FIFO aging helpers)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth; Customers; Credit; due dates/overdue; Payments/ledger; Statements/receipts; Catalog; Suppliers; **Purchasing**; Commercial/UtangCapabilityPolicy; Reporting batch lookups)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migrations through `AddPosPerformanceIndexes`, `AddPosSuppliers`, **`AddPosPurchasing`**; `Health/PosDatabaseReadyHealthCheck`)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + `/health/ready` + customers + credit + repayments/ledger + due dates/overdue + statements/receipts + catalog + sales + inventory + expenses + suppliers + **purchase-orders/goods-receipts** + dashboard/reports; commercial header gates; Production security pipeline; phase marker `P10-WP02-purchasing`)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client; PosCommercialHeaderHandler; PosCustomerClient; PosSaleClient/PosExpenseClient/**PosPurchaseOrderClient** idempotency headers; PosCatalogClient online-only; PosSupplierClient online-only)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.LocalStore/ (Microsoft.Data.Sqlite foundation + generic encrypted offline_operations outbox + BlockedByAccess reclaim + encrypted customer/credit/repayment projections — P7-WP01/P7-WP02/P7-WP03/P7-WP04; no catalog/supplier offline cache; **not** part of server backup sets)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers + credit + repayments + ledger + overdue/due dates + statement/receipt preview/share + catalog/barcode + sales + inventory + expenses + **suppliers** + dashboard/reports; onboarding/auth; sync-status shell; offline foundation diagnostics; PosResources en/fil-PH)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers + credit + repayments + ledger + overdue/due dates + statement/receipt preview/share + catalog/barcode + sales + inventory + expenses + suppliers + **purchasing** + dashboard/reports; onboarding/auth; sync-status shell; offline foundation diagnostics; PosResources en/fil-PH)
 tests/ExItS.Platform.UnitTests/
 tests/ExItS.ArchitectureTests/
 tests/ExItS.Platform.IntegrationTests/
@@ -164,6 +164,7 @@ docs/reports/P9-WP05-pilot-and-deployment.md
 docs/reports/P9-WP06-commercial-mvp-closeout.md
 docs/reports/P10-WP01-scope-ambiguity.md
 docs/reports/P10-WP01-suppliers.md
+docs/reports/P10-WP02-purchasing.md
 docs/reports/P10-WP02-healthcare-workspace-cleanup.md
 docs/operations/backup-restore/README.md
 docs/operations/pilot-and-deployment/README.md
