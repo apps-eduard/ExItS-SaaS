@@ -18,6 +18,7 @@ else
     <PageHeader Title="@L["Inventory_Title"]" Subtitle="@L["Inventory_Subtitle"]">
         <Actions>
             <Button Variant="ButtonVariant.Secondary" OnClick="GoLowStock">@L["Inventory_OpenLowStock"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoCounts">@L["Inventory_OpenCounts"]</Button>
             <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Inventory_Refresh"]</Button>
         </Actions>
     </PageHeader>
@@ -169,4 +170,5 @@ else
     }
 
     private void GoLowStock() => Nav.NavigateTo("/inventory/low-stock");
+    private void GoCounts() => Nav.NavigateTo("/inventory/counts");
 }

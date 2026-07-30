@@ -55,13 +55,16 @@ public sealed class PosInventoryScopeArchitectureTests
     }
 
     [Fact]
-    public void Inventory_persistence_adds_account_and_movement_tables_only()
+    public void Inventory_persistence_adds_account_movement_and_advanced_tables()
     {
         var context = File.ReadAllText(Path.Combine(
             PosProject("ExItS.PinoyBusinessPOS.Infrastructure"), "Persistence", "PosDbContext.cs"));
 
         Assert.Contains("\"inventory_accounts\"", context, StringComparison.Ordinal);
         Assert.Contains("\"stock_movements\"", context, StringComparison.Ordinal);
+        Assert.Contains("\"inventory_reorder_changes\"", context, StringComparison.Ordinal);
+        Assert.Contains("\"stock_counts\"", context, StringComparison.Ordinal);
+        Assert.Contains("\"stock_count_lines\"", context, StringComparison.Ordinal);
 
         foreach (var table in new[]
                  {

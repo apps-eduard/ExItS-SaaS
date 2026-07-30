@@ -83,6 +83,24 @@ public static class DomainErrorCodes
     public const string InventoryInsufficientStock = "pos.inventory.insufficient_stock";
     public const string InventoryAdjustmentReasonRequired = "pos.inventory.adjustment_reason_required";
     public const string InventoryReorderLevelInvalid = "pos.inventory.reorder_level.invalid";
+    public const string InventoryReorderQuantityInvalid = "pos.inventory.reorder_quantity.invalid";
+    public const string InvalidInventoryReorderChangeId = "pos.inventory.reorder_change.id.invalid";
+    public const string InvalidInventoryReorderReason = "pos.inventory.reorder.reason.invalid";
+    public const string InvalidInventoryReorderActor = "pos.inventory.reorder.actor.invalid";
+    public const string InventoryReorderUnchanged = "pos.inventory.reorder.unchanged";
+    public const string InvalidStockCountId = "pos.stock_count.id.invalid";
+    public const string InvalidStockCountLineId = "pos.stock_count_line.id.invalid";
+    public const string InvalidStockCountNumber = "pos.stock_count.number.invalid";
+    public const string InvalidStockCountStatus = "pos.stock_count.status.invalid";
+    public const string InvalidStockCountStatusTransition = "pos.stock_count.status.invalid_transition";
+    public const string InvalidStockCountLine = "pos.stock_count.line.invalid";
+    public const string InvalidStockCountNotes = "pos.stock_count.notes.invalid";
+    public const string StockCountRequiresLines = "pos.stock_count.lines.required";
+    public const string StockCountDuplicateProduct = "pos.stock_count.duplicate_product";
+    public const string StockCountProductNotFound = "pos.stock_count.product.not_found";
+    public const string StockCountProductNotTracked = "pos.stock_count.product.not_tracked";
+    public const string StockCountCountedQuantityRequired = "pos.stock_count.counted_quantity.required";
+    public const string StockCountNumberConflict = "pos.stock_count.number.conflict";
     public const string InventoryOpeningDuplicate = "pos.inventory.opening_duplicate";
     public const string InventoryUomChangeBlocked = "pos.inventory.uom_change_blocked";
 

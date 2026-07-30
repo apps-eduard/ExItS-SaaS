@@ -40,7 +40,50 @@ public interface IPosInventoryClient
 
     Task<ApiResult<PosStockMovementPagedResult>> ListMovementsAsync(
         Guid productId,
+        string? movementType = null,
+        string? sourceType = null,
+        string? fromDateUtc = null,
+        string? toDateUtc = null,
         int page = 1,
         int pageSize = 20,
         CancellationToken ct = default);
+
+    Task<ApiResult<PosInventoryAccountDto>> SetReorderAsync(
+        Guid productId,
+        SetInventoryReorderRequest request,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosInventoryAccountPagedResult>> ListReorderSuggestionsAsync(
+        string? search = null,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosInventoryReconciliationDto>> GetReconciliationAsync(
+        Guid productId,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PagedResult<PosStockCountDto>>> ListStockCountsAsync(
+        string? status = null,
+        string? countNumber = null,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosStockCountDto>> GetStockCountAsync(Guid stockCountId, CancellationToken ct = default);
+
+    Task<ApiResult<PosStockCountDto>> CreateStockCountAsync(
+        CreateStockCountRequest request,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosStockCountDto>> UpdateStockCountAsync(
+        Guid stockCountId,
+        UpdateStockCountRequest request,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosStockCountDto>> StartStockCountAsync(Guid stockCountId, CancellationToken ct = default);
+
+    Task<ApiResult<PosStockCountDto>> CompleteStockCountAsync(Guid stockCountId, CancellationToken ct = default);
+
+    Task<ApiResult<PosStockCountDto>> CancelStockCountAsync(Guid stockCountId, CancellationToken ct = default);
 }

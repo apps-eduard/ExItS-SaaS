@@ -42,6 +42,10 @@ public sealed class PosDbContext : DbContext
     internal DbSet<SaleNumberSequenceRecord> SaleNumberSequences => Set<SaleNumberSequenceRecord>();
     internal DbSet<InventoryAccountRecord> InventoryAccounts => Set<InventoryAccountRecord>();
     internal DbSet<StockMovementRecord> StockMovements => Set<StockMovementRecord>();
+    internal DbSet<InventoryReorderChangeRecord> InventoryReorderChanges => Set<InventoryReorderChangeRecord>();
+    internal DbSet<StockCountRecord> StockCounts => Set<StockCountRecord>();
+    internal DbSet<StockCountLineRecord> StockCountLines => Set<StockCountLineRecord>();
+    internal DbSet<StockCountNumberSequenceRecord> StockCountNumberSequences => Set<StockCountNumberSequenceRecord>();
     internal DbSet<ExpenseCategoryRecord> ExpenseCategories => Set<ExpenseCategoryRecord>();
     internal DbSet<ExpenseRecord> Expenses => Set<ExpenseRecord>();
     internal DbSet<ExpenseNumberSequenceRecord> ExpenseNumberSequences => Set<ExpenseNumberSequenceRecord>();
@@ -592,6 +596,9 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_inventory_accounts_reorder_level_non_negative",
                     "reorder_level IS NULL OR reorder_level >= 0");
+                tb.HasCheckConstraint(
+                    "ck_inventory_accounts_reorder_quantity_positive",
+                    "reorder_quantity IS NULL OR reorder_quantity > 0");
             });
 
             entity.HasKey(e => e.Id);
@@ -600,6 +607,7 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
             entity.Property(e => e.IsTracked).HasColumnName("is_tracked").IsRequired();
             entity.Property(e => e.ReorderLevel).HasColumnName("reorder_level").HasPrecision(18, 3);
+            entity.Property(e => e.ReorderQuantity).HasColumnName("reorder_quantity").HasPrecision(18, 3);
             entity.Property(e => e.OnHandQuantity)
                 .HasColumnName("on_hand_quantity")
                 .HasPrecision(18, 3)
@@ -687,6 +695,12 @@ public sealed class PosDbContext : DbContext
                 .HasFilter(
                     $"source_type = '{nameof(StockMovementSourceType.PurchaseReceipt)}' AND source_id IS NOT NULL");
 
+            entity.HasIndex(e => new { e.OrganizationId, e.SourceId, e.ProductId, e.MovementType })
+                .IsUnique()
+                .HasDatabaseName("ux_stock_movements_stock_count_source")
+                .HasFilter(
+                    $"source_type = '{nameof(StockMovementSourceType.StockCount)}' AND source_id IS NOT NULL");
+
             entity.HasIndex(e => new { e.OrganizationId, e.ProductId, e.MovementType })
                 .IsUnique()
                 .HasDatabaseName("ux_stock_movements_opening_stock")
@@ -703,6 +717,120 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_stock_movements_products");
+        });
+
+        modelBuilder.Entity<InventoryReorderChangeRecord>(entity =>
+        {
+            entity.ToTable("inventory_reorder_changes");
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.InventoryAccountId).HasColumnName("inventory_account_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.PreviousReorderLevel).HasColumnName("previous_reorder_level").HasPrecision(18, 3);
+            entity.Property(e => e.NewReorderLevel).HasColumnName("new_reorder_level").HasPrecision(18, 3);
+            entity.Property(e => e.PreviousReorderQuantity).HasColumnName("previous_reorder_quantity").HasPrecision(18, 3);
+            entity.Property(e => e.NewReorderQuantity).HasColumnName("new_reorder_quantity").HasPrecision(18, 3);
+            entity.Property(e => e.Reason)
+                .HasColumnName("reason")
+                .HasMaxLength(InventoryReorderChange.ReasonMaxLength)
+                .IsRequired();
+            entity.Property(e => e.ChangedBy).HasColumnName("changed_by").IsRequired();
+            entity.Property(e => e.ChangedAtUtc).HasColumnName("changed_at_utc");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ProductId, e.ChangedAtUtc })
+                .HasDatabaseName("ix_inventory_reorder_changes_org_product_changed");
+
+            entity.HasOne<InventoryAccountRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.InventoryAccountId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_inventory_reorder_changes_accounts");
+        });
+
+        modelBuilder.Entity<StockCountRecord>(entity =>
+        {
+            entity.ToTable("stock_counts", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_stock_counts_status",
+                    "status IN ('Draft', 'InProgress', 'Completed', 'Cancelled')");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.CountNumber).HasColumnName("count_number").HasMaxLength(StockCountNumbers.MaxLength);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(StockCount.NotesMaxLength);
+            entity.Property(e => e.StartedAtUtc).HasColumnName("started_at_utc");
+            entity.Property(e => e.StartedBy).HasColumnName("started_by");
+            entity.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
+            entity.Property(e => e.CompletedBy).HasColumnName("completed_by");
+            entity.Property(e => e.CancelledAtUtc).HasColumnName("cancelled_at_utc");
+            entity.Property(e => e.CancelledBy).HasColumnName("cancelled_by");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.CountNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_stock_counts_org_count_number")
+                .HasFilter("count_number IS NOT NULL");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.Status, e.UpdatedAtUtc })
+                .HasDatabaseName("ix_stock_counts_org_status_updated");
+        });
+
+        modelBuilder.Entity<StockCountLineRecord>(entity =>
+        {
+            entity.ToTable("stock_count_lines");
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.StockCountId).HasColumnName("stock_count_id").IsRequired();
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.LineNumber).HasColumnName("line_number").IsRequired();
+            entity.Property(e => e.SystemOnHandSnapshot).HasColumnName("system_on_hand_snapshot").HasPrecision(18, 3);
+            entity.Property(e => e.CountedQuantity).HasColumnName("counted_quantity").HasPrecision(18, 3);
+
+            entity.HasIndex(e => new { e.StockCountId, e.ProductId })
+                .IsUnique()
+                .HasDatabaseName("ux_stock_count_lines_count_product");
+
+            entity.HasOne<StockCountRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.StockCountId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_stock_count_lines_counts");
+
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_stock_count_lines_products");
+        });
+
+        modelBuilder.Entity<StockCountNumberSequenceRecord>(entity =>
+        {
+            entity.ToTable("stock_count_number_sequences", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_stock_count_number_sequences_last_value_positive",
+                    "last_value > 0");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BusinessDate })
+                .HasName("pk_stock_count_number_sequences");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date");
+            entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
         });
 
         modelBuilder.Entity<ExpenseCategoryRecord>(entity =>

@@ -1,0 +1,223 @@
+@page "/inventory/counts/{StockCountId:guid}"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosInventoryClient Inventory
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (_count is null)
+{
+    <Page>
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_CountsTitle"])" Message="@(_errorMessage ?? L["NotFound_Message"])" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Inventory_CountsTitle"]</Button>
+    </Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageInventory);
+    var inProgress = string.Equals(_count.Status, "InProgress", StringComparison.OrdinalIgnoreCase);
+    var draft = string.Equals(_count.Status, "Draft", StringComparison.OrdinalIgnoreCase);
+<Page>
+    <PageHeader Title="@(_count.CountNumber ?? L["Inventory_CountsDraft"])" Subtitle="@_count.Status">
+        <Actions>
+            @if (canManage && !_isOffline)
+            {
+                @if (draft)
+                {
+                    <Button Variant="ButtonVariant.Primary" IsLoading="@_busy" OnClick="StartAsync">@L["Inventory_CountsStart"]</Button>
+                }
+                @if (inProgress)
+                {
+                    <Button Variant="ButtonVariant.Primary" IsLoading="@_busy" OnClick="CompleteAsync">@L["Inventory_CountsComplete"]</Button>
+                }
+                @if (draft || inProgress)
+                {
+                    <Button Variant="ButtonVariant.Secondary" IsLoading="@_busy" OnClick="CancelAsync">@L["Inventory_CountsCancel"]</Button>
+                }
+            }
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Inventory_CountsTitle"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_CountsTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Inventory_CountsLines"]">
+        <Stack Gap="2">
+            @foreach (var line in _count.Lines)
+            {
+                <div>
+                    @line.ProductName · @L["Inventory_OnHand"]: @(line.SystemOnHandSnapshot?.ToString("0.###") ?? "—")
+                    @if (inProgress && canManage)
+                    {
+                        <TextInput Label="@L["Inventory_CountsCounted"]"
+                                   Value="@GetCountedText(line.LineId)"
+                                   ValueChanged="v => SetCountedText(line.LineId, v)" />
+                    }
+                    else if (line.CountedQuantity is not null)
+                    {
+                        <span> · @L["Inventory_CountsCounted"]: @line.CountedQuantity.Value.ToString("0.###") · @L["Inventory_CountsVariance"]: @(line.Variance?.ToString("+0.###;-0.###") ?? "—")</span>
+                    }
+                </div>
+            }
+        </Stack>
+        @if (inProgress && canManage)
+        {
+            <Button Variant="ButtonVariant.Secondary" IsLoading="@_busy" OnClick="SaveLinesAsync">@L["Inventory_CountsSaveLines"]</Button>
+        }
+    </Section>
+</Page>
+}
+
+@code {
+    [Parameter] public Guid StockCountId { get; set; }
+
+    private bool _ready;
+    private bool _busy;
+    private bool _isOffline;
+    private PosStockCountDto? _count;
+    private readonly Dictionary<Guid, string> _countedByLine = new();
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ViewInventory))
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _errorTitle = null;
+        _errorMessage = null;
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _count = null;
+            return;
+        }
+
+        var result = await Inventory.GetStockCountAsync(StockCountId);
+        if (result.Status == ApiCallStatus.Success)
+        {
+            _count = result.Data;
+            foreach (var line in _count!.Lines)
+            {
+                _countedByLine[line.LineId] = line.CountedQuantity?.ToString("0.###") ?? string.Empty;
+            }
+        }
+        else
+        {
+            _count = null;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+    }
+
+    private string GetCountedText(Guid lineId) =>
+        _countedByLine.TryGetValue(lineId, out var text) ? text : string.Empty;
+
+    private void SetCountedText(Guid lineId, string value) => _countedByLine[lineId] = value;
+
+    private async Task StartAsync()
+    {
+        _busy = true;
+        var result = await Inventory.StartStockCountAsync(StockCountId);
+        _busy = false;
+        if (result.Status == ApiCallStatus.Success)
+        {
+            await ReloadAsync();
+            return;
+        }
+
+        ShowError(result);
+    }
+
+    private async Task SaveLinesAsync()
+    {
+        if (_count is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        var lines = _count.Lines.Select(line =>
+        {
+            decimal? counted = null;
+            if (_countedByLine.TryGetValue(line.LineId, out var text) && decimal.TryParse(text, out var parsed))
+            {
+                counted = parsed;
+            }
+
+            return new CreateStockCountLineRequest(line.ProductId, counted);
+        }).ToList();
+
+        var result = await Inventory.UpdateStockCountAsync(StockCountId, new UpdateStockCountRequest(lines));
+        _busy = false;
+        if (result.Status == ApiCallStatus.Success)
+        {
+            await ReloadAsync();
+            return;
+        }
+
+        ShowError(result);
+    }
+
+    private async Task CompleteAsync()
+    {
+        await SaveLinesAsync();
+        _busy = true;
+        var result = await Inventory.CompleteStockCountAsync(StockCountId);
+        _busy = false;
+        if (result.Status == ApiCallStatus.Success)
+        {
+            await ReloadAsync();
+            return;
+        }
+
+        ShowError(result);
+    }
+
+    private async Task CancelAsync()
+    {
+        _busy = true;
+        var result = await Inventory.CancelStockCountAsync(StockCountId);
+        _busy = false;
+        if (result.Status == ApiCallStatus.Success)
+        {
+            await ReloadAsync();
+            return;
+        }
+
+        ShowError(result);
+    }
+
+    private void ShowError<T>(ApiResult<T> result)
+    {
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _errorTitle = described.Title;
+        _errorMessage = result.Error?.Detail ?? described.Message;
+    }
+
+    private void GoBack() => Nav.NavigateTo("/inventory/counts");
+}

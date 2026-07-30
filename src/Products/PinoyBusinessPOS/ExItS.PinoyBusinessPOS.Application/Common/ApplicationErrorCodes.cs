@@ -35,6 +35,8 @@ public static class ApplicationErrorCodes
     public const string InventoryAccountNotFound = "pos.inventory.account.not_found";
     public const string InventoryProductNotFound = "pos.inventory.product.not_found";
     public const string InventoryConcurrencyConflict = "pos.inventory.concurrency_conflict";
+    public const string StockCountNotFound = "pos.stock_count.not_found";
+    public const string StockCountNumberConflict = "pos.stock_count.number.conflict";
     public const string InsufficientStock = "pos.inventory.insufficient_stock";
 
     public const string ExpenseCategoryNotFound = "pos.expense_category.not_found";

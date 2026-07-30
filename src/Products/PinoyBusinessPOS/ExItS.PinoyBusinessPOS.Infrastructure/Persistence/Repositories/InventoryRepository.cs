@@ -101,6 +101,17 @@ internal sealed class InventoryRepository : IInventoryRepository
                 && x.Account.OnHandQuantity <= x.Account.ReorderLevel);
         }
 
+        if (filter.ReorderSuggestedOnly == true)
+        {
+            query = query.Where(x =>
+                x.Account != null
+                && x.Account.IsTracked
+                && x.Account.ReorderLevel != null
+                && x.Account.ReorderQuantity != null
+                && x.Account.ReorderQuantity > 0
+                && x.Account.OnHandQuantity <= x.Account.ReorderLevel);
+        }
+
         var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
         var rows = await query
             .OrderBy(x => x.Product.Name)
@@ -126,6 +137,7 @@ internal sealed class InventoryRepository : IInventoryRepository
                     CatalogProductId.From(row.Product.Id),
                     isTracked: false,
                     reorderLevel: null,
+                    reorderQuantity: null,
                     onHandQuantity: 0m,
                     row.Product.CreatedAtUtc,
                     row.Product.UpdatedAtUtc));
@@ -208,15 +220,59 @@ internal sealed class InventoryRepository : IInventoryRepository
                 && m.MovementType == nameof(StockMovementType.OpeningStock),
             cancellationToken);
 
+    public async Task<(IReadOnlyList<InventoryAccount> Items, int TotalCount)> ListReorderSuggestionsAsync(
+        PosOrganizationId organizationId,
+        string? search,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default) =>
+        await ListAsync(
+                organizationId,
+                new InventoryAccountFilter(Search: search, TrackedOnly: true, ReorderSuggestedOnly: true),
+                skip,
+                take,
+                cancellationToken)
+            .ConfigureAwait(false);
+
     public async Task<(IReadOnlyList<StockMovement> Items, int TotalCount)> ListMovementsAsync(
         PosOrganizationId organizationId,
         CatalogProductId productId,
+        StockMovementFilter filter,
         int skip,
         int take,
         CancellationToken cancellationToken = default)
     {
         var query = _db.StockMovements.AsNoTracking()
             .Where(m => m.OrganizationId == organizationId.Value && m.ProductId == productId.Value);
+
+        if (!string.IsNullOrWhiteSpace(filter.MovementType)
+            && StockMovementTypes.TryParse(filter.MovementType, out var movementType))
+        {
+            var code = StockMovementTypes.ToCode(movementType);
+            query = query.Where(m => m.MovementType == code);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.SourceType)
+            && StockMovementSourceTypes.TryParse(filter.SourceType, out var sourceType))
+        {
+            var code = StockMovementSourceTypes.ToCode(sourceType);
+            query = query.Where(m => m.SourceType == code);
+        }
+
+        if (filter.FromDateUtc is not null)
+        {
+            var from = new DateTimeOffset(filter.FromDateUtc.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+            query = query.Where(m => m.RecordedAtUtc >= from);
+        }
+
+        if (filter.ToDateUtc is not null)
+        {
+            var exclusiveTo = new DateTimeOffset(
+                filter.ToDateUtc.Value.AddDays(1).ToDateTime(TimeOnly.MinValue),
+                TimeSpan.Zero);
+            query = query.Where(m => m.RecordedAtUtc < exclusiveTo);
+        }
+
         var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
         var records = await query
             .OrderByDescending(m => m.RecordedAtUtc)
@@ -227,6 +283,32 @@ internal sealed class InventoryRepository : IInventoryRepository
             .ConfigureAwait(false);
         return (records.Select(InventoryEntityMapper.ToDomain).ToList(), total);
     }
+
+    public async Task<decimal> SumMovementEffectsAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default)
+    {
+        var sum = await _db.StockMovements.AsNoTracking()
+            .Where(m => m.OrganizationId == organizationId.Value && m.ProductId == productId.Value)
+            .SumAsync(m => m.QuantityEffect, cancellationToken)
+            .ConfigureAwait(false);
+        return sum;
+    }
+
+    public Task<bool> HasStockCountVarianceAsync(
+        PosOrganizationId organizationId,
+        StockCountId stockCountId,
+        CatalogProductId productId,
+        StockMovementType movementType,
+        CancellationToken cancellationToken = default) =>
+        _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.SourceId == stockCountId.Value
+                && m.ProductId == productId.Value
+                && m.SourceType == nameof(StockMovementSourceType.StockCount)
+                && m.MovementType == StockMovementTypes.ToCode(movementType),
+            cancellationToken);
 
     public async Task<IReadOnlyList<StockMovement>> ListMovementsForReportAsync(
         PosOrganizationId organizationId,

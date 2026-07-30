@@ -56,8 +56,28 @@ public interface IInventoryRepository
     Task<(IReadOnlyList<StockMovement> Items, int TotalCount)> ListMovementsAsync(
         PosOrganizationId organizationId,
         CatalogProductId productId,
+        StockMovementFilter filter,
         int skip,
         int take,
+        CancellationToken cancellationToken = default);
+
+    Task<decimal> SumMovementEffectsAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default);
+
+    Task<(IReadOnlyList<InventoryAccount> Items, int TotalCount)> ListReorderSuggestionsAsync(
+        PosOrganizationId organizationId,
+        string? search,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> HasStockCountVarianceAsync(
+        PosOrganizationId organizationId,
+        StockCountId stockCountId,
+        CatalogProductId productId,
+        StockMovementType movementType,
         CancellationToken cancellationToken = default);
 
     /// <summary>

@@ -9,7 +9,8 @@ public enum StockMovementSourceType
     Sale = 1,
     Manual = 2,
     Opening = 3,
-    PurchaseReceipt = 4
+    PurchaseReceipt = 4,
+    StockCount = 5
 }
 
 public static class StockMovementSourceTypes
@@ -22,7 +23,8 @@ public static class StockMovementSourceTypes
         nameof(StockMovementSourceType.Sale),
         nameof(StockMovementSourceType.Manual),
         nameof(StockMovementSourceType.Opening),
-        nameof(StockMovementSourceType.PurchaseReceipt)
+        nameof(StockMovementSourceType.PurchaseReceipt),
+        nameof(StockMovementSourceType.StockCount)
     ];
 
     public static string ToCode(StockMovementSourceType type) => type.ToString();

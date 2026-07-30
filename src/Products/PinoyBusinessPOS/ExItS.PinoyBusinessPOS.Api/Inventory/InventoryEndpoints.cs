@@ -7,9 +7,7 @@ using ExItS.PinoyBusinessPOS.Domain.Inventory;
 namespace ExItS.PinoyBusinessPOS.Api.Inventory;
 
 /// <summary>
-/// Organization-scoped basic inventory endpoints (P8-WP04). Development-stage only: organization
-/// scope from <c>X-Pos-Organization-Id</c>, actor from <c>X-Dev-Platform-User-Id</c>. Online-only —
-/// no offline inventory queue, suppliers, warehouses, or costing surface.
+/// Organization-scoped inventory endpoints (P8-WP04 basic + P10-WP03 advanced). Online-only.
 /// </summary>
 internal static class InventoryEndpoints
 {
@@ -17,15 +15,31 @@ internal static class InventoryEndpoints
     {
         var group = app.MapGroup("/api/v1/pos/inventory");
 
-        group.MapGet("/", async (
+        group.MapGet("/", ListInventory);
+        group.MapGet("/low-stock", ListLowStock);
+        group.MapGet("/reorder-suggestions", ListReorderSuggestions);
+        MapStockCounts(group);
+
+        group.MapGet("/{productId:guid}", GetByProduct);
+        group.MapPut("/{productId:guid}/reorder", SetReorder);
+        group.MapGet("/{productId:guid}/reconciliation", GetReconciliation);
+        group.MapPost("/{productId:guid}/enable", Enable);
+        group.MapPost("/{productId:guid}/disable", Disable);
+        group.MapPost("/{productId:guid}/adjustments", Adjust);
+        group.MapGet("/{productId:guid}/movements", ListMovements);
+
+        return app;
+    }
+
+    private static void MapStockCounts(RouteGroupBuilder group)
+    {
+        group.MapGet("/stock-counts", async (
             HttpRequest request,
-            string? search,
-            bool? tracked,
-            bool? lowStock,
-            string? productStatus,
+            string? status,
+            string? countNumber,
             int? page,
             int? pageSize,
-            InventoryQueryService queries,
+            StockCountQueryService queries,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -34,79 +48,16 @@ internal static class InventoryEndpoints
                 return problem!;
             }
 
-            var filter = new InventoryAccountFilter(search, tracked, lowStock, productStatus);
+            var filter = new StockCountFilter(status, countNumber);
             var result = await queries.ListAsync(organizationId, filter, page, pageSize, ct).ConfigureAwait(false);
             return Results.Ok(result);
         });
 
-        group.MapGet("/low-stock", async (
+        group.MapPost("/stock-counts", async (
             HttpRequest request,
-            string? search,
-            int? page,
-            int? pageSize,
-            InventoryQueryService queries,
-            IPosCommercialAccessAccessor access,
-            CancellationToken ct) =>
-        {
-            if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
-            {
-                return problem!;
-            }
-
-            var result = await queries
-                .ListLowStockAsync(organizationId, search, page, pageSize, ct)
-                .ConfigureAwait(false);
-            return Results.Ok(result);
-        });
-
-        group.MapGet("/{productId:guid}", async (
-            HttpRequest request,
-            Guid productId,
-            InventoryQueryService queries,
-            IPosCommercialAccessAccessor access,
-            CancellationToken ct) =>
-        {
-            if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
-            {
-                return problem!;
-            }
-
-            var dto = await queries.GetByProductIdAsync(organizationId, productId, ct).ConfigureAwait(false);
-            return dto is null
-                ? PosApiResults.Problem(
-                    ApplicationErrorCodes.InventoryProductNotFound,
-                    "Product was not found.",
-                    StatusCodes.Status404NotFound)
-                : Results.Ok(dto);
-        });
-
-        group.MapPost("/{productId:guid}/enable", async (
-            HttpRequest request,
-            Guid productId,
-            EnableInventoryTrackingRequest? body,
-            EnableInventoryTracking useCase,
-            InventoryQueryService queries,
-            IPosCommercialAccessAccessor access,
-            CancellationToken ct) =>
-        {
-            if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
-                || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
-            {
-                return problem!;
-            }
-
-            body ??= new EnableInventoryTrackingRequest();
-            var result = await useCase
-                .ExecuteAsync(organizationId, productId, actorId, body.OpeningQuantity, body.ReorderLevel, ct)
-                .ConfigureAwait(false);
-            return await FromAccountResultAsync(organizationId, productId, result, queries, ct).ConfigureAwait(false);
-        });
-
-        group.MapPost("/{productId:guid}/disable", async (
-            HttpRequest request,
-            Guid productId,
-            DisableInventoryTracking useCase,
-            InventoryQueryService queries,
+            CreateStockCountRequest body,
+            CreateStockCount useCase,
+            StockCountQueryService queries,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -115,16 +66,66 @@ internal static class InventoryEndpoints
                 return problem!;
             }
 
-            var result = await useCase.ExecuteAsync(organizationId, productId, ct).ConfigureAwait(false);
-            return await FromAccountResultAsync(organizationId, productId, result, queries, ct).ConfigureAwait(false);
+            var result = await useCase.ExecuteAsync(organizationId, body, ct).ConfigureAwait(false);
+            return await FromStockCountResultAsync(organizationId, result, queries, ct).ConfigureAwait(false);
         });
 
-        group.MapPost("/{productId:guid}/adjustments", async (
+        group.MapGet("/stock-counts/{stockCountId:guid}", async (
             HttpRequest request,
-            Guid productId,
-            AdjustInventoryRequest body,
-            AdjustInventoryStock useCase,
-            InventoryQueryService queries,
+            Guid stockCountId,
+            StockCountQueryService queries,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            var dto = await queries.GetByIdAsync(organizationId, stockCountId, ct).ConfigureAwait(false);
+            return dto is null
+                ? PosApiResults.Problem(
+                    ApplicationErrorCodes.StockCountNotFound,
+                    "Stock count was not found.",
+                    StatusCodes.Status404NotFound)
+                : Results.Ok(dto);
+        });
+
+        group.MapPut("/stock-counts/{stockCountId:guid}", async (
+            HttpRequest request,
+            Guid stockCountId,
+            UpdateStockCountRequest body,
+            UpdateStockCountDraft draftUseCase,
+            UpdateStockCountInProgress inProgressUseCase,
+            StockCountQueryService queries,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            var existing = await queries.GetByIdAsync(organizationId, stockCountId, ct).ConfigureAwait(false);
+            if (existing is null)
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.StockCountNotFound,
+                    "Stock count was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            ApplicationResult<StockCount> result = string.Equals(existing.Status, nameof(StockCountStatus.InProgress), StringComparison.OrdinalIgnoreCase)
+                ? await inProgressUseCase.ExecuteAsync(organizationId, stockCountId, body, ct).ConfigureAwait(false)
+                : await draftUseCase.ExecuteAsync(organizationId, stockCountId, body, ct).ConfigureAwait(false);
+            return await FromStockCountResultAsync(organizationId, result, queries, ct).ConfigureAwait(false);
+        });
+
+        group.MapPost("/stock-counts/{stockCountId:guid}/start", async (
+            HttpRequest request,
+            Guid stockCountId,
+            StartStockCount useCase,
+            StockCountQueryService queries,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -134,50 +135,276 @@ internal static class InventoryEndpoints
                 return problem!;
             }
 
-            var result = await useCase
-                .ExecuteAsync(
-                    organizationId,
-                    productId,
-                    body.Direction,
-                    body.Quantity,
-                    body.Reason,
-                    actorId,
-                    body.ReorderLevel,
-                    ct)
-                .ConfigureAwait(false);
-            return await FromAccountResultAsync(organizationId, productId, result, queries, ct).ConfigureAwait(false);
+            var result = await useCase.ExecuteAsync(organizationId, stockCountId, actorId, ct).ConfigureAwait(false);
+            return await FromStockCountResultAsync(organizationId, result, queries, ct).ConfigureAwait(false);
         });
 
-        group.MapGet("/{productId:guid}/movements", async (
+        group.MapPost("/stock-counts/{stockCountId:guid}/complete", async (
             HttpRequest request,
-            Guid productId,
-            int? page,
-            int? pageSize,
-            InventoryQueryService queries,
+            Guid stockCountId,
+            CompleteStockCount useCase,
+            StockCountQueryService queries,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
-            if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
+            if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+                || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
             {
                 return problem!;
             }
 
-            var product = await queries.GetByProductIdAsync(organizationId, productId, ct).ConfigureAwait(false);
-            if (product is null)
-            {
-                return PosApiResults.Problem(
-                    ApplicationErrorCodes.InventoryProductNotFound,
-                    "Product was not found.",
-                    StatusCodes.Status404NotFound);
-            }
-
-            var result = await queries
-                .ListMovementsAsync(organizationId, productId, page, pageSize, ct)
-                .ConfigureAwait(false);
-            return Results.Ok(result);
+            var result = await useCase.ExecuteAsync(organizationId, stockCountId, actorId, ct).ConfigureAwait(false);
+            return await FromStockCountResultAsync(organizationId, result, queries, ct).ConfigureAwait(false);
         });
 
-        return app;
+        group.MapPost("/stock-counts/{stockCountId:guid}/cancel", async (
+            HttpRequest request,
+            Guid stockCountId,
+            CancelStockCount useCase,
+            StockCountQueryService queries,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+                || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase.ExecuteAsync(organizationId, stockCountId, actorId, ct).ConfigureAwait(false);
+            return await FromStockCountResultAsync(organizationId, result, queries, ct).ConfigureAwait(false);
+        });
+    }
+
+    private static async Task<IResult> ListInventory(
+        HttpRequest request,
+        string? search,
+        bool? tracked,
+        bool? lowStock,
+        string? productStatus,
+        int? page,
+        int? pageSize,
+        InventoryQueryService queries,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        var filter = new InventoryAccountFilter(search, tracked, lowStock, ProductStatus: productStatus);
+        var result = await queries.ListAsync(organizationId, filter, page, pageSize, ct).ConfigureAwait(false);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> ListLowStock(
+        HttpRequest request,
+        string? search,
+        int? page,
+        int? pageSize,
+        InventoryQueryService queries,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        var result = await queries.ListLowStockAsync(organizationId, search, page, pageSize, ct).ConfigureAwait(false);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> ListReorderSuggestions(
+        HttpRequest request,
+        string? search,
+        int? page,
+        int? pageSize,
+        InventoryQueryService queries,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        var result = await queries.ListReorderSuggestionsAsync(organizationId, search, page, pageSize, ct).ConfigureAwait(false);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> GetByProduct(
+        HttpRequest request,
+        Guid productId,
+        InventoryQueryService queries,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        var dto = await queries.GetByProductIdAsync(organizationId, productId, ct).ConfigureAwait(false);
+        return dto is null
+            ? PosApiResults.Problem(
+                ApplicationErrorCodes.InventoryProductNotFound,
+                "Product was not found.",
+                StatusCodes.Status404NotFound)
+            : Results.Ok(dto);
+    }
+
+    private static async Task<IResult> SetReorder(
+        HttpRequest request,
+        Guid productId,
+        SetInventoryReorderRequest body,
+        SetInventoryReorderConfiguration useCase,
+        InventoryQueryService queries,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+        {
+            return problem!;
+        }
+
+        var result = await useCase
+            .ExecuteAsync(
+                organizationId,
+                productId,
+                body.ReorderLevel,
+                body.ReorderQuantity,
+                body.Reason,
+                actorId,
+                ct)
+            .ConfigureAwait(false);
+        return await FromAccountResultAsync(organizationId, productId, result, queries, ct).ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> GetReconciliation(
+        HttpRequest request,
+        Guid productId,
+        InventoryReconciliationQuery query,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        var result = await query.GetAsync(organizationId, productId, ct).ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> Enable(
+        HttpRequest request,
+        Guid productId,
+        EnableInventoryTrackingRequest? body,
+        EnableInventoryTracking useCase,
+        InventoryQueryService queries,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+        {
+            return problem!;
+        }
+
+        body ??= new EnableInventoryTrackingRequest();
+        var result = await useCase
+            .ExecuteAsync(organizationId, productId, actorId, body.OpeningQuantity, body.ReorderLevel, ct)
+            .ConfigureAwait(false);
+        return await FromAccountResultAsync(organizationId, productId, result, queries, ct).ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> Disable(
+        HttpRequest request,
+        Guid productId,
+        DisableInventoryTracking useCase,
+        InventoryQueryService queries,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        var result = await useCase.ExecuteAsync(organizationId, productId, ct).ConfigureAwait(false);
+        return await FromAccountResultAsync(organizationId, productId, result, queries, ct).ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> Adjust(
+        HttpRequest request,
+        Guid productId,
+        AdjustInventoryRequest body,
+        AdjustInventoryStock useCase,
+        InventoryQueryService queries,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+        {
+            return problem!;
+        }
+
+        var result = await useCase
+            .ExecuteAsync(
+                organizationId,
+                productId,
+                body.Direction,
+                body.Quantity,
+                body.Reason,
+                actorId,
+                body.ReorderLevel,
+                ct)
+            .ConfigureAwait(false);
+        return await FromAccountResultAsync(organizationId, productId, result, queries, ct).ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> ListMovements(
+        HttpRequest request,
+        Guid productId,
+        string? movementType,
+        string? sourceType,
+        string? fromDateUtc,
+        string? toDateUtc,
+        int? page,
+        int? pageSize,
+        InventoryQueryService queries,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        if (!TryParseDate(fromDateUtc, out var fromDate, out problem)
+            || !TryParseDate(toDateUtc, out var toDate, out problem))
+        {
+            return problem!;
+        }
+
+        var product = await queries.GetByProductIdAsync(organizationId, productId, ct).ConfigureAwait(false);
+        if (product is null)
+        {
+            return PosApiResults.Problem(
+                ApplicationErrorCodes.InventoryProductNotFound,
+                "Product was not found.",
+                StatusCodes.Status404NotFound);
+        }
+
+        var filter = new StockMovementFilter(movementType, sourceType, fromDate, toDate);
+        var result = await queries
+            .ListMovementsAsync(organizationId, productId, filter, page, pageSize, ct)
+            .ConfigureAwait(false);
+        return Results.Ok(result);
     }
 
     private static async Task<IResult> FromAccountResultAsync(
@@ -202,6 +429,51 @@ internal static class InventoryEndpoints
                 "Inventory account was not found.",
                 StatusCodes.Status404NotFound)
             : Results.Ok(dto);
+    }
+
+    private static async Task<IResult> FromStockCountResultAsync(
+        Guid organizationId,
+        ApplicationResult<StockCount> result,
+        StockCountQueryService queries,
+        CancellationToken ct)
+    {
+        if (!result.IsSuccess)
+        {
+            return PosApiResults.Problem(
+                result.ErrorCode!,
+                result.ErrorMessage!,
+                PosApiResults.MapStatusCode(result.ErrorCode!));
+        }
+
+        var dto = await queries.GetByIdAsync(organizationId, result.Value!.Id.Value, ct).ConfigureAwait(false);
+        return dto is null
+            ? PosApiResults.Problem(
+                ApplicationErrorCodes.StockCountNotFound,
+                "Stock count was not found.",
+                StatusCodes.Status404NotFound)
+            : Results.Ok(dto);
+    }
+
+    private static bool TryParseDate(string? value, out DateOnly? parsed, out IResult? problem)
+    {
+        parsed = null;
+        problem = null;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return true;
+        }
+
+        if (DateOnly.TryParse(value, out var date))
+        {
+            parsed = date;
+            return true;
+        }
+
+        problem = PosApiResults.Problem(
+            ApplicationErrorCodes.DomainViolation,
+            $"Invalid date '{value}'. Use ISO date (yyyy-MM-dd).",
+            StatusCodes.Status400BadRequest);
+        return false;
     }
 
     private static bool TryAuthorize(

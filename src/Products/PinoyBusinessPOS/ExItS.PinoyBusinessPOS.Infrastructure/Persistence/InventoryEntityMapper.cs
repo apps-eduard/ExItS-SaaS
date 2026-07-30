@@ -14,6 +14,7 @@ internal static class InventoryEntityMapper
             CatalogProductId.From(record.ProductId),
             record.IsTracked,
             record.ReorderLevel,
+            record.ReorderQuantity,
             record.OnHandQuantity,
             record.CreatedAtUtc,
             record.UpdatedAtUtc);
@@ -26,6 +27,7 @@ internal static class InventoryEntityMapper
             ProductId = account.ProductId.Value,
             IsTracked = account.IsTracked,
             ReorderLevel = account.ReorderLevel,
+            ReorderQuantity = account.ReorderQuantity,
             OnHandQuantity = account.OnHandQuantity,
             CreatedAtUtc = account.CreatedAtUtc,
             UpdatedAtUtc = account.UpdatedAtUtc
@@ -35,6 +37,7 @@ internal static class InventoryEntityMapper
     {
         record.IsTracked = account.IsTracked;
         record.ReorderLevel = account.ReorderLevel;
+        record.ReorderQuantity = account.ReorderQuantity;
         record.OnHandQuantity = account.OnHandQuantity;
         record.UpdatedAtUtc = account.UpdatedAtUtc;
     }

@@ -7,6 +7,7 @@ internal sealed class InventoryAccountRecord
     public Guid ProductId { get; set; }
     public bool IsTracked { get; set; }
     public decimal? ReorderLevel { get; set; }
+    public decimal? ReorderQuantity { get; set; }
     public decimal OnHandQuantity { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }

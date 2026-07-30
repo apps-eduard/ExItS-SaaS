@@ -831,6 +831,30 @@
   <data name="Inventory_SearchPlaceholder" xml:space="preserve"><value>Search by name, SKU, or barcode</value></data>
   <data name="Inventory_InsufficientStockTitle" xml:space="preserve"><value>Insufficient stock</value></data>
   <data name="Inventory_InsufficientStockMessage" xml:space="preserve"><value>One or more tracked products do not have enough on-hand quantity for this sale.</value></data>
+  <data name="Inventory_ReorderTitle" xml:space="preserve"><value>Reorder settings</value></data>
+  <data name="Inventory_ReorderQuantity" xml:space="preserve"><value>Reorder quantity</value></data>
+  <data name="Inventory_StockStatus" xml:space="preserve"><value>Stock status</value></data>
+  <data name="Inventory_SaveReorder" xml:space="preserve"><value>Save reorder settings</value></data>
+  <data name="Inventory_OpenCounts" xml:space="preserve"><value>Stock counts</value></data>
+  <data name="Inventory_CountsTitle" xml:space="preserve"><value>Stock counts</value></data>
+  <data name="Inventory_CountsSubtitle" xml:space="preserve"><value>Physical counts with variance adjustments (online only).</value></data>
+  <data name="Inventory_CountsAdd" xml:space="preserve"><value>New count</value></data>
+  <data name="Inventory_CountsEmptyTitle" xml:space="preserve"><value>No stock counts</value></data>
+  <data name="Inventory_CountsEmptyMessage" xml:space="preserve"><value>Create a draft count to reconcile on-hand stock.</value></data>
+  <data name="Inventory_CountsNumber" xml:space="preserve"><value>Count number</value></data>
+  <data name="Inventory_CountsUpdated" xml:space="preserve"><value>Updated</value></data>
+  <data name="Inventory_CountsDraft" xml:space="preserve"><value>Draft count</value></data>
+  <data name="Inventory_CountsCreateTitle" xml:space="preserve"><value>Create stock count</value></data>
+  <data name="Inventory_CountsAddLine" xml:space="preserve"><value>Add product</value></data>
+  <data name="Inventory_CountsNotes" xml:space="preserve"><value>Notes</value></data>
+  <data name="Inventory_CountsCreate" xml:space="preserve"><value>Create draft</value></data>
+  <data name="Inventory_CountsStart" xml:space="preserve"><value>Start count</value></data>
+  <data name="Inventory_CountsComplete" xml:space="preserve"><value>Complete count</value></data>
+  <data name="Inventory_CountsCancel" xml:space="preserve"><value>Cancel count</value></data>
+  <data name="Inventory_CountsLines" xml:space="preserve"><value>Count lines</value></data>
+  <data name="Inventory_CountsCounted" xml:space="preserve"><value>Counted</value></data>
+  <data name="Inventory_CountsVariance" xml:space="preserve"><value>Variance</value></data>
+  <data name="Inventory_CountsSaveLines" xml:space="preserve"><value>Save counted quantities</value></data>
   <data name="Nav_Inventory" xml:space="preserve"><value>Inventory</value></data>
   <data name="Nav_Expenses" xml:space="preserve"><value>Expenses</value></data>
   <data name="Expenses_Title" xml:space="preserve"><value>Expenses</value></data>

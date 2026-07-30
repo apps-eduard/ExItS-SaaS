@@ -1,0 +1,130 @@
+@page "/inventory/counts/new"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosInventoryClient Inventory
+@inject IPosCatalogClient Catalog
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+<Page>
+    <PageHeader Title="@L["Inventory_CountsCreateTitle"]" Subtitle="@L["Inventory_CountsSubtitle"]" />
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_CountsCreateTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Inventory_CountsCreateTitle"]">
+        <Stack Gap="3">
+            <Select Label="@L["Catalog_Col_Name"]"
+                    Value="@_selectedProductId"
+                    ValueChanged="OnProductChanged"
+                    Options="@ProductOptions" />
+            <Button Variant="ButtonVariant.Secondary" Disabled="@(_isOffline || string.IsNullOrEmpty(_selectedProductId))" OnClick="AddLine">@L["Inventory_CountsAddLine"]</Button>
+            @foreach (var line in _lines)
+            {
+                <div>@line.Name</div>
+            }
+            <TextInput Label="@L["Inventory_CountsNotes"]" Value="@_notes" ValueChanged="v => _notes = v" />
+            <Button Variant="ButtonVariant.Primary" Disabled="@(_isOffline || _busy || _lines.Count == 0)" IsLoading="@_busy" OnClick="CreateAsync">@L["Inventory_CountsCreate"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Inventory_CountsTitle"]</Button>
+        </Stack>
+    </Section>
+</Page>
+}
+
+@code {
+    private sealed record LineEntry(Guid ProductId, string Name);
+
+    private bool _ready;
+    private bool _busy;
+    private bool _isOffline;
+    private string _selectedProductId = string.Empty;
+    private string _notes = string.Empty;
+    private List<LineEntry> _lines = [];
+    private List<PosCatalogProductDto> _products = [];
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    private IReadOnlyList<SelectOption> ProductOptions =>
+        _products.Select(p => new SelectOption(p.ProductId.ToString("D"), p.Name)).ToList();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ManageInventory))
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            return;
+        }
+
+        var products = await Catalog.ListProductsAsync(pageSize: 200);
+        if (products.IsSuccess && products.Data is not null)
+        {
+            _products = products.Data.Items.Where(p => string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+    }
+
+    private void OnProductChanged(string value) => _selectedProductId = value;
+
+    private void AddLine()
+    {
+        if (!Guid.TryParse(_selectedProductId, out var productId))
+        {
+            return;
+        }
+
+        if (_lines.Any(l => l.ProductId == productId))
+        {
+            return;
+        }
+
+        var product = _products.FirstOrDefault(p => p.ProductId == productId);
+        if (product is null)
+        {
+            return;
+        }
+
+        _lines.Add(new LineEntry(productId, product.Name));
+    }
+
+    private async Task CreateAsync()
+    {
+        _busy = true;
+        var request = new CreateStockCountRequest(
+            _lines.Select(l => new CreateStockCountLineRequest(l.ProductId)).ToList(),
+            string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim());
+        var result = await Inventory.CreateStockCountAsync(request);
+        _busy = false;
+        if (result.Status == ApiCallStatus.Success && result.Data is not null)
+        {
+            Nav.NavigateTo($"/inventory/counts/{result.Data.StockCountId:D}");
+            return;
+        }
+
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _errorTitle = described.Title;
+        _errorMessage = result.Error?.Detail ?? described.Message;
+    }
+
+    private void GoBack() => Nav.NavigateTo("/inventory/counts");
+}

@@ -1,0 +1,105 @@
+@page "/inventory/counts"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosInventoryClient Inventory
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageInventory);
+<Page>
+    <PageHeader Title="@L["Inventory_CountsTitle"]" Subtitle="@L["Inventory_CountsSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="GoNew">@L["Inventory_CountsAdd"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoInventory">@L["Inventory_Title"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
+    }
+
+    <ResponsiveDataList TItem="PosStockCountDto"
+                        Items="@_items"
+                        Columns="@Columns"
+                        CellTemplate="@CellTemplate"
+                        IsLoading="@_loading"
+                        EmptyTitle="@L["Inventory_CountsEmptyTitle"]"
+                        EmptyMessage="@L["Inventory_CountsEmptyMessage"]"
+                        AriaLabel="@L["Inventory_CountsTitle"]" />
+</Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _loading;
+    private bool _isOffline;
+    private IReadOnlyList<PosStockCountDto> _items = Array.Empty<PosStockCountDto>();
+
+    private IReadOnlyList<DataColumnDefinition> Columns =>
+    [
+        new("number", L["Inventory_CountsNumber"], Primary: true, Width: "40%"),
+        new("status", L["Catalog_Filter_Status"], Width: "30%"),
+        new("updated", L["Inventory_CountsUpdated"], Width: "30%")
+    ];
+
+    private RenderFragment<(PosStockCountDto Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
+    {
+        switch (context.Column.Key)
+        {
+            case "number":
+                builder.OpenElement(0, "a");
+                builder.AddAttribute(1, "class", "pos-link");
+                builder.AddAttribute(2, "href", $"/inventory/counts/{context.Item.StockCountId:D}");
+                builder.AddContent(3, context.Item.CountNumber ?? L["Inventory_CountsDraft"].Value);
+                builder.CloseElement();
+                break;
+            case "status":
+                builder.AddContent(0, context.Item.Status);
+                break;
+            default:
+                builder.AddContent(0, context.Item.UpdatedAtUtc.UtcDateTime.ToString("u"));
+                break;
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ViewInventory))
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (_isOffline)
+        {
+            return;
+        }
+
+        _loading = true;
+        var result = await Inventory.ListStockCountsAsync();
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _items = result.Data.Items;
+        }
+
+        _loading = false;
+    }
+
+    private void GoNew() => Nav.NavigateTo("/inventory/counts/new");
+    private void GoInventory() => Nav.NavigateTo("/inventory");
+}

@@ -16,6 +16,7 @@ public sealed class StockMovement
     public const string SaleDeductionReason = "Sale deduction";
     public const string SaleVoidRestorationReason = "Sale void restoration";
     public const string PurchaseReceiptReason = "Purchase receipt";
+    public const string StockCountVarianceReason = "Stock count variance";
 
     public StockMovementId Id { get; }
     public PosOrganizationId OrganizationId { get; }
@@ -244,6 +245,76 @@ public sealed class StockMovement
             PurchaseReceiptReason,
             StockMovementSourceType.PurchaseReceipt,
             goodsReceiptId,
+            utcNow,
+            actorId);
+    }
+
+    public static StockMovement StockCountVarianceIncrease(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid stockCountId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        StockMovementId? id = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        if (stockCountId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidStockCountId,
+                "StockCountId cannot be an empty GUID.");
+        }
+
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.StockCountVarianceIncrease,
+            absolute,
+            StockCountVarianceReason,
+            StockMovementSourceType.StockCount,
+            stockCountId,
+            utcNow,
+            actorId);
+    }
+
+    public static StockMovement StockCountVarianceDecrease(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid stockCountId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        StockMovementId? id = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        if (stockCountId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidStockCountId,
+                "StockCountId cannot be an empty GUID.");
+        }
+
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.StockCountVarianceDecrease,
+            -absolute,
+            StockCountVarianceReason,
+            StockMovementSourceType.StockCount,
+            stockCountId,
             utcNow,
             actorId);
     }

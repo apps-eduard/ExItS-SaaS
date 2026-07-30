@@ -1,0 +1,114 @@
+@page "/inventory/{ProductId:guid}/reorder"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosInventoryClient Inventory
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+<Page>
+    <PageHeader Title="@L["Inventory_ReorderTitle"]" Subtitle="@(_account?.Name ?? L["Inventory_Title"])" />
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_ReorderTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Inventory_ReorderTitle"]">
+        <Stack Gap="3">
+            <TextInput Label="@L["Inventory_ReorderLevel"]" Value="@_reorderLevelText" ValueChanged="v => _reorderLevelText = v" />
+            <TextInput Label="@L["Inventory_ReorderQuantity"]" Value="@_reorderQuantityText" ValueChanged="v => _reorderQuantityText = v" />
+            <TextInput Label="@L["Inventory_Reason"]" Value="@_reason" ValueChanged="v => _reason = v" />
+            <Button Variant="ButtonVariant.Primary"
+                    Disabled="@(_isOffline || _busy)"
+                    IsLoading="@_busy"
+                    OnClick="SaveAsync">@L["Inventory_SaveReorder"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Inventory_DetailTitle"]</Button>
+        </Stack>
+    </Section>
+</Page>
+}
+
+@code {
+    [Parameter] public Guid ProductId { get; set; }
+
+    private bool _ready;
+    private bool _busy;
+    private bool _isOffline;
+    private PosInventoryAccountDto? _account;
+    private string _reorderLevelText = string.Empty;
+    private string _reorderQuantityText = string.Empty;
+    private string _reason = string.Empty;
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ManageInventory))
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            return;
+        }
+
+        var result = await Inventory.GetAsync(ProductId);
+        if (result.Status == ApiCallStatus.Success && result.Data is not null)
+        {
+            _account = result.Data;
+            _reorderLevelText = _account.ReorderLevel?.ToString("0.###") ?? string.Empty;
+            _reorderQuantityText = _account.ReorderQuantity?.ToString("0.###") ?? string.Empty;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _busy = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        decimal? level = decimal.TryParse(_reorderLevelText, out var l) ? l : null;
+        if (string.IsNullOrWhiteSpace(_reorderLevelText))
+        {
+            level = null;
+        }
+
+        decimal? qty = decimal.TryParse(_reorderQuantityText, out var q) ? q : null;
+        if (string.IsNullOrWhiteSpace(_reorderQuantityText))
+        {
+            qty = null;
+        }
+
+        var result = await Inventory.SetReorderAsync(
+            ProductId,
+            new SetInventoryReorderRequest(level, qty, _reason));
+        _busy = false;
+        if (result.Status == ApiCallStatus.Success)
+        {
+            Nav.NavigateTo($"/inventory/{ProductId:D}");
+            return;
+        }
+
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _errorTitle = described.Title;
+        _errorMessage = result.Error?.Detail ?? described.Message;
+    }
+
+    private void GoBack() => Nav.NavigateTo($"/inventory/{ProductId:D}");
+}

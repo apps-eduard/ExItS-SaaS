@@ -33,6 +33,7 @@ else
                 else
                 {
                     <Button Variant="ButtonVariant.Secondary" OnClick="GoAdjust">@L["Inventory_Adjust"]</Button>
+                    <Button Variant="ButtonVariant.Secondary" OnClick="GoReorder">@L["Inventory_ReorderTitle"]</Button>
                     <Button Variant="ButtonVariant.Secondary" IsLoading="@_busy" OnClick="DisableAsync">@L["Inventory_Disable"]</Button>
                 }
             }
@@ -55,6 +56,8 @@ else
             <div>@L["Inventory_OnHand"]: <strong>@_account.OnHandQuantity.ToString("0.###") @_account.UnitOfMeasure</strong></div>
             <div>@(_account.IsTracked ? L["Inventory_Tracked"] : L["Inventory_NotTracked"])</div>
             <div>@L["Inventory_ReorderLevel"]: @(_account.ReorderLevel?.ToString("0.###") ?? "—")</div>
+            <div>@L["Inventory_ReorderQuantity"]: @(_account.ReorderQuantity?.ToString("0.###") ?? "—")</div>
+            <div>@L["Inventory_StockStatus"]: @_account.StockStatus</div>
             @if (_account.IsLowStock)
             {
                 <Alert Tone="AlertTone.Warning" Title="@L["Inventory_LowStockTitle"]" Message="@L["Inventory_LowStockSubtitle"]" />
@@ -167,5 +170,6 @@ else
     }
 
     private void GoAdjust() => Nav.NavigateTo($"/inventory/{ProductId:D}/adjust");
+    private void GoReorder() => Nav.NavigateTo($"/inventory/{ProductId:D}/reorder");
     private void GoBack() => Nav.NavigateTo("/inventory");
 }

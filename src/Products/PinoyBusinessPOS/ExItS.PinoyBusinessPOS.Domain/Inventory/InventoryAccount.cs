@@ -16,6 +16,7 @@ public sealed class InventoryAccount
     public CatalogProductId ProductId { get; }
     public bool IsTracked { get; private set; }
     public decimal? ReorderLevel { get; private set; }
+    public decimal? ReorderQuantity { get; private set; }
     public decimal OnHandQuantity { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
@@ -26,6 +27,7 @@ public sealed class InventoryAccount
         CatalogProductId productId,
         bool isTracked,
         decimal? reorderLevel,
+        decimal? reorderQuantity,
         decimal onHandQuantity,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc)
@@ -35,6 +37,7 @@ public sealed class InventoryAccount
         ProductId = productId;
         IsTracked = isTracked;
         ReorderLevel = reorderLevel;
+        ReorderQuantity = reorderQuantity;
         OnHandQuantity = onHandQuantity;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
@@ -56,6 +59,7 @@ public sealed class InventoryAccount
             productId,
             isTracked: false,
             reorderLevel: null,
+            reorderQuantity: null,
             onHandQuantity: 0m,
             utcNow,
             utcNow);
@@ -67,6 +71,7 @@ public sealed class InventoryAccount
         CatalogProductId productId,
         bool isTracked,
         decimal? reorderLevel,
+        decimal? reorderQuantity,
         decimal onHandQuantity,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc) =>
@@ -76,6 +81,7 @@ public sealed class InventoryAccount
             productId,
             isTracked,
             reorderLevel,
+            reorderQuantity,
             onHandQuantity,
             createdAtUtc,
             updatedAtUtc);
@@ -183,8 +189,34 @@ public sealed class InventoryAccount
         UpdatedAtUtc = utcNow;
     }
 
+    public void SetReorderConfiguration(
+        decimal? reorderLevel,
+        decimal? reorderQuantity,
+        UnitOfMeasure unitOfMeasure,
+        DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+
+        if (!IsTracked)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InventoryNotTracked,
+                "Inventory is not tracked for this product.");
+        }
+
+        ReorderLevel = NormalizeReorderLevel(reorderLevel, unitOfMeasure);
+        ReorderQuantity = NormalizeReorderQuantity(reorderQuantity, unitOfMeasure);
+        UpdatedAtUtc = utcNow;
+    }
+
+    public InventoryStockStatus StockStatus =>
+        InventoryStockStatuses.Derive(IsTracked, OnHandQuantity, ReorderLevel, ReorderQuantity);
+
     public bool IsLowStock =>
         IsTracked && ReorderLevel is not null && OnHandQuantity <= ReorderLevel.Value;
+
+    public bool IsReorderSuggested =>
+        IsTracked && InventoryStockStatuses.IsReorderSuggested(OnHandQuantity, ReorderLevel, ReorderQuantity);
 
     public static decimal? NormalizeReorderLevel(decimal? reorderLevel, UnitOfMeasure unitOfMeasure)
     {
@@ -216,6 +248,33 @@ public sealed class InventoryAccount
         }
 
         return reorderLevel.Value;
+    }
+
+    public static decimal? NormalizeReorderQuantity(decimal? reorderQuantity, UnitOfMeasure unitOfMeasure)
+    {
+        if (reorderQuantity is null)
+        {
+            return null;
+        }
+
+        if (reorderQuantity.Value <= 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InventoryReorderQuantityInvalid,
+                "Reorder quantity must be greater than zero when set.");
+        }
+
+        var maxDecimals = SaleMoney.MaxQuantityDecimals(unitOfMeasure);
+        if (!SaleMoney.HasAtMostDecimals(reorderQuantity.Value, maxDecimals))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InventoryReorderQuantityInvalid,
+                maxDecimals == 0
+                    ? $"{unitOfMeasure} reorder quantities must be whole numbers."
+                    : $"{unitOfMeasure} reorder quantities may have at most {maxDecimals} decimal places.");
+        }
+
+        return reorderQuantity.Value;
     }
 
     private static void EnsureUtc(DateTimeOffset utcNow)

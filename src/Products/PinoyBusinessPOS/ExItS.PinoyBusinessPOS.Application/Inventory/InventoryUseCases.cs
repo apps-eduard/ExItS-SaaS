@@ -75,9 +75,26 @@ public sealed class InventoryQueryService
         return await MapPageAsync(orgId, accounts, total, page, take, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<PagedResult<PosInventoryAccountDto>> ListReorderSuggestionsAsync(
+        Guid organizationId,
+        string? search,
+        int? page,
+        int? pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (skip, take) = PosPagination.Normalize(page, pageSize);
+        var orgId = PosOrganizationId.From(organizationId);
+        var (accounts, total) = await _inventory
+            .ListReorderSuggestionsAsync(orgId, search, skip, take, cancellationToken)
+            .ConfigureAwait(false);
+
+        return await MapPageAsync(orgId, accounts, total, page, take, cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<PagedResult<PosStockMovementDto>> ListMovementsAsync(
         Guid organizationId,
         Guid productId,
+        StockMovementFilter filter,
         int? page,
         int? pageSize,
         CancellationToken cancellationToken = default)
@@ -93,7 +110,7 @@ public sealed class InventoryQueryService
         }
 
         var (items, total) = await _inventory
-            .ListMovementsAsync(orgId, catalogProductId, skip, take, cancellationToken)
+            .ListMovementsAsync(orgId, catalogProductId, filter, skip, take, cancellationToken)
             .ConfigureAwait(false);
 
         return new PagedResult<PosStockMovementDto>(
@@ -147,7 +164,12 @@ public sealed class InventoryQueryService
         var isTracked = account?.IsTracked ?? false;
         var onHand = account?.OnHandQuantity ?? 0m;
         var reorder = account?.ReorderLevel;
+        var reorderQty = account?.ReorderQuantity;
         var isLow = account?.IsLowStock ?? false;
+        var isReorderSuggested = account?.IsReorderSuggested ?? false;
+        var stockStatus = account is null
+            ? InventoryStockStatuses.ToCode(InventoryStockStatus.InStock)
+            : InventoryStockStatuses.ToCode(account.StockStatus);
 
         return new PosInventoryAccountDto(
             product.Id.Value,
@@ -158,7 +180,10 @@ public sealed class InventoryQueryService
             isTracked,
             onHand,
             reorder,
+            reorderQty,
+            stockStatus,
             isLow,
+            isReorderSuggested,
             latestMovementAtUtc,
             movementCount,
             account?.CreatedAtUtc ?? product.CreatedAtUtc,

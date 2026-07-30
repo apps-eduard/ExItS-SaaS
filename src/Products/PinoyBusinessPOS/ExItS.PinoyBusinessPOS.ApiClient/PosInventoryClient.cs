@@ -88,6 +88,10 @@ public sealed class PosInventoryClient(HttpClient httpClient, IConnectivityServi
 
     public Task<ApiResult<PosStockMovementPagedResult>> ListMovementsAsync(
         Guid productId,
+        string? movementType = null,
+        string? sourceType = null,
+        string? fromDateUtc = null,
+        string? toDateUtc = null,
         int page = 1,
         int pageSize = 20,
         CancellationToken ct = default)
@@ -95,8 +99,78 @@ public sealed class PosInventoryClient(HttpClient httpClient, IConnectivityServi
         var query = new StringBuilder($"{InventoryPath}/{productId:D}/movements?");
         query.Append("page=").Append(page.ToString(CultureInfo.InvariantCulture));
         query.Append("&pageSize=").Append(pageSize.ToString(CultureInfo.InvariantCulture));
+        AppendOptional(query, "movementType", movementType);
+        AppendOptional(query, "sourceType", sourceType);
+        AppendOptional(query, "fromDateUtc", fromDateUtc);
+        AppendOptional(query, "toDateUtc", toDateUtc);
         return SendAsync<PosStockMovementPagedResult>(HttpMethod.Get, query.ToString(), null, ct);
     }
+
+    public Task<ApiResult<PosInventoryAccountDto>> SetReorderAsync(
+        Guid productId,
+        SetInventoryReorderRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<PosInventoryAccountDto>(HttpMethod.Put, $"{InventoryPath}/{productId:D}/reorder", request, ct);
+
+    public Task<ApiResult<PosInventoryAccountPagedResult>> ListReorderSuggestionsAsync(
+        string? search = null,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default)
+    {
+        var query = new StringBuilder($"{InventoryPath}/reorder-suggestions?");
+        query.Append("page=").Append(page.ToString(CultureInfo.InvariantCulture));
+        query.Append("&pageSize=").Append(pageSize.ToString(CultureInfo.InvariantCulture));
+        AppendOptional(query, "search", search);
+        return SendAsync<PosInventoryAccountPagedResult>(HttpMethod.Get, query.ToString(), null, ct);
+    }
+
+    public Task<ApiResult<PosInventoryReconciliationDto>> GetReconciliationAsync(
+        Guid productId,
+        CancellationToken ct = default) =>
+        SendAsync<PosInventoryReconciliationDto>(
+            HttpMethod.Get,
+            $"{InventoryPath}/{productId:D}/reconciliation",
+            null,
+            ct);
+
+    public Task<ApiResult<PagedResult<PosStockCountDto>>> ListStockCountsAsync(
+        string? status = null,
+        string? countNumber = null,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default)
+    {
+        var query = new StringBuilder($"{InventoryPath}/stock-counts?");
+        query.Append("page=").Append(page.ToString(CultureInfo.InvariantCulture));
+        query.Append("&pageSize=").Append(pageSize.ToString(CultureInfo.InvariantCulture));
+        AppendOptional(query, "status", status);
+        AppendOptional(query, "countNumber", countNumber);
+        return SendAsync<PagedResult<PosStockCountDto>>(HttpMethod.Get, query.ToString(), null, ct);
+    }
+
+    public Task<ApiResult<PosStockCountDto>> GetStockCountAsync(Guid stockCountId, CancellationToken ct = default) =>
+        SendAsync<PosStockCountDto>(HttpMethod.Get, $"{InventoryPath}/stock-counts/{stockCountId:D}", null, ct);
+
+    public Task<ApiResult<PosStockCountDto>> CreateStockCountAsync(
+        CreateStockCountRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<PosStockCountDto>(HttpMethod.Post, $"{InventoryPath}/stock-counts", request, ct);
+
+    public Task<ApiResult<PosStockCountDto>> UpdateStockCountAsync(
+        Guid stockCountId,
+        UpdateStockCountRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<PosStockCountDto>(HttpMethod.Put, $"{InventoryPath}/stock-counts/{stockCountId:D}", request, ct);
+
+    public Task<ApiResult<PosStockCountDto>> StartStockCountAsync(Guid stockCountId, CancellationToken ct = default) =>
+        SendAsync<PosStockCountDto>(HttpMethod.Post, $"{InventoryPath}/stock-counts/{stockCountId:D}/start", null, ct);
+
+    public Task<ApiResult<PosStockCountDto>> CompleteStockCountAsync(Guid stockCountId, CancellationToken ct = default) =>
+        SendAsync<PosStockCountDto>(HttpMethod.Post, $"{InventoryPath}/stock-counts/{stockCountId:D}/complete", null, ct);
+
+    public Task<ApiResult<PosStockCountDto>> CancelStockCountAsync(Guid stockCountId, CancellationToken ct = default) =>
+        SendAsync<PosStockCountDto>(HttpMethod.Post, $"{InventoryPath}/stock-counts/{stockCountId:D}/cancel", null, ct);
 
     private static void AppendOptional(StringBuilder query, string name, string? value)
     {
