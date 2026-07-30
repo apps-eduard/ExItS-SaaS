@@ -93,7 +93,9 @@ POS Domain/Application/Infrastructure/Api/ApiClient/Maui customers; phase-06 roa
 ## Git evidence
 
 - Feature commit: `674ad0660b0bd11bca75f2e90e329c4579ff592a`
+- Docs hash-record commit: `0b921f076235ec70d5f26388bd2e95bcfd6ba7cd`
 - Phase marker: `P6-WP01-customers`
+- Remote `main` matches local `0b921f0`
 
 ## Exact next work package
 
