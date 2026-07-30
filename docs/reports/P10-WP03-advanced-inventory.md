@@ -6,6 +6,9 @@ Phase marker: `P10-WP03-advanced-inventory`
 
 **Complete.** Reorder configuration with audit trail, derived stock states, stock counts with variance movements, enhanced movement filters, reconciliation, API/MAUI surfaces, PostgreSQL migration, and tests. **P10-WP04 not started.**
 
+Feature commit: `5c62133`  
+Docs commit: `8af7a14`
+
 ## Delivered capability
 
 | Area | Delivered |

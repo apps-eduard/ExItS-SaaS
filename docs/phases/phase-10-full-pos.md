@@ -122,7 +122,7 @@ Organization-isolated purchasing for PinoyBusinessPOS using P10-WP01 suppliers:
 
 Status: **Complete**
 
-Prior tip: `882050c` (docs authorize). Baseline: **1067 / 0 / 0**. Tests: **1073 / 0 / 0**. Part A HealthCare cleanup remains closed at `fd77f88`.
+Prior tip: `882050c` (docs authorize). Feature: `5c62133`. Docs: `8af7a14`. Baseline: **1067 / 0 / 0**. Tests: **1073 / 0 / 0**. Part A HealthCare cleanup remains closed at `fd77f88`.
 
 #### Required outcomes (approved)
 
@@ -150,8 +150,8 @@ Warehouses, branches, transfers, costing, valuation, batches, serials, expiry, p
 - [x] Applicable tests pass with exact evidence.
 - [x] Dashboard and phase page updated.
 - [x] Completion report created (`docs/reports/P10-WP03-advanced-inventory.md`).
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Focused commit created and hash recorded (`5c62133`; docs `8af7a14`).
+- [x] Working tree clean.
 - [x] Exact next WP recorded: **P10-WP04 — Cashier Shifts** (do not begin).
 
 ### P10-WP04 — Cashier Shifts
