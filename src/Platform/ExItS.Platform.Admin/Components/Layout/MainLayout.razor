@@ -4,6 +4,8 @@
 @inject IHostEnvironment Env
 @inject IStringLocalizer<AdminResources> L
 
+<a class="skip-link" href="#main-content">@L["Nav_SkipToContent"]</a>
+
 <div class="app-shell" id="app-shell">
     <input type="checkbox" id="nav-drawer-toggle" class="shell-toggle" />
     <input type="checkbox" id="nav-collapse-toggle" class="shell-toggle" />
@@ -37,7 +39,7 @@
             </div>
         </header>
 
-        <main class="app-main" id="main-content">
+        <main class="app-main" id="main-content" tabindex="-1">
             @Body
         </main>
 
@@ -45,7 +47,7 @@
             <p>@L["Footer_Text"]</p>
             @if (!string.IsNullOrWhiteSpace(ActorDisplayName))
             {
-                <p class="muted">Actor context (dev only): @ActorDisplayName — not authorization.</p>
+                <p class="muted">@string.Format(L["Footer_ActorContext"].Value, ActorDisplayName)</p>
             }
         </footer>
     </div>
@@ -53,10 +55,10 @@
     <ToastHost @rendermode="InteractiveServer" />
 </div>
 
-<div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
-    <span class="dismiss">Dismiss</span>
+<div id="blazor-error-ui" data-nosnippet role="alert">
+    @L["Error_Unhandled"]
+    <a href="." class="reload">@L["Error_Reload"]</a>
+    <span class="dismiss">@L["Error_Dismiss"]</span>
 </div>
 
 @code {

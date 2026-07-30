@@ -14,6 +14,8 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
+<a class="skip-link" href="#pos-main">@L["Nav_SkipToContent"]</a>
+
 <div class="exds-root pos-shell" data-layout="phone" @key="_cultureEpoch">
     <header class="pos-topbar">
         <div class="pos-topbar__brand">
@@ -62,7 +64,7 @@
         </div>
     }
 
-    <main class="pos-content" id="pos-main">
+    <main class="pos-content" id="pos-main" tabindex="-1">
         @Body
     </main>
 

@@ -3,42 +3,39 @@
 @rendermode InteractiveServer
 @inject IPlatformApiClient Api
 @inject NavigationManager Nav
+@inject IStringLocalizer<AdminResources> L
 
 @if (Id is null)
 {
-    <PageHeader Title="Manual SaaS payments" Breadcrumb="Platform Admin / Payments" Description="Cash, bank transfer, and manual GCash reference records only. Development-stage; unauthenticated." />
-    <section class="warning" role="note">
-        Manual SaaS payment confirmation is operator attestation only — not automatic provider verification.
-        This UI never displays card numbers, CVV, PIN, OTP, gateway secrets, or GCash credentials.
-        There is no payment gateway, webhook, QR, invoice engine, or POS/Utang payment integration here.
-    </section>
+    <PageHeader Title="@L["Payments_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Payments"]}")" Description="@L["Payments_Description"]" />
+    <section class="warning" role="note">@L["Payments_Warning"]</section>
 
-    <section class="panel">
-        <h2>Create manual SaaS payment</h2>
-        @if (!string.IsNullOrWhiteSpace(_formError) && _showCreate) { <ErrorState Title="Could not create payment" Detail="@_formError" /> }
+    <section class="panel" aria-label="@L["Payments_AriaCreate"]">
+        <h2>@L["Payments_CreateSection"]</h2>
+        @if (!string.IsNullOrWhiteSpace(_formError) && _showCreate) { <ErrorState Title="@L["Payments_CreateFailed"]" Detail="@_formError" /> }
         <div class="form-grid">
-            <label>Organization ID <input @bind="_createOrgId" placeholder="GUID" /></label>
-            <label>Product code <input @bind="_createProductCode" /></label>
-            <label>Amount <input @bind="_createAmount" /></label>
+            <label>@L["Common_Organization"] ID <input @bind="_createOrgId" placeholder="GUID" /></label>
+            <label>@L["OrgProductAccess_ProductCode"] <input @bind="_createProductCode" /></label>
+            <label>@L["Common_Amount"] <input @bind="_createAmount" /></label>
             <label>Currency <input @bind="_createCurrency" placeholder="PHP" /></label>
-            <label>Method
+            <label>@L["Common_Method"]
                 <select @bind="_createMethod">
                     <option>Cash</option>
                     <option>BankTransfer</option>
                     <option>GCash</option>
                 </select>
             </label>
-            <label>External reference <input @bind="_createReference" autocomplete="off" /></label>
-            <label>Paid at (UTC) <input @bind="_createPaidAt" placeholder="yyyy-MM-ddTHH:mm:ssZ" /></label>
+            <label>@L["Common_Reference"] <input @bind="_createReference" autocomplete="off" /></label>
+            <label>@L["Common_PaidUtc"] <input @bind="_createPaidAt" placeholder="yyyy-MM-ddTHH:mm:ssZ" /></label>
         </div>
         <div class="actions">
-            <button type="button" @onclick="CreatePaymentAsync" disabled="@_busy">Create manual payment</button>
+            <button type="button" @onclick="CreatePaymentAsync" disabled="@_busy">@L["Payments_CreateButton"]</button>
         </div>
         @if (!string.IsNullOrWhiteSpace(_toast) && Id is null) { <p class="toast" role="status">@_toast</p> }
     </section>
 
     <form class="filters" @onsubmit="LoadListAsync" @onsubmit:preventDefault>
-        <label>Status
+        <label>@L["Common_Status"]
             <select @bind="_status">
                 <option value="PendingConfirmation">PendingConfirmation</option>
                 <option value="Confirmed">Confirmed</option>
@@ -46,86 +43,84 @@
                 <option value="Voided">Voided</option>
             </select>
         </label>
-        <label>Product code <input @bind="_productCode" placeholder="optional" /></label>
-        <label>Organization id <input @bind="_organizationIdText" placeholder="optional GUID" /></label>
-        <button type="submit">Apply filters</button>
+        <label>@L["OrgProductAccess_ProductCode"] <input @bind="_productCode" placeholder="optional" /></label>
+        <label>@L["Common_Organization"] id <input @bind="_organizationIdText" placeholder="optional GUID" /></label>
+        <button type="submit">@L["Common_ApplyFilters"]</button>
     </form>
 
-    @if (_list is null) { <LoadingState Message="Loading payments…" /> }
-    else if (!_list.IsSuccess) { <ErrorState Title="@(_list.Error?.Title ?? "Error")" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" /> }
-    else if (_list.Data!.Items.Count == 0) { <EmptyState Message="No payments match the current filters." /> }
+    @if (_list is null) { <LoadingState Message="@L["Payments_Loading"]" /> }
+    else if (!_list.IsSuccess) { <ErrorState Title="@(_list.Error?.Title ?? L["Common_Error"])" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" /> }
+    else if (_list.Data!.Items.Count == 0) { <EmptyState Message="@L["Payments_Empty"]" /> }
     else
     {
         <table class="data-table responsive-table">
-            <caption class="sr-only">Manual SaaS payments</caption>
+            <caption class="sr-only">@L["Payments_Title"]</caption>
             <thead>
                 <tr>
-                    <th scope="col">Reference</th>
-                    <th scope="col">Amount</th>
-                    <th scope="col">Method</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Organization</th>
-                    <th scope="col">Paid (UTC)</th>
+                    <th scope="col">@L["Common_Reference"]</th>
+                    <th scope="col">@L["Common_Amount"]</th>
+                    <th scope="col">@L["Common_Method"]</th>
+                    <th scope="col">@L["Common_Status"]</th>
+                    <th scope="col">@L["Common_Organization"]</th>
+                    <th scope="col">@L["Common_PaidUtc"]</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var item in _list.Data.Items)
                 {
                     <tr>
-                        <td data-label="Reference"><a href="/admin/payments/@item.Id">@item.ExternalReference</a></td>
-                        <td data-label="Amount">@item.Amount @item.CurrencyCode</td>
-                        <td data-label="Method">@item.Method</td>
-                        <td data-label="Status"><StatusBadge Value="@item.Status" /></td>
-                        <td data-label="Organization"><a href="/admin/organizations/@item.OrganizationId">@item.OrganizationId</a></td>
-                        <td data-label="Paid"><UtcTimestamp Value="@item.PaidAtUtc" /></td>
+                        <td data-label="@L["Common_Reference"]"><a href="/admin/payments/@item.Id">@item.ExternalReference</a></td>
+                        <td data-label="@L["Common_Amount"]">@item.Amount @item.CurrencyCode</td>
+                        <td data-label="@L["Common_Method"]">@item.Method</td>
+                        <td data-label="@L["Common_Status"]"><StatusBadge Value="@item.Status" /></td>
+                        <td data-label="@L["Common_Organization"]"><a href="/admin/organizations/@item.OrganizationId">@item.OrganizationId</a></td>
+                        <td data-label="@L["Common_PaidUtc"]"><UtcTimestamp Value="@item.PaidAtUtc" /></td>
                     </tr>
                 }
             </tbody>
         </table>
-        <p class="muted">Showing @_list.Data.Items.Count of @_list.Data.TotalCount</p>
+        <p class="muted">@string.Format(L["Common_ShowingCount"], _list.Data.Items.Count, _list.Data.TotalCount)</p>
     }
 }
 else
 {
-    <PageHeader Title="Payment detail" Breadcrumb="Platform Admin / Payments / Detail" Description="Manual SaaS payment lifecycle. Development-stage; unauthenticated." />
-    <section class="warning" role="note">
-        Manual confirmation is not automatic provider verification. Confirmed payments may activate an eligible subscription atomically. Confirmed payments cannot be reused. No gateway, card, invoice, POS, or HealthCare payment behavior.
-    </section>
+    <PageHeader Title="@L["Payments_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Payments"]} / {L["Common_Detail"]}")" Description="@L["Payments_DetailDescription"]" />
+    <section class="warning" role="note">@L["Payments_DetailWarning"]</section>
 
-    @if (_detail is null) { <LoadingState Message="Loading payment…" /> }
-    else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? "Error")" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }
+    @if (_detail is null) { <LoadingState Message="@L["Payments_DetailLoading"]" /> }
+    else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? L["Common_Error"])" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }
     else
     {
         var p = _detail.Data!;
         @if (!string.IsNullOrWhiteSpace(_toast)) { <p class="toast" role="status">@_toast</p> }
-        @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="Action failed" Detail="@_formError" /> }
+        @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="@L["Common_ActionFailed"]" Detail="@_formError" /> }
 
         <dl>
-            <dt>External reference</dt><dd>@p.ExternalReference</dd>
-            <dt>Amount</dt><dd>@p.Amount @p.CurrencyCode</dd>
-            <dt>Method</dt><dd>@p.Method</dd>
-            <dt>Status</dt><dd><StatusBadge Value="@p.Status" /></dd>
-            <dt>Organization</dt><dd><a href="/admin/organizations/@p.OrganizationId">@p.OrganizationId</a></dd>
-            <dt>Product</dt><dd>@p.ProductCode</dd>
+            <dt>@L["Common_Reference"]</dt><dd>@p.ExternalReference</dd>
+            <dt>@L["Common_Amount"]</dt><dd>@p.Amount @p.CurrencyCode</dd>
+            <dt>@L["Common_Method"]</dt><dd>@p.Method</dd>
+            <dt>@L["Common_Status"]</dt><dd><StatusBadge Value="@p.Status" /></dd>
+            <dt>@L["Common_Organization"]</dt><dd><a href="/admin/organizations/@p.OrganizationId">@p.OrganizationId</a></dd>
+            <dt>@L["Common_Product"]</dt><dd>@p.ProductCode</dd>
             <dt>Linked subscription</dt>
             <dd>
                 @if (p.SubscriptionId is Guid sid) { <a href="/admin/subscriptions/@sid">@sid</a> }
                 else { <span>—</span> }
             </dd>
-            <dt>Paid at (UTC)</dt><dd><UtcTimestamp Value="@p.PaidAtUtc" /></dd>
+            <dt>@L["Common_PaidUtc"]</dt><dd><UtcTimestamp Value="@p.PaidAtUtc" /></dd>
             <dt>Confirmed at (UTC)</dt><dd><UtcTimestamp Value="@p.ConfirmedAtUtc" /></dd>
             <dt>Confirmed by</dt><dd>@(p.ConfirmedBy ?? "—")</dd>
             <dt>Rejected at (UTC)</dt><dd><UtcTimestamp Value="@p.RejectedAtUtc" /></dd>
             <dt>Rejected by</dt><dd>@(p.RejectedBy ?? "—")</dd>
-            <dt>Rejection reason</dt><dd>@(p.RejectionReason ?? "—")</dd>
+            <dt>@L["Common_Reason"]</dt><dd>@(p.RejectionReason ?? "—")</dd>
             <dt>Voided at (UTC)</dt><dd><UtcTimestamp Value="@p.VoidedAtUtc" /></dd>
             <dt>Voided by</dt><dd>@(p.VoidedBy ?? "—")</dd>
             <dt>Void reason</dt><dd>@(p.VoidReason ?? "—")</dd>
-            <dt>Version</dt><dd>@p.Version</dd>
+            <dt>@L["Common_Version"]</dt><dd>@p.Version</dd>
         </dl>
 
-        <section class="panel">
-            <h2>Payment actions</h2>
+        <section class="panel" aria-label="@L["Payments_PaymentActions"]">
+            <h2>@L["Payments_PaymentActions"]</h2>
             @if (p.Status == "PendingConfirmation")
             {
                 <div class="form-grid">

@@ -3,26 +3,27 @@
 @rendermode InteractiveServer
 @inject IPlatformApiClient Api
 @inject NavigationManager Nav
+@inject IStringLocalizer<AdminResources> L
 
 @if (Id is null)
 {
-    <PageHeader Title="Subscriptions" Breadcrumb="Platform Admin / Subscriptions" Description="Development-stage subscription administration. Lifecycle mutations call Platform APIs; server-side authorization is still required before production." />
-    <div class="warning" role="note">Subscription changes affect commercial eligibility only. They do not assign product-local roles or deliver entitlements to HealthCare or POS.</div>
+    <PageHeader Title="@L["Subscriptions_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Subscriptions"]}")" Description="@L["Subscriptions_Description"]" />
+    <div class="warning" role="note">@L["Subscriptions_Warning"]</div>
 
-    <section class="panel">
-        <h2>Start organization trial</h2>
-        <p class="muted">Trial duration comes from the selected trial definition. Repeat-trial policy is provisional — review before starting another trial for the same organization and product.</p>
-        @if (!string.IsNullOrWhiteSpace(_formError) && _showStartTrial) { <ErrorState Title="Could not start trial" Detail="@_formError" /> }
+    <section class="panel" aria-label="@L["Subscriptions_AriaStartTrial"]">
+        <h2>@L["Subscriptions_StartTrial"]</h2>
+        <p class="muted">@L["Subscriptions_StartTrialHint"]</p>
+        @if (!string.IsNullOrWhiteSpace(_formError) && _showStartTrial) { <ErrorState Title="@L["Subscriptions_StartTrialFailed"]" Detail="@_formError" /> }
         <div class="form-grid">
-            <label>Organization ID <input @bind="_trialOrgId" placeholder="GUID" /></label>
-            <label>Product code <input @bind="_trialProductCode" placeholder="e.g. pinoy-business-pos" /></label>
-            <label>Plan ID <input @bind="_trialPlanId" placeholder="GUID" /></label>
+            <label>@L["Common_Organization"] ID <input @bind="_trialOrgId" placeholder="GUID" /></label>
+            <label>@L["OrgProductAccess_ProductCode"] <input @bind="_trialProductCode" placeholder="e.g. pinoy-business-pos" /></label>
+            <label>@L["Common_Plan"] ID <input @bind="_trialPlanId" placeholder="GUID" /></label>
             <label>Plan version ID <input @bind="_trialPlanVersionId" placeholder="GUID" /></label>
             <label>Trial definition ID <input @bind="_trialDefinitionId" placeholder="GUID" /></label>
         </div>
         <div class="actions">
-            <button type="button" class="secondary" @onclick="LoadTrialCatalogAsync" disabled="@_busy">Load catalog for product</button>
-            <button type="button" @onclick="StartTrialAsync" disabled="@_busy">Start trial</button>
+            <button type="button" class="secondary" @onclick="LoadTrialCatalogAsync" disabled="@_busy">@L["Subscriptions_LoadCatalog"]</button>
+            <button type="button" @onclick="StartTrialAsync" disabled="@_busy">@L["Subscriptions_StartTrialButton"]</button>
         </div>
         @if (_overview is { IsSuccess: true })
         {
@@ -41,7 +42,7 @@
     </section>
 
     <form class="filters" @onsubmit="LoadListAsync" @onsubmit:preventDefault>
-        <label>Status
+        <label>@L["Common_Status"]
             <select @bind="_status">
                 <option value="Active">Active</option>
                 <option value="Trialing">Trialing</option>
@@ -52,64 +53,64 @@
                 <option value="Expired">Expired</option>
             </select>
         </label>
-        <label>Product code <input @bind="_productCode" placeholder="optional" /></label>
-        <button type="submit">Apply filters</button>
+        <label>@L["OrgProductAccess_ProductCode"] <input @bind="_productCode" placeholder="optional" /></label>
+        <button type="submit">@L["Common_ApplyFilters"]</button>
     </form>
 
-    @if (_list is null) { <LoadingState Message="Loading subscriptions…" /> }
-    else if (!_list.IsSuccess) { <ErrorState Title="@(_list.Error?.Title ?? "Error")" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" /> }
-    else if (_list.Data!.Items.Count == 0) { <EmptyState Message="No subscriptions match the current filters." /> }
+    @if (_list is null) { <LoadingState Message="@L["Subscriptions_Loading"]" /> }
+    else if (!_list.IsSuccess) { <ErrorState Title="@(_list.Error?.Title ?? L["Common_Error"])" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" /> }
+    else if (_list.Data!.Items.Count == 0) { <EmptyState Message="@L["Subscriptions_Empty"]" /> }
     else
     {
         <table class="data-table responsive-table">
-            <caption class="sr-only">Subscriptions</caption>
+            <caption class="sr-only">@L["Subscriptions_Title"]</caption>
             <thead>
                 <tr>
-                    <th scope="col">Product</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Organization</th>
-                    <th scope="col">Trial end (UTC)</th>
-                    <th scope="col">Updated (UTC)</th>
+                    <th scope="col">@L["Common_Product"]</th>
+                    <th scope="col">@L["Common_Status"]</th>
+                    <th scope="col">@L["Common_Organization"]</th>
+                    <th scope="col">@L["Subscriptions_Column_TrialEndUtc"]</th>
+                    <th scope="col">@L["Common_UpdatedUtc"]</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var item in _list.Data.Items)
                 {
                     <tr>
-                        <td data-label="Product"><a href="/admin/subscriptions/@item.Id">@item.ProductCode</a></td>
-                        <td data-label="Status"><StatusBadge Value="@item.Status" /></td>
-                        <td data-label="Organization"><a href="/admin/organizations/@item.OrganizationId">@item.OrganizationId</a></td>
-                        <td data-label="Trial end"><UtcTimestamp Value="@item.TrialEndUtc" /></td>
-                        <td data-label="Updated"><UtcTimestamp Value="@item.UpdatedAtUtc" /></td>
+                        <td data-label="@L["Common_Product"]"><a href="/admin/subscriptions/@item.Id">@item.ProductCode</a></td>
+                        <td data-label="@L["Common_Status"]"><StatusBadge Value="@item.Status" /></td>
+                        <td data-label="@L["Common_Organization"]"><a href="/admin/organizations/@item.OrganizationId">@item.OrganizationId</a></td>
+                        <td data-label="@L["Subscriptions_Column_TrialEndUtc"]"><UtcTimestamp Value="@item.TrialEndUtc" /></td>
+                        <td data-label="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@item.UpdatedAtUtc" /></td>
                     </tr>
                 }
             </tbody>
         </table>
-        <p class="muted">Showing @_list.Data.Items.Count of @_list.Data.TotalCount</p>
+        <p class="muted">@string.Format(L["Common_ShowingCount"], _list.Data.Items.Count, _list.Data.TotalCount)</p>
     }
 }
 else
 {
-    <PageHeader Title="Subscription detail" Breadcrumb="Platform Admin / Subscriptions / Detail" Description="Commercial lifecycle administration. Development-stage; unauthenticated." />
-    <div class="warning" role="note">Cancelled and Expired are terminal. Subscription eligibility is not product provisioning and does not assign product-local roles.</div>
+    <PageHeader Title="@L["Subscriptions_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Subscriptions"]} / {L["Common_Detail"]}")" Description="@L["Subscriptions_DetailDescription"]" />
+    <div class="warning" role="note">@L["Subscriptions_DetailWarning"]</div>
 
-    @if (_detail is null) { <LoadingState Message="Loading subscription…" /> }
-    else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? "Error")" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }
+    @if (_detail is null) { <LoadingState Message="@L["Subscriptions_DetailLoading"]" /> }
+    else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? L["Common_Error"])" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }
     else
     {
         var s = _detail.Data!;
         @if (!string.IsNullOrWhiteSpace(_toast)) { <p class="toast" role="status">@_toast</p> }
-        @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="Action failed" Detail="@_formError" /> }
+        @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="@L["Common_ActionFailed"]" Detail="@_formError" /> }
 
         <dl>
-            <dt>Status</dt><dd><StatusBadge Value="@s.Status" /></dd>
-            <dt>Organization</dt><dd><a href="/admin/organizations/@s.OrganizationId">@s.OrganizationId</a></dd>
-            <dt>Product</dt><dd>@s.ProductCode</dd>
-            <dt>Plan id</dt><dd>@s.PlanId</dd>
+            <dt>@L["Common_Status"]</dt><dd><StatusBadge Value="@s.Status" /></dd>
+            <dt>@L["Common_Organization"]</dt><dd><a href="/admin/organizations/@s.OrganizationId">@s.OrganizationId</a></dd>
+            <dt>@L["Common_Product"]</dt><dd>@s.ProductCode</dd>
+            <dt>@L["Common_Plan"] id</dt><dd>@s.PlanId</dd>
             <dt>Plan version id</dt><dd>@s.PlanVersionId</dd>
             <dt>Trial definition</dt><dd>@(s.TrialDefinitionId?.ToString() ?? "—")</dd>
             <dt>Trial start (UTC)</dt><dd><UtcTimestamp Value="@s.TrialStartUtc" /></dd>
-            <dt>Trial end (UTC)</dt><dd><UtcTimestamp Value="@s.TrialEndUtc" /></dd>
+            <dt>@L["Subscriptions_Column_TrialEndUtc"]</dt><dd><UtcTimestamp Value="@s.TrialEndUtc" /></dd>
             <dt>Trial remaining</dt><dd>@TrialRemaining(s)</dd>
             <dt>Paid period start (UTC)</dt><dd><UtcTimestamp Value="@s.PaidPeriodStartUtc" /></dd>
             <dt>Paid period end (UTC)</dt><dd><UtcTimestamp Value="@s.PaidPeriodEndUtc" /></dd>
@@ -118,20 +119,20 @@ else
             <dt>Suspended at (UTC)</dt><dd><UtcTimestamp Value="@s.SuspendedAtUtc" /></dd>
             <dt>Cancelled at (UTC)</dt><dd><UtcTimestamp Value="@s.CancelledAtUtc" /></dd>
             <dt>Expired at (UTC)</dt><dd><UtcTimestamp Value="@s.ExpiredAtUtc" /></dd>
-            <dt>Version</dt><dd>@s.Version</dd>
-            <dt>Related</dt>
+            <dt>@L["Common_Version"]</dt><dd>@s.Version</dd>
+            <dt>@L["Common_Related"]</dt>
             <dd>
-                <a href="/admin/payments?organizationId=@s.OrganizationId">Payments</a>
+                <a href="/admin/payments?organizationId=@s.OrganizationId">@L["Common_Payments"]</a>
                 ·
-                <a href="/admin/entitlements/history/@s.OrganizationId/@s.ProductCode">Entitlement history</a>
+                <a href="/admin/entitlements/history/@s.OrganizationId/@s.ProductCode">@L["Common_History"]</a>
                 ·
-                <a href="/admin/organizations/@s.OrganizationId/product-access">Product access</a>
+                <a href="/admin/organizations/@s.OrganizationId/product-access">@L["Common_ProductAccess"]</a>
             </dd>
         </dl>
 
-        <section class="panel">
-            <h2>Lifecycle actions</h2>
-            <p class="muted">Only actions valid for the current status are shown. Hidden or disabled controls are not security.</p>
+        <section class="panel" aria-label="@L["Subscriptions_LifecycleActions"]">
+            <h2>@L["Subscriptions_LifecycleActions"]</h2>
+            <p class="muted">@L["Subscriptions_LifecycleHint"]</p>
             <div class="form-grid">
                 <label>Period start (UTC) <input @bind="_periodStartText" placeholder="yyyy-MM-ddTHH:mm:ssZ" /></label>
                 <label>Period end (UTC) <input @bind="_periodEndText" placeholder="yyyy-MM-ddTHH:mm:ssZ" /></label>

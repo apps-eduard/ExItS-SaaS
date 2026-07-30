@@ -3,40 +3,39 @@
 @page "/admin/entitlements/history/{OrganizationId:guid}/{ProductCode}"
 @rendermode InteractiveServer
 @inject IPlatformApiClient Api
+@inject IStringLocalizer<AdminResources> L
 
 @if (Id is not null)
 {
-    <PageHeader Title="Entitlement snapshot" Breadcrumb="Platform Admin / Entitlements / Detail" Description="Platform-authoritative snapshot state. Not proof of delivery to a product." />
-    <section class="warning" role="note">
-        This snapshot is authoritative Platform state only. It is not evidence that HealthCare or POS received or applied entitlements. Provisional refresh policy remains open where applicable.
-    </section>
-    @if (_detail is null) { <LoadingState Message="Loading snapshot…" /> }
-    else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? "Error")" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }
+    <PageHeader Title="@L["Entitlements_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Entitlements"]} / {L["Common_Detail"]}")" Description="@L["Entitlements_DetailDescription"]" />
+    <section class="warning" role="note">@L["Entitlements_DetailWarning"]</section>
+    @if (_detail is null) { <LoadingState Message="@L["Entitlements_DetailLoading"]" /> }
+    else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? L["Common_Error"])" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }
     else
     {
         var s = _detail.Data!;
         <dl>
-            <dt>Organization</dt><dd><a href="/admin/organizations/@s.OrganizationId">@s.OrganizationId</a></dd>
-            <dt>Product</dt><dd>@s.ProductCode</dd>
-            <dt>Subscription</dt><dd><a href="/admin/subscriptions/@s.SubscriptionId">@s.SubscriptionId</a></dd>
-            <dt>Plan</dt><dd>@s.PlanCode v@s.PlanVersionNumber</dd>
-            <dt>Snapshot version</dt><dd>@s.SnapshotVersion</dd>
-            <dt>Schema version</dt><dd>@s.SchemaVersion</dd>
-            <dt>Subscription status</dt><dd><StatusBadge Value="@s.SubscriptionStatus" /></dd>
-            <dt>In grace period</dt><dd>@s.InGracePeriod</dd>
-            <dt>Generated (UTC)</dt><dd><UtcTimestamp Value="@s.GeneratedAtUtc" /></dd>
-            <dt>Effective (UTC)</dt><dd><UtcTimestamp Value="@s.EffectiveAtUtc" /></dd>
-            <dt>Refresh by (UTC)</dt><dd><UtcTimestamp Value="@s.RefreshByUtc" /></dd>
-            <dt>Expires (UTC)</dt><dd><UtcTimestamp Value="@s.ExpiresAtUtc" /></dd>
-            <dt>History</dt><dd><a href="/admin/entitlements/history/@s.OrganizationId/@s.ProductCode">View history</a></dd>
+            <dt>@L["Common_Organization"]</dt><dd><a href="/admin/organizations/@s.OrganizationId">@s.OrganizationId</a></dd>
+            <dt>@L["Common_Product"]</dt><dd>@s.ProductCode</dd>
+            <dt>@L["Common_Subscription"]</dt><dd><a href="/admin/subscriptions/@s.SubscriptionId">@s.SubscriptionId</a></dd>
+            <dt>@L["Common_Plan"]</dt><dd>@s.PlanCode v@s.PlanVersionNumber</dd>
+            <dt>@L["Entitlements_SnapshotVersion"]</dt><dd>@s.SnapshotVersion</dd>
+            <dt>@L["Entitlements_SchemaVersion"]</dt><dd>@s.SchemaVersion</dd>
+            <dt>@L["Entitlements_SubscriptionStatus"]</dt><dd><StatusBadge Value="@s.SubscriptionStatus" /></dd>
+            <dt>@L["Entitlements_InGracePeriod"]</dt><dd>@s.InGracePeriod</dd>
+            <dt>@L["Common_GeneratedUtc"]</dt><dd><UtcTimestamp Value="@s.GeneratedAtUtc" /></dd>
+            <dt>@L["Common_EffectiveUtc"]</dt><dd><UtcTimestamp Value="@s.EffectiveAtUtc" /></dd>
+            <dt>@L["Entitlements_RefreshByUtc"]</dt><dd><UtcTimestamp Value="@s.RefreshByUtc" /></dd>
+            <dt>@L["Common_ExpiresUtc"]</dt><dd><UtcTimestamp Value="@s.ExpiresAtUtc" /></dd>
+            <dt>@L["Common_History"]</dt><dd><a href="/admin/entitlements/history/@s.OrganizationId/@s.ProductCode">@L["Common_ViewHistory"]</a></dd>
         </dl>
 
-        <h2>Feature grants</h2>
-        @if (s.Grants.Count == 0) { <EmptyState Message="No grants on this snapshot." /> }
+        <h2>@L["Entitlements_FeatureGrants"]</h2>
+        @if (s.Grants.Count == 0) { <EmptyState Message="@L["Entitlements_NoGrants"]" /> }
         else
         {
             <table>
-                <thead><tr><th>Feature</th><th>Enabled</th><th>Limit</th><th>Source</th><th>Effective (UTC)</th><th>Expires (UTC)</th></tr></thead>
+                <thead><tr><th>@L["Common_Feature"]</th><th>@L["Common_Enabled"]</th><th>@L["Common_Limit"]</th><th>@L["Common_Source"]</th><th>@L["Common_EffectiveUtc"]</th><th>@L["Common_ExpiresUtc"]</th></tr></thead>
                 <tbody>
                 @foreach (var g in s.Grants)
                 {
@@ -53,14 +52,14 @@
             </table>
         }
 
-        <h2>Feature override history</h2>
-        @if (_overrides is null) { <LoadingState Message="Loading feature overrides…" /> }
-        else if (!_overrides.IsSuccess) { <ErrorState Title="@(_overrides.Error?.Title ?? "Overrides unavailable")" Detail="@_overrides.Error?.Detail" /> }
-        else if (_overrides.Data!.Items.Count == 0) { <EmptyState Message="No feature overrides for this organization/product." /> }
+        <h2>@L["Entitlements_FeatureOverrideHistory"]</h2>
+        @if (_overrides is null) { <LoadingState Message="@L["Entitlements_OverridesLoading"]" /> }
+        else if (!_overrides.IsSuccess) { <ErrorState Title="@(_overrides.Error?.Title ?? L["Entitlements_OverridesUnavailable"])" Detail="@_overrides.Error?.Detail" /> }
+        else if (_overrides.Data!.Items.Count == 0) { <EmptyState Message="@L["Entitlements_NoOverrides"]" /> }
         else
         {
             <table>
-                <thead><tr><th>Feature</th><th>Enabled</th><th>Limit</th><th>Status</th><th>Reason</th><th>Effective from (UTC)</th></tr></thead>
+                <thead><tr><th>@L["Common_Feature"]</th><th>@L["Common_Enabled"]</th><th>@L["Common_Limit"]</th><th>@L["Common_Status"]</th><th>@L["Common_Reason"]</th><th>@L["Entitlements_Column_EffectiveFromUtc"]</th></tr></thead>
                 <tbody>
                 @foreach (var o in _overrides.Data.Items)
                 {
@@ -80,14 +79,14 @@
 }
 else if (OrganizationId is not null && ProductCode is not null)
 {
-    <PageHeader Title="Entitlement history" Breadcrumb="Platform Admin / Entitlements / History" Description="Immutable snapshot versions for an organization/product pair." />
-    @if (_history is null) { <LoadingState Message="Loading history…" /> }
-    else if (!_history.IsSuccess) { <ErrorState Title="@(_history.Error?.Title ?? "Error")" Detail="@_history.Error?.Detail" CorrelationId="@_history.Error?.CorrelationId" Unavailable="@(_history.Status == ApiCallStatus.Unavailable)" /> }
-    else if (_history.Data!.Items.Count == 0) { <EmptyState Message="No snapshots in history." /> }
+    <PageHeader Title="@L["Entitlements_HistoryTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Entitlements"]} / {L["Common_History"]}")" Description="@L["Entitlements_HistoryDescription"]" />
+    @if (_history is null) { <LoadingState Message="@L["Entitlements_HistoryLoading"]" /> }
+    else if (!_history.IsSuccess) { <ErrorState Title="@(_history.Error?.Title ?? L["Common_Error"])" Detail="@_history.Error?.Detail" CorrelationId="@_history.Error?.CorrelationId" Unavailable="@(_history.Status == ApiCallStatus.Unavailable)" /> }
+    else if (_history.Data!.Items.Count == 0) { <EmptyState Message="@L["Entitlements_HistoryEmpty"]" /> }
     else
     {
         <table>
-            <thead><tr><th>Version</th><th>Schema</th><th>Status</th><th>Generated (UTC)</th></tr></thead>
+            <thead><tr><th>@L["Common_Version"]</th><th>@L["Entitlements_SchemaVersion"]</th><th>@L["Common_Status"]</th><th>@L["Common_GeneratedUtc"]</th></tr></thead>
             <tbody>
             @foreach (var x in _history.Data.Items)
             {
@@ -104,24 +103,22 @@ else if (OrganizationId is not null && ProductCode is not null)
 }
 else
 {
-    <PageHeader Title="Latest entitlements" Breadcrumb="Platform Admin / Entitlements" Description="Latest snapshot per organization/product. Snapshot ≠ product delivery." />
-    <section class="warning" role="note">
-        Listed snapshots are Platform state only and do not prove product-local delivery.
-    </section>
-    @if (_latest is null) { <LoadingState Message="Loading latest entitlements…" /> }
-    else if (!_latest.IsSuccess) { <ErrorState Title="@(_latest.Error?.Title ?? "Error")" Detail="@_latest.Error?.Detail" CorrelationId="@_latest.Error?.CorrelationId" Unavailable="@(_latest.Status == ApiCallStatus.Unavailable)" /> }
-    else if (_latest.Data!.Items.Count == 0) { <EmptyState Message="No entitlement snapshots exist yet." /> }
+    <PageHeader Title="@L["Entitlements_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Entitlements"]}")" Description="@L["Entitlements_Description"]" />
+    <section class="warning" role="note">@L["Entitlements_Warning"]</section>
+    @if (_latest is null) { <LoadingState Message="@L["Entitlements_Loading"]" /> }
+    else if (!_latest.IsSuccess) { <ErrorState Title="@(_latest.Error?.Title ?? L["Common_Error"])" Detail="@_latest.Error?.Detail" CorrelationId="@_latest.Error?.CorrelationId" Unavailable="@(_latest.Status == ApiCallStatus.Unavailable)" /> }
+    else if (_latest.Data!.Items.Count == 0) { <EmptyState Message="@L["Entitlements_Empty"]" /> }
     else
     {
         <table>
             <thead>
                 <tr>
-                    <th scope="col">Product</th>
-                    <th scope="col">Organization</th>
-                    <th scope="col">Version</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Generated (UTC)</th>
-                    <th scope="col">History</th>
+                    <th scope="col">@L["Common_Product"]</th>
+                    <th scope="col">@L["Common_Organization"]</th>
+                    <th scope="col">@L["Common_Version"]</th>
+                    <th scope="col">@L["Common_Status"]</th>
+                    <th scope="col">@L["Common_GeneratedUtc"]</th>
+                    <th scope="col">@L["Common_History"]</th>
                 </tr>
             </thead>
             <tbody>
@@ -133,12 +130,12 @@ else
                         <td><a href="/admin/entitlements/@x.Id">@x.SnapshotVersion</a></td>
                         <td><StatusBadge Value="@x.SubscriptionStatus" /></td>
                         <td><UtcTimestamp Value="@x.GeneratedAtUtc" /></td>
-                        <td><a href="/admin/entitlements/history/@x.OrganizationId/@x.ProductCode">History</a></td>
+                        <td><a href="/admin/entitlements/history/@x.OrganizationId/@x.ProductCode">@L["Common_History"]</a></td>
                     </tr>
                 }
             </tbody>
         </table>
-        <p class="muted">Showing @_latest.Data.Items.Count of @_latest.Data.TotalCount</p>
+        <p class="muted">@string.Format(L["Common_ShowingCount"], _latest.Data.Items.Count, _latest.Data.TotalCount)</p>
     }
 }
 

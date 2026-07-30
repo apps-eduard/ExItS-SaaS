@@ -2,7 +2,9 @@
 @using System.Globalization
 @inject IStringLocalizer<DesignSystemResources> L
 
-<span class="@CssClass" title="@Title">
+<span class="@CssClass"
+      title="@Title"
+      aria-label="@AccessibleLabel">
     @DisplayText
 </span>
 
@@ -31,6 +33,8 @@
             return $"{CurrencyCode} {amount}";
         }
     }
+
+    private string AccessibleLabel => DisplayText;
 
     private string? Title => Unavailable || Amount is null ? L["Money_Unavailable"].Value : null;
 }

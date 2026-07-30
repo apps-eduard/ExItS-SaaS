@@ -134,4 +134,289 @@
 
   <data name="Footer_Text" xml:space="preserve"><value>ExItS Platform Admin — portfolio, subscriptions, payments, trials, authorization, and audit (P4-WP04). Development-stage.</value></data>
   <data name="Footer_ActorContext" xml:space="preserve"><value>Actor context (dev only): {0} — not authorization.</value></data>
+
+  <data name="Aria_AdminNav" xml:space="preserve"><value>Platform Admin navigation</value></data>
+  <data name="Common_ActionFailed" xml:space="preserve"><value>Action failed</value></data>
+  <data name="Common_Error" xml:space="preserve"><value>Error</value></data>
+  <data name="Common_Detail" xml:space="preserve"><value>Detail</value></data>
+  <data name="Common_Manage" xml:space="preserve"><value>Manage</value></data>
+  <data name="Common_History" xml:space="preserve"><value>History</value></data>
+  <data name="Common_ShowingCount" xml:space="preserve"><value>Showing {0} of {1}</value></data>
+  <data name="Common_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Common_Organization" xml:space="preserve"><value>Organization</value></data>
+  <data name="Common_Product" xml:space="preserve"><value>Product</value></data>
+  <data name="Common_User" xml:space="preserve"><value>User</value></data>
+  <data name="Common_Unavailable" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="Common_ViewHistory" xml:space="preserve"><value>View history</value></data>
+  <data name="Common_Reason" xml:space="preserve"><value>Reason</value></data>
+  <data name="Common_Summary" xml:space="preserve"><value>Summary</value></data>
+  <data name="Common_CorrelationId" xml:space="preserve"><value>Correlation ID</value></data>
+  <data name="Common_Subscription" xml:space="preserve"><value>Subscription</value></data>
+  <data name="Common_Plan" xml:space="preserve"><value>Plan</value></data>
+  <data name="Common_Amount" xml:space="preserve"><value>Amount</value></data>
+  <data name="Common_Method" xml:space="preserve"><value>Method</value></data>
+  <data name="Common_Reference" xml:space="preserve"><value>Reference</value></data>
+  <data name="Common_Actions" xml:space="preserve"><value>Actions</value></data>
+  <data name="Common_Role" xml:space="preserve"><value>Role</value></data>
+  <data name="Common_Code" xml:space="preserve"><value>Code</value></data>
+  <data name="Common_DisplayName" xml:space="preserve"><value>Display name</value></data>
+  <data name="Common_UpdatedUtc" xml:space="preserve"><value>Updated (UTC)</value></data>
+  <data name="Common_CreatedUtc" xml:space="preserve"><value>Created (UTC)</value></data>
+  <data name="Common_GeneratedUtc" xml:space="preserve"><value>Generated (UTC)</value></data>
+  <data name="Common_GrantedUtc" xml:space="preserve"><value>Granted (UTC)</value></data>
+  <data name="Common_RevokedUtc" xml:space="preserve"><value>Revoked (UTC)</value></data>
+  <data name="Common_PaidUtc" xml:space="preserve"><value>Paid (UTC)</value></data>
+  <data name="Common_EffectiveUtc" xml:space="preserve"><value>Effective (UTC)</value></data>
+  <data name="Common_ExpiresUtc" xml:space="preserve"><value>Expires (UTC)</value></data>
+  <data name="Common_Username" xml:space="preserve"><value>Username</value></data>
+  <data name="Common_Email" xml:space="preserve"><value>Email</value></data>
+  <data name="Common_Slug" xml:space="preserve"><value>Slug</value></data>
+  <data name="Common_Version" xml:space="preserve"><value>Version</value></data>
+  <data name="Common_Feature" xml:space="preserve"><value>Feature</value></data>
+  <data name="Common_Enabled" xml:space="preserve"><value>Enabled</value></data>
+  <data name="Common_Limit" xml:space="preserve"><value>Limit</value></data>
+  <data name="Common_Source" xml:space="preserve"><value>Source</value></data>
+  <data name="Common_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Common_Type" xml:space="preserve"><value>Type</value></data>
+  <data name="Common_Open" xml:space="preserve"><value>Open</value></data>
+  <data name="Common_Evaluate" xml:space="preserve"><value>Evaluate</value></data>
+  <data name="Common_Suspend" xml:space="preserve"><value>Suspend</value></data>
+  <data name="Common_Reactivate" xml:space="preserve"><value>Reactivate</value></data>
+  <data name="Common_Revoke" xml:space="preserve"><value>Revoke</value></data>
+  <data name="Common_ApplyFilters" xml:space="preserve"><value>Apply filters</value></data>
+  <data name="Common_HideCreate" xml:space="preserve"><value>Hide create</value></data>
+  <data name="Common_CreateUser" xml:space="preserve"><value>Create user</value></data>
+  <data name="Common_Membership" xml:space="preserve"><value>Membership</value></data>
+  <data name="Common_Assignment" xml:space="preserve"><value>Assignment</value></data>
+  <data name="Common_Snapshot" xml:space="preserve"><value>Snapshot</value></data>
+  <data name="Common_EvaluatedUtc" xml:space="preserve"><value>Evaluated (UTC)</value></data>
+  <data name="Common_Related" xml:space="preserve"><value>Related</value></data>
+  <data name="Common_Payments" xml:space="preserve"><value>Payments</value></data>
+  <data name="Common_ProductAccess" xml:space="preserve"><value>Product access</value></data>
+  <data name="Common_Members" xml:space="preserve"><value>Members</value></data>
+  <data name="Common_CommercialSummary" xml:space="preserve"><value>commercial summary</value></data>
+  <data name="Common_Grants" xml:space="preserve"><value>Grants</value></data>
+  <data name="Common_Duration" xml:space="preserve"><value>Duration</value></data>
+
+  <data name="Status_Active" xml:space="preserve"><value>Active</value></data>
+  <data name="Status_Suspended" xml:space="preserve"><value>Suspended</value></data>
+  <data name="Status_Deactivated" xml:space="preserve"><value>Deactivated</value></data>
+  <data name="Status_Removed" xml:space="preserve"><value>Removed</value></data>
+  <data name="Status_Revoked" xml:space="preserve"><value>Revoked</value></data>
+  <data name="Status_PendingConfirmation" xml:space="preserve"><value>PendingConfirmation</value></data>
+  <data name="Status_Confirmed" xml:space="preserve"><value>Confirmed</value></data>
+  <data name="Status_Rejected" xml:space="preserve"><value>Rejected</value></data>
+  <data name="Status_Voided" xml:space="preserve"><value>Voided</value></data>
+  <data name="Status_Trialing" xml:space="preserve"><value>Trialing</value></data>
+  <data name="Status_GracePeriod" xml:space="preserve"><value>GracePeriod</value></data>
+  <data name="Status_PastDue" xml:space="preserve"><value>PastDue</value></data>
+  <data name="Status_Cancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="Status_Expired" xml:space="preserve"><value>Expired</value></data>
+  <data name="Status_Succeeded" xml:space="preserve"><value>Succeeded</value></data>
+  <data name="Status_Denied" xml:space="preserve"><value>Denied</value></data>
+  <data name="Status_Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Access_Allowed" xml:space="preserve"><value>Allowed</value></data>
+  <data name="Access_Denied" xml:space="preserve"><value>Denied</value></data>
+  <data name="Access_Reason" xml:space="preserve"><value>Reason:</value></data>
+
+  <data name="Error_PageTitle" xml:space="preserve"><value>Error</value></data>
+  <data name="Error_Heading" xml:space="preserve"><value>Error.</value></data>
+  <data name="Error_Subheading" xml:space="preserve"><value>An error occurred while processing your request.</value></data>
+  <data name="Error_RequestId" xml:space="preserve"><value>Request ID:</value></data>
+  <data name="Error_DevelopmentMode" xml:space="preserve"><value>Development Mode</value></data>
+  <data name="Error_DevelopmentModeDetail" xml:space="preserve"><value>Swapping to Development environment will display more detailed information about the error that occurred.</value></data>
+  <data name="Error_DevelopmentModeWarning" xml:space="preserve"><value>The Development environment shouldn't be enabled for deployed applications.</value></data>
+  <data name="Error_DevelopmentModeWarningDetail" xml:space="preserve"><value>It can result in displaying sensitive information from exceptions to end users. For local debugging, enable the Development environment by setting the ASPNETCORE_ENVIRONMENT environment variable to Development and restarting the app.</value></data>
+
+  <data name="NotFound_Title" xml:space="preserve"><value>Not Found</value></data>
+  <data name="NotFound_Message" xml:space="preserve"><value>Sorry, the content you are looking for does not exist.</value></data>
+
+  <data name="Dashboard_Title" xml:space="preserve"><value>Portfolio dashboard</value></data>
+  <data name="Dashboard_Description" xml:space="preserve"><value>Read-only commercial summary composed from Platform APIs. Failed sections are listed — counts are not invented when a section fails.</value></data>
+  <data name="Dashboard_Loading" xml:space="preserve"><value>Loading portfolio summary…</value></data>
+  <data name="Dashboard_AriaPortfolioCounts" xml:space="preserve"><value>Portfolio counts</value></data>
+  <data name="Dashboard_Card_ActiveProducts" xml:space="preserve"><value>Active products</value></data>
+  <data name="Dashboard_Card_PublishedPlanVersions" xml:space="preserve"><value>Published plan versions</value></data>
+  <data name="Dashboard_Card_Organizations" xml:space="preserve"><value>Organizations</value></data>
+  <data name="Dashboard_Card_TrialingSubscriptions" xml:space="preserve"><value>Trialing subscriptions</value></data>
+  <data name="Dashboard_Card_ActiveSubscriptions" xml:space="preserve"><value>Active subscriptions</value></data>
+  <data name="Dashboard_Card_GracePastDueSuspended" xml:space="preserve"><value>Grace / Past due / Suspended</value></data>
+  <data name="Dashboard_Card_PendingManualPayments" xml:space="preserve"><value>Pending manual payments</value></data>
+  <data name="Dashboard_Card_LatestEntitlementSnapshots" xml:space="preserve"><value>Latest entitlement snapshots</value></data>
+  <data name="Dashboard_PartialUnavailable" xml:space="preserve"><value>Partial data unavailable.</value></data>
+  <data name="Dashboard_PartialUnavailableDetail" xml:space="preserve"><value>Failed sections are not shown as zero.</value></data>
+
+  <data name="Products_Title" xml:space="preserve"><value>Products</value></data>
+  <data name="Products_Description" xml:space="preserve"><value>Read-only product catalog. No create, rename, activate, or retire actions in this work package.</value></data>
+  <data name="Products_Loading" xml:space="preserve"><value>Loading products…</value></data>
+  <data name="Products_Empty" xml:space="preserve"><value>No products are registered in the Platform catalog.</value></data>
+  <data name="Products_DetailTitle" xml:space="preserve"><value>Product detail</value></data>
+  <data name="Products_DetailDescription" xml:space="preserve"><value>Features, plans, published plan versions, and trial definitions. Read-only.</value></data>
+  <data name="Products_DetailLoading" xml:space="preserve"><value>Loading product overview…</value></data>
+  <data name="Products_FeatureCount" xml:space="preserve"><value>Feature count</value></data>
+  <data name="Products_PlanCount" xml:space="preserve"><value>Plan count</value></data>
+  <data name="Products_FeatureDefinitions" xml:space="preserve"><value>Feature definitions</value></data>
+  <data name="Products_FeatureDefinitionsEmpty" xml:space="preserve"><value>No feature definitions.</value></data>
+  <data name="Products_Plans" xml:space="preserve"><value>Plans</value></data>
+  <data name="Products_PlansEmpty" xml:space="preserve"><value>No plans.</value></data>
+  <data name="Products_PublishedPlanVersions" xml:space="preserve"><value>Published plan versions</value></data>
+  <data name="Products_PublishedPlanVersionsEmpty" xml:space="preserve"><value>No published plan versions.</value></data>
+  <data name="Products_TrialDefinitions" xml:space="preserve"><value>Trial definitions</value></data>
+  <data name="Products_TrialDefinitionsEmpty" xml:space="preserve"><value>No trial definitions.</value></data>
+  <data name="Products_Column_Billing" xml:space="preserve"><value>Billing</value></data>
+  <data name="Products_Column_TrialEligible" xml:space="preserve"><value>Trial eligible</value></data>
+
+  <data name="Organizations_Title" xml:space="preserve"><value>Organizations</value></data>
+  <data name="Organizations_Description" xml:space="preserve"><value>Platform Organizations with commercial summaries, membership, and product-access administration.</value></data>
+  <data name="Organizations_Loading" xml:space="preserve"><value>Loading organizations…</value></data>
+  <data name="Organizations_Empty" xml:space="preserve"><value>No organizations have been created.</value></data>
+  <data name="Organizations_DetailTitle" xml:space="preserve"><value>Organization commercial summary</value></data>
+  <data name="Organizations_DetailDescription" xml:space="preserve"><value>Subscriptions, manual SaaS payments, and latest entitlement snapshots. Use subscription and payment pages for lifecycle actions.</value></data>
+  <data name="Organizations_DetailLoading" xml:space="preserve"><value>Loading organization…</value></data>
+  <data name="Organizations_CommercialAdmin" xml:space="preserve"><value>Commercial admin</value></data>
+  <data name="Organizations_StartTrialSubscriptions" xml:space="preserve"><value>Start trial / subscriptions</value></data>
+  <data name="Organizations_CreateViewPayments" xml:space="preserve"><value>Create / view payments</value></data>
+  <data name="Organizations_SubscriptionsByProduct" xml:space="preserve"><value>Subscriptions by product</value></data>
+  <data name="Organizations_SubscriptionsHint" xml:space="preserve"><value>Open a subscription to run lifecycle actions. Historical subscriptions remain listed.</value></data>
+  <data name="Organizations_SubscriptionsEmpty" xml:space="preserve"><value>No subscriptions for this organization.</value></data>
+  <data name="Organizations_OpenSubscription" xml:space="preserve"><value>Open subscription</value></data>
+  <data name="Organizations_PaymentHistory" xml:space="preserve"><value>Manual SaaS payment history</value></data>
+  <data name="Organizations_PaymentsEmpty" xml:space="preserve"><value>No payments recorded.</value></data>
+  <data name="Organizations_OpenPayment" xml:space="preserve"><value>Open payment</value></data>
+  <data name="Organizations_LatestEntitlements" xml:space="preserve"><value>Latest entitlement snapshots</value></data>
+  <data name="Organizations_EntitlementsEmpty" xml:space="preserve"><value>No entitlement snapshots for this organization.</value></data>
+
+  <data name="OrgMembers_Title" xml:space="preserve"><value>Organization members</value></data>
+  <data name="OrgMembers_Description" xml:space="preserve"><value>Platform organization membership and roles. Development-stage; unauthenticated.</value></data>
+  <data name="OrgMembers_Warning" xml:space="preserve"><value>Platform organization roles (Owner, Administrator, Member) are not product-local roles. Removing membership revokes product-access assignments for this organization.</value></data>
+  <data name="OrgMembers_Loading" xml:space="preserve"><value>Loading organization…</value></data>
+  <data name="OrgMembers_AddSection" xml:space="preserve"><value>Add existing Platform user</value></data>
+  <data name="OrgMembers_UserId" xml:space="preserve"><value>User ID</value></data>
+  <data name="OrgMembers_OrgRole" xml:space="preserve"><value>Organization role</value></data>
+  <data name="OrgMembers_AddMember" xml:space="preserve"><value>Add member</value></data>
+  <data name="OrgMembers_LoadingMembers" xml:space="preserve"><value>Loading members…</value></data>
+  <data name="OrgMembers_Unavailable" xml:space="preserve"><value>Members unavailable</value></data>
+  <data name="OrgMembers_Empty" xml:space="preserve"><value>No memberships for this organization.</value></data>
+  <data name="OrgMembers_SuspendMembership" xml:space="preserve"><value>Suspend membership</value></data>
+  <data name="OrgMembers_RevokeMembership" xml:space="preserve"><value>Revoke membership</value></data>
+  <data name="OrgMembers_ReactivateMembership" xml:space="preserve"><value>Reactivate membership</value></data>
+
+  <data name="OrgProductAccess_Title" xml:space="preserve"><value>Product access</value></data>
+  <data name="OrgProductAccess_Description" xml:space="preserve"><value>Commercial product-access assignments. Development-stage; unauthenticated.</value></data>
+  <data name="OrgProductAccess_Warning" xml:space="preserve"><value>Product access grants commercial entry eligibility only. It does not assign Doctor, Nurse, Clinic Admin, Cashier, Store Manager, POS Administrator, Patient, or any other product-local role. Effective access also requires active user, membership, product, Trialing/Active subscription, and a current entitlement snapshot.</value></data>
+  <data name="OrgProductAccess_Loading" xml:space="preserve"><value>Loading organization…</value></data>
+  <data name="OrgProductAccess_GrantSection" xml:space="preserve"><value>Grant product access</value></data>
+  <data name="OrgProductAccess_GrantUserIdPlaceholder" xml:space="preserve"><value>GUID of active member</value></data>
+  <data name="OrgProductAccess_ProductCode" xml:space="preserve"><value>Product code</value></data>
+  <data name="OrgProductAccess_GrantAccess" xml:space="preserve"><value>Grant access</value></data>
+  <data name="OrgProductAccess_EvaluateSection" xml:space="preserve"><value>Evaluate effective access</value></data>
+  <data name="OrgProductAccess_EvaluationFailed" xml:space="preserve"><value>Evaluation failed</value></data>
+  <data name="OrgProductAccess_LoadingAssignments" xml:space="preserve"><value>Loading assignments…</value></data>
+  <data name="OrgProductAccess_AssignmentsUnavailable" xml:space="preserve"><value>Assignments unavailable</value></data>
+  <data name="OrgProductAccess_Empty" xml:space="preserve"><value>No product-access assignments for this organization.</value></data>
+  <data name="OrgProductAccess_RevokeAccess" xml:space="preserve"><value>Revoke access</value></data>
+  <data name="OrgProductAccess_AriaGrant" xml:space="preserve"><value>Grant product access</value></data>
+  <data name="OrgProductAccess_AriaEvaluate" xml:space="preserve"><value>Evaluate effective access</value></data>
+
+  <data name="Users_Title" xml:space="preserve"><value>Platform users</value></data>
+  <data name="Users_Description" xml:space="preserve"><value>Development-stage Platform user administration. APIs remain unauthenticated; server-side authorization is still required before production.</value></data>
+  <data name="Users_Warning" xml:space="preserve"><value>Platform membership is not product operational authorization. No passwords, invitations, or identity-provider linkage in this work package.</value></data>
+  <data name="Users_SearchPlaceholder" xml:space="preserve"><value>Username, email, or name</value></data>
+  <data name="Users_HideCreate" xml:space="preserve"><value>Hide create</value></data>
+  <data name="Users_CreateUser" xml:space="preserve"><value>Create user</value></data>
+  <data name="Users_AriaCreate" xml:space="preserve"><value>Create Platform user</value></data>
+  <data name="Users_CreateSection" xml:space="preserve"><value>Create Platform user</value></data>
+  <data name="Users_CreateFailed" xml:space="preserve"><value>Could not create user</value></data>
+  <data name="Users_Loading" xml:space="preserve"><value>Loading users…</value></data>
+  <data name="Users_Empty" xml:space="preserve"><value>No Platform users match the current filters.</value></data>
+  <data name="Users_DetailTitle" xml:space="preserve"><value>Platform user detail</value></data>
+  <data name="Users_DetailDescription" xml:space="preserve"><value>Profile, memberships, and commercial product-access assignments. Development-stage only.</value></data>
+  <data name="Users_DetailLoading" xml:space="preserve"><value>Loading user…</value></data>
+  <data name="Users_SuspendedUtc" xml:space="preserve"><value>Suspended (UTC)</value></data>
+  <data name="Users_SuspensionReason" xml:space="preserve"><value>Suspension reason</value></data>
+  <data name="Users_EditProfile" xml:space="preserve"><value>Edit profile</value></data>
+  <data name="Users_SaveProfile" xml:space="preserve"><value>Save profile</value></data>
+  <data name="Users_Lifecycle" xml:space="preserve"><value>Lifecycle</value></data>
+  <data name="Users_LifecycleHint" xml:space="preserve"><value>Suspending a user makes all memberships and product assignments ineffective for commercial access evaluation.</value></data>
+  <data name="Users_SuspendUser" xml:space="preserve"><value>Suspend user</value></data>
+  <data name="Users_ReactivateUser" xml:space="preserve"><value>Reactivate user</value></data>
+  <data name="Users_DisableUser" xml:space="preserve"><value>Disable user</value></data>
+  <data name="Users_OrgMemberships" xml:space="preserve"><value>Organization memberships</value></data>
+  <data name="Users_OrgMembershipsHint" xml:space="preserve"><value>Platform organization roles only — not Doctor, Nurse, Cashier, or other product-local roles.</value></data>
+  <data name="Users_LoadingMemberships" xml:space="preserve"><value>Loading memberships…</value></data>
+  <data name="Users_MembershipsUnavailable" xml:space="preserve"><value>Memberships unavailable</value></data>
+  <data name="Users_MembershipsEmpty" xml:space="preserve"><value>This user has no organization memberships.</value></data>
+  <data name="Users_ProductAccess" xml:space="preserve"><value>Product-access assignments</value></data>
+  <data name="Users_ProductAccessWarning" xml:space="preserve"><value>Product access means commercial entry eligibility only. It does not assign product-local roles or permissions.</value></data>
+  <data name="Users_LoadingProductAccess" xml:space="preserve"><value>Loading product access…</value></data>
+  <data name="Users_ProductAccessUnavailable" xml:space="preserve"><value>Product access unavailable</value></data>
+  <data name="Users_ProductAccessEmpty" xml:space="preserve"><value>No product-access assignments for this user.</value></data>
+
+  <data name="Subscriptions_Title" xml:space="preserve"><value>Subscriptions</value></data>
+  <data name="Subscriptions_Description" xml:space="preserve"><value>Development-stage subscription administration. Lifecycle mutations call Platform APIs; server-side authorization is still required before production.</value></data>
+  <data name="Subscriptions_Warning" xml:space="preserve"><value>Subscription changes affect commercial eligibility only. They do not assign product-local roles or deliver entitlements to HealthCare or POS.</value></data>
+  <data name="Subscriptions_StartTrial" xml:space="preserve"><value>Start organization trial</value></data>
+  <data name="Subscriptions_StartTrialHint" xml:space="preserve"><value>Trial duration comes from the selected trial definition. Repeat-trial policy is provisional — review before starting another trial for the same organization and product.</value></data>
+  <data name="Subscriptions_StartTrialFailed" xml:space="preserve"><value>Could not start trial</value></data>
+  <data name="Subscriptions_LoadCatalog" xml:space="preserve"><value>Load catalog for product</value></data>
+  <data name="Subscriptions_StartTrialButton" xml:space="preserve"><value>Start trial</value></data>
+  <data name="Subscriptions_Loading" xml:space="preserve"><value>Loading subscriptions…</value></data>
+  <data name="Subscriptions_Empty" xml:space="preserve"><value>No subscriptions match the current filters.</value></data>
+  <data name="Subscriptions_DetailTitle" xml:space="preserve"><value>Subscription detail</value></data>
+  <data name="Subscriptions_DetailDescription" xml:space="preserve"><value>Commercial lifecycle administration. Development-stage; unauthenticated.</value></data>
+  <data name="Subscriptions_DetailWarning" xml:space="preserve"><value>Cancelled and Expired are terminal. Subscription eligibility is not product provisioning and does not assign product-local roles.</value></data>
+  <data name="Subscriptions_DetailLoading" xml:space="preserve"><value>Loading subscription…</value></data>
+  <data name="Subscriptions_AriaStartTrial" xml:space="preserve"><value>Start organization trial</value></data>
+  <data name="Subscriptions_LifecycleActions" xml:space="preserve"><value>Lifecycle actions</value></data>
+  <data name="Subscriptions_LifecycleHint" xml:space="preserve"><value>Only actions valid for the current status are shown. Hidden or disabled controls are not security.</value></data>
+  <data name="Subscriptions_Column_TrialEndUtc" xml:space="preserve"><value>Trial end (UTC)</value></data>
+
+  <data name="Payments_Title" xml:space="preserve"><value>Manual SaaS payments</value></data>
+  <data name="Payments_Description" xml:space="preserve"><value>Cash, bank transfer, and manual GCash reference records only. Development-stage; unauthenticated.</value></data>
+  <data name="Payments_Warning" xml:space="preserve"><value>Manual SaaS payment confirmation is operator attestation only — not automatic provider verification. This UI never displays card numbers, CVV, PIN, OTP, gateway secrets, or GCash credentials. There is no payment gateway, webhook, QR, invoice engine, or POS/Utang payment integration here.</value></data>
+  <data name="Payments_CreateSection" xml:space="preserve"><value>Create manual SaaS payment</value></data>
+  <data name="Payments_CreateFailed" xml:space="preserve"><value>Could not create payment</value></data>
+  <data name="Payments_CreateButton" xml:space="preserve"><value>Create manual payment</value></data>
+  <data name="Payments_Loading" xml:space="preserve"><value>Loading payments…</value></data>
+  <data name="Payments_Empty" xml:space="preserve"><value>No payments match the current filters.</value></data>
+  <data name="Payments_DetailTitle" xml:space="preserve"><value>Payment detail</value></data>
+  <data name="Payments_DetailDescription" xml:space="preserve"><value>Manual SaaS payment lifecycle. Development-stage; unauthenticated.</value></data>
+  <data name="Payments_DetailWarning" xml:space="preserve"><value>Manual confirmation is not automatic provider verification. Confirmed payments may activate an eligible subscription atomically. Confirmed payments cannot be reused. No gateway, card, invoice, POS, or HealthCare payment behavior.</value></data>
+  <data name="Payments_DetailLoading" xml:space="preserve"><value>Loading payment…</value></data>
+  <data name="Payments_AriaCreate" xml:space="preserve"><value>Create manual SaaS payment</value></data>
+  <data name="Payments_PaymentActions" xml:space="preserve"><value>Payment actions</value></data>
+
+  <data name="Entitlements_Title" xml:space="preserve"><value>Latest entitlements</value></data>
+  <data name="Entitlements_Description" xml:space="preserve"><value>Latest snapshot per organization/product. Snapshot ≠ product delivery.</value></data>
+  <data name="Entitlements_Warning" xml:space="preserve"><value>Listed snapshots are Platform state only and do not prove product-local delivery.</value></data>
+  <data name="Entitlements_Loading" xml:space="preserve"><value>Loading latest entitlements…</value></data>
+  <data name="Entitlements_Empty" xml:space="preserve"><value>No entitlement snapshots exist yet.</value></data>
+  <data name="Entitlements_DetailTitle" xml:space="preserve"><value>Entitlement snapshot</value></data>
+  <data name="Entitlements_DetailDescription" xml:space="preserve"><value>Platform-authoritative snapshot state. Not proof of delivery to a product.</value></data>
+  <data name="Entitlements_DetailWarning" xml:space="preserve"><value>This snapshot is authoritative Platform state only. It is not evidence that HealthCare or POS received or applied entitlements. Provisional refresh policy remains open where applicable.</value></data>
+  <data name="Entitlements_DetailLoading" xml:space="preserve"><value>Loading snapshot…</value></data>
+  <data name="Entitlements_HistoryTitle" xml:space="preserve"><value>Entitlement history</value></data>
+  <data name="Entitlements_HistoryDescription" xml:space="preserve"><value>Immutable snapshot versions for an organization/product pair.</value></data>
+  <data name="Entitlements_HistoryLoading" xml:space="preserve"><value>Loading history…</value></data>
+  <data name="Entitlements_HistoryEmpty" xml:space="preserve"><value>No snapshots in history.</value></data>
+  <data name="Entitlements_FeatureGrants" xml:space="preserve"><value>Feature grants</value></data>
+  <data name="Entitlements_NoGrants" xml:space="preserve"><value>No grants on this snapshot.</value></data>
+  <data name="Entitlements_FeatureOverrideHistory" xml:space="preserve"><value>Feature override history</value></data>
+  <data name="Entitlements_OverridesLoading" xml:space="preserve"><value>Loading feature overrides…</value></data>
+  <data name="Entitlements_OverridesUnavailable" xml:space="preserve"><value>Overrides unavailable</value></data>
+  <data name="Entitlements_NoOverrides" xml:space="preserve"><value>No feature overrides for this organization/product.</value></data>
+  <data name="Entitlements_SnapshotVersion" xml:space="preserve"><value>Snapshot version</value></data>
+  <data name="Entitlements_SchemaVersion" xml:space="preserve"><value>Schema version</value></data>
+  <data name="Entitlements_SubscriptionStatus" xml:space="preserve"><value>Subscription status</value></data>
+  <data name="Entitlements_InGracePeriod" xml:space="preserve"><value>In grace period</value></data>
+  <data name="Entitlements_RefreshByUtc" xml:space="preserve"><value>Refresh by (UTC)</value></data>
+  <data name="Entitlements_Column_EffectiveFromUtc" xml:space="preserve"><value>Effective from (UTC)</value></data>
+
+  <data name="Audit_OutcomeSucceeded" xml:space="preserve"><value>Succeeded</value></data>
+  <data name="Audit_OutcomeDenied" xml:space="preserve"><value>Denied</value></data>
+  <data name="Audit_OutcomeFailed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Nav_SkipToContent" xml:space="preserve"><value>Skip to main content</value></data>
+  <data name="Error_Unhandled" xml:space="preserve"><value>An unhandled error has occurred.</value></data>
+  <data name="Error_Reload" xml:space="preserve"><value>Reload</value></data>
+  <data name="Error_Dismiss" xml:space="preserve"><value>Dismiss</value></data>
 </root>

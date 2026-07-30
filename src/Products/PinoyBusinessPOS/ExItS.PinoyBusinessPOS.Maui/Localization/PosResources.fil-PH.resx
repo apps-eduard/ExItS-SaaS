@@ -991,4 +991,7 @@
   <data name="Reports_ExpenseDetails" xml:space="preserve"><value>Expense details</value></data>
   <data name="Reports_ExportDeferredTitle" xml:space="preserve"><value>File export deferred</value></data>
   <data name="Reports_ExportDeferredMessage" xml:space="preserve"><value>Report contracts are export-ready. CSV/PDF/Excel file generation is not included in this work package.</value></data>
+  <data name="Nav_SkipToContent" xml:space="preserve">
+    <value>Lumaktaw papunta sa pangunahing nilalaman</value>
+  </data>
 </root>

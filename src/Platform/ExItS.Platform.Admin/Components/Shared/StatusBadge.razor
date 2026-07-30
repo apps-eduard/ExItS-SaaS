@@ -1,5 +1,29 @@
-<span class="status-badge" data-status="@Value">@Value</span>
+@inject IStringLocalizer<AdminResources> L
+
+<span class="status-badge" data-status="@Value">@DisplayValue</span>
 
 @code {
     [Parameter, EditorRequired] public string Value { get; set; } = "";
+
+    private string DisplayValue => Value switch
+    {
+        "Active" => L["Status_Active"],
+        "Suspended" => L["Status_Suspended"],
+        "Deactivated" => L["Status_Deactivated"],
+        "Removed" => L["Status_Removed"],
+        "Revoked" => L["Status_Revoked"],
+        "PendingConfirmation" => L["Status_PendingConfirmation"],
+        "Confirmed" => L["Status_Confirmed"],
+        "Rejected" => L["Status_Rejected"],
+        "Voided" => L["Status_Voided"],
+        "Trialing" => L["Status_Trialing"],
+        "GracePeriod" => L["Status_GracePeriod"],
+        "PastDue" => L["Status_PastDue"],
+        "Cancelled" => L["Status_Cancelled"],
+        "Expired" => L["Status_Expired"],
+        "Succeeded" => L["Status_Succeeded"],
+        "Denied" => L["Status_Denied"],
+        "Failed" => L["Status_Failed"],
+        _ => Value
+    };
 }

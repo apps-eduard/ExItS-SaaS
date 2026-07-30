@@ -27,9 +27,9 @@ else if (AuditId is null)
         <label>@L["Audit_FilterOutcome"]
             <select @bind="_outcome">
                 <option value="">@L["Common_All"]</option>
-                <option value="Succeeded">Succeeded</option>
-                <option value="Denied">Denied</option>
-                <option value="Failed">Failed</option>
+                <option value="Succeeded">@L["Audit_OutcomeSucceeded"]</option>
+                <option value="Denied">@L["Audit_OutcomeDenied"]</option>
+                <option value="Failed">@L["Audit_OutcomeFailed"]</option>
             </select>
         </label>
         <button type="button" @onclick="LoadAsync">@L["Common_Apply"]</button>
@@ -75,7 +75,7 @@ else if (AuditId is null)
                 }
             </tbody>
         </table>
-        <p class="muted">Showing @_list.Data.Items.Count of @_list.Data.TotalCount</p>
+        <p class="muted">@string.Format(L["Common_ShowingCount"], _list.Data.Items.Count, _list.Data.TotalCount)</p>
     }
 }
 else
@@ -99,12 +99,12 @@ else
             <dt>@L["Audit_FilterActor"]</dt><dd>@r.ActorIdentifier (@r.ActorType)</dd>
             <dt>@L["Audit_ColumnAction"]</dt><dd>@r.ActionCode</dd>
             <dt>@L["Audit_ColumnTarget"]</dt><dd>@r.TargetType — @r.TargetId</dd>
-            <dt>Organization</dt><dd>@(r.OrganizationId?.ToString() ?? "—")</dd>
+            <dt>@L["Common_Organization"]</dt><dd>@(r.OrganizationId?.ToString() ?? "—")</dd>
             <dt>@L["Audit_FilterProduct"]</dt><dd>@(r.ProductCode ?? "—")</dd>
             <dt>@L["Audit_ColumnOutcome"]</dt><dd><StatusBadge Value="@r.Outcome" /></dd>
-            <dt>Reason</dt><dd>@(r.Reason ?? "—")</dd>
-            <dt>Summary</dt><dd>@(r.Summary ?? "—")</dd>
-            <dt>Correlation ID</dt><dd>@(r.CorrelationId ?? "—")</dd>
+            <dt>@L["Common_Reason"]</dt><dd>@(r.Reason ?? "—")</dd>
+            <dt>@L["Common_Summary"]</dt><dd>@(r.Summary ?? "—")</dd>
+            <dt>@L["Common_CorrelationId"]</dt><dd>@(r.CorrelationId ?? "—")</dd>
         </dl>
 
         <AuditTimeline Records="@(new[] { r })" ShowLink="false" />

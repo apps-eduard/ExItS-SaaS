@@ -20,8 +20,8 @@ public sealed class PerformanceReliabilityArchitectureTests
         var platformReady = File.ReadAllText(Path.Combine(root,
             "src", "Platform", "ExItS.Platform.Infrastructure", "Health", "PlatformDatabaseReadyHealthCheck.cs"));
 
-        Assert.Contains("P9-WP03-backup-and-restore", pos, StringComparison.Ordinal);
-        Assert.Contains("P9-WP03-backup-and-restore", platform, StringComparison.Ordinal);
+        Assert.Contains("P9-WP04-accessibility-localization-theme-qa", pos, StringComparison.Ordinal);
+        Assert.Contains("P9-WP04-accessibility-localization-theme-qa", platform, StringComparison.Ordinal);
         Assert.Contains("MapPosHealthEndpoints", pos, StringComparison.Ordinal);
         Assert.Contains("MapPlatformHealthEndpoints", platform, StringComparison.Ordinal);
         Assert.Contains("/health/ready", posHealth, StringComparison.Ordinal);

@@ -8,12 +8,13 @@
         <div class="exds-dialog"
              role="dialog"
              aria-modal="true"
-             aria-label="@Title"
+             aria-labelledby="@_titleId"
              tabindex="-1"
+             @ref="_dialogRef"
              @onkeydown="HandleKeyDown"
              @onclick:stopPropagation="true">
             <div class="exds-dialog__header">
-                <h2 class="exds-dialog__title">@Title</h2>
+                <h2 class="exds-dialog__title" id="@_titleId">@Title</h2>
                 <IconButton AriaLabel="@ResolvedCloseLabel" IconName="close" OnClick="Close" />
             </div>
             <div class="exds-dialog__body">
@@ -35,7 +36,28 @@
     [Parameter] public RenderFragment? Footer { get; set; }
     [Parameter] public string? CloseLabel { get; set; }
 
+    private readonly string _titleId = "exds-dialog-title-" + Guid.NewGuid().ToString("N");
+    private ElementReference _dialogRef;
+    private bool _wasVisible;
+
     private string ResolvedCloseLabel => CloseLabel ?? L["Action_Close"];
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Visible && !_wasVisible)
+        {
+            try
+            {
+                await _dialogRef.FocusAsync();
+            }
+            catch
+            {
+                // Focus is best-effort in hybrid hosts.
+            }
+        }
+
+        _wasVisible = Visible;
+    }
 
     private async Task Close()
     {

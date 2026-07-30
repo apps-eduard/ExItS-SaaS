@@ -1,91 +1,89 @@
 @page "/admin/organizations/{OrganizationId:guid}/product-access"
 @rendermode InteractiveServer
 @inject IPlatformApiClient Api
+@inject IStringLocalizer<AdminResources> L
 
-<PageHeader Title="Product access" Breadcrumb="Platform Admin / Organizations / Product access" Description="Commercial product-access assignments. Development-stage; unauthenticated." />
-<div class="warning" role="note">
-    Product access grants commercial entry eligibility only. It does <strong>not</strong> assign Doctor, Nurse, Clinic Admin, Cashier, Store Manager, POS Administrator, Patient, or any other product-local role.
-    Effective access also requires active user, membership, product, Trialing/Active subscription, and a current entitlement snapshot.
-</div>
+<PageHeader Title="@L["OrgProductAccess_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Organizations"]} / {L["Common_ProductAccess"]}")" Description="@L["OrgProductAccess_Description"]" />
+<div class="warning" role="note">@L["OrgProductAccess_Warning"]</div>
 
-@if (_org is null) { <LoadingState Message="Loading organization…" /> }
-else if (!_org.IsSuccess) { <ErrorState Title="@(_org.Error?.Title ?? "Error")" Detail="@_org.Error?.Detail" Unavailable="@(_org.Status == ApiCallStatus.Unavailable)" /> }
+@if (_org is null) { <LoadingState Message="@L["OrgProductAccess_Loading"]" /> }
+else if (!_org.IsSuccess) { <ErrorState Title="@(_org.Error?.Title ?? L["Common_Error"])" Detail="@_org.Error?.Detail" Unavailable="@(_org.Status == ApiCallStatus.Unavailable)" /> }
 else
 {
-    <p><a href="/admin/organizations/@OrganizationId">← @_org.Data!.DisplayName commercial summary</a> · <a href="/admin/organizations/@OrganizationId/members">Members</a></p>
+    <p><a href="/admin/organizations/@OrganizationId">← @_org.Data!.DisplayName @L["Common_CommercialSummary"]</a> · <a href="/admin/organizations/@OrganizationId/members">@L["Common_Members"]</a></p>
     @if (!string.IsNullOrWhiteSpace(_toast)) { <p class="toast" role="status">@_toast</p> }
-    @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="Action failed" Detail="@_formError" /> }
+    @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="@L["Common_ActionFailed"]" Detail="@_formError" /> }
 
-    <section class="panel">
-        <h2>Grant product access</h2>
+    <section class="panel" aria-label="@L["OrgProductAccess_AriaGrant"]">
+        <h2>@L["OrgProductAccess_GrantSection"]</h2>
         <div class="form-grid">
-            <label>User ID <input @bind="_grantUserId" placeholder="GUID of active member" /></label>
-            <label>Product code <input @bind="_grantProductCode" placeholder="e.g. pinoybusinesspos" /></label>
-            <label>Reason <input @bind="_grantReason" /></label>
+            <label>@L["OrgMembers_UserId"] <input @bind="_grantUserId" placeholder="@L["OrgProductAccess_GrantUserIdPlaceholder"]" /></label>
+            <label>@L["OrgProductAccess_ProductCode"] <input @bind="_grantProductCode" placeholder="e.g. pinoybusinesspos" /></label>
+            <label>@L["Common_Reason"] <input @bind="_grantReason" /></label>
         </div>
         <div class="actions">
-            <button type="button" @onclick="GrantAsync" disabled="@_busy">Grant access</button>
+            <button type="button" @onclick="GrantAsync" disabled="@_busy">@L["OrgProductAccess_GrantAccess"]</button>
         </div>
     </section>
 
-    <section class="panel">
-        <h2>Evaluate effective access</h2>
+    <section class="panel" aria-label="@L["OrgProductAccess_AriaEvaluate"]">
+        <h2>@L["OrgProductAccess_EvaluateSection"]</h2>
         <div class="form-grid">
-            <label>User ID <input @bind="_evalUserId" /></label>
-            <label>Product code <input @bind="_evalProductCode" /></label>
+            <label>@L["OrgMembers_UserId"] <input @bind="_evalUserId" /></label>
+            <label>@L["OrgProductAccess_ProductCode"] <input @bind="_evalProductCode" /></label>
         </div>
         <div class="actions">
-            <button type="button" class="secondary" @onclick="EvaluateAsync" disabled="@_busy">Evaluate</button>
+            <button type="button" class="secondary" @onclick="EvaluateAsync" disabled="@_busy">@L["Common_Evaluate"]</button>
         </div>
         @if (_evaluation is not null)
         {
-            @if (!_evaluation.IsSuccess) { <ErrorState Title="Evaluation failed" Detail="@_evaluation.Error?.Detail" /> }
+            @if (!_evaluation.IsSuccess) { <ErrorState Title="@L["OrgProductAccess_EvaluationFailed"]" Detail="@_evaluation.Error?.Detail" /> }
             else
             {
                 var e = _evaluation.Data!;
                 <AccessStateIndicator Allowed="@e.Allowed" ReasonCode="@e.ReasonCode" />
                 <dl>
-                    <dt>Membership</dt><dd>@(e.MembershipId?.ToString() ?? "—")</dd>
-                    <dt>Assignment</dt><dd>@(e.AssignmentId?.ToString() ?? "—")</dd>
-                    <dt>Subscription</dt><dd>@(e.SubscriptionId?.ToString() ?? "—")</dd>
-                    <dt>Snapshot</dt><dd>@(e.SnapshotId?.ToString() ?? "—")</dd>
-                    <dt>Evaluated (UTC)</dt><dd><UtcTimestamp Value="@e.EvaluatedAtUtc" /></dd>
+                    <dt>@L["Common_Membership"]</dt><dd>@(e.MembershipId?.ToString() ?? "—")</dd>
+                    <dt>@L["Common_Assignment"]</dt><dd>@(e.AssignmentId?.ToString() ?? "—")</dd>
+                    <dt>@L["Common_Subscription"]</dt><dd>@(e.SubscriptionId?.ToString() ?? "—")</dd>
+                    <dt>@L["Common_Snapshot"]</dt><dd>@(e.SnapshotId?.ToString() ?? "—")</dd>
+                    <dt>@L["Common_EvaluatedUtc"]</dt><dd><UtcTimestamp Value="@e.EvaluatedAtUtc" /></dd>
                 </dl>
             }
         }
     </section>
 
     <div class="filters">
-        <label>Status
+        <label>@L["Common_Status"]
             <select @bind="_status">
-                <option value="">All</option>
+                <option value="">@L["Common_All"]</option>
                 <option>Active</option>
                 <option>Revoked</option>
             </select>
         </label>
-        <button type="button" @onclick="ReloadAsync">Apply</button>
+        <button type="button" @onclick="ReloadAsync">@L["Common_Apply"]</button>
     </div>
 
-    @if (_assignments is null) { <LoadingState Message="Loading assignments…" /> }
-    else if (!_assignments.IsSuccess) { <ErrorState Title="Assignments unavailable" Detail="@_assignments.Error?.Detail" /> }
-    else if (_assignments.Data!.Items.Count == 0) { <EmptyState Message="No product-access assignments for this organization." /> }
+    @if (_assignments is null) { <LoadingState Message="@L["OrgProductAccess_LoadingAssignments"]" /> }
+    else if (!_assignments.IsSuccess) { <ErrorState Title="@L["OrgProductAccess_AssignmentsUnavailable"]" Detail="@_assignments.Error?.Detail" /> }
+    else if (_assignments.Data!.Items.Count == 0) { <EmptyState Message="@L["OrgProductAccess_Empty"]" /> }
     else
     {
         <table class="data-table responsive-table">
-            <thead><tr><th>User</th><th>Product</th><th>Status</th><th>Granted (UTC)</th><th>Revoked (UTC)</th><th>Actions</th></tr></thead>
+            <thead><tr><th>@L["Common_User"]</th><th>@L["Common_Product"]</th><th>@L["Common_Status"]</th><th>@L["Common_GrantedUtc"]</th><th>@L["Common_RevokedUtc"]</th><th>@L["Common_Actions"]</th></tr></thead>
             <tbody>
             @foreach (var a in _assignments.Data.Items)
             {
                 <tr>
-                    <td data-label="User"><a href="/admin/users/@a.UserId">@a.UserId</a></td>
-                    <td data-label="Product">@a.ProductCode</td>
-                    <td data-label="Status"><StatusBadge Value="@a.Status" /></td>
-                    <td data-label="Granted"><UtcTimestamp Value="@a.GrantedAtUtc" /></td>
-                    <td data-label="Revoked">@(a.RevokedAtUtc is null ? "—" : null)@if (a.RevokedAtUtc is not null){<UtcTimestamp Value="@a.RevokedAtUtc.Value" />}</td>
-                    <td data-label="Actions">
+                    <td data-label="@L["Common_User"]"><a href="/admin/users/@a.UserId">@a.UserId</a></td>
+                    <td data-label="@L["Common_Product"]">@a.ProductCode</td>
+                    <td data-label="@L["Common_Status"]"><StatusBadge Value="@a.Status" /></td>
+                    <td data-label="@L["Common_GrantedUtc"]"><UtcTimestamp Value="@a.GrantedAtUtc" /></td>
+                    <td data-label="@L["Common_RevokedUtc"]">@(a.RevokedAtUtc is null ? "—" : null)@if (a.RevokedAtUtc is not null){<UtcTimestamp Value="@a.RevokedAtUtc.Value" />}</td>
+                    <td data-label="@L["Common_Actions"]">
                         @if (a.Status == "Active")
                         {
-                            <button type="button" class="danger" @onclick='() => Ask("Revoke product access", "Revoke commercial product access for this user? Historical assignment remains queryable.", () => RevokeAsync(a.Id))'>Revoke access</button>
+                            <button type="button" class="danger" @onclick='() => Ask(L["OrgProductAccess_RevokeAccess"], "Revoke commercial product access for this user? Historical assignment remains queryable.", () => RevokeAsync(a.Id))'>@L["OrgProductAccess_RevokeAccess"]</button>
                         }
                     </td>
                 </tr>

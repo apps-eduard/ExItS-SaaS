@@ -1,6 +1,8 @@
+@inject IStringLocalizer<AdminResources> L
+
 <div class="access-state @(Allowed ? "allowed" : "denied")" role="status">
-    <strong>@(Allowed ? "Allowed" : "Denied")</strong>
-    <span>Reason: @ReasonCode</span>
+    <strong>@(Allowed ? L["Access_Allowed"] : L["Access_Denied"])</strong>
+    <span>@L["Access_Reason"] @ReasonCode</span>
 </div>
 
 @code {

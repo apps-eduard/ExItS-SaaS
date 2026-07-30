@@ -13,6 +13,24 @@ html, body {
     background: var(--exits-bg, #f3f6f4);
 }
 
+.skip-link {
+    position: absolute;
+    left: 0.75rem;
+    top: -3rem;
+    z-index: 2000;
+    padding: 0.5rem 0.85rem;
+    background: var(--exits-primary, #166534);
+    color: var(--exits-primary-contrast, #fff);
+    border-radius: var(--exits-radius-sm, 0.3rem);
+    text-decoration: none;
+    font-weight: 600;
+}
+.skip-link:focus {
+    top: 0.75rem;
+    outline: 3px solid var(--exits-focus, #166534);
+    outline-offset: 2px;
+}
+
 #app {
     min-height: 100%;
 }

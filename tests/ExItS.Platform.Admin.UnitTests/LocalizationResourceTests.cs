@@ -28,7 +28,15 @@ public sealed class LocalizationResourceTests
         "Language_Label",
         "Unauthorized_Title",
         "Unauthorized_Message",
-        "Banner_DevSecurityCompact"
+        "Banner_DevSecurityCompact",
+        "Nav_SkipToContent",
+        "Users_Title",
+        "Organizations_Title",
+        "Subscriptions_Title",
+        "Payments_Title",
+        "Common_ActionFailed",
+        "Status_Active",
+        "Status_Voided"
     ];
 
     [Fact]

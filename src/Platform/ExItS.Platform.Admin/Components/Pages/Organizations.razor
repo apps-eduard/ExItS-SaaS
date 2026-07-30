@@ -2,24 +2,25 @@
 @page "/admin/organizations/{Id:guid}"
 @rendermode InteractiveServer
 @inject IPlatformApiClient Api
+@inject IStringLocalizer<AdminResources> L
 
 @if (Id is null)
 {
-    <PageHeader Title="Organizations" Breadcrumb="Platform Admin / Organizations" Description="Platform Organizations with commercial summaries, membership, and product-access administration." />
-    @if (_list is null) { <LoadingState Message="Loading organizations…" /> }
-    else if (!_list.IsSuccess) { <ErrorState Title="@(_list.Error?.Title ?? "Error")" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" /> }
-    else if (_list.Data!.Items.Count == 0) { <EmptyState Message="No organizations have been created." /> }
+    <PageHeader Title="@L["Organizations_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Organizations"]}")" Description="@L["Organizations_Description"]" />
+    @if (_list is null) { <LoadingState Message="@L["Organizations_Loading"]" /> }
+    else if (!_list.IsSuccess) { <ErrorState Title="@(_list.Error?.Title ?? L["Common_Error"])" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" /> }
+    else if (_list.Data!.Items.Count == 0) { <EmptyState Message="@L["Organizations_Empty"]" /> }
     else
     {
     <table class="data-table">
-        <caption class="sr-only">Organizations</caption>
+        <caption class="sr-only">@L["Organizations_Title"]</caption>
             <thead>
                 <tr>
-                    <th scope="col">Display name</th>
-                    <th scope="col">Slug</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Created (UTC)</th>
-                    <th scope="col">Updated (UTC)</th>
+                    <th scope="col">@L["Common_DisplayName"]</th>
+                    <th scope="col">@L["Common_Slug"]</th>
+                    <th scope="col">@L["Common_Status"]</th>
+                    <th scope="col">@L["Common_CreatedUtc"]</th>
+                    <th scope="col">@L["Common_UpdatedUtc"]</th>
                 </tr>
             </thead>
             <tbody>
@@ -35,42 +36,42 @@
                 }
             </tbody>
         </table>
-        <p class="muted">Showing @_list.Data.Items.Count of @_list.Data.TotalCount</p>
+        <p class="muted">@string.Format(L["Common_ShowingCount"], _list.Data.Items.Count, _list.Data.TotalCount)</p>
     }
 }
 else
 {
-    <PageHeader Title="Organization commercial summary" Breadcrumb="Platform Admin / Organizations / Detail" Description="Subscriptions, manual SaaS payments, and latest entitlement snapshots. Use subscription and payment pages for lifecycle actions." />
-    @if (_detail is null) { <LoadingState Message="Loading organization…" /> }
-    else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? "Error")" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }
+    <PageHeader Title="@L["Organizations_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Organizations"]} / {L["Common_Detail"]}")" Description="@L["Organizations_DetailDescription"]" />
+    @if (_detail is null) { <LoadingState Message="@L["Organizations_DetailLoading"]" /> }
+    else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? L["Common_Error"])" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }
     else
     {
         var d = _detail.Data!;
         <dl>
-            <dt>Display name</dt><dd>@d.Organization.DisplayName</dd>
-            <dt>Slug</dt><dd>@d.Organization.Slug</dd>
-            <dt>Status</dt><dd><StatusBadge Value="@d.Organization.Status" /></dd>
-            <dt>Created (UTC)</dt><dd><UtcTimestamp Value="@d.Organization.CreatedAtUtc" /></dd>
-            <dt>Updated (UTC)</dt><dd><UtcTimestamp Value="@d.Organization.UpdatedAtUtc" /></dd>
-            <dt>Commercial admin</dt>
+            <dt>@L["Common_DisplayName"]</dt><dd>@d.Organization.DisplayName</dd>
+            <dt>@L["Common_Slug"]</dt><dd>@d.Organization.Slug</dd>
+            <dt>@L["Common_Status"]</dt><dd><StatusBadge Value="@d.Organization.Status" /></dd>
+            <dt>@L["Common_CreatedUtc"]</dt><dd><UtcTimestamp Value="@d.Organization.CreatedAtUtc" /></dd>
+            <dt>@L["Common_UpdatedUtc"]</dt><dd><UtcTimestamp Value="@d.Organization.UpdatedAtUtc" /></dd>
+            <dt>@L["Organizations_CommercialAdmin"]</dt>
             <dd>
-                <a href="/admin/organizations/@Id/members">Members</a>
+                <a href="/admin/organizations/@Id/members">@L["Common_Members"]</a>
                 ·
-                <a href="/admin/organizations/@Id/product-access">Product access</a>
+                <a href="/admin/organizations/@Id/product-access">@L["Common_ProductAccess"]</a>
                 ·
-                <a href="/admin/subscriptions">Start trial / subscriptions</a>
+                <a href="/admin/subscriptions">@L["Organizations_StartTrialSubscriptions"]</a>
                 ·
-                <a href="/admin/payments?organizationId=@Id">Create / view payments</a>
+                <a href="/admin/payments?organizationId=@Id">@L["Organizations_CreateViewPayments"]</a>
             </dd>
         </dl>
 
-        <h2>Subscriptions by product</h2>
-        <p class="muted">Open a subscription to run lifecycle actions. Historical subscriptions remain listed.</p>
-        @if (d.Subscriptions.Count == 0) { <EmptyState Message="No subscriptions for this organization." /> }
+        <h2>@L["Organizations_SubscriptionsByProduct"]</h2>
+        <p class="muted">@L["Organizations_SubscriptionsHint"]</p>
+        @if (d.Subscriptions.Count == 0) { <EmptyState Message="@L["Organizations_SubscriptionsEmpty"]" /> }
         else
         {
             <table class="data-table">
-                <thead><tr><th>Product</th><th>Status</th><th>Detail</th></tr></thead>
+                <thead><tr><th>@L["Common_Product"]</th><th>@L["Common_Status"]</th><th>@L["Common_Detail"]</th></tr></thead>
                 <tbody>
                 @foreach (var group in d.Subscriptions.GroupBy(s => s.ProductCode))
                 {
@@ -79,7 +80,7 @@ else
                         <tr>
                             <td>@s.ProductCode</td>
                             <td><StatusBadge Value="@s.Status" /></td>
-                            <td><a href="/admin/subscriptions/@s.Id">Open subscription</a></td>
+                            <td><a href="/admin/subscriptions/@s.Id">@L["Organizations_OpenSubscription"]</a></td>
                         </tr>
                     }
                 }
@@ -87,12 +88,12 @@ else
             </table>
         }
 
-        <h2>Manual SaaS payment history</h2>
-        @if (d.Payments.Count == 0) { <EmptyState Message="No payments recorded." /> }
+        <h2>@L["Organizations_PaymentHistory"]</h2>
+        @if (d.Payments.Count == 0) { <EmptyState Message="@L["Organizations_PaymentsEmpty"]" /> }
         else
         {
             <table class="data-table">
-                <thead><tr><th>Reference</th><th>Amount</th><th>Method</th><th>Status</th><th>Detail</th></tr></thead>
+                <thead><tr><th>@L["Common_Reference"]</th><th>@L["Common_Amount"]</th><th>@L["Common_Method"]</th><th>@L["Common_Status"]</th><th>@L["Common_Detail"]</th></tr></thead>
                 <tbody>
                 @foreach (var p in d.Payments)
                 {
@@ -101,19 +102,19 @@ else
                         <td>@p.Amount @p.CurrencyCode</td>
                         <td>@p.Method</td>
                         <td><StatusBadge Value="@p.Status" /></td>
-                        <td><a href="/admin/payments/@p.Id">Open payment</a></td>
+                        <td><a href="/admin/payments/@p.Id">@L["Organizations_OpenPayment"]</a></td>
                     </tr>
                 }
                 </tbody>
             </table>
         }
 
-        <h2>Latest entitlement snapshots</h2>
-        @if (d.LatestEntitlements.Count == 0) { <EmptyState Message="No entitlement snapshots for this organization." /> }
+        <h2>@L["Organizations_LatestEntitlements"]</h2>
+        @if (d.LatestEntitlements.Count == 0) { <EmptyState Message="@L["Organizations_EntitlementsEmpty"]" /> }
         else
         {
             <table class="data-table">
-                <thead><tr><th>Product</th><th>Version</th><th>Status</th><th>Generated (UTC)</th><th>History</th></tr></thead>
+                <thead><tr><th>@L["Common_Product"]</th><th>@L["Common_Version"]</th><th>@L["Common_Status"]</th><th>@L["Common_GeneratedUtc"]</th><th>@L["Common_History"]</th></tr></thead>
                 <tbody>
                 @foreach (var e in d.LatestEntitlements)
                 {
@@ -122,7 +123,7 @@ else
                         <td><a href="/admin/entitlements/@e.Id">@e.SnapshotVersion</a></td>
                         <td><StatusBadge Value="@e.SubscriptionStatus" /></td>
                         <td><UtcTimestamp Value="@e.GeneratedAtUtc" /></td>
-                        <td><a href="/admin/entitlements/history/@e.OrganizationId/@e.ProductCode">History</a></td>
+                        <td><a href="/admin/entitlements/history/@e.OrganizationId/@e.ProductCode">@L["Common_History"]</a></td>
                     </tr>
                 }
                 </tbody>

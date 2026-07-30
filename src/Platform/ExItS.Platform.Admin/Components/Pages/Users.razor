@@ -2,163 +2,164 @@
 @page "/admin/users/{Id:guid}"
 @rendermode InteractiveServer
 @inject IPlatformApiClient Api
+@inject IStringLocalizer<AdminResources> L
 
 @if (Id is null)
 {
-    <PageHeader Title="Platform users" Breadcrumb="Platform Admin / Users" Description="Development-stage Platform user administration. APIs remain unauthenticated; server-side authorization is still required before production." />
-    <div class="warning" role="note">Platform membership is not product operational authorization. No passwords, invitations, or identity-provider linkage in this work package.</div>
+    <PageHeader Title="@L["Users_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Users"]}")" Description="@L["Users_Description"]" />
+    <div class="warning" role="note">@L["Users_Warning"]</div>
 
     <div class="filters">
-        <label>Search <input @bind="_search" @bind:event="oninput" placeholder="Username, email, or name" /></label>
-        <label>Status
+        <label>@L["Common_Search"] <input @bind="_search" @bind:event="oninput" placeholder="@L["Users_SearchPlaceholder"]" /></label>
+        <label>@L["Common_Status"]
             <select @bind="_status">
-                <option value="">All</option>
+                <option value="">@L["Common_All"]</option>
                 <option>Active</option>
                 <option>Suspended</option>
                 <option>Deactivated</option>
             </select>
         </label>
-        <button type="button" @onclick="ReloadListAsync">Apply</button>
-        <button type="button" class="secondary" @onclick="() => _showCreate = !_showCreate">@(_showCreate ? "Hide create" : "Create user")</button>
+        <button type="button" @onclick="ReloadListAsync">@L["Common_Apply"]</button>
+        <button type="button" class="secondary" @onclick="() => _showCreate = !_showCreate">@(_showCreate ? L["Users_HideCreate"] : L["Users_CreateUser"])</button>
     </div>
 
     @if (_showCreate)
     {
-        <section class="panel" aria-label="Create Platform user">
-            <h2>Create Platform user</h2>
-            @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="Could not create user" Detail="@_formError" /> }
+        <section class="panel" aria-label="@L["Users_AriaCreate"]">
+            <h2>@L["Users_CreateSection"]</h2>
+            @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="@L["Users_CreateFailed"]" Detail="@_formError" /> }
             <div class="form-grid">
-                <label>Username <input @bind="_newUsername" autocomplete="off" /></label>
-                <label>Display name <input @bind="_newDisplayName" /></label>
-                <label>Email <input @bind="_newEmail" type="email" autocomplete="off" /></label>
+                <label>@L["Common_Username"] <input @bind="_newUsername" autocomplete="off" /></label>
+                <label>@L["Common_DisplayName"] <input @bind="_newDisplayName" /></label>
+                <label>@L["Common_Email"] <input @bind="_newEmail" type="email" autocomplete="off" /></label>
             </div>
             <div class="actions">
-                <button type="button" @onclick="CreateAsync" disabled="@_busy">Create</button>
+                <button type="button" @onclick="CreateAsync" disabled="@_busy">@L["Common_Create"]</button>
             </div>
             @if (!string.IsNullOrWhiteSpace(_toast)) { <p class="toast" role="status">@_toast</p> }
         </section>
     }
 
-    @if (_list is null) { <LoadingState Message="Loading users…" /> }
-    else if (!_list.IsSuccess) { <ErrorState Title="@(_list.Error?.Title ?? "Error")" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" /> }
-    else if (_list.Data!.Items.Count == 0) { <EmptyState Message="No Platform users match the current filters." /> }
+    @if (_list is null) { <LoadingState Message="@L["Users_Loading"]" /> }
+    else if (!_list.IsSuccess) { <ErrorState Title="@(_list.Error?.Title ?? L["Common_Error"])" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" /> }
+    else if (_list.Data!.Items.Count == 0) { <EmptyState Message="@L["Users_Empty"]" /> }
     else
     {
         <table class="data-table responsive-table">
-            <caption class="sr-only">Platform users</caption>
+            <caption class="sr-only">@L["Users_Title"]</caption>
             <thead>
                 <tr>
-                    <th scope="col">User</th>
-                    <th scope="col">Username</th>
-                    <th scope="col">Email</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Updated (UTC)</th>
+                    <th scope="col">@L["Common_User"]</th>
+                    <th scope="col">@L["Common_Username"]</th>
+                    <th scope="col">@L["Common_Email"]</th>
+                    <th scope="col">@L["Common_Status"]</th>
+                    <th scope="col">@L["Common_UpdatedUtc"]</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var item in _list.Data.Items)
                 {
                     <tr>
-                        <td data-label="User">
+                        <td data-label="@L["Common_User"]">
                             <span class="avatar" aria-hidden="true">@Initials(item.DisplayName)</span>
                             <a href="/admin/users/@item.Id">@item.DisplayName</a>
                         </td>
-                        <td data-label="Username">@item.Username</td>
-                        <td data-label="Email">@item.Email</td>
-                        <td data-label="Status"><StatusBadge Value="@item.Status" /></td>
-                        <td data-label="Updated"><UtcTimestamp Value="@item.UpdatedAtUtc" /></td>
+                        <td data-label="@L["Common_Username"]">@item.Username</td>
+                        <td data-label="@L["Common_Email"]">@item.Email</td>
+                        <td data-label="@L["Common_Status"]"><StatusBadge Value="@item.Status" /></td>
+                        <td data-label="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@item.UpdatedAtUtc" /></td>
                     </tr>
                 }
             </tbody>
         </table>
-        <p class="muted">Showing @_list.Data.Items.Count of @_list.Data.TotalCount</p>
+        <p class="muted">@string.Format(L["Common_ShowingCount"], _list.Data.Items.Count, _list.Data.TotalCount)</p>
     }
 }
 else
 {
-    <PageHeader Title="Platform user detail" Breadcrumb="Platform Admin / Users / Detail" Description="Profile, memberships, and commercial product-access assignments. Development-stage only." />
-    @if (_detail is null) { <LoadingState Message="Loading user…" /> }
-    else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? "Error")" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }
+    <PageHeader Title="@L["Users_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Users"]} / {L["Common_Detail"]}")" Description="@L["Users_DetailDescription"]" />
+    @if (_detail is null) { <LoadingState Message="@L["Users_DetailLoading"]" /> }
+    else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? L["Common_Error"])" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }
     else
     {
         var u = _detail.Data!;
         @if (!string.IsNullOrWhiteSpace(_toast)) { <p class="toast" role="status">@_toast</p> }
-        @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="Action failed" Detail="@_formError" /> }
+        @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="@L["Common_ActionFailed"]" Detail="@_formError" /> }
 
         <dl>
-            <dt>Username</dt><dd>@u.Username</dd>
-            <dt>Status</dt><dd><StatusBadge Value="@u.Status" /></dd>
-            <dt>Created (UTC)</dt><dd><UtcTimestamp Value="@u.CreatedAtUtc" /></dd>
-            <dt>Updated (UTC)</dt><dd><UtcTimestamp Value="@u.UpdatedAtUtc" /></dd>
+            <dt>@L["Common_Username"]</dt><dd>@u.Username</dd>
+            <dt>@L["Common_Status"]</dt><dd><StatusBadge Value="@u.Status" /></dd>
+            <dt>@L["Common_CreatedUtc"]</dt><dd><UtcTimestamp Value="@u.CreatedAtUtc" /></dd>
+            <dt>@L["Common_UpdatedUtc"]</dt><dd><UtcTimestamp Value="@u.UpdatedAtUtc" /></dd>
             @if (u.SuspendedAtUtc is not null)
             {
-                <dt>Suspended (UTC)</dt><dd><UtcTimestamp Value="@u.SuspendedAtUtc.Value" /></dd>
-                <dt>Suspension reason</dt><dd>@(u.SuspensionReason ?? "—")</dd>
+                <dt>@L["Users_SuspendedUtc"]</dt><dd><UtcTimestamp Value="@u.SuspendedAtUtc.Value" /></dd>
+                <dt>@L["Users_SuspensionReason"]</dt><dd>@(u.SuspensionReason ?? "—")</dd>
             }
         </dl>
 
-        <section class="panel">
-            <h2>Edit profile</h2>
+        <section class="panel" aria-label="@L["Users_EditProfile"]">
+            <h2>@L["Users_EditProfile"]</h2>
             <div class="form-grid">
-                <label>Display name <input @bind="_editDisplayName" /></label>
-                <label>Email <input @bind="_editEmail" type="email" /></label>
+                <label>@L["Common_DisplayName"] <input @bind="_editDisplayName" /></label>
+                <label>@L["Common_Email"] <input @bind="_editEmail" type="email" /></label>
             </div>
             <div class="actions">
-                <button type="button" @onclick="SaveProfileAsync" disabled="@_busy">Save profile</button>
+                <button type="button" @onclick="SaveProfileAsync" disabled="@_busy">@L["Users_SaveProfile"]</button>
             </div>
         </section>
 
-        <section class="panel">
-            <h2>Lifecycle</h2>
-            <p class="muted">Suspending a user makes all memberships and product assignments ineffective for commercial access evaluation.</p>
+        <section class="panel" aria-label="@L["Users_Lifecycle"]">
+            <h2>@L["Users_Lifecycle"]</h2>
+            <p class="muted">@L["Users_LifecycleHint"]</p>
             <div class="actions">
-                <button type="button" class="secondary" @onclick='() => AskConfirm("Suspend user", "Suspend this Platform user? Effective product access will be denied while suspended.", SuspendAsync)' disabled="@_busy">Suspend user</button>
-                <button type="button" class="secondary" @onclick="ReactivateAsync" disabled="@_busy">Reactivate user</button>
-                <button type="button" class="danger" @onclick='() => AskConfirm("Disable user", "Disable (deactivate) this Platform user permanently for new access? Historical records remain.", DisableAsync)' disabled="@_busy">Disable user</button>
+                <button type="button" class="secondary" @onclick='() => AskConfirm(L["Users_SuspendUser"], "Suspend this Platform user? Effective product access will be denied while suspended.", SuspendAsync)' disabled="@_busy">@L["Users_SuspendUser"]</button>
+                <button type="button" class="secondary" @onclick="ReactivateAsync" disabled="@_busy">@L["Users_ReactivateUser"]</button>
+                <button type="button" class="danger" @onclick='() => AskConfirm(L["Users_DisableUser"], "Disable (deactivate) this Platform user permanently for new access? Historical records remain.", DisableAsync)' disabled="@_busy">@L["Users_DisableUser"]</button>
             </div>
         </section>
 
-        <h2>Organization memberships</h2>
-        <p class="muted">Platform organization roles only — not Doctor, Nurse, Cashier, or other product-local roles.</p>
-        @if (_memberships is null) { <LoadingState Message="Loading memberships…" /> }
-        else if (!_memberships.IsSuccess) { <ErrorState Title="Memberships unavailable" Detail="@_memberships.Error?.Detail" /> }
-        else if (_memberships.Data!.Items.Count == 0) { <EmptyState Message="This user has no organization memberships." /> }
+        <h2>@L["Users_OrgMemberships"]</h2>
+        <p class="muted">@L["Users_OrgMembershipsHint"]</p>
+        @if (_memberships is null) { <LoadingState Message="@L["Users_LoadingMemberships"]" /> }
+        else if (!_memberships.IsSuccess) { <ErrorState Title="@L["Users_MembershipsUnavailable"]" Detail="@_memberships.Error?.Detail" /> }
+        else if (_memberships.Data!.Items.Count == 0) { <EmptyState Message="@L["Users_MembershipsEmpty"]" /> }
         else
         {
             <table class="data-table responsive-table">
-                <thead><tr><th>Organization</th><th>Role</th><th>Status</th><th></th></tr></thead>
+                <thead><tr><th>@L["Common_Organization"]</th><th>@L["Common_Role"]</th><th>@L["Common_Status"]</th><th></th></tr></thead>
                 <tbody>
                 @foreach (var m in _memberships.Data.Items)
                 {
                     <tr>
-                        <td data-label="Organization"><a href="/admin/organizations/@m.OrganizationId/members">@m.OrganizationId</a></td>
-                        <td data-label="Role">@m.Role</td>
-                        <td data-label="Status"><StatusBadge Value="@m.Status" /></td>
-                        <td data-label="Open"><a href="/admin/organizations/@m.OrganizationId/members">Manage</a></td>
+                        <td data-label="@L["Common_Organization"]"><a href="/admin/organizations/@m.OrganizationId/members">@m.OrganizationId</a></td>
+                        <td data-label="@L["Common_Role"]">@m.Role</td>
+                        <td data-label="@L["Common_Status"]"><StatusBadge Value="@m.Status" /></td>
+                        <td data-label="@L["Common_Open"]"><a href="/admin/organizations/@m.OrganizationId/members">@L["Common_Manage"]</a></td>
                     </tr>
                 }
                 </tbody>
             </table>
         }
 
-        <h2>Product-access assignments</h2>
-        <div class="warning" role="note">Product access means commercial entry eligibility only. It does not assign product-local roles or permissions.</div>
-        @if (_access is null) { <LoadingState Message="Loading product access…" /> }
-        else if (!_access.IsSuccess) { <ErrorState Title="Product access unavailable" Detail="@_access.Error?.Detail" /> }
-        else if (_access.Data!.Items.Count == 0) { <EmptyState Message="No product-access assignments for this user." /> }
+        <h2>@L["Users_ProductAccess"]</h2>
+        <div class="warning" role="note">@L["Users_ProductAccessWarning"]</div>
+        @if (_access is null) { <LoadingState Message="@L["Users_LoadingProductAccess"]" /> }
+        else if (!_access.IsSuccess) { <ErrorState Title="@L["Users_ProductAccessUnavailable"]" Detail="@_access.Error?.Detail" /> }
+        else if (_access.Data!.Items.Count == 0) { <EmptyState Message="@L["Users_ProductAccessEmpty"]" /> }
         else
         {
             <table class="data-table responsive-table">
-                <thead><tr><th>Product</th><th>Organization</th><th>Status</th><th>Granted (UTC)</th><th>Revoked (UTC)</th></tr></thead>
+                <thead><tr><th>@L["Common_Product"]</th><th>@L["Common_Organization"]</th><th>@L["Common_Status"]</th><th>@L["Common_GrantedUtc"]</th><th>@L["Common_RevokedUtc"]</th></tr></thead>
                 <tbody>
                 @foreach (var a in _access.Data.Items)
                 {
                     <tr>
-                        <td data-label="Product">@a.ProductCode</td>
-                        <td data-label="Organization"><a href="/admin/organizations/@a.OrganizationId/product-access">@a.OrganizationId</a></td>
-                        <td data-label="Status"><StatusBadge Value="@a.Status" /></td>
-                        <td data-label="Granted"><UtcTimestamp Value="@a.GrantedAtUtc" /></td>
-                        <td data-label="Revoked">@(a.RevokedAtUtc is null ? "—" : null)@if (a.RevokedAtUtc is not null){<UtcTimestamp Value="@a.RevokedAtUtc.Value" />}</td>
+                        <td data-label="@L["Common_Product"]">@a.ProductCode</td>
+                        <td data-label="@L["Common_Organization"]"><a href="/admin/organizations/@a.OrganizationId/product-access">@a.OrganizationId</a></td>
+                        <td data-label="@L["Common_Status"]"><StatusBadge Value="@a.Status" /></td>
+                        <td data-label="@L["Common_GrantedUtc"]"><UtcTimestamp Value="@a.GrantedAtUtc" /></td>
+                        <td data-label="@L["Common_RevokedUtc"]">@(a.RevokedAtUtc is null ? "—" : null)@if (a.RevokedAtUtc is not null){<UtcTimestamp Value="@a.RevokedAtUtc.Value" />}</td>
                     </tr>
                 }
                 </tbody>

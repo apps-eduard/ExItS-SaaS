@@ -134,4 +134,289 @@
 
   <data name="Footer_Text" xml:space="preserve"><value>ExItS Platform Admin — portfolio, subscriptions, payments, trials, authorization, and audit (P4-WP04). Development-stage.</value></data>
   <data name="Footer_ActorContext" xml:space="preserve"><value>Konteksto ng actor (dev lang): {0} — hindi ito authorization.</value></data>
+
+  <data name="Aria_AdminNav" xml:space="preserve"><value>Platform Admin navigation</value></data>
+  <data name="Common_ActionFailed" xml:space="preserve"><value>Nabigo ang aksyon</value></data>
+  <data name="Common_Error" xml:space="preserve"><value>Error</value></data>
+  <data name="Common_Detail" xml:space="preserve"><value>Detalye</value></data>
+  <data name="Common_Manage" xml:space="preserve"><value>Pamahalaan</value></data>
+  <data name="Common_History" xml:space="preserve"><value>Kasaysayan</value></data>
+  <data name="Common_ShowingCount" xml:space="preserve"><value>Ipinapakita ang {0} sa {1}</value></data>
+  <data name="Common_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Common_Organization" xml:space="preserve"><value>Organisasyon</value></data>
+  <data name="Common_Product" xml:space="preserve"><value>Produkto</value></data>
+  <data name="Common_User" xml:space="preserve"><value>User</value></data>
+  <data name="Common_Unavailable" xml:space="preserve"><value>Hindi available</value></data>
+  <data name="Common_ViewHistory" xml:space="preserve"><value>Tingnan ang kasaysayan</value></data>
+  <data name="Common_Reason" xml:space="preserve"><value>Dahilan</value></data>
+  <data name="Common_Summary" xml:space="preserve"><value>Buod</value></data>
+  <data name="Common_CorrelationId" xml:space="preserve"><value>Correlation ID</value></data>
+  <data name="Common_Subscription" xml:space="preserve"><value>Subscription</value></data>
+  <data name="Common_Plan" xml:space="preserve"><value>Plan</value></data>
+  <data name="Common_Amount" xml:space="preserve"><value>Halaga</value></data>
+  <data name="Common_Method" xml:space="preserve"><value>Paraan</value></data>
+  <data name="Common_Reference" xml:space="preserve"><value>Reference</value></data>
+  <data name="Common_Actions" xml:space="preserve"><value>Mga aksyon</value></data>
+  <data name="Common_Role" xml:space="preserve"><value>Role</value></data>
+  <data name="Common_Code" xml:space="preserve"><value>Code</value></data>
+  <data name="Common_DisplayName" xml:space="preserve"><value>Display name</value></data>
+  <data name="Common_UpdatedUtc" xml:space="preserve"><value>Na-update (UTC)</value></data>
+  <data name="Common_CreatedUtc" xml:space="preserve"><value>Ginawa (UTC)</value></data>
+  <data name="Common_GeneratedUtc" xml:space="preserve"><value>Nagenerate (UTC)</value></data>
+  <data name="Common_GrantedUtc" xml:space="preserve"><value>Na-grant (UTC)</value></data>
+  <data name="Common_RevokedUtc" xml:space="preserve"><value>Na-revoke (UTC)</value></data>
+  <data name="Common_PaidUtc" xml:space="preserve"><value>Binayaran (UTC)</value></data>
+  <data name="Common_EffectiveUtc" xml:space="preserve"><value>Epektibo (UTC)</value></data>
+  <data name="Common_ExpiresUtc" xml:space="preserve"><value>Mag-e-expire (UTC)</value></data>
+  <data name="Common_Username" xml:space="preserve"><value>Username</value></data>
+  <data name="Common_Email" xml:space="preserve"><value>Email</value></data>
+  <data name="Common_Slug" xml:space="preserve"><value>Slug</value></data>
+  <data name="Common_Version" xml:space="preserve"><value>Version</value></data>
+  <data name="Common_Feature" xml:space="preserve"><value>Feature</value></data>
+  <data name="Common_Enabled" xml:space="preserve"><value>Enabled</value></data>
+  <data name="Common_Limit" xml:space="preserve"><value>Limit</value></data>
+  <data name="Common_Source" xml:space="preserve"><value>Source</value></data>
+  <data name="Common_Name" xml:space="preserve"><value>Pangalan</value></data>
+  <data name="Common_Type" xml:space="preserve"><value>Uri</value></data>
+  <data name="Common_Open" xml:space="preserve"><value>Buksan</value></data>
+  <data name="Common_Evaluate" xml:space="preserve"><value>I-evaluate</value></data>
+  <data name="Common_Suspend" xml:space="preserve"><value>I-suspend</value></data>
+  <data name="Common_Reactivate" xml:space="preserve"><value>I-reactivate</value></data>
+  <data name="Common_Revoke" xml:space="preserve"><value>I-revoke</value></data>
+  <data name="Common_ApplyFilters" xml:space="preserve"><value>I-apply ang mga filter</value></data>
+  <data name="Common_HideCreate" xml:space="preserve"><value>Itago ang create</value></data>
+  <data name="Common_CreateUser" xml:space="preserve"><value>Gumawa ng user</value></data>
+  <data name="Common_Membership" xml:space="preserve"><value>Membership</value></data>
+  <data name="Common_Assignment" xml:space="preserve"><value>Assignment</value></data>
+  <data name="Common_Snapshot" xml:space="preserve"><value>Snapshot</value></data>
+  <data name="Common_EvaluatedUtc" xml:space="preserve"><value>Na-evaluate (UTC)</value></data>
+  <data name="Common_Related" xml:space="preserve"><value>Kaugnay</value></data>
+  <data name="Common_Payments" xml:space="preserve"><value>Mga Bayad</value></data>
+  <data name="Common_ProductAccess" xml:space="preserve"><value>Product access</value></data>
+  <data name="Common_Members" xml:space="preserve"><value>Mga miyembro</value></data>
+  <data name="Common_CommercialSummary" xml:space="preserve"><value>commercial summary</value></data>
+  <data name="Common_Grants" xml:space="preserve"><value>Mga grant</value></data>
+  <data name="Common_Duration" xml:space="preserve"><value>Tagal</value></data>
+
+  <data name="Status_Active" xml:space="preserve"><value>Active</value></data>
+  <data name="Status_Suspended" xml:space="preserve"><value>Suspended</value></data>
+  <data name="Status_Deactivated" xml:space="preserve"><value>Deactivated</value></data>
+  <data name="Status_Removed" xml:space="preserve"><value>Removed</value></data>
+  <data name="Status_Revoked" xml:space="preserve"><value>Revoked</value></data>
+  <data name="Status_PendingConfirmation" xml:space="preserve"><value>PendingConfirmation</value></data>
+  <data name="Status_Confirmed" xml:space="preserve"><value>Confirmed</value></data>
+  <data name="Status_Rejected" xml:space="preserve"><value>Rejected</value></data>
+  <data name="Status_Voided" xml:space="preserve"><value>Voided</value></data>
+  <data name="Status_Trialing" xml:space="preserve"><value>Trialing</value></data>
+  <data name="Status_GracePeriod" xml:space="preserve"><value>GracePeriod</value></data>
+  <data name="Status_PastDue" xml:space="preserve"><value>PastDue</value></data>
+  <data name="Status_Cancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="Status_Expired" xml:space="preserve"><value>Expired</value></data>
+  <data name="Status_Succeeded" xml:space="preserve"><value>Succeeded</value></data>
+  <data name="Status_Denied" xml:space="preserve"><value>Denied</value></data>
+  <data name="Status_Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Access_Allowed" xml:space="preserve"><value>Allowed</value></data>
+  <data name="Access_Denied" xml:space="preserve"><value>Denied</value></data>
+  <data name="Access_Reason" xml:space="preserve"><value>Dahilan:</value></data>
+
+  <data name="Error_PageTitle" xml:space="preserve"><value>Error</value></data>
+  <data name="Error_Heading" xml:space="preserve"><value>Error.</value></data>
+  <data name="Error_Subheading" xml:space="preserve"><value>May naganap na error habang pinoproseso ang iyong request.</value></data>
+  <data name="Error_RequestId" xml:space="preserve"><value>Request ID:</value></data>
+  <data name="Error_DevelopmentMode" xml:space="preserve"><value>Development Mode</value></data>
+  <data name="Error_DevelopmentModeDetail" xml:space="preserve"><value>Kapag pinalitan ang environment sa Development, mas detalyadong impormasyon ang ipapakita tungkol sa error.</value></data>
+  <data name="Error_DevelopmentModeWarning" xml:space="preserve"><value>Hindi dapat naka-enable ang Development environment para sa deployed applications.</value></data>
+  <data name="Error_DevelopmentModeWarningDetail" xml:space="preserve"><value>Maaari itong magresulta sa pagpapakita ng sensitibong impormasyon mula sa mga exception sa mga end user. Para sa local debugging, i-enable ang Development environment sa pamamagitan ng pag-set ng ASPNETCORE_ENVIRONMENT environment variable sa Development at i-restart ang app.</value></data>
+
+  <data name="NotFound_Title" xml:space="preserve"><value>Hindi Nahanap</value></data>
+  <data name="NotFound_Message" xml:space="preserve"><value>Paumanhin, ang content na hinahanap mo ay hindi umiiral.</value></data>
+
+  <data name="Dashboard_Title" xml:space="preserve"><value>Portfolio dashboard</value></data>
+  <data name="Dashboard_Description" xml:space="preserve"><value>Read-only commercial summary mula sa Platform APIs. Ang mga nabigong seksyon ay nakalista — hindi ginagawang zero ang mga count kapag nabigo ang isang seksyon.</value></data>
+  <data name="Dashboard_Loading" xml:space="preserve"><value>Naglo-load ng portfolio summary…</value></data>
+  <data name="Dashboard_AriaPortfolioCounts" xml:space="preserve"><value>Mga portfolio count</value></data>
+  <data name="Dashboard_Card_ActiveProducts" xml:space="preserve"><value>Mga active na produkto</value></data>
+  <data name="Dashboard_Card_PublishedPlanVersions" xml:space="preserve"><value>Mga published plan version</value></data>
+  <data name="Dashboard_Card_Organizations" xml:space="preserve"><value>Mga Organisasyon</value></data>
+  <data name="Dashboard_Card_TrialingSubscriptions" xml:space="preserve"><value>Mga trialing subscription</value></data>
+  <data name="Dashboard_Card_ActiveSubscriptions" xml:space="preserve"><value>Mga active subscription</value></data>
+  <data name="Dashboard_Card_GracePastDueSuspended" xml:space="preserve"><value>Grace / Past due / Suspended</value></data>
+  <data name="Dashboard_Card_PendingManualPayments" xml:space="preserve"><value>Mga pending manual payment</value></data>
+  <data name="Dashboard_Card_LatestEntitlementSnapshots" xml:space="preserve"><value>Pinakabagong entitlement snapshot</value></data>
+  <data name="Dashboard_PartialUnavailable" xml:space="preserve"><value>Bahagyang hindi available ang data.</value></data>
+  <data name="Dashboard_PartialUnavailableDetail" xml:space="preserve"><value>Ang mga nabigong seksyon ay hindi ipinapakita bilang zero.</value></data>
+
+  <data name="Products_Title" xml:space="preserve"><value>Mga Produkto</value></data>
+  <data name="Products_Description" xml:space="preserve"><value>Read-only product catalog. Walang create, rename, activate, o retire actions sa work package na ito.</value></data>
+  <data name="Products_Loading" xml:space="preserve"><value>Naglo-load ng mga produkto…</value></data>
+  <data name="Products_Empty" xml:space="preserve"><value>Walang produktong nakarehistro sa Platform catalog.</value></data>
+  <data name="Products_DetailTitle" xml:space="preserve"><value>Detalye ng produkto</value></data>
+  <data name="Products_DetailDescription" xml:space="preserve"><value>Mga feature, plan, published plan version, at trial definition. Read-only.</value></data>
+  <data name="Products_DetailLoading" xml:space="preserve"><value>Naglo-load ng product overview…</value></data>
+  <data name="Products_FeatureCount" xml:space="preserve"><value>Bilang ng feature</value></data>
+  <data name="Products_PlanCount" xml:space="preserve"><value>Bilang ng plan</value></data>
+  <data name="Products_FeatureDefinitions" xml:space="preserve"><value>Mga feature definition</value></data>
+  <data name="Products_FeatureDefinitionsEmpty" xml:space="preserve"><value>Walang feature definition.</value></data>
+  <data name="Products_Plans" xml:space="preserve"><value>Mga plan</value></data>
+  <data name="Products_PlansEmpty" xml:space="preserve"><value>Walang plan.</value></data>
+  <data name="Products_PublishedPlanVersions" xml:space="preserve"><value>Mga published plan version</value></data>
+  <data name="Products_PublishedPlanVersionsEmpty" xml:space="preserve"><value>Walang published plan version.</value></data>
+  <data name="Products_TrialDefinitions" xml:space="preserve"><value>Mga trial definition</value></data>
+  <data name="Products_TrialDefinitionsEmpty" xml:space="preserve"><value>Walang trial definition.</value></data>
+  <data name="Products_Column_Billing" xml:space="preserve"><value>Billing</value></data>
+  <data name="Products_Column_TrialEligible" xml:space="preserve"><value>Trial eligible</value></data>
+
+  <data name="Organizations_Title" xml:space="preserve"><value>Mga Organisasyon</value></data>
+  <data name="Organizations_Description" xml:space="preserve"><value>Mga Platform Organization na may commercial summary, membership, at product-access administration.</value></data>
+  <data name="Organizations_Loading" xml:space="preserve"><value>Naglo-load ng mga organisasyon…</value></data>
+  <data name="Organizations_Empty" xml:space="preserve"><value>Walang organisasyong nagawa.</value></data>
+  <data name="Organizations_DetailTitle" xml:space="preserve"><value>Commercial summary ng organisasyon</value></data>
+  <data name="Organizations_DetailDescription" xml:space="preserve"><value>Mga subscription, manual SaaS payment, at pinakabagong entitlement snapshot. Gamitin ang subscription at payment pages para sa lifecycle actions.</value></data>
+  <data name="Organizations_DetailLoading" xml:space="preserve"><value>Naglo-load ng organisasyon…</value></data>
+  <data name="Organizations_CommercialAdmin" xml:space="preserve"><value>Commercial admin</value></data>
+  <data name="Organizations_StartTrialSubscriptions" xml:space="preserve"><value>Simulan ang trial / subscriptions</value></data>
+  <data name="Organizations_CreateViewPayments" xml:space="preserve"><value>Gumawa / tingnan ang mga bayad</value></data>
+  <data name="Organizations_SubscriptionsByProduct" xml:space="preserve"><value>Mga subscription ayon sa produkto</value></data>
+  <data name="Organizations_SubscriptionsHint" xml:space="preserve"><value>Buksan ang subscription para magpatakbo ng lifecycle actions. Mananatiling nakalista ang mga historical subscription.</value></data>
+  <data name="Organizations_SubscriptionsEmpty" xml:space="preserve"><value>Walang subscription para sa organisasyong ito.</value></data>
+  <data name="Organizations_OpenSubscription" xml:space="preserve"><value>Buksan ang subscription</value></data>
+  <data name="Organizations_PaymentHistory" xml:space="preserve"><value>Kasaysayan ng manual SaaS payment</value></data>
+  <data name="Organizations_PaymentsEmpty" xml:space="preserve"><value>Walang naitalang bayad.</value></data>
+  <data name="Organizations_OpenPayment" xml:space="preserve"><value>Buksan ang bayad</value></data>
+  <data name="Organizations_LatestEntitlements" xml:space="preserve"><value>Pinakabagong entitlement snapshot</value></data>
+  <data name="Organizations_EntitlementsEmpty" xml:space="preserve"><value>Walang entitlement snapshot para sa organisasyong ito.</value></data>
+
+  <data name="OrgMembers_Title" xml:space="preserve"><value>Mga miyembro ng organisasyon</value></data>
+  <data name="OrgMembers_Description" xml:space="preserve"><value>Platform organization membership at mga role. Development-stage; walang authentication.</value></data>
+  <data name="OrgMembers_Warning" xml:space="preserve"><value>Ang mga Platform organization role (Owner, Administrator, Member) ay hindi product-local role. Ang pag-alis ng membership ay nagre-revoke ng product-access assignment para sa organisasyong ito.</value></data>
+  <data name="OrgMembers_Loading" xml:space="preserve"><value>Naglo-load ng organisasyon…</value></data>
+  <data name="OrgMembers_AddSection" xml:space="preserve"><value>Magdagdag ng umiiral na Platform user</value></data>
+  <data name="OrgMembers_UserId" xml:space="preserve"><value>User ID</value></data>
+  <data name="OrgMembers_OrgRole" xml:space="preserve"><value>Organization role</value></data>
+  <data name="OrgMembers_AddMember" xml:space="preserve"><value>Magdagdag ng miyembro</value></data>
+  <data name="OrgMembers_LoadingMembers" xml:space="preserve"><value>Naglo-load ng mga miyembro…</value></data>
+  <data name="OrgMembers_Unavailable" xml:space="preserve"><value>Hindi available ang mga miyembro</value></data>
+  <data name="OrgMembers_Empty" xml:space="preserve"><value>Walang membership para sa organisasyong ito.</value></data>
+  <data name="OrgMembers_SuspendMembership" xml:space="preserve"><value>I-suspend ang membership</value></data>
+  <data name="OrgMembers_RevokeMembership" xml:space="preserve"><value>I-revoke ang membership</value></data>
+  <data name="OrgMembers_ReactivateMembership" xml:space="preserve"><value>I-reactivate ang membership</value></data>
+
+  <data name="OrgProductAccess_Title" xml:space="preserve"><value>Product access</value></data>
+  <data name="OrgProductAccess_Description" xml:space="preserve"><value>Mga commercial product-access assignment. Development-stage; walang authentication.</value></data>
+  <data name="OrgProductAccess_Warning" xml:space="preserve"><value>Ang product access ay nagbibigay ng commercial entry eligibility lamang. Hindi ito nag-a-assign ng Doctor, Nurse, Clinic Admin, Cashier, Store Manager, POS Administrator, Patient, o anumang product-local role. Kailangan din ng active user, membership, produkto, Trialing/Active subscription, at current entitlement snapshot para maging epektibo ang access.</value></data>
+  <data name="OrgProductAccess_Loading" xml:space="preserve"><value>Naglo-load ng organisasyon…</value></data>
+  <data name="OrgProductAccess_GrantSection" xml:space="preserve"><value>I-grant ang product access</value></data>
+  <data name="OrgProductAccess_GrantUserIdPlaceholder" xml:space="preserve"><value>GUID ng active member</value></data>
+  <data name="OrgProductAccess_ProductCode" xml:space="preserve"><value>Product code</value></data>
+  <data name="OrgProductAccess_GrantAccess" xml:space="preserve"><value>I-grant ang access</value></data>
+  <data name="OrgProductAccess_EvaluateSection" xml:space="preserve"><value>I-evaluate ang effective access</value></data>
+  <data name="OrgProductAccess_EvaluationFailed" xml:space="preserve"><value>Nabigo ang evaluation</value></data>
+  <data name="OrgProductAccess_LoadingAssignments" xml:space="preserve"><value>Naglo-load ng mga assignment…</value></data>
+  <data name="OrgProductAccess_AssignmentsUnavailable" xml:space="preserve"><value>Hindi available ang mga assignment</value></data>
+  <data name="OrgProductAccess_Empty" xml:space="preserve"><value>Walang product-access assignment para sa organisasyong ito.</value></data>
+  <data name="OrgProductAccess_RevokeAccess" xml:space="preserve"><value>I-revoke ang access</value></data>
+  <data name="OrgProductAccess_AriaGrant" xml:space="preserve"><value>I-grant ang product access</value></data>
+  <data name="OrgProductAccess_AriaEvaluate" xml:space="preserve"><value>I-evaluate ang effective access</value></data>
+
+  <data name="Users_Title" xml:space="preserve"><value>Mga Platform user</value></data>
+  <data name="Users_Description" xml:space="preserve"><value>Development-stage Platform user administration. Ang mga API ay nananatiling walang authentication; kailangan pa rin ng server-side authorization bago ang production.</value></data>
+  <data name="Users_Warning" xml:space="preserve"><value>Ang Platform membership ay hindi product operational authorization. Walang password, invitation, o identity-provider linkage sa work package na ito.</value></data>
+  <data name="Users_SearchPlaceholder" xml:space="preserve"><value>Username, email, o pangalan</value></data>
+  <data name="Users_HideCreate" xml:space="preserve"><value>Itago ang create</value></data>
+  <data name="Users_CreateUser" xml:space="preserve"><value>Gumawa ng user</value></data>
+  <data name="Users_AriaCreate" xml:space="preserve"><value>Gumawa ng Platform user</value></data>
+  <data name="Users_CreateSection" xml:space="preserve"><value>Gumawa ng Platform user</value></data>
+  <data name="Users_CreateFailed" xml:space="preserve"><value>Hindi makagawa ng user</value></data>
+  <data name="Users_Loading" xml:space="preserve"><value>Naglo-load ng mga user…</value></data>
+  <data name="Users_Empty" xml:space="preserve"><value>Walang Platform user na tumugma sa kasalukuyang filter.</value></data>
+  <data name="Users_DetailTitle" xml:space="preserve"><value>Detalye ng Platform user</value></data>
+  <data name="Users_DetailDescription" xml:space="preserve"><value>Profile, membership, at commercial product-access assignment. Development-stage lamang.</value></data>
+  <data name="Users_DetailLoading" xml:space="preserve"><value>Naglo-load ng user…</value></data>
+  <data name="Users_SuspendedUtc" xml:space="preserve"><value>Na-suspend (UTC)</value></data>
+  <data name="Users_SuspensionReason" xml:space="preserve"><value>Dahilan ng suspension</value></data>
+  <data name="Users_EditProfile" xml:space="preserve"><value>I-edit ang profile</value></data>
+  <data name="Users_SaveProfile" xml:space="preserve"><value>I-save ang profile</value></data>
+  <data name="Users_Lifecycle" xml:space="preserve"><value>Lifecycle</value></data>
+  <data name="Users_LifecycleHint" xml:space="preserve"><value>Ang pag-suspend ng user ay ginagawang hindi epektibo ang lahat ng membership at product assignment para sa commercial access evaluation.</value></data>
+  <data name="Users_SuspendUser" xml:space="preserve"><value>I-suspend ang user</value></data>
+  <data name="Users_ReactivateUser" xml:space="preserve"><value>I-reactivate ang user</value></data>
+  <data name="Users_DisableUser" xml:space="preserve"><value>I-disable ang user</value></data>
+  <data name="Users_OrgMemberships" xml:space="preserve"><value>Mga organization membership</value></data>
+  <data name="Users_OrgMembershipsHint" xml:space="preserve"><value>Platform organization role lamang — hindi Doctor, Nurse, Cashier, o iba pang product-local role.</value></data>
+  <data name="Users_LoadingMemberships" xml:space="preserve"><value>Naglo-load ng mga membership…</value></data>
+  <data name="Users_MembershipsUnavailable" xml:space="preserve"><value>Hindi available ang mga membership</value></data>
+  <data name="Users_MembershipsEmpty" xml:space="preserve"><value>Walang organization membership ang user na ito.</value></data>
+  <data name="Users_ProductAccess" xml:space="preserve"><value>Mga product-access assignment</value></data>
+  <data name="Users_ProductAccessWarning" xml:space="preserve"><value>Ang product access ay commercial entry eligibility lamang. Hindi ito nag-a-assign ng product-local role o permission.</value></data>
+  <data name="Users_LoadingProductAccess" xml:space="preserve"><value>Naglo-load ng product access…</value></data>
+  <data name="Users_ProductAccessUnavailable" xml:space="preserve"><value>Hindi available ang product access</value></data>
+  <data name="Users_ProductAccessEmpty" xml:space="preserve"><value>Walang product-access assignment para sa user na ito.</value></data>
+
+  <data name="Subscriptions_Title" xml:space="preserve"><value>Mga Subscription</value></data>
+  <data name="Subscriptions_Description" xml:space="preserve"><value>Development-stage subscription administration. Ang lifecycle mutation ay tumatawag sa Platform APIs; kailangan pa rin ng server-side authorization bago ang production.</value></data>
+  <data name="Subscriptions_Warning" xml:space="preserve"><value>Ang mga pagbabago sa subscription ay nakakaapekto sa commercial eligibility lamang. Hindi ito nag-a-assign ng product-local role o nagde-deliver ng entitlement sa HealthCare o POS.</value></data>
+  <data name="Subscriptions_StartTrial" xml:space="preserve"><value>Simulan ang organization trial</value></data>
+  <data name="Subscriptions_StartTrialHint" xml:space="preserve"><value>Ang tagal ng trial ay mula sa napiling trial definition. Ang repeat-trial policy ay provisional — suriin bago magsimula ng isa pang trial para sa parehong organisasyon at produkto.</value></data>
+  <data name="Subscriptions_StartTrialFailed" xml:space="preserve"><value>Hindi masimulan ang trial</value></data>
+  <data name="Subscriptions_LoadCatalog" xml:space="preserve"><value>I-load ang catalog para sa produkto</value></data>
+  <data name="Subscriptions_StartTrialButton" xml:space="preserve"><value>Simulan ang trial</value></data>
+  <data name="Subscriptions_Loading" xml:space="preserve"><value>Naglo-load ng mga subscription…</value></data>
+  <data name="Subscriptions_Empty" xml:space="preserve"><value>Walang subscription na tumugma sa kasalukuyang filter.</value></data>
+  <data name="Subscriptions_DetailTitle" xml:space="preserve"><value>Detalye ng subscription</value></data>
+  <data name="Subscriptions_DetailDescription" xml:space="preserve"><value>Commercial lifecycle administration. Development-stage; walang authentication.</value></data>
+  <data name="Subscriptions_DetailWarning" xml:space="preserve"><value>Ang Cancelled at Expired ay terminal. Ang subscription eligibility ay hindi product provisioning at hindi nag-a-assign ng product-local role.</value></data>
+  <data name="Subscriptions_DetailLoading" xml:space="preserve"><value>Naglo-load ng subscription…</value></data>
+  <data name="Subscriptions_AriaStartTrial" xml:space="preserve"><value>Simulan ang organization trial</value></data>
+  <data name="Subscriptions_LifecycleActions" xml:space="preserve"><value>Mga lifecycle action</value></data>
+  <data name="Subscriptions_LifecycleHint" xml:space="preserve"><value>Ang mga aksyon na valid para sa kasalukuyang status lamang ang ipinapakita. Ang mga nakatago o disabled na control ay hindi security.</value></data>
+  <data name="Subscriptions_Column_TrialEndUtc" xml:space="preserve"><value>Katapusan ng trial (UTC)</value></data>
+
+  <data name="Payments_Title" xml:space="preserve"><value>Mga manual SaaS payment</value></data>
+  <data name="Payments_Description" xml:space="preserve"><value>Mga record ng cash, bank transfer, at manual GCash reference lamang. Development-stage; walang authentication.</value></data>
+  <data name="Payments_Warning" xml:space="preserve"><value>Ang manual SaaS payment confirmation ay operator attestation lamang — hindi automatic provider verification. Hindi kailanman ipinapakita ng UI na ito ang mga card number, CVV, PIN, OTP, gateway secret, o GCash credential. Walang payment gateway, webhook, QR, invoice engine, o POS/Utang payment integration dito.</value></data>
+  <data name="Payments_CreateSection" xml:space="preserve"><value>Gumawa ng manual SaaS payment</value></data>
+  <data name="Payments_CreateFailed" xml:space="preserve"><value>Hindi makagawa ng payment</value></data>
+  <data name="Payments_CreateButton" xml:space="preserve"><value>Gumawa ng manual payment</value></data>
+  <data name="Payments_Loading" xml:space="preserve"><value>Naglo-load ng mga bayad…</value></data>
+  <data name="Payments_Empty" xml:space="preserve"><value>Walang bayad na tumugma sa kasalukuyang filter.</value></data>
+  <data name="Payments_DetailTitle" xml:space="preserve"><value>Detalye ng bayad</value></data>
+  <data name="Payments_DetailDescription" xml:space="preserve"><value>Manual SaaS payment lifecycle. Development-stage; walang authentication.</value></data>
+  <data name="Payments_DetailWarning" xml:space="preserve"><value>Ang manual confirmation ay hindi automatic provider verification. Maaaring i-activate ng confirmed payment ang eligible subscription nang sabay-sabay. Hindi maaaring gamitin muli ang confirmed payment. Walang gateway, card, invoice, POS, o HealthCare payment behavior.</value></data>
+  <data name="Payments_DetailLoading" xml:space="preserve"><value>Naglo-load ng bayad…</value></data>
+  <data name="Payments_AriaCreate" xml:space="preserve"><value>Gumawa ng manual SaaS payment</value></data>
+  <data name="Payments_PaymentActions" xml:space="preserve"><value>Mga payment action</value></data>
+
+  <data name="Entitlements_Title" xml:space="preserve"><value>Pinakabagong entitlement</value></data>
+  <data name="Entitlements_Description" xml:space="preserve"><value>Pinakabagong snapshot bawat organisasyon/produkto. Snapshot ≠ product delivery.</value></data>
+  <data name="Entitlements_Warning" xml:space="preserve"><value>Ang mga nakalistang snapshot ay Platform state lamang at hindi patunay ng product-local delivery.</value></data>
+  <data name="Entitlements_Loading" xml:space="preserve"><value>Naglo-load ng pinakabagong entitlement…</value></data>
+  <data name="Entitlements_Empty" xml:space="preserve"><value>Wala pang entitlement snapshot.</value></data>
+  <data name="Entitlements_DetailTitle" xml:space="preserve"><value>Entitlement snapshot</value></data>
+  <data name="Entitlements_DetailDescription" xml:space="preserve"><value>Platform-authoritative snapshot state. Hindi patunay ng delivery sa produkto.</value></data>
+  <data name="Entitlements_DetailWarning" xml:space="preserve"><value>Ang snapshot na ito ay authoritative Platform state lamang. Hindi ito ebidensya na natanggap o na-apply ng HealthCare o POS ang mga entitlement. Ang provisional refresh policy ay nananatiling bukas kung naaangkop.</value></data>
+  <data name="Entitlements_DetailLoading" xml:space="preserve"><value>Naglo-load ng snapshot…</value></data>
+  <data name="Entitlements_HistoryTitle" xml:space="preserve"><value>Kasaysayan ng entitlement</value></data>
+  <data name="Entitlements_HistoryDescription" xml:space="preserve"><value>Mga immutable snapshot version para sa pares ng organisasyon/produkto.</value></data>
+  <data name="Entitlements_HistoryLoading" xml:space="preserve"><value>Naglo-load ng kasaysayan…</value></data>
+  <data name="Entitlements_HistoryEmpty" xml:space="preserve"><value>Walang snapshot sa kasaysayan.</value></data>
+  <data name="Entitlements_FeatureGrants" xml:space="preserve"><value>Mga feature grant</value></data>
+  <data name="Entitlements_NoGrants" xml:space="preserve"><value>Walang grant sa snapshot na ito.</value></data>
+  <data name="Entitlements_FeatureOverrideHistory" xml:space="preserve"><value>Kasaysayan ng feature override</value></data>
+  <data name="Entitlements_OverridesLoading" xml:space="preserve"><value>Naglo-load ng feature override…</value></data>
+  <data name="Entitlements_OverridesUnavailable" xml:space="preserve"><value>Hindi available ang mga override</value></data>
+  <data name="Entitlements_NoOverrides" xml:space="preserve"><value>Walang feature override para sa organisasyon/produktong ito.</value></data>
+  <data name="Entitlements_SnapshotVersion" xml:space="preserve"><value>Snapshot version</value></data>
+  <data name="Entitlements_SchemaVersion" xml:space="preserve"><value>Schema version</value></data>
+  <data name="Entitlements_SubscriptionStatus" xml:space="preserve"><value>Subscription status</value></data>
+  <data name="Entitlements_InGracePeriod" xml:space="preserve"><value>Nasa grace period</value></data>
+  <data name="Entitlements_RefreshByUtc" xml:space="preserve"><value>I-refresh bago (UTC)</value></data>
+  <data name="Entitlements_Column_EffectiveFromUtc" xml:space="preserve"><value>Epektibo mula (UTC)</value></data>
+
+  <data name="Audit_OutcomeSucceeded" xml:space="preserve"><value>Succeeded</value></data>
+  <data name="Audit_OutcomeDenied" xml:space="preserve"><value>Denied</value></data>
+  <data name="Audit_OutcomeFailed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Nav_SkipToContent" xml:space="preserve"><value>Lumaktaw papunta sa pangunahing nilalaman</value></data>
+  <data name="Error_Unhandled" xml:space="preserve"><value>May nangyaring hindi nasolusyonang error.</value></data>
+  <data name="Error_Reload" xml:space="preserve"><value>I-reload</value></data>
+  <data name="Error_Dismiss" xml:space="preserve"><value>Isara</value></data>
 </root>

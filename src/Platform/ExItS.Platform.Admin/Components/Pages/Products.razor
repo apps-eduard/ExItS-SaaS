@@ -2,32 +2,33 @@
 @page "/admin/products/{Id:guid}"
 @rendermode InteractiveServer
 @inject IPlatformApiClient Api
+@inject IStringLocalizer<AdminResources> L
 
 @if (Id is null)
 {
-    <PageHeader Title="Products" Breadcrumb="Platform Admin / Products" Description="Read-only product catalog. No create, rename, activate, or retire actions in this work package." />
+    <PageHeader Title="@L["Products_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Products"]}")" Description="@L["Products_Description"]" />
     @if (_list is null)
     {
-        <LoadingState Message="Loading products…" />
+        <LoadingState Message="@L["Products_Loading"]" />
     }
     else if (!_list.IsSuccess)
     {
-        <ErrorState Title="@(_list.Error?.Title ?? "Error")" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" />
+        <ErrorState Title="@(_list.Error?.Title ?? L["Common_Error"])" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" />
     }
     else if (_list.Data!.Items.Count == 0)
     {
-        <EmptyState Message="No products are registered in the Platform catalog." />
+        <EmptyState Message="@L["Products_Empty"]" />
     }
     else
     {
         <table>
-            <caption class="sr-only">Products</caption>
+            <caption class="sr-only">@L["Products_Title"]</caption>
             <thead>
                 <tr>
-                    <th scope="col">Code</th>
-                    <th scope="col">Display name</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Updated (UTC)</th>
+                    <th scope="col">@L["Common_Code"]</th>
+                    <th scope="col">@L["Common_DisplayName"]</th>
+                    <th scope="col">@L["Common_Status"]</th>
+                    <th scope="col">@L["Common_UpdatedUtc"]</th>
                 </tr>
             </thead>
             <tbody>
@@ -42,39 +43,39 @@
                 }
             </tbody>
         </table>
-        <p class="muted">Showing @_list.Data.Items.Count of @_list.Data.TotalCount</p>
+        <p class="muted">@string.Format(L["Common_ShowingCount"], _list.Data.Items.Count, _list.Data.TotalCount)</p>
     }
 }
 else
 {
-    <PageHeader Title="Product detail" Breadcrumb="Platform Admin / Products / Detail" Description="Features, plans, published plan versions, and trial definitions. Read-only." />
+    <PageHeader Title="@L["Products_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Products"]} / {L["Common_Detail"]}")" Description="@L["Products_DetailDescription"]" />
     @if (_overview is null)
     {
-        <LoadingState Message="Loading product overview…" />
+        <LoadingState Message="@L["Products_DetailLoading"]" />
     }
     else if (!_overview.IsSuccess)
     {
-        <ErrorState Title="@(_overview.Error?.Title ?? "Error")" Detail="@_overview.Error?.Detail" CorrelationId="@_overview.Error?.CorrelationId" Unavailable="@(_overview.Status == ApiCallStatus.Unavailable)" />
+        <ErrorState Title="@(_overview.Error?.Title ?? L["Common_Error"])" Detail="@_overview.Error?.Detail" CorrelationId="@_overview.Error?.CorrelationId" Unavailable="@(_overview.Status == ApiCallStatus.Unavailable)" />
     }
     else
     {
         var o = _overview.Data!;
         <dl>
-            <dt>Code</dt><dd>@o.Product.Code</dd>
-            <dt>Display name</dt><dd>@o.Product.DisplayName</dd>
-            <dt>Status</dt><dd><StatusBadge Value="@o.Product.Status" /></dd>
-            <dt>Created (UTC)</dt><dd><UtcTimestamp Value="@o.Product.CreatedAtUtc" /></dd>
-            <dt>Updated (UTC)</dt><dd><UtcTimestamp Value="@o.Product.UpdatedAtUtc" /></dd>
-            <dt>Feature count</dt><dd>@o.Features.Count</dd>
-            <dt>Plan count</dt><dd>@o.Plans.Count</dd>
+            <dt>@L["Common_Code"]</dt><dd>@o.Product.Code</dd>
+            <dt>@L["Common_DisplayName"]</dt><dd>@o.Product.DisplayName</dd>
+            <dt>@L["Common_Status"]</dt><dd><StatusBadge Value="@o.Product.Status" /></dd>
+            <dt>@L["Common_CreatedUtc"]</dt><dd><UtcTimestamp Value="@o.Product.CreatedAtUtc" /></dd>
+            <dt>@L["Common_UpdatedUtc"]</dt><dd><UtcTimestamp Value="@o.Product.UpdatedAtUtc" /></dd>
+            <dt>@L["Products_FeatureCount"]</dt><dd>@o.Features.Count</dd>
+            <dt>@L["Products_PlanCount"]</dt><dd>@o.Plans.Count</dd>
         </dl>
 
-        <h2>Feature definitions</h2>
-        @if (o.Features.Count == 0) { <EmptyState Message="No feature definitions." /> }
+        <h2>@L["Products_FeatureDefinitions"]</h2>
+        @if (o.Features.Count == 0) { <EmptyState Message="@L["Products_FeatureDefinitionsEmpty"]" /> }
         else
         {
             <table>
-                <thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Status</th></tr></thead>
+                <thead><tr><th>@L["Common_Code"]</th><th>@L["Common_Name"]</th><th>@L["Common_Type"]</th><th>@L["Common_Status"]</th></tr></thead>
                 <tbody>
                 @foreach (var f in o.Features)
                 {
@@ -84,12 +85,12 @@ else
             </table>
         }
 
-        <h2>Plans</h2>
-        @if (o.Plans.Count == 0) { <EmptyState Message="No plans." /> }
+        <h2>@L["Products_Plans"]</h2>
+        @if (o.Plans.Count == 0) { <EmptyState Message="@L["Products_PlansEmpty"]" /> }
         else
         {
             <table>
-                <thead><tr><th>Code</th><th>Name</th><th>Status</th></tr></thead>
+                <thead><tr><th>@L["Common_Code"]</th><th>@L["Common_Name"]</th><th>@L["Common_Status"]</th></tr></thead>
                 <tbody>
                 @foreach (var p in o.Plans)
                 {
@@ -99,12 +100,12 @@ else
             </table>
         }
 
-        <h2>Published plan versions</h2>
-        @if (o.PublishedPlanVersions.Count == 0) { <EmptyState Message="No published plan versions." /> }
+        <h2>@L["Products_PublishedPlanVersions"]</h2>
+        @if (o.PublishedPlanVersions.Count == 0) { <EmptyState Message="@L["Products_PublishedPlanVersionsEmpty"]" /> }
         else
         {
             <table>
-                <thead><tr><th>Plan</th><th>Version</th><th>Billing</th><th>Trial eligible</th><th>Grants</th></tr></thead>
+                <thead><tr><th>@L["Common_Plan"]</th><th>@L["Common_Version"]</th><th>@L["Products_Column_Billing"]</th><th>@L["Products_Column_TrialEligible"]</th><th>@L["Common_Grants"]</th></tr></thead>
                 <tbody>
                 @foreach (var v in o.PublishedPlanVersions)
                 {
@@ -120,12 +121,12 @@ else
             </table>
         }
 
-        <h2>Trial definitions</h2>
-        @if (o.Trials.Count == 0) { <EmptyState Message="No trial definitions." /> }
+        <h2>@L["Products_TrialDefinitions"]</h2>
+        @if (o.Trials.Count == 0) { <EmptyState Message="@L["Products_TrialDefinitionsEmpty"]" /> }
         else
         {
             <table>
-                <thead><tr><th>Name</th><th>Duration</th><th>Status</th><th>Grants</th></tr></thead>
+                <thead><tr><th>@L["Common_Name"]</th><th>@L["Common_Duration"]</th><th>@L["Common_Status"]</th><th>@L["Common_Grants"]</th></tr></thead>
                 <tbody>
                 @foreach (var t in o.Trials)
                 {

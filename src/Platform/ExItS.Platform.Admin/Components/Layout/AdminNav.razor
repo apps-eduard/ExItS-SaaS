@@ -1,7 +1,7 @@
 @inject PlatformPermissionState Permissions
 @inject IStringLocalizer<AdminResources> L
 
-<nav class="admin-nav-scroll" aria-label="Platform Admin navigation">
+<nav class="admin-nav-scroll" aria-label="@L["Aria_AdminNav"]">
     <div class="nav-section">@L["Nav_SectionOverview"]</div>
     <NavLink class="nav-item" href="/admin" Match="NavLinkMatch.All">
         <NavIcon Name="dashboard" /><span class="nav-label">@L["Nav_Dashboard"]</span>
