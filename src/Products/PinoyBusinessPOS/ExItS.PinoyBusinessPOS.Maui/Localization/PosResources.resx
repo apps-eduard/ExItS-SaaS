@@ -703,4 +703,83 @@
   <data name="Catalog_Lookup_NoMatchMessage" xml:space="preserve"><value>No product matches that barcode or SKU.</value></data>
   <data name="Catalog_Lookup_ResultTitle" xml:space="preserve"><value>Match</value></data>
   <data name="Catalog_Lookup_OpenProduct" xml:space="preserve"><value>Open product</value></data>
+  <data name="Sales_Title" xml:space="preserve"><value>Sales</value></data>
+  <data name="Sales_Subtitle" xml:space="preserve"><value>Recorded sales for this store.</value></data>
+  <data name="Sales_New" xml:space="preserve"><value>New sale</value></data>
+  <data name="Sales_Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Sales_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Sales_BackToList" xml:space="preserve"><value>Back to sales</value></data>
+  <data name="Sales_Loading" xml:space="preserve"><value>Loading sales…</value></data>
+  <data name="Sales_SearchPlaceholder" xml:space="preserve"><value>Search by sale number</value></data>
+  <data name="Sales_FiltersTitle" xml:space="preserve"><value>Filters</value></data>
+  <data name="Sales_Filter_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Sales_Filter_Payment" xml:space="preserve"><value>Payment method</value></data>
+  <data name="Sales_Filter_FromDate" xml:space="preserve"><value>From date</value></data>
+  <data name="Sales_Filter_ToDate" xml:space="preserve"><value>To date</value></data>
+  <data name="Sales_Filter_AllStatuses" xml:space="preserve"><value>All statuses</value></data>
+  <data name="Sales_Filter_AllPayments" xml:space="preserve"><value>All payment methods</value></data>
+  <data name="Sales_Status_Completed" xml:space="preserve"><value>Completed</value></data>
+  <data name="Sales_Status_Voided" xml:space="preserve"><value>Voided</value></data>
+  <data name="Sales_Payment_Cash" xml:space="preserve"><value>Cash</value></data>
+  <data name="Sales_Payment_ManualGCash" xml:space="preserve"><value>GCash (manual)</value></data>
+  <data name="Sales_Col_SaleNumber" xml:space="preserve"><value>Sale number</value></data>
+  <data name="Sales_Col_RecordedAt" xml:space="preserve"><value>Recorded</value></data>
+  <data name="Sales_Col_Payment" xml:space="preserve"><value>Payment</value></data>
+  <data name="Sales_Col_Total" xml:space="preserve"><value>Total</value></data>
+  <data name="Sales_Col_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Sales_EmptyTitle" xml:space="preserve"><value>No sales yet</value></data>
+  <data name="Sales_EmptyMessage" xml:space="preserve"><value>Recorded sales appear here. Start a new sale to record one.</value></data>
+  <data name="Sales_ErrorTitle" xml:space="preserve"><value>Sale error</value></data>
+  <data name="Sales_SuccessTitle" xml:space="preserve"><value>Done</value></data>
+  <data name="Sales_OfflineTitle" xml:space="preserve"><value>Reconnect required</value></data>
+  <data name="Sales_OfflineMessage" xml:space="preserve"><value>Sales need a connection. Reconnect to view sales history.</value></data>
+  <data name="Sales_NotFoundTitle" xml:space="preserve"><value>Sale not found</value></data>
+  <data name="Sales_NotFoundMessage" xml:space="preserve"><value>This sale is not available for your store.</value></data>
+  <data name="Sales_DetailSubtitle" xml:space="preserve"><value>Sale details</value></data>
+  <data name="Sales_DetailSection" xml:space="preserve"><value>Sale</value></data>
+  <data name="Sales_LinesSection" xml:space="preserve"><value>Items</value></data>
+  <data name="Sales_Field_PaymentMethod" xml:space="preserve"><value>Payment method</value></data>
+  <data name="Sales_Field_Subtotal" xml:space="preserve"><value>Subtotal</value></data>
+  <data name="Sales_Field_AmountTendered" xml:space="preserve"><value>Amount tendered</value></data>
+  <data name="Sales_Field_ChangeAmount" xml:space="preserve"><value>Change</value></data>
+  <data name="Sales_Field_GCashReference" xml:space="preserve"><value>GCash reference</value></data>
+  <data name="Sales_Field_VoidReason" xml:space="preserve"><value>Void reason</value></data>
+  <data name="Sales_Field_VoidedAt" xml:space="preserve"><value>Voided</value></data>
+  <data name="Sales_TenderHint" xml:space="preserve"><value>Must be at least the total.</value></data>
+  <data name="Sales_TenderRequired" xml:space="preserve"><value>Enter the amount tendered.</value></data>
+  <data name="Sales_TenderBelowTotal" xml:space="preserve"><value>Amount tendered must be at least the total.</value></data>
+  <data name="Sales_GCash_ManualTitle" xml:space="preserve"><value>Manual GCash entry</value></data>
+  <data name="Sales_GCash_ManualWarning" xml:space="preserve"><value>This reference is typed by you and is never verified with GCash. Confirm the payment in your own GCash app before recording the sale.</value></data>
+  <data name="Sales_GCash_ReferenceHint" xml:space="preserve"><value>Optional. Copy the reference from your GCash app.</value></data>
+  <data name="Sales_GCash_ReferenceTooLong" xml:space="preserve"><value>The GCash reference is too long.</value></data>
+  <data name="Sales_GCash_ConfirmReceived" xml:space="preserve"><value>I confirmed the GCash payment was received.</value></data>
+  <data name="Sales_GCash_ConfirmRequired" xml:space="preserve"><value>Confirm the GCash payment was received first.</value></data>
+  <data name="Sales_Void" xml:space="preserve"><value>Void sale</value></data>
+  <data name="Sales_VoidTitle" xml:space="preserve"><value>Void this sale?</value></data>
+  <data name="Sales_VoidMessage" xml:space="preserve"><value>A voided sale stops counting toward your totals. It does not refund money or change stock. Give a reason.</value></data>
+  <data name="Sales_VoidedSuccess" xml:space="preserve"><value>Sale voided.</value></data>
+  <data name="Sales_Checkout_Title" xml:space="preserve"><value>New sale</value></data>
+  <data name="Sales_Checkout_Subtitle" xml:space="preserve"><value>Scan or search products, then take payment.</value></data>
+  <data name="Sales_Checkout_LookupSection" xml:space="preserve"><value>Add product</value></data>
+  <data name="Sales_Checkout_LookupLabel" xml:space="preserve"><value>Barcode, SKU, or name</value></data>
+  <data name="Sales_Checkout_LookupHint" xml:space="preserve"><value>Scan a barcode or type a SKU for an exact match.</value></data>
+  <data name="Sales_Checkout_LookupExact" xml:space="preserve"><value>Add exact match</value></data>
+  <data name="Sales_Checkout_Search" xml:space="preserve"><value>Search</value></data>
+  <data name="Sales_Checkout_AddToCart" xml:space="preserve"><value>Add</value></data>
+  <data name="Sales_Checkout_NoMatchTitle" xml:space="preserve"><value>No match</value></data>
+  <data name="Sales_Checkout_NoMatchMessage" xml:space="preserve"><value>No active product matches that barcode, SKU, or name.</value></data>
+  <data name="Sales_Checkout_CartSection" xml:space="preserve"><value>Cart</value></data>
+  <data name="Sales_Checkout_CartEmptyTitle" xml:space="preserve"><value>Cart is empty</value></data>
+  <data name="Sales_Checkout_CartEmptyMessage" xml:space="preserve"><value>Add at least one product to record a sale.</value></data>
+  <data name="Sales_Checkout_Quantity" xml:space="preserve"><value>Quantity</value></data>
+  <data name="Sales_Checkout_QuantityWhole" xml:space="preserve"><value>This unit is sold in whole numbers only.</value></data>
+  <data name="Sales_Checkout_QuantityPrecision" xml:space="preserve"><value>Use a quantity greater than zero with at most 3 decimal places.</value></data>
+  <data name="Sales_Checkout_Remove" xml:space="preserve"><value>Remove</value></data>
+  <data name="Sales_Checkout_ClearCart" xml:space="preserve"><value>Clear cart</value></data>
+  <data name="Sales_Checkout_PaymentSection" xml:space="preserve"><value>Payment</value></data>
+  <data name="Sales_Checkout_ServerAuthoritative" xml:space="preserve"><value>Prices and totals are confirmed by the server at checkout.</value></data>
+  <data name="Sales_Checkout_Confirm" xml:space="preserve"><value>Record sale</value></data>
+  <data name="Sales_Checkout_ConfirmTitle" xml:space="preserve"><value>Record this sale?</value></data>
+  <data name="Sales_Checkout_ConfirmMessage" xml:space="preserve"><value>{0} item(s) for a preview total of PHP {1}. The server confirms the final total.</value></data>
+  <data name="Sales_Checkout_OfflineMessage" xml:space="preserve"><value>Checkout needs a connection. Reconnect before recording a sale.</value></data>
 </root>

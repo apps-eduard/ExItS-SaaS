@@ -1,0 +1,240 @@
+@page "/sales"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosSaleClient Sales
+@inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    var canView = Capabilities.IsAllowed(UtangCapability.ViewSales);
+    var canCreate = Capabilities.IsAllowed(UtangCapability.CreateSale);
+<Page>
+    <PageHeader Title="@L["Sales_Title"]" Subtitle="@L["Sales_Subtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Primary" Disabled="@(!canCreate || _isOffline)" OnClick="GoNew">@L["Sales_New"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Sales_OfflineTitle"]" Message="@L["Sales_OfflineMessage"]" />
+    }
+    else if (!canView)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+    }
+
+    <SearchToolbar SearchText="@_saleNumber" SearchTextChanged="OnSaleNumberChanged" Placeholder="@L["Sales_SearchPlaceholder"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Sales_Refresh"]</Button>
+        </Actions>
+    </SearchToolbar>
+
+    <Section Title="@L["Sales_FiltersTitle"]">
+        <Stack Gap="3">
+            <Select Label="@L["Sales_Filter_Status"]"
+                    Value="@_statusFilter"
+                    ValueChanged="OnStatusFilterChanged"
+                    Options="@SalesUiOptions.StatusFilters(L)" />
+            <Select Label="@L["Sales_Filter_Payment"]"
+                    Value="@_paymentFilter"
+                    ValueChanged="OnPaymentFilterChanged"
+                    Options="@SalesUiOptions.PaymentMethodFilters(L)" />
+            <DateInput Label="@L["Sales_Filter_FromDate"]"
+                       Value="@_fromDate"
+                       ValueChanged="OnFromDateChanged" />
+            <DateInput Label="@L["Sales_Filter_ToDate"]"
+                       Value="@_toDate"
+                       ValueChanged="OnToDateChanged" />
+        </Stack>
+    </Section>
+
+    <ResponsiveDataList TItem="PosSaleDto"
+                        Items="@_items"
+                        Columns="@Columns"
+                        CellTemplate="@CellTemplate"
+                        IsLoading="@_loading"
+                        LoadingLabel="@L["Sales_Loading"]"
+                        EmptyTitle="@L["Sales_EmptyTitle"]"
+                        EmptyMessage="@L["Sales_EmptyMessage"]"
+                        ErrorTitle="@_errorTitle"
+                        ErrorMessage="@_errorMessage"
+                        RetryLabel="@L["Api_Retry"]"
+                        OnRetry="ReloadAsync"
+                        AriaLabel="@L["Sales_Title"]" />
+
+    @if (!_loading && _totalCount > 0)
+    {
+        <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
+    }
+</Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _loading;
+    private bool _isOffline;
+    private string? _saleNumber;
+    private string? _statusFilter;
+    private string? _paymentFilter;
+    private DateOnly? _fromDate;
+    private DateOnly? _toDate;
+    private int _page = 1;
+    private const int _pageSize = 20;
+    private int _totalCount;
+    private IReadOnlyList<PosSaleDto> _items = Array.Empty<PosSaleDto>();
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    private IReadOnlyList<DataColumnDefinition> Columns =>
+    [
+        new("saleNumber", L["Sales_Col_SaleNumber"], Primary: true, Width: "26%"),
+        new("recordedAt", L["Sales_Col_RecordedAt"], Width: "22%"),
+        new("payment", L["Sales_Col_Payment"], Width: "18%"),
+        new("total", L["Sales_Col_Total"], Width: "18%"),
+        new("status", L["Sales_Col_Status"], Width: "16%"),
+    ];
+
+    private RenderFragment<(PosSaleDto Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
+    {
+        switch (context.Column.Key)
+        {
+            case "saleNumber":
+                builder.OpenElement(0, "a");
+                builder.AddAttribute(1, "class", "pos-link");
+                builder.AddAttribute(2, "href", $"/sales/{context.Item.SaleId:D}");
+                builder.AddContent(3, context.Item.SaleNumber);
+                builder.CloseElement();
+                break;
+            case "recordedAt":
+                builder.AddContent(0, context.Item.RecordedAtUtc.ToLocalTime().ToString("g"));
+                break;
+            case "payment":
+                builder.AddContent(0, SalesUiOptions.PaymentMethodLabel(L, context.Item.PaymentMethod));
+                break;
+            case "total":
+                builder.OpenComponent<MoneyDisplay>(0);
+                builder.AddAttribute(1, "Amount", context.Item.Total);
+                builder.AddAttribute(2, "CurrencyCode", "PHP");
+                builder.CloseComponent();
+                break;
+            default:
+                builder.OpenComponent<Badge>(0);
+                builder.AddAttribute(1, "Tone", context.Item.Status == PosSaleOptions.CompletedStatus
+                    ? BadgeTone.Success
+                    : BadgeTone.Neutral);
+                builder.AddAttribute(2, "ChildContent", (RenderFragment)(b =>
+                    b.AddContent(0, SalesUiOptions.StatusLabel(L, context.Item.Status))));
+                builder.CloseComponent();
+                break;
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task OnSaleNumberChanged(string? value)
+    {
+        _saleNumber = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnStatusFilterChanged(string? value)
+    {
+        _statusFilter = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnPaymentFilterChanged(string? value)
+    {
+        _paymentFilter = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnFromDateChanged(DateOnly? value)
+    {
+        _fromDate = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnToDateChanged(DateOnly? value)
+    {
+        _toDate = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _page = page;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        StateHasChanged();
+
+        // Sales history is server-only: there is no local sale cache to fall back on.
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _items = Array.Empty<PosSaleDto>();
+            _totalCount = 0;
+            _errorTitle = L["Sales_OfflineTitle"];
+            _errorMessage = L["Sales_OfflineMessage"];
+            _loading = false;
+            return;
+        }
+
+        var result = await Sales.ListSalesAsync(
+            string.IsNullOrWhiteSpace(_statusFilter) ? null : _statusFilter,
+            string.IsNullOrWhiteSpace(_paymentFilter) ? null : _paymentFilter,
+            _fromDate,
+            _toDate,
+            _saleNumber,
+            _page,
+            _pageSize);
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _items = result.Data.Items;
+            _totalCount = result.Data.TotalCount;
+        }
+        else
+        {
+            _items = Array.Empty<PosSaleDto>();
+            _totalCount = 0;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private void GoNew() => Nav.NavigateTo("/sales/new");
+}

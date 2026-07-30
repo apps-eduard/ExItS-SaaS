@@ -32,6 +32,15 @@ public interface ICatalogProductRepository
         string barcode,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Loads the products with the given identifiers inside one organization, regardless of status.
+    /// Callers decide how missing and inactive products are reported.
+    /// </summary>
+    Task<IReadOnlyList<CatalogProduct>> ListByIdsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<CatalogProductId> productIds,
+        CancellationToken cancellationToken = default);
+
     Task<(IReadOnlyList<CatalogProduct> Items, int TotalCount)> ListAsync(
         PosOrganizationId organizationId,
         CatalogProductFilter filter,

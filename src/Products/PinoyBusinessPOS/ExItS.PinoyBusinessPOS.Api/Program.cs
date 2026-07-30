@@ -4,12 +4,14 @@ using ExItS.PinoyBusinessPOS.Api.Credit;
 using ExItS.PinoyBusinessPOS.Api.Customers;
 using ExItS.PinoyBusinessPOS.Api.Offline;
 using ExItS.PinoyBusinessPOS.Api.Payments;
+using ExItS.PinoyBusinessPOS.Api.Sales;
 using ExItS.PinoyBusinessPOS.Api.Statements;
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Payments;
+using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Application.Statements;
 using ExItS.PinoyBusinessPOS.Infrastructure;
 
@@ -47,6 +49,9 @@ builder.Services.AddScoped<CreateCatalogProduct>();
 builder.Services.AddScoped<UpdateCatalogProduct>();
 builder.Services.AddScoped<DeactivateCatalogProduct>();
 builder.Services.AddScoped<ReactivateCatalogProduct>();
+builder.Services.AddScoped<SaleQueryService>();
+builder.Services.AddScoped<CheckoutSale>();
+builder.Services.AddScoped<VoidSale>();
 
 var app = builder.Build();
 
@@ -60,9 +65,10 @@ app.MapDueDateEndpoints();
 app.MapRepaymentEndpoints();
 app.MapStatementEndpoints();
 app.MapCatalogEndpoints();
+app.MapSaleEndpoints();
 app.MapDevOfflineProbeEndpoints();
 
-// Phase marker: P8-WP01-catalog-and-barcode
+// Phase marker: P8-WP02-simple-sales
 
 app.Run();
 

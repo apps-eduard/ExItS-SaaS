@@ -55,7 +55,7 @@ public sealed class PosCatalogScopeArchitectureTests
     }
 
     [Fact]
-    public void Catalog_persistence_adds_only_product_category_and_product_tables()
+    public void Catalog_persistence_adds_no_stock_tax_discount_or_supplier_tables()
     {
         var context = File.ReadAllText(Path.Combine(
             PosProject("ExItS.PinoyBusinessPOS.Infrastructure"), "Persistence", "PosDbContext.cs"));
@@ -63,9 +63,11 @@ public sealed class PosCatalogScopeArchitectureTests
         Assert.Contains("\"product_categories\"", context, StringComparison.Ordinal);
         Assert.Contains("\"products\"", context, StringComparison.Ordinal);
 
+        // Sales tables are owned by the P8-WP02 slice; stock, cart, tax, discount, and supplier
+        // persistence remains out of scope for both slices.
         foreach (var table in new[]
                  {
-                     "\"stock\"", "\"stock_levels\"", "\"inventory\"", "\"sales\"", "\"sale_lines\"",
+                     "\"stock\"", "\"stock_levels\"", "\"inventory\"",
                      "\"carts\"", "\"taxes\"", "\"discounts\"", "\"product_barcodes\"", "\"suppliers\""
                  })
         {

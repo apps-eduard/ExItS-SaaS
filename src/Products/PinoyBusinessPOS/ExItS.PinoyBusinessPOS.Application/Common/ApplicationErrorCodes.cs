@@ -23,6 +23,11 @@ public static class ApplicationErrorCodes
     public const string ProductSkuConflict = "pos.product.sku.conflict";
     public const string ProductBarcodeConflict = "pos.product.barcode.conflict";
     public const string CatalogConcurrencyConflict = "pos.catalog.concurrency_conflict";
+
+    public const string SaleNotFound = "pos.sale.not_found";
+    public const string SaleProductNotFound = "pos.sale.product.not_found";
+    public const string SaleProductNotActive = "pos.sale.product.not_active";
+    public const string SaleNumberConflict = "pos.sale.number.conflict";
 }
 
 public sealed class PersistenceConflictException : Exception

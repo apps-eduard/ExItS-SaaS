@@ -27,7 +27,8 @@ internal static class PosApiResults
             or ApplicationErrorCodes.CreditEntryNotFound
             or ApplicationErrorCodes.RepaymentNotFound
             or ApplicationErrorCodes.CategoryNotFound
-            or ApplicationErrorCodes.ProductNotFound => StatusCodes.Status404NotFound,
+            or ApplicationErrorCodes.ProductNotFound
+            or ApplicationErrorCodes.SaleNotFound => StatusCodes.Status404NotFound,
 
         ApplicationErrorCodes.MobileConflict
             or ApplicationErrorCodes.ConcurrencyConflict
@@ -48,7 +49,12 @@ internal static class PosApiResults
             or DomainErrorCodes.InvalidCategoryStatusTransition
             or DomainErrorCodes.InvalidProductStatusTransition
             or DomainErrorCodes.CategoryNotActive
-            or DomainErrorCodes.ProductNotActive => StatusCodes.Status409Conflict,
+            or DomainErrorCodes.ProductNotActive
+            or ApplicationErrorCodes.SaleNumberConflict
+            or ApplicationErrorCodes.SaleProductNotActive
+            or DomainErrorCodes.InvalidSaleStatusTransition => StatusCodes.Status409Conflict,
+
+        ApplicationErrorCodes.SaleProductNotFound => StatusCodes.Status400BadRequest,
 
         ApplicationErrorCodes.OrganizationRequired
             or ApplicationErrorCodes.ActorRequired

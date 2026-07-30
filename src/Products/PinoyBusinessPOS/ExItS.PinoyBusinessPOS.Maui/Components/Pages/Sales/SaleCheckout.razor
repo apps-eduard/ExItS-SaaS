@@ -1,0 +1,401 @@
+@page "/sales/new"
+@implements IDisposable
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosSaleClient Sales
+@inject IPosCatalogClient Catalog
+@inject SaleCartService Cart
+@inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    var canCreate = Capabilities.IsAllowed(UtangCapability.CreateSale);
+    var blocked = !canCreate || _isOffline;
+    var isGCash = _paymentMethod == PosSaleOptions.ManualGCashPaymentMethod;
+<Page>
+    <PageHeader Title="@L["Sales_Checkout_Title"]" Subtitle="@L["Sales_Checkout_Subtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Sales_BackToList"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Sales_OfflineTitle"]" Message="@L["Sales_Checkout_OfflineMessage"]" />
+    }
+    else if (!canCreate)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Sales_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Sales_Checkout_LookupSection"]">
+        <Stack Gap="3">
+            <TextInput Label="@L["Sales_Checkout_LookupLabel"]"
+                       Value="@_lookupText"
+                       ValueChanged="v => _lookupText = v"
+                       Hint="@L["Sales_Checkout_LookupHint"]"
+                       Disabled="@(blocked || _lookingUp)" />
+            <FormActions>
+                <Button Variant="ButtonVariant.Secondary"
+                        IsLoading="@_lookingUp"
+                        Disabled="@blocked"
+                        OnClick="LookupExactAsync">@L["Sales_Checkout_LookupExact"]</Button>
+                <Button Variant="ButtonVariant.Secondary"
+                        IsLoading="@_lookingUp"
+                        Disabled="@blocked"
+                        OnClick="SearchAsync">@L["Sales_Checkout_Search"]</Button>
+            </FormActions>
+
+            @if (_matches.Count > 0)
+            {
+                <Stack Gap="2">
+                    @foreach (var match in _matches)
+                    {
+                        <div class="pos-row">
+                            <span class="pos-value-md">@match.Name</span>
+                            <span class="pos-muted">@SalesUiOptions.UnitOfMeasureLabel(L, match.UnitOfMeasure)</span>
+                            <MoneyDisplay Amount="@match.SellingPrice" CurrencyCode="PHP" />
+                            <Button Variant="ButtonVariant.Secondary" Disabled="@blocked" OnClick="() => AddToCart(match)">@L["Sales_Checkout_AddToCart"]</Button>
+                        </div>
+                    }
+                </Stack>
+            }
+        </Stack>
+    </Section>
+
+    <Section Title="@L["Sales_Checkout_CartSection"]">
+        @if (Cart.IsEmpty)
+        {
+            <EmptyState IconName="sales" Title="@L["Sales_Checkout_CartEmptyTitle"]" Message="@L["Sales_Checkout_CartEmptyMessage"]" />
+        }
+        else
+        {
+            <Stack Gap="3">
+                @foreach (var item in Cart.Items)
+                {
+                    <div class="pos-row">
+                        <span class="pos-value-md">@item.Name</span>
+                        <span class="pos-muted">@SalesUiOptions.UnitOfMeasureLabel(L, item.UnitOfMeasure)</span>
+                        <MoneyDisplay Amount="@item.UnitPrice" CurrencyCode="PHP" />
+                        <NumberInput Label="@L["Sales_Checkout_Quantity"]"
+                                     Value="@item.Quantity"
+                                     ValueChanged="v => SetQuantity(item.ProductId, v)"
+                                     DecimalPlaces="@PosSaleOptions.MaxQuantityDecimals(item.UnitOfMeasure)"
+                                     IsInvalid="@(!PosSaleOptions.IsValidQuantity(item.Quantity, item.UnitOfMeasure))"
+                                     ErrorText="@QuantityError(item.UnitOfMeasure)"
+                                     Disabled="@blocked" />
+                        <MoneyDisplay Amount="@item.LineTotal" CurrencyCode="PHP" />
+                        <Button Variant="ButtonVariant.Danger" Disabled="@blocked" OnClick="() => Cart.Remove(item.ProductId)">@L["Sales_Checkout_Remove"]</Button>
+                    </div>
+                }
+
+                <Divider />
+
+                <div>
+                    <span class="pos-muted">@L["Sales_Field_Subtotal"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@Cart.Subtotal" CurrencyCode="PHP" /></div>
+                </div>
+                <div class="pos-muted">@L["Sales_Checkout_ServerAuthoritative"]</div>
+                <FormActions>
+                    <Button Variant="ButtonVariant.Secondary" Disabled="@blocked" OnClick="() => Cart.Clear()">@L["Sales_Checkout_ClearCart"]</Button>
+                </FormActions>
+            </Stack>
+        }
+    </Section>
+
+    <Section Title="@L["Sales_Checkout_PaymentSection"]">
+        <Stack Gap="3">
+            <Select Label="@L["Sales_Field_PaymentMethod"]"
+                    Value="@_paymentMethod"
+                    ValueChanged="OnPaymentMethodChanged"
+                    Options="@SalesUiOptions.PaymentMethods(L)"
+                    Required="true"
+                    Disabled="@blocked" />
+
+            @if (isGCash)
+            {
+                <Alert Tone="AlertTone.Warning" Title="@L["Sales_GCash_ManualTitle"]" Message="@L["Sales_GCash_ManualWarning"]" />
+                <TextInput Label="@L["Sales_Field_GCashReference"]"
+                           Value="@_gcashReference"
+                           ValueChanged="v => _gcashReference = v"
+                           Hint="@L["Sales_GCash_ReferenceHint"]"
+                           IsInvalid="@(!string.IsNullOrEmpty(_gcashError))"
+                           ErrorText="@_gcashError"
+                           Disabled="@blocked" />
+                <Checkbox Value="@_gcashConfirmed"
+                          ValueChanged="v => _gcashConfirmed = v"
+                          Disabled="@blocked">@L["Sales_GCash_ConfirmReceived"]</Checkbox>
+            }
+            else
+            {
+                <CurrencyInput Label="@L["Sales_Field_AmountTendered"]"
+                               Value="@_amountTendered"
+                               ValueChanged="v => _amountTendered = v"
+                               CurrencyCode="PHP"
+                               Required="true"
+                               Hint="@L["Sales_TenderHint"]"
+                               IsInvalid="@(!string.IsNullOrEmpty(_tenderError))"
+                               ErrorText="@_tenderError"
+                               Disabled="@blocked" />
+                <div>
+                    <span class="pos-muted">@L["Sales_Field_ChangeAmount"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@ChangePreview" CurrencyCode="PHP" /></div>
+                </div>
+            }
+        </Stack>
+    </Section>
+
+    <FormActions>
+        <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="GoList">@L["Sales_Cancel"]</Button>
+        <Button Variant="ButtonVariant.Primary"
+                IsLoading="@_saving"
+                Disabled="@(blocked || !Cart.IsCheckoutReady)"
+                OnClick="OpenConfirm">@L["Sales_Checkout_Confirm"]</Button>
+    </FormActions>
+
+    <ConfirmDialog Visible="@_confirm"
+                   VisibleChanged="v => _confirm = v"
+                   Title="@L["Sales_Checkout_ConfirmTitle"]"
+                   Message="@ConfirmMessage"
+                   ConfirmLabel="@L["Sales_Checkout_Confirm"]"
+                   IsLoading="@_saving"
+                   OnConfirm="CheckoutAsync" />
+</Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _isOffline;
+    private bool _lookingUp;
+    private bool _saving;
+    private bool _confirm;
+    private bool _gcashConfirmed;
+    private string? _lookupText;
+    private string _paymentMethod = PosSaleOptions.CashPaymentMethod;
+    private decimal? _amountTendered;
+    private string? _gcashReference;
+    private string? _tenderError;
+    private string? _gcashError;
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private IReadOnlyList<PosCatalogProductDto> _matches = Array.Empty<PosCatalogProductDto>();
+
+    /// <summary>
+    /// Stable per-attempt sale identifier. Re-sending the same identifier after a failed or unclear
+    /// response returns the sale already recorded instead of recording a second one.
+    /// </summary>
+    private Guid _attemptSaleId = Guid.NewGuid();
+
+    private decimal ChangePreview =>
+        _amountTendered is null || _amountTendered.Value < Cart.Subtotal
+            ? 0m
+            : PosSaleOptions.RoundMoney(_amountTendered.Value - Cart.Subtotal);
+
+    private string ConfirmMessage => string.Format(
+        L["Sales_Checkout_ConfirmMessage"],
+        Cart.LineCount,
+        Cart.Subtotal.ToString("N2"));
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        Cart.Changed += OnCartChanged;
+        _ready = true;
+        _isOffline = !await Connectivity.IsConnectedAsync();
+    }
+
+    private void OnCartChanged() => StateHasChanged();
+
+    private string QuantityError(string unitOfMeasure) =>
+        PosSaleOptions.RequiresWholeQuantity(unitOfMeasure)
+            ? L["Sales_Checkout_QuantityWhole"]
+            : L["Sales_Checkout_QuantityPrecision"];
+
+    private void OnPaymentMethodChanged(string? value)
+    {
+        _paymentMethod = string.IsNullOrWhiteSpace(value) ? PosSaleOptions.CashPaymentMethod : value;
+        _tenderError = null;
+        _gcashError = null;
+        if (_paymentMethod == PosSaleOptions.ManualGCashPaymentMethod)
+        {
+            _amountTendered = null;
+        }
+        else
+        {
+            _gcashReference = null;
+            _gcashConfirmed = false;
+        }
+    }
+
+    private void AddToCart(PosCatalogProductDto product)
+    {
+        Cart.Add(product);
+        _matches = Array.Empty<PosCatalogProductDto>();
+        _lookupText = null;
+    }
+
+    private void SetQuantity(Guid productId, decimal? quantity) =>
+        Cart.SetQuantity(productId, quantity ?? 0m);
+
+    private async Task LookupExactAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_lookupText))
+        {
+            return;
+        }
+
+        _lookingUp = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        _matches = Array.Empty<PosCatalogProductDto>();
+
+        var term = _lookupText.Trim();
+        var byBarcode = await Catalog.LookupByBarcodeAsync(term);
+        if (byBarcode.IsSuccess && byBarcode.Data is not null)
+        {
+            AddToCart(byBarcode.Data);
+            _lookingUp = false;
+            return;
+        }
+
+        var bySku = await Catalog.LookupBySkuAsync(term);
+        if (bySku.IsSuccess && bySku.Data is not null)
+        {
+            AddToCart(bySku.Data);
+            _lookingUp = false;
+            return;
+        }
+
+        _errorTitle = L["Sales_Checkout_NoMatchTitle"];
+        _errorMessage = L["Sales_Checkout_NoMatchMessage"];
+        _lookingUp = false;
+    }
+
+    private async Task SearchAsync()
+    {
+        _lookingUp = true;
+        _errorTitle = null;
+        _errorMessage = null;
+
+        var result = await Catalog.ListProductsAsync(
+            _lookupText,
+            PosCatalogOptions.ActiveStatus,
+            page: 1,
+            pageSize: 20);
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _matches = result.Data.Items;
+            if (_matches.Count == 0)
+            {
+                _errorTitle = L["Sales_Checkout_NoMatchTitle"];
+                _errorMessage = L["Sales_Checkout_NoMatchMessage"];
+            }
+        }
+        else
+        {
+            _matches = Array.Empty<PosCatalogProductDto>();
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _lookingUp = false;
+    }
+
+    private void OpenConfirm()
+    {
+        _tenderError = null;
+        _gcashError = null;
+        _errorTitle = null;
+        _errorMessage = null;
+
+        if (_paymentMethod == PosSaleOptions.ManualGCashPaymentMethod)
+        {
+            if (!_gcashConfirmed)
+            {
+                _gcashError = L["Sales_GCash_ConfirmRequired"];
+                return;
+            }
+
+            if (_gcashReference?.Trim().Length > PosSaleOptions.GCashReferenceMaxLength)
+            {
+                _gcashError = L["Sales_GCash_ReferenceTooLong"];
+                return;
+            }
+        }
+        else
+        {
+            if (_amountTendered is null)
+            {
+                _tenderError = L["Sales_TenderRequired"];
+                return;
+            }
+
+            if (_amountTendered.Value < Cart.Subtotal)
+            {
+                _tenderError = L["Sales_TenderBelowTotal"];
+                return;
+            }
+        }
+
+        _confirm = true;
+    }
+
+    private async Task CheckoutAsync()
+    {
+        _confirm = false;
+
+        // Checkout is online-only: no sale is ever queued or stored locally.
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline || !Capabilities.IsAllowed(UtangCapability.CreateSale) || !Cart.IsCheckoutReady)
+        {
+            return;
+        }
+
+        _saving = true;
+        var request = new CheckoutSaleRequest(
+            Cart.ToCheckoutLines(),
+            _paymentMethod,
+            _paymentMethod == PosSaleOptions.CashPaymentMethod ? _amountTendered : null,
+            _paymentMethod == PosSaleOptions.ManualGCashPaymentMethod ? _gcashReference : null,
+            _attemptSaleId);
+
+        var result = await Sales.CheckoutAsync(request);
+        _saving = false;
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            Cart.Clear();
+            _attemptSaleId = Guid.NewGuid();
+            Nav.NavigateTo($"/sales/{result.Data.SaleId:D}");
+            return;
+        }
+
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _errorTitle = described.Title;
+        _errorMessage = result.Error?.Detail ?? described.Message;
+    }
+
+    private void GoList() => Nav.NavigateTo("/sales");
+
+    public void Dispose() => Cart.Changed -= OnCartChanged;
+}

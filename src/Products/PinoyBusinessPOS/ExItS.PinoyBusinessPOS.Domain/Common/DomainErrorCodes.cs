@@ -50,4 +50,21 @@ public static class DomainErrorCodes
     public const string InvalidProductStatus = "pos.product.status.invalid";
     public const string InvalidProductStatusTransition = "pos.product.status.invalid_transition";
     public const string ProductNotActive = "pos.product.not_active";
+
+    public const string InvalidSaleId = "pos.sale.id.invalid";
+    public const string InvalidSaleLineId = "pos.sale_line.id.invalid";
+    public const string InvalidSaleNumber = "pos.sale.number.invalid";
+    public const string InvalidSaleStatus = "pos.sale.status.invalid";
+    public const string InvalidSaleStatusTransition = "pos.sale.status.invalid_transition";
+    public const string InvalidSalePaymentMethod = "pos.sale.payment_method.invalid";
+    public const string InvalidSaleActor = "pos.sale.actor.invalid";
+    public const string SaleRequiresAtLeastOneLine = "pos.sale.lines.required";
+    public const string SaleTotalTooLarge = "pos.sale.total.too_large";
+    public const string InvalidSaleAmountTendered = "pos.sale.amount_tendered.invalid";
+    public const string SaleAmountTenderedBelowTotal = "pos.sale.amount_tendered.below_total";
+    public const string InvalidSaleGCashReference = "pos.sale.gcash_reference.invalid";
+    public const string InvalidSaleVoidReason = "pos.sale.void_reason.invalid";
+    public const string InvalidSaleLineQuantity = "pos.sale_line.quantity.invalid";
+    public const string InvalidSaleLineUnitPrice = "pos.sale_line.unit_price.invalid";
+    public const string InvalidSaleLineNameSnapshot = "pos.sale_line.name.invalid";
 }

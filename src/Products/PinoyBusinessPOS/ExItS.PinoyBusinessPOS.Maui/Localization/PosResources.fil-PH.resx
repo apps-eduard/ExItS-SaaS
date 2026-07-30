@@ -703,4 +703,83 @@
   <data name="Catalog_Lookup_NoMatchMessage" xml:space="preserve"><value>Walang produktong tugma sa barcode o SKU na iyon.</value></data>
   <data name="Catalog_Lookup_ResultTitle" xml:space="preserve"><value>Tugma</value></data>
   <data name="Catalog_Lookup_OpenProduct" xml:space="preserve"><value>Buksan ang produkto</value></data>
+  <data name="Sales_Title" xml:space="preserve"><value>Benta</value></data>
+  <data name="Sales_Subtitle" xml:space="preserve"><value>Mga naitalang benta ng tindahan.</value></data>
+  <data name="Sales_New" xml:space="preserve"><value>Bagong benta</value></data>
+  <data name="Sales_Refresh" xml:space="preserve"><value>I-refresh</value></data>
+  <data name="Sales_Cancel" xml:space="preserve"><value>Kanselahin</value></data>
+  <data name="Sales_BackToList" xml:space="preserve"><value>Bumalik sa benta</value></data>
+  <data name="Sales_Loading" xml:space="preserve"><value>Kinukuha ang benta…</value></data>
+  <data name="Sales_SearchPlaceholder" xml:space="preserve"><value>Hanapin sa numero ng benta</value></data>
+  <data name="Sales_FiltersTitle" xml:space="preserve"><value>Mga filter</value></data>
+  <data name="Sales_Filter_Status" xml:space="preserve"><value>Katayuan</value></data>
+  <data name="Sales_Filter_Payment" xml:space="preserve"><value>Paraan ng bayad</value></data>
+  <data name="Sales_Filter_FromDate" xml:space="preserve"><value>Mula sa petsa</value></data>
+  <data name="Sales_Filter_ToDate" xml:space="preserve"><value>Hanggang petsa</value></data>
+  <data name="Sales_Filter_AllStatuses" xml:space="preserve"><value>Lahat ng katayuan</value></data>
+  <data name="Sales_Filter_AllPayments" xml:space="preserve"><value>Lahat ng paraan ng bayad</value></data>
+  <data name="Sales_Status_Completed" xml:space="preserve"><value>Tapos</value></data>
+  <data name="Sales_Status_Voided" xml:space="preserve"><value>Kanselado</value></data>
+  <data name="Sales_Payment_Cash" xml:space="preserve"><value>Cash</value></data>
+  <data name="Sales_Payment_ManualGCash" xml:space="preserve"><value>GCash (manual)</value></data>
+  <data name="Sales_Col_SaleNumber" xml:space="preserve"><value>Numero ng benta</value></data>
+  <data name="Sales_Col_RecordedAt" xml:space="preserve"><value>Naitala</value></data>
+  <data name="Sales_Col_Payment" xml:space="preserve"><value>Bayad</value></data>
+  <data name="Sales_Col_Total" xml:space="preserve"><value>Kabuuan</value></data>
+  <data name="Sales_Col_Status" xml:space="preserve"><value>Katayuan</value></data>
+  <data name="Sales_EmptyTitle" xml:space="preserve"><value>Wala pang benta</value></data>
+  <data name="Sales_EmptyMessage" xml:space="preserve"><value>Lilitaw dito ang mga naitalang benta. Magsimula ng bagong benta.</value></data>
+  <data name="Sales_ErrorTitle" xml:space="preserve"><value>May problema sa benta</value></data>
+  <data name="Sales_SuccessTitle" xml:space="preserve"><value>Tapos na</value></data>
+  <data name="Sales_OfflineTitle" xml:space="preserve"><value>Kailangang mag-reconnect</value></data>
+  <data name="Sales_OfflineMessage" xml:space="preserve"><value>Kailangan ng koneksyon ang benta. Mag-reconnect para makita ang kasaysayan.</value></data>
+  <data name="Sales_NotFoundTitle" xml:space="preserve"><value>Walang nahanap na benta</value></data>
+  <data name="Sales_NotFoundMessage" xml:space="preserve"><value>Hindi available ang bentang ito para sa tindahan mo.</value></data>
+  <data name="Sales_DetailSubtitle" xml:space="preserve"><value>Detalye ng benta</value></data>
+  <data name="Sales_DetailSection" xml:space="preserve"><value>Benta</value></data>
+  <data name="Sales_LinesSection" xml:space="preserve"><value>Mga item</value></data>
+  <data name="Sales_Field_PaymentMethod" xml:space="preserve"><value>Paraan ng bayad</value></data>
+  <data name="Sales_Field_Subtotal" xml:space="preserve"><value>Subtotal</value></data>
+  <data name="Sales_Field_AmountTendered" xml:space="preserve"><value>Ibinayad</value></data>
+  <data name="Sales_Field_ChangeAmount" xml:space="preserve"><value>Sukli</value></data>
+  <data name="Sales_Field_GCashReference" xml:space="preserve"><value>GCash reference</value></data>
+  <data name="Sales_Field_VoidReason" xml:space="preserve"><value>Dahilan ng pagkansela</value></data>
+  <data name="Sales_Field_VoidedAt" xml:space="preserve"><value>Kinansela</value></data>
+  <data name="Sales_TenderHint" xml:space="preserve"><value>Dapat hindi bababa sa kabuuan.</value></data>
+  <data name="Sales_TenderRequired" xml:space="preserve"><value>Ilagay ang ibinayad.</value></data>
+  <data name="Sales_TenderBelowTotal" xml:space="preserve"><value>Ang ibinayad ay dapat hindi bababa sa kabuuan.</value></data>
+  <data name="Sales_GCash_ManualTitle" xml:space="preserve"><value>Manual na GCash</value></data>
+  <data name="Sales_GCash_ManualWarning" xml:space="preserve"><value>Ikaw ang naglagay ng reference na ito at hindi ito bineberipika sa GCash. Tiyakin sa GCash app mo na natanggap ang bayad bago itala ang benta.</value></data>
+  <data name="Sales_GCash_ReferenceHint" xml:space="preserve"><value>Opsyonal. Kopyahin ang reference mula sa GCash app.</value></data>
+  <data name="Sales_GCash_ReferenceTooLong" xml:space="preserve"><value>Masyadong mahaba ang GCash reference.</value></data>
+  <data name="Sales_GCash_ConfirmReceived" xml:space="preserve"><value>Tiniyak ko na natanggap ang bayad sa GCash.</value></data>
+  <data name="Sales_GCash_ConfirmRequired" xml:space="preserve"><value>Tiyakin muna na natanggap ang bayad sa GCash.</value></data>
+  <data name="Sales_Void" xml:space="preserve"><value>Kanselahin ang benta</value></data>
+  <data name="Sales_VoidTitle" xml:space="preserve"><value>Kanselahin ang bentang ito?</value></data>
+  <data name="Sales_VoidMessage" xml:space="preserve"><value>Hindi na kasama sa kabuuan ang kanseladong benta. Hindi ito nagsasauli ng pera at hindi nagbabago ng stock. Maglagay ng dahilan.</value></data>
+  <data name="Sales_VoidedSuccess" xml:space="preserve"><value>Kinansela ang benta.</value></data>
+  <data name="Sales_Checkout_Title" xml:space="preserve"><value>Bagong benta</value></data>
+  <data name="Sales_Checkout_Subtitle" xml:space="preserve"><value>I-scan o hanapin ang produkto, pagkatapos tanggapin ang bayad.</value></data>
+  <data name="Sales_Checkout_LookupSection" xml:space="preserve"><value>Magdagdag ng produkto</value></data>
+  <data name="Sales_Checkout_LookupLabel" xml:space="preserve"><value>Barcode, SKU, o pangalan</value></data>
+  <data name="Sales_Checkout_LookupHint" xml:space="preserve"><value>I-scan ang barcode o i-type ang SKU para sa eksaktong tugma.</value></data>
+  <data name="Sales_Checkout_LookupExact" xml:space="preserve"><value>Idagdag ang eksaktong tugma</value></data>
+  <data name="Sales_Checkout_Search" xml:space="preserve"><value>Maghanap</value></data>
+  <data name="Sales_Checkout_AddToCart" xml:space="preserve"><value>Idagdag</value></data>
+  <data name="Sales_Checkout_NoMatchTitle" xml:space="preserve"><value>Walang tugma</value></data>
+  <data name="Sales_Checkout_NoMatchMessage" xml:space="preserve"><value>Walang aktibong produktong tugma sa barcode, SKU, o pangalan.</value></data>
+  <data name="Sales_Checkout_CartSection" xml:space="preserve"><value>Cart</value></data>
+  <data name="Sales_Checkout_CartEmptyTitle" xml:space="preserve"><value>Walang laman ang cart</value></data>
+  <data name="Sales_Checkout_CartEmptyMessage" xml:space="preserve"><value>Magdagdag ng kahit isang produkto para makapagtala ng benta.</value></data>
+  <data name="Sales_Checkout_Quantity" xml:space="preserve"><value>Bilang</value></data>
+  <data name="Sales_Checkout_QuantityWhole" xml:space="preserve"><value>Buong bilang lang ang unit na ito.</value></data>
+  <data name="Sales_Checkout_QuantityPrecision" xml:space="preserve"><value>Gumamit ng bilang na higit sa zero at hindi lalabis sa 3 desimal.</value></data>
+  <data name="Sales_Checkout_Remove" xml:space="preserve"><value>Alisin</value></data>
+  <data name="Sales_Checkout_ClearCart" xml:space="preserve"><value>Linisin ang cart</value></data>
+  <data name="Sales_Checkout_PaymentSection" xml:space="preserve"><value>Bayad</value></data>
+  <data name="Sales_Checkout_ServerAuthoritative" xml:space="preserve"><value>Ang presyo at kabuuan ay kinukumpirma ng server sa checkout.</value></data>
+  <data name="Sales_Checkout_Confirm" xml:space="preserve"><value>Itala ang benta</value></data>
+  <data name="Sales_Checkout_ConfirmTitle" xml:space="preserve"><value>Itala ang bentang ito?</value></data>
+  <data name="Sales_Checkout_ConfirmMessage" xml:space="preserve"><value>{0} item para sa preview na kabuuang PHP {1}. Ang server ang kumukumpirma ng huling kabuuan.</value></data>
+  <data name="Sales_Checkout_OfflineMessage" xml:space="preserve"><value>Kailangan ng koneksyon ang checkout. Mag-reconnect bago magtala ng benta.</value></data>
 </root>

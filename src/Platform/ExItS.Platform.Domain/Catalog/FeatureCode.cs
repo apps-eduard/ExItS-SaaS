@@ -21,6 +21,15 @@ public sealed partial class FeatureCode : IEquatable<FeatureCode>
     /// <summary>POS Basic Store: create, edit, and change lifecycle of catalog products and categories.</summary>
     public const string StoreCatalogManage = "store-catalog-manage";
 
+    /// <summary>POS Basic Store: read recorded sales history and sale details.</summary>
+    public const string StoreSalesView = "store-sales-view";
+
+    /// <summary>POS Basic Store: record a simple retail sale at checkout.</summary>
+    public const string StoreSalesCreate = "store-sales-create";
+
+    /// <summary>POS Basic Store: void a recorded sale with a reason.</summary>
+    public const string StoreSalesVoid = "store-sales-void";
+
     private static readonly Regex ValidPattern = CreateValidPattern();
 
     public string Value { get; }

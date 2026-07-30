@@ -1,0 +1,237 @@
+@page "/sales/{SaleId:guid}"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosSaleClient Sales
+@inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (_loading)
+{
+    <Page><Spinner /><span>@L["Sales_Loading"]</span></Page>
+}
+else if (_sale is null)
+{
+    <Page>
+        <ErrorState Title="@(_errorTitle ?? L["Sales_NotFoundTitle"])"
+                    Message="@(_errorMessage ?? L["Sales_NotFoundMessage"])"
+                    RetryLabel="@L["Api_Retry"]"
+                    OnRetry="LoadAsync" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Sales_BackToList"]</Button>
+    </Page>
+}
+else
+{
+    var sale = _sale;
+    var isCompleted = sale.Status == PosSaleOptions.CompletedStatus;
+    var canVoid = Capabilities.IsAllowed(UtangCapability.VoidSale) && isCompleted && !_isOffline;
+<Page>
+    <PageHeader Title="@sale.SaleNumber" Subtitle="@L["Sales_DetailSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Sales_BackToList"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Sales_OfflineTitle"]" Message="@L["Sales_OfflineMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_banner))
+    {
+        <Alert Tone="AlertTone.Success" Title="@L["Sales_SuccessTitle"]" Message="@_banner" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Sales_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Sales_DetailSection"]">
+        <Stack Gap="3">
+            <div>
+                <span class="pos-muted">@L["Sales_Col_Status"]</span>
+                <div class="pos-value-md">
+                    <Badge Tone="@(isCompleted ? BadgeTone.Success : BadgeTone.Neutral)">@SalesUiOptions.StatusLabel(L, sale.Status)</Badge>
+                </div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Sales_Col_RecordedAt"]</span>
+                <div class="pos-value-md">@sale.RecordedAtUtc.ToLocalTime().ToString("g")</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Sales_Field_PaymentMethod"]</span>
+                <div class="pos-value-md">@SalesUiOptions.PaymentMethodLabel(L, sale.PaymentMethod)</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Sales_Field_Subtotal"]</span>
+                <div class="pos-value-md"><MoneyDisplay Amount="@sale.Subtotal" CurrencyCode="PHP" /></div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Sales_Col_Total"]</span>
+                <div class="pos-value-md"><MoneyDisplay Amount="@sale.Total" CurrencyCode="PHP" /></div>
+            </div>
+            @if (sale.AmountTendered is not null)
+            {
+                <div>
+                    <span class="pos-muted">@L["Sales_Field_AmountTendered"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@sale.AmountTendered.Value" CurrencyCode="PHP" /></div>
+                </div>
+                <div>
+                    <span class="pos-muted">@L["Sales_Field_ChangeAmount"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@(sale.ChangeAmount ?? 0m)" CurrencyCode="PHP" /></div>
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(sale.GCashReference))
+            {
+                <div>
+                    <span class="pos-muted">@L["Sales_Field_GCashReference"]</span>
+                    <div class="pos-value-md pos-wrap">@sale.GCashReference</div>
+                    <div class="pos-muted">@L["Sales_GCash_ManualWarning"]</div>
+                </div>
+            }
+            @if (!isCompleted)
+            {
+                <div>
+                    <span class="pos-muted">@L["Sales_Field_VoidReason"]</span>
+                    <div class="pos-value-md pos-wrap">@sale.VoidReason</div>
+                </div>
+                <div>
+                    <span class="pos-muted">@L["Sales_Field_VoidedAt"]</span>
+                    <div class="pos-value-md">@(sale.VoidedAtUtc?.ToLocalTime().ToString("g"))</div>
+                </div>
+            }
+        </Stack>
+    </Section>
+
+    <Section Title="@L["Sales_LinesSection"]">
+        <Stack Gap="3">
+            @foreach (var line in sale.Lines)
+            {
+                <div class="pos-row">
+                    <span class="pos-value-md">@line.Name</span>
+                    <span class="pos-muted">@SalesUiOptions.UnitOfMeasureLabel(L, line.UnitOfMeasure)</span>
+                    <span class="pos-muted">@line.Quantity.ToString("0.###")</span>
+                    <MoneyDisplay Amount="@line.UnitPrice" CurrencyCode="PHP" />
+                    <MoneyDisplay Amount="@line.LineTotal" CurrencyCode="PHP" />
+                </div>
+            }
+        </Stack>
+    </Section>
+
+    @if (isCompleted)
+    {
+        <FormActions>
+            <Button Variant="ButtonVariant.Danger" Disabled="@(!canVoid)" OnClick="() => _confirmVoid = true">@L["Sales_Void"]</Button>
+        </FormActions>
+    }
+
+    <ConfirmDialog Visible="@_confirmVoid"
+                   VisibleChanged="v => _confirmVoid = v"
+                   Title="@L["Sales_VoidTitle"]"
+                   Message="@L["Sales_VoidMessage"]"
+                   Danger="true"
+                   ShowReason="true"
+                   Reason="@_voidReason"
+                   ReasonChanged="v => _voidReason = v"
+                   ReasonLabel="@L["Sales_Field_VoidReason"]"
+                   ConfirmLabel="@L["Sales_Void"]"
+                   IsLoading="@_acting"
+                   OnConfirm="VoidAsync" />
+</Page>
+}
+
+@code {
+    [Parameter] public Guid SaleId { get; set; }
+
+    private bool _ready;
+    private bool _loading = true;
+    private bool _acting;
+    private bool _confirmVoid;
+    private bool _isOffline;
+    private PosSaleDto? _sale;
+    private string? _voidReason;
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private string? _banner;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+
+        // Sales are server-only, so an offline device cannot show a sale at all.
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _sale = null;
+            _errorTitle = L["Sales_OfflineTitle"];
+            _errorMessage = L["Sales_OfflineMessage"];
+            _loading = false;
+            return;
+        }
+
+        var result = await Sales.GetSaleAsync(SaleId);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _sale = result.Data;
+        }
+        else
+        {
+            _sale = null;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private async Task VoidAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_voidReason))
+        {
+            return;
+        }
+
+        _acting = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        var result = await Sales.VoidSaleAsync(SaleId, new VoidSaleRequest(_voidReason!));
+        _acting = false;
+        _confirmVoid = false;
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _sale = result.Data;
+            _voidReason = null;
+            _banner = L["Sales_VoidedSuccess"];
+            return;
+        }
+
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _errorTitle = described.Title;
+        _errorMessage = result.Error?.Detail ?? described.Message;
+    }
+
+    private void GoList() => Nav.NavigateTo("/sales");
+}

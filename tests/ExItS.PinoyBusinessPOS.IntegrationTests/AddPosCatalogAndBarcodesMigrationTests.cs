@@ -109,9 +109,9 @@ public sealed class AddPosCatalogAndBarcodesMigrationTests(PosPostgreSqlFixture 
         Assert.DoesNotContain("cost_price", columns);
         Assert.DoesNotContain("tax_rate", columns);
 
+        // Sales tables arrive in AddPosSimpleSales (P8-WP02) and are asserted there; the catalog slice
+        // itself still owns no stock, inventory, or separate barcode table.
         var tables = await QueryPosTablesAsync();
-        Assert.DoesNotContain("sales", tables);
-        Assert.DoesNotContain("sale_lines", tables);
         Assert.DoesNotContain("stock_levels", tables);
         Assert.DoesNotContain("inventory_movements", tables);
         Assert.DoesNotContain("product_barcodes", tables);

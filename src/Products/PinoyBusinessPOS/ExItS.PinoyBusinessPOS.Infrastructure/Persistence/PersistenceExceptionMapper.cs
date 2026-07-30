@@ -38,6 +38,13 @@ internal static class PersistenceExceptionMapper
             return true;
         }
 
+        if (constraint.Contains("ux_sales_org_sale_number", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.SaleNumberConflict;
+            message = "A sale number was allocated concurrently. Retry the checkout.";
+            return true;
+        }
+
         if (constraint.Contains("ux_customers_org_active_mobile", StringComparison.OrdinalIgnoreCase)
             || constraint.Contains("mobile", StringComparison.OrdinalIgnoreCase))
         {

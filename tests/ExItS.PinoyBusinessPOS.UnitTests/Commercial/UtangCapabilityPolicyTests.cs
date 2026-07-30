@@ -25,6 +25,13 @@ public sealed class UtangCapabilityPolicyTests
         PosFeatureCodes.StoreCatalogManage
     ];
 
+    private static readonly string[] SalesGrants =
+    [
+        PosFeatureCodes.StoreSalesView,
+        PosFeatureCodes.StoreSalesCreate,
+        PosFeatureCodes.StoreSalesVoid
+    ];
+
     [Theory]
     [InlineData(PosSubscriptionStatuses.Trialing)]
     [InlineData(PosSubscriptionStatuses.Active)]
@@ -142,6 +149,68 @@ public sealed class UtangCapabilityPolicyTests
     {
         Assert.Contains(PosFeatureCodes.StoreCatalogView, UtangCapabilityPolicy.DefaultDevelopmentGrants);
         Assert.Contains(PosFeatureCodes.StoreCatalogManage, UtangCapabilityPolicy.DefaultDevelopmentGrants);
+    }
+
+    [Theory]
+    [InlineData(PosSubscriptionStatuses.Trialing)]
+    [InlineData(PosSubscriptionStatuses.Active)]
+    [InlineData(PosSubscriptionStatuses.GracePeriod)]
+    public void Full_states_allow_sales_view_create_and_void_with_sales_grants(string status)
+    {
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewSales, status, SalesGrants));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.CreateSale, status, SalesGrants));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.VoidSale, status, SalesGrants));
+    }
+
+    [Theory]
+    [InlineData(PosSubscriptionStatuses.PastDue)]
+    [InlineData(PosSubscriptionStatuses.Cancelled)]
+    [InlineData(PosSubscriptionStatuses.Expired)]
+    public void Continuity_states_allow_sales_view_but_deny_create_and_void(string status)
+    {
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewSales, status, SalesGrants));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(UtangCapability.CreateSale, status, SalesGrants));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(UtangCapability.VoidSale, status, SalesGrants));
+    }
+
+    [Fact]
+    public void Continuity_entry_is_granted_by_sales_view_code()
+    {
+        Assert.True(UtangCapabilityPolicy.CanEnter(
+            PosSubscriptionStatuses.Expired,
+            [PosFeatureCodes.StoreSalesView]));
+        Assert.False(UtangCapabilityPolicy.CanEnter(
+            PosSubscriptionStatuses.Expired,
+            [PosFeatureCodes.StoreSalesCreate]));
+    }
+
+    [Fact]
+    public void Sales_capabilities_require_their_own_grants()
+    {
+        Assert.False(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.ViewSales,
+            PosSubscriptionStatuses.Active,
+            CatalogGrants));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.CreateSale,
+            PosSubscriptionStatuses.Active,
+            [PosFeatureCodes.StoreSalesView]));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.VoidSale,
+            PosSubscriptionStatuses.Active,
+            [PosFeatureCodes.StoreSalesCreate]));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.ManageCatalog,
+            PosSubscriptionStatuses.Active,
+            SalesGrants));
+    }
+
+    [Fact]
+    public void Development_grants_include_sales_codes()
+    {
+        Assert.Contains(PosFeatureCodes.StoreSalesView, UtangCapabilityPolicy.DefaultDevelopmentGrants);
+        Assert.Contains(PosFeatureCodes.StoreSalesCreate, UtangCapabilityPolicy.DefaultDevelopmentGrants);
+        Assert.Contains(PosFeatureCodes.StoreSalesVoid, UtangCapabilityPolicy.DefaultDevelopmentGrants);
     }
 
     [Fact]

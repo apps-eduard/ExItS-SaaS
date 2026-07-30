@@ -8,6 +8,9 @@ public static class PosFeatureCodes
     public const string CustomerCreditCreate = "customer-credit-create";
     public const string StoreCatalogView = "store-catalog-view";
     public const string StoreCatalogManage = "store-catalog-manage";
+    public const string StoreSalesView = "store-sales-view";
+    public const string StoreSalesCreate = "store-sales-create";
+    public const string StoreSalesVoid = "store-sales-void";
 }
 
 /// <summary>Subscription status names mirrored from Platform (string-stable for headers/session).</summary>
@@ -37,7 +40,10 @@ public enum UtangCapability
     ViewGenerateStatement = 9,
     ViewGenerateReceipt = 10,
     ViewCatalog = 11,
-    ManageCatalog = 12
+    ManageCatalog = 12,
+    ViewSales = 13,
+    CreateSale = 14,
+    VoidSale = 15
 }
 
 /// <summary>
@@ -115,6 +121,17 @@ public static class UtangCapabilityPolicy
                 IsFullCommercialState(status)
                 && HasFeature(grants, PosFeatureCodes.StoreCatalogManage),
 
+            UtangCapability.ViewSales =>
+                CanEnter(status, grants) && HasFeature(grants, PosFeatureCodes.StoreSalesView),
+
+            UtangCapability.CreateSale =>
+                IsFullCommercialState(status)
+                && HasFeature(grants, PosFeatureCodes.StoreSalesCreate),
+
+            UtangCapability.VoidSale =>
+                IsFullCommercialState(status)
+                && HasFeature(grants, PosFeatureCodes.StoreSalesVoid),
+
             _ => false
         };
     }
@@ -140,7 +157,8 @@ public static class UtangCapabilityPolicy
                 HasFeature(grants, PosFeatureCodes.CustomerCreditView)
                 || HasFeature(grants, PosFeatureCodes.CustomerCreditRepay)
                 || HasFeature(grants, PosFeatureCodes.StoreCatalogView)
-                || HasFeature(grants, PosFeatureCodes.StoreCatalogManage),
+                || HasFeature(grants, PosFeatureCodes.StoreCatalogManage)
+                || HasFeature(grants, PosFeatureCodes.StoreSalesView),
             _ => false
         };
     }
@@ -151,7 +169,10 @@ public static class UtangCapabilityPolicy
         PosFeatureCodes.CustomerCreditRepay,
         PosFeatureCodes.CustomerCreditCreate,
         PosFeatureCodes.StoreCatalogView,
-        PosFeatureCodes.StoreCatalogManage
+        PosFeatureCodes.StoreCatalogManage,
+        PosFeatureCodes.StoreSalesView,
+        PosFeatureCodes.StoreSalesCreate,
+        PosFeatureCodes.StoreSalesVoid
     ];
 
     private static string Normalize(string? subscriptionStatus) =>

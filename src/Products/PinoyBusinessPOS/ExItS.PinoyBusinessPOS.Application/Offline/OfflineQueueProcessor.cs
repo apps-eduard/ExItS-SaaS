@@ -358,4 +358,11 @@ public static class OfflineOperationTypes
     public const string CreditReverse = "credit.reverse";
     public const string CreditDueDateSet = "credit.due-date.set";
     public const string CreditDueDateClear = "credit.due-date.clear";
+
+    /// <summary>
+    /// Server-side idempotency operation type for sale checkout. Sales are online-only: no offline
+    /// dispatcher, queue handler, or local projection exists for this type. It names the server
+    /// idempotency scope so a retried checkout request replays instead of double-recording.
+    /// </summary>
+    public const string SaleCheckout = "sale.checkout";
 }

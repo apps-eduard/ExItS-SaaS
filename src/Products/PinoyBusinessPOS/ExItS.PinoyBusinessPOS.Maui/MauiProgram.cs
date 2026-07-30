@@ -120,6 +120,9 @@ public static class MauiProgram
         services.AddSingleton<IOfflineOperationDispatcher, CreditDueDateSetOfflineDispatcher>();
         services.AddSingleton<ICustomerCreditOfflineSyncService, CustomerCreditOfflineSyncService>();
         services.AddSingleton<PosStatusState>();
-        // Phase marker: P7-WP04-payment-sync-and-recovery
+        // The checkout cart lives only in memory for the signed-in session and clears itself on
+        // sign-out or organization switch; it is never persisted or queued.
+        services.AddSingleton<SaleCartService>();
+        // Phase marker: P8-WP02-simple-sales
     }
 }
