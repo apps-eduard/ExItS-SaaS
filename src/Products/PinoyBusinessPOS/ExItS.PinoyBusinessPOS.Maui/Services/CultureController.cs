@@ -37,21 +37,30 @@ public sealed class CultureController(ICulturePreferenceStore store, IJSRuntime 
         await ApplyToDocumentAsync(Current);
     }
 
-    public async Task SetCultureAsync(string culture)
+    public async Task<bool> SetCultureAsync(string culture)
     {
-        var normalized = culture == MauiCulturePreferenceStore.Filipino
-            ? MauiCulturePreferenceStore.Filipino
-            : MauiCulturePreferenceStore.English;
-
-        Current = normalized;
-        Epoch++;
-        await store.SetAsync(normalized);
-        ApplyCultureInfo(normalized);
-        await ApplyToDocumentAsync(normalized);
-
-        if (Changed is not null)
+        try
         {
-            await Changed.Invoke();
+            var normalized = culture == MauiCulturePreferenceStore.Filipino
+                ? MauiCulturePreferenceStore.Filipino
+                : MauiCulturePreferenceStore.English;
+
+            Current = normalized;
+            Epoch++;
+            await store.SetAsync(normalized);
+            ApplyCultureInfo(normalized);
+            await ApplyToDocumentAsync(normalized);
+
+            if (Changed is not null)
+            {
+                await Changed.Invoke();
+            }
+
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
         }
     }
 

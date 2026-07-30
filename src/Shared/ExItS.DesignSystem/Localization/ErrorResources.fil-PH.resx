@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="Unexpected_Title" xml:space="preserve"><value>May naganap na error</value></data>
+  <data name="Unexpected_Message" xml:space="preserve"><value>May hindi inaasahang error. Pakisubukan muli.</value></data>
+  <data name="Unauthorized_Title" xml:space="preserve"><value>Kailangan mag-sign in</value></data>
+  <data name="Unauthorized_Message" xml:space="preserve"><value>Kailangan mong mag-sign in para magpatuloy. Hindi pa available ang sign-in sa foundation build na ito.</value></data>
+  <data name="Forbidden_Title" xml:space="preserve"><value>Walang permiso</value></data>
+  <data name="Forbidden_Message" xml:space="preserve"><value>Wala kang permiso para gawin ang aksyong ito.</value></data>
+  <data name="RetryFailed_Title" xml:space="preserve"><value>Hindi nagtagumpay ang pagsubok</value></data>
+  <data name="RetryFailed_Message" xml:space="preserve"><value>Hindi nagtagumpay ang muling pagsubok. Suriin ang koneksyon at subukan muli.</value></data>
+  <data name="PreferenceSaveFailed" xml:space="preserve"><value>Hindi ma-save ang iyong preference. Pakisubukan muli.</value></data>
+  <data name="Timeout_Title" xml:space="preserve"><value>Nag-timeout ang request</value></data>
+  <data name="Timeout_Message" xml:space="preserve"><value>Masyadong matagal bago sumagot. Pakisubukan muli.</value></data>
+  <data name="Offline_Title" xml:space="preserve"><value>Offline ka</value></data>
+  <data name="Offline_Message" xml:space="preserve"><value>Suriin ang iyong internet connection at subukan muli.</value></data>
+  <data name="Unavailable_Title" xml:space="preserve"><value>Hindi available ang serbisyo</value></data>
+  <data name="Unavailable_Message" xml:space="preserve"><value>Hindi namin maabot ang server. Pakisubukan muli sa ilang sandali.</value></data>
+  <data name="Validation_Title" xml:space="preserve"><value>Suriin ang iyong input</value></data>
+  <data name="Validation_Message" xml:space="preserve"><value>May mga value na hindi wasto. Suriin ang form at subukan muli.</value></data>
+</root>

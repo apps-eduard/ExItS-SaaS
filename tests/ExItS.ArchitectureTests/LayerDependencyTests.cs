@@ -667,7 +667,7 @@ public sealed class LayerDependencyTests
         Assert.Contains("MapAdminEndpoints", program);
         Assert.Contains("MapAuthorizationEndpoints", program);
         Assert.Contains("MapAuditEndpoints", program);
-        Assert.Contains("P5-WP02", program, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("P5-WP03", program, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("catalog", program, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("subscription", program, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("payment", program, StringComparison.OrdinalIgnoreCase);

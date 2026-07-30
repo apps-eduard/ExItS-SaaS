@@ -1,5 +1,6 @@
 @namespace ExItS.DesignSystem.Components.Overlay
 @using ExItS.DesignSystem.Components.Primitives
+@inject IStringLocalizer<DesignSystemResources> L
 
 <div class="exds-drawer__backdrop @(Visible ? "exds-drawer__backdrop--open" : null)" aria-hidden="true" @onclick="Close"></div>
 <div class="exds-drawer @(Side == DrawerSide.Left ? "exds-drawer--left" : null) @(Visible ? "exds-drawer--open" : null)"
@@ -11,7 +12,7 @@
      @onkeydown="HandleKeyDown">
     <div class="exds-drawer__header">
         <h2 class="exds-drawer__title">@Title</h2>
-        <IconButton AriaLabel="@CloseLabel" IconName="close" OnClick="Close" />
+        <IconButton AriaLabel="@ResolvedCloseLabel" IconName="close" OnClick="Close" />
     </div>
     <div class="exds-drawer__body">
         @ChildContent
@@ -24,7 +25,9 @@
     [Parameter] public DrawerSide Side { get; set; } = DrawerSide.Right;
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
-    [Parameter] public string CloseLabel { get; set; } = "Close";
+    [Parameter] public string? CloseLabel { get; set; }
+
+    private string ResolvedCloseLabel => CloseLabel ?? L["Action_Close"];
 
     private async Task Close()
     {

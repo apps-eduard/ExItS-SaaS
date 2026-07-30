@@ -1,5 +1,7 @@
 @namespace ExItS.DesignSystem.Components.Overlay
 @using ExItS.DesignSystem.Components.Internal
+@using ExItS.DesignSystem.Localization
+@inject IStringLocalizer<DesignSystemResources> L
 @implements IDisposable
 
 <div class="exds-toast-host" aria-live="polite" aria-atomic="true">
@@ -8,7 +10,7 @@
         <div class="exds-toast @ToneClass(toast.Tone)" role="status">
             <span class="exds-toast__icon">@IconGlyphs.Get(ToneIcon(toast.Tone))</span>
             <span class="exds-toast__message">@toast.Message</span>
-            <button type="button" class="exds-icon-btn exds-toast__close" aria-label="@CloseLabel" @onclick="() => Dismiss(toast)">
+            <button type="button" class="exds-icon-btn exds-toast__close" aria-label="@ResolvedCloseLabel" @onclick="() => Dismiss(toast)">
                 @IconGlyphs.Get("close")
             </button>
         </div>
@@ -19,8 +21,10 @@
     private readonly List<ToastEntry> _toasts = new();
     private readonly Dictionary<Guid, CancellationTokenSource> _timers = new();
 
-    [Parameter] public string CloseLabel { get; set; } = "Dismiss";
+    [Parameter] public string? CloseLabel { get; set; }
     [Parameter] public int DefaultDurationMs { get; set; } = 4000;
+
+    private string ResolvedCloseLabel => CloseLabel ?? L["Action_Dismiss"];
 
     /// <summary>Enqueues a toast. Obtain a reference to this host with <c>@@ref</c> to call it.</summary>
     public void Show(string message, ToastTone tone = ToastTone.Info, int? durationMs = null)

@@ -41,7 +41,7 @@ src/Platform/ExItS.Platform.Admin/Localization/
 
 ASP.NET Core request localization + cookie/localStorage language preference. Shell, navigation, and shared components use `IStringLocalizer<AdminResources>`. Business page copy may remain English in P4-WP04. Glossary: [admin-terminology-guide.md](admin-terminology-guide.md).
 
-### PinoyBusinessPOS resources (P5-WP01 / P5-WP02)
+### PinoyBusinessPOS resources (P5-WP01–P5-WP03)
 
 ```text
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/Localization/
@@ -50,12 +50,13 @@ src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/Localization/
 └── PosResources.cs
 
 src/Shared/ExItS.DesignSystem/Localization/
-├── DesignSystemResources.resx
-├── DesignSystemResources.fil-PH.resx
-└── DesignSystemResources.cs
+├── DesignSystemResources.resx (+ .fil-PH.resx)
+├── ValidationResources.resx (+ .fil-PH.resx)
+├── ErrorResources.resx (+ .fil-PH.resx)
+└── marker classes for IStringLocalizer<T>
 ```
 
-MAUI registers `en` + `fil-PH`; culture preference persisted. Shell/Home/Settings/deferred copy uses `IStringLocalizer<PosResources>` (including density labels); shared empty/error/offline strings use DesignSystem resources. UI label for `fil-PH` is “Tagalog”. Glossary: [pos-terminology-guide.md](pos-terminology-guide.md). Dedicated localization WP (**P5-WP03**) remains for completeness hardening.
+MAUI registers `en` + `fil-PH`; culture preference persisted. Shell/Home/Settings/deferred/NotFound use `IStringLocalizer<PosResources>`. Shared chrome uses DesignSystem/Validation/Error resources. UI label for `fil-PH` is **Tagalog**. Formatting: `CultureFormatting`. Glossary: [pos-terminology-guide.md](pos-terminology-guide.md).
 
 ## Translation quality
 

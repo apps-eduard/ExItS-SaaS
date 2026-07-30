@@ -30,15 +30,24 @@ public sealed class ThemeController(IThemePreferenceStore store, IJSRuntime js)
         await ApplyToDocumentAsync(Current);
     }
 
-    public async Task SetThemeAsync(ThemePreference preference)
+    public async Task<bool> SetThemeAsync(ThemePreference preference)
     {
-        Current = preference;
-        await store.SetAsync(preference);
-        await ApplyToDocumentAsync(preference);
-
-        if (Changed is not null)
+        try
         {
-            await Changed.Invoke();
+            Current = preference;
+            await store.SetAsync(preference);
+            await ApplyToDocumentAsync(preference);
+
+            if (Changed is not null)
+            {
+                await Changed.Invoke();
+            }
+
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
         }
     }
 

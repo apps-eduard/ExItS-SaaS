@@ -7,9 +7,8 @@ namespace ExItS.DesignSystem.Localization;
 /// Designer.cs so the resource keys below are the source of truth.
 /// </summary>
 /// <remarks>
-/// Keys: Empty_DefaultTitle, Empty_DefaultMessage, Error_DefaultTitle, Error_DefaultMessage,
-/// Error_Retry, Loading_Label, Search_Placeholder, Offline_Title, Offline_Message,
-/// ApiUnavailable_Title, ApiUnavailable_Message, Timeout_Title, Timeout_Message.
+/// Keys: Empty_*, Error_*, Loading_*, Search_*, Offline_*, ApiUnavailable_*, Timeout_*,
+/// Action_*, Status_*, Empty_NoRecords, Loading_BusyAria.
 /// </remarks>
 public sealed class DesignSystemResources
 {

@@ -91,6 +91,7 @@ public static class MauiProgram
         services.AddSingleton<ThemeController>();
         services.AddSingleton<DensityController>();
         services.AddSingleton<CultureController>();
+        services.AddSingleton<ApiStatusLocalizer>();
 
         services.AddPosApiClient(configuration);
         services.AddSingleton<PosStatusState>();

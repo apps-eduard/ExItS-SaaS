@@ -27,15 +27,24 @@ public sealed class DensityController(IDensityPreferenceStore store, IJSRuntime 
         await ApplyToDocumentAsync(Current);
     }
 
-    public async Task SetDensityAsync(DensityMode density)
+    public async Task<bool> SetDensityAsync(DensityMode density)
     {
-        Current = density;
-        await store.SetAsync(density);
-        await ApplyToDocumentAsync(density);
-
-        if (Changed is not null)
+        try
         {
-            await Changed.Invoke();
+            Current = density;
+            await store.SetAsync(density);
+            await ApplyToDocumentAsync(density);
+
+            if (Changed is not null)
+            {
+                await Changed.Invoke();
+            }
+
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
         }
     }
 

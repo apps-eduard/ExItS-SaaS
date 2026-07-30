@@ -14,7 +14,7 @@
            @oninput="HandleInput" />
     @if (!string.IsNullOrEmpty(Value))
     {
-        <IconButton AriaLabel="@ClearLabel" IconName="close" OnClick="Clear" />
+        <IconButton AriaLabel="@ResolvedClearLabel" IconName="close" OnClick="Clear" />
     }
 </div>
 
@@ -22,8 +22,10 @@
     [Parameter] public string? Value { get; set; }
     [Parameter] public EventCallback<string?> ValueChanged { get; set; }
     [Parameter] public string? Placeholder { get; set; }
-    [Parameter] public string ClearLabel { get; set; } = "Clear search";
+    [Parameter] public string? ClearLabel { get; set; }
     [Parameter] public bool Disabled { get; set; }
+
+    private string ResolvedClearLabel => ClearLabel ?? L["Action_ClearSearch"];
 
     private async Task HandleInput(ChangeEventArgs args)
     {

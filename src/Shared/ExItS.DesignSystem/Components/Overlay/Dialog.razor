@@ -1,5 +1,6 @@
 @namespace ExItS.DesignSystem.Components.Overlay
 @using ExItS.DesignSystem.Components.Primitives
+@inject IStringLocalizer<DesignSystemResources> L
 
 @if (Visible)
 {
@@ -13,7 +14,7 @@
              @onclick:stopPropagation="true">
             <div class="exds-dialog__header">
                 <h2 class="exds-dialog__title">@Title</h2>
-                <IconButton AriaLabel="@CloseLabel" IconName="close" OnClick="Close" />
+                <IconButton AriaLabel="@ResolvedCloseLabel" IconName="close" OnClick="Close" />
             </div>
             <div class="exds-dialog__body">
                 @ChildContent
@@ -32,7 +33,9 @@
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public RenderFragment? Footer { get; set; }
-    [Parameter] public string CloseLabel { get; set; } = "Close";
+    [Parameter] public string? CloseLabel { get; set; }
+
+    private string ResolvedCloseLabel => CloseLabel ?? L["Action_Close"];
 
     private async Task Close()
     {

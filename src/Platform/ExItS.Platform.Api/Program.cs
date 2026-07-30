@@ -122,7 +122,7 @@ app.MapGet("/", () => Results.Json(new
 {
     service = "ExItS.Platform.Api",
     status = "ok",
-    phase = "P5-WP02-native-ui-tokens-themes-compact-layout"
+    phase = "P5-WP03-english-filipino-localization"
 }));
 
 app.MapHealthChecks("/health");

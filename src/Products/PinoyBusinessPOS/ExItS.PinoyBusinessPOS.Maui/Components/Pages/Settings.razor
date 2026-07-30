@@ -6,12 +6,18 @@
 @inject PosStatusState Status
 @inject IAppInfoService AppInfo
 @inject IOptions<PosApiOptions> ApiOptions
+@inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
 
 <Page>
     <PageHeader Title="@L["Settings_Title"]" Subtitle="@L["Settings_Subtitle"]" />
 
     <Alert Tone="AlertTone.Warning" Title="@L["Settings_DevNoticeTitle"]" Message="@L["Settings_DevNoticeMessage"]" />
+
+    @if (_preferenceError is not null)
+    {
+        <Alert Tone="AlertTone.Danger" Message="@_preferenceError" />
+    }
 
     <Section Title="@L["Settings_AppearanceSectionTitle"]">
         <Card>
@@ -64,6 +70,7 @@
 @code {
     private bool _testSucceeded;
     private string? _testResultMessage;
+    private string? _preferenceError;
 
     private IReadOnlyList<SelectOption> ThemeOptions =>
     [
@@ -104,25 +111,37 @@
 
     private async Task OnThemeChangedAsync(string? value)
     {
+        _preferenceError = null;
         if (Enum.TryParse<ThemePreference>(value, out var preference))
         {
-            await ThemeCtl.SetThemeAsync(preference);
+            if (!await ThemeCtl.SetThemeAsync(preference))
+            {
+                _preferenceError = ApiLocalizer.PreferenceSaveFailed;
+            }
         }
     }
 
     private async Task OnDensityChangedAsync(string? value)
     {
+        _preferenceError = null;
         if (Enum.TryParse<DensityMode>(value, out var density))
         {
-            await DensityCtl.SetDensityAsync(density);
+            if (!await DensityCtl.SetDensityAsync(density))
+            {
+                _preferenceError = ApiLocalizer.PreferenceSaveFailed;
+            }
         }
     }
 
     private async Task OnCultureChangedAsync(string? value)
     {
+        _preferenceError = null;
         if (!string.IsNullOrEmpty(value))
         {
-            await CultureCtl.SetCultureAsync(value);
+            if (!await CultureCtl.SetCultureAsync(value))
+            {
+                _preferenceError = ApiLocalizer.PreferenceSaveFailed;
+            }
         }
     }
 
@@ -131,9 +150,22 @@
         _testResultMessage = null;
         await Status.RefreshApiHealthAsync();
         _testSucceeded = Status.ApiStatus == ApiCallStatus.Success;
-        _testResultMessage = _testSucceeded
-            ? string.Format(L["Api_TestSuccess"], Status.ApiHealthText ?? "OK")
-            : L["Api_TestFailure"];
+        if (_testSucceeded)
+        {
+            var health = string.IsNullOrWhiteSpace(Status.ApiHealthText)
+                ? L["Common_Success"].Value
+                : Status.ApiHealthText;
+            _testResultMessage = string.Format(L["Api_TestSuccess"], health);
+        }
+        else if (Status.ApiStatus is { } status)
+        {
+            var described = ApiLocalizer.Describe(status, Status.LastApiError);
+            _testResultMessage = described.Message;
+        }
+        else
+        {
+            _testResultMessage = L["Api_TestFailure"];
+        }
     }
 
     private async Task OnChangedAsync() => await InvokeAsync(StateHasChanged);

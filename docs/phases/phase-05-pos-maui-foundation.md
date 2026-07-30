@@ -1,6 +1,6 @@
 # Phase 5 — PinoyBusinessPOS MAUI Foundation
 
-[Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Previous](phase-04-platform-admin.md) | [Next](phase-06-utang-mvp.md) | [P5-WP02 report](../reports/P5-WP02-native-ui-tokens-themes-and-compact-layout.md)
+[Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Previous](phase-04-platform-admin.md) | [Next](phase-06-utang-mvp.md) | [P5-WP03 report](../reports/P5-WP03-english-and-filipino-localization.md)
 
 ## Objective
 
@@ -8,7 +8,7 @@ Create the PinoyBusinessPOS MAUI foundation with compact native UI, localization
 
 ## Status
 
-**In Progress** — P5-WP01 and P5-WP02 complete. Do **not** begin P5-WP03 until explicitly authorized.
+**In Progress** — P5-WP01–P5-WP03 complete. Do **not** begin P5-WP04 until explicitly authorized.
 
 ## Work packages
 
@@ -63,22 +63,27 @@ Report: [P5-WP02-native-ui-tokens-themes-and-compact-layout.md](../reports/P5-WP
 
 ### P5-WP03 — English and Filipino Localization
 
-Status: Not Started
+Status: **Complete**
 
-#### Required outcomes
+#### Outcomes
 
-- Add English and Filipino/Tagalog resources.
-- Remove hard-coded user-facing strings.
-- Add resource-completeness validation.
+- Complete EN/`fil-PH` coverage for DesignSystem (`DesignSystemResources`, `ValidationResources`, `ErrorResources`) and `PosResources`
+- Culture-aware `CultureFormatting`; `ApiStatusLocalizer` for safe API error mapping
+- Shared component defaults localized; NotFound and preference-save failures localized
+- Resource-completeness + formatting tests; terminology guide expanded; UI label **Tagalog** for `fil-PH`
+- Phase marker `P5-WP03-english-filipino-localization`
+- Release Android build succeeded; interactive emulator validation unavailable (R-109)
+
+Report: [P5-WP03-english-and-filipino-localization.md](../reports/P5-WP03-english-and-filipino-localization.md)
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [x] Focused commit created and hash recorded (`3d3cba8`).
-- [x] Working tree clean (after push).
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence.
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [ ] Focused commit created and hash recorded.
+- [ ] Working tree clean.
 
 ### P5-WP04 — Reusable MVP Components
 

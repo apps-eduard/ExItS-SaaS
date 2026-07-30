@@ -1,13 +1,16 @@
 @namespace ExItS.DesignSystem.Components.Primitives
+@inject IStringLocalizer<DesignSystemResources> L
 
 <button type="@Type"
         class="@CssClass"
         disabled="@(Disabled || IsLoading)"
+        aria-busy="@IsLoading"
         @onclick="HandleClickAsync"
         @attributes="AdditionalAttributes">
     @if (IsLoading)
     {
         <span class="exds-btn__spinner" aria-hidden="true"><Spinner /></span>
+        <span class="exds-sr-only">@L["Loading_Label"]</span>
     }
     @ChildContent
 </button>

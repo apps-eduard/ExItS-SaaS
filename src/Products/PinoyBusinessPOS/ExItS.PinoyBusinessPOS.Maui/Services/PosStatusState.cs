@@ -27,6 +27,8 @@ public sealed class PosStatusState : IDisposable
 
     public string? ApiHealthText { get; private set; }
 
+    public ApiError? LastApiError { get; private set; }
+
     public bool IsCheckingApi { get; private set; }
 
     /// <summary>Raised whenever connectivity or API status changes; subscribers should call <c>StateHasChanged</c>.</summary>
@@ -47,7 +49,10 @@ public sealed class PosStatusState : IDisposable
 
         var result = await _apiClient.GetHealthAsync(ct).ConfigureAwait(false);
         ApiStatus = result.Status;
-        ApiHealthText = result.IsSuccess ? result.Data?.Status : result.Error?.Detail ?? result.Error?.Title;
+        LastApiError = result.Error;
+        // Success may show the server status token (e.g. "Healthy"); failures never surface raw
+        // ProblemDetails — callers must map via ApiStatusLocalizer.
+        ApiHealthText = result.IsSuccess ? result.Data?.Status : null;
         IsCheckingApi = false;
 
         await NotifyAsync().ConfigureAwait(false);

@@ -87,4 +87,40 @@
   <data name="Timeout_Message" xml:space="preserve">
     <value>Masyadong matagal bago sumagot ang request. Pakisubukan muli.</value>
   </data>
+  <data name="Action_Close" xml:space="preserve">
+    <value>Isara</value>
+  </data>
+  <data name="Action_Dismiss" xml:space="preserve">
+    <value>I-dismiss</value>
+  </data>
+  <data name="Action_ClearSearch" xml:space="preserve">
+    <value>I-clear ang paghahanap</value>
+  </data>
+  <data name="Action_Save" xml:space="preserve">
+    <value>I-save</value>
+  </data>
+  <data name="Action_Cancel" xml:space="preserve">
+    <value>Kanselahin</value>
+  </data>
+  <data name="Action_Confirm" xml:space="preserve">
+    <value>Kumpirmahin</value>
+  </data>
+  <data name="Action_Retry" xml:space="preserve">
+    <value>Subukan muli</value>
+  </data>
+  <data name="Status_Success" xml:space="preserve">
+    <value>Tagumpay</value>
+  </data>
+  <data name="Status_Warning" xml:space="preserve">
+    <value>Babala</value>
+  </data>
+  <data name="Status_Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Empty_NoRecords" xml:space="preserve">
+    <value>Walang nakitang record</value>
+  </data>
+  <data name="Loading_BusyAria" xml:space="preserve">
+    <value>Abala</value>
+  </data>
 </root>

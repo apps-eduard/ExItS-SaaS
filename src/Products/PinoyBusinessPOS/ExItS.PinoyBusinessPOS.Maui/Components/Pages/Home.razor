@@ -4,6 +4,7 @@
 @inject PosStatusState Status
 @inject IAppInfoService AppInfo
 @inject NavigationManager Nav
+@inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
 
 <Page>
@@ -48,25 +49,12 @@
                             <span>@L["Api_Checking"]</span>
                         </Stack>
                     }
-                    else if (Status.ApiStatus == ApiCallStatus.Success)
+                    else if (Status.ApiStatus is { } apiStatus)
                     {
+                        var described = ApiLocalizer.Describe(apiStatus, Status.LastApiError);
                         <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Gap="2">
-                            <span class="pos-value-md">@L["Api_Available"]</span>
-                            <Badge Tone="BadgeTone.Success">@L["Api_Available"]</Badge>
-                        </Stack>
-                    }
-                    else if (Status.ApiStatus == ApiCallStatus.Offline)
-                    {
-                        <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Gap="2">
-                            <span class="pos-value-md">@L["Connectivity_Offline"]</span>
-                            <Badge Tone="BadgeTone.Danger">@L["Connectivity_Offline"]</Badge>
-                        </Stack>
-                    }
-                    else if (Status.ApiStatus is not null)
-                    {
-                        <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Gap="2">
-                            <span class="pos-value-md">@L["Api_Unavailable"]</span>
-                            <Badge Tone="BadgeTone.Warning">@L["Api_Unavailable"]</Badge>
+                            <span class="pos-value-md pos-wrap">@described.Title</span>
+                            <Badge Tone="@ApiBadgeTone(apiStatus)">@described.Title</Badge>
                         </Stack>
                     }
                     else
@@ -81,13 +69,10 @@
         {
             <Alert Tone="AlertTone.Success" Title="@L["Api_Available"]" Message="@L["Home_ApiHealthy"]" />
         }
-        else if (!Status.IsCheckingApi && Status.ApiStatus == ApiCallStatus.Offline)
+        else if (!Status.IsCheckingApi && Status.ApiStatus is { } failing and not ApiCallStatus.Success)
         {
-            <ErrorState IconName="warning" Title="@L["Connectivity_Offline"]" Message="@L["Api_Offline"]" RetryLabel="@L["Common_Retry"]" OnRetry="RetryAsync" />
-        }
-        else if (!Status.IsCheckingApi && Status.ApiStatus is not null and not ApiCallStatus.Success)
-        {
-            <ErrorState Title="@L["Api_Unavailable"]" Message="@L["Home_ApiUnhealthy"]" RetryLabel="@L["Common_Retry"]" OnRetry="RetryAsync" />
+            var described = ApiLocalizer.Describe(failing, Status.LastApiError);
+            <ErrorState Title="@described.Title" Message="@described.Message" RetryLabel="@L["Common_Retry"]" OnRetry="RetryAsync" />
         }
     </Section>
 
@@ -116,6 +101,14 @@
         ConnectivityStatus.Online => L["Connectivity_Online"],
         ConnectivityStatus.Offline => L["Connectivity_Offline"],
         _ => L["Connectivity_Unknown"],
+    };
+
+    private static BadgeTone ApiBadgeTone(ApiCallStatus status) => status switch
+    {
+        ApiCallStatus.Success => BadgeTone.Success,
+        ApiCallStatus.Offline => BadgeTone.Danger,
+        ApiCallStatus.Unauthorized or ApiCallStatus.Forbidden => BadgeTone.Warning,
+        _ => BadgeTone.Warning,
     };
 
     private Task RetryAsync() => Status.RefreshApiHealthAsync();

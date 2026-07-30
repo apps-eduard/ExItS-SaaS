@@ -1,11 +1,13 @@
 ﻿@page "/not-found"
 @layout ExItS.PinoyBusinessPOS.Maui.Components.Layout.PosShell
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
 
 <Page>
-    <PageHeader Title="404" Subtitle="Sorry, the content you are looking for does not exist." />
-    <Button Variant="ButtonVariant.Secondary" OnClick='() => Nav.NavigateTo("/home")'>Back to home</Button>
+    <PageHeader Title="@L["NotFound_Title"]" Subtitle="@L["NotFound_Message"]" />
+    <Button Variant="ButtonVariant.Secondary" OnClick="GoHome">@L["NotFound_BackToHome"]</Button>
 </Page>
 
 @code {
-    [Inject] private NavigationManager Nav { get; set; } = default!;
+    private void GoHome() => Nav.NavigateTo("/home");
 }

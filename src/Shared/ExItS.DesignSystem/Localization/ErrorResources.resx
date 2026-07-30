@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="Unexpected_Title" xml:space="preserve"><value>Something went wrong</value></data>
+  <data name="Unexpected_Message" xml:space="preserve"><value>An unexpected error occurred. Please try again.</value></data>
+  <data name="Unauthorized_Title" xml:space="preserve"><value>Sign-in required</value></data>
+  <data name="Unauthorized_Message" xml:space="preserve"><value>You need to sign in to continue. Sign-in is not available in this foundation build.</value></data>
+  <data name="Forbidden_Title" xml:space="preserve"><value>Access denied</value></data>
+  <data name="Forbidden_Message" xml:space="preserve"><value>You do not have permission to perform this action.</value></data>
+  <data name="RetryFailed_Title" xml:space="preserve"><value>Retry failed</value></data>
+  <data name="RetryFailed_Message" xml:space="preserve"><value>The retry did not succeed. Check your connection and try again.</value></data>
+  <data name="PreferenceSaveFailed" xml:space="preserve"><value>Could not save your preference. Please try again.</value></data>
+  <data name="Timeout_Title" xml:space="preserve"><value>Request timed out</value></data>
+  <data name="Timeout_Message" xml:space="preserve"><value>The request took too long to respond. Please try again.</value></data>
+  <data name="Offline_Title" xml:space="preserve"><value>You're offline</value></data>
+  <data name="Offline_Message" xml:space="preserve"><value>Check your internet connection and try again.</value></data>
+  <data name="Unavailable_Title" xml:space="preserve"><value>Service unavailable</value></data>
+  <data name="Unavailable_Message" xml:space="preserve"><value>We couldn't reach the server. Please try again shortly.</value></data>
+  <data name="Validation_Title" xml:space="preserve"><value>Check your input</value></data>
+  <data name="Validation_Message" xml:space="preserve"><value>Some values are not valid. Review the form and try again.</value></data>
+</root>

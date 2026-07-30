@@ -63,10 +63,10 @@
   <data name="Brand_Tagline" xml:space="preserve"><value>Pundasyong point-of-sale para sa maliliit na negosyong Pilipino</value></data>
 
   <data name="Nav_Home" xml:space="preserve"><value>Home</value></data>
-  <data name="Nav_Products" xml:space="preserve"><value>Produkto</value></data>
+  <data name="Nav_Products" xml:space="preserve"><value>Mga Produkto</value></data>
   <data name="Nav_Sales" xml:space="preserve"><value>Benta</value></data>
-  <data name="Nav_Customers" xml:space="preserve"><value>Kustomer</value></data>
-  <data name="Nav_More" xml:space="preserve"><value>Iba pa</value></data>
+  <data name="Nav_Customers" xml:space="preserve"><value>Mga Kustomer</value></data>
+  <data name="Nav_More" xml:space="preserve"><value>Higit pa</value></data>
   <data name="Nav_Settings" xml:space="preserve"><value>Mga Setting</value></data>
   <data name="Nav_Primary" xml:space="preserve"><value>Pangunahing navigasyon</value></data>
 
@@ -105,7 +105,7 @@
   <data name="Home_NoFeaturesMessage" xml:space="preserve"><value>Ang benta, produkto, at kustomer ay darating sa susunod na work package. Ang build na ito ay para lamang sa app shell, koneksyon, tema, at wika.</value></data>
 
   <data name="Settings_Title" xml:space="preserve"><value>Mga Setting</value></data>
-  <data name="Settings_Subtitle" xml:space="preserve"><value>Itsura, density, wika, at pagsusuri ng koneksyon.</value></data>
+  <data name="Settings_Subtitle" xml:space="preserve"><value>Itsura, densidad, wika, at pagsusuri ng koneksyon.</value></data>
   <data name="Settings_AppearanceSectionTitle" xml:space="preserve"><value>Itsura</value></data>
   <data name="Settings_ThemeLabel" xml:space="preserve"><value>Tema</value></data>
   <data name="Settings_Theme_System" xml:space="preserve"><value>System</value></data>
@@ -131,4 +131,27 @@
 
   <data name="Common_Retry" xml:space="preserve"><value>Subukan ulit</value></data>
   <data name="Common_Close" xml:space="preserve"><value>Isara</value></data>
+  <data name="Common_Save" xml:space="preserve"><value>I-save</value></data>
+  <data name="Common_Cancel" xml:space="preserve"><value>Kanselahin</value></data>
+  <data name="Common_Confirm" xml:space="preserve"><value>Kumpirmahin</value></data>
+  <data name="Common_Search" xml:space="preserve"><value>Maghanap</value></data>
+  <data name="Common_Connected" xml:space="preserve"><value>Nakakonekta</value></data>
+  <data name="Common_Loading" xml:space="preserve"><value>Naglo-load…</value></data>
+  <data name="Common_Success" xml:space="preserve"><value>Tagumpay</value></data>
+  <data name="Common_Warning" xml:space="preserve"><value>Babala</value></data>
+  <data name="Common_Error" xml:space="preserve"><value>Error</value></data>
+  <data name="Common_NoRecords" xml:space="preserve"><value>Walang nakitang record</value></data>
+
+  <data name="NotFound_Title" xml:space="preserve"><value>Hindi nahanap ang page</value></data>
+  <data name="NotFound_Message" xml:space="preserve"><value>Pasensya, wala ang content na hinahanap mo.</value></data>
+  <data name="NotFound_BackToHome" xml:space="preserve"><value>Bumalik sa home</value></data>
+
+  <data name="Status_Unauthorized" xml:space="preserve"><value>Kailangan mag-sign in</value></data>
+  <data name="Status_Forbidden" xml:space="preserve"><value>Walang permiso</value></data>
+  <data name="Status_Timeout" xml:space="preserve"><value>Nag-timeout</value></data>
+  <data name="Status_Validation" xml:space="preserve"><value>Hindi wastong input</value></data>
+  <data name="Preference_SaveFailed" xml:space="preserve"><value>Hindi ma-save ang iyong preference. Pakisubukan muli.</value></data>
+
+  <data name="Format_UtcSuffix" xml:space="preserve"><value>UTC</value></data>
+  <data name="Format_LocalSuffix" xml:space="preserve"><value>Lokal</value></data>
 </root>

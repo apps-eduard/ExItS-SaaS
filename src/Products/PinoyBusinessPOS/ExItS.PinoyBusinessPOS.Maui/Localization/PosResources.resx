@@ -68,7 +68,7 @@
   <data name="Nav_Customers" xml:space="preserve"><value>Customers</value></data>
   <data name="Nav_More" xml:space="preserve"><value>More</value></data>
   <data name="Nav_Settings" xml:space="preserve"><value>Settings</value></data>
-  <data name="Nav_Primary" xml:space="preserve"><value>Primary</value></data>
+  <data name="Nav_Primary" xml:space="preserve"><value>Primary navigation</value></data>
 
   <data name="Env_BannerCompact" xml:space="preserve"><value>Development-stage</value></data>
   <data name="Env_BannerDetail" xml:space="preserve"><value>Development-stage security warning: this app and the POS API it talks to are currently unauthenticated. This build is not production-secure.</value></data>
@@ -131,4 +131,27 @@
 
   <data name="Common_Retry" xml:space="preserve"><value>Retry</value></data>
   <data name="Common_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Common_Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Common_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Common_Confirm" xml:space="preserve"><value>Confirm</value></data>
+  <data name="Common_Search" xml:space="preserve"><value>Search</value></data>
+  <data name="Common_Connected" xml:space="preserve"><value>Connected</value></data>
+  <data name="Common_Loading" xml:space="preserve"><value>Loading…</value></data>
+  <data name="Common_Success" xml:space="preserve"><value>Success</value></data>
+  <data name="Common_Warning" xml:space="preserve"><value>Warning</value></data>
+  <data name="Common_Error" xml:space="preserve"><value>Error</value></data>
+  <data name="Common_NoRecords" xml:space="preserve"><value>No records found</value></data>
+
+  <data name="NotFound_Title" xml:space="preserve"><value>Page not found</value></data>
+  <data name="NotFound_Message" xml:space="preserve"><value>Sorry, the content you are looking for does not exist.</value></data>
+  <data name="NotFound_BackToHome" xml:space="preserve"><value>Back to home</value></data>
+
+  <data name="Status_Unauthorized" xml:space="preserve"><value>Sign-in required</value></data>
+  <data name="Status_Forbidden" xml:space="preserve"><value>Access denied</value></data>
+  <data name="Status_Timeout" xml:space="preserve"><value>Timed out</value></data>
+  <data name="Status_Validation" xml:space="preserve"><value>Invalid input</value></data>
+  <data name="Preference_SaveFailed" xml:space="preserve"><value>Could not save your preference. Please try again.</value></data>
+
+  <data name="Format_UtcSuffix" xml:space="preserve"><value>UTC</value></data>
+  <data name="Format_LocalSuffix" xml:space="preserve"><value>Local</value></data>
 </root>
