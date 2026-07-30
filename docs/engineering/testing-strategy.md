@@ -45,9 +45,9 @@
 - Remarks-based credit (P6-WP02) — append-only entries, derived outstanding, reversal; Testcontainers PostgreSQL
 - Repayments and unified ledger (P6-WP03) — overpayment protection, serializable balance checks, ledger read model; Testcontainers PostgreSQL
 - Due dates and overdue monitoring (P6-WP04) — append-only due-date history, FIFO aging read model, overdue rules, migration apply/rollback; Testcontainers PostgreSQL
-- Statements / receipts / trial rules *(Phase 6 P6-WP05+)*
+- Statements, repayment receipts, and trial/continuity capability matrix (P6-WP05) — projection statements/receipts (`RCPT-{guid:N}`); `UtangCapabilityPolicy`; Platform POS continuity entry; commercial header gates; OD-07/08/09; Testcontainers where relational; no new receipt migration
 - Tenant isolation
-- Subscription feature enforcement
+- Subscription feature enforcement (P6-WP05 matrix + grants)
 - Offline queue and idempotency *(Phase 7)*
 - Inventory movements
 - Cashier permissions

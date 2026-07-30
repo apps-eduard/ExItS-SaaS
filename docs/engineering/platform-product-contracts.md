@@ -179,27 +179,67 @@ Trial expiration = trial start timestamp plus three calendar months
 
 Generic Platform trial duration remains configurable; **90 days is not an approved substitute**. End-of-month calendar arithmetic is deferred to a later configuration WP (open: Jan 31 + 3 months → Apr 30 vs other approved rule).
 
-### Allowed after expiry
+### Product entry vs feature authorization (P6-WP05)
+
+Platform product-access evaluation may allow PinoyBusinessPOS **entry** for continuity states, but every Utang operation must still pass effective feature grants. Entry alone does not restore full product capability. Suspended is an explicit full-access block. PastDue / Cancelled / Expired permit **continuity only** (view existing debt, accept repayments, retrieve financial history). Missing, stale, unknown, or invalid entitlement denies every protected capability. Continuity entry applies to **PinoyBusinessPOS only**; other products remain Trialing/Active for entry/new grants.
+
+| Subscription state | POS entry |
+|---|---|
+| Trialing / Active / GracePeriod | Allow |
+| PastDue / Cancelled / Expired | Allow with restricted continuity features (requires view or repay grant) |
+| Suspended | **Deny** |
+| Missing, stale, unknown, invalid | **Deny** |
+
+Feature codes (server-side authority): `customer-credit-view`, `customer-credit-repay`, `customer-credit-create`.
+
+### Authoritative capability matrix (P6-WP05)
+
+| Capability | Trialing | Active | GracePeriod | PastDue | Cancelled | Expired | Suspended | Grant |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| Enter POS | Allow | Allow | Allow | Allow | Allow | Allow | Deny | Continuity: view or repay |
+| View customers and Utang history | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `customer-credit-view` |
+| Create customer — OD-07 | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `customer-credit-create` |
+| Edit customer contact/profile — OD-08 | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `customer-credit-create` |
+| Create new credit | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `customer-credit-create` |
+| Record repayment | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `customer-credit-repay` |
+| Reverse credit — OD-09 | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `customer-credit-view` |
+| Reverse repayment — OD-09 | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `customer-credit-repay` |
+| Set/change/clear due date | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `customer-credit-create` |
+| View/generate statement | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `customer-credit-view` |
+| View/generate repayment receipt | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `customer-credit-view` |
+
+### Allowed after expiry (continuity)
 
 - View existing customers, balances, historical credit entries, payment history
 - Receive partial/full payment against **existing** debt via **Cash** or **GCash** (manual GCash; reference required)
+- Reverse credit (audited correction; cannot increase debt) — OD-09
+- View/generate statements and repayment receipts when `customer-credit-view` is granted
 - Export/access data where separately approved
 - Upgrade or renew subscription
 
-### Blocked after expiry
+### Blocked after expiry (continuity)
 
+- Create customer (OD-07), edit customer contact/profile (OD-08)
 - Create new customer credit / increase debt / add new credit entries
-- Use features not allowed by expired entitlement
+- Reverse repayment (OD-09 — would increase outstanding)
+- Set/change/clear due dates
+- Use features not allowed by expired entitlement or missing grants
+- Suspended / missing / stale / unknown / invalid: deny all protected capabilities
 
 POS retail payment method codes and Cash/GCash field rules: [pinoy-business-pos-requirements.md](../product/pinoy-business-pos-requirements.md).
 
-### Open (do not guess)
+### Resolved (P6-WP05)
 
 | Question | Status |
 |---|---|
-| Create new cash-only customer after trial expiry? | **Open** — OD-07 |
-| Edit customer contact info after expiry? | **Open** — OD-08 |
-| Correct erroneous historical entry (elevated + audit)? | **Open** — OD-09 (direction: elevated + audit preferred; finalize in Phase 6) |
+| Create new cash-only customer after trial expiry? | **Resolved — Deny** (OD-07) |
+| Edit customer contact info after expiry? | **Resolved — Deny** (OD-08) |
+| Correct erroneous historical entry? | **Resolved** (OD-09): credit reverse allowed in continuity; repayment reverse only Trialing/Active/GracePeriod |
+
+### Still open (do not guess)
+
+| Question | Status |
+|---|---|
 | Offline device with stale entitlement after expiry? | Bound by projection states + Phase 7; stale window duration **not** fixed here (R-022) |
 | Duplicate GCash reference hard-block vs warn-only? | **Open** — OD-11 (warn minimum is approved) |
 
@@ -346,9 +386,9 @@ Transport protocols deferred (OD-03).
 | OD-04 | MFA | Platform security | Later | No | Factors + recovery |
 | OD-05 | HealthCare import timing | Portfolio lead | After Platform foundation | No | Import WP |
 | OD-06 | Multi-org from HC StaffMember | Platform + HC | Phase 2 | No | Migration design |
-| OD-07 | Cash-only customer create after trial expiry | POS product | Phase 6 | No | Allow/deny |
-| OD-08 | Edit customer contact after trial expiry | POS product | Phase 6 | No | Allow/deny |
-| OD-09 | Historical credit correction policy | POS product | Phase 6 | No | Elevated + audit rules |
+| OD-07 | Cash-only customer create after trial expiry | POS product | Phase 6 | No | **Resolved (P6-WP05) — Deny** in PastDue/Cancelled/Expired |
+| OD-08 | Edit customer contact after trial expiry | POS product | Phase 6 | No | **Resolved (P6-WP05) — Deny** in PastDue/Cancelled/Expired |
+| OD-09 | Historical credit correction policy | POS product | Phase 6 | No | **Resolved (P6-WP05)** — credit reverse allowed in continuity; repayment reverse only full commercial states |
 | OD-10 | Legal retention periods | Compliance | Before commercial launch | No | Periods by data class |
 | OD-11 | Duplicate GCash reference: hard-block vs warn-only | POS product | Phase 6 / 8 | No | Warn minimum approved |
 | R-022 | Exact stale/refresh durations | Platform + products | Phase 3 / 7 | No | Numeric policy |

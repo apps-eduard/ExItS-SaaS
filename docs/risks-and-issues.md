@@ -133,9 +133,13 @@
 | R-127 | Derived outstanding mistaken for stored balance / repayment ledger | High | Document sum-of-active-entries only; no edit/delete; repayments deferred to P6-WP03 | Mitigated in P6-WP03 — outstanding = active credits − active repayments; ledger is read-only; FIFO aging in P6-WP04 also derived |
 | R-128 | Dev actor header mistaken for production audit identity | High | Document `X-Dev-Platform-User-Id` as Development/Testing-only; production JWT still required (R-091) | Open — introduced P6-WP03; also used for due-date set/clear in P6-WP04 |
 
+## Phase 6 note (P6-WP05)
+
+P6-WP05 delivered projection statements and repayment receipts (`RCPT-{guid:N}`), centralized `UtangCapabilityPolicy`, Platform continuity entry for PinoyBusinessPOS only (`ProductAccessEligibility.CanEnterPinoyBusinessPos`), and Development-stage commercial headers. **Product entry vs feature authorization are separate** — Suspended denies; PastDue/Cancelled/Expired are continuity-only. **OD-07 / OD-08 / OD-09 resolved** (deny customer create/edit in continuity; credit reverse allowed; repayment reverse full states only). **No new receipt migration.** Commercial headers are not production-secure. R-109 remains open (no interactive Android validation). Feature commit: `271c518cb8c4051502d6370ec71e6498fbbfd6b5`. Next: **P6-WP06 — Utang MVP Closeout** when authorized.
+
 ## Phase 6 note (P6-WP04)
 
-P6-WP04 delivered optional credit due dates (`current_due_date` + append-only `credit_due_date_changes`), FIFO aging as a read model, and overdue monitoring APIs/MAUI. Effective business date is server UTC calendar day only (org timezone not defined). **Not delivered:** statements, printable receipts, trial-expiry behavior. OD-07/OD-08 remain open. R-109 remains open (no interactive Android validation). Next: **P6-WP05 — Statements, Receipts and Trial Rules** when authorized.
+P6-WP04 delivered optional credit due dates (`current_due_date` + append-only `credit_due_date_changes`), FIFO aging as a read model, and overdue monitoring APIs/MAUI. Effective business date is server UTC calendar day only (org timezone not defined). Superseded as “next WP” by P6-WP05.
 
 ## Phase 5 note (P5-WP05 closeout)
 

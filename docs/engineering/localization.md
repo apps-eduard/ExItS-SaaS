@@ -50,7 +50,7 @@ src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/Localization/
 └── PosResources.cs
 ```
 
-Includes shell/home/settings/auth keys plus **Customers_***, **Credit_***, **Payment_***, **Ledger_***, **DueDate_***, **Overdue_***, and remaining **Utang_*** deferred-feature strings (statements/receipts).
+Includes shell/home/settings/auth keys plus **Customers_***, **Credit_***, **Payment_***, **Ledger_***, **DueDate_***, **Overdue_***, **Statement_***, **Receipt_***, **Access_***, and remaining **Utang_*** deferred-feature strings.
 
 src/Shared/ExItS.DesignSystem/Localization/
 ├── DesignSystemResources.resx (+ .fil-PH.resx)

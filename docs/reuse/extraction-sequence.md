@@ -205,9 +205,9 @@ POS does **not** need full HealthCare reconnection first.
 | OD-04 | MFA | Platform security | Later | No | Password + refresh only |
 | OD-05 | HealthCare import timing | Portfolio lead | After Platform foundation | No | Keep nested ignored |
 | OD-06 | Multi-org from HC StaffMember | Platform + HC | Phase 2 | No | HC single membership until cutover WP |
-| OD-07 | Cash-only customer after trial expiry | POS | Phase 6 | No | Do not invent allow without decision |
-| OD-08 | Edit customer contact after expiry | POS | Phase 6 | No | Prefer read-only until decided |
-| OD-09 | Historical credit correction policy | POS | Phase 6 | No | Elevated + audit direction preferred |
+| OD-07 | Cash-only customer after trial expiry | POS | Phase 6 | No | **Resolved (P6-WP05) — Deny** in PastDue/Cancelled/Expired |
+| OD-08 | Edit customer contact after expiry | POS | Phase 6 | No | **Resolved (P6-WP05) — Deny** in PastDue/Cancelled/Expired |
+| OD-09 | Historical credit correction policy | POS | Phase 6 | No | **Resolved (P6-WP05)** — credit reverse in continuity; repayment reverse only Trialing/Active/GracePeriod |
 | OD-10 | Legal retention periods | Compliance | Before commercial launch | No | Retain; no cascade delete |
 | OD-11 | GCash duplicate hard-block vs warn | POS | Phase 6 / 8 | No | **Warn** minimum |
 | OD-12 | Split tender timing | POS | Later | No | Single tender MVP |

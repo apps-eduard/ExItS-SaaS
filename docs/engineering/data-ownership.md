@@ -36,7 +36,9 @@ Clinics, staff assignments, patients, appointments, medical notes, clinical auth
 
 **P6-WP04 (due dates and overdue):** Same database/schema. Nullable `current_due_date` on `credit_entries`; append-only `credit_due_date_changes` history (reason, actor, UTC). FIFO aging and overdue status are read models only — no persisted payment allocations. Effective business date = server UTC calendar day (org timezone not defined). Outstanding formula unchanged.
 
-Later POS ownership (not yet implemented): businesses, stores/branches/registers, statements/receipts, retail payments, catalog, sales, inventory, expenses, suppliers, offline device state, POS audit, **entitlement projection rows**.
+**P6-WP05 (statements, receipts, trial rules):** Same database/schema — **no new tables/migrations**. Customer statements and repayment receipts are read-model projections. Receipt reference `RCPT-{guid:N}` is deterministic from repayment id. Commercial capability matrix and Platform continuity entry for PinoyBusinessPOS only (Suspended denies; PastDue/Cancelled/Expired continuity). Outstanding formula unchanged.
+
+Later POS ownership (not yet implemented): businesses, stores/branches/registers, retail payments, catalog, sales, inventory, expenses, suppliers, offline device state, POS audit, **entitlement projection rows**.
 
 ---
 

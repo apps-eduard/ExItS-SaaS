@@ -216,7 +216,8 @@ Exact SLAs **not** promised here.
 | OD-04 | MFA | Deferred |
 | OD-05 | When/how to import HealthCare into monorepo | After Platform foundation (Phase 1–2) |
 | OD-06 | Multi-org membership migration from HC single StaffMember | Phase 2 extraction design |
-| OD-07–OD-11 | Trial post-expiry UX; legal retention; GCash duplicate hard-block | Carried in [contracts §20](platform-product-contracts.md) / POS requirements |
+| OD-07–OD-09 | Trial post-expiry UX (customer create/edit; historical correction) | **Resolved P6-WP05** — see [contracts §9/§20](platform-product-contracts.md) |
+| OD-10–OD-11 | Legal retention; GCash duplicate hard-block | Carried in [contracts §20](platform-product-contracts.md) / POS requirements |
 
 P1-WP02 expands contract mechanics in [platform-product-contracts.md](platform-product-contracts.md) and [ADR-012](../decisions/ADR-012-versioned-platform-contracts-and-local-projections.md).
 

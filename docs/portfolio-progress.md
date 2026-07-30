@@ -2,7 +2,7 @@
 
 > Primary status page. Cursor must update this file after every completed work package. Percentages are calculated from approved work packages, never estimated.
 
-[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P6-WP04 report](reports/P6-WP04-due-dates-and-overdue-monitoring.md)
+[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P6-WP05 report](reports/P6-WP05-statements-receipts-and-trial-rules.md)
 
 ## Current status
 
@@ -12,10 +12,10 @@
 | Existing product | HealthCare SaaS MVP (ignored nested `HealthCare/`) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 6 — Utang MVP (**In Progress**) |
-| Current work package | P6-WP04 — Due Dates and Overdue Monitoring (**Complete with documented risks**) |
-| Overall status | **P6-WP04 complete** — due dates + FIFO overdue monitoring; next P6-WP05 when authorized |
-| Latest verified commit | 9947d95cba27c8311091f95ea51c79be1de0acb9 |
-| Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations; R-035 calendar EOM; no statements/receipts yet; no payment gateway; no interactive Android emulator (R-109); OD-07/OD-08 open; org timezone undefined for due dates |
+| Current work package | P6-WP05 — Statements, Receipts and Trial Rules (**Complete**) |
+| Overall status | **P6-WP05 complete** — statements, receipts, capability matrix, POS continuity entry; next P6-WP06 when authorized |
+| Latest verified commit | `271c518cb8c4051502d6370ec71e6498fbbfd6b5` (P6-WP05 feature) |
+| Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations; R-035 calendar EOM; no payment gateway; no interactive Android emulator (R-109); commercial headers Development-stage only; org timezone undefined for due dates; OD-11 open |
 | Last updated | 2026-07-30 |
 
 ## Delivery sequence
@@ -31,7 +31,9 @@ P6-WP03 ✓ Payments and Ledger (complete with risks)
         ↓
 P6-WP04 ✓ Due Dates and Overdue Monitoring (complete with risks)
         ↓
-P6-WP05 — Statements, Receipts and Trial Rules (not started — do not begin until authorized)
+P6-WP05 — Statements, Receipts and Trial Rules (complete — do not begin WP06 until authorized)
+        ↓
+P6-WP06 — Utang MVP Closeout (not started)
 ```
 
 ## Phase progress
@@ -60,7 +62,7 @@ P6-WP05 — Statements, Receipts and Trial Rules (not started — do not begin u
 | P6-WP02 | Complete with risks | ead6942187ca9a9c507dcf706bbece2e507a8645 |
 | P6-WP03 | Complete with risks | de39091f6110acbc721ac78da51a92acefd6775a |
 | P6-WP04 | Complete with risks | 9947d95cba27c8311091f95ea51c79be1de0acb9 |
-| P6-WP05 | Not Started | — |
+| P6-WP05 | Complete | `271c518cb8c4051502d6370ec71e6498fbbfd6b5` |
 | P6-WP06 | Not Started | — |
 
 ## Phase 5 work packages
@@ -81,13 +83,6 @@ P6-WP05 — Statements, Receipts and Trial Rules (not started — do not begin u
 
 | Suite | Passed | Failed | Skipped |
 |---|---:|---:|---:|
-| Platform unit | 261 | 0 | 0 |
-| Architecture | 41 | 0 | 0 |
-| Admin unit | 27 | 0 | 0 |
-| DesignSystem | 28 | 0 | 0 |
-| ApiClient | 17 | 0 | 0 |
-| Maui | 27 | 0 | 0 |
-| POS unit | 26 | 0 | 0 |
-| POS integration | 10 | 0 | 0 |
-| Platform integration | 84 | 0 | 0 |
-| **Total** | **521** | **0** | **0** |
+| Full solution (P6-WP05) | 541 | 0 | 0 |
+
+Prior verified baseline (P6-WP04): **521** passed / 0 failed / 0 skipped.

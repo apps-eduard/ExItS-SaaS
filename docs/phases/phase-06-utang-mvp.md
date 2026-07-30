@@ -8,7 +8,7 @@ Deliver the customer-facing Utang product.
 
 ## Status
 
-**In Progress** — P6-WP01 through P6-WP04 complete. Do **not** begin P6-WP05 until explicitly authorized.
+**In Progress** — P6-WP01 through P6-WP05 complete. Do **not** begin P6-WP06 until explicitly authorized.
 
 ## Work packages
 
@@ -165,26 +165,41 @@ Statements, printable receipts, trial-expiry rules, interest, penalties, credit 
 
 ### P6-WP05 — Statements, Receipts and Trial Rules
 
-Status: Not Started — **do not begin**
+Status: **Complete with documented risks**
 
-#### Required outcomes
+Feature commit: `271c518cb8c4051502d6370ec71e6498fbbfd6b5`
+Report: [P6-WP05-statements-receipts-and-trial-rules.md](../reports/P6-WP05-statements-receipts-and-trial-rules.md)
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+#### Approved scope
+
+Statements, repayment receipts, trial/continuity commercial rules, and MAUI preview/handoff:
+
+- Projection-based customer statements (period opening/closing, ledger lines, due/overdue presentation)
+- Projection-based repayment receipts with deterministic `RCPT-{guid:N}` reference
+- Centralized `UtangCapabilityPolicy` matrix; product entry vs feature authorization separation
+- Platform `ProductAccessEligibility.CanEnterPinoyBusinessPos` continuity for PastDue/Cancelled/Expired (POS only); Suspended denies
+- Development-stage headers `X-Pos-Subscription-Status`, `X-Pos-Feature-Grants`
+- POS API + MAUI statement/receipt preview and share handoff; EN + `fil-PH`
+- OD-07 / OD-08 / OD-09 resolved
+- No new migration for receipts/statements
+- Phase marker `P6-WP05-statements-receipts-and-trial-rules`
+
+#### Explicit exclusions (later / out of scope)
+
+Interest, penalties, credit limits, sales, inventory, gateways, tax invoices, offline sync, payment-allocation persistence. Platform SaaS payments remain separate.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (full solution **541** passed / 0 failed / 0 skipped).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded.
+- [ ] Working tree clean (pending docs finalize push).
 
 ### P6-WP06 — Utang MVP Closeout
 
-Status: Not Started
+Status: Not Started — **do not begin**
 
 #### Required outcomes
 

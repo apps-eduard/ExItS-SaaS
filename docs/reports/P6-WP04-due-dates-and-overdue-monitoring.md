@@ -4,7 +4,7 @@ Phase marker: `P6-WP04-due-dates-and-overdue-monitoring`
 
 ## Status
 
-**Complete with documented risks.** Organization-owned optional due dates on credit entries with append-only change history and derived overdue monitoring via FIFO aging. Outstanding formula remains active credits − active repayments. Statements, printable receipts, trial-expiry behavior, interest, penalties, credit limits, write-offs, installments, sales, inventory, gateways, QR/cards, offline sync, and payment-allocation persistence remain excluded. Platform SaaS payments remain separate. OD-07 and OD-08 remain open. **P6-WP05 was not started.**
+**Complete with documented risks.** Organization-owned optional due dates on credit entries with append-only change history and derived overdue monitoring via FIFO aging. Outstanding formula remains active credits − active repayments. Interest, penalties, credit limits, write-offs, installments, sales, inventory, gateways, QR/cards, offline sync, and payment-allocation persistence remain excluded. Platform SaaS payments remain separate. OD-07 and OD-08 were later resolved in P6-WP05. **P6-WP05 was not started in this WP.**
 
 ## Delivered capability
 
@@ -130,4 +130,4 @@ POS Domain/Application/Infrastructure/Api/ApiClient/Maui due-date + overdue slic
 
 ## Exact next work package
 
-**P6-WP05 — Statements, Receipts and Trial Rules** (not started — do not begin until explicitly authorized)
+**P6-WP05 — Statements, Receipts and Trial Rules** (delivered separately — see that report)
