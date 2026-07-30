@@ -50,6 +50,7 @@
 - Simple sales (P8-WP02) — sale/line domain; qty/UOM; AwayFromZero rounding; Cash/ManualGCash; void; sale-number sequence; idempotent checkout; `store-sales-*` continuity; migration `AddPosSimpleSales`; MAUI checkout/history; online-only
 - Product-Based Utang (P8-WP03) — Utang payment; atomic sale+credit; optional due date; void+reverse; standalone reverse blocked; migration `AddProductBasedUtang`; dual capability gates; online-only
 - Basic inventory (P8-WP04) — accounts/movements; enable/adjust; sale deduction/void restore; low-stock; `store-inventory-*`; migration `AddPosBasicInventory`; online-only
+- Expenses (P8-WP05) — categories; immutable Cash/ManualGCash entries; void; derived summaries; `store-expenses-*`; migration `AddPosExpenses`; online-only
 - Tenant isolation
 - Subscription feature enforcement (P6-WP05 matrix + grants; P8-WP01 catalog grants)
 - Offline queue and idempotency *(Phase 7)*
@@ -77,5 +78,6 @@
 - **P8-WP02:** sale domain qty/rounding/cash/gcash/void; capability matrix for `store-sales-view` / `store-sales-create` / `store-sales-void`; migration apply/rollback-to-`AddPosCatalogAndBarcodes`/re-apply; checkout idempotency replay/mismatch; org isolation; MAUI page guards; architecture exclusions (no stock/offline sale queue)
 - **P8-WP03:** Product-Based Utang domain/API (active customer, zero-total reject, atomic sale+credit, due date, void+reverse, standalone reverse block, repayment void conflict); migration apply/rollback-to-`AddPosSimpleSales`/re-apply; MAUI Utang checkout/detail guards; no offline Utang queue
 - **P8-WP04:** inventory domain enable/adjust/negative; sale Cash/Utang deduct+void restore; insufficient stock; idempotent no double-deduct; UOM lock; capability matrix; migration apply/rollback-to-`AddProductBasedUtang`/re-apply; online-only architecture exclusions
+- **P8-WP05:** expense category uniqueness; Cash/GCash create; void; idempotent replay; summaries; capability matrix; migration apply/rollback-to-`AddPosBasicInventory`/re-apply; online-only architecture exclusions
 
 All reports use exact command output; totals are never estimated.

@@ -8,7 +8,7 @@ Deliver the Basic Store paid plan.
 
 ## Status
 
-**In Progress** — P8-WP01 through P8-WP04 complete with documented risks. Do **not** begin P8-WP05 until explicitly authorized.
+**In Progress** — P8-WP01 through P8-WP05 complete with documented risks. Do **not** begin P8-WP06 until explicitly authorized.
 
 Feature commit (P8-WP01): `5573822ca116ab46f1a5cdce407e1d7b4f58f796`
 
@@ -210,26 +210,46 @@ Suppliers/purchasing/POs/receiving, warehouses/branches/bins, transfers, batches
 
 ### P8-WP05 — Expenses
 
-Status: Not Started — do not begin until authorized
+Status: **Complete with documented risks**
 
-#### Required outcomes
+Phase marker: `P8-WP05-expenses`
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+Feature commit: `ca956921fbfcfad8499f01acb9d9726fff2d81d4`
+
+Report: [P8-WP05-expenses.md](../reports/P8-WP05-expenses.md)
+
+#### Approved scope (clarified)
+
+Organization-isolated **store expense recording and monitoring**:
+
+- Flat expense categories (Active/Inactive; active normalized name unique per org; no hierarchy/hard delete)
+- Immutable expense entries: amount > 0 (≤2 dp), Cash or ManualGCash, required description, calendar ExpenseDate, optional payee/GCash reference
+- Status Recorded | Voided; corrections via void + replacement expense; no direct edit
+- Server expense number `EXP-YYYYMMDD-<sequence>`; idempotent create via existing infrastructure
+- Derived period summaries (totals by category/payment, net excludes voided); no P&L/tax claims
+- Features: `store-expenses-view` / `store-expenses-manage`; continuity view-only; Suspended deny
+- Migration `AddPosExpenses` (`pos.expense_categories`, `pos.expenses`, `pos.expense_number_sequences`)
+- API `/api/v1/pos/expense-categories`, `/api/v1/pos/expenses*`
+- MAUI `/expenses*`
+- Online-only; no default category seeding
+- Tests, docs, Android evidence
+
+#### Explicit exclusions (P8-WP06+)
+
+AP/suppliers/POs/receiving, payroll, reimbursements/advances, recurring automation, budgets/approvals, GL/journal, tax/VAT rules, OCR/attachments, split payments, cards/gateways/QR/GCash verification, offline expenses, P&L reporting, POS operational roles.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (830 / 0 / 0; baseline 805).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded (`ca956921fbfcfad8499f01acb9d9726fff2d81d4`).
+- [x] Working tree clean.
 
 ### P8-WP06 — Dashboard and Reports
 
-Status: Not Started
+Status: Not Started — do not begin until authorized
 
 #### Required outcomes
 

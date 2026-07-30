@@ -91,4 +91,4 @@ Root `HealthCare/` remains ignored, untracked, outside `ExItS.slnx`.
 
 ## Exact next work package
 
-**P8-WP05 — Expenses** (do not begin until explicitly authorized).
+**P8-WP05 — Expenses** completed separately; next authorized WP is **P8-WP06 — Dashboard and Reports**.

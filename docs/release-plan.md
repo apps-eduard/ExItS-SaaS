@@ -51,13 +51,13 @@ MAUI app, bilingual UI, themes, customers, Utang, payments, overdue monitoring a
 
 **Not production-ready** while R-109, R-022, full-database encryption, production auth/roles, and production background scheduling remain open.
 
-## R3.6 — Basic Store started (Phase 8 / P8-WP01–P8-WP04)
+## R3.6 — Basic Store started (Phase 8 / P8-WP01–P8-WP05)
 
-**Phase 8 in progress** — P8-WP01 through P8-WP04 **complete** with documented risks. See [P8-WP04 report](reports/P8-WP04-basic-inventory.md).
+**Phase 8 in progress** — P8-WP01 through P8-WP05 **complete** with documented risks. See [P8-WP05 report](reports/P8-WP05-expenses.md).
 
-Online-only catalog, Cash/ManualGCash/Utang sales, and basic inventory (immutable movements, sale deduction/void restoration). Features include `store-inventory-view` / `store-inventory-manage`. Migration `AddPosBasicInventory`. **No suppliers, warehouses, costing, offline inventory, or negative-stock override.** R-109 remains open.
+Online-only catalog, sales (Cash/ManualGCash/Utang), basic inventory, and store expenses (immutable entries, void corrections, derived summaries). Features include `store-expenses-view` / `store-expenses-manage`. Migration `AddPosExpenses`. **No AP, payroll, GL, offline expenses, or P&L.** R-109 remains open.
 
-**Next:** **P8-WP05 — Expenses** when approved.
+**Next:** **P8-WP06 — Dashboard and Reports** when approved.
 
 ## R4 — Commercial MVP
 

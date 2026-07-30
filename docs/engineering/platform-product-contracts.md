@@ -221,8 +221,10 @@ Feature codes (server-side authority): `customer-credit-view`, `customer-credit-
 | Void Product-Based Utang sale | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `store-sales-void` **and** `ReverseCredit` (`customer-credit-view`) |
 | View inventory / movements / low-stock | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `store-inventory-view` |
 | Enable/disable tracking / adjust stock | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `store-inventory-manage` |
+| View expenses / summaries | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `store-expenses-view` |
+| Create/void expenses / manage categories | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `store-expenses-manage` |
 
-Catalog, sales, Product-Based Utang, and basic inventory are **online-only**. Entry alone does not grant capability; Suspended / missing / stale / unknown deny. Continuity permits view when the matching view grant is present; mutations remain Trialing/Active/GracePeriod + required grants. Sale stock deduction is part of checkout authorization (sales capabilities), not a separate client inventory grant.
+Catalog, sales, Product-Based Utang, basic inventory, and expenses are **online-only**. Entry alone does not grant capability; Suspended / missing / stale / unknown deny. Continuity permits view when the matching view grant is present; mutations remain Trialing/Active/GracePeriod + required grants. Sale stock deduction is part of checkout authorization (sales capabilities), not a separate client inventory grant.
 
 ### Allowed after expiry (continuity)
 
@@ -233,6 +235,7 @@ Catalog, sales, Product-Based Utang, and basic inventory are **online-only**. En
 - View catalog / categories / SKU-barcode lookup when `store-catalog-view` is granted (P8-WP01; online-only)
 - View sales history when `store-sales-view` is granted (P8-WP02; online-only)
 - View inventory when `store-inventory-view` is granted (P8-WP04; online-only)
+- View expenses when `store-expenses-view` is granted (P8-WP05; online-only)
 - Export/access data where separately approved
 - Upgrade or renew subscription
 
@@ -246,6 +249,7 @@ Catalog, sales, Product-Based Utang, and basic inventory are **online-only**. En
 - Create or void sales (`store-sales-create` / `store-sales-void` denied in continuity)
 - Create Product-Based Utang (`customer-credit-create` also denied in continuity)
 - Enable/disable inventory or adjust stock (`store-inventory-manage` denied in continuity)
+- Create/void expenses or manage expense categories (`store-expenses-manage` denied in continuity)
 - Use features not allowed by expired entitlement or missing grants
 - Suspended / missing / stale / unknown / invalid: deny all protected capabilities
 
