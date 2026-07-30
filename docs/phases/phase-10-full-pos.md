@@ -79,8 +79,8 @@ Deliver:
 - [x] Applicable tests pass with exact evidence (preserve 1001 baseline; suite now 1047 / 0 / 0).
 - [x] Dashboard and phase page updated.
 - [x] Completion report created (`docs/reports/P10-WP01-suppliers.md`).
-- [x] Focused commit created and hash recorded (`6f92dd43b2f66709891d82079f9d3fbd0b5c450e`).
-- [ ] Working tree clean.
+- [x] Focused commit created and hash recorded (`6f92dd43b2f66709891d82079f9d3fbd0b5c450e`; docs `55469c60802d11273669efa10494ff1632efa84d`).
+- [x] Working tree clean (after push).
 - [x] Exact next WP recorded: **P10-WP02 — Purchasing** (do not begin).
 
 ### P10-WP02 — Purchasing

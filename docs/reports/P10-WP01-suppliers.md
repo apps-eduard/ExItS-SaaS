@@ -111,7 +111,8 @@ Unchanged release blockers: R-091, R-109, R-129, TLS-PROD, MAUI-HTTPS, POS-ROLES
 |---|---|
 | Feature commit | `6f92dd43b2f66709891d82079f9d3fbd0b5c450e` |
 | Feature message | `feat(pos): add organization-owned supplier master data (P10-WP01 Option A)` |
-| Docs / hash-record | recorded in follow-up commits |
+| Docs commit | `55469c60802d11273669efa10494ff1632efa84d` |
+| Docs message | `docs(pos): record P10-WP01 suppliers Option A completion evidence` |
 | HealthCare | ignored, untracked, outside `ExItS.slnx` |
 
 Exact next: **P10-WP02 — Purchasing** (do not begin until authorized).
