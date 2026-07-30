@@ -43,7 +43,8 @@
 - **P5-WP05 (auth):** Dev/Testing sign-in; secure session clear; production auth blocked; org access deny/allow; no POS operational roles
 - Customer profiles (P6-WP01) — organization-isolated; Testcontainers PostgreSQL
 - Remarks-based credit (P6-WP02) — append-only entries, derived outstanding, reversal; Testcontainers PostgreSQL
-- Customer repayments / payment ledger *(Phase 6 P6-WP03+)*
+- Repayments and unified ledger (P6-WP03) — overpayment protection, serializable balance checks, ledger read model; Testcontainers PostgreSQL
+- Due dates / statements / receipts *(Phase 6 P6-WP04+)*
 - Tenant isolation
 - Subscription feature enforcement
 - Offline queue and idempotency *(Phase 7)*

@@ -8,7 +8,7 @@ Deliver the customer-facing Utang product.
 
 ## Status
 
-**In Progress** — P6-WP01 and P6-WP02 complete. Do **not** begin P6-WP03 until explicitly authorized.
+**In Progress** — P6-WP01 through P6-WP03 complete. Do **not** begin P6-WP04 until explicitly authorized.
 
 ## Work packages
 
@@ -92,26 +92,44 @@ Repayments, payment allocation, full payment ledger, due dates, statements, rece
 
 ### P6-WP03 — Payments and Ledger
 
-Status: Not Started — **do not begin**
+Status: **Complete with documented risks**
 
-#### Required outcomes
+Feature commit: `de39091f6110acbc721ac78da51a92acefd6775a`
+Report: [P6-WP03-payments-and-ledger.md](../reports/P6-WP03-payments-and-ledger.md)
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+#### Approved scope
+
+Organization-owned customer repayments and a unified read-only Utang ledger:
+
+- Positive decimal repayment amount (≤2 decimal places)
+- Optional remarks/reference
+- Customer must exist (inactive customers may repay existing debt)
+- Append-only repayments; explicit reversal with required reason
+- Overpayment blocked (outstanding cannot go negative from an active repayment)
+- Unified chronological ledger (credits + repayments) as a read model
+- Derived outstanding = active credits − active repayments
+- POS API + MAUI workflows
+- PostgreSQL migration `AddPosRepayments`
+- Organization isolation
+- Tests, documentation, Android evidence
+- Phase marker `P6-WP03-payments-and-ledger`
+
+#### Explicit exclusions (later WPs)
+
+Due dates, statements, printable receipts, trial-expiry behavior, interest, penalties, credit limits, write-offs, installments, sales, inventory, gateways, QR/cards, offline sync. Platform SaaS payments remain separate. OD-07/OD-08 remain open.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence.
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean.
 
 ### P6-WP04 — Due Dates and Overdue Monitoring
 
-Status: Not Started
+Status: Not Started — **do not begin**
 
 #### Required outcomes
 

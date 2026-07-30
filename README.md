@@ -36,7 +36,7 @@ ExItS-SaaS/
 
 `HealthCare/` remains frozen and outside root Git. Do not import it without an approved work package.
 
-**Phase 6** is **in progress**. [P6-WP02 — Remarks-Based Credit](docs/reports/P6-WP02-remarks-based-credit.md) delivered organization-owned remarks-based credit entries with derived outstanding and explicit reversal (after [P6-WP01 customers](docs/reports/P6-WP01-customers.md)). Repayments/ledger remain later. Production auth, POS operational roles, sales/inventory, and offline sync remain open. Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Next: **P6-WP03 — Payments and Ledger** when authorized.
+**Phase 6** is **in progress**. [P6-WP03 — Payments and Ledger](docs/reports/P6-WP03-payments-and-ledger.md) delivered repayments and a unified Utang ledger (after [P6-WP02 credit](docs/reports/P6-WP02-remarks-based-credit.md) and [P6-WP01 customers](docs/reports/P6-WP01-customers.md)). Due dates/statements remain later. Production auth, POS operational roles, sales/inventory, and offline sync remain open. Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Next: **P6-WP04 — Due Dates and Overdue Monitoring** when authorized.
 
 ### Platform database (local)
 

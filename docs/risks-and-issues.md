@@ -130,11 +130,12 @@
 | R-124 | POS customer API organization header mistaken for production authz | Critical | Document Dev/Testing-only scope; production JWT still required (R-091); fail closed cross-org 404 | Open — introduced P6-WP01 |
 | R-125 | Customer notes misused as credit/utang records | High | Notes hint forbids credit meaning; dedicated `credit_entries` + UI copy | Open — introduced P6-WP01; mitigated further in P6-WP02 |
 | R-126 | Duplicate mobile MVP rule too strict/loose for real stores | Medium | Document MVP active-mobile uniqueness; refine later | Open — introduced P6-WP01 |
-| R-127 | Derived outstanding mistaken for stored balance / repayment ledger | High | Document sum-of-active-entries only; no edit/delete; repayments deferred to P6-WP03 | Open — introduced P6-WP02 |
+| R-127 | Derived outstanding mistaken for stored balance / repayment ledger | High | Document sum-of-active-entries only; no edit/delete; repayments deferred to P6-WP03 | Mitigated in P6-WP03 — outstanding = active credits − active repayments; ledger is read-only |
+| R-128 | Dev actor header mistaken for production audit identity | High | Document `X-Dev-Platform-User-Id` as Development/Testing-only; production JWT still required (R-091) | Open — introduced P6-WP03 |
 
-## Phase 6 note (P6-WP02)
+## Phase 6 note (P6-WP03)
 
-P6-WP02 delivered organization-owned remarks-based credit entries (`pos.credit_entries`) with derived outstanding and explicit reversal. **Not delivered:** repayments, payment allocation, full payment ledger, due dates, statements, receipts. OD-07/OD-08 remain open. Next: **P6-WP03 — Payments and Ledger** when authorized.
+P6-WP03 delivered organization-owned repayments (`pos.repayments`) and a unified read-only Utang ledger with overpayment protection. **Not delivered:** due dates, statements, printable receipts, trial-expiry behavior. OD-07/OD-08 remain open. Next: **P6-WP04 — Due Dates and Overdue Monitoring** when authorized.
 
 ## Phase 5 note (P5-WP05 closeout)
 
