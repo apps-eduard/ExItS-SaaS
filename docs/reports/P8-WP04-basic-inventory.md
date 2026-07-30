@@ -86,7 +86,7 @@ Root `HealthCare/` remains ignored, untracked, outside `ExItS.slnx`.
 | Field | Value |
 |---|---|
 | Feature commit | `64f05e7fd5ab868beb62c7cce88ad7a15e21c7b8` |
-| Docs hash-record commit | *(recorded in follow-up docs commit)* |
+| Docs hash-record commit | `df36203728aa244037b0bf83ad45b7a6f7504f50` |
 | Final working tree | clean after push |
 
 ## Exact next work package
