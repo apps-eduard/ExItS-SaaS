@@ -1,5 +1,10 @@
-<p class="state" role="status" aria-live="polite">@Message</p>
+@inject IStringLocalizer<AdminResources> L
+
+<p class="state loading" role="status" aria-live="polite">
+    <span class="spinner" aria-hidden="true"></span>
+    @(Message ?? L["State_Loading"])
+</p>
 
 @code {
-    [Parameter] public string Message { get; set; } = "Loading…";
+    [Parameter] public string? Message { get; set; }
 }

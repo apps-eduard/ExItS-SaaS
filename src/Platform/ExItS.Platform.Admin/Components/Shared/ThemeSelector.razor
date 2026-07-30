@@ -1,0 +1,35 @@
+@inject ThemeService Theme
+@inject IStringLocalizer<AdminResources> L
+
+<div class="selector-group">
+    <label class="sr-only" for="theme-selector">@L["Theme_Label"]</label>
+    <select id="theme-selector" value="@Theme.Current" @onchange="OnChangedAsync" disabled="@(!_ready)">
+        <option value="@AdminTheme.System">@L["Theme_System"]</option>
+        <option value="@AdminTheme.Light">@L["Theme_Light"]</option>
+        <option value="@AdminTheme.Dark">@L["Theme_Dark"]</option>
+    </select>
+</div>
+
+@code {
+    private bool _ready;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _ready)
+        {
+            return;
+        }
+
+        await Theme.InitializeAsync();
+        _ready = true;
+        StateHasChanged();
+    }
+
+    private async Task OnChangedAsync(ChangeEventArgs e)
+    {
+        if (Enum.TryParse<AdminTheme>(e.Value?.ToString(), out var theme))
+        {
+            await Theme.SetThemeAsync(theme);
+        }
+    }
+}

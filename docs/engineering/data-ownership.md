@@ -2,8 +2,8 @@
 
 [Architecture](architecture.md) | [Security](security.md) | [Data authority matrix](data-authority-matrix.md) | [Capability boundary](platform-product-capability-boundary.md) | [Contracts](platform-product-contracts.md) | [Classification](data-classification-matrix.md) | [Extraction sequence](../reuse/extraction-sequence.md) | [ADR-012](../decisions/ADR-012-versioned-platform-contracts-and-local-projections.md) | [ADR-013](../decisions/ADR-013-build-new-platform-before-healthcare-reconnection.md)
 
-**Work package:** P1-WP02 (ownership docs); **P2-WP02** identity; **P2-WP03** commercial; **P2-WP04** outbound HC projection contracts (Platform-side only); **P2-WP05** migration dry-run validation (no real migration); **P3-WP02** organization + subscription persistence; **P4-WP02** Platform users, organization memberships, and product-access assignments (no product-local roles); **P4-WP03** Admin subscription/payment/trial workflows over existing Phase 3 persistence (no new commercial migration).
-**Status:** Authoritative ownership + projection rules; identity/commercial domain + contract adaptation foundation in code; org/subscription rows for commercial lifecycle
+**Work package:** P1-WP02 (ownership docs); **P2-WP02** identity; **P2-WP03** commercial; **P2-WP04** outbound HC projection contracts (Platform-side only); **P2-WP05** migration dry-run validation (no real migration); **P3-WP02** organization + subscription persistence; **P4-WP02** Platform users, organization memberships, and product-access assignments (no product-local roles); **P4-WP03** Admin subscription/payment/trial workflows over existing Phase 3 persistence (no new commercial migration); **P4-WP04** Platform role assignments + append-only audit records (`platform.platform_role_assignments`, `platform.audit_records`).
+**Status:** Authoritative ownership + projection rules; identity/commercial domain + contract adaptation foundation in code; org/subscription rows for commercial lifecycle; authorization/audit tables for Platform Admin closeout
 
 Authoritative field-level matrix: [data-authority-matrix.md](data-authority-matrix.md). Contract shapes: [platform-product-contracts.md](platform-product-contracts.md).
 
@@ -20,7 +20,7 @@ Authoritative field-level matrix: [data-authority-matrix.md](data-authority-matr
 
 ## Platform database (summary)
 
-Users, organizations, memberships, products, plans, subscriptions, SaaS payments, entitlements/overrides, Platform audit.
+Users, organizations, memberships, products, plans, subscriptions, SaaS payments, entitlements/overrides, Platform system role assignments, Platform audit records.
 
 ## HealthCare database (summary)
 
@@ -81,6 +81,31 @@ Businesses, stores/branches/registers, customers, credit, retail payments, catal
 | Projection | Full commercial entitlement snapshot locally |
 
 **P3-WP04:** Platform persists authoritative `feature_overrides` and immutable `entitlement_snapshots` (+ grants). Product-local projection storage and delivery remain product-owned and out of scope.
+
+### Platform role assignment (P4-WP04)
+
+| Aspect | Rule |
+|---|---|
+| System of record | Platform |
+| Stable ID | PlatformRoleAssignmentId |
+| Table | `platform.platform_role_assignments` |
+| Scope | Platform-wide (`OrganizationId` null) or organization-scoped |
+| Replication | None to products (Platform Admin operations only) |
+| Prohibited | Product-local roles (Doctor, Cashier, etc.); clinical/POS permissions |
+| Update / audit / deletion | Platform (revoke is status change; mutations audited) |
+| Retention | Platform (+ OD-10) |
+
+### Platform audit record (P4-WP04)
+
+| Aspect | Rule |
+|---|---|
+| System of record | Platform |
+| Stable ID | AuditRecordId |
+| Table | `platform.audit_records` (append-only) |
+| Contents | Actor, action code, target, organization, product code, correlation id, outcome, reason, safe summary, UTC |
+| Prohibited | Passwords, tokens, card/GCash secrets, PHI, raw payloads, exception dumps |
+| Replication | None to products |
+| Retention | Platform; archival policy pending (R-096 / OD-10) |
 
 ### Clinic / patient / appointment / medical note
 

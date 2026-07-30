@@ -1,0 +1,14 @@
+@inject IStringLocalizer<AdminResources> L
+
+<section class="panel unauthorized-panel" role="alert">
+    <h1>@L["Unauthorized_Title"]</h1>
+    <p>@L["Unauthorized_Message"]</p>
+    @if (!string.IsNullOrWhiteSpace(RequiredPermission))
+    {
+        <p class="muted">@RequiredPermission</p>
+    }
+</section>
+
+@code {
+    [Parameter] public string? RequiredPermission { get; set; }
+}

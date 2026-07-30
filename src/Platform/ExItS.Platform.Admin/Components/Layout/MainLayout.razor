@@ -2,22 +2,55 @@
 @using Microsoft.Extensions.Options
 @inject IOptions<DevelopmentOperatorOptions> OperatorOptions
 @inject IHostEnvironment Env
+@inject IStringLocalizer<AdminResources> L
 
-<div class="admin-shell">
-    <AdminNav />
-    <div class="admin-content">
-        <main class="admin-main" id="main-content">
-            <DevSecurityBanner />
+<div class="app-shell" id="app-shell">
+    <input type="checkbox" id="nav-drawer-toggle" class="shell-toggle" />
+    <input type="checkbox" id="nav-collapse-toggle" class="shell-toggle" />
+
+    <label class="drawer-backdrop" for="nav-drawer-toggle" aria-hidden="true"></label>
+
+    <aside class="app-sidebar">
+        <div class="brand-row">
+            <a class="brand-mark" href="/admin" aria-hidden="true">EA</a>
+            <span class="brand-text">@L["Brand_Name"]</span>
+            <label class="icon-btn drawer-close" for="nav-drawer-toggle" aria-label="@L["Nav_CloseDrawer"]">
+                <NavIcon Name="close" />
+            </label>
+        </div>
+        <AdminNav @rendermode="InteractiveServer" />
+    </aside>
+
+    <div class="app-content">
+        <header class="app-header">
+            <label class="icon-btn menu-toggle" for="nav-drawer-toggle" aria-label="@L["Nav_OpenDrawer"]">
+                <NavIcon Name="menu" />
+            </label>
+            <label class="icon-btn collapse-toggle" for="nav-collapse-toggle" aria-label="@L["Nav_CollapseSidebar"]" title="@L["Nav_CollapseSidebar"]">
+                <NavIcon Name="collapse" />
+            </label>
+            <span class="app-header-spacer"></span>
+            <div class="app-header-controls">
+                <ThemeSelector @rendermode="InteractiveServer" />
+                <LanguageSelector @rendermode="InteractiveServer" />
+                <EnvironmentBanner ActorDisplayName="@ActorDisplayName" />
+            </div>
+        </header>
+
+        <main class="app-main" id="main-content">
             @Body
         </main>
-        <footer class="admin-footer">
-            <p>ExItS Platform Admin — portfolio, subscriptions, payments, and trials (P4-WP03). Development-stage.</p>
-            @if ((Env.IsDevelopment() || Env.IsEnvironment("Testing")) && !string.IsNullOrWhiteSpace(OperatorOptions.Value.DisplayName))
+
+        <footer class="app-footer">
+            <p>@L["Footer_Text"]</p>
+            @if (!string.IsNullOrWhiteSpace(ActorDisplayName))
             {
-                <p class="muted">Actor context (dev only): @OperatorOptions.Value.DisplayName — not authorization.</p>
+                <p class="muted">Actor context (dev only): @ActorDisplayName — not authorization.</p>
             }
         </footer>
     </div>
+
+    <ToastHost @rendermode="InteractiveServer" />
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
@@ -25,3 +58,10 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">Dismiss</span>
 </div>
+
+@code {
+    private string? ActorDisplayName =>
+        (Env.IsDevelopment() || Env.IsEnvironment("Testing")) && !string.IsNullOrWhiteSpace(OperatorOptions.Value.DisplayName)
+            ? OperatorOptions.Value.DisplayName
+            : null;
+}

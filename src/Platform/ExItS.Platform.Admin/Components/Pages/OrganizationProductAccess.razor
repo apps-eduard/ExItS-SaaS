@@ -71,7 +71,7 @@ else
     else if (_assignments.Data!.Items.Count == 0) { <EmptyState Message="No product-access assignments for this organization." /> }
     else
     {
-        <table class="responsive-table">
+        <table class="data-table responsive-table">
             <thead><tr><th>User</th><th>Product</th><th>Status</th><th>Granted (UTC)</th><th>Revoked (UTC)</th><th>Actions</th></tr></thead>
             <tbody>
             @foreach (var a in _assignments.Data.Items)

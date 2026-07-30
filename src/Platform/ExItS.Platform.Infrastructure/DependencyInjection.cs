@@ -1,5 +1,7 @@
 using ExItS.Platform.Application.Access;
 using ExItS.Platform.Application.Admin;
+using ExItS.Platform.Application.Audit;
+using ExItS.Platform.Application.Authorization;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.Identity;
@@ -7,6 +9,7 @@ using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
+using ExItS.Platform.Infrastructure.Authorization;
 using ExItS.Platform.Infrastructure.Persistence;
 using ExItS.Platform.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -40,9 +43,15 @@ public static class DependencyInjection
         services.AddScoped<IPlatformUserRepository, PlatformUserRepository>();
         services.AddScoped<IOrganizationMembershipRepository, OrganizationMembershipRepository>();
         services.AddScoped<IProductAccessAssignmentRepository, ProductAccessAssignmentRepository>();
+        services.AddScoped<IPlatformRoleAssignmentRepository, PlatformRoleAssignmentRepository>();
+        services.AddScoped<IAuditRecordRepository, AuditRecordRepository>();
         services.AddScoped<IPlatformUnitOfWork, PlatformUnitOfWork>();
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IEntitlementRefreshPolicy, ProvisionalEntitlementRefreshPolicy>();
+        services.AddHttpContextAccessor();
+        services.AddScoped<IPlatformActorAccessor, DevelopmentPlatformActorAccessor>();
+        services.AddScoped<IPlatformAuthorizationService, PlatformAuthorizationService>();
+        services.AddScoped<IAuditWriter, AuditWriter>();
 
         return services;
     }

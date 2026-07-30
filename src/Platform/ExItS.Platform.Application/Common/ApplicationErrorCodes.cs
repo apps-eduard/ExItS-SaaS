@@ -70,4 +70,8 @@ public static class ApplicationErrorCodes
     public const string EntitlementProductMismatch = "application.entitlement.product_mismatch";
     public const string EntitlementSubscriptionInvalid = "application.entitlement.subscription_invalid";
     public const string EntitlementRefreshPolicyMissing = "application.entitlement.refresh_policy_missing";
+
+    public const string RoleAssignmentNotFound = "application.role_assignment.not_found";
+    public const string RoleAssignmentConflict = "application.role_assignment.conflict";
+    public const string AuditRecordNotFound = "application.audit_record.not_found";
 }

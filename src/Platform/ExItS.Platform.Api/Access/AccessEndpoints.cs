@@ -1,6 +1,8 @@
 using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Access;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Domain.Audit;
+using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
@@ -11,7 +13,8 @@ namespace ExItS.Platform.Api.Access;
 /// <summary>
 /// Product-access assignment and effective commercial access evaluation.
 /// Grants commercial entry eligibility only — never product-local roles.
-/// Development-stage: unauthenticated.
+/// Development-stage: actor identity is unauthenticated, but mutations enforce
+/// <see cref="PlatformPermission.ManageProductAccess"/> scoped to the organization and record audit trail entries.
 /// </summary>
 internal static class AccessEndpoints
 {
@@ -40,8 +43,22 @@ internal static class AccessEndpoints
             Guid organizationId,
             GrantProductAccessRequest body,
             GrantProductAccess useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageProductAccess,
+                PlatformAuditActions.ProductAccessGranted,
+                "ProductAccessAssignment",
+                body.UserId.ToString("D"),
+                organizationId,
+                body.ProductCode,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             try
             {
                 var result = await useCase
@@ -53,6 +70,18 @@ internal static class AccessEndpoints
                         body.Reason,
                         ct)
                     .ConfigureAwait(false);
+                if (result.IsSuccess)
+                {
+                    await authz.AuditSucceededAsync(
+                        PlatformAuditActions.ProductAccessGranted,
+                        "ProductAccessAssignment",
+                        result.Value!.Id.Value.ToString("D"),
+                        organizationId,
+                        body.ProductCode,
+                        reason: body.Reason,
+                        cancellationToken: ct).ConfigureAwait(false);
+                }
+
                 return PlatformApiResults.FromResult(result, a => Results.Created(
                     $"/api/v1/platform/product-access/{a.Id.Value}",
                     ProductAccessQueryService.Map(a)));
@@ -84,8 +113,25 @@ internal static class AccessEndpoints
             Guid assignmentId,
             RevokeProductAccessRequest body,
             RevokeProductAccess useCase,
+            ProductAccessQueryService queries,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var existing = await queries.GetByIdAsync(assignmentId, ct).ConfigureAwait(false);
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageProductAccess,
+                PlatformAuditActions.ProductAccessRevoked,
+                "ProductAccessAssignment",
+                assignmentId.ToString("D"),
+                existing?.OrganizationId,
+                existing?.ProductCode,
+                reason: body.Reason,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             try
             {
                 var result = await useCase
@@ -95,6 +141,18 @@ internal static class AccessEndpoints
                         body.Reason,
                         ct)
                     .ConfigureAwait(false);
+                if (result.IsSuccess)
+                {
+                    await authz.AuditSucceededAsync(
+                        PlatformAuditActions.ProductAccessRevoked,
+                        "ProductAccessAssignment",
+                        assignmentId.ToString("D"),
+                        result.Value!.OrganizationId.Value,
+                        result.Value.ProductCode.Value,
+                        reason: body.Reason,
+                        cancellationToken: ct).ConfigureAwait(false);
+                }
+
                 return PlatformApiResults.FromResult(result, a => Results.Ok(ProductAccessQueryService.Map(a)));
             }
             catch (DomainException ex)

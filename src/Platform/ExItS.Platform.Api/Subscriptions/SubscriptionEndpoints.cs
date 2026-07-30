@@ -1,15 +1,18 @@
 using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Subscriptions;
+using ExItS.Platform.Domain.Audit;
+using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Subscriptions;
 
 namespace ExItS.Platform.Api.Subscriptions;
 
 /// <summary>
-/// Platform subscription lifecycle endpoints. Development-stage only: unauthenticated, no
-/// tenant scoping. No payments, invoices, GCash, entitlement delivery, Hangfire, or POS
-/// concerns are implemented here.
+/// Platform subscription lifecycle endpoints. Development-stage only: actor identity is
+/// unauthenticated, but mutations enforce <see cref="PlatformPermission.ManageSubscriptions"/>
+/// (scoped to the owning organization when known) and record audit trail entries. No payments,
+/// invoices, GCash, entitlement delivery, Hangfire, or POS concerns are implemented here.
 /// </summary>
 internal static class SubscriptionEndpoints
 {
@@ -77,13 +80,24 @@ internal static class SubscriptionEndpoints
             Guid subscriptionId,
             ActivateSubscriptionRequest body,
             ActivateSubscription useCase,
+            SubscriptionQueryService queries,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await EnsureSubscriptionMutationAsync(
+                authz, queries, subscriptionId, PlatformAuditActions.SubscriptionActivated, ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await useCase.ExecuteAsync(
                 SubscriptionId.From(subscriptionId),
                 body.PeriodStartUtc,
                 body.PeriodEndUtc,
                 ct).ConfigureAwait(false);
+            await AuditSubscriptionSuccessAsync(authz, result, PlatformAuditActions.SubscriptionActivated, subscriptionId, ct)
+                .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, s => Results.Ok(MapSubscription(s)));
         });
 
@@ -91,30 +105,63 @@ internal static class SubscriptionEndpoints
             Guid subscriptionId,
             GracePeriodRequest body,
             EnterSubscriptionGracePeriod useCase,
+            SubscriptionQueryService queries,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await EnsureSubscriptionMutationAsync(
+                authz, queries, subscriptionId, PlatformAuditActions.SubscriptionEnteredGracePeriod, ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await useCase.ExecuteAsync(
                 SubscriptionId.From(subscriptionId),
                 body.GracePeriodEndUtc,
                 ct).ConfigureAwait(false);
+            await AuditSubscriptionSuccessAsync(
+                authz, result, PlatformAuditActions.SubscriptionEnteredGracePeriod, subscriptionId, ct).ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, s => Results.Ok(MapSubscription(s)));
         });
 
         subscriptions.MapPost("/{subscriptionId:guid}/past-due", async (
             Guid subscriptionId,
             MarkSubscriptionPastDue useCase,
+            SubscriptionQueryService queries,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await EnsureSubscriptionMutationAsync(
+                authz, queries, subscriptionId, PlatformAuditActions.SubscriptionMarkedPastDue, ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await useCase.ExecuteAsync(SubscriptionId.From(subscriptionId), ct).ConfigureAwait(false);
+            await AuditSubscriptionSuccessAsync(
+                authz, result, PlatformAuditActions.SubscriptionMarkedPastDue, subscriptionId, ct).ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, s => Results.Ok(MapSubscription(s)));
         });
 
         subscriptions.MapPost("/{subscriptionId:guid}/suspend", async (
             Guid subscriptionId,
             SuspendSubscription useCase,
+            SubscriptionQueryService queries,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await EnsureSubscriptionMutationAsync(
+                authz, queries, subscriptionId, PlatformAuditActions.SubscriptionSuspended, ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await useCase.ExecuteAsync(SubscriptionId.From(subscriptionId), ct).ConfigureAwait(false);
+            await AuditSubscriptionSuccessAsync(
+                authz, result, PlatformAuditActions.SubscriptionSuspended, subscriptionId, ct).ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, s => Results.Ok(MapSubscription(s)));
         });
 
@@ -122,34 +169,101 @@ internal static class SubscriptionEndpoints
             Guid subscriptionId,
             ReactivateSubscriptionRequest? body,
             ReactivateSubscription useCase,
+            SubscriptionQueryService queries,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await EnsureSubscriptionMutationAsync(
+                authz, queries, subscriptionId, PlatformAuditActions.SubscriptionReactivated, ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await useCase.ExecuteAsync(
                 SubscriptionId.From(subscriptionId),
                 body?.PeriodStartUtc,
                 body?.PeriodEndUtc,
                 ct).ConfigureAwait(false);
+            await AuditSubscriptionSuccessAsync(
+                authz, result, PlatformAuditActions.SubscriptionReactivated, subscriptionId, ct).ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, s => Results.Ok(MapSubscription(s)));
         });
 
         subscriptions.MapPost("/{subscriptionId:guid}/cancel", async (
             Guid subscriptionId,
             CancelSubscription useCase,
+            SubscriptionQueryService queries,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await EnsureSubscriptionMutationAsync(
+                authz, queries, subscriptionId, PlatformAuditActions.SubscriptionCancelled, ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await useCase.ExecuteAsync(SubscriptionId.From(subscriptionId), ct).ConfigureAwait(false);
+            await AuditSubscriptionSuccessAsync(
+                authz, result, PlatformAuditActions.SubscriptionCancelled, subscriptionId, ct).ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, s => Results.Ok(MapSubscription(s)));
         });
 
         subscriptions.MapPost("/{subscriptionId:guid}/expire", async (
             Guid subscriptionId,
             ExpireSubscription useCase,
+            SubscriptionQueryService queries,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await EnsureSubscriptionMutationAsync(
+                authz, queries, subscriptionId, PlatformAuditActions.SubscriptionExpired, ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await useCase.ExecuteAsync(SubscriptionId.From(subscriptionId), ct).ConfigureAwait(false);
+            await AuditSubscriptionSuccessAsync(
+                authz, result, PlatformAuditActions.SubscriptionExpired, subscriptionId, ct).ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, s => Results.Ok(MapSubscription(s)));
         });
     }
+
+    private static async Task<IResult?> EnsureSubscriptionMutationAsync(
+        PlatformAuthz authz,
+        SubscriptionQueryService queries,
+        Guid subscriptionId,
+        string actionCode,
+        CancellationToken ct)
+    {
+        var existing = await queries.GetByIdAsync(subscriptionId, ct).ConfigureAwait(false);
+        return await authz.EnsureAsync(
+            PlatformPermission.ManageSubscriptions,
+            actionCode,
+            nameof(Subscription),
+            subscriptionId.ToString("D"),
+            existing?.OrganizationId,
+            existing?.ProductCode,
+            cancellationToken: ct).ConfigureAwait(false);
+    }
+
+    private static Task AuditSubscriptionSuccessAsync(
+        PlatformAuthz authz,
+        ApplicationResult<Subscription> result,
+        string actionCode,
+        Guid subscriptionId,
+        CancellationToken ct) =>
+        result.IsSuccess
+            ? authz.AuditSucceededAsync(
+                actionCode,
+                nameof(Subscription),
+                subscriptionId.ToString("D"),
+                result.Value!.OrganizationId.Value,
+                result.Value.ProductCode.Value,
+                cancellationToken: ct)
+            : Task.CompletedTask;
 
     private static void MapOrganizationScopedSubscriptionEndpoints(IEndpointRouteBuilder app)
     {
@@ -195,8 +309,21 @@ internal static class SubscriptionEndpoints
             Guid organizationId,
             StartTrialSubscriptionRequest body,
             StartTrialSubscription useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageSubscriptions,
+                PlatformAuditActions.SubscriptionTrialStarted,
+                nameof(Subscription),
+                organizationId.ToString("D"),
+                organizationId,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             try
             {
                 var result = await useCase.ExecuteAsync(
@@ -205,6 +332,16 @@ internal static class SubscriptionEndpoints
                     PlanVersionIdFrom(body.PlanVersionId),
                     TrialDefinitionIdFrom(body.TrialDefinitionId),
                     ct).ConfigureAwait(false);
+                if (result.IsSuccess)
+                {
+                    await authz.AuditSucceededAsync(
+                        PlatformAuditActions.SubscriptionTrialStarted,
+                        nameof(Subscription),
+                        result.Value!.Id.Value.ToString("D"),
+                        organizationId,
+                        result.Value.ProductCode.Value,
+                        cancellationToken: ct).ConfigureAwait(false);
+                }
 
                 return PlatformApiResults.FromResult(result, s => Results.Created(
                     $"/api/v1/platform/subscriptions/{s.Id.Value}",

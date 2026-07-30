@@ -1,0 +1,35 @@
+@inject CultureService Culture
+@inject IStringLocalizer<AdminResources> L
+
+<div class="selector-group">
+    <label class="sr-only" for="language-selector">@L["Language_Label"]</label>
+    <select id="language-selector" value="@_current" @onchange="OnChangedAsync" disabled="@(!_ready)">
+        @foreach (var option in CultureService.Options)
+        {
+            <option value="@option.Code">@option.NativeLabel</option>
+        }
+    </select>
+</div>
+
+@code {
+    private string _current = CultureService.English;
+    private bool _ready;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _ready)
+        {
+            return;
+        }
+
+        _current = await Culture.GetCurrentAsync();
+        _ready = true;
+        StateHasChanged();
+    }
+
+    private async Task OnChangedAsync(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? CultureService.English;
+        await Culture.SetCultureAsync(value);
+    }
+}

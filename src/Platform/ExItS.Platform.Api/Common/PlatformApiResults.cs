@@ -24,6 +24,8 @@ internal static class PlatformApiResults
 
     public static int MapStatusCode(string errorCode) => errorCode switch
     {
+        DomainErrorCodes.AuthorizationDenied => StatusCodes.Status403Forbidden,
+
         ApplicationErrorCodes.OrganizationNotFound
             or ApplicationErrorCodes.UserNotFound
             or ApplicationErrorCodes.MembershipNotFound
@@ -36,7 +38,9 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.FeatureNotFound
             or ApplicationErrorCodes.FeatureOverrideNotFound
             or ApplicationErrorCodes.EntitlementSnapshotNotFound
-            or ApplicationErrorCodes.PaymentNotFound => StatusCodes.Status404NotFound,
+            or ApplicationErrorCodes.PaymentNotFound
+            or ApplicationErrorCodes.RoleAssignmentNotFound
+            or ApplicationErrorCodes.AuditRecordNotFound => StatusCodes.Status404NotFound,
 
         ApplicationErrorCodes.SlugConflict
             or ApplicationErrorCodes.EmailConflict
@@ -65,6 +69,7 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.FeatureOverrideInvalidTransition
             or ApplicationErrorCodes.EntitlementProductMismatch
             or ApplicationErrorCodes.EntitlementSubscriptionInvalid
+            or ApplicationErrorCodes.RoleAssignmentConflict
             or DomainErrorCodes.UserNotActive
             or DomainErrorCodes.OrganizationNotActive
             or DomainErrorCodes.MembershipNotActive

@@ -99,6 +99,14 @@ public static class PersistenceExceptionMapper
             return true;
         }
 
+        if (detail.Contains("ux_platform_role_assignments", StringComparison.OrdinalIgnoreCase)
+            || detail.Contains("platform_role_assignments", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.RoleAssignmentConflict;
+            message = "An active assignment for this Platform User, role, and organization scope already exists.";
+            return true;
+        }
+
         errorCode = ApplicationErrorCodes.DomainViolation;
         message = "A unique constraint was violated.";
         return true;

@@ -1,12 +1,14 @@
+@inject IStringLocalizer<AdminResources> L
+
 @if (Visible)
 {
-    <div class="dialog-backdrop" role="presentation">
+    <div class="dialog-backdrop" role="presentation" @onkeydown="OnKeyDownAsync">
         <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="@_titleId" aria-describedby="@_bodyId">
-            <h2 id="@_titleId">@Title</h2>
+            <h2 id="@_titleId">@(Title ?? L["Common_Confirm"])</h2>
             <p id="@_bodyId">@Message</p>
             <div class="actions">
-                <button type="button" class="secondary" @onclick="CancelAsync" disabled="@Busy">Cancel</button>
-                <button type="button" class="danger" @onclick="ConfirmAsync" disabled="@Busy">Confirm</button>
+                <button type="button" class="secondary" @onclick="CancelAsync" disabled="@Busy">@L["Common_Cancel"]</button>
+                <button type="button" class="danger" @onclick="ConfirmAsync" disabled="@Busy">@L["Common_Confirm"]</button>
             </div>
         </div>
     </div>
@@ -14,7 +16,7 @@
 
 @code {
     [Parameter] public bool Visible { get; set; }
-    [Parameter] public string Title { get; set; } = "Confirm";
+    [Parameter] public string? Title { get; set; }
     [Parameter] public string Message { get; set; } = "";
     [Parameter] public Func<Task>? OnConfirm { get; set; }
     [Parameter] public Func<Task>? OnCancel { get; set; }
@@ -35,6 +37,14 @@
         if (OnCancel is not null)
         {
             await OnCancel();
+        }
+    }
+
+    private async Task OnKeyDownAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && !Busy)
+        {
+            await CancelAsync();
         }
     }
 }

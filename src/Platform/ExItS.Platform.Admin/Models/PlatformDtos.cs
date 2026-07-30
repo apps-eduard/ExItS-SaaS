@@ -277,3 +277,52 @@ public sealed record ActivateSubscriptionForPaymentRequest(
     DateTimeOffset PeriodEndUtc);
 
 public sealed record PaymentActivationResultDto(PaymentDto Payment, SubscriptionDto Subscription);
+
+public sealed record AuditRecordDto(
+    Guid Id,
+    DateTimeOffset OccurredAtUtc,
+    string ActorIdentifier,
+    string ActorType,
+    string ActionCode,
+    string TargetType,
+    string TargetId,
+    Guid? OrganizationId,
+    string? ProductCode,
+    string? CorrelationId,
+    string Outcome,
+    string? Reason,
+    string? Summary);
+
+public sealed record AuditQuery(
+    DateTimeOffset? OccurredFromUtc = null,
+    DateTimeOffset? OccurredToUtc = null,
+    string? ActorIdentifier = null,
+    string? ActionCode = null,
+    Guid? OrganizationId = null,
+    string? ProductCode = null,
+    string? Outcome = null,
+    string? CorrelationId = null,
+    int Page = 1,
+    int PageSize = 25);
+
+public sealed record ResolvedPermissionsDto(
+    string ActorIdentifier,
+    string ActorType,
+    Guid? PlatformUserId,
+    Guid? OrganizationId,
+    IReadOnlyList<string> Permissions);
+
+public sealed record PlatformRoleAssignmentDto(
+    Guid Id,
+    Guid PlatformUserId,
+    string Role,
+    Guid? OrganizationId,
+    string Status,
+    string GrantedByActor,
+    DateTimeOffset GrantedAtUtc,
+    string? Reason,
+    string? RevokedByActor,
+    DateTimeOffset? RevokedAtUtc,
+    string? RevokeReason);
+
+public sealed record PlatformRoleCatalogEntryDto(string Role, IReadOnlyList<string> Permissions);

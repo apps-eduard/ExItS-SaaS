@@ -34,7 +34,7 @@ ExItS-SaaS/
 
 `HealthCare/` remains frozen and outside root Git. Do not import it without an approved work package.
 
-**Phase 4 / P4-WP03** is complete ([report](docs/reports/P4-WP03-subscriptions-payments-and-trials.md)): Platform Admin subscription lifecycle, trial start, and manual SaaS payment confirmation/activation. Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. APIs and Admin remain development-stage unauthenticated. Manual confirmation is not provider verification. Subscription changes are not product provisioning. HealthCare remains frozen. Next: **P4-WP04 — Audit, Authorization and Closeout** when authorized.
+**Phase 4** is **closed with documented risks** ([P4-WP04 report](docs/reports/P4-WP04-audit-authorization-and-closeout.md)): Platform Admin redesign, audit trail, system-role authorization (server-side), themes, and EN/fil-PH localization. Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. Production authentication (JWT/MFA/SSO/AD) remains open — development operator is not production auth. Manual confirmation is not provider verification. Subscription changes are not product provisioning. HealthCare remains frozen. Next: **Phase 5 / P5-WP01 — MAUI Solution and API Client** when authorized.
 
 ### Platform database (local)
 

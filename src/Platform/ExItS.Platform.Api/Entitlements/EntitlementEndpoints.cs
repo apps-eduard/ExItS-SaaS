@@ -1,6 +1,8 @@
 using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Entitlements;
+using ExItS.Platform.Domain.Audit;
+using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Entitlements;
@@ -12,8 +14,10 @@ namespace ExItS.Platform.Api.Entitlements;
 
 /// <summary>
 /// Development-stage entitlement snapshot and feature override endpoints
-/// (P3-WP04-entitlement-snapshots-grace-rules). Unauthenticated, no tenant scoping, no broker/outbox
-/// delivery — snapshots and overrides are persisted for later product-local projection only.
+/// (P3-WP04-entitlement-snapshots-grace-rules). Actor identity is unauthenticated, no broker/outbox
+/// delivery — snapshots and overrides are persisted for later product-local projection only. Feature
+/// override mutations enforce <see cref="PlatformPermission.ManageEntitlementOverrides"/> and record
+/// audit trail entries.
 /// </summary>
 internal static class EntitlementEndpoints
 {
@@ -158,8 +162,23 @@ internal static class EntitlementEndpoints
             string productCode,
             CreateFeatureOverrideRequest body,
             CreateFeatureOverride useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageEntitlementOverrides,
+                PlatformAuditActions.FeatureOverrideCreated,
+                "FeatureOverride",
+                body.FeatureCode,
+                organizationId,
+                productCode,
+                reason: body.Reason,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             try
             {
                 var result = await useCase.ExecuteAsync(
@@ -172,6 +191,17 @@ internal static class EntitlementEndpoints
                     body.NumericLimit,
                     body.ExpiresAtUtc,
                     ct).ConfigureAwait(false);
+                if (result.IsSuccess)
+                {
+                    await authz.AuditSucceededAsync(
+                        PlatformAuditActions.FeatureOverrideCreated,
+                        "FeatureOverride",
+                        result.Value!.Id.Value.ToString("D"),
+                        organizationId,
+                        productCode,
+                        reason: body.Reason,
+                        cancellationToken: ct).ConfigureAwait(false);
+                }
 
                 return PlatformApiResults.FromResult(result, o => Results.Created(
                     $"/api/v1/platform/feature-overrides/{o.Id.Value}",
@@ -221,13 +251,41 @@ internal static class EntitlementEndpoints
             Guid overrideId,
             RevokeFeatureOverrideRequest body,
             RevokeFeatureOverride useCase,
+            FeatureOverrideQueryService queries,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var existing = await queries.GetByIdAsync(overrideId, ct).ConfigureAwait(false);
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageEntitlementOverrides,
+                PlatformAuditActions.FeatureOverrideRevoked,
+                "FeatureOverride",
+                overrideId.ToString("D"),
+                existing?.OrganizationId,
+                existing?.ProductCode,
+                reason: body.Reason,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await useCase.ExecuteAsync(
                 FeatureOverrideId.From(overrideId),
                 body.Reason,
                 PlatformUserId.From(body.RevokedByUserId),
                 ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.FeatureOverrideRevoked,
+                    "FeatureOverride",
+                    overrideId.ToString("D"),
+                    result.Value!.OrganizationId.Value,
+                    result.Value.ProductCode.Value,
+                    reason: body.Reason,
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
 
             return PlatformApiResults.FromResult(result, o => Results.Ok(MapOverride(o)));
         });

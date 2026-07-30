@@ -1,0 +1,164 @@
+@page "/admin/audit"
+@page "/admin/audit/{AuditId:guid}"
+@rendermode InteractiveServer
+@inject IPlatformApiClient Api
+@inject PlatformPermissionState Permissions
+@inject IStringLocalizer<AdminResources> L
+
+@if (!Permissions.Loaded)
+{
+    <LoadingState />
+}
+else if (!Permissions.HasPermission(PlatformPermissionCodes.ViewAuditRecords))
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ViewAuditRecords" />
+}
+else if (AuditId is null)
+{
+    <PageHeader Title="@L["Audit_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Audit"]}")" Description="@L["Audit_Description"]" />
+
+    <FilterBar>
+        <label>@L["Audit_FilterDateFrom"] <input @bind="_fromText" placeholder="yyyy-MM-ddTHH:mm:ssZ" /></label>
+        <label>@L["Audit_FilterDateTo"] <input @bind="_toText" placeholder="yyyy-MM-ddTHH:mm:ssZ" /></label>
+        <label>@L["Audit_FilterActor"] <input @bind="_actor" placeholder="dev-admin" /></label>
+        <label>@L["Audit_FilterAction"] <input @bind="_action" placeholder="platform.subscription.activated" /></label>
+        <label>@L["Audit_FilterOrganization"] <input @bind="_organizationId" placeholder="GUID" /></label>
+        <label>@L["Audit_FilterProduct"] <input @bind="_productCode" /></label>
+        <label>@L["Audit_FilterOutcome"]
+            <select @bind="_outcome">
+                <option value="">@L["Common_All"]</option>
+                <option value="Succeeded">Succeeded</option>
+                <option value="Denied">Denied</option>
+                <option value="Failed">Failed</option>
+            </select>
+        </label>
+        <button type="button" @onclick="LoadAsync">@L["Common_Apply"]</button>
+        <button type="button" class="ghost" @onclick="ClearFiltersAsync">@L["Common_ClearFilters"]</button>
+    </FilterBar>
+
+    @if (_list is null)
+    {
+        <LoadingState />
+    }
+    else if (!_list.IsSuccess)
+    {
+        <ErrorState Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" />
+        <p class="muted">@L["Audit_NotReady"]</p>
+    }
+    else if (_list.Data!.Items.Count == 0)
+    {
+        <EmptyState Message="@L["Audit_Empty"]" />
+    }
+    else
+    {
+        <table class="data-table responsive-table">
+            <caption class="sr-only">@L["Audit_Title"]</caption>
+            <thead>
+                <tr>
+                    <th scope="col">@L["Audit_ColumnOccurred"]</th>
+                    <th scope="col">@L["Audit_ColumnActor"]</th>
+                    <th scope="col">@L["Audit_ColumnAction"]</th>
+                    <th scope="col">@L["Audit_ColumnTarget"]</th>
+                    <th scope="col">@L["Audit_ColumnOutcome"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in _list.Data.Items)
+                {
+                    <tr>
+                        <td data-label="@L["Audit_ColumnOccurred"]"><a href="/admin/audit/@item.Id"><UtcTimestamp Value="@item.OccurredAtUtc" /></a></td>
+                        <td data-label="@L["Audit_ColumnActor"]">@item.ActorIdentifier</td>
+                        <td data-label="@L["Audit_ColumnAction"]">@item.ActionCode</td>
+                        <td data-label="@L["Audit_ColumnTarget"]">@item.TargetType @item.TargetId</td>
+                        <td data-label="@L["Audit_ColumnOutcome"]"><StatusBadge Value="@item.Outcome" /></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <p class="muted">Showing @_list.Data.Items.Count of @_list.Data.TotalCount</p>
+    }
+}
+else
+{
+    <PageHeader Title="@L["Audit_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Audit"]} / {L["Common_ViewDetails"]}")" Description="@L["Audit_DetailDescription"]" />
+
+    @if (_detail is null)
+    {
+        <LoadingState />
+    }
+    else if (!_detail.IsSuccess)
+    {
+        <ErrorState Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" />
+        <p class="muted">@L["Audit_NotReady"]</p>
+    }
+    else
+    {
+        var r = _detail.Data!;
+        <dl>
+            <dt>@L["Audit_ColumnOccurred"]</dt><dd><UtcTimestamp Value="@r.OccurredAtUtc" /></dd>
+            <dt>@L["Audit_FilterActor"]</dt><dd>@r.ActorIdentifier (@r.ActorType)</dd>
+            <dt>@L["Audit_ColumnAction"]</dt><dd>@r.ActionCode</dd>
+            <dt>@L["Audit_ColumnTarget"]</dt><dd>@r.TargetType — @r.TargetId</dd>
+            <dt>Organization</dt><dd>@(r.OrganizationId?.ToString() ?? "—")</dd>
+            <dt>@L["Audit_FilterProduct"]</dt><dd>@(r.ProductCode ?? "—")</dd>
+            <dt>@L["Audit_ColumnOutcome"]</dt><dd><StatusBadge Value="@r.Outcome" /></dd>
+            <dt>Reason</dt><dd>@(r.Reason ?? "—")</dd>
+            <dt>Summary</dt><dd>@(r.Summary ?? "—")</dd>
+            <dt>Correlation ID</dt><dd>@(r.CorrelationId ?? "—")</dd>
+        </dl>
+
+        <AuditTimeline Records="@(new[] { r })" ShowLink="false" />
+    }
+}
+
+@code {
+    [Parameter] public Guid? AuditId { get; set; }
+
+    private ApiCallResult<PagedResult<AuditRecordDto>>? _list;
+    private ApiCallResult<AuditRecordDto>? _detail;
+
+    private string _fromText = "";
+    private string _toText = "";
+    private string _actor = "";
+    private string _action = "";
+    private string _organizationId = "";
+    private string _productCode = "";
+    private string _outcome = "";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await Permissions.EnsureLoadedAsync();
+        if (!Permissions.HasPermission(PlatformPermissionCodes.ViewAuditRecords))
+        {
+            return;
+        }
+
+        if (AuditId is null)
+        {
+            await LoadAsync();
+        }
+        else
+        {
+            _detail = await Api.GetAuditRecordAsync(AuditId.Value);
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        var query = new AuditQuery(
+            OccurredFromUtc: DateTimeOffset.TryParse(_fromText, out var from) ? from.ToUniversalTime() : null,
+            OccurredToUtc: DateTimeOffset.TryParse(_toText, out var to) ? to.ToUniversalTime() : null,
+            ActorIdentifier: string.IsNullOrWhiteSpace(_actor) ? null : _actor,
+            ActionCode: string.IsNullOrWhiteSpace(_action) ? null : _action,
+            OrganizationId: Guid.TryParse(_organizationId, out var orgId) ? orgId : null,
+            ProductCode: string.IsNullOrWhiteSpace(_productCode) ? null : _productCode,
+            Outcome: string.IsNullOrWhiteSpace(_outcome) ? null : _outcome);
+        _list = await Api.GetAuditRecordsAsync(query);
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        _fromText = _toText = _actor = _action = _organizationId = _productCode = _outcome = "";
+        await LoadAsync();
+    }
+}

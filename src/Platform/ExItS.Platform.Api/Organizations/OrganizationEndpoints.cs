@@ -1,14 +1,17 @@
 using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Domain.Audit;
+using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Organizations;
 
 namespace ExItS.Platform.Api.Organizations;
 
 /// <summary>
-/// Platform Organization lifecycle endpoints. Development-stage only: unauthenticated, no
-/// tenant scoping, no membership enforcement. Auth is out of scope for P3-WP02.
+/// Platform Organization lifecycle endpoints. Development-stage only: actor identity is
+/// unauthenticated, but mutations enforce <see cref="PlatformPermission.ManageOrganizations"/> and
+/// record audit trail entries.
 /// </summary>
 internal static class OrganizationEndpoints
 {
@@ -29,9 +32,32 @@ internal static class OrganizationEndpoints
         organizations.MapPost("/", async (
             CreateOrganizationRequest body,
             CreatePlatformOrganization useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageOrganizations,
+                PlatformAuditActions.OrganizationCreated,
+                nameof(PlatformOrganization),
+                body.Slug,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await useCase.ExecuteAsync(body.DisplayName, body.Slug, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.OrganizationCreated,
+                    nameof(PlatformOrganization),
+                    result.Value!.Id.Value.ToString("D"),
+                    result.Value.Id.Value,
+                    summary: $"Created organization {result.Value.DisplayName}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
             return PlatformApiResults.FromResult(result, o => Results.Created(
                 $"/api/v1/platform/organizations/{o.Id.Value}",
                 MapOrganization(o)));
@@ -54,13 +80,36 @@ internal static class OrganizationEndpoints
         organizations.MapPost("/{organizationId:guid}/suspend", async (
             Guid organizationId,
             SuspendPlatformOrganization useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageOrganizations,
+                PlatformAuditActions.OrganizationSuspended,
+                nameof(PlatformOrganization),
+                organizationId.ToString("D"),
+                organizationId,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             try
             {
                 var result = await useCase
                     .ExecuteAsync(PlatformOrganizationId.From(organizationId), ct)
                     .ConfigureAwait(false);
+                if (result.IsSuccess)
+                {
+                    await authz.AuditSucceededAsync(
+                        PlatformAuditActions.OrganizationSuspended,
+                        nameof(PlatformOrganization),
+                        organizationId.ToString("D"),
+                        organizationId,
+                        cancellationToken: ct).ConfigureAwait(false);
+                }
+
                 return PlatformApiResults.FromResult(result, o => Results.Ok(MapOrganization(o)));
             }
             catch (DomainException ex)

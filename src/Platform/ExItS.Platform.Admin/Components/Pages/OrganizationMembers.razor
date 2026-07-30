@@ -50,7 +50,7 @@ else
     else if (_members.Data!.Items.Count == 0) { <EmptyState Message="No memberships for this organization." /> }
     else
     {
-        <table class="responsive-table">
+        <table class="data-table responsive-table">
             <thead><tr><th>User</th><th>Role</th><th>Status</th><th>Updated (UTC)</th><th>Actions</th></tr></thead>
             <tbody>
             @foreach (var m in _members.Data.Items)

@@ -122,6 +122,25 @@ public sealed class PlatformApiClient(HttpClient httpClient) : IPlatformApiClien
         SendAsync<PaymentActivationResultDto>(HttpMethod.Post, $"/api/v1/platform/payments/{paymentId}/activate-subscription",
             request with { ConfirmedBy = string.IsNullOrWhiteSpace(request.ConfirmedBy) ? DevActor : request.ConfirmedBy }, ct);
 
+    public Task<ApiCallResult<PagedResult<AuditRecordDto>>> GetAuditRecordsAsync(AuditQuery query, CancellationToken ct = default) =>
+        GetAsync<PagedResult<AuditRecordDto>>($"/api/v1/platform/audit?{Query(
+            ("fromUtc", query.OccurredFromUtc?.ToString("o")),
+            ("toUtc", query.OccurredToUtc?.ToString("o")),
+            ("actor", query.ActorIdentifier),
+            ("action", query.ActionCode),
+            ("organizationId", query.OrganizationId),
+            ("productCode", query.ProductCode),
+            ("outcome", query.Outcome),
+            ("correlationId", query.CorrelationId),
+            ("page", query.Page),
+            ("pageSize", query.PageSize))}", ct);
+    public Task<ApiCallResult<AuditRecordDto>> GetAuditRecordAsync(Guid id, CancellationToken ct = default) =>
+        GetAsync<AuditRecordDto>($"/api/v1/platform/audit/{id}", ct);
+    public Task<ApiCallResult<ResolvedPermissionsDto>> GetMyAuthorizationAsync(Guid? organizationId = null, CancellationToken ct = default) =>
+        GetAsync<ResolvedPermissionsDto>($"/api/v1/platform/authorization/me?{Query(("organizationId", organizationId))}", ct);
+    public Task<ApiCallResult<IReadOnlyList<PlatformRoleCatalogEntryDto>>> GetAuthorizationRolesAsync(CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<PlatformRoleCatalogEntryDto>>("/api/v1/platform/authorization/roles", ct);
+
     private static MembershipLifecycleRequest WithActor(MembershipLifecycleRequest request) =>
         request with { ActorReference = string.IsNullOrWhiteSpace(request.ActorReference) ? DevActor : request.ActorReference };
 

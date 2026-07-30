@@ -1,7 +1,7 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown documentation files plus root Platform foundation through Phase 4 Platform Admin (P4-WP03 subscriptions/payments/trials).
-Internal links checked: spot-check P4-WP03
+Markdown documentation files plus root Platform foundation through Phase 4 Platform Admin closeout (P4-WP04 audit, authorization, themes, i18n).
+Internal links checked: spot-check P4-WP04
 Broken links: none found in spot-check of new paths
 
 ## Root foundation (tracked)
@@ -14,11 +14,11 @@ global.json
 Directory.Build.props
 Directory.Packages.props
 ExItS.slnx
-src/Platform/ExItS.Platform.Domain/
-src/Platform/ExItS.Platform.Application/ (+ Catalog; Admin portfolio queries; Contracts; Projections; MigrationValidation; Integration/HealthCare)
-src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog + organization/subscription + payment + entitlement persistence, Admin portfolio read store, migrations)
-src/Platform/ExItS.Platform.Api/ (`/` + `/health` + catalog + organizations + subscriptions + payments + entitlements + admin read APIs)
-src/Platform/ExItS.Platform.Admin/ (Blazor Web App — native CSS Platform Admin; typed API client; portfolio + users/memberships/product-access + subscription/payment/trial mutation views)
+src/Platform/ExItS.Platform.Domain/ (+ Authorization; Audit)
+src/Platform/ExItS.Platform.Application/ (+ Catalog; Admin portfolio queries; Authorization; Audit; Contracts; Projections; MigrationValidation; Integration/HealthCare)
+src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog + organization/subscription + payment + entitlement + role-assignment + audit persistence, Admin portfolio read store, migrations including `AddPlatformAuthorizationAndAudit`)
+src/Platform/ExItS.Platform.Api/ (`/` + `/health` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs; `PlatformAuthz`)
+src/Platform/ExItS.Platform.Admin/ (Blazor Web App — redesigned native CSS shell; typed API client; portfolio + users/memberships/product-access + subscription/payment/trial + audit views; themes; AdminResources en/fil-PH)
 tests/ExItS.Platform.UnitTests/
 tests/ExItS.ArchitectureTests/
 tests/ExItS.Platform.IntegrationTests/
@@ -38,6 +38,7 @@ docs/decisions/ADR-014-approve-exits-portfolio-architecture-for-controlled-imple
 docs/decisions/README.md
 docs/engineering/architecture.md
 docs/engineering/approved-architecture-summary.md
+docs/engineering/admin-terminology-guide.md
 docs/engineering/authorization-matrix.md
 docs/engineering/capability-ownership-matrix.md
 docs/engineering/data-authority-matrix.md
@@ -99,6 +100,13 @@ docs/reports/P2-WP05-regression-and-migration-validation.md
 docs/reports/P2-WP06-extraction-closeout.md
 docs/reports/P3-WP01-product-and-plan-catalog.md
 docs/reports/P3-WP02-trials-and-subscription-lifecycle.md
+docs/reports/P3-WP03-manual-payment-activation.md
+docs/reports/P3-WP04-entitlement-snapshots-and-grace-rules.md
+docs/reports/P3-WP05-billing-closeout.md
+docs/reports/P4-WP01-portfolio-navigation-and-product-views.md
+docs/reports/P4-WP02-organizations-users-and-product-access.md
+docs/reports/P4-WP03-subscriptions-payments-and-trials.md
+docs/reports/P4-WP04-audit-authorization-and-closeout.md
 docs/reports/phase-02-extraction-closeout.md
 docs/reports/phase-00-final-assessment-and-recommendation.md
 docs/reports/phase-01-architecture-approval.md

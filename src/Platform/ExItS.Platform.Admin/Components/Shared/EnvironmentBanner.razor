@@ -1,0 +1,24 @@
+@inject IStringLocalizer<AdminResources> L
+
+<div class="env-banner-wrap" style="position: relative;">
+    <button type="button" class="env-chip" @onclick="Toggle" aria-expanded="@_expanded" aria-controls="env-banner-detail" title="@L["Banner_DevSecurityDetail"]">
+        <span class="dot" aria-hidden="true"></span>
+        <span>@L["Banner_DevSecurityCompact"]</span>
+    </button>
+    @if (_expanded)
+    {
+        <div id="env-banner-detail" class="env-banner-detail" role="note" style="position: absolute; top: calc(100% + .5rem); right: 0; width: 20rem; z-index: 60;">
+            <p style="margin:0;">@L["Banner_DevSecurityDetail"]</p>
+            @if (!string.IsNullOrWhiteSpace(ActorDisplayName))
+            {
+                <p class="muted" style="margin:.4rem 0 0;">@string.Format(L["Footer_ActorContext"], ActorDisplayName)</p>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? ActorDisplayName { get; set; }
+    private bool _expanded;
+    private void Toggle() => _expanded = !_expanded;
+}

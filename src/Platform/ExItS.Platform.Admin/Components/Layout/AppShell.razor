@@ -1,0 +1,48 @@
+@using Microsoft.Extensions.Options
+@inject IOptions<DevelopmentOperatorOptions> OperatorOptions
+@inject IHostEnvironment Env
+@inject IStringLocalizer<AdminResources> L
+
+@* Shell chrome is hosted by InteractiveServer MainLayout; this component remains for reuse/tests. *@
+<div class="app-shell @(_collapsed ? "sidebar-collapsed" : null) @(_drawerOpen ? "drawer-open" : null)">
+    <div class="drawer-backdrop @(_drawerOpen ? "open" : null)" @onclick="CloseDrawer" aria-hidden="@(!_drawerOpen)"></div>
+    <aside class="app-sidebar">
+        <div class="brand-row">
+            <a class="brand-mark" href="/admin" aria-hidden="true">EA</a>
+            <span class="brand-text">@L["Brand_Name"]</span>
+        </div>
+        <AdminNav OnNavigateRequested="CloseDrawer" />
+    </aside>
+    <div class="app-content">
+        <header class="app-header">
+            <button type="button" class="icon-btn menu-toggle" @onclick="ToggleDrawer" aria-expanded="@_drawerOpen" aria-label="@(_drawerOpen ? L["Nav_CloseDrawer"] : L["Nav_OpenDrawer"])">
+                <NavIcon Name="@(_drawerOpen ? "close" : "menu")" />
+            </button>
+            <button type="button" class="icon-btn" @onclick="ToggleCollapse" aria-label="@(_collapsed ? L["Nav_ExpandSidebar"] : L["Nav_CollapseSidebar"])">
+                <NavIcon Name="@(_collapsed ? "expand" : "collapse")" />
+            </button>
+            <span class="app-header-spacer"></span>
+            <div class="app-header-controls">
+                <ThemeSelector />
+                <LanguageSelector />
+                <EnvironmentBanner ActorDisplayName="@ActorDisplayName" />
+            </div>
+        </header>
+        <main class="app-main" id="main-content">@ChildContent</main>
+        <footer class="app-footer"><p>@L["Footer_Text"]</p></footer>
+    </div>
+    <ToastHost />
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    private bool _collapsed;
+    private bool _drawerOpen;
+    private string? ActorDisplayName =>
+        (Env.IsDevelopment() || Env.IsEnvironment("Testing")) && !string.IsNullOrWhiteSpace(OperatorOptions.Value.DisplayName)
+            ? OperatorOptions.Value.DisplayName
+            : null;
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+    private void ToggleCollapse() => _collapsed = !_collapsed;
+    private void CloseDrawer() => _drawerOpen = false;
+}

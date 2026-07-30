@@ -111,13 +111,60 @@ public sealed class AdminArchitectureGuardTests
     public void Admin_shell_includes_development_security_and_delivery_warnings()
     {
         var root = FindRepositoryRoot();
-        var banner = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Shared", "DevSecurityBanner.razor"));
-        Assert.Contains("unauthenticated", banner, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("not production-secure", banner, StringComparison.OrdinalIgnoreCase);
+        var bannerResx = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Localization", "AdminResources.resx"));
+        Assert.Contains("unauthenticated", bannerResx, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("not production-secure", bannerResx, StringComparison.OrdinalIgnoreCase);
+
+        var banner = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Shared", "EnvironmentBanner.razor"));
+        Assert.Contains("Banner_DevSecurityCompact", banner, StringComparison.Ordinal);
+        Assert.Contains("Banner_DevSecurityDetail", banner, StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Shared", "DevSecurityBanner.razor")),
+            "DevSecurityBanner.razor should be superseded by the compact EnvironmentBanner in P4-WP04.");
 
         var entitlements = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Entitlements.razor"));
         Assert.Contains("not proof of delivery", entitlements, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("not evidence that", entitlements, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Admin_theme_and_language_infrastructure_is_present()
+    {
+        var root = FindRepositoryRoot();
+        var adminRoot = Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin");
+
+        Assert.True(File.Exists(Path.Combine(adminRoot, "wwwroot", "theme-boot.js")));
+        Assert.True(File.Exists(Path.Combine(adminRoot, "Components", "Shared", "ThemeSelector.razor")));
+        Assert.True(File.Exists(Path.Combine(adminRoot, "Components", "Shared", "LanguageSelector.razor")));
+        Assert.True(File.Exists(Path.Combine(adminRoot, "Components", "Layout", "AppShell.razor")));
+        Assert.True(File.Exists(Path.Combine(adminRoot, "Components", "Pages", "Audit.razor")));
+        Assert.True(File.Exists(Path.Combine(adminRoot, "Localization", "AdminResources.resx")));
+        Assert.True(File.Exists(Path.Combine(adminRoot, "Localization", "AdminResources.fil-PH.resx")));
+
+        var css = File.ReadAllText(Path.Combine(adminRoot, "wwwroot", "app.css"));
+        Assert.Contains("--color-background", css, StringComparison.Ordinal);
+        Assert.Contains("--color-surface", css, StringComparison.Ordinal);
+        Assert.Contains("--color-text", css, StringComparison.Ordinal);
+        Assert.Contains("--color-primary", css, StringComparison.Ordinal);
+        Assert.Contains("--shadow-sm", css, StringComparison.Ordinal);
+        Assert.Contains("--radius-sm", css, StringComparison.Ordinal);
+        Assert.Contains("--motion-fast", css, StringComparison.Ordinal);
+        Assert.Contains("data-theme=\"dark\"", css, StringComparison.Ordinal);
+        Assert.Contains("prefers-reduced-motion", css, StringComparison.Ordinal);
+
+        var themeBoot = File.ReadAllText(Path.Combine(adminRoot, "wwwroot", "theme-boot.js"));
+        Assert.Contains("exits-admin-theme", themeBoot, StringComparison.Ordinal);
+        Assert.Contains("exits-admin-culture", themeBoot, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Admin_audit_page_is_permission_gated_and_does_not_hardcode_english_shell_copy()
+    {
+        var root = FindRepositoryRoot();
+        var audit = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Audit.razor"));
+        Assert.Contains("ViewAuditRecords", audit, StringComparison.Ordinal);
+        Assert.Contains("UnauthorizedPanel", audit, StringComparison.Ordinal);
+        Assert.Contains("@page \"/admin/audit\"", audit, StringComparison.Ordinal);
+        Assert.Contains("@page \"/admin/audit/{AuditId:guid}\"", audit, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -142,12 +189,12 @@ public sealed class AdminArchitectureGuardTests
     {
         var root = FindRepositoryRoot();
         var nav = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "AdminNav.razor"));
-        foreach (var href in new[] { "/admin", "/admin/products", "/admin/organizations", "/admin/subscriptions", "/admin/payments", "/admin/entitlements", "/admin/users" })
+        foreach (var href in new[] { "/admin", "/admin/products", "/admin/organizations", "/admin/subscriptions", "/admin/payments", "/admin/entitlements", "/admin/users", "/admin/audit" })
         {
             Assert.Contains($"href=\"{href}\"", nav, StringComparison.Ordinal);
         }
 
-        Assert.Contains("Platform Admin", nav, StringComparison.Ordinal);
+        Assert.Contains("PlatformPermissionCodes", nav, StringComparison.Ordinal);
     }
 
     private static string FindRepositoryRoot()

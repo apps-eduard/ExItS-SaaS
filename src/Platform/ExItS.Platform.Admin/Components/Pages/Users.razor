@@ -44,7 +44,7 @@
     else if (_list.Data!.Items.Count == 0) { <EmptyState Message="No Platform users match the current filters." /> }
     else
     {
-        <table class="responsive-table">
+        <table class="data-table responsive-table">
             <caption class="sr-only">Platform users</caption>
             <thead>
                 <tr>
@@ -125,7 +125,7 @@ else
         else if (_memberships.Data!.Items.Count == 0) { <EmptyState Message="This user has no organization memberships." /> }
         else
         {
-            <table class="responsive-table">
+            <table class="data-table responsive-table">
                 <thead><tr><th>Organization</th><th>Role</th><th>Status</th><th></th></tr></thead>
                 <tbody>
                 @foreach (var m in _memberships.Data.Items)
@@ -148,7 +148,7 @@ else
         else if (_access.Data!.Items.Count == 0) { <EmptyState Message="No product-access assignments for this user." /> }
         else
         {
-            <table class="responsive-table">
+            <table class="data-table responsive-table">
                 <thead><tr><th>Product</th><th>Organization</th><th>Status</th><th>Granted (UTC)</th><th>Revoked (UTC)</th></tr></thead>
                 <tbody>
                 @foreach (var a in _access.Data.Items)

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="Brand_Name" xml:space="preserve"><value>Platform Admin</value></data>
+
+  <data name="Nav_SectionOverview" xml:space="preserve"><value>Overview</value></data>
+  <data name="Nav_SectionCommercial" xml:space="preserve"><value>Commercial</value></data>
+  <data name="Nav_SectionAccess" xml:space="preserve"><value>Access</value></data>
+  <data name="Nav_SectionCompliance" xml:space="preserve"><value>Compliance</value></data>
+  <data name="Nav_Dashboard" xml:space="preserve"><value>Dashboard</value></data>
+  <data name="Nav_Products" xml:space="preserve"><value>Products</value></data>
+  <data name="Nav_Organizations" xml:space="preserve"><value>Organizations</value></data>
+  <data name="Nav_Subscriptions" xml:space="preserve"><value>Subscriptions</value></data>
+  <data name="Nav_Payments" xml:space="preserve"><value>Payments</value></data>
+  <data name="Nav_Users" xml:space="preserve"><value>Users</value></data>
+  <data name="Nav_Entitlements" xml:space="preserve"><value>Entitlements</value></data>
+  <data name="Nav_Audit" xml:space="preserve"><value>Audit</value></data>
+  <data name="Nav_Toggle" xml:space="preserve"><value>Menu</value></data>
+  <data name="Nav_CollapseSidebar" xml:space="preserve"><value>Collapse sidebar</value></data>
+  <data name="Nav_ExpandSidebar" xml:space="preserve"><value>Expand sidebar</value></data>
+  <data name="Nav_CloseDrawer" xml:space="preserve"><value>Close navigation</value></data>
+  <data name="Nav_OpenDrawer" xml:space="preserve"><value>Open navigation</value></data>
+
+  <data name="Common_Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Common_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Common_Confirm" xml:space="preserve"><value>Confirm</value></data>
+  <data name="Common_Create" xml:space="preserve"><value>Create</value></data>
+  <data name="Common_Search" xml:space="preserve"><value>Search</value></data>
+  <data name="Common_Filter" xml:space="preserve"><value>Filter</value></data>
+  <data name="Common_Apply" xml:space="preserve"><value>Apply</value></data>
+  <data name="Common_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Common_ClearFilters" xml:space="preserve"><value>Clear filters</value></data>
+  <data name="Common_ViewDetails" xml:space="preserve"><value>View details</value></data>
+  <data name="Common_All" xml:space="preserve"><value>All</value></data>
+
+  <data name="State_Loading" xml:space="preserve"><value>Loading…</value></data>
+  <data name="State_Empty" xml:space="preserve"><value>No records found.</value></data>
+  <data name="State_Error" xml:space="preserve"><value>Request failed</value></data>
+  <data name="State_Unavailable" xml:space="preserve"><value>Platform API unavailable</value></data>
+  <data name="State_CorrelationId" xml:space="preserve"><value>Correlation ID</value></data>
+  <data name="State_Retry" xml:space="preserve"><value>Retry</value></data>
+
+  <data name="Banner_DevSecurityCompact" xml:space="preserve"><value>Development-stage — unauthenticated</value></data>
+  <data name="Banner_DevSecurityDetail" xml:space="preserve"><value>Development-stage security warning: Platform Admin and Platform APIs are currently unauthenticated. This surface is not production-secure and must not be exposed as an authorized operator console.</value></data>
+
+  <data name="Theme_Label" xml:space="preserve"><value>Theme</value></data>
+  <data name="Theme_System" xml:space="preserve"><value>System</value></data>
+  <data name="Theme_Light" xml:space="preserve"><value>Light</value></data>
+  <data name="Theme_Dark" xml:space="preserve"><value>Dark</value></data>
+
+  <data name="Language_Label" xml:space="preserve"><value>Language</value></data>
+  <data name="Language_English" xml:space="preserve"><value>English</value></data>
+  <data name="Language_Filipino" xml:space="preserve"><value>Tagalog</value></data>
+
+  <data name="Audit_Title" xml:space="preserve"><value>Audit log</value></data>
+  <data name="Audit_Description" xml:space="preserve"><value>Append-only record of Platform mutations. Who did what, to what, when, and with what outcome.</value></data>
+  <data name="Audit_DetailTitle" xml:space="preserve"><value>Audit record detail</value></data>
+  <data name="Audit_DetailDescription" xml:space="preserve"><value>Full detail for a single audit record, including reason and safe summary text.</value></data>
+  <data name="Audit_FilterDateFrom" xml:space="preserve"><value>From (UTC)</value></data>
+  <data name="Audit_FilterDateTo" xml:space="preserve"><value>To (UTC)</value></data>
+  <data name="Audit_FilterActor" xml:space="preserve"><value>Actor</value></data>
+  <data name="Audit_FilterAction" xml:space="preserve"><value>Action</value></data>
+  <data name="Audit_FilterOrganization" xml:space="preserve"><value>Organization ID</value></data>
+  <data name="Audit_FilterProduct" xml:space="preserve"><value>Product code</value></data>
+  <data name="Audit_FilterOutcome" xml:space="preserve"><value>Outcome</value></data>
+  <data name="Audit_Empty" xml:space="preserve"><value>No audit records match the current filters.</value></data>
+  <data name="Audit_ColumnOccurred" xml:space="preserve"><value>Occurred (UTC)</value></data>
+  <data name="Audit_ColumnActor" xml:space="preserve"><value>Actor</value></data>
+  <data name="Audit_ColumnAction" xml:space="preserve"><value>Action</value></data>
+  <data name="Audit_ColumnTarget" xml:space="preserve"><value>Target</value></data>
+  <data name="Audit_ColumnOutcome" xml:space="preserve"><value>Outcome</value></data>
+  <data name="Audit_NotReady" xml:space="preserve"><value>Audit query API is not available yet in this environment. This page will populate once the endpoint is deployed.</value></data>
+
+  <data name="Unauthorized_Title" xml:space="preserve"><value>You don't have access to this section</value></data>
+  <data name="Unauthorized_Message" xml:space="preserve"><value>Your current Platform permissions do not include this section. This is a UI convenience check only — the Platform API remains the source of truth and enforces its own authorization.</value></data>
+
+  <data name="Footer_Text" xml:space="preserve"><value>ExItS Platform Admin — portfolio, subscriptions, payments, trials, authorization, and audit (P4-WP04). Development-stage.</value></data>
+  <data name="Footer_ActorContext" xml:space="preserve"><value>Actor context (dev only): {0} — not authorization.</value></data>
+</root>

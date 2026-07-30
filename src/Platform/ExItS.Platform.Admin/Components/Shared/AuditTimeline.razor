@@ -1,0 +1,35 @@
+@inject IStringLocalizer<AdminResources> L
+
+@if (Records.Count == 0)
+{
+    <EmptyState Message="@L["Audit_Empty"]" />
+}
+else
+{
+    <ul class="audit-timeline">
+        @foreach (var record in Records)
+        {
+            <li data-outcome="@record.Outcome">
+                <div class="audit-time"><UtcTimestamp Value="@record.OccurredAtUtc" /></div>
+                <div class="audit-action">@record.ActionCode</div>
+                <div class="audit-meta">
+                    @record.ActorIdentifier (@record.ActorType) → @record.TargetType @record.TargetId
+                    · <StatusBadge Value="@record.Outcome" />
+                </div>
+                @if (!string.IsNullOrWhiteSpace(record.Summary))
+                {
+                    <p class="muted">@record.Summary</p>
+                }
+                @if (ShowLink)
+                {
+                    <a href="/admin/audit/@record.Id">@L["Common_ViewDetails"]</a>
+                }
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<AuditRecordDto> Records { get; set; } = [];
+    [Parameter] public bool ShowLink { get; set; } = true;
+}

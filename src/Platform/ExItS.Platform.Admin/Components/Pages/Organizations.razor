@@ -11,8 +11,8 @@
     else if (_list.Data!.Items.Count == 0) { <EmptyState Message="No organizations have been created." /> }
     else
     {
-        <table>
-            <caption class="sr-only">Organizations</caption>
+    <table class="data-table">
+        <caption class="sr-only">Organizations</caption>
             <thead>
                 <tr>
                     <th scope="col">Display name</th>
@@ -69,7 +69,7 @@ else
         @if (d.Subscriptions.Count == 0) { <EmptyState Message="No subscriptions for this organization." /> }
         else
         {
-            <table>
+            <table class="data-table">
                 <thead><tr><th>Product</th><th>Status</th><th>Detail</th></tr></thead>
                 <tbody>
                 @foreach (var group in d.Subscriptions.GroupBy(s => s.ProductCode))
@@ -91,7 +91,7 @@ else
         @if (d.Payments.Count == 0) { <EmptyState Message="No payments recorded." /> }
         else
         {
-            <table>
+            <table class="data-table">
                 <thead><tr><th>Reference</th><th>Amount</th><th>Method</th><th>Status</th><th>Detail</th></tr></thead>
                 <tbody>
                 @foreach (var p in d.Payments)
@@ -112,7 +112,7 @@ else
         @if (d.LatestEntitlements.Count == 0) { <EmptyState Message="No entitlement snapshots for this organization." /> }
         else
         {
-            <table>
+            <table class="data-table">
                 <thead><tr><th>Product</th><th>Version</th><th>Status</th><th>Generated (UTC)</th><th>History</th></tr></thead>
                 <tbody>
                 @foreach (var e in d.LatestEntitlements)

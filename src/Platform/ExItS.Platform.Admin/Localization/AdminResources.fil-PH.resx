@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="Brand_Name" xml:space="preserve"><value>Platform Admin</value></data>
+
+  <data name="Nav_SectionOverview" xml:space="preserve"><value>Pangkalahatang-ideya</value></data>
+  <data name="Nav_SectionCommercial" xml:space="preserve"><value>Komersyal</value></data>
+  <data name="Nav_SectionAccess" xml:space="preserve"><value>Access</value></data>
+  <data name="Nav_SectionCompliance" xml:space="preserve"><value>Pagsunod (Audit)</value></data>
+  <data name="Nav_Dashboard" xml:space="preserve"><value>Dashboard</value></data>
+  <data name="Nav_Products" xml:space="preserve"><value>Mga Produkto</value></data>
+  <data name="Nav_Organizations" xml:space="preserve"><value>Mga Organisasyon</value></data>
+  <data name="Nav_Subscriptions" xml:space="preserve"><value>Mga Subscription</value></data>
+  <data name="Nav_Payments" xml:space="preserve"><value>Mga Bayad</value></data>
+  <data name="Nav_Users" xml:space="preserve"><value>Mga User</value></data>
+  <data name="Nav_Entitlements" xml:space="preserve"><value>Mga Entitlement</value></data>
+  <data name="Nav_Audit" xml:space="preserve"><value>Audit</value></data>
+  <data name="Nav_Toggle" xml:space="preserve"><value>Menu</value></data>
+  <data name="Nav_CollapseSidebar" xml:space="preserve"><value>I-collapse ang sidebar</value></data>
+  <data name="Nav_ExpandSidebar" xml:space="preserve"><value>I-expand ang sidebar</value></data>
+  <data name="Nav_CloseDrawer" xml:space="preserve"><value>Isara ang navigation</value></data>
+  <data name="Nav_OpenDrawer" xml:space="preserve"><value>Buksan ang navigation</value></data>
+
+  <data name="Common_Save" xml:space="preserve"><value>I-save</value></data>
+  <data name="Common_Cancel" xml:space="preserve"><value>Kanselahin</value></data>
+  <data name="Common_Confirm" xml:space="preserve"><value>Kumpirmahin</value></data>
+  <data name="Common_Create" xml:space="preserve"><value>Gumawa</value></data>
+  <data name="Common_Search" xml:space="preserve"><value>Maghanap</value></data>
+  <data name="Common_Filter" xml:space="preserve"><value>I-filter</value></data>
+  <data name="Common_Apply" xml:space="preserve"><value>I-apply</value></data>
+  <data name="Common_Close" xml:space="preserve"><value>Isara</value></data>
+  <data name="Common_ClearFilters" xml:space="preserve"><value>I-clear ang mga filter</value></data>
+  <data name="Common_ViewDetails" xml:space="preserve"><value>Tingnan ang detalye</value></data>
+  <data name="Common_All" xml:space="preserve"><value>Lahat</value></data>
+
+  <data name="State_Loading" xml:space="preserve"><value>Naglo-load…</value></data>
+  <data name="State_Empty" xml:space="preserve"><value>Walang nahanap na record.</value></data>
+  <data name="State_Error" xml:space="preserve"><value>Nabigo ang request</value></data>
+  <data name="State_Unavailable" xml:space="preserve"><value>Hindi available ang Platform API</value></data>
+  <data name="State_CorrelationId" xml:space="preserve"><value>Correlation ID</value></data>
+  <data name="State_Retry" xml:space="preserve"><value>Subukan muli</value></data>
+
+  <data name="Banner_DevSecurityCompact" xml:space="preserve"><value>Development-stage — walang authentication</value></data>
+  <data name="Banner_DevSecurityDetail" xml:space="preserve"><value>Babala sa seguridad (development-stage): Ang Platform Admin at Platform API ay kasalukuyang walang authentication. Ang surface na ito ay hindi production-secure at hindi dapat ilantad bilang authorized operator console.</value></data>
+
+  <data name="Theme_Label" xml:space="preserve"><value>Tema</value></data>
+  <data name="Theme_System" xml:space="preserve"><value>System</value></data>
+  <data name="Theme_Light" xml:space="preserve"><value>Maliwanag</value></data>
+  <data name="Theme_Dark" xml:space="preserve"><value>Madilim</value></data>
+
+  <data name="Language_Label" xml:space="preserve"><value>Wika</value></data>
+  <data name="Language_English" xml:space="preserve"><value>English</value></data>
+  <data name="Language_Filipino" xml:space="preserve"><value>Tagalog</value></data>
+
+  <data name="Audit_Title" xml:space="preserve"><value>Audit log</value></data>
+  <data name="Audit_Description" xml:space="preserve"><value>Talaan ng lahat ng pagbabago sa Platform — sino ang gumawa, ano ang ginawa, kailan, at ano ang resulta.</value></data>
+  <data name="Audit_DetailTitle" xml:space="preserve"><value>Detalye ng audit record</value></data>
+  <data name="Audit_DetailDescription" xml:space="preserve"><value>Buong detalye ng isang audit record, kasama ang dahilan at ligtas na summary.</value></data>
+  <data name="Audit_FilterDateFrom" xml:space="preserve"><value>Mula (UTC)</value></data>
+  <data name="Audit_FilterDateTo" xml:space="preserve"><value>Hanggang (UTC)</value></data>
+  <data name="Audit_FilterActor" xml:space="preserve"><value>Actor</value></data>
+  <data name="Audit_FilterAction" xml:space="preserve"><value>Aksyon</value></data>
+  <data name="Audit_FilterOrganization" xml:space="preserve"><value>Organization ID</value></data>
+  <data name="Audit_FilterProduct" xml:space="preserve"><value>Product code</value></data>
+  <data name="Audit_FilterOutcome" xml:space="preserve"><value>Resulta</value></data>
+  <data name="Audit_Empty" xml:space="preserve"><value>Walang audit record na tumugma sa kasalukuyang filter.</value></data>
+  <data name="Audit_ColumnOccurred" xml:space="preserve"><value>Naganap (UTC)</value></data>
+  <data name="Audit_ColumnActor" xml:space="preserve"><value>Actor</value></data>
+  <data name="Audit_ColumnAction" xml:space="preserve"><value>Aksyon</value></data>
+  <data name="Audit_ColumnTarget" xml:space="preserve"><value>Target</value></data>
+  <data name="Audit_ColumnOutcome" xml:space="preserve"><value>Resulta</value></data>
+  <data name="Audit_NotReady" xml:space="preserve"><value>Hindi pa available ang audit query API sa environment na ito. Mapupuno ang page na ito kapag na-deploy na ang endpoint.</value></data>
+
+  <data name="Unauthorized_Title" xml:space="preserve"><value>Wala kang access sa seksyong ito</value></data>
+  <data name="Unauthorized_Message" xml:space="preserve"><value>Ang iyong kasalukuyang mga Platform permission ay hindi kasama ang seksyong ito. Ito ay UI convenience check lamang — ang Platform API pa rin ang source of truth at nagpapatupad ng sarili nitong authorization.</value></data>
+
+  <data name="Footer_Text" xml:space="preserve"><value>ExItS Platform Admin — portfolio, subscriptions, payments, trials, authorization, and audit (P4-WP04). Development-stage.</value></data>
+  <data name="Footer_ActorContext" xml:space="preserve"><value>Konteksto ng actor (dev lang): {0} — hindi ito authorization.</value></data>
+</root>

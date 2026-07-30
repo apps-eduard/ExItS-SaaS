@@ -85,7 +85,7 @@
 | R-079 | Duplicate username/email policy edge cases | Medium | Global unique normalized username/email; 409 conflicts | **Mitigated** (P4-WP02) — awareness |
 | R-080 | Missing invitation workflow | Medium | Deferred; add existing users only | Open — introduced P4-WP02 |
 | R-081 | Missing identity-provider linkage | High | Deferred with authentication WP | Open — introduced P4-WP02 |
-| R-082 | Missing dedicated audit subsystem for access changes | Medium | Actor/reason/UTC metadata on rows; full audit trail deferred to P4-WP04 | Open — introduced P4-WP02 |
+| R-082 | Missing dedicated audit subsystem for access changes | Medium | Append-only `platform.audit_records` + mutation/denial coverage in P4-WP04; actor/reason/UTC retained on domain rows | **Mitigated** (P4-WP04) — awareness; retention/growth tracked as R-096 |
 | R-083 | Admin UI contract drift for access endpoints | Medium | Typed client + integration tests | Open — introduced P4-WP02 |
 | R-084 | Concurrency during concurrent access changes | Medium | PostgreSQL `xmin`; 409 on conflict | Open — introduced P4-WP02 |
 | R-085 | Unauthenticated subscription/payment mutation via Admin | Critical | Development-stage only; same production gate as R-055/R-063; no fake auth | Open — introduced P4-WP03 |
@@ -94,10 +94,22 @@
 | R-088 | Subscription Admin changes mistaken for product provisioning | High | UI warnings; no entitlement delivery routes; fail-closed access evaluation only | Open — introduced P4-WP03 |
 | R-089 | Provisional repeat-trial policy misapplied as automatic approval | Medium | Conflict/warning only; no automatic repeat-trial approval rules | Open — introduced P4-WP03 |
 | R-090 | Concurrent Admin commercial lifecycle mutations | Medium | Domain concurrency + 409 ProblemDetails; UI refreshes after success | Open — introduced P4-WP03 |
+| R-091 | Missing production authentication (JWT / passwords / MFA / SSO / AD) | Critical | Server-side `PlatformAuthz` + role assignments for development; require real Platform auth before production; no fake login | Open — introduced P4-WP04; production blocker |
+| R-092 | Authorization policy gaps (permission catalog / scope edge cases) | High | Fail-closed catalog; org-scoped vs platform-wide assignments; expand policy tests as roles evolve | Open — introduced P4-WP04 |
+| R-093 | UI-only authorization assumptions (hiding nav treated as security) | High | Docs + UI copy: visibility is convenience; `PlatformAuthz.EnsureAsync` is authoritative → 403 + denied audit | Open — introduced P4-WP04; awareness |
+| R-094 | Translation mistakes or incomplete Admin localization | Medium | `AdminResources` en/fil-PH + terminology guide; resource-completeness tests; English fallback | Open — introduced P4-WP04 |
+| R-095 | Theme contrast / focus visibility regressions (Admin Light/Dark/System) | High | Semantic tokens; visible focus; a11y review; honor `prefers-reduced-motion` | Open — introduced P4-WP04; related R-008 |
+| R-096 | Audit table growth without retention / archival policy | Medium | Append-only by design; define retention/archival before production volume | Open — introduced P4-WP04 |
+| R-097 | Sensitive data written into Platform audit payloads | Critical | Forbidden fields (passwords, tokens, card/GCash secrets, PHI, raw payloads, exception dumps); safe summary only | **Mitigated** (P4-WP04) — by design; keep reviewing new writers |
+| R-098 | Development operator full-access misuse outside controlled hosts | Critical | `GrantDevelopmentOperatorFullAccess` only on Development/Testing; optional `X-Dev-Platform-User-Id` for role-based principal; never enable in production | Open — introduced P4-WP04; production blocker |
+
+## Phase 4 closeout note (P4-WP04)
+
+Phase 4 is **Complete with documented risks**. P4-WP04 delivered Platform system-role authorization (server-side), append-only audit, Admin redesign, System/Light/Dark themes, and EN/fil-PH Admin resources. **Production blockers remain OPEN:** R-045/R-050/R-055/R-062/R-063/R-072/R-085/R-091/R-098 (and related unauthenticated mutation gates). Gateways, invoices, entitlement delivery, R-022, and R-035 remain open. Next: **Phase 5 / P5-WP01 — MAUI Solution and API Client** when authorized.
 
 ## Phase 4 note (P4-WP03)
 
-P4-WP03 delivered Admin subscription lifecycle, trial start, and manual SaaS payment confirmation/activation by reusing Phase 3 APIs. Authentication, gateway/invoice automation, entitlement delivery, R-035 calendar EOM, and production authorization remain open. Next: **P4-WP04 — Audit, Authorization and Closeout** when authorized.
+P4-WP03 delivered Admin subscription lifecycle, trial start, and manual SaaS payment confirmation/activation by reusing Phase 3 APIs. Authentication, gateway/invoice automation, entitlement delivery, R-035 calendar EOM, and production authorization remain open. Superseded as “next WP” by Phase 4 closeout (P4-WP04).
 
 ## Phase 4 note (P4-WP02)
 

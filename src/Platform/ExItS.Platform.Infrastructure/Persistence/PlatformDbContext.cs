@@ -1,4 +1,6 @@
 using ExItS.Platform.Infrastructure.Persistence.Access;
+using ExItS.Platform.Infrastructure.Persistence.Audit;
+using ExItS.Platform.Infrastructure.Persistence.Authorization;
 using ExItS.Platform.Infrastructure.Persistence.Catalog;
 using ExItS.Platform.Infrastructure.Persistence.Entitlements;
 using ExItS.Platform.Infrastructure.Persistence.Identity;
@@ -43,6 +45,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PlatformUserRecord> PlatformUsers => Set<PlatformUserRecord>();
     internal DbSet<OrganizationMembershipRecord> OrganizationMemberships => Set<OrganizationMembershipRecord>();
     internal DbSet<ProductAccessAssignmentRecord> ProductAccessAssignments => Set<ProductAccessAssignmentRecord>();
+    internal DbSet<PlatformRoleAssignmentRecord> PlatformRoleAssignments => Set<PlatformRoleAssignmentRecord>();
+    internal DbSet<AuditRecordRecord> AuditRecords => Set<AuditRecordRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -503,6 +507,81 @@ public sealed class PlatformDbContext : DbContext
                 .HasForeignKey(e => e.ProductCode)
                 .HasPrincipalKey(p => p.Code)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PlatformRoleAssignmentRecord>(entity =>
+        {
+            entity.ToTable("platform_role_assignments");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.PlatformUserId).HasColumnName("platform_user_id");
+            entity.Property(e => e.Role).HasColumnName("role").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.GrantedByActor).HasColumnName("granted_by_actor").HasMaxLength(128).IsRequired();
+            entity.Property(e => e.GrantedAtUtc).HasColumnName("granted_at_utc");
+            entity.Property(e => e.Reason).HasColumnName("reason").HasMaxLength(512);
+            entity.Property(e => e.RevokedByActor).HasColumnName("revoked_by_actor").HasMaxLength(128);
+            entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
+            entity.Property(e => e.RevokeReason).HasColumnName("revoke_reason").HasMaxLength(512);
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => e.OrganizationId).HasDatabaseName("ix_platform_role_assignments_organization_id");
+
+            // Two filtered unique indexes are required (rather than one) because Postgres treats
+            // NULLs as distinct in a unique index: this enforces one active assignment per
+            // (user, role) for platform-wide grants (organization_id IS NULL) and, separately, one
+            // active assignment per (user, role, organization) for organization-scoped grants.
+            entity.HasIndex(e => new { e.PlatformUserId, e.Role, e.OrganizationId })
+                .IsUnique()
+                .HasFilter("status = 'Active' AND organization_id IS NOT NULL")
+                .HasDatabaseName("ux_platform_role_assignments_org_scoped_active");
+
+            entity.HasIndex(e => new { e.PlatformUserId, e.Role })
+                .IsUnique()
+                .HasFilter("status = 'Active' AND organization_id IS NULL")
+                .HasDatabaseName("ux_platform_role_assignments_platform_wide_active");
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.PlatformUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<AuditRecordRecord>(entity =>
+        {
+            // Append-only log: no unique constraints, no FKs to mutable aggregates, and the
+            // application layer exposes no update/delete method (see AuditRecord.Rehydrate/Create).
+            entity.ToTable("audit_records");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OccurredAtUtc).HasColumnName("occurred_at_utc");
+            entity.Property(e => e.ActorIdentifier).HasColumnName("actor_identifier").HasMaxLength(256).IsRequired();
+            entity.Property(e => e.ActorType).HasColumnName("actor_type").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.ActionCode).HasColumnName("action_code").HasMaxLength(128).IsRequired();
+            entity.Property(e => e.TargetType).HasColumnName("target_type").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.TargetId).HasColumnName("target_id").HasMaxLength(128).IsRequired();
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(64);
+            entity.Property(e => e.CorrelationId).HasColumnName("correlation_id").HasMaxLength(128);
+            entity.Property(e => e.Outcome).HasColumnName("outcome").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.Reason).HasColumnName("reason").HasMaxLength(512);
+            entity.Property(e => e.Summary).HasColumnName("summary").HasMaxLength(2000);
+
+            entity.HasIndex(e => e.OccurredAtUtc).HasDatabaseName("ix_audit_records_occurred_at_utc");
+            entity.HasIndex(e => e.ActorIdentifier).HasDatabaseName("ix_audit_records_actor_identifier");
+            entity.HasIndex(e => e.ActionCode).HasDatabaseName("ix_audit_records_action_code");
+            entity.HasIndex(e => e.OrganizationId).HasDatabaseName("ix_audit_records_organization_id");
+            entity.HasIndex(e => e.Outcome).HasDatabaseName("ix_audit_records_outcome");
         });
     }
 }

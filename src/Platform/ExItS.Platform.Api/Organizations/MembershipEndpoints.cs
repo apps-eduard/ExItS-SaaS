@@ -1,6 +1,8 @@
 using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Domain.Audit;
+using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
@@ -9,7 +11,8 @@ namespace ExItS.Platform.Api.Organizations;
 
 /// <summary>
 /// Organization membership endpoints. Platform organization roles only — never product-local roles.
-/// Development-stage: unauthenticated.
+/// Development-stage: actor identity is unauthenticated, but mutations enforce
+/// <see cref="PlatformPermission.ManageMemberships"/> scoped to the organization and record audit trail entries.
 /// </summary>
 internal static class MembershipEndpoints
 {
@@ -38,11 +41,24 @@ internal static class MembershipEndpoints
             Guid organizationId,
             AddMemberRequest body,
             AddOrganizationMembership useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
             if (!TryParseRole(body.Role, out var role, out var error))
             {
                 return error!;
+            }
+
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageMemberships,
+                PlatformAuditActions.MembershipAdded,
+                nameof(OrganizationMembership),
+                body.UserId.ToString("D"),
+                organizationId,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
             }
 
             try
@@ -54,6 +70,16 @@ internal static class MembershipEndpoints
                         role,
                         ct)
                     .ConfigureAwait(false);
+                if (result.IsSuccess)
+                {
+                    await authz.AuditSucceededAsync(
+                        PlatformAuditActions.MembershipAdded,
+                        nameof(OrganizationMembership),
+                        result.Value!.Id.Value.ToString("D"),
+                        organizationId,
+                        cancellationToken: ct).ConfigureAwait(false);
+                }
+
                 return PlatformApiResults.FromResult(result, m => Results.Created(
                     $"/api/v1/platform/memberships/{m.Id.Value}",
                     MembershipQueryService.Map(m)));
@@ -85,6 +111,8 @@ internal static class MembershipEndpoints
             Guid membershipId,
             ChangeRoleRequest body,
             ChangeOrganizationRole useCase,
+            MembershipQueryService queries,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
             if (!TryParseRole(body.Role, out var role, out var error))
@@ -92,11 +120,35 @@ internal static class MembershipEndpoints
                 return error!;
             }
 
+            var existing = await queries.GetByIdAsync(membershipId, ct).ConfigureAwait(false);
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageMemberships,
+                PlatformAuditActions.MembershipRoleChanged,
+                nameof(OrganizationMembership),
+                membershipId.ToString("D"),
+                existing?.OrganizationId,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             try
             {
                 var result = await useCase
                     .ExecuteAsync(OrganizationMembershipId.From(membershipId), role, body.ActorReference, ct)
                     .ConfigureAwait(false);
+                if (result.IsSuccess)
+                {
+                    await authz.AuditSucceededAsync(
+                        PlatformAuditActions.MembershipRoleChanged,
+                        nameof(OrganizationMembership),
+                        membershipId.ToString("D"),
+                        result.Value!.OrganizationId.Value,
+                        summary: $"Changed membership role to {role}.",
+                        cancellationToken: ct).ConfigureAwait(false);
+                }
+
                 return PlatformApiResults.FromResult(result, m => Results.Ok(MembershipQueryService.Map(m)));
             }
             catch (DomainException ex)
@@ -109,13 +161,40 @@ internal static class MembershipEndpoints
             Guid membershipId,
             MembershipLifecycleRequest? body,
             SuspendOrganizationMembership useCase,
+            MembershipQueryService queries,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var existing = await queries.GetByIdAsync(membershipId, ct).ConfigureAwait(false);
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageMemberships,
+                PlatformAuditActions.MembershipSuspended,
+                nameof(OrganizationMembership),
+                membershipId.ToString("D"),
+                existing?.OrganizationId,
+                reason: body?.Reason,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             try
             {
                 var result = await useCase
                     .ExecuteAsync(OrganizationMembershipId.From(membershipId), body?.Reason, body?.ActorReference, ct)
                     .ConfigureAwait(false);
+                if (result.IsSuccess)
+                {
+                    await authz.AuditSucceededAsync(
+                        PlatformAuditActions.MembershipSuspended,
+                        nameof(OrganizationMembership),
+                        membershipId.ToString("D"),
+                        result.Value!.OrganizationId.Value,
+                        reason: body?.Reason,
+                        cancellationToken: ct).ConfigureAwait(false);
+                }
+
                 return PlatformApiResults.FromResult(result, m => Results.Ok(MembershipQueryService.Map(m)));
             }
             catch (DomainException ex)
@@ -128,13 +207,38 @@ internal static class MembershipEndpoints
             Guid membershipId,
             MembershipLifecycleRequest? body,
             ReactivateOrganizationMembership useCase,
+            MembershipQueryService queries,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var existing = await queries.GetByIdAsync(membershipId, ct).ConfigureAwait(false);
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageMemberships,
+                PlatformAuditActions.MembershipReactivated,
+                nameof(OrganizationMembership),
+                membershipId.ToString("D"),
+                existing?.OrganizationId,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             try
             {
                 var result = await useCase
                     .ExecuteAsync(OrganizationMembershipId.From(membershipId), body?.ActorReference, ct)
                     .ConfigureAwait(false);
+                if (result.IsSuccess)
+                {
+                    await authz.AuditSucceededAsync(
+                        PlatformAuditActions.MembershipReactivated,
+                        nameof(OrganizationMembership),
+                        membershipId.ToString("D"),
+                        result.Value!.OrganizationId.Value,
+                        cancellationToken: ct).ConfigureAwait(false);
+                }
+
                 return PlatformApiResults.FromResult(result, m => Results.Ok(MembershipQueryService.Map(m)));
             }
             catch (DomainException ex)
@@ -147,13 +251,40 @@ internal static class MembershipEndpoints
             Guid membershipId,
             MembershipLifecycleRequest? body,
             RevokeOrganizationMembership useCase,
+            MembershipQueryService queries,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var existing = await queries.GetByIdAsync(membershipId, ct).ConfigureAwait(false);
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageMemberships,
+                PlatformAuditActions.MembershipRevoked,
+                nameof(OrganizationMembership),
+                membershipId.ToString("D"),
+                existing?.OrganizationId,
+                reason: body?.Reason,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             try
             {
                 var result = await useCase
                     .ExecuteAsync(OrganizationMembershipId.From(membershipId), body?.Reason, body?.ActorReference, ct)
                     .ConfigureAwait(false);
+                if (result.IsSuccess)
+                {
+                    await authz.AuditSucceededAsync(
+                        PlatformAuditActions.MembershipRevoked,
+                        nameof(OrganizationMembership),
+                        membershipId.ToString("D"),
+                        result.Value!.OrganizationId.Value,
+                        reason: body?.Reason,
+                        cancellationToken: ct).ConfigureAwait(false);
+                }
+
                 return PlatformApiResults.FromResult(result, m => Results.Ok(MembershipQueryService.Map(m)));
             }
             catch (DomainException ex)

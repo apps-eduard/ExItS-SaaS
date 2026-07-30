@@ -66,4 +66,20 @@ public static class DomainErrorCodes
     public const string PaymentCurrencyInvalid = "platform.saas_payment.currency.invalid";
     public const string PaymentReferenceRequired = "platform.saas_payment.reference.required";
     public const string PaymentReasonRequired = "platform.saas_payment.reason.required";
+
+    public const string InvalidPlatformRoleAssignmentId = "platform.role_assignment.id.invalid";
+    public const string InvalidPlatformSystemRole = "platform.role_assignment.role.invalid";
+    public const string InvalidPermissionCode = "platform.permission.invalid";
+    public const string AuthorizationDenied = "platform.authorization.denied";
+
+    public const string InvalidAuditRecordId = "platform.audit_record.id.invalid";
+    public const string InvalidAuditActorType = "platform.audit_record.actor_type.invalid";
+    public const string InvalidAuditOutcome = "platform.audit_record.outcome.invalid";
+    public const string InvalidAuditActorIdentifier = "platform.audit_record.actor_identifier.invalid";
+    public const string InvalidAuditActionCode = "platform.audit_record.action_code.invalid";
+    public const string InvalidAuditTargetType = "platform.audit_record.target_type.invalid";
+    public const string InvalidAuditTargetId = "platform.audit_record.target_id.invalid";
+    public const string InvalidAuditCorrelationId = "platform.audit_record.correlation_id.invalid";
+    public const string InvalidAuditReason = "platform.audit_record.reason.invalid";
+    public const string InvalidAuditSummary = "platform.audit_record.summary.invalid";
 }

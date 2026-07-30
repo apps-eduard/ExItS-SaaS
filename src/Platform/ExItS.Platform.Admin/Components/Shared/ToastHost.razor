@@ -1,0 +1,50 @@
+@implements IDisposable
+@inject ToastService Toasts
+@inject IStringLocalizer<AdminResources> L
+
+<div class="toast-host" aria-live="polite" aria-atomic="false">
+    @foreach (var toast in _visible)
+    {
+        <div class="toast" data-kind="@toast.Kind" role="status">
+            @toast.Text
+            <button type="button" class="ghost" @onclick="() => Dismiss(toast.Id)" aria-label="@L["Common_Close"]">×</button>
+        </div>
+    }
+</div>
+
+@code {
+    private readonly List<ToastMessage> _visible = [];
+
+    protected override void OnInitialized()
+    {
+        Toasts.Added += OnAdded;
+        Toasts.Removed += OnRemoved;
+    }
+
+    private void OnAdded(ToastMessage toast)
+    {
+        _visible.Add(toast);
+        InvokeAsync(StateHasChanged);
+        _ = AutoDismissAsync(toast.Id);
+    }
+
+    private void OnRemoved(Guid id)
+    {
+        _visible.RemoveAll(t => t.Id == id);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task AutoDismissAsync(Guid id)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(6));
+        Toasts.Dismiss(id);
+    }
+
+    private void Dismiss(Guid id) => Toasts.Dismiss(id);
+
+    public void Dispose()
+    {
+        Toasts.Added -= OnAdded;
+        Toasts.Removed -= OnRemoved;
+    }
+}

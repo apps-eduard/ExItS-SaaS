@@ -1,14 +1,17 @@
 using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Domain.Audit;
+using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 
 namespace ExItS.Platform.Api.Identity;
 
 /// <summary>
-/// Platform User lifecycle endpoints. Development-stage only: unauthenticated.
-/// Authentication and authorization enforcement remain deferred.
+/// Platform User lifecycle endpoints. Development-stage only: actor identity is unauthenticated
+/// (<see cref="ExItS.Platform.Infrastructure.Authorization.DevelopmentPlatformActorAccessor"/>), but
+/// mutations enforce <see cref="PlatformPermission.ManagePlatformUsers"/> and record audit trail entries.
 /// </summary>
 internal static class IdentityEndpoints
 {
@@ -45,11 +48,33 @@ internal static class IdentityEndpoints
         users.MapPost("/", async (
             CreateUserRequest body,
             CreatePlatformUser useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManagePlatformUsers,
+                PlatformAuditActions.PlatformUserCreated,
+                nameof(PlatformUser),
+                body.Username,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await useCase
                 .ExecuteAsync(body.Username, body.DisplayName, body.Email, ct)
                 .ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.PlatformUserCreated,
+                    nameof(PlatformUser),
+                    result.Value!.Id.Value.ToString("D"),
+                    summary: $"Created Platform User {result.Value.Username}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
             return PlatformApiResults.FromResult(result, u => Results.Created(
                 $"/api/v1/platform/users/{u.Id.Value}",
                 PlatformUserQueryService.Map(u)));
@@ -73,13 +98,34 @@ internal static class IdentityEndpoints
             Guid userId,
             UpdateUserRequest body,
             UpdatePlatformUserProfile useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManagePlatformUsers,
+                PlatformAuditActions.PlatformUserProfileUpdated,
+                nameof(PlatformUser),
+                userId.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             try
             {
                 var result = await useCase
                     .ExecuteAsync(PlatformUserId.From(userId), body.DisplayName, body.Email, ct)
                     .ConfigureAwait(false);
+                if (result.IsSuccess)
+                {
+                    await authz.AuditSucceededAsync(
+                        PlatformAuditActions.PlatformUserProfileUpdated,
+                        nameof(PlatformUser),
+                        userId.ToString("D"),
+                        cancellationToken: ct).ConfigureAwait(false);
+                }
+
                 return PlatformApiResults.FromResult(result, u => Results.Ok(PlatformUserQueryService.Map(u)));
             }
             catch (DomainException ex)
@@ -92,13 +138,36 @@ internal static class IdentityEndpoints
             Guid userId,
             LifecycleReasonRequest? body,
             SuspendPlatformUser useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManagePlatformUsers,
+                PlatformAuditActions.PlatformUserSuspended,
+                nameof(PlatformUser),
+                userId.ToString("D"),
+                reason: body?.Reason,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             try
             {
                 var result = await useCase
                     .ExecuteAsync(PlatformUserId.From(userId), body?.Reason, ct)
                     .ConfigureAwait(false);
+                if (result.IsSuccess)
+                {
+                    await authz.AuditSucceededAsync(
+                        PlatformAuditActions.PlatformUserSuspended,
+                        nameof(PlatformUser),
+                        userId.ToString("D"),
+                        reason: body?.Reason,
+                        cancellationToken: ct).ConfigureAwait(false);
+                }
+
                 return PlatformApiResults.FromResult(result, u => Results.Ok(PlatformUserQueryService.Map(u)));
             }
             catch (DomainException ex)
@@ -110,11 +179,32 @@ internal static class IdentityEndpoints
         users.MapPost("/{userId:guid}/reactivate", async (
             Guid userId,
             ReactivatePlatformUser useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManagePlatformUsers,
+                PlatformAuditActions.PlatformUserReactivated,
+                nameof(PlatformUser),
+                userId.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             try
             {
                 var result = await useCase.ExecuteAsync(PlatformUserId.From(userId), ct).ConfigureAwait(false);
+                if (result.IsSuccess)
+                {
+                    await authz.AuditSucceededAsync(
+                        PlatformAuditActions.PlatformUserReactivated,
+                        nameof(PlatformUser),
+                        userId.ToString("D"),
+                        cancellationToken: ct).ConfigureAwait(false);
+                }
+
                 return PlatformApiResults.FromResult(result, u => Results.Ok(PlatformUserQueryService.Map(u)));
             }
             catch (DomainException ex)
@@ -126,11 +216,32 @@ internal static class IdentityEndpoints
         users.MapPost("/{userId:guid}/disable", async (
             Guid userId,
             DeactivatePlatformUser useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManagePlatformUsers,
+                PlatformAuditActions.PlatformUserDeactivated,
+                nameof(PlatformUser),
+                userId.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             try
             {
                 var result = await useCase.ExecuteAsync(PlatformUserId.From(userId), ct).ConfigureAwait(false);
+                if (result.IsSuccess)
+                {
+                    await authz.AuditSucceededAsync(
+                        PlatformAuditActions.PlatformUserDeactivated,
+                        nameof(PlatformUser),
+                        userId.ToString("D"),
+                        cancellationToken: ct).ConfigureAwait(false);
+                }
+
                 return PlatformApiResults.FromResult(result, u => Results.Ok(PlatformUserQueryService.Map(u)));
             }
             catch (DomainException ex)

@@ -1,11 +1,13 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="@CultureName">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
     <base href="/" />
     <ResourcePreloader />
+    <script src="@Assets["theme-boot.js"]"></script>
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["ExItS.Platform.Admin.styles.css"]" />
     <ImportMap />
@@ -19,3 +21,12 @@
 </body>
 
 </html>
+
+@code {
+    private string CultureName => System.Globalization.CultureInfo.CurrentUICulture.Name switch
+    {
+        "fil-PH" => "fil-PH",
+        _ => "en"
+    };
+}
+

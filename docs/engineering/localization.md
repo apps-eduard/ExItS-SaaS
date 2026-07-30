@@ -30,6 +30,17 @@ Localization/
 └── PosResources.fil-PH.resx
 ```
 
+### Platform Admin resources (P4-WP04)
+
+```text
+src/Platform/ExItS.Platform.Admin/Localization/
+├── AdminResources.resx          # English (default)
+├── AdminResources.fil-PH.resx   # Filipino/Tagalog
+└── AdminResources.cs
+```
+
+ASP.NET Core request localization + cookie/localStorage language preference. Shell, navigation, and shared components use `IStringLocalizer<AdminResources>`. Business page copy may remain English in P4-WP04. Glossary: [admin-terminology-guide.md](admin-terminology-guide.md).
+
 ## Translation quality
 
 Use natural store language, not literal technical translation. Maintain a glossary for Utang, balance, payment, due date, stock, sale, refund and cashier terms.

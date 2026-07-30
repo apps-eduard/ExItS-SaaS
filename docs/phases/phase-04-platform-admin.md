@@ -1,10 +1,14 @@
 # Phase 4 — Platform Admin Expansion
 
-[Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Previous](phase-03-billing-entitlements.md) | [Next](phase-05-pos-maui-foundation.md)
+[Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Previous](phase-03-billing-entitlements.md) | [Next](phase-05-pos-maui-foundation.md) | [P4-WP04 report](../reports/P4-WP04-audit-authorization-and-closeout.md)
 
 ## Objective
 
 Build a **new** native-CSS ExITS Platform Admin (Blazor Web App) for multi-product operations. Do **not** extend HealthCare Staff Web Ant Design as the long-term Platform Admin UI.
+
+## Phase status
+
+**Complete with documented risks** (P4-WP01–P4-WP04). Production authentication, payment gateways, entitlement delivery, and Phase 5 POS remain deferred. Do **not** begin Phase 5 until explicitly authorized.
 
 ## Work packages
 
@@ -84,26 +88,37 @@ Report: [P4-WP03-subscriptions-payments-and-trials.md](../reports/P4-WP03-subscr
 
 ### P4-WP04 — Audit, Authorization and Closeout
 
-Status: Not Started
+Status: **Complete**
+
+Feature commit: _(recorded after push)_
+Report: [P4-WP04-audit-authorization-and-closeout.md](../reports/P4-WP04-audit-authorization-and-closeout.md)
 
 #### Required outcomes
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+- [x] Platform system roles + permissions with server-side enforcement (`PlatformAuthz`)
+- [x] Append-only Platform audit records for sensitive mutations and authorization denials
+- [x] Admin audit browse/detail; permission-aware navigation
+- [x] Admin UI redesign (shell, responsive layout, shared design-system components)
+- [x] Theme System / Light / Dark with persistence and flash prevention
+- [x] Localization English (`en`) + Tagalog (`fil-PH`) via `AdminResources`
+- [x] Migration `AddPlatformAuthorizationAndAudit` apply → rollback → re-apply
+- [x] Tests, docs, runtime evidence; HealthCare freeze preserved
+- [x] Phase 4 closed with documented risks (not production-ready)
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (411 passed: 261/39/27/84).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit hash placeholder recorded (`_(recorded after push)_`).
+- [ ] Working tree clean (after commit/push — pending).
 
 ## Phase exit criteria
 
-- [ ] Every work package is complete or explicitly deferred.
-- [ ] Risks and decisions are recorded.
-- [ ] Required regression/security tests pass.
-- [ ] Next phase is explicitly approved.
+- [x] Every work package is complete or explicitly deferred.
+- [x] Risks and decisions are recorded.
+- [x] Required regression/security tests pass (411 Platform root tests).
+- [ ] Next phase is explicitly approved (Phase 5 / P5-WP01 identified; start requires separate authorization).
+
+**Phase recommendation:** Close with documented risks. See [P4-WP04 report](../reports/P4-WP04-audit-authorization-and-closeout.md). Not production-ready while JWT/MFA/SSO/AD, gateways, and entitlement delivery remain open.

@@ -1,6 +1,9 @@
 using ExItS.Platform.Api.Access;
 using ExItS.Platform.Api.Admin;
+using ExItS.Platform.Api.Audit;
+using ExItS.Platform.Api.Authorization;
 using ExItS.Platform.Api.Catalog;
+using ExItS.Platform.Api.Common;
 using ExItS.Platform.Api.Entitlements;
 using ExItS.Platform.Api.Identity;
 using ExItS.Platform.Api.Organizations;
@@ -8,6 +11,8 @@ using ExItS.Platform.Api.Payments;
 using ExItS.Platform.Api.Subscriptions;
 using ExItS.Platform.Application.Access;
 using ExItS.Platform.Application.Admin;
+using ExItS.Platform.Application.Audit;
+using ExItS.Platform.Application.Authorization;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.Identity;
@@ -21,6 +26,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddProblemDetails();
 builder.Services.AddHealthChecks();
 builder.Services.AddPlatformPersistence(builder.Configuration);
+
+// Development-stage only: DevelopmentOperator actors receive full Platform permissions so existing
+// unauthenticated development/testing workflows continue while permission enforcement is exercised.
+// Must never be enabled outside Development/Testing (never a production authentication substitute).
+builder.Services.Configure<DevelopmentAuthorizationOptions>(options =>
+{
+    options.GrantDevelopmentOperatorFullAccess =
+        builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing");
+});
 
 builder.Services.AddScoped<CatalogQueryService>();
 builder.Services.AddScoped<CreateProduct>();
@@ -91,6 +105,14 @@ builder.Services.AddScoped<ReconcileEntitlementSnapshot>();
 
 builder.Services.AddScoped<AdminPortfolioQueryService>();
 
+builder.Services.AddScoped<ListPlatformRoles>();
+builder.Services.AddScoped<AssignPlatformRole>();
+builder.Services.AddScoped<RevokePlatformRole>();
+builder.Services.AddScoped<ResolveCurrentPermissions>();
+builder.Services.AddScoped<QueryAuditRecords>();
+builder.Services.AddScoped<GetAuditRecord>();
+builder.Services.AddScoped<PlatformAuthz>();
+
 var app = builder.Build();
 
 app.UseExceptionHandler();
@@ -100,7 +122,7 @@ app.MapGet("/", () => Results.Json(new
 {
     service = "ExItS.Platform.Api",
     status = "ok",
-    phase = "P4-WP03-subscriptions-payments-trials"
+    phase = "P4-WP04-audit-authorization-closeout"
 }));
 
 app.MapHealthChecks("/health");
@@ -113,6 +135,8 @@ app.MapSubscriptionEndpoints();
 app.MapPaymentEndpoints();
 app.MapEntitlementEndpoints();
 app.MapAdminEndpoints();
+app.MapAuthorizationEndpoints();
+app.MapAuditEndpoints();
 
 app.Run();
 

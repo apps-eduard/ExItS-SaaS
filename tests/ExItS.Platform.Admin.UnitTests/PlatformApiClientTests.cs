@@ -171,6 +171,93 @@ public sealed class PlatformApiClientTests
         Assert.Equal(HttpStatusCode.Conflict, result.Error.StatusCode);
     }
 
+    [Fact]
+    public async Task Get_audit_records_uses_expected_query_route()
+    {
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"items":[],"totalCount":0,"page":1,"pageSize":25}""", Encoding.UTF8, "application/json")
+        });
+        var client = CreateClient(handler);
+
+        var result = await client.GetAuditRecordsAsync(new AuditQuery(ActorIdentifier: "dev-admin", Outcome: "Succeeded", Page: 1, PageSize: 25));
+
+        Assert.True(result.IsSuccess);
+        Assert.StartsWith("/api/v1/platform/audit", handler.Request!.AbsolutePath, StringComparison.Ordinal);
+        Assert.Contains("actor=dev-admin", handler.Request!.Query, StringComparison.Ordinal);
+        Assert.Contains("outcome=Succeeded", handler.Request!.Query, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Get_audit_record_uses_id_route()
+    {
+        var id = Guid.Parse("55555555-5555-5555-5555-555555555555");
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                $$"""{"id":"{{id}}","occurredAtUtc":"2026-07-01T00:00:00Z","actorIdentifier":"dev-admin","actorType":"DevelopmentOperator","actionCode":"platform.subscription.activated","targetType":"Subscription","targetId":"{{id}}","organizationId":null,"productCode":null,"correlationId":null,"outcome":"Succeeded","reason":null,"summary":null}""",
+                Encoding.UTF8,
+                "application/json")
+        });
+        var client = CreateClient(handler);
+
+        var result = await client.GetAuditRecordAsync(id);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal($"/api/v1/platform/audit/{id}", handler.Request!.AbsolutePath);
+    }
+
+    [Fact]
+    public async Task Get_my_authorization_uses_authorization_me_route()
+    {
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                """{"actorIdentifier":"dev-admin","actorType":"DevelopmentOperator","platformUserId":null,"organizationId":null,"permissions":["platform.permission.view_portfolio"]}""",
+                Encoding.UTF8,
+                "application/json")
+        });
+        var client = CreateClient(handler);
+
+        var result = await client.GetMyAuthorizationAsync();
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("/api/v1/platform/authorization/me", handler.Request!.AbsolutePath);
+        Assert.Contains("platform.permission.view_portfolio", result.Data!.Permissions);
+    }
+
+    [Fact]
+    public async Task Get_authorization_roles_uses_authorization_roles_route()
+    {
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""[{"role":"PlatformAdministrator","permissions":["platform.permission.view_portfolio"]}]""", Encoding.UTF8, "application/json")
+        });
+        var client = CreateClient(handler);
+
+        var result = await client.GetAuthorizationRolesAsync();
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("/api/v1/platform/authorization/roles", handler.Request!.AbsolutePath);
+        Assert.Single(result.Data!);
+    }
+
+    [Fact]
+    public async Task Audit_endpoints_return_unavailable_when_api_not_yet_deployed()
+    {
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)
+        {
+            Content = new StringContent("""{"title":"Not Found"}""", Encoding.UTF8, "application/problem+json")
+        });
+        var client = CreateClient(handler);
+
+        var records = await client.GetAuditRecordsAsync(new AuditQuery());
+        Assert.Equal(ApiCallStatus.NotFound, records.Status);
+
+        var me = await client.GetMyAuthorizationAsync();
+        Assert.Equal(ApiCallStatus.NotFound, me.Status);
+    }
+
     private static PlatformApiClient CreateClient(StubHandler handler) =>
         new(new HttpClient(handler) { BaseAddress = new Uri("http://platform.test") });
 

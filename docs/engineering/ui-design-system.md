@@ -19,6 +19,10 @@ Validated against HealthCare evidence in **P0-WP03**. No application UI was impl
 
 Visual consistency across **new** Platform Admin and POS comes from shared semantic tokens, typography, spacing, theme/localization/accessibility/motion standards, and UI-independent models — **not** from Ant Design.
 
+### Platform Admin redesign (P4-WP04)
+
+Commercial Admin shell: collapsible sidebar (checkbox CSS), mobile drawer, sticky header, environment chip, shared design-system components (page header, filters, empty/loading/error, audit timeline, theme/language selectors), responsive tables/cards (≈320–1920px). Permission-aware nav is UI convenience only. Keyboard-usable controls; `prefers-reduced-motion` respected. No Ant Design; no Tailwind.
+
 ### Proposed project boundaries (not created in P0-WP03)
 
 ```text
@@ -29,7 +33,7 @@ Shared/
 └── ExItS.Ui.Validation
 
 Platform/
-└── ExItS.Platform.Admin (Blazor Web App — native UI; P4-WP01 shell + P4-WP02 users/memberships/product access + P4-WP03 subscriptions/payments/trials)
+└── ExItS.Platform.Admin (Blazor Web App — native UI; P4-WP01 shell + P4-WP02 users/memberships/product access + P4-WP03 subscriptions/payments/trials + P4-WP04 audit/authorization redesign, themes, i18n)
 
 Products/PinoyBusinessPOS/
 ├── PinoyBusinessPOS.Ui
@@ -108,13 +112,13 @@ Required modes: **Light**, **Dark**, **System**.
 - Theme change must not restart the app or lose form state.
 - See [theme-system.md](theme-system.md).
 
-HealthCare today: light canvas tokens + dark **sider only** — not a product theme system.
+**P4-WP04:** Platform Admin implements System / Light / Dark via semantic CSS tokens, header selector, `localStorage` persistence, and `theme-boot.js` flash prevention. HealthCare today: light canvas tokens + dark **sider only** — not a product theme system.
 
 ---
 
 ## Localization
 
-Initial languages: **English (`en`)** and **Filipino (`fil`)**.
+Initial languages: **English (`en`)** and **Filipino (`fil` / `fil-PH`)**.
 
 - Resource-based; no hard-coded strings in reusable POS components.
 - Localized navigation, validation, statuses, empty states, dates, numbers, currency (PHP).
@@ -122,7 +126,7 @@ Initial languages: **English (`en`)** and **Filipino (`fil`)**.
 - Configuration language name: **Filipino**; Tagalog wording may appear in copy.
 - Do **not** claim all Philippine languages.
 
-HealthCare today: **no** localization foundation (do not add during Phase 0).
+**P4-WP04:** Platform Admin ships `AdminResources` (`en` + `fil-PH`) for shell/nav/shared components; see [localization.md](localization.md) and [admin-terminology-guide.md](admin-terminology-guide.md). HealthCare today: **no** localization foundation (do not add during Phase 0).
 
 ---
 
