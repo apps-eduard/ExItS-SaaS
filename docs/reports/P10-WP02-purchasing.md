@@ -131,6 +131,6 @@ Unchanged release blockers: R-091, R-129, TLS-PROD, MAUI-HTTPS, POS-ROLES; Manua
 | Docs commit (initial) | `bc6dc7477e74c3c03785862dd98317d39c55eee1` |
 | Gap-fix feature commit | `bfb4c6b454757e2794aec33399b4556a711dc934` |
 | Gap-fix feature message | `fix(pos): enrich goods receipts and fix purchasing MAUI receive (P10-WP02)` |
-| Gap-fix docs / hash-record | _(filled after docs commit)_ |
+| Gap-fix docs / hash-record | `dfea2fa5b34a3d7a59e6d251f3559813dbdeb444` |
 
 Exact next: **P10-WP03 — Advanced Inventory** (do not begin until authorized).
