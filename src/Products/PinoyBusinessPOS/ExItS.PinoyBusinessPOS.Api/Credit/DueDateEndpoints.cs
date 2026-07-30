@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Api.Common;
+using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 
@@ -20,9 +21,15 @@ internal static class DueDateEndpoints
             Guid creditEntryId,
             SetCreditDueDateRequest body,
             SetCreditDueDate useCase,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.MutateDueDate, out problem))
             {
                 return problem!;
             }
@@ -44,9 +51,15 @@ internal static class DueDateEndpoints
             Guid creditEntryId,
             string? reason,
             SetCreditDueDate useCase,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.MutateDueDate, out problem))
             {
                 return problem!;
             }
@@ -69,9 +82,15 @@ internal static class DueDateEndpoints
             int? page,
             int? pageSize,
             CreditDueDateHistoryQuery query,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewCustomersAndHistory, out problem))
             {
                 return problem!;
             }
@@ -89,9 +108,15 @@ internal static class DueDateEndpoints
             HttpRequest request,
             Guid customerId,
             OverdueQueryService overdue,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewCustomersAndHistory, out problem))
             {
                 return problem!;
             }
@@ -112,9 +137,15 @@ internal static class DueDateEndpoints
             int? page,
             int? pageSize,
             OverdueQueryService overdue,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewCustomersAndHistory, out problem))
             {
                 return problem!;
             }
@@ -130,9 +161,15 @@ internal static class DueDateEndpoints
             int? page,
             int? pageSize,
             OverdueQueryService overdue,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewCustomersAndHistory, out problem))
             {
                 return problem!;
             }
@@ -148,9 +185,15 @@ internal static class DueDateEndpoints
             int? page,
             int? pageSize,
             OverdueQueryService overdue,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewCustomersAndHistory, out problem))
             {
                 return problem!;
             }

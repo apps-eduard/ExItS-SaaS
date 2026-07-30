@@ -4,6 +4,7 @@ using ExItS.DesignSystem.Abstractions;
 using ExItS.PinoyBusinessPOS.ApiClient;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
+using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Maui.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,11 +15,11 @@ namespace ExItS.PinoyBusinessPOS.Maui;
 public static class MauiProgram
 {
     /// <summary>
-    /// Development-stage notice (P6-WP04): authentication uses the approved Development/Testing
+    /// Development-stage notice (P6-WP05): authentication uses the approved Development/Testing
     /// Platform identity mechanism only (<c>X-Dev-Platform-User-Id</c>). Production JWT/MFA/SSO
     /// authentication is not implemented. Remarks-based credit, repayments, unified ledger, due dates,
-    /// and overdue monitoring are available; statements, receipts, sales, inventory, and offline sync
-    /// are not.
+    /// overdue monitoring, statements, and repayment receipts are available; interest, credit limits,
+    /// sales, inventory, and offline sync are not.
     /// </summary>
     public static MauiApp CreateMauiApp()
     {
@@ -89,6 +90,8 @@ public static class MauiProgram
         services.AddSingleton<IAuthEventSink, LoggingAuthEventSink>();
         services.AddSingleton<IProductAccessResolver, ProductAccessResolver>();
         services.AddSingleton<IAuthenticationService, AuthenticationService>();
+        services.AddSingleton<IUtangCapabilityEvaluator, UtangCapabilityEvaluator>();
+        services.AddSingleton<IDocumentHandoffService, MauiDocumentHandoffService>();
         services.AddSingleton<NavigationGate>();
 
         services.AddSingleton<ThemeController>();

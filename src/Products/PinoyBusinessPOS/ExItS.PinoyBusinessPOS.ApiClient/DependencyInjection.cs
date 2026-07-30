@@ -28,6 +28,7 @@ public static class DependencyInjection
 
         services.AddTransient<DevPlatformUserHeaderHandler>();
         services.AddTransient<PosOrganizationHeaderHandler>();
+        services.AddTransient<PosCommercialHeaderHandler>();
 
         services.AddHttpClient<IPosApiClient, PosApiClient>((provider, client) =>
             {
@@ -44,7 +45,8 @@ public static class DependencyInjection
                 client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
             })
             .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
-            .AddHttpMessageHandler<PosOrganizationHeaderHandler>();
+            .AddHttpMessageHandler<PosOrganizationHeaderHandler>()
+            .AddHttpMessageHandler<PosCommercialHeaderHandler>();
 
         services.AddSingleton<IPlatformAccessClient, PlatformAccessClient>();
 

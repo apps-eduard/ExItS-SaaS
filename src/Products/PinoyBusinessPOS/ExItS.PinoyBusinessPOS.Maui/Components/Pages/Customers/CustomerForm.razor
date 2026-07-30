@@ -8,7 +8,7 @@
                    Required="true"
                    IsInvalid="@(!string.IsNullOrEmpty(DisplayNameError))"
                    ErrorText="@DisplayNameError"
-                   Disabled="@IsSaving" />
+                   Disabled="@(IsSaving || Disabled)" />
 
         <TextInput Label="@L["Customers_Field_Mobile"]"
                    Value="@MobileNumber"
@@ -16,26 +16,26 @@
                    Hint="@L["Customers_MobileHint"]"
                    IsInvalid="@(!string.IsNullOrEmpty(MobileError))"
                    ErrorText="@MobileError"
-                   Disabled="@IsSaving" />
+                   Disabled="@(IsSaving || Disabled)" />
 
         <TextInput Label="@L["Customers_Field_Address"]"
                    Value="@Address"
                    ValueChanged="AddressChanged"
                    Hint="@L["Customers_AddressHint"]"
-                   Disabled="@IsSaving" />
+                   Disabled="@(IsSaving || Disabled)" />
 
         <TextArea Label="@L["Customers_Field_Notes"]"
                   Value="@Notes"
                   ValueChanged="NotesChanged"
                   Hint="@L["Customers_NotesHint"]"
                   Rows="3"
-                  Disabled="@IsSaving" />
+                  Disabled="@(IsSaving || Disabled)" />
     </Stack>
 </Section>
 
 <FormActions>
-    <Button Variant="ButtonVariant.Secondary" Disabled="@IsSaving" OnClick="OnCancel">@L["Customers_Cancel"]</Button>
-    <Button Variant="ButtonVariant.Primary" IsLoading="@IsSaving" OnClick="OnSave">@SaveLabel</Button>
+    <Button Variant="ButtonVariant.Secondary" Disabled="@(IsSaving || Disabled)" OnClick="OnCancel">@L["Customers_Cancel"]</Button>
+    <Button Variant="ButtonVariant.Primary" Disabled="@Disabled" IsLoading="@IsSaving" OnClick="OnSave">@SaveLabel</Button>
 </FormActions>
 
 @code {
@@ -50,6 +50,7 @@
     [Parameter] public string? DisplayNameError { get; set; }
     [Parameter] public string? MobileError { get; set; }
     [Parameter] public bool IsSaving { get; set; }
+    [Parameter] public bool Disabled { get; set; }
     [Parameter] public string? SaveLabel { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }

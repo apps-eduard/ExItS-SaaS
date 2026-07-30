@@ -3,6 +3,7 @@
 @inject NavigationGate Gate
 @inject IPosCustomerClient Customers
 @inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
 
@@ -23,12 +24,18 @@ else if (_customer is null)
 }
 else
 {
+    var canEdit = Capabilities.IsAllowed(UtangCapability.EditCustomer);
 <Page>
     <PageHeader Title="@L["Customers_EditTitle"]" Subtitle="@_customer.DisplayName">
         <Actions>
             <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Customers_Cancel"]</Button>
         </Actions>
     </PageHeader>
+
+    @if (!canEdit)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+    }
 
     @if (!string.IsNullOrEmpty(_formError))
     {
@@ -46,6 +53,7 @@ else
                   DisplayNameError="@_displayNameError"
                   MobileError="@_mobileError"
                   IsSaving="@_saving"
+                  Disabled="@(!canEdit)"
                   SaveLabel="@L["Customers_Save"]"
                   OnSave="SaveAsync"
                   OnCancel="GoDetail" />
@@ -104,6 +112,12 @@ else
 
     private async Task SaveAsync()
     {
+        if (!Capabilities.IsAllowed(UtangCapability.EditCustomer))
+        {
+            _formError = L["Access_RestrictedMessage"];
+            return;
+        }
+
         _displayNameError = null;
         _mobileError = null;
         _formError = null;

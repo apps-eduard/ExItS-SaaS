@@ -298,11 +298,54 @@
   <data name="Customers_NotesHint" xml:space="preserve"><value>Para sa pagkilala lang — hindi credit record.</value></data>
   <data name="Customers_DisplayNameRequired" xml:space="preserve"><value>Kailangan ang display name.</value></data>
   <data name="Customers_CreditDeferredTitle" xml:space="preserve"><value>Mga susunod na Utang feature</value></data>
-  <data name="Customers_CreditDeferredMessage" xml:space="preserve"><value>Hindi pa available ang statements at printable receipts. Available na ang due dates at overdue monitoring sa customer detail at Overdue.</value></data>
+  <data name="Customers_CreditDeferredMessage" xml:space="preserve"><value>Hindi pa available ang interest at credit limits. Available na ang statements at repayment receipts sa customer detail.</value></data>
   <data name="Customers_RepaymentDeferredTitle" xml:space="preserve"><value>Mga susunod na Utang feature</value></data>
-  <data name="Customers_RepaymentDeferredMessage" xml:space="preserve"><value>Hindi pa available ang statements at printable receipts. Available na ang payments, ledger, at due dates sa customer detail.</value></data>
+  <data name="Customers_RepaymentDeferredMessage" xml:space="preserve"><value>Hindi pa available ang interest at credit limits. Available na ang payments, ledger, statements, at receipts sa customer detail.</value></data>
   <data name="Utang_DeferredTitle" xml:space="preserve"><value>Mga susunod na Utang feature</value></data>
-  <data name="Utang_DeferredMessage" xml:space="preserve"><value>Hindi available sa work package na ito ang statements, printable receipts, interest, at credit limits.</value></data>
+  <data name="Utang_DeferredMessage" xml:space="preserve"><value>Hindi available sa work package na ito ang interest at credit limits. Available na ang statements at repayment receipts.</value></data>
+  <data name="Access_RestrictedTitle" xml:space="preserve"><value>Restricted ang access</value></data>
+  <data name="Access_RestrictedMessage" xml:space="preserve"><value>Hindi pinapayagan ng kasalukuyang subscription o feature grants ang aksyong ito.</value></data>
+  <data name="Access_Restricted" xml:space="preserve"><value>Restricted</value></data>
+  <data name="Commercial_SubscriptionStatus" xml:space="preserve"><value>Subscription</value></data>
+  <data name="Commercial_FeatureGrants" xml:space="preserve"><value>Feature grants</value></data>
+  <data name="Commercial_TrialNotice" xml:space="preserve"><value>Aktibo ang trial access. Maaaring limitado ang ilang mutation ayon sa entitlement.</value></data>
+  <data name="Handoff_Initiated" xml:space="preserve"><value>Nabuksan ang share sheet. Kumpirmahin sa device para matapos ang pag-share.</value></data>
+  <data name="Handoff_Failed" xml:space="preserve"><value>Hindi mabuksan ang share sheet sa device na ito.</value></data>
+  <data name="Statement_Title" xml:space="preserve"><value>Customer statement</value></data>
+  <data name="Statement_Subtitle" xml:space="preserve"><value>Period preview ng Utang activity</value></data>
+  <data name="Statement_Open" xml:space="preserve"><value>Statement</value></data>
+  <data name="Statement_PeriodTitle" xml:space="preserve"><value>Statement period</value></data>
+  <data name="Statement_PeriodStart" xml:space="preserve"><value>Simula ng period</value></data>
+  <data name="Statement_PeriodEnd" xml:space="preserve"><value>Wakas ng period</value></data>
+  <data name="Statement_Generate" xml:space="preserve"><value>I-preview ang statement</value></data>
+  <data name="Statement_Share" xml:space="preserve"><value>I-share ang statement</value></data>
+  <data name="Statement_Loading" xml:space="preserve"><value>Naglo-load ang statement…</value></data>
+  <data name="Statement_ErrorTitle" xml:space="preserve"><value>Hindi nakuha ang statement</value></data>
+  <data name="Statement_PeriodRequired" xml:space="preserve"><value>Piliin ang period start at period end.</value></data>
+  <data name="Statement_PeriodInvalid" xml:space="preserve"><value>Dapat ang period end ay on or after ng period start.</value></data>
+  <data name="Statement_SummaryTitle" xml:space="preserve"><value>Buod ng statement</value></data>
+  <data name="Statement_Customer" xml:space="preserve"><value>Customer</value></data>
+  <data name="Statement_OpeningBalance" xml:space="preserve"><value>Opening balance</value></data>
+  <data name="Statement_ClosingBalance" xml:space="preserve"><value>Closing balance</value></data>
+  <data name="Statement_PeriodCredits" xml:space="preserve"><value>Credits sa period</value></data>
+  <data name="Statement_PeriodRepayments" xml:space="preserve"><value>Repayments sa period</value></data>
+  <data name="Statement_LinesTitle" xml:space="preserve"><value>Mga linya ng statement</value></data>
+  <data name="Statement_EmptyTitle" xml:space="preserve"><value>Walang activity sa period</value></data>
+  <data name="Statement_EmptyMessage" xml:space="preserve"><value>Walang credit o repayment lines sa napiling petsa.</value></data>
+  <data name="Receipt_Title" xml:space="preserve"><value>Repayment receipt</value></data>
+  <data name="Receipt_Subtitle" xml:space="preserve"><value>Preview para sa pag-share</value></data>
+  <data name="Receipt_Open" xml:space="preserve"><value>Receipt</value></data>
+  <data name="Receipt_Share" xml:space="preserve"><value>I-share ang receipt</value></data>
+  <data name="Receipt_Loading" xml:space="preserve"><value>Naglo-load ang receipt…</value></data>
+  <data name="Receipt_ErrorTitle" xml:space="preserve"><value>Hindi nakuha ang receipt</value></data>
+  <data name="Receipt_NotFoundTitle" xml:space="preserve"><value>Hindi nahanap ang receipt</value></data>
+  <data name="Receipt_NotFoundMessage" xml:space="preserve"><value>Hindi available ang repayment receipt para sa napiling organization.</value></data>
+  <data name="Receipt_PreviewTitle" xml:space="preserve"><value>Preview ng receipt</value></data>
+  <data name="Receipt_Reference" xml:space="preserve"><value>Receipt reference</value></data>
+  <data name="Receipt_OutstandingAfter" xml:space="preserve"><value>Outstanding pagkatapos magbayad</value></data>
+  <data name="Receipt_Disclaimer" xml:space="preserve"><value>Disclaimer</value></data>
+  <data name="Receipt_ReversedTitle" xml:space="preserve"><value>Reversed na repayment</value></data>
+  <data name="Receipt_ReversedMessage" xml:space="preserve"><value>Ang receipt na ito ay para sa reversed repayment at malinaw na minarkahan bilang reversed.</value></data>
   <data name="Utang_SectionTitle" xml:space="preserve"><value>Utang balance</value></data>
   <data name="Utang_CreditsTotal" xml:space="preserve"><value>Active credit</value></data>
   <data name="Utang_PaymentsTotal" xml:space="preserve"><value>Active payments</value></data>

@@ -47,6 +47,12 @@ public interface IUtangLedgerQuery
         int skip,
         int take,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Full chronological ledger with running balances (no paging).</summary>
+    Task<IReadOnlyList<LedgerEntryDto>> ListAllChronologicalAsync(
+        PosOrganizationId organizationId,
+        POSCustomerId customerId,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IOutstandingBalanceService

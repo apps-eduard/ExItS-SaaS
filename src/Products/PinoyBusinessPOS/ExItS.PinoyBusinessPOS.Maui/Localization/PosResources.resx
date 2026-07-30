@@ -298,11 +298,54 @@
   <data name="Customers_NotesHint" xml:space="preserve"><value>General identification only — not a credit record.</value></data>
   <data name="Customers_DisplayNameRequired" xml:space="preserve"><value>Display name is required.</value></data>
   <data name="Customers_CreditDeferredTitle" xml:space="preserve"><value>Later Utang features</value></data>
-  <data name="Customers_CreditDeferredMessage" xml:space="preserve"><value>Statements and printable receipts are not available yet. Due dates and overdue monitoring are on customer detail and Overdue.</value></data>
+  <data name="Customers_CreditDeferredMessage" xml:space="preserve"><value>Interest and credit limits are not available yet. Statements and repayment receipts are available on customer detail.</value></data>
   <data name="Customers_RepaymentDeferredTitle" xml:space="preserve"><value>Later Utang features</value></data>
-  <data name="Customers_RepaymentDeferredMessage" xml:space="preserve"><value>Statements and printable receipts are not available yet. Payments, ledger, and due dates are available on the customer detail page.</value></data>
+  <data name="Customers_RepaymentDeferredMessage" xml:space="preserve"><value>Interest and credit limits are not available yet. Payments, ledger, statements, and receipts are available on the customer detail page.</value></data>
   <data name="Utang_DeferredTitle" xml:space="preserve"><value>Later Utang features</value></data>
-  <data name="Utang_DeferredMessage" xml:space="preserve"><value>Statements, printable receipts, interest, and credit limits are not available in this work package.</value></data>
+  <data name="Utang_DeferredMessage" xml:space="preserve"><value>Interest and credit limits are not available in this work package. Statements and repayment receipts are available.</value></data>
+  <data name="Access_RestrictedTitle" xml:space="preserve"><value>Access restricted</value></data>
+  <data name="Access_RestrictedMessage" xml:space="preserve"><value>Your current subscription or feature grants do not allow this action.</value></data>
+  <data name="Access_Restricted" xml:space="preserve"><value>Restricted</value></data>
+  <data name="Commercial_SubscriptionStatus" xml:space="preserve"><value>Subscription</value></data>
+  <data name="Commercial_FeatureGrants" xml:space="preserve"><value>Feature grants</value></data>
+  <data name="Commercial_TrialNotice" xml:space="preserve"><value>Trial access is active. Some mutations may be limited by entitlement.</value></data>
+  <data name="Handoff_Initiated" xml:space="preserve"><value>Share sheet opened. Confirm on the device to finish sharing.</value></data>
+  <data name="Handoff_Failed" xml:space="preserve"><value>Could not open the share sheet on this device.</value></data>
+  <data name="Statement_Title" xml:space="preserve"><value>Customer statement</value></data>
+  <data name="Statement_Subtitle" xml:space="preserve"><value>Period preview for Utang activity</value></data>
+  <data name="Statement_Open" xml:space="preserve"><value>Statement</value></data>
+  <data name="Statement_PeriodTitle" xml:space="preserve"><value>Statement period</value></data>
+  <data name="Statement_PeriodStart" xml:space="preserve"><value>Period start</value></data>
+  <data name="Statement_PeriodEnd" xml:space="preserve"><value>Period end</value></data>
+  <data name="Statement_Generate" xml:space="preserve"><value>Preview statement</value></data>
+  <data name="Statement_Share" xml:space="preserve"><value>Share statement</value></data>
+  <data name="Statement_Loading" xml:space="preserve"><value>Loading statement…</value></data>
+  <data name="Statement_ErrorTitle" xml:space="preserve"><value>Statement failed</value></data>
+  <data name="Statement_PeriodRequired" xml:space="preserve"><value>Choose both period start and period end.</value></data>
+  <data name="Statement_PeriodInvalid" xml:space="preserve"><value>Period end must be on or after period start.</value></data>
+  <data name="Statement_SummaryTitle" xml:space="preserve"><value>Statement summary</value></data>
+  <data name="Statement_Customer" xml:space="preserve"><value>Customer</value></data>
+  <data name="Statement_OpeningBalance" xml:space="preserve"><value>Opening balance</value></data>
+  <data name="Statement_ClosingBalance" xml:space="preserve"><value>Closing balance</value></data>
+  <data name="Statement_PeriodCredits" xml:space="preserve"><value>Period credits</value></data>
+  <data name="Statement_PeriodRepayments" xml:space="preserve"><value>Period repayments</value></data>
+  <data name="Statement_LinesTitle" xml:space="preserve"><value>Statement lines</value></data>
+  <data name="Statement_EmptyTitle" xml:space="preserve"><value>No activity in period</value></data>
+  <data name="Statement_EmptyMessage" xml:space="preserve"><value>No credit or repayment lines fall inside the selected dates.</value></data>
+  <data name="Receipt_Title" xml:space="preserve"><value>Repayment receipt</value></data>
+  <data name="Receipt_Subtitle" xml:space="preserve"><value>Preview for sharing</value></data>
+  <data name="Receipt_Open" xml:space="preserve"><value>Receipt</value></data>
+  <data name="Receipt_Share" xml:space="preserve"><value>Share receipt</value></data>
+  <data name="Receipt_Loading" xml:space="preserve"><value>Loading receipt…</value></data>
+  <data name="Receipt_ErrorTitle" xml:space="preserve"><value>Receipt failed</value></data>
+  <data name="Receipt_NotFoundTitle" xml:space="preserve"><value>Receipt not found</value></data>
+  <data name="Receipt_NotFoundMessage" xml:space="preserve"><value>This repayment receipt is not available for the selected organization.</value></data>
+  <data name="Receipt_PreviewTitle" xml:space="preserve"><value>Receipt preview</value></data>
+  <data name="Receipt_Reference" xml:space="preserve"><value>Receipt reference</value></data>
+  <data name="Receipt_OutstandingAfter" xml:space="preserve"><value>Outstanding after payment</value></data>
+  <data name="Receipt_Disclaimer" xml:space="preserve"><value>Disclaimer</value></data>
+  <data name="Receipt_ReversedTitle" xml:space="preserve"><value>Reversed repayment</value></data>
+  <data name="Receipt_ReversedMessage" xml:space="preserve"><value>This receipt is for a reversed repayment and is marked clearly as reversed.</value></data>
   <data name="Utang_SectionTitle" xml:space="preserve"><value>Utang balance</value></data>
   <data name="Utang_CreditsTotal" xml:space="preserve"><value>Active credit</value></data>
   <data name="Utang_PaymentsTotal" xml:space="preserve"><value>Active payments</value></data>

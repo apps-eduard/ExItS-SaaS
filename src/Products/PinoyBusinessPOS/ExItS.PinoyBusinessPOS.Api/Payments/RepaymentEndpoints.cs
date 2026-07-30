@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Api.Common;
+using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Payments;
@@ -22,9 +23,15 @@ internal static class RepaymentEndpoints
             Guid customerId,
             POSCustomerQueryService customers,
             IOutstandingBalanceService outstanding,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewCustomersAndHistory, out problem))
             {
                 return problem!;
             }
@@ -49,9 +56,15 @@ internal static class RepaymentEndpoints
             int? pageSize,
             POSCustomerQueryService customers,
             UtangLedgerQueryService ledger,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewCustomersAndHistory, out problem))
             {
                 return problem!;
             }
@@ -76,9 +89,15 @@ internal static class RepaymentEndpoints
             int? pageSize,
             POSCustomerQueryService customers,
             RepaymentQueryService repayments,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewCustomersAndHistory, out problem))
             {
                 return problem!;
             }
@@ -103,9 +122,15 @@ internal static class RepaymentEndpoints
             Guid customerId,
             CreateRepaymentRequest body,
             CreateRepayment useCase,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.RecordRepayment, out problem))
             {
                 return problem!;
             }
@@ -130,9 +155,15 @@ internal static class RepaymentEndpoints
             HttpRequest request,
             Guid repaymentId,
             RepaymentQueryService repayments,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewCustomersAndHistory, out problem))
             {
                 return problem!;
             }
@@ -151,9 +182,15 @@ internal static class RepaymentEndpoints
             Guid repaymentId,
             ReverseRepaymentRequest body,
             ReverseRepayment useCase,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ReverseRepayment, out problem))
             {
                 return problem!;
             }

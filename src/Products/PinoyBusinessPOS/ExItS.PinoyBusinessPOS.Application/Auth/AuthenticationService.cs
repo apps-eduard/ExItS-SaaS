@@ -15,7 +15,6 @@ public sealed class AuthenticationService(
     ICurrentUserContext currentUser,
     IOnboardingPreferenceStore preferences,
     IPlatformAccessClient accessClient,
-    IProductAccessResolver accessResolver,
     IAuthEventSink events,
     TimeProvider? timeProvider = null) : IAuthenticationService
 {
@@ -166,14 +165,30 @@ public sealed class AuthenticationService(
             return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
         }
 
-        var evaluation = await accessResolver.EvaluateAsync(session.UserId, organizationId, ct).ConfigureAwait(false);
-        if (!evaluation.Succeeded)
+        var accessResult = await accessClient
+            .EvaluateAccessAsync(session.UserId, organizationId, PosProductCodes.PinoyBusinessPos, ct)
+            .ConfigureAwait(false);
+        if (!accessResult.IsSuccess || accessResult.Data is null)
         {
+            var transport = MapTransport(accessResult.Status);
             events.Record("access_denial", Dict(
                 ("userId", session.UserId.ToString("D")),
                 ("organizationId", organizationId.ToString("D")),
-                ("reason", evaluation.SafeMessageKey)));
-            return evaluation;
+                ("reason", transport.SafeMessageKey)));
+            return transport;
+        }
+
+        if (!accessResult.Data.Allowed)
+        {
+            var denial = new AuthResult(
+                false,
+                AuthFailureReason.AccessDenied,
+                SafeMessageKey: ProductAccessResolver.MapReasonKey(accessResult.Data.ReasonCode));
+            events.Record("access_denial", Dict(
+                ("userId", session.UserId.ToString("D")),
+                ("organizationId", organizationId.ToString("D")),
+                ("reason", denial.SafeMessageKey)));
+            return denial;
         }
 
         var org = await accessClient.GetOrganizationAsync(organizationId, ct).ConfigureAwait(false);
@@ -186,7 +201,9 @@ public sealed class AuthenticationService(
             OrganizationId = organizationId,
             OrganizationDisplayName = displayName,
             HasPosAccess = true,
-            AccessReasonCode = "allowed"
+            AccessReasonCode = accessResult.Data.ReasonCode ?? "allowed",
+            SubscriptionStatus = accessResult.Data.SubscriptionStatus,
+            EnabledFeatureCodes = accessResult.Data.EnabledFeatureCodes
         };
 
         try
@@ -234,19 +251,28 @@ public sealed class AuthenticationService(
         var hasAccess = false;
         string? reason = null;
 
+        string? subscriptionStatus = null;
+        IReadOnlyList<string>? enabledFeatureCodes = null;
+
         if (organizationId is Guid orgId)
         {
-            var evaluation = await accessResolver.EvaluateAsync(userId, orgId, ct).ConfigureAwait(false);
-            if (!evaluation.Succeeded)
+            var accessResult = await accessClient
+                .EvaluateAccessAsync(userId, orgId, PosProductCodes.PinoyBusinessPos, ct)
+                .ConfigureAwait(false);
+            if (!accessResult.IsSuccess || accessResult.Data is null || !accessResult.Data.Allowed)
             {
                 await preferences.ClearOrganizationPreferenceAsync(ct).ConfigureAwait(false);
                 organizationId = null;
-                reason = evaluation.SafeMessageKey;
+                reason = accessResult.Data is not null && !accessResult.Data.Allowed
+                    ? ProductAccessResolver.MapReasonKey(accessResult.Data.ReasonCode)
+                    : MapTransport(accessResult.Status).SafeMessageKey;
             }
             else
             {
                 hasAccess = true;
-                reason = "allowed";
+                reason = accessResult.Data.ReasonCode ?? "allowed";
+                subscriptionStatus = accessResult.Data.SubscriptionStatus;
+                enabledFeatureCodes = accessResult.Data.EnabledFeatureCodes;
                 var org = await accessClient.GetOrganizationAsync(orgId, ct).ConfigureAwait(false);
                 organizationName = org.IsSuccess && org.Data is not null ? org.Data.DisplayName : orgId.ToString("D");
             }
@@ -262,7 +288,9 @@ public sealed class AuthenticationService(
             issuedAt,
             expiresAt,
             hasAccess,
-            reason);
+            reason,
+            subscriptionStatus,
+            enabledFeatureCodes);
 
         try
         {

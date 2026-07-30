@@ -3,6 +3,7 @@
 @inject NavigationGate Gate
 @inject IPosCustomerClient Customers
 @inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
 
@@ -24,6 +25,8 @@ else if (_entry is null)
 else
 {
     var entry = _entry;
+    var canMutateDueDate = Capabilities.IsAllowed(UtangCapability.MutateDueDate);
+    var canReverseCredit = Capabilities.IsAllowed(UtangCapability.ReverseCredit);
 <Page>
     <PageHeader Title="@L["Credit_DetailTitle"]" Subtitle="@L["Credit_DetailSubtitle"]">
         <Actions>
@@ -39,6 +42,11 @@ else
     @if (!string.IsNullOrEmpty(_errorMessage))
     {
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Credit_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    @if (!canMutateDueDate || !canReverseCredit)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
     }
 
     <Section Title="@L["Credit_EntrySection"]">
@@ -77,19 +85,22 @@ else
                 <DateInput Label="@L["DueDate_Field_Date"]"
                            Value="@_dueDate"
                            ValueChanged="v => _dueDate = v"
-                           Hint="@L["DueDate_DateHint"]" />
+                           Hint="@L["DueDate_DateHint"]"
+                           Disabled="@(!canMutateDueDate)" />
                 <TextArea Label="@L["DueDate_Field_Reason"]"
                           Value="@_reason"
                           ValueChanged="v => _reason = v"
                           Required="true"
                           Hint="@L["DueDate_ReasonHint"]"
-                          Rows="3" />
+                          Rows="3"
+                          Disabled="@(!canMutateDueDate)" />
                 <FormActions>
-                    <Button Variant="ButtonVariant.Primary" OnClick="() => _confirmSet = true">@L["DueDate_Set"]</Button>
+                    <Button Variant="ButtonVariant.Primary" Disabled="@(!canMutateDueDate)" OnClick="() => _confirmSet = true">@L["DueDate_Set"]</Button>
                     @if (entry.CurrentDueDate is not null)
                     {
-                        <Button Variant="ButtonVariant.Secondary" OnClick="() => _confirmClear = true">@L["DueDate_Clear"]</Button>
+                        <Button Variant="ButtonVariant.Secondary" Disabled="@(!canMutateDueDate)" OnClick="() => _confirmClear = true">@L["DueDate_Clear"]</Button>
                     }
+                    <Button Variant="ButtonVariant.Danger" Disabled="@(!canReverseCredit)" OnClick="() => _confirmReverse = true">@L["Credit_Reverse"]</Button>
                 </FormActions>
             </Stack>
         </Section>
@@ -139,6 +150,19 @@ else
                    ConfirmLabel="@L["DueDate_Clear"]"
                    IsLoading="@_acting"
                    OnConfirm="ClearDueDateAsync" />
+
+    <ConfirmDialog Visible="@_confirmReverse"
+                   VisibleChanged="v => _confirmReverse = v"
+                   Title="@L["Credit_ReverseTitle"]"
+                   Message="@L["Credit_ReverseMessage"]"
+                   Danger="true"
+                   ShowReason="true"
+                   Reason="@_reversalReason"
+                   ReasonChanged="v => _reversalReason = v"
+                   ReasonLabel="@L["Credit_Field_ReversalReason"]"
+                   ConfirmLabel="@L["Credit_Reverse"]"
+                   IsLoading="@_acting"
+                   OnConfirm="ReverseCreditAsync" />
 </Page>
 }
 
@@ -152,11 +176,13 @@ else
     private bool _acting;
     private bool _confirmSet;
     private bool _confirmClear;
+    private bool _confirmReverse;
     private PosCreditEntryDto? _entry;
     private PosAgedCreditDto? _aged;
     private List<PosCreditDueDateChangeDto> _history = [];
     private DateOnly? _dueDate;
     private string? _reason;
+    private string? _reversalReason;
     private string? _errorTitle;
     private string? _errorMessage;
     private string? _banner;
@@ -333,6 +359,34 @@ else
         "Reversed" => BadgeTone.Neutral,
         _ => BadgeTone.Neutral
     };
+
+    private async Task ReverseCreditAsync()
+    {
+        if (!Capabilities.IsAllowed(UtangCapability.ReverseCredit) || string.IsNullOrWhiteSpace(_reversalReason))
+        {
+            return;
+        }
+
+        _acting = true;
+        var result = await Customers.ReverseCreditEntryAsync(
+            CustomerId,
+            CreditEntryId,
+            new ReversePosCreditEntryRequest(_reversalReason!));
+        _acting = false;
+        _confirmReverse = false;
+
+        if (result.IsSuccess)
+        {
+            _banner = L["Credit_ReversedSuccess"];
+            _reversalReason = null;
+            await LoadAsync();
+        }
+        else
+        {
+            _errorTitle = L["Credit_ErrorTitle"];
+            _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        }
+    }
 
     private void GoBack() => Nav.NavigateTo($"/customers/{CustomerId:D}");
 }

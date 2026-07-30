@@ -12,6 +12,8 @@ public static class SecureTokenKeys
     public const string SessionMarker = "pos.session.marker";
     public const string IssuedAtUtc = "pos.session.issuedAtUtc";
     public const string ExpiresAtUtc = "pos.session.expiresAtUtc";
+    public const string SubscriptionStatus = "pos.session.subscriptionStatus";
+    public const string FeatureGrants = "pos.session.featureGrants";
 }
 
 public static class PreferenceKeys
@@ -62,7 +64,9 @@ public sealed record AuthSession(
     DateTimeOffset IssuedAtUtc,
     DateTimeOffset ExpiresAtUtc,
     bool HasPosAccess,
-    string? AccessReasonCode);
+    string? AccessReasonCode,
+    string? SubscriptionStatus = null,
+    IReadOnlyList<string>? EnabledFeatureCodes = null);
 
 public sealed record EligibleOrganization(
     Guid OrganizationId,

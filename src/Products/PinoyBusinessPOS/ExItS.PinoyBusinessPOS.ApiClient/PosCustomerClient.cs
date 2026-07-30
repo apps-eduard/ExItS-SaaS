@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
@@ -7,6 +8,7 @@ using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Payments;
+using ExItS.PinoyBusinessPOS.Application.Statements;
 
 namespace ExItS.PinoyBusinessPOS.ApiClient;
 
@@ -226,6 +228,66 @@ public sealed class PosCustomerClient(HttpClient httpClient, IConnectivityServic
             $"/api/v1/pos/overdue/credits?page={page}&pageSize={pageSize}",
             null,
             ct);
+
+    public Task<ApiResult<PosCustomerStatementDto>> GetStatementAsync(
+        Guid customerId,
+        DateOnly periodStart,
+        DateOnly periodEnd,
+        string? organizationDisplayName = null,
+        string? currencyCode = null,
+        string? culture = null,
+        CancellationToken ct = default)
+    {
+        var query = new StringBuilder($"/api/v1/pos/customers/{customerId:D}/statement?");
+        query.Append("periodStart=").Append(Uri.EscapeDataString(periodStart.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
+        query.Append("&periodEnd=").Append(Uri.EscapeDataString(periodEnd.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
+        if (!string.IsNullOrWhiteSpace(organizationDisplayName))
+        {
+            query.Append("&organizationDisplayName=").Append(Uri.EscapeDataString(organizationDisplayName.Trim()));
+        }
+
+        if (!string.IsNullOrWhiteSpace(currencyCode))
+        {
+            query.Append("&currencyCode=").Append(Uri.EscapeDataString(currencyCode.Trim()));
+        }
+
+        if (!string.IsNullOrWhiteSpace(culture))
+        {
+            query.Append("&culture=").Append(Uri.EscapeDataString(culture.Trim()));
+        }
+
+        return SendAsync<PosCustomerStatementDto>(HttpMethod.Get, query.ToString(), null, ct);
+    }
+
+    public Task<ApiResult<PosRepaymentReceiptDto>> GetRepaymentReceiptAsync(
+        Guid repaymentId,
+        string? organizationDisplayName = null,
+        string? currencyCode = null,
+        string? culture = null,
+        CancellationToken ct = default)
+    {
+        var query = new StringBuilder($"/api/v1/pos/repayments/{repaymentId:D}/receipt?");
+        var first = true;
+        if (!string.IsNullOrWhiteSpace(organizationDisplayName))
+        {
+            query.Append("organizationDisplayName=").Append(Uri.EscapeDataString(organizationDisplayName.Trim()));
+            first = false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(currencyCode))
+        {
+            query.Append(first ? "" : "&").Append("currencyCode=").Append(Uri.EscapeDataString(currencyCode.Trim()));
+            first = false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(culture))
+        {
+            query.Append(first ? "" : "&").Append("culture=").Append(Uri.EscapeDataString(culture.Trim()));
+        }
+
+        var path = query.ToString().TrimEnd('?');
+        return SendAsync<PosRepaymentReceiptDto>(HttpMethod.Get, path, null, ct);
+    }
 
     private async Task<ApiResult<TResponse>> SendAsync<TResponse>(
         HttpMethod method,

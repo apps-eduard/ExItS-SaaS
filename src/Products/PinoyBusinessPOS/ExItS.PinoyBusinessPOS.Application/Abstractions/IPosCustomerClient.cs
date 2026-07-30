@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Payments;
+using ExItS.PinoyBusinessPOS.Application.Statements;
 
 namespace ExItS.PinoyBusinessPOS.Application.Abstractions;
 
@@ -107,5 +108,21 @@ public interface IPosCustomerClient
     Task<ApiResult<PosAgedCreditPagedResult>> ListOverdueCreditsAsync(
         int page = 1,
         int pageSize = 50,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosCustomerStatementDto>> GetStatementAsync(
+        Guid customerId,
+        DateOnly periodStart,
+        DateOnly periodEnd,
+        string? organizationDisplayName = null,
+        string? currencyCode = null,
+        string? culture = null,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosRepaymentReceiptDto>> GetRepaymentReceiptAsync(
+        Guid repaymentId,
+        string? organizationDisplayName = null,
+        string? currencyCode = null,
+        string? culture = null,
         CancellationToken ct = default);
 }

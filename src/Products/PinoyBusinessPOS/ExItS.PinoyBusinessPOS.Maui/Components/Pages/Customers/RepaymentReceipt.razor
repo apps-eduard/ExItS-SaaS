@@ -1,0 +1,223 @@
+@page "/customers/{CustomerId:guid}/repayments/{RepaymentId:guid}/receipt"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCustomerClient Customers
+@inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IDocumentHandoffService Handoff
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (!_canView)
+{
+    <Page>
+        <PageHeader Title="@L["Receipt_Title"]" Subtitle="@L["Receipt_Subtitle"]">
+            <Actions>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
+            </Actions>
+        </PageHeader>
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+    </Page>
+}
+else if (_loading)
+{
+    <Page><Spinner /><span>@L["Receipt_Loading"]</span></Page>
+}
+else if (_receipt is null)
+{
+    <Page>
+        <ErrorState Title="@(_errorTitle ?? L["Receipt_NotFoundTitle"])" Message="@(_errorMessage ?? L["Receipt_NotFoundMessage"])" RetryLabel="@L["Api_Retry"]" OnRetry="LoadAsync" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
+    </Page>
+}
+else
+{
+    var receipt = _receipt;
+<Page>
+    <PageHeader Title="@L["Receipt_Title"]" Subtitle="@L["Receipt_Subtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoPayment">@L["Payment_View"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (!string.IsNullOrEmpty(_banner))
+    {
+        <Alert Tone="AlertTone.Success" Title="@L["Customers_SuccessTitle"]" Message="@_banner" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Receipt_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    @if (receipt.IsReversed)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Receipt_ReversedTitle"]" Message="@L["Receipt_ReversedMessage"]" />
+    }
+
+    <Section Title="@L["Receipt_PreviewTitle"]">
+        <Stack Gap="3">
+            <div>
+                <span class="pos-muted">@L["Receipt_Reference"]</span>
+                <div class="pos-value-md">@receipt.ReceiptReference</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Statement_Customer"]</span>
+                <div class="pos-value-md">@receipt.CustomerDisplayName</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Payment_Field_Amount"]</span>
+                <div class="pos-value-md"><MoneyDisplay Amount="@receipt.Amount" CurrencyCode="@receipt.CurrencyCode" /></div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Customers_Field_Status"]</span>
+                <Badge Tone="@(receipt.IsReversed ? BadgeTone.Warning : BadgeTone.Success)">@receipt.Status</Badge>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Payment_RecordedAt"]</span>
+                <div class="pos-value-md">@receipt.RecordedAtUtc.ToLocalTime().ToString("g")</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Payment_Field_Remarks"]</span>
+                <div class="pos-value-md pos-wrap">@(string.IsNullOrWhiteSpace(receipt.Remarks) ? L["Customers_NoValue"] : receipt.Remarks)</div>
+            </div>
+            @if (receipt.OutstandingAfterRepayment is decimal after)
+            {
+                <div>
+                    <span class="pos-muted">@L["Receipt_OutstandingAfter"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@after" CurrencyCode="@receipt.CurrencyCode" /></div>
+                </div>
+            }
+            @if (receipt.IsReversed)
+            {
+                <div>
+                    <span class="pos-muted">@L["Credit_ReversalReason"]</span>
+                    <div class="pos-value-md pos-wrap">@(receipt.ReversalReason ?? L["Customers_NoValue"])</div>
+                </div>
+            }
+            <div class="pos-muted pos-wrap">@L["Receipt_Disclaimer"]: @receipt.Disclaimer</div>
+        </Stack>
+    </Section>
+
+    <FormActions>
+        <Button Variant="ButtonVariant.Primary" IsLoading="@_sharing" OnClick="ShareAsync">@L["Receipt_Share"]</Button>
+    </FormActions>
+</Page>
+}
+
+@code {
+    [Parameter] public Guid CustomerId { get; set; }
+    [Parameter] public Guid RepaymentId { get; set; }
+
+    private bool _ready;
+    private bool _canView;
+    private bool _loading = true;
+    private bool _sharing;
+    private PosRepaymentReceiptDto? _receipt;
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private string? _banner;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _canView = Capabilities.IsAllowed(UtangCapability.ViewGenerateReceipt);
+        _ready = true;
+        if (_canView)
+        {
+            await LoadAsync();
+        }
+        else
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        StateHasChanged();
+
+        var result = await Customers.GetRepaymentReceiptAsync(
+            RepaymentId,
+            CurrentUser.Session?.OrganizationDisplayName,
+            "PHP",
+            CultureInfo.CurrentUICulture.Name);
+
+        if (result.IsSuccess && result.Data is not null && result.Data.CustomerId == CustomerId)
+        {
+            _receipt = result.Data;
+        }
+        else
+        {
+            _receipt = null;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private async Task ShareAsync()
+    {
+        if (_receipt is null)
+        {
+            return;
+        }
+
+        _sharing = true;
+        _banner = null;
+        _errorMessage = null;
+        var text = FormatShareText(_receipt);
+        var result = await Handoff.ShareTextAsync(L["Receipt_Title"], text);
+        if (result.Initiated)
+        {
+            _banner = L[result.MessageKey];
+        }
+        else
+        {
+            _errorTitle = L["Receipt_ErrorTitle"];
+            _errorMessage = L[result.MessageKey];
+        }
+
+        _sharing = false;
+    }
+
+    private static string FormatShareText(PosRepaymentReceiptDto receipt)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine(receipt.ReceiptReference);
+        sb.AppendLine(receipt.CustomerDisplayName);
+        sb.AppendLine($"{receipt.Amount:0.00} {receipt.CurrencyCode}");
+        sb.AppendLine(receipt.Status);
+        sb.AppendLine(receipt.RecordedAtUtc.ToString("u"));
+        if (!string.IsNullOrWhiteSpace(receipt.Remarks))
+        {
+            sb.AppendLine(receipt.Remarks);
+        }
+
+        if (receipt.IsReversed)
+        {
+            sb.AppendLine($"REVERSED: {receipt.ReversalReason}");
+        }
+
+        sb.AppendLine(receipt.Disclaimer);
+        return sb.ToString();
+    }
+
+    private void GoBack() => Nav.NavigateTo($"/customers/{CustomerId:D}");
+    private void GoPayment() => Nav.NavigateTo($"/customers/{CustomerId:D}/repayments/{RepaymentId:D}");
+}

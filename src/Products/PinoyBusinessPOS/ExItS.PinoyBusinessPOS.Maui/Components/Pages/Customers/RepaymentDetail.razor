@@ -3,6 +3,7 @@
 @inject NavigationGate Gate
 @inject IPosCustomerClient Customers
 @inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
 
@@ -24,10 +25,13 @@ else if (_repayment is null)
 else
 {
     var repayment = _repayment;
+    var canReverse = Capabilities.IsAllowed(UtangCapability.ReverseRepayment);
+    var canReceipt = Capabilities.IsAllowed(UtangCapability.ViewGenerateReceipt);
 <Page>
     <PageHeader Title="@L["Payment_DetailTitle"]" Subtitle="@L["Payment_DetailSubtitle"]">
         <Actions>
             <Button Variant="ButtonVariant.Secondary" OnClick="GoLedger">@L["Ledger_Open"]</Button>
+            <Button Variant="ButtonVariant.Secondary" Disabled="@(!canReceipt)" OnClick="GoReceipt">@L["Receipt_Open"]</Button>
             <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
         </Actions>
     </PageHeader>
@@ -40,6 +44,11 @@ else
     @if (!string.IsNullOrEmpty(_errorMessage))
     {
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Payment_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    @if (!canReverse || !canReceipt)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
     }
 
     <Section Title="@L["Payment_EntrySection"]">
@@ -73,7 +82,7 @@ else
     @if (repayment.Status == "Active")
     {
         <FormActions>
-            <Button Variant="ButtonVariant.Danger" OnClick="() => _confirmReverse = true">@L["Payment_Reverse"]</Button>
+            <Button Variant="ButtonVariant.Danger" Disabled="@(!canReverse)" OnClick="() => _confirmReverse = true">@L["Payment_Reverse"]</Button>
         </FormActions>
     }
 
@@ -166,4 +175,5 @@ else
 
     private void GoBack() => Nav.NavigateTo($"/customers/{CustomerId:D}");
     private void GoLedger() => Nav.NavigateTo($"/customers/{CustomerId:D}/ledger");
+    private void GoReceipt() => Nav.NavigateTo($"/customers/{CustomerId:D}/repayments/{RepaymentId:D}/receipt");
 }

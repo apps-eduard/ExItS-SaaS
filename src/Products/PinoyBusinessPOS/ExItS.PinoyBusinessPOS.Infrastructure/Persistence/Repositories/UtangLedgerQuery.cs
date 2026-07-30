@@ -22,8 +22,24 @@ internal sealed class UtangLedgerQuery : IUtangLedgerQuery
         int take,
         CancellationToken cancellationToken = default)
     {
-        // Load full chronological set for this customer to compute running balances correctly,
-        // then page in memory. MVP-scale history; not a materialized ledger table.
+        var withBalance = await LoadAllAsync(organizationId, customerId, cancellationToken).ConfigureAwait(false);
+        var page = withBalance.Skip(skip).Take(take).ToList();
+        return (page, withBalance.Count);
+    }
+
+    public Task<IReadOnlyList<LedgerEntryDto>> ListAllChronologicalAsync(
+        PosOrganizationId organizationId,
+        POSCustomerId customerId,
+        CancellationToken cancellationToken = default) =>
+        LoadAllAsync(organizationId, customerId, cancellationToken);
+
+    private async Task<IReadOnlyList<LedgerEntryDto>> LoadAllAsync(
+        PosOrganizationId organizationId,
+        POSCustomerId customerId,
+        CancellationToken cancellationToken)
+    {
+        // Load full chronological set for this customer to compute running balances correctly.
+        // MVP-scale history; not a materialized ledger table.
         const string sql =
             """
             SELECT
@@ -108,8 +124,7 @@ internal sealed class UtangLedgerQuery : IUtangLedgerQuery
                 running));
         }
 
-        var page = withBalance.Skip(skip).Take(take).ToList();
-        return (page, withBalance.Count);
+        return withBalance;
     }
 
     private sealed class LedgerSqlRow

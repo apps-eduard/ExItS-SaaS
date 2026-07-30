@@ -46,7 +46,9 @@ public sealed record EffectiveAccessDto(
     Guid? AssignmentId,
     Guid? SubscriptionId,
     Guid? SnapshotId,
-    DateTimeOffset EvaluatedAtUtc);
+    DateTimeOffset EvaluatedAtUtc,
+    string? SubscriptionStatus = null,
+    IReadOnlyList<string>? EnabledFeatureCodes = null);
 
 /// <summary>Typed Platform identity/access reads used by POS authentication and commercial-access evaluation.</summary>
 public interface IPlatformAccessClient

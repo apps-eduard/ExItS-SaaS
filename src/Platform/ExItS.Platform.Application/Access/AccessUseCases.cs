@@ -7,6 +7,7 @@ using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Common;
+using ExItS.Platform.Domain.Entitlements;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Products;
@@ -15,14 +16,68 @@ using ExItS.Platform.Domain.Subscriptions;
 namespace ExItS.Platform.Application.Access;
 
 /// <summary>
-/// P4-WP02 decision: new product-access grants and effective commercial access require
-/// subscription status Trialing or Active only (fail closed for GracePeriod, PastDue,
-/// Suspended, Cancelled, Expired).
+/// Product-entry and new-grant eligibility. New grants remain Trialing/Active only (P4-WP02).
+/// PinoyBusinessPOS entry allows continuity states when view/repay grants are effective (P6-WP05).
+/// Other products remain Trialing/Active only. Suspended and unknown always deny entry.
 /// </summary>
 public static class ProductAccessEligibility
 {
+    /// <summary>Eligibility to grant a new product-access assignment (unchanged from P4-WP02).</summary>
     public static bool IsSubscriptionEligible(SubscriptionStatus status) =>
         status is SubscriptionStatus.Trialing or SubscriptionStatus.Active;
+
+    /// <summary>Alias kept for call sites that mean new-grant eligibility.</summary>
+    public static bool IsEligibleForNewGrant(SubscriptionStatus status) =>
+        IsSubscriptionEligible(status);
+
+    public static bool CanEnterProduct(
+        string productCode,
+        SubscriptionStatus status,
+        IEnumerable<EntitlementGrant> grants)
+    {
+        ArgumentNullException.ThrowIfNull(grants);
+
+        if (string.Equals(productCode, ProductCode.PinoyBusinessPos, StringComparison.Ordinal))
+        {
+            return CanEnterPinoyBusinessPos(status, grants);
+        }
+
+        // Unrelated products: do not weaken — Trialing/Active only.
+        return IsSubscriptionEligible(status);
+    }
+
+    public static bool CanEnterPinoyBusinessPos(
+        SubscriptionStatus status,
+        IEnumerable<EntitlementGrant> grants)
+    {
+        ArgumentNullException.ThrowIfNull(grants);
+
+        return status switch
+        {
+            SubscriptionStatus.Trialing
+                or SubscriptionStatus.Active
+                or SubscriptionStatus.GracePeriod => true,
+            SubscriptionStatus.PastDue
+                or SubscriptionStatus.Cancelled
+                or SubscriptionStatus.Expired => HasContinuityFeature(grants),
+            SubscriptionStatus.Suspended => false,
+            _ => false
+        };
+    }
+
+    public static bool HasContinuityFeature(IEnumerable<EntitlementGrant> grants) =>
+        grants.Any(g =>
+            g.Enabled
+            && (g.FeatureCode.Value is FeatureCode.CustomerCreditView
+                or FeatureCode.CustomerCreditRepay));
+
+    public static IReadOnlyList<string> EnabledFeatureCodes(IEnumerable<EntitlementGrant> grants) =>
+        grants
+            .Where(g => g.Enabled)
+            .Select(g => g.FeatureCode.Value)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(c => c, StringComparer.Ordinal)
+            .ToList();
 }
 
 public sealed record ProductAccessAssignmentDto(
@@ -50,7 +105,9 @@ public sealed record EffectiveProductAccessResult(
     Guid? AssignmentId,
     Guid? SubscriptionId,
     Guid? SnapshotId,
-    DateTimeOffset EvaluatedAtUtc);
+    DateTimeOffset EvaluatedAtUtc,
+    string? SubscriptionStatus = null,
+    IReadOnlyList<string>? EnabledFeatureCodes = null);
 
 public sealed class ProductAccessQueryService
 {
@@ -420,13 +477,12 @@ public sealed class EvaluateEffectiveProductAccess
         var subscription = await _subscriptions
             .GetCurrentForOrganizationProductAsync(organizationId, code, cancellationToken)
             .ConfigureAwait(false);
-        if (subscription is null || !ProductAccessEligibility.IsSubscriptionEligible(subscription.Status))
+        if (subscription is null)
         {
             return Denied(
                 EffectiveAccessReasonCodes.SubscriptionIneligible,
                 membership.Id.Value,
-                assignment.Id.Value,
-                subscription?.Id.Value);
+                assignment.Id.Value);
         }
 
         var snapshot = await _snapshots
@@ -461,14 +517,47 @@ public sealed class EvaluateEffectiveProductAccess
                 snapshot.Id.Value);
         }
 
-        if (!ProductAccessEligibility.IsSubscriptionEligible(snapshot.SubscriptionStatus))
+        // Prefer snapshot commercial status + grants as effective truth for entry.
+        if (!ProductAccessEligibility.CanEnterProduct(
+                code.Value,
+                snapshot.SubscriptionStatus,
+                snapshot.Grants))
         {
-            return Denied(
+            return new EffectiveProductAccessResult(
+                false,
                 EffectiveAccessReasonCodes.EntitlementDenied,
+                userId.Value,
+                organizationId.Value,
+                code.Value,
                 membership.Id.Value,
                 assignment.Id.Value,
                 subscription.Id.Value,
-                snapshot.Id.Value);
+                snapshot.Id.Value,
+                utcNow,
+                snapshot.SubscriptionStatus.ToString(),
+                ProductAccessEligibility.EnabledFeatureCodes(snapshot.Grants));
+        }
+
+        // Also require the live subscription status permits entry for this product
+        // (guards against snapshot/subscription skew that would otherwise over-admit).
+        if (!ProductAccessEligibility.CanEnterProduct(
+                code.Value,
+                subscription.Status,
+                snapshot.Grants))
+        {
+            return new EffectiveProductAccessResult(
+                false,
+                EffectiveAccessReasonCodes.SubscriptionIneligible,
+                userId.Value,
+                organizationId.Value,
+                code.Value,
+                membership.Id.Value,
+                assignment.Id.Value,
+                subscription.Id.Value,
+                snapshot.Id.Value,
+                utcNow,
+                subscription.Status.ToString(),
+                ProductAccessEligibility.EnabledFeatureCodes(snapshot.Grants));
         }
 
         return new EffectiveProductAccessResult(
@@ -481,7 +570,9 @@ public sealed class EvaluateEffectiveProductAccess
             assignment.Id.Value,
             subscription.Id.Value,
             snapshot.Id.Value,
-            utcNow);
+            utcNow,
+            snapshot.SubscriptionStatus.ToString(),
+            ProductAccessEligibility.EnabledFeatureCodes(snapshot.Grants));
     }
 }
 

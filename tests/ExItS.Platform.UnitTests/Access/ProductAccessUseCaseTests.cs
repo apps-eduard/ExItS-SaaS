@@ -36,13 +36,176 @@ public sealed class ProductAccessUseCaseTests
     }
 
     [Fact]
-    public void ProductAccessEligibility_allows_only_trialing_and_active()
+    public void ProductAccessEligibility_new_grants_remain_trialing_and_active_only()
     {
         Assert.True(ProductAccessEligibility.IsSubscriptionEligible(SubscriptionStatus.Trialing));
         Assert.True(ProductAccessEligibility.IsSubscriptionEligible(SubscriptionStatus.Active));
         Assert.False(ProductAccessEligibility.IsSubscriptionEligible(SubscriptionStatus.GracePeriod));
         Assert.False(ProductAccessEligibility.IsSubscriptionEligible(SubscriptionStatus.PastDue));
         Assert.False(ProductAccessEligibility.IsSubscriptionEligible(SubscriptionStatus.Suspended));
+        Assert.False(ProductAccessEligibility.IsSubscriptionEligible(SubscriptionStatus.Cancelled));
+        Assert.False(ProductAccessEligibility.IsSubscriptionEligible(SubscriptionStatus.Expired));
+    }
+
+    [Fact]
+    public void PinoyBusinessPos_entry_allows_continuity_states_with_view_or_repay_grants()
+    {
+        var view = new EntitlementGrant(
+            FeatureCode.Create(FeatureCode.CustomerCreditView),
+            enabled: true,
+            EntitlementGrantSource.Trial,
+            T0);
+        var repay = new EntitlementGrant(
+            FeatureCode.Create(FeatureCode.CustomerCreditRepay),
+            enabled: true,
+            EntitlementGrantSource.Trial,
+            T0);
+        var createOnly = new EntitlementGrant(
+            FeatureCode.Create(FeatureCode.CustomerCreditCreate),
+            enabled: true,
+            EntitlementGrantSource.Trial,
+            T0);
+
+        Assert.True(ProductAccessEligibility.CanEnterPinoyBusinessPos(SubscriptionStatus.GracePeriod, [view]));
+        Assert.True(ProductAccessEligibility.CanEnterPinoyBusinessPos(SubscriptionStatus.PastDue, [repay]));
+        Assert.True(ProductAccessEligibility.CanEnterPinoyBusinessPos(SubscriptionStatus.Cancelled, [view]));
+        Assert.True(ProductAccessEligibility.CanEnterPinoyBusinessPos(SubscriptionStatus.Expired, [view, repay]));
+        Assert.False(ProductAccessEligibility.CanEnterPinoyBusinessPos(SubscriptionStatus.Expired, [createOnly]));
+        Assert.False(ProductAccessEligibility.CanEnterPinoyBusinessPos(SubscriptionStatus.Suspended, [view]));
+        Assert.False(ProductAccessEligibility.CanEnterPinoyBusinessPos(SubscriptionStatus.Expired, []));
+    }
+
+    [Fact]
+    public void Unrelated_products_do_not_gain_continuity_entry()
+    {
+        var view = new EntitlementGrant(
+            FeatureCode.Create(FeatureCode.CustomerCreditView),
+            enabled: true,
+            EntitlementGrantSource.Plan,
+            T0);
+        Assert.False(ProductAccessEligibility.CanEnterProduct(
+            ProductCode.HealthCare,
+            SubscriptionStatus.Expired,
+            [view]));
+        Assert.False(ProductAccessEligibility.CanEnterProduct(
+            ProductCode.HealthCare,
+            SubscriptionStatus.GracePeriod,
+            [view]));
+        Assert.True(ProductAccessEligibility.CanEnterProduct(
+            ProductCode.HealthCare,
+            SubscriptionStatus.Active,
+            [view]));
+    }
+
+    [Fact]
+    public async Task Evaluate_allows_expired_pinoy_business_pos_when_continuity_grants_present()
+    {
+        var harness = await AccessHarness.CreateAsync();
+        Assert.True((await harness.Grant.ExecuteAsync(
+            harness.Organization.Id,
+            harness.User.Id,
+            harness.Product.Code.Value,
+            "dev-admin")).IsSuccess);
+
+        // Mutate subscription + snapshot to Expired with post-expiry grants.
+        var subscription = (await harness.Subscriptions.GetCurrentForOrganizationProductAsync(
+            harness.Organization.Id,
+            harness.Product.Code))!;
+        subscription.Expire(T0.AddDays(1));
+        await harness.Subscriptions.UpdateAsync(subscription);
+
+        var expiredSnapshot = EntitlementSnapshot.Create(
+            harness.Organization.Id,
+            harness.Product.Code,
+            subscription.Id,
+            PlanCode.Create("utang-trial"),
+            1,
+            snapshotVersion: 2,
+            SubscriptionStatus.Expired,
+            inGracePeriod: false,
+            generatedAtUtc: T0.AddDays(1),
+            effectiveAtUtc: T0.AddDays(1),
+            refreshByUtc: T0.AddDays(8),
+            sourceAggregateVersion: subscription.Version,
+            grants:
+            [
+                new EntitlementGrant(
+                    FeatureCode.Create(FeatureCode.CustomerCreditView),
+                    true,
+                    EntitlementGrantSource.Trial,
+                    T0.AddDays(1)),
+                new EntitlementGrant(
+                    FeatureCode.Create(FeatureCode.CustomerCreditRepay),
+                    true,
+                    EntitlementGrantSource.Trial,
+                    T0.AddDays(1)),
+                new EntitlementGrant(
+                    FeatureCode.Create(FeatureCode.CustomerCreditCreate),
+                    false,
+                    EntitlementGrantSource.Trial,
+                    T0.AddDays(1))
+            ]);
+        await harness.Snapshots.AddAsync(expiredSnapshot);
+        harness.Clock.UtcNow = T0.AddDays(1).AddMinutes(1);
+
+        var allowed = await harness.Evaluate.ExecuteAsync(
+            harness.User.Id,
+            harness.Organization.Id,
+            harness.Product.Code.Value);
+        Assert.True(allowed.Allowed);
+        Assert.Equal("Expired", allowed.SubscriptionStatus);
+        Assert.Contains(FeatureCode.CustomerCreditView, allowed.EnabledFeatureCodes!);
+        Assert.Contains(FeatureCode.CustomerCreditRepay, allowed.EnabledFeatureCodes!);
+        Assert.DoesNotContain(FeatureCode.CustomerCreditCreate, allowed.EnabledFeatureCodes!);
+    }
+
+    [Fact]
+    public async Task Evaluate_denies_suspended_pinoy_business_pos_even_with_view_grants()
+    {
+        var harness = await AccessHarness.CreateAsync();
+        Assert.True((await harness.Grant.ExecuteAsync(
+            harness.Organization.Id,
+            harness.User.Id,
+            harness.Product.Code.Value,
+            "dev-admin")).IsSuccess);
+
+        var subscription = (await harness.Subscriptions.GetCurrentForOrganizationProductAsync(
+            harness.Organization.Id,
+            harness.Product.Code))!;
+        subscription.ActivateFromTrial(T0, T0.AddDays(30), T0.AddMinutes(1));
+        subscription.Suspend(T0.AddMinutes(2));
+        await harness.Subscriptions.UpdateAsync(subscription);
+
+        var suspendedSnapshot = EntitlementSnapshot.Create(
+            harness.Organization.Id,
+            harness.Product.Code,
+            subscription.Id,
+            PlanCode.Create("utang-trial"),
+            1,
+            snapshotVersion: 2,
+            SubscriptionStatus.Suspended,
+            inGracePeriod: false,
+            generatedAtUtc: T0.AddMinutes(2),
+            effectiveAtUtc: T0.AddMinutes(2),
+            refreshByUtc: T0.AddDays(7),
+            sourceAggregateVersion: subscription.Version,
+            grants:
+            [
+                new EntitlementGrant(
+                    FeatureCode.Create(FeatureCode.CustomerCreditView),
+                    true,
+                    EntitlementGrantSource.Plan,
+                    T0.AddMinutes(2))
+            ]);
+        await harness.Snapshots.AddAsync(suspendedSnapshot);
+        harness.Clock.UtcNow = T0.AddMinutes(3);
+
+        var denied = await harness.Evaluate.ExecuteAsync(
+            harness.User.Id,
+            harness.Organization.Id,
+            harness.Product.Code.Value);
+        Assert.False(denied.Allowed);
+        Assert.Equal(EffectiveAccessReasonCodes.EntitlementDenied, denied.ReasonCode);
     }
 
     [Fact]

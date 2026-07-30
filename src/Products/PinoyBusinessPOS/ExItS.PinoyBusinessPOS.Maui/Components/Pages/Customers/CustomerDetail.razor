@@ -3,6 +3,7 @@
 @inject NavigationGate Gate
 @inject IPosCustomerClient Customers
 @inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
 
@@ -24,13 +25,17 @@ else if (_customer is null)
 else
 {
     var customer = _customer;
+    var canEdit = Capabilities.IsAllowed(UtangCapability.EditCustomer);
+    var canCreateCredit = Capabilities.IsAllowed(UtangCapability.CreateCredit);
+    var canReverseCredit = Capabilities.IsAllowed(UtangCapability.ReverseCredit);
+    var canStatement = Capabilities.IsAllowed(UtangCapability.ViewGenerateStatement);
 <Page>
     <PageHeader Title="@customer.DisplayName" Subtitle="@L["Customers_DetailSubtitle"]">
         <Actions>
             <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Customers_BackToList"]</Button>
             @if (customer.Status == "Active")
             {
-                <Button Variant="ButtonVariant.Primary" OnClick="GoEdit">@L["Customers_Edit"]</Button>
+                <Button Variant="ButtonVariant.Primary" Disabled="@(!canEdit)" OnClick="GoEdit">@L["Customers_Edit"]</Button>
             }
         </Actions>
     </PageHeader>
@@ -43,6 +48,11 @@ else
     @if (!string.IsNullOrEmpty(_errorMessage))
     {
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Customers_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    @if (!canEdit || !canCreateCredit || !canReverseCredit || !canStatement)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
     }
 
     <Alert Tone="AlertTone.Info" Title="@L["Utang_DeferredTitle"]" Message="@L["Utang_DeferredMessage"]" />
@@ -106,13 +116,14 @@ else
             <FormActions>
                 @if (customer.Status == "Active")
                 {
-                    <Button Variant="ButtonVariant.Secondary" OnClick="GoAddCredit">@L["Credit_Add"]</Button>
+                    <Button Variant="ButtonVariant.Secondary" Disabled="@(!canCreateCredit)" OnClick="GoAddCredit">@L["Credit_Add"]</Button>
                 }
                 <Button Variant="ButtonVariant.Primary"
-                        Disabled="@(_utang is null || _utang.OutstandingAmount <= 0m)"
+                        Disabled="@(_utang is null || _utang.OutstandingAmount <= 0m || !Capabilities.IsAllowed(UtangCapability.RecordRepayment))"
                         OnClick="GoAddPayment">@L["Payment_Record"]</Button>
                 <Button Variant="ButtonVariant.Secondary" OnClick="GoLedger">@L["Ledger_Open"]</Button>
                 <Button Variant="ButtonVariant.Secondary" OnClick="GoOverdue">@L["Overdue_OpenDetail"]</Button>
+                <Button Variant="ButtonVariant.Secondary" Disabled="@(!canStatement)" OnClick="GoStatement">@L["Statement_Open"]</Button>
             </FormActions>
             @if (customer.Status != "Active")
             {
@@ -158,7 +169,7 @@ else
                         {
                             <FormActions>
                                 <Button Variant="ButtonVariant.Secondary" OnClick="() => GoCreditDetail(entry.CreditEntryId)">@L["DueDate_OpenCredit"]</Button>
-                                <Button Variant="ButtonVariant.Danger" OnClick="() => BeginReverseCredit(entry)">@L["Credit_Reverse"]</Button>
+                                <Button Variant="ButtonVariant.Danger" Disabled="@(!canReverseCredit)" OnClick="() => BeginReverseCredit(entry)">@L["Credit_Reverse"]</Button>
                             </FormActions>
                         }
                     </div>
@@ -331,6 +342,11 @@ else
 
     private void BeginReverseCredit(PosCreditEntryDto entry)
     {
+        if (!Capabilities.IsAllowed(UtangCapability.ReverseCredit))
+        {
+            return;
+        }
+
         _reverseCreditTarget = entry;
         _creditReversalReason = null;
         _confirmReverseCredit = true;
@@ -386,5 +402,6 @@ else
     private void GoAddPayment() => Nav.NavigateTo($"/customers/{CustomerId:D}/repayments/new");
     private void GoLedger() => Nav.NavigateTo($"/customers/{CustomerId:D}/ledger");
     private void GoOverdue() => Nav.NavigateTo($"/customers/{CustomerId:D}/overdue");
+    private void GoStatement() => Nav.NavigateTo($"/customers/{CustomerId:D}/statement");
     private void GoCreditDetail(Guid entryId) => Nav.NavigateTo($"/customers/{CustomerId:D}/credit/{entryId:D}");
 }

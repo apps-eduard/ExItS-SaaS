@@ -57,7 +57,7 @@ public sealed class MauiFoundationGuardTests
     }
 
     [Fact]
-    public void Customer_routes_cover_list_create_detail_edit_credit_payment_ledger_and_overdue()
+    public void Customer_routes_cover_list_create_detail_edit_credit_payment_ledger_overdue_statement_and_receipt()
     {
         var root = FindRepoRoot();
         var customers = Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
@@ -74,6 +74,8 @@ public sealed class MauiFoundationGuardTests
         Assert.True(File.Exists(Path.Combine(customers, "CustomerLedger.razor")));
         Assert.True(File.Exists(Path.Combine(customers, "OverdueList.razor")));
         Assert.True(File.Exists(Path.Combine(customers, "CustomerOverdue.razor")));
+        Assert.True(File.Exists(Path.Combine(customers, "CustomerStatement.razor")));
+        Assert.True(File.Exists(Path.Combine(customers, "RepaymentReceipt.razor")));
 
         foreach (var file in Directory.EnumerateFiles(customers, "*.razor"))
         {
@@ -105,6 +107,7 @@ public sealed class MauiFoundationGuardTests
         Assert.Contains("GoAddPayment", detail, StringComparison.Ordinal);
         Assert.Contains("GoLedger", detail, StringComparison.Ordinal);
         Assert.Contains("GoOverdue", detail, StringComparison.Ordinal);
+        Assert.Contains("GoStatement", detail, StringComparison.Ordinal);
         Assert.Contains("CurrentDueDate", detail, StringComparison.Ordinal);
 
         var edit = File.ReadAllText(Path.Combine(customers, "CustomerEdit.razor"));
@@ -117,6 +120,19 @@ public sealed class MauiFoundationGuardTests
         Assert.Contains("@page \"/customers/{CustomerId:guid}/credit/{CreditEntryId:guid}\"", creditDetail, StringComparison.Ordinal);
         Assert.Contains("SetCreditDueDateAsync", creditDetail, StringComparison.Ordinal);
         Assert.Contains("DueDate_HistoryTitle", creditDetail, StringComparison.Ordinal);
+
+        var statement = File.ReadAllText(Path.Combine(customers, "CustomerStatement.razor"));
+        Assert.Contains("@page \"/customers/{CustomerId:guid}/statement\"", statement, StringComparison.Ordinal);
+        Assert.Contains("GetStatementAsync", statement, StringComparison.Ordinal);
+        Assert.Contains("IDocumentHandoffService", statement, StringComparison.Ordinal);
+
+        var receipt = File.ReadAllText(Path.Combine(customers, "RepaymentReceipt.razor"));
+        Assert.Contains("@page \"/customers/{CustomerId:guid}/repayments/{RepaymentId:guid}/receipt\"", receipt, StringComparison.Ordinal);
+        Assert.Contains("GetRepaymentReceiptAsync", receipt, StringComparison.Ordinal);
+        Assert.Contains("Receipt_Reversed", receipt, StringComparison.Ordinal);
+
+        var repaymentDetail = File.ReadAllText(Path.Combine(customers, "RepaymentDetail.razor"));
+        Assert.Contains("GoReceipt", repaymentDetail, StringComparison.Ordinal);
 
         var overdue = File.ReadAllText(Path.Combine(customers, "OverdueList.razor"));
         Assert.Contains("@page \"/overdue\"", overdue, StringComparison.Ordinal);
@@ -143,7 +159,17 @@ public sealed class MauiFoundationGuardTests
         Assert.Contains("Overdue_Title", fil, StringComparison.Ordinal);
         Assert.Contains("Utang_DeferredMessage", en, StringComparison.Ordinal);
         Assert.Contains("Utang_DeferredMessage", fil, StringComparison.Ordinal);
-        Assert.DoesNotContain("due dates, statements, printable receipts, interest", en, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Statement_Title", en, StringComparison.Ordinal);
+        Assert.Contains("Statement_Title", fil, StringComparison.Ordinal);
+        Assert.Contains("Receipt_Title", en, StringComparison.Ordinal);
+        Assert.Contains("Receipt_Title", fil, StringComparison.Ordinal);
+        Assert.Contains("Access_RestrictedMessage", en, StringComparison.Ordinal);
+        Assert.Contains("Access_RestrictedMessage", fil, StringComparison.Ordinal);
+        Assert.Contains("Handoff_Initiated", en, StringComparison.Ordinal);
+        Assert.Contains("Handoff_Initiated", fil, StringComparison.Ordinal);
+        Assert.Contains("Interest and credit limits are not available", en, StringComparison.Ordinal);
+        Assert.DoesNotContain("Statements, printable receipts, interest", en, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("statements and printable receipts are not available", en, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

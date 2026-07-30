@@ -3,6 +3,7 @@
 @inject NavigationGate Gate
 @inject IPosCustomerClient Customers
 @inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
 
@@ -12,15 +13,20 @@
 }
 else
 {
+    var canCreate = Capabilities.IsAllowed(UtangCapability.CreateCustomer);
 <Page>
     <PageHeader Title="@L["Customers_Title"]" Subtitle="@L["Customers_Subtitle"]">
         <Actions>
-            <Button Variant="ButtonVariant.Primary" OnClick="GoNew">@L["Customers_Add"]</Button>
+            <Button Variant="ButtonVariant.Primary" Disabled="@(!canCreate)" OnClick="GoNew">@L["Customers_Add"]</Button>
         </Actions>
     </PageHeader>
 
     <Alert Tone="AlertTone.Info" Title="@L["Customers_CreditDeferredTitle"]" Message="@L["Customers_CreditDeferredMessage"]" />
 
+    @if (!canCreate)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+    }
     <SearchToolbar SearchText="@_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Customers_SearchPlaceholder"]">
         <Actions>
             <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Customers_Refresh"]</Button>

@@ -40,7 +40,13 @@ internal static class PosApiResults
             or DomainErrorCodes.CreditDueDateUnchanged => StatusCodes.Status409Conflict,
 
         ApplicationErrorCodes.OrganizationRequired
-            or ApplicationErrorCodes.ActorRequired => StatusCodes.Status400BadRequest,
+            or ApplicationErrorCodes.ActorRequired
+            or ApplicationErrorCodes.StatementInvalidPeriod => StatusCodes.Status400BadRequest,
+
+        ApplicationErrorCodes.CommercialAccessUnknown
+            or ApplicationErrorCodes.CommercialCapabilityDenied => StatusCodes.Status403Forbidden,
+
+        ApplicationErrorCodes.ReceiptNotFound => StatusCodes.Status404NotFound,
 
         _ when errorCode.Contains("not_found", StringComparison.OrdinalIgnoreCase) => StatusCodes.Status404NotFound,
         _ when errorCode.Contains("conflict", StringComparison.OrdinalIgnoreCase) => StatusCodes.Status409Conflict,

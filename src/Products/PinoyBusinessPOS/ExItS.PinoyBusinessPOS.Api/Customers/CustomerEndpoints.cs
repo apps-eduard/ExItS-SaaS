@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Api.Common;
+using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Common;
@@ -24,9 +25,15 @@ internal static class CustomerEndpoints
             int? page,
             int? pageSize,
             POSCustomerQueryService queries,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewCustomersAndHistory, out problem))
             {
                 return problem!;
             }
@@ -55,9 +62,15 @@ internal static class CustomerEndpoints
             HttpRequest request,
             CreateCustomerRequest body,
             CreatePOSCustomer useCase,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.CreateCustomer, out problem))
             {
                 return problem!;
             }
@@ -75,9 +88,15 @@ internal static class CustomerEndpoints
             HttpRequest request,
             Guid customerId,
             POSCustomerQueryService queries,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewCustomersAndHistory, out problem))
             {
                 return problem!;
             }
@@ -96,9 +115,15 @@ internal static class CustomerEndpoints
             Guid customerId,
             UpdateCustomerRequest body,
             UpdatePOSCustomer useCase,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.EditCustomer, out problem))
             {
                 return problem!;
             }
@@ -114,9 +139,15 @@ internal static class CustomerEndpoints
             HttpRequest request,
             Guid customerId,
             DeactivatePOSCustomer useCase,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.EditCustomer, out problem))
             {
                 return problem!;
             }
@@ -129,9 +160,15 @@ internal static class CustomerEndpoints
             HttpRequest request,
             Guid customerId,
             ReactivatePOSCustomer useCase,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.EditCustomer, out problem))
             {
                 return problem!;
             }

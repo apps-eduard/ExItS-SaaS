@@ -132,7 +132,9 @@ public sealed class AuthenticationServiceTests
             OrganizationResult = ApiResult<PlatformOrganizationDto>.Success(Org(orgId)),
             EvaluateResult = ApiResult<EffectiveAccessDto>.Success(new EffectiveAccessDto(
                 true, "allowed", userId, orgId, PosProductCodes.PinoyBusinessPos,
-                Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow))
+                Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow,
+                SubscriptionStatus: "Active",
+                EnabledFeatureCodes: ["customer-credit-view", "customer-credit-repay", "customer-credit-create"]))
         };
         var sut = CreateSut("Development", access, tokens, prefs);
         await sut.SignInAsync(new SignInRequest(userId));
@@ -140,6 +142,10 @@ public sealed class AuthenticationServiceTests
         Assert.True(select.Succeeded);
         Assert.Equal(orgId, await prefs.GetSelectedOrganizationIdAsync());
         Assert.True(select.Session!.HasPosAccess);
+        Assert.Equal("Active", select.Session.SubscriptionStatus);
+        Assert.Equal(3, select.Session.EnabledFeatureCodes!.Count);
+        Assert.Equal("Active", await tokens.GetAsync(SecureTokenKeys.SubscriptionStatus));
+        Assert.Contains("customer-credit-view", await tokens.GetAsync(SecureTokenKeys.FeatureGrants) ?? string.Empty);
     }
 
     [Fact]
@@ -161,7 +167,6 @@ public sealed class AuthenticationServiceTests
         prefs ??= new MemoryOnboardingStore();
         currentUser ??= new CurrentUserContext();
         var sessionStore = new SecureSessionStore(tokens);
-        var resolver = new ProductAccessResolver(access);
         var events = new LoggingAuthEventSink(NullLogger<LoggingAuthEventSink>.Instance);
         return new AuthenticationService(
             new StubAppInfo(environment),
@@ -169,7 +174,6 @@ public sealed class AuthenticationServiceTests
             currentUser,
             prefs,
             access,
-            resolver,
             events,
             time);
     }

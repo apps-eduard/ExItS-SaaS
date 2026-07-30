@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Api.Common;
+using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
@@ -22,9 +23,15 @@ internal static class CreditEndpoints
             Guid customerId,
             POSCustomerQueryService customers,
             CreditEntryQueryService credit,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewCustomersAndHistory, out problem))
             {
                 return problem!;
             }
@@ -49,9 +56,15 @@ internal static class CreditEndpoints
             int? pageSize,
             POSCustomerQueryService customers,
             CreditEntryQueryService credit,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewCustomersAndHistory, out problem))
             {
                 return problem!;
             }
@@ -76,9 +89,15 @@ internal static class CreditEndpoints
             Guid customerId,
             CreateCreditEntryRequest body,
             CreateCreditEntry useCase,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.CreateCredit, out problem))
             {
                 return problem!;
             }
@@ -97,9 +116,15 @@ internal static class CreditEndpoints
             Guid customerId,
             Guid entryId,
             CreditEntryQueryService credit,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewCustomersAndHistory, out problem))
             {
                 return problem!;
             }
@@ -119,9 +144,15 @@ internal static class CreditEndpoints
             Guid entryId,
             ReverseCreditEntryRequest body,
             ReverseCreditEntry useCase,
+            IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ReverseCredit, out problem))
             {
                 return problem!;
             }

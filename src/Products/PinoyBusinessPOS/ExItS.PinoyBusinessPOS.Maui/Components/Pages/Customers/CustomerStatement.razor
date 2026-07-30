@@ -1,0 +1,250 @@
+@page "/customers/{CustomerId:guid}/statement"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCustomerClient Customers
+@inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IDocumentHandoffService Handoff
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (!_canView)
+{
+    <Page>
+        <PageHeader Title="@L["Statement_Title"]" Subtitle="@L["Statement_Subtitle"]">
+            <Actions>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
+            </Actions>
+        </PageHeader>
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+    </Page>
+}
+else
+{
+<Page>
+    <PageHeader Title="@L["Statement_Title"]" Subtitle="@L["Statement_Subtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (!string.IsNullOrEmpty(_banner))
+    {
+        <Alert Tone="AlertTone.Success" Title="@L["Customers_SuccessTitle"]" Message="@_banner" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Statement_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Statement_PeriodTitle"]">
+        <Stack Gap="3">
+            <DateInput Label="@L["Statement_PeriodStart"]"
+                       Value="@_periodStart"
+                       ValueChanged="v => _periodStart = v"
+                       Required="true" />
+            <DateInput Label="@L["Statement_PeriodEnd"]"
+                       Value="@_periodEnd"
+                       ValueChanged="v => _periodEnd = v"
+                       Required="true" />
+            <FormActions>
+                <Button Variant="ButtonVariant.Primary" IsLoading="@_loading" OnClick="LoadStatementAsync">@L["Statement_Generate"]</Button>
+                <Button Variant="ButtonVariant.Secondary"
+                        Disabled="@(_statement is null || _sharing)"
+                        IsLoading="@_sharing"
+                        OnClick="ShareAsync">@L["Statement_Share"]</Button>
+            </FormActions>
+        </Stack>
+    </Section>
+
+    @if (_loading)
+    {
+        <Spinner /><span>@L["Statement_Loading"]</span>
+    }
+    else if (_statement is not null)
+    {
+        var statement = _statement;
+        <Section Title="@L["Statement_SummaryTitle"]">
+            <Stack Gap="3">
+                <div>
+                    <span class="pos-muted">@L["Statement_Customer"]</span>
+                    <div class="pos-value-md">@statement.CustomerDisplayName</div>
+                </div>
+                <div>
+                    <span class="pos-muted">@L["Statement_OpeningBalance"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@statement.OpeningBalance" CurrencyCode="@statement.CurrencyCode" /></div>
+                </div>
+                <div>
+                    <span class="pos-muted">@L["Statement_ClosingBalance"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@statement.ClosingBalance" CurrencyCode="@statement.CurrencyCode" /></div>
+                </div>
+                <div>
+                    <span class="pos-muted">@L["Credit_Outstanding"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@statement.OutstandingBalance" CurrencyCode="@statement.CurrencyCode" /></div>
+                </div>
+                <div class="pos-muted">
+                    @L["Statement_PeriodCredits"] <MoneyDisplay Amount="@statement.PeriodCreditTotal" CurrencyCode="@statement.CurrencyCode" />
+                    · @L["Statement_PeriodRepayments"] <MoneyDisplay Amount="@statement.PeriodRepaymentTotal" CurrencyCode="@statement.CurrencyCode" />
+                </div>
+            </Stack>
+        </Section>
+
+        <Section Title="@L["Statement_LinesTitle"]">
+            @if (statement.Lines.Count == 0)
+            {
+                <EmptyState Title="@L["Statement_EmptyTitle"]" Message="@L["Statement_EmptyMessage"]" />
+            }
+            else
+            {
+                <Stack Gap="3">
+                    @foreach (var line in statement.Lines)
+                    {
+                        <div class="pos-credit-entry">
+                            <div class="pos-value-md">
+                                <MoneyDisplay Amount="@line.Amount" CurrencyCode="@statement.CurrencyCode" />
+                                <Badge Tone="@(line.IsReversed ? BadgeTone.Neutral : BadgeTone.Success)">@line.EntryType</Badge>
+                                @if (line.IsReversed)
+                                {
+                                    <Badge Tone="BadgeTone.Neutral">@line.Status</Badge>
+                                }
+                            </div>
+                            <div class="pos-wrap">@(string.IsNullOrWhiteSpace(line.Remarks) ? L["Customers_NoValue"] : line.Remarks)</div>
+                            <div class="pos-muted">
+                                @line.RecordedAtUtc.ToLocalTime().ToString("g")
+                                · @L["Ledger_RunningBalance"] <MoneyDisplay Amount="@line.RunningBalance" CurrencyCode="@statement.CurrencyCode" />
+                            </div>
+                        </div>
+                    }
+                </Stack>
+            }
+        </Section>
+    }
+</Page>
+}
+
+@code {
+    [Parameter] public Guid CustomerId { get; set; }
+
+    private bool _ready;
+    private bool _canView;
+    private bool _loading;
+    private bool _sharing;
+    private DateOnly? _periodStart;
+    private DateOnly? _periodEnd;
+    private PosCustomerStatementDto? _statement;
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private string? _banner;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _canView = Capabilities.IsAllowed(UtangCapability.ViewGenerateStatement);
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        _periodEnd = today;
+        _periodStart = today.AddMonths(-1);
+        _ready = true;
+    }
+
+    private async Task LoadStatementAsync()
+    {
+        _banner = null;
+        _errorTitle = null;
+        _errorMessage = null;
+
+        if (_periodStart is null || _periodEnd is null)
+        {
+            _errorTitle = L["Statement_ErrorTitle"];
+            _errorMessage = L["Statement_PeriodRequired"];
+            return;
+        }
+
+        if (_periodEnd < _periodStart)
+        {
+            _errorTitle = L["Statement_ErrorTitle"];
+            _errorMessage = L["Statement_PeriodInvalid"];
+            return;
+        }
+
+        _loading = true;
+        StateHasChanged();
+
+        var result = await Customers.GetStatementAsync(
+            CustomerId,
+            _periodStart.Value,
+            _periodEnd.Value,
+            CurrentUser.Session?.OrganizationDisplayName,
+            "PHP",
+            CultureInfo.CurrentUICulture.Name);
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _statement = result.Data;
+        }
+        else
+        {
+            _statement = null;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private async Task ShareAsync()
+    {
+        if (_statement is null)
+        {
+            return;
+        }
+
+        _sharing = true;
+        _banner = null;
+        _errorMessage = null;
+        var text = FormatShareText(_statement);
+        var result = await Handoff.ShareTextAsync(L["Statement_Title"], text);
+        _banner = L[result.MessageKey];
+        if (!result.Initiated)
+        {
+            _errorTitle = L["Statement_ErrorTitle"];
+            _errorMessage = L[result.MessageKey];
+            _banner = null;
+        }
+
+        _sharing = false;
+    }
+
+    private static string FormatShareText(PosCustomerStatementDto statement)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine(statement.CustomerDisplayName);
+        sb.AppendLine($"{statement.PeriodStart:yyyy-MM-dd} – {statement.PeriodEnd:yyyy-MM-dd}");
+        sb.AppendLine($"Opening: {statement.OpeningBalance:0.00} {statement.CurrencyCode}");
+        sb.AppendLine($"Closing: {statement.ClosingBalance:0.00} {statement.CurrencyCode}");
+        sb.AppendLine($"Outstanding: {statement.OutstandingBalance:0.00} {statement.CurrencyCode}");
+        sb.AppendLine();
+        foreach (var line in statement.Lines)
+        {
+            sb.AppendLine($"{line.RecordedAtUtc:u} | {line.EntryType} | {line.Amount:0.00} | {line.Status} | bal {line.RunningBalance:0.00}");
+            if (!string.IsNullOrWhiteSpace(line.Remarks))
+            {
+                sb.AppendLine(line.Remarks);
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private void GoBack() => Nav.NavigateTo($"/customers/{CustomerId:D}");
+}

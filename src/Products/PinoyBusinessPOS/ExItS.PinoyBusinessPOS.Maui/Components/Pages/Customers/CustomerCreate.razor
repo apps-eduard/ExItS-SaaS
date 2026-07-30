@@ -3,6 +3,7 @@
 @inject NavigationGate Gate
 @inject IPosCustomerClient Customers
 @inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
 
@@ -12,6 +13,7 @@
 }
 else
 {
+    var canCreate = Capabilities.IsAllowed(UtangCapability.CreateCustomer);
 <Page>
     <PageHeader Title="@L["Customers_CreateTitle"]" Subtitle="@L["Customers_CreateSubtitle"]">
         <Actions>
@@ -20,6 +22,11 @@ else
     </PageHeader>
 
     <Alert Tone="AlertTone.Info" Title="@L["Customers_RepaymentDeferredTitle"]" Message="@L["Customers_RepaymentDeferredMessage"]" />
+
+    @if (!canCreate)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+    }
 
     @if (!string.IsNullOrEmpty(_formError))
     {
@@ -37,6 +44,7 @@ else
                   DisplayNameError="@_displayNameError"
                   MobileError="@_mobileError"
                   IsSaving="@_saving"
+                  Disabled="@(!canCreate)"
                   SaveLabel="@L["Customers_Create"]"
                   OnSave="SaveAsync"
                   OnCancel="GoBack" />
@@ -67,6 +75,12 @@ else
 
     private async Task SaveAsync()
     {
+        if (!Capabilities.IsAllowed(UtangCapability.CreateCustomer))
+        {
+            _formError = L["Access_RestrictedMessage"];
+            return;
+        }
+
         _displayNameError = null;
         _mobileError = null;
         _formError = null;

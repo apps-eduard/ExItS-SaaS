@@ -242,7 +242,9 @@ public sealed record EffectiveProductAccessResultDto(
     Guid? AssignmentId,
     Guid? SubscriptionId,
     Guid? SnapshotId,
-    DateTimeOffset EvaluatedAtUtc);
+    DateTimeOffset EvaluatedAtUtc,
+    string? SubscriptionStatus = null,
+    IReadOnlyList<string>? EnabledFeatureCodes = null);
 
 public sealed record CreatePlatformUserRequest(string Username, string DisplayName, string Email);
 public sealed record UpdatePlatformUserRequest(string DisplayName, string Email);
