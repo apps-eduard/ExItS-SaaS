@@ -236,6 +236,8 @@ Catalog, sales, Product-Based Utang, basic inventory, and expenses are **online-
 - View sales history when `store-sales-view` is granted (P8-WP02; online-only)
 - View inventory when `store-inventory-view` is granted (P8-WP04; online-only)
 - View expenses when `store-expenses-view` is granted (P8-WP05; online-only)
+- View dashboard when `store-dashboard-view` is granted (P8-WP06; online-only)
+- View reports when `store-reports-view` is granted (P8-WP06; online-only; continuity/read)
 - Export/access data where separately approved
 - Upgrade or renew subscription
 

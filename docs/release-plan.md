@@ -53,9 +53,9 @@ MAUI app, bilingual UI, themes, customers, Utang, payments, overdue monitoring a
 
 ## R3.6 — Basic Store started (Phase 8 / P8-WP01–P8-WP05)
 
-**Phase 8 in progress** — P8-WP01 through P8-WP05 **complete** with documented risks. See [P8-WP05 report](reports/P8-WP05-expenses.md).
+**Phase 8 in progress** — P8-WP01 through P8-WP06 **complete** with documented risks. See [P8-WP06 report](reports/P8-WP06-dashboard-and-reports.md).
 
-Online-only catalog, sales (Cash/ManualGCash/Utang), basic inventory, and store expenses (immutable entries, void corrections, derived summaries). Features include `store-expenses-view` / `store-expenses-manage`. Migration `AddPosExpenses`. **No AP, payroll, GL, offline expenses, or P&L.** R-109 remains open.
+Online-only catalog, sales, inventory, expenses, and operational dashboard/reports. Features include `store-dashboard-view` / `store-reports-view`. Query projections only (no report migration). **No P&L, valuation, accounting, or offline authoritative reports.** R-109 remains open.
 
 **Next:** **P8-WP06 — Dashboard and Reports** when approved.
 

@@ -134,6 +134,11 @@
 | R-128 | Dev actor header mistaken for production audit identity | High | Document `X-Dev-Platform-User-Id` as Development/Testing-only; production JWT still required (R-091) | Open — introduced P6-WP03; also used for due-date set/clear in P6-WP04 |
 | R-129 | Transitive SQLitePCLRaw NU1903 advisory on Microsoft.Data.Sqlite 10.0.4 | Medium | Track package upgrade when Microsoft ships fixed transitive; P7-WP03 mitigated by row-level AES-GCM instead of SQLCipher; advisory remains open on Microsoft.Data.Sqlite transitive | Open — introduced P7-WP01; WP03 avoided SQLCipher |
 
+
+## Phase 8 note (P8-WP06)
+
+P8-WP06 delivered operational dashboard and read-only reports from immutable Basic Store data. Features `store-dashboard-view` / `store-reports-view`. Max report span 366 inclusive days. Export file generation deferred. **No P&L, valuation, accounting, or offline authoritative caches.** R-109 remains open. **Not production-ready.** Next: **P8-WP07 � Basic Store Closeout** when authorized.
+
 ## Phase 8 note (P8-WP05)
 
 P8-WP05 delivered store expenses (`pos.expense_categories`, `pos.expenses`, `pos.expense_number_sequences`; migration `AddPosExpenses`). Cash/ManualGCash; immutable Recorded entries; void corrections; derived summaries. Features `store-expenses-view` / `store-expenses-manage`. **No AP, payroll, GL, offline expenses, or P&L.** R-109 remains open. **Not production-ready.** Next: **P8-WP06 — Dashboard and Reports** when authorized.

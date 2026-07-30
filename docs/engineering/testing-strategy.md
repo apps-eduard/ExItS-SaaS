@@ -51,6 +51,7 @@
 - Product-Based Utang (P8-WP03) — Utang payment; atomic sale+credit; optional due date; void+reverse; standalone reverse blocked; migration `AddProductBasedUtang`; dual capability gates; online-only
 - Basic inventory (P8-WP04) — accounts/movements; enable/adjust; sale deduction/void restore; low-stock; `store-inventory-*`; migration `AddPosBasicInventory`; online-only
 - Expenses (P8-WP05) — categories; immutable Cash/ManualGCash entries; void; derived summaries; `store-expenses-*`; migration `AddPosExpenses`; online-only
+- Dashboard/Reports (P8-WP06) � period KPIs; sales/utang/inventory/expense reports; max 366-day span; continuity grants; no P&L/offline caches
 - Tenant isolation
 - Subscription feature enforcement (P6-WP05 matrix + grants; P8-WP01 catalog grants)
 - Offline queue and idempotency *(Phase 7)*

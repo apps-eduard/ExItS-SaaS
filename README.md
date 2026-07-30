@@ -40,7 +40,7 @@ ExItS-SaaS/
 
 **Phase 7** is **complete** with documented risks ([P7-WP05 closeout](docs/reports/P7-WP05-offline-closeout.md)). Offline subsystem (DeviceId/SQLite isolation, encrypted queue + idempotency, customer/credit/payment sync, recovery/UX closeout) is closed.
 
-**Phase 8** is **in progress** — P8-WP01 through P8-WP05 **complete** with documented risks ([P8-WP05](docs/reports/P8-WP05-expenses.md)). Online-only catalog, sales (Cash/ManualGCash/Utang), basic inventory, and store expenses. **Not production-ready** while R-109, R-022, full-DB encryption, production auth/roles, and production background scheduling remain open.
+**Phase 8** is **in progress** — P8-WP01 through P8-WP06 **complete** with documented risks ([P8-WP06](docs/reports/P8-WP06-dashboard-and-reports.md)). Online-only catalog, sales, inventory, expenses, and dashboard/reports. **Not production-ready** while R-109, R-022, full-DB encryption, production auth/roles, and production background scheduling remain open.
 
 Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Next: **P8-WP06 — Dashboard and Reports** when authorized.
 

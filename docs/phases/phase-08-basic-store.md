@@ -8,7 +8,7 @@ Deliver the Basic Store paid plan.
 
 ## Status
 
-**In Progress** — P8-WP01 through P8-WP05 complete with documented risks. Do **not** begin P8-WP06 until explicitly authorized.
+**In Progress** — P8-WP01 through P8-WP06 complete with documented risks. Do **not** begin P8-WP07 until explicitly authorized.
 
 Feature commit (P8-WP01): `5573822ca116ab46f1a5cdce407e1d7b4f58f796`
 
@@ -249,26 +249,47 @@ AP/suppliers/POs/receiving, payroll, reimbursements/advances, recurring automati
 
 ### P8-WP06 — Dashboard and Reports
 
-Status: Not Started — do not begin until authorized
+Status: **Complete with documented risks**
 
-#### Required outcomes
+Phase marker: `P8-WP06-dashboard-and-reports`
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+Feature commit: `a0028f36a0d8e2ea76c3101b2b65ba82bfd4fd02`
+
+Report: [P8-WP06-dashboard-and-reports.md](../reports/P8-WP06-dashboard-and-reports.md)
+
+#### Approved scope (clarified)
+
+Organization-isolated **operational dashboards and reports** derived from existing Basic Store immutable records (read-only projections; no business-transaction writes):
+
+- Compact period dashboard: completed sales/count, Cash / ManualGCash / Utang sales totals, active customer Utang outstanding, overdue Utang, recorded expenses, low-stock count, voided sale/expense counts; sales/expenses-by-day trends; payment-method breakdown; optional vs preceding equal-length period (absolute/%; “Not available” on divide-by-zero). Do **not** calculate profit (sales − expenses).
+- Sales reports: summary, by payment method/product/category, top products by qty/amount, voided-sales summary, Product-Based Utang sales summary — immutable sale-line snapshots; voided excluded from active totals.
+- Utang reports: reuse authoritative outstanding/overdue/FIFO aging (no second balance model); credits/repayments in period; customer statement navigation.
+- Inventory reports: tracked on-hand, low/out-of-stock, movement totals by type, sale deductions/void restorations/manual adjustments, latest movement date — no valuation/cost/reorder.
+- Expense reports: reuse expense summary rules (active/voided, by category/payment/day, count, detail list) — never combine with sales into P&L.
+- Filters: date range, payment method, sale status, product, category, customer, expense category, inventory tracking/low-stock — server-side, paginated, deterministic; document any max range if introduced.
+- Export: stable export-ready DTOs; CSV/PDF/Excel file generation deferred unless an approved mechanism already exists (none today) — UI download/share preparation only; no heavy reporting dependency.
+- Features: `store-dashboard-view`, `store-reports-view` (`store-reports-export` only if export files are implemented). Continuity/read matrix: grant-controlled through PastDue/Cancelled/Expired; Suspended/missing/stale/unknown deny. No POS operational roles.
+- Persistence: query projections only — no persisted dashboard/report totals. Migration only if a confirmed index is required (`ExItS_PinoyBusinessPOS` / `pos`).
+- API: `/api/v1/pos/dashboard`, `/api/v1/pos/reports/{sales,utang,inventory,expenses}` (+ by-product/by-category as needed).
+- MAUI: `/dashboard`, `/reports`, `/reports/sales|utang|inventory|expenses` — online-only authoritative; offline shows reconnect-required.
+- Tests, documentation, Android evidence.
+
+#### Explicit exclusions (P8-WP07+)
+
+Profit/margin/COGS/P&L; accounting journals/balance sheet/cash-flow/tax reports; supplier/purchasing/payroll/reimbursement reports; inventory valuation; forecasting/AI; scheduled/email/notification reports; PDF/Excel generation (deferred); offline authoritative report caches; custom report builders; Phase 9+.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (851 / 0 / 0; baseline 830).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded (`a0028f36a0d8e2ea76c3101b2b65ba82bfd4fd02`).
+- [x] Working tree clean.
 
 ### P8-WP07 — Basic Store Closeout
 
-Status: Not Started
+Status: Not Started — do not begin until authorized
 
 #### Required outcomes
 

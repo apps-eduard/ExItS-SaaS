@@ -1,7 +1,7 @@
 # ExITS SaaS Documentation Package Manifest
 
 Markdown documentation files plus root Platform foundation through Phase 8 Basic Store (P8-WP01–P8-WP05 complete with documented risks; Phase 8 in progress).
-Internal links checked: spot-check P8-WP05
+Internal links checked: spot-check P8-WP06
 Broken links: none found in spot-check of new paths
 
 ## Root foundation (tracked)
@@ -23,7 +23,7 @@ src/Shared/ExItS.DesignSystem/ (semantic tokens; forms/data/feedback overlays; D
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ (POSCustomer + CreditEntry + CreditDueDateChange + Repayment + CatalogProduct + ProductCategory aggregates; FIFO aging helpers)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth; Customers; Credit; due dates/overdue; Payments/ledger; Statements/receipts; Catalog; Commercial/UtangCapabilityPolicy)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migrations `AddPosCustomers`, `AddPosCreditEntries`, `AddPosRepayments`, `AddPosCreditDueDates`, `AddPosCatalogAndBarcodes`; no receipt migration)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + customers + credit + repayments/ledger + due dates/overdue + statements/receipts + catalog + sales + inventory + expenses; commercial header gates; phase marker `P8-WP05-expenses`)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + customers + credit + repayments/ledger + due dates/overdue + statements/receipts + catalog + sales + inventory + expenses + dashboard/reports; commercial header gates; phase marker `P8-WP06-dashboard-and-reports`)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client; PosCommercialHeaderHandler; PosCustomerClient; PosCatalogClient online-only)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.LocalStore/ (Microsoft.Data.Sqlite foundation + generic encrypted offline_operations outbox + encrypted customer/credit/repayment projections — P7-WP01/P7-WP02/P7-WP03/P7-WP04; no catalog offline cache)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers + credit + repayments + ledger + overdue/due dates + statement/receipt preview/share + catalog/barcode; onboarding/auth; sync-status shell; offline foundation diagnostics; PosResources en/fil-PH)
