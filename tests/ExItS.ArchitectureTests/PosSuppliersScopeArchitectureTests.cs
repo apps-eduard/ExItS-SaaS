@@ -46,13 +46,21 @@ public sealed class PosSuppliersScopeArchitectureTests
     }
 
     [Fact]
-    public void Supplier_persistence_adds_supplier_tables_without_purchasing_or_payables()
+    public void Supplier_persistence_adds_supplier_tables_without_purchasing_in_supplier_slice()
     {
         var context = File.ReadAllText(Path.Combine(
             PosProject("ExItS.PinoyBusinessPOS.Infrastructure"), "Persistence", "PosDbContext.cs"));
 
         Assert.Contains("\"suppliers\"", context, StringComparison.Ordinal);
         Assert.Contains("\"supplier_code_sequences\"", context, StringComparison.Ordinal);
+
+        var supplierPersistence = string.Join(
+            '\n',
+            Directory.EnumerateFiles(
+                    Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Infrastructure"), "Persistence", "Suppliers"),
+                    "*.cs",
+                    SearchOption.AllDirectories)
+                .Select(File.ReadAllText));
 
         foreach (var table in new[]
                  {
@@ -61,7 +69,7 @@ public sealed class PosSuppliersScopeArchitectureTests
                      "\"cost_history\"", "\"purchase_returns\""
                  })
         {
-            Assert.DoesNotContain(table, context, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(table, supplierPersistence, StringComparison.OrdinalIgnoreCase);
         }
     }
 

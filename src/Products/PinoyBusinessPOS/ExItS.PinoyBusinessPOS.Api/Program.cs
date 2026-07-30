@@ -20,6 +20,8 @@ using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Application.Statements;
 using ExItS.PinoyBusinessPOS.Application.Suppliers;
+using ExItS.PinoyBusinessPOS.Application.Purchasing;
+using ExItS.PinoyBusinessPOS.Api.Purchasing;
 using ExItS.PinoyBusinessPOS.Infrastructure;
 using ExItS.PinoyBusinessPOS.Infrastructure.Health;
 using Microsoft.AspNetCore.RateLimiting;
@@ -82,6 +84,13 @@ builder.Services.AddScoped<CreateSupplier>();
 builder.Services.AddScoped<UpdateSupplier>();
 builder.Services.AddScoped<ActivateSupplier>();
 builder.Services.AddScoped<DeactivateSupplier>();
+builder.Services.AddScoped<PurchaseOrderQueryService>();
+builder.Services.AddScoped<GoodsReceiptQueryService>();
+builder.Services.AddScoped<CreatePurchaseOrder>();
+builder.Services.AddScoped<UpdatePurchaseOrder>();
+builder.Services.AddScoped<SubmitPurchaseOrder>();
+builder.Services.AddScoped<CancelPurchaseOrder>();
+builder.Services.AddScoped<ReceivePurchaseOrder>();
 builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.DashboardQueryService>();
 builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.SalesReportService>();
 builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.UtangReportService>();
@@ -105,10 +114,11 @@ app.MapSaleEndpoints();
 app.MapInventoryEndpoints();
 app.MapExpenseEndpoints();
 app.MapSupplierEndpoints();
+app.MapPurchaseOrderEndpoints();
 app.MapReportingEndpoints();
 app.MapDevOfflineProbeEndpoints();
 
-// Phase marker: P10-WP01-suppliers
+// Phase marker: P10-WP02-purchasing
 
 app.Run();
 

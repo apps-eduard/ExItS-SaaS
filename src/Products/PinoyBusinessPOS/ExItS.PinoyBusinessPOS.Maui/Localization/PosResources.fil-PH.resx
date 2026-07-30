@@ -1061,6 +1061,23 @@
   <data name="Suppliers_ReactivateMessage" xml:space="preserve"><value>Maging aktibo muli ang supplier sa inyong organisasyon.</value></data>
   <data name="Suppliers_DeactivatedSuccess" xml:space="preserve"><value>Na-deactivate ang supplier.</value></data>
   <data name="Suppliers_ReactivatedSuccess" xml:space="preserve"><value>Na-reactivate ang supplier.</value></data>
+  <data name="Nav_Purchasing" xml:space="preserve"><value>Pagbili</value></data>
+  <data name="Purchasing_Title" xml:space="preserve"><value>Pagbili</value></data>
+  <data name="Purchasing_Subtitle" xml:space="preserve"><value>Gumawa ng purchase order at tumanggap ng stock mula sa supplier (online lang).</value></data>
+  <data name="Purchasing_Add" xml:space="preserve"><value>Bagong purchase order</value></data>
+  <data name="Purchasing_EmptyTitle" xml:space="preserve"><value>Wala pang purchase order</value></data>
+  <data name="Purchasing_EmptyMessage" xml:space="preserve"><value>Gumawa ng draft purchase order para umorder sa supplier.</value></data>
+  <data name="Purchasing_OfflineTitle" xml:space="preserve"><value>Kailangan ng koneksyon</value></data>
+  <data name="Purchasing_OfflineMessage" xml:space="preserve"><value>Online lang ang pagbili. Kumonekta muli para tingnan o baguhin ang purchase order.</value></data>
+  <data name="Purchasing_CreateTitle" xml:space="preserve"><value>Bagong purchase order</value></data>
+  <data name="Purchasing_CreateSubtitle" xml:space="preserve"><value>Magdagdag ng linya at i-save ang draft bago i-submit.</value></data>
+  <data name="Purchasing_Create" xml:space="preserve"><value>Gumawa ng purchase order</value></data>
+  <data name="Purchasing_DetailTitle" xml:space="preserve"><value>Purchase order</value></data>
+  <data name="Purchasing_Submit" xml:space="preserve"><value>I-submit ang order</value></data>
+  <data name="Purchasing_Cancel" xml:space="preserve"><value>Kanselahin ang order</value></data>
+  <data name="Purchasing_ReceiveTitle" xml:space="preserve"><value>Tumanggap ng goods</value></data>
+  <data name="Purchasing_ReceiveSubtitle" xml:space="preserve"><value>I-record ang natanggap na dami para sa purchase order na ito.</value></data>
+  <data name="Purchasing_Receive" xml:space="preserve"><value>Tumanggap</value></data>
   <data name="Nav_SkipToContent" xml:space="preserve">
     <value>Lumaktaw papunta sa pangunahing nilalaman</value>
   </data>

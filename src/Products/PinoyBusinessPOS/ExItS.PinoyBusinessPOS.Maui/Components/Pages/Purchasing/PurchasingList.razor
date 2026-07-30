@@ -1,0 +1,80 @@
+@page "/purchasing"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosPurchaseOrderClient Purchasing
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManagePurchasing);
+<Page>
+    <PageHeader Title="@L["Purchasing_Title"]" Subtitle="@L["Purchasing_Subtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="GoNew">@L["Purchasing_Add"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Purchasing_OfflineTitle"]" Message="@L["Purchasing_OfflineMessage"]" />
+    }
+
+    <ResponsiveDataList TItem="PosPurchaseOrderDto"
+                        Items="@_items"
+                        IsLoading="@_loading"
+                        EmptyTitle="@L["Purchasing_EmptyTitle"]"
+                        EmptyMessage="@L["Purchasing_EmptyMessage"]"
+                        AriaLabel="@L["Purchasing_Title"]" />
+</Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _loading;
+    private bool _isOffline;
+    private IReadOnlyList<PosPurchaseOrderDto> _items = Array.Empty<PosPurchaseOrderDto>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewPurchasing))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (_isOffline)
+        {
+            return;
+        }
+
+        _loading = true;
+        var result = await Purchasing.ListAsync();
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _items = result.Data.Items;
+        }
+
+        _loading = false;
+    }
+
+    private void GoNew() => Nav.NavigateTo("/purchasing/new");
+}

@@ -375,4 +375,14 @@ public static class OfflineOperationTypes
     /// idempotency scope so a retried create request replays instead of double-recording.
     /// </summary>
     public const string ExpenseCreate = "expense.create";
+
+    /// <summary>
+    /// Server-side idempotency operation type for purchase order submit. Purchasing is online-only.
+    /// </summary>
+    public const string PurchaseOrderSubmit = "purchase_order.submit";
+
+    /// <summary>
+    /// Server-side idempotency operation type for purchase order receive. Purchasing is online-only.
+    /// </summary>
+    public const string PurchaseOrderReceive = "purchase_order.receive";
 }

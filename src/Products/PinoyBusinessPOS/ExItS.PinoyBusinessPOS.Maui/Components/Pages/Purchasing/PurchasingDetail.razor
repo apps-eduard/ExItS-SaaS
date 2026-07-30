@@ -1,0 +1,88 @@
+@page "/purchasing/{PurchaseOrderId:guid}"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosPurchaseOrderClient Purchasing
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManagePurchasing);
+<Page>
+    <PageHeader Title="@L["Purchasing_DetailTitle"]" Subtitle="@_po?.PoNumber" />
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Purchasing_OfflineTitle"]" Message="@L["Purchasing_OfflineMessage"]" />
+    }
+    @if (_po is not null && canManage && !_isOffline)
+    {
+        <Stack Gap="2">
+            <Button Variant="ButtonVariant.Primary" OnClick="SubmitAsync">@L["Purchasing_Submit"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="CancelAsync">@L["Purchasing_Cancel"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoReceive">@L["Purchasing_Receive"]</Button>
+        </Stack>
+    }
+</Page>
+}
+
+@code {
+    [Parameter] public Guid PurchaseOrderId { get; set; }
+
+    private bool _ready;
+    private bool _isOffline;
+    private PosPurchaseOrderDto? _po;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewPurchasing))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (!_isOffline)
+        {
+            var result = await Purchasing.GetAsync(PurchaseOrderId);
+            if (result.IsSuccess)
+            {
+                _po = result.Data;
+            }
+        }
+
+        _ready = true;
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_po is null || _isOffline)
+        {
+            return;
+        }
+
+        _ = await Purchasing.SubmitAsync(_po.PurchaseOrderId);
+    }
+
+    private async Task CancelAsync()
+    {
+        if (_po is null || _isOffline)
+        {
+            return;
+        }
+
+        _ = await Purchasing.CancelAsync(_po.PurchaseOrderId);
+    }
+
+    private void GoReceive() => Nav.NavigateTo($"/purchasing/{PurchaseOrderId:D}/receive");
+}

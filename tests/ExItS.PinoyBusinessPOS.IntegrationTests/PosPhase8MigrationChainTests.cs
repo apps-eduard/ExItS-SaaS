@@ -36,7 +36,6 @@ public sealed class PosPhase8MigrationChainTests(PosPostgreSqlFixture fixture)
 
     private static readonly string[] DeferredTables =
     [
-        "purchase_orders",
         "warehouses",
         "payroll",
         "general_ledger",

@@ -20,8 +20,8 @@ public sealed class PerformanceReliabilityArchitectureTests
         var platformReady = File.ReadAllText(Path.Combine(root,
             "src", "Platform", "ExItS.Platform.Infrastructure", "Health", "PlatformDatabaseReadyHealthCheck.cs"));
 
-        Assert.Contains("P10-WP01-suppliers", pos, StringComparison.Ordinal);
-        Assert.Contains("P10-WP01-suppliers", platform, StringComparison.Ordinal);
+        Assert.Contains("P10-WP02-purchasing", pos, StringComparison.Ordinal);
+        Assert.Contains("P10-WP02-purchasing", platform, StringComparison.Ordinal);
         Assert.Contains("MapPosHealthEndpoints", pos, StringComparison.Ordinal);
         Assert.Contains("MapPlatformHealthEndpoints", platform, StringComparison.Ordinal);
         Assert.Contains("/health/ready", posHealth, StringComparison.Ordinal);
@@ -35,18 +35,23 @@ public sealed class PerformanceReliabilityArchitectureTests
     }
 
     [Fact]
-    public void Sale_and_expense_clients_attach_idempotency_headers_when_entity_id_present()
+    public void Sale_expense_and_purchasing_clients_attach_idempotency_headers_when_entity_id_present()
     {
         var root = FindRepositoryRoot();
         var sale = File.ReadAllText(Path.Combine(root,
             "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.ApiClient", "PosSaleClient.cs"));
         var expense = File.ReadAllText(Path.Combine(root,
             "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.ApiClient", "PosExpenseClient.cs"));
+        var purchasing = File.ReadAllText(Path.Combine(root,
+            "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.ApiClient", "PosPurchaseOrderClient.cs"));
 
         Assert.Contains("PosMutationIdempotencyHelper.BuildHeaders", sale, StringComparison.Ordinal);
         Assert.Contains("PosMutationIdempotencyHelper.BuildHeaders", expense, StringComparison.Ordinal);
+        Assert.Contains("PosMutationIdempotencyHelper.BuildHeaders", purchasing, StringComparison.Ordinal);
         Assert.Contains("OfflineOperationTypes.SaleCheckout", sale, StringComparison.Ordinal);
         Assert.Contains("OfflineOperationTypes.ExpenseCreate", expense, StringComparison.Ordinal);
+        Assert.Contains("OfflineOperationTypes.PurchaseOrderSubmit", purchasing, StringComparison.Ordinal);
+        Assert.Contains("OfflineOperationTypes.PurchaseOrderReceive", purchasing, StringComparison.Ordinal);
     }
 
     [Fact]

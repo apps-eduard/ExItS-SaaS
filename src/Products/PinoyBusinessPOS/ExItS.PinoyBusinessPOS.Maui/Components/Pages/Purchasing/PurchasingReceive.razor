@@ -1,0 +1,61 @@
+@page "/purchasing/{PurchaseOrderId:guid}/receive"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosPurchaseOrderClient Purchasing
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManagePurchasing);
+<Page>
+    <PageHeader Title="@L["Purchasing_ReceiveTitle"]" Subtitle="@L["Purchasing_ReceiveSubtitle"]" />
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Purchasing_OfflineTitle"]" Message="@L["Purchasing_OfflineMessage"]" />
+    }
+    <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="ReceiveAsync">@L["Purchasing_Receive"]</Button>
+</Page>
+}
+
+@code {
+    [Parameter] public Guid PurchaseOrderId { get; set; }
+
+    private bool _ready;
+    private bool _isOffline;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewPurchasing))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        _ready = true;
+    }
+
+    private Task ReceiveAsync()
+    {
+        if (_isOffline)
+        {
+            return Task.CompletedTask;
+        }
+
+        return Purchasing.ReceiveAsync(
+            PurchaseOrderId,
+            new ReceivePurchaseOrderRequest([], Guid.NewGuid())).AsTask();
+    }
+}

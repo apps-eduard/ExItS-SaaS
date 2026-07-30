@@ -65,7 +65,7 @@ public sealed class PosExpensesScopeArchitectureTests
         foreach (var table in new[]
                  {
                      "\"payroll\"", "\"general_ledger\"", "\"journal_entries\"",
-                     "\"expense_attachments\"", "\"expense_budgets\"", "\"purchase_orders\"",
+                     "\"expense_attachments\"", "\"expense_budgets\"",
                      "\"accounts_payable\""
                  })
         {

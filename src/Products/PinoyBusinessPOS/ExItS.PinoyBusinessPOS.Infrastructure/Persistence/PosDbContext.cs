@@ -6,6 +6,7 @@ using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
+using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Customers;
@@ -15,6 +16,7 @@ using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Payments;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Sales;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Suppliers;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Purchasing;
 using Microsoft.EntityFrameworkCore;
 
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
@@ -45,6 +47,12 @@ public sealed class PosDbContext : DbContext
     internal DbSet<ExpenseNumberSequenceRecord> ExpenseNumberSequences => Set<ExpenseNumberSequenceRecord>();
     internal DbSet<SupplierRecord> Suppliers => Set<SupplierRecord>();
     internal DbSet<SupplierCodeSequenceRecord> SupplierCodeSequences => Set<SupplierCodeSequenceRecord>();
+    internal DbSet<PurchaseOrderRecord> PurchaseOrders => Set<PurchaseOrderRecord>();
+    internal DbSet<PurchaseOrderLineRecord> PurchaseOrderLines => Set<PurchaseOrderLineRecord>();
+    internal DbSet<PurchaseOrderNumberSequenceRecord> PurchaseOrderNumberSequences => Set<PurchaseOrderNumberSequenceRecord>();
+    internal DbSet<GoodsReceiptRecord> GoodsReceipts => Set<GoodsReceiptRecord>();
+    internal DbSet<GoodsReceiptLineRecord> GoodsReceiptLines => Set<GoodsReceiptLineRecord>();
+    internal DbSet<GoodsReceiptNumberSequenceRecord> GoodsReceiptNumberSequences => Set<GoodsReceiptNumberSequenceRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -673,6 +681,12 @@ public sealed class PosDbContext : DbContext
                 .HasFilter(
                     $"source_type = '{nameof(StockMovementSourceType.Sale)}' AND source_id IS NOT NULL");
 
+            entity.HasIndex(e => new { e.OrganizationId, e.SourceId, e.ProductId, e.MovementType })
+                .IsUnique()
+                .HasDatabaseName("ux_stock_movements_purchase_receipt_source")
+                .HasFilter(
+                    $"source_type = '{nameof(StockMovementSourceType.PurchaseReceipt)}' AND source_id IS NOT NULL");
+
             entity.HasIndex(e => new { e.OrganizationId, e.ProductId, e.MovementType })
                 .IsUnique()
                 .HasDatabaseName("ux_stock_movements_opening_stock")
@@ -945,6 +959,193 @@ public sealed class PosDbContext : DbContext
                 .HasName("pk_supplier_code_sequences");
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
             entity.Property(e => e.NextValue).HasColumnName("next_value").IsRequired();
+        });
+
+        modelBuilder.Entity<PurchaseOrderRecord>(entity =>
+        {
+            entity.ToTable("purchase_orders", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_purchase_orders_status",
+                    "status IN ('Draft', 'Ordered', 'PartiallyReceived', 'Received', 'Cancelled')");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.PoNumber).HasColumnName("po_number").HasMaxLength(PurchaseOrderNumbers.MaxLength);
+            entity.Property(e => e.SupplierId).HasColumnName("supplier_id").IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.OrderDate).HasColumnName("order_date").IsRequired();
+            entity.Property(e => e.ExpectedDeliveryDate).HasColumnName("expected_delivery_date");
+            entity.Property(e => e.SupplierReference)
+                .HasColumnName("supplier_reference")
+                .HasMaxLength(PurchaseOrder.SupplierReferenceMaxLength);
+            entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(PurchaseOrder.NotesMaxLength);
+            entity.Property(e => e.OrderedAtUtc).HasColumnName("ordered_at_utc");
+            entity.Property(e => e.OrderedBy).HasColumnName("ordered_by");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.PoNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_purchase_orders_org_po_number")
+                .HasFilter("po_number IS NOT NULL");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.Status })
+                .HasDatabaseName("ix_purchase_orders_org_status");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.SupplierId })
+                .HasDatabaseName("ix_purchase_orders_org_supplier");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.OrderDate })
+                .HasDatabaseName("ix_purchase_orders_org_order_date");
+
+            entity.HasOne<SupplierRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_purchase_orders_suppliers");
+        });
+
+        modelBuilder.Entity<PurchaseOrderLineRecord>(entity =>
+        {
+            entity.ToTable("purchase_order_lines", tb =>
+            {
+                tb.HasCheckConstraint("ck_purchase_order_lines_ordered_qty_positive", "ordered_qty > 0");
+                tb.HasCheckConstraint("ck_purchase_order_lines_unit_cost_nonnegative", "unit_purchase_cost >= 0");
+                tb.HasCheckConstraint("ck_purchase_order_lines_received_qty_nonnegative", "received_qty >= 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.PurchaseOrderId).HasColumnName("purchase_order_id").IsRequired();
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.LineNumber).HasColumnName("line_number").IsRequired();
+            entity.Property(e => e.NameSnapshot)
+                .HasColumnName("name_snapshot")
+                .HasMaxLength(PurchaseOrderLine.NameSnapshotMaxLength);
+            entity.Property(e => e.UomSnapshot).HasColumnName("uom_snapshot").HasMaxLength(UnitOfMeasures.CodeMaxLength);
+            entity.Property(e => e.OrderedQty).HasColumnName("ordered_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.UnitPurchaseCost).HasColumnName("unit_purchase_cost").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.LineTotal).HasColumnName("line_total").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.ReceivedQty).HasColumnName("received_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.LineNotes).HasColumnName("line_notes").HasMaxLength(PurchaseOrderLine.LineNotesMaxLength);
+
+            entity.HasIndex(e => new { e.PurchaseOrderId, e.LineNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_purchase_order_lines_po_line_number");
+
+            entity.HasIndex(e => new { e.PurchaseOrderId, e.ProductId })
+                .IsUnique()
+                .HasDatabaseName("ux_purchase_order_lines_po_product");
+
+            entity.HasOne<PurchaseOrderRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.PurchaseOrderId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_purchase_order_lines_purchase_orders");
+
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_purchase_order_lines_products");
+        });
+
+        modelBuilder.Entity<PurchaseOrderNumberSequenceRecord>(entity =>
+        {
+            entity.ToTable("purchase_order_number_sequences", tb =>
+            {
+                tb.HasCheckConstraint("ck_po_number_sequences_last_value_positive", "last_value > 0");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BusinessDate })
+                .HasName("pk_purchase_order_number_sequences");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BusinessDate).HasColumnName("business_date");
+            entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
+        });
+
+        modelBuilder.Entity<GoodsReceiptRecord>(entity =>
+        {
+            entity.ToTable("goods_receipts");
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.PurchaseOrderId).HasColumnName("purchase_order_id").IsRequired();
+            entity.Property(e => e.GrnNumber).HasColumnName("grn_number").HasMaxLength(GoodsReceiptNumbers.MaxLength).IsRequired();
+            entity.Property(e => e.ReceivedAtUtc).HasColumnName("received_at_utc");
+            entity.Property(e => e.ReceivedBy).HasColumnName("received_by").IsRequired();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.GrnNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_goods_receipts_org_grn_number");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.PurchaseOrderId })
+                .HasDatabaseName("ix_goods_receipts_org_po");
+
+            entity.HasOne<PurchaseOrderRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.PurchaseOrderId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_goods_receipts_purchase_orders");
+        });
+
+        modelBuilder.Entity<GoodsReceiptLineRecord>(entity =>
+        {
+            entity.ToTable("goods_receipt_lines", tb =>
+            {
+                tb.HasCheckConstraint("ck_goods_receipt_lines_received_qty_positive", "received_qty > 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.GoodsReceiptId).HasColumnName("goods_receipt_id").IsRequired();
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.PurchaseOrderLineId).HasColumnName("purchase_order_line_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.LineNumber).HasColumnName("line_number").IsRequired();
+            entity.Property(e => e.NameSnapshot).HasColumnName("name_snapshot").HasMaxLength(PurchaseOrderLine.NameSnapshotMaxLength).IsRequired();
+            entity.Property(e => e.UomSnapshot).HasColumnName("uom_snapshot").HasMaxLength(UnitOfMeasures.CodeMaxLength).IsRequired();
+            entity.Property(e => e.ReceivedQty).HasColumnName("received_qty").HasPrecision(18, 3).IsRequired();
+
+            entity.HasIndex(e => new { e.GoodsReceiptId, e.LineNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_goods_receipt_lines_grn_line_number");
+
+            entity.HasOne<GoodsReceiptRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.GoodsReceiptId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_goods_receipt_lines_goods_receipts");
+
+            entity.HasOne<PurchaseOrderLineRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.PurchaseOrderLineId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_goods_receipt_lines_po_lines");
+        });
+
+        modelBuilder.Entity<GoodsReceiptNumberSequenceRecord>(entity =>
+        {
+            entity.ToTable("grn_number_sequences", tb =>
+            {
+                tb.HasCheckConstraint("ck_grn_number_sequences_last_value_positive", "last_value > 0");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BusinessDate })
+                .HasName("pk_grn_number_sequences");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BusinessDate).HasColumnName("business_date");
+            entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
         });
     }
 }

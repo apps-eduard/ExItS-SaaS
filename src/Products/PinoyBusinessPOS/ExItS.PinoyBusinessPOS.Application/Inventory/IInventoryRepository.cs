@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
+using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.Application.Inventory;
@@ -83,6 +84,12 @@ public interface IInventoryRepository
     Task<bool> HasSaleVoidRestorationAsync(
         PosOrganizationId organizationId,
         SaleId saleId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> HasPurchaseReceiptAsync(
+        PosOrganizationId organizationId,
+        GoodsReceiptId goodsReceiptId,
         CatalogProductId productId,
         CancellationToken cancellationToken = default);
 

@@ -54,6 +54,15 @@ public static class ApplicationErrorCodes
     public const string SupplierMobileConflict = "pos.supplier.mobile.conflict";
     public const string SupplierTaxConflict = "pos.supplier.tax_number.conflict";
     public const string SupplierConcurrencyConflict = "pos.supplier.concurrency_conflict";
+
+    public const string PurchaseOrderNotFound = "pos.purchase_order.not_found";
+    public const string GoodsReceiptNotFound = "pos.goods_receipt.not_found";
+    public const string PurchaseOrderNumberConflict = "pos.purchase_order.number.conflict";
+    public const string GoodsReceiptNumberConflict = "pos.goods_receipt.number.conflict";
+    public const string PurchaseOrderConcurrencyConflict = "pos.purchase_order.concurrency_conflict";
+    public const string PurchaseSupplierNotActive = "pos.purchase_order.supplier.not_active";
+    public const string PurchaseProductNotFound = "pos.purchase_order.product.not_found";
+    public const string PurchaseProductNotActive = "pos.purchase_order.product.not_active";
 }
 
 public sealed class PersistenceConflictException : Exception

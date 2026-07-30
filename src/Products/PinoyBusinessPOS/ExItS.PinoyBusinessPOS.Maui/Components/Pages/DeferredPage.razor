@@ -32,6 +32,12 @@
                 <Button Variant="ButtonVariant.Primary" OnClick="GoSuppliers">@L["Nav_Suppliers"]</Button>
             </Stack>
         </Section>
+        <Section Title="@L["Purchasing_Title"]">
+            <Stack Gap="3">
+                <div class="pos-muted">@L["Purchasing_Subtitle"]</div>
+                <Button Variant="ButtonVariant.Primary" OnClick="GoPurchasing">@L["Nav_Purchasing"]</Button>
+            </Stack>
+        </Section>
         <Section Title="@L["Dashboard_Title"]">
             <Stack Gap="3">
                 <div class="pos-muted">@L["Dashboard_Subtitle"]</div>
@@ -83,6 +89,7 @@
     private void GoInventory() => Nav.NavigateTo("/inventory");
     private void GoExpenses() => Nav.NavigateTo("/expenses");
     private void GoSuppliers() => Nav.NavigateTo("/suppliers");
+    private void GoPurchasing() => Nav.NavigateTo("/purchasing");
     private void GoDashboard() => Nav.NavigateTo("/dashboard");
     private void GoReports() => Nav.NavigateTo("/reports");
 }

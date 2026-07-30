@@ -194,7 +194,7 @@ public sealed class PackageVersionAndSmokeTests
     [Fact]
     public void Phase_marker_is_p9_wp05()
     {
-        Assert.Equal("P10-WP01-suppliers", DeploymentConstants.PhaseMarker);
+        Assert.Equal("P10-WP02-purchasing", DeploymentConstants.PhaseMarker);
     }
 }
 
@@ -277,7 +277,7 @@ public sealed class AndroidAndCompatibilityTests
     [Fact]
     public void Platform_and_pos_share_same_phase_marker_constant()
     {
-        Assert.Equal(DeploymentConstants.PhaseMarker, "P10-WP01-suppliers");
+        Assert.Equal(DeploymentConstants.PhaseMarker, "P10-WP02-purchasing");
     }
 
     [Fact]

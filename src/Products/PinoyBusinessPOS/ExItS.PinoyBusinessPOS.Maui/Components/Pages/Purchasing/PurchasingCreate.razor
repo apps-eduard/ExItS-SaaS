@@ -1,0 +1,58 @@
+@page "/purchasing/new"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosPurchaseOrderClient Purchasing
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManagePurchasing);
+<Page>
+    <PageHeader Title="@L["Purchasing_CreateTitle"]" Subtitle="@L["Purchasing_CreateSubtitle"]" />
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Purchasing_OfflineTitle"]" Message="@L["Purchasing_OfflineMessage"]" />
+    }
+    else if (!canManage)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+    }
+    <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline || _saving)" OnClick="SaveAsync">@L["Purchasing_Create"]</Button>
+</Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _saving;
+    private bool _isOffline;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewPurchasing))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        _ready = true;
+    }
+
+    private Task SaveAsync()
+    {
+        _saving = true;
+        return Task.CompletedTask;
+    }
+}

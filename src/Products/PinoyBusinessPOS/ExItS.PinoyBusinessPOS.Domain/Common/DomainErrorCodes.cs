@@ -116,4 +116,25 @@ public static class DomainErrorCodes
     public const string InvalidSupplierStatus = "pos.supplier.status.invalid";
     public const string InvalidSupplierStatusTransition = "pos.supplier.status.invalid_transition";
     public const string SupplierNotActive = "pos.supplier.not_active";
+
+    public const string InvalidPurchaseOrderId = "pos.purchase_order.id.invalid";
+    public const string InvalidPurchaseOrderLineId = "pos.purchase_order_line.id.invalid";
+    public const string InvalidGoodsReceiptId = "pos.goods_receipt.id.invalid";
+    public const string InvalidGoodsReceiptLineId = "pos.goods_receipt_line.id.invalid";
+    public const string InvalidPurchaseOrderNumber = "pos.purchase_order.number.invalid";
+    public const string InvalidGoodsReceiptNumber = "pos.goods_receipt.number.invalid";
+    public const string InvalidPurchaseOrderStatus = "pos.purchase_order.status.invalid";
+    public const string InvalidPurchaseOrderStatusTransition = "pos.purchase_order.status.invalid_transition";
+    public const string InvalidPurchaseOrderQuantity = "pos.purchase_order.quantity.invalid";
+    public const string InvalidPurchaseUnitCost = "pos.purchase_order.unit_cost.invalid";
+    public const string InvalidPurchaseOrderLine = "pos.purchase_order.line.invalid";
+    public const string InvalidPurchaseOrderNotes = "pos.purchase_order.notes.invalid";
+    public const string InvalidPurchaseSupplierReference = "pos.purchase_order.supplier_reference.invalid";
+    public const string InvalidPurchaseExpectedDeliveryDate = "pos.purchase_order.expected_delivery.invalid";
+    public const string PurchaseOrderRequiresLines = "pos.purchase_order.lines.required";
+    public const string PurchaseOrderDuplicateProduct = "pos.purchase_order.duplicate_product";
+    public const string PurchaseReceiveRequiresLines = "pos.purchase_order.receive.lines_required";
+    public const string InvalidPurchaseReceiveQuantity = "pos.purchase_order.receive.quantity.invalid";
+    public const string PurchaseOverReceipt = "pos.purchase_order.receive.over_receipt";
+    public const string InvalidGoodsReceiptLine = "pos.goods_receipt.line.invalid";
 }
