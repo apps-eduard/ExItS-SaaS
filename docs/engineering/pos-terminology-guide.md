@@ -7,7 +7,7 @@ Glossary for PinoyBusinessPOS shell and shared DesignSystem feedback (`PosResour
 always **`fil-PH`**. User-facing language label is consistently **Tagalog** (not “Filipino”) for
 familiarity in the store UI.
 
-Business flows (sales entry, inventory, Utang) remain deferred — do not invent commercial copy yet.
+Business flows for sales entry and inventory remain deferred. Utang customers/credit/payments/due dates are in progress through Phase 6 — do not invent sales/inventory commercial copy yet.
 
 ## Principles
 

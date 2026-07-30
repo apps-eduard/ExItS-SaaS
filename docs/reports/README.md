@@ -49,3 +49,4 @@ The dashboard links to the latest accepted report.
 | [P6-WP01-customers.md](P6-WP01-customers.md) | Customers | Complete with documented risks |
 | [P6-WP02-remarks-based-credit.md](P6-WP02-remarks-based-credit.md) | Remarks-Based Credit | Complete with documented risks |
 | [P6-WP03-payments-and-ledger.md](P6-WP03-payments-and-ledger.md) | Payments and Ledger | Complete with documented risks |
+| [P6-WP04-due-dates-and-overdue-monitoring.md](P6-WP04-due-dates-and-overdue-monitoring.md) | Due Dates and Overdue Monitoring | Complete with documented risks |

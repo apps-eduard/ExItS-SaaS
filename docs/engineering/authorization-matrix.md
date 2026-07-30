@@ -6,7 +6,7 @@ Platform grants **product access**; each product owns **operational permissions*
 
 **P3-WP02 note:** Organization and subscription REST endpoints are development-stage regarding **authentication** (no JWT/passwords/MFA/SSO/AD).
 
-**P6-WP01 / P6-WP02 / P6-WP03 note:** POS customer, credit, repayment, and ledger routes require `X-Pos-Organization-Id`. Repayment record/reverse also require Development/Testing actor header `X-Dev-Platform-User-Id`. Cross-organization access returns 404. Product-local Cashier/Store roles are still not implemented. Development/Testing Platform identity remains the MAUI auth path.
+**P6-WP01 / P6-WP02 / P6-WP03 / P6-WP04 note:** POS customer, credit, repayment, ledger, due-date, and overdue routes require `X-Pos-Organization-Id`. Repayment record/reverse and due-date set/clear also require Development/Testing actor header `X-Dev-Platform-User-Id`. Cross-organization access returns 404. Product-local Cashier/Store roles are still not implemented. Development/Testing Platform identity remains the MAUI auth path.
 
 ## Authorization layers (fail closed)
 

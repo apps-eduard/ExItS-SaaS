@@ -130,12 +130,12 @@
 | R-124 | POS customer API organization header mistaken for production authz | Critical | Document Dev/Testing-only scope; production JWT still required (R-091); fail closed cross-org 404 | Open — introduced P6-WP01 |
 | R-125 | Customer notes misused as credit/utang records | High | Notes hint forbids credit meaning; dedicated `credit_entries` + UI copy | Open — introduced P6-WP01; mitigated further in P6-WP02 |
 | R-126 | Duplicate mobile MVP rule too strict/loose for real stores | Medium | Document MVP active-mobile uniqueness; refine later | Open — introduced P6-WP01 |
-| R-127 | Derived outstanding mistaken for stored balance / repayment ledger | High | Document sum-of-active-entries only; no edit/delete; repayments deferred to P6-WP03 | Mitigated in P6-WP03 — outstanding = active credits − active repayments; ledger is read-only |
-| R-128 | Dev actor header mistaken for production audit identity | High | Document `X-Dev-Platform-User-Id` as Development/Testing-only; production JWT still required (R-091) | Open — introduced P6-WP03 |
+| R-127 | Derived outstanding mistaken for stored balance / repayment ledger | High | Document sum-of-active-entries only; no edit/delete; repayments deferred to P6-WP03 | Mitigated in P6-WP03 — outstanding = active credits − active repayments; ledger is read-only; FIFO aging in P6-WP04 also derived |
+| R-128 | Dev actor header mistaken for production audit identity | High | Document `X-Dev-Platform-User-Id` as Development/Testing-only; production JWT still required (R-091) | Open — introduced P6-WP03; also used for due-date set/clear in P6-WP04 |
 
-## Phase 6 note (P6-WP03)
+## Phase 6 note (P6-WP04)
 
-P6-WP03 delivered organization-owned repayments (`pos.repayments`) and a unified read-only Utang ledger with overpayment protection. **Not delivered:** due dates, statements, printable receipts, trial-expiry behavior. OD-07/OD-08 remain open. Next: **P6-WP04 — Due Dates and Overdue Monitoring** when authorized.
+P6-WP04 delivered optional credit due dates (`current_due_date` + append-only `credit_due_date_changes`), FIFO aging as a read model, and overdue monitoring APIs/MAUI. Effective business date is server UTC calendar day only (org timezone not defined). **Not delivered:** statements, printable receipts, trial-expiry behavior. OD-07/OD-08 remain open. R-109 remains open (no interactive Android validation). Next: **P6-WP05 — Statements, Receipts and Trial Rules** when authorized.
 
 ## Phase 5 note (P5-WP05 closeout)
 

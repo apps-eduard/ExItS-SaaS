@@ -34,7 +34,9 @@ Clinics, staff assignments, patients, appointments, medical notes, clinical auth
 
 **P6-WP03 (payments and ledger):** Same database/schema, table `repayments`. Append-only repayments with explicit reversal and actor metadata. Unified ledger is a read model (UNION), not a persisted ledger table. Outstanding = active credits − active repayments. Inactive customers may repay existing debt. SaaS subscription payments remain distinct.
 
-Later POS ownership (not yet implemented): businesses, stores/branches/registers, due dates/statements/receipts, retail payments, catalog, sales, inventory, expenses, suppliers, offline device state, POS audit, **entitlement projection rows**.
+**P6-WP04 (due dates and overdue):** Same database/schema. Nullable `current_due_date` on `credit_entries`; append-only `credit_due_date_changes` history (reason, actor, UTC). FIFO aging and overdue status are read models only — no persisted payment allocations. Effective business date = server UTC calendar day (org timezone not defined). Outstanding formula unchanged.
+
+Later POS ownership (not yet implemented): businesses, stores/branches/registers, statements/receipts, retail payments, catalog, sales, inventory, expenses, suppliers, offline device state, POS audit, **entitlement projection rows**.
 
 ---
 
