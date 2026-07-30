@@ -71,4 +71,41 @@ public interface IPosCustomerClient
         Guid repaymentId,
         ReversePosRepaymentRequest request,
         CancellationToken ct = default);
+
+    Task<ApiResult<PosCreditEntryDto>> SetCreditDueDateAsync(
+        Guid creditEntryId,
+        SetPosCreditDueDateRequest request,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosCreditEntryDto>> ClearCreditDueDateAsync(
+        Guid creditEntryId,
+        string reason,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosCreditDueDateHistoryPagedResult>> ListCreditDueDateHistoryAsync(
+        Guid creditEntryId,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosCustomerOverdueSummaryDto>> GetOverdueSummaryAsync(
+        Guid customerId,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosAgedCreditPagedResult>> ListAgedCreditsAsync(
+        Guid customerId,
+        string? filter = null,
+        int page = 1,
+        int pageSize = 50,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosOverdueCustomerPagedResult>> ListOverdueCustomersAsync(
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosAgedCreditPagedResult>> ListOverdueCreditsAsync(
+        int page = 1,
+        int pageSize = 50,
+        CancellationToken ct = default);
 }

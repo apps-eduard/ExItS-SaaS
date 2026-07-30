@@ -16,7 +16,8 @@ internal static class CreditEntryEntityMapper
             Enum.Parse<CreditEntryStatus>(record.Status, ignoreCase: false),
             record.CreatedAtUtc,
             record.ReversedAtUtc,
-            record.ReversalReason);
+            record.ReversalReason,
+            record.CurrentDueDate);
 
     public static CreditEntryRecord ToRecord(CreditEntry entry) =>
         new()
@@ -29,7 +30,8 @@ internal static class CreditEntryEntityMapper
             Status = entry.Status.ToString(),
             CreatedAtUtc = entry.CreatedAtUtc,
             ReversedAtUtc = entry.ReversedAtUtc,
-            ReversalReason = entry.ReversalReason
+            ReversalReason = entry.ReversalReason,
+            CurrentDueDate = entry.CurrentDueDate
         };
 
     public static void ApplyToRecord(CreditEntry entry, CreditEntryRecord record)
@@ -37,5 +39,6 @@ internal static class CreditEntryEntityMapper
         record.Status = entry.Status.ToString();
         record.ReversedAtUtc = entry.ReversedAtUtc;
         record.ReversalReason = entry.ReversalReason;
+        record.CurrentDueDate = entry.CurrentDueDate;
     }
 }

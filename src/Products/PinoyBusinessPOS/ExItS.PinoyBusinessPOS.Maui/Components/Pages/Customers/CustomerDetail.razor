@@ -93,6 +93,15 @@ else
                     @L["Utang_CreditsTotal"] <MoneyDisplay Amount="@_utang.ActiveCreditTotal" CurrencyCode="PHP" />
                     · @L["Utang_PaymentsTotal"] <MoneyDisplay Amount="@_utang.ActiveRepaymentTotal" CurrencyCode="PHP" />
                 </div>
+                <div class="pos-muted">
+                    @L["Overdue_Amount"]: <MoneyDisplay Amount="@_utang.OverdueAmount" CurrencyCode="PHP" />
+                    · @L["Overdue_Count"]: @_utang.OverdueCreditCount
+                    · @L["Overdue_NoDueDateCount"]: @_utang.CreditsWithoutDueDateCount
+                </div>
+                <div class="pos-muted">
+                    @L["Overdue_Earliest"]: @(_utang.EarliestOverdueDate?.ToString("d") ?? L["Customers_NoValue"])
+                    · @L["Overdue_NextDue"]: @(_utang.NextUpcomingDueDate?.ToString("d") ?? L["Customers_NoValue"])
+                </div>
             }
             <FormActions>
                 @if (customer.Status == "Active")
@@ -103,6 +112,7 @@ else
                         Disabled="@(_utang is null || _utang.OutstandingAmount <= 0m)"
                         OnClick="GoAddPayment">@L["Payment_Record"]</Button>
                 <Button Variant="ButtonVariant.Secondary" OnClick="GoLedger">@L["Ledger_Open"]</Button>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoOverdue">@L["Overdue_OpenDetail"]</Button>
             </FormActions>
             @if (customer.Status != "Active")
             {
@@ -129,6 +139,14 @@ else
                         <div class="pos-value-md">
                             <MoneyDisplay Amount="@entry.Amount" CurrencyCode="PHP" />
                             <Badge Tone="@(entry.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@entry.Status</Badge>
+                            @if (entry.CurrentDueDate is null)
+                            {
+                                <Badge Tone="BadgeTone.Neutral">@L["DueDate_Badge_NoDueDate"]</Badge>
+                            }
+                            else
+                            {
+                                <Badge Tone="BadgeTone.Warning">@L["DueDate_Current"]: @entry.CurrentDueDate.Value.ToString("d")</Badge>
+                            }
                         </div>
                         <div class="pos-wrap">@entry.Remarks</div>
                         <div class="pos-muted">@entry.CreatedAtUtc.ToLocalTime().ToString("g")</div>
@@ -138,7 +156,10 @@ else
                         }
                         else
                         {
-                            <Button Variant="ButtonVariant.Danger" OnClick="() => BeginReverseCredit(entry)">@L["Credit_Reverse"]</Button>
+                            <FormActions>
+                                <Button Variant="ButtonVariant.Secondary" OnClick="() => GoCreditDetail(entry.CreditEntryId)">@L["DueDate_OpenCredit"]</Button>
+                                <Button Variant="ButtonVariant.Danger" OnClick="() => BeginReverseCredit(entry)">@L["Credit_Reverse"]</Button>
+                            </FormActions>
                         }
                     </div>
                 }
@@ -364,4 +385,6 @@ else
     private void GoAddCredit() => Nav.NavigateTo($"/customers/{CustomerId:D}/credit/new");
     private void GoAddPayment() => Nav.NavigateTo($"/customers/{CustomerId:D}/repayments/new");
     private void GoLedger() => Nav.NavigateTo($"/customers/{CustomerId:D}/ledger");
+    private void GoOverdue() => Nav.NavigateTo($"/customers/{CustomerId:D}/overdue");
+    private void GoCreditDetail(Guid entryId) => Nav.NavigateTo($"/customers/{CustomerId:D}/credit/{entryId:D}");
 }

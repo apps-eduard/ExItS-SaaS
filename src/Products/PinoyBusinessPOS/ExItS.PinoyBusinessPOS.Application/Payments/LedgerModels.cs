@@ -32,7 +32,12 @@ public sealed record CustomerUtangSummaryDto(
     decimal ActiveRepaymentTotal,
     int ActiveCreditCount,
     int ActiveRepaymentCount,
-    int TotalLedgerEntryCount);
+    int TotalLedgerEntryCount,
+    decimal OverdueAmount = 0m,
+    int OverdueCreditCount = 0,
+    DateOnly? EarliestOverdueDate = null,
+    DateOnly? NextUpcomingDueDate = null,
+    int CreditsWithoutDueDateCount = 0);
 
 public interface IUtangLedgerQuery
 {

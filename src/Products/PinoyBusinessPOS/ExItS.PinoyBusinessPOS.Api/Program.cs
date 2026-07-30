@@ -21,6 +21,9 @@ builder.Services.AddScoped<ReactivatePOSCustomer>();
 builder.Services.AddScoped<CreditEntryQueryService>();
 builder.Services.AddScoped<CreateCreditEntry>();
 builder.Services.AddScoped<ReverseCreditEntry>();
+builder.Services.AddScoped<SetCreditDueDate>();
+builder.Services.AddScoped<CreditDueDateHistoryQuery>();
+builder.Services.AddScoped<OverdueQueryService>();
 builder.Services.AddScoped<RepaymentQueryService>();
 builder.Services.AddScoped<UtangLedgerQueryService>();
 builder.Services.AddScoped<CreateRepayment>();
@@ -31,9 +34,10 @@ var app = builder.Build();
 app.MapHealthChecks("/health");
 app.MapCustomerEndpoints();
 app.MapCreditEndpoints();
+app.MapDueDateEndpoints();
 app.MapRepaymentEndpoints();
 
-// Phase marker: P6-WP03-payments-and-ledger
+// Phase marker: P6-WP04-due-dates-and-overdue-monitoring
 
 app.Run();
 

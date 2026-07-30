@@ -19,6 +19,7 @@ public sealed class PosDbContext : DbContext
 
     internal DbSet<POSCustomerRecord> Customers => Set<POSCustomerRecord>();
     internal DbSet<CreditEntryRecord> CreditEntries => Set<CreditEntryRecord>();
+    internal DbSet<CreditDueDateChangeRecord> CreditDueDateChanges => Set<CreditDueDateChangeRecord>();
     internal DbSet<RepaymentRecord> Repayments => Set<RepaymentRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -90,6 +91,9 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.ReversalReason)
                 .HasColumnName("reversal_reason")
                 .HasMaxLength(CreditEntry.ReversalReasonMaxLength);
+            entity.Property(e => e.CurrentDueDate)
+                .HasColumnName("current_due_date")
+                .HasColumnType("date");
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")
@@ -102,11 +106,55 @@ public sealed class PosDbContext : DbContext
             entity.HasIndex(e => new { e.OrganizationId, e.CustomerId, e.Status })
                 .HasDatabaseName("ix_credit_entries_org_customer_status");
 
+            entity.HasIndex(e => new { e.OrganizationId, e.CurrentDueDate })
+                .HasDatabaseName("ix_credit_entries_org_current_due_date");
+
             entity.HasOne<POSCustomerRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_credit_entries_customers");
+        });
+
+        modelBuilder.Entity<CreditDueDateChangeRecord>(entity =>
+        {
+            entity.ToTable("credit_due_date_changes");
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.CreditEntryId).HasColumnName("credit_entry_id").IsRequired();
+            entity.Property(e => e.CustomerId).HasColumnName("customer_id").IsRequired();
+            entity.Property(e => e.PreviousDueDate)
+                .HasColumnName("previous_due_date")
+                .HasColumnType("date");
+            entity.Property(e => e.NewDueDate)
+                .HasColumnName("new_due_date")
+                .HasColumnType("date");
+            entity.Property(e => e.Reason)
+                .HasColumnName("reason")
+                .HasMaxLength(CreditDueDateChange.ReasonMaxLength)
+                .IsRequired();
+            entity.Property(e => e.ChangedBy).HasColumnName("changed_by").IsRequired();
+            entity.Property(e => e.ChangedAtUtc).HasColumnName("changed_at_utc");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.CreditEntryId, e.ChangedAtUtc })
+                .HasDatabaseName("ix_credit_due_date_changes_org_credit_changed");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ChangedAtUtc })
+                .HasDatabaseName("ix_credit_due_date_changes_org_changed");
+
+            entity.HasOne<CreditEntryRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CreditEntryId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_credit_due_date_changes_credit_entries");
+
+            entity.HasOne<POSCustomerRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_credit_due_date_changes_customers");
         });
 
         modelBuilder.Entity<RepaymentRecord>(entity =>

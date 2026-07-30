@@ -17,7 +17,8 @@ public sealed record CreditEntryDto(
     string Status,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset? ReversedAtUtc,
-    string? ReversalReason);
+    string? ReversalReason,
+    DateOnly? CurrentDueDate);
 
 public sealed record CustomerCreditSummaryDto(
     Guid CustomerId,
@@ -101,7 +102,8 @@ public sealed class CreditEntryQueryService
             entry.Status.ToString(),
             entry.CreatedAtUtc,
             entry.ReversedAtUtc,
-            entry.ReversalReason);
+            entry.ReversalReason,
+            entry.CurrentDueDate);
 }
 
 public sealed class CreateCreditEntry

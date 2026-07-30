@@ -22,7 +22,7 @@ public sealed class RepaymentUseCaseTests
         var customers = new InMemoryCustomerRepository();
         var credits = new InMemoryCreditRepository();
         var repayments = new InMemoryRepaymentRepository();
-        var outstanding = new OutstandingBalanceService(credits, repayments);
+        var outstanding = new OutstandingBalanceService(credits, repayments, new FixedClock(Now));
         var uow = new ImmediateUnitOfWork();
         var clock = new FixedClock(Now);
 
@@ -113,6 +113,9 @@ public sealed class RepaymentUseCaseTests
         public Task<CreditEntry?> GetByIdAsync(PosOrganizationId organizationId, POSCustomerId customerId, CreditEntryId entryId, CancellationToken cancellationToken = default) =>
             Task.FromResult(_items.FirstOrDefault(e => e.Id == entryId && e.OrganizationId == organizationId && e.CustomerId == customerId));
 
+        public Task<CreditEntry?> GetByIdForOrganizationAsync(PosOrganizationId organizationId, CreditEntryId entryId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(e => e.Id == entryId && e.OrganizationId == organizationId));
+
         public Task<(IReadOnlyList<CreditEntry> Items, int TotalCount)> ListByCustomerAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
@@ -123,6 +126,15 @@ public sealed class RepaymentUseCaseTests
             var list = _items.Where(e => e.OrganizationId == organizationId && e.CustomerId == customerId).ToList();
             return Task.FromResult(((IReadOnlyList<CreditEntry>)list.Skip(skip).Take(take).ToList(), list.Count));
         }
+
+        public Task<IReadOnlyList<CreditEntry>> ListActiveByOrganizationAsync(
+            PosOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult((IReadOnlyList<CreditEntry>)_items
+                .Where(e => e.OrganizationId == organizationId && e.Status == CreditEntryStatus.Active)
+                .OrderBy(e => e.CreatedAtUtc)
+                .ThenBy(e => e.Id.Value)
+                .ToList());
 
         public Task<decimal> SumActiveAmountAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
             Task.FromResult(_items.Where(e => e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == CreditEntryStatus.Active).Sum(e => e.Amount));

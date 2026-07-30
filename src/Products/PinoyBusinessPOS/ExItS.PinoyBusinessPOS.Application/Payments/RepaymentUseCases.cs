@@ -26,13 +26,16 @@ public sealed class OutstandingBalanceService : IOutstandingBalanceService
 {
     private readonly ICreditEntryRepository _credits;
     private readonly IRepaymentRepository _repayments;
+    private readonly IClock _clock;
 
     public OutstandingBalanceService(
         ICreditEntryRepository credits,
-        IRepaymentRepository repayments)
+        IRepaymentRepository repayments,
+        IClock clock)
     {
         _credits = credits;
         _repayments = repayments;
+        _clock = clock;
     }
 
     public async Task<decimal> GetOutstandingAsync(
@@ -58,18 +61,37 @@ public sealed class OutstandingBalanceService : IOutstandingBalanceService
         var activeRepayments = await _repayments.SumActiveAmountAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
         var activeCreditCount = await _credits.CountActiveAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
         var activeRepaymentCount = await _repayments.CountActiveAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
-        var (_, creditTotal) = await _credits.ListByCustomerAsync(orgId, custId, 0, 1, cancellationToken).ConfigureAwait(false);
+        var (creditItems, creditTotal) = await _credits.ListByCustomerAsync(orgId, custId, 0, 10_000, cancellationToken).ConfigureAwait(false);
         var (_, repaymentTotal) = await _repayments.ListByCustomerAsync(orgId, custId, 0, 1, cancellationToken).ConfigureAwait(false);
 
-        return new CustomerUtangSummaryDto(
+        var aged = CreditFifoAging.AgeCredits(
+            creditItems,
+            activeRepayments,
+            CreditFifoAging.EffectiveBusinessDateUtc(_clock.UtcNow));
+        var overdueSummary = CreditFifoAging.BuildCustomerSummary(
             customerId,
             organizationId,
-            activeCredits - activeRepayments,
+            aged,
             activeCredits,
             activeRepayments,
             activeCreditCount,
             activeRepaymentCount,
             creditTotal + repaymentTotal);
+
+        return new CustomerUtangSummaryDto(
+            customerId,
+            organizationId,
+            overdueSummary.OutstandingAmount,
+            overdueSummary.ActiveCreditTotal,
+            overdueSummary.ActiveRepaymentTotal,
+            overdueSummary.ActiveCreditCount,
+            overdueSummary.ActiveRepaymentCount,
+            overdueSummary.TotalLedgerEntryCount,
+            overdueSummary.OverdueAmount,
+            overdueSummary.OverdueCreditCount,
+            overdueSummary.EarliestOverdueDate,
+            overdueSummary.NextUpcomingDueDate,
+            overdueSummary.CreditsWithoutDueDateCount);
     }
 }
 

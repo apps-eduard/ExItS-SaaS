@@ -8,6 +8,16 @@
 <Page>
     <PageHeader Title="@FeatureName" Subtitle="@L["Deferred_Title"]" />
 
+    @if (IsMore)
+    {
+        <Section Title="@L["Overdue_Title"]">
+            <Stack Gap="3">
+                <div class="pos-muted">@L["Overdue_Subtitle"]</div>
+                <Button Variant="ButtonVariant.Primary" OnClick="GoOverdue">@L["Overdue_OpenOrg"]</Button>
+            </Stack>
+        </Section>
+    }
+
     <EmptyState IconName="@IconName" Title="@L["Deferred_Title"]" Message="@string.Format(L["Deferred_Message"], FeatureName)">
         <Actions>
             <Button Variant="ButtonVariant.Secondary" OnClick="GoHome">@L["Deferred_BackToHome"]</Button>
@@ -26,6 +36,8 @@
 
     private string RelativePath => Nav.ToBaseRelativePath(Nav.Uri).Trim('/');
 
+    private bool IsMore => string.Equals(RelativePath, "more", StringComparison.OrdinalIgnoreCase);
+
     private string FeatureName => RelativePath switch
     {
         "products" => L["Nav_Products"],
@@ -43,4 +55,5 @@
     };
 
     private void GoHome() => Nav.NavigateTo("/home");
+    private void GoOverdue() => Nav.NavigateTo("/overdue");
 }

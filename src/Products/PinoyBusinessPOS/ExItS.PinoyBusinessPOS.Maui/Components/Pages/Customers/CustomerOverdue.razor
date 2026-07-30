@@ -1,0 +1,213 @@
+@page "/customers/{CustomerId:guid}/overdue"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCustomerClient Customers
+@inject ICurrentUserContext CurrentUser
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (_loading)
+{
+    <Page><Spinner /><span>@L["Overdue_Loading"]</span></Page>
+}
+else if (_summary is null)
+{
+    <Page>
+        <ErrorState Title="@(_errorTitle ?? L["Customers_NotFoundTitle"])" Message="@(_errorMessage ?? L["Customers_NotFoundMessage"])" RetryLabel="@L["Api_Retry"]" OnRetry="LoadAsync" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
+    </Page>
+}
+else
+{
+    var summary = _summary;
+<Page>
+    <PageHeader Title="@L["Overdue_CustomerTitle"]" Subtitle="@L["Overdue_CustomerSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoOrgOverdue">@L["Overdue_OpenOrg"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Overdue_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Overdue_SummaryTitle"]">
+        <Stack Gap="3">
+            <div>
+                <span class="pos-muted">@L["Credit_Outstanding"]</span>
+                <div class="pos-value-md"><MoneyDisplay Amount="@summary.OutstandingAmount" CurrencyCode="PHP" /></div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Overdue_Amount"]</span>
+                <div class="pos-value-md"><MoneyDisplay Amount="@summary.OverdueAmount" CurrencyCode="PHP" /></div>
+            </div>
+            <div class="pos-muted">
+                @L["Overdue_Count"]: @summary.OverdueCreditCount
+                · @L["Overdue_NoDueDateCount"]: @summary.CreditsWithoutDueDateCount
+            </div>
+            <div class="pos-muted">
+                @L["Overdue_Earliest"]: @(summary.EarliestOverdueDate?.ToString("d") ?? L["Customers_NoValue"])
+                · @L["Overdue_NextDue"]: @(summary.NextUpcomingDueDate?.ToString("d") ?? L["Customers_NoValue"])
+            </div>
+        </Stack>
+    </Section>
+
+    <Section Title="@L["Overdue_FilterTitle"]">
+            <FormActions>
+                <Button Variant="@FilterVariantAll" OnClick="SetFilterAllAsync">@L["Overdue_Filter_All"]</Button>
+                <Button Variant="@FilterVariantOverdue" OnClick="SetFilterOverdueAsync">@L["Overdue_Filter_Overdue"]</Button>
+                <Button Variant="@FilterVariantDueSoon" OnClick="SetFilterDueSoonAsync">@L["Overdue_Filter_DueSoon"]</Button>
+                <Button Variant="@FilterVariantNoDueDate" OnClick="SetFilterNoDueDateAsync">@L["Overdue_Filter_NoDueDate"]</Button>
+            </FormActions>
+    </Section>
+
+    <Section Title="@L["Overdue_CreditsTitle"]">
+        @if (_creditsLoading)
+        {
+            <Spinner /><span>@L["Overdue_Loading"]</span>
+        }
+        else if (_credits.Count == 0)
+        {
+            <EmptyState Title="@L["Overdue_EmptyCreditsTitle"]" Message="@L["Overdue_EmptyFilterMessage"]" />
+        }
+        else
+        {
+            <Stack Gap="3">
+                @foreach (var credit in _credits)
+                {
+                    <div class="pos-credit-entry">
+                        <div class="pos-value-md">
+                            <MoneyDisplay Amount="@credit.RemainingUnpaidAmount" CurrencyCode="PHP" />
+                            <Badge Tone="@DueStatusTone(credit.DueStatus)">@DueStatusLabel(credit.DueStatus)</Badge>
+                        </div>
+                        <div class="pos-wrap">@credit.Remarks</div>
+                        <div class="pos-muted">
+                            @L["DueDate_Current"]: @(credit.CurrentDueDate?.ToString("d") ?? L["DueDate_None"])
+                        </div>
+                        <Button Variant="ButtonVariant.Secondary" OnClick="() => GoCredit(credit.CreditEntryId)">@L["DueDate_OpenCredit"]</Button>
+                    </div>
+                }
+            </Stack>
+        }
+    </Section>
+</Page>
+}
+
+@code {
+    [Parameter] public Guid CustomerId { get; set; }
+
+    private bool _ready;
+    private bool _loading = true;
+    private bool _creditsLoading;
+    private string _filter = "all";
+    private PosCustomerOverdueSummaryDto? _summary;
+    private List<PosAgedCreditDto> _credits = [];
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        StateHasChanged();
+
+        var summary = await Customers.GetOverdueSummaryAsync(CustomerId);
+        if (summary.IsSuccess)
+        {
+            _summary = summary.Data;
+            await LoadCreditsAsync();
+        }
+        else
+        {
+            _summary = null;
+            var described = ApiLocalizer.Describe(summary.Status, summary.Error);
+            _errorTitle = described.Title;
+            _errorMessage = summary.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private async Task SetFilterAllAsync() => await SetFilterAsync("all");
+    private async Task SetFilterOverdueAsync() => await SetFilterAsync("overdue");
+    private async Task SetFilterDueSoonAsync() => await SetFilterAsync("duesoon");
+    private async Task SetFilterNoDueDateAsync() => await SetFilterAsync("noduedate");
+
+    private async Task SetFilterAsync(string filter)
+    {
+        _filter = filter;
+        await LoadCreditsAsync();
+    }
+
+    private async Task LoadCreditsAsync()
+    {
+        _creditsLoading = true;
+        var credits = await Customers.ListAgedCreditsAsync(CustomerId, filter: _filter, page: 1, pageSize: 100);
+        if (credits.IsSuccess && credits.Data is not null)
+        {
+            _credits = credits.Data.Items;
+        }
+        else if (!credits.IsSuccess)
+        {
+            _errorTitle = L["Overdue_ErrorTitle"];
+            _errorMessage = credits.Error?.Detail ?? ApiLocalizer.Describe(credits.Status, credits.Error).Message;
+            _credits = [];
+        }
+
+        _creditsLoading = false;
+    }
+
+    private ButtonVariant FilterVariantAll => FilterVariant("all");
+    private ButtonVariant FilterVariantOverdue => FilterVariant("overdue");
+    private ButtonVariant FilterVariantDueSoon => FilterVariant("duesoon");
+    private ButtonVariant FilterVariantNoDueDate => FilterVariant("noduedate");
+
+    private ButtonVariant FilterVariant(string filter) =>
+        string.Equals(_filter, filter, StringComparison.OrdinalIgnoreCase)
+            ? ButtonVariant.Primary
+            : ButtonVariant.Secondary;
+
+    private string DueStatusLabel(string status) => status switch
+    {
+        "Overdue" => L["DueDate_Badge_Overdue"],
+        "DueToday" => L["DueDate_Badge_DueToday"],
+        "DueSoon" => L["DueDate_Badge_DueSoon"],
+        "Upcoming" => L["DueDate_Badge_Upcoming"],
+        "Paid" => L["DueDate_Badge_Paid"],
+        "Reversed" => L["DueDate_Badge_Reversed"],
+        _ => L["DueDate_Badge_NoDueDate"]
+    };
+
+    private static BadgeTone DueStatusTone(string status) => status switch
+    {
+        "Overdue" => BadgeTone.Danger,
+        "DueToday" => BadgeTone.Warning,
+        "DueSoon" => BadgeTone.Warning,
+        "Paid" => BadgeTone.Success,
+        "Reversed" => BadgeTone.Neutral,
+        _ => BadgeTone.Neutral
+    };
+
+    private void GoBack() => Nav.NavigateTo($"/customers/{CustomerId:D}");
+    private void GoOrgOverdue() => Nav.NavigateTo("/overdue");
+    private void GoCredit(Guid creditId) => Nav.NavigateTo($"/customers/{CustomerId:D}/credit/{creditId:D}");
+}

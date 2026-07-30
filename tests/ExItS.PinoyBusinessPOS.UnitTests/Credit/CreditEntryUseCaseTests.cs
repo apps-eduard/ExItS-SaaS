@@ -21,7 +21,7 @@ public sealed class CreditEntryUseCaseTests
         var customers = new InMemoryCustomerRepository();
         var entries = new InMemoryCreditRepository();
         var repayments = new InMemoryRepaymentRepository();
-        var outstanding = new OutstandingBalanceService(entries, repayments);
+        var outstanding = new OutstandingBalanceService(entries, repayments, new FixedClock(Now));
         var clock = new FixedClock(Now);
         var customer = POSCustomer.Create(PosOrganizationId.From(OrgId), "Rosa", Now);
         await customers.AddAsync(customer);
@@ -115,6 +115,12 @@ public sealed class CreditEntryUseCaseTests
             Task.FromResult(_items.FirstOrDefault(e =>
                 e.Id == entryId && e.CustomerId == customerId && e.OrganizationId == organizationId));
 
+        public Task<CreditEntry?> GetByIdForOrganizationAsync(
+            PosOrganizationId organizationId,
+            CreditEntryId entryId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(e => e.Id == entryId && e.OrganizationId == organizationId));
+
         public Task<(IReadOnlyList<CreditEntry> Items, int TotalCount)> ListByCustomerAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
@@ -128,6 +134,15 @@ public sealed class CreditEntryUseCaseTests
                 .ToList();
             return Task.FromResult(((IReadOnlyList<CreditEntry>)list.Skip(skip).Take(take).ToList(), list.Count));
         }
+
+        public Task<IReadOnlyList<CreditEntry>> ListActiveByOrganizationAsync(
+            PosOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult((IReadOnlyList<CreditEntry>)_items
+                .Where(e => e.OrganizationId == organizationId && e.Status == CreditEntryStatus.Active)
+                .OrderBy(e => e.CreatedAtUtc)
+                .ThenBy(e => e.Id.Value)
+                .ToList());
 
         public Task<decimal> SumActiveAmountAsync(
             PosOrganizationId organizationId,

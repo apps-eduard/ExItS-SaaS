@@ -298,11 +298,11 @@
   <data name="Customers_NotesHint" xml:space="preserve"><value>Para sa pagkilala lang — hindi credit record.</value></data>
   <data name="Customers_DisplayNameRequired" xml:space="preserve"><value>Kailangan ang display name.</value></data>
   <data name="Customers_CreditDeferredTitle" xml:space="preserve"><value>Mga susunod na Utang feature</value></data>
-  <data name="Customers_CreditDeferredMessage" xml:space="preserve"><value>Hindi pa available ang due dates, statements, at receipts. Available na ang payments at ledger sa customer detail.</value></data>
+  <data name="Customers_CreditDeferredMessage" xml:space="preserve"><value>Hindi pa available ang statements at printable receipts. Available na ang due dates at overdue monitoring sa customer detail at Overdue.</value></data>
   <data name="Customers_RepaymentDeferredTitle" xml:space="preserve"><value>Mga susunod na Utang feature</value></data>
-  <data name="Customers_RepaymentDeferredMessage" xml:space="preserve"><value>Hindi pa available ang due dates, statements, at receipts. Available na ang payments at ledger sa customer detail.</value></data>
+  <data name="Customers_RepaymentDeferredMessage" xml:space="preserve"><value>Hindi pa available ang statements at printable receipts. Available na ang payments, ledger, at due dates sa customer detail.</value></data>
   <data name="Utang_DeferredTitle" xml:space="preserve"><value>Mga susunod na Utang feature</value></data>
-  <data name="Utang_DeferredMessage" xml:space="preserve"><value>Hindi pa available ang due dates, statements, printable receipts, interest, at credit limits sa work package na ito.</value></data>
+  <data name="Utang_DeferredMessage" xml:space="preserve"><value>Hindi available sa work package na ito ang statements, printable receipts, interest, at credit limits.</value></data>
   <data name="Utang_SectionTitle" xml:space="preserve"><value>Utang balance</value></data>
   <data name="Utang_CreditsTotal" xml:space="preserve"><value>Active credit</value></data>
   <data name="Utang_PaymentsTotal" xml:space="preserve"><value>Active payments</value></data>
@@ -374,6 +374,73 @@
   <data name="Credit_InactiveTitle" xml:space="preserve"><value>Hindi active ang customer</value></data>
   <data name="Credit_InactiveMessage" xml:space="preserve"><value>Bagong credit ay para lang sa active customer. Maaari pa ring tingnan o i-reverse ang existing history.</value></data>
   <data name="Credit_ErrorTitle" xml:space="preserve"><value>Hindi natuloy ang credit action</value></data>
+  <data name="Credit_NotFoundTitle" xml:space="preserve"><value>Hindi nahanap ang credit entry</value></data>
+  <data name="Credit_NotFoundMessage" xml:space="preserve"><value>Hindi available ang credit entry na ito para sa napiling organization.</value></data>
+  <data name="Credit_DetailTitle" xml:space="preserve"><value>Detalye ng credit</value></data>
+  <data name="Credit_DetailSubtitle" xml:space="preserve"><value>Due date at append-only credit history</value></data>
+  <data name="DueDate_Loading" xml:space="preserve"><value>Nilo-load ang credit…</value></data>
+  <data name="DueDate_Status" xml:space="preserve"><value>Due status</value></data>
+  <data name="DueDate_Current" xml:space="preserve"><value>Due date</value></data>
+  <data name="DueDate_None" xml:space="preserve"><value>Walang due date</value></data>
+  <data name="DueDate_ActionsTitle" xml:space="preserve"><value>Due date</value></data>
+  <data name="DueDate_Field_Date" xml:space="preserve"><value>Due date</value></data>
+  <data name="DueDate_Field_Reason" xml:space="preserve"><value>Dahilan ng pagbabago</value></data>
+  <data name="DueDate_DateHint" xml:space="preserve"><value>Calendar date lang. Pinapayagan ang nakaraang petsa at magiging overdue kapag hindi pa bayad.</value></data>
+  <data name="DueDate_ReasonHint" xml:space="preserve"><value>Kailangan sa set, change, at clear.</value></data>
+  <data name="DueDate_Set" xml:space="preserve"><value>I-save ang due date</value></data>
+  <data name="DueDate_Clear" xml:space="preserve"><value>I-clear ang due date</value></data>
+  <data name="DueDate_ConfirmSetTitle" xml:space="preserve"><value>I-save ang due date?</value></data>
+  <data name="DueDate_ConfirmSetMessage" xml:space="preserve"><value>Mababago ang current due date at madadagdagan ang audit history. Hindi magbabago ang amount at remarks.</value></data>
+  <data name="DueDate_ConfirmClearTitle" xml:space="preserve"><value>I-clear ang due date?</value></data>
+  <data name="DueDate_ConfirmClearMessage" xml:space="preserve"><value>Aalisin ang due date at maitatala ang pagbabago sa history.</value></data>
+  <data name="DueDate_HistoryTitle" xml:space="preserve"><value>Kasaysayan ng due date</value></data>
+  <data name="DueDate_HistoryLoading" xml:space="preserve"><value>Nilo-load ang due-date history…</value></data>
+  <data name="DueDate_HistoryEmptyTitle" xml:space="preserve"><value>Wala pang due-date change</value></data>
+  <data name="DueDate_HistoryEmptyMessage" xml:space="preserve"><value>Mag-set o mag-clear ng due date para magsimula ang append-only history.</value></data>
+  <data name="DueDate_ReasonRequired" xml:space="preserve"><value>Kailangan ang dahilan ng pagbabago.</value></data>
+  <data name="DueDate_DateInvalid" xml:space="preserve"><value>Maglagay ng wastong calendar date.</value></data>
+  <data name="DueDate_ErrorTitle" xml:space="preserve"><value>Hindi natuloy ang due-date action</value></data>
+  <data name="DueDate_ConflictTitle" xml:space="preserve"><value>Due-date conflict</value></data>
+  <data name="DueDate_ConflictMessage" xml:space="preserve"><value>Hindi mabago ang due date. Mag-refresh at subukan ulit.</value></data>
+  <data name="DueDate_SavedSuccess" xml:space="preserve"><value>Na-save ang due date.</value></data>
+  <data name="DueDate_ClearedSuccess" xml:space="preserve"><value>Na-clear ang due date.</value></data>
+  <data name="DueDate_OpenCredit" xml:space="preserve"><value>Buksan ang credit</value></data>
+  <data name="DueDate_Badge_Overdue" xml:space="preserve"><value>Overdue</value></data>
+  <data name="DueDate_Badge_DueToday" xml:space="preserve"><value>Due ngayon</value></data>
+  <data name="DueDate_Badge_DueSoon" xml:space="preserve"><value>Malapit nang due</value></data>
+  <data name="DueDate_Badge_Upcoming" xml:space="preserve"><value>Paparating</value></data>
+  <data name="DueDate_Badge_Paid" xml:space="preserve"><value>Bayad na</value></data>
+  <data name="DueDate_Badge_Reversed" xml:space="preserve"><value>Reversed</value></data>
+  <data name="DueDate_Badge_NoDueDate" xml:space="preserve"><value>Walang due date</value></data>
+  <data name="Overdue_Title" xml:space="preserve"><value>Overdue monitoring</value></data>
+  <data name="Overdue_Subtitle" xml:space="preserve"><value>Mga overdue customer at credit ng organization</value></data>
+  <data name="Overdue_PolicyTitle" xml:space="preserve"><value>FIFO aging</value></data>
+  <data name="Overdue_PolicyMessage" xml:space="preserve"><value>Kinukuha ang overdue amount sa pamamagitan ng paglalapat ng active repayments sa pinakamatandang active credits. Hindi sine-save ang allocation.</value></data>
+  <data name="Overdue_CustomersTitle" xml:space="preserve"><value>Mga customer na overdue</value></data>
+  <data name="Overdue_CreditsTitle" xml:space="preserve"><value>Mga overdue credit</value></data>
+  <data name="Overdue_Loading" xml:space="preserve"><value>Nilo-load ang overdue…</value></data>
+  <data name="Overdue_ErrorTitle" xml:space="preserve"><value>Hindi ma-load ang overdue</value></data>
+  <data name="Overdue_EmptyCustomersTitle" xml:space="preserve"><value>Walang overdue customer</value></data>
+  <data name="Overdue_EmptyCustomersMessage" xml:space="preserve"><value>Lilitaw dito ang customer kapag may unpaid active credit na may due date bago ang ngayon (UTC).</value></data>
+  <data name="Overdue_EmptyCreditsTitle" xml:space="preserve"><value>Walang overdue credit</value></data>
+  <data name="Overdue_EmptyCreditsMessage" xml:space="preserve"><value>Lilitaw dito ang overdue credit entries ng organization.</value></data>
+  <data name="Overdue_EmptyFilterMessage" xml:space="preserve"><value>Walang credit na tumutugma sa filter na ito.</value></data>
+  <data name="Overdue_Amount" xml:space="preserve"><value>Overdue amount</value></data>
+  <data name="Overdue_Count" xml:space="preserve"><value>Overdue credits</value></data>
+  <data name="Overdue_Earliest" xml:space="preserve"><value>Pinakamaagang overdue</value></data>
+  <data name="Overdue_NextDue" xml:space="preserve"><value>Susunod na due</value></data>
+  <data name="Overdue_NoDueDateCount" xml:space="preserve"><value>Walang due date</value></data>
+  <data name="Overdue_OpenCustomer" xml:space="preserve"><value>Buksan ang customer</value></data>
+  <data name="Overdue_OpenDetail" xml:space="preserve"><value>Detalye ng overdue</value></data>
+  <data name="Overdue_OpenOrg" xml:space="preserve"><value>Overdue ng organization</value></data>
+  <data name="Overdue_CustomerTitle" xml:space="preserve"><value>Overdue ng customer</value></data>
+  <data name="Overdue_CustomerSubtitle" xml:space="preserve"><value>Derived overdue summary at filtered credits</value></data>
+  <data name="Overdue_SummaryTitle" xml:space="preserve"><value>Overdue summary</value></data>
+  <data name="Overdue_FilterTitle" xml:space="preserve"><value>Mga filter</value></data>
+  <data name="Overdue_Filter_All" xml:space="preserve"><value>Lahat</value></data>
+  <data name="Overdue_Filter_Overdue" xml:space="preserve"><value>Overdue</value></data>
+  <data name="Overdue_Filter_DueSoon" xml:space="preserve"><value>Malapit nang due</value></data>
+  <data name="Overdue_Filter_NoDueDate" xml:space="preserve"><value>Walang due date</value></data>
   <data name="Customers_ConflictTitle" xml:space="preserve"><value>Duplicate mobile</value></data>
   <data name="Customers_ConflictMessage" xml:space="preserve"><value>May active customer na na may ganitong mobile number sa organization na ito.</value></data>
   <data name="Customers_ErrorTitle" xml:space="preserve"><value>Hindi ma-save</value></data>

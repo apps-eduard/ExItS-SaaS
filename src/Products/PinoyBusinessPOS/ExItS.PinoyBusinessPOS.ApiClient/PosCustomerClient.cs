@@ -151,6 +151,82 @@ public sealed class PosCustomerClient(HttpClient httpClient, IConnectivityServic
             request,
             ct);
 
+    public Task<ApiResult<PosCreditEntryDto>> SetCreditDueDateAsync(
+        Guid creditEntryId,
+        SetPosCreditDueDateRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<PosCreditEntryDto>(
+            HttpMethod.Put,
+            $"/api/v1/pos/credit/{creditEntryId:D}/due-date",
+            request,
+            ct);
+
+    public Task<ApiResult<PosCreditEntryDto>> ClearCreditDueDateAsync(
+        Guid creditEntryId,
+        string reason,
+        CancellationToken ct = default) =>
+        SendAsync<PosCreditEntryDto>(
+            HttpMethod.Delete,
+            $"/api/v1/pos/credit/{creditEntryId:D}/due-date?reason={Uri.EscapeDataString(reason)}",
+            null,
+            ct);
+
+    public Task<ApiResult<PosCreditDueDateHistoryPagedResult>> ListCreditDueDateHistoryAsync(
+        Guid creditEntryId,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default) =>
+        SendAsync<PosCreditDueDateHistoryPagedResult>(
+            HttpMethod.Get,
+            $"/api/v1/pos/credit/{creditEntryId:D}/due-date-history?page={page}&pageSize={pageSize}",
+            null,
+            ct);
+
+    public Task<ApiResult<PosCustomerOverdueSummaryDto>> GetOverdueSummaryAsync(
+        Guid customerId,
+        CancellationToken ct = default) =>
+        SendAsync<PosCustomerOverdueSummaryDto>(
+            HttpMethod.Get,
+            $"/api/v1/pos/customers/{customerId:D}/overdue-summary",
+            null,
+            ct);
+
+    public Task<ApiResult<PosAgedCreditPagedResult>> ListAgedCreditsAsync(
+        Guid customerId,
+        string? filter = null,
+        int page = 1,
+        int pageSize = 50,
+        CancellationToken ct = default)
+    {
+        var path = $"/api/v1/pos/customers/{customerId:D}/aged-credits?page={page}&pageSize={pageSize}";
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            path += "&filter=" + Uri.EscapeDataString(filter.Trim());
+        }
+
+        return SendAsync<PosAgedCreditPagedResult>(HttpMethod.Get, path, null, ct);
+    }
+
+    public Task<ApiResult<PosOverdueCustomerPagedResult>> ListOverdueCustomersAsync(
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default) =>
+        SendAsync<PosOverdueCustomerPagedResult>(
+            HttpMethod.Get,
+            $"/api/v1/pos/overdue/customers?page={page}&pageSize={pageSize}",
+            null,
+            ct);
+
+    public Task<ApiResult<PosAgedCreditPagedResult>> ListOverdueCreditsAsync(
+        int page = 1,
+        int pageSize = 50,
+        CancellationToken ct = default) =>
+        SendAsync<PosAgedCreditPagedResult>(
+            HttpMethod.Get,
+            $"/api/v1/pos/overdue/credits?page={page}&pageSize={pageSize}",
+            null,
+            ct);
+
     private async Task<ApiResult<TResponse>> SendAsync<TResponse>(
         HttpMethod method,
         string path,

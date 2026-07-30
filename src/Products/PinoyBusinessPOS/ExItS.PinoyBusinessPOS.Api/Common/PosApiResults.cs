@@ -35,7 +35,9 @@ internal static class PosApiResults
             or DomainErrorCodes.InvalidRepaymentStatusTransition
             or DomainErrorCodes.RepaymentExceedsOutstanding
             or DomainErrorCodes.RepaymentOutstandingZero
-            or DomainErrorCodes.CreditReversalWouldMakeOutstandingNegative => StatusCodes.Status409Conflict,
+            or DomainErrorCodes.CreditReversalWouldMakeOutstandingNegative
+            or DomainErrorCodes.CreditDueDateNotAllowedOnReversed
+            or DomainErrorCodes.CreditDueDateUnchanged => StatusCodes.Status409Conflict,
 
         ApplicationErrorCodes.OrganizationRequired
             or ApplicationErrorCodes.ActorRequired => StatusCodes.Status400BadRequest,

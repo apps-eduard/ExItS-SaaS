@@ -298,11 +298,11 @@
   <data name="Customers_NotesHint" xml:space="preserve"><value>General identification only — not a credit record.</value></data>
   <data name="Customers_DisplayNameRequired" xml:space="preserve"><value>Display name is required.</value></data>
   <data name="Customers_CreditDeferredTitle" xml:space="preserve"><value>Later Utang features</value></data>
-  <data name="Customers_CreditDeferredMessage" xml:space="preserve"><value>Due dates, statements, and receipts are not available yet. Payments and ledger are on the customer detail page.</value></data>
+  <data name="Customers_CreditDeferredMessage" xml:space="preserve"><value>Statements and printable receipts are not available yet. Due dates and overdue monitoring are on customer detail and Overdue.</value></data>
   <data name="Customers_RepaymentDeferredTitle" xml:space="preserve"><value>Later Utang features</value></data>
-  <data name="Customers_RepaymentDeferredMessage" xml:space="preserve"><value>Due dates, statements, and receipts are not available yet. Payments and ledger are available on the customer detail page.</value></data>
+  <data name="Customers_RepaymentDeferredMessage" xml:space="preserve"><value>Statements and printable receipts are not available yet. Payments, ledger, and due dates are available on the customer detail page.</value></data>
   <data name="Utang_DeferredTitle" xml:space="preserve"><value>Later Utang features</value></data>
-  <data name="Utang_DeferredMessage" xml:space="preserve"><value>Due dates, statements, printable receipts, interest, and credit limits are not available in this work package.</value></data>
+  <data name="Utang_DeferredMessage" xml:space="preserve"><value>Statements, printable receipts, interest, and credit limits are not available in this work package.</value></data>
   <data name="Utang_SectionTitle" xml:space="preserve"><value>Utang balance</value></data>
   <data name="Utang_CreditsTotal" xml:space="preserve"><value>Active credit</value></data>
   <data name="Utang_PaymentsTotal" xml:space="preserve"><value>Active payments</value></data>
@@ -374,6 +374,73 @@
   <data name="Credit_InactiveTitle" xml:space="preserve"><value>Customer not active</value></data>
   <data name="Credit_InactiveMessage" xml:space="preserve"><value>New credit can only be recorded for an active customer. Existing history can still be viewed or reversed.</value></data>
   <data name="Credit_ErrorTitle" xml:space="preserve"><value>Credit action failed</value></data>
+  <data name="Credit_NotFoundTitle" xml:space="preserve"><value>Credit entry not found</value></data>
+  <data name="Credit_NotFoundMessage" xml:space="preserve"><value>This credit entry is not available for the selected organization.</value></data>
+  <data name="Credit_DetailTitle" xml:space="preserve"><value>Credit detail</value></data>
+  <data name="Credit_DetailSubtitle" xml:space="preserve"><value>Due date and append-only credit history</value></data>
+  <data name="DueDate_Loading" xml:space="preserve"><value>Loading credit…</value></data>
+  <data name="DueDate_Status" xml:space="preserve"><value>Due status</value></data>
+  <data name="DueDate_Current" xml:space="preserve"><value>Due date</value></data>
+  <data name="DueDate_None" xml:space="preserve"><value>No due date</value></data>
+  <data name="DueDate_ActionsTitle" xml:space="preserve"><value>Due date</value></data>
+  <data name="DueDate_Field_Date" xml:space="preserve"><value>Due date</value></data>
+  <data name="DueDate_Field_Reason" xml:space="preserve"><value>Change reason</value></data>
+  <data name="DueDate_DateHint" xml:space="preserve"><value>Calendar date only. Past dates are allowed and become overdue when unpaid.</value></data>
+  <data name="DueDate_ReasonHint" xml:space="preserve"><value>Required for set, change, and clear.</value></data>
+  <data name="DueDate_Set" xml:space="preserve"><value>Save due date</value></data>
+  <data name="DueDate_Clear" xml:space="preserve"><value>Clear due date</value></data>
+  <data name="DueDate_ConfirmSetTitle" xml:space="preserve"><value>Save due date?</value></data>
+  <data name="DueDate_ConfirmSetMessage" xml:space="preserve"><value>This updates the current due date and appends an audit history entry. Credit amount and remarks stay unchanged.</value></data>
+  <data name="DueDate_ConfirmClearTitle" xml:space="preserve"><value>Clear due date?</value></data>
+  <data name="DueDate_ConfirmClearMessage" xml:space="preserve"><value>The due date will be removed and the change will be recorded in history.</value></data>
+  <data name="DueDate_HistoryTitle" xml:space="preserve"><value>Due-date history</value></data>
+  <data name="DueDate_HistoryLoading" xml:space="preserve"><value>Loading due-date history…</value></data>
+  <data name="DueDate_HistoryEmptyTitle" xml:space="preserve"><value>No due-date changes yet</value></data>
+  <data name="DueDate_HistoryEmptyMessage" xml:space="preserve"><value>Set or clear a due date to start the append-only history.</value></data>
+  <data name="DueDate_ReasonRequired" xml:space="preserve"><value>A change reason is required.</value></data>
+  <data name="DueDate_DateInvalid" xml:space="preserve"><value>Enter a valid calendar date as yyyy-MM-dd.</value></data>
+  <data name="DueDate_ErrorTitle" xml:space="preserve"><value>Due-date action failed</value></data>
+  <data name="DueDate_ConflictTitle" xml:space="preserve"><value>Due-date conflict</value></data>
+  <data name="DueDate_ConflictMessage" xml:space="preserve"><value>The due date could not be changed. Refresh and try again.</value></data>
+  <data name="DueDate_SavedSuccess" xml:space="preserve"><value>Due date saved.</value></data>
+  <data name="DueDate_ClearedSuccess" xml:space="preserve"><value>Due date cleared.</value></data>
+  <data name="DueDate_OpenCredit" xml:space="preserve"><value>Open credit</value></data>
+  <data name="DueDate_Badge_Overdue" xml:space="preserve"><value>Overdue</value></data>
+  <data name="DueDate_Badge_DueToday" xml:space="preserve"><value>Due today</value></data>
+  <data name="DueDate_Badge_DueSoon" xml:space="preserve"><value>Due soon</value></data>
+  <data name="DueDate_Badge_Upcoming" xml:space="preserve"><value>Upcoming</value></data>
+  <data name="DueDate_Badge_Paid" xml:space="preserve"><value>Paid</value></data>
+  <data name="DueDate_Badge_Reversed" xml:space="preserve"><value>Reversed</value></data>
+  <data name="DueDate_Badge_NoDueDate" xml:space="preserve"><value>No due date</value></data>
+  <data name="Overdue_Title" xml:space="preserve"><value>Overdue monitoring</value></data>
+  <data name="Overdue_Subtitle" xml:space="preserve"><value>Organization overdue customers and credits</value></data>
+  <data name="Overdue_PolicyTitle" xml:space="preserve"><value>FIFO aging</value></data>
+  <data name="Overdue_PolicyMessage" xml:space="preserve"><value>Overdue amounts are derived by applying active repayments to active credits oldest-first. Allocations are not stored.</value></data>
+  <data name="Overdue_CustomersTitle" xml:space="preserve"><value>Customers with overdue</value></data>
+  <data name="Overdue_CreditsTitle" xml:space="preserve"><value>Overdue credits</value></data>
+  <data name="Overdue_Loading" xml:space="preserve"><value>Loading overdue…</value></data>
+  <data name="Overdue_ErrorTitle" xml:space="preserve"><value>Could not load overdue</value></data>
+  <data name="Overdue_EmptyCustomersTitle" xml:space="preserve"><value>No overdue customers</value></data>
+  <data name="Overdue_EmptyCustomersMessage" xml:space="preserve"><value>Customers appear here when unpaid active credits have a due date before today (UTC).</value></data>
+  <data name="Overdue_EmptyCreditsTitle" xml:space="preserve"><value>No overdue credits</value></data>
+  <data name="Overdue_EmptyCreditsMessage" xml:space="preserve"><value>Overdue credit entries for this organization will appear here.</value></data>
+  <data name="Overdue_EmptyFilterMessage" xml:space="preserve"><value>No credits match this filter.</value></data>
+  <data name="Overdue_Amount" xml:space="preserve"><value>Overdue amount</value></data>
+  <data name="Overdue_Count" xml:space="preserve"><value>Overdue credits</value></data>
+  <data name="Overdue_Earliest" xml:space="preserve"><value>Earliest overdue</value></data>
+  <data name="Overdue_NextDue" xml:space="preserve"><value>Next due</value></data>
+  <data name="Overdue_NoDueDateCount" xml:space="preserve"><value>Without due date</value></data>
+  <data name="Overdue_OpenCustomer" xml:space="preserve"><value>Open customer</value></data>
+  <data name="Overdue_OpenDetail" xml:space="preserve"><value>Overdue detail</value></data>
+  <data name="Overdue_OpenOrg" xml:space="preserve"><value>Organization overdue</value></data>
+  <data name="Overdue_CustomerTitle" xml:space="preserve"><value>Customer overdue</value></data>
+  <data name="Overdue_CustomerSubtitle" xml:space="preserve"><value>Derived overdue summary and filtered credits</value></data>
+  <data name="Overdue_SummaryTitle" xml:space="preserve"><value>Overdue summary</value></data>
+  <data name="Overdue_FilterTitle" xml:space="preserve"><value>Filters</value></data>
+  <data name="Overdue_Filter_All" xml:space="preserve"><value>All</value></data>
+  <data name="Overdue_Filter_Overdue" xml:space="preserve"><value>Overdue</value></data>
+  <data name="Overdue_Filter_DueSoon" xml:space="preserve"><value>Due soon</value></data>
+  <data name="Overdue_Filter_NoDueDate" xml:space="preserve"><value>No due date</value></data>
   <data name="Customers_ConflictTitle" xml:space="preserve"><value>Duplicate mobile</value></data>
   <data name="Customers_ConflictMessage" xml:space="preserve"><value>An active customer with this mobile number already exists in this organization.</value></data>
   <data name="Customers_ErrorTitle" xml:space="preserve"><value>Could not save</value></data>

@@ -18,6 +18,11 @@ public static class DomainErrorCodes
     public const string InvalidCreditReversalReason = "pos.credit_entry.reversal_reason.invalid";
     public const string InvalidCreditEntryStatusTransition = "pos.credit_entry.status.invalid_transition";
     public const string CreditReversalWouldMakeOutstandingNegative = "pos.credit_entry.reversal.outstanding_negative";
+    public const string CreditDueDateNotAllowedOnReversed = "pos.credit_entry.due_date.reversed";
+    public const string InvalidCreditDueDateChangeId = "pos.credit_due_date.id.invalid";
+    public const string InvalidCreditDueDateReason = "pos.credit_due_date.reason.invalid";
+    public const string InvalidCreditDueDateActor = "pos.credit_due_date.actor.invalid";
+    public const string CreditDueDateUnchanged = "pos.credit_due_date.unchanged";
 
     public const string InvalidRepaymentId = "pos.repayment.id.invalid";
     public const string InvalidRepaymentAmount = "pos.repayment.amount.invalid";

@@ -6,7 +6,7 @@ namespace ExItS.PinoyBusinessPOS.Domain.Credit;
 /// <summary>
 /// Organization-owned remarks-based credit entry. Append-only after create:
 /// amount and remarks cannot be edited; corrections use explicit reversal with a reason.
-/// Not a repayment, ledger journal, SaaS payment, sale, or inventory movement.
+/// Optional calendar due date is denormalized for reads; history is append-only.
 /// </summary>
 public sealed class CreditEntry
 {
@@ -23,6 +23,7 @@ public sealed class CreditEntry
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset? ReversedAtUtc { get; private set; }
     public string? ReversalReason { get; private set; }
+    public DateOnly? CurrentDueDate { get; private set; }
 
     private CreditEntry(
         CreditEntryId id,
@@ -33,7 +34,8 @@ public sealed class CreditEntry
         CreditEntryStatus status,
         DateTimeOffset createdAtUtc,
         DateTimeOffset? reversedAtUtc,
-        string? reversalReason)
+        string? reversalReason,
+        DateOnly? currentDueDate)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -44,6 +46,7 @@ public sealed class CreditEntry
         CreatedAtUtc = createdAtUtc;
         ReversedAtUtc = reversedAtUtc;
         ReversalReason = reversalReason;
+        CurrentDueDate = currentDueDate;
     }
 
     public static CreditEntry Create(
@@ -64,6 +67,7 @@ public sealed class CreditEntry
             CreditEntryStatus.Active,
             utcNow,
             null,
+            null,
             null);
     }
 
@@ -76,7 +80,8 @@ public sealed class CreditEntry
         CreditEntryStatus status,
         DateTimeOffset createdAtUtc,
         DateTimeOffset? reversedAtUtc,
-        string? reversalReason) =>
+        string? reversalReason,
+        DateOnly? currentDueDate) =>
         new(
             id,
             organizationId,
@@ -86,7 +91,8 @@ public sealed class CreditEntry
             status,
             createdAtUtc,
             reversedAtUtc,
-            reversalReason);
+            reversalReason,
+            currentDueDate);
 
     public void Reverse(string reason, DateTimeOffset utcNow)
     {
@@ -101,6 +107,22 @@ public sealed class CreditEntry
         Status = CreditEntryStatus.Reversed;
         ReversedAtUtc = utcNow;
         ReversalReason = NormalizeReversalReason(reason);
+    }
+
+    /// <summary>
+    /// Updates only the denormalized current due date. Financial fields are untouched.
+    /// Reversed credits cannot receive due-date changes.
+    /// </summary>
+    public void ApplyCurrentDueDate(DateOnly? dueDate)
+    {
+        if (Status == CreditEntryStatus.Reversed)
+        {
+            throw new DomainException(
+                DomainErrorCodes.CreditDueDateNotAllowedOnReversed,
+                "Due dates cannot be set on a reversed credit entry.");
+        }
+
+        CurrentDueDate = dueDate;
     }
 
     public static decimal NormalizeAmount(decimal amount)

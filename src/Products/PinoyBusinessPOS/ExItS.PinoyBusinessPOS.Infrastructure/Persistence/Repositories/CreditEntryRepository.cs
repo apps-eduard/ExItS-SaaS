@@ -29,6 +29,19 @@ internal sealed class CreditEntryRepository : ICreditEntryRepository
         return record is null ? null : CreditEntryEntityMapper.ToDomain(record);
     }
 
+    public async Task<CreditEntry?> GetByIdForOrganizationAsync(
+        PosOrganizationId organizationId,
+        CreditEntryId entryId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await _db.CreditEntries.AsNoTracking()
+            .FirstOrDefaultAsync(
+                e => e.Id == entryId.Value && e.OrganizationId == organizationId.Value,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : CreditEntryEntityMapper.ToDomain(record);
+    }
+
     public async Task<(IReadOnlyList<CreditEntry> Items, int TotalCount)> ListByCustomerAsync(
         PosOrganizationId organizationId,
         POSCustomerId customerId,
@@ -49,6 +62,20 @@ internal sealed class CreditEntryRepository : ICreditEntryRepository
             .ConfigureAwait(false);
 
         return (records.Select(CreditEntryEntityMapper.ToDomain).ToList(), total);
+    }
+
+    public async Task<IReadOnlyList<CreditEntry>> ListActiveByOrganizationAsync(
+        PosOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var active = CreditEntryStatus.Active.ToString();
+        var records = await _db.CreditEntries.AsNoTracking()
+            .Where(e => e.OrganizationId == organizationId.Value && e.Status == active)
+            .OrderBy(e => e.CreatedAtUtc)
+            .ThenBy(e => e.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(CreditEntryEntityMapper.ToDomain).ToList();
     }
 
     public async Task<decimal> SumActiveAmountAsync(

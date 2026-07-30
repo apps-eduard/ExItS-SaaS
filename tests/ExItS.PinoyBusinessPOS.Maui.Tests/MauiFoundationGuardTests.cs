@@ -57,7 +57,7 @@ public sealed class MauiFoundationGuardTests
     }
 
     [Fact]
-    public void Customer_routes_cover_list_create_detail_edit_credit_payment_and_ledger()
+    public void Customer_routes_cover_list_create_detail_edit_credit_payment_ledger_and_overdue()
     {
         var root = FindRepoRoot();
         var customers = Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
@@ -68,9 +68,12 @@ public sealed class MauiFoundationGuardTests
         Assert.True(File.Exists(Path.Combine(customers, "CustomerEdit.razor")));
         Assert.True(File.Exists(Path.Combine(customers, "CustomerForm.razor")));
         Assert.True(File.Exists(Path.Combine(customers, "CreditCreate.razor")));
+        Assert.True(File.Exists(Path.Combine(customers, "CreditDetail.razor")));
         Assert.True(File.Exists(Path.Combine(customers, "RepaymentCreate.razor")));
         Assert.True(File.Exists(Path.Combine(customers, "RepaymentDetail.razor")));
         Assert.True(File.Exists(Path.Combine(customers, "CustomerLedger.razor")));
+        Assert.True(File.Exists(Path.Combine(customers, "OverdueList.razor")));
+        Assert.True(File.Exists(Path.Combine(customers, "CustomerOverdue.razor")));
 
         foreach (var file in Directory.EnumerateFiles(customers, "*.razor"))
         {
@@ -79,9 +82,11 @@ public sealed class MauiFoundationGuardTests
             Assert.DoesNotContain("RecordSale", text, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("SQLite", text, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("SyncQueue", text, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("DueDate", text, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("PrintReceipt", text, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("PaymentGateway", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Installment", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Interest", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Penalty", text, StringComparison.OrdinalIgnoreCase);
         }
 
         var list = File.ReadAllText(Path.Combine(customers, "CustomersList.razor"));
@@ -99,12 +104,25 @@ public sealed class MauiFoundationGuardTests
         Assert.Contains("GetUtangSummaryAsync", detail, StringComparison.Ordinal);
         Assert.Contains("GoAddPayment", detail, StringComparison.Ordinal);
         Assert.Contains("GoLedger", detail, StringComparison.Ordinal);
+        Assert.Contains("GoOverdue", detail, StringComparison.Ordinal);
+        Assert.Contains("CurrentDueDate", detail, StringComparison.Ordinal);
 
         var edit = File.ReadAllText(Path.Combine(customers, "CustomerEdit.razor"));
         Assert.Contains("@page \"/customers/{CustomerId:guid}/edit\"", edit, StringComparison.Ordinal);
 
         var ledger = File.ReadAllText(Path.Combine(customers, "CustomerLedger.razor"));
         Assert.Contains("@page \"/customers/{CustomerId:guid}/ledger\"", ledger, StringComparison.Ordinal);
+
+        var creditDetail = File.ReadAllText(Path.Combine(customers, "CreditDetail.razor"));
+        Assert.Contains("@page \"/customers/{CustomerId:guid}/credit/{CreditEntryId:guid}\"", creditDetail, StringComparison.Ordinal);
+        Assert.Contains("SetCreditDueDateAsync", creditDetail, StringComparison.Ordinal);
+        Assert.Contains("DueDate_HistoryTitle", creditDetail, StringComparison.Ordinal);
+
+        var overdue = File.ReadAllText(Path.Combine(customers, "OverdueList.razor"));
+        Assert.Contains("@page \"/overdue\"", overdue, StringComparison.Ordinal);
+
+        var customerOverdue = File.ReadAllText(Path.Combine(customers, "CustomerOverdue.razor"));
+        Assert.Contains("@page \"/customers/{CustomerId:guid}/overdue\"", customerOverdue, StringComparison.Ordinal);
 
         var repaymentCreate = File.ReadAllText(Path.Combine(customers, "RepaymentCreate.razor"));
         Assert.Contains("@page \"/customers/{CustomerId:guid}/repayments/new\"", repaymentCreate, StringComparison.Ordinal);
@@ -119,8 +137,13 @@ public sealed class MauiFoundationGuardTests
         Assert.Contains("Payment_Record", fil, StringComparison.Ordinal);
         Assert.Contains("Ledger_Title", en, StringComparison.Ordinal);
         Assert.Contains("Ledger_Title", fil, StringComparison.Ordinal);
+        Assert.Contains("DueDate_Badge_Overdue", en, StringComparison.Ordinal);
+        Assert.Contains("DueDate_Badge_Overdue", fil, StringComparison.Ordinal);
+        Assert.Contains("Overdue_Title", en, StringComparison.Ordinal);
+        Assert.Contains("Overdue_Title", fil, StringComparison.Ordinal);
         Assert.Contains("Utang_DeferredMessage", en, StringComparison.Ordinal);
         Assert.Contains("Utang_DeferredMessage", fil, StringComparison.Ordinal);
+        Assert.DoesNotContain("due dates, statements, printable receipts, interest", en, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

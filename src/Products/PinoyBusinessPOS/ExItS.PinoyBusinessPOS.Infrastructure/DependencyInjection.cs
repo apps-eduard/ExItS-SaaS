@@ -24,6 +24,7 @@ public static class DependencyInjection
 
         services.AddScoped<IPOSCustomerRepository, POSCustomerRepository>();
         services.AddScoped<ICreditEntryRepository, CreditEntryRepository>();
+        services.AddScoped<ICreditDueDateChangeRepository, CreditDueDateChangeRepository>();
         services.AddScoped<IRepaymentRepository, RepaymentRepository>();
         services.AddScoped<IUtangLedgerQuery, UtangLedgerQuery>();
         services.AddScoped<IOutstandingBalanceService, OutstandingBalanceService>();

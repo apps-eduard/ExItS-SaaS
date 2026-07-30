@@ -1,0 +1,157 @@
+@page "/overdue"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCustomerClient Customers
+@inject ICurrentUserContext CurrentUser
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+<Page>
+    <PageHeader Title="@L["Overdue_Title"]" Subtitle="@L["Overdue_Subtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Customers_Refresh"]</Button>
+        </Actions>
+    </PageHeader>
+
+    <Alert Tone="AlertTone.Info" Title="@L["Overdue_PolicyTitle"]" Message="@L["Overdue_PolicyMessage"]" />
+
+    <Section Title="@L["Overdue_CustomersTitle"]">
+        @if (_loading)
+        {
+            <Spinner /><span>@L["Overdue_Loading"]</span>
+        }
+        else if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <ErrorState Title="@(_errorTitle ?? L["Overdue_ErrorTitle"])" Message="@_errorMessage" RetryLabel="@L["Api_Retry"]" OnRetry="ReloadAsync" />
+        }
+        else if (_customers.Count == 0)
+        {
+            <EmptyState Title="@L["Overdue_EmptyCustomersTitle"]" Message="@L["Overdue_EmptyCustomersMessage"]" />
+        }
+        else
+        {
+            <Stack Gap="3">
+                @foreach (var item in _customers)
+                {
+                    <div class="pos-credit-entry">
+                        <div class="pos-value-md">
+                            @item.DisplayName
+                            <Badge Tone="BadgeTone.Danger">@L["DueDate_Badge_Overdue"]</Badge>
+                        </div>
+                        <div class="pos-muted">
+                            @L["Overdue_Amount"]: <MoneyDisplay Amount="@item.OverdueAmount" CurrencyCode="PHP" />
+                            · @L["Overdue_Count"]: @item.OverdueCreditCount
+                            @if (item.EarliestOverdueDate is not null)
+                            {
+                                <text> · @L["Overdue_Earliest"]: @item.EarliestOverdueDate.Value.ToString("d")</text>
+                            }
+                        </div>
+                        <FormActions>
+                            <Button Variant="ButtonVariant.Secondary" OnClick="() => GoCustomer(item.CustomerId)">@L["Overdue_OpenCustomer"]</Button>
+                            <Button Variant="ButtonVariant.Primary" OnClick="() => GoCustomerOverdue(item.CustomerId)">@L["Overdue_OpenDetail"]</Button>
+                        </FormActions>
+                    </div>
+                }
+            </Stack>
+        }
+    </Section>
+
+    <Section Title="@L["Overdue_CreditsTitle"]">
+        @if (_creditsLoading)
+        {
+            <Spinner /><span>@L["Overdue_Loading"]</span>
+        }
+        else if (_credits.Count == 0)
+        {
+            <EmptyState Title="@L["Overdue_EmptyCreditsTitle"]" Message="@L["Overdue_EmptyCreditsMessage"]" />
+        }
+        else
+        {
+            <Stack Gap="3">
+                @foreach (var credit in _credits)
+                {
+                    <div class="pos-credit-entry">
+                        <div class="pos-value-md">
+                            <MoneyDisplay Amount="@credit.RemainingUnpaidAmount" CurrencyCode="PHP" />
+                            <Badge Tone="BadgeTone.Danger">@L["DueDate_Badge_Overdue"]</Badge>
+                        </div>
+                        <div class="pos-wrap">@credit.Remarks</div>
+                        <div class="pos-muted">
+                            @L["DueDate_Current"]: @(credit.CurrentDueDate?.ToString("d") ?? L["DueDate_None"])
+                        </div>
+                        <Button Variant="ButtonVariant.Secondary" OnClick="() => GoCredit(credit.CustomerId, credit.CreditEntryId)">@L["DueDate_OpenCredit"]</Button>
+                    </div>
+                }
+            </Stack>
+        }
+    </Section>
+</Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _loading = true;
+    private bool _creditsLoading;
+    private List<PosOverdueCustomerListItemDto> _customers = [];
+    private List<PosAgedCreditDto> _credits = [];
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _creditsLoading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        StateHasChanged();
+
+        var customers = await Customers.ListOverdueCustomersAsync(page: 1, pageSize: 50);
+        if (customers.IsSuccess && customers.Data is not null)
+        {
+            _customers = customers.Data.Items;
+        }
+        else
+        {
+            _customers = [];
+            var described = ApiLocalizer.Describe(customers.Status, customers.Error);
+            _errorTitle = described.Title;
+            _errorMessage = customers.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+
+        var credits = await Customers.ListOverdueCreditsAsync(page: 1, pageSize: 50);
+        if (credits.IsSuccess && credits.Data is not null)
+        {
+            _credits = credits.Data.Items;
+        }
+        else
+        {
+            _credits = [];
+        }
+
+        _creditsLoading = false;
+    }
+
+    private void GoCustomer(Guid id) => Nav.NavigateTo($"/customers/{id:D}");
+    private void GoCustomerOverdue(Guid id) => Nav.NavigateTo($"/customers/{id:D}/overdue");
+    private void GoCredit(Guid customerId, Guid creditId) => Nav.NavigateTo($"/customers/{customerId:D}/credit/{creditId:D}");
+}

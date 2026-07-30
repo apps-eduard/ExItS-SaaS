@@ -1,0 +1,338 @@
+@page "/customers/{CustomerId:guid}/credit/{CreditEntryId:guid}"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCustomerClient Customers
+@inject ICurrentUserContext CurrentUser
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (_loading)
+{
+    <Page><Spinner /><span>@L["DueDate_Loading"]</span></Page>
+}
+else if (_entry is null)
+{
+    <Page>
+        <ErrorState Title="@(_errorTitle ?? L["Credit_NotFoundTitle"])" Message="@(_errorMessage ?? L["Credit_NotFoundMessage"])" RetryLabel="@L["Api_Retry"]" OnRetry="LoadAsync" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
+    </Page>
+}
+else
+{
+    var entry = _entry;
+<Page>
+    <PageHeader Title="@L["Credit_DetailTitle"]" Subtitle="@L["Credit_DetailSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (!string.IsNullOrEmpty(_banner))
+    {
+        <Alert Tone="AlertTone.Success" Title="@L["Customers_SuccessTitle"]" Message="@_banner" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Credit_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Credit_EntrySection"]">
+        <Stack Gap="3">
+            <div>
+                <span class="pos-muted">@L["Credit_Field_Amount"]</span>
+                <div class="pos-value-md"><MoneyDisplay Amount="@entry.Amount" CurrencyCode="PHP" /></div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Customers_Field_Status"]</span>
+                <Badge Tone="@(entry.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@entry.Status</Badge>
+            </div>
+            <div>
+                <span class="pos-muted">@L["DueDate_Status"]</span>
+                <Badge Tone="@DueStatusTone(_dueStatus)">@_dueStatusLabel</Badge>
+            </div>
+            <div>
+                <span class="pos-muted">@L["DueDate_Current"]</span>
+                <div class="pos-value-md">@(entry.CurrentDueDate is null ? L["DueDate_None"] : FormatDate(entry.CurrentDueDate.Value))</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Credit_Field_Remarks"]</span>
+                <div class="pos-value-md pos-wrap">@entry.Remarks</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Payment_RecordedAt"]</span>
+                <div class="pos-value-md">@entry.CreatedAtUtc.ToLocalTime().ToString("g")</div>
+            </div>
+        </Stack>
+    </Section>
+
+    @if (entry.Status == "Active")
+    {
+        <Section Title="@L["DueDate_ActionsTitle"]">
+            <Stack Gap="3">
+                <DateInput Label="@L["DueDate_Field_Date"]"
+                           Value="@_dueDate"
+                           ValueChanged="v => _dueDate = v"
+                           Hint="@L["DueDate_DateHint"]" />
+                <TextArea Label="@L["DueDate_Field_Reason"]"
+                          Value="@_reason"
+                          ValueChanged="v => _reason = v"
+                          Required="true"
+                          Hint="@L["DueDate_ReasonHint"]"
+                          Rows="3" />
+                <FormActions>
+                    <Button Variant="ButtonVariant.Primary" OnClick="() => _confirmSet = true">@L["DueDate_Set"]</Button>
+                    @if (entry.CurrentDueDate is not null)
+                    {
+                        <Button Variant="ButtonVariant.Secondary" OnClick="() => _confirmClear = true">@L["DueDate_Clear"]</Button>
+                    }
+                </FormActions>
+            </Stack>
+        </Section>
+    }
+
+    <Section Title="@L["DueDate_HistoryTitle"]">
+        @if (_historyLoading)
+        {
+            <Spinner /><span>@L["DueDate_HistoryLoading"]</span>
+        }
+        else if (_history.Count == 0)
+        {
+            <EmptyState Title="@L["DueDate_HistoryEmptyTitle"]" Message="@L["DueDate_HistoryEmptyMessage"]" />
+        }
+        else
+        {
+            <Stack Gap="3">
+                @foreach (var change in _history)
+                {
+                    <div class="pos-credit-entry">
+                        <div class="pos-value-md">
+                            @(change.PreviousDueDate is null ? L["DueDate_None"] : FormatDate(change.PreviousDueDate.Value))
+                            →
+                            @(change.NewDueDate is null ? L["DueDate_None"] : FormatDate(change.NewDueDate.Value))
+                        </div>
+                        <div class="pos-wrap">@change.Reason</div>
+                        <div class="pos-muted">@change.ChangedAtUtc.ToLocalTime().ToString("g")</div>
+                    </div>
+                }
+            </Stack>
+        }
+    </Section>
+
+    <ConfirmDialog Visible="@_confirmSet"
+                   VisibleChanged="v => _confirmSet = v"
+                   Title="@L["DueDate_ConfirmSetTitle"]"
+                   Message="@L["DueDate_ConfirmSetMessage"]"
+                   ConfirmLabel="@L["DueDate_Set"]"
+                   IsLoading="@_acting"
+                   OnConfirm="SetDueDateAsync" />
+
+    <ConfirmDialog Visible="@_confirmClear"
+                   VisibleChanged="v => _confirmClear = v"
+                   Title="@L["DueDate_ConfirmClearTitle"]"
+                   Message="@L["DueDate_ConfirmClearMessage"]"
+                   Danger="true"
+                   ConfirmLabel="@L["DueDate_Clear"]"
+                   IsLoading="@_acting"
+                   OnConfirm="ClearDueDateAsync" />
+</Page>
+}
+
+@code {
+    [Parameter] public Guid CustomerId { get; set; }
+    [Parameter] public Guid CreditEntryId { get; set; }
+
+    private bool _ready;
+    private bool _loading = true;
+    private bool _historyLoading;
+    private bool _acting;
+    private bool _confirmSet;
+    private bool _confirmClear;
+    private PosCreditEntryDto? _entry;
+    private PosAgedCreditDto? _aged;
+    private List<PosCreditDueDateChangeDto> _history = [];
+    private DateOnly? _dueDate;
+    private string? _reason;
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private string? _banner;
+    private string _dueStatus = "NoDueDate";
+    private string _dueStatusLabel = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        StateHasChanged();
+
+        var aged = await Customers.ListAgedCreditsAsync(CustomerId, filter: "all", page: 1, pageSize: 200);
+        if (aged.IsSuccess && aged.Data is not null)
+        {
+            _aged = aged.Data.Items.FirstOrDefault(i => i.CreditEntryId == CreditEntryId);
+        }
+
+        if (_aged is not null)
+        {
+            _entry = new PosCreditEntryDto(
+                _aged.CreditEntryId,
+                _aged.OrganizationId,
+                _aged.CustomerId,
+                _aged.Amount,
+                _aged.Remarks,
+                _aged.Status,
+                _aged.CreatedAtUtc,
+                null,
+                null,
+                _aged.CurrentDueDate);
+            _dueStatus = _aged.DueStatus;
+            _dueStatusLabel = DueStatusLabel(_aged.DueStatus);
+            _dueDate = _aged.CurrentDueDate;
+        }
+        else
+        {
+            _entry = null;
+            var described = ApiLocalizer.Describe(aged.Status, aged.Error);
+            _errorTitle = described.Title;
+            _errorMessage = aged.Error?.Detail ?? described.Message;
+        }
+
+        await LoadHistoryAsync();
+        _loading = false;
+    }
+
+    private async Task LoadHistoryAsync()
+    {
+        _historyLoading = true;
+        var history = await Customers.ListCreditDueDateHistoryAsync(CreditEntryId, page: 1, pageSize: 50);
+        if (history.IsSuccess && history.Data is not null)
+        {
+            _history = history.Data.Items;
+        }
+        else if (!history.IsSuccess && history.Status != ApiCallStatus.NotFound)
+        {
+            _errorTitle = L["DueDate_ErrorTitle"];
+            _errorMessage = history.Error?.Detail ?? ApiLocalizer.Describe(history.Status, history.Error).Message;
+        }
+
+        _historyLoading = false;
+    }
+
+    private async Task SetDueDateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_reason))
+        {
+            _errorTitle = L["DueDate_ErrorTitle"];
+            _errorMessage = L["DueDate_ReasonRequired"];
+            _confirmSet = false;
+            return;
+        }
+
+        if (_dueDate is null)
+        {
+            _errorTitle = L["DueDate_ErrorTitle"];
+            _errorMessage = L["DueDate_DateInvalid"];
+            _confirmSet = false;
+            return;
+        }
+
+        _acting = true;
+        var result = await Customers.SetCreditDueDateAsync(
+            CreditEntryId,
+            new SetPosCreditDueDateRequest(_dueDate, _reason!));
+        _acting = false;
+        _confirmSet = false;
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _banner = L["DueDate_SavedSuccess"];
+            _reason = null;
+            await LoadAsync();
+        }
+        else if (result.Status == ApiCallStatus.Conflict)
+        {
+            _errorTitle = L["DueDate_ConflictTitle"];
+            _errorMessage = result.Error?.Detail ?? L["DueDate_ConflictMessage"];
+        }
+        else
+        {
+            _errorTitle = L["DueDate_ErrorTitle"];
+            _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        }
+    }
+
+    private async Task ClearDueDateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_reason))
+        {
+            _errorTitle = L["DueDate_ErrorTitle"];
+            _errorMessage = L["DueDate_ReasonRequired"];
+            _confirmClear = false;
+            return;
+        }
+
+        _acting = true;
+        var result = await Customers.ClearCreditDueDateAsync(CreditEntryId, _reason!);
+        _acting = false;
+        _confirmClear = false;
+
+        if (result.IsSuccess)
+        {
+            _banner = L["DueDate_ClearedSuccess"];
+            _reason = null;
+            await LoadAsync();
+        }
+        else if (result.Status == ApiCallStatus.Conflict)
+        {
+            _errorTitle = L["DueDate_ConflictTitle"];
+            _errorMessage = result.Error?.Detail ?? L["DueDate_ConflictMessage"];
+        }
+        else
+        {
+            _errorTitle = L["DueDate_ErrorTitle"];
+            _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        }
+    }
+
+    private static string FormatDate(DateOnly date) =>
+        date.ToString("d");
+
+    private string DueStatusLabel(string status) => status switch
+    {
+        "Overdue" => L["DueDate_Badge_Overdue"],
+        "DueToday" => L["DueDate_Badge_DueToday"],
+        "DueSoon" => L["DueDate_Badge_DueSoon"],
+        "Upcoming" => L["DueDate_Badge_Upcoming"],
+        "Paid" => L["DueDate_Badge_Paid"],
+        "Reversed" => L["DueDate_Badge_Reversed"],
+        _ => L["DueDate_Badge_NoDueDate"]
+    };
+
+    private static BadgeTone DueStatusTone(string status) => status switch
+    {
+        "Overdue" => BadgeTone.Danger,
+        "DueToday" => BadgeTone.Warning,
+        "DueSoon" => BadgeTone.Warning,
+        "Paid" => BadgeTone.Success,
+        "Reversed" => BadgeTone.Neutral,
+        _ => BadgeTone.Neutral
+    };
+
+    private void GoBack() => Nav.NavigateTo($"/customers/{CustomerId:D}");
+}
