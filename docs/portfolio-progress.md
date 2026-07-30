@@ -14,7 +14,7 @@
 | Current phase | Phase 6 — Utang MVP (**In Progress**) |
 | Current work package | P6-WP05 — Statements, Receipts and Trial Rules (**Complete**) |
 | Overall status | **P6-WP05 complete** — statements, receipts, capability matrix, POS continuity entry; next P6-WP06 when authorized |
-| Latest verified commit | `ffc0369437400a4aed2a54227aa000868fb82d97` (P6-WP05 tip; feature `271c518cb8c4051502d6370ec71e6498fbbfd6b5`) |
+| Latest verified commit | `a7ddb2f90df0c180809d75eb7d56e13a9a88772e` (P6-WP05 tip; feature `271c518cb8c4051502d6370ec71e6498fbbfd6b5`) |
 | Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations; R-035 calendar EOM; no payment gateway; no interactive Android emulator (R-109); commercial headers Development-stage only; org timezone undefined for due dates; OD-11 open |
 | Last updated | 2026-07-30 |
 
