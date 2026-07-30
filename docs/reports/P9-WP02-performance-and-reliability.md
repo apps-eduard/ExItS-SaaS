@@ -131,3 +131,13 @@ Unchanged: ignored, untracked, outside `ExItS.slnx`.
 ## Files / docs changed
 
 See Git feature and documentation commits for this WP.
+
+## Git evidence
+
+| Item | Value |
+|---|---|
+| Feature commit | 46a4ac7bacfad0736fba4741817958862fadf9e2 |
+| Docs commit | 61b85779ef5b2fa48f63f8c38194a56daaf6627e |
+| Docs hash-record commit | _(filled by hash-record commit)_ |
+| Tests | 915 / 0 / 0 |
+| Exact next WP | **P9-WP03 — Backup and Restore** |
