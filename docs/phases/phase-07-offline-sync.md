@@ -59,7 +59,7 @@ Status: **Complete with documented risks**
 
 Phase marker: `P7-WP03-customer-and-credit-sync`
 
-Feature commit: `_(recorded after push)_`
+Feature commit: `3763ca0fe406067eb539b3d8adca21447f813dcf`
 
 #### Approved scope
 
@@ -78,8 +78,8 @@ Feature commit: `_(recorded after push)_`
 - [x] Applicable tests pass with exact evidence (586 passed / 0 failed / 0 skipped).
 - [x] Dashboard and phase page updated.
 - [x] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean.
 
 ### P7-WP04 — Payment Sync and Recovery
 
