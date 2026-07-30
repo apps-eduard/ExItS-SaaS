@@ -14,7 +14,7 @@
 | Current phase | Phase 5 — PinoyBusinessPOS MAUI Foundation (**In Progress**) |
 | Current work package | P5-WP01 — MAUI Solution and API Client (**Complete**) |
 | Overall status | **P5-WP01 complete** — MAUI shell, DesignSystem, themes, i18n, API client; next P5-WP02 |
-| Latest verified commit | _(recorded after push)_ |
+| Latest verified commit | 3015925d16560be13953270565c1ab99a8d69934 |
 | Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations; R-035 calendar EOM; no product delivery; no payment gateway; POS foundation not offline business |
 | Last updated | 2026-07-30 |
 
@@ -50,7 +50,7 @@ P5-WP02 — Native UI Tokens, Themes and Compact Layout (not started — do not 
 
 | WP | Status | Key commit |
 |---|---|---|
-| P5-WP01 | Complete | _(recorded after push)_ |
+| P5-WP01 | Complete | 3015925d16560be13953270565c1ab99a8d69934 |
 | P5-WP02 | Not Started | — |
 | P5-WP03 | Not Started | — |
 | P5-WP04 | Not Started | — |
