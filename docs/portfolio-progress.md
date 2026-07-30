@@ -14,7 +14,9 @@
 | Current phase | Phase 10 — Full POS |
 | Current work package | P10-WP03 — Advanced Inventory (**complete**) |
 | Overall status | **P10-WP03 complete.** Do not begin P10-WP04. |
-| Latest verified commit | `8af7a14` (feat `5c62133`) |
+| Latest verified commit | `12d443b` (feat `5c62133`, gap-fix `31d809c`) |
+| Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; POS operational roles; Manual GCash unverified; online-only Basic Store limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/refund/accounting deferred |
+| Last updated | 2026-07-31 |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; POS operational roles; Manual GCash unverified; online-only Basic Store limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/refund/accounting deferred |
 | Last updated | 2026-07-31 |
 
