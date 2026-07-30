@@ -1,0 +1,254 @@
+@page "/catalog"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCatalogClient Catalog
+@inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageCatalog);
+<Page>
+    <PageHeader Title="@L["Catalog_Title"]" Subtitle="@L["Catalog_Subtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoCategories">@L["Catalog_Categories"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBarcodeLookup">@L["Catalog_BarcodeLookup"]</Button>
+            <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="GoNew">@L["Catalog_Product_Add"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Catalog_OfflineTitle"]" Message="@L["Catalog_OfflineMessage"]" />
+    }
+    else if (!canManage)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+    }
+
+    <SearchToolbar SearchText="@_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Catalog_SearchPlaceholder"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Catalog_Refresh"]</Button>
+        </Actions>
+    </SearchToolbar>
+
+    <Section Title="@L["Catalog_FiltersTitle"]">
+        <Stack Gap="3">
+            <Select Label="@L["Catalog_Filter_Status"]"
+                    Value="@_statusFilter"
+                    ValueChanged="OnStatusFilterChanged"
+                    Options="@CatalogUiOptions.StatusFilters(L)" />
+            <Select Label="@L["Catalog_Filter_Category"]"
+                    Value="@_categoryFilter"
+                    ValueChanged="OnCategoryFilterChanged"
+                    Options="@CatalogUiOptions.CategoryFilters(L, _categories)" />
+            <Select Label="@L["Catalog_Filter_Unit"]"
+                    Value="@_unitFilter"
+                    ValueChanged="OnUnitFilterChanged"
+                    Options="@CatalogUiOptions.UnitOfMeasureFilters(L)" />
+        </Stack>
+    </Section>
+
+    <ResponsiveDataList TItem="PosCatalogProductDto"
+                        Items="@_items"
+                        Columns="@Columns"
+                        CellTemplate="@CellTemplate"
+                        IsLoading="@_loading"
+                        LoadingLabel="@L["Catalog_Loading"]"
+                        EmptyTitle="@L["Catalog_EmptyTitle"]"
+                        EmptyMessage="@L["Catalog_EmptyMessage"]"
+                        ErrorTitle="@_errorTitle"
+                        ErrorMessage="@_errorMessage"
+                        RetryLabel="@L["Api_Retry"]"
+                        OnRetry="ReloadAsync"
+                        AriaLabel="@L["Catalog_Title"]" />
+
+    @if (!_loading && _totalCount > 0)
+    {
+        <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
+    }
+</Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _loading;
+    private bool _isOffline;
+    private string? _search;
+    private string? _statusFilter = PosCatalogOptions.ActiveStatus;
+    private string? _categoryFilter;
+    private string? _unitFilter;
+    private int _page = 1;
+    private const int _pageSize = 20;
+    private int _totalCount;
+    private IReadOnlyList<PosCatalogProductDto> _items = Array.Empty<PosCatalogProductDto>();
+    private IReadOnlyList<PosProductCategoryDto> _categories = Array.Empty<PosProductCategoryDto>();
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    private IReadOnlyList<DataColumnDefinition> Columns =>
+    [
+        new("name", L["Catalog_Col_Name"], Primary: true, Width: "28%"),
+        new("sku", L["Catalog_Col_Sku"], Width: "16%"),
+        new("barcode", L["Catalog_Col_Barcode"], Width: "16%"),
+        new("price", L["Catalog_Col_Price"], Width: "14%"),
+        new("unit", L["Catalog_Col_Unit"], Width: "12%"),
+        new("status", L["Catalog_Col_Status"], Width: "14%"),
+    ];
+
+    private RenderFragment<(PosCatalogProductDto Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
+    {
+        switch (context.Column.Key)
+        {
+            case "name":
+                builder.OpenElement(0, "a");
+                builder.AddAttribute(1, "class", "pos-link");
+                builder.AddAttribute(2, "href", $"/catalog/products/{context.Item.ProductId:D}");
+                builder.AddContent(3, context.Item.Name);
+                builder.CloseElement();
+                break;
+            case "sku":
+                builder.AddContent(0, string.IsNullOrWhiteSpace(context.Item.Sku)
+                    ? L["Catalog_NoValue"].Value
+                    : context.Item.Sku);
+                break;
+            case "barcode":
+                builder.AddContent(0, string.IsNullOrWhiteSpace(context.Item.Barcode)
+                    ? L["Catalog_NoValue"].Value
+                    : context.Item.Barcode);
+                break;
+            case "price":
+                builder.OpenComponent<MoneyDisplay>(0);
+                builder.AddAttribute(1, "Amount", context.Item.SellingPrice);
+                builder.AddAttribute(2, "CurrencyCode", "PHP");
+                builder.CloseComponent();
+                break;
+            case "unit":
+                builder.AddContent(0, CatalogUiOptions.UnitOfMeasureLabel(L, context.Item.UnitOfMeasure));
+                break;
+            default:
+                builder.OpenComponent<Badge>(0);
+                builder.AddAttribute(1, "Tone", context.Item.Status == PosCatalogOptions.ActiveStatus
+                    ? BadgeTone.Success
+                    : BadgeTone.Neutral);
+                builder.AddAttribute(2, "ChildContent", (RenderFragment)(b =>
+                    b.AddContent(0, CatalogUiOptions.StatusLabel(L, context.Item.Status))));
+                builder.CloseComponent();
+                break;
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task OnSearchChanged(string? value)
+    {
+        _search = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnStatusFilterChanged(string? value)
+    {
+        _statusFilter = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnCategoryFilterChanged(string? value)
+    {
+        _categoryFilter = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnUnitFilterChanged(string? value)
+    {
+        _unitFilter = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _page = page;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        StateHasChanged();
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _items = Array.Empty<PosCatalogProductDto>();
+            _totalCount = 0;
+            _errorTitle = L["Catalog_OfflineTitle"];
+            _errorMessage = L["Catalog_OfflineMessage"];
+            _loading = false;
+            return;
+        }
+
+        await LoadCategoriesAsync();
+
+        Guid? categoryId = Guid.TryParse(_categoryFilter, out var parsedCategory) ? parsedCategory : null;
+        var result = await Catalog.ListProductsAsync(
+            _search,
+            string.IsNullOrWhiteSpace(_statusFilter) ? null : _statusFilter,
+            categoryId,
+            string.IsNullOrWhiteSpace(_unitFilter) ? null : _unitFilter,
+            _page,
+            _pageSize);
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _items = result.Data.Items;
+            _totalCount = result.Data.TotalCount;
+        }
+        else
+        {
+            _items = Array.Empty<PosCatalogProductDto>();
+            _totalCount = 0;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private async Task LoadCategoriesAsync()
+    {
+        var result = await Catalog.ListCategoriesAsync(
+            status: PosCatalogOptions.ActiveStatus,
+            page: 1,
+            pageSize: 100);
+        _categories = result.IsSuccess && result.Data is not null
+            ? result.Data.Items
+            : Array.Empty<PosProductCategoryDto>();
+    }
+
+    private void GoNew() => Nav.NavigateTo("/catalog/products/new");
+    private void GoCategories() => Nav.NavigateTo("/catalog/categories");
+    private void GoBarcodeLookup() => Nav.NavigateTo("/catalog/barcode-lookup");
+}

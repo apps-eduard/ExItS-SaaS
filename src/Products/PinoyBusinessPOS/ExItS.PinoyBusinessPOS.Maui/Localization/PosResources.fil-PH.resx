@@ -592,4 +592,115 @@
   <data name="Offline_OverpaymentLocal" xml:space="preserve"><value>Lampas sa projected outstanding kasama ang pending local changes.</value></data>
   <data name="Offline_DueDateConflictTitle" xml:space="preserve"><value>Conflict sa due date</value></data>
   <data name="Offline_DueDateConflictMessage" xml:space="preserve"><value>Magkaiba ang due date sa server at local change mo. I-refresh mula sa server o i-discard ang local request.</value></data>
+  <data name="Catalog_Title" xml:space="preserve"><value>Mga Produkto</value></data>
+  <data name="Catalog_Subtitle" xml:space="preserve"><value>Pamahalaan ang catalog ng produkto, SKU, at barcode.</value></data>
+  <data name="Catalog_Categories" xml:space="preserve"><value>Mga Kategorya</value></data>
+  <data name="Catalog_BarcodeLookup" xml:space="preserve"><value>Hanapin sa barcode</value></data>
+  <data name="Catalog_Refresh" xml:space="preserve"><value>I-refresh</value></data>
+  <data name="Catalog_Loading" xml:space="preserve"><value>Naglo-load ng catalog…</value></data>
+  <data name="Catalog_SearchPlaceholder" xml:space="preserve"><value>Maghanap sa pangalan, SKU, o barcode</value></data>
+  <data name="Catalog_EmptyTitle" xml:space="preserve"><value>Wala pang produkto</value></data>
+  <data name="Catalog_EmptyMessage" xml:space="preserve"><value>Magdagdag ng unang produkto para simulan ang catalog.</value></data>
+  <data name="Catalog_FiltersTitle" xml:space="preserve"><value>Mga filter</value></data>
+  <data name="Catalog_Filter_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Catalog_Filter_Category" xml:space="preserve"><value>Kategorya</value></data>
+  <data name="Catalog_Filter_Unit" xml:space="preserve"><value>Yunit</value></data>
+  <data name="Catalog_Filter_AllStatuses" xml:space="preserve"><value>Lahat ng status</value></data>
+  <data name="Catalog_Filter_AllCategories" xml:space="preserve"><value>Lahat ng kategorya</value></data>
+  <data name="Catalog_Filter_AllUnits" xml:space="preserve"><value>Lahat ng yunit</value></data>
+  <data name="Catalog_Col_Name" xml:space="preserve"><value>Pangalan</value></data>
+  <data name="Catalog_Col_Sku" xml:space="preserve"><value>SKU</value></data>
+  <data name="Catalog_Col_Barcode" xml:space="preserve"><value>Barcode</value></data>
+  <data name="Catalog_Col_Price" xml:space="preserve"><value>Presyo</value></data>
+  <data name="Catalog_Col_Unit" xml:space="preserve"><value>Yunit</value></data>
+  <data name="Catalog_Col_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Catalog_Col_Actions" xml:space="preserve"><value>Aksyon</value></data>
+  <data name="Catalog_NoValue" xml:space="preserve"><value>Wala</value></data>
+  <data name="Catalog_BackToList" xml:space="preserve"><value>Bumalik sa mga produkto</value></data>
+  <data name="Catalog_Cancel" xml:space="preserve"><value>Kanselahin</value></data>
+  <data name="Catalog_Save" xml:space="preserve"><value>I-save</value></data>
+  <data name="Catalog_Deactivate" xml:space="preserve"><value>I-deactivate</value></data>
+  <data name="Catalog_Reactivate" xml:space="preserve"><value>I-reactivate</value></data>
+  <data name="Catalog_ErrorTitle" xml:space="preserve"><value>May problema sa catalog</value></data>
+  <data name="Catalog_SuccessTitle" xml:space="preserve"><value>Na-save</value></data>
+  <data name="Catalog_OfflineTitle" xml:space="preserve"><value>Kailangan ng koneksyon</value></data>
+  <data name="Catalog_OfflineMessage" xml:space="preserve"><value>Online lang ang catalog. Kumonekta muli para tingnan o baguhin ang mga produkto at kategorya.</value></data>
+  <data name="Catalog_Status_Active" xml:space="preserve"><value>Aktibo</value></data>
+  <data name="Catalog_Status_Inactive" xml:space="preserve"><value>Hindi aktibo</value></data>
+  <data name="Catalog_Uom_Piece" xml:space="preserve"><value>Piraso</value></data>
+  <data name="Catalog_Uom_Pack" xml:space="preserve"><value>Pack</value></data>
+  <data name="Catalog_Uom_Box" xml:space="preserve"><value>Kahon</value></data>
+  <data name="Catalog_Uom_Bottle" xml:space="preserve"><value>Bote</value></data>
+  <data name="Catalog_Uom_Can" xml:space="preserve"><value>Lata</value></data>
+  <data name="Catalog_Uom_Sachet" xml:space="preserve"><value>Sachet</value></data>
+  <data name="Catalog_Uom_Kilogram" xml:space="preserve"><value>Kilo</value></data>
+  <data name="Catalog_Uom_Gram" xml:space="preserve"><value>Gramo</value></data>
+  <data name="Catalog_Uom_Liter" xml:space="preserve"><value>Litro</value></data>
+  <data name="Catalog_Uom_Milliliter" xml:space="preserve"><value>Mililitro</value></data>
+  <data name="Catalog_Uom_Meter" xml:space="preserve"><value>Metro</value></data>
+  <data name="Catalog_Field_Name" xml:space="preserve"><value>Pangalan ng produkto</value></data>
+  <data name="Catalog_Field_Description" xml:space="preserve"><value>Paglalarawan</value></data>
+  <data name="Catalog_Field_Sku" xml:space="preserve"><value>SKU</value></data>
+  <data name="Catalog_Field_Barcode" xml:space="preserve"><value>Barcode</value></data>
+  <data name="Catalog_Field_Category" xml:space="preserve"><value>Kategorya</value></data>
+  <data name="Catalog_Field_Unit" xml:space="preserve"><value>Yunit ng sukat</value></data>
+  <data name="Catalog_Field_SellingPrice" xml:space="preserve"><value>Presyong bentahan</value></data>
+  <data name="Catalog_Field_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Catalog_DescriptionHint" xml:space="preserve"><value>Opsyonal. Hanggang 512 karakter.</value></data>
+  <data name="Catalog_SkuHint" xml:space="preserve"><value>Opsyonal. Letra, numero, at - _ . / lamang.</value></data>
+  <data name="Catalog_BarcodeHint" xml:space="preserve"><value>Opsyonal. 8 hanggang 14 na numero. Sinusuri ang check digit ng EAN-8, UPC-A, EAN-13, at GTIN-14.</value></data>
+  <data name="Catalog_CategoryHint" xml:space="preserve"><value>Opsyonal. Aktibong kategorya lamang ang maaaring italaga.</value></data>
+  <data name="Catalog_PriceHint" xml:space="preserve"><value>Zero pataas, hanggang dalawang decimal.</value></data>
+  <data name="Catalog_NameRequired" xml:space="preserve"><value>Kailangan ang pangalan ng produkto.</value></data>
+  <data name="Catalog_PriceRequired" xml:space="preserve"><value>Maglagay ng presyong zero pataas.</value></data>
+  <data name="Catalog_SkuConflict" xml:space="preserve"><value>Ginagamit na ang SKU na ito ng ibang produkto sa organisasyon mo.</value></data>
+  <data name="Catalog_BarcodeConflict" xml:space="preserve"><value>Ginagamit na ang barcode na ito ng ibang produkto sa organisasyon mo.</value></data>
+  <data name="Catalog_CategoryNotAssignable" xml:space="preserve"><value>Pumili ng aktibong kategorya sa organisasyon mo.</value></data>
+  <data name="Catalog_ConcurrencyConflict" xml:space="preserve"><value>Nabago ito sa ibang lugar. I-reload at subukan muli.</value></data>
+  <data name="Catalog_Product_Add" xml:space="preserve"><value>Magdagdag ng produkto</value></data>
+  <data name="Catalog_Product_Create" xml:space="preserve"><value>Gumawa ng produkto</value></data>
+  <data name="Catalog_Product_Edit" xml:space="preserve"><value>I-edit ang produkto</value></data>
+  <data name="Catalog_Product_CreateTitle" xml:space="preserve"><value>Bagong produkto</value></data>
+  <data name="Catalog_Product_CreateSubtitle" xml:space="preserve"><value>Magdagdag ng produkto sa catalog mo.</value></data>
+  <data name="Catalog_Product_EditTitle" xml:space="preserve"><value>I-edit ang produkto</value></data>
+  <data name="Catalog_Product_DetailSubtitle" xml:space="preserve"><value>Produkto sa catalog</value></data>
+  <data name="Catalog_Product_DetailsSection" xml:space="preserve"><value>Detalye ng produkto</value></data>
+  <data name="Catalog_Product_NoCategory" xml:space="preserve"><value>Walang kategorya</value></data>
+  <data name="Catalog_Product_NotFoundTitle" xml:space="preserve"><value>Hindi nakita ang produkto</value></data>
+  <data name="Catalog_Product_NotFoundMessage" xml:space="preserve"><value>Wala ang produktong ito sa organisasyon mo.</value></data>
+  <data name="Catalog_Product_DeactivateTitle" xml:space="preserve"><value>I-deactivate ang produkto?</value></data>
+  <data name="Catalog_Product_DeactivateMessage" xml:space="preserve"><value>Mananatili ito sa catalog at nakareserba pa rin ang SKU at barcode nito.</value></data>
+  <data name="Catalog_Product_ReactivateTitle" xml:space="preserve"><value>I-reactivate ang produkto?</value></data>
+  <data name="Catalog_Product_ReactivateMessage" xml:space="preserve"><value>Magiging available muli ito sa catalog.</value></data>
+  <data name="Catalog_Product_DeactivatedSuccess" xml:space="preserve"><value>Na-deactivate ang produkto.</value></data>
+  <data name="Catalog_Product_ReactivatedSuccess" xml:space="preserve"><value>Na-reactivate ang produkto.</value></data>
+  <data name="Catalog_Category_Title" xml:space="preserve"><value>Mga Kategorya</value></data>
+  <data name="Catalog_Category_Subtitle" xml:space="preserve"><value>Pagpangkat-pangkatin ang mga produkto para madaling hanapin.</value></data>
+  <data name="Catalog_Category_AddTitle" xml:space="preserve"><value>Bagong kategorya</value></data>
+  <data name="Catalog_Category_EditTitle" xml:space="preserve"><value>Palitan ang pangalan ng kategorya</value></data>
+  <data name="Catalog_Category_Field_Name" xml:space="preserve"><value>Pangalan ng kategorya</value></data>
+  <data name="Catalog_Category_Add" xml:space="preserve"><value>Magdagdag ng kategorya</value></data>
+  <data name="Catalog_Category_Rename" xml:space="preserve"><value>Palitan ang pangalan</value></data>
+  <data name="Catalog_Category_SearchPlaceholder" xml:space="preserve"><value>Maghanap ng kategorya</value></data>
+  <data name="Catalog_Category_EmptyTitle" xml:space="preserve"><value>Wala pang kategorya</value></data>
+  <data name="Catalog_Category_EmptyMessage" xml:space="preserve"><value>Magdagdag ng kategorya para pangkatin ang mga produkto.</value></data>
+  <data name="Catalog_Category_NameRequired" xml:space="preserve"><value>Kailangan ang pangalan ng kategorya.</value></data>
+  <data name="Catalog_Category_NameConflict" xml:space="preserve"><value>May aktibong kategorya nang gumagamit ng pangalang ito.</value></data>
+  <data name="Catalog_Category_CreatedSuccess" xml:space="preserve"><value>Nagawa ang kategorya.</value></data>
+  <data name="Catalog_Category_UpdatedSuccess" xml:space="preserve"><value>Na-update ang kategorya.</value></data>
+  <data name="Catalog_Category_DeactivatedSuccess" xml:space="preserve"><value>Na-deactivate ang kategorya.</value></data>
+  <data name="Catalog_Category_ReactivatedSuccess" xml:space="preserve"><value>Na-reactivate ang kategorya.</value></data>
+  <data name="Catalog_Lookup_Title" xml:space="preserve"><value>Hanapin sa barcode</value></data>
+  <data name="Catalog_Lookup_Subtitle" xml:space="preserve"><value>Hanapin ang produkto gamit ang barcode o SKU.</value></data>
+  <data name="Catalog_Lookup_FormTitle" xml:space="preserve"><value>Maghanap</value></data>
+  <data name="Catalog_Lookup_Barcode" xml:space="preserve"><value>Barcode</value></data>
+  <data name="Catalog_Lookup_Sku" xml:space="preserve"><value>SKU</value></data>
+  <data name="Catalog_Lookup_IncludeInactive" xml:space="preserve"><value>Isama ang hindi aktibong produkto</value></data>
+  <data name="Catalog_Lookup_Search" xml:space="preserve"><value>Maghanap</value></data>
+  <data name="Catalog_Lookup_Clear" xml:space="preserve"><value>Burahin</value></data>
+  <data name="Catalog_Lookup_InputRequired" xml:space="preserve"><value>Maglagay ng barcode o SKU.</value></data>
+  <data name="Catalog_Lookup_NoMatchTitle" xml:space="preserve"><value>Walang tugma</value></data>
+  <data name="Catalog_Lookup_NoMatchMessage" xml:space="preserve"><value>Walang produktong tugma sa barcode o SKU na iyon.</value></data>
+  <data name="Catalog_Lookup_ResultTitle" xml:space="preserve"><value>Tugma</value></data>
+  <data name="Catalog_Lookup_OpenProduct" xml:space="preserve"><value>Buksan ang produkto</value></data>
 </root>

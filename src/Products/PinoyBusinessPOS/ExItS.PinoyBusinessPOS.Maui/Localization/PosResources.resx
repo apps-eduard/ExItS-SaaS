@@ -592,4 +592,115 @@
   <data name="Offline_OverpaymentLocal" xml:space="preserve"><value>Amount exceeds projected outstanding including pending local changes.</value></data>
   <data name="Offline_DueDateConflictTitle" xml:space="preserve"><value>Due date conflict</value></data>
   <data name="Offline_DueDateConflictMessage" xml:space="preserve"><value>The server due date differs from your local change. Refresh from server or discard the local request.</value></data>
+  <data name="Catalog_Title" xml:space="preserve"><value>Products</value></data>
+  <data name="Catalog_Subtitle" xml:space="preserve"><value>Manage your product catalog, SKUs, and barcodes.</value></data>
+  <data name="Catalog_Categories" xml:space="preserve"><value>Categories</value></data>
+  <data name="Catalog_BarcodeLookup" xml:space="preserve"><value>Barcode lookup</value></data>
+  <data name="Catalog_Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Catalog_Loading" xml:space="preserve"><value>Loading catalog…</value></data>
+  <data name="Catalog_SearchPlaceholder" xml:space="preserve"><value>Search by name, SKU, or barcode</value></data>
+  <data name="Catalog_EmptyTitle" xml:space="preserve"><value>No products yet</value></data>
+  <data name="Catalog_EmptyMessage" xml:space="preserve"><value>Add your first product to start building the catalog.</value></data>
+  <data name="Catalog_FiltersTitle" xml:space="preserve"><value>Filters</value></data>
+  <data name="Catalog_Filter_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Catalog_Filter_Category" xml:space="preserve"><value>Category</value></data>
+  <data name="Catalog_Filter_Unit" xml:space="preserve"><value>Unit</value></data>
+  <data name="Catalog_Filter_AllStatuses" xml:space="preserve"><value>All statuses</value></data>
+  <data name="Catalog_Filter_AllCategories" xml:space="preserve"><value>All categories</value></data>
+  <data name="Catalog_Filter_AllUnits" xml:space="preserve"><value>All units</value></data>
+  <data name="Catalog_Col_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Catalog_Col_Sku" xml:space="preserve"><value>SKU</value></data>
+  <data name="Catalog_Col_Barcode" xml:space="preserve"><value>Barcode</value></data>
+  <data name="Catalog_Col_Price" xml:space="preserve"><value>Price</value></data>
+  <data name="Catalog_Col_Unit" xml:space="preserve"><value>Unit</value></data>
+  <data name="Catalog_Col_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Catalog_Col_Actions" xml:space="preserve"><value>Actions</value></data>
+  <data name="Catalog_NoValue" xml:space="preserve"><value>Not set</value></data>
+  <data name="Catalog_BackToList" xml:space="preserve"><value>Back to products</value></data>
+  <data name="Catalog_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Catalog_Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Catalog_Deactivate" xml:space="preserve"><value>Deactivate</value></data>
+  <data name="Catalog_Reactivate" xml:space="preserve"><value>Reactivate</value></data>
+  <data name="Catalog_ErrorTitle" xml:space="preserve"><value>Catalog error</value></data>
+  <data name="Catalog_SuccessTitle" xml:space="preserve"><value>Saved</value></data>
+  <data name="Catalog_OfflineTitle" xml:space="preserve"><value>Reconnect required</value></data>
+  <data name="Catalog_OfflineMessage" xml:space="preserve"><value>The catalog is online-only. Reconnect to view or change products and categories.</value></data>
+  <data name="Catalog_Status_Active" xml:space="preserve"><value>Active</value></data>
+  <data name="Catalog_Status_Inactive" xml:space="preserve"><value>Inactive</value></data>
+  <data name="Catalog_Uom_Piece" xml:space="preserve"><value>Piece</value></data>
+  <data name="Catalog_Uom_Pack" xml:space="preserve"><value>Pack</value></data>
+  <data name="Catalog_Uom_Box" xml:space="preserve"><value>Box</value></data>
+  <data name="Catalog_Uom_Bottle" xml:space="preserve"><value>Bottle</value></data>
+  <data name="Catalog_Uom_Can" xml:space="preserve"><value>Can</value></data>
+  <data name="Catalog_Uom_Sachet" xml:space="preserve"><value>Sachet</value></data>
+  <data name="Catalog_Uom_Kilogram" xml:space="preserve"><value>Kilogram</value></data>
+  <data name="Catalog_Uom_Gram" xml:space="preserve"><value>Gram</value></data>
+  <data name="Catalog_Uom_Liter" xml:space="preserve"><value>Liter</value></data>
+  <data name="Catalog_Uom_Milliliter" xml:space="preserve"><value>Milliliter</value></data>
+  <data name="Catalog_Uom_Meter" xml:space="preserve"><value>Meter</value></data>
+  <data name="Catalog_Field_Name" xml:space="preserve"><value>Product name</value></data>
+  <data name="Catalog_Field_Description" xml:space="preserve"><value>Description</value></data>
+  <data name="Catalog_Field_Sku" xml:space="preserve"><value>SKU</value></data>
+  <data name="Catalog_Field_Barcode" xml:space="preserve"><value>Barcode</value></data>
+  <data name="Catalog_Field_Category" xml:space="preserve"><value>Category</value></data>
+  <data name="Catalog_Field_Unit" xml:space="preserve"><value>Unit of measure</value></data>
+  <data name="Catalog_Field_SellingPrice" xml:space="preserve"><value>Selling price</value></data>
+  <data name="Catalog_Field_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Catalog_DescriptionHint" xml:space="preserve"><value>Optional. Up to 512 characters.</value></data>
+  <data name="Catalog_SkuHint" xml:space="preserve"><value>Optional. Letters, digits, and - _ . / only.</value></data>
+  <data name="Catalog_BarcodeHint" xml:space="preserve"><value>Optional. 8 to 14 digits. EAN-8, UPC-A, EAN-13, and GTIN-14 check digits are verified.</value></data>
+  <data name="Catalog_CategoryHint" xml:space="preserve"><value>Optional. Only active categories can be assigned.</value></data>
+  <data name="Catalog_PriceHint" xml:space="preserve"><value>Zero or more, up to two decimal places.</value></data>
+  <data name="Catalog_NameRequired" xml:space="preserve"><value>Product name is required.</value></data>
+  <data name="Catalog_PriceRequired" xml:space="preserve"><value>Enter a selling price of zero or more.</value></data>
+  <data name="Catalog_SkuConflict" xml:space="preserve"><value>This SKU is already used by another product in your organization.</value></data>
+  <data name="Catalog_BarcodeConflict" xml:space="preserve"><value>This barcode is already used by another product in your organization.</value></data>
+  <data name="Catalog_CategoryNotAssignable" xml:space="preserve"><value>Choose an active category in your organization.</value></data>
+  <data name="Catalog_ConcurrencyConflict" xml:space="preserve"><value>This item changed elsewhere. Reload and try again.</value></data>
+  <data name="Catalog_Product_Add" xml:space="preserve"><value>Add product</value></data>
+  <data name="Catalog_Product_Create" xml:space="preserve"><value>Create product</value></data>
+  <data name="Catalog_Product_Edit" xml:space="preserve"><value>Edit product</value></data>
+  <data name="Catalog_Product_CreateTitle" xml:space="preserve"><value>New product</value></data>
+  <data name="Catalog_Product_CreateSubtitle" xml:space="preserve"><value>Add a product to your catalog.</value></data>
+  <data name="Catalog_Product_EditTitle" xml:space="preserve"><value>Edit product</value></data>
+  <data name="Catalog_Product_DetailSubtitle" xml:space="preserve"><value>Catalog product</value></data>
+  <data name="Catalog_Product_DetailsSection" xml:space="preserve"><value>Product details</value></data>
+  <data name="Catalog_Product_NoCategory" xml:space="preserve"><value>No category</value></data>
+  <data name="Catalog_Product_NotFoundTitle" xml:space="preserve"><value>Product not found</value></data>
+  <data name="Catalog_Product_NotFoundMessage" xml:space="preserve"><value>This product does not exist in your organization.</value></data>
+  <data name="Catalog_Product_DeactivateTitle" xml:space="preserve"><value>Deactivate product?</value></data>
+  <data name="Catalog_Product_DeactivateMessage" xml:space="preserve"><value>The product stays in the catalog and its SKU and barcode remain reserved.</value></data>
+  <data name="Catalog_Product_ReactivateTitle" xml:space="preserve"><value>Reactivate product?</value></data>
+  <data name="Catalog_Product_ReactivateMessage" xml:space="preserve"><value>The product becomes available in the catalog again.</value></data>
+  <data name="Catalog_Product_DeactivatedSuccess" xml:space="preserve"><value>Product deactivated.</value></data>
+  <data name="Catalog_Product_ReactivatedSuccess" xml:space="preserve"><value>Product reactivated.</value></data>
+  <data name="Catalog_Category_Title" xml:space="preserve"><value>Categories</value></data>
+  <data name="Catalog_Category_Subtitle" xml:space="preserve"><value>Group products for easier searching.</value></data>
+  <data name="Catalog_Category_AddTitle" xml:space="preserve"><value>New category</value></data>
+  <data name="Catalog_Category_EditTitle" xml:space="preserve"><value>Rename category</value></data>
+  <data name="Catalog_Category_Field_Name" xml:space="preserve"><value>Category name</value></data>
+  <data name="Catalog_Category_Add" xml:space="preserve"><value>Add category</value></data>
+  <data name="Catalog_Category_Rename" xml:space="preserve"><value>Rename</value></data>
+  <data name="Catalog_Category_SearchPlaceholder" xml:space="preserve"><value>Search categories</value></data>
+  <data name="Catalog_Category_EmptyTitle" xml:space="preserve"><value>No categories yet</value></data>
+  <data name="Catalog_Category_EmptyMessage" xml:space="preserve"><value>Add a category to group your products.</value></data>
+  <data name="Catalog_Category_NameRequired" xml:space="preserve"><value>Category name is required.</value></data>
+  <data name="Catalog_Category_NameConflict" xml:space="preserve"><value>An active category already uses this name.</value></data>
+  <data name="Catalog_Category_CreatedSuccess" xml:space="preserve"><value>Category created.</value></data>
+  <data name="Catalog_Category_UpdatedSuccess" xml:space="preserve"><value>Category updated.</value></data>
+  <data name="Catalog_Category_DeactivatedSuccess" xml:space="preserve"><value>Category deactivated.</value></data>
+  <data name="Catalog_Category_ReactivatedSuccess" xml:space="preserve"><value>Category reactivated.</value></data>
+  <data name="Catalog_Lookup_Title" xml:space="preserve"><value>Barcode lookup</value></data>
+  <data name="Catalog_Lookup_Subtitle" xml:space="preserve"><value>Find a product by barcode or SKU.</value></data>
+  <data name="Catalog_Lookup_FormTitle" xml:space="preserve"><value>Search</value></data>
+  <data name="Catalog_Lookup_Barcode" xml:space="preserve"><value>Barcode</value></data>
+  <data name="Catalog_Lookup_Sku" xml:space="preserve"><value>SKU</value></data>
+  <data name="Catalog_Lookup_IncludeInactive" xml:space="preserve"><value>Include inactive products</value></data>
+  <data name="Catalog_Lookup_Search" xml:space="preserve"><value>Search</value></data>
+  <data name="Catalog_Lookup_Clear" xml:space="preserve"><value>Clear</value></data>
+  <data name="Catalog_Lookup_InputRequired" xml:space="preserve"><value>Enter a barcode or a SKU.</value></data>
+  <data name="Catalog_Lookup_NoMatchTitle" xml:space="preserve"><value>No match</value></data>
+  <data name="Catalog_Lookup_NoMatchMessage" xml:space="preserve"><value>No product matches that barcode or SKU.</value></data>
+  <data name="Catalog_Lookup_ResultTitle" xml:space="preserve"><value>Match</value></data>
+  <data name="Catalog_Lookup_OpenProduct" xml:space="preserve"><value>Open product</value></data>
 </root>

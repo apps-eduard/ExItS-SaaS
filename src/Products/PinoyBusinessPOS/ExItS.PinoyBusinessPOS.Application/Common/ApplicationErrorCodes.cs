@@ -15,6 +15,14 @@ public static class ApplicationErrorCodes
     public const string CommercialCapabilityDenied = "pos.commercial.capability_denied";
     public const string StatementInvalidPeriod = "pos.statement.invalid_period";
     public const string ReceiptNotFound = "pos.receipt.not_found";
+
+    public const string CategoryNotFound = "pos.category.not_found";
+    public const string CategoryNameConflict = "pos.category.name.conflict";
+    public const string CategoryNotAssignable = "pos.category.not_assignable";
+    public const string ProductNotFound = "pos.product.not_found";
+    public const string ProductSkuConflict = "pos.product.sku.conflict";
+    public const string ProductBarcodeConflict = "pos.product.barcode.conflict";
+    public const string CatalogConcurrencyConflict = "pos.catalog.concurrency_conflict";
 }
 
 public sealed class PersistenceConflictException : Exception

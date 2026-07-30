@@ -1,9 +1,11 @@
+using ExItS.PinoyBusinessPOS.Api.Catalog;
 using ExItS.PinoyBusinessPOS.Api.Common;
 using ExItS.PinoyBusinessPOS.Api.Credit;
 using ExItS.PinoyBusinessPOS.Api.Customers;
 using ExItS.PinoyBusinessPOS.Api.Offline;
 using ExItS.PinoyBusinessPOS.Api.Payments;
 using ExItS.PinoyBusinessPOS.Api.Statements;
+using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
@@ -35,6 +37,16 @@ builder.Services.AddScoped<CreateRepayment>();
 builder.Services.AddScoped<ReverseRepayment>();
 builder.Services.AddScoped<ICustomerStatementService, CustomerStatementService>();
 builder.Services.AddScoped<IRepaymentReceiptService, RepaymentReceiptService>();
+builder.Services.AddScoped<ProductCategoryQueryService>();
+builder.Services.AddScoped<CreateProductCategory>();
+builder.Services.AddScoped<UpdateProductCategory>();
+builder.Services.AddScoped<DeactivateProductCategory>();
+builder.Services.AddScoped<ReactivateProductCategory>();
+builder.Services.AddScoped<CatalogProductQueryService>();
+builder.Services.AddScoped<CreateCatalogProduct>();
+builder.Services.AddScoped<UpdateCatalogProduct>();
+builder.Services.AddScoped<DeactivateCatalogProduct>();
+builder.Services.AddScoped<ReactivateCatalogProduct>();
 
 var app = builder.Build();
 
@@ -47,9 +59,10 @@ app.MapCustomerCreditSyncEndpoints();
 app.MapDueDateEndpoints();
 app.MapRepaymentEndpoints();
 app.MapStatementEndpoints();
+app.MapCatalogEndpoints();
 app.MapDevOfflineProbeEndpoints();
 
-// Phase marker: P7-WP03-customer-credit-offline-sync
+// Phase marker: P8-WP01-catalog-and-barcode
 
 app.Run();
 

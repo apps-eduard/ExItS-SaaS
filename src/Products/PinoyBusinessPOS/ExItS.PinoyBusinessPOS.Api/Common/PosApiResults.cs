@@ -25,7 +25,9 @@ internal static class PosApiResults
     {
         ApplicationErrorCodes.CustomerNotFound
             or ApplicationErrorCodes.CreditEntryNotFound
-            or ApplicationErrorCodes.RepaymentNotFound => StatusCodes.Status404NotFound,
+            or ApplicationErrorCodes.RepaymentNotFound
+            or ApplicationErrorCodes.CategoryNotFound
+            or ApplicationErrorCodes.ProductNotFound => StatusCodes.Status404NotFound,
 
         ApplicationErrorCodes.MobileConflict
             or ApplicationErrorCodes.ConcurrencyConflict
@@ -38,11 +40,20 @@ internal static class PosApiResults
             or DomainErrorCodes.RepaymentOutstandingZero
             or DomainErrorCodes.CreditReversalWouldMakeOutstandingNegative
             or DomainErrorCodes.CreditDueDateNotAllowedOnReversed
-            or DomainErrorCodes.CreditDueDateUnchanged => StatusCodes.Status409Conflict,
+            or DomainErrorCodes.CreditDueDateUnchanged
+            or ApplicationErrorCodes.CategoryNameConflict
+            or ApplicationErrorCodes.ProductSkuConflict
+            or ApplicationErrorCodes.ProductBarcodeConflict
+            or ApplicationErrorCodes.CatalogConcurrencyConflict
+            or DomainErrorCodes.InvalidCategoryStatusTransition
+            or DomainErrorCodes.InvalidProductStatusTransition
+            or DomainErrorCodes.CategoryNotActive
+            or DomainErrorCodes.ProductNotActive => StatusCodes.Status409Conflict,
 
         ApplicationErrorCodes.OrganizationRequired
             or ApplicationErrorCodes.ActorRequired
-            or ApplicationErrorCodes.StatementInvalidPeriod => StatusCodes.Status400BadRequest,
+            or ApplicationErrorCodes.StatementInvalidPeriod
+            or ApplicationErrorCodes.CategoryNotAssignable => StatusCodes.Status400BadRequest,
 
         ApplicationErrorCodes.CommercialAccessUnknown
             or ApplicationErrorCodes.CommercialCapabilityDenied => StatusCodes.Status403Forbidden,

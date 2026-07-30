@@ -1,6 +1,8 @@
+using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Customers;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Idempotency;
@@ -23,6 +25,8 @@ public sealed class PosDbContext : DbContext
     internal DbSet<CreditDueDateChangeRecord> CreditDueDateChanges => Set<CreditDueDateChangeRecord>();
     internal DbSet<RepaymentRecord> Repayments => Set<RepaymentRecord>();
     internal DbSet<PosIdempotencyRecord> IdempotencyRecords => Set<PosIdempotencyRecord>();
+    internal DbSet<ProductCategoryRecord> ProductCategories => Set<ProductCategoryRecord>();
+    internal DbSet<CatalogProductRecord> CatalogProducts => Set<CatalogProductRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -241,6 +245,126 @@ public sealed class PosDbContext : DbContext
 
             entity.HasIndex(e => new { e.OrganizationId, e.CreatedAtUtc })
                 .HasDatabaseName("ix_idempotency_org_created");
+        });
+
+        modelBuilder.Entity<ProductCategoryRecord>(entity =>
+        {
+            entity.ToTable("product_categories", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_product_categories_status",
+                    "status IN ('Active', 'Inactive')");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.Name)
+                .HasColumnName("name")
+                .HasMaxLength(ProductCategory.NameMaxLength)
+                .IsRequired();
+            entity.Property(e => e.NormalizedName)
+                .HasColumnName("normalized_name")
+                .HasMaxLength(ProductCategory.NameMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            // Only Active category names are unique — an inactive name can be reused.
+            entity.HasIndex(e => new { e.OrganizationId, e.NormalizedName })
+                .IsUnique()
+                .HasDatabaseName("ux_product_categories_org_active_name")
+                .HasFilter($"status = '{nameof(ProductCategoryStatus.Active)}'");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.Name })
+                .HasDatabaseName("ix_product_categories_org_name");
+        });
+
+        modelBuilder.Entity<CatalogProductRecord>(entity =>
+        {
+            entity.ToTable("products", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_products_status",
+                    "status IN ('Active', 'Inactive')");
+                tb.HasCheckConstraint(
+                    "ck_products_selling_price_non_negative",
+                    "selling_price >= 0");
+                tb.HasCheckConstraint(
+                    "ck_products_unit_of_measure",
+                    $"unit_of_measure IN ({string.Join(", ", UnitOfMeasures.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_products_barcode_digits",
+                    "barcode IS NULL OR barcode ~ '^[0-9]{8,14}$'");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.Name)
+                .HasColumnName("name")
+                .HasMaxLength(CatalogProduct.NameMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Description)
+                .HasColumnName("description")
+                .HasMaxLength(CatalogProduct.DescriptionMaxLength);
+            entity.Property(e => e.Sku).HasColumnName("sku").HasMaxLength(CatalogProduct.SkuMaxLength);
+            entity.Property(e => e.NormalizedSku)
+                .HasColumnName("normalized_sku")
+                .HasMaxLength(CatalogProduct.SkuMaxLength);
+            entity.Property(e => e.Barcode)
+                .HasColumnName("barcode")
+                .HasMaxLength(CatalogProduct.BarcodeMaxLength);
+            entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.UnitOfMeasure)
+                .HasColumnName("unit_of_measure")
+                .HasMaxLength(UnitOfMeasures.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.SellingPrice)
+                .HasColumnName("selling_price")
+                .HasPrecision(18, 2)
+                .IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            // No status filter: SKUs and barcodes of inactive products stay reserved.
+            entity.HasIndex(e => new { e.OrganizationId, e.NormalizedSku })
+                .IsUnique()
+                .HasDatabaseName("ux_products_org_normalized_sku")
+                .HasFilter("normalized_sku IS NOT NULL");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.Barcode })
+                .IsUnique()
+                .HasDatabaseName("ux_products_org_barcode")
+                .HasFilter("barcode IS NOT NULL");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.Name })
+                .HasDatabaseName("ix_products_org_name");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.CategoryId })
+                .HasDatabaseName("ix_products_org_category");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.Status })
+                .HasDatabaseName("ix_products_org_status");
+
+            // Restrict: deactivating or removing a category must never cascade into products.
+            entity.HasOne<ProductCategoryRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_products_product_categories");
         });
     }
 }

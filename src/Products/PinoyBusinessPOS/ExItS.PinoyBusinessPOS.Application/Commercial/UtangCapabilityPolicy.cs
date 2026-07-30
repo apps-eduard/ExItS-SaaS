@@ -6,6 +6,8 @@ public static class PosFeatureCodes
     public const string CustomerCreditView = "customer-credit-view";
     public const string CustomerCreditRepay = "customer-credit-repay";
     public const string CustomerCreditCreate = "customer-credit-create";
+    public const string StoreCatalogView = "store-catalog-view";
+    public const string StoreCatalogManage = "store-catalog-manage";
 }
 
 /// <summary>Subscription status names mirrored from Platform (string-stable for headers/session).</summary>
@@ -33,7 +35,9 @@ public enum UtangCapability
     ReverseRepayment = 7,
     MutateDueDate = 8,
     ViewGenerateStatement = 9,
-    ViewGenerateReceipt = 10
+    ViewGenerateReceipt = 10,
+    ViewCatalog = 11,
+    ManageCatalog = 12
 }
 
 /// <summary>
@@ -104,6 +108,13 @@ public static class UtangCapabilityPolicy
                 IsFullCommercialState(status)
                 && HasFeature(grants, PosFeatureCodes.CustomerCreditCreate),
 
+            UtangCapability.ViewCatalog =>
+                CanEnter(status, grants) && HasFeature(grants, PosFeatureCodes.StoreCatalogView),
+
+            UtangCapability.ManageCatalog =>
+                IsFullCommercialState(status)
+                && HasFeature(grants, PosFeatureCodes.StoreCatalogManage),
+
             _ => false
         };
     }
@@ -127,7 +138,9 @@ public static class UtangCapabilityPolicy
                 or PosSubscriptionStatuses.Cancelled
                 or PosSubscriptionStatuses.Expired =>
                 HasFeature(grants, PosFeatureCodes.CustomerCreditView)
-                || HasFeature(grants, PosFeatureCodes.CustomerCreditRepay),
+                || HasFeature(grants, PosFeatureCodes.CustomerCreditRepay)
+                || HasFeature(grants, PosFeatureCodes.StoreCatalogView)
+                || HasFeature(grants, PosFeatureCodes.StoreCatalogManage),
             _ => false
         };
     }
@@ -136,7 +149,9 @@ public static class UtangCapabilityPolicy
     [
         PosFeatureCodes.CustomerCreditView,
         PosFeatureCodes.CustomerCreditRepay,
-        PosFeatureCodes.CustomerCreditCreate
+        PosFeatureCodes.CustomerCreditCreate,
+        PosFeatureCodes.StoreCatalogView,
+        PosFeatureCodes.StoreCatalogManage
     ];
 
     private static string Normalize(string? subscriptionStatus) =>

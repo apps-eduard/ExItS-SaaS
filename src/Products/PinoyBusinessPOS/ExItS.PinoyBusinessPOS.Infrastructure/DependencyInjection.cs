@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Payments;
@@ -26,6 +27,8 @@ public static class DependencyInjection
         services.AddScoped<ICreditEntryRepository, CreditEntryRepository>();
         services.AddScoped<ICreditDueDateChangeRepository, CreditDueDateChangeRepository>();
         services.AddScoped<IRepaymentRepository, RepaymentRepository>();
+        services.AddScoped<IProductCategoryRepository, ProductCategoryRepository>();
+        services.AddScoped<ICatalogProductRepository, CatalogProductRepository>();
         services.AddScoped<IUtangLedgerQuery, UtangLedgerQuery>();
         services.AddScoped<IOutstandingBalanceService, OutstandingBalanceService>();
         services.AddScoped<IPosUnitOfWork, PosUnitOfWork>();

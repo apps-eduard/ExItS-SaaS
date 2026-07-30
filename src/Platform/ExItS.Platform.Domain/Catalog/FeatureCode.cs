@@ -15,6 +15,12 @@ public sealed partial class FeatureCode : IEquatable<FeatureCode>
     /// <summary>POS Utang: create new credit / increase debt (blocked after trial expiry).</summary>
     public const string CustomerCreditCreate = "customer-credit-create";
 
+    /// <summary>POS Basic Store: read the product catalog, categories, and SKU/barcode lookup.</summary>
+    public const string StoreCatalogView = "store-catalog-view";
+
+    /// <summary>POS Basic Store: create, edit, and change lifecycle of catalog products and categories.</summary>
+    public const string StoreCatalogManage = "store-catalog-manage";
+
     private static readonly Regex ValidPattern = CreateValidPattern();
 
     public string Value { get; }

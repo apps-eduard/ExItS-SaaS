@@ -1,0 +1,231 @@
+@page "/catalog/products/{ProductId:guid}/edit"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCatalogClient Catalog
+@inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (_loading)
+{
+    <Page><Spinner /><span>@L["Catalog_Loading"]</span></Page>
+}
+else if (_product is null)
+{
+    <Page>
+        <ErrorState Title="@(_errorTitle ?? L["Catalog_Product_NotFoundTitle"])"
+                    Message="@(_errorMessage ?? L["Catalog_Product_NotFoundMessage"])"
+                    RetryLabel="@L["Api_Retry"]"
+                    OnRetry="LoadAsync" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Catalog_BackToList"]</Button>
+    </Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageCatalog);
+<Page>
+    <PageHeader Title="@L["Catalog_Product_EditTitle"]" Subtitle="@_product.Name">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Catalog_Cancel"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Catalog_OfflineTitle"]" Message="@L["Catalog_OfflineMessage"]" />
+    }
+    else if (!canManage)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_formError))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@L["Catalog_ErrorTitle"]" Message="@_formError" />
+    }
+
+    <CatalogProductForm Name="@_name"
+                        NameChanged="v => _name = v"
+                        Description="@_description"
+                        DescriptionChanged="v => _description = v"
+                        Sku="@_sku"
+                        SkuChanged="v => _sku = v"
+                        Barcode="@_barcode"
+                        BarcodeChanged="v => _barcode = v"
+                        CategoryId="@_categoryId"
+                        CategoryIdChanged="v => _categoryId = v"
+                        UnitOfMeasure="@_unitOfMeasure"
+                        UnitOfMeasureChanged="v => _unitOfMeasure = v"
+                        SellingPrice="@_sellingPrice"
+                        SellingPriceChanged="v => _sellingPrice = v"
+                        Categories="@_categories"
+                        NameError="@_nameError"
+                        SkuError="@_skuError"
+                        BarcodeError="@_barcodeError"
+                        SellingPriceError="@_priceError"
+                        IsSaving="@_saving"
+                        Disabled="@(!canManage || _isOffline)"
+                        SaveLabel="@L["Catalog_Save"]"
+                        OnSave="SaveAsync"
+                        OnCancel="GoDetail" />
+</Page>
+}
+
+@code {
+    [Parameter] public Guid ProductId { get; set; }
+
+    private bool _ready;
+    private bool _loading = true;
+    private bool _saving;
+    private bool _isOffline;
+    private PosCatalogProductDto? _product;
+    private string? _name;
+    private string? _description;
+    private string? _sku;
+    private string? _barcode;
+    private string? _categoryId;
+    private string? _unitOfMeasure;
+    private decimal? _sellingPrice;
+    private IReadOnlyList<PosProductCategoryDto> _categories = Array.Empty<PosProductCategoryDto>();
+    private string? _nameError;
+    private string? _skuError;
+    private string? _barcodeError;
+    private string? _priceError;
+    private string? _formError;
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        _formError = null;
+        StateHasChanged();
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _product = null;
+            _errorTitle = L["Catalog_OfflineTitle"];
+            _formError = L["Catalog_OfflineMessage"];
+            _errorMessage = L["Catalog_OfflineMessage"];
+            _loading = false;
+            return;
+        }
+
+        var result = await Catalog.GetProductAsync(ProductId);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _product = result.Data;
+            _name = _product.Name;
+            _description = _product.Description;
+            _sku = _product.Sku;
+            _barcode = _product.Barcode;
+            _categoryId = _product.CategoryId?.ToString("D");
+            _unitOfMeasure = _product.UnitOfMeasure;
+            _sellingPrice = _product.SellingPrice;
+
+            var categories = await Catalog.ListCategoriesAsync(
+                status: PosCatalogOptions.ActiveStatus,
+                page: 1,
+                pageSize: 100);
+            if (categories.IsSuccess && categories.Data is not null)
+            {
+                _categories = categories.Data.Items;
+            }
+
+            if (_product.CategoryId is { } assigned && _categories.All(c => c.CategoryId != assigned))
+            {
+                var current = await Catalog.GetCategoryAsync(assigned);
+                if (current.IsSuccess && current.Data is not null)
+                {
+                    _categories = _categories.Append(current.Data).ToList();
+                }
+            }
+        }
+        else
+        {
+            _product = null;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (!Capabilities.IsAllowed(UtangCapability.ManageCatalog) || _product is null)
+        {
+            _formError = L["Access_RestrictedMessage"];
+            return;
+        }
+
+        _nameError = null;
+        _skuError = null;
+        _barcodeError = null;
+        _priceError = null;
+        _formError = null;
+
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _nameError = L["Catalog_NameRequired"];
+            return;
+        }
+
+        if (_sellingPrice is null || _sellingPrice < 0m)
+        {
+            _priceError = L["Catalog_PriceRequired"];
+            return;
+        }
+
+        _saving = true;
+        var result = await Catalog.UpdateProductAsync(ProductId, new UpdatePosCatalogProductRequest(
+            _name.Trim(),
+            _unitOfMeasure ?? PosCatalogOptions.DefaultUnitOfMeasureCode,
+            _sellingPrice.Value,
+            string.IsNullOrWhiteSpace(_description) ? null : _description,
+            string.IsNullOrWhiteSpace(_sku) ? null : _sku,
+            string.IsNullOrWhiteSpace(_barcode) ? null : _barcode,
+            Guid.TryParse(_categoryId, out var categoryId) ? categoryId : null,
+            _product.UpdatedAtUtc));
+        _saving = false;
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            Nav.NavigateTo($"/catalog/products/{ProductId:D}", replace: true);
+            return;
+        }
+
+        var mapped = CatalogErrorPresenter.Describe(result.Error?.ErrorCode, L);
+        _nameError = mapped.Name;
+        _skuError = mapped.Sku;
+        _barcodeError = mapped.Barcode;
+        _formError = mapped.Form
+            ?? result.Error?.Detail
+            ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+    }
+
+    private void GoList() => Nav.NavigateTo("/catalog");
+    private void GoDetail() => Nav.NavigateTo($"/catalog/products/{ProductId:D}");
+}

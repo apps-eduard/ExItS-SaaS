@@ -1,0 +1,92 @@
+@inject IStringLocalizer<PosResources> L
+
+<Section Title="@L["Catalog_Product_DetailsSection"]">
+    <Stack Gap="3">
+        <TextInput Label="@L["Catalog_Field_Name"]"
+                   Value="@Name"
+                   ValueChanged="NameChanged"
+                   Required="true"
+                   IsInvalid="@(!string.IsNullOrEmpty(NameError))"
+                   ErrorText="@NameError"
+                   Disabled="@(IsSaving || Disabled)" />
+
+        <TextArea Label="@L["Catalog_Field_Description"]"
+                  Value="@Description"
+                  ValueChanged="DescriptionChanged"
+                  Hint="@L["Catalog_DescriptionHint"]"
+                  Rows="3"
+                  Disabled="@(IsSaving || Disabled)" />
+
+        <TextInput Label="@L["Catalog_Field_Sku"]"
+                   Value="@Sku"
+                   ValueChanged="SkuChanged"
+                   Hint="@L["Catalog_SkuHint"]"
+                   IsInvalid="@(!string.IsNullOrEmpty(SkuError))"
+                   ErrorText="@SkuError"
+                   Disabled="@(IsSaving || Disabled)" />
+
+        <TextInput Label="@L["Catalog_Field_Barcode"]"
+                   Value="@Barcode"
+                   ValueChanged="BarcodeChanged"
+                   Hint="@L["Catalog_BarcodeHint"]"
+                   IsInvalid="@(!string.IsNullOrEmpty(BarcodeError))"
+                   ErrorText="@BarcodeError"
+                   Disabled="@(IsSaving || Disabled)" />
+
+        <Select Label="@L["Catalog_Field_Category"]"
+                Value="@CategoryId"
+                ValueChanged="CategoryIdChanged"
+                Options="@CatalogUiOptions.CategoryChoices(L, Categories)"
+                Hint="@L["Catalog_CategoryHint"]"
+                Disabled="@(IsSaving || Disabled)" />
+
+        <Select Label="@L["Catalog_Field_Unit"]"
+                Value="@UnitOfMeasure"
+                ValueChanged="UnitOfMeasureChanged"
+                Options="@CatalogUiOptions.UnitOfMeasures(L)"
+                Required="true"
+                Disabled="@(IsSaving || Disabled)" />
+
+        <CurrencyInput Label="@L["Catalog_Field_SellingPrice"]"
+                       Value="@SellingPrice"
+                       ValueChanged="SellingPriceChanged"
+                       CurrencyCode="PHP"
+                       Required="true"
+                       Hint="@L["Catalog_PriceHint"]"
+                       IsInvalid="@(!string.IsNullOrEmpty(SellingPriceError))"
+                       ErrorText="@SellingPriceError"
+                       Disabled="@(IsSaving || Disabled)" />
+    </Stack>
+</Section>
+
+<FormActions>
+    <Button Variant="ButtonVariant.Secondary" Disabled="@(IsSaving || Disabled)" OnClick="OnCancel">@L["Catalog_Cancel"]</Button>
+    <Button Variant="ButtonVariant.Primary" Disabled="@Disabled" IsLoading="@IsSaving" OnClick="OnSave">@SaveLabel</Button>
+</FormActions>
+
+@code {
+    [Parameter] public string? Name { get; set; }
+    [Parameter] public EventCallback<string?> NameChanged { get; set; }
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public EventCallback<string?> DescriptionChanged { get; set; }
+    [Parameter] public string? Sku { get; set; }
+    [Parameter] public EventCallback<string?> SkuChanged { get; set; }
+    [Parameter] public string? Barcode { get; set; }
+    [Parameter] public EventCallback<string?> BarcodeChanged { get; set; }
+    [Parameter] public string? CategoryId { get; set; }
+    [Parameter] public EventCallback<string?> CategoryIdChanged { get; set; }
+    [Parameter] public string? UnitOfMeasure { get; set; }
+    [Parameter] public EventCallback<string?> UnitOfMeasureChanged { get; set; }
+    [Parameter] public decimal? SellingPrice { get; set; }
+    [Parameter] public EventCallback<decimal?> SellingPriceChanged { get; set; }
+    [Parameter] public IReadOnlyList<PosProductCategoryDto> Categories { get; set; } = Array.Empty<PosProductCategoryDto>();
+    [Parameter] public string? NameError { get; set; }
+    [Parameter] public string? SkuError { get; set; }
+    [Parameter] public string? BarcodeError { get; set; }
+    [Parameter] public string? SellingPriceError { get; set; }
+    [Parameter] public bool IsSaving { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? SaveLabel { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+}

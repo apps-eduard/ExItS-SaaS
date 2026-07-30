@@ -19,6 +19,12 @@ public sealed class UtangCapabilityPolicyTests
 
     private static readonly string[] ViewOnly = [PosFeatureCodes.CustomerCreditView];
 
+    private static readonly string[] CatalogGrants =
+    [
+        PosFeatureCodes.StoreCatalogView,
+        PosFeatureCodes.StoreCatalogManage
+    ];
+
     [Theory]
     [InlineData(PosSubscriptionStatuses.Trialing)]
     [InlineData(PosSubscriptionStatuses.Active)]
@@ -81,6 +87,61 @@ public sealed class UtangCapabilityPolicyTests
             PosSubscriptionStatuses.Expired,
             [PosFeatureCodes.CustomerCreditCreate]));
         Assert.True(UtangCapabilityPolicy.CanEnter(PosSubscriptionStatuses.Expired, ViewOnly));
+    }
+
+    [Theory]
+    [InlineData(PosSubscriptionStatuses.Trialing)]
+    [InlineData(PosSubscriptionStatuses.Active)]
+    [InlineData(PosSubscriptionStatuses.GracePeriod)]
+    public void Full_states_allow_catalog_view_and_manage_with_catalog_grants(string status)
+    {
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewCatalog, status, CatalogGrants));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManageCatalog, status, CatalogGrants));
+    }
+
+    [Theory]
+    [InlineData(PosSubscriptionStatuses.PastDue)]
+    [InlineData(PosSubscriptionStatuses.Cancelled)]
+    [InlineData(PosSubscriptionStatuses.Expired)]
+    public void Continuity_states_allow_catalog_view_but_deny_catalog_manage(string status)
+    {
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewCatalog, status, CatalogGrants));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManageCatalog, status, CatalogGrants));
+    }
+
+    [Fact]
+    public void Continuity_entry_is_granted_by_either_catalog_code()
+    {
+        Assert.True(UtangCapabilityPolicy.CanEnter(
+            PosSubscriptionStatuses.Expired,
+            [PosFeatureCodes.StoreCatalogView]));
+        Assert.True(UtangCapabilityPolicy.CanEnter(
+            PosSubscriptionStatuses.Expired,
+            [PosFeatureCodes.StoreCatalogManage]));
+    }
+
+    [Fact]
+    public void Catalog_capabilities_require_their_own_grants()
+    {
+        Assert.False(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.ViewCatalog,
+            PosSubscriptionStatuses.Active,
+            FullGrants));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.ManageCatalog,
+            PosSubscriptionStatuses.Active,
+            [PosFeatureCodes.StoreCatalogView]));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.CreateCredit,
+            PosSubscriptionStatuses.Active,
+            CatalogGrants));
+    }
+
+    [Fact]
+    public void Development_grants_include_catalog_codes()
+    {
+        Assert.Contains(PosFeatureCodes.StoreCatalogView, UtangCapabilityPolicy.DefaultDevelopmentGrants);
+        Assert.Contains(PosFeatureCodes.StoreCatalogManage, UtangCapabilityPolicy.DefaultDevelopmentGrants);
     }
 
     [Fact]

@@ -1,4 +1,3 @@
-@page "/products"
 @page "/sales"
 @page "/more"
 @inject NavigationManager Nav
@@ -40,7 +39,6 @@
 
     private string FeatureName => RelativePath switch
     {
-        "products" => L["Nav_Products"],
         "sales" => L["Nav_Sales"],
         "more" => L["Nav_More"],
         _ => string.Empty,
@@ -48,7 +46,6 @@
 
     private string IconName => RelativePath switch
     {
-        "products" => "products",
         "sales" => "sales",
         "more" => "more",
         _ => "inbox",

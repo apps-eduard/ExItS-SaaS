@@ -32,4 +32,22 @@ public static class DomainErrorCodes
     public const string InvalidRepaymentActor = "pos.repayment.actor.invalid";
     public const string RepaymentExceedsOutstanding = "pos.repayment.exceeds_outstanding";
     public const string RepaymentOutstandingZero = "pos.repayment.outstanding_zero";
+
+    public const string InvalidCatalogProductId = "pos.catalog.product.id.invalid";
+    public const string InvalidProductCategoryId = "pos.catalog.category.id.invalid";
+    public const string InvalidUnitOfMeasure = "pos.catalog.unit_of_measure.invalid";
+
+    public const string InvalidCategoryName = "pos.category.name.invalid";
+    public const string InvalidCategoryStatus = "pos.category.status.invalid";
+    public const string InvalidCategoryStatusTransition = "pos.category.status.invalid_transition";
+    public const string CategoryNotActive = "pos.category.not_active";
+
+    public const string InvalidProductName = "pos.product.name.invalid";
+    public const string InvalidProductDescription = "pos.product.description.invalid";
+    public const string InvalidProductSku = "pos.product.sku.invalid";
+    public const string InvalidProductBarcode = "pos.product.barcode.invalid";
+    public const string InvalidProductSellingPrice = "pos.product.selling_price.invalid";
+    public const string InvalidProductStatus = "pos.product.status.invalid";
+    public const string InvalidProductStatusTransition = "pos.product.status.invalid_transition";
+    public const string ProductNotActive = "pos.product.not_active";
 }
