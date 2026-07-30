@@ -42,6 +42,12 @@
 *.pem
 !**/certs/*.example.pem
 
+# Database backup artifacts (never commit dumps or encrypted production backups)
+*.dump
+*.dump.enc
+**/ops/backup/local/
+**/ops/backup/*.manifest.json
+
 # OS / misc
 Thumbs.db
 Desktop.ini

@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>ExItS.BackupRestore.Tests</RootNamespace>
+    <AssemblyName>ExItS.BackupRestore.Tests</AssemblyName>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Shared\ExItS.BackupRestore\ExItS.BackupRestore.csproj" />
+    <ProjectReference Include="..\..\src\Platform\ExItS.Platform.Infrastructure\ExItS.Platform.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.Infrastructure\ExItS.PinoyBusinessPOS.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

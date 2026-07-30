@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>ExItS.BackupRestore.Cli</RootNamespace>
+    <AssemblyName>ExItS.BackupRestore.Cli</AssemblyName>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Shared\ExItS.BackupRestore\ExItS.BackupRestore.csproj" />
+  </ItemGroup>
+</Project>

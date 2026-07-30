@@ -18,6 +18,7 @@
   </Folder>
   <Folder Name="/src/Shared/">
     <Project Path="src/Shared/ExItS.DesignSystem/ExItS.DesignSystem.csproj" />
+    <Project Path="src/Shared/ExItS.BackupRestore/ExItS.BackupRestore.csproj" />
   </Folder>
   <Folder Name="/src/Products/">
     <Folder Name="/src/Products/PinoyBusinessPOS/">
@@ -36,5 +37,9 @@
     <Project Path="tests/ExItS.PinoyBusinessPOS.ApiClient.Tests/ExItS.PinoyBusinessPOS.ApiClient.Tests.csproj" />
     <Project Path="tests/ExItS.PinoyBusinessPOS.IntegrationTests/ExItS.PinoyBusinessPOS.IntegrationTests.csproj" />
     <Project Path="tests/ExItS.PinoyBusinessPOS.Maui.Tests/ExItS.PinoyBusinessPOS.Maui.Tests.csproj" />
+    <Project Path="tests/ExItS.BackupRestore.Tests/ExItS.BackupRestore.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/ExItS.BackupRestore.Cli/ExItS.BackupRestore.Cli.csproj" />
   </Folder>
 </Solution>

@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>ExItS.BackupRestore</RootNamespace>
+    <AssemblyName>ExItS.BackupRestore</AssemblyName>
+    <Description>MVP PostgreSQL backup/restore helpers: manifests, checksums, retention, safe restore guards.</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+</Project>
