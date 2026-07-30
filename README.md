@@ -43,7 +43,7 @@ This workspace does **not** contain a nested HealthCare product tree. Platform `
 
 **Phase 8** is **complete** with documented risks ([P8-WP07 closeout](docs/reports/P8-WP07-basic-store-closeout.md)). Online-only Basic Store MVP is closed.
 
-**Phase 9** is **complete with documented risks** ([P9-WP01](docs/reports/P9-WP01-security-and-privacy-hardening.md)–[P9-WP06](docs/reports/P9-WP06-commercial-mvp-closeout.md)). **P10-WP02 — Purchasing** is **complete** ([report](docs/reports/P10-WP02-purchasing.md)). Exact next when authorized: **P10-WP03 — Advanced Inventory**.
+**Phase 9** is **complete with documented risks** ([P9-WP01](docs/reports/P9-WP01-security-and-privacy-hardening.md)–[P9-WP06](docs/reports/P9-WP06-commercial-mvp-closeout.md)). **P10-WP02 — Purchasing** and **P10-WP03 — Advanced Inventory** are **complete** ([P10-WP02 report](docs/reports/P10-WP02-purchasing.md), [P10-WP03 report](docs/reports/P10-WP03-advanced-inventory.md)). Do not begin **P10-WP04 — Cashier Shifts** until authorized.
 
 Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`.
 

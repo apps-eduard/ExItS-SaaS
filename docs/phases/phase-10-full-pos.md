@@ -120,9 +120,9 @@ Organization-isolated purchasing for PinoyBusinessPOS using P10-WP01 suppliers:
 
 ### P10-WP03 — Advanced Inventory
 
-Status: **In Progress** (authorized)
+Status: **Complete**
 
-Prior tip: `933600283f8032783dfca2c01ae09f0af781abd9` (P10-WP02 complete including gap-fix; report also cites hash-record `8f6781a`). Baseline: **1067 / 0 / 0**. Part A HealthCare cleanup remains closed at `fd77f8892c363e48c40b4b35a6c9f4430af2d090`.
+Prior tip: `882050c` (docs authorize). Baseline: **1067 / 0 / 0**. Tests: **1073 / 0 / 0**. Part A HealthCare cleanup remains closed at `fd77f88`.
 
 #### Required outcomes (approved)
 
@@ -146,13 +146,13 @@ Warehouses, branches, transfers, costing, valuation, batches, serials, expiry, p
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence.
+- [x] Dashboard and phase page updated.
+- [x] Completion report created (`docs/reports/P10-WP03-advanced-inventory.md`).
 - [ ] Focused commit created and hash recorded.
 - [ ] Working tree clean.
-- [ ] Exact next WP recorded: **P10-WP04 — Cashier Shifts** (do not begin).
+- [x] Exact next WP recorded: **P10-WP04 — Cashier Shifts** (do not begin).
 
 ### P10-WP04 — Cashier Shifts
 

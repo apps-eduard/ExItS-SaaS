@@ -46,6 +46,10 @@ Clinics, staff assignments, patients, appointments, medical notes, clinical auth
 
 **P8-WP04 (basic inventory):** Same database/schema — migration `AddPosBasicInventory` adds `pos.inventory_accounts`, `pos.stock_movements`. On-hand is movement-derived (denormalized projection protected). Sale checkout/void write SaleDeduction / SaleVoidRestoration movements. Online-only — no local stock projections.
 
+**P10-WP02 (purchasing):** Same database/schema — migrations add purchase orders, goods receipts, and `PurchaseReceipt` stock movements. Online-only.
+
+**P10-WP03 (advanced inventory):** Migration `AddPosAdvancedInventory` adds `reorder_quantity` on `inventory_accounts`, `inventory_reorder_changes`, `stock_counts`, `stock_count_lines`, `stock_count_number_sequences`, and stock-count variance movement types/sources. On-hand remains movement-derived; reconciliation compares on-hand to movement sum. Online-only.
+
 **P8-WP05 (expenses):** Same database/schema — migration `AddPosExpenses` adds `pos.expense_categories`, `pos.expenses`, `pos.expense_number_sequences`. Immutable expense entries; void corrections; derived summaries. Online-only — no local expense projections.
 
 **P8-WP06 (dashboard/reports):** No new tables. Read-only projections over existing `pos` sales, credit, inventory, and expense records.

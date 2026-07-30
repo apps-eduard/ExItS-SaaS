@@ -61,6 +61,7 @@
 - Commercial MVP closeout (P9-WP06) ? environment readiness board; risk classification; capability inventory; Phase 9 reconciliation guards; full suite 1001 / 0 / 0
 - Suppliers master data (P10-WP01 Option A) ? domain/lifecycle; `SUP-NNNNNN` codes; duplicate guards; capability matrix; `AddPosSuppliers` migrate apply/rollback/re-apply; API org isolation; MAUI online-only page guards; architecture purchasing exclusions; full suite **1047 / 0 / 0**
 - Purchasing (P10-WP02) ? PO/GRN lifecycle; `PO-`/`GRN-` numbers; over-receipt denial; idempotent submit/receive; `PurchaseReceipt` inventory hook; `store-purchasing-view`/`manage` matrix; `AddPosPurchasing` migrate apply/rollback/re-apply; API org isolation; MAUI online-only page guards; architecture scope guards; full suite **1067 / 0 / 0**
+- Advanced inventory (P10-WP03) ? reorder audit; derived stock states; stock counts (`CNT-` numbers); variance movements; reconciliation; `AddPosAdvancedInventory`; MAUI reorder/counts pages; full suite **1073 / 0 / 0**
 - Tenant isolation
 - Subscription feature enforcement (P6-WP05 matrix + grants; P8-WP01?P8-WP07 store grants; P10-WP01 supplier grants; P10-WP02 purchasing grants)
 - Offline queue and idempotency *(Phase 7)*
