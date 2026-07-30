@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <!-- Android-first foundation. iOS/Windows/MacCatalyst are not required for P5-WP01 completion. -->
+    <!-- Clear Directory.Build.props default TargetFramework so multi-TFM Android builds work under ExItS.slnx. -->
+    <TargetFramework></TargetFramework>
     <TargetFrameworks>net10.0-android</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <RootNamespace>ExItS.PinoyBusinessPOS.Maui</RootNamespace>

@@ -42,3 +42,8 @@ The dashboard links to the latest accepted report.
 | [P4-WP03-subscriptions-payments-and-trials.md](P4-WP03-subscriptions-payments-and-trials.md) | Subscriptions, Payments and Trials | Complete |
 | [P4-WP04-audit-authorization-and-closeout.md](P4-WP04-audit-authorization-and-closeout.md) | Audit, Authorization and Closeout | Complete (Phase 4 closed with documented risks) |
 | [P5-WP01-maui-solution-and-api-client.md](P5-WP01-maui-solution-and-api-client.md) | MAUI Solution and API Client | Complete |
+| [P5-WP02-native-ui-tokens-themes-and-compact-layout.md](P5-WP02-native-ui-tokens-themes-and-compact-layout.md) | Native UI Tokens, Themes and Compact Layout | Complete |
+| [P5-WP03-english-and-filipino-localization.md](P5-WP03-english-and-filipino-localization.md) | English and Filipino Localization | Complete |
+| [P5-WP04-reusable-mvp-components.md](P5-WP04-reusable-mvp-components.md) | Reusable MVP Components | Complete |
+| [P5-WP05-authentication-onboarding-and-closeout.md](P5-WP05-authentication-onboarding-and-closeout.md) | Authentication, Onboarding and Closeout | Complete (Phase 5 closed with documented risks) |
+| [P6-WP01-customers.md](P6-WP01-customers.md) | Customers | Complete with documented risks |

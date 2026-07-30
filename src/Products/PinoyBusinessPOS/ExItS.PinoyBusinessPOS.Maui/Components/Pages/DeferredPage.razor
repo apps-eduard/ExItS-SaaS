@@ -1,6 +1,5 @@
 @page "/products"
 @page "/sales"
-@page "/customers"
 @page "/more"
 @inject NavigationManager Nav
 @inject NavigationGate Gate
@@ -31,7 +30,6 @@
     {
         "products" => L["Nav_Products"],
         "sales" => L["Nav_Sales"],
-        "customers" => L["Nav_Customers"],
         "more" => L["Nav_More"],
         _ => string.Empty,
     };
@@ -40,7 +38,6 @@
     {
         "products" => "products",
         "sales" => "sales",
-        "customers" => "customers",
         "more" => "more",
         _ => "inbox",
     };

@@ -47,12 +47,62 @@ public sealed class MauiFoundationGuardTests
 
         var deferred = File.ReadAllText(Path.Combine(pages, "Pages", "DeferredPage.razor"));
         Assert.Contains("Deferred_", deferred, StringComparison.Ordinal);
+        Assert.DoesNotContain("@page \"/customers\"", deferred, StringComparison.Ordinal);
 
         var settings = File.ReadAllText(Path.Combine(pages, "Pages", "Settings.razor"));
         Assert.Contains("Theme", settings, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Density", settings, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Language", settings, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("password", settings, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Customer_routes_cover_list_create_detail_edit_without_credit_controls()
+    {
+        var root = FindRepoRoot();
+        var customers = Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui", "Components", "Pages", "Customers");
+        Assert.True(File.Exists(Path.Combine(customers, "CustomersList.razor")));
+        Assert.True(File.Exists(Path.Combine(customers, "CustomerCreate.razor")));
+        Assert.True(File.Exists(Path.Combine(customers, "CustomerDetail.razor")));
+        Assert.True(File.Exists(Path.Combine(customers, "CustomerEdit.razor")));
+        Assert.True(File.Exists(Path.Combine(customers, "CustomerForm.razor")));
+
+        foreach (var file in Directory.EnumerateFiles(customers, "*.razor"))
+        {
+            var text = File.ReadAllText(file);
+            Assert.DoesNotContain("UtangBalance", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("LedgerEntry", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("RecordRepayment", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("RecordSale", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("SQLite", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("SyncQueue", text, StringComparison.OrdinalIgnoreCase);
+        }
+
+        var list = File.ReadAllText(Path.Combine(customers, "CustomersList.razor"));
+        Assert.Contains("@page \"/customers\"", list, StringComparison.Ordinal);
+        Assert.Contains("Customers_CreditDeferred", list, StringComparison.Ordinal);
+        Assert.Contains("ResponsiveDataList", list, StringComparison.Ordinal);
+
+        var create = File.ReadAllText(Path.Combine(customers, "CustomerCreate.razor"));
+        Assert.Contains("@page \"/customers/new\"", create, StringComparison.Ordinal);
+
+        var detail = File.ReadAllText(Path.Combine(customers, "CustomerDetail.razor"));
+        Assert.Contains("@page \"/customers/{CustomerId:guid}\"", detail, StringComparison.Ordinal);
+        Assert.Contains("Deactivate", detail, StringComparison.Ordinal);
+        Assert.Contains("Reactivate", detail, StringComparison.Ordinal);
+
+        var edit = File.ReadAllText(Path.Combine(customers, "CustomerEdit.razor"));
+        Assert.Contains("@page \"/customers/{CustomerId:guid}/edit\"", edit, StringComparison.Ordinal);
+
+        var en = File.ReadAllText(Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui", "Localization", "PosResources.resx"));
+        var fil = File.ReadAllText(Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui", "Localization", "PosResources.fil-PH.resx"));
+        Assert.Contains("Customers_Title", en, StringComparison.Ordinal);
+        Assert.Contains("Customers_Title", fil, StringComparison.Ordinal);
+        Assert.Contains("Customers_CreditDeferredMessage", en, StringComparison.Ordinal);
+        Assert.Contains("Customers_CreditDeferredMessage", fil, StringComparison.Ordinal);
     }
 
     [Fact]

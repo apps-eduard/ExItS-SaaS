@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>ExItS.PinoyBusinessPOS.IntegrationTests</RootNamespace>
+    <AssemblyName>ExItS.PinoyBusinessPOS.IntegrationTests</AssemblyName>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.Api\ExItS.PinoyBusinessPOS.Api.csproj" />
+    <ProjectReference Include="..\..\src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.Application\ExItS.PinoyBusinessPOS.Application.csproj" />
+    <ProjectReference Include="..\..\src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.Domain\ExItS.PinoyBusinessPOS.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.Infrastructure\ExItS.PinoyBusinessPOS.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

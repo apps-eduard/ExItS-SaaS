@@ -27,7 +27,7 @@ ExItS-SaaS/
 ├── global.json                 # SDK 10.0.302
 ├── src/Platform/               # Domain, Application, Infrastructure, Api, Admin
 ├── src/Shared/                 # ExItS.DesignSystem
-├── src/Products/PinoyBusinessPOS/  # Application, ApiClient, Maui (Android-first)
+├── src/Products/PinoyBusinessPOS/  # Domain, Application, Infrastructure, Api, ApiClient, Maui (Android-first)
 ├── tests/                      # Unit + architecture + Admin + DesignSystem + POS tests
 ├── docs/                       # portfolio architecture and tracking
 ├── HealthCare/                 # nested independent Git repo — ignored by root
@@ -36,7 +36,7 @@ ExItS-SaaS/
 
 `HealthCare/` remains frozen and outside root Git. Do not import it without an approved work package.
 
-**Phase 5** is **complete with documented risks** ([P5-WP05 report](docs/reports/P5-WP05-authentication-onboarding-and-closeout.md)): MAUI foundation, DesignSystem, localization, reusable components, and Development/Testing authentication/onboarding. Production auth, POS operational roles, sales/inventory/Utang, and offline sync remain open. Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Next: **Phase 6 — Utang MVP** when authorized.
+**Phase 6** is **in progress**. [P6-WP01 — Customers](docs/reports/P6-WP01-customers.md) delivered organization-isolated POS customer management (separate `ExItS_PinoyBusinessPOS` database). Credit/ledger/repayments remain later. Production auth, POS operational roles, sales/inventory, and offline sync remain open. Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Next: **P6-WP02 — Remarks-Based Credit** when authorized.
 
 ### Platform database (local)
 

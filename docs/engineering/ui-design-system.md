@@ -37,9 +37,12 @@ Platform/
 └── ExItS.Platform.Admin (Blazor Web App — native UI; P4-WP01–04)
 
 Products/PinoyBusinessPOS/
+├── ExItS.PinoyBusinessPOS.Domain
 ├── ExItS.PinoyBusinessPOS.Application
+├── ExItS.PinoyBusinessPOS.Infrastructure
+├── ExItS.PinoyBusinessPOS.Api
 ├── ExItS.PinoyBusinessPOS.ApiClient
-└── ExItS.PinoyBusinessPOS.Maui   # Android-first MAUI Blazor Hybrid (P5-WP01)
+└── ExItS.PinoyBusinessPOS.Maui   # Android-first MAUI Blazor Hybrid
 ```
 
 Platform Admin: Blazor Web App. POS: .NET MAUI Blazor Hybrid (Android-first; future iOS/Windows). Both use native shared conventions above.

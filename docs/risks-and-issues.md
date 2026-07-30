@@ -127,10 +127,17 @@
 | R-121 | Token/session leakage via Preferences, logs, or UI | Critical | SecureStorage only for session secrets; event sink forbids token/password keys; no password capture | Open — introduced P5-WP05; related R-106 |
 | R-122 | Stale commercial access after session restore or org switch | High | Re-evaluate on restore/select; clear org preference on deny; fail closed | Open — introduced P5-WP05 |
 | R-123 | Commercial POS access confused with operational roles | High | Explicit UI/docs: no Cashier/Manager/Admin assignment; product-local roles deferred | Open — introduced P5-WP05 |
+| R-124 | POS customer API organization header mistaken for production authz | Critical | Document Dev/Testing-only scope; production JWT still required (R-091); fail closed cross-org 404 | Open — introduced P6-WP01 |
+| R-125 | Customer notes misused as credit/utang records | High | UI deferred-credit copy; notes hint forbids credit meaning; credit WP deferred | Open — introduced P6-WP01 |
+| R-126 | Duplicate mobile MVP rule too strict/loose for real stores | Medium | Document MVP active-mobile uniqueness; refine later | Open — introduced P6-WP01 |
+
+## Phase 6 note (P6-WP01)
+
+P6-WP01 delivered organization-isolated POS customers (separate `ExItS_PinoyBusinessPOS` / `pos.customers`). **Not delivered:** remarks-based credit, balances, ledger, repayments, due dates, statements. OD-07/OD-08 remain open. Next: **P6-WP02 — Remarks-Based Credit** when authorized.
 
 ## Phase 5 note (P5-WP05 closeout)
 
-Phase 5 is **Complete with documented risks**. P5-WP05 delivered Development/Testing authentication, secure session handling, onboarding, organization selection, and commercial POS access gating. **Not delivered / still open:** production JWT/MFA/SSO (R-091), POS operational roles, sales/inventory/Utang, offline sync, interactive emulator validation (R-109). Next: **Phase 6 — Utang MVP** when authorized.
+Phase 5 is **Complete with documented risks**. P5-WP05 delivered Development/Testing authentication, secure session handling, onboarding, organization selection, and commercial POS access gating. **Not delivered / still open:** production JWT/MFA/SSO (R-091), POS operational roles, sales/inventory, offline sync, interactive emulator validation (R-109).
 
 ## Phase 4 closeout note (P4-WP04)
 

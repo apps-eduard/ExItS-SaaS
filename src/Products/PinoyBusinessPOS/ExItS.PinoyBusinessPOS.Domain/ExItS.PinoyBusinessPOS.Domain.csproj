@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>ExItS.PinoyBusinessPOS.Domain</RootNamespace>
+    <AssemblyName>ExItS.PinoyBusinessPOS.Domain</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ExItS.PinoyBusinessPOS.Infrastructure" />
+    <InternalsVisibleTo Include="ExItS.PinoyBusinessPOS.UnitTests" />
+    <InternalsVisibleTo Include="ExItS.PinoyBusinessPOS.IntegrationTests" />
+  </ItemGroup>
+
+</Project>

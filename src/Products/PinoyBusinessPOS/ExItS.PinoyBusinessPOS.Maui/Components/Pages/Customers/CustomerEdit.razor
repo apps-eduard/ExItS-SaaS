@@ -1,0 +1,146 @@
+@page "/customers/{CustomerId:guid}/edit"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCustomerClient Customers
+@inject ICurrentUserContext CurrentUser
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (_loading)
+{
+    <Page><Spinner /></Page>
+}
+else if (_customer is null)
+{
+    <Page>
+        <ErrorState Title="@(_errorTitle ?? L["Customers_NotFoundTitle"])" Message="@(_errorMessage ?? L["Customers_NotFoundMessage"])" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Customers_BackToDetail"]</Button>
+    </Page>
+}
+else
+{
+<Page>
+    <PageHeader Title="@L["Customers_EditTitle"]" Subtitle="@_customer.DisplayName">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Customers_Cancel"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (!string.IsNullOrEmpty(_formError))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@L["Customers_ErrorTitle"]" Message="@_formError" />
+    }
+
+    <CustomerForm DisplayName="@_displayName"
+                  DisplayNameChanged="v => _displayName = v"
+                  MobileNumber="@_mobile"
+                  MobileNumberChanged="v => _mobile = v"
+                  Address="@_address"
+                  AddressChanged="v => _address = v"
+                  Notes="@_notes"
+                  NotesChanged="v => _notes = v"
+                  DisplayNameError="@_displayNameError"
+                  MobileError="@_mobileError"
+                  IsSaving="@_saving"
+                  SaveLabel="@L["Customers_Save"]"
+                  OnSave="SaveAsync"
+                  OnCancel="GoDetail" />
+</Page>
+}
+
+@code {
+    [Parameter] public Guid CustomerId { get; set; }
+
+    private bool _ready;
+    private bool _loading = true;
+    private bool _saving;
+    private PosCustomerDetailDto? _customer;
+    private string? _displayName;
+    private string? _mobile;
+    private string? _address;
+    private string? _notes;
+    private string? _displayNameError;
+    private string? _mobileError;
+    private string? _formError;
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        var result = await Customers.GetAsync(CustomerId);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _customer = result.Data;
+            _displayName = result.Data.DisplayName;
+            _mobile = result.Data.MobileNumber;
+            _address = result.Data.Address;
+            _notes = result.Data.Notes;
+            if (result.Data.Status != "Active")
+            {
+                Nav.NavigateTo($"/customers/{CustomerId:D}", replace: true);
+                return;
+            }
+        }
+        else
+        {
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        _displayNameError = null;
+        _mobileError = null;
+        _formError = null;
+
+        if (string.IsNullOrWhiteSpace(_displayName))
+        {
+            _displayNameError = L["Customers_DisplayNameRequired"];
+            return;
+        }
+
+        _saving = true;
+        var result = await Customers.UpdateAsync(
+            CustomerId,
+            new UpdatePosCustomerRequest(
+                _displayName.Trim(),
+                string.IsNullOrWhiteSpace(_mobile) ? null : _mobile,
+                string.IsNullOrWhiteSpace(_address) ? null : _address,
+                string.IsNullOrWhiteSpace(_notes) ? null : _notes));
+
+        if (result.IsSuccess)
+        {
+            Nav.NavigateTo($"/customers/{CustomerId:D}", replace: true);
+            return;
+        }
+
+        if (result.Status == ApiCallStatus.Conflict)
+        {
+            _formError = L["Customers_ConflictMessage"];
+            _mobileError = L["Customers_ConflictMessage"];
+        }
+        else
+        {
+            _formError = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        }
+
+        _saving = false;
+    }
+
+    private void GoDetail() => Nav.NavigateTo($"/customers/{CustomerId:D}");
+}

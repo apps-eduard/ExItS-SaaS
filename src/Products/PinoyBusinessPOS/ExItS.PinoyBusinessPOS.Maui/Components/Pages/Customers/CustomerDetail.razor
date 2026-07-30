@@ -1,0 +1,190 @@
+@page "/customers/{CustomerId:guid}"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCustomerClient Customers
+@inject ICurrentUserContext CurrentUser
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (_loading)
+{
+    <Page><Spinner /><span>@L["Customers_Loading"]</span></Page>
+}
+else if (_customer is null)
+{
+    <Page>
+        <ErrorState Title="@(_errorTitle ?? L["Customers_NotFoundTitle"])" Message="@(_errorMessage ?? L["Customers_NotFoundMessage"])" RetryLabel="@L["Api_Retry"]" OnRetry="LoadAsync" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Customers_BackToList"]</Button>
+    </Page>
+}
+else
+{
+<Page>
+    <PageHeader Title="@_customer.DisplayName" Subtitle="@L["Customers_DetailSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Customers_BackToList"]</Button>
+            @if (_customer.Status == "Active")
+            {
+                <Button Variant="ButtonVariant.Primary" OnClick="GoEdit">@L["Customers_Edit"]</Button>
+            }
+        </Actions>
+    </PageHeader>
+
+    @if (!string.IsNullOrEmpty(_banner))
+    {
+        <Alert Tone="AlertTone.Success" Title="@L["Customers_SuccessTitle"]" Message="@_banner" />
+    }
+
+    <Alert Tone="AlertTone.Info" Title="@L["Customers_CreditDeferredTitle"]" Message="@L["Customers_CreditDeferredMessage"]" />
+
+    <Section Title="@L["Customers_ProfileSection"]">
+        <Stack Gap="3">
+            <div>
+                <span class="pos-muted">@L["Customers_Field_DisplayName"]</span>
+                <div class="pos-value-md">@_customer.DisplayName</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Customers_Field_Mobile"]</span>
+                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(_customer.MobileNumber) ? L["Customers_NoMobile"] : _customer.MobileNumber)</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Customers_Field_Address"]</span>
+                <div class="pos-value-md pos-wrap">@(string.IsNullOrWhiteSpace(_customer.Address) ? L["Customers_NoValue"] : _customer.Address)</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Customers_Field_Notes"]</span>
+                <div class="pos-value-md pos-wrap">@(string.IsNullOrWhiteSpace(_customer.Notes) ? L["Customers_NoValue"] : _customer.Notes)</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Customers_Field_Status"]</span>
+                <Badge Tone="@(_customer.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@_customer.Status</Badge>
+            </div>
+        </Stack>
+    </Section>
+
+    <FormActions>
+        @if (_customer.Status == "Active")
+        {
+            <Button Variant="ButtonVariant.Danger" OnClick="() => _confirmDeactivate = true">@L["Customers_Deactivate"]</Button>
+        }
+        else
+        {
+            <Button Variant="ButtonVariant.Primary" OnClick="() => _confirmReactivate = true">@L["Customers_Reactivate"]</Button>
+        }
+    </FormActions>
+
+    <ConfirmDialog Visible="@_confirmDeactivate"
+                   VisibleChanged="v => _confirmDeactivate = v"
+                   Title="@L["Customers_DeactivateTitle"]"
+                   Message="@L["Customers_DeactivateMessage"]"
+                   Danger="true"
+                   ConfirmLabel="@L["Customers_Deactivate"]"
+                   IsLoading="@_acting"
+                   OnConfirm="DeactivateAsync" />
+
+    <ConfirmDialog Visible="@_confirmReactivate"
+                   VisibleChanged="v => _confirmReactivate = v"
+                   Title="@L["Customers_ReactivateTitle"]"
+                   Message="@L["Customers_ReactivateMessage"]"
+                   ConfirmLabel="@L["Customers_Reactivate"]"
+                   IsLoading="@_acting"
+                   OnConfirm="ReactivateAsync" />
+</Page>
+}
+
+@code {
+    [Parameter] public Guid CustomerId { get; set; }
+
+    private bool _ready;
+    private bool _loading = true;
+    private bool _acting;
+    private bool _confirmDeactivate;
+    private bool _confirmReactivate;
+    private PosCustomerDetailDto? _customer;
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private string? _banner;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        StateHasChanged();
+
+        var result = await Customers.GetAsync(CustomerId);
+        if (result.IsSuccess)
+        {
+            _customer = result.Data;
+        }
+        else
+        {
+            _customer = null;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private async Task DeactivateAsync()
+    {
+        _acting = true;
+        var result = await Customers.DeactivateAsync(CustomerId);
+        _acting = false;
+        _confirmDeactivate = false;
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _customer = result.Data;
+            _banner = L["Customers_DeactivatedSuccess"];
+        }
+        else
+        {
+            _errorTitle = L["Customers_ErrorTitle"];
+            _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        }
+    }
+
+    private async Task ReactivateAsync()
+    {
+        _acting = true;
+        var result = await Customers.ReactivateAsync(CustomerId);
+        _acting = false;
+        _confirmReactivate = false;
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _customer = result.Data;
+            _banner = L["Customers_ReactivatedSuccess"];
+        }
+        else if (result.Status == ApiCallStatus.Conflict)
+        {
+            _errorTitle = L["Customers_ConflictTitle"];
+            _errorMessage = L["Customers_ConflictMessage"];
+        }
+        else
+        {
+            _errorTitle = L["Customers_ErrorTitle"];
+            _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        }
+    }
+
+    private void GoList() => Nav.NavigateTo("/customers");
+    private void GoEdit() => Nav.NavigateTo($"/customers/{CustomerId:D}/edit");
+}

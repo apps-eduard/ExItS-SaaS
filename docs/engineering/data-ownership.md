@@ -28,7 +28,9 @@ Clinics, staff assignments, patients, appointments, medical notes, clinical auth
 
 ## PinoyBusinessPOS database (summary)
 
-Businesses, stores/branches/registers, customers, credit, retail payments, catalog, sales, inventory, expenses, suppliers, offline device state, POS audit, **entitlement projection rows**.
+**P6-WP01 (customers-only):** Database `ExItS_PinoyBusinessPOS`, schema `pos`, table `customers`. OrganizationId is a Platform organization GUID value only (no cross-database FK). Soft deactivate; no physical delete. Notes are identification only — not credit records.
+
+Later POS ownership (not yet implemented): businesses, stores/branches/registers, credit, retail payments, catalog, sales, inventory, expenses, suppliers, offline device state, POS audit, **entitlement projection rows**.
 
 ---
 

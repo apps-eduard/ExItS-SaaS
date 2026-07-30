@@ -41,13 +41,16 @@ src/Platform/ExItS.Platform.Admin/Localization/
 
 ASP.NET Core request localization + cookie/localStorage language preference. Shell, navigation, and shared components use `IStringLocalizer<AdminResources>`. Business page copy may remain English in P4-WP04. Glossary: [admin-terminology-guide.md](admin-terminology-guide.md).
 
-### PinoyBusinessPOS resources (P5-WP01–P5-WP04)
+### PinoyBusinessPOS resources (P5-WP01–P6-WP01)
 
 ```text
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/Localization/
 ├── PosResources.resx            # English (default)
 ├── PosResources.fil-PH.resx     # Filipino/Tagalog
 └── PosResources.cs
+```
+
+Includes shell/home/settings/auth keys plus **Customers_*** list/create/detail/edit/conflict/deferred-credit strings.
 
 src/Shared/ExItS.DesignSystem/Localization/
 ├── DesignSystemResources.resx (+ .fil-PH.resx)

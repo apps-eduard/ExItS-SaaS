@@ -14,7 +14,7 @@
         HealthCare Product        PinoyBusinessPOS Product
         API + Web/Mobile          API + MAUI Blazor Hybrid
                  │                         │
-        HealthCare PostgreSQL      POS PostgreSQL + device SQLite
+        HealthCare PostgreSQL      POS PostgreSQL (`ExItS_PinoyBusinessPOS`, schema `pos`) + device SQLite (later)
 ```
 
 ## Repository direction

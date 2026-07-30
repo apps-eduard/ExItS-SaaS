@@ -1,7 +1,7 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown documentation files plus root Platform foundation through Phase 5 PinoyBusinessPOS MAUI foundation closeout (P5-WP05 authentication/onboarding).
-Internal links checked: spot-check P5-WP05
+Markdown documentation files plus root Platform foundation through Phase 6 P6-WP01 customers (organization-isolated POS customer management).
+Internal links checked: spot-check P6-WP01
 Broken links: none found in spot-check of new paths
 
 ## Root foundation (tracked)
@@ -17,12 +17,15 @@ ExItS.slnx
 src/Platform/ExItS.Platform.Domain/ (+ Authorization; Audit)
 src/Platform/ExItS.Platform.Application/ (+ Catalog; Admin portfolio queries; Authorization; Audit; Contracts; Projections; MigrationValidation; Integration/HealthCare)
 src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog + organization/subscription + payment + entitlement + role-assignment + audit persistence, Admin portfolio read store, migrations including `AddPlatformAuthorizationAndAudit`)
-src/Platform/ExItS.Platform.Api/ (`/` + `/health` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs; `PlatformAuthz`; phase marker `P5-WP05-authentication-onboarding-closeout`)
+src/Platform/ExItS.Platform.Api/ (`/` + `/health` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs; `PlatformAuthz`; phase marker retained from P5)
 src/Platform/ExItS.Platform.Admin/ (Blazor Web App — redesigned native CSS shell; typed API client; portfolio + users/memberships/product-access + subscription/payment/trial + audit views; themes; AdminResources en/fil-PH)
 src/Shared/ExItS.DesignSystem/ (semantic tokens; forms/data/feedback overlays; DesignSystem/Validation/Error resources en/fil-PH; Blazor primitives; `IDensityPreferenceStore`)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth session/access abstractions)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client; Dev user header handler)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; onboarding/auth routes; SecureStorage session; PosResources en/fil-PH; Dev `/dev/components` showcase)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ (POSCustomer aggregate)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth; Customers use cases/DTOs)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migration `AddPosCustomers`)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + `/api/v1/pos/customers*`; phase marker `P6-WP01-customers`)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client; PosCustomerClient; org header handler)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers list/create/detail/edit; onboarding/auth; PosResources en/fil-PH)
 tests/ExItS.Platform.UnitTests/
 tests/ExItS.ArchitectureTests/
 tests/ExItS.Platform.IntegrationTests/
@@ -30,6 +33,8 @@ tests/ExItS.Platform.Admin.UnitTests/
 tests/ExItS.DesignSystem.Tests/
 tests/ExItS.PinoyBusinessPOS.ApiClient.Tests/
 tests/ExItS.PinoyBusinessPOS.Maui.Tests/
+tests/ExItS.PinoyBusinessPOS.UnitTests/
+tests/ExItS.PinoyBusinessPOS.IntegrationTests/
 
 ## Documentation (tracked)
 

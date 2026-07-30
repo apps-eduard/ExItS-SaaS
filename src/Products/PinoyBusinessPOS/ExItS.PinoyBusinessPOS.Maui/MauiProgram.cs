@@ -54,7 +54,9 @@ public static class MauiProgram
         configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["PosApi:BaseUrl"] = "http://10.0.2.2:5288",
-            ["PosApi:TimeoutSeconds"] = "15"
+            ["PosApi:TimeoutSeconds"] = "15",
+            ["PosBusinessApi:BaseUrl"] = "http://10.0.2.2:5290",
+            ["PosBusinessApi:TimeoutSeconds"] = "15"
         });
 
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("appsettings.json");

@@ -8,8 +8,11 @@
     <Project Path="src/Platform/ExItS.Platform.Infrastructure/ExItS.Platform.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Products/PinoyBusinessPOS/">
+    <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ExItS.PinoyBusinessPOS.Api.csproj" />
     <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ExItS.PinoyBusinessPOS.ApiClient.csproj" />
     <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ExItS.PinoyBusinessPOS.Application.csproj" />
+    <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ExItS.PinoyBusinessPOS.Domain.csproj" />
+    <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ExItS.PinoyBusinessPOS.Infrastructure.csproj" />
     <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ExItS.PinoyBusinessPOS.Maui.csproj" />
   </Folder>
   <Folder Name="/src/Shared/">
@@ -24,11 +27,13 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/ExItS.ArchitectureTests/ExItS.ArchitectureTests.csproj" />
+    <Project Path="tests/ExItS.PinoyBusinessPOS.UnitTests/ExItS.PinoyBusinessPOS.UnitTests.csproj" />
     <Project Path="tests/ExItS.Platform.Admin.UnitTests/ExItS.Platform.Admin.UnitTests.csproj" />
     <Project Path="tests/ExItS.Platform.IntegrationTests/ExItS.Platform.IntegrationTests.csproj" />
     <Project Path="tests/ExItS.Platform.UnitTests/ExItS.Platform.UnitTests.csproj" />
     <Project Path="tests/ExItS.DesignSystem.Tests/ExItS.DesignSystem.Tests.csproj" />
     <Project Path="tests/ExItS.PinoyBusinessPOS.ApiClient.Tests/ExItS.PinoyBusinessPOS.ApiClient.Tests.csproj" />
+    <Project Path="tests/ExItS.PinoyBusinessPOS.IntegrationTests/ExItS.PinoyBusinessPOS.IntegrationTests.csproj" />
     <Project Path="tests/ExItS.PinoyBusinessPOS.Maui.Tests/ExItS.PinoyBusinessPOS.Maui.Tests.csproj" />
   </Folder>
 </Solution>

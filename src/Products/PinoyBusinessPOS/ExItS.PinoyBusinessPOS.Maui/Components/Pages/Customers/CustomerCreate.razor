@@ -1,0 +1,112 @@
+@page "/customers/new"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCustomerClient Customers
+@inject ICurrentUserContext CurrentUser
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+<Page>
+    <PageHeader Title="@L["Customers_CreateTitle"]" Subtitle="@L["Customers_CreateSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_Cancel"]</Button>
+        </Actions>
+    </PageHeader>
+
+    <Alert Tone="AlertTone.Info" Title="@L["Customers_CreditDeferredTitle"]" Message="@L["Customers_CreditDeferredMessage"]" />
+
+    @if (!string.IsNullOrEmpty(_formError))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@L["Customers_ErrorTitle"]" Message="@_formError" />
+    }
+
+    <CustomerForm DisplayName="@_displayName"
+                  DisplayNameChanged="v => _displayName = v"
+                  MobileNumber="@_mobile"
+                  MobileNumberChanged="v => _mobile = v"
+                  Address="@_address"
+                  AddressChanged="v => _address = v"
+                  Notes="@_notes"
+                  NotesChanged="v => _notes = v"
+                  DisplayNameError="@_displayNameError"
+                  MobileError="@_mobileError"
+                  IsSaving="@_saving"
+                  SaveLabel="@L["Customers_Create"]"
+                  OnSave="SaveAsync"
+                  OnCancel="GoBack" />
+</Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _saving;
+    private string? _displayName;
+    private string? _mobile;
+    private string? _address;
+    private string? _notes;
+    private string? _displayNameError;
+    private string? _mobileError;
+    private string? _formError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        _displayNameError = null;
+        _mobileError = null;
+        _formError = null;
+
+        if (string.IsNullOrWhiteSpace(_displayName))
+        {
+            _displayNameError = L["Customers_DisplayNameRequired"];
+            return;
+        }
+
+        _saving = true;
+        var result = await Customers.CreateAsync(new CreatePosCustomerRequest(
+            _displayName.Trim(),
+            string.IsNullOrWhiteSpace(_mobile) ? null : _mobile,
+            string.IsNullOrWhiteSpace(_address) ? null : _address,
+            string.IsNullOrWhiteSpace(_notes) ? null : _notes));
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            Nav.NavigateTo($"/customers/{result.Data.CustomerId:D}", replace: true);
+            return;
+        }
+
+        if (result.Status == ApiCallStatus.Conflict)
+        {
+            _formError = L["Customers_ConflictMessage"];
+            _mobileError = L["Customers_ConflictMessage"];
+        }
+        else if (result.Status == ApiCallStatus.Validation)
+        {
+            _formError = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        }
+        else
+        {
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _formError = result.Error?.Detail ?? described.Message;
+        }
+
+        _saving = false;
+    }
+
+    private void GoBack() => Nav.NavigateTo("/customers");
+}

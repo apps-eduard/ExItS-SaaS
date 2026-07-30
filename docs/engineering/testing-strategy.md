@@ -41,7 +41,8 @@
 - **P5-WP03 (localization):** resource completeness, Tagalog label consistency, CultureFormatting, ApiStatusLocalizer wiring guards
 - **P5-WP04 (components):** reusable MVP inventory; responsive table/card CSS; pagination/sort labels; ConfirmDialog loading/Escape; MoneyDisplay decimal; Dev showcase gating
 - **P5-WP05 (auth):** Dev/Testing sign-in; secure session clear; production auth blocked; org access deny/allow; no POS operational roles
-- Customer credit/payment ledger *(Phase 6+)*
+- Customer profiles (P6-WP01) — organization-isolated; Testcontainers PostgreSQL
+- Customer credit/payment ledger *(Phase 6 P6-WP02+)*
 - Tenant isolation
 - Subscription feature enforcement
 - Offline queue and idempotency *(Phase 7)*

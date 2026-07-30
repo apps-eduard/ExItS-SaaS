@@ -1,0 +1,56 @@
+@inject IStringLocalizer<PosResources> L
+
+<Section Title="@L["Customers_ProfileSection"]">
+    <Stack Gap="3">
+        <TextInput Label="@L["Customers_Field_DisplayName"]"
+                   Value="@DisplayName"
+                   ValueChanged="DisplayNameChanged"
+                   Required="true"
+                   IsInvalid="@(!string.IsNullOrEmpty(DisplayNameError))"
+                   ErrorText="@DisplayNameError"
+                   Disabled="@IsSaving" />
+
+        <TextInput Label="@L["Customers_Field_Mobile"]"
+                   Value="@MobileNumber"
+                   ValueChanged="MobileNumberChanged"
+                   Hint="@L["Customers_MobileHint"]"
+                   IsInvalid="@(!string.IsNullOrEmpty(MobileError))"
+                   ErrorText="@MobileError"
+                   Disabled="@IsSaving" />
+
+        <TextInput Label="@L["Customers_Field_Address"]"
+                   Value="@Address"
+                   ValueChanged="AddressChanged"
+                   Hint="@L["Customers_AddressHint"]"
+                   Disabled="@IsSaving" />
+
+        <TextArea Label="@L["Customers_Field_Notes"]"
+                  Value="@Notes"
+                  ValueChanged="NotesChanged"
+                  Hint="@L["Customers_NotesHint"]"
+                  Rows="3"
+                  Disabled="@IsSaving" />
+    </Stack>
+</Section>
+
+<FormActions>
+    <Button Variant="ButtonVariant.Secondary" Disabled="@IsSaving" OnClick="OnCancel">@L["Customers_Cancel"]</Button>
+    <Button Variant="ButtonVariant.Primary" IsLoading="@IsSaving" OnClick="OnSave">@SaveLabel</Button>
+</FormActions>
+
+@code {
+    [Parameter] public string? DisplayName { get; set; }
+    [Parameter] public EventCallback<string?> DisplayNameChanged { get; set; }
+    [Parameter] public string? MobileNumber { get; set; }
+    [Parameter] public EventCallback<string?> MobileNumberChanged { get; set; }
+    [Parameter] public string? Address { get; set; }
+    [Parameter] public EventCallback<string?> AddressChanged { get; set; }
+    [Parameter] public string? Notes { get; set; }
+    [Parameter] public EventCallback<string?> NotesChanged { get; set; }
+    [Parameter] public string? DisplayNameError { get; set; }
+    [Parameter] public string? MobileError { get; set; }
+    [Parameter] public bool IsSaving { get; set; }
+    [Parameter] public string? SaveLabel { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+}

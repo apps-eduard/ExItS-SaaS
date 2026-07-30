@@ -11,6 +11,8 @@ public sealed class PosFoundationArchitectureTests
         var projects = new[]
         {
             Path.Combine(root, "src", "Shared", "ExItS.DesignSystem", "ExItS.DesignSystem.csproj"),
+            Path.Combine(root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Domain",
+                "ExItS.PinoyBusinessPOS.Domain.csproj"),
             Path.Combine(root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Application",
                 "ExItS.PinoyBusinessPOS.Application.csproj"),
             Path.Combine(root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.ApiClient",
@@ -30,6 +32,12 @@ public sealed class PosFoundationArchitectureTests
             Assert.DoesNotContain("AntDesign", text, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("Tailwind", text, StringComparison.OrdinalIgnoreCase);
         }
+
+        var infra = File.ReadAllText(Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Infrastructure", "ExItS.PinoyBusinessPOS.Infrastructure.csproj"));
+        Assert.Contains("EntityFrameworkCore", infra, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Npgsql", infra, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HealthCare", infra, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

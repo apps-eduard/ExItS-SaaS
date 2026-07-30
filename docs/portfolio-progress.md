@@ -2,7 +2,7 @@
 
 > Primary status page. Cursor must update this file after every completed work package. Percentages are calculated from approved work packages, never estimated.
 
-[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P5-WP05 report](reports/P5-WP05-authentication-onboarding-and-closeout.md)
+[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P6-WP01 report](reports/P6-WP01-customers.md)
 
 ## Current status
 
@@ -11,21 +11,21 @@
 | Portfolio | ExITS SaaS |
 | Existing product | HealthCare SaaS MVP (ignored nested `HealthCare/`) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 5 — PinoyBusinessPOS MAUI Foundation (**Complete with documented risks**) |
-| Current work package | P5-WP05 — Authentication, Onboarding and Closeout (**Complete**) |
-| Overall status | **Phase 5 complete with risks** — Dev/Testing auth + onboarding; next Phase 6 when authorized |
-| Latest verified commit | 81eaa892cb6ac1ffb1b201b69dc7e390e5536586 |
-| Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations; R-035 calendar EOM; no product delivery; no payment gateway; POS foundation not offline business; no interactive Android emulator attached (R-109); no POS operational roles |
+| Current phase | Phase 6 — Utang MVP (**In Progress**) |
+| Current work package | P6-WP01 — Customers (**Complete with documented risks**) |
+| Overall status | **P6-WP01 complete** — customers-only; next P6-WP02 when authorized |
+| Latest verified commit | _(feature hash after push)_ |
+| Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations; R-035 calendar EOM; no credit/ledger yet; no payment gateway; no interactive Android emulator (R-109); OD-07/OD-08 open |
 | Last updated | 2026-07-30 |
 
 ## Delivery sequence
 
 ```text
-Phase 4 ✓
+Phase 5 ✓
         ↓
-P5-WP01 … P5-WP05 ✓ (Phase 5 complete with documented risks)
+P6-WP01 ✓ Customers (complete with risks)
         ↓
-Phase 6 — Utang MVP (not started — do not begin until authorized)
+P6-WP02 — Remarks-Based Credit (not started — do not begin until authorized)
 ```
 
 ## Phase progress
@@ -38,13 +38,24 @@ Phase 6 — Utang MVP (not started — do not begin until authorized)
 | 3 | Portfolio Billing, Plans and Entitlements | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-03-billing-entitlements.md) |
 | 4 | Platform Admin Expansion | **Complete with documented risks** | 4 | 4 | 100% | [Open](phases/phase-04-platform-admin.md) |
 | 5 | PinoyBusinessPOS MAUI Foundation | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-05-pos-maui-foundation.md) |
-| 6 | Utang MVP | Not Started | 0 | 6 | 0% | [Open](phases/phase-06-utang-mvp.md) |
+| 6 | Utang MVP | **In Progress** | 1 | 6 | 16.67% | [Open](phases/phase-06-utang-mvp.md) |
 | 7 | Offline Synchronization | Not Started | 0 | 5 | 0% | [Open](phases/phase-07-offline-sync.md) |
 | 8 | Basic Store | Not Started | 0 | 7 | 0% | [Open](phases/phase-08-basic-store.md) |
 | 9 | MVP Hardening and Release | Not Started | 0 | 6 | 0% | [Open](phases/phase-09-mvp-hardening.md) |
 | 10 | Full POS | Future | 0 | 8 | 0% | [Open](phases/phase-10-full-pos.md) |
 
-**MVP phases 0–9:** 28 / 52 = **53.85%**.
+**MVP phases 0–9:** 29 / 52 = **55.77%**.
+
+## Phase 6 work packages
+
+| WP | Status | Key commit |
+|---|---|---|
+| P6-WP01 | Complete with risks | _(after push)_ |
+| P6-WP02 | Not Started | — |
+| P6-WP03 | Not Started | — |
+| P6-WP04 | Not Started | — |
+| P6-WP05 | Not Started | — |
+| P6-WP06 | Not Started | — |
 
 ## Phase 5 work packages
 
@@ -56,15 +67,6 @@ Phase 6 — Utang MVP (not started — do not begin until authorized)
 | P5-WP04 | Complete | 763b0dc7cd73ab21ada2d101d115423c23d90cfa |
 | P5-WP05 | Complete | 81eaa892cb6ac1ffb1b201b69dc7e390e5536586 |
 
-## Phase 4 work packages
-
-| WP | Status | Key commit |
-|---|---|---|
-| P4-WP01 | Complete | `aa340e1` |
-| P4-WP02 | Complete | `6f1cacb` |
-| P4-WP03 | Complete | `91e88c3` |
-| P4-WP04 | Complete | `74ed46d` |
-
 ## Permanent workflow rules
 
 `.cursor/rules/exits-workflow.mdc` — HealthCare freeze, Git, build/test, security/architecture, documentation/reporting.
@@ -73,11 +75,13 @@ Phase 6 — Utang MVP (not started — do not begin until authorized)
 
 | Suite | Passed | Failed | Skipped |
 |---|---:|---:|---:|
-| Unit | 261 | 0 | 0 |
+| Platform unit | 261 | 0 | 0 |
 | Architecture | 41 | 0 | 0 |
 | Admin unit | 27 | 0 | 0 |
-| DesignSystem | 17 | 0 | 0 |
+| DesignSystem | 28 | 0 | 0 |
 | ApiClient | 17 | 0 | 0 |
-| Maui | 15 | 0 | 0 |
-| Integration | 84 | 0 | 0 |
-| **Total** | **462** | **0** | **0** |
+| Maui | 27 | 0 | 0 |
+| POS unit | 8 | 0 | 0 |
+| POS integration | 4 | 0 | 0 |
+| Platform integration | 84 | 0 | 0 |
+| **Total** | **497** | **0** | **0** |

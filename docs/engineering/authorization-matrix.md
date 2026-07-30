@@ -6,7 +6,7 @@ Platform grants **product access**; each product owns **operational permissions*
 
 **P3-WP02 note:** Organization and subscription REST endpoints are development-stage regarding **authentication** (no JWT/passwords/MFA/SSO/AD).
 
-**P4-WP04 note:** Sensitive mutations enforce **server-side** Platform permissions via `PlatformAuthz.EnsureAsync` (fail closed → stable `403` ProblemDetails + denied audit). Admin UI permission-aware navigation is **convenience only** — not security. Production still requires real authentication (R-091). Development operator full access is host-gated and is **not** production auth (R-098).
+**P6-WP01 note:** POS customer routes require `X-Pos-Organization-Id`. Cross-organization access returns 404. Product-local Cashier/Store roles are still not implemented. Development/Testing Platform identity remains the MAUI auth path.
 
 ## Authorization layers (fail closed)
 

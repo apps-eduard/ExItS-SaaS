@@ -1,0 +1,155 @@
+@page "/customers"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCustomerClient Customers
+@inject ICurrentUserContext CurrentUser
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+<Page>
+    <PageHeader Title="@L["Customers_Title"]" Subtitle="@L["Customers_Subtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Primary" OnClick="GoNew">@L["Customers_Add"]</Button>
+        </Actions>
+    </PageHeader>
+
+    <Alert Tone="AlertTone.Info" Title="@L["Customers_CreditDeferredTitle"]" Message="@L["Customers_CreditDeferredMessage"]" />
+
+    <SearchToolbar SearchText="@_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Customers_SearchPlaceholder"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Customers_Refresh"]</Button>
+        </Actions>
+    </SearchToolbar>
+
+    <ResponsiveDataList TItem="PosCustomerListItemDto"
+                        Items="@_items"
+                        Columns="@Columns"
+                        CellTemplate="@CellTemplate"
+                        IsLoading="@_loading"
+                        LoadingLabel="@L["Customers_Loading"]"
+                        EmptyTitle="@L["Customers_EmptyTitle"]"
+                        EmptyMessage="@L["Customers_EmptyMessage"]"
+                        ErrorTitle="@_errorTitle"
+                        ErrorMessage="@_errorMessage"
+                        RetryLabel="@L["Api_Retry"]"
+                        OnRetry="ReloadAsync"
+                        AriaLabel="@L["Customers_Title"]" />
+
+    @if (!_loading && _totalCount > 0)
+    {
+        <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
+    }
+</Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _loading;
+    private string? _search;
+    private int _page = 1;
+    private const int _pageSize = 20;
+    private int _totalCount;
+    private IReadOnlyList<PosCustomerListItemDto> _items = Array.Empty<PosCustomerListItemDto>();
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    private IReadOnlyList<DataColumnDefinition> Columns =>
+    [
+        new("name", L["Customers_Col_Name"], Primary: true, Width: "32%"),
+        new("mobile", L["Customers_Col_Mobile"], Width: "24%"),
+        new("status", L["Customers_Col_Status"], Width: "16%"),
+        new("actions", L["Customers_Col_Actions"], Width: "28%"),
+    ];
+
+    private RenderFragment<(PosCustomerListItemDto Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
+    {
+        switch (context.Column.Key)
+        {
+            case "name":
+                builder.OpenElement(0, "a");
+                builder.AddAttribute(1, "class", "pos-link");
+                builder.AddAttribute(2, "href", $"/customers/{context.Item.CustomerId:D}");
+                builder.AddContent(3, context.Item.DisplayName);
+                builder.CloseElement();
+                break;
+            case "mobile":
+                builder.AddContent(0, string.IsNullOrWhiteSpace(context.Item.MobileNumber)
+                    ? L["Customers_NoMobile"].Value
+                    : context.Item.MobileNumber);
+                break;
+            case "status":
+                builder.OpenComponent<Badge>(0);
+                builder.AddAttribute(1, "Tone", context.Item.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral);
+                builder.AddAttribute(2, "ChildContent", (RenderFragment)(b => b.AddContent(0, context.Item.Status)));
+                builder.CloseComponent();
+                break;
+            default:
+                builder.OpenComponent<Button>(0);
+                builder.AddAttribute(1, "Variant", ButtonVariant.Ghost);
+                builder.AddAttribute(2, "Size", ButtonSize.Sm);
+                builder.AddAttribute(3, "OnClick", EventCallback.Factory.Create(this, () => GoDetail(context.Item.CustomerId)));
+                builder.AddAttribute(4, "ChildContent", (RenderFragment)(b => b.AddContent(0, L["Customers_View"].Value)));
+                builder.CloseComponent();
+                break;
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task OnSearchChanged(string? value)
+    {
+        _search = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _page = page;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        StateHasChanged();
+
+        var result = await Customers.ListAsync(_search, page: _page, pageSize: _pageSize);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _items = result.Data.Items;
+            _totalCount = result.Data.TotalCount;
+        }
+        else
+        {
+            _items = Array.Empty<PosCustomerListItemDto>();
+            _totalCount = 0;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private void GoNew() => Nav.NavigateTo("/customers/new");
+    private void GoDetail(Guid id) => Nav.NavigateTo($"/customers/{id:D}");
+}
