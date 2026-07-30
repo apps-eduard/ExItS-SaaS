@@ -2,23 +2,28 @@ using System.Diagnostics;
 
 namespace ExItS.ArchitectureTests;
 
+/// <summary>
+/// Portfolio independence: ExItS must not nest or track a HealthCare product source tree.
+/// Platform <c>Integration/HealthCare</c> contract abstractions remain tracked intentionally.
+/// </summary>
 public sealed class RepositorySafetyTests
 {
     [Fact]
-    public void Root_git_does_not_track_HealthCare_paths()
+    public void Root_git_does_not_track_HealthCare_product_paths()
     {
         var root = FindRepositoryRoot();
         var tracked = RunGit(root, "ls-files", "--", "HealthCare/");
         Assert.True(string.IsNullOrWhiteSpace(tracked),
-            "Root Git must not track nested HealthCare/ product files. Output: " + tracked);
+            "Root Git must not track a HealthCare/ product tree. Output: " + tracked);
     }
 
     [Fact]
-    public void HealthCare_directory_is_ignored_by_root_gitignore()
+    public void Root_HealthCare_product_directory_does_not_exist()
     {
         var root = FindRepositoryRoot();
-        var output = RunGit(root, "check-ignore", "-v", "HealthCare/");
-        Assert.Contains("/HealthCare/", output, StringComparison.Ordinal);
+        Assert.False(
+            Directory.Exists(Path.Combine(root, "HealthCare")),
+            "A nested HealthCare/ product directory must not exist in the ExItS workspace.");
     }
 
     [Fact]
@@ -51,7 +56,7 @@ public sealed class RepositorySafetyTests
     }
 
     [Fact]
-    public void PinoyBusinessPOS_and_DesignSystem_projects_exist_while_HealthCare_remains_outside_solution()
+    public void PinoyBusinessPOS_and_DesignSystem_projects_exist_without_HealthCare_csproj()
     {
         var root = FindRepositoryRoot();
         Assert.True(Directory.Exists(Path.Combine(root, "src", "Products", "PinoyBusinessPOS")));
@@ -60,8 +65,7 @@ public sealed class RepositorySafetyTests
         Assert.False(Directory.Exists(Path.Combine(root, "Products")));
 
         var csprojs = Directory.GetFiles(root, "*.csproj", SearchOption.AllDirectories)
-            .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}HealthCare{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
-                        && !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+            .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
                         && !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
             .Select(Path.GetFileNameWithoutExtension)
             .ToArray();

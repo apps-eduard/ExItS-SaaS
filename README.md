@@ -4,10 +4,10 @@ ExITS SaaS is a multi-product SaaS ecosystem.
 
 Initial products:
 
-- **HealthCare SaaS** — completed MVP already present in this repository and the primary source for reusable platform capabilities.
-- **PinoyBusinessPOS** — new offline-capable SaaS for Sari-Sari Stores and Mini Groceries.
+- **HealthCare SaaS** — separate completed MVP (historical assessment source for reusable platform capabilities; not present in this workspace).
+- **PinoyBusinessPOS** — offline-capable SaaS for Sari-Sari Stores and Mini Groceries (in this repository).
 
-The shared **ExITS Platform** will manage global identity, organizations, product subscriptions, plans, trials, payments, product entitlements, platform administrators, and platform-wide audit/support operations.
+The shared **ExITS Platform** manages global identity, organizations, product subscriptions, plans, trials, payments, product entitlements, platform administrators, and platform-wide audit/support operations.
 
 Product-specific workflows and data remain inside each product.
 
@@ -32,11 +32,10 @@ ExItS-SaaS/
 ├── ops/                        # backup + deploy operator scripts
 ├── deploy/docker/              # NON-PRODUCTION pilot compose + Dockerfiles
 ├── docs/                       # portfolio architecture and tracking
-├── HealthCare/                 # nested independent Git repo — ignored by root
 └── README.md
 ```
 
-`HealthCare/` remains frozen and outside root Git. Do not import it without an approved work package.
+This workspace does **not** contain a nested HealthCare product tree. Platform `Integration/HealthCare` contracts remain tracked Platform files. Do not recreate or import external product source without an approved work package.
 
 **Phase 6** is **complete** with documented risks ([P6-WP06 closeout](docs/reports/P6-WP06-utang-mvp-closeout.md)). Utang MVP (customers, credit, repayments/ledger, due dates/overdue, statements/receipts, trial/continuity rules) is closed.
 
@@ -44,9 +43,9 @@ ExItS-SaaS/
 
 **Phase 8** is **complete** with documented risks ([P8-WP07 closeout](docs/reports/P8-WP07-basic-store-closeout.md)). Online-only Basic Store MVP is closed.
 
-**Phase 9** is **complete with documented risks** ([P9-WP01](docs/reports/P9-WP01-security-and-privacy-hardening.md)–[P9-WP06](docs/reports/P9-WP06-commercial-mvp-closeout.md)). **P10-WP01 — Suppliers** (Option A — master data only) is **complete** ([report](docs/reports/P10-WP01-suppliers.md)). Exact next: **P10-WP02 — Purchasing** (do not begin until authorized).
+**Phase 9** is **complete with documented risks** ([P9-WP01](docs/reports/P9-WP01-security-and-privacy-hardening.md)–[P9-WP06](docs/reports/P9-WP06-commercial-mvp-closeout.md)). **P10-WP01 — Suppliers** (Option A — master data only) is **complete** ([report](docs/reports/P10-WP01-suppliers.md)). Exact next when authorized: **P10-WP02 — Purchasing**.
 
-Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen.
+Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`.
 
 ### Platform database (local)
 

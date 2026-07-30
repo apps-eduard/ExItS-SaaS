@@ -9,11 +9,11 @@
 | Field | Value |
 |---|---|
 | Portfolio | ExITS SaaS |
-| Existing product | HealthCare SaaS MVP (ignored nested `HealthCare/`) |
+| Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 10 — Full POS |
-| Current work package | P10-WP01 — Suppliers (**Complete** — Option A) |
-| Overall status | **P10-WP01 complete.** Supplier master data only. Next: **P10-WP02 — Purchasing** (do not begin until authorized). |
+| Current work package | P10-WP02 — Purchasing (**authorized / in progress**) |
+| Overall status | **P10-WP01 complete.** P10-WP02 Purchasing authorized. Nested HealthCare folder removed from ExItS workspace. |
 | Latest verified commit | 9c1b86b4488005e81bb9d78b1dafaea66a8e6e4d |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; POS operational roles; Manual GCash unverified; online-only Basic Store limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/refund/accounting/purchasing deferred to Phase 10+ |
 | Last updated | 2026-07-31 |
@@ -82,4 +82,4 @@ P10-WP02 ○ Purchasing (not started)
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Do not begin **P10-WP02 — Purchasing** until explicitly authorized.
+Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P10-WP03 — Advanced Inventory** until explicitly authorized.

@@ -4,7 +4,7 @@
 
 ## Status
 
-**In Progress** — P10-WP01 authorized (Option A — supplier master data only). Do **not** begin P10-WP02 until explicitly authorized. HealthCare remains frozen.
+**In Progress** — P10-WP02 Purchasing authorized. Nested HealthCare product folder removed from the ExItS workspace (Part A). Do **not** begin P10-WP03 until explicitly authorized.
 
 ## Objective
 

@@ -7,9 +7,9 @@ alwaysApply: true
 
 ## Repository Safety
 
-- Root `/HealthCare/` is a separate frozen repository. Keep it ignored, untracked by the ExItS root repo, unmoved, unchanged, and outside `ExItS.slnx`.
-- Never modify, move, delete, import, retire, format, reset, clean, or commit inside HealthCare unless a future work package explicitly authorizes it.
-- Platform integration contracts under `src/Platform/.../Integration/HealthCare/` are tracked Platform files — not the frozen HealthCare repository.
+- ExItS is an independent multi-product portfolio repository. Do not recreate, clone, import, or nest a HealthCare (or other external product) source tree into this workspace without explicit authorization.
+- Platform integration contracts under `src/Platform/.../Integration/HealthCare/` are tracked Platform files (versioned contract boundaries) — not a product source tree.
+- Preserve ownership boundaries: product operational data belongs in the product database; no cross-product database access or foreign keys; POS must not contain PHI; future products require separate authorization.
 - Do not implement future work packages or adjacent product capability without explicit authorization.
 - Do not implement PinoyBusinessPOS unless explicitly authorized.
 
@@ -24,7 +24,7 @@ alwaysApply: true
 - A small documentation hash-record commit is allowed.
 - Push only after restore, Release build, tests, and required validation succeed.
 - Final local and remote `main` must match; final working tree must be clean.
-- Verify HealthCare freeze before and after: `git ls-files -- HealthCare/`, `git check-ignore -v HealthCare/`, `dotnet sln ExItS.slnx list`.
+- Verify portfolio independence before and after material changes: no root `HealthCare/` directory; `git ls-files -- HealthCare/` empty; `dotnet sln ExItS.slnx list` has no HealthCare project.
 
 ## Build and Test Workflow
 
@@ -52,4 +52,5 @@ alwaysApply: true
 - Update only documents affected by actual work.
 - Keep README, FILE-MANIFEST, phase progress, risks, release plan, and completion reports consistent with code.
 - Do not claim unimplemented capability.
-- Completion reports must include: status; delivered capability; explicit exclusions; persistence/migrations when relevant; API/UI capability; build/test/runtime evidence; security limitations; HealthCare freeze evidence; risks/open decisions; files/docs changed; Git/push evidence; exact next work package.
+- Completion reports must include: status; delivered capability; explicit exclusions; persistence/migrations when relevant; API/UI capability; build/test/runtime evidence; security limitations; portfolio-independence evidence; risks/open decisions; files/docs changed; Git/push evidence; exact next work package.
+- Historical signed-off reports may retain accurate historical evidence; do not rewrite them merely to erase history unless an active authoritative document is now materially misleading.

@@ -6,7 +6,7 @@ Broken links: none found in spot-check of new paths
 
 ## Root foundation (tracked)
 
-.gitignore (nested product only: `/HealthCare/`; also ignores `*.dump` / encrypted backup artifacts)
+.gitignore (also ignores `*.dump` / encrypted backup artifacts; no nested HealthCare product path)
 .cursor/rules/exits-workflow.mdc
 .dockerignore
 README.md
@@ -164,6 +164,7 @@ docs/reports/P9-WP05-pilot-and-deployment.md
 docs/reports/P9-WP06-commercial-mvp-closeout.md
 docs/reports/P10-WP01-scope-ambiguity.md
 docs/reports/P10-WP01-suppliers.md
+docs/reports/P10-WP02-healthcare-workspace-cleanup.md
 docs/operations/backup-restore/README.md
 docs/operations/pilot-and-deployment/README.md
 docs/reports/phase-02-extraction-closeout.md
@@ -179,5 +180,4 @@ docs/risks-and-issues.md
 
 ## Not tracked
 
-HealthCare/ (ignored nested repository)
 **/bin/, **/obj/

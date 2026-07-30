@@ -72,3 +72,4 @@ The dashboard links to the latest accepted report.
 | [P9-WP06-commercial-mvp-closeout.md](P9-WP06-commercial-mvp-closeout.md) | Commercial MVP Closeout | Complete with documented risks (Phase 9 closed) |
 | [P10-WP01-scope-ambiguity.md](P10-WP01-scope-ambiguity.md) | P10-WP01 scope ambiguity | Resolved — Option A authorized |
 | [P10-WP01-suppliers.md](P10-WP01-suppliers.md) | P10-WP01 Suppliers | Complete (Option A — master data only) |
+| [P10-WP02-healthcare-workspace-cleanup.md](P10-WP02-healthcare-workspace-cleanup.md) | P10-WP02 Part A workspace cleanup | Complete |
