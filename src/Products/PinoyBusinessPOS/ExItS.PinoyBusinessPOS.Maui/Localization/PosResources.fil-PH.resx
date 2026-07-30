@@ -800,4 +800,36 @@
   <data name="Sales_Checkout_OfflineMessage" xml:space="preserve"><value>Kailangan ng koneksyon ang checkout. Mag-reconnect bago magtala ng benta.</value></data>
   <data name="Credit_LinkedSale" xml:space="preserve"><value>Naka-link na benta</value></data>
   <data name="Credit_ReverseViaSaleVoid" xml:space="preserve"><value>Galing ang credit na ito sa product sale. Kanselahin ang benta para i-reverse. Hindi pinapayagan ang standalone reverse.</value></data>
+  <data name="Inventory_Title" xml:space="preserve"><value>Imbentaryo</value></data>
+  <data name="Inventory_Subtitle" xml:space="preserve"><value>Subaybayan ang on-hand stock ng mga produkto (online lamang).</value></data>
+  <data name="Inventory_LowStockTitle" xml:space="preserve"><value>Kulang na stock</value></data>
+  <data name="Inventory_LowStockSubtitle" xml:space="preserve"><value>Mga tracked na produkto na nasa o mas mababa sa reorder level.</value></data>
+  <data name="Inventory_DetailTitle" xml:space="preserve"><value>Detalye ng stock</value></data>
+  <data name="Inventory_AdjustTitle" xml:space="preserve"><value>I-adjust ang stock</value></data>
+  <data name="Inventory_Enable" xml:space="preserve"><value>I-enable ang tracking</value></data>
+  <data name="Inventory_Disable" xml:space="preserve"><value>I-disable ang tracking</value></data>
+  <data name="Inventory_Adjust" xml:space="preserve"><value>I-adjust</value></data>
+  <data name="Inventory_OpeningQuantity" xml:space="preserve"><value>Opening quantity</value></data>
+  <data name="Inventory_ReorderLevel" xml:space="preserve"><value>Reorder level</value></data>
+  <data name="Inventory_OnHand" xml:space="preserve"><value>On hand</value></data>
+  <data name="Inventory_Tracked" xml:space="preserve"><value>Tracked</value></data>
+  <data name="Inventory_NotTracked" xml:space="preserve"><value>Hindi tracked</value></data>
+  <data name="Inventory_Direction" xml:space="preserve"><value>Direksyon</value></data>
+  <data name="Inventory_DirectionIn" xml:space="preserve"><value>Stock in</value></data>
+  <data name="Inventory_DirectionOut" xml:space="preserve"><value>Stock out</value></data>
+  <data name="Inventory_Quantity" xml:space="preserve"><value>Dami</value></data>
+  <data name="Inventory_Reason" xml:space="preserve"><value>Dahilan</value></data>
+  <data name="Inventory_SaveAdjustment" xml:space="preserve"><value>I-save ang adjustment</value></data>
+  <data name="Inventory_Movements" xml:space="preserve"><value>Mga galaw</value></data>
+  <data name="Inventory_Refresh" xml:space="preserve"><value>I-refresh</value></data>
+  <data name="Inventory_OpenLowStock" xml:space="preserve"><value>Kulang na stock</value></data>
+  <data name="Inventory_OfflineTitle" xml:space="preserve"><value>Kailangan ng koneksyon ang imbentaryo</value></data>
+  <data name="Inventory_OfflineMessage" xml:space="preserve"><value>Online-only ang imbentaryo. Mag-reconnect para makita o baguhin ang stock.</value></data>
+  <data name="Inventory_EmptyTitle" xml:space="preserve"><value>Wala pang produkto</value></data>
+  <data name="Inventory_EmptyMessage" xml:space="preserve"><value>Magdagdag muna ng catalog products, pagkatapos i-enable ang tracking dito.</value></data>
+  <data name="Inventory_Loading" xml:space="preserve"><value>Nilo-load ang imbentaryo…</value></data>
+  <data name="Inventory_SearchPlaceholder" xml:space="preserve"><value>Maghanap ayon sa pangalan, SKU, o barcode</value></data>
+  <data name="Inventory_InsufficientStockTitle" xml:space="preserve"><value>Kulang ang stock</value></data>
+  <data name="Inventory_InsufficientStockMessage" xml:space="preserve"><value>Walang sapat na on-hand quantity ang isa o higit pang tracked na produkto para sa bentang ito.</value></data>
+  <data name="Nav_Inventory" xml:space="preserve"><value>Imbentaryo</value></data>
 </root>

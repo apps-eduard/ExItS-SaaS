@@ -2,20 +2,14 @@ namespace ExItS.ArchitectureTests;
 
 /// <summary>
 /// Guards the Product-Based Utang / simple-sales boundary: sales may record Cash, ManualGCash, and
-/// online Utang checkouts (with linked credit) and void them, but must not introduce inventory
-/// deduction, offline sale capture, tax, discounts, refunds, split tender, or payment gateways.
+/// online Utang checkouts (with linked credit), void them, and collaborate with basic inventory
+/// deduction/restoration — but must not introduce suppliers, warehouses, costing, offline sale
+/// capture, tax, discounts, refunds, split tender, or payment gateways.
 /// </summary>
 public sealed class PosSalesScopeArchitectureTests
 {
     private static readonly string[] OutOfScopeConcepts =
     [
-        "StockOnHand",
-        "QuantityOnHand",
-        "StockMovement",
-        "StockDeduction",
-        "DeductStock",
-        "InventoryAdjustment",
-        "ReorderLevel",
         "TaxRate",
         "VatRate",
         "TaxAmount",
@@ -29,11 +23,15 @@ public sealed class PosSalesScopeArchitectureTests
         "PaymentIntent",
         "GCashApi",
         "PurchaseOrder",
-        "SupplierId"
+        "SupplierId",
+        "WarehouseId",
+        "CostPrice",
+        "AverageCost",
+        "NegativeStockOverride"
     ];
 
     [Fact]
-    public void Sales_slice_declares_no_inventory_tax_discount_refund_or_gateway_concepts()
+    public void Sales_slice_declares_no_tax_discount_refund_gateway_or_supplier_concepts()
     {
         foreach (var file in SalesSourceFiles())
         {
@@ -62,7 +60,7 @@ public sealed class PosSalesScopeArchitectureTests
     }
 
     [Fact]
-    public void Sales_persistence_adds_only_sale_sale_line_and_sequence_tables()
+    public void Sales_persistence_keeps_sale_tables_without_supplier_or_warehouse_tables()
     {
         var context = File.ReadAllText(Path.Combine(
             PosProject("ExItS.PinoyBusinessPOS.Infrastructure"), "Persistence", "PosDbContext.cs"));
@@ -73,9 +71,8 @@ public sealed class PosSalesScopeArchitectureTests
 
         foreach (var table in new[]
                  {
-                     "\"stock\"", "\"stock_levels\"", "\"inventory\"", "\"inventory_movements\"",
                      "\"carts\"", "\"taxes\"", "\"discounts\"", "\"sale_refunds\"", "\"sale_payments\"",
-                     "\"suppliers\""
+                     "\"suppliers\"", "\"warehouses\""
                  })
         {
             Assert.DoesNotContain(table, context, StringComparison.OrdinalIgnoreCase);
@@ -83,16 +80,16 @@ public sealed class PosSalesScopeArchitectureTests
     }
 
     [Fact]
-    public void Checkout_utang_path_may_use_credit_and_customer_repositories()
+    public void Checkout_utang_path_may_use_credit_customer_and_inventory_stock_services()
     {
         var useCases = File.ReadAllText(Path.Combine(
             PosProject("ExItS.PinoyBusinessPOS.Application"), "Sales", "SaleUseCases.cs"));
 
         Assert.Contains("ICreditEntryRepository", useCases, StringComparison.Ordinal);
         Assert.Contains("IPOSCustomerRepository", useCases, StringComparison.Ordinal);
+        Assert.Contains("ISaleStockService", useCases, StringComparison.Ordinal);
         Assert.Contains("SalePaymentMethod.Utang", useCases, StringComparison.Ordinal);
 
-        // Offline sale queue / repayment mutation from checkout remain out of scope.
         Assert.DoesNotContain("IOfflineOperationDispatcher", useCases, StringComparison.Ordinal);
         Assert.DoesNotContain("IRepaymentRepository", useCases, StringComparison.Ordinal);
     }
@@ -100,8 +97,6 @@ public sealed class PosSalesScopeArchitectureTests
     [Fact]
     public void Sales_have_no_offline_queue_dispatcher_or_local_projection()
     {
-        // The sale checkout operation type exists purely for server-side idempotency headers; there is
-        // no offline dispatcher, local sale table, or queued sale operation.
         foreach (var file in SalesSourceFiles())
         {
             var text = File.ReadAllText(file);

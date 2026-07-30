@@ -1,0 +1,123 @@
+@page "/inventory/low-stock"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosInventoryClient Inventory
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+<Page>
+    <PageHeader Title="@L["Inventory_LowStockTitle"]" Subtitle="@L["Inventory_LowStockSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Inventory_Title"]</Button>
+            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Inventory_Refresh"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_LowStockTitle"])" Message="@_errorMessage" />
+    }
+
+    <ResponsiveDataList TItem="PosInventoryAccountDto"
+                        Items="@_items"
+                        Columns="@Columns"
+                        CellTemplate="@CellTemplate"
+                        IsLoading="@_loading"
+                        LoadingLabel="@L["Inventory_Loading"]"
+                        EmptyTitle="@L["Inventory_EmptyTitle"]"
+                        EmptyMessage="@L["Inventory_EmptyMessage"]"
+                        AriaLabel="@L["Inventory_LowStockTitle"]" />
+</Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _loading;
+    private bool _isOffline;
+    private IReadOnlyList<PosInventoryAccountDto> _items = Array.Empty<PosInventoryAccountDto>();
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    private IReadOnlyList<DataColumnDefinition> Columns =>
+    [
+        new("name", L["Catalog_Col_Name"], Primary: true, Width: "40%"),
+        new("onHand", L["Inventory_OnHand"], Width: "30%"),
+        new("reorder", L["Inventory_ReorderLevel"], Width: "30%")
+    ];
+
+    private RenderFragment<(PosInventoryAccountDto Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
+    {
+        switch (context.Column.Key)
+        {
+            case "name":
+                builder.OpenElement(0, "a");
+                builder.AddAttribute(1, "class", "pos-link");
+                builder.AddAttribute(2, "href", $"/inventory/{context.Item.ProductId:D}");
+                builder.AddContent(3, context.Item.Name);
+                builder.CloseElement();
+                break;
+            case "onHand":
+                builder.AddContent(0, context.Item.OnHandQuantity.ToString("0.###", CultureInfo.InvariantCulture));
+                break;
+            default:
+                builder.AddContent(0, context.Item.ReorderLevel?.ToString("0.###", CultureInfo.InvariantCulture) ?? "—");
+                break;
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ViewInventory))
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _items = Array.Empty<PosInventoryAccountDto>();
+            _loading = false;
+            return;
+        }
+
+        var result = await Inventory.ListLowStockAsync();
+        if (result.Status == ApiCallStatus.Success && result.Data is not null)
+        {
+            _items = result.Data.Items;
+        }
+        else
+        {
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+            _items = Array.Empty<PosInventoryAccountDto>();
+        }
+
+        _loading = false;
+    }
+
+    private void GoBack() => Nav.NavigateTo("/inventory");
+}

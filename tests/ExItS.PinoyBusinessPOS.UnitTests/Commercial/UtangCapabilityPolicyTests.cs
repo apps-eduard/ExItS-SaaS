@@ -213,6 +213,40 @@ public sealed class UtangCapabilityPolicyTests
         Assert.Contains(PosFeatureCodes.StoreSalesVoid, UtangCapabilityPolicy.DefaultDevelopmentGrants);
     }
 
+    private static readonly string[] InventoryGrants =
+    [
+        PosFeatureCodes.StoreInventoryView,
+        PosFeatureCodes.StoreInventoryManage
+    ];
+
+    [Theory]
+    [InlineData(PosSubscriptionStatuses.Trialing)]
+    [InlineData(PosSubscriptionStatuses.Active)]
+    [InlineData(PosSubscriptionStatuses.GracePeriod)]
+    public void Full_states_allow_inventory_view_and_manage(string status)
+    {
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewInventory, status, InventoryGrants));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManageInventory, status, InventoryGrants));
+    }
+
+    [Theory]
+    [InlineData(PosSubscriptionStatuses.PastDue)]
+    [InlineData(PosSubscriptionStatuses.Cancelled)]
+    [InlineData(PosSubscriptionStatuses.Expired)]
+    public void Continuity_states_allow_inventory_view_deny_manage(string status)
+    {
+        Assert.True(UtangCapabilityPolicy.CanEnter(status, InventoryGrants));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewInventory, status, InventoryGrants));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManageInventory, status, InventoryGrants));
+    }
+
+    [Fact]
+    public void Development_grants_include_inventory_codes()
+    {
+        Assert.Contains(PosFeatureCodes.StoreInventoryView, UtangCapabilityPolicy.DefaultDevelopmentGrants);
+        Assert.Contains(PosFeatureCodes.StoreInventoryManage, UtangCapabilityPolicy.DefaultDevelopmentGrants);
+    }
+
     [Fact]
     public void Feature_grants_required_even_in_active()
     {
@@ -224,5 +258,13 @@ public sealed class UtangCapabilityPolicyTests
             UtangCapability.RecordRepayment,
             PosSubscriptionStatuses.Active,
             ViewOnly));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.ViewInventory,
+            PosSubscriptionStatuses.Active,
+            ViewOnly));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.ManageInventory,
+            PosSubscriptionStatuses.Active,
+            [PosFeatureCodes.StoreInventoryView]));
     }
 }

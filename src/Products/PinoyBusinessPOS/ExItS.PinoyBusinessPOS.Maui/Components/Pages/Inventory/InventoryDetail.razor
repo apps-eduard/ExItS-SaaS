@@ -1,0 +1,171 @@
+@page "/inventory/{ProductId:guid}"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosInventoryClient Inventory
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (_account is null)
+{
+    <Page>
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_DetailTitle"])" Message="@(_errorMessage ?? L["NotFound_Message"])" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Inventory_Title"]</Button>
+    </Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageInventory);
+<Page>
+    <PageHeader Title="@_account.Name" Subtitle="@L["Inventory_DetailTitle"]">
+        <Actions>
+            @if (canManage && !_isOffline)
+            {
+                @if (!_account.IsTracked)
+                {
+                    <Button Variant="ButtonVariant.Primary" IsLoading="@_busy" OnClick="EnableAsync">@L["Inventory_Enable"]</Button>
+                }
+                else
+                {
+                    <Button Variant="ButtonVariant.Secondary" OnClick="GoAdjust">@L["Inventory_Adjust"]</Button>
+                    <Button Variant="ButtonVariant.Secondary" IsLoading="@_busy" OnClick="DisableAsync">@L["Inventory_Disable"]</Button>
+                }
+            }
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Inventory_Title"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_DetailTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Inventory_DetailTitle"]">
+        <Stack Gap="2">
+            <div>@L["Inventory_OnHand"]: <strong>@_account.OnHandQuantity.ToString("0.###") @_account.UnitOfMeasure</strong></div>
+            <div>@(_account.IsTracked ? L["Inventory_Tracked"] : L["Inventory_NotTracked"])</div>
+            <div>@L["Inventory_ReorderLevel"]: @(_account.ReorderLevel?.ToString("0.###") ?? "—")</div>
+            @if (_account.IsLowStock)
+            {
+                <Alert Tone="AlertTone.Warning" Title="@L["Inventory_LowStockTitle"]" Message="@L["Inventory_LowStockSubtitle"]" />
+            }
+        </Stack>
+    </Section>
+
+    <Section Title="@L["Inventory_Movements"]">
+        @if (_movements.Count == 0)
+        {
+            <div class="pos-muted">—</div>
+        }
+        else
+        {
+            <Stack Gap="2">
+                @foreach (var m in _movements)
+                {
+                    <div>@m.RecordedAtUtc.UtcDateTime.ToString("u") · @m.MovementType · @m.QuantityEffect.ToString("+0.###;-0.###") · @m.Reason</div>
+                }
+            </Stack>
+        }
+    </Section>
+</Page>
+}
+
+@code {
+    [Parameter] public Guid ProductId { get; set; }
+
+    private bool _ready;
+    private bool _busy;
+    private bool _isOffline;
+    private PosInventoryAccountDto? _account;
+    private List<PosStockMovementDto> _movements = [];
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ViewInventory))
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _errorTitle = null;
+        _errorMessage = null;
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _account = null;
+            return;
+        }
+
+        var result = await Inventory.GetAsync(ProductId);
+        if (result.Status == ApiCallStatus.Success)
+        {
+            _account = result.Data;
+        }
+        else
+        {
+            _account = null;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+            return;
+        }
+
+        var movements = await Inventory.ListMovementsAsync(ProductId);
+        _movements = movements.Status == ApiCallStatus.Success && movements.Data is not null
+            ? movements.Data.Items
+            : [];
+    }
+
+    private async Task EnableAsync()
+    {
+        _busy = true;
+        var result = await Inventory.EnableAsync(ProductId, new EnableInventoryTrackingRequest());
+        _busy = false;
+        if (result.Status == ApiCallStatus.Success)
+        {
+            await ReloadAsync();
+            return;
+        }
+
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _errorTitle = described.Title;
+        _errorMessage = result.Error?.Detail ?? described.Message;
+    }
+
+    private async Task DisableAsync()
+    {
+        _busy = true;
+        var result = await Inventory.DisableAsync(ProductId);
+        _busy = false;
+        if (result.Status == ApiCallStatus.Success)
+        {
+            await ReloadAsync();
+            return;
+        }
+
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _errorTitle = described.Title;
+        _errorMessage = result.Error?.Detail ?? described.Message;
+    }
+
+    private void GoAdjust() => Nav.NavigateTo($"/inventory/{ProductId:D}/adjust");
+    private void GoBack() => Nav.NavigateTo("/inventory");
+}

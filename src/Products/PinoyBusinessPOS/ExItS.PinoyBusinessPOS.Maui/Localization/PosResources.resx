@@ -800,4 +800,36 @@
   <data name="Sales_Checkout_OfflineMessage" xml:space="preserve"><value>Checkout needs a connection. Reconnect before recording a sale.</value></data>
   <data name="Credit_LinkedSale" xml:space="preserve"><value>Linked sale</value></data>
   <data name="Credit_ReverseViaSaleVoid" xml:space="preserve"><value>This credit came from a product sale. Void the sale to reverse it. Standalone reverse is not allowed.</value></data>
+  <data name="Inventory_Title" xml:space="preserve"><value>Inventory</value></data>
+  <data name="Inventory_Subtitle" xml:space="preserve"><value>Track on-hand stock for catalog products (online only).</value></data>
+  <data name="Inventory_LowStockTitle" xml:space="preserve"><value>Low stock</value></data>
+  <data name="Inventory_LowStockSubtitle" xml:space="preserve"><value>Tracked products at or below their reorder level.</value></data>
+  <data name="Inventory_DetailTitle" xml:space="preserve"><value>Stock detail</value></data>
+  <data name="Inventory_AdjustTitle" xml:space="preserve"><value>Adjust stock</value></data>
+  <data name="Inventory_Enable" xml:space="preserve"><value>Enable tracking</value></data>
+  <data name="Inventory_Disable" xml:space="preserve"><value>Disable tracking</value></data>
+  <data name="Inventory_Adjust" xml:space="preserve"><value>Adjust</value></data>
+  <data name="Inventory_OpeningQuantity" xml:space="preserve"><value>Opening quantity</value></data>
+  <data name="Inventory_ReorderLevel" xml:space="preserve"><value>Reorder level</value></data>
+  <data name="Inventory_OnHand" xml:space="preserve"><value>On hand</value></data>
+  <data name="Inventory_Tracked" xml:space="preserve"><value>Tracked</value></data>
+  <data name="Inventory_NotTracked" xml:space="preserve"><value>Not tracked</value></data>
+  <data name="Inventory_Direction" xml:space="preserve"><value>Direction</value></data>
+  <data name="Inventory_DirectionIn" xml:space="preserve"><value>Stock in</value></data>
+  <data name="Inventory_DirectionOut" xml:space="preserve"><value>Stock out</value></data>
+  <data name="Inventory_Quantity" xml:space="preserve"><value>Quantity</value></data>
+  <data name="Inventory_Reason" xml:space="preserve"><value>Reason</value></data>
+  <data name="Inventory_SaveAdjustment" xml:space="preserve"><value>Save adjustment</value></data>
+  <data name="Inventory_Movements" xml:space="preserve"><value>Movements</value></data>
+  <data name="Inventory_Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Inventory_OpenLowStock" xml:space="preserve"><value>Low stock</value></data>
+  <data name="Inventory_OfflineTitle" xml:space="preserve"><value>Inventory needs a connection</value></data>
+  <data name="Inventory_OfflineMessage" xml:space="preserve"><value>Inventory is online-only. Reconnect to view or change stock.</value></data>
+  <data name="Inventory_EmptyTitle" xml:space="preserve"><value>No products yet</value></data>
+  <data name="Inventory_EmptyMessage" xml:space="preserve"><value>Add catalog products first, then enable tracking here.</value></data>
+  <data name="Inventory_Loading" xml:space="preserve"><value>Loading inventory…</value></data>
+  <data name="Inventory_SearchPlaceholder" xml:space="preserve"><value>Search by name, SKU, or barcode</value></data>
+  <data name="Inventory_InsufficientStockTitle" xml:space="preserve"><value>Insufficient stock</value></data>
+  <data name="Inventory_InsufficientStockMessage" xml:space="preserve"><value>One or more tracked products do not have enough on-hand quantity for this sale.</value></data>
+  <data name="Nav_Inventory" xml:space="preserve"><value>Inventory</value></data>
 </root>

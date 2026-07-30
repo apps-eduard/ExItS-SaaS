@@ -30,6 +30,11 @@ public static class ApplicationErrorCodes
     public const string SaleNumberConflict = "pos.sale.number.conflict";
     public const string CreditReversalRequiresSaleVoid = "pos.credit_entry.reversal.requires_sale_void";
     public const string SaleVoidBlockedBySubsequentUtangActivity = "pos.sale.void.blocked_by_subsequent_utang";
+
+    public const string InventoryAccountNotFound = "pos.inventory.account.not_found";
+    public const string InventoryProductNotFound = "pos.inventory.product.not_found";
+    public const string InventoryConcurrencyConflict = "pos.inventory.concurrency_conflict";
+    public const string InsufficientStock = "pos.inventory.insufficient_stock";
 }
 
 public sealed class PersistenceConflictException : Exception

@@ -14,6 +14,12 @@
                 <Button Variant="ButtonVariant.Primary" OnClick="GoOverdue">@L["Overdue_OpenOrg"]</Button>
             </Stack>
         </Section>
+        <Section Title="@L["Inventory_Title"]">
+            <Stack Gap="3">
+                <div class="pos-muted">@L["Inventory_Subtitle"]</div>
+                <Button Variant="ButtonVariant.Primary" OnClick="GoInventory">@L["Nav_Inventory"]</Button>
+            </Stack>
+        </Section>
     }
 
     <EmptyState IconName="@IconName" Title="@L["Deferred_Title"]" Message="@string.Format(L["Deferred_Message"], FeatureName)">
@@ -50,4 +56,5 @@
 
     private void GoHome() => Nav.NavigateTo("/home");
     private void GoOverdue() => Nav.NavigateTo("/overdue");
+    private void GoInventory() => Nav.NavigateTo("/inventory");
 }

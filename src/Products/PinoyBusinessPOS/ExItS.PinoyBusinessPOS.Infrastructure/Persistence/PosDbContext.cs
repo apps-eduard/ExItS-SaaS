@@ -1,12 +1,14 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Customers;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Idempotency;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Payments;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Sales;
 using Microsoft.EntityFrameworkCore;
@@ -32,6 +34,8 @@ public sealed class PosDbContext : DbContext
     internal DbSet<SaleRecord> Sales => Set<SaleRecord>();
     internal DbSet<SaleLineRecord> SaleLines => Set<SaleLineRecord>();
     internal DbSet<SaleNumberSequenceRecord> SaleNumberSequences => Set<SaleNumberSequenceRecord>();
+    internal DbSet<InventoryAccountRecord> InventoryAccounts => Set<InventoryAccountRecord>();
+    internal DbSet<StockMovementRecord> StockMovements => Set<StockMovementRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -553,6 +557,120 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
             entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date");
             entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
+        });
+
+        modelBuilder.Entity<InventoryAccountRecord>(entity =>
+        {
+            entity.ToTable("inventory_accounts", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_inventory_accounts_on_hand_non_negative",
+                    "on_hand_quantity >= 0");
+                tb.HasCheckConstraint(
+                    "ck_inventory_accounts_reorder_level_non_negative",
+                    "reorder_level IS NULL OR reorder_level >= 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.IsTracked).HasColumnName("is_tracked").IsRequired();
+            entity.Property(e => e.ReorderLevel).HasColumnName("reorder_level").HasPrecision(18, 3);
+            entity.Property(e => e.OnHandQuantity)
+                .HasColumnName("on_hand_quantity")
+                .HasPrecision(18, 3)
+                .HasDefaultValue(0m)
+                .IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ProductId })
+                .IsUnique()
+                .HasDatabaseName("ux_inventory_accounts_org_product");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.IsTracked })
+                .HasDatabaseName("ix_inventory_accounts_org_tracked");
+
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_inventory_accounts_products");
+        });
+
+        modelBuilder.Entity<StockMovementRecord>(entity =>
+        {
+            entity.ToTable("stock_movements", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_stock_movements_quantity_effect_nonzero",
+                    "quantity_effect <> 0");
+                tb.HasCheckConstraint(
+                    "ck_stock_movements_movement_type",
+                    $"movement_type IN ({string.Join(", ", StockMovementTypes.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_stock_movements_source_type",
+                    $"source_type IN ({string.Join(", ", StockMovementSourceTypes.Codes.Select(c => $"'{c}'"))})");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.InventoryAccountId).HasColumnName("inventory_account_id").IsRequired();
+            entity.Property(e => e.MovementType)
+                .HasColumnName("movement_type")
+                .HasMaxLength(StockMovementTypes.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.QuantityEffect)
+                .HasColumnName("quantity_effect")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.Reason)
+                .HasColumnName("reason")
+                .HasMaxLength(StockMovement.ReasonMaxLength)
+                .IsRequired();
+            entity.Property(e => e.SourceType)
+                .HasColumnName("source_type")
+                .HasMaxLength(StockMovementSourceTypes.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.SourceId).HasColumnName("source_id");
+            entity.Property(e => e.RecordedAtUtc).HasColumnName("recorded_at_utc");
+            entity.Property(e => e.RecordedBy).HasColumnName("recorded_by").IsRequired();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ProductId, e.RecordedAtUtc })
+                .HasDatabaseName("ix_stock_movements_org_product_recorded");
+
+            // One unique index covers SaleDeduction and SaleVoidRestoration (movement_type is part of the key).
+            // EF cannot model two filtered uniques on the identical column set.
+            entity.HasIndex(e => new { e.OrganizationId, e.SourceId, e.ProductId, e.MovementType })
+                .IsUnique()
+                .HasDatabaseName("ux_stock_movements_sale_source")
+                .HasFilter(
+                    $"source_type = '{nameof(StockMovementSourceType.Sale)}' AND source_id IS NOT NULL");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ProductId, e.MovementType })
+                .IsUnique()
+                .HasDatabaseName("ux_stock_movements_opening_stock")
+                .HasFilter($"movement_type = '{nameof(StockMovementType.OpeningStock)}'");
+
+            entity.HasOne<InventoryAccountRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.InventoryAccountId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_stock_movements_inventory_accounts");
+
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_stock_movements_products");
         });
     }
 }

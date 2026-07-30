@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
@@ -149,7 +150,8 @@ public sealed class SaleQueryService
 /// prices or names are never read.
 ///
 /// Product-Based Utang creates the sale and a linked remarks credit in one transaction. Cash and
-/// ManualGCash create the sale only. No stock is deducted; no tax or discount is applied.
+/// ManualGCash create the sale only. Tracked inventory is deducted atomically inside the same
+/// checkout transaction (before credit creation for Utang).
 /// </summary>
 public sealed class CheckoutSale
 {
@@ -158,6 +160,7 @@ public sealed class CheckoutSale
     private readonly IPOSCustomerRepository _customers;
     private readonly ICreditEntryRepository _credits;
     private readonly ICreditDueDateChangeRepository _dueDateChanges;
+    private readonly ISaleStockService _saleStock;
     private readonly IClock _clock;
 
     public CheckoutSale(
@@ -166,6 +169,7 @@ public sealed class CheckoutSale
         IPOSCustomerRepository customers,
         ICreditEntryRepository credits,
         ICreditDueDateChangeRepository dueDateChanges,
+        ISaleStockService saleStock,
         IClock clock)
     {
         _sales = sales;
@@ -173,6 +177,7 @@ public sealed class CheckoutSale
         _customers = customers;
         _credits = credits;
         _dueDateChanges = dueDateChanges;
+        _saleStock = saleStock;
         _clock = clock;
     }
 
@@ -331,6 +336,7 @@ public sealed class CheckoutSale
             var capturedCreditEntryId = linkedCreditEntryId;
             var capturedDueDate = dueDate;
             var capturedActorId = actorId;
+            var productsById = byId;
 
             var sale = await _sales
                 .CheckoutAsync(
@@ -348,36 +354,43 @@ public sealed class CheckoutSale
                         clientSaleId is null ? null : SaleId.From(clientSaleId.Value),
                         capturedCustomerId,
                         capturedCreditEntryId),
-                    isUtang
-                        ? async (createdSale, ct) =>
+                    async (createdSale, ct) =>
+                    {
+                        await _saleStock
+                            .DeductForSaleAsync(orgId, createdSale, productsById, capturedActorId, utcNow, ct)
+                            .ConfigureAwait(false);
+
+                        if (!isUtang)
                         {
-                            var entry = CreditEntry.Create(
-                                orgId,
-                                capturedCustomerId!,
-                                createdSale.Total,
-                                ProductBasedUtangRemarks.ForSaleNumber(createdSale.SaleNumber),
-                                utcNow,
-                                capturedCreditEntryId,
-                                createdSale.Id);
-
-                            if (capturedDueDate is not null)
-                            {
-                                var change = CreditDueDateChange.Create(
-                                    orgId,
-                                    entry.Id,
-                                    entry.CustomerId,
-                                    previousDueDate: null,
-                                    newDueDate: capturedDueDate,
-                                    ProductBasedUtangRemarks.InitialDueDateReason,
-                                    capturedActorId,
-                                    utcNow);
-                                entry.ApplyCurrentDueDate(capturedDueDate);
-                                await _dueDateChanges.AddAsync(change, ct).ConfigureAwait(false);
-                            }
-
-                            await _credits.AddAsync(entry, ct).ConfigureAwait(false);
+                            return;
                         }
-                        : null,
+
+                        var entry = CreditEntry.Create(
+                            orgId,
+                            capturedCustomerId!,
+                            createdSale.Total,
+                            ProductBasedUtangRemarks.ForSaleNumber(createdSale.SaleNumber),
+                            utcNow,
+                            capturedCreditEntryId,
+                            createdSale.Id);
+
+                        if (capturedDueDate is not null)
+                        {
+                            var change = CreditDueDateChange.Create(
+                                orgId,
+                                entry.Id,
+                                entry.CustomerId,
+                                previousDueDate: null,
+                                newDueDate: capturedDueDate,
+                                ProductBasedUtangRemarks.InitialDueDateReason,
+                                capturedActorId,
+                                utcNow);
+                            entry.ApplyCurrentDueDate(capturedDueDate);
+                            await _dueDateChanges.AddAsync(change, ct).ConfigureAwait(false);
+                        }
+
+                        await _credits.AddAsync(entry, ct).ConfigureAwait(false);
+                    },
                     cancellationToken)
                 .ConfigureAwait(false);
 
@@ -424,15 +437,16 @@ public sealed class CheckoutSale
 }
 
 /// <summary>
-/// Voids a recorded sale with a required reason and actor. Cash/ManualGCash voids only the sale.
-/// Product-Based Utang voids the sale and reverses the linked credit in one serializable transaction.
-/// Voiding does not refund money or restore stock.
+/// Voids a recorded sale with a required reason and actor. Cash/ManualGCash voids the sale and
+/// restores tracked stock. Product-Based Utang voids the sale, reverses the linked credit, and
+/// restores stock in one serializable transaction.
 /// </summary>
 public sealed class VoidSale
 {
     private readonly ISaleRepository _sales;
     private readonly ICreditEntryRepository _credits;
     private readonly IOutstandingBalanceService _outstanding;
+    private readonly ISaleStockService _saleStock;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -440,12 +454,14 @@ public sealed class VoidSale
         ISaleRepository sales,
         ICreditEntryRepository credits,
         IOutstandingBalanceService outstanding,
+        ISaleStockService saleStock,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
         _sales = sales;
         _credits = credits;
         _outstanding = outstanding;
+        _saleStock = saleStock;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -467,33 +483,6 @@ public sealed class VoidSale
         var orgId = PosOrganizationId.From(organizationId);
         var id = SaleId.From(saleId);
 
-        var sale = await _sales.GetByIdAsync(orgId, id, cancellationToken).ConfigureAwait(false);
-        if (sale is null)
-        {
-            return ApplicationResult<Sale>.Failure(
-                ApplicationErrorCodes.SaleNotFound,
-                "Sale was not found.");
-        }
-
-        if (sale.PaymentMethod != SalePaymentMethod.Utang)
-        {
-            try
-            {
-                sale.Void(reason, actorId, _clock.UtcNow);
-                await _sales.UpdateAsync(sale, cancellationToken).ConfigureAwait(false);
-                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                return ApplicationResult<Sale>.Success(sale);
-            }
-            catch (DomainException ex)
-            {
-                return ApplicationResult<Sale>.Failure(ex.ErrorCode, ex.Message);
-            }
-            catch (PersistenceConflictException ex)
-            {
-                return ApplicationResult<Sale>.Failure(ex.ErrorCode, ex.Message);
-            }
-        }
-
         try
         {
             return await _unitOfWork
@@ -507,59 +496,71 @@ public sealed class VoidSale
                             "Sale was not found.");
                     }
 
-                    if (current.LinkedCreditEntryId is null || current.CustomerId is null)
+                    if (current.PaymentMethod == SalePaymentMethod.Utang)
                     {
-                        return ApplicationResult<Sale>.Failure(
-                            DomainErrorCodes.SaleUtangLinkageInvalid,
-                            "Utang sale is missing customer or linked credit entry.");
-                    }
+                        if (current.LinkedCreditEntryId is null || current.CustomerId is null)
+                        {
+                            return ApplicationResult<Sale>.Failure(
+                                DomainErrorCodes.SaleUtangLinkageInvalid,
+                                "Utang sale is missing customer or linked credit entry.");
+                        }
 
-                    var credit = await _credits
-                        .GetByIdAsync(orgId, current.CustomerId, current.LinkedCreditEntryId, ct)
-                        .ConfigureAwait(false);
-                    if (credit is null)
-                    {
-                        return ApplicationResult<Sale>.Failure(
-                            ApplicationErrorCodes.CreditEntryNotFound,
-                            "Linked credit entry was not found.");
-                    }
-
-                    if (credit.SourceSaleId is null || credit.SourceSaleId.Value != current.Id.Value)
-                    {
-                        return ApplicationResult<Sale>.Failure(
-                            DomainErrorCodes.SaleUtangLinkageInvalid,
-                            "Linked credit entry does not reference this sale.");
-                    }
-
-                    if (credit.Status == CreditEntryStatus.Reversed
-                        && current.Status == SaleStatus.Completed)
-                    {
-                        return ApplicationResult<Sale>.Failure(
-                            ApplicationErrorCodes.SaleVoidBlockedBySubsequentUtangActivity,
-                            "The linked Utang credit is already reversed; voiding this sale is blocked.");
-                    }
-
-                    if (credit.Status == CreditEntryStatus.Active)
-                    {
-                        var outstanding = await _outstanding
-                            .GetOutstandingAsync(orgId, current.CustomerId, ct)
+                        var credit = await _credits
+                            .GetByIdAsync(orgId, current.CustomerId, current.LinkedCreditEntryId, ct)
                             .ConfigureAwait(false);
-                        if (outstanding - credit.Amount < 0m)
+                        if (credit is null)
+                        {
+                            return ApplicationResult<Sale>.Failure(
+                                ApplicationErrorCodes.CreditEntryNotFound,
+                                "Linked credit entry was not found.");
+                        }
+
+                        if (credit.SourceSaleId is null || credit.SourceSaleId.Value != current.Id.Value)
+                        {
+                            return ApplicationResult<Sale>.Failure(
+                                DomainErrorCodes.SaleUtangLinkageInvalid,
+                                "Linked credit entry does not reference this sale.");
+                        }
+
+                        if (credit.Status == CreditEntryStatus.Reversed
+                            && current.Status == SaleStatus.Completed)
                         {
                             return ApplicationResult<Sale>.Failure(
                                 ApplicationErrorCodes.SaleVoidBlockedBySubsequentUtangActivity,
-                                "Voiding this Utang sale would make outstanding negative because of subsequent repayments. Reverse those repayments first, or leave the sale as recorded.");
+                                "The linked Utang credit is already reversed; voiding this sale is blocked.");
+                        }
+
+                        if (credit.Status == CreditEntryStatus.Active)
+                        {
+                            var outstanding = await _outstanding
+                                .GetOutstandingAsync(orgId, current.CustomerId, ct)
+                                .ConfigureAwait(false);
+                            if (outstanding - credit.Amount < 0m)
+                            {
+                                return ApplicationResult<Sale>.Failure(
+                                    ApplicationErrorCodes.SaleVoidBlockedBySubsequentUtangActivity,
+                                    "Voiding this Utang sale would make outstanding negative because of subsequent repayments. Reverse those repayments first, or leave the sale as recorded.");
+                            }
+                        }
+
+                        current.Void(reason, actorId, _clock.UtcNow);
+                        await _sales.UpdateAsync(current, ct).ConfigureAwait(false);
+
+                        if (credit.Status == CreditEntryStatus.Active)
+                        {
+                            credit.Reverse(reason, _clock.UtcNow);
+                            await _credits.UpdateAsync(credit, ct).ConfigureAwait(false);
                         }
                     }
-
-                    current.Void(reason, actorId, _clock.UtcNow);
-                    await _sales.UpdateAsync(current, ct).ConfigureAwait(false);
-
-                    if (credit.Status == CreditEntryStatus.Active)
+                    else
                     {
-                        credit.Reverse(reason, _clock.UtcNow);
-                        await _credits.UpdateAsync(credit, ct).ConfigureAwait(false);
+                        current.Void(reason, actorId, _clock.UtcNow);
+                        await _sales.UpdateAsync(current, ct).ConfigureAwait(false);
                     }
+
+                    await _saleStock
+                        .RestoreForSaleVoidAsync(orgId, current, actorId, reason, _clock.UtcNow, ct)
+                        .ConfigureAwait(false);
 
                     await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
                     return ApplicationResult<Sale>.Success(current);

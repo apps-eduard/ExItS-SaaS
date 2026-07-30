@@ -30,6 +30,12 @@ public sealed partial class FeatureCode : IEquatable<FeatureCode>
     /// <summary>POS Basic Store: void a recorded sale with a reason.</summary>
     public const string StoreSalesVoid = "store-sales-void";
 
+    /// <summary>POS Basic Store: view on-hand stock, low-stock, and movement history.</summary>
+    public const string StoreInventoryView = "store-inventory-view";
+
+    /// <summary>POS Basic Store: enable/disable tracking and record manual stock adjustments.</summary>
+    public const string StoreInventoryManage = "store-inventory-manage";
+
     private static readonly Regex ValidPattern = CreateValidPattern();
 
     public string Value { get; }

@@ -8,11 +8,6 @@ public sealed class PosCatalogScopeArchitectureTests
 {
     private static readonly string[] OutOfScopeConcepts =
     [
-        "StockOnHand",
-        "QuantityOnHand",
-        "ReorderLevel",
-        "StockMovement",
-        "InventoryAdjustment",
         "SaleLine",
         "SaleOrder",
         "CartItem",
@@ -22,7 +17,9 @@ public sealed class PosCatalogScopeArchitectureTests
         "DiscountRule",
         "PriceTier",
         "SupplierId",
-        "PurchaseOrder"
+        "PurchaseOrder",
+        "WarehouseId",
+        "CostPrice"
     ];
 
     [Fact]
@@ -63,12 +60,12 @@ public sealed class PosCatalogScopeArchitectureTests
         Assert.Contains("\"product_categories\"", context, StringComparison.Ordinal);
         Assert.Contains("\"products\"", context, StringComparison.Ordinal);
 
-        // Sales tables are owned by the P8-WP02 slice; stock, cart, tax, discount, and supplier
-        // persistence remains out of scope for both slices.
+        // Sales tables are owned by the P8-WP02 slice; inventory tables by P8-WP04.
+        // Cart, tax, discount, and supplier persistence remains out of scope for catalog.
         foreach (var table in new[]
                  {
-                     "\"stock\"", "\"stock_levels\"", "\"inventory\"",
-                     "\"carts\"", "\"taxes\"", "\"discounts\"", "\"product_barcodes\"", "\"suppliers\""
+                     "\"stock_levels\"", "\"carts\"", "\"taxes\"", "\"discounts\"",
+                     "\"product_barcodes\"", "\"suppliers\"", "\"warehouses\""
                  })
         {
             Assert.DoesNotContain(table, context, StringComparison.OrdinalIgnoreCase);

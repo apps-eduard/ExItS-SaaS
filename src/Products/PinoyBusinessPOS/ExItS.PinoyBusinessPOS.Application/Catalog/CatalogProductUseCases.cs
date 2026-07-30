@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
@@ -242,17 +243,20 @@ public sealed class UpdateCatalogProduct
 {
     private readonly ICatalogProductRepository _products;
     private readonly IProductCategoryRepository _categories;
+    private readonly IInventoryRepository _inventory;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public UpdateCatalogProduct(
         ICatalogProductRepository products,
         IProductCategoryRepository categories,
+        IInventoryRepository inventory,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
         _products = products;
         _categories = categories;
+        _inventory = inventory;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -291,6 +295,23 @@ public sealed class UpdateCatalogProduct
         try
         {
             var unit = UnitOfMeasures.Parse(unitOfMeasure);
+
+            if (unit != product.UnitOfMeasure)
+            {
+                var hasMovements = await _inventory
+                    .HasAnyMovementAsync(orgId, product.Id, cancellationToken)
+                    .ConfigureAwait(false);
+                var account = await _inventory
+                    .GetByProductIdAsync(orgId, product.Id, cancellationToken)
+                    .ConfigureAwait(false);
+                var trackedWithOnHand = account is { IsTracked: true, OnHandQuantity: not 0m };
+                if (hasMovements || trackedWithOnHand)
+                {
+                    return ApplicationResult<CatalogProduct>.Failure(
+                        DomainErrorCodes.InventoryUomChangeBlocked,
+                        "Unit of measure cannot change after inventory activity for this product.");
+                }
+            }
 
             ProductCategoryId? category = null;
             if (categoryId is not null)

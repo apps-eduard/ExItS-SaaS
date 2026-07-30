@@ -71,4 +71,18 @@ public static class DomainErrorCodes
     public const string SaleUtangLinkageInvalid = "pos.sale.utang.linkage_invalid";
     public const string SaleUtangTotalMustBePositive = "pos.sale.utang.total_must_be_positive";
     public const string SaleCashMustNotLinkCredit = "pos.sale.cash_must_not_link_credit";
+
+    public const string InvalidInventoryAccountId = "pos.inventory.account.id.invalid";
+    public const string InvalidStockMovementId = "pos.inventory.movement.id.invalid";
+    public const string InvalidInventoryMovementType = "pos.inventory.movement_type.invalid";
+    public const string InvalidInventorySourceType = "pos.inventory.source_type.invalid";
+    public const string InvalidInventoryQuantity = "pos.inventory.quantity.invalid";
+    public const string InventoryNotTracked = "pos.inventory.not_tracked";
+    public const string InventoryAlreadyTracked = "pos.inventory.already_tracked";
+    public const string InventoryDisableRequiresZero = "pos.inventory.disable_requires_zero";
+    public const string InventoryInsufficientStock = "pos.inventory.insufficient_stock";
+    public const string InventoryAdjustmentReasonRequired = "pos.inventory.adjustment_reason_required";
+    public const string InventoryReorderLevelInvalid = "pos.inventory.reorder_level.invalid";
+    public const string InventoryOpeningDuplicate = "pos.inventory.opening_duplicate";
+    public const string InventoryUomChangeBlocked = "pos.inventory.uom_change_blocked";
 }

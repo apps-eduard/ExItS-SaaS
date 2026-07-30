@@ -1,0 +1,126 @@
+@page "/inventory/{ProductId:guid}/adjust"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosInventoryClient Inventory
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+<Page>
+    <PageHeader Title="@L["Inventory_AdjustTitle"]" Subtitle="@(_account?.Name ?? L["Inventory_Title"])" />
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_AdjustTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Inventory_AdjustTitle"]">
+        <Stack Gap="3">
+            <Select Label="@L["Inventory_Direction"]"
+                    Value="@_direction"
+                    ValueChanged="OnDirectionChanged"
+                    Options="@DirectionOptions" />
+            <TextInput Label="@L["Inventory_Quantity"]" Value="@_quantityText" ValueChanged="v => _quantityText = v" />
+            <TextInput Label="@L["Inventory_Reason"]" Value="@_reason" ValueChanged="v => _reason = v" />
+            <Button Variant="ButtonVariant.Primary"
+                    Disabled="@(_isOffline || _busy)"
+                    IsLoading="@_busy"
+                    OnClick="SaveAsync">@L["Inventory_SaveAdjustment"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Inventory_DetailTitle"]</Button>
+        </Stack>
+    </Section>
+</Page>
+}
+
+@code {
+    [Parameter] public Guid ProductId { get; set; }
+
+    private bool _ready;
+    private bool _busy;
+    private bool _isOffline;
+    private PosInventoryAccountDto? _account;
+    private string _direction = "In";
+    private string _quantityText = "1";
+    private string _reason = string.Empty;
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    private IReadOnlyList<SelectOption> DirectionOptions =>
+    [
+        new("In", L["Inventory_DirectionIn"]),
+        new("Out", L["Inventory_DirectionOut"])
+    ];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ManageInventory))
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            return;
+        }
+
+        var result = await Inventory.GetAsync(ProductId);
+        _account = result.Data;
+        if (result.Status != ApiCallStatus.Success || _account is null || !_account.IsTracked)
+        {
+            Nav.NavigateTo($"/inventory/{ProductId:D}", replace: true);
+        }
+    }
+
+    private Task OnDirectionChanged(string value)
+    {
+        _direction = value;
+        return Task.CompletedTask;
+    }
+
+    private async Task SaveAsync()
+    {
+        _busy = true;
+        _errorTitle = null;
+        _errorMessage = null;
+
+        if (!decimal.TryParse(_quantityText, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var qty))
+        {
+            _errorTitle = L["Inventory_AdjustTitle"];
+            _errorMessage = L["Sales_Checkout_QuantityPrecision"];
+            _busy = false;
+            return;
+        }
+
+        var result = await Inventory.AdjustAsync(
+            ProductId,
+            new AdjustInventoryRequest(_direction, qty, _reason));
+        _busy = false;
+
+        if (result.Status == ApiCallStatus.Success)
+        {
+            Nav.NavigateTo($"/inventory/{ProductId:D}");
+            return;
+        }
+
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _errorTitle = described.Title;
+        _errorMessage = result.Error?.Detail ?? described.Message;
+    }
+
+    private void GoBack() => Nav.NavigateTo($"/inventory/{ProductId:D}");
+}

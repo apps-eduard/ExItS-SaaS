@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Api.Catalog;
 using ExItS.PinoyBusinessPOS.Api.Common;
 using ExItS.PinoyBusinessPOS.Api.Credit;
 using ExItS.PinoyBusinessPOS.Api.Customers;
+using ExItS.PinoyBusinessPOS.Api.Inventory;
 using ExItS.PinoyBusinessPOS.Api.Offline;
 using ExItS.PinoyBusinessPOS.Api.Payments;
 using ExItS.PinoyBusinessPOS.Api.Sales;
@@ -10,6 +11,7 @@ using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Application.Statements;
@@ -52,6 +54,10 @@ builder.Services.AddScoped<ReactivateCatalogProduct>();
 builder.Services.AddScoped<SaleQueryService>();
 builder.Services.AddScoped<CheckoutSale>();
 builder.Services.AddScoped<VoidSale>();
+builder.Services.AddScoped<InventoryQueryService>();
+builder.Services.AddScoped<EnableInventoryTracking>();
+builder.Services.AddScoped<DisableInventoryTracking>();
+builder.Services.AddScoped<AdjustInventoryStock>();
 
 var app = builder.Build();
 
@@ -66,9 +72,10 @@ app.MapRepaymentEndpoints();
 app.MapStatementEndpoints();
 app.MapCatalogEndpoints();
 app.MapSaleEndpoints();
+app.MapInventoryEndpoints();
 app.MapDevOfflineProbeEndpoints();
 
-// Phase marker: P8-WP02-simple-sales
+// Phase marker: P8-WP04-basic-inventory
 
 app.Run();
 

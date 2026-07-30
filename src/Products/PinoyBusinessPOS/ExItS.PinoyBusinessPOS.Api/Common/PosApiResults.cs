@@ -28,7 +28,9 @@ internal static class PosApiResults
             or ApplicationErrorCodes.RepaymentNotFound
             or ApplicationErrorCodes.CategoryNotFound
             or ApplicationErrorCodes.ProductNotFound
-            or ApplicationErrorCodes.SaleNotFound => StatusCodes.Status404NotFound,
+            or ApplicationErrorCodes.SaleNotFound
+            or ApplicationErrorCodes.InventoryAccountNotFound
+            or ApplicationErrorCodes.InventoryProductNotFound => StatusCodes.Status404NotFound,
 
         ApplicationErrorCodes.MobileConflict
             or ApplicationErrorCodes.ConcurrencyConflict
@@ -54,7 +56,15 @@ internal static class PosApiResults
             or ApplicationErrorCodes.SaleProductNotActive
             or DomainErrorCodes.InvalidSaleStatusTransition
             or ApplicationErrorCodes.CreditReversalRequiresSaleVoid
-            or ApplicationErrorCodes.SaleVoidBlockedBySubsequentUtangActivity => StatusCodes.Status409Conflict,
+            or ApplicationErrorCodes.SaleVoidBlockedBySubsequentUtangActivity
+            or ApplicationErrorCodes.InsufficientStock
+            or ApplicationErrorCodes.InventoryConcurrencyConflict
+            or DomainErrorCodes.InventoryInsufficientStock
+            or DomainErrorCodes.InventoryDisableRequiresZero
+            or DomainErrorCodes.InventoryOpeningDuplicate
+            or DomainErrorCodes.InventoryUomChangeBlocked
+            or DomainErrorCodes.InventoryAlreadyTracked
+            or DomainErrorCodes.InventoryNotTracked => StatusCodes.Status409Conflict,
 
         ApplicationErrorCodes.SaleProductNotFound => StatusCodes.Status400BadRequest,
 

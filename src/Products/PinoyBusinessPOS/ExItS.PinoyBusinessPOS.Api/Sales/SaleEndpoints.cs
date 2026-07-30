@@ -16,8 +16,8 @@ namespace ExItS.PinoyBusinessPOS.Api.Sales;
 /// cross-organization access returns 404 (fail closed).
 ///
 /// Totals are always computed server-side from the live catalog. Product-Based Utang checkout also
-/// creates a linked remarks credit. No inventory deduction, discount, tax, refund, split tender,
-/// or gateway surface exists here.
+/// creates a linked remarks credit. Tracked inventory is deducted atomically at checkout and
+/// restored on void. No discount, tax, refund, split tender, or gateway surface exists here.
 /// </summary>
 internal static class SaleEndpoints
 {

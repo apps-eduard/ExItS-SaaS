@@ -30,9 +30,22 @@ public sealed class ApiStatusLocalizer(
             ApiCallStatus.Validation => (errors["Validation_Title"], errors["Validation_Message"], diagnostic),
             ApiCallStatus.NotFound => (pos["NotFound_Title"], pos["NotFound_Message"], diagnostic),
             ApiCallStatus.Cancelled => (errors["Unexpected_Title"], design["Error_DefaultMessage"], diagnostic),
-            ApiCallStatus.Conflict => (errors["Unexpected_Title"], design["Error_DefaultMessage"], diagnostic),
+            ApiCallStatus.Conflict => DescribeConflict(error, diagnostic),
             _ => (errors["Unexpected_Title"], errors["Unexpected_Message"], diagnostic),
         };
+    }
+
+    private (string Title, string Message, string? DiagnosticCode) DescribeConflict(
+        ApiError? error,
+        string? diagnostic)
+    {
+        if (string.Equals(error?.ErrorCode, ApplicationErrorCodes.InsufficientStock, StringComparison.Ordinal)
+            || string.Equals(error?.ErrorCode, "pos.inventory.insufficient_stock", StringComparison.Ordinal))
+        {
+            return (pos["Inventory_InsufficientStockTitle"], pos["Inventory_InsufficientStockMessage"], diagnostic);
+        }
+
+        return (errors["Unexpected_Title"], design["Error_DefaultMessage"], diagnostic);
     }
 
     public string PreferenceSaveFailed => pos["Preference_SaveFailed"];
