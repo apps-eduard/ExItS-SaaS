@@ -1,0 +1,97 @@
+﻿@namespace ExItS.DesignSystem.Components.Data
+@typeparam TItem
+@using ExItS.DesignSystem.Components.Feedback
+@using ExItS.DesignSystem.Components.Overlay
+@using ExItS.DesignSystem.Components.Primitives
+@inject IStringLocalizer<DesignSystemResources> L
+
+<div class="exds-responsive-data" @attributes="AdditionalAttributes">
+    @if (IsLoading)
+    {
+        <div class="exds-responsive-data__state" role="status">
+            <Spinner Size="SpinnerSize.Lg" />
+            <span>@(LoadingLabel ?? L["Loading_Label"])</span>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(ErrorTitle) || !string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="exds-responsive-data__state">
+            <ErrorState Title="@ErrorTitle" Message="@ErrorMessage" RetryLabel="@RetryLabel" OnRetry="OnRetry" />
+        </div>
+    }
+    else if (Items is null || !Items.Any())
+    {
+        <div class="exds-responsive-data__state">
+            <EmptyState Title="@(EmptyTitle ?? L["Empty_NoRecords"])" Message="@EmptyMessage" />
+        </div>
+    }
+    else
+    {
+        <div class="exds-data-table-wrap" role="region" aria-label="@(AriaLabel ?? L["Data_TableLabel"])">
+            <table class="exds-data-table">
+                <thead>
+                    <tr>
+                        @foreach (var column in ColumnList)
+                        {
+                            <th scope="col" style="@(string.IsNullOrEmpty(column.Width) ? null : $"width:{column.Width}")">@column.Title</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Items)
+                    {
+                        <tr @key="item">
+                            @foreach (var column in ColumnList)
+                            {
+                                <td data-label="@column.Title">
+                                    @if (CellTemplate is not null)
+                                    {
+                                        @CellTemplate((item, column))
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="exds-data-cards" aria-label="@(AriaLabel ?? L["Data_ListLabel"])">
+            @foreach (var item in Items)
+            {
+                <MobileRowCard @key="item">
+                    @foreach (var column in ColumnList)
+                    {
+                        <div class="exds-mobile-row__field @(column.Primary ? "exds-mobile-row__field--primary" : null)">
+                            <span class="exds-mobile-row__label">@column.Title</span>
+                            <span class="exds-mobile-row__value">
+                                @if (CellTemplate is not null)
+                                {
+                                    @CellTemplate((item, column))
+                                }
+                            </span>
+                        </div>
+                    }
+                </MobileRowCard>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IEnumerable<TItem>? Items { get; set; }
+    [Parameter] public IReadOnlyList<DataColumnDefinition>? Columns { get; set; }
+    [Parameter] public RenderFragment<(TItem Item, DataColumnDefinition Column)>? CellTemplate { get; set; }
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public string? LoadingLabel { get; set; }
+    [Parameter] public string? EmptyTitle { get; set; }
+    [Parameter] public string? EmptyMessage { get; set; }
+    [Parameter] public string? ErrorTitle { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public string? RetryLabel { get; set; }
+    [Parameter] public EventCallback OnRetry { get; set; }
+    [Parameter] public string? AriaLabel { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private IReadOnlyList<DataColumnDefinition> ColumnList => Columns ?? Array.Empty<DataColumnDefinition>();
+}

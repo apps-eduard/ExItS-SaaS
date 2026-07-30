@@ -1,0 +1,15 @@
+﻿@namespace ExItS.DesignSystem.Components.Feedback
+
+<div class="exds-inline-message exds-inline-message--@Tone.ToString().ToLowerInvariant()" role="status">
+    @if (!string.IsNullOrEmpty(Title))
+    {
+        <strong class="exds-inline-message__title">@Title</strong>
+    }
+    <span class="exds-inline-message__text">@ChildContent</span>
+</div>
+
+@code {
+    [Parameter] public InlineMessageTone Tone { get; set; } = InlineMessageTone.Info;
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

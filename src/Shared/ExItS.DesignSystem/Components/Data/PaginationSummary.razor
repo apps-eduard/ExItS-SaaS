@@ -1,0 +1,14 @@
+﻿@namespace ExItS.DesignSystem.Components.Data
+@inject IStringLocalizer<DesignSystemResources> L
+
+<p class="exds-pagination-summary">
+    @string.Format(L["Data_PaginationSummary"].Value, Page, TotalPages, TotalCount)
+</p>
+
+@code {
+    [Parameter] public int Page { get; set; } = 1;
+    [Parameter] public int PageSize { get; set; } = 10;
+    [Parameter] public int TotalCount { get; set; }
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(TotalCount / (double)Math.Max(1, PageSize)));
+}

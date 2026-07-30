@@ -1,0 +1,8 @@
+@namespace ExItS.DesignSystem.Components.Forms
+
+<span class="exds-field__error" role="alert" id="@(string.IsNullOrEmpty(ForId) ? null : $"{ForId}-error")">@Text</span>
+
+@code {
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public string? ForId { get; set; }
+}

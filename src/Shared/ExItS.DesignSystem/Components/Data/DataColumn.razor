@@ -1,0 +1,11 @@
+﻿@namespace ExItS.DesignSystem.Components.Data
+
+@* Declarative column metadata helper for call sites that prefer markup over lists. *@
+@code {
+    [Parameter] public string Key { get; set; } = string.Empty;
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public bool Primary { get; set; }
+    [Parameter] public string? Width { get; set; }
+
+    public DataColumnDefinition ToDefinition() => new(Key, Title, Primary, Width);
+}

@@ -1,0 +1,13 @@
+﻿@namespace ExItS.DesignSystem.Components.Forms
+@using ExItS.DesignSystem.Components.Layout
+
+<div class="exds-form-actions" @attributes="AdditionalAttributes">
+    <Stack Direction="StackDirection.Row" Justify="StackJustify.End" Align="StackAlign.Center" Wrap="true" Gap="2">
+        @ChildContent
+    </Stack>
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+}

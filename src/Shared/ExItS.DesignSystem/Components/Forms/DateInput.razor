@@ -1,0 +1,47 @@
+﻿@namespace ExItS.DesignSystem.Components.Forms
+@using ExItS.DesignSystem.Components.Primitives
+
+<div class="exds-field @(IsInvalid ? "exds-field--invalid" : null)">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <Label For="@_id" Required="@Required">@Label</Label>
+    }
+    <input id="@_id"
+           type="date"
+           class="exds-field__control"
+           disabled="@Disabled"
+           value="@Format(Value)"
+           aria-invalid="@(IsInvalid ? "true" : "false")"
+           @onchange="HandleChange"
+           @attributes="AdditionalAttributes" />
+    @if (IsInvalid && !string.IsNullOrEmpty(ErrorText))
+    {
+        <span class="exds-field__error" role="alert">@ErrorText</span>
+    }
+    else if (!string.IsNullOrEmpty(Hint))
+    {
+        <span class="exds-field__hint">@Hint</span>
+    }
+</div>
+
+@code {
+    private readonly string _id = $"exds-date-{Guid.NewGuid():N}";
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public DateOnly? Value { get; set; }
+    [Parameter] public EventCallback<DateOnly?> ValueChanged { get; set; }
+    [Parameter] public string? Hint { get; set; }
+    [Parameter] public bool IsInvalid { get; set; }
+    [Parameter] public string? ErrorText { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private static string Format(DateOnly? value) => value?.ToString("yyyy-MM-dd") ?? string.Empty;
+
+    private async Task HandleChange(ChangeEventArgs args)
+    {
+        var text = args.Value?.ToString();
+        Value = DateOnly.TryParse(text, out var parsed) ? parsed : null;
+        if (ValueChanged.HasDelegate) await ValueChanged.InvokeAsync(Value);
+    }
+}

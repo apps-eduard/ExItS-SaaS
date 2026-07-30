@@ -1,0 +1,25 @@
+﻿@namespace ExItS.DesignSystem.Components.Layout
+
+<header class="exds-section-header" @attributes="AdditionalAttributes">
+    <div class="exds-section-header__text">
+        @if (!string.IsNullOrEmpty(Title))
+        {
+            <h2 class="exds-section-header__title">@Title</h2>
+        }
+        @if (!string.IsNullOrEmpty(Subtitle))
+        {
+            <p class="exds-section-header__subtitle">@Subtitle</p>
+        }
+    </div>
+    @if (Actions is not null)
+    {
+        <div class="exds-section-header__actions">@Actions</div>
+    }
+</header>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+}

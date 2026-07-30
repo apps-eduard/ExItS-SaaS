@@ -22,7 +22,7 @@
 
 **Complete with documented risks (Phase 2 / P2-WP06).** Root Platform foundation, identity/org, commercial domain, HC contract boundaries, and migration dry-run validation delivered. HealthCare remains frozen. Auth, persistence, real HC integration/cutover, Admin UI, and POS were **not** delivered. See [phase-02-extraction-closeout.md](reports/phase-02-extraction-closeout.md).
 
-**Next:** Phase 5 is **in progress**. P5-WP03 complete. Next authorized work: **P5-WP04 — Reusable MVP Components**.
+**Next:** Phase 5 is **in progress**. P5-WP04 complete. Next authorized work: **P5-WP05 — Authentication, Onboarding and Closeout**.
 
 ## R2 — Platform portfolio administration
 
@@ -30,7 +30,7 @@
 
 ## R2.5 — PinoyBusinessPOS MAUI foundation (Phase 5)
 
-**In progress (P5-WP03 complete).** EN/`fil-PH` localization foundation, culture formatting, and safe API error mapping delivered on the MAUI shell. Auth, sales, inventory, offline sync, and reusable MVP components remain open. See [P5-WP03 report](reports/P5-WP03-english-and-filipino-localization.md).
+**In progress (P5-WP04 complete).** Reusable DesignSystem MVP components, responsive data display, money display, and Dev/Testing showcase delivered. Auth, sales, inventory, and offline sync remain open. See [P5-WP04 report](reports/P5-WP04-reusable-mvp-components.md).
 
 ## R3 — PinoyBusinessPOS Utang pilot
 

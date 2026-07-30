@@ -154,4 +154,42 @@
 
   <data name="Format_UtcSuffix" xml:space="preserve"><value>UTC</value></data>
   <data name="Format_LocalSuffix" xml:space="preserve"><value>Lokal</value></data>
+
+  <data name="DevShowcase_Title" xml:space="preserve"><value>Showcase ng mga component</value></data>
+  <data name="DevShowcase_Subtitle" xml:space="preserve"><value>Development at Testing lang — visual QA para sa shared UI components.</value></data>
+  <data name="DevShowcase_UnavailableTitle" xml:space="preserve"><value>Hindi available ang showcase</value></data>
+  <data name="DevShowcase_UnavailableMessage" xml:space="preserve"><value>Available lang ang component showcase sa Development o Testing builds.</value></data>
+  <data name="DevShowcase_SampleNoticeTitle" xml:space="preserve"><value>Sample values lang</value></data>
+  <data name="DevShowcase_SampleNoticeMessage" xml:space="preserve"><value>Ang mga label at amount sa ibaba ay neutral samples para sa visual QA. Hindi ito live business records.</value></data>
+  <data name="DevShowcase_FormsTitle" xml:space="preserve"><value>Mga form at validation</value></data>
+  <data name="DevShowcase_FormsSubtitle" xml:space="preserve"><value>Mga label, required indicators, numeric at currency inputs.</value></data>
+  <data name="DevShowcase_SampleFormTitle" xml:space="preserve"><value>Sample form</value></data>
+  <data name="DevShowcase_NameLabel" xml:space="preserve"><value>Pangalan</value></data>
+  <data name="DevShowcase_NameRequired" xml:space="preserve"><value>Kailangan ang pangalan.</value></data>
+  <data name="DevShowcase_QtyLabel" xml:space="preserve"><value>Dami</value></data>
+  <data name="DevShowcase_AmountLabel" xml:space="preserve"><value>Halaga</value></data>
+  <data name="DevShowcase_DateLabel" xml:space="preserve"><value>Petsa</value></data>
+  <data name="DevShowcase_TimeLabel" xml:space="preserve"><value>Oras</value></data>
+  <data name="DevShowcase_NotesLabel" xml:space="preserve"><value>Mga tala</value></data>
+  <data name="DevShowcase_AcceptLabel" xml:space="preserve"><value>Tinatanggap ko ang sample terms</value></data>
+  <data name="DevShowcase_OptionLabel" xml:space="preserve"><value>Opsyon</value></data>
+  <data name="DevShowcase_OptionA" xml:space="preserve"><value>Opsyon A</value></data>
+  <data name="DevShowcase_OptionB" xml:space="preserve"><value>Opsyon B</value></data>
+  <data name="DevShowcase_FeedbackTitle" xml:space="preserve"><value>Feedback at pera</value></data>
+  <data name="DevShowcase_InlineWarning" xml:space="preserve"><value>Inline warning para sa visual QA.</value></data>
+  <data name="DevShowcase_ProgressLabel" xml:space="preserve"><value>Sample progress</value></data>
+  <data name="DevShowcase_OpenConfirm" xml:space="preserve"><value>Buksan ang confirmation</value></data>
+  <data name="DevShowcase_ConfirmTitle" xml:space="preserve"><value>Kumpirmahin ang sample action</value></data>
+  <data name="DevShowcase_ConfirmMessage" xml:space="preserve"><value>Hindi ito nagsasagawa ng business operation.</value></data>
+  <data name="DevShowcase_DataTitle" xml:space="preserve"><value>Responsive data</value></data>
+  <data name="DevShowcase_DataSubtitle" xml:space="preserve"><value>Table sa malapad na layout; mobile row cards sa makitid na telepono.</value></data>
+  <data name="DevShowcase_FiltersLabel" xml:space="preserve"><value>Mga sample filter</value></data>
+  <data name="DevShowcase_SortName" xml:space="preserve"><value>Ayusin ayon sa pangalan</value></data>
+  <data name="DevShowcase_SortAmount" xml:space="preserve"><value>Ayusin ayon sa halaga</value></data>
+  <data name="DevShowcase_ColName" xml:space="preserve"><value>Pangalan</value></data>
+  <data name="DevShowcase_ColStatus" xml:space="preserve"><value>Status</value></data>
+  <data name="DevShowcase_ColAmount" xml:space="preserve"><value>Halaga</value></data>
+  <data name="DevShowcase_EmptyHint" xml:space="preserve"><value>Walang sample row na tumutugma sa kasalukuyang search.</value></data>
+  <data name="DevShowcase_AccordionTitle" xml:space="preserve"><value>Sample accordion</value></data>
+  <data name="DevShowcase_AccordionBody" xml:space="preserve"><value>Maaaring ilagay ang secondary detail sa accordion nang hindi ginugulo ang pangunahing view.</value></data>
 </root>

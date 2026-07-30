@@ -1,6 +1,6 @@
 # Phase 5 — PinoyBusinessPOS MAUI Foundation
 
-[Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Previous](phase-04-platform-admin.md) | [Next](phase-06-utang-mvp.md) | [P5-WP03 report](../reports/P5-WP03-english-and-filipino-localization.md)
+[Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Previous](phase-04-platform-admin.md) | [Next](phase-06-utang-mvp.md) | [P5-WP04 report](../reports/P5-WP04-reusable-mvp-components.md)
 
 ## Objective
 
@@ -8,7 +8,7 @@ Create the PinoyBusinessPOS MAUI foundation with compact native UI, localization
 
 ## Status
 
-**In Progress** — P5-WP01–P5-WP03 complete. Do **not** begin P5-WP04 until explicitly authorized.
+**In Progress** — P5-WP01–P5-WP04 complete. Do **not** begin P5-WP05 until explicitly authorized.
 
 ## Work packages
 
@@ -28,38 +28,17 @@ Status: **Complete**
 
 Report: [P5-WP01-maui-solution-and-api-client.md](../reports/P5-WP01-maui-solution-and-api-client.md)
 
-#### Definition of Done
-
-- [x] Approved outcomes complete.
-- [x] Applicable tests pass with exact evidence.
-- [x] Dashboard and phase page updated.
-- [x] Completion report created.
-- [x] Focused commit created and hash recorded (`3015925`).
-- [x] Working tree clean (after push).
-
 ### P5-WP02 — Native UI Tokens, Themes and Compact Layout
 
 Status: **Complete**
 
 #### Outcomes
 
-- Standardized semantic `--exits-*` tokens (secondary, accent, info, disabled, z-index, easing, breakpoints)
-- Compact (default) and Comfortable density with persistence and pre-paint boot
-- Polished shell (top bar, bottom nav, phone/tablet/landscape), Home/Settings density selector
-- Touch targets remain ≥44px in compact; reduced-motion honored
+- Semantic `--exits-*` token expansion, Compact (default) / Comfortable density, shell polish
+- Phone/tablet CSS, touch-target minima, motion tokens
 - Phase marker `P5-WP02-native-ui-tokens-themes-compact-layout`
-- Release Android build succeeded; interactive emulator validation unavailable (documented)
 
 Report: [P5-WP02-native-ui-tokens-themes-and-compact-layout.md](../reports/P5-WP02-native-ui-tokens-themes-and-compact-layout.md)
-
-#### Definition of Done
-
-- [x] Approved outcomes complete.
-- [x] Applicable tests pass with exact evidence.
-- [x] Dashboard and phase page updated.
-- [x] Completion report created.
-- [x] Focused commit created and hash recorded (`3d3cba8`).
-- [x] Working tree clean (after push).
 
 ### P5-WP03 — English and Filipino Localization
 
@@ -67,14 +46,22 @@ Status: **Complete**
 
 #### Outcomes
 
-- Complete EN/`fil-PH` coverage for DesignSystem (`DesignSystemResources`, `ValidationResources`, `ErrorResources`) and `PosResources`
-- Culture-aware `CultureFormatting`; `ApiStatusLocalizer` for safe API error mapping
-- Shared component defaults localized; NotFound and preference-save failures localized
-- Resource-completeness + formatting tests; terminology guide expanded; UI label **Tagalog** for `fil-PH`
+- EN/`fil-PH` DesignSystem + Pos resources, Tagalog UI label, CultureFormatting, ApiStatusLocalizer
 - Phase marker `P5-WP03-english-filipino-localization`
-- Release Android build succeeded; interactive emulator validation unavailable (R-109)
 
 Report: [P5-WP03-english-and-filipino-localization.md](../reports/P5-WP03-english-and-filipino-localization.md)
+
+### P5-WP04 — Reusable MVP Components
+
+Status: **Complete**
+
+#### Outcomes
+
+- Forms, validation, confirmation, feedback, responsive data list/table, pagination, money display
+- Dev/Testing-only `/dev/components` showcase (neutral samples; not in production nav)
+- Components use existing theme, density, and localization foundations; no POS business logic
+- Phase marker `P5-WP04-reusable-mvp-components`
+- Tests **474** passed; Release Android APK succeeded; no interactive emulator (R-109)
 
 #### Definition of Done
 
@@ -82,27 +69,10 @@ Report: [P5-WP03-english-and-filipino-localization.md](../reports/P5-WP03-englis
 - [x] Applicable tests pass with exact evidence.
 - [x] Dashboard and phase page updated.
 - [x] Completion report created.
-- [x] Focused commit created and hash recorded (`1dea793`).
-- [x] Working tree clean (after push).
+- [ ] Focused commit created and hash recorded.
+- [ ] Working tree clean (after push).
 
-### P5-WP04 — Reusable MVP Components
-
-Status: Not Started
-
-#### Required outcomes
-
-- Build only required native components: fields, select, date wrapper, table, dialog and feedback.
-- Review HealthCare components before creating each abstraction.
-- Keep Ant Design out of POS UI projects.
-
-#### Definition of Done
-
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [x] Focused commit created and hash recorded (`3d3cba8`).
-- [x] Working tree clean (after push).
+Report: [P5-WP04-reusable-mvp-components.md](../reports/P5-WP04-reusable-mvp-components.md)
 
 ### P5-WP05 — Authentication, Onboarding and Closeout
 
@@ -120,8 +90,8 @@ Status: Not Started
 - [ ] Applicable tests pass with exact evidence.
 - [ ] Dashboard and phase page updated.
 - [ ] Completion report created.
-- [x] Focused commit created and hash recorded (`3d3cba8`).
-- [x] Working tree clean (after push).
+- [ ] Focused commit created and hash recorded.
+- [ ] Working tree clean (after push).
 
 ## Phase exit criteria
 

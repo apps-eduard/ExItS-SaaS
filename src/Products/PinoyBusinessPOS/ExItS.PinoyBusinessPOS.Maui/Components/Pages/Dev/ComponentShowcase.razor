@@ -1,0 +1,234 @@
+@page "/dev/components"
+@inject IAppInfoService AppInfo
+@inject IStringLocalizer<PosResources> L
+@inject NavigationManager Nav
+
+@if (!IsDevOrTesting)
+{
+    <Page>
+        <ErrorState Title="@L["DevShowcase_UnavailableTitle"]" Message="@L["DevShowcase_UnavailableMessage"]" RetryLabel="@L["Deferred_BackToHome"]" OnRetry="GoHome" />
+    </Page>
+}
+else
+{
+    <Page>
+        <PageHeader Title="@L["DevShowcase_Title"]" Subtitle="@L["DevShowcase_Subtitle"]" />
+        <Alert Tone="AlertTone.Info" Title="@L["DevShowcase_SampleNoticeTitle"]" Message="@L["DevShowcase_SampleNoticeMessage"]" />
+
+        <SectionHeader Title="@L["DevShowcase_FormsTitle"]" Subtitle="@L["DevShowcase_FormsSubtitle"]" />
+        <Card>
+            <FormValidationSummary Messages="_validationMessages" />
+            <FormGroup Title="@L["DevShowcase_SampleFormTitle"]">
+                <TextInput Label="@L["DevShowcase_NameLabel"]" @bind-Value="_name" Required="true" IsInvalid="@_nameInvalid" ErrorText="@(_nameInvalid ? L["DevShowcase_NameRequired"].Value : null)" />
+                <NumberInput Label="@L["DevShowcase_QtyLabel"]" @bind-Value="_qty" DecimalPlaces="0" />
+                <CurrencyInput Label="@L["DevShowcase_AmountLabel"]" @bind-Value="_amount" CurrencyCode="PHP" />
+                <DateInput Label="@L["DevShowcase_DateLabel"]" @bind-Value="_date" />
+                <TimeInput Label="@L["DevShowcase_TimeLabel"]" @bind-Value="_time" />
+                <TextArea Label="@L["DevShowcase_NotesLabel"]" @bind-Value="_notes" Rows="3" />
+                <Checkbox @bind-Value="_accepted">@L["DevShowcase_AcceptLabel"]</Checkbox>
+                <RadioGroup Label="@L["DevShowcase_OptionLabel"]" @bind-Value="_option" Options="RadioOptions" />
+            </FormGroup>
+            <FormActions>
+                <Button Variant="ButtonVariant.Ghost" OnClick="ResetForm">@L["Common_Cancel"]</Button>
+                <Button OnClick="ValidateForm">@L["Common_Save"]</Button>
+            </FormActions>
+        </Card>
+
+        <SectionHeader Title="@L["DevShowcase_FeedbackTitle"]" />
+        <Stack Gap="3">
+            <InlineMessage Tone="InlineMessageTone.Success">@L["Common_Success"]</InlineMessage>
+            <InlineMessage Tone="InlineMessageTone.Warning" Title="@L["Common_Warning"]">@L["DevShowcase_InlineWarning"]</InlineMessage>
+            <Progress Value="64" Label="@L["DevShowcase_ProgressLabel"]" />
+            <ActionBar>
+                <Start><Button Variant="ButtonVariant.Secondary" OnClick="OpenConfirm">@L["DevShowcase_OpenConfirm"]</Button></Start>
+                <End><MoneyDisplay Amount="1250.50m" CurrencyCode="PHP" /></End>
+            </ActionBar>
+            <Stack Direction="StackDirection.Row" Gap="3" Wrap="true">
+                <MoneyDisplay Amount="0m" CurrencyCode="PHP" />
+                <MoneyDisplay Amount="-42.10m" CurrencyCode="PHP" />
+                <MoneyDisplay Unavailable="true" />
+            </Stack>
+        </Stack>
+
+        <ConfirmDialog @bind-Visible="_confirmOpen"
+                       Title="@L["DevShowcase_ConfirmTitle"]"
+                       Message="@L["DevShowcase_ConfirmMessage"]"
+                       ShowReason="true"
+                       @bind-Reason="_confirmReason"
+                       Danger="true"
+                       IsLoading="_confirmLoading"
+                       OnConfirm="ConfirmAsync"
+                       OnCancel="CloseConfirm" />
+
+        <SectionHeader Title="@L["DevShowcase_DataTitle"]" Subtitle="@L["DevShowcase_DataSubtitle"]" />
+        <SearchToolbar SearchText="_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Common_Search"]" />
+        <FilterBar AriaLabel="@L["DevShowcase_FiltersLabel"]">
+            <SortControl Value="_sort" ValueChanged="OnSortChanged" Options="SortOptions" />
+        </FilterBar>
+        <ResponsiveDataList TItem="SampleRow"
+                            Items="PagedRows"
+                            Columns="Columns"
+                            CellTemplate="CellTemplate"
+                            EmptyMessage="@L["DevShowcase_EmptyHint"]" />
+        <Pagination Page="_page" PageSize="5" TotalCount="FilteredCount" PageChanged="OnPageChanged" />
+
+        <Accordion Title="@L["DevShowcase_AccordionTitle"]">
+            <p>@L["DevShowcase_AccordionBody"]</p>
+        </Accordion>
+    </Page>
+}
+
+@code {
+    private bool IsDevOrTesting =>
+        string.Equals(AppInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(AppInfo.EnvironmentName, "Testing", StringComparison.OrdinalIgnoreCase);
+
+    private string? _name;
+    private bool _nameInvalid;
+    private decimal? _qty = 2;
+    private decimal? _amount = 199.99m;
+    private DateOnly? _date = DateOnly.FromDateTime(DateTime.UtcNow);
+    private TimeOnly? _time = new(9, 30);
+    private string? _notes;
+    private bool _accepted;
+    private string? _option = "a";
+    private List<string> _validationMessages = [];
+    private bool _confirmOpen;
+    private bool _confirmLoading;
+    private string? _confirmReason;
+    private string? _search;
+    private string? _sort = "name";
+    private int _page = 1;
+
+    private IReadOnlyList<RadioOption> RadioOptions =>
+    [
+        new("a", L["DevShowcase_OptionA"]),
+        new("b", L["DevShowcase_OptionB"]),
+    ];
+
+    private IReadOnlyList<SelectOption> SortOptions =>
+    [
+        new("name", L["DevShowcase_SortName"]),
+        new("amount", L["DevShowcase_SortAmount"]),
+    ];
+
+    private IReadOnlyList<DataColumnDefinition> Columns =>
+    [
+        new("name", L["DevShowcase_ColName"], Primary: true),
+        new("status", L["DevShowcase_ColStatus"]),
+        new("amount", L["DevShowcase_ColAmount"]),
+    ];
+
+    private readonly List<SampleRow> _rows =
+    [
+        new("Sample Alpha", "Active", 120.00m),
+        new("Sample Bravo", "Pending", 45.50m),
+        new("Sample Charlie", "Active", 0m),
+        new("Sample Delta", "Inactive", -10.25m),
+        new("Sample Echo", "Active", 980.00m),
+        new("Sample Foxtrot", "Pending", 15.00m),
+    ];
+
+    private List<SampleRow> FilteredRows
+    {
+        get
+        {
+            IEnumerable<SampleRow> query = _rows;
+            if (!string.IsNullOrWhiteSpace(_search))
+            {
+                query = query.Where(r => r.Name.Contains(_search, StringComparison.OrdinalIgnoreCase));
+            }
+
+            query = _sort == "amount"
+                ? query.OrderBy(r => r.Amount)
+                : query.OrderBy(r => r.Name);
+
+            return query.ToList();
+        }
+    }
+
+    private int FilteredCount => FilteredRows.Count;
+
+    private List<SampleRow> PagedRows =>
+        FilteredRows.Skip((_page - 1) * 5).Take(5).ToList();
+
+    private RenderFragment<(SampleRow Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
+    {
+        if (context.Column.Key == "name")
+        {
+            builder.AddContent(0, context.Item.Name);
+            return;
+        }
+
+        if (context.Column.Key == "status")
+        {
+            var tone = context.Item.Status == "Active" ? BadgeTone.Success : BadgeTone.Warning;
+            builder.OpenComponent<StatusCell>(1);
+            builder.AddAttribute(2, "Tone", tone);
+            builder.AddAttribute(3, "ChildContent", (RenderFragment)(b => b.AddContent(0, context.Item.Status)));
+            builder.CloseComponent();
+            return;
+        }
+
+        if (context.Column.Key == "amount")
+        {
+            builder.OpenComponent<MoneyDisplay>(4);
+            builder.AddAttribute(5, "Amount", context.Item.Amount);
+            builder.AddAttribute(6, "CurrencyCode", "PHP");
+            builder.CloseComponent();
+        }
+    };
+
+    private void ValidateForm()
+    {
+        _validationMessages = [];
+        _nameInvalid = string.IsNullOrWhiteSpace(_name);
+        if (_nameInvalid)
+        {
+            _validationMessages.Add(L["DevShowcase_NameRequired"]);
+        }
+    }
+
+    private void ResetForm()
+    {
+        _name = null;
+        _nameInvalid = false;
+        _validationMessages = [];
+        _notes = null;
+        _accepted = false;
+    }
+
+    private void OpenConfirm() => _confirmOpen = true;
+
+    private void CloseConfirm()
+    {
+        if (_confirmLoading) return;
+        _confirmOpen = false;
+    }
+
+    private async Task ConfirmAsync()
+    {
+        _confirmLoading = true;
+        await Task.Delay(400);
+        _confirmLoading = false;
+        _confirmOpen = false;
+    }
+
+    private void OnSearchChanged(string? value)
+    {
+        _search = value;
+        _page = 1;
+    }
+
+    private void OnSortChanged(string? value)
+    {
+        _sort = value;
+        _page = 1;
+    }
+
+    private void OnPageChanged(int page) => _page = page;
+
+    private void GoHome() => Nav.NavigateTo("/home");
+
+    private sealed record SampleRow(string Name, string Status, decimal Amount);
+}

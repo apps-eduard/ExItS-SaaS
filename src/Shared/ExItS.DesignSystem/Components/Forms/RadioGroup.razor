@@ -1,0 +1,49 @@
+﻿@namespace ExItS.DesignSystem.Components.Forms
+@using ExItS.DesignSystem.Components.Primitives
+
+<div class="exds-field @(IsInvalid ? "exds-field--invalid" : null)" role="radiogroup" aria-labelledby="@_labelId">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <span class="exds-label @(Required ? "exds-label--required" : null)" id="@_labelId">@Label</span>
+    }
+    <div class="exds-radio-group">
+        @foreach (var option in Options ?? Array.Empty<RadioOption>())
+        {
+            var optionId = $"{_id}-{option.Value}";
+            <label class="exds-radio @(option.Disabled || Disabled ? "exds-radio--disabled" : null)" for="@optionId">
+                <input type="radio"
+                       id="@optionId"
+                       name="@_id"
+                       value="@option.Value"
+                       checked="@(string.Equals(Value, option.Value, StringComparison.Ordinal))"
+                       disabled="@(Disabled || option.Disabled)"
+                       @onchange="() => SelectAsync(option.Value)" />
+                <span class="exds-radio__mark" aria-hidden="true"></span>
+                <span class="exds-radio__label">@option.Text</span>
+            </label>
+        }
+    </div>
+    @if (IsInvalid && !string.IsNullOrEmpty(ErrorText))
+    {
+        <span class="exds-field__error" role="alert">@ErrorText</span>
+    }
+</div>
+
+@code {
+    private readonly string _id = $"exds-rg-{Guid.NewGuid():N}";
+    private string _labelId => $"{_id}-label";
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public IReadOnlyList<RadioOption>? Options { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public bool IsInvalid { get; set; }
+    [Parameter] public string? ErrorText { get; set; }
+
+    private async Task SelectAsync(string value)
+    {
+        Value = value;
+        if (ValueChanged.HasDelegate) await ValueChanged.InvokeAsync(Value);
+    }
+}

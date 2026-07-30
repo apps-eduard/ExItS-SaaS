@@ -1,0 +1,10 @@
+﻿@namespace ExItS.DesignSystem.Components.Data
+
+<article class="exds-mobile-row" @attributes="AdditionalAttributes">
+    @ChildContent
+</article>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+}

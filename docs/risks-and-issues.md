@@ -120,10 +120,13 @@
 | R-114 | Mixed-language screens or raw resource keys in UI | Medium | No hard-coded shell English sentences; localizer-only defaults; NotFound localized | Open — introduced P5-WP03 |
 | R-115 | Culture formatting mistakes (UTC/local, currency display) | Medium | Central `CultureFormatting`; UTC label; display-only PHP formatting; unit tests | Open — introduced P5-WP03 |
 | R-116 | DesignSystem coupled to POS-specific resources | Medium | POS terms forbidden in DesignSystem resource tests; product copy stays in PosResources | Open — introduced P5-WP03 |
+| R-117 | Responsive data table/card pattern regressions on phone/tablet | Medium | Single `ResponsiveDataList` pattern; CSS switch at 768px; DesignSystem tests for markers | Open — introduced P5-WP04 |
+| R-118 | MoneyDisplay misuse for pricing/FX/business calculations | Medium | Display-only decimal+currency code; no conversion; architecture/docs forbid business math | Open — introduced P5-WP04 |
+| R-119 | Dev component showcase reachable outside Development/Testing | Medium | Gated by `IAppInfoService.EnvironmentName`; Release=Production unavailable; not in bottom nav | Open — introduced P5-WP04 |
 
-## Phase 5 note (P5-WP03)
+## Phase 5 note (P5-WP04)
 
-Phase 5 is **In Progress**. P5-WP03 delivered complete EN/`fil-PH` resource coverage for the MAUI foundation and shared DesignSystem, culture-aware formatting, and safe API error localization. **Not delivered:** authentication, sales/inventory, offline sync, interactive emulator validation (R-109), reusable MVP component catalog (P5-WP04). Production Platform auth blockers from Phase 4 remain OPEN. Next: **P5-WP04 — Reusable MVP Components** when authorized.
+Phase 5 is **In Progress**. P5-WP04 delivered reusable DesignSystem MVP components (forms, validation, confirmation, feedback, responsive data, money display) and a Development/Testing-only showcase. **Not delivered:** authentication, sales/inventory, offline sync, interactive emulator validation (R-109). Production Platform auth blockers from Phase 4 remain OPEN. Next: **P5-WP05 — Authentication, Onboarding and Closeout** when authorized.
 
 ## Phase 4 closeout note (P4-WP04)
 

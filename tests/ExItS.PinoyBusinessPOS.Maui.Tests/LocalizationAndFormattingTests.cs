@@ -12,7 +12,8 @@ public sealed class LocalizationAndFormattingTests
         "Settings_ThemeLabel", "Settings_DensityLabel", "Settings_LanguageLabel",
         "Settings_Language_English", "Settings_Language_Filipino",
         "Deferred_Title", "NotFound_Title", "Preference_SaveFailed",
-        "Common_Retry", "Common_Connected", "Api_TestConnection"
+        "Common_Retry", "Common_Connected", "Api_TestConnection",
+        "DevShowcase_Title", "DevShowcase_UnavailableTitle"
     ];
 
     [Fact]
@@ -41,7 +42,7 @@ public sealed class LocalizationAndFormattingTests
     {
         var pages = Path.Combine(FindRepoRoot(), "src", "Products", "PinoyBusinessPOS",
             "ExItS.PinoyBusinessPOS.Maui", "Components", "Pages");
-        foreach (var file in Directory.EnumerateFiles(pages, "*.razor"))
+        foreach (var file in Directory.EnumerateFiles(pages, "*.razor", SearchOption.AllDirectories))
         {
             var text = File.ReadAllText(file);
             Assert.DoesNotContain("Sorry, the content you are looking for", text, StringComparison.Ordinal);

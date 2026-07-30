@@ -1,0 +1,23 @@
+﻿@namespace ExItS.DesignSystem.Components.Forms
+
+<div class="exds-form-group" role="group" aria-labelledby="@(_legendId)" @attributes="AdditionalAttributes">
+    @if (!string.IsNullOrEmpty(Title))
+    {
+        <div class="exds-form-group__title" id="@_legendId">@Title</div>
+    }
+    @if (!string.IsNullOrEmpty(Description))
+    {
+        <p class="exds-form-group__description">@Description</p>
+    }
+    <div class="exds-form-group__body">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    private readonly string _legendId = $"exds-fg-{Guid.NewGuid():N}";
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+}

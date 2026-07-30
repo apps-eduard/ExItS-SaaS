@@ -13,9 +13,9 @@ namespace ExItS.PinoyBusinessPOS.Maui;
 public static class MauiProgram
 {
     /// <summary>
-    /// Development-stage notice (P5-WP02): this app ships no authentication, no sales/inventory
+    /// Development-stage notice (P5-WP04): this app ships no authentication, no sales/inventory
     /// data entry, and no offline synchronization. It establishes the Android app shell,
-    /// design tokens, density, connectivity/health surfacing, theme, and language foundation only.
+    /// design tokens, density, localization, reusable MVP components, and a Dev-only showcase.
     /// </summary>
     public static MauiApp CreateMauiApp()
     {

@@ -1,0 +1,25 @@
+﻿@namespace ExItS.DesignSystem.Components.Data
+@using ExItS.DesignSystem.Components.Primitives
+@inject IStringLocalizer<DesignSystemResources> L
+
+<div class="exds-sort-control">
+    <Select Label="@(Label ?? L["Data_SortLabel"])"
+            Value="@Value"
+            ValueChanged="OnChanged"
+            Options="Options"
+            Disabled="@Disabled" />
+</div>
+
+@code {
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public IReadOnlyList<SelectOption>? Options { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+
+    private async Task OnChanged(string? value)
+    {
+        Value = value;
+        if (ValueChanged.HasDelegate) await ValueChanged.InvokeAsync(value);
+    }
+}

@@ -1,0 +1,16 @@
+﻿@namespace ExItS.DesignSystem.Components.Feedback
+
+<div class="exds-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@Math.Clamp(Value, 0, 100)" aria-label="@Label">
+    <div class="exds-progress__track">
+        <div class="exds-progress__bar" style="width:@Math.Clamp(Value, 0, 100)%"></div>
+    </div>
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <span class="exds-progress__label">@Label</span>
+    }
+</div>
+
+@code {
+    [Parameter] public int Value { get; set; }
+    [Parameter] public string? Label { get; set; }
+}

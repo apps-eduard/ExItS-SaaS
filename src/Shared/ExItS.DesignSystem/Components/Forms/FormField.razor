@@ -1,0 +1,28 @@
+﻿@namespace ExItS.DesignSystem.Components.Forms
+
+<div class="exds-form-field @(IsInvalid ? "exds-field--invalid" : null)" @attributes="AdditionalAttributes">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <Label For="@FieldId" Required="@Required">@Label</Label>
+    }
+    @ChildContent
+    @if (IsInvalid && !string.IsNullOrEmpty(ErrorText))
+    {
+        <FieldValidationMessage Text="@ErrorText" ForId="@FieldId" />
+    }
+    else if (!string.IsNullOrEmpty(Hint))
+    {
+        <span class="exds-field__hint" id="@($"{FieldId}-hint")">@Hint</span>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string FieldId { get; set; } = $"exds-field-{Guid.NewGuid():N}";
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public bool IsInvalid { get; set; }
+    [Parameter] public string? ErrorText { get; set; }
+    [Parameter] public string? Hint { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+}

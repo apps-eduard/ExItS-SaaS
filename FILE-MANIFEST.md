@@ -1,7 +1,7 @@
 # ExITS SaaS Documentation Package Manifest
 
-Markdown documentation files plus root Platform foundation through Phase 5 PinoyBusinessPOS MAUI foundation (P5-WP03 English/Filipino localization).
-Internal links checked: spot-check P5-WP03
+Markdown documentation files plus root Platform foundation through Phase 5 PinoyBusinessPOS MAUI foundation (P5-WP04 reusable MVP components).
+Internal links checked: spot-check P5-WP04
 Broken links: none found in spot-check of new paths
 
 ## Root foundation (tracked)
@@ -17,12 +17,12 @@ ExItS.slnx
 src/Platform/ExItS.Platform.Domain/ (+ Authorization; Audit)
 src/Platform/ExItS.Platform.Application/ (+ Catalog; Admin portfolio queries; Authorization; Audit; Contracts; Projections; MigrationValidation; Integration/HealthCare)
 src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog + organization/subscription + payment + entitlement + role-assignment + audit persistence, Admin portfolio read store, migrations including `AddPlatformAuthorizationAndAudit`)
-src/Platform/ExItS.Platform.Api/ (`/` + `/health` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs; `PlatformAuthz`; phase marker `P5-WP03-english-filipino-localization`)
+src/Platform/ExItS.Platform.Api/ (`/` + `/health` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs; `PlatformAuthz`; phase marker `P5-WP04-reusable-mvp-components`)
 src/Platform/ExItS.Platform.Admin/ (Blazor Web App — redesigned native CSS shell; typed API client; portfolio + users/memberships/product-access + subscription/payment/trial + audit views; themes; AdminResources en/fil-PH)
-src/Shared/ExItS.DesignSystem/ (semantic tokens; DesignSystem/Validation/Error resources en/fil-PH; Blazor primitives; `IDensityPreferenceStore`)
+src/Shared/ExItS.DesignSystem/ (semantic tokens; forms/data/feedback overlays; DesignSystem/Validation/Error resources en/fil-PH; Blazor primitives; `IDensityPreferenceStore`)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; PosShell; themes; PosResources en/fil-PH)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; PosShell; themes; PosResources en/fil-PH; Dev `/dev/components` showcase)
 tests/ExItS.Platform.UnitTests/
 tests/ExItS.ArchitectureTests/
 tests/ExItS.Platform.IntegrationTests/
@@ -118,6 +118,7 @@ docs/reports/P4-WP04-audit-authorization-and-closeout.md
 docs/reports/P5-WP01-maui-solution-and-api-client.md
 docs/reports/P5-WP02-native-ui-tokens-themes-and-compact-layout.md
 docs/reports/P5-WP03-english-and-filipino-localization.md
+docs/reports/P5-WP04-reusable-mvp-components.md
 docs/reports/phase-02-extraction-closeout.md
 docs/reports/phase-00-final-assessment-and-recommendation.md
 docs/reports/phase-01-architecture-approval.md

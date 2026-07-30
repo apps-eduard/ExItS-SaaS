@@ -154,4 +154,42 @@
 
   <data name="Format_UtcSuffix" xml:space="preserve"><value>UTC</value></data>
   <data name="Format_LocalSuffix" xml:space="preserve"><value>Local</value></data>
+
+  <data name="DevShowcase_Title" xml:space="preserve"><value>Component showcase</value></data>
+  <data name="DevShowcase_Subtitle" xml:space="preserve"><value>Development and Testing only — visual QA for shared UI components.</value></data>
+  <data name="DevShowcase_UnavailableTitle" xml:space="preserve"><value>Showcase unavailable</value></data>
+  <data name="DevShowcase_UnavailableMessage" xml:space="preserve"><value>The component showcase is available only in Development or Testing builds.</value></data>
+  <data name="DevShowcase_SampleNoticeTitle" xml:space="preserve"><value>Sample values only</value></data>
+  <data name="DevShowcase_SampleNoticeMessage" xml:space="preserve"><value>Labels and amounts below are neutral samples for visual QA. They are not live business records.</value></data>
+  <data name="DevShowcase_FormsTitle" xml:space="preserve"><value>Forms and validation</value></data>
+  <data name="DevShowcase_FormsSubtitle" xml:space="preserve"><value>Labels, required indicators, numeric and currency inputs.</value></data>
+  <data name="DevShowcase_SampleFormTitle" xml:space="preserve"><value>Sample form</value></data>
+  <data name="DevShowcase_NameLabel" xml:space="preserve"><value>Name</value></data>
+  <data name="DevShowcase_NameRequired" xml:space="preserve"><value>Name is required.</value></data>
+  <data name="DevShowcase_QtyLabel" xml:space="preserve"><value>Quantity</value></data>
+  <data name="DevShowcase_AmountLabel" xml:space="preserve"><value>Amount</value></data>
+  <data name="DevShowcase_DateLabel" xml:space="preserve"><value>Date</value></data>
+  <data name="DevShowcase_TimeLabel" xml:space="preserve"><value>Time</value></data>
+  <data name="DevShowcase_NotesLabel" xml:space="preserve"><value>Notes</value></data>
+  <data name="DevShowcase_AcceptLabel" xml:space="preserve"><value>I accept the sample terms</value></data>
+  <data name="DevShowcase_OptionLabel" xml:space="preserve"><value>Option</value></data>
+  <data name="DevShowcase_OptionA" xml:space="preserve"><value>Option A</value></data>
+  <data name="DevShowcase_OptionB" xml:space="preserve"><value>Option B</value></data>
+  <data name="DevShowcase_FeedbackTitle" xml:space="preserve"><value>Feedback and money</value></data>
+  <data name="DevShowcase_InlineWarning" xml:space="preserve"><value>Inline warning for visual QA.</value></data>
+  <data name="DevShowcase_ProgressLabel" xml:space="preserve"><value>Sample progress</value></data>
+  <data name="DevShowcase_OpenConfirm" xml:space="preserve"><value>Open confirmation</value></data>
+  <data name="DevShowcase_ConfirmTitle" xml:space="preserve"><value>Confirm sample action</value></data>
+  <data name="DevShowcase_ConfirmMessage" xml:space="preserve"><value>This confirmation does not perform a business operation.</value></data>
+  <data name="DevShowcase_DataTitle" xml:space="preserve"><value>Responsive data</value></data>
+  <data name="DevShowcase_DataSubtitle" xml:space="preserve"><value>Table on wide layouts; mobile row cards on narrow phones.</value></data>
+  <data name="DevShowcase_FiltersLabel" xml:space="preserve"><value>Sample filters</value></data>
+  <data name="DevShowcase_SortName" xml:space="preserve"><value>Sort by name</value></data>
+  <data name="DevShowcase_SortAmount" xml:space="preserve"><value>Sort by amount</value></data>
+  <data name="DevShowcase_ColName" xml:space="preserve"><value>Name</value></data>
+  <data name="DevShowcase_ColStatus" xml:space="preserve"><value>Status</value></data>
+  <data name="DevShowcase_ColAmount" xml:space="preserve"><value>Amount</value></data>
+  <data name="DevShowcase_EmptyHint" xml:space="preserve"><value>No sample rows match the current search.</value></data>
+  <data name="DevShowcase_AccordionTitle" xml:space="preserve"><value>Accordion sample</value></data>
+  <data name="DevShowcase_AccordionBody" xml:space="preserve"><value>Secondary detail can live in an accordion without crowding the main view.</value></data>
 </root>

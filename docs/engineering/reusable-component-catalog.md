@@ -2,7 +2,7 @@
 
 [UI design system](ui-design-system.md) | [UI reuse assessment](../reuse/healthcare-ui-reuse-assessment.md)
 
-Documentation-only catalog for future **ExItS Platform Admin** and **PinoyBusinessPOS** native Razor components (and shared models). **Nothing here is implemented in P0-WP03.** Ant Design remains only inside existing HealthCare Staff Web.
+Documentation-only catalog originally authored in P0-WP03. **P5-WP04 implemented** the shared DesignSystem MVP foundation components listed below (forms, validation, responsive data, money, confirm/feedback). Ant Design remains only inside existing HealthCare Staff Web. Business-specific POS controls (PasswordBox, cart, pickers, Utang, payments) remain deferred.
 
 Phase labels:
 

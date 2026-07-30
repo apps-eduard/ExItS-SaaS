@@ -123,4 +123,34 @@
   <data name="Loading_BusyAria" xml:space="preserve">
     <value>Busy</value>
   </data>
+  <data name="Validation_SummaryTitle" xml:space="preserve">
+    <value>Please fix the following:</value>
+  </data>
+  <data name="Confirm_ReasonLabel" xml:space="preserve">
+    <value>Reason (optional)</value>
+  </data>
+  <data name="Data_TableLabel" xml:space="preserve">
+    <value>Data table</value>
+  </data>
+  <data name="Data_ListLabel" xml:space="preserve">
+    <value>Data list</value>
+  </data>
+  <data name="Data_SortLabel" xml:space="preserve">
+    <value>Sort</value>
+  </data>
+  <data name="Data_PaginationLabel" xml:space="preserve">
+    <value>Pagination</value>
+  </data>
+  <data name="Data_Previous" xml:space="preserve">
+    <value>Previous</value>
+  </data>
+  <data name="Data_Next" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="Data_PaginationSummary" xml:space="preserve">
+    <value>Page {0} of {1} ({2} items)</value>
+  </data>
+  <data name="Money_Unavailable" xml:space="preserve">
+    <value>Unavailable</value>
+  </data>
 </root>

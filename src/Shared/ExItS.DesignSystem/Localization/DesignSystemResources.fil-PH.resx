@@ -123,4 +123,34 @@
   <data name="Loading_BusyAria" xml:space="preserve">
     <value>Abala</value>
   </data>
+  <data name="Validation_SummaryTitle" xml:space="preserve">
+    <value>Pakisayos ang mga sumusunod:</value>
+  </data>
+  <data name="Confirm_ReasonLabel" xml:space="preserve">
+    <value>Dahilan (opsyonal)</value>
+  </data>
+  <data name="Data_TableLabel" xml:space="preserve">
+    <value>Talahanayan ng datos</value>
+  </data>
+  <data name="Data_ListLabel" xml:space="preserve">
+    <value>Listahan ng datos</value>
+  </data>
+  <data name="Data_SortLabel" xml:space="preserve">
+    <value>Ayusin</value>
+  </data>
+  <data name="Data_PaginationLabel" xml:space="preserve">
+    <value>Pagination</value>
+  </data>
+  <data name="Data_Previous" xml:space="preserve">
+    <value>Nakaraan</value>
+  </data>
+  <data name="Data_Next" xml:space="preserve">
+    <value>Susunod</value>
+  </data>
+  <data name="Data_PaginationSummary" xml:space="preserve">
+    <value>Page {0} ng {1} ({2} items)</value>
+  </data>
+  <data name="Money_Unavailable" xml:space="preserve">
+    <value>Hindi available</value>
+  </data>
 </root>

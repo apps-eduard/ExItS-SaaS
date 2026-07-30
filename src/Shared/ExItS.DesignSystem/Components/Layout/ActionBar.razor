@@ -1,0 +1,13 @@
+﻿@namespace ExItS.DesignSystem.Components.Layout
+
+<div class="exds-action-bar" @attributes="AdditionalAttributes">
+    <div class="exds-action-bar__start">@Start</div>
+    <div class="exds-action-bar__end">@End@ChildContent</div>
+</div>
+
+@code {
+    [Parameter] public RenderFragment? Start { get; set; }
+    [Parameter] public RenderFragment? End { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+}

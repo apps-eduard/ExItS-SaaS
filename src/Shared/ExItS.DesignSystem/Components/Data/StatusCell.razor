@@ -1,0 +1,11 @@
+﻿@namespace ExItS.DesignSystem.Components.Data
+@using ExItS.DesignSystem.Components.Primitives
+
+<span class="exds-status-cell">
+    <Badge Tone="@Tone">@ChildContent</Badge>
+</span>
+
+@code {
+    [Parameter] public BadgeTone Tone { get; set; } = BadgeTone.Neutral;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

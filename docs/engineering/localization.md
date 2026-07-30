@@ -41,7 +41,7 @@ src/Platform/ExItS.Platform.Admin/Localization/
 
 ASP.NET Core request localization + cookie/localStorage language preference. Shell, navigation, and shared components use `IStringLocalizer<AdminResources>`. Business page copy may remain English in P4-WP04. Glossary: [admin-terminology-guide.md](admin-terminology-guide.md).
 
-### PinoyBusinessPOS resources (P5-WP01–P5-WP03)
+### PinoyBusinessPOS resources (P5-WP01–P5-WP04)
 
 ```text
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/Localization/
@@ -56,7 +56,7 @@ src/Shared/ExItS.DesignSystem/Localization/
 └── marker classes for IStringLocalizer<T>
 ```
 
-MAUI registers `en` + `fil-PH`; culture preference persisted. Shell/Home/Settings/deferred/NotFound use `IStringLocalizer<PosResources>`. Shared chrome uses DesignSystem/Validation/Error resources. UI label for `fil-PH` is **Tagalog**. Formatting: `CultureFormatting`. Glossary: [pos-terminology-guide.md](pos-terminology-guide.md).
+MAUI registers `en` + `fil-PH`; culture preference persisted. Shell/Home/Settings/deferred/NotFound/Dev showcase use `IStringLocalizer<PosResources>`. Shared chrome and MVP components use DesignSystem/Validation/Error resources (including Data_*, Money_Unavailable, Confirm_ReasonLabel). UI label for `fil-PH` is **Tagalog**. Formatting: `CultureFormatting`. Glossary: [pos-terminology-guide.md](pos-terminology-guide.md).
 
 ## Translation quality
 

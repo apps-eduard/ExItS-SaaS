@@ -1,0 +1,36 @@
+﻿@namespace ExItS.DesignSystem.Components.Data
+@using System.Globalization
+@inject IStringLocalizer<DesignSystemResources> L
+
+<span class="@CssClass" title="@Title">
+    @DisplayText
+</span>
+
+@code {
+    [Parameter] public decimal? Amount { get; set; }
+    [Parameter] public string CurrencyCode { get; set; } = "PHP";
+    [Parameter] public bool Unavailable { get; set; }
+
+    private string CssClass
+    {
+        get
+        {
+            if (Unavailable || Amount is null) return "exds-money exds-money--unavailable";
+            if (Amount < 0) return "exds-money exds-money--negative";
+            if (Amount == 0) return "exds-money exds-money--zero";
+            return "exds-money";
+        }
+    }
+
+    private string DisplayText
+    {
+        get
+        {
+            if (Unavailable || Amount is null) return L["Money_Unavailable"];
+            var amount = Amount.Value.ToString("N2", CultureInfo.CurrentUICulture);
+            return $"{CurrencyCode} {amount}";
+        }
+    }
+
+    private string? Title => Unavailable || Amount is null ? L["Money_Unavailable"].Value : null;
+}

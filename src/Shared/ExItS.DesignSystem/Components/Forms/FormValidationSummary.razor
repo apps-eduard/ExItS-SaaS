@@ -1,0 +1,20 @@
+@namespace ExItS.DesignSystem.Components.Forms
+@inject IStringLocalizer<DesignSystemResources> L
+
+@if (Messages is { Count: > 0 })
+{
+    <div class="exds-validation-summary" role="alert" aria-live="polite">
+        <p class="exds-validation-summary__title">@(Title ?? L["Validation_SummaryTitle"])</p>
+        <ul class="exds-validation-summary__list">
+            @foreach (var message in Messages)
+            {
+                <li>@message</li>
+            }
+        </ul>
+    </div>
+}
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public IReadOnlyList<string>? Messages { get; set; }
+}

@@ -1,0 +1,16 @@
+﻿@namespace ExItS.DesignSystem.Components.Layout
+@using ExItS.DesignSystem.Components.Primitives
+
+<details class="exds-dropdown">
+    <summary class="exds-dropdown__trigger" aria-haspopup="menu">
+        @(TriggerText ?? "…")
+    </summary>
+    <div class="exds-dropdown__menu" role="menu">
+        @ChildContent
+    </div>
+</details>
+
+@code {
+    [Parameter] public string? TriggerText { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

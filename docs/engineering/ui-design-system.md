@@ -23,9 +23,9 @@ Visual consistency across **new** Platform Admin and POS comes from shared seman
 
 Commercial Admin shell: collapsible sidebar (checkbox CSS), mobile drawer, sticky header, environment chip, shared design-system components (page header, filters, empty/loading/error, audit timeline, theme/language selectors), responsive tables/cards (≈320–1920px). Permission-aware nav is UI convenience only. Keyboard-usable controls; `prefers-reduced-motion` respected. No Ant Design; no Tailwind.
 
-### Shared DesignSystem library (P5-WP01 / P5-WP02)
+### Shared DesignSystem library (P5-WP01–P5-WP04)
 
-`src/Shared/ExItS.DesignSystem` is a `net10.0` Razor class library with semantic `--exits-*` tokens (including secondary, accent, info, disabled, z-index, easing, breakpoints), System/Light/Dark theme hooks, Compact/Comfortable density (Compact default for POS), shared Blazor primitives, and `DesignSystemResources` (`en` + `fil-PH`). Density preference is an abstraction (`IDensityPreferenceStore`); hosts implement storage. No Ant Design, Tailwind, Bootstrap CSS framework imports, EF Core, or Platform/product Infrastructure references. Consumed by PinoyBusinessPOS MAUI; Platform Admin continues native Admin CSS tokens (`--color-*`) while sharing semantic conventions and terminology.
+`src/Shared/ExItS.DesignSystem` is a `net10.0` Razor class library with semantic `--exits-*` tokens (including secondary, accent, info, disabled, z-index, easing, breakpoints), System/Light/Dark theme hooks, Compact/Comfortable density (Compact default for POS), shared Blazor primitives plus MVP forms/feedback/data components, and `DesignSystemResources` (`en` + `fil-PH`). Density preference is an abstraction (`IDensityPreferenceStore`); hosts implement storage. No Ant Design, Tailwind, Bootstrap CSS framework imports, EF Core, or Platform/product Infrastructure references. Consumed by PinoyBusinessPOS MAUI; Platform Admin continues native Admin CSS tokens (`--color-*`) while sharing semantic conventions and terminology. Dev-only component showcase lives in the MAUI host (`/dev/components`), not in DesignSystem.
 
 ### Proposed project boundaries (updated P5-WP01)
 

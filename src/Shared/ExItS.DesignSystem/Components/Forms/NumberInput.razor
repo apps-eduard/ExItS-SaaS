@@ -1,0 +1,75 @@
+﻿@namespace ExItS.DesignSystem.Components.Forms
+@using System.Globalization
+@using ExItS.DesignSystem.Components.Primitives
+
+<div class="exds-field @(IsInvalid ? "exds-field--invalid" : null)">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <Label For="@_id" Required="@Required">@Label</Label>
+    }
+    <input id="@_id"
+           type="text"
+           inputmode="decimal"
+           class="exds-field__control"
+           placeholder="@Placeholder"
+           disabled="@Disabled"
+           value="@_text"
+           aria-invalid="@(IsInvalid ? "true" : "false")"
+           @oninput="HandleInput"
+           @attributes="AdditionalAttributes" />
+    @if (IsInvalid && !string.IsNullOrEmpty(ErrorText))
+    {
+        <span class="exds-field__error" role="alert">@ErrorText</span>
+    }
+    else if (!string.IsNullOrEmpty(Hint))
+    {
+        <span class="exds-field__hint">@Hint</span>
+    }
+</div>
+
+@code {
+    private readonly string _id = $"exds-num-{Guid.NewGuid():N}";
+    private string _text = string.Empty;
+
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public decimal? Value { get; set; }
+    [Parameter] public EventCallback<decimal?> ValueChanged { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public string? Hint { get; set; }
+    [Parameter] public bool IsInvalid { get; set; }
+    [Parameter] public string? ErrorText { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public int DecimalPlaces { get; set; } = 2;
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (Value is null)
+        {
+            if (string.IsNullOrWhiteSpace(_text)) _text = string.Empty;
+            return;
+        }
+
+        var expected = Value.Value.ToString($"F{Math.Clamp(DecimalPlaces, 0, 8)}", CultureInfo.CurrentUICulture);
+        if (!decimal.TryParse(_text, NumberStyles.Number, CultureInfo.CurrentUICulture, out var parsed) || parsed != Value)
+        {
+            _text = expected;
+        }
+    }
+
+    private async Task HandleInput(ChangeEventArgs args)
+    {
+        _text = args.Value?.ToString() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(_text))
+        {
+            Value = null;
+        }
+        else if (decimal.TryParse(_text, NumberStyles.Number, CultureInfo.CurrentUICulture, out var parsed))
+        {
+            Value = parsed;
+        }
+
+        if (ValueChanged.HasDelegate) await ValueChanged.InvokeAsync(Value);
+    }
+}

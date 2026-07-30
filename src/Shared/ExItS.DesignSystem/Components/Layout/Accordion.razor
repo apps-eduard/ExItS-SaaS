@@ -1,0 +1,12 @@
+﻿@namespace ExItS.DesignSystem.Components.Layout
+
+<details class="exds-accordion" open="@Expanded">
+    <summary class="exds-accordion__summary">@Title</summary>
+    <div class="exds-accordion__body">@ChildContent</div>
+</details>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public bool Expanded { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

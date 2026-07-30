@@ -1,0 +1,78 @@
+﻿@namespace ExItS.DesignSystem.Components.Overlay
+@using ExItS.DesignSystem.Components.Forms
+@using ExItS.DesignSystem.Components.Primitives
+@inject IStringLocalizer<DesignSystemResources> L
+
+@if (Visible)
+{
+    <div class="exds-dialog__backdrop" @onclick="CancelAsync">
+        <div class="exds-dialog exds-confirm"
+             role="alertdialog"
+             aria-modal="true"
+             aria-label="@Title"
+             tabindex="-1"
+             @onclick:stopPropagation="true"
+             @onkeydown="HandleKeyDown">
+            <div class="exds-dialog__header">
+                <h2 class="exds-dialog__title">@Title</h2>
+                <IconButton AriaLabel="@CancelLabelResolved" IconName="close" Disabled="@IsLoading" OnClick="CancelAsync" />
+            </div>
+            <div class="exds-dialog__body">
+                <p class="exds-confirm__message">@Message</p>
+                @if (ShowReason)
+                {
+                    <TextArea Label="@ReasonLabelResolved" Value="@Reason" ValueChanged="OnReasonChanged" Rows="3" Disabled="@IsLoading" />
+                }
+            </div>
+            <div class="exds-dialog__footer">
+                <Button Variant="ButtonVariant.Ghost" Disabled="@IsLoading" OnClick="CancelAsync">@CancelLabelResolved</Button>
+                <Button Variant="@(Danger ? ButtonVariant.Danger : ButtonVariant.Primary)" IsLoading="@IsLoading" OnClick="ConfirmAsync">@ConfirmLabelResolved</Button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public bool Danger { get; set; }
+    [Parameter] public bool ShowReason { get; set; }
+    [Parameter] public string? Reason { get; set; }
+    [Parameter] public EventCallback<string?> ReasonChanged { get; set; }
+    [Parameter] public string? ReasonLabel { get; set; }
+    [Parameter] public string? ConfirmLabel { get; set; }
+    [Parameter] public string? CancelLabel { get; set; }
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public EventCallback OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private string ConfirmLabelResolved => ConfirmLabel ?? L["Action_Confirm"];
+    private string CancelLabelResolved => CancelLabel ?? L["Action_Cancel"];
+    private string ReasonLabelResolved => ReasonLabel ?? L["Confirm_ReasonLabel"];
+
+    private async Task OnReasonChanged(string? value)
+    {
+        Reason = value;
+        if (ReasonChanged.HasDelegate) await ReasonChanged.InvokeAsync(value);
+    }
+
+    private async Task ConfirmAsync()
+    {
+        if (OnConfirm.HasDelegate) await OnConfirm.InvokeAsync();
+    }
+
+    private async Task CancelAsync()
+    {
+        if (IsLoading) return;
+        Visible = false;
+        if (VisibleChanged.HasDelegate) await VisibleChanged.InvokeAsync(false);
+        if (OnCancel.HasDelegate) await OnCancel.InvokeAsync();
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape") await CancelAsync();
+    }
+}

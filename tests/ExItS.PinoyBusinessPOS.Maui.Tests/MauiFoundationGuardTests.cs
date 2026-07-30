@@ -141,7 +141,7 @@ public sealed class MauiFoundationGuardTests
         var root = FindRepoRoot();
         var pagesDir = Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
             "ExItS.PinoyBusinessPOS.Maui", "Components", "Pages");
-        foreach (var file in Directory.EnumerateFiles(pagesDir, "*.razor"))
+        foreach (var file in Directory.EnumerateFiles(pagesDir, "*.razor", SearchOption.AllDirectories))
         {
             var text = File.ReadAllText(file);
             Assert.DoesNotContain("SQLite", text, StringComparison.OrdinalIgnoreCase);
@@ -150,6 +150,32 @@ public sealed class MauiFoundationGuardTests
             Assert.DoesNotContain("RecordSale", text, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("Stripe", text, StringComparison.OrdinalIgnoreCase);
         }
+    }
+
+    [Fact]
+    public void Dev_component_showcase_is_gated_and_not_in_production_nav()
+    {
+        var root = FindRepoRoot();
+        var showcase = Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui", "Components", "Pages", "Dev", "ComponentShowcase.razor");
+        Assert.True(File.Exists(showcase));
+        var text = File.ReadAllText(showcase);
+        Assert.Contains("@page \"/dev/components\"", text, StringComparison.Ordinal);
+        Assert.Contains("Development", text, StringComparison.Ordinal);
+        Assert.Contains("Testing", text, StringComparison.Ordinal);
+        Assert.Contains("DevShowcase_", text, StringComparison.Ordinal);
+        Assert.Contains("Sample Alpha", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("RecordSale", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Utang", text, StringComparison.OrdinalIgnoreCase);
+
+        var shell = File.ReadAllText(Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui", "Components", "Layout", "PosShell.razor"));
+        Assert.DoesNotContain("/dev/components", shell, StringComparison.Ordinal);
+        Assert.DoesNotContain("DevShowcase", shell, StringComparison.Ordinal);
+
+        var en = File.ReadAllText(Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui", "Localization", "PosResources.resx"));
+        Assert.Contains("DevShowcase_Title", en, StringComparison.Ordinal);
     }
 
     private static string FindRepoRoot()
