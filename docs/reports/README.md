@@ -64,3 +64,4 @@ The dashboard links to the latest accepted report.
 | [P8-WP05-expenses.md](P8-WP05-expenses.md) | Expenses | Complete with documented risks |
 | [P8-WP06-dashboard-and-reports.md](P8-WP06-dashboard-and-reports.md) | Dashboard and Reports | Complete with documented risks |
 | [P8-WP07-basic-store-closeout.md](P8-WP07-basic-store-closeout.md) | Basic Store Closeout | Complete with documented risks (Phase 8 closed) |
+| [P9-WP01-security-and-privacy-hardening.md](P9-WP01-security-and-privacy-hardening.md) | Security and Privacy Hardening | Complete with documented risks |

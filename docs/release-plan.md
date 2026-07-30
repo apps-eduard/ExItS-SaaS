@@ -61,6 +61,14 @@ Online-only catalog, sales, Product-Based Utang, inventory, expenses, and operat
 
 **Next:** **Phase 9 / P9-WP01 — Security and Privacy Hardening** when approved.
 
+## R3.7 — MVP hardening started (Phase 9 / P9-WP01)
+
+**P9-WP01 complete with documented risks.** See [P9-WP01 report](reports/P9-WP01-security-and-privacy-hardening.md).
+
+Production guards reject Development/Testing org/actor/commercial bypass headers outside approved environments; Platform ignores forged `X-Dev-Platform-User-Id` outside Dev/Testing; Production startup fails on missing secure config / known-dev password / wildcard AllowedHosts; CORS deny-by-default; partitioned rate limits; safe exception ProblemDetails; security headers; HTTPS when EnforceHttps. **Not production-ready** (R-091, R-109, R-129, Production TLS/MAUI cleartext gate remain open).
+
+**Next:** **P9-WP02 — Performance and Reliability** when approved.
+
 ## R4 — Commercial MVP
 
 Offline synchronization, Basic Store and production hardening.

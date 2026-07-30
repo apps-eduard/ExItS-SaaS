@@ -13,5 +13,5 @@
 | 6 | Utang MVP | **Complete with documented risks** | [Open](phase-06-utang-mvp.md) |
 | 7 | Offline Synchronization | **Complete with documented risks** | [Open](phase-07-offline-sync.md) |
 | 8 | Basic Store | **Complete with documented risks** | [Open](phase-08-basic-store.md) |
-| 9 | MVP Hardening and Release | Not Started (do not begin until authorized) | [Open](phase-09-mvp-hardening.md) |
+| 9 | MVP Hardening and Release | **In Progress** (P9-WP01 complete) | [Open](phase-09-mvp-hardening.md) |
 | 10 | Full POS | Future | [Open](phase-10-full-pos.md) |

@@ -40,9 +40,11 @@ ExItS-SaaS/
 
 **Phase 7** is **complete** with documented risks ([P7-WP05 closeout](docs/reports/P7-WP05-offline-closeout.md)). Offline subsystem (DeviceId/SQLite isolation, encrypted queue + idempotency, customer/credit/payment sync, recovery/UX closeout) is closed.
 
-**Phase 8** is **complete** with documented risks ([P8-WP07 closeout](docs/reports/P8-WP07-basic-store-closeout.md)). Online-only Basic Store MVP (catalog, sales, Product-Based Utang, inventory, expenses, dashboard/reports) is closed. **Not production-ready** while R-109, R-022, full-DB encryption, production auth/roles, and production background scheduling remain open.
+**Phase 8** is **complete** with documented risks ([P8-WP07 closeout](docs/reports/P8-WP07-basic-store-closeout.md)). Online-only Basic Store MVP is closed.
 
-Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Next: **Phase 9 / P9-WP01 — Security and Privacy Hardening** when authorized.
+**Phase 9** is **in progress** — P9-WP01 Security and Privacy Hardening **complete** with documented risks ([P9-WP01](docs/reports/P9-WP01-security-and-privacy-hardening.md)). **Not production-ready** while R-091, R-109, R-129, Production HTTPS/MAUI cleartext replacement, and related blockers remain open.
+
+Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Next: **P9-WP02 — Performance and Reliability** when authorized.
 
 ### Platform database (local)
 

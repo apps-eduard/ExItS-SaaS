@@ -2,7 +2,7 @@
 
 > Primary status page. Cursor must update this file after every completed work package. Percentages are calculated from approved work packages, never estimated.
 
-[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P8-WP07 report](reports/P8-WP07-basic-store-closeout.md)
+[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P9-WP01 report](reports/P9-WP01-security-and-privacy-hardening.md)
 
 ## Current status
 
@@ -11,33 +11,21 @@
 | Portfolio | ExITS SaaS |
 | Existing product | HealthCare SaaS MVP (ignored nested `HealthCare/`) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 8 — Basic Store (**Complete** with documented risks) |
-| Current work package | P8-WP07 — Basic Store Closeout (**Complete** with documented risks) |
-| Overall status | **Phase 8 closed** — Basic Store MVP (online-only catalog/sales/Utang/inventory/expenses/dashboard/reports); not production-ready; next Phase 9 / P9-WP01 when authorized |
-| Latest verified commit | 0bc5ebb999c0708e6ac76b04a30d522037eec3cb |
-| Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations / no offline entitlement grace; R-035 calendar EOM; no payment gateway; no interactive Android emulator (R-109); commercial/actor headers Development-stage only; org timezone undefined for due dates; OD-11 open; no POS operational roles; SQLitePCLRaw NU1903 (R-129); catalog/sales/inventory/expenses/reports online-only by design; report export deferred |
-| Last updated | 2026-07-30 |
+| Current phase | Phase 9 — MVP Hardening and Release (**In Progress**) |
+| Current work package | P9-WP01 — Security and Privacy Hardening (**Complete** with documented risks) |
+| Overall status | **Phase 9 in progress** — security/privacy hardening complete with documented risks; not production-ready; next P9-WP02 when authorized |
+| Latest verified commit | de4fac64739f5b368a6b1f2490223fa032201b65 |
+| Open blockers | Missing production auth (JWT/MFA/SSO/AD) (R-091); R-022 refresh durations / no offline entitlement grace; R-035 calendar EOM; no payment gateway; no interactive Android emulator (R-109); Production HTTPS/MAUI cleartext replacement gate; SQLitePCLRaw NU1903 (R-129); catalog/sales/inventory/expenses/reports online-only by design; report export deferred; no POS operational roles |
+| Last updated | 2026-07-31 |
 
 ## Delivery sequence
 
 ```text
-P7-WP05 ✓ Offline Closeout (Phase 7 closed)
+P8-WP07 ✓ Basic Store Closeout (Phase 8 closed)
         ↓
-P8-WP01 ✓ Catalog and Barcode (complete with risks)
+P9-WP01 ✓ Security and Privacy Hardening (complete with risks)
         ↓
-P8-WP02 ✓ Simple Sales (complete with risks)
-        ↓
-P8-WP03 ✓ Product-Based Utang (complete with risks)
-        ↓
-P8-WP04 ✓ Basic Inventory (complete with risks)
-        ↓
-P8-WP05 ✓ Expenses (complete with risks)
-        ↓
-P8-WP06 ✓ Dashboard and Reports (complete with risks)
-        ↓
-P8-WP07 ✓ Basic Store Closeout (Phase 8 closed with risks)
-        ↓
-P9-WP01 ○ Security and Privacy Hardening (not started — do not begin until authorized)
+P9-WP02 ○ Performance and Reliability (not started — do not begin until authorized)
 ```
 
 ## Phase progress
@@ -53,10 +41,21 @@ P9-WP01 ○ Security and Privacy Hardening (not started — do not begin until a
 | 6 | Utang MVP | **Complete with documented risks** | 6 | 6 | 100% | [Open](phases/phase-06-utang-mvp.md) |
 | 7 | Offline Synchronization | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-07-offline-sync.md) |
 | 8 | Basic Store | **Complete with documented risks** | 7 | 7 | 100% | [Open](phases/phase-08-basic-store.md) |
-| 9 | MVP Hardening and Release | Not Started | 0 | 6 | 0% | [Open](phases/phase-09-mvp-hardening.md) |
+| 9 | MVP Hardening and Release | **In Progress** | 1 | 6 | ~17% | [Open](phases/phase-09-mvp-hardening.md) |
 | 10 | Full POS | Future | 0 | 8 | 0% | [Open](phases/phase-10-full-pos.md) |
 
-**MVP phases 0–9:** 45 / 52 = **86.54%**.
+**MVP phases 0–9:** 46 / 52 = **88.46%**.
+
+## Phase 9 work packages
+
+| WP | Status | Key commit |
+|---|---|---|
+| P9-WP01 | Complete with risks | de4fac64739f5b368a6b1f2490223fa032201b65 |
+| P9-WP02 | Not Started | — |
+| P9-WP03 | Not Started | — |
+| P9-WP04 | Not Started | — |
+| P9-WP05 | Not Started | — |
+| P9-WP06 | Not Started | — |
 
 ## Phase 8 work packages
 
@@ -69,16 +68,6 @@ P9-WP01 ○ Security and Privacy Hardening (not started — do not begin until a
 | P8-WP05 | Complete with risks | ca956921fbfcfad8499f01acb9d9726fff2d81d4 |
 | P8-WP06 | Complete with risks | a0028f36a0d8e2ea76c3101b2b65ba82bfd4fd02 |
 | P8-WP07 | Complete with risks | 0bc5ebb999c0708e6ac76b04a30d522037eec3cb |
-
-## Phase 7 work packages
-
-| WP | Status | Key commit |
-|---|---|---|
-| P7-WP01 | Complete with risks | a82a4be07e90ddfad59b741f6822022369cda68e |
-| P7-WP02 | Complete with risks | aa1f92eba97bc77775f59de8209b42c9d7a475cc |
-| P7-WP03 | Complete with risks | 3763ca0fe406067eb539b3d8adca21447f813dcf |
-| P7-WP04 | Complete with risks | 9c862b4bcd1604a351334120823bdf1e4a2014cb |
-| P7-WP05 | Complete with risks | 3b5a1e72294eb102f51f46c995e784138685faa4 |
 
 ## Permanent workflow rules
 

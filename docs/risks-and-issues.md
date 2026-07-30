@@ -135,6 +135,10 @@
 | R-129 | Transitive SQLitePCLRaw NU1903 advisory on Microsoft.Data.Sqlite 10.0.4 | Medium | Track package upgrade when Microsoft ships fixed transitive; P7-WP03 mitigated by row-level AES-GCM instead of SQLCipher; advisory remains open on Microsoft.Data.Sqlite transitive | Open — introduced P7-WP01; WP03 avoided SQLCipher |
 
 
+## Phase 9 note (P9-WP01)
+
+P9-WP01 hardened Platform and POS Production guards: Development/Testing headers and `/dev` probes unavailable outside approved environments; Production startup fails on missing secure configuration, known-dev DB password, or `AllowedHosts=*`; CORS deny-by-default; partitioned rate limiting; safe exception ProblemDetails; security headers; HTTPS when `Security:EnforceHttps`. Base appsettings no longer embed the development DB password. R-091 / R-109 / R-129 remain open. **Not production-ready.** Next: **P9-WP02 — Performance and Reliability** when authorized.
+
 ## Phase 8 note (P8-WP07)
 
 P8-WP07 closed Phase 8 Basic Store. Reconciled P8-WP01-P8-WP06; consolidated `store-*` capability matrix; Phase 8 migration-chain apply/rollback/re-apply; deferred-scope architecture guards. **No new business capability.** R-109 remains open (`adb` unavailable). Dev commercial/actor headers remain Development/Testing-only. Online-only Basic Store surfaces remain by design. Report export, Manual GCash verification, production auth/roles, tax/refund/accounting remain deferred. **Not production-ready.** Next: **Phase 9 / P9-WP01 — Security and Privacy Hardening** when authorized.

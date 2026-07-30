@@ -53,6 +53,7 @@
 - Expenses (P8-WP05) ? categories; immutable Cash/ManualGCash entries; void; derived summaries; `store-expenses-*`; migration `AddPosExpenses`; online-only
 - Dashboard/Reports (P8-WP06) ? period KPIs; sales/utang/inventory/expense reports; max 366-day span; continuity grants; no P&L/offline caches
 - Basic Store closeout (P8-WP07) ? consolidated `store-*` capability matrix; Phase 8 migration-chain apply/rollback/re-apply; deferred-scope architecture guards; full suite 882 / 0 / 0
+- Security hardening (P9-WP01) ? Production header/route guards; startup fail-closed; CORS; rate limits; safe ProblemDetails; secret-pattern architecture tests; full suite 900 / 0 / 0
 - Tenant isolation
 - Subscription feature enforcement (P6-WP05 matrix + grants; P8-WP01?P8-WP07 store grants)
 - Offline queue and idempotency *(Phase 7)*
@@ -83,5 +84,6 @@
 - **P8-WP05:** expense category uniqueness; Cash/GCash create; void; idempotent replay; summaries; capability matrix; migration apply/rollback-to-`AddPosBasicInventory`/re-apply; online-only architecture exclusions
 - **P8-WP06:** dashboard/report period KPIs; 366-day span; continuity grants; no P&L/export/offline caches
 - **P8-WP07:** consolidated store capability matrix; Phase 8 migration chain; deferred-scope architecture guards
+- **P9-WP01:** Production header/route guards; startup fail-closed; CORS/rate-limit/HTTPS pipeline source guards; empty base connection strings
 
 All reports use exact command output; totals are never estimated.
