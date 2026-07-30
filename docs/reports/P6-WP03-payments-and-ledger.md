@@ -109,7 +109,7 @@ POS Domain/Application/Infrastructure/Api/ApiClient/Maui repayment + ledger slic
 ## Git evidence
 
 - Feature commit: `de39091f6110acbc721ac78da51a92acefd6775a`
-- Docs commit: _(recorded after docs commit)_
+- Docs commit: `c0210475855dd398d62cdb2c15980ea60262b8bd`
 - Phase marker: `P6-WP03-payments-and-ledger`
 - Pushed to `origin/main`; local and remote `main` match; working tree clean
 
