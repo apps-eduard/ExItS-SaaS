@@ -136,4 +136,4 @@ Do not begin until explicitly authorized.
 | Kind | Message | Hash |
 |---|---|---|
 | Feature | `feat(pos): maui foundation design system and api client` | `3015925d16560be13953270565c1ab99a8d69934` |
-| Docs | `docs(pos): record P5-WP01 commit hashes` | `274197b` (superseded by hash-record follow-up if amended) |
+| Docs | `docs(pos): record P5-WP01 commit hashes` / `docs(pos): finalize P5-WP01 report evidence and DoD` | `274197b` / `0996663b5758bd3d261f8f6644d961c0fbcdf304` |
