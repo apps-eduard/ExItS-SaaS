@@ -135,6 +135,7 @@ See Git feature and documentation commits for this WP.
 | Item | Value |
 |---|---|
 | Feature commit | 3bbb0c716da60bd7d87a191c35bd0eced1bde380 |
-| Docs commit | _(recorded after docs commit)_ |
+| Docs commit | 20ac81ac1cedc281a5c8e2d27ea8e8194e33a461 |
+| Docs hash-record commit | _(filled after hash-record)_ |
 | Tests | 931 / 0 / 0 |
 | Exact next WP | **P9-WP04 — Accessibility, Localization and Theme QA** |

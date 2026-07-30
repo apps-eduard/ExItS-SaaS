@@ -115,6 +115,7 @@ Status: **Complete** with documented risks
 Report: [P9-WP03-backup-and-restore.md](../reports/P9-WP03-backup-and-restore.md)
 
 Feature commit: 3bbb0c716da60bd7d87a191c35bd0eced1bde380
+Docs commit: 20ac81ac1cedc281a5c8e2d27ea8e8194e33a461
 
 Phase marker: `P9-WP03-backup-and-restore`
 
