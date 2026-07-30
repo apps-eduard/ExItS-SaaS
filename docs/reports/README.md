@@ -53,3 +53,4 @@ The dashboard links to the latest accepted report.
 | [P6-WP05-statements-receipts-and-trial-rules.md](P6-WP05-statements-receipts-and-trial-rules.md) | Statements, Receipts and Trial Rules | Complete with documented risks |
 | [P6-WP06-utang-mvp-closeout.md](P6-WP06-utang-mvp-closeout.md) | Utang MVP Closeout | Complete with documented risks (Phase 6 closed) |
 | [P7-WP01-sqlite-and-device-identity.md](P7-WP01-sqlite-and-device-identity.md) | SQLite and Device Identity | Complete with documented risks |
+| [P7-WP02-offline-queue-and-idempotency.md](P7-WP02-offline-queue-and-idempotency.md) | Offline Queue and Idempotency | Complete with documented risks |

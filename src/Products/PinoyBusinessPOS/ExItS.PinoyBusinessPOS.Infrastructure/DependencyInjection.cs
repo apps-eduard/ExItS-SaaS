@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<IUtangLedgerQuery, UtangLedgerQuery>();
         services.AddScoped<IOutstandingBalanceService, OutstandingBalanceService>();
         services.AddScoped<IPosUnitOfWork, PosUnitOfWork>();
+        services.AddScoped<ExItS.PinoyBusinessPOS.Application.Abstractions.IPosIdempotencyService, Idempotency.PosIdempotencyService>();
         services.AddSingleton<IClock, SystemClock>();
 
         return services;

@@ -7,8 +7,8 @@ namespace ExItS.PinoyBusinessPOS.LocalStore;
 public static class LocalStoreServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers SQLite local-store infrastructure. Callers must also register
-    /// <see cref="ILocalStoreRootPathProvider"/> (MAUI sandbox path).
+    /// Registers SQLite local-store infrastructure including the generic offline outbox.
+    /// Callers must also register <see cref="ILocalStoreRootPathProvider"/> and <see cref="ISecureTokenStore"/>.
     /// </summary>
     public static IServiceCollection AddPinoyBusinessPosLocalStore(this IServiceCollection services)
     {
@@ -17,6 +17,11 @@ public static class LocalStoreServiceCollectionExtensions
         services.AddSingleton<ILocalDatabaseMigrator, LocalDatabaseMigrator>();
         services.AddSingleton<ILocalContextManager, LocalContextManager>();
         services.AddSingleton<IDeviceIdentityProvider, DeviceIdentityProvider>();
+        services.AddSingleton<ILocalPayloadProtector, AesGcmLocalPayloadProtector>();
+        services.AddSingleton<IOfflineOperationQueue, OfflineOperationQueue>();
+        services.AddSingleton<IOfflineRetryClassifier, OfflineRetryClassifier>();
+        services.AddSingleton<IOfflineAccessRevalidator, OfflineAccessRevalidator>();
+        services.AddSingleton<IOfflineQueueProcessor, OfflineQueueProcessor>();
         return services;
     }
 }

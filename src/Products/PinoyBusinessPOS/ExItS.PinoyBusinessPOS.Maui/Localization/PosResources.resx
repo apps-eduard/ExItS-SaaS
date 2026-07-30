@@ -517,10 +517,21 @@
   <data name="SyncStatus_ReconnectShort" xml:space="preserve"><value>Reconnect</value></data>
   <data name="SyncStatus_ReconnectTitle" xml:space="preserve"><value>Reconnect required</value></data>
   <data name="SyncStatus_ReconnectMessage" xml:space="preserve"><value>Reconnect to verify access before continuing. Local data alone cannot unlock the POS.</value></data>
-  <data name="SyncStatus_Pending" xml:space="preserve"><value>Pending Sync</value></data>
+  <data name="SyncStatus_Pending" xml:space="preserve"><value>Pending Sync ({0})</value></data>
+  <data name="SyncStatus_PendingShort" xml:space="preserve"><value>Pending ({0})</value></data>
+  <data name="SyncStatus_PendingDetail" xml:space="preserve"><value>Saved on this device. Waiting to sync.</value></data>
   <data name="SyncStatus_Syncing" xml:space="preserve"><value>Syncing</value></data>
+  <data name="SyncStatus_SyncingShort" xml:space="preserve"><value>Syncing</value></data>
+  <data name="SyncStatus_SyncingDetail" xml:space="preserve"><value>Sending pending work to the server.</value></data>
   <data name="SyncStatus_Failed" xml:space="preserve"><value>Sync Failed</value></data>
+  <data name="SyncStatus_FailedShort" xml:space="preserve"><value>Failed</value></data>
+  <data name="SyncStatus_FailedDetail" xml:space="preserve"><value>Some operations need review. Pending work was retained.</value></data>
   <data name="SyncStatus_LastSynced" xml:space="preserve"><value>Last Synced</value></data>
+  <data name="SyncStatus_LastSyncedShort" xml:space="preserve"><value>Synced</value></data>
+  <data name="SyncStatus_LastSyncedAt" xml:space="preserve"><value>Last Synced {0}</value></data>
+  <data name="SyncStatus_KeyUnavailable" xml:space="preserve"><value>Local encryption key unavailable. Pending work was preserved and cannot be processed.</value></data>
+  <data name="SyncStatus_RetryNow" xml:space="preserve"><value>Retry sync</value></data>
+  <data name="SyncStatus_SavedOnDevice" xml:space="preserve"><value>Saved on this device</value></data>
   <data name="DevOffline_Title" xml:space="preserve"><value>Offline foundation diagnostics</value></data>
   <data name="DevOffline_Subtitle" xml:space="preserve"><value>Development/Testing only. No tokens or business payloads.</value></data>
   <data name="DevOffline_NoticeTitle" xml:space="preserve"><value>Foundation diagnostics</value></data>
@@ -537,5 +548,18 @@
   <data name="DevOffline_OrganizationId" xml:space="preserve"><value>Organization</value></data>
   <data name="DevOffline_ProductCode" xml:space="preserve"><value>Product</value></data>
   <data name="DevOffline_LastOpened" xml:space="preserve"><value>Last opened (UTC)</value></data>
+  <data name="DevOffline_QueueTitle" xml:space="preserve"><value>Queue counts</value></data>
+  <data name="DevOffline_Pending" xml:space="preserve"><value>Pending</value></data>
+  <data name="DevOffline_Syncing" xml:space="preserve"><value>Syncing</value></data>
+  <data name="DevOffline_Succeeded" xml:space="preserve"><value>Succeeded</value></data>
+  <data name="DevOffline_Retryable" xml:space="preserve"><value>Retryable</value></data>
+  <data name="DevOffline_Permanent" xml:space="preserve"><value>Permanent failure</value></data>
+  <data name="DevOffline_Conflict" xml:space="preserve"><value>Conflict</value></data>
+  <data name="DevOffline_Blocked" xml:space="preserve"><value>Blocked by access</value></data>
+  <data name="DevOffline_Claimed" xml:space="preserve"><value>Claimed operation</value></data>
+  <data name="DevOffline_Attempts" xml:space="preserve"><value>Attempts</value></data>
+  <data name="DevOffline_NextAttempt" xml:space="preserve"><value>Next attempt</value></data>
+  <data name="DevOffline_LastSynced" xml:space="preserve"><value>Last synced</value></data>
+  <data name="DevOffline_FailureCode" xml:space="preserve"><value>Failure code</value></data>
   <data name="Settings_DevOfflineLink" xml:space="preserve"><value>Offline foundation diagnostics</value></data>
 </root>

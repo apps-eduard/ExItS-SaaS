@@ -34,6 +34,22 @@ else
                 <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_ProductCode"]: @(_snapshot.ProductCode ?? "—")</InlineMessage>
                 <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_LastOpened"]: @FormatTime(_snapshot.LastOpenedAtUtc)</InlineMessage>
             </Stack>
+
+            <SectionHeader Title="@L["DevOffline_QueueTitle"]" />
+            <Stack Gap="2">
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_Pending"]: @_snapshot.Pending</InlineMessage>
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_Syncing"]: @_snapshot.Syncing</InlineMessage>
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_Succeeded"]: @_snapshot.Succeeded</InlineMessage>
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_Retryable"]: @_snapshot.RetryableFailure</InlineMessage>
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_Permanent"]: @_snapshot.PermanentFailure</InlineMessage>
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_Conflict"]: @_snapshot.Conflict</InlineMessage>
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_Blocked"]: @_snapshot.BlockedByAccess</InlineMessage>
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_Claimed"]: @(_snapshot.ClaimedOperationIdShort ?? "—")</InlineMessage>
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_Attempts"]: @(_snapshot.ClaimedAttemptCount?.ToString() ?? "—")</InlineMessage>
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_NextAttempt"]: @FormatTime(_snapshot.ClaimedNextAttemptUtc)</InlineMessage>
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_LastSynced"]: @FormatTime(_snapshot.LastSyncedAtUtc)</InlineMessage>
+                <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_FailureCode"]: @(_snapshot.SampleFailureCode ?? "—")</InlineMessage>
+            </Stack>
         }
 
         <FormActions>

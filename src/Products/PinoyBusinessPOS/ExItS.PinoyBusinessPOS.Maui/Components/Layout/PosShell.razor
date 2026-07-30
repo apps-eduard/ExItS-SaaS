@@ -6,6 +6,7 @@
 @inject CultureController CultureCtl
 @inject PosStatusState Status
 @inject IPosSyncStatusService SyncStatus
+@inject IOfflineQueueProcessor QueueProcessor
 @inject IAppInfoService AppInfo
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
@@ -42,6 +43,10 @@
                 <strong>@SyncTitle</strong>
             </div>
             <p class="pos-muted">@SyncDetail</p>
+            @if (SyncKind is PosSyncStatusKind.PendingSync or PosSyncStatusKind.SyncFailed or PosSyncStatusKind.Offline)
+            {
+                <button type="button" class="pos-sync-panel__close" disabled="@_retryBusy" @onclick="RetrySyncAsync">@L["SyncStatus_RetryNow"]</button>
+            }
             <button type="button" class="pos-sync-panel__close" @onclick="CloseSyncPanel">@L["Common_Close"]</button>
         </div>
     }
@@ -77,6 +82,7 @@
 @code {
     private int _cultureEpoch;
     private bool _syncPanelOpen;
+    private bool _retryBusy;
 
     protected override void OnInitialized()
     {
@@ -136,6 +142,10 @@
         PosSyncStatusKind.Online => L["SyncStatus_OnlineShort"],
         PosSyncStatusKind.Offline => L["SyncStatus_OfflineShort"],
         PosSyncStatusKind.ReconnectRequired => L["SyncStatus_ReconnectShort"],
+        PosSyncStatusKind.PendingSync => string.Format(L["SyncStatus_PendingShort"].Value, SyncStatus.Current.PendingCount ?? 0),
+        PosSyncStatusKind.Syncing => L["SyncStatus_SyncingShort"],
+        PosSyncStatusKind.SyncFailed => L["SyncStatus_FailedShort"],
+        PosSyncStatusKind.LastSynced => L["SyncStatus_LastSyncedShort"],
         _ => L["SyncStatus_OfflineShort"],
     };
 
@@ -144,10 +154,10 @@
         PosSyncStatusKind.Online => L["SyncStatus_Online"],
         PosSyncStatusKind.Offline => L["SyncStatus_Offline"],
         PosSyncStatusKind.ReconnectRequired => L["SyncStatus_Reconnect"],
-        PosSyncStatusKind.PendingSync => L["SyncStatus_Pending"],
+        PosSyncStatusKind.PendingSync => string.Format(L["SyncStatus_Pending"].Value, SyncStatus.Current.PendingCount ?? 0),
         PosSyncStatusKind.Syncing => L["SyncStatus_Syncing"],
         PosSyncStatusKind.SyncFailed => L["SyncStatus_Failed"],
-        PosSyncStatusKind.LastSynced => L["SyncStatus_LastSynced"],
+        PosSyncStatusKind.LastSynced => FormatLastSynced(),
         _ => L["SyncStatus_Offline"],
     };
 
@@ -158,12 +168,46 @@
         PosSyncStatusKind.Online => L["SyncStatus_OnlineDetail"],
         PosSyncStatusKind.Offline => L["SyncStatus_OfflineDetail"],
         PosSyncStatusKind.ReconnectRequired => L["SyncStatus_ReconnectMessage"],
+        PosSyncStatusKind.PendingSync => L["SyncStatus_PendingDetail"],
+        PosSyncStatusKind.Syncing => L["SyncStatus_SyncingDetail"],
+        PosSyncStatusKind.SyncFailed => L["SyncStatus_FailedDetail"],
+        PosSyncStatusKind.LastSynced => FormatLastSynced(),
         _ => L["SyncStatus_OfflineDetail"],
     };
+
+    private string FormatLastSynced()
+    {
+        var at = SyncStatus.Current.LastSyncedAtUtc;
+        if (at is null)
+        {
+            return L["SyncStatus_LastSynced"];
+        }
+
+        return string.Format(L["SyncStatus_LastSyncedAt"].Value, at.Value.ToLocalTime().ToString("g"));
+    }
 
     private void ToggleSyncPanel() => _syncPanelOpen = !_syncPanelOpen;
 
     private void CloseSyncPanel() => _syncPanelOpen = false;
+
+    private async Task RetrySyncAsync()
+    {
+        if (_retryBusy)
+        {
+            return;
+        }
+
+        _retryBusy = true;
+        try
+        {
+            await QueueProcessor.ProcessAvailableAsync();
+            SyncStatus.Refresh();
+        }
+        finally
+        {
+            _retryBusy = false;
+        }
+    }
 
     private void GoToSettings() => Nav.NavigateTo("/settings");
 

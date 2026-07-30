@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Api.Common;
 using ExItS.PinoyBusinessPOS.Api.Credit;
 using ExItS.PinoyBusinessPOS.Api.Customers;
+using ExItS.PinoyBusinessPOS.Api.Offline;
 using ExItS.PinoyBusinessPOS.Api.Payments;
 using ExItS.PinoyBusinessPOS.Api.Statements;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
@@ -45,8 +46,9 @@ app.MapCreditEndpoints();
 app.MapDueDateEndpoints();
 app.MapRepaymentEndpoints();
 app.MapStatementEndpoints();
+app.MapDevOfflineProbeEndpoints();
 
-// Phase marker: P6-WP06-utang-mvp-closeout
+// Phase marker: P7-WP02-offline-queue-and-idempotency
 
 app.Run();
 

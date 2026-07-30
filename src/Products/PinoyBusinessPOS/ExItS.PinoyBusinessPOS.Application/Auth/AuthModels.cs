@@ -19,6 +19,11 @@ public static class SecureTokenKeys
     /// Durable installation DeviceId. Not a session key — must survive logout and ClearAllSessionKeysAsync.
     /// </summary>
     public const string DeviceId = "pos.device.id";
+
+    /// <summary>
+    /// AES-GCM key for offline queue payloads. Survives logout; never stored in SQLite.
+    /// </summary>
+    public const string LocalPayloadEncryptionKey = "pos.local.payload.key";
 }
 
 public static class PreferenceKeys

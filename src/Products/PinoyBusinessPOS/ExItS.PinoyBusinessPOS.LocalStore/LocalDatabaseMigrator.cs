@@ -4,16 +4,16 @@ using ExItS.PinoyBusinessPOS.Application.Abstractions;
 namespace ExItS.PinoyBusinessPOS.LocalStore;
 
 /// <summary>
-/// Foundation schema only: local_schema_info + local_context_info.
-/// No business, queue, entitlement, or DeviceId tables.
+/// Local schema migrations. v1 foundation metadata; v2 generic encrypted outbox.
 /// </summary>
 public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : ILocalDatabaseMigrator
 {
     public const int FoundationSchemaVersion = 1;
+    public const int QueueSchemaVersion = 2;
 
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
 
-    public int CurrentSchemaVersion => FoundationSchemaVersion;
+    public int CurrentSchemaVersion => QueueSchemaVersion;
 
     public async Task<LocalMigrationResult> MigrateAsync(
         ILocalDatabaseConnection connection,
@@ -26,6 +26,8 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
 
         try
         {
+            await connection.ExecuteAsync("PRAGMA journal_mode=WAL;", ct).ConfigureAwait(false);
+
             await connection.ExecuteAsync(
                 """
                 CREATE TABLE IF NOT EXISTS local_schema_info (
@@ -62,6 +64,71 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
                     VALUES ({FoundationSchemaVersion}, '{now}');
                     """,
                     ct).ConfigureAwait(false);
+                current = FoundationSchemaVersion;
+            }
+
+            if (current < QueueSchemaVersion)
+            {
+                await connection.ExecuteAsync(
+                    """
+                    CREATE TABLE IF NOT EXISTS offline_operations (
+                        operation_id TEXT NOT NULL PRIMARY KEY,
+                        device_id TEXT NOT NULL,
+                        user_id TEXT NOT NULL,
+                        organization_id TEXT NOT NULL,
+                        product_code TEXT NOT NULL,
+                        operation_type TEXT NOT NULL,
+                        payload_version INTEGER NOT NULL,
+                        ciphertext BLOB NOT NULL,
+                        nonce BLOB NOT NULL,
+                        tag BLOB NOT NULL,
+                        payload_hash TEXT NOT NULL,
+                        idempotency_key TEXT NOT NULL,
+                        created_utc TEXT NOT NULL,
+                        next_attempt_utc TEXT NOT NULL,
+                        attempt_count INTEGER NOT NULL DEFAULT 0,
+                        queue_state TEXT NOT NULL,
+                        last_attempt_utc TEXT NULL,
+                        failure_code TEXT NULL,
+                        failure_summary TEXT NULL,
+                        server_reference TEXT NULL,
+                        concurrency_token TEXT NULL,
+                        claimed_by TEXT NULL,
+                        claimed_utc TEXT NULL
+                    );
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE INDEX IF NOT EXISTS ix_offline_ops_fifo
+                    ON offline_operations (queue_state, created_utc, operation_id);
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE INDEX IF NOT EXISTS ix_offline_ops_next
+                    ON offline_operations (queue_state, next_attempt_utc);
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_sync_meta (
+                        key TEXT NOT NULL PRIMARY KEY,
+                        value TEXT NOT NULL
+                    );
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    $"""
+                    INSERT INTO local_schema_info (schema_version, applied_at_utc)
+                    VALUES ({QueueSchemaVersion}, '{now}');
+                    """,
+                    ct).ConfigureAwait(false);
+                current = QueueSchemaVersion;
             }
 
             var existing = await connection
@@ -100,14 +167,13 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
                     ct).ConfigureAwait(false);
             }
 
-            // Guard: foundation schema must not contain deferred business/queue tables.
             var forbidden = await connection.QueryRowsAsync(
                 """
                 SELECT name FROM sqlite_master
                 WHERE type = 'table'
                   AND name IN (
                     'customers', 'credit_entries', 'repayments', 'ledger', 'due_dates',
-                    'statements', 'receipts', 'operation_queue', 'sync_queue', 'conflicts',
+                    'statements', 'receipts', 'sync_queue', 'conflicts',
                     'entitlement_cache', 'sync_checkpoints');
                 """,
                 ct).ConfigureAwait(false);
@@ -117,7 +183,7 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
                 return new LocalMigrationResult(false, (int)current, "forbidden_tables_present");
             }
 
-            return new LocalMigrationResult(true, FoundationSchemaVersion);
+            return new LocalMigrationResult(true, QueueSchemaVersion);
         }
         catch (OperationCanceledException)
         {

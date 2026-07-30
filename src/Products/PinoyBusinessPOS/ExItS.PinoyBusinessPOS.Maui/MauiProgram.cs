@@ -17,10 +17,9 @@ namespace ExItS.PinoyBusinessPOS.Maui;
 public static class MauiProgram
 {
     /// <summary>
-    /// Development-stage notice (P7-WP01): authentication uses the approved Development/Testing
-    /// Platform identity mechanism only (<c>X-Dev-Platform-User-Id</c>). Production JWT/MFA/SSO
-    /// authentication is not implemented. Local SQLite foundation and DeviceId are available;
-    /// offline business operations, sync queue, and entitlement cache are not.
+    /// Development-stage notice (P7-WP02): authentication uses the approved Development/Testing
+    /// Platform identity mechanism only. Local SQLite foundation, DeviceId, encrypted offline queue,
+    /// and Dev probe sync are available; real offline customer/credit workflows are not.
     /// </summary>
     public static MauiApp CreateMauiApp()
     {
@@ -94,7 +93,11 @@ public static class MauiProgram
         services.AddPinoyBusinessPosLocalStore();
         services.AddSingleton<ProtectedShellAccessPolicy>();
         services.AddSingleton<IProtectedShellAccessPolicy>(sp => sp.GetRequiredService<ProtectedShellAccessPolicy>());
-        services.AddSingleton<IPosSyncStatusService, PosSyncStatusService>();
+        services.AddSingleton<IPosSyncStatusService>(sp =>
+            new PosSyncStatusService(
+                sp.GetRequiredService<IConnectivityService>(),
+                sp.GetRequiredService<IProtectedShellAccessPolicy>(),
+                sp.GetRequiredService<IOfflineOperationQueue>()));
         services.AddSingleton<IAuthenticationService, AuthenticationService>();
         services.AddSingleton<IUtangCapabilityEvaluator, UtangCapabilityEvaluator>();
         services.AddSingleton<IDocumentHandoffService, MauiDocumentHandoffService>();
@@ -107,6 +110,8 @@ public static class MauiProgram
         services.AddSingleton<ApiStatusLocalizer>();
 
         services.AddPosApiClient(configuration);
+        services.AddSingleton<IOfflineOperationDispatcher, DevOfflineProbeDispatcher>();
         services.AddSingleton<PosStatusState>();
+        // Phase marker: P7-WP02-offline-queue-and-idempotency
     }
 }

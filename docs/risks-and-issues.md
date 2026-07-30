@@ -134,9 +134,13 @@
 | R-128 | Dev actor header mistaken for production audit identity | High | Document `X-Dev-Platform-User-Id` as Development/Testing-only; production JWT still required (R-091) | Open — introduced P6-WP03; also used for due-date set/clear in P6-WP04 |
 | R-129 | Transitive SQLitePCLRaw NU1903 advisory on Microsoft.Data.Sqlite 10.0.4 | Medium | Track package upgrade when Microsoft ships fixed transitive; foundation stores no business secrets in WP01; sandbox + SecureStorage for secrets | Open — introduced P7-WP01 |
 
+## Phase 7 note (P7-WP02)
+
+P7-WP02 delivered the generic encrypted offline outbox, FIFO processor, server idempotency, OD-10 retention resolution, and operational sync indicator. **No offline business mutations.** R-109 remains open. R-022 remains open. Next: **P7-WP03 — Customer and Credit Sync** when authorized.
+
 ## Phase 7 note (P7-WP01)
 
-P7-WP01 delivered SQLite foundation, DeviceId, local-context isolation, sync-status shell (Online/Offline/Reconnect), and Dev diagnostics. **No offline business operations.** R-109 remains open. OD-10 and R-022 remain open. Next: **P7-WP02 — Offline Queue and Idempotency** when authorized.
+P7-WP01 delivered SQLite foundation, DeviceId, local-context isolation, sync-status shell (Online/Offline/Reconnect), and Dev diagnostics. **No offline business operations.**
 
 ## Phase 6 note (P6-WP06 closeout)
 

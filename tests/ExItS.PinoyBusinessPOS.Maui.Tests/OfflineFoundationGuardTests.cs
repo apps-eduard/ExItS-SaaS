@@ -12,10 +12,11 @@ public sealed class OfflineFoundationGuardTests
         Assert.Contains("pos-sync-status", shell, StringComparison.Ordinal);
         Assert.Contains("SyncStatus_Online", shell, StringComparison.Ordinal);
         Assert.Contains("SyncStatus_Offline", shell, StringComparison.Ordinal);
-        Assert.Contains("SyncStatus_Reconnect", shell, StringComparison.Ordinal);
+        Assert.Contains("SyncStatus_Pending", shell, StringComparison.Ordinal);
+        Assert.Contains("SyncStatus_Syncing", shell, StringComparison.Ordinal);
+        Assert.Contains("SyncStatus_Failed", shell, StringComparison.Ordinal);
+        Assert.Contains("LastSyncedAtUtc", shell, StringComparison.Ordinal);
         Assert.Contains("aria-label", shell, StringComparison.Ordinal);
-        Assert.DoesNotContain("PendingCount", shell, StringComparison.Ordinal);
-        Assert.DoesNotContain("LastSyncedAtUtc", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("SyncQueue", shell, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("emoji", shell, StringComparison.OrdinalIgnoreCase);
     }
@@ -97,8 +98,9 @@ public sealed class OfflineFoundationGuardTests
             var text = File.ReadAllText(file);
             Assert.DoesNotContain("class SyncQueue", text, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("IOfflineMutationQueue", text, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("IdempotencyKey", text, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("SQLCipher", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("CREATE TABLE customers", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("CREATE TABLE credit_entries", text, StringComparison.OrdinalIgnoreCase);
         }
     }
 

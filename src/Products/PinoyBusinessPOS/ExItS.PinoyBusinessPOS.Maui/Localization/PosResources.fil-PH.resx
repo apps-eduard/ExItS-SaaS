@@ -517,10 +517,21 @@
   <data name="SyncStatus_ReconnectShort" xml:space="preserve"><value>Reconnect</value></data>
   <data name="SyncStatus_ReconnectTitle" xml:space="preserve"><value>Kailangan mag-reconnect</value></data>
   <data name="SyncStatus_ReconnectMessage" xml:space="preserve"><value>Mag-reconnect para i-verify ang access bago magpatuloy. Hindi sapat ang local data para i-unlock ang POS.</value></data>
-  <data name="SyncStatus_Pending" xml:space="preserve"><value>Pending Sync</value></data>
+  <data name="SyncStatus_Pending" xml:space="preserve"><value>Pending Sync ({0})</value></data>
+  <data name="SyncStatus_PendingShort" xml:space="preserve"><value>Pending ({0})</value></data>
+  <data name="SyncStatus_PendingDetail" xml:space="preserve"><value>Naka-save sa device na ito. Naghihintay mag-sync.</value></data>
   <data name="SyncStatus_Syncing" xml:space="preserve"><value>Sini-sync</value></data>
+  <data name="SyncStatus_SyncingShort" xml:space="preserve"><value>Sini-sync</value></data>
+  <data name="SyncStatus_SyncingDetail" xml:space="preserve"><value>Pinapadala ang pending work sa server.</value></data>
   <data name="SyncStatus_Failed" xml:space="preserve"><value>Nabigo ang Sync</value></data>
+  <data name="SyncStatus_FailedShort" xml:space="preserve"><value>Nabigo</value></data>
+  <data name="SyncStatus_FailedDetail" xml:space="preserve"><value>May operation na kailangan i-review. Napanatili ang pending work.</value></data>
   <data name="SyncStatus_LastSynced" xml:space="preserve"><value>Huling Sync</value></data>
+  <data name="SyncStatus_LastSyncedShort" xml:space="preserve"><value>Na-sync</value></data>
+  <data name="SyncStatus_LastSyncedAt" xml:space="preserve"><value>Huling Sync {0}</value></data>
+  <data name="SyncStatus_KeyUnavailable" xml:space="preserve"><value>Hindi available ang local encryption key. Napanatili ang pending work at hindi mapoproseso.</value></data>
+  <data name="SyncStatus_RetryNow" xml:space="preserve"><value>I-retry ang sync</value></data>
+  <data name="SyncStatus_SavedOnDevice" xml:space="preserve"><value>Naka-save sa device na ito</value></data>
   <data name="DevOffline_Title" xml:space="preserve"><value>Offline foundation diagnostics</value></data>
   <data name="DevOffline_Subtitle" xml:space="preserve"><value>Development/Testing lamang. Walang token o business payload.</value></data>
   <data name="DevOffline_NoticeTitle" xml:space="preserve"><value>Foundation diagnostics</value></data>
@@ -537,5 +548,18 @@
   <data name="DevOffline_OrganizationId" xml:space="preserve"><value>Organization</value></data>
   <data name="DevOffline_ProductCode" xml:space="preserve"><value>Product</value></data>
   <data name="DevOffline_LastOpened" xml:space="preserve"><value>Huling binuksan (UTC)</value></data>
+  <data name="DevOffline_QueueTitle" xml:space="preserve"><value>Queue counts</value></data>
+  <data name="DevOffline_Pending" xml:space="preserve"><value>Pending</value></data>
+  <data name="DevOffline_Syncing" xml:space="preserve"><value>Sini-sync</value></data>
+  <data name="DevOffline_Succeeded" xml:space="preserve"><value>Succeeded</value></data>
+  <data name="DevOffline_Retryable" xml:space="preserve"><value>Retryable</value></data>
+  <data name="DevOffline_Permanent" xml:space="preserve"><value>Permanent failure</value></data>
+  <data name="DevOffline_Conflict" xml:space="preserve"><value>Conflict</value></data>
+  <data name="DevOffline_Blocked" xml:space="preserve"><value>Blocked by access</value></data>
+  <data name="DevOffline_Claimed" xml:space="preserve"><value>Claimed operation</value></data>
+  <data name="DevOffline_Attempts" xml:space="preserve"><value>Attempts</value></data>
+  <data name="DevOffline_NextAttempt" xml:space="preserve"><value>Susunod na attempt</value></data>
+  <data name="DevOffline_LastSynced" xml:space="preserve"><value>Huling sync</value></data>
+  <data name="DevOffline_FailureCode" xml:space="preserve"><value>Failure code</value></data>
   <data name="Settings_DevOfflineLink" xml:space="preserve"><value>Offline foundation diagnostics</value></data>
 </root>

@@ -6,76 +6,76 @@
 
 Safe offline-first operation and synchronization for PinoyBusinessPOS. Work packages are sequenced; do not implement later WP scope early.
 
-## P7-WP01 decisions (authoritative)
+## P7-WP01 decisions (complete)
 
-### Scope — foundation only
+Foundation: DeviceId, per-context SQLite isolation, schema versioning, local-context lifecycle, sync-status shell shell (Online/Offline/Reconnect), Dev diagnostics. No offline business operations.
 
-Delivered in P7-WP01:
+## P7-WP02 decisions (authoritative)
 
-- SQLite local-store infrastructure (Microsoft.Data.Sqlite)
-- Local schema versioning and migrations
-- Per-user / per-organization / per-product database isolation
-- Durable local DeviceId (SecureStorage)
-- Local-context lifecycle (open/close on validated online access)
-- Persistent sync-status shell indicator (Online / Offline / Reconnect only)
-- Development/Testing diagnostics at `/dev/offline-foundation`
+### Scope — infrastructure only
 
-**P7-WP01 does not enable offline business operations.**
+Deliver:
 
-### Explicit deferrals (P7-WP02+)
+- Generic SQLite outbox (`offline_operations`) shared by all future POS operation types
+- AES-GCM payload encryption; key in SecureStorage only (no SQLCipher)
+- Explicit queue state machine and FIFO processing
+- Bounded retry/backoff with transient vs permanent classification
+- Server idempotency persistence for future mutations
+- Crash/restart recovery of abandoned `Syncing` claims
+- Access revalidation before processing (`BlockedByAccess`)
+- Operational sync indicator (Pending Sync / Syncing / Sync Failed / Last Synced)
+- Development/Testing probe handler + diagnostics (not a production business endpoint)
 
-- Offline mutation queue/outbox and idempotency processing
-- Customer / credit / repayment / ledger caching
-- Offline create/update/reversal operations
-- Sync workers, retry scheduling, conflict resolution
-- Server device registration
-- Cached entitlement snapshots and offline authorization grace periods (**R-022** remains open)
-- Pending-operation retention (**OD-10** remains open; not blocking WP01 because no business data is stored)
-- SQLCipher / DB encryption for cached business payloads (required decision before first offline business-data WP)
-- Production synchronization; sales/inventory/gateways/QR/cards
+**Does not enable real offline customer, credit, repayment, or other business workflows.**
 
-### Device identity
+### OD-10 resolution (retention)
 
-- One cryptographically random UUID generated on first use
-- Persisted via existing `ISecureTokenStore` / MAUI SecureStorage
-- Survives restart, logout, user change, organization change
-- New id after reinstall, app-data clear, or secure-storage loss
-- Not derived from hardware, IMEI, MAC, username, organization, or advertising IDs
-- Not authentication or authorization proof
-- No Platform/POS registration in WP01
-- No reset/rotation UI in WP01
+Pending operations remain encrypted across logout and access loss, isolated to their original user/organization/product context, and are never processed until that context is reauthorized. They are not silently deleted. No time-based retention period is invented in this work package.
 
-### Local database isolation
+### Generic envelope
 
-- Separate SQLite file per `User + Organization + Product`
-- Deterministic hashed filename (no raw user/org IDs in path)
-- Files under MAUI application sandbox; OS file protection only (no SQLCipher in WP01)
-- No tokens, passwords, authorization headers, or entitlement grants in SQLite
-- DesignSystem and Razor must not open SQLite directly
+One reusable envelope for all current and future POS offline operations. Future WPs add versioned `OperationType` values and handlers — they must not create separate queues.
 
-### Authorization (no offline grace window in WP01)
+Required fields: OperationId, DeviceId, UserId, OrganizationId, ProductCode, OperationType, PayloadVersion, encrypted payload (ciphertext/nonce/tag), payload hash, idempotency key, CreatedUtc, NextAttemptUtc, AttemptCount, QueueState, LastAttemptUtc, safe failure code/summary, server reference, concurrency/version metadata.
 
-- Local DB open requires authenticated **online** session and validated org/product access
-- Offline startup cannot enter protected POS routes using SQLite or prior session alone
-- DeviceId and DB existence never grant access
-- Fail closed for missing/stale/revoked/Suspended/unknown access
+### Queue states
 
-### Sync-status shell (permanent UX)
+`Pending` · `Syncing` · `Succeeded` · `RetryableFailure` · `PermanentFailure` · `Conflict` · `BlockedByAccess`
 
-Shared contract states: Online, Offline, Pending Sync, Syncing, Sync Failed, Last Synced, Reconnect to verify access.
+### Processing order
 
-**WP01 wires only:** Online, Offline, Reconnect to verify access.  
-Queue-driven states are deferred until P7-WP02 (must not be fabricated).
+FIFO by `CreatedUtc` within a context; `OperationId` is the deterministic tie-breaker. Later operations must not overtake earlier pending ones in the same context.
 
-## Later phase (preview — not WP01)
+### Payload protection
 
-MAUI stores approved offline business data in SQLite and queues commands with OperationId, DeviceId, and idempotency key (P7-WP02+).
+- Random 256-bit key in SecureStorage (`pos.local.payload.key`)
+- AES-GCM authenticated encryption; unique nonce per payload
+- AAD binds ciphertext to context hash + operation identity where practical
+- Key never in SQLite, Preferences, logs, UI, or docs
+- Key loss: fail closed; preserve encrypted DB; localized recovery error; no overwrite/process
 
-Supported first when those WPs authorize:
+### Server idempotency
 
-- Customer creation
-- Remarks-based credit
-- Payment on existing credit
-- Later: sales and inventory movements
+Identity: organization + product + operation type + idempotency key.
 
-Financial records remain append-only. Retry must not duplicate balances. Offline entitlement grace policy remains **undefined** until an explicit decision (R-022).
+- First valid submission executes once
+- Exact replay returns original outcome
+- Same key + different payload hash → conflict
+- Concurrent duplicates converge to one execution
+- Authorization checked before protected results
+- Idempotency never bypasses validation, scope, entitlements, or business invariants
+
+### Retry
+
+Retry only transient: connectivity, timeout, temporary unavailability, approved 5xx.  
+Do not auto-retry: validation, authz denial, org mismatch, revoked access, business conflicts, incompatible version, key/payload mismatch, financial invariant failures.
+
+Bounded exponential backoff with jitter; max attempts documented. After limit: retain, classify, require explicit later retry/review; never auto-delete.
+
+### Explicit deferrals (P7-WP03+)
+
+Customer/credit/repayment offline workflows, business-data cache, automatic financial conflict resolution, production sync scheduling, sales/inventory/gateways/QR/cards, SQLCipher, offline entitlement grace (R-022), time-based retention purge.
+
+## Later phase (preview)
+
+P7-WP03 — Customer and Credit Sync will integrate real operation types into this same queue.

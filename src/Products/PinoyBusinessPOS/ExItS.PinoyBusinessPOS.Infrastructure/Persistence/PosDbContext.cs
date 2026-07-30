@@ -3,6 +3,7 @@ using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Customers;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Idempotency;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Payments;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,6 +22,7 @@ public sealed class PosDbContext : DbContext
     internal DbSet<CreditEntryRecord> CreditEntries => Set<CreditEntryRecord>();
     internal DbSet<CreditDueDateChangeRecord> CreditDueDateChanges => Set<CreditDueDateChangeRecord>();
     internal DbSet<RepaymentRecord> Repayments => Set<RepaymentRecord>();
+    internal DbSet<PosIdempotencyRecord> IdempotencyRecords => Set<PosIdempotencyRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -208,6 +210,37 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_repayments_customers");
+        });
+
+        modelBuilder.Entity<PosIdempotencyRecord>(entity =>
+        {
+            entity.ToTable("idempotency_records");
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.OperationType).HasColumnName("operation_type").HasMaxLength(128).IsRequired();
+            entity.Property(e => e.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(128).IsRequired();
+            entity.Property(e => e.PayloadHash).HasColumnName("payload_hash").HasMaxLength(128).IsRequired();
+            entity.Property(e => e.OperationId).HasColumnName("operation_id");
+            entity.Property(e => e.OutcomeCode).HasColumnName("outcome_code").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.OutcomeBodyJson).HasColumnName("outcome_body_json");
+            entity.Property(e => e.ServerReference).HasColumnName("server_reference").HasMaxLength(128);
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ProductCode, e.OperationType, e.IdempotencyKey })
+                .IsUnique()
+                .HasDatabaseName("ux_idempotency_org_product_type_key");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.CreatedAtUtc })
+                .HasDatabaseName("ix_idempotency_org_created");
         });
     }
 }

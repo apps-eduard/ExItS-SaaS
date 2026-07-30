@@ -42,6 +42,10 @@ Later POS ownership (not yet implemented): businesses, stores/branches/registers
 
 **P7-WP01 local device ownership (foundation only):** per-user/org/product SQLite files under the MAUI sandbox hold schema/context metadata only (`local_schema_info`, `local_context_info`). DeviceId lives in SecureStorage, not SQLite. No tokens, entitlements, customers, or financial rows locally.
 
+**P7-WP02 local queue ownership:** same isolated SQLite files also hold encrypted `offline_operations` outbox rows and `local_sync_meta`. Payloads are ciphertext-only; encryption key is SecureStorage-only. Server owns `pos.idempotency_records` for replay proofs (not duplicated business transactions).
+
+**OD-10 (resolved for pending ops):** Pending operations remain encrypted across logout and access loss, isolated to their original context, and are never processed until that context is reauthorized. They are not silently deleted. No time-based retention period is invented.
+
 ---
 
 ## Ownership catalog

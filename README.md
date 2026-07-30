@@ -38,9 +38,9 @@ ExItS-SaaS/
 
 **Phase 6** is **complete** with documented risks ([P6-WP06 closeout](docs/reports/P6-WP06-utang-mvp-closeout.md)). Utang MVP (customers, credit, repayments/ledger, due dates/overdue, statements/receipts, trial/continuity rules) is closed.
 
-**Phase 7** is **in progress**. [P7-WP01](docs/reports/P7-WP01-sqlite-and-device-identity.md) delivered SQLite foundation + DeviceId (no offline business ops). Production auth, POS operational roles, sales/inventory remain open.
+**Phase 7** is **in progress**. [P7-WP01](docs/reports/P7-WP01-sqlite-and-device-identity.md) delivered SQLite foundation + DeviceId. [P7-WP02](docs/reports/P7-WP02-offline-queue-and-idempotency.md) delivered encrypted offline queue + server idempotency (no real offline business workflows). Production auth, POS operational roles, sales/inventory remain open.
 
-Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Next: **P7-WP02 — Offline Queue and Idempotency** when authorized.
+Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Next: **P7-WP03 — Customer and Credit Sync** when authorized.
 
 ### Platform database (local)
 
