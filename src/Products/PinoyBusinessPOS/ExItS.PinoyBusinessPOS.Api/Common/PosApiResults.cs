@@ -29,6 +29,7 @@ internal static class PosApiResults
 
         ApplicationErrorCodes.MobileConflict
             or ApplicationErrorCodes.ConcurrencyConflict
+            or ApplicationErrorCodes.CustomerConcurrencyConflict
             or DomainErrorCodes.InvalidCustomerStatusTransition
             or DomainErrorCodes.CustomerNotActive
             or DomainErrorCodes.InvalidCreditEntryStatusTransition

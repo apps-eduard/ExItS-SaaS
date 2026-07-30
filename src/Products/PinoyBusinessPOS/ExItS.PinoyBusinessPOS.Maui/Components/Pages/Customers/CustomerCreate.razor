@@ -1,11 +1,11 @@
 @page "/customers/new"
 @inject NavigationManager Nav
 @inject NavigationGate Gate
-@inject IPosCustomerClient Customers
 @inject ICurrentUserContext CurrentUser
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
+@inject ICustomerCreditOfflineSyncService Sync
 
 @if (!_ready)
 {
@@ -31,6 +31,11 @@ else
     @if (!string.IsNullOrEmpty(_formError))
     {
         <Alert Tone="AlertTone.Danger" Title="@L["Customers_ErrorTitle"]" Message="@_formError" />
+    }
+
+    @if (!string.IsNullOrEmpty(_pendingMessage))
+    {
+        <Alert Tone="AlertTone.Success" Title="@L["Customers_SuccessTitle"]" Message="@_pendingMessage" />
     }
 
     <CustomerForm DisplayName="@_displayName"
@@ -61,6 +66,7 @@ else
     private string? _displayNameError;
     private string? _mobileError;
     private string? _formError;
+    private string? _pendingMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -84,6 +90,7 @@ else
         _displayNameError = null;
         _mobileError = null;
         _formError = null;
+        _pendingMessage = null;
 
         if (string.IsNullOrWhiteSpace(_displayName))
         {
@@ -92,31 +99,33 @@ else
         }
 
         _saving = true;
-        var result = await Customers.CreateAsync(new CreatePosCustomerRequest(
+        var result = await Sync.CreateCustomerAsync(
             _displayName.Trim(),
             string.IsNullOrWhiteSpace(_mobile) ? null : _mobile,
             string.IsNullOrWhiteSpace(_address) ? null : _address,
-            string.IsNullOrWhiteSpace(_notes) ? null : _notes));
+            string.IsNullOrWhiteSpace(_notes) ? null : _notes);
 
-        if (result.IsSuccess && result.Data is not null)
+        if (result.Succeeded && result.Customer is not null)
         {
-            Nav.NavigateTo($"/customers/{result.Data.CustomerId:D}", replace: true);
+            var route = result.PendingLocal
+                ? $"/customers/{result.Customer.CustomerId:D}?pending=1"
+                : $"/customers/{result.Customer.CustomerId:D}";
+            Nav.NavigateTo(route, replace: true);
             return;
         }
 
-        if (result.Status == ApiCallStatus.Conflict)
+        if (string.Equals(result.ErrorCode, ApplicationErrorCodes.MobileConflict, StringComparison.Ordinal))
         {
             _formError = L["Customers_ConflictMessage"];
             _mobileError = L["Customers_ConflictMessage"];
         }
-        else if (result.Status == ApiCallStatus.Validation)
+        else if (string.Equals(result.ErrorCode, "offline_mutations_unavailable", StringComparison.Ordinal))
         {
-            _formError = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+            _formError = L["Offline_MutationsUnavailable"];
         }
         else
         {
-            var described = ApiLocalizer.Describe(result.Status, result.Error);
-            _formError = result.Error?.Detail ?? described.Message;
+            _formError = result.ErrorMessage ?? L["Customers_ErrorTitle"];
         }
 
         _saving = false;

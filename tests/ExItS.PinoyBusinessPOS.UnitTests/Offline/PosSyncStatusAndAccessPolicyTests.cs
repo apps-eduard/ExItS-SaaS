@@ -70,6 +70,32 @@ public sealed class PosSyncStatusAndAccessPolicyTests
         Assert.False(policy.RequiresReconnectToVerifyAccess);
     }
 
+    [Fact]
+    public async Task Continuous_session_allows_offline_shell_after_online_validation()
+    {
+        var connectivity = new FakeConnectivity(online: true);
+        var current = new CurrentUserContext();
+        current.Set(new AuthSession(
+            Guid.NewGuid(), "User", "user", "u@example.com",
+            Guid.NewGuid(), "Org",
+            DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddHours(1),
+            HasPosAccess: true, AccessReasonCode: "allowed"));
+
+        var policy = new ProtectedShellAccessPolicy(current, connectivity);
+        await policy.InitializeAsync();
+
+        Assert.True(policy.CanEnterProtectedShell);
+        Assert.True(policy.AllowsOfflineMutation);
+        Assert.False(policy.RequiresReconnectToVerifyAccess);
+
+        connectivity.SetOnline(false);
+        await Task.Delay(10);
+
+        Assert.True(policy.CanEnterProtectedShell);
+        Assert.True(policy.AllowsOfflineMutation);
+        Assert.False(policy.RequiresReconnectToVerifyAccess);
+    }
+
     private sealed class FakeConnectivity(bool online) : IConnectivityService
     {
         private bool _online = online;

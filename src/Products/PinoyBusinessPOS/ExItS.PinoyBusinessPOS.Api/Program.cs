@@ -43,12 +43,13 @@ app.UseMiddleware<PosCommercialAccessMiddleware>();
 app.MapHealthChecks("/health");
 app.MapCustomerEndpoints();
 app.MapCreditEndpoints();
+app.MapCustomerCreditSyncEndpoints();
 app.MapDueDateEndpoints();
 app.MapRepaymentEndpoints();
 app.MapStatementEndpoints();
 app.MapDevOfflineProbeEndpoints();
 
-// Phase marker: P7-WP02-offline-queue-and-idempotency
+// Phase marker: P7-WP03-customer-credit-offline-sync
 
 app.Run();
 

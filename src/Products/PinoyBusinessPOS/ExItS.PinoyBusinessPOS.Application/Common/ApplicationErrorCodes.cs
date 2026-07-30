@@ -4,6 +4,7 @@ public static class ApplicationErrorCodes
 {
     public const string CustomerNotFound = "pos.customer.not_found";
     public const string MobileConflict = "pos.customer.mobile.conflict";
+    public const string CustomerConcurrencyConflict = "pos.customer.concurrency_conflict";
     public const string CreditEntryNotFound = "pos.credit_entry.not_found";
     public const string RepaymentNotFound = "pos.repayment.not_found";
     public const string ActorRequired = "pos.actor.required";

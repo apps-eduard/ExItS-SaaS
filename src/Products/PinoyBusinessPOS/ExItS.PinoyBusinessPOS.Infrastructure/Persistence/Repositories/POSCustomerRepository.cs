@@ -89,6 +89,34 @@ internal sealed class POSCustomerRepository : IPOSCustomerRepository
         return (records.Select(CustomerEntityMapper.ToDomain).ToList(), total);
     }
 
+    public async Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListUpdatedSinceAsync(
+        PosOrganizationId organizationId,
+        DateTimeOffset? sinceUtc,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _db.Customers.AsNoTracking()
+            .Where(c => c.OrganizationId == organizationId.Value);
+
+        if (sinceUtc is not null)
+        {
+            var since = sinceUtc.Value.ToUniversalTime();
+            query = query.Where(c => c.UpdatedAtUtc > since);
+        }
+
+        var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
+        var records = await query
+            .OrderBy(c => c.UpdatedAtUtc)
+            .ThenBy(c => c.Id)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return (records.Select(CustomerEntityMapper.ToDomain).ToList(), total);
+    }
+
     public Task AddAsync(POSCustomer customer, CancellationToken cancellationToken = default)
     {
         _db.Customers.Add(CustomerEntityMapper.ToRecord(customer));

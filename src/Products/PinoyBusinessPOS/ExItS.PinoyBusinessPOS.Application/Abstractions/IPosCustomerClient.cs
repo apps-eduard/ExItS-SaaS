@@ -17,11 +17,15 @@ public interface IPosCustomerClient
 
     Task<ApiResult<PosCustomerDetailDto>> GetAsync(Guid customerId, CancellationToken ct = default);
 
-    Task<ApiResult<PosCustomerDetailDto>> CreateAsync(CreatePosCustomerRequest request, CancellationToken ct = default);
+    Task<ApiResult<PosCustomerDetailDto>> CreateAsync(
+        CreatePosCustomerRequest request,
+        PosMutationIdempotencyHeaders? idempotency = null,
+        CancellationToken ct = default);
 
     Task<ApiResult<PosCustomerDetailDto>> UpdateAsync(
         Guid customerId,
         UpdatePosCustomerRequest request,
+        PosMutationIdempotencyHeaders? idempotency = null,
         CancellationToken ct = default);
 
     Task<ApiResult<PosCustomerDetailDto>> DeactivateAsync(Guid customerId, CancellationToken ct = default);
@@ -39,6 +43,7 @@ public interface IPosCustomerClient
     Task<ApiResult<PosCreditEntryDto>> CreateCreditEntryAsync(
         Guid customerId,
         CreatePosCreditEntryRequest request,
+        PosMutationIdempotencyHeaders? idempotency = null,
         CancellationToken ct = default);
 
     Task<ApiResult<PosCreditEntryDto>> ReverseCreditEntryAsync(
@@ -124,5 +129,17 @@ public interface IPosCustomerClient
         string? organizationDisplayName = null,
         string? currencyCode = null,
         string? culture = null,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosCustomerSyncPageResult>> SyncCustomersAsync(
+        DateTimeOffset? sinceUtc = null,
+        int page = 1,
+        int pageSize = 100,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosCreditSyncPageResult>> SyncCreditEntriesAsync(
+        DateTimeOffset? sinceUtc = null,
+        int page = 1,
+        int pageSize = 100,
         CancellationToken ct = default);
 }

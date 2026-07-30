@@ -44,6 +44,8 @@ Later POS ownership (not yet implemented): businesses, stores/branches/registers
 
 **P7-WP02 local queue ownership:** same isolated SQLite files also hold encrypted `offline_operations` outbox rows and `local_sync_meta`. Payloads are ciphertext-only; encryption key is SecureStorage-only. Server owns `pos.idempotency_records` for replay proofs (not duplicated business transactions).
 
+**P7-WP03 local encrypted customer/credit projections:** same isolated SQLite files also hold encrypted local customer and credit read-model rows (row-level AES-GCM; no plaintext PII or financial amounts). Server PostgreSQL (`pos.customers`, `pos.credit_entries`, etc.) remains system of record. Local rows are projections + pending offline mutations only; never authoritative over server state. Outstanding is derived — confirmed vs pending effects distinguished; no editable balance column.
+
 **OD-10 (resolved for pending ops):** Pending operations remain encrypted across logout and access loss, isolated to their original context, and are never processed until that context is reauthorized. They are not silently deleted. No time-based retention period is invented.
 
 ---

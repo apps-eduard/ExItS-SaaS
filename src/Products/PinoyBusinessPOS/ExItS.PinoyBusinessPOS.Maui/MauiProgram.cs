@@ -111,7 +111,11 @@ public static class MauiProgram
 
         services.AddPosApiClient(configuration);
         services.AddSingleton<IOfflineOperationDispatcher, DevOfflineProbeDispatcher>();
+        services.AddSingleton<IOfflineOperationDispatcher, CustomerCreateOfflineDispatcher>();
+        services.AddSingleton<IOfflineOperationDispatcher, CustomerUpdateOfflineDispatcher>();
+        services.AddSingleton<IOfflineOperationDispatcher, CreditCreateOfflineDispatcher>();
+        services.AddSingleton<ICustomerCreditOfflineSyncService, CustomerCreditOfflineSyncService>();
         services.AddSingleton<PosStatusState>();
-        // Phase marker: P7-WP02-offline-queue-and-idempotency
+        // Phase marker: P7-WP03-customer-and-credit-sync
     }
 }

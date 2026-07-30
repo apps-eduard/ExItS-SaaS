@@ -43,7 +43,9 @@ public sealed record OfflineOperationEnvelope(
     string? FailureCode,
     string? FailureSummary,
     string? ServerReference,
-    string? ConcurrencyToken);
+    string? ConcurrencyToken,
+    Guid? DependsOnOperationId = null,
+    Guid? EntityId = null);
 
 public sealed record EncryptedPayload(
     byte[] Ciphertext,
@@ -56,7 +58,9 @@ public sealed record OfflineEnqueueRequest(
     int PayloadVersion,
     string IdempotencyKey,
     ReadOnlyMemory<byte> PlaintextPayload,
-    string? ConcurrencyToken = null);
+    string? ConcurrencyToken = null,
+    Guid? DependsOnOperationId = null,
+    Guid? EntityId = null);
 
 public sealed record OfflineQueueCounts(
     int Pending,

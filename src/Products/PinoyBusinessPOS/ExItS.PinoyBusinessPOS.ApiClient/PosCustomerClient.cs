@@ -15,6 +15,11 @@ namespace ExItS.PinoyBusinessPOS.ApiClient;
 public sealed class PosCustomerClient(HttpClient httpClient, IConnectivityService? connectivityService = null)
     : IPosCustomerClient
 {
+    private const string IdempotencyKeyHeader = "Idempotency-Key";
+    private const string PayloadHashHeader = "X-Pos-Payload-Hash";
+    private const string OperationIdHeader = "X-Pos-Operation-Id";
+    private const string OperationTypeHeader = "X-Pos-Operation-Type";
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -47,14 +52,28 @@ public sealed class PosCustomerClient(HttpClient httpClient, IConnectivityServic
     public Task<ApiResult<PosCustomerDetailDto>> GetAsync(Guid customerId, CancellationToken ct = default) =>
         SendAsync<PosCustomerDetailDto>(HttpMethod.Get, $"/api/v1/pos/customers/{customerId:D}", null, ct);
 
-    public Task<ApiResult<PosCustomerDetailDto>> CreateAsync(CreatePosCustomerRequest request, CancellationToken ct = default) =>
-        SendAsync<PosCustomerDetailDto>(HttpMethod.Post, "/api/v1/pos/customers", request, ct);
+    public Task<ApiResult<PosCustomerDetailDto>> CreateAsync(
+        CreatePosCustomerRequest request,
+        PosMutationIdempotencyHeaders? idempotency = null,
+        CancellationToken ct = default) =>
+        SendAsync<PosCustomerDetailDto>(
+            HttpMethod.Post,
+            "/api/v1/pos/customers",
+            request,
+            BuildIdempotencyHeaders(idempotency),
+            ct);
 
     public Task<ApiResult<PosCustomerDetailDto>> UpdateAsync(
         Guid customerId,
         UpdatePosCustomerRequest request,
+        PosMutationIdempotencyHeaders? idempotency = null,
         CancellationToken ct = default) =>
-        SendAsync<PosCustomerDetailDto>(HttpMethod.Put, $"/api/v1/pos/customers/{customerId:D}", request, ct);
+        SendAsync<PosCustomerDetailDto>(
+            HttpMethod.Put,
+            $"/api/v1/pos/customers/{customerId:D}",
+            request,
+            BuildIdempotencyHeaders(idempotency),
+            ct);
 
     public Task<ApiResult<PosCustomerDetailDto>> DeactivateAsync(Guid customerId, CancellationToken ct = default) =>
         SendAsync<PosCustomerDetailDto>(HttpMethod.Post, $"/api/v1/pos/customers/{customerId:D}/deactivate", null, ct);
@@ -83,11 +102,13 @@ public sealed class PosCustomerClient(HttpClient httpClient, IConnectivityServic
     public Task<ApiResult<PosCreditEntryDto>> CreateCreditEntryAsync(
         Guid customerId,
         CreatePosCreditEntryRequest request,
+        PosMutationIdempotencyHeaders? idempotency = null,
         CancellationToken ct = default) =>
         SendAsync<PosCreditEntryDto>(
             HttpMethod.Post,
             $"/api/v1/pos/customers/{customerId:D}/credit-entries",
             request,
+            BuildIdempotencyHeaders(idempotency),
             ct);
 
     public Task<ApiResult<PosCreditEntryDto>> ReverseCreditEntryAsync(
@@ -289,10 +310,52 @@ public sealed class PosCustomerClient(HttpClient httpClient, IConnectivityServic
         return SendAsync<PosRepaymentReceiptDto>(HttpMethod.Get, path, null, ct);
     }
 
+    public Task<ApiResult<PosCustomerSyncPageResult>> SyncCustomersAsync(
+        DateTimeOffset? sinceUtc = null,
+        int page = 1,
+        int pageSize = 100,
+        CancellationToken ct = default)
+    {
+        var query = new StringBuilder("/api/v1/pos/sync/customers?");
+        query.Append("page=").Append(page);
+        query.Append("&pageSize=").Append(pageSize);
+        if (sinceUtc is not null)
+        {
+            query.Append("&sinceUtc=").Append(Uri.EscapeDataString(sinceUtc.Value.ToString("O")));
+        }
+
+        return SendAsync<PosCustomerSyncPageResult>(HttpMethod.Get, query.ToString(), null, ct);
+    }
+
+    public Task<ApiResult<PosCreditSyncPageResult>> SyncCreditEntriesAsync(
+        DateTimeOffset? sinceUtc = null,
+        int page = 1,
+        int pageSize = 100,
+        CancellationToken ct = default)
+    {
+        var query = new StringBuilder("/api/v1/pos/sync/credit-entries?");
+        query.Append("page=").Append(page);
+        query.Append("&pageSize=").Append(pageSize);
+        if (sinceUtc is not null)
+        {
+            query.Append("&sinceUtc=").Append(Uri.EscapeDataString(sinceUtc.Value.ToString("O")));
+        }
+
+        return SendAsync<PosCreditSyncPageResult>(HttpMethod.Get, query.ToString(), null, ct);
+    }
+
     private async Task<ApiResult<TResponse>> SendAsync<TResponse>(
         HttpMethod method,
         string path,
         object? body,
+        CancellationToken ct) =>
+        await SendAsync<TResponse>(method, path, body, null, ct).ConfigureAwait(false);
+
+    private async Task<ApiResult<TResponse>> SendAsync<TResponse>(
+        HttpMethod method,
+        string path,
+        object? body,
+        IReadOnlyDictionary<string, string>? extraHeaders,
         CancellationToken ct)
     {
         if (connectivityService is not null && !await connectivityService.IsConnectedAsync(ct).ConfigureAwait(false))
@@ -310,6 +373,14 @@ public sealed class PosCustomerClient(HttpClient httpClient, IConnectivityServic
             if (body is not null)
             {
                 request.Content = JsonContent.Create(body, options: JsonOptions);
+            }
+
+            if (extraHeaders is not null)
+            {
+                foreach (var (key, value) in extraHeaders)
+                {
+                    request.Headers.TryAddWithoutValidation(key, value);
+                }
             }
 
             using var response = await httpClient.SendAsync(request, ct).ConfigureAwait(false);
@@ -412,4 +483,27 @@ public sealed class PosCustomerClient(HttpClient httpClient, IConnectivityServic
         _ when (int)statusCode >= 500 => ApiCallStatus.Unavailable,
         _ => ApiCallStatus.Failed
     };
+
+    private static IReadOnlyDictionary<string, string>? BuildIdempotencyHeaders(
+        PosMutationIdempotencyHeaders? idempotency)
+    {
+        if (idempotency is null)
+        {
+            return null;
+        }
+
+        var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            [IdempotencyKeyHeader] = idempotency.IdempotencyKey,
+            [PayloadHashHeader] = idempotency.PayloadHash,
+            [OperationTypeHeader] = idempotency.OperationType
+        };
+
+        if (idempotency.OperationId is Guid operationId && operationId != Guid.Empty)
+        {
+            headers[OperationIdHeader] = operationId.ToString("D");
+        }
+
+        return headers;
+    }
 }

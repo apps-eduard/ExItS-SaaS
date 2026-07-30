@@ -7,6 +7,8 @@
 @inject PosStatusState Status
 @inject IPosSyncStatusService SyncStatus
 @inject IOfflineQueueProcessor QueueProcessor
+@inject ICustomerCreditOfflineSyncService CustomerCreditSync
+@inject IConnectivityService Connectivity
 @inject IAppInfoService AppInfo
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
@@ -200,7 +202,15 @@
         _retryBusy = true;
         try
         {
-            await QueueProcessor.ProcessAvailableAsync();
+            if (await Connectivity.IsConnectedAsync())
+            {
+                await CustomerCreditSync.ReconcileOnReconnectAsync();
+            }
+            else
+            {
+                await QueueProcessor.ProcessAvailableAsync();
+            }
+
             SyncStatus.Refresh();
         }
         finally

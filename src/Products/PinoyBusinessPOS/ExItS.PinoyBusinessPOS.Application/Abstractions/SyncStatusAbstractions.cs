@@ -41,8 +41,8 @@ public interface IPosSyncStatusService
 }
 
 /// <summary>
-/// Gate for protected POS shell entry. Requires online connectivity plus validated access.
-/// No offline authorization window in P7-WP01.
+/// Gate for protected POS shell entry. Online validation unlocks the process session;
+/// mid-session offline continues only while that continuous validated session remains active.
 /// </summary>
 public interface IProtectedShellAccessPolicy
 {
@@ -51,5 +51,11 @@ public interface IProtectedShellAccessPolicy
     /// <summary>True when the user is authenticated but must reconnect online to verify access.</summary>
     bool RequiresReconnectToVerifyAccess { get; }
 
+    /// <summary>True when offline customer/credit mutations are allowed for this continuous session.</summary>
+    bool AllowsOfflineMutation { get; }
+
     Task InitializeAsync(CancellationToken ct = default);
+
+    /// <summary>Clears process-lifetime online validation (logout / context switch).</summary>
+    void ClearProcessValidation();
 }

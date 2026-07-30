@@ -9,6 +9,7 @@ public sealed class OfflineFoundationDiagnostics(
     IDeviceIdentityProvider deviceIdentity,
     ILocalContextManager localContext,
     IOfflineOperationQueue queue,
+    ILocalCustomerCreditStore customerCreditStore,
     IAppInfoService appInfo)
 {
     public bool IsAvailable =>
@@ -42,11 +43,13 @@ public sealed class OfflineFoundationDiagnostics(
         OfflineQueueCounts counts;
         DateTimeOffset? lastSynced = null;
         IReadOnlyList<OfflineOperationEnvelope> sample = [];
+        LocalEntityStateCounts entityCounts = LocalEntityStateCounts.Empty;
         try
         {
             counts = await queue.GetCountsAsync(ct).ConfigureAwait(false);
             lastSynced = await queue.GetLastSyncedUtcAsync(ct).ConfigureAwait(false);
             sample = await queue.ListSafeMetadataAsync(5, ct).ConfigureAwait(false);
+            entityCounts = await customerCreditStore.GetEntityStateCountsAsync(ct).ConfigureAwait(false);
         }
         catch
         {
@@ -76,7 +79,9 @@ public sealed class OfflineFoundationDiagnostics(
             ClaimedAttemptCount: claimed?.AttemptCount,
             ClaimedNextAttemptUtc: claimed?.NextAttemptUtc,
             LastSyncedAtUtc: lastSynced,
-            SampleFailureCode: sample.FirstOrDefault(o => o.FailureCode is not null)?.FailureCode);
+            SampleFailureCode: sample.FirstOrDefault(o => o.FailureCode is not null)?.FailureCode,
+            LocalCustomerEntityCounts: entityCounts.Customers,
+            LocalCreditEntityCounts: entityCounts.Credits);
     }
 }
 
@@ -102,7 +107,9 @@ public sealed record OfflineFoundationDiagnosticsSnapshot(
     int? ClaimedAttemptCount = null,
     DateTimeOffset? ClaimedNextAttemptUtc = null,
     DateTimeOffset? LastSyncedAtUtc = null,
-    string? SampleFailureCode = null)
+    string? SampleFailureCode = null,
+    IReadOnlyDictionary<LocalEntitySyncState, int>? LocalCustomerEntityCounts = null,
+    IReadOnlyDictionary<LocalEntitySyncState, int>? LocalCreditEntityCounts = null)
 {
     public static OfflineFoundationDiagnosticsSnapshot Unavailable { get; } = new(false);
 }

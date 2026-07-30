@@ -1,8 +1,10 @@
 using ExItS.PinoyBusinessPOS.Api.Common;
+using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Offline;
 
 namespace ExItS.PinoyBusinessPOS.Api.Credit;
 
@@ -89,6 +91,7 @@ internal static class CreditEndpoints
             Guid customerId,
             CreateCreditEntryRequest body,
             CreateCreditEntry useCase,
+            IPosIdempotencyService idempotency,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -102,13 +105,24 @@ internal static class CreditEndpoints
                 return problem!;
             }
 
-            var result = await useCase
-                .ExecuteAsync(organizationId, customerId, body.Amount, body.Remarks, ct)
+            return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                    request,
+                    organizationId,
+                    OfflineOperationTypes.CreditCreate,
+                    idempotency,
+                    ct2 => useCase.ExecuteAsync(
+                        organizationId,
+                        customerId,
+                        body.Amount,
+                        body.Remarks,
+                        body.CreditEntryId,
+                        ct2),
+                    CreditEntryQueryService.Map,
+                    dto => Results.Created(
+                        $"/api/v1/pos/customers/{customerId:D}/credit-entries/{dto.CreditEntryId:D}",
+                        dto),
+                    ct)
                 .ConfigureAwait(false);
-
-            return PosApiResults.FromResult(result, e => Results.Created(
-                $"/api/v1/pos/customers/{customerId:D}/credit-entries/{e.Id.Value:D}",
-                CreditEntryQueryService.Map(e)));
         });
 
         group.MapGet("/credit-entries/{entryId:guid}", async (
@@ -168,6 +182,6 @@ internal static class CreditEndpoints
     }
 }
 
-public sealed record CreateCreditEntryRequest(decimal Amount, string Remarks);
+public sealed record CreateCreditEntryRequest(decimal Amount, string Remarks, Guid? CreditEntryId = null);
 
 public sealed record ReverseCreditEntryRequest(string Reason);

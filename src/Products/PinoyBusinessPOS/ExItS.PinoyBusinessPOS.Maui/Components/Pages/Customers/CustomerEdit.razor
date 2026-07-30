@@ -6,6 +6,10 @@
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
+@inject ICustomerCreditOfflineSyncService Sync
+@inject ILocalCustomerCreditStore LocalStore
+@inject IConnectivityService Connectivity
+@inject ILocalContextManager LocalContext
 
 @if (!_ready)
 {
@@ -31,6 +35,14 @@ else
             <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Customers_Cancel"]</Button>
         </Actions>
     </PageHeader>
+
+    @if (_entityState == LocalEntitySyncState.Conflict || _showConflictAlert)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Offline_ConflictTitle"]" Message="@L["Offline_ConflictMessage"]" />
+        <FormActions>
+            <Button Variant="ButtonVariant.Danger" IsLoading="@_discarding" OnClick="DiscardConflictAsync">@L["Offline_DiscardLocal"]</Button>
+        </FormActions>
+    }
 
     @if (!canEdit)
     {
@@ -66,7 +78,10 @@ else
     private bool _ready;
     private bool _loading = true;
     private bool _saving;
+    private bool _discarding;
+    private bool _showConflictAlert;
     private PosCustomerDetailDto? _customer;
+    private LocalEntitySyncState? _entityState;
     private string? _displayName;
     private string? _mobile;
     private string? _address;
@@ -86,28 +101,100 @@ else
         }
 
         _ready = true;
-        var result = await Customers.GetAsync(CustomerId);
-        if (result.IsSuccess && result.Data is not null)
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        _showConflictAlert = false;
+        _entityState = null;
+
+        var online = await Connectivity.IsConnectedAsync();
+        if (online)
         {
-            _customer = result.Data;
-            _displayName = result.Data.DisplayName;
-            _mobile = result.Data.MobileNumber;
-            _address = result.Data.Address;
-            _notes = result.Data.Notes;
-            if (result.Data.Status != "Active")
+            var result = await Customers.GetAsync(CustomerId);
+            if (result.IsSuccess && result.Data is not null)
             {
-                Nav.NavigateTo($"/customers/{CustomerId:D}", replace: true);
+                await ApplyCustomerAsync(result.Data);
+                if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
+                {
+                    var projection = MapToProjection(result.Data, LocalEntitySyncState.ServerConfirmed);
+                    await Sync.ApplyServerCustomerAfterSuccessAsync(CustomerId, projection);
+                }
+
+                _loading = false;
                 return;
             }
-        }
-        else
-        {
+
+            if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
+            {
+                var local = await LocalStore.GetCustomerAsync(CustomerId);
+                if (local is not null)
+                {
+                    await ApplyLocalCustomerAsync(local);
+                    _loading = false;
+                    return;
+                }
+            }
+
             var described = ApiLocalizer.Describe(result.Status, result.Error);
             _errorTitle = described.Title;
             _errorMessage = result.Error?.Detail ?? described.Message;
         }
+        else if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
+        {
+            var local = await LocalStore.GetCustomerAsync(CustomerId);
+            if (local is not null)
+            {
+                await ApplyLocalCustomerAsync(local);
+            }
+            else
+            {
+                _errorTitle = L["SyncStatus_Offline"];
+                _errorMessage = L["Customers_NotFoundMessage"];
+            }
+        }
+        else
+        {
+            _errorTitle = L["SyncStatus_Offline"];
+            _errorMessage = L["Api_Offline"];
+        }
 
         _loading = false;
+    }
+
+    private async Task ApplyCustomerAsync(PosCustomerDetailDto data)
+    {
+        _customer = data;
+        _displayName = data.DisplayName;
+        _mobile = data.MobileNumber;
+        _address = data.Address;
+        _notes = data.Notes;
+        if (data.Status != "Active")
+        {
+            Nav.NavigateTo($"/customers/{CustomerId:D}", replace: true);
+        }
+
+        await Task.CompletedTask;
+    }
+
+    private async Task ApplyLocalCustomerAsync(LocalCustomerProjection local)
+    {
+        _entityState = local.EntityState;
+        _customer = OfflineCustomerCreditUiHelpers.ToDetail(local);
+        _displayName = local.DisplayName;
+        _mobile = local.MobileNumber;
+        _address = local.Address;
+        _notes = local.Notes;
+        if (local.Status != "Active")
+        {
+            Nav.NavigateTo($"/customers/{CustomerId:D}", replace: true);
+        }
+
+        await Task.CompletedTask;
     }
 
     private async Task SaveAsync()
@@ -121,6 +208,7 @@ else
         _displayNameError = null;
         _mobileError = null;
         _formError = null;
+        _showConflictAlert = false;
 
         if (string.IsNullOrWhiteSpace(_displayName))
         {
@@ -129,32 +217,75 @@ else
         }
 
         _saving = true;
-        var result = await Customers.UpdateAsync(
+        var result = await Sync.UpdateCustomerAsync(
             CustomerId,
-            new UpdatePosCustomerRequest(
-                _displayName.Trim(),
-                string.IsNullOrWhiteSpace(_mobile) ? null : _mobile,
-                string.IsNullOrWhiteSpace(_address) ? null : _address,
-                string.IsNullOrWhiteSpace(_notes) ? null : _notes));
+            _displayName.Trim(),
+            string.IsNullOrWhiteSpace(_mobile) ? null : _mobile,
+            string.IsNullOrWhiteSpace(_address) ? null : _address,
+            string.IsNullOrWhiteSpace(_notes) ? null : _notes);
 
-        if (result.IsSuccess)
+        if (result.Succeeded)
         {
-            Nav.NavigateTo($"/customers/{CustomerId:D}", replace: true);
+            var route = result.PendingLocal
+                ? $"/customers/{CustomerId:D}?pending=1"
+                : $"/customers/{CustomerId:D}";
+            Nav.NavigateTo(route, replace: true);
             return;
         }
 
-        if (result.Status == ApiCallStatus.Conflict)
+        if (string.Equals(result.ErrorCode, ApplicationErrorCodes.CustomerConcurrencyConflict, StringComparison.Ordinal))
+        {
+            _showConflictAlert = true;
+            _entityState = LocalEntitySyncState.Conflict;
+            _formError = L["Offline_ConflictMessage"];
+        }
+        else if (string.Equals(result.ErrorCode, ApplicationErrorCodes.MobileConflict, StringComparison.Ordinal))
         {
             _formError = L["Customers_ConflictMessage"];
             _mobileError = L["Customers_ConflictMessage"];
         }
+        else if (string.Equals(result.ErrorCode, "offline_mutations_unavailable", StringComparison.Ordinal))
+        {
+            _formError = L["Offline_MutationsUnavailable"];
+        }
         else
         {
-            _formError = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+            _formError = result.ErrorMessage ?? L["Customers_ErrorTitle"];
         }
 
         _saving = false;
     }
+
+    private async Task DiscardConflictAsync()
+    {
+        _discarding = true;
+        try
+        {
+            await Sync.DiscardCustomerConflictAsync(CustomerId);
+            await LoadAsync();
+        }
+        finally
+        {
+            _discarding = false;
+        }
+    }
+
+    private static LocalCustomerProjection MapToProjection(PosCustomerDetailDto dto, LocalEntitySyncState state) =>
+        new(
+            dto.CustomerId,
+            dto.OrganizationId,
+            dto.DisplayName,
+            dto.MobileNumber,
+            dto.Address,
+            dto.Notes,
+            dto.Status,
+            dto.CreatedAtUtc,
+            dto.UpdatedAtUtc,
+            state,
+            null,
+            dto.UpdatedAtUtc.UtcDateTime.ToString("O", System.Globalization.CultureInfo.InvariantCulture),
+            null,
+            null);
 
     private void GoDetail() => Nav.NavigateTo($"/customers/{CustomerId:D}");
 }

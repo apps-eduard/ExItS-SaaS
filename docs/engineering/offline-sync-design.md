@@ -76,6 +76,52 @@ Bounded exponential backoff with jitter; max attempts documented. After limit: r
 
 Customer/credit/repayment offline workflows, business-data cache, automatic financial conflict resolution, production sync scheduling, sales/inventory/gateways/QR/cards, SQLCipher, offline entitlement grace (R-022), time-based retention purge.
 
+## P7-WP03 decisions (authoritative)
+
+### Scope
+
+Encrypted local customer + credit read models; offline `CustomerCreate`, `CustomerUpdate`, and `CreditCreate` via the **same** generic queue; download/reconcile; optimistic concurrency conflicts without silent merge; confirmed vs projected outstanding. **No** offline repayments, reversals, due-date changes, statements/receipts, or production sync scheduling.
+
+### Offline authorization (session continuity)
+
+No time-based offline entitlement grace (R-022 remains open). Offline customer/credit work is allowed only while the user previously authenticated online, org + PinoyBusinessPOS access were validated, the **same in-process application session** remains active, and the same user/organization/product context remains selected.
+
+After app restart while offline, logout, user/org switch, or secure-session loss: protected POS requires reconnect; cache must not unlock the prior context; offline mutations unavailable; queued work remains encrypted and retained (OD-10). Reconnect revalidates access before download or queue processing.
+
+### Local business-data encryption
+
+Full-database encryption (SQLCipher) remains deferred — R-129 (transitive SQLitePCLRaw NU1903 on Microsoft.Data.Sqlite) must not be worsened by adding SQLCipher packages in this WP.
+
+**Chosen mechanism:** authenticated **row-level AES-GCM** using the existing SecureStorage-backed `ILocalPayloadProtector` / `pos.local.payload.key` architecture. Unique nonce per row; AAD binds context + entity identity. No plaintext customer mobile, address, notes, credit remarks, or financial amounts in SQLite. Fail closed on key loss; never overwrite unreadable ciphertext; never log decrypted business data.
+
+### Operation types (generic queue only)
+
+| Constant | Value |
+|---|---|
+| `CustomerCreate` | `customer.create` |
+| `CustomerUpdate` | `customer.update` |
+| `CreditCreate` | `credit.create` |
+
+`CreditCreate` for a locally created customer **depends on** that customer’s `CustomerCreate` operation succeeding. Unresolved dependencies block later ops. Permanent/conflict failure of the dependency marks dependents Conflict/blocked — never submit independently.
+
+### Local read-model states
+
+`ServerConfirmed` · `PendingCreate` · `PendingUpdate` · `Syncing` · `Conflict` · `Rejected`
+
+Local-only data never appears ServerConfirmed. Client-generated IDs remain stable. Server concurrency/version (`UpdatedAtUtc`) retained. No editable outstanding balance column — confirmed vs pending financial effects are distinguished.
+
+### Balance projection
+
+`Projected outstanding = confirmed outstanding + pending locally accepted credit`. On credit rejection: remove from pending/projected; retain rejected history; safe localized reason; never silent-delete the operation.
+
+### Customer conflict policy
+
+Optimistic concurrency uses last confirmed server `UpdatedAtUtc`. On conflict: retain local + server versions; mark Conflict; user may discard local or review server and retry deliberately. No silent overwrite/merge. Deactivate/reactivate remain online-only.
+
+### Explicit deferrals (P7-WP04+)
+
+Offline repayments, credit/repayment reversals, due-date changes, statements/receipts, automatic conflict merging, production background sync scheduling, sales/inventory/gateways/QR/cards, SQLCipher, offline entitlement grace (R-022).
+
 ## Later phase (preview)
 
-P7-WP03 — Customer and Credit Sync will integrate real operation types into this same queue.
+**P7-WP04 — Payment Sync and Recovery** follows Customer and Credit Sync.

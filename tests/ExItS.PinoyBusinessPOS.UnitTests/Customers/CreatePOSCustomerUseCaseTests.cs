@@ -24,6 +24,45 @@ public sealed class CreatePOSCustomerUseCaseTests
     }
 
     [Fact]
+    public async Task Create_with_clientCustomerId_uses_that_id()
+    {
+        var org = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var clientId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
+        var repo = new InMemoryCustomerRepository();
+        var create = new CreatePOSCustomer(repo, new ImmediateUnitOfWork(), new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z")));
+
+        var result = await create.ExecuteAsync(org, "Client Id Customer", "09170001111", "Addr", "Notes", clientId);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(clientId, result.Value!.Id.Value);
+    }
+
+    [Fact]
+    public async Task Update_with_mismatched_expectedUpdatedAtUtc_returns_concurrency_conflict()
+    {
+        var org = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var repo = new InMemoryCustomerRepository();
+        var clock = new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z"));
+        var create = new CreatePOSCustomer(repo, new ImmediateUnitOfWork(), clock);
+        var update = new UpdatePOSCustomer(repo, new ImmediateUnitOfWork(), clock);
+
+        var created = await create.ExecuteAsync(org, "Original", "09175556666", null, null);
+        Assert.True(created.IsSuccess);
+
+        var stale = created.Value!.UpdatedAtUtc.AddMinutes(-5);
+        var result = await update.ExecuteAsync(
+            org,
+            created.Value.Id.Value,
+            "Updated",
+            "09175556666",
+            null,
+            null,
+            stale);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.CustomerConcurrencyConflict, result.ErrorCode);
+    }
+
+    [Fact]
     public async Task Create_allows_same_mobile_across_organizations()
     {
         var orgA = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
@@ -78,6 +117,24 @@ public sealed class CreatePOSCustomerUseCaseTests
             }
 
             var list = query.OrderBy(c => c.DisplayName).ThenBy(c => c.Id.Value).ToList();
+            return Task.FromResult(((IReadOnlyList<POSCustomer>)list.Skip(skip).Take(take).ToList(), list.Count));
+        }
+
+        public Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListUpdatedSinceAsync(
+            PosOrganizationId organizationId,
+            DateTimeOffset? sinceUtc,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default)
+        {
+            var query = _items.Where(c => c.OrganizationId == organizationId);
+            if (sinceUtc is not null)
+            {
+                var since = sinceUtc.Value.ToUniversalTime();
+                query = query.Where(c => c.UpdatedAtUtc.ToUniversalTime() > since);
+            }
+
+            var list = query.OrderBy(c => c.UpdatedAtUtc).ThenBy(c => c.Id.Value).ToList();
             return Task.FromResult(((IReadOnlyList<POSCustomer>)list.Skip(skip).Take(take).ToList(), list.Count));
         }
 

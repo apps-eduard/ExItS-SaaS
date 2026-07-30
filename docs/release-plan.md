@@ -37,13 +37,15 @@ MAUI app, bilingual UI, themes, customers, Utang, payments, overdue monitoring a
 
 **Next:** **P7-WP02 — Offline Queue and Idempotency** when approved.
 
-## R3.5 — Offline foundation (Phase 7 / P7-WP01–P7-WP02)
+## R3.5 — Offline foundation (Phase 7 / P7-WP01–P7-WP03)
 
 **P7-WP01 complete** — DeviceId, SQLite foundation, isolation, sync-status shell base, Dev diagnostics.
 
 **P7-WP02 complete with documented risks** — encrypted generic outbox, idempotency, retry/access blocking, operational sync states. No offline business workflows. See [P7-WP02 report](reports/P7-WP02-offline-queue-and-idempotency.md).
 
-**Next:** **P7-WP03 — Customer and Credit Sync** when approved.
+**P7-WP03 complete with documented risks** — encrypted local customer/credit read models; offline customer create/update and credit create; row-level AES-GCM (SQLCipher deferred). No offline repayments. See [P7-WP03 report](reports/P7-WP03-customer-and-credit-sync.md).
+
+**Next:** **P7-WP04 — Payment Sync and Recovery** when approved.
 
 ## R4 — Commercial MVP
 

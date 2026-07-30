@@ -55,7 +55,7 @@ public sealed class LocalDatabaseIsolationTests
         var org = Guid.NewGuid();
         var open = await manager.OpenAsync(user, org, PosProductCodes.PinoyBusinessPos);
         Assert.True(open.Succeeded);
-        Assert.Equal(2, open.Context!.SchemaVersion);
+        Assert.Equal(3, open.Context!.SchemaVersion);
         Assert.Equal(LocalContextInitStatus.Ready, open.Context.Status);
 
         var path = new LocalDatabasePathResolver(root).ResolveDatabasePath(user, org, PosProductCodes.PinoyBusinessPos);
@@ -68,6 +68,10 @@ public sealed class LocalDatabaseIsolationTests
         Assert.Contains("local_context_info", names);
         Assert.Contains("offline_operations", names);
         Assert.Contains("local_sync_meta", names);
+        Assert.Contains("local_customer_projection", names);
+        Assert.Contains("local_credit_projection", names);
+        Assert.Contains("local_customer_balance", names);
+        Assert.Contains("local_download_checkpoint", names);
         Assert.DoesNotContain("customers", names);
         Assert.DoesNotContain("credit_entries", names);
         Assert.DoesNotContain("repayments", names);

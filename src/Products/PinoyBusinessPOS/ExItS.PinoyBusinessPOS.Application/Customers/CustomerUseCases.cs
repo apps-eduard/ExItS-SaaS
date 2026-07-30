@@ -16,6 +16,13 @@ public sealed record POSCustomerDto(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
 
+public sealed record CustomerSyncPageDto(
+    List<POSCustomerDto> Items,
+    int TotalCount,
+    int Page,
+    int PageSize,
+    DateTimeOffset? NextCheckpointUtc);
+
 public sealed class POSCustomerQueryService
 {
     private readonly IPOSCustomerRepository _customers;
@@ -53,6 +60,26 @@ public sealed class POSCustomerQueryService
             take);
     }
 
+    public async Task<CustomerSyncPageDto> ListForSyncAsync(
+        Guid organizationId,
+        DateTimeOffset? sinceUtc,
+        int? page,
+        int? pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (skip, take) = PosPagination.Normalize(page, pageSize);
+        var (items, total) = await _customers
+            .ListUpdatedSinceAsync(PosOrganizationId.From(organizationId), sinceUtc, skip, take, cancellationToken)
+            .ConfigureAwait(false);
+
+        var mapped = items.Select(Map).ToList();
+        DateTimeOffset? nextCheckpoint = mapped.Count > 0
+            ? mapped.Max(c => c.UpdatedAtUtc)
+            : null;
+
+        return new CustomerSyncPageDto(mapped, total, Math.Max(page ?? 1, 1), take, nextCheckpoint);
+    }
+
     public static POSCustomerDto Map(POSCustomer customer) =>
         new(
             customer.Id.Value,
@@ -85,12 +112,34 @@ public sealed class CreatePOSCustomer
         string? mobileNumber,
         string? address,
         string? notes,
+        Guid? clientCustomerId = null,
         CancellationToken cancellationToken = default)
     {
         try
         {
             var orgId = PosOrganizationId.From(organizationId);
-            var customer = POSCustomer.Create(orgId, displayName, _clock.UtcNow, mobileNumber, address, notes);
+
+            if (clientCustomerId is not null)
+            {
+                var existingById = await _customers
+                    .GetByIdAsync(orgId, POSCustomerId.From(clientCustomerId.Value), cancellationToken)
+                    .ConfigureAwait(false);
+                if (existingById is not null)
+                {
+                    return ApplicationResult<POSCustomer>.Success(existingById);
+                }
+            }
+
+            var customer = clientCustomerId is null
+                ? POSCustomer.Create(orgId, displayName, _clock.UtcNow, mobileNumber, address, notes)
+                : POSCustomer.Create(
+                    orgId,
+                    displayName,
+                    _clock.UtcNow,
+                    mobileNumber,
+                    address,
+                    notes,
+                    id: POSCustomerId.From(clientCustomerId.Value));
 
             if (customer.NormalizedMobile is not null)
             {
@@ -140,6 +189,7 @@ public sealed class UpdatePOSCustomer
         string? mobileNumber,
         string? address,
         string? notes,
+        DateTimeOffset? expectedUpdatedAtUtc = null,
         CancellationToken cancellationToken = default)
     {
         var orgId = PosOrganizationId.From(organizationId);
@@ -151,6 +201,18 @@ public sealed class UpdatePOSCustomer
             return ApplicationResult<POSCustomer>.Failure(
                 ApplicationErrorCodes.CustomerNotFound,
                 "Customer was not found.");
+        }
+
+        if (expectedUpdatedAtUtc is not null)
+        {
+            var expected = expectedUpdatedAtUtc.Value.ToUniversalTime();
+            var actual = customer.UpdatedAtUtc.ToUniversalTime();
+            if (expected.UtcTicks != actual.UtcTicks)
+            {
+                return ApplicationResult<POSCustomer>.Failure(
+                    ApplicationErrorCodes.CustomerConcurrencyConflict,
+                    "The customer was updated concurrently. Reload the latest version and try again.");
+            }
         }
 
         try

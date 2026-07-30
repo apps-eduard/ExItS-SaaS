@@ -8,11 +8,11 @@ Deliver safe offline-first operation and synchronization.
 
 ## Status
 
-**In Progress** — P7-WP01 and P7-WP02 complete with documented risks. Do **not** begin P7-WP03 until explicitly authorized.
+**In Progress** — P7-WP01, P7-WP02, and P7-WP03 complete with documented risks. Do **not** begin P7-WP04 until explicitly authorized.
 
 Authoritative design: [offline-sync-design.md](../engineering/offline-sync-design.md)
 
-Reports: [P7-WP01](../reports/P7-WP01-sqlite-and-device-identity.md) · [P7-WP02](../reports/P7-WP02-offline-queue-and-idempotency.md)
+Reports: [P7-WP01](../reports/P7-WP01-sqlite-and-device-identity.md) · [P7-WP02](../reports/P7-WP02-offline-queue-and-idempotency.md) · [P7-WP03](../reports/P7-WP03-customer-and-credit-sync.md)
 
 ## Work packages
 
@@ -55,20 +55,29 @@ Feature commit: `aa1f92eba97bc77775f59de8209b42c9d7a475cc`
 
 ### P7-WP03 — Customer and Credit Sync
 
-Status: Not Started — **do not begin**
+Status: **Complete with documented risks**
 
-#### Required outcomes
+Phase marker: `P7-WP03-customer-and-credit-sync`
 
-- Integrate customer and credit offline operation types into the generic queue
-- Add required tests and documentation evidence
-- Preserve security, tenant isolation and product boundaries
+Feature commit: `_(recorded after push)_`
+
+#### Approved scope
+
+- Encrypted local customer + credit read models
+- Offline `CustomerCreate`, `CustomerUpdate`, `CreditCreate` via generic queue
+- Row-level AES-GCM (SQLCipher deferred; R-129 mitigated by not adding SQLCipher)
+- Download/reconcile; optimistic concurrency conflicts; confirmed vs projected outstanding
+- Same in-process session offline auth gate (R-022 open; no time-based grace)
+- OD-10 retention retained; no time-based purge
+
+**Does not enable offline repayments.**
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (586 passed / 0 failed / 0 skipped).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
 - [ ] Focused commit created and hash recorded.
 - [ ] Working tree clean.
 

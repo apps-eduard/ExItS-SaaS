@@ -6,6 +6,10 @@
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
+@inject ICustomerCreditOfflineSyncService Sync
+@inject ILocalCustomerCreditStore LocalStore
+@inject IConnectivityService Connectivity
+@inject ILocalContextManager LocalContext
 
 @if (!_ready)
 {
@@ -22,6 +26,11 @@ else
     </PageHeader>
 
     <Alert Tone="AlertTone.Info" Title="@L["Customers_CreditDeferredTitle"]" Message="@L["Customers_CreditDeferredMessage"]" />
+
+    @if (_fromLocal)
+    {
+        <Alert Tone="AlertTone.Info" Title="@L["SyncStatus_Offline"]" Message="@L["SyncStatus_OfflineDetail"]" />
+    }
 
     @if (!canCreate)
     {
@@ -57,11 +66,13 @@ else
 @code {
     private bool _ready;
     private bool _loading;
+    private bool _fromLocal;
     private string? _search;
     private int _page = 1;
     private const int _pageSize = 20;
     private int _totalCount;
     private IReadOnlyList<PosCustomerListItemDto> _items = Array.Empty<PosCustomerListItemDto>();
+    private Dictionary<Guid, LocalEntitySyncState> _entityStates = new();
     private string? _errorTitle;
     private string? _errorMessage;
 
@@ -94,6 +105,15 @@ else
                 builder.AddAttribute(1, "Tone", context.Item.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral);
                 builder.AddAttribute(2, "ChildContent", (RenderFragment)(b => b.AddContent(0, context.Item.Status)));
                 builder.CloseComponent();
+                if (_fromLocal
+                    && _entityStates.TryGetValue(context.Item.CustomerId, out var state)
+                    && OfflineCustomerCreditUiHelpers.EntityBadge(state) is { } badge)
+                {
+                    builder.OpenComponent<Badge>(3);
+                    builder.AddAttribute(4, "Tone", badge.Tone);
+                    builder.AddAttribute(5, "ChildContent", (RenderFragment)(b => b.AddContent(0, L[badge.LabelKey].Value)));
+                    builder.CloseComponent();
+                }
                 break;
             default:
                 builder.OpenComponent<Button>(0);
@@ -136,24 +156,73 @@ else
         _loading = true;
         _errorTitle = null;
         _errorMessage = null;
+        _fromLocal = false;
+        _entityStates.Clear();
         StateHasChanged();
 
-        var result = await Customers.ListAsync(_search, page: _page, pageSize: _pageSize);
-        if (result.IsSuccess && result.Data is not null)
+        var online = await Connectivity.IsConnectedAsync();
+        if (online)
         {
-            _items = result.Data.Items;
-            _totalCount = result.Data.TotalCount;
-        }
-        else
-        {
+            try
+            {
+                await Sync.DownloadIncrementalAsync();
+            }
+            catch
+            {
+                // Best effort incremental download.
+            }
+
+            var result = await Customers.ListAsync(_search, page: _page, pageSize: _pageSize);
+            if (result.IsSuccess && result.Data is not null)
+            {
+                _items = result.Data.Items;
+                _totalCount = result.Data.TotalCount;
+                _loading = false;
+                return;
+            }
+
+            if (CanUseLocalFallback(result.Status))
+            {
+                await LoadFromLocalAsync();
+                _loading = false;
+                return;
+            }
+
             _items = Array.Empty<PosCustomerListItemDto>();
             _totalCount = 0;
             var described = ApiLocalizer.Describe(result.Status, result.Error);
             _errorTitle = described.Title;
             _errorMessage = result.Error?.Detail ?? described.Message;
         }
+        else if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
+        {
+            await LoadFromLocalAsync();
+        }
+        else
+        {
+            _items = Array.Empty<PosCustomerListItemDto>();
+            _totalCount = 0;
+            _errorTitle = L["SyncStatus_Offline"];
+            _errorMessage = L["Api_Offline"];
+        }
 
         _loading = false;
+    }
+
+    private bool CanUseLocalFallback(ApiCallStatus status) =>
+        status is ApiCallStatus.Offline or ApiCallStatus.Timeout or ApiCallStatus.Unavailable
+        && OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext);
+
+    private async Task LoadFromLocalAsync()
+    {
+        var skip = (_page - 1) * _pageSize;
+        var locals = await LocalStore.ListCustomersAsync(_search, skip, _pageSize);
+        _totalCount = await LocalStore.CountCustomersAsync(_search);
+        _items = locals.Select(OfflineCustomerCreditUiHelpers.ToListItem).ToList();
+        _entityStates = locals.ToDictionary(c => c.CustomerId, c => c.EntityState);
+        _fromLocal = true;
+        _errorTitle = null;
+        _errorMessage = null;
     }
 
     private void GoNew() => Nav.NavigateTo("/customers/new");

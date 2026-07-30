@@ -6,6 +6,10 @@
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
+@inject ICustomerCreditOfflineSyncService Sync
+@inject ILocalCustomerCreditStore LocalStore
+@inject IConnectivityService Connectivity
+@inject ILocalContextManager LocalContext
 
 @if (!_ready)
 {
@@ -45,6 +49,14 @@ else
         <Alert Tone="AlertTone.Success" Title="@L["Customers_SuccessTitle"]" Message="@_banner" />
     }
 
+    @if (_entityState == LocalEntitySyncState.Conflict)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Offline_ConflictTitle"]" Message="@L["Offline_ConflictMessage"]" />
+        <FormActions>
+            <Button Variant="ButtonVariant.Primary" OnClick="GoEdit">@L["Customers_Edit"]</Button>
+        </FormActions>
+    }
+
     @if (!string.IsNullOrEmpty(_errorMessage))
     {
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Customers_ErrorTitle"])" Message="@_errorMessage" />
@@ -61,7 +73,13 @@ else
         <Stack Gap="3">
             <div>
                 <span class="pos-muted">@L["Customers_Field_DisplayName"]</span>
-                <div class="pos-value-md">@customer.DisplayName</div>
+                <div class="pos-value-md">
+                    @customer.DisplayName
+                    @if (_entityState is { } state && OfflineCustomerCreditUiHelpers.EntityBadge(state) is { } badge)
+                    {
+                        <Badge Tone="@badge.Tone">@L[badge.LabelKey]</Badge>
+                    }
+                </div>
             </div>
             <div>
                 <span class="pos-muted">@L["Customers_Field_Mobile"]</span>
@@ -84,34 +102,58 @@ else
 
     <Section Title="@L["Utang_SectionTitle"]">
         <Stack Gap="3">
-            <div>
-                <span class="pos-muted">@L["Credit_Outstanding"]</span>
-                <div class="pos-value-md">
-                    @if (_utang is null)
-                    {
-                        <Spinner />
-                    }
-                    else
-                    {
-                        <MoneyDisplay Amount="@_utang.OutstandingAmount" CurrencyCode="PHP" />
-                    }
-                </div>
-            </div>
-            @if (_utang is not null)
+            @if (_showLocalBalance && _localBalance is not null)
             {
-                <div class="pos-muted">
-                    @L["Utang_CreditsTotal"] <MoneyDisplay Amount="@_utang.ActiveCreditTotal" CurrencyCode="PHP" />
-                    · @L["Utang_PaymentsTotal"] <MoneyDisplay Amount="@_utang.ActiveRepaymentTotal" CurrencyCode="PHP" />
+                <div>
+                    <span class="pos-muted">@L["Offline_ConfirmedOutstanding"]</span>
+                    <div class="pos-value-md">
+                        <MoneyDisplay Amount="@_localBalance.ConfirmedOutstanding" CurrencyCode="PHP" />
+                    </div>
                 </div>
-                <div class="pos-muted">
-                    @L["Overdue_Amount"]: <MoneyDisplay Amount="@_utang.OverdueAmount" CurrencyCode="PHP" />
-                    · @L["Overdue_Count"]: @_utang.OverdueCreditCount
-                    · @L["Overdue_NoDueDateCount"]: @_utang.CreditsWithoutDueDateCount
+                <div>
+                    <span class="pos-muted">@L["Offline_PendingCredit"]</span>
+                    <div class="pos-value-md">
+                        <MoneyDisplay Amount="@_localBalance.PendingCredit" CurrencyCode="PHP" />
+                    </div>
                 </div>
-                <div class="pos-muted">
-                    @L["Overdue_Earliest"]: @(_utang.EarliestOverdueDate?.ToString("d") ?? L["Customers_NoValue"])
-                    · @L["Overdue_NextDue"]: @(_utang.NextUpcomingDueDate?.ToString("d") ?? L["Customers_NoValue"])
+                <div>
+                    <span class="pos-muted">@L["Offline_ProjectedOutstanding"]</span>
+                    <div class="pos-value-md">
+                        <MoneyDisplay Amount="@_localBalance.ProjectedOutstanding" CurrencyCode="PHP" />
+                    </div>
                 </div>
+            }
+            else
+            {
+                <div>
+                    <span class="pos-muted">@L["Credit_Outstanding"]</span>
+                    <div class="pos-value-md">
+                        @if (_utang is null)
+                        {
+                            <Spinner />
+                        }
+                        else
+                        {
+                            <MoneyDisplay Amount="@_utang.OutstandingAmount" CurrencyCode="PHP" />
+                        }
+                    </div>
+                </div>
+                @if (_utang is not null)
+                {
+                    <div class="pos-muted">
+                        @L["Utang_CreditsTotal"] <MoneyDisplay Amount="@_utang.ActiveCreditTotal" CurrencyCode="PHP" />
+                        · @L["Utang_PaymentsTotal"] <MoneyDisplay Amount="@_utang.ActiveRepaymentTotal" CurrencyCode="PHP" />
+                    </div>
+                    <div class="pos-muted">
+                        @L["Overdue_Amount"]: <MoneyDisplay Amount="@_utang.OverdueAmount" CurrencyCode="PHP" />
+                        · @L["Overdue_Count"]: @_utang.OverdueCreditCount
+                        · @L["Overdue_NoDueDateCount"]: @_utang.CreditsWithoutDueDateCount
+                    </div>
+                    <div class="pos-muted">
+                        @L["Overdue_Earliest"]: @(_utang.EarliestOverdueDate?.ToString("d") ?? L["Customers_NoValue"])
+                        · @L["Overdue_NextDue"]: @(_utang.NextUpcomingDueDate?.ToString("d") ?? L["Customers_NoValue"])
+                    </div>
+                }
             }
             <FormActions>
                 @if (customer.Status == "Active")
@@ -119,12 +161,16 @@ else
                     <Button Variant="ButtonVariant.Secondary" Disabled="@(!canCreateCredit)" OnClick="GoAddCredit">@L["Credit_Add"]</Button>
                 }
                 <Button Variant="ButtonVariant.Primary"
-                        Disabled="@(_utang is null || _utang.OutstandingAmount <= 0m || !Capabilities.IsAllowed(UtangCapability.RecordRepayment))"
+                        Disabled="@(_isOffline || _utang is null && !_showLocalBalance || (_utang?.OutstandingAmount ?? _localBalance?.ProjectedOutstanding ?? 0m) <= 0m || !Capabilities.IsAllowed(UtangCapability.RecordRepayment))"
                         OnClick="GoAddPayment">@L["Payment_Record"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoLedger">@L["Ledger_Open"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoOverdue">@L["Overdue_OpenDetail"]</Button>
-                <Button Variant="ButtonVariant.Secondary" Disabled="@(!canStatement)" OnClick="GoStatement">@L["Statement_Open"]</Button>
+                <Button Variant="ButtonVariant.Secondary" Disabled="@_isOffline" OnClick="GoLedger">@L["Ledger_Open"]</Button>
+                <Button Variant="ButtonVariant.Secondary" Disabled="@_isOffline" OnClick="GoOverdue">@L["Overdue_OpenDetail"]</Button>
+                <Button Variant="ButtonVariant.Secondary" Disabled="@(!canStatement || _isOffline)" OnClick="GoStatement">@L["Statement_Open"]</Button>
             </FormActions>
+            @if (_isOffline)
+            {
+                <Alert Tone="AlertTone.Info" Title="@L["SyncStatus_Offline"]" Message="@L["Offline_CreditOnlineOnly"]" />
+            }
             @if (customer.Status != "Active")
             {
                 <Alert Tone="AlertTone.Info" Title="@L["Payment_InactiveAllowedTitle"]" Message="@L["Payment_InactiveAllowedMessage"]" />
@@ -137,9 +183,29 @@ else
         {
             <Spinner /><span>@L["Credit_HistoryLoading"]</span>
         }
-        else if (_entries.Count == 0)
+        else if (_entries.Count == 0 && _localCreditEntries.Count == 0)
         {
             <EmptyState Title="@L["Credit_HistoryEmptyTitle"]" Message="@L["Credit_HistoryEmptyMessage"]" />
+        }
+        else if (_isOffline || _fromLocalCredits)
+        {
+            <Stack Gap="3">
+                @foreach (var entry in _localCreditEntries)
+                {
+                    <div class="pos-credit-entry">
+                        <div class="pos-value-md">
+                            <MoneyDisplay Amount="@entry.Amount" CurrencyCode="PHP" />
+                            <Badge Tone="@(entry.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@entry.Status</Badge>
+                            @if (OfflineCustomerCreditUiHelpers.EntityBadge(entry.EntityState) is { } badge)
+                            {
+                                <Badge Tone="@badge.Tone">@L[badge.LabelKey]</Badge>
+                            }
+                        </div>
+                        <div class="pos-wrap">@entry.Remarks</div>
+                        <div class="pos-muted">@entry.CreatedAtUtc.ToLocalTime().ToString("g")</div>
+                    </div>
+                }
+            </Stack>
         }
         else
         {
@@ -181,13 +247,18 @@ else
     <FormActions>
         @if (customer.Status == "Active")
         {
-            <Button Variant="ButtonVariant.Danger" OnClick="() => _confirmDeactivate = true">@L["Customers_Deactivate"]</Button>
+            <Button Variant="ButtonVariant.Danger" Disabled="@_isOffline" OnClick="() => _confirmDeactivate = true">@L["Customers_Deactivate"]</Button>
         }
         else
         {
-            <Button Variant="ButtonVariant.Primary" OnClick="() => _confirmReactivate = true">@L["Customers_Reactivate"]</Button>
+            <Button Variant="ButtonVariant.Primary" Disabled="@_isOffline" OnClick="() => _confirmReactivate = true">@L["Customers_Reactivate"]</Button>
         }
     </FormActions>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Info" Title="@L["SyncStatus_Offline"]" Message="@L["Offline_MutationsUnavailable"]" />
+    }
 
     <ConfirmDialog Visible="@_confirmDeactivate"
                    VisibleChanged="v => _confirmDeactivate = v"
@@ -224,6 +295,9 @@ else
 @code {
     [Parameter] public Guid CustomerId { get; set; }
 
+    [SupplyParameterFromQuery(Name = "pending")]
+    public int? Pending { get; set; }
+
     private bool _ready;
     private bool _loading = true;
     private bool _entriesLoading;
@@ -231,9 +305,15 @@ else
     private bool _confirmDeactivate;
     private bool _confirmReactivate;
     private bool _confirmReverseCredit;
+    private bool _isOffline;
+    private bool _showLocalBalance;
+    private bool _fromLocalCredits;
     private PosCustomerDetailDto? _customer;
+    private LocalEntitySyncState? _entityState;
     private PosCustomerUtangSummaryDto? _utang;
+    private LocalCustomerBalanceProjection? _localBalance;
     private List<PosCreditEntryDto> _entries = [];
+    private List<LocalCreditProjection> _localCreditEntries = [];
     private PosCreditEntryDto? _reverseCreditTarget;
     private string? _creditReversalReason;
     private string? _errorTitle;
@@ -248,6 +328,11 @@ else
             return;
         }
 
+        if (Pending == 1)
+        {
+            _banner = L["Offline_SavedPendingSync"];
+        }
+
         _ready = true;
         await LoadAsync();
     }
@@ -257,23 +342,73 @@ else
         _loading = true;
         _errorTitle = null;
         _errorMessage = null;
+        _utang = null;
+        _localBalance = null;
+        _showLocalBalance = false;
+        _fromLocalCredits = false;
+        _localCreditEntries = [];
+        _entries = [];
         StateHasChanged();
 
-        var result = await Customers.GetAsync(CustomerId);
-        if (result.IsSuccess)
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (!_isOffline)
         {
-            _customer = result.Data;
-            await LoadUtangAsync();
+            var result = await Customers.GetAsync(CustomerId);
+            if (result.IsSuccess && result.Data is not null)
+            {
+                _customer = result.Data;
+                if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
+                {
+                    var local = await LocalStore.GetCustomerAsync(CustomerId);
+                    _entityState = local?.EntityState;
+                }
+
+                await LoadUtangAsync();
+            }
+            else if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
+            {
+                await LoadFromLocalAsync();
+            }
+            else
+            {
+                _customer = null;
+                var described = ApiLocalizer.Describe(result.Status, result.Error);
+                _errorTitle = described.Title;
+                _errorMessage = result.Error?.Detail ?? described.Message;
+            }
+        }
+        else if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
+        {
+            await LoadFromLocalAsync();
         }
         else
         {
             _customer = null;
-            var described = ApiLocalizer.Describe(result.Status, result.Error);
-            _errorTitle = described.Title;
-            _errorMessage = result.Error?.Detail ?? described.Message;
+            _errorTitle = L["SyncStatus_Offline"];
+            _errorMessage = L["Api_Offline"];
         }
 
         _loading = false;
+    }
+
+    private async Task LoadFromLocalAsync()
+    {
+        var local = await LocalStore.GetCustomerAsync(CustomerId);
+        if (local is null)
+        {
+            _customer = null;
+            _errorTitle = L["Customers_NotFoundTitle"];
+            _errorMessage = L["Customers_NotFoundMessage"];
+            return;
+        }
+
+        _customer = OfflineCustomerCreditUiHelpers.ToDetail(local);
+        _entityState = local.EntityState;
+        _localBalance = await LocalStore.GetBalanceAsync(CustomerId);
+        _showLocalBalance = true;
+        _localCreditEntries = (await LocalStore.ListCreditsAsync(CustomerId)).ToList();
+        _fromLocalCredits = true;
+        _entriesLoading = false;
     }
 
     private async Task LoadUtangAsync()
@@ -283,17 +418,31 @@ else
         if (summaryResult.IsSuccess)
         {
             _utang = summaryResult.Data;
+            _showLocalBalance = false;
+        }
+        else if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
+        {
+            _localBalance = await LocalStore.GetBalanceAsync(CustomerId);
+            _showLocalBalance = true;
         }
 
-        var entriesResult = await Customers.ListCreditEntriesAsync(CustomerId, page: 1, pageSize: 50);
-        if (entriesResult.IsSuccess && entriesResult.Data is not null)
+        if (!_isOffline)
         {
-            _entries = entriesResult.Data.Items;
-        }
-        else if (!entriesResult.IsSuccess)
-        {
-            _errorTitle = L["Credit_ErrorTitle"];
-            _errorMessage = entriesResult.Error?.Detail ?? ApiLocalizer.Describe(entriesResult.Status, entriesResult.Error).Message;
+            var entriesResult = await Customers.ListCreditEntriesAsync(CustomerId, page: 1, pageSize: 50);
+            if (entriesResult.IsSuccess && entriesResult.Data is not null)
+            {
+                _entries = entriesResult.Data.Items;
+            }
+            else if (!entriesResult.IsSuccess)
+            {
+                _errorTitle = L["Credit_ErrorTitle"];
+                _errorMessage = entriesResult.Error?.Detail ?? ApiLocalizer.Describe(entriesResult.Status, entriesResult.Error).Message;
+                if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
+                {
+                    _localCreditEntries = (await LocalStore.ListCreditsAsync(CustomerId)).ToList();
+                    _fromLocalCredits = _localCreditEntries.Count > 0;
+                }
+            }
         }
 
         _entriesLoading = false;
@@ -301,6 +450,11 @@ else
 
     private async Task DeactivateAsync()
     {
+        if (_isOffline)
+        {
+            return;
+        }
+
         _acting = true;
         var result = await Customers.DeactivateAsync(CustomerId);
         _acting = false;
@@ -319,6 +473,11 @@ else
 
     private async Task ReactivateAsync()
     {
+        if (_isOffline)
+        {
+            return;
+        }
+
         _acting = true;
         var result = await Customers.ReactivateAsync(CustomerId);
         _acting = false;

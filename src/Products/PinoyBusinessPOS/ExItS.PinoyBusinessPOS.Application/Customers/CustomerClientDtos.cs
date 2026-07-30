@@ -26,16 +26,25 @@ public sealed record CreatePosCustomerRequest(
     string DisplayName,
     string? MobileNumber,
     string? Address,
-    string? Notes);
+    string? Notes,
+    Guid? CustomerId = null);
 
 public sealed record UpdatePosCustomerRequest(
     string DisplayName,
     string? MobileNumber,
     string? Address,
-    string? Notes);
+    string? Notes,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
 
 public sealed record PosCustomerPagedResult(
     List<PosCustomerListItemDto> Items,
     int TotalCount,
     int Page,
     int PageSize);
+
+public sealed record PosCustomerSyncPageResult(
+    List<PosCustomerDetailDto> Items,
+    int TotalCount,
+    int Page,
+    int PageSize,
+    DateTimeOffset? NextCheckpointUtc);

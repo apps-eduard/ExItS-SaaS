@@ -19,6 +19,7 @@ public static class LocalStoreServiceCollectionExtensions
         services.AddSingleton<IDeviceIdentityProvider, DeviceIdentityProvider>();
         services.AddSingleton<ILocalPayloadProtector, AesGcmLocalPayloadProtector>();
         services.AddSingleton<IOfflineOperationQueue, OfflineOperationQueue>();
+        services.AddSingleton<ILocalCustomerCreditStore, LocalEncryptedCustomerCreditStore>();
         services.AddSingleton<IOfflineRetryClassifier, OfflineRetryClassifier>();
         services.AddSingleton<IOfflineAccessRevalidator, OfflineAccessRevalidator>();
         services.AddSingleton<IOfflineQueueProcessor, OfflineQueueProcessor>();

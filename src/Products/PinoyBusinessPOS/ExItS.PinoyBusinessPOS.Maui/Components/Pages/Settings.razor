@@ -9,6 +9,7 @@
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
+@inject IOfflineOperationQueue OfflineQueue
 @inject NavigationGate Gate
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
@@ -32,13 +33,13 @@
                         <span class="pos-muted pos-wrap">@CurrentUser.Session.OrganizationDisplayName</span>
                     </Stack>
                     <Button Variant="ButtonVariant.Secondary" OnClick="GoSwitchOrg">@L["Settings_SwitchOrganization"]</Button>
-                    <Button Variant="ButtonVariant.Danger" OnClick="OpenLogout">@L["Auth_Logout"]</Button>
+                    <Button Variant="ButtonVariant.Danger" OnClick="OpenLogoutAsync">@L["Auth_Logout"]</Button>
                 </Stack>
             </Card>
         </Section>
         <ConfirmDialog @bind-Visible="_logoutOpen"
                        Title="@L["Auth_LogoutConfirmTitle"]"
-                       Message="@L["Auth_LogoutConfirmMessage"]"
+                       Message="@_logoutMessage"
                        Danger="true"
                        IsLoading="_logoutBusy"
                        OnConfirm="LogoutAsync"
@@ -108,6 +109,7 @@
     private string? _preferenceError;
     private bool _logoutOpen;
     private bool _logoutBusy;
+    private string _logoutMessage = string.Empty;
 
     private IReadOnlyList<SelectOption> ThemeOptions =>
     [
@@ -162,7 +164,23 @@
 
     private void GoDevOffline() => Nav.NavigateTo("/dev/offline-foundation");
 
-    private void OpenLogout() => _logoutOpen = true;
+    private async Task OpenLogoutAsync()
+    {
+        _logoutMessage = L["Auth_LogoutConfirmMessage"];
+        try
+        {
+            if (await OfflineQueue.HasUnsyncedWorkAsync())
+            {
+                _logoutMessage = $"{L["Auth_LogoutConfirmMessage"]} {L["Offline_LogoutUnsyncedWarning"]}";
+            }
+        }
+        catch
+        {
+            // Keep default logout message when queue is unavailable.
+        }
+
+        _logoutOpen = true;
+    }
 
     private async Task LogoutAsync()
     {

@@ -50,6 +50,26 @@ else
                 <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_LastSynced"]: @FormatTime(_snapshot.LastSyncedAtUtc)</InlineMessage>
                 <InlineMessage Tone="InlineMessageTone.Info">@L["DevOffline_FailureCode"]: @(_snapshot.SampleFailureCode ?? "—")</InlineMessage>
             </Stack>
+
+            @if (_snapshot.LocalCustomerEntityCounts is not null || _snapshot.LocalCreditEntityCounts is not null)
+            {
+                <SectionHeader Title="@L["DevOffline_LocalProjectionsTitle"]" />
+                <Stack Gap="2">
+                    @foreach (var state in Enum.GetValues<LocalEntitySyncState>())
+                    {
+                        var customerCount = _snapshot.LocalCustomerEntityCounts?.GetValueOrDefault(state) ?? 0;
+                        var creditCount = _snapshot.LocalCreditEntityCounts?.GetValueOrDefault(state) ?? 0;
+                        if (customerCount == 0 && creditCount == 0)
+                        {
+                            continue;
+                        }
+
+                        <InlineMessage Tone="InlineMessageTone.Info">
+                            @state: @L["DevOffline_CustomersLabel"] @customerCount · @L["DevOffline_CreditsLabel"] @creditCount
+                        </InlineMessage>
+                    }
+                </Stack>
+            }
         }
 
         <FormActions>

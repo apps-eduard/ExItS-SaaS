@@ -562,4 +562,21 @@
   <data name="DevOffline_LastSynced" xml:space="preserve"><value>Huling sync</value></data>
   <data name="DevOffline_FailureCode" xml:space="preserve"><value>Failure code</value></data>
   <data name="Settings_DevOfflineLink" xml:space="preserve"><value>Offline foundation diagnostics</value></data>
+  <data name="Offline_SavedPendingSync" xml:space="preserve"><value>Nai-save sa device na ito — Pending Sync</value></data>
+  <data name="Offline_ConfirmedOutstanding" xml:space="preserve"><value>Kumpirmadong outstanding</value></data>
+  <data name="Offline_PendingCredit" xml:space="preserve"><value>Pending na credit</value></data>
+  <data name="Offline_ProjectedOutstanding" xml:space="preserve"><value>Projected outstanding</value></data>
+  <data name="Offline_EntityPending" xml:space="preserve"><value>Pending Sync</value></data>
+  <data name="Offline_EntityConflict" xml:space="preserve"><value>Conflict</value></data>
+  <data name="Offline_EntityRejected" xml:space="preserve"><value>Tinanggihan</value></data>
+  <data name="Offline_EntityConfirmed" xml:space="preserve"><value>Na-sync</value></data>
+  <data name="Offline_ConflictTitle" xml:space="preserve"><value>Conflict sa pag-update ng customer</value></data>
+  <data name="Offline_ConflictMessage" xml:space="preserve"><value>Magkaiba ang server at local na bersyon. I-discard ang local change o suriin at subukang muli. Hindi kailanman awtomatikong pinagsasama ang mga pagbabago.</value></data>
+  <data name="Offline_DiscardLocal" xml:space="preserve"><value>I-discard ang local change</value></data>
+  <data name="Offline_MutationsUnavailable" xml:space="preserve"><value>Kumonekta muli para i-verify ang access bago gumawa ng offline changes.</value></data>
+  <data name="Offline_CreditOnlineOnly" xml:space="preserve"><value>Kailangan ng online connection ang repayments, reversals, at due dates.</value></data>
+  <data name="Offline_LogoutUnsyncedWarning" xml:space="preserve"><value>May unsynced work pa sa device na ito. Mananatili ito hanggang mag-sign in ka ulit at mag-sync.</value></data>
+  <data name="DevOffline_LocalProjectionsTitle" xml:space="preserve"><value>Local customer/credit counts</value></data>
+  <data name="DevOffline_CustomersLabel" xml:space="preserve"><value>customers</value></data>
+  <data name="DevOffline_CreditsLabel" xml:space="preserve"><value>credits</value></data>
 </root>

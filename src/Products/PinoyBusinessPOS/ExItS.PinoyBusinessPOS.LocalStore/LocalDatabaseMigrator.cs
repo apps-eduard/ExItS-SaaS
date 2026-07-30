@@ -4,16 +4,17 @@ using ExItS.PinoyBusinessPOS.Application.Abstractions;
 namespace ExItS.PinoyBusinessPOS.LocalStore;
 
 /// <summary>
-/// Local schema migrations. v1 foundation metadata; v2 generic encrypted outbox.
+/// Local schema migrations. v1 foundation metadata; v2 generic encrypted outbox; v3 encrypted business cache.
 /// </summary>
 public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : ILocalDatabaseMigrator
 {
     public const int FoundationSchemaVersion = 1;
     public const int QueueSchemaVersion = 2;
+    public const int BusinessCacheSchemaVersion = 3;
 
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
 
-    public int CurrentSchemaVersion => QueueSchemaVersion;
+    public int CurrentSchemaVersion => BusinessCacheSchemaVersion;
 
     public async Task<LocalMigrationResult> MigrateAsync(
         ILocalDatabaseConnection connection,
@@ -131,6 +132,86 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
                 current = QueueSchemaVersion;
             }
 
+            if (current < BusinessCacheSchemaVersion)
+            {
+                await connection.ExecuteAsync(
+                    "ALTER TABLE offline_operations ADD COLUMN depends_on_operation_id TEXT NULL;",
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    "ALTER TABLE offline_operations ADD COLUMN entity_id TEXT NULL;",
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_customer_projection (
+                        customer_id TEXT NOT NULL PRIMARY KEY,
+                        organization_id TEXT NOT NULL,
+                        status TEXT NOT NULL,
+                        entity_state TEXT NOT NULL,
+                        concurrency_token TEXT NULL,
+                        pending_operation_id TEXT NULL,
+                        created_utc TEXT NOT NULL,
+                        updated_utc TEXT NOT NULL,
+                        ciphertext BLOB NOT NULL,
+                        nonce BLOB NOT NULL,
+                        tag BLOB NOT NULL,
+                        conflict_server_json TEXT NULL,
+                        safe_failure_code TEXT NULL
+                    );
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_credit_projection (
+                        credit_entry_id TEXT NOT NULL PRIMARY KEY,
+                        customer_id TEXT NOT NULL,
+                        organization_id TEXT NOT NULL,
+                        entity_state TEXT NOT NULL,
+                        pending_operation_id TEXT NULL,
+                        depends_on_operation_id TEXT NULL,
+                        created_utc TEXT NOT NULL,
+                        ciphertext BLOB NOT NULL,
+                        nonce BLOB NOT NULL,
+                        tag BLOB NOT NULL,
+                        safe_failure_code TEXT NULL
+                    );
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_customer_balance (
+                        customer_id TEXT NOT NULL PRIMARY KEY,
+                        confirmed_ciphertext BLOB NULL,
+                        confirmed_nonce BLOB NULL,
+                        confirmed_tag BLOB NULL,
+                        pending_ciphertext BLOB NULL,
+                        pending_nonce BLOB NULL,
+                        pending_tag BLOB NULL
+                    );
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_download_checkpoint (
+                        stream TEXT NOT NULL PRIMARY KEY,
+                        checkpoint_utc TEXT NOT NULL
+                    );
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    $"""
+                    INSERT INTO local_schema_info (schema_version, applied_at_utc)
+                    VALUES ({BusinessCacheSchemaVersion}, '{now}');
+                    """,
+                    ct).ConfigureAwait(false);
+                current = BusinessCacheSchemaVersion;
+            }
+
             var existing = await connection
                 .QueryScalarAsync<long>(
                     $"""
@@ -183,7 +264,7 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
                 return new LocalMigrationResult(false, (int)current, "forbidden_tables_present");
             }
 
-            return new LocalMigrationResult(true, QueueSchemaVersion);
+            return new LocalMigrationResult(true, BusinessCacheSchemaVersion);
         }
         catch (OperationCanceledException)
         {

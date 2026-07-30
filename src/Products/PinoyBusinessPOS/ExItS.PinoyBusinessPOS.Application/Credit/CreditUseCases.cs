@@ -20,6 +20,13 @@ public sealed record CreditEntryDto(
     string? ReversalReason,
     DateOnly? CurrentDueDate);
 
+public sealed record CreditSyncPageDto(
+    List<CreditEntryDto> Items,
+    int TotalCount,
+    int Page,
+    int PageSize,
+    DateTimeOffset? NextCheckpointUtc);
+
 public sealed record CustomerCreditSummaryDto(
     Guid CustomerId,
     Guid OrganizationId,
@@ -78,6 +85,32 @@ public sealed class CreditEntryQueryService
             take);
     }
 
+    public async Task<CreditSyncPageDto> ListForSyncAsync(
+        Guid organizationId,
+        DateTimeOffset? sinceUtc,
+        int? page,
+        int? pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (skip, take) = PosPagination.Normalize(page, pageSize);
+        var (items, total) = await _entries
+            .ListCreatedSinceAsync(PosOrganizationId.From(organizationId), sinceUtc, skip, take, cancellationToken)
+            .ConfigureAwait(false);
+
+        var mapped = items.Select(Map).ToList();
+        DateTimeOffset? nextCheckpoint = null;
+        foreach (var entry in mapped)
+        {
+            var candidate = entry.ReversedAtUtc ?? entry.CreatedAtUtc;
+            if (nextCheckpoint is null || candidate > nextCheckpoint)
+            {
+                nextCheckpoint = candidate;
+            }
+        }
+
+        return new CreditSyncPageDto(mapped, total, Math.Max(page ?? 1, 1), take, nextCheckpoint);
+    }
+
     public async Task<CustomerCreditSummaryDto> GetSummaryAsync(
         Guid organizationId,
         Guid customerId,
@@ -130,6 +163,7 @@ public sealed class CreateCreditEntry
         Guid customerId,
         decimal amount,
         string remarks,
+        Guid? clientCreditEntryId = null,
         CancellationToken cancellationToken = default)
     {
         var orgId = PosOrganizationId.From(organizationId);
@@ -149,9 +183,28 @@ public sealed class CreateCreditEntry
                 "Credit can only be recorded for an active customer.");
         }
 
+        if (clientCreditEntryId is not null)
+        {
+            var existing = await _entries
+                .GetByIdAsync(orgId, custId, CreditEntryId.From(clientCreditEntryId.Value), cancellationToken)
+                .ConfigureAwait(false);
+            if (existing is not null)
+            {
+                return ApplicationResult<CreditEntry>.Success(existing);
+            }
+        }
+
         try
         {
-            var entry = CreditEntry.Create(orgId, custId, amount, remarks, _clock.UtcNow);
+            var entry = clientCreditEntryId is null
+                ? CreditEntry.Create(orgId, custId, amount, remarks, _clock.UtcNow)
+                : CreditEntry.Create(
+                    orgId,
+                    custId,
+                    amount,
+                    remarks,
+                    _clock.UtcNow,
+                    id: CreditEntryId.From(clientCreditEntryId.Value));
             await _entries.AddAsync(entry, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<CreditEntry>.Success(entry);

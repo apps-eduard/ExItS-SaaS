@@ -22,6 +22,13 @@ public interface IPOSCustomerRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListUpdatedSinceAsync(
+        PosOrganizationId organizationId,
+        DateTimeOffset? sinceUtc,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(POSCustomer customer, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(POSCustomer customer, CancellationToken cancellationToken = default);

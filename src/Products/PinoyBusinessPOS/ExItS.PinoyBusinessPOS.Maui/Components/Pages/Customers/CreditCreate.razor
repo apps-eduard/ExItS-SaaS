@@ -1,10 +1,10 @@
 @page "/customers/{CustomerId:guid}/credit/new"
 @inject NavigationManager Nav
 @inject NavigationGate Gate
-@inject IPosCustomerClient Customers
 @inject ICurrentUserContext CurrentUser
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
+@inject ICustomerCreditOfflineSyncService Sync
 
 @if (!_ready)
 {
@@ -92,6 +92,12 @@ else
             return;
         }
 
+        if (!OfflineCustomerCreditUiHelpers.HasAtMostTwoDecimalPlaces(amount))
+        {
+            _amountError = L["Credit_AmountInvalid"];
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(_remarks))
         {
             _remarksError = L["Credit_RemarksRequired"];
@@ -99,31 +105,37 @@ else
         }
 
         _saving = true;
-        var result = await Customers.CreateCreditEntryAsync(
-            CustomerId,
-            new CreatePosCreditEntryRequest(amount, _remarks!));
+        var result = await Sync.CreateCreditAsync(CustomerId, amount, _remarks!);
         _saving = false;
 
-        if (result.IsSuccess)
+        if (result.Succeeded)
         {
-            Nav.NavigateTo($"/customers/{CustomerId:D}");
+            var route = result.PendingLocal
+                ? $"/customers/{CustomerId:D}?pending=1"
+                : $"/customers/{CustomerId:D}";
+            Nav.NavigateTo(route);
             return;
         }
 
-        if (result.Status == ApiCallStatus.Conflict)
+        if (string.Equals(result.ErrorCode, "customer_not_active", StringComparison.Ordinal))
         {
             _errorTitle = L["Credit_InactiveTitle"];
-            _errorMessage = result.Error?.Detail ?? L["Credit_InactiveMessage"];
+            _errorMessage = result.ErrorMessage ?? L["Credit_InactiveMessage"];
         }
-        else if (result.Status == ApiCallStatus.Validation)
+        else if (string.Equals(result.ErrorCode, "offline_mutations_unavailable", StringComparison.Ordinal))
         {
-            _errorTitle = L["Credit_ErrorTitle"];
-            _errorMessage = result.Error?.Detail ?? L["Credit_AmountInvalid"];
+            _errorTitle = L["SyncStatus_Offline"];
+            _errorMessage = L["Offline_MutationsUnavailable"];
+        }
+        else if (string.Equals(result.ErrorCode, ApplicationErrorCodes.CustomerNotFound, StringComparison.Ordinal))
+        {
+            _errorTitle = L["Customers_NotFoundTitle"];
+            _errorMessage = result.ErrorMessage ?? L["Customers_NotFoundMessage"];
         }
         else
         {
             _errorTitle = L["Credit_ErrorTitle"];
-            _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+            _errorMessage = result.ErrorMessage ?? L["Credit_AmountInvalid"];
         }
     }
 

@@ -1,7 +1,10 @@
+using System.Text.Json;
 using ExItS.PinoyBusinessPOS.Api.Common;
+using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 
@@ -62,6 +65,7 @@ internal static class CustomerEndpoints
             HttpRequest request,
             CreateCustomerRequest body,
             CreatePOSCustomer useCase,
+            IPosIdempotencyService idempotency,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -75,13 +79,23 @@ internal static class CustomerEndpoints
                 return problem!;
             }
 
-            var result = await useCase
-                .ExecuteAsync(organizationId, body.DisplayName, body.MobileNumber, body.Address, body.Notes, ct)
+            return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                    request,
+                    organizationId,
+                    OfflineOperationTypes.CustomerCreate,
+                    idempotency,
+                    ct2 => useCase.ExecuteAsync(
+                        organizationId,
+                        body.DisplayName,
+                        body.MobileNumber,
+                        body.Address,
+                        body.Notes,
+                        body.CustomerId,
+                        ct2),
+                    POSCustomerQueryService.Map,
+                    dto => Results.Created($"/api/v1/pos/customers/{dto.CustomerId:D}", dto),
+                    ct)
                 .ConfigureAwait(false);
-
-            return PosApiResults.FromResult(result, c => Results.Created(
-                $"/api/v1/pos/customers/{c.Id.Value:D}",
-                POSCustomerQueryService.Map(c)));
         });
 
         group.MapGet("/{customerId:guid}", async (
@@ -115,6 +129,7 @@ internal static class CustomerEndpoints
             Guid customerId,
             UpdateCustomerRequest body,
             UpdatePOSCustomer useCase,
+            IPosIdempotencyService idempotency,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -128,11 +143,24 @@ internal static class CustomerEndpoints
                 return problem!;
             }
 
-            var result = await useCase
-                .ExecuteAsync(organizationId, customerId, body.DisplayName, body.MobileNumber, body.Address, body.Notes, ct)
+            return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                    request,
+                    organizationId,
+                    OfflineOperationTypes.CustomerUpdate,
+                    idempotency,
+                    ct2 => useCase.ExecuteAsync(
+                        organizationId,
+                        customerId,
+                        body.DisplayName,
+                        body.MobileNumber,
+                        body.Address,
+                        body.Notes,
+                        body.ExpectedUpdatedAtUtc,
+                        ct2),
+                    POSCustomerQueryService.Map,
+                    Results.Ok,
+                    ct)
                 .ConfigureAwait(false);
-
-            return PosApiResults.FromResult(result, c => Results.Ok(POSCustomerQueryService.Map(c)));
         });
 
         group.MapPost("/{customerId:guid}/deactivate", async (
@@ -185,10 +213,12 @@ public sealed record CreateCustomerRequest(
     string DisplayName,
     string? MobileNumber,
     string? Address,
-    string? Notes);
+    string? Notes,
+    Guid? CustomerId = null);
 
 public sealed record UpdateCustomerRequest(
     string DisplayName,
     string? MobileNumber,
     string? Address,
-    string? Notes);
+    string? Notes,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);

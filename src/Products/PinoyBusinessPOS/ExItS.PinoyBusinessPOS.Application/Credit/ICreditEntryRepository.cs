@@ -23,6 +23,13 @@ public interface ICreditEntryRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    Task<(IReadOnlyList<CreditEntry> Items, int TotalCount)> ListCreatedSinceAsync(
+        PosOrganizationId organizationId,
+        DateTimeOffset? sinceUtc,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<CreditEntry>> ListActiveByOrganizationAsync(
         PosOrganizationId organizationId,
         CancellationToken cancellationToken = default);

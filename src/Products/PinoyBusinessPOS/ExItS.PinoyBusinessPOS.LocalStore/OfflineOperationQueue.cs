@@ -63,13 +63,13 @@ public sealed class OfflineOperationQueue(
                     operation_type, payload_version, ciphertext, nonce, tag, payload_hash,
                     idempotency_key, created_utc, next_attempt_utc, attempt_count, queue_state,
                     last_attempt_utc, failure_code, failure_summary, server_reference, concurrency_token,
-                    claimed_by, claimed_utc)
+                    claimed_by, claimed_utc, depends_on_operation_id, entity_id)
                 VALUES (
                     $operation_id, $device_id, $user_id, $organization_id, $product_code,
                     $operation_type, $payload_version, $ciphertext, $nonce, $tag, $payload_hash,
                     $idempotency_key, $created_utc, $next_attempt_utc, 0, $queue_state,
                     NULL, NULL, NULL, NULL, $concurrency_token,
-                    NULL, NULL);
+                    NULL, NULL, $depends_on, $entity_id);
                 """;
             cmd.Parameters.AddWithValue("$operation_id", request.OperationId.ToString("D"));
             cmd.Parameters.AddWithValue("$device_id", deviceId);
@@ -87,6 +87,12 @@ public sealed class OfflineOperationQueue(
             cmd.Parameters.AddWithValue("$next_attempt_utc", now.UtcDateTime.ToString("O", CultureInfo.InvariantCulture));
             cmd.Parameters.AddWithValue("$queue_state", nameof(OfflineQueueState.Pending));
             cmd.Parameters.AddWithValue("$concurrency_token", (object?)request.ConcurrencyToken ?? DBNull.Value);
+            cmd.Parameters.AddWithValue(
+                "$depends_on",
+                request.DependsOnOperationId is Guid dep ? dep.ToString("D") : DBNull.Value);
+            cmd.Parameters.AddWithValue(
+                "$entity_id",
+                request.EntityId is Guid entity ? entity.ToString("D") : DBNull.Value);
             await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
             await tx.CommitAsync(ct).ConfigureAwait(false);
         }
@@ -142,51 +148,70 @@ public sealed class OfflineOperationQueue(
                 select.Transaction = tx;
                 select.CommandText =
                     """
-                    SELECT operation_id FROM offline_operations
+                    SELECT operation_id, depends_on_operation_id FROM offline_operations
                     WHERE queue_state IN ($pending, $retryable)
                       AND next_attempt_utc <= $now
-                    ORDER BY created_utc ASC, operation_id ASC
-                    LIMIT 1;
+                    ORDER BY created_utc ASC, operation_id ASC;
                     """;
                 select.Parameters.AddWithValue("$pending", nameof(OfflineQueueState.Pending));
                 select.Parameters.AddWithValue("$retryable", nameof(OfflineQueueState.RetryableFailure));
                 select.Parameters.AddWithValue("$now", now);
-                var idObj = await select.ExecuteScalarAsync(ct).ConfigureAwait(false);
-                if (idObj is null or DBNull)
-                {
-                    await tx.CommitAsync(ct).ConfigureAwait(false);
-                    return null;
-                }
 
-                var operationId = Convert.ToString(idObj, CultureInfo.InvariantCulture)!;
-                await using var update = connection.CreateCommand();
-                update.Transaction = tx;
-                update.CommandText =
-                    """
-                    UPDATE offline_operations
-                    SET queue_state = $syncing,
-                        claimed_by = $claim,
-                        claimed_utc = $now,
-                        last_attempt_utc = $now,
-                        attempt_count = attempt_count + 1
-                    WHERE operation_id = $id
-                      AND queue_state IN ($pending, $retryable);
-                    """;
-                update.Parameters.AddWithValue("$syncing", nameof(OfflineQueueState.Syncing));
-                update.Parameters.AddWithValue("$claim", claimToken);
-                update.Parameters.AddWithValue("$now", now);
-                update.Parameters.AddWithValue("$id", operationId);
-                update.Parameters.AddWithValue("$pending", nameof(OfflineQueueState.Pending));
-                update.Parameters.AddWithValue("$retryable", nameof(OfflineQueueState.RetryableFailure));
-                var rows = await update.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
-                if (rows != 1)
+                await using var reader = await select.ExecuteReaderAsync(ct).ConfigureAwait(false);
+                while (await reader.ReadAsync(ct).ConfigureAwait(false))
                 {
-                    await tx.CommitAsync(ct).ConfigureAwait(false);
-                    return null;
+                    var operationId = reader.GetString(0);
+                    var dependsOn = reader.IsDBNull(1) ? null : reader.GetString(1);
+
+                    if (dependsOn is not null)
+                    {
+                        var depState = await GetQueueStateAsync(connection, tx, dependsOn, ct).ConfigureAwait(false);
+                        if (depState is null)
+                        {
+                            continue;
+                        }
+
+                        if (depState is OfflineQueueState.PermanentFailure or OfflineQueueState.Conflict)
+                        {
+                            await MarkDependencyFailedAsync(connection, tx, operationId, now, ct).ConfigureAwait(false);
+                            continue;
+                        }
+
+                        if (depState is not OfflineQueueState.Succeeded)
+                        {
+                            continue;
+                        }
+                    }
+
+                    await using var update = connection.CreateCommand();
+                    update.Transaction = tx;
+                    update.CommandText =
+                        """
+                        UPDATE offline_operations
+                        SET queue_state = $syncing,
+                            claimed_by = $claim,
+                            claimed_utc = $now,
+                            last_attempt_utc = $now,
+                            attempt_count = attempt_count + 1
+                        WHERE operation_id = $id
+                          AND queue_state IN ($pending, $retryable);
+                        """;
+                    update.Parameters.AddWithValue("$syncing", nameof(OfflineQueueState.Syncing));
+                    update.Parameters.AddWithValue("$claim", claimToken);
+                    update.Parameters.AddWithValue("$now", now);
+                    update.Parameters.AddWithValue("$id", operationId);
+                    update.Parameters.AddWithValue("$pending", nameof(OfflineQueueState.Pending));
+                    update.Parameters.AddWithValue("$retryable", nameof(OfflineQueueState.RetryableFailure));
+                    var rows = await update.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+                    if (rows == 1)
+                    {
+                        await tx.CommitAsync(ct).ConfigureAwait(false);
+                        return await LoadEnvelopeAsync(connection, operationId, ct).ConfigureAwait(false);
+                    }
                 }
 
                 await tx.CommitAsync(ct).ConfigureAwait(false);
-                return await LoadEnvelopeAsync(connection, operationId, ct).ConfigureAwait(false);
+                return null;
             }
         }
         finally
@@ -251,7 +276,9 @@ public sealed class OfflineOperationQueue(
         try
         {
             await using var connection = await OpenConnectionAsync(active, ct).ConfigureAwait(false);
+            await using var tx = (SqliteTransaction)await connection.BeginTransactionAsync(ct).ConfigureAwait(false);
             await using var cmd = connection.CreateCommand();
+            cmd.Transaction = tx;
             cmd.CommandText =
                 """
                 UPDATE offline_operations
@@ -275,6 +302,14 @@ public sealed class OfflineOperationQueue(
             cmd.Parameters.AddWithValue("$now", now);
             cmd.Parameters.AddWithValue("$id", operationId.ToString("D"));
             await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+
+            if (state is OfflineQueueState.PermanentFailure or OfflineQueueState.Conflict)
+            {
+                await MarkDependentsConflictAsync(connection, tx, operationId.ToString("D"), now, ct)
+                    .ConfigureAwait(false);
+            }
+
+            await tx.CommitAsync(ct).ConfigureAwait(false);
         }
         finally
         {
@@ -325,7 +360,7 @@ public sealed class OfflineOperationQueue(
             SELECT operation_id, device_id, user_id, organization_id, product_code, operation_type,
                    payload_version, payload_hash, idempotency_key, created_utc, next_attempt_utc,
                    attempt_count, queue_state, last_attempt_utc, failure_code, failure_summary,
-                   server_reference, concurrency_token
+                   server_reference, concurrency_token, depends_on_operation_id, entity_id
             FROM offline_operations
             ORDER BY created_utc DESC, operation_id DESC
             LIMIT $take;
@@ -394,7 +429,8 @@ public sealed class OfflineOperationQueue(
             SELECT operation_id, device_id, user_id, organization_id, product_code, operation_type,
                    payload_version, payload_hash, idempotency_key, created_utc, next_attempt_utc,
                    attempt_count, queue_state, last_attempt_utc, failure_code, failure_summary,
-                   server_reference, concurrency_token, ciphertext, nonce, tag
+                   server_reference, concurrency_token, depends_on_operation_id, entity_id,
+                   ciphertext, nonce, tag
             FROM offline_operations
             WHERE operation_id = $id;
             """;
@@ -452,7 +488,7 @@ public sealed class OfflineOperationQueue(
             SELECT operation_id, device_id, user_id, organization_id, product_code, operation_type,
                    payload_version, payload_hash, idempotency_key, created_utc, next_attempt_utc,
                    attempt_count, queue_state, last_attempt_utc, failure_code, failure_summary,
-                   server_reference, concurrency_token
+                   server_reference, concurrency_token, depends_on_operation_id, entity_id
             FROM offline_operations
             WHERE operation_id = $id;
             """;
@@ -466,8 +502,11 @@ public sealed class OfflineOperationQueue(
         return ReadEnvelope(reader);
     }
 
-    private static OfflineOperationEnvelope ReadEnvelope(SqliteDataReader reader) =>
-        new(
+    private static OfflineOperationEnvelope ReadEnvelope(SqliteDataReader reader)
+    {
+        var dependsOnOrdinal = reader.GetOrdinal("depends_on_operation_id");
+        var entityOrdinal = reader.GetOrdinal("entity_id");
+        return new(
             Guid.Parse(reader.GetString(reader.GetOrdinal("operation_id"))),
             reader.GetString(reader.GetOrdinal("device_id")),
             Guid.Parse(reader.GetString(reader.GetOrdinal("user_id"))),
@@ -487,7 +526,90 @@ public sealed class OfflineOperationQueue(
             reader.IsDBNull(reader.GetOrdinal("failure_code")) ? null : reader.GetString(reader.GetOrdinal("failure_code")),
             reader.IsDBNull(reader.GetOrdinal("failure_summary")) ? null : reader.GetString(reader.GetOrdinal("failure_summary")),
             reader.IsDBNull(reader.GetOrdinal("server_reference")) ? null : reader.GetString(reader.GetOrdinal("server_reference")),
-            reader.IsDBNull(reader.GetOrdinal("concurrency_token")) ? null : reader.GetString(reader.GetOrdinal("concurrency_token")));
+            reader.IsDBNull(reader.GetOrdinal("concurrency_token")) ? null : reader.GetString(reader.GetOrdinal("concurrency_token")),
+            reader.IsDBNull(dependsOnOrdinal) ? null : Guid.Parse(reader.GetString(dependsOnOrdinal)),
+            reader.IsDBNull(entityOrdinal) ? null : Guid.Parse(reader.GetString(entityOrdinal)));
+    }
+
+    private static async Task<OfflineQueueState?> GetQueueStateAsync(
+        SqliteConnection connection,
+        SqliteTransaction tx,
+        string operationId,
+        CancellationToken ct)
+    {
+        await using var cmd = connection.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = "SELECT queue_state FROM offline_operations WHERE operation_id = $id;";
+        cmd.Parameters.AddWithValue("$id", operationId);
+        var value = await cmd.ExecuteScalarAsync(ct).ConfigureAwait(false);
+        if (value is null or DBNull)
+        {
+            return null;
+        }
+
+        return Enum.Parse<OfflineQueueState>(Convert.ToString(value, CultureInfo.InvariantCulture)!, ignoreCase: true);
+    }
+
+    private static async Task MarkDependencyFailedAsync(
+        SqliteConnection connection,
+        SqliteTransaction tx,
+        string operationId,
+        string now,
+        CancellationToken ct)
+    {
+        await using var cmd = connection.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText =
+            """
+            UPDATE offline_operations
+            SET queue_state = $conflict,
+                failure_code = $code,
+                failure_summary = NULL,
+                claimed_by = NULL,
+                claimed_utc = NULL,
+                last_attempt_utc = $now
+            WHERE operation_id = $id
+              AND queue_state IN ($pending, $retryable);
+            """;
+        cmd.Parameters.AddWithValue("$conflict", nameof(OfflineQueueState.Conflict));
+        cmd.Parameters.AddWithValue("$code", "dependency_failed");
+        cmd.Parameters.AddWithValue("$now", now);
+        cmd.Parameters.AddWithValue("$id", operationId);
+        cmd.Parameters.AddWithValue("$pending", nameof(OfflineQueueState.Pending));
+        cmd.Parameters.AddWithValue("$retryable", nameof(OfflineQueueState.RetryableFailure));
+        await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+    }
+
+    private static async Task MarkDependentsConflictAsync(
+        SqliteConnection connection,
+        SqliteTransaction tx,
+        string dependencyOperationId,
+        string now,
+        CancellationToken ct)
+    {
+        await using var cmd = connection.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText =
+            """
+            UPDATE offline_operations
+            SET queue_state = $conflict,
+                failure_code = $code,
+                failure_summary = NULL,
+                claimed_by = NULL,
+                claimed_utc = NULL,
+                last_attempt_utc = $now
+            WHERE depends_on_operation_id = $dep
+              AND queue_state IN ($pending, $retryable, $syncing);
+            """;
+        cmd.Parameters.AddWithValue("$conflict", nameof(OfflineQueueState.Conflict));
+        cmd.Parameters.AddWithValue("$code", "dependency_failed");
+        cmd.Parameters.AddWithValue("$now", now);
+        cmd.Parameters.AddWithValue("$dep", dependencyOperationId);
+        cmd.Parameters.AddWithValue("$pending", nameof(OfflineQueueState.Pending));
+        cmd.Parameters.AddWithValue("$retryable", nameof(OfflineQueueState.RetryableFailure));
+        cmd.Parameters.AddWithValue("$syncing", nameof(OfflineQueueState.Syncing));
+        await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+    }
 
     private static int Get(Dictionary<string, int> map, string key) =>
         map.TryGetValue(key, out var value) ? value : 0;

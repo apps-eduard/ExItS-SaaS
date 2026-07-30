@@ -244,8 +244,11 @@ public sealed class OfflineAccessRevalidator(
     }
 }
 
-/// <summary>Development/Testing probe operation type constant.</summary>
+/// <summary>Generic offline operation type constants (one queue for all types).</summary>
 public static class OfflineOperationTypes
 {
     public const string DevOfflineProbe = "dev.offline-probe";
+    public const string CustomerCreate = "customer.create";
+    public const string CustomerUpdate = "customer.update";
+    public const string CreditCreate = "credit.create";
 }

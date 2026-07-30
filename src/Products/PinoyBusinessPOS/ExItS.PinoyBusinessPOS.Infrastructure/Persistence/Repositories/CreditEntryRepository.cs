@@ -64,6 +64,36 @@ internal sealed class CreditEntryRepository : ICreditEntryRepository
         return (records.Select(CreditEntryEntityMapper.ToDomain).ToList(), total);
     }
 
+    public async Task<(IReadOnlyList<CreditEntry> Items, int TotalCount)> ListCreatedSinceAsync(
+        PosOrganizationId organizationId,
+        DateTimeOffset? sinceUtc,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _db.CreditEntries.AsNoTracking()
+            .Where(e => e.OrganizationId == organizationId.Value);
+
+        if (sinceUtc is not null)
+        {
+            var since = sinceUtc.Value.ToUniversalTime();
+            query = query.Where(e =>
+                e.CreatedAtUtc > since
+                || (e.ReversedAtUtc != null && e.ReversedAtUtc > since));
+        }
+
+        var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
+        var records = await query
+            .OrderBy(e => e.CreatedAtUtc)
+            .ThenBy(e => e.Id)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return (records.Select(CreditEntryEntityMapper.ToDomain).ToList(), total);
+    }
+
     public async Task<IReadOnlyList<CreditEntry>> ListActiveByOrganizationAsync(
         PosOrganizationId organizationId,
         CancellationToken cancellationToken = default)

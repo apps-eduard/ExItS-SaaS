@@ -89,7 +89,7 @@ public sealed record PosCustomerCreditSummaryDto(
     int ActiveEntryCount,
     int TotalEntryCount);
 
-public sealed record CreatePosCreditEntryRequest(decimal Amount, string Remarks);
+public sealed record CreatePosCreditEntryRequest(decimal Amount, string Remarks, Guid? CreditEntryId = null);
 
 public sealed record ReversePosCreditEntryRequest(string Reason);
 
@@ -98,3 +98,10 @@ public sealed record PosCreditEntryPagedResult(
     int TotalCount,
     int Page,
     int PageSize);
+
+public sealed record PosCreditSyncPageResult(
+    List<PosCreditEntryDto> Items,
+    int TotalCount,
+    int Page,
+    int PageSize,
+    DateTimeOffset? NextCheckpointUtc);

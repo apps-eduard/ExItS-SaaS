@@ -562,4 +562,21 @@
   <data name="DevOffline_LastSynced" xml:space="preserve"><value>Last synced</value></data>
   <data name="DevOffline_FailureCode" xml:space="preserve"><value>Failure code</value></data>
   <data name="Settings_DevOfflineLink" xml:space="preserve"><value>Offline foundation diagnostics</value></data>
+  <data name="Offline_SavedPendingSync" xml:space="preserve"><value>Saved on this device — Pending Sync</value></data>
+  <data name="Offline_ConfirmedOutstanding" xml:space="preserve"><value>Confirmed outstanding</value></data>
+  <data name="Offline_PendingCredit" xml:space="preserve"><value>Pending credit</value></data>
+  <data name="Offline_ProjectedOutstanding" xml:space="preserve"><value>Projected outstanding</value></data>
+  <data name="Offline_EntityPending" xml:space="preserve"><value>Pending Sync</value></data>
+  <data name="Offline_EntityConflict" xml:space="preserve"><value>Conflict</value></data>
+  <data name="Offline_EntityRejected" xml:space="preserve"><value>Rejected</value></data>
+  <data name="Offline_EntityConfirmed" xml:space="preserve"><value>Synced</value></data>
+  <data name="Offline_ConflictTitle" xml:space="preserve"><value>Customer update conflict</value></data>
+  <data name="Offline_ConflictMessage" xml:space="preserve"><value>Server and local versions differ. Discard local change or review and retry. Changes are never merged automatically.</value></data>
+  <data name="Offline_DiscardLocal" xml:space="preserve"><value>Discard local change</value></data>
+  <data name="Offline_MutationsUnavailable" xml:space="preserve"><value>Reconnect to verify access before offline changes.</value></data>
+  <data name="Offline_CreditOnlineOnly" xml:space="preserve"><value>Repayments, reversals, and due dates require an online connection.</value></data>
+  <data name="Offline_LogoutUnsyncedWarning" xml:space="preserve"><value>Unsynced work is still on this device. It will remain until you sign in again and sync.</value></data>
+  <data name="DevOffline_LocalProjectionsTitle" xml:space="preserve"><value>Local customer/credit counts</value></data>
+  <data name="DevOffline_CustomersLabel" xml:space="preserve"><value>customers</value></data>
+  <data name="DevOffline_CreditsLabel" xml:space="preserve"><value>credits</value></data>
 </root>

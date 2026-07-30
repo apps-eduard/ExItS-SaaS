@@ -94,6 +94,14 @@ public sealed class CreditEntryUseCaseTests
             return Task.FromResult(((IReadOnlyList<POSCustomer>)list.Skip(skip).Take(take).ToList(), list.Count));
         }
 
+        public Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListUpdatedSinceAsync(
+            PosOrganizationId organizationId,
+            DateTimeOffset? sinceUtc,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            ListAsync(organizationId, null, null, skip, take, cancellationToken);
+
         public Task AddAsync(POSCustomer customer, CancellationToken cancellationToken = default)
         {
             _items.Add(customer);
@@ -162,6 +170,20 @@ public sealed class CreditEntryUseCaseTests
                 e.OrganizationId == organizationId
                 && e.CustomerId == customerId
                 && e.Status == CreditEntryStatus.Active));
+
+        public Task<(IReadOnlyList<CreditEntry> Items, int TotalCount)> ListCreatedSinceAsync(
+            PosOrganizationId organizationId,
+            DateTimeOffset? sinceUtc,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default)
+        {
+            var list = _items
+                .Where(e => e.OrganizationId == organizationId)
+                .OrderByDescending(e => e.CreatedAtUtc)
+                .ToList();
+            return Task.FromResult(((IReadOnlyList<CreditEntry>)list.Skip(skip).Take(take).ToList(), list.Count));
+        }
 
         public Task AddAsync(CreditEntry entry, CancellationToken cancellationToken = default)
         {

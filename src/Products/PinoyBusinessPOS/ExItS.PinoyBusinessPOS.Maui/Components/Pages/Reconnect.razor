@@ -5,6 +5,7 @@
 @inject IPosSyncStatusService SyncStatus
 @inject NavigationManager Nav
 @inject IProtectedShellAccessPolicy AccessPolicy
+@inject ICustomerCreditOfflineSyncService Sync
 
 <Page>
     <PageHeader Title="@L["SyncStatus_ReconnectTitle"]" Subtitle="@L["SyncStatus_ReconnectMessage"]" />
@@ -39,6 +40,7 @@
             var route = await Gate.ResolveStartRouteAsync();
             if (!string.Equals(route, "/reconnect", StringComparison.Ordinal))
             {
+                await Sync.ReconcileOnReconnectAsync();
                 SyncStatus.SetReconnectRequired(false);
                 Nav.NavigateTo(route);
             }

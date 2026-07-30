@@ -17,11 +17,13 @@ public sealed class AuthenticationService(
     IPlatformAccessClient accessClient,
     IAuthEventSink events,
     ILocalContextManager? localContext = null,
+    IProtectedShellAccessPolicy? accessPolicy = null,
     TimeProvider? timeProvider = null) : IAuthenticationService
 {
     private static readonly TimeSpan SessionLifetime = TimeSpan.FromHours(12);
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
     private readonly ILocalContextManager? _localContext = localContext;
+    private readonly IProtectedShellAccessPolicy? _accessPolicy = accessPolicy;
 
     public bool IsDevelopmentAuthenticationEnabled =>
         string.Equals(appInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase)
@@ -419,6 +421,7 @@ public sealed class AuthenticationService(
     private async Task ClearLocalAsync(CancellationToken ct)
     {
         await CloseLocalContextAsync(ct).ConfigureAwait(false);
+        _accessPolicy?.ClearProcessValidation();
 
         try
         {
