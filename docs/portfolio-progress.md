@@ -68,7 +68,7 @@ P10-WP04 ○ Cashier Shifts (not started)
 |---|---|---|
 | P10-WP01 — Suppliers | Complete (Option A) | 6f92dd43b2f66709891d82079f9d3fbd0b5c450e |
 | P10-WP02 — Purchasing | Complete | c0f8130ef99e958bceaee98024a69339b7e8e41a |
-| P10-WP03 — Advanced Inventory | Complete | — |
+| P10-WP03 — Advanced Inventory | Complete | 5c62133 (+ gap-fix 31d809c) |
 | P10-WP04 — Cashier Shifts | Not Started | — |
 | P10-WP05 — Returns and Refunds | Not Started | — |
 | P10-WP06 — Advanced Permissions and Reports | Not Started | — |
