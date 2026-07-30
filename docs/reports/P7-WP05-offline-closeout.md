@@ -219,7 +219,7 @@ Updated Phase 7, offline-sync design, portfolio, FILE-MANIFEST, README, security
 | Field | Value |
 |---|---|
 | Feature commit | `3b5a1e72294eb102f51f46c995e784138685faa4` |
-| Docs hash-record commit | *(recorded in follow-up docs commit)* |
+| Docs hash-record commit | `1d4c6eb9fabd0b8a3014f131529a83659df8fe6f` |
 | Final working tree | clean after push |
 
 ## HealthCare freeze
