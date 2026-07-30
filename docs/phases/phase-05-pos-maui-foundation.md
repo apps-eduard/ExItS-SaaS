@@ -69,8 +69,8 @@ Status: **Complete**
 - [x] Applicable tests pass with exact evidence.
 - [x] Dashboard and phase page updated.
 - [x] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean (after push).
+- [x] Focused commit created and hash recorded (`763b0dc`).
+- [x] Working tree clean (after push).
 
 Report: [P5-WP04-reusable-mvp-components.md](../reports/P5-WP04-reusable-mvp-components.md)
 

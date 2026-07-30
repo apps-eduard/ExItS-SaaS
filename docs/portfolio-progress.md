@@ -14,7 +14,7 @@
 | Current phase | Phase 5 — PinoyBusinessPOS MAUI Foundation (**In Progress**) |
 | Current work package | P5-WP04 — Reusable MVP Components (**Complete**) |
 | Overall status | **P5-WP04 complete** — reusable DesignSystem MVP components + Dev showcase; next P5-WP05 |
-| Latest verified commit | *(feature hash after push)* |
+| Latest verified commit | 763b0dc7cd73ab21ada2d101d115423c23d90cfa |
 | Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations; R-035 calendar EOM; no product delivery; no payment gateway; POS foundation not offline business; no interactive Android emulator attached (R-109) |
 | Last updated | 2026-07-30 |
 
@@ -59,7 +59,7 @@ P5-WP05 — Authentication, Onboarding and Closeout (not started — do not begi
 | P5-WP01 | Complete | 3015925d16560be13953270565c1ab99a8d69934 |
 | P5-WP02 | Complete | 3d3cba840ffff20dc07ae7237d7f81c3873a502e |
 | P5-WP03 | Complete | 1dea793407adaa9e8a27c19f45727bc90d866f60 |
-| P5-WP04 | Complete | *(feature hash after push)* |
+| P5-WP04 | Complete | 763b0dc7cd73ab21ada2d101d115423c23d90cfa |
 | P5-WP05 | Not Started | — |
 
 ## Phase 4 work packages

@@ -92,5 +92,5 @@ Do not begin until explicitly authorized.
 
 | Kind | Message | Hash |
 |---|---|---|
-| Feature | *(recorded after commit)* | — |
+| Feature | `feat(pos): reusable mvp design-system components and showcase` | `763b0dc7cd73ab21ada2d101d115423c23d90cfa` |
 | Docs hash record | *(recorded after docs commit)* | — |
