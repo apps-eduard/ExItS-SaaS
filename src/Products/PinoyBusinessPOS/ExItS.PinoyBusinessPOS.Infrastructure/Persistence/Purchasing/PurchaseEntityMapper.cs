@@ -109,14 +109,21 @@ internal static class PurchaseEntityMapper
                 l.LineNumber,
                 l.NameSnapshot,
                 UnitOfMeasures.Parse(l.UomSnapshot),
-                l.ReceivedQty))
+                l.ReceivedQty,
+                l.UnitPurchaseCostSnapshot,
+                l.LineTotalSnapshot,
+                l.InventoryMovementId))
             .ToList();
 
         return GoodsReceipt.Rehydrate(
             grnId,
             orgId,
             PurchaseOrderId.From(record.PurchaseOrderId),
+            SupplierId.From(record.SupplierId),
             record.GrnNumber,
+            record.ReceivedDate,
+            record.DeliveryReference,
+            record.Notes,
             record.ReceivedAtUtc,
             record.ReceivedBy,
             lines);
@@ -128,7 +135,11 @@ internal static class PurchaseEntityMapper
             Id = receipt.Id.Value,
             OrganizationId = receipt.OrganizationId.Value,
             PurchaseOrderId = receipt.PurchaseOrderId.Value,
+            SupplierId = receipt.SupplierId.Value,
             GrnNumber = receipt.GrnNumber,
+            ReceivedDate = receipt.ReceivedDate,
+            DeliveryReference = receipt.DeliveryReference,
+            Notes = receipt.Notes,
             ReceivedAtUtc = receipt.ReceivedAtUtc,
             ReceivedBy = receipt.ReceivedBy
         };
@@ -144,6 +155,14 @@ internal static class PurchaseEntityMapper
             LineNumber = line.LineNumber,
             NameSnapshot = line.NameSnapshot,
             UomSnapshot = UnitOfMeasures.ToCode(line.UomSnapshot),
-            ReceivedQty = line.ReceivedQty
+            ReceivedQty = line.QuantityReceived,
+            UnitPurchaseCostSnapshot = line.UnitPurchaseCostSnapshot,
+            LineTotalSnapshot = line.LineTotalSnapshot,
+            InventoryMovementId = line.InventoryMovementId
         };
+
+    public static void ApplyMovementId(GoodsReceiptLine line, GoodsReceiptLineRecord record)
+    {
+        record.InventoryMovementId = line.InventoryMovementId;
+    }
 }

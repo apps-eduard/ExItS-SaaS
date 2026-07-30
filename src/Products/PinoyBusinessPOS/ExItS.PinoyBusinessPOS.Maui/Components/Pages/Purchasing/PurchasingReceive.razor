@@ -3,6 +3,7 @@
 @inject NavigationGate Gate
 @inject IPosPurchaseOrderClient Purchasing
 @inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
@@ -10,16 +11,69 @@
 {
     <Page><Spinner /></Page>
 }
+else if (_loading)
+{
+    <Page><Spinner /></Page>
+}
+else if (_po is null)
+{
+    <Page>
+        <ErrorState Title="@(_errorTitle ?? L["Purchasing_NotFoundTitle"])"
+                    Message="@(_errorMessage ?? L["Purchasing_NotFoundMessage"])"
+                    RetryLabel="@L["Api_Retry"]"
+                    OnRetry="LoadAsync" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Purchasing_BackToDetail"]</Button>
+    </Page>
+}
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManagePurchasing);
+    var canReceive = canManage && !_isOffline
+        && (_po.Status == "Ordered" || _po.Status == "PartiallyReceived")
+        && _lines.Any(l => l.OutstandingQty > 0m);
 <Page>
-    <PageHeader Title="@L["Purchasing_ReceiveTitle"]" Subtitle="@L["Purchasing_ReceiveSubtitle"]" />
+    <PageHeader Title="@L["Purchasing_ReceiveTitle"]" Subtitle="@(_po.PoNumber ?? L["Purchasing_ReceiveSubtitle"])">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Purchasing_BackToDetail"]</Button>
+        </Actions>
+    </PageHeader>
+
     @if (_isOffline)
     {
         <Alert Tone="AlertTone.Warning" Title="@L["Purchasing_OfflineTitle"]" Message="@L["Purchasing_OfflineMessage"]" />
     }
-    <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="ReceiveAsync">@L["Purchasing_Receive"]</Button>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Purchasing_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Purchasing_ReceiveLinesSection"]">
+        <Stack Gap="3">
+            @foreach (var line in _lines)
+            {
+                <div>
+                    <div class="pos-value-md">@(line.NameSnapshot ?? line.ProductId.ToString("D"))</div>
+                    <div class="pos-muted">@L["Purchasing_Outstanding", line.OutstandingQty, line.UomSnapshot ?? ""]</div>
+                    @if (canReceive && line.OutstandingQty > 0m)
+                    {
+                        <TextInput Label="@L["Purchasing_ReceiveQty"]"
+                                   Value="@line.QtyText"
+                                   ValueChanged="v => line.QtyText = v" />
+                    }
+                </div>
+            }
+            @if (canReceive)
+            {
+                <TextInput Label="@L["Purchasing_DeliveryReference"]" Value="@_deliveryReference" ValueChanged="v => _deliveryReference = v" />
+                <TextInput Label="@L["Purchasing_ReceiveNotes"]" Value="@_notes" ValueChanged="v => _notes = v" />
+            }
+            <Button Variant="ButtonVariant.Primary"
+                    Disabled="@(!canReceive || _busy)"
+                    IsLoading="@_busy"
+                    OnClick="ReceiveAsync">@L["Purchasing_Receive"]</Button>
+        </Stack>
+    </Section>
 </Page>
 }
 
@@ -27,7 +81,15 @@ else
     [Parameter] public Guid PurchaseOrderId { get; set; }
 
     private bool _ready;
+    private bool _loading;
+    private bool _busy;
     private bool _isOffline;
+    private PosPurchaseOrderDto? _po;
+    private List<ReceiveLineEdit> _lines = [];
+    private string _deliveryReference = string.Empty;
+    private string _notes = string.Empty;
+    private string? _errorTitle;
+    private string? _errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -43,19 +105,125 @@ else
             return;
         }
 
-        _isOffline = !await Connectivity.IsConnectedAsync();
         _ready = true;
+        await LoadAsync();
     }
 
-    private Task ReceiveAsync()
+    private async Task LoadAsync()
     {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        _isOffline = !await Connectivity.IsConnectedAsync();
         if (_isOffline)
         {
-            return Task.CompletedTask;
+            _po = null;
+            _lines = [];
+            _loading = false;
+            return;
         }
 
-        return Purchasing.ReceiveAsync(
+        var result = await Purchasing.GetAsync(PurchaseOrderId);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _po = result.Data;
+            _lines = result.Data.Lines
+                .OrderBy(l => l.LineNumber)
+                .Select(l => new ReceiveLineEdit(l))
+                .ToList();
+        }
+        else
+        {
+            _po = null;
+            _lines = [];
+            _errorTitle = L["Purchasing_ErrorTitle"];
+            _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        }
+
+        _loading = false;
+    }
+
+    private async Task ReceiveAsync()
+    {
+        if (_po is null || _isOffline || _busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        _errorMessage = null;
+
+        var receiveLines = new List<ReceivePurchaseOrderLineRequest>();
+        foreach (var line in _lines)
+        {
+            if (string.IsNullOrWhiteSpace(line.QtyText))
+            {
+                continue;
+            }
+
+            if (!decimal.TryParse(line.QtyText.Trim(), out var qty) || qty <= 0m)
+            {
+                _errorTitle = L["Purchasing_ErrorTitle"];
+                _errorMessage = L["Purchasing_InvalidReceiveQty"];
+                _busy = false;
+                return;
+            }
+
+            if (qty > line.OutstandingQty)
+            {
+                _errorTitle = L["Purchasing_ErrorTitle"];
+                _errorMessage = L["Purchasing_OverReceiveQty"];
+                _busy = false;
+                return;
+            }
+
+            receiveLines.Add(new ReceivePurchaseOrderLineRequest(line.ProductId, qty));
+        }
+
+        if (receiveLines.Count == 0)
+        {
+            _errorTitle = L["Purchasing_ErrorTitle"];
+            _errorMessage = L["Purchasing_ReceiveRequiresLines"];
+            _busy = false;
+            return;
+        }
+
+        var result = await Purchasing.ReceiveAsync(
             PurchaseOrderId,
-            new ReceivePurchaseOrderRequest([], Guid.NewGuid())).AsTask();
+            new ReceivePurchaseOrderRequest(
+                receiveLines,
+                Guid.NewGuid(),
+                DeliveryReference: string.IsNullOrWhiteSpace(_deliveryReference) ? null : _deliveryReference.Trim(),
+                Notes: string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim()));
+
+        if (result.IsSuccess)
+        {
+            Nav.NavigateTo($"/purchasing/{PurchaseOrderId:D}", replace: true);
+            return;
+        }
+
+        _errorTitle = L["Purchasing_ErrorTitle"];
+        _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        _busy = false;
+    }
+
+    private void GoBack() => Nav.NavigateTo($"/purchasing/{PurchaseOrderId:D}");
+
+    private sealed class ReceiveLineEdit
+    {
+        public ReceiveLineEdit(PosPurchaseOrderLineDto line)
+        {
+            ProductId = line.ProductId;
+            NameSnapshot = line.NameSnapshot;
+            UomSnapshot = line.UomSnapshot;
+            OutstandingQty = line.OutstandingQty;
+            QtyText = line.OutstandingQty > 0m ? line.OutstandingQty.ToString("0.###") : string.Empty;
+        }
+
+        public Guid ProductId { get; }
+        public string? NameSnapshot { get; }
+        public string? UomSnapshot { get; }
+        public decimal OutstandingQty { get; }
+        public string QtyText { get; set; }
     }
 }

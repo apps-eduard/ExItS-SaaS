@@ -233,6 +233,14 @@ internal sealed class PurchaseOrderRepository : IPurchaseOrderRepository
                 if (afterReceiptCreated is not null)
                 {
                     await afterReceiptCreated(receipt, po, ct).ConfigureAwait(false);
+                    foreach (var line in receipt.Lines)
+                    {
+                        var lineRecord = _db.GoodsReceiptLines.Local.FirstOrDefault(l => l.Id == line.Id.Value);
+                        if (lineRecord is not null)
+                        {
+                            PurchaseEntityMapper.ApplyMovementId(line, lineRecord);
+                        }
+                    }
                 }
 
                 await _db.SaveChangesAsync(ct).ConfigureAwait(false);

@@ -91,6 +91,7 @@ public sealed class AddPosPurchasingMigrationTests(PosPostgreSqlFixture fixture)
         Assert.Contains("ux_purchase_orders_org_po_number", indexes);
         Assert.Contains("ux_purchase_order_lines_po_product", indexes);
         Assert.Contains("ux_goods_receipts_org_grn_number", indexes);
+        Assert.Contains("ux_goods_receipt_lines_inventory_movement_id", indexes);
         Assert.Contains("ux_stock_movements_purchase_receipt_source", indexes);
 
         var constraints = await QueryNamesAsync(
@@ -105,6 +106,23 @@ public sealed class AddPosPurchasingMigrationTests(PosPostgreSqlFixture fixture)
         Assert.Contains("ck_purchase_orders_status", constraints);
         Assert.Contains("ck_purchase_order_lines_unit_cost_nonnegative", constraints);
         Assert.Contains("ck_goods_receipt_lines_received_qty_positive", constraints);
+        Assert.Contains("ck_goods_receipt_lines_unit_cost_non_negative", constraints);
+        Assert.Contains("fk_goods_receipts_suppliers", constraints);
+
+        var columns = await QueryNamesAsync(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'pos'
+              AND (
+                (table_name = 'goods_receipts' AND column_name IN ('supplier_id', 'received_date', 'delivery_reference', 'notes'))
+                OR (table_name = 'goods_receipt_lines' AND column_name IN ('unit_purchase_cost_snapshot', 'line_total_snapshot', 'inventory_movement_id'))
+              )
+            """);
+        Assert.Contains("supplier_id", columns);
+        Assert.Contains("received_date", columns);
+        Assert.Contains("unit_purchase_cost_snapshot", columns);
+        Assert.Contains("inventory_movement_id", columns);
     }
 
     private async Task<HashSet<string>> QueryNamesAsync(string sql)

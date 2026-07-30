@@ -48,13 +48,24 @@ public sealed record PosGoodsReceiptLineDto(
     int LineNumber,
     string NameSnapshot,
     string UomSnapshot,
-    decimal ReceivedQty);
+    decimal QuantityReceived,
+    decimal UnitPurchaseCostSnapshot,
+    decimal LineTotalSnapshot,
+    Guid? InventoryMovementId)
+{
+    /// <summary>Alias for clients that still expect ReceivedQty.</summary>
+    public decimal ReceivedQty => QuantityReceived;
+}
 
 public sealed record PosGoodsReceiptDto(
     Guid GoodsReceiptId,
     Guid OrganizationId,
     Guid PurchaseOrderId,
+    Guid SupplierId,
     string GrnNumber,
+    DateOnly ReceivedDate,
+    string? DeliveryReference,
+    string? Notes,
     DateTimeOffset ReceivedAtUtc,
     Guid ReceivedBy,
     IReadOnlyList<PosGoodsReceiptLineDto> Lines);
@@ -88,7 +99,10 @@ public sealed record ReceivePurchaseOrderLineRequest(
 
 public sealed record ReceivePurchaseOrderRequest(
     IReadOnlyList<ReceivePurchaseOrderLineRequest> Lines,
-    Guid? GoodsReceiptId = null);
+    Guid? GoodsReceiptId = null,
+    DateOnly? ReceivedDate = null,
+    string? DeliveryReference = null,
+    string? Notes = null);
 
 public static class PurchaseMapper
 {
@@ -128,7 +142,11 @@ public static class PurchaseMapper
             receipt.Id.Value,
             receipt.OrganizationId.Value,
             receipt.PurchaseOrderId.Value,
+            receipt.SupplierId.Value,
             receipt.GrnNumber,
+            receipt.ReceivedDate,
+            receipt.DeliveryReference,
+            receipt.Notes,
             receipt.ReceivedAtUtc,
             receipt.ReceivedBy,
             receipt.Lines.Select(l => new PosGoodsReceiptLineDto(
@@ -138,7 +156,10 @@ public static class PurchaseMapper
                 l.LineNumber,
                 l.NameSnapshot,
                 l.UomSnapshot.ToString(),
-                l.ReceivedQty)).ToList());
+                l.QuantityReceived,
+                l.UnitPurchaseCostSnapshot,
+                l.LineTotalSnapshot,
+                l.InventoryMovementId)).ToList());
 }
 
 public sealed class PurchaseOrderQueryService
@@ -702,7 +723,10 @@ public sealed class ReceivePurchaseOrder
                             receiveLines,
                             actorId,
                             utcNow,
-                            request.GoodsReceiptId is Guid grnId && grnId != Guid.Empty
+                            receivedDate: request.ReceivedDate,
+                            deliveryReference: request.DeliveryReference,
+                            notes: request.Notes,
+                            id: request.GoodsReceiptId is Guid grnId && grnId != Guid.Empty
                                 ? GoodsReceiptId.From(grnId)
                                 : null);
                         return (existing, grn);

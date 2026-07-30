@@ -137,4 +137,5 @@ public static class DomainErrorCodes
     public const string InvalidPurchaseReceiveQuantity = "pos.purchase_order.receive.quantity.invalid";
     public const string PurchaseOverReceipt = "pos.purchase_order.receive.over_receipt";
     public const string InvalidGoodsReceiptLine = "pos.goods_receipt.line.invalid";
+    public const string InvalidGoodsReceiptNotes = "pos.goods_receipt.notes.invalid";
 }

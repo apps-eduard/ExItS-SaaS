@@ -58,11 +58,12 @@ public sealed class PurchaseStockService : IPurchaseStockService
                 organizationId,
                 line.ProductId,
                 account.Id,
-                line.ReceivedQty,
+                line.QuantityReceived,
                 line.UomSnapshot,
                 receipt.Id.Value,
                 actorId,
                 utcNow);
+            line.AttachInventoryMovement(movement.Id);
             account.ApplyMovementEffect(movement.QuantityEffect);
             account.Touch(utcNow);
             await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);

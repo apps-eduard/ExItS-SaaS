@@ -103,7 +103,10 @@ public sealed class PurchaseOrderDomainTests
             Guid.NewGuid(),
             Now);
         Assert.Single(grn.Lines);
-        Assert.Equal(4m, grn.Lines.Single().ReceivedQty);
+        Assert.Equal(SupplierA, grn.SupplierId.Value);
+        Assert.Equal(4m, grn.Lines.Single().QuantityReceived);
+        Assert.Equal(10m, grn.Lines.Single().UnitPurchaseCostSnapshot);
+        Assert.Equal(40m, grn.Lines.Single().LineTotalSnapshot);
 
         po.ApplyReceiptLines([new PurchaseOrderReceiveLineDraft(CatalogProductId.From(ProductA), 6m)], Now);
         Assert.Equal(PurchaseOrderStatus.Received, po.Status);

@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Purchasing;
@@ -16,7 +17,13 @@ public sealed class GoodsReceiptLine
     public int LineNumber { get; }
     public string NameSnapshot { get; }
     public UnitOfMeasure UomSnapshot { get; }
-    public decimal ReceivedQty { get; }
+    public decimal QuantityReceived { get; }
+    public decimal UnitPurchaseCostSnapshot { get; }
+    public decimal LineTotalSnapshot { get; }
+    public Guid? InventoryMovementId { get; private set; }
+
+    /// <summary>Alias for persistence/DTO mapping compatibility.</summary>
+    public decimal ReceivedQty => QuantityReceived;
 
     private GoodsReceiptLine(
         GoodsReceiptLineId id,
@@ -27,7 +34,10 @@ public sealed class GoodsReceiptLine
         int lineNumber,
         string nameSnapshot,
         UnitOfMeasure uomSnapshot,
-        decimal receivedQty)
+        decimal quantityReceived,
+        decimal unitPurchaseCostSnapshot,
+        decimal lineTotalSnapshot,
+        Guid? inventoryMovementId)
     {
         Id = id;
         GoodsReceiptId = goodsReceiptId;
@@ -37,7 +47,10 @@ public sealed class GoodsReceiptLine
         LineNumber = lineNumber;
         NameSnapshot = nameSnapshot;
         UomSnapshot = uomSnapshot;
-        ReceivedQty = receivedQty;
+        QuantityReceived = quantityReceived;
+        UnitPurchaseCostSnapshot = unitPurchaseCostSnapshot;
+        LineTotalSnapshot = lineTotalSnapshot;
+        InventoryMovementId = inventoryMovementId;
     }
 
     internal static GoodsReceiptLine Create(
@@ -63,6 +76,7 @@ public sealed class GoodsReceiptLine
                 "Receive quantity must be greater than zero.");
         }
 
+        var cost = poLine.UnitPurchaseCost;
         return new GoodsReceiptLine(
             id ?? GoodsReceiptLineId.New(),
             goodsReceiptId,
@@ -72,7 +86,22 @@ public sealed class GoodsReceiptLine
             lineNumber,
             poLine.NameSnapshot,
             poLine.UomSnapshot.Value,
-            normalized);
+            normalized,
+            cost,
+            SaleMoney.RoundMoney(cost * normalized),
+            inventoryMovementId: null);
+    }
+
+    public void AttachInventoryMovement(StockMovementId movementId)
+    {
+        if (InventoryMovementId is not null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGoodsReceiptLine,
+                "Inventory movement is already linked to this receipt line.");
+        }
+
+        InventoryMovementId = movementId.Value;
     }
 
     public static GoodsReceiptLine Rehydrate(
@@ -84,7 +113,10 @@ public sealed class GoodsReceiptLine
         int lineNumber,
         string nameSnapshot,
         UnitOfMeasure uomSnapshot,
-        decimal receivedQty) =>
+        decimal quantityReceived,
+        decimal unitPurchaseCostSnapshot,
+        decimal lineTotalSnapshot,
+        Guid? inventoryMovementId) =>
         new(
             id,
             goodsReceiptId,
@@ -94,5 +126,8 @@ public sealed class GoodsReceiptLine
             lineNumber,
             nameSnapshot,
             uomSnapshot,
-            receivedQty);
+            quantityReceived,
+            unitPurchaseCostSnapshot,
+            lineTotalSnapshot,
+            inventoryMovementId);
 }

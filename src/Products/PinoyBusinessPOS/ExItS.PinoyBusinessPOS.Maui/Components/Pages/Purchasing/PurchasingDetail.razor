@@ -3,6 +3,7 @@
 @inject NavigationGate Gate
 @inject IPosPurchaseOrderClient Purchasing
 @inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
@@ -10,22 +11,109 @@
 {
     <Page><Spinner /></Page>
 }
+else if (_loading)
+{
+    <Page><Spinner /></Page>
+}
+else if (_po is null)
+{
+    <Page>
+        <ErrorState Title="@(_errorTitle ?? L["Purchasing_NotFoundTitle"])"
+                    Message="@(_errorMessage ?? L["Purchasing_NotFoundMessage"])"
+                    RetryLabel="@L["Api_Retry"]"
+                    OnRetry="LoadAsync" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Purchasing_BackToList"]</Button>
+    </Page>
+}
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManagePurchasing);
+    var canSubmit = canManage && !_isOffline && _po.Status == "Draft";
+    var canCancel = canManage && !_isOffline && (_po.Status == "Draft" || _po.Status == "Ordered");
+    var canReceive = canManage && !_isOffline && (_po.Status == "Ordered" || _po.Status == "PartiallyReceived");
 <Page>
-    <PageHeader Title="@L["Purchasing_DetailTitle"]" Subtitle="@_po?.PoNumber" />
+    <PageHeader Title="@(_po.PoNumber ?? L["Purchasing_DetailTitle"])" Subtitle="@L["Purchasing_DetailSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Purchasing_BackToList"]</Button>
+        </Actions>
+    </PageHeader>
+
     @if (_isOffline)
     {
         <Alert Tone="AlertTone.Warning" Title="@L["Purchasing_OfflineTitle"]" Message="@L["Purchasing_OfflineMessage"]" />
     }
-    @if (_po is not null && canManage && !_isOffline)
+
+    @if (!string.IsNullOrEmpty(_banner))
     {
-        <Stack Gap="2">
-            <Button Variant="ButtonVariant.Primary" OnClick="SubmitAsync">@L["Purchasing_Submit"]</Button>
-            <Button Variant="ButtonVariant.Secondary" OnClick="CancelAsync">@L["Purchasing_Cancel"]</Button>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoReceive">@L["Purchasing_Receive"]</Button>
+        <Alert Tone="AlertTone.Success" Title="@L["Purchasing_SuccessTitle"]" Message="@_banner" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Purchasing_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Purchasing_DetailsSection"]">
+        <Stack Gap="3">
+            <div>
+                <span class="pos-muted">@L["Purchasing_Field_Status"]</span>
+                <div class="pos-value-md">@_po.Status</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Purchasing_Field_OrderDate"]</span>
+                <div class="pos-value-md">@_po.OrderDate</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Purchasing_Field_Supplier"]</span>
+                <div class="pos-value-md">@_po.SupplierId</div>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_po.SupplierReference))
+            {
+                <div>
+                    <span class="pos-muted">@L["Purchasing_Field_SupplierReference"]</span>
+                    <div class="pos-value-md">@_po.SupplierReference</div>
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(_po.Notes))
+            {
+                <div>
+                    <span class="pos-muted">@L["Purchasing_Field_Notes"]</span>
+                    <div class="pos-value-md pos-wrap">@_po.Notes</div>
+                </div>
+            }
         </Stack>
+    </Section>
+
+    <Section Title="@L["Purchasing_LinesSection"]">
+        <Stack Gap="3">
+            @foreach (var line in _po.Lines.OrderBy(l => l.LineNumber))
+            {
+                <div>
+                    <div class="pos-value-md">@(line.NameSnapshot ?? line.ProductId.ToString("D"))</div>
+                    <div class="pos-muted">
+                        @L["Purchasing_LineSummary", line.OrderedQty, line.ReceivedQty, line.OutstandingQty, line.UnitPurchaseCost]
+                    </div>
+                </div>
+            }
+        </Stack>
+    </Section>
+
+    @if (canSubmit || canCancel || canReceive)
+    {
+        <FormActions>
+            @if (canSubmit)
+            {
+                <Button Variant="ButtonVariant.Primary" Disabled="@_busy" IsLoading="@_busy" OnClick="SubmitAsync">@L["Purchasing_Submit"]</Button>
+            }
+            @if (canReceive)
+            {
+                <Button Variant="ButtonVariant.Primary" OnClick="GoReceive">@L["Purchasing_Receive"]</Button>
+            }
+            @if (canCancel)
+            {
+                <Button Variant="ButtonVariant.Secondary" Disabled="@_busy" OnClick="CancelAsync">@L["Purchasing_Cancel"]</Button>
+            }
+        </FormActions>
     }
 </Page>
 }
@@ -34,8 +122,13 @@ else
     [Parameter] public Guid PurchaseOrderId { get; set; }
 
     private bool _ready;
+    private bool _loading;
+    private bool _busy;
     private bool _isOffline;
     private PosPurchaseOrderDto? _po;
+    private string? _banner;
+    private string? _errorTitle;
+    private string? _errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -51,38 +144,88 @@ else
             return;
         }
 
+        _ready = true;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
         _isOffline = !await Connectivity.IsConnectedAsync();
-        if (!_isOffline)
+        if (_isOffline)
         {
-            var result = await Purchasing.GetAsync(PurchaseOrderId);
-            if (result.IsSuccess)
-            {
-                _po = result.Data;
-            }
+            _po = null;
+            _loading = false;
+            return;
         }
 
-        _ready = true;
+        var result = await Purchasing.GetAsync(PurchaseOrderId);
+        if (result.IsSuccess)
+        {
+            _po = result.Data;
+        }
+        else
+        {
+            _po = null;
+            _errorTitle = L["Purchasing_ErrorTitle"];
+            _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        }
+
+        _loading = false;
     }
 
     private async Task SubmitAsync()
     {
-        if (_po is null || _isOffline)
+        if (_po is null || _isOffline || _busy)
         {
             return;
         }
 
-        _ = await Purchasing.SubmitAsync(_po.PurchaseOrderId);
+        _busy = true;
+        _banner = null;
+        _errorMessage = null;
+        var result = await Purchasing.SubmitAsync(_po.PurchaseOrderId);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _po = result.Data;
+            _banner = L["Purchasing_SubmitSuccess"];
+        }
+        else
+        {
+            _errorTitle = L["Purchasing_ErrorTitle"];
+            _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        }
+
+        _busy = false;
     }
 
     private async Task CancelAsync()
     {
-        if (_po is null || _isOffline)
+        if (_po is null || _isOffline || _busy)
         {
             return;
         }
 
-        _ = await Purchasing.CancelAsync(_po.PurchaseOrderId);
+        _busy = true;
+        _banner = null;
+        _errorMessage = null;
+        var result = await Purchasing.CancelAsync(_po.PurchaseOrderId);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _po = result.Data;
+            _banner = L["Purchasing_CancelSuccess"];
+        }
+        else
+        {
+            _errorTitle = L["Purchasing_ErrorTitle"];
+            _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        }
+
+        _busy = false;
     }
 
     private void GoReceive() => Nav.NavigateTo($"/purchasing/{PurchaseOrderId:D}/receive");
+    private void GoList() => Nav.NavigateTo("/purchasing");
 }

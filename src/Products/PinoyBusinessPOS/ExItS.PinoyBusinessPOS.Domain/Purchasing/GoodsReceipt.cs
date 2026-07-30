@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
+using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Purchasing;
 
@@ -10,12 +11,19 @@ namespace ExItS.PinoyBusinessPOS.Domain.Purchasing;
 /// </summary>
 public sealed class GoodsReceipt
 {
+    public const int DeliveryReferenceMaxLength = 128;
+    public const int NotesMaxLength = 512;
+
     private readonly List<GoodsReceiptLine> _lines;
 
     public GoodsReceiptId Id { get; }
     public PosOrganizationId OrganizationId { get; }
     public PurchaseOrderId PurchaseOrderId { get; }
+    public SupplierId SupplierId { get; }
     public string GrnNumber { get; }
+    public DateOnly ReceivedDate { get; }
+    public string? DeliveryReference { get; }
+    public string? Notes { get; }
     public DateTimeOffset ReceivedAtUtc { get; }
     public Guid ReceivedBy { get; }
 
@@ -25,7 +33,11 @@ public sealed class GoodsReceipt
         GoodsReceiptId id,
         PosOrganizationId organizationId,
         PurchaseOrderId purchaseOrderId,
+        SupplierId supplierId,
         string grnNumber,
+        DateOnly receivedDate,
+        string? deliveryReference,
+        string? notes,
         DateTimeOffset receivedAtUtc,
         Guid receivedBy,
         List<GoodsReceiptLine> lines)
@@ -33,7 +45,11 @@ public sealed class GoodsReceipt
         Id = id;
         OrganizationId = organizationId;
         PurchaseOrderId = purchaseOrderId;
+        SupplierId = supplierId;
         GrnNumber = grnNumber;
+        ReceivedDate = receivedDate;
+        DeliveryReference = deliveryReference;
+        Notes = notes;
         ReceivedAtUtc = receivedAtUtc;
         ReceivedBy = receivedBy;
         _lines = lines;
@@ -47,6 +63,9 @@ public sealed class GoodsReceipt
         IReadOnlyList<PurchaseOrderReceiveLineDraft> receiveLines,
         Guid receivedBy,
         DateTimeOffset utcNow,
+        DateOnly? receivedDate = null,
+        string? deliveryReference = null,
+        string? notes = null,
         GoodsReceiptId? id = null)
     {
         SaleMoney.EnsureUtc(utcNow);
@@ -59,6 +78,7 @@ public sealed class GoodsReceipt
                 "At least one receive line is required.");
         }
 
+        var seenLines = new HashSet<Guid>();
         var poLineByProduct = purchaseOrder.Lines.ToDictionary(l => l.ProductId.Value);
         var grnId = id ?? GoodsReceiptId.New();
         var lines = new List<GoodsReceiptLine>(receiveLines.Count);
@@ -72,6 +92,13 @@ public sealed class GoodsReceipt
                     "Receive line product is not on this purchase order.");
             }
 
+            if (!seenLines.Add(poLine.Id.Value))
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidGoodsReceiptLine,
+                    "Duplicate purchase-order line references are not allowed on a receipt.");
+            }
+
             lines.Add(GoodsReceiptLine.Create(grnId, organizationId, lineNumber++, poLine, receive.ReceiveQty));
         }
 
@@ -79,7 +106,11 @@ public sealed class GoodsReceipt
             grnId,
             organizationId,
             purchaseOrderId,
+            purchaseOrder.SupplierId,
             GoodsReceiptNumbers.Normalize(grnNumber),
+            receivedDate ?? DateOnly.FromDateTime(utcNow.UtcDateTime),
+            NormalizeOptional(deliveryReference, DeliveryReferenceMaxLength, DomainErrorCodes.InvalidGoodsReceiptNotes, "Delivery reference"),
+            NormalizeOptional(notes, NotesMaxLength, DomainErrorCodes.InvalidGoodsReceiptNotes, "Notes"),
             utcNow,
             receivedBy,
             lines);
@@ -89,7 +120,11 @@ public sealed class GoodsReceipt
         GoodsReceiptId id,
         PosOrganizationId organizationId,
         PurchaseOrderId purchaseOrderId,
+        SupplierId supplierId,
         string grnNumber,
+        DateOnly receivedDate,
+        string? deliveryReference,
+        string? notes,
         DateTimeOffset receivedAtUtc,
         Guid receivedBy,
         IReadOnlyList<GoodsReceiptLine> lines) =>
@@ -97,8 +132,28 @@ public sealed class GoodsReceipt
             id,
             organizationId,
             purchaseOrderId,
+            supplierId,
             grnNumber,
+            receivedDate,
+            deliveryReference,
+            notes,
             receivedAtUtc,
             receivedBy,
             lines.ToList());
+
+    private static string? NormalizeOptional(string? value, int maxLength, string errorCode, string label)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var trimmed = value.Trim();
+        if (trimmed.Length > maxLength)
+        {
+            throw new DomainException(errorCode, $"{label} must be at most {maxLength} characters.");
+        }
+
+        return trimmed;
+    }
 }

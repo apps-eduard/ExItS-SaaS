@@ -53,7 +53,11 @@ internal sealed class GoodsReceiptRecord
     public Guid Id { get; set; }
     public Guid OrganizationId { get; set; }
     public Guid PurchaseOrderId { get; set; }
+    public Guid SupplierId { get; set; }
     public string GrnNumber { get; set; } = string.Empty;
+    public DateOnly ReceivedDate { get; set; }
+    public string? DeliveryReference { get; set; }
+    public string? Notes { get; set; }
     public DateTimeOffset ReceivedAtUtc { get; set; }
     public Guid ReceivedBy { get; set; }
 }
@@ -69,4 +73,7 @@ internal sealed class GoodsReceiptLineRecord
     public string NameSnapshot { get; set; } = string.Empty;
     public string UomSnapshot { get; set; } = string.Empty;
     public decimal ReceivedQty { get; set; }
+    public decimal UnitPurchaseCostSnapshot { get; set; }
+    public decimal LineTotalSnapshot { get; set; }
+    public Guid? InventoryMovementId { get; set; }
 }

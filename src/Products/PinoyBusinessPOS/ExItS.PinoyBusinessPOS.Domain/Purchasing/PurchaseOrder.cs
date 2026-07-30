@@ -178,6 +178,13 @@ public sealed class PurchaseOrder
                 "Purchase orders with receipts cannot be cancelled.");
         }
 
+        if (_lines.Any(l => l.ReceivedQty > 0m))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderStatusTransition,
+                "Purchase orders with received quantity cannot be cancelled.");
+        }
+
         Status = PurchaseOrderStatus.Cancelled;
         UpdatedAtUtc = utcNow;
     }

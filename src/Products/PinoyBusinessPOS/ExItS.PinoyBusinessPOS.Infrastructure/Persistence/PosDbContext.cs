@@ -1081,7 +1081,11 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
             entity.Property(e => e.PurchaseOrderId).HasColumnName("purchase_order_id").IsRequired();
+            entity.Property(e => e.SupplierId).HasColumnName("supplier_id").IsRequired();
             entity.Property(e => e.GrnNumber).HasColumnName("grn_number").HasMaxLength(GoodsReceiptNumbers.MaxLength).IsRequired();
+            entity.Property(e => e.ReceivedDate).HasColumnName("received_date").IsRequired();
+            entity.Property(e => e.DeliveryReference).HasColumnName("delivery_reference").HasMaxLength(GoodsReceipt.DeliveryReferenceMaxLength);
+            entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(GoodsReceipt.NotesMaxLength);
             entity.Property(e => e.ReceivedAtUtc).HasColumnName("received_at_utc");
             entity.Property(e => e.ReceivedBy).HasColumnName("received_by").IsRequired();
 
@@ -1097,6 +1101,12 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.PurchaseOrderId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_goods_receipts_purchase_orders");
+
+            entity.HasOne<SupplierRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_goods_receipts_suppliers");
         });
 
         modelBuilder.Entity<GoodsReceiptLineRecord>(entity =>
@@ -1104,6 +1114,8 @@ public sealed class PosDbContext : DbContext
             entity.ToTable("goods_receipt_lines", tb =>
             {
                 tb.HasCheckConstraint("ck_goods_receipt_lines_received_qty_positive", "received_qty > 0");
+                tb.HasCheckConstraint("ck_goods_receipt_lines_unit_cost_non_negative", "unit_purchase_cost_snapshot >= 0");
+                tb.HasCheckConstraint("ck_goods_receipt_lines_line_total_non_negative", "line_total_snapshot >= 0");
             });
 
             entity.HasKey(e => e.Id);
@@ -1116,10 +1128,18 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.NameSnapshot).HasColumnName("name_snapshot").HasMaxLength(PurchaseOrderLine.NameSnapshotMaxLength).IsRequired();
             entity.Property(e => e.UomSnapshot).HasColumnName("uom_snapshot").HasMaxLength(UnitOfMeasures.CodeMaxLength).IsRequired();
             entity.Property(e => e.ReceivedQty).HasColumnName("received_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.UnitPurchaseCostSnapshot).HasColumnName("unit_purchase_cost_snapshot").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.LineTotalSnapshot).HasColumnName("line_total_snapshot").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.InventoryMovementId).HasColumnName("inventory_movement_id");
 
             entity.HasIndex(e => new { e.GoodsReceiptId, e.LineNumber })
                 .IsUnique()
                 .HasDatabaseName("ux_goods_receipt_lines_grn_line_number");
+
+            entity.HasIndex(e => e.InventoryMovementId)
+                .IsUnique()
+                .HasDatabaseName("ux_goods_receipt_lines_inventory_movement_id")
+                .HasFilter("inventory_movement_id IS NOT NULL");
 
             entity.HasOne<GoodsReceiptRecord>()
                 .WithMany()

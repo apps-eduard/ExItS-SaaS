@@ -22,6 +22,9 @@ public sealed class PurchasingPageGuardTests
         var receive = File.ReadAllText(Path.Combine(pages, "PurchasingReceive.razor"));
         Assert.Contains("@page \"/purchasing/{PurchaseOrderId:guid}/receive\"", receive, StringComparison.Ordinal);
         Assert.Contains("ReceiveAsync", receive, StringComparison.Ordinal);
+        Assert.DoesNotContain(".AsTask()", receive, StringComparison.Ordinal);
+        Assert.Contains("ReceivePurchaseOrderRequest", receive, StringComparison.Ordinal);
+        Assert.Contains("OutstandingQty", receive, StringComparison.Ordinal);
     }
 
     [Fact]
