@@ -14,7 +14,7 @@
 | Current phase | Phase 9 — MVP Hardening and Release (**Complete with documented risks**) |
 | Current work package | P9-WP06 — Commercial MVP Closeout (**Complete** with documented risks) |
 | Overall status | **Phase 9 closed** — Commercial MVP release candidate evidenced; controlled internal technical pilot Ready with documented risks; restricted external pilot and Production **Blocked**; next Phase 10 when authorized |
-| Latest verified commit | _(feature commit recorded after push)_ |
+| Latest verified commit | f6117c59e9c63d629af5805cf2d4ae7f8ea61225 |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; POS operational roles; Manual GCash unverified; online-only Basic Store limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/refund/accounting/purchasing deferred to Phase 10+ |
 | Last updated | 2026-07-31 |
 
@@ -63,7 +63,7 @@ Phase 10 ○ Full POS (not started — do not begin until authorized)
 | P9-WP03 | Complete with risks | 3bbb0c716da60bd7d87a191c35bd0eced1bde380 |
 | P9-WP04 | Complete with risks | f7b3aecec614eea8b1de601cd08e843f4aea91f8 |
 | P9-WP05 | Complete with risks | 9c1bbd0557e252758a772b985c907233da3f5214 |
-| P9-WP06 | Complete with risks | _(recorded after feature commit)_ |
+| P9-WP06 | Complete with risks | f6117c59e9c63d629af5805cf2d4ae7f8ea61225 |
 
 ## Permanent workflow rules
 

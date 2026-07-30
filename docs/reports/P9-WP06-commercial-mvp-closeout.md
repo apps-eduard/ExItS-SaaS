@@ -16,9 +16,9 @@ Final environment decisions:
 | Restricted external pilot | **Blocked** |
 | Production | **Blocked** |
 
-Feature commit: _(recorded after feature commit)_
+Feature commit: f6117c59e9c63d629af5805cf2d4ae7f8ea61225
 
-Docs commit: _(recorded after docs hash-record)_
+Docs commit: _(pending)_
 
 ## Phase 9 closeout decision
 

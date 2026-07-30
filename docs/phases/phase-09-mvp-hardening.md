@@ -254,7 +254,7 @@ Status: **Complete** with documented risks
 
 Report: [P9-WP06-commercial-mvp-closeout.md](../reports/P9-WP06-commercial-mvp-closeout.md)
 
-Feature commit: _(recorded after feature commit)_
+Feature commit: f6117c59e9c63d629af5805cf2d4ae7f8ea61225
 
 Phase marker: `P9-WP06-commercial-mvp-closeout`
 
