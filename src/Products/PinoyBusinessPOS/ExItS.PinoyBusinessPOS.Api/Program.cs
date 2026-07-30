@@ -94,7 +94,7 @@ app.MapExpenseEndpoints();
 app.MapReportingEndpoints();
 app.MapDevOfflineProbeEndpoints();
 
-// Phase marker: P8-WP06-dashboard-and-reports
+// Phase marker: P8-WP07-basic-store-closeout
 
 app.Run();
 
