@@ -135,9 +135,13 @@
 | R-129 | Transitive SQLitePCLRaw NU1903 advisory on Microsoft.Data.Sqlite 10.0.4 | Medium | Track package upgrade when Microsoft ships fixed transitive; P7-WP03 mitigated by row-level AES-GCM instead of SQLCipher; advisory remains open on Microsoft.Data.Sqlite transitive | Open — introduced P7-WP01; WP03 avoided SQLCipher |
 
 
+## Phase 8 note (P8-WP07)
+
+P8-WP07 closed Phase 8 Basic Store. Reconciled P8-WP01-P8-WP06; consolidated `store-*` capability matrix; Phase 8 migration-chain apply/rollback/re-apply; deferred-scope architecture guards. **No new business capability.** R-109 remains open (`adb` unavailable). Dev commercial/actor headers remain Development/Testing-only. Online-only Basic Store surfaces remain by design. Report export, Manual GCash verification, production auth/roles, tax/refund/accounting remain deferred. **Not production-ready.** Next: **Phase 9 / P9-WP01 — Security and Privacy Hardening** when authorized.
+
 ## Phase 8 note (P8-WP06)
 
-P8-WP06 delivered operational dashboard and read-only reports from immutable Basic Store data. Features `store-dashboard-view` / `store-reports-view`. Max report span 366 inclusive days. Export file generation deferred. **No P&L, valuation, accounting, or offline authoritative caches.** R-109 remains open. **Not production-ready.** Next: **P8-WP07 � Basic Store Closeout** when authorized.
+P8-WP06 delivered operational dashboard and read-only reports from immutable Basic Store data. Features `store-dashboard-view` / `store-reports-view`. Max report span 366 inclusive days. Export file generation deferred. **No P&L, valuation, accounting, or offline authoritative caches.** R-109 remains open. **Not production-ready.** Superseded as "next WP" by P8-WP07.
 
 ## Phase 8 note (P8-WP05)
 

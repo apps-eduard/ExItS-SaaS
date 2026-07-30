@@ -8,9 +8,11 @@ Deliver the Basic Store paid plan.
 
 ## Status
 
-**In Progress** — P8-WP01 through P8-WP06 complete with documented risks. Do **not** begin P8-WP07 until explicitly authorized.
+**Complete with documented risks.** P8-WP01 through P8-WP07 complete. Phase 8 Basic Store closed. Do **not** begin Phase 9 until explicitly authorized. **Not production-ready** while R-109, production authentication/roles, online-only Basic Store restrictions, Manual GCash verification, report export, and related documented blockers remain open.
 
 Feature commit (P8-WP01): `5573822ca116ab46f1a5cdce407e1d7b4f58f796`
+
+Closeout report: [P8-WP07-basic-store-closeout.md](../reports/P8-WP07-basic-store-closeout.md)
 
 ## Work packages
 
@@ -289,26 +291,49 @@ Profit/margin/COGS/P&L; accounting journals/balance sheet/cash-flow/tax reports;
 
 ### P8-WP07 — Basic Store Closeout
 
-Status: Not Started — do not begin until authorized
+Status: **Complete** with documented risks
 
-#### Required outcomes
+Phase marker: `P8-WP07-basic-store-closeout`
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+Report: [P8-WP07-basic-store-closeout.md](../reports/P8-WP07-basic-store-closeout.md)
+
+Feature commit: 0bc5ebb999c0708e6ac76b04a30d522037eec3cb
+
+#### Approved scope (clarified)
+
+Close Phase 8 by **reconciling, validating, hardening, and documenting** the Basic Store MVP (P8-WP01–P8-WP06) as one coherent subsystem. **No new business scope** unless required to fix a confirmed Phase 8 defect or satisfy an existing Phase 8 acceptance gate.
+
+Reconcile and prove:
+
+- Catalog/barcode, Cash/ManualGCash sales, Product-Based Utang, basic inventory, expenses, dashboard/reports
+- Organization isolation, feature grants, commercial-state matrix, idempotency, immutability, migrations, MAUI boundaries
+- End-to-end business invariants (catalog uniqueness, sale/expense immutability, Utang atomicity, inventory non-negative tracked stock, report reconciliation, 366-day range)
+- Authorization matrix for all `store-*` Phase 8 feature codes; Suspended/missing/stale/unknown fail closed
+- Transaction/idempotency across sale/Utang/stock/expense paths (PostgreSQL/Testcontainers)
+- Migration chain: `AddPosCatalogAndBarcodes` → `AddPosSimpleSales` → `AddProductBasedUtang` → `AddPosBasicInventory` → `AddPosExpenses` (apply/rollback/re-apply; no deferred tables)
+- Complete Phase 8 API inventory and MAUI Basic Store experience
+- Focused gap-closing tests only; preserve 851-test baseline
+- Android Release evidence; R-109 remains open without interactive device
+- Documentation closeout: Phase 8 complete with documented risks — **not** production-ready
+
+#### Explicit exclusions (Phase 9+)
+
+Suppliers/purchasing; warehouses/branches/transfers/batches/lots/serials/expiry; cost/valuation/COGS/profit/margin/P&L/journals; tax/VAT/fiscal; discounts/promotions; refunds/returns/exchanges/partial voids; split payments; gateway/card/QR/GCash verification; receipt/label printing and file export; offline catalog/sales/inventory/expenses/reports; POS operational roles and production auth; Phase 9 functionality.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (882 / 0 / 0; baseline 851).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean.
+- [x] Phase 8 marked complete with documented risks (not production-ready).
+- [x] Exact next authorized package recorded (Phase 9 / P9-WP01 when authorized).
 
 ## Phase exit criteria
 
-- [ ] Every work package is complete or explicitly deferred.
-- [ ] Risks and decisions are recorded.
-- [ ] Required regression/security tests pass.
-- [ ] Next phase is explicitly approved.
+- [x] Every work package is complete or explicitly deferred.
+- [x] Risks and decisions are recorded.
+- [x] Required regression/security tests pass.
+- [ ] Next phase is explicitly approved (Phase 9 — MVP Hardening when authorized).

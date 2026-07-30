@@ -2,7 +2,7 @@
 
 > Primary status page. Cursor must update this file after every completed work package. Percentages are calculated from approved work packages, never estimated.
 
-[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P8-WP06 report](reports/P8-WP06-dashboard-and-reports.md)
+[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P8-WP07 report](reports/P8-WP07-basic-store-closeout.md)
 
 ## Current status
 
@@ -11,11 +11,11 @@
 | Portfolio | ExITS SaaS |
 | Existing product | HealthCare SaaS MVP (ignored nested `HealthCare/`) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 8 — Basic Store (**In Progress**) |
-| Current work package | P8-WP06 — Dashboard and Reports (**Complete** with documented risks) |
-| Overall status | **Phase 8 in progress** — catalog + sales + inventory + expenses + dashboard/reports (online-only); not production-ready; next P8-WP07 when authorized |
-| Latest verified commit | `a0028f36a0d8e2ea76c3101b2b65ba82bfd4fd02` (P8-WP06) |
-| Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations / no offline entitlement grace; R-035 calendar EOM; no payment gateway; no interactive Android emulator (R-109); commercial/actor headers Development-stage only; org timezone undefined for due dates; OD-11 open; no POS operational roles; SQLitePCLRaw NU1903 (R-129); catalog/sales/inventory/expenses/reports online-only by design |
+| Current phase | Phase 8 — Basic Store (**Complete** with documented risks) |
+| Current work package | P8-WP07 — Basic Store Closeout (**Complete** with documented risks) |
+| Overall status | **Phase 8 closed** — Basic Store MVP (online-only catalog/sales/Utang/inventory/expenses/dashboard/reports); not production-ready; next Phase 9 / P9-WP01 when authorized |
+| Latest verified commit | 0bc5ebb999c0708e6ac76b04a30d522037eec3cb |
+| Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations / no offline entitlement grace; R-035 calendar EOM; no payment gateway; no interactive Android emulator (R-109); commercial/actor headers Development-stage only; org timezone undefined for due dates; OD-11 open; no POS operational roles; SQLitePCLRaw NU1903 (R-129); catalog/sales/inventory/expenses/reports online-only by design; report export deferred |
 | Last updated | 2026-07-30 |
 
 ## Delivery sequence
@@ -35,7 +35,9 @@ P8-WP05 ✓ Expenses (complete with risks)
         ↓
 P8-WP06 ✓ Dashboard and Reports (complete with risks)
         ↓
-P8-WP07 ○ Basic Store Closeout (not started — do not begin until authorized)
+P8-WP07 ✓ Basic Store Closeout (Phase 8 closed with risks)
+        ↓
+P9-WP01 ○ Security and Privacy Hardening (not started — do not begin until authorized)
 ```
 
 ## Phase progress
@@ -50,11 +52,11 @@ P8-WP07 ○ Basic Store Closeout (not started — do not begin until authorized)
 | 5 | PinoyBusinessPOS MAUI Foundation | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-05-pos-maui-foundation.md) |
 | 6 | Utang MVP | **Complete with documented risks** | 6 | 6 | 100% | [Open](phases/phase-06-utang-mvp.md) |
 | 7 | Offline Synchronization | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-07-offline-sync.md) |
-| 8 | Basic Store | **In Progress** | 6 | 7 | ~86% | [Open](phases/phase-08-basic-store.md) |
+| 8 | Basic Store | **Complete with documented risks** | 7 | 7 | 100% | [Open](phases/phase-08-basic-store.md) |
 | 9 | MVP Hardening and Release | Not Started | 0 | 6 | 0% | [Open](phases/phase-09-mvp-hardening.md) |
 | 10 | Full POS | Future | 0 | 8 | 0% | [Open](phases/phase-10-full-pos.md) |
 
-**MVP phases 0–9:** 44 / 52 = **84.62%**.
+**MVP phases 0–9:** 45 / 52 = **86.54%**.
 
 ## Phase 8 work packages
 
@@ -66,7 +68,7 @@ P8-WP07 ○ Basic Store Closeout (not started — do not begin until authorized)
 | P8-WP04 | Complete with risks | 64f05e7fd5ab868beb62c7cce88ad7a15e21c7b8 |
 | P8-WP05 | Complete with risks | ca956921fbfcfad8499f01acb9d9726fff2d81d4 |
 | P8-WP06 | Complete with risks | a0028f36a0d8e2ea76c3101b2b65ba82bfd4fd02 |
-| P8-WP07 | Not Started | — |
+| P8-WP07 | Complete with risks | 0bc5ebb999c0708e6ac76b04a30d522037eec3cb |
 
 ## Phase 7 work packages
 

@@ -50,6 +50,8 @@ Clinics, staff assignments, patients, appointments, medical notes, clinical auth
 
 **P8-WP06 (dashboard/reports):** No new tables. Read-only projections over existing `pos` sales, credit, inventory, and expense records.
 
+**P8-WP07 (Basic Store closeout):** No schema change. Reconciled Phase 8 migrations `AddPosCatalogAndBarcodes` → `AddPosSimpleSales` → `AddProductBasedUtang` → `AddPosBasicInventory` → `AddPosExpenses`. Confirmed absence of deferred supplier/tax/accounting/report-cache tables in `pos`.
+
 **P7-WP01 local device ownership (foundation only):** per-user/org/product SQLite files under the MAUI sandbox hold schema/context metadata only (`local_schema_info`, `local_context_info`). DeviceId lives in SecureStorage, not SQLite. No tokens, entitlements, customers, or financial rows locally.
 
 **P7-WP02 local queue ownership:** same isolated SQLite files also hold encrypted `offline_operations` outbox rows and `local_sync_meta`. Payloads are ciphertext-only; encryption key is SecureStorage-only. Server owns `pos.idempotency_records` for replay proofs (not duplicated business transactions).

@@ -51,13 +51,15 @@ MAUI app, bilingual UI, themes, customers, Utang, payments, overdue monitoring a
 
 **Not production-ready** while R-109, R-022, full-database encryption, production auth/roles, and production background scheduling remain open.
 
-## R3.6 — Basic Store started (Phase 8 / P8-WP01–P8-WP05)
+## R3.6 — Basic Store closed (Phase 8 / P8-WP01–P8-WP07)
 
-**Phase 8 in progress** — P8-WP01 through P8-WP06 **complete** with documented risks. See [P8-WP06 report](reports/P8-WP06-dashboard-and-reports.md).
+**Phase 8 complete with documented risks.** See [P8-WP07 closeout](reports/P8-WP07-basic-store-closeout.md).
 
-Online-only catalog, sales, inventory, expenses, and operational dashboard/reports. Features include `store-dashboard-view` / `store-reports-view`. Query projections only (no report migration). **No P&L, valuation, accounting, or offline authoritative reports.** R-109 remains open.
+Online-only catalog, sales, Product-Based Utang, inventory, expenses, and operational dashboard/reports. Full `store-*` capability matrix. Migrations through `AddPosExpenses`. Query projections only for reports (no report migration / export files). **No P&L, valuation, accounting, suppliers, offline Basic Store, or production auth/roles.** R-109 remains open.
 
-**Next:** **P8-WP06 — Dashboard and Reports** when approved.
+**Not production-ready.**
+
+**Next:** **Phase 9 / P9-WP01 — Security and Privacy Hardening** when approved.
 
 ## R4 — Commercial MVP
 

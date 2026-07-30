@@ -2,6 +2,10 @@
 
 [Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Previous](phase-08-basic-store.md) | [Next](phase-10-full-pos.md)
 
+## Status
+
+**Not Started.** Do **not** begin until explicitly authorized after Phase 8 closeout acceptance.
+
 ## Objective
 
 Prepare the first commercial MVP for secure production release.

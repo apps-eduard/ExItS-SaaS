@@ -208,7 +208,7 @@ Feature codes (server-side authority): `customer-credit-view`, `customer-credit-
 | View/generate statement | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `customer-credit-view` |
 | View/generate repayment receipt | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `customer-credit-view` |
 
-### Catalog and sales capability matrix (P8-WP01 / P8-WP02 / P8-WP03)
+### Catalog and sales capability matrix (P8-WP01–P8-WP07)
 
 | Capability | Trialing | Active | GracePeriod | PastDue | Cancelled | Expired | Suspended | Grant |
 |---|---:|---:|---:|---:|---:|---:|---:|---|
@@ -223,8 +223,10 @@ Feature codes (server-side authority): `customer-credit-view`, `customer-credit-
 | Enable/disable tracking / adjust stock | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `store-inventory-manage` |
 | View expenses / summaries | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `store-expenses-view` |
 | Create/void expenses / manage categories | Allow | Allow | Allow | Deny | Deny | Deny | Deny | `store-expenses-manage` |
+| View dashboard | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `store-dashboard-view` |
+| View reports | Allow | Allow | Allow | Allow | Allow | Allow | Deny | `store-reports-view` |
 
-Catalog, sales, Product-Based Utang, basic inventory, and expenses are **online-only**. Entry alone does not grant capability; Suspended / missing / stale / unknown deny. Continuity permits view when the matching view grant is present; mutations remain Trialing/Active/GracePeriod + required grants. Sale stock deduction is part of checkout authorization (sales capabilities), not a separate client inventory grant.
+Catalog, sales, Product-Based Utang, basic inventory, expenses, dashboard, and reports are **online-only**. Entry alone does not grant capability; Suspended / missing / stale / unknown deny. Continuity permits view when the matching view grant is present; mutations remain Trialing/Active/GracePeriod + required grants. Sale stock deduction is part of checkout authorization (sales capabilities), not a separate client inventory grant. Consolidated matrix coverage: P8-WP07 `BasicStoreCapabilityMatrixTests`.
 
 ### Allowed after expiry (continuity)
 

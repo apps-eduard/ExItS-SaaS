@@ -4,7 +4,7 @@ Phase marker: `P8-WP06-dashboard-and-reports`
 
 ## Status
 
-**Complete with documented risks.** Organization-isolated operational dashboard and read-only reports derived from immutable Basic Store records (sales, Utang, inventory, expenses). **No** P&L, valuation, accounting journals, forecasting, offline authoritative caches, or CSV/PDF/Excel file generation. P8-WP07 was not started.
+**Complete with documented risks.** Organization-isolated operational dashboard and read-only reports derived from immutable Basic Store records (sales, Utang, inventory, expenses). **No** P&L, valuation, accounting journals, forecasting, offline authoritative caches, or CSV/PDF/Excel file generation. P8-WP07 completed separately.
 
 Feature commit: `a0028f36a0d8e2ea76c3101b2b65ba82bfd4fd02`
 
@@ -87,4 +87,4 @@ Root `HealthCare/` remains ignored, untracked, outside `ExItS.slnx`.
 
 ## Exact next work package
 
-**P8-WP07 — Basic Store Closeout** (do not begin until explicitly authorized).
+**P8-WP07 — Basic Store Closeout** completed separately; next authorized package is **Phase 9 / P9-WP01 — Security and Privacy Hardening** when authorized.
