@@ -8,7 +8,9 @@ Prior tip (Part A cleanup): `fd77f8892c363e48c40b4b35a6c9f4430af2d090`
 
 ## 1. Summary
 
-Organization-isolated purchase orders and goods receipts for PinoyBusinessPOS: Draft → Ordered → PartiallyReceived → Received (Cancelled terminal), immutable GRNs, partial/full receiving with over-receipt denial, idempotent submit/receive, atomic `PurchaseReceipt` inventory movements for tracked products only, typed API + MAUI purchasing screens (online-only), PostgreSQL migration `AddPosPurchasing`, feature grants, and focused tests. No AP, payments, tax, returns, unplanned GRN, or offline purchasing queue.
+Organization-isolated purchase orders and goods receipts for PinoyBusinessPOS: Draft → Ordered → PartiallyReceived → Received (Cancelled terminal), immutable GRNs, partial/full receiving with over-receipt denial, idempotent submit/receive, atomic `PurchaseReceipt` inventory movements for tracked products only, typed API + MAUI purchasing screens (online-only), PostgreSQL migrations `AddPosPurchasing` + `EnrichPosGoodsReceiptFields`, feature grants, and focused tests. No AP, payments, tax, returns, unplanned GRN, or offline purchasing queue.
+
+Gap-fix follow-up after the initial feature tip enriched goods-receipt fields (SupplierId, ReceivedDate, DeliveryReference, Notes, cost snapshots, InventoryMovementId), hardened cancel-after-receipt rules, fixed MAUI receive/detail (including Android compile), and linked stock movements onto receipt lines.
 
 ## 2. Purchase order model
 
@@ -31,12 +33,13 @@ ProductId, NameSnapshot, UomSnapshot (frozen on submit), OrderedQty, UnitPurchas
 
 ## 3. Goods receipt model
 
-Immutable GRN with `GRN-YYYYMMDD-NNNNNN`, receipt lines tied to PO lines, over-receipt denied at domain and API layers. Receive is idempotent via `IPosIdempotencyService` when `GoodsReceiptId` and idempotency headers are supplied.
+Immutable GRN with `GRN-YYYYMMDD-NNNNNN`. Parent fields include SupplierId (inherited from PO), ReceivedDate, optional DeliveryReference/Notes, ReceivedAtUtc/ReceivedBy. Lines include PurchaseOrderLineId, ProductId, QuantityReceived, UnitPurchaseCostSnapshot, LineTotalSnapshot, UomSnapshot, and optional InventoryMovementId. Over-receipt denied at domain and API layers. Receive is idempotent via `IPosIdempotencyService` when `GoodsReceiptId` and idempotency headers are supplied.
 
 ## 4. Inventory hook
 
 - `StockMovementType.PurchaseReceipt` + `StockMovementSourceType.PurchaseReceipt`
 - `PurchaseStockService` applied inside receive transaction for **tracked** products only
+- Receipt line `AttachInventoryMovement` persists movement id after create
 - Unique index on purchase-receipt stock movements; no COGS/valuation from purchase cost
 
 ## 5. Authorization matrix
@@ -51,9 +54,12 @@ Grants: `store-purchasing-view`, `store-purchasing-manage`
 
 ## 6. Migration and indexes
 
-Database: `ExItS_PinoyBusinessPOS` · Schema: `pos` · Migration: `AddPosPurchasing` (after `AddPosSuppliers`)
+Database: `ExItS_PinoyBusinessPOS` · Schema: `pos`  
+Migrations: `AddPosPurchasing` (after `AddPosSuppliers`), then `EnrichPosGoodsReceiptFields`
 
-Tables: `pos.purchase_orders`, `pos.purchase_order_lines`, `pos.purchase_order_number_sequences`, `pos.goods_receipts`, `pos.goods_receipt_lines`, `pos.goods_receipt_number_sequences`
+Tables: `pos.purchase_orders`, `pos.purchase_order_lines`, `pos.purchase_order_number_sequences`, `pos.goods_receipts`, `pos.goods_receipt_lines`, `pos.grn_number_sequences`
+
+Enrichment backfills supplier/received date and cost snapshots from PO data before NOT NULL + FK.
 
 Validated: apply → rollback to `AddPosSuppliers` → re-apply (integration tests).
 
@@ -69,6 +75,8 @@ Typed DTOs; ProblemDetails `errorCode`; org concealment; pagination on list.
 ## 8. MAUI routes
 
 - `/purchasing`, `/purchasing/new`, `/purchasing/{id}`, `/purchasing/{id}/receive`
+- Detail: status-gated submit / cancel / receive
+- Receive: outstanding-qty line editors + delivery reference / notes
 - Entry from `/more` (not bottom nav)
 - EN + fil-PH resources; online-only reconnect UX
 
@@ -96,9 +104,9 @@ Accounts payable, supplier payments, tax, purchase returns, unplanned GRN withou
 
 Breakdown: Platform.UnitTests 265; Platform.Admin.UnitTests 27; Platform.IntegrationTests 90; ArchitectureTests 116; Deployment.Tests 40; DesignSystem.Tests 33; BackupRestore.Tests 10; PinoyBusinessPOS.UnitTests 292; PinoyBusinessPOS.IntegrationTests 109; PinoyBusinessPOS.ApiClient.Tests 24; PinoyBusinessPOS.Maui.Tests 61.
 
-Release build: POS API + integration test projects **succeeded** (`net10.0`). Full solution `net10.0-android` MAUI target **not built** on this machine — Android SDK unavailable (**R-109 retained**). NU1903 (R-129) remains open.
+Release build: POS API **succeeded**. MAUI `net10.0-android` Release **succeeded** on this machine (compile evidence; device deploy not required for this WP). NU1903 (R-129) remains open.
 
-New focused coverage: domain lifecycle, `AddPosPurchasing` rollback/re-apply, PO API lifecycle + idempotency + over-receipt, MAUI page guards, `PosPurchasingScopeArchitectureTests`, capability matrix purchasing grants.
+New focused coverage: domain lifecycle, `AddPosPurchasing`/`EnrichPosGoodsReceiptFields` schema assertions, PO API lifecycle + idempotency + over-receipt, MAUI page guards (no `.AsTask()`, outstanding receive UX), `PosPurchasingScopeArchitectureTests`, capability matrix purchasing grants.
 
 ## 13. Portfolio independence
 
@@ -108,7 +116,7 @@ New focused coverage: domain lifecycle, `AddPosPurchasing` rollback/re-apply, PO
 
 ## 14. Open risks
 
-Unchanged release blockers: R-091, R-109, R-129, TLS-PROD, MAUI-HTTPS, POS-ROLES; Manual GCash unverified; online-only Basic Store limits; PITR deferred; etc.
+Unchanged release blockers: R-091, R-129, TLS-PROD, MAUI-HTTPS, POS-ROLES; Manual GCash unverified; online-only Basic Store limits; PITR deferred; etc. R-109 Android compile gap closed for this WP’s purchasing pages; device-level verification remains out of scope unless required later.
 
 ## 15. Exact next work package
 
@@ -118,9 +126,11 @@ Unchanged release blockers: R-091, R-109, R-129, TLS-PROD, MAUI-HTTPS, POS-ROLES
 
 | Field | Value |
 |---|---|
-| Feature commit | `c0f8130ef99e958bceaee98024a69339b7e8e41a` |
+| Feature commit (initial) | `c0f8130ef99e958bceaee98024a69339b7e8e41a` |
 | Feature message | `feat(pos): add purchase orders, goods receipts, and purchase receipt inventory (P10-WP02)` |
-| Docs commit | `bc6dc7477e74c3c03785862dd98317d39c55eee1` |
-| Docs message | `docs(pos): record P10-WP02 purchasing completion evidence` |
+| Docs commit (initial) | `bc6dc7477e74c3c03785862dd98317d39c55eee1` |
+| Gap-fix feature commit | `bfb4c6b454757e2794aec33399b4556a711dc934` |
+| Gap-fix feature message | `fix(pos): enrich goods receipts and fix purchasing MAUI receive (P10-WP02)` |
+| Gap-fix docs / hash-record | _(filled after docs commit)_ |
 
 Exact next: **P10-WP03 — Advanced Inventory** (do not begin until authorized).
