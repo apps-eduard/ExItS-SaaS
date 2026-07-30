@@ -40,6 +40,8 @@ Clinics, staff assignments, patients, appointments, medical notes, clinical auth
 
 **P8-WP01 (catalog and barcode):** Same database/schema — tables `pos.product_categories`, `pos.products` (migration `AddPosCatalogAndBarcodes`). OrganizationId is a Platform organization GUID value only (no cross-database FK). Soft Active/Inactive; no hard delete. Optional SKU/barcode uniqueness reserved while inactive. Server PostgreSQL is system of record; **no offline catalog cache or queue**.
 
+**P8-WP02 (simple sales):** Same database/schema — tables `pos.sales`, `pos.sale_lines`, `pos.sale_number_sequences` (migration `AddPosSimpleSales`). Sale lines snapshot catalog identity/price at checkout; product FK is restrictive. **No inventory balances or stock movements.** Online-only — cart is in-memory MAUI state only.
+
 **P7-WP01 local device ownership (foundation only):** per-user/org/product SQLite files under the MAUI sandbox hold schema/context metadata only (`local_schema_info`, `local_context_info`). DeviceId lives in SecureStorage, not SQLite. No tokens, entitlements, customers, or financial rows locally.
 
 **P7-WP02 local queue ownership:** same isolated SQLite files also hold encrypted `offline_operations` outbox rows and `local_sync_meta`. Payloads are ciphertext-only; encryption key is SecureStorage-only. Server owns `pos.idempotency_records` for replay proofs (not duplicated business transactions).

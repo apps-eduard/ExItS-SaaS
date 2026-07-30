@@ -134,4 +134,4 @@ Updated: phase-08, portfolio-progress, reports index, FILE-MANIFEST, README, ris
 
 ## Exact next work package
 
-**P8-WP02 — Simple Sales** (do not begin until explicitly authorized).
+**P8-WP02 — Simple Sales** completed separately; next authorized WP is **P8-WP03 — Product-Based Utang**.

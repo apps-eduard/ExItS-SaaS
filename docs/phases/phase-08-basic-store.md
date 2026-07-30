@@ -8,7 +8,7 @@ Deliver the Basic Store paid plan.
 
 ## Status
 
-**In Progress** — P8-WP01 **Complete with documented risks**. Do **not** begin P8-WP02 until explicitly authorized.
+**In Progress** — P8-WP01 and P8-WP02 complete with documented risks. Do **not** begin P8-WP03 until explicitly authorized.
 
 Feature commit (P8-WP01): `5573822ca116ab46f1a5cdce407e1d7b4f58f796`
 
@@ -87,26 +87,50 @@ Sales/checkout, inventory/stock, suppliers/purchasing, discounts/tax/VAT, receip
 
 ### P8-WP02 — Simple Sales
 
-Status: Not Started — do not begin until authorized
+Status: **Complete with documented risks**
 
-#### Required outcomes
+Phase marker: `P8-WP02-simple-sales`
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+Feature commit: `72a6fa9b1bb6f48610563d01ee10e608e99806e1`
+
+Report: [P8-WP02-simple-sales.md](../reports/P8-WP02-simple-sales.md)
+
+#### Approved scope (clarified)
+
+Organization-isolated **simple retail sales** using the P8-WP01 catalog:
+
+- Sale + sale-line domain (Completed | Voided)
+- Payment methods: Cash, ManualGCash only (exactly one per sale)
+- Temporary client cart; server-authoritative checkout totals
+- Product lookup reuse (barcode/SKU/name/catalog); only active org products
+- Snapshot product name/SKU/barcode/UOM/unit price on lines
+- Quantity: whole for Piece/Pack/Box/Bottle/Can/Sachet; ≤3 decimals for Kilogram/Gram/Liter/Milliliter/Meter
+- Monetary rounding: `MidpointRounding.AwayFromZero` to 2 decimals (credit/repayment convention)
+- Organization-scoped sale number `SALE-YYYYMMDD-<sequence>` via `pos.sale_number_sequences`
+- Explicit void with required reason + actor (no refund/inventory)
+- Migration `AddPosSimpleSales` (`pos.sales`, `pos.sale_lines`, `pos.sale_number_sequences`)
+- API: POST/GET sales, GET by id, POST void; checkout idempotency (`sale.checkout`)
+- MAUI `/sales`, `/sales/new`, `/sales/{saleId}`
+- Features: `store-sales-view`, `store-sales-create`, `store-sales-void`
+- Continuity: PastDue/Cancelled/Expired view-only; Suspended/unknown deny
+- Online-only (no offline sale queue/cache)
+
+#### Explicit exclusions (P8-WP03+)
+
+Inventory/stock deduction, suppliers/purchasing, Utang/customer-credit sales, split/partial payments, cards/gateways/QR/GCash verification, discounts/tax/VAT/fees/tips, refunds/returns/exchanges/line voids, fiscal invoices, offline sales, POS operational roles.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (759 / 0 / 0; baseline 684).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created.
+- [x] Focused commit created and hash recorded (`72a6fa9b1bb6f48610563d01ee10e608e99806e1`).
+- [x] Working tree clean.
 
 ### P8-WP03 — Product-Based Utang
 
-Status: Not Started
+Status: Not Started — do not begin until authorized
 
 #### Required outcomes
 

@@ -2,7 +2,7 @@
 
 > Primary status page. Cursor must update this file after every completed work package. Percentages are calculated from approved work packages, never estimated.
 
-[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P8-WP01 report](reports/P8-WP01-catalog-and-barcode.md)
+[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P8-WP02 report](reports/P8-WP02-simple-sales.md)
 
 ## Current status
 
@@ -12,10 +12,10 @@
 | Existing product | HealthCare SaaS MVP (ignored nested `HealthCare/`) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 8 — Basic Store (**In Progress**) |
-| Current work package | P8-WP01 — Catalog and Barcode (**Complete** with documented risks); next P8-WP02 not started |
-| Overall status | **Phase 8 in progress** — catalog/barcode foundation delivered (online-only); sales/inventory not started; not production-ready |
-| Latest verified commit | `5573822ca116ab46f1a5cdce407e1d7b4f58f796` (P8-WP01) |
-| Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations / no offline entitlement grace; R-035 calendar EOM; no payment gateway; no interactive Android emulator (R-109); commercial/actor headers Development-stage only; org timezone undefined for due dates; OD-11 open; no POS operational roles; SQLitePCLRaw NU1903 (R-129 — row-level AES-GCM; SQLCipher / full-DB encryption still deferred — production gate); catalog online-only (by design for P8-WP01) |
+| Current work package | P8-WP02 — Simple Sales (**Complete** with documented risks) |
+| Overall status | **Phase 8 in progress** — catalog + simple Cash/ManualGCash sales (online-only); no inventory/Utang sales; not production-ready; next P8-WP03 when authorized |
+| Latest verified commit | `72a6fa9b1bb6f48610563d01ee10e608e99806e1` (P8-WP02) |
+| Open blockers | Missing production auth (JWT/MFA/SSO/AD); R-022 refresh durations / no offline entitlement grace; R-035 calendar EOM; no payment gateway; no interactive Android emulator (R-109); commercial/actor headers Development-stage only; org timezone undefined for due dates; OD-11 open; no POS operational roles; SQLitePCLRaw NU1903 (R-129); catalog/sales online-only by design |
 | Last updated | 2026-07-30 |
 
 ## Delivery sequence
@@ -25,7 +25,9 @@ P7-WP05 ✓ Offline Closeout (Phase 7 closed)
         ↓
 P8-WP01 ✓ Catalog and Barcode (complete with risks)
         ↓
-P8-WP02 ○ Simple Sales (not started — do not begin until authorized)
+P8-WP02 ✓ Simple Sales (complete with risks)
+        ↓
+P8-WP03 ○ Product-Based Utang (not started — do not begin until authorized)
 ```
 
 ## Phase progress
@@ -40,18 +42,18 @@ P8-WP02 ○ Simple Sales (not started — do not begin until authorized)
 | 5 | PinoyBusinessPOS MAUI Foundation | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-05-pos-maui-foundation.md) |
 | 6 | Utang MVP | **Complete with documented risks** | 6 | 6 | 100% | [Open](phases/phase-06-utang-mvp.md) |
 | 7 | Offline Synchronization | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-07-offline-sync.md) |
-| 8 | Basic Store | **In Progress** | 1 | 7 | ~14% | [Open](phases/phase-08-basic-store.md) |
+| 8 | Basic Store | **In Progress** | 2 | 7 | ~29% | [Open](phases/phase-08-basic-store.md) |
 | 9 | MVP Hardening and Release | Not Started | 0 | 6 | 0% | [Open](phases/phase-09-mvp-hardening.md) |
 | 10 | Full POS | Future | 0 | 8 | 0% | [Open](phases/phase-10-full-pos.md) |
 
-**MVP phases 0–9:** 39 / 52 = **75.00%**.
+**MVP phases 0–9:** 40 / 52 = **76.92%**.
 
 ## Phase 8 work packages
 
 | WP | Status | Key commit |
 |---|---|---|
 | P8-WP01 | Complete with risks | 5573822ca116ab46f1a5cdce407e1d7b4f58f796 |
-| P8-WP02 | Not Started | — |
+| P8-WP02 | Complete with risks | 72a6fa9b1bb6f48610563d01ee10e608e99806e1 |
 | P8-WP03 | Not Started | — |
 | P8-WP04 | Not Started | — |
 | P8-WP05 | Not Started | — |
