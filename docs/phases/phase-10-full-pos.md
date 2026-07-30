@@ -4,7 +4,7 @@
 
 ## Status
 
-**In Progress** — P10-WP02 Purchasing **complete** (feat `c0f8130`, docs `f9dca785`). Part A workspace cleanup at `fd77f88`. Do **not** begin P10-WP03 until explicitly authorized.
+**In Progress** — P10-WP02 Purchasing **complete** (feat `c0f8130`, docs `bc6dc747`). Part A workspace cleanup at `fd77f88`. Do **not** begin P10-WP03 until explicitly authorized.
 
 ## Objective
 
@@ -114,7 +114,7 @@ Organization-isolated purchasing for PinoyBusinessPOS using P10-WP01 suppliers:
 - [x] Applicable tests pass with exact evidence (baseline 1047 → suite now 1067 / 0 / 0).
 - [x] Dashboard and phase page updated.
 - [x] Completion report created (`docs/reports/P10-WP02-purchasing.md`).
-- [x] Focused commit created and hash recorded (`c0f8130ef99e958bceaee98024a69339b7e8e41a`; docs `f9dca785ec993ce1392437a3fdc908322476e06b`).
+- [x] Focused commit created and hash recorded (`c0f8130ef99e958bceaee98024a69339b7e8e41a`; docs `bc6dc7477e74c3c03785862dd98317d39c55eee1`).
 - [x] Working tree clean (after push).
 - [x] Exact next WP recorded: **P10-WP03 — Advanced Inventory** (do not begin).
 

@@ -120,7 +120,7 @@ Unchanged release blockers: R-091, R-109, R-129, TLS-PROD, MAUI-HTTPS, POS-ROLES
 |---|---|
 | Feature commit | `c0f8130ef99e958bceaee98024a69339b7e8e41a` |
 | Feature message | `feat(pos): add purchase orders, goods receipts, and purchase receipt inventory (P10-WP02)` |
-| Docs commit | `f9dca785ec993ce1392437a3fdc908322476e06b` |
+| Docs commit | `bc6dc7477e74c3c03785862dd98317d39c55eee1` |
 | Docs message | `docs(pos): record P10-WP02 purchasing completion evidence` |
 
 Exact next: **P10-WP03 — Advanced Inventory** (do not begin until authorized).
