@@ -9,6 +9,7 @@ using ExItS.PinoyBusinessPOS.Api.Payments;
 using ExItS.PinoyBusinessPOS.Api.Reporting;
 using ExItS.PinoyBusinessPOS.Api.Sales;
 using ExItS.PinoyBusinessPOS.Api.Statements;
+using ExItS.PinoyBusinessPOS.Api.Suppliers;
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Credit;
@@ -18,6 +19,7 @@ using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Application.Statements;
+using ExItS.PinoyBusinessPOS.Application.Suppliers;
 using ExItS.PinoyBusinessPOS.Infrastructure;
 using ExItS.PinoyBusinessPOS.Infrastructure.Health;
 using Microsoft.AspNetCore.RateLimiting;
@@ -75,6 +77,11 @@ builder.Services.AddScoped<ExpenseQueryService>();
 builder.Services.AddScoped<RecordExpense>();
 builder.Services.AddScoped<VoidExpense>();
 builder.Services.AddScoped<ExpenseSummaryService>();
+builder.Services.AddScoped<SupplierQueryService>();
+builder.Services.AddScoped<CreateSupplier>();
+builder.Services.AddScoped<UpdateSupplier>();
+builder.Services.AddScoped<ActivateSupplier>();
+builder.Services.AddScoped<DeactivateSupplier>();
 builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.DashboardQueryService>();
 builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.SalesReportService>();
 builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.UtangReportService>();
@@ -97,10 +104,11 @@ app.MapCatalogEndpoints();
 app.MapSaleEndpoints();
 app.MapInventoryEndpoints();
 app.MapExpenseEndpoints();
+app.MapSupplierEndpoints();
 app.MapReportingEndpoints();
 app.MapDevOfflineProbeEndpoints();
 
-// Phase marker: P9-WP06-commercial-mvp-closeout
+// Phase marker: P10-WP01-suppliers
 
 app.Run();
 

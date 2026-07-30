@@ -103,4 +103,17 @@ public static class DomainErrorCodes
     public const string InvalidExpensePayee = "pos.expense.payee.invalid";
     public const string InvalidExpenseGCashReference = "pos.expense.gcash_reference.invalid";
     public const string InvalidExpenseVoidReason = "pos.expense.void_reason.invalid";
+
+    public const string InvalidSupplierId = "pos.supplier.id.invalid";
+    public const string InvalidSupplierCode = "pos.supplier.code.invalid";
+    public const string InvalidSupplierName = "pos.supplier.name.invalid";
+    public const string InvalidSupplierContactPerson = "pos.supplier.contact_person.invalid";
+    public const string InvalidSupplierTelephone = "pos.supplier.telephone.invalid";
+    public const string InvalidSupplierEmail = "pos.supplier.email.invalid";
+    public const string InvalidSupplierAddress = "pos.supplier.address.invalid";
+    public const string InvalidSupplierTaxNumber = "pos.supplier.tax_number.invalid";
+    public const string InvalidSupplierNotes = "pos.supplier.notes.invalid";
+    public const string InvalidSupplierStatus = "pos.supplier.status.invalid";
+    public const string InvalidSupplierStatusTransition = "pos.supplier.status.invalid_transition";
+    public const string SupplierNotActive = "pos.supplier.not_active";
 }

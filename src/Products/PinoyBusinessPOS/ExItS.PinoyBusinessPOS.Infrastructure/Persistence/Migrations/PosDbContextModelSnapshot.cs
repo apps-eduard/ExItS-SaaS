@@ -1161,6 +1161,177 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Suppliers.SupplierCodeSequenceRecord", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<long>("NextValue")
+                        .HasColumnType("bigint")
+                        .HasColumnName("next_value");
+
+                    b.HasKey("OrganizationId")
+                        .HasName("pk_supplier_code_sequences");
+
+                    b.ToTable("supplier_code_sequences", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_supplier_code_sequences_next_value_positive", "next_value > 0");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Suppliers.SupplierRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AddressLine1")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("address_line1");
+
+                    b.Property<string>("AddressLine2")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("address_line2");
+
+                    b.Property<string>("CityMunicipality")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("city_municipality");
+
+                    b.Property<string>("ContactPerson")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("contact_person");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("email");
+
+                    b.Property<string>("MobileNumber")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("mobile_number");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("NormalizedEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("normalized_email");
+
+                    b.Property<string>("NormalizedMobile")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("normalized_mobile");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("normalized_name");
+
+                    b.Property<string>("NormalizedTaxOrRegistrationNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("normalized_tax_or_registration_number");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("PostalCode")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("postal_code");
+
+                    b.Property<string>("Province")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("province");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("SupplierCode")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("supplier_code");
+
+                    b.Property<string>("TaxOrRegistrationNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("tax_or_registration_number");
+
+                    b.Property<string>("TelephoneNumber")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("telephone_number");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "NormalizedEmail")
+                        .HasDatabaseName("ix_suppliers_org_normalized_email")
+                        .HasFilter("normalized_email IS NOT NULL");
+
+                    b.HasIndex("OrganizationId", "NormalizedMobile")
+                        .HasDatabaseName("ix_suppliers_org_normalized_mobile")
+                        .HasFilter("normalized_mobile IS NOT NULL");
+
+                    b.HasIndex("OrganizationId", "NormalizedName")
+                        .IsUnique()
+                        .HasDatabaseName("ix_suppliers_org_normalized_name")
+                        .HasFilter("status = 'Active'");
+
+                    b.HasIndex("OrganizationId", "NormalizedTaxOrRegistrationNumber")
+                        .HasDatabaseName("ix_suppliers_org_normalized_tax")
+                        .HasFilter("normalized_tax_or_registration_number IS NOT NULL");
+
+                    b.HasIndex("OrganizationId", "Status")
+                        .HasDatabaseName("ix_suppliers_org_status");
+
+                    b.HasIndex("OrganizationId", "SupplierCode")
+                        .IsUnique()
+                        .HasDatabaseName("ux_suppliers_org_supplier_code");
+
+                    b.ToTable("suppliers", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_suppliers_status", "status IN ('Active', 'Inactive')");
+                        });
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", b =>
                 {
                     b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.ProductCategoryRecord", null)

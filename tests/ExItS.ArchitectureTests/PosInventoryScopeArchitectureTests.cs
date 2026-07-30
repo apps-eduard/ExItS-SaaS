@@ -65,7 +65,7 @@ public sealed class PosInventoryScopeArchitectureTests
 
         foreach (var table in new[]
                  {
-                     "\"suppliers\"", "\"warehouses\"", "\"purchase_orders\"", "\"stock_transfers\"",
+                     "\"warehouses\"", "\"purchase_orders\"", "\"stock_transfers\"",
                      "\"inventory_costs\"", "\"lots\"", "\"serials\""
                  })
         {

@@ -45,8 +45,28 @@ internal static class PersistenceExceptionMapper
             return true;
         }
 
-        if (constraint.Contains("ux_customers_org_active_mobile", StringComparison.OrdinalIgnoreCase)
-            || constraint.Contains("mobile", StringComparison.OrdinalIgnoreCase))
+        if (constraint.Contains("ux_suppliers_org_active_name", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.SupplierNameConflict;
+            message = "An active supplier with this name already exists in this organization.";
+            return true;
+        }
+
+        if (constraint.Contains("ux_suppliers_org_supplier_code", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.SupplierCodeConflict;
+            message = "A supplier code was allocated concurrently. Retry the create.";
+            return true;
+        }
+
+        if (constraint.Contains("ux_expense_categories_org_active_name", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.ExpenseCategoryNameConflict;
+            message = "An active expense category with this name already exists in this organization.";
+            return true;
+        }
+
+        if (constraint.Contains("ux_customers_org_active_mobile", StringComparison.OrdinalIgnoreCase))
         {
             errorCode = ApplicationErrorCodes.MobileConflict;
             message = "An active customer with this mobile number already exists in this organization.";

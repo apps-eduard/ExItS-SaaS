@@ -11,8 +11,8 @@ public sealed class SecurityHardeningArchitectureTests
         var platform = File.ReadAllText(Path.Combine(FindRepositoryRoot(),
             "src", "Platform", "ExItS.Platform.Api", "Program.cs"));
 
-        Assert.Contains("P9-WP06-commercial-mvp-closeout", pos, StringComparison.Ordinal);
-        Assert.Contains("P9-WP06-commercial-mvp-closeout", platform, StringComparison.Ordinal);
+        Assert.Contains("P10-WP01-suppliers", pos, StringComparison.Ordinal);
+        Assert.Contains("P10-WP01-suppliers", platform, StringComparison.Ordinal);
         Assert.Contains("AddPosSecurity", pos, StringComparison.Ordinal);
         Assert.Contains("UsePosSecurity", pos, StringComparison.Ordinal);
         Assert.Contains("AddPlatformSecurity", platform, StringComparison.Ordinal);

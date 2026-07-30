@@ -1,0 +1,252 @@
+@page "/suppliers/{SupplierId:guid}"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosSupplierClient Suppliers
+@inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (_loading)
+{
+    <Page><Spinner /><span>@L["Suppliers_Loading"]</span></Page>
+}
+else if (_supplier is null)
+{
+    <Page>
+        <ErrorState Title="@(_errorTitle ?? L["Suppliers_NotFoundTitle"])"
+                    Message="@(_errorMessage ?? L["Suppliers_NotFoundMessage"])"
+                    RetryLabel="@L["Api_Retry"]"
+                    OnRetry="LoadAsync" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Suppliers_BackToList"]</Button>
+    </Page>
+}
+else
+{
+    var supplier = _supplier;
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageSuppliers);
+    var isActive = supplier.Status == SupplierUiOptions.ActiveStatus;
+<Page>
+    <PageHeader Title="@supplier.Name" Subtitle="@L["Suppliers_DetailSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Suppliers_BackToList"]</Button>
+            <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="GoEdit">@L["Suppliers_Edit"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Suppliers_OfflineTitle"]" Message="@L["Suppliers_OfflineMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_banner))
+    {
+        <Alert Tone="AlertTone.Success" Title="@L["Suppliers_SuccessTitle"]" Message="@_banner" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Suppliers_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Suppliers_DetailsSection"]">
+        <Stack Gap="3">
+            <div>
+                <span class="pos-muted">@L["Suppliers_Field_Code"]</span>
+                <div class="pos-value-md">@supplier.SupplierCode</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Suppliers_Field_Name"]</span>
+                <div class="pos-value-md">@supplier.Name</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Suppliers_Field_ContactPerson"]</span>
+                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(supplier.ContactPerson) ? L["Suppliers_NoValue"] : supplier.ContactPerson)</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Suppliers_Field_Mobile"]</span>
+                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(supplier.MobileNumber) ? L["Suppliers_NoValue"] : supplier.MobileNumber)</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Suppliers_Field_Telephone"]</span>
+                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(supplier.TelephoneNumber) ? L["Suppliers_NoValue"] : supplier.TelephoneNumber)</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Suppliers_Field_Email"]</span>
+                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(supplier.Email) ? L["Suppliers_NoValue"] : supplier.Email)</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Suppliers_Field_AddressLine1"]</span>
+                <div class="pos-value-md pos-wrap">@(string.IsNullOrWhiteSpace(supplier.AddressLine1) ? L["Suppliers_NoValue"] : supplier.AddressLine1)</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Suppliers_Field_AddressLine2"]</span>
+                <div class="pos-value-md pos-wrap">@(string.IsNullOrWhiteSpace(supplier.AddressLine2) ? L["Suppliers_NoValue"] : supplier.AddressLine2)</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Suppliers_Field_City"]</span>
+                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(supplier.CityMunicipality) ? L["Suppliers_NoValue"] : supplier.CityMunicipality)</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Suppliers_Field_Province"]</span>
+                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(supplier.Province) ? L["Suppliers_NoValue"] : supplier.Province)</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Suppliers_Field_PostalCode"]</span>
+                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(supplier.PostalCode) ? L["Suppliers_NoValue"] : supplier.PostalCode)</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Suppliers_Field_TaxNumber"]</span>
+                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(supplier.TaxOrRegistrationNumber) ? L["Suppliers_NoValue"] : supplier.TaxOrRegistrationNumber)</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Suppliers_Field_Notes"]</span>
+                <div class="pos-value-md pos-wrap">@(string.IsNullOrWhiteSpace(supplier.Notes) ? L["Suppliers_NoValue"] : supplier.Notes)</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Suppliers_Field_Status"]</span>
+                <Badge Tone="@(isActive ? BadgeTone.Success : BadgeTone.Neutral)">@SupplierUiOptions.StatusLabel(L, supplier.Status)</Badge>
+            </div>
+        </Stack>
+    </Section>
+
+    <FormActions>
+        @if (isActive)
+        {
+            <Button Variant="ButtonVariant.Danger" Disabled="@(!canManage || _isOffline)" OnClick="() => _confirmDeactivate = true">@L["Suppliers_Deactivate"]</Button>
+        }
+        else
+        {
+            <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="() => _confirmReactivate = true">@L["Suppliers_Reactivate"]</Button>
+        }
+    </FormActions>
+
+    <ConfirmDialog Visible="@_confirmDeactivate"
+                   VisibleChanged="v => _confirmDeactivate = v"
+                   Title="@L["Suppliers_DeactivateTitle"]"
+                   Message="@L["Suppliers_DeactivateMessage"]"
+                   Danger="true"
+                   ConfirmLabel="@L["Suppliers_Deactivate"]"
+                   IsLoading="@_acting"
+                   OnConfirm="DeactivateAsync" />
+
+    <ConfirmDialog Visible="@_confirmReactivate"
+                   VisibleChanged="v => _confirmReactivate = v"
+                   Title="@L["Suppliers_ReactivateTitle"]"
+                   Message="@L["Suppliers_ReactivateMessage"]"
+                   ConfirmLabel="@L["Suppliers_Reactivate"]"
+                   IsLoading="@_acting"
+                   OnConfirm="ReactivateAsync" />
+</Page>
+}
+
+@code {
+    [Parameter] public Guid SupplierId { get; set; }
+
+    private bool _ready;
+    private bool _loading = true;
+    private bool _acting;
+    private bool _isOffline;
+    private bool _confirmDeactivate;
+    private bool _confirmReactivate;
+    private PosSupplierDto? _supplier;
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private string? _banner;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewSuppliers))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        _ready = true;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        StateHasChanged();
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _supplier = null;
+            _errorTitle = L["Suppliers_OfflineTitle"];
+            _errorMessage = L["Suppliers_OfflineMessage"];
+            _loading = false;
+            return;
+        }
+
+        var result = await Suppliers.GetAsync(SupplierId);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _supplier = result.Data;
+        }
+        else
+        {
+            _supplier = null;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private async Task DeactivateAsync()
+    {
+        _acting = true;
+        var result = await Suppliers.DeactivateAsync(SupplierId);
+        _acting = false;
+        _confirmDeactivate = false;
+        ApplyMutation(result, L["Suppliers_DeactivatedSuccess"]);
+    }
+
+    private async Task ReactivateAsync()
+    {
+        _acting = true;
+        var result = await Suppliers.ActivateAsync(SupplierId);
+        _acting = false;
+        _confirmReactivate = false;
+        ApplyMutation(result, L["Suppliers_ReactivatedSuccess"]);
+    }
+
+    private void ApplyMutation(ApiResult<PosSupplierDto> result, string successMessage)
+    {
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _supplier = result.Data;
+            _banner = successMessage;
+            _errorTitle = null;
+            _errorMessage = null;
+            return;
+        }
+
+        _banner = null;
+        _errorTitle = L["Suppliers_ErrorTitle"];
+        var mapped = SupplierErrorPresenter.Describe(result.Error?.ErrorCode, L);
+        _errorMessage = mapped.Form
+            ?? result.Error?.Detail
+            ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+    }
+
+    private void GoList() => Nav.NavigateTo("/suppliers");
+    private void GoEdit() => Nav.NavigateTo($"/suppliers/{SupplierId:D}/edit");
+}

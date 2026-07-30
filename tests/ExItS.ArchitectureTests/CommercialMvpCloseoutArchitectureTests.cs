@@ -10,8 +10,8 @@ public sealed class CommercialMvpCloseoutArchitectureTests
         var pos = File.ReadAllText(Path.Combine(root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Api", "Program.cs"));
         var platform = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "Program.cs"));
         var closeout = File.ReadAllText(Path.Combine(root, "src", "Shared", "ExItS.Deployment", "CommercialMvpCloseout.cs"));
-        Assert.Contains("P9-WP06-commercial-mvp-closeout", pos, StringComparison.Ordinal);
-        Assert.Contains("P9-WP06-commercial-mvp-closeout", platform, StringComparison.Ordinal);
+        Assert.Contains("P10-WP01-suppliers", pos, StringComparison.Ordinal);
+        Assert.Contains("P10-WP01-suppliers", platform, StringComparison.Ordinal);
         Assert.Contains("P9-WP06-commercial-mvp-closeout", closeout, StringComparison.Ordinal);
         Assert.Contains("Phase 10 — Full POS", closeout, StringComparison.Ordinal);
     }

@@ -52,7 +52,7 @@ public sealed class PosCatalogScopeArchitectureTests
     }
 
     [Fact]
-    public void Catalog_persistence_adds_no_stock_tax_discount_or_supplier_tables()
+    public void Catalog_persistence_adds_no_stock_tax_discount_or_warehouse_tables()
     {
         var context = File.ReadAllText(Path.Combine(
             PosProject("ExItS.PinoyBusinessPOS.Infrastructure"), "Persistence", "PosDbContext.cs"));
@@ -60,12 +60,12 @@ public sealed class PosCatalogScopeArchitectureTests
         Assert.Contains("\"product_categories\"", context, StringComparison.Ordinal);
         Assert.Contains("\"products\"", context, StringComparison.Ordinal);
 
-        // Sales tables are owned by the P8-WP02 slice; inventory tables by P8-WP04.
-        // Cart, tax, discount, and supplier persistence remains out of scope for catalog.
+        // Sales tables are owned by the P8-WP02 slice; inventory tables by P8-WP04; suppliers by P10-WP01.
+        // Cart, tax, discount, and warehouse persistence remains out of scope for catalog.
         foreach (var table in new[]
                  {
                      "\"stock_levels\"", "\"carts\"", "\"taxes\"", "\"discounts\"",
-                     "\"product_barcodes\"", "\"suppliers\"", "\"warehouses\""
+                     "\"product_barcodes\"", "\"warehouses\""
                  })
         {
             Assert.DoesNotContain(table, context, StringComparison.OrdinalIgnoreCase);

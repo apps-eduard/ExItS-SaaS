@@ -5,6 +5,7 @@ using ExItS.PinoyBusinessPOS.Domain.Expenses;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
+using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Customers;
@@ -13,6 +14,7 @@ using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Idempotency;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Payments;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Sales;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Suppliers;
 using Microsoft.EntityFrameworkCore;
 
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
@@ -41,6 +43,8 @@ public sealed class PosDbContext : DbContext
     internal DbSet<ExpenseCategoryRecord> ExpenseCategories => Set<ExpenseCategoryRecord>();
     internal DbSet<ExpenseRecord> Expenses => Set<ExpenseRecord>();
     internal DbSet<ExpenseNumberSequenceRecord> ExpenseNumberSequences => Set<ExpenseNumberSequenceRecord>();
+    internal DbSet<SupplierRecord> Suppliers => Set<SupplierRecord>();
+    internal DbSet<SupplierCodeSequenceRecord> SupplierCodeSequences => Set<SupplierCodeSequenceRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -823,6 +827,124 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
             entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date");
             entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
+        });
+
+        modelBuilder.Entity<SupplierRecord>(entity =>
+        {
+            entity.ToTable("suppliers", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_suppliers_status",
+                    "status IN ('Active', 'Inactive')");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.SupplierCode)
+                .HasColumnName("supplier_code")
+                .HasMaxLength(SupplierCodes.MaxLength)
+                .IsRequired();
+            entity.Property(e => e.Name)
+                .HasColumnName("name")
+                .HasMaxLength(Supplier.NameMaxLength)
+                .IsRequired();
+            entity.Property(e => e.NormalizedName)
+                .HasColumnName("normalized_name")
+                .HasMaxLength(Supplier.NameMaxLength)
+                .IsRequired();
+            entity.Property(e => e.ContactPerson)
+                .HasColumnName("contact_person")
+                .HasMaxLength(Supplier.ContactPersonMaxLength);
+            entity.Property(e => e.MobileNumber)
+                .HasColumnName("mobile_number")
+                .HasMaxLength(Supplier.MobileMaxLength);
+            entity.Property(e => e.NormalizedMobile)
+                .HasColumnName("normalized_mobile")
+                .HasMaxLength(Supplier.MobileMaxLength);
+            entity.Property(e => e.TelephoneNumber)
+                .HasColumnName("telephone_number")
+                .HasMaxLength(Supplier.TelephoneMaxLength);
+            entity.Property(e => e.Email)
+                .HasColumnName("email")
+                .HasMaxLength(Supplier.EmailMaxLength);
+            entity.Property(e => e.NormalizedEmail)
+                .HasColumnName("normalized_email")
+                .HasMaxLength(Supplier.EmailMaxLength);
+            entity.Property(e => e.AddressLine1)
+                .HasColumnName("address_line1")
+                .HasMaxLength(Supplier.AddressLineMaxLength);
+            entity.Property(e => e.AddressLine2)
+                .HasColumnName("address_line2")
+                .HasMaxLength(Supplier.AddressLineMaxLength);
+            entity.Property(e => e.CityMunicipality)
+                .HasColumnName("city_municipality")
+                .HasMaxLength(Supplier.CityMaxLength);
+            entity.Property(e => e.Province)
+                .HasColumnName("province")
+                .HasMaxLength(Supplier.ProvinceMaxLength);
+            entity.Property(e => e.PostalCode)
+                .HasColumnName("postal_code")
+                .HasMaxLength(Supplier.PostalCodeMaxLength);
+            entity.Property(e => e.TaxOrRegistrationNumber)
+                .HasColumnName("tax_or_registration_number")
+                .HasMaxLength(Supplier.TaxMaxLength);
+            entity.Property(e => e.NormalizedTaxOrRegistrationNumber)
+                .HasColumnName("normalized_tax_or_registration_number")
+                .HasMaxLength(Supplier.TaxMaxLength);
+            entity.Property(e => e.Notes)
+                .HasColumnName("notes")
+                .HasMaxLength(Supplier.NotesMaxLength);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.SupplierCode })
+                .IsUnique()
+                .HasDatabaseName("ux_suppliers_org_supplier_code");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.NormalizedName })
+                .IsUnique()
+                .HasDatabaseName("ux_suppliers_org_active_name")
+                .HasFilter($"status = '{nameof(SupplierStatus.Active)}'");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.Status })
+                .HasDatabaseName("ix_suppliers_org_status");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.NormalizedName })
+                .HasDatabaseName("ix_suppliers_org_normalized_name");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.NormalizedEmail })
+                .HasDatabaseName("ix_suppliers_org_normalized_email")
+                .HasFilter("normalized_email IS NOT NULL");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.NormalizedMobile })
+                .HasDatabaseName("ix_suppliers_org_normalized_mobile")
+                .HasFilter("normalized_mobile IS NOT NULL");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.NormalizedTaxOrRegistrationNumber })
+                .HasDatabaseName("ix_suppliers_org_normalized_tax")
+                .HasFilter("normalized_tax_or_registration_number IS NOT NULL");
+        });
+
+        modelBuilder.Entity<SupplierCodeSequenceRecord>(entity =>
+        {
+            entity.ToTable("supplier_code_sequences", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_supplier_code_sequences_next_value_positive",
+                    "next_value > 0");
+            });
+
+            entity.HasKey(e => e.OrganizationId)
+                .HasName("pk_supplier_code_sequences");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.NextValue).HasColumnName("next_value").IsRequired();
         });
     }
 }

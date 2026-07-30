@@ -318,6 +318,68 @@ public sealed class UtangCapabilityPolicyTests
         Assert.Contains(PosFeatureCodes.StoreReportsView, UtangCapabilityPolicy.DefaultDevelopmentGrants);
     }
 
+    private static readonly string[] SupplierGrants =
+    [
+        PosFeatureCodes.StoreSuppliersView,
+        PosFeatureCodes.StoreSuppliersManage
+    ];
+
+    [Theory]
+    [InlineData(PosSubscriptionStatuses.Trialing)]
+    [InlineData(PosSubscriptionStatuses.Active)]
+    [InlineData(PosSubscriptionStatuses.GracePeriod)]
+    public void Full_states_allow_supplier_view_and_manage(string status)
+    {
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewSuppliers, status, SupplierGrants));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManageSuppliers, status, SupplierGrants));
+    }
+
+    [Theory]
+    [InlineData(PosSubscriptionStatuses.PastDue)]
+    [InlineData(PosSubscriptionStatuses.Cancelled)]
+    [InlineData(PosSubscriptionStatuses.Expired)]
+    public void Continuity_states_allow_supplier_view_deny_manage(string status)
+    {
+        Assert.True(UtangCapabilityPolicy.CanEnter(status, SupplierGrants));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewSuppliers, status, SupplierGrants));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManageSuppliers, status, SupplierGrants));
+    }
+
+    [Fact]
+    public void Continuity_entry_is_granted_by_either_supplier_code()
+    {
+        Assert.True(UtangCapabilityPolicy.CanEnter(
+            PosSubscriptionStatuses.Expired,
+            [PosFeatureCodes.StoreSuppliersView]));
+        Assert.True(UtangCapabilityPolicy.CanEnter(
+            PosSubscriptionStatuses.Expired,
+            [PosFeatureCodes.StoreSuppliersManage]));
+    }
+
+    [Fact]
+    public void Supplier_capabilities_require_their_own_grants()
+    {
+        Assert.False(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.ViewSuppliers,
+            PosSubscriptionStatuses.Active,
+            CatalogGrants));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.ManageSuppliers,
+            PosSubscriptionStatuses.Active,
+            [PosFeatureCodes.StoreSuppliersView]));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.ManageCatalog,
+            PosSubscriptionStatuses.Active,
+            SupplierGrants));
+    }
+
+    [Fact]
+    public void Development_grants_include_supplier_codes()
+    {
+        Assert.Contains(PosFeatureCodes.StoreSuppliersView, UtangCapabilityPolicy.DefaultDevelopmentGrants);
+        Assert.Contains(PosFeatureCodes.StoreSuppliersManage, UtangCapabilityPolicy.DefaultDevelopmentGrants);
+    }
+
     [Fact]
     public void Feature_grants_required_even_in_active()
     {
@@ -345,6 +407,14 @@ public sealed class UtangCapabilityPolicyTests
             UtangCapability.ManageExpenses,
             PosSubscriptionStatuses.Active,
             [PosFeatureCodes.StoreExpensesView]));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.ViewSuppliers,
+            PosSubscriptionStatuses.Active,
+            ViewOnly));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.ManageSuppliers,
+            PosSubscriptionStatuses.Active,
+            [PosFeatureCodes.StoreSuppliersView]));
         Assert.False(UtangCapabilityPolicy.IsAllowed(
             UtangCapability.ViewDashboard,
             PosSubscriptionStatuses.Active,

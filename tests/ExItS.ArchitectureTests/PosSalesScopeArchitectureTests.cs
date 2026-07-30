@@ -72,7 +72,7 @@ public sealed class PosSalesScopeArchitectureTests
         foreach (var table in new[]
                  {
                      "\"carts\"", "\"taxes\"", "\"discounts\"", "\"sale_refunds\"", "\"sale_payments\"",
-                     "\"suppliers\"", "\"warehouses\""
+                     "\"warehouses\""
                  })
         {
             Assert.DoesNotContain(table, context, StringComparison.OrdinalIgnoreCase);

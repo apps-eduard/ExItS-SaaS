@@ -64,8 +64,9 @@ public sealed class PosExpensesScopeArchitectureTests
 
         foreach (var table in new[]
                  {
-                     "\"suppliers\"", "\"payroll\"", "\"general_ledger\"", "\"journal_entries\"",
-                     "\"expense_attachments\"", "\"expense_budgets\""
+                     "\"payroll\"", "\"general_ledger\"", "\"journal_entries\"",
+                     "\"expense_attachments\"", "\"expense_budgets\"", "\"purchase_orders\"",
+                     "\"accounts_payable\""
                  })
         {
             Assert.DoesNotContain(table, context, StringComparison.OrdinalIgnoreCase);

@@ -32,7 +32,8 @@ internal static class PosApiResults
             or ApplicationErrorCodes.InventoryAccountNotFound
             or ApplicationErrorCodes.InventoryProductNotFound
             or ApplicationErrorCodes.ExpenseCategoryNotFound
-            or ApplicationErrorCodes.ExpenseNotFound => StatusCodes.Status404NotFound,
+            or ApplicationErrorCodes.ExpenseNotFound
+            or ApplicationErrorCodes.SupplierNotFound => StatusCodes.Status404NotFound,
 
         ApplicationErrorCodes.MobileConflict
             or ApplicationErrorCodes.ConcurrencyConflict
@@ -72,7 +73,14 @@ internal static class PosApiResults
             or ApplicationErrorCodes.ExpenseConcurrencyConflict
             or DomainErrorCodes.InvalidExpenseCategoryStatusTransition
             or DomainErrorCodes.ExpenseCategoryNotActive
-            or DomainErrorCodes.InvalidExpenseStatusTransition => StatusCodes.Status409Conflict,
+            or DomainErrorCodes.InvalidExpenseStatusTransition
+            or ApplicationErrorCodes.SupplierNameConflict
+            or ApplicationErrorCodes.SupplierCodeConflict
+            or ApplicationErrorCodes.SupplierEmailConflict
+            or ApplicationErrorCodes.SupplierMobileConflict
+            or ApplicationErrorCodes.SupplierTaxConflict
+            or ApplicationErrorCodes.SupplierConcurrencyConflict
+            or DomainErrorCodes.InvalidSupplierStatusTransition => StatusCodes.Status409Conflict,
 
         ApplicationErrorCodes.SaleProductNotFound => StatusCodes.Status400BadRequest,
 

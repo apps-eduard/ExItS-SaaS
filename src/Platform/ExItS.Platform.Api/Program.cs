@@ -127,7 +127,7 @@ app.MapGet("/", () => Results.Json(new
 {
     service = "ExItS.Platform.Api",
     status = "ok",
-    phase = "P9-WP06-commercial-mvp-closeout"
+    phase = "P10-WP01-suppliers"
 }));
 
 app.MapPlatformHealthEndpoints();

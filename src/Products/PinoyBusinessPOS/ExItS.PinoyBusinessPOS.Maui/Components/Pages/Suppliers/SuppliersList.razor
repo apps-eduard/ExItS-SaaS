@@ -1,0 +1,229 @@
+@page "/suppliers"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosSupplierClient Suppliers
+@inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageSuppliers);
+<Page>
+    <PageHeader Title="@L["Suppliers_Title"]" Subtitle="@L["Suppliers_Subtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="GoNew">@L["Suppliers_Add"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Suppliers_OfflineTitle"]" Message="@L["Suppliers_OfflineMessage"]" />
+    }
+    else if (!canManage)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+    }
+
+    <SearchToolbar SearchText="@_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Suppliers_SearchPlaceholder"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Suppliers_Refresh"]</Button>
+        </Actions>
+    </SearchToolbar>
+
+    <Section Title="@L["Suppliers_FiltersTitle"]">
+        <Stack Gap="3">
+            <Select Label="@L["Suppliers_Filter_Status"]"
+                    Value="@_statusFilter"
+                    ValueChanged="OnStatusFilterChanged"
+                    Options="@SupplierUiOptions.StatusFilters(L)" />
+        </Stack>
+    </Section>
+
+    <ResponsiveDataList TItem="PosSupplierDto"
+                        Items="@_items"
+                        Columns="@Columns"
+                        CellTemplate="@CellTemplate"
+                        IsLoading="@_loading"
+                        LoadingLabel="@L["Suppliers_Loading"]"
+                        EmptyTitle="@L["Suppliers_EmptyTitle"]"
+                        EmptyMessage="@L["Suppliers_EmptyMessage"]"
+                        ErrorTitle="@_errorTitle"
+                        ErrorMessage="@_errorMessage"
+                        RetryLabel="@L["Api_Retry"]"
+                        OnRetry="ReloadAsync"
+                        AriaLabel="@L["Suppliers_Title"]" />
+
+    @if (!_loading && _totalCount > 0)
+    {
+        <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
+    }
+</Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _loading;
+    private bool _isOffline;
+    private string? _search;
+    private string? _statusFilter = SupplierUiOptions.ActiveStatus;
+    private int _page = 1;
+    private const int _pageSize = 20;
+    private int _totalCount;
+    private IReadOnlyList<PosSupplierDto> _items = Array.Empty<PosSupplierDto>();
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    private IReadOnlyList<DataColumnDefinition> Columns =>
+    [
+        new("name", L["Suppliers_Col_Name"], Primary: true, Width: "28%"),
+        new("code", L["Suppliers_Col_Code"], Width: "16%"),
+        new("contact", L["Suppliers_Col_Contact"], Width: "18%"),
+        new("mobile", L["Suppliers_Col_Mobile"], Width: "16%"),
+        new("status", L["Suppliers_Col_Status"], Width: "14%"),
+    ];
+
+    private RenderFragment<(PosSupplierDto Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
+    {
+        switch (context.Column.Key)
+        {
+            case "name":
+                builder.OpenElement(0, "a");
+                builder.AddAttribute(1, "class", "pos-link");
+                builder.AddAttribute(2, "href", $"/suppliers/{context.Item.SupplierId:D}");
+                builder.AddContent(3, context.Item.Name);
+                builder.CloseElement();
+                break;
+            case "code":
+                builder.AddContent(0, context.Item.SupplierCode);
+                break;
+            case "contact":
+                builder.AddContent(0, string.IsNullOrWhiteSpace(context.Item.ContactPerson)
+                    ? L["Suppliers_NoValue"].Value
+                    : context.Item.ContactPerson);
+                break;
+            case "mobile":
+                builder.AddContent(0, string.IsNullOrWhiteSpace(context.Item.MobileNumber)
+                    ? L["Suppliers_NoValue"].Value
+                    : context.Item.MobileNumber);
+                break;
+            default:
+                builder.OpenComponent<Badge>(0);
+                builder.AddAttribute(1, "Tone", context.Item.Status == SupplierUiOptions.ActiveStatus
+                    ? BadgeTone.Success
+                    : BadgeTone.Neutral);
+                builder.AddAttribute(2, "ChildContent", (RenderFragment)(b =>
+                    b.AddContent(0, SupplierUiOptions.StatusLabel(L, context.Item.Status))));
+                builder.CloseComponent();
+                break;
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewSuppliers))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task OnSearchChanged(string? value)
+    {
+        _search = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnStatusFilterChanged(string? value)
+    {
+        _statusFilter = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _page = page;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        StateHasChanged();
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _items = Array.Empty<PosSupplierDto>();
+            _totalCount = 0;
+            _errorTitle = L["Suppliers_OfflineTitle"];
+            _errorMessage = L["Suppliers_OfflineMessage"];
+            _loading = false;
+            return;
+        }
+
+        ResolveSearch(_search, out var supplierCode, out var name);
+        var result = await Suppliers.ListAsync(
+            supplierCode,
+            name,
+            status: string.IsNullOrWhiteSpace(_statusFilter) ? null : _statusFilter,
+            page: _page,
+            pageSize: _pageSize);
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _items = result.Data.Items;
+            _totalCount = result.Data.TotalCount;
+        }
+        else
+        {
+            _items = Array.Empty<PosSupplierDto>();
+            _totalCount = 0;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private static void ResolveSearch(string? search, out string? supplierCode, out string? name)
+    {
+        supplierCode = null;
+        name = null;
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            return;
+        }
+
+        var trimmed = search.Trim();
+        if (trimmed.StartsWith("SUP", StringComparison.OrdinalIgnoreCase))
+        {
+            supplierCode = trimmed;
+            return;
+        }
+
+        name = trimmed;
+    }
+
+    private void GoNew() => Nav.NavigateTo("/suppliers/new");
+}

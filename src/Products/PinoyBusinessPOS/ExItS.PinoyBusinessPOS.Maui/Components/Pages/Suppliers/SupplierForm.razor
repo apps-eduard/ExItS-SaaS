@@ -1,0 +1,122 @@
+@inject IStringLocalizer<PosResources> L
+
+<Section Title="@L["Suppliers_DetailsSection"]">
+    <Stack Gap="3">
+        <TextInput Label="@L["Suppliers_Field_Name"]"
+                   Value="@Name"
+                   ValueChanged="NameChanged"
+                   Required="true"
+                   IsInvalid="@(!string.IsNullOrEmpty(NameError))"
+                   ErrorText="@NameError"
+                   Disabled="@(IsSaving || Disabled)" />
+
+        <TextInput Label="@L["Suppliers_Field_ContactPerson"]"
+                   Value="@ContactPerson"
+                   ValueChanged="ContactPersonChanged"
+                   Hint="@L["Suppliers_ContactPersonHint"]"
+                   Disabled="@(IsSaving || Disabled)" />
+
+        <TextInput Label="@L["Suppliers_Field_Mobile"]"
+                   Value="@MobileNumber"
+                   ValueChanged="MobileNumberChanged"
+                   Hint="@L["Suppliers_MobileHint"]"
+                   IsInvalid="@(!string.IsNullOrEmpty(MobileError))"
+                   ErrorText="@MobileError"
+                   Disabled="@(IsSaving || Disabled)" />
+
+        <TextInput Label="@L["Suppliers_Field_Telephone"]"
+                   Value="@TelephoneNumber"
+                   ValueChanged="TelephoneNumberChanged"
+                   Hint="@L["Suppliers_TelephoneHint"]"
+                   Disabled="@(IsSaving || Disabled)" />
+
+        <TextInput Label="@L["Suppliers_Field_Email"]"
+                   Value="@Email"
+                   ValueChanged="EmailChanged"
+                   Hint="@L["Suppliers_EmailHint"]"
+                   IsInvalid="@(!string.IsNullOrEmpty(EmailError))"
+                   ErrorText="@EmailError"
+                   Disabled="@(IsSaving || Disabled)" />
+
+        <TextInput Label="@L["Suppliers_Field_AddressLine1"]"
+                   Value="@AddressLine1"
+                   ValueChanged="AddressLine1Changed"
+                   Disabled="@(IsSaving || Disabled)" />
+
+        <TextInput Label="@L["Suppliers_Field_AddressLine2"]"
+                   Value="@AddressLine2"
+                   ValueChanged="AddressLine2Changed"
+                   Disabled="@(IsSaving || Disabled)" />
+
+        <TextInput Label="@L["Suppliers_Field_City"]"
+                   Value="@CityMunicipality"
+                   ValueChanged="CityMunicipalityChanged"
+                   Disabled="@(IsSaving || Disabled)" />
+
+        <TextInput Label="@L["Suppliers_Field_Province"]"
+                   Value="@Province"
+                   ValueChanged="ProvinceChanged"
+                   Disabled="@(IsSaving || Disabled)" />
+
+        <TextInput Label="@L["Suppliers_Field_PostalCode"]"
+                   Value="@PostalCode"
+                   ValueChanged="PostalCodeChanged"
+                   Disabled="@(IsSaving || Disabled)" />
+
+        <TextInput Label="@L["Suppliers_Field_TaxNumber"]"
+                   Value="@TaxOrRegistrationNumber"
+                   ValueChanged="TaxOrRegistrationNumberChanged"
+                   Hint="@L["Suppliers_TaxHint"]"
+                   IsInvalid="@(!string.IsNullOrEmpty(TaxNumberError))"
+                   ErrorText="@TaxNumberError"
+                   Disabled="@(IsSaving || Disabled)" />
+
+        <TextArea Label="@L["Suppliers_Field_Notes"]"
+                  Value="@Notes"
+                  ValueChanged="NotesChanged"
+                  Hint="@L["Suppliers_NotesHint"]"
+                  Rows="3"
+                  Disabled="@(IsSaving || Disabled)" />
+    </Stack>
+</Section>
+
+<FormActions>
+    <Button Variant="ButtonVariant.Secondary" Disabled="@(IsSaving || Disabled)" OnClick="OnCancel">@L["Suppliers_Cancel"]</Button>
+    <Button Variant="ButtonVariant.Primary" Disabled="@Disabled" IsLoading="@IsSaving" OnClick="OnSave">@SaveLabel</Button>
+</FormActions>
+
+@code {
+    [Parameter] public string? Name { get; set; }
+    [Parameter] public EventCallback<string?> NameChanged { get; set; }
+    [Parameter] public string? ContactPerson { get; set; }
+    [Parameter] public EventCallback<string?> ContactPersonChanged { get; set; }
+    [Parameter] public string? MobileNumber { get; set; }
+    [Parameter] public EventCallback<string?> MobileNumberChanged { get; set; }
+    [Parameter] public string? TelephoneNumber { get; set; }
+    [Parameter] public EventCallback<string?> TelephoneNumberChanged { get; set; }
+    [Parameter] public string? Email { get; set; }
+    [Parameter] public EventCallback<string?> EmailChanged { get; set; }
+    [Parameter] public string? AddressLine1 { get; set; }
+    [Parameter] public EventCallback<string?> AddressLine1Changed { get; set; }
+    [Parameter] public string? AddressLine2 { get; set; }
+    [Parameter] public EventCallback<string?> AddressLine2Changed { get; set; }
+    [Parameter] public string? CityMunicipality { get; set; }
+    [Parameter] public EventCallback<string?> CityMunicipalityChanged { get; set; }
+    [Parameter] public string? Province { get; set; }
+    [Parameter] public EventCallback<string?> ProvinceChanged { get; set; }
+    [Parameter] public string? PostalCode { get; set; }
+    [Parameter] public EventCallback<string?> PostalCodeChanged { get; set; }
+    [Parameter] public string? TaxOrRegistrationNumber { get; set; }
+    [Parameter] public EventCallback<string?> TaxOrRegistrationNumberChanged { get; set; }
+    [Parameter] public string? Notes { get; set; }
+    [Parameter] public EventCallback<string?> NotesChanged { get; set; }
+    [Parameter] public string? NameError { get; set; }
+    [Parameter] public string? EmailError { get; set; }
+    [Parameter] public string? MobileError { get; set; }
+    [Parameter] public string? TaxNumberError { get; set; }
+    [Parameter] public bool IsSaving { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? SaveLabel { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+}

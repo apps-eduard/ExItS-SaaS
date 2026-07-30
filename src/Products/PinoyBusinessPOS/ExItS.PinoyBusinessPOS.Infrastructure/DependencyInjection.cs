@@ -5,6 +5,7 @@ using ExItS.PinoyBusinessPOS.Application.Expenses;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Application.Sales;
+using ExItS.PinoyBusinessPOS.Application.Suppliers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Repositories;
@@ -36,6 +37,7 @@ public static class DependencyInjection
         services.AddScoped<IInventoryRepository, InventoryRepository>();
         services.AddScoped<IExpenseCategoryRepository, ExpenseCategoryRepository>();
         services.AddScoped<IExpenseRepository, ExpenseRepository>();
+        services.AddScoped<ISupplierRepository, SupplierRepository>();
         services.AddScoped<ISaleStockService, SaleStockService>();
         services.AddScoped<IUtangLedgerQuery, UtangLedgerQuery>();
         services.AddScoped<IOutstandingBalanceService, OutstandingBalanceService>();

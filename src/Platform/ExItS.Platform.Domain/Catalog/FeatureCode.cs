@@ -48,6 +48,12 @@ public sealed partial class FeatureCode : IEquatable<FeatureCode>
     /// <summary>POS Basic Store: view operational reports (read-only projections).</summary>
     public const string StoreReportsView = "store-reports-view";
 
+    /// <summary>POS Full POS: view supplier master data.</summary>
+    public const string StoreSuppliersView = "store-suppliers-view";
+
+    /// <summary>POS Full POS: create, edit, activate, and deactivate suppliers.</summary>
+    public const string StoreSuppliersManage = "store-suppliers-manage";
+
     private static readonly Regex ValidPattern = CreateValidPattern();
 
     public string Value { get; }

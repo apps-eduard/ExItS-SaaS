@@ -46,6 +46,14 @@ public static class ApplicationErrorCodes
 
     public const string ReportInvalidDateRange = "pos.report.invalid_date_range";
     public const string ReportRangeTooLarge = "pos.report.range_too_large";
+
+    public const string SupplierNotFound = "pos.supplier.not_found";
+    public const string SupplierNameConflict = "pos.supplier.name.conflict";
+    public const string SupplierCodeConflict = "pos.supplier.code.conflict";
+    public const string SupplierEmailConflict = "pos.supplier.email.conflict";
+    public const string SupplierMobileConflict = "pos.supplier.mobile.conflict";
+    public const string SupplierTaxConflict = "pos.supplier.tax_number.conflict";
+    public const string SupplierConcurrencyConflict = "pos.supplier.concurrency_conflict";
 }
 
 public sealed class PersistenceConflictException : Exception

@@ -1,0 +1,246 @@
+@page "/suppliers/{SupplierId:guid}/edit"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosSupplierClient Suppliers
+@inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (_loading)
+{
+    <Page><Spinner /><span>@L["Suppliers_Loading"]</span></Page>
+}
+else if (_supplier is null)
+{
+    <Page>
+        <ErrorState Title="@(_errorTitle ?? L["Suppliers_NotFoundTitle"])"
+                    Message="@(_errorMessage ?? L["Suppliers_NotFoundMessage"])"
+                    RetryLabel="@L["Api_Retry"]"
+                    OnRetry="LoadAsync" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Suppliers_BackToList"]</Button>
+    </Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageSuppliers);
+<Page>
+    <PageHeader Title="@L["Suppliers_EditTitle"]" Subtitle="@_supplier.Name">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Suppliers_Cancel"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Suppliers_OfflineTitle"]" Message="@L["Suppliers_OfflineMessage"]" />
+    }
+    else if (!canManage)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_formError))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@L["Suppliers_ErrorTitle"]" Message="@_formError" />
+    }
+
+    <SupplierForm Name="@_name"
+                  NameChanged="v => _name = v"
+                  ContactPerson="@_contactPerson"
+                  ContactPersonChanged="v => _contactPerson = v"
+                  MobileNumber="@_mobileNumber"
+                  MobileNumberChanged="v => _mobileNumber = v"
+                  TelephoneNumber="@_telephoneNumber"
+                  TelephoneNumberChanged="v => _telephoneNumber = v"
+                  Email="@_email"
+                  EmailChanged="v => _email = v"
+                  AddressLine1="@_addressLine1"
+                  AddressLine1Changed="v => _addressLine1 = v"
+                  AddressLine2="@_addressLine2"
+                  AddressLine2Changed="v => _addressLine2 = v"
+                  CityMunicipality="@_cityMunicipality"
+                  CityMunicipalityChanged="v => _cityMunicipality = v"
+                  Province="@_province"
+                  ProvinceChanged="v => _province = v"
+                  PostalCode="@_postalCode"
+                  PostalCodeChanged="v => _postalCode = v"
+                  TaxOrRegistrationNumber="@_taxOrRegistrationNumber"
+                  TaxOrRegistrationNumberChanged="v => _taxOrRegistrationNumber = v"
+                  Notes="@_notes"
+                  NotesChanged="v => _notes = v"
+                  NameError="@_nameError"
+                  EmailError="@_emailError"
+                  MobileError="@_mobileError"
+                  TaxNumberError="@_taxNumberError"
+                  IsSaving="@_saving"
+                  Disabled="@(!canManage || _isOffline)"
+                  SaveLabel="@L["Suppliers_Save"]"
+                  OnSave="SaveAsync"
+                  OnCancel="GoDetail" />
+</Page>
+}
+
+@code {
+    [Parameter] public Guid SupplierId { get; set; }
+
+    private bool _ready;
+    private bool _loading = true;
+    private bool _saving;
+    private bool _isOffline;
+    private PosSupplierDto? _supplier;
+    private string? _name;
+    private string? _contactPerson;
+    private string? _mobileNumber;
+    private string? _telephoneNumber;
+    private string? _email;
+    private string? _addressLine1;
+    private string? _addressLine2;
+    private string? _cityMunicipality;
+    private string? _province;
+    private string? _postalCode;
+    private string? _taxOrRegistrationNumber;
+    private string? _notes;
+    private string? _nameError;
+    private string? _emailError;
+    private string? _mobileError;
+    private string? _taxNumberError;
+    private string? _formError;
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewSuppliers))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        _ready = true;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        _formError = null;
+        StateHasChanged();
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _supplier = null;
+            _errorTitle = L["Suppliers_OfflineTitle"];
+            _formError = L["Suppliers_OfflineMessage"];
+            _errorMessage = L["Suppliers_OfflineMessage"];
+            _loading = false;
+            return;
+        }
+
+        var result = await Suppliers.GetAsync(SupplierId);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _supplier = result.Data;
+            _name = _supplier.Name;
+            _contactPerson = _supplier.ContactPerson;
+            _mobileNumber = _supplier.MobileNumber;
+            _telephoneNumber = _supplier.TelephoneNumber;
+            _email = _supplier.Email;
+            _addressLine1 = _supplier.AddressLine1;
+            _addressLine2 = _supplier.AddressLine2;
+            _cityMunicipality = _supplier.CityMunicipality;
+            _province = _supplier.Province;
+            _postalCode = _supplier.PostalCode;
+            _taxOrRegistrationNumber = _supplier.TaxOrRegistrationNumber;
+            _notes = _supplier.Notes;
+        }
+        else
+        {
+            _supplier = null;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (!Capabilities.IsAllowed(UtangCapability.ManageSuppliers) || _supplier is null)
+        {
+            _formError = L["Access_RestrictedMessage"];
+            return;
+        }
+
+        if (_isOffline)
+        {
+            _formError = L["Suppliers_OfflineMessage"];
+            return;
+        }
+
+        _nameError = null;
+        _emailError = null;
+        _mobileError = null;
+        _taxNumberError = null;
+        _formError = null;
+
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _nameError = L["Suppliers_NameRequired"];
+            return;
+        }
+
+        _saving = true;
+        var result = await Suppliers.UpdateAsync(SupplierId, new UpdateSupplierRequest(
+            _name.Trim(),
+            _supplier.UpdatedAtUtc,
+            NullIfWhiteSpace(_contactPerson),
+            NullIfWhiteSpace(_mobileNumber),
+            NullIfWhiteSpace(_telephoneNumber),
+            NullIfWhiteSpace(_email),
+            NullIfWhiteSpace(_addressLine1),
+            NullIfWhiteSpace(_addressLine2),
+            NullIfWhiteSpace(_cityMunicipality),
+            NullIfWhiteSpace(_province),
+            NullIfWhiteSpace(_postalCode),
+            NullIfWhiteSpace(_taxOrRegistrationNumber),
+            NullIfWhiteSpace(_notes)));
+        _saving = false;
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            Nav.NavigateTo($"/suppliers/{SupplierId:D}", replace: true);
+            return;
+        }
+
+        var mapped = SupplierErrorPresenter.Describe(result.Error?.ErrorCode, L);
+        _nameError = mapped.Name;
+        _emailError = mapped.Email;
+        _mobileError = mapped.Mobile;
+        _taxNumberError = mapped.TaxNumber;
+        _formError = mapped.Form
+            ?? result.Error?.Detail
+            ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+    }
+
+    private static string? NullIfWhiteSpace(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private void GoList() => Nav.NavigateTo("/suppliers");
+    private void GoDetail() => Nav.NavigateTo($"/suppliers/{SupplierId:D}");
+}
