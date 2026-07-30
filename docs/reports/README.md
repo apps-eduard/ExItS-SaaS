@@ -70,3 +70,4 @@ The dashboard links to the latest accepted report.
 | [P9-WP04-accessibility-localization-theme-qa.md](P9-WP04-accessibility-localization-theme-qa.md) | Accessibility, Localization and Theme QA | Complete with documented risks |
 | [P9-WP05-pilot-and-deployment.md](P9-WP05-pilot-and-deployment.md) | Pilot and Deployment | Complete with documented risks |
 | [P9-WP06-commercial-mvp-closeout.md](P9-WP06-commercial-mvp-closeout.md) | Commercial MVP Closeout | Complete with documented risks (Phase 9 closed) |
+| [P10-WP01-scope-ambiguity.md](P10-WP01-scope-ambiguity.md) | P10-WP01 scope ambiguity | Stopped for authorization (docs only) |

@@ -107,7 +107,7 @@ Non-production deployment packaging, config validation, backup-before-migrate, s
 
 Environment board: Dev/Testing/internal pilot Ready with documented risks; restricted external pilot and Production **Blocked**. Risk register classifies R-091/R-109/R-129/TLS/MAUI-HTTPS/POS-ROLES as release blockers. **Not production-ready.**
 
-**Next:** **Phase 10 — Full POS** when approved.
+**Next:** **Phase 10 — Full POS** / first WP **P10-WP01 — Suppliers** when approved scope is authorized (title confirmed; detailed scope pending — see [P10-WP01 scope ambiguity](reports/P10-WP01-scope-ambiguity.md)).
 
 ## R4 — Commercial MVP
 
@@ -115,4 +115,6 @@ Offline synchronization, Basic Store and production hardening.
 
 ## R5 — Full POS
 
-Purchasing, advanced inventory, shifts, returns/refunds and multiple registers.
+**First work package (roadmap):** **P10-WP01 — Suppliers** (formally numbered). Then purchasing, advanced inventory, cashier shifts, returns/refunds, advanced permissions/reports, multiple registers, and closeout.
+
+Product docs historically phrase “Suppliers and purchasing” together; the authoritative phase roadmap keeps them as separate WPs (`P10-WP01` / `P10-WP02`). Implementation of WP01 is blocked until approved scope is clarified.

@@ -162,6 +162,7 @@ docs/reports/P9-WP03-backup-and-restore.md
 docs/reports/P9-WP04-accessibility-localization-theme-qa.md
 docs/reports/P9-WP05-pilot-and-deployment.md
 docs/reports/P9-WP06-commercial-mvp-closeout.md
+docs/reports/P10-WP01-scope-ambiguity.md
 docs/operations/backup-restore/README.md
 docs/operations/pilot-and-deployment/README.md
 docs/reports/phase-02-extraction-closeout.md

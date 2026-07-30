@@ -14,4 +14,4 @@
 | 7 | Offline Synchronization | **Complete with documented risks** | [Open](phase-07-offline-sync.md) |
 | 8 | Basic Store | **Complete with documented risks** | [Open](phase-08-basic-store.md) |
 | 9 | MVP Hardening and Release | **Complete with documented risks** | [Open](phase-09-mvp-hardening.md) |
-| 10 | Full POS | Future | [Open](phase-10-full-pos.md) |
+| 10 | Full POS | **Authorized — P10-WP01 scope pending** | [Open](phase-10-full-pos.md) |
