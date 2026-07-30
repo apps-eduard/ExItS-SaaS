@@ -69,6 +69,14 @@ Production guards reject Development/Testing org/actor/commercial bypass headers
 
 **Next:** **P9-WP02 — Performance and Reliability** when approved.
 
+## R3.8 — Performance and reliability (Phase 9 / P9-WP02)
+
+**P9-WP02 complete with documented risks.** See [P9-WP02 report](reports/P9-WP02-performance-and-reliability.md).
+
+Liveness/readiness health; reporting N+1 batching; justified performance indexes; sale/expense client idempotency headers; BlockedByAccess reclaim; CI scaled latency smoke. **Not production-ready** (R-091, R-109, R-129; full MVP load not claimed).
+
+**Next:** **P9-WP03 — Backup and Restore** when approved.
+
 ## R4 — Commercial MVP
 
 Offline synchronization, Basic Store and production hardening.

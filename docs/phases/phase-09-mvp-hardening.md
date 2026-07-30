@@ -4,7 +4,7 @@
 
 ## Status
 
-**In Progress** — P9-WP01 complete with documented risks. Phase 8 accepted complete at `4a9ed5c4ac5ccaa7d96f04bfc68b9950b0ab1c79`. Do **not** begin P9-WP02 until explicitly authorized. **Not production-ready.**
+**In Progress** — P9-WP01 and P9-WP02 complete with documented risks. Do **not** begin P9-WP03 until explicitly authorized. **Not production-ready.**
 
 ## Objective
 
@@ -64,26 +64,53 @@ Existing Development/Testing identity, commercial, actor, feature-grant, and org
 
 ### P9-WP02 — Performance and Reliability
 
-Status: Not Started (do not begin until authorized)
+Status: **Complete** with documented risks
 
-#### Required outcomes
+Report: [P9-WP02-performance-and-reliability.md](../reports/P9-WP02-performance-and-reliability.md)
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+Feature commit: 46a4ac7bacfad0736fba4741817958862fadf9e2
+
+Phase marker: `P9-WP02-performance-and-reliability`
+
+#### Approved scope (clarified)
+
+Harden Platform and PinoyBusinessPOS for predictable MVP-scale performance, resilience, recovery, and operational reliability. **No new business features.** Preserve all P9-WP01 security controls.
+
+Deliver:
+
+- Performance baselines and provisional budgets (not business SLAs unless documented otherwise)
+- Database/query optimization (justified indexes only; no speculative indexing)
+- API reliability controls (timeouts, cancellation, bounded retries where idempotent)
+- Concurrency and transaction hardening (financial/stock invariants)
+- Offline-sync reliability review (bounded processing; no silent discard)
+- Health/readiness checks (liveness vs readiness; no secrets)
+- Graceful failure behavior and failure-scenario matrix
+- Load/soak evidence at representative or documented-scaled volumes
+- Reliability risks and release blockers
+- Observability: safe duration/outcome metrics without secrets/PHI/high-cardinality payloads
+
+#### Explicit exclusions
+
+- New business features; HealthCare changes
+- Caching that exposes cross-org data or presents stale financial state as authoritative
+- Redis/distributed cache without measured justification and roadmap approval
+- Weakening authorization, org isolation, immutability, idempotency, or fail-closed behavior
+- Automatic destructive offline cleanup
+- P9-WP03 or later
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (915 / 0 / 0; baseline 900).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created (`docs/reports/P9-WP02-performance-and-reliability.md`).
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean.
+- [x] Exact next WP recorded: **P9-WP03 — Backup and Restore** (do not begin).
 
 ### P9-WP03 — Backup and Restore
 
-Status: Not Started
+Status: Not Started (do not begin until authorized)
 
 #### Required outcomes
 

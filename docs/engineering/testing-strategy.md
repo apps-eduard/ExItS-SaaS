@@ -53,7 +53,8 @@
 - Expenses (P8-WP05) ? categories; immutable Cash/ManualGCash entries; void; derived summaries; `store-expenses-*`; migration `AddPosExpenses`; online-only
 - Dashboard/Reports (P8-WP06) ? period KPIs; sales/utang/inventory/expense reports; max 366-day span; continuity grants; no P&L/offline caches
 - Basic Store closeout (P8-WP07) ? consolidated `store-*` capability matrix; Phase 8 migration-chain apply/rollback/re-apply; deferred-scope architecture guards; full suite 882 / 0 / 0
-- Security hardening (P9-WP01) ? Production header/route guards; startup fail-closed; CORS; rate limits; safe ProblemDetails; secret-pattern architecture tests; full suite 900 / 0 / 0
+- Security hardening (P9-WP01) ? Production header/route guards; startup fail-closed; CORS; rate limits; safe ProblemDetails; secret-pattern architecture tests
+- Performance/reliability (P9-WP02) ? `/health` vs `/health/ready`; reporting batch queries; performance indexes migrate; offline BlockedByAccess reclaim; scaled CI latency smoke; full suite 915 / 0 / 0
 - Tenant isolation
 - Subscription feature enforcement (P6-WP05 matrix + grants; P8-WP01?P8-WP07 store grants)
 - Offline queue and idempotency *(Phase 7)*
@@ -85,5 +86,6 @@
 - **P8-WP06:** dashboard/report period KPIs; 366-day span; continuity grants; no P&L/export/offline caches
 - **P8-WP07:** consolidated store capability matrix; Phase 8 migration chain; deferred-scope architecture guards
 - **P9-WP01:** Production header/route guards; startup fail-closed; CORS/rate-limit/HTTPS pipeline source guards; empty base connection strings
+- **P9-WP02:** Liveness/readiness; performance index migration; reporting N+1 guards; sale idempotency headers; offline reclaim; provisional budget smoke
 
 All reports use exact command output; totals are never estimated.

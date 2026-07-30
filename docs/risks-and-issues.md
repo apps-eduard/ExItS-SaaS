@@ -135,9 +135,13 @@
 | R-129 | Transitive SQLitePCLRaw NU1903 advisory on Microsoft.Data.Sqlite 10.0.4 | Medium | Track package upgrade when Microsoft ships fixed transitive; P7-WP03 mitigated by row-level AES-GCM instead of SQLCipher; advisory remains open on Microsoft.Data.Sqlite transitive | Open — introduced P7-WP01; WP03 avoided SQLCipher |
 
 
+## Phase 9 note (P9-WP02)
+
+P9-WP02 added liveness vs readiness (`/health`, `/health/ready`), reporting batch queries, justified POS indexes (`AddPosPerformanceIndexes`), sale/expense idempotency client headers, expense attempt-id retention on ambiguous failures, and offline `BlockedByAccess` reclaim. CI scaled warm-path latency smoke is provisional only. R-091 / R-109 / R-129 remain open. **Not production-ready.** Next: **P9-WP03 — Backup and Restore** when authorized.
+
 ## Phase 9 note (P9-WP01)
 
-P9-WP01 hardened Platform and POS Production guards: Development/Testing headers and `/dev` probes unavailable outside approved environments; Production startup fails on missing secure configuration, known-dev DB password, or `AllowedHosts=*`; CORS deny-by-default; partitioned rate limiting; safe exception ProblemDetails; security headers; HTTPS when `Security:EnforceHttps`. Base appsettings no longer embed the development DB password. R-091 / R-109 / R-129 remain open. **Not production-ready.** Next: **P9-WP02 — Performance and Reliability** when authorized.
+P9-WP01 hardened Platform and POS Production guards: Development/Testing headers and `/dev` probes unavailable outside approved environments; Production startup fails on missing secure configuration, known-dev DB password, or `AllowedHosts=*`; CORS deny-by-default; partitioned rate limiting; safe exception ProblemDetails; security headers; HTTPS when `Security:EnforceHttps`. Base appsettings no longer embed the development DB password. R-091 / R-109 / R-129 remain open. **Not production-ready.**
 
 ## Phase 8 note (P8-WP07)
 

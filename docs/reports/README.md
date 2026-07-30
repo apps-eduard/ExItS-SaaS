@@ -65,3 +65,4 @@ The dashboard links to the latest accepted report.
 | [P8-WP06-dashboard-and-reports.md](P8-WP06-dashboard-and-reports.md) | Dashboard and Reports | Complete with documented risks |
 | [P8-WP07-basic-store-closeout.md](P8-WP07-basic-store-closeout.md) | Basic Store Closeout | Complete with documented risks (Phase 8 closed) |
 | [P9-WP01-security-and-privacy-hardening.md](P9-WP01-security-and-privacy-hardening.md) | Security and Privacy Hardening | Complete with documented risks |
+| [P9-WP02-performance-and-reliability.md](P9-WP02-performance-and-reliability.md) | Performance and Reliability | Complete with documented risks |

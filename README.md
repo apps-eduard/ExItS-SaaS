@@ -42,7 +42,7 @@ ExItS-SaaS/
 
 **Phase 8** is **complete** with documented risks ([P8-WP07 closeout](docs/reports/P8-WP07-basic-store-closeout.md)). Online-only Basic Store MVP is closed.
 
-**Phase 9** is **in progress** — P9-WP01 Security and Privacy Hardening **complete** with documented risks ([P9-WP01](docs/reports/P9-WP01-security-and-privacy-hardening.md)). **Not production-ready** while R-091, R-109, R-129, Production HTTPS/MAUI cleartext replacement, and related blockers remain open.
+**Phase 9** is **in progress** — P9-WP01 Security and Privacy Hardening and P9-WP02 Performance and Reliability are **complete** with documented risks ([P9-WP01](docs/reports/P9-WP01-security-and-privacy-hardening.md), [P9-WP02](docs/reports/P9-WP02-performance-and-reliability.md)). **Not production-ready** while R-091, R-109, R-129, Production HTTPS/MAUI cleartext replacement, and related blockers remain open. Next authorized WP: **P9-WP03 — Backup and Restore** (do not begin until authorized).
 
 Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`. HealthCare remains frozen. Next: **P9-WP02 — Performance and Reliability** when authorized.
 

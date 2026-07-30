@@ -2,7 +2,7 @@
 
 > Primary status page. Cursor must update this file after every completed work package. Percentages are calculated from approved work packages, never estimated.
 
-[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P9-WP01 report](reports/P9-WP01-security-and-privacy-hardening.md)
+[Documentation Home](index.md) | [Approved architecture](engineering/approved-architecture-summary.md) | [P9-WP02 report](reports/P9-WP02-performance-and-reliability.md)
 
 ## Current status
 
@@ -12,20 +12,20 @@
 | Existing product | HealthCare SaaS MVP (ignored nested `HealthCare/`) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 9 — MVP Hardening and Release (**In Progress**) |
-| Current work package | P9-WP01 — Security and Privacy Hardening (**Complete** with documented risks) |
-| Overall status | **Phase 9 in progress** — security/privacy hardening complete with documented risks; not production-ready; next P9-WP02 when authorized |
-| Latest verified commit | de4fac64739f5b368a6b1f2490223fa032201b65 |
-| Open blockers | Missing production auth (JWT/MFA/SSO/AD) (R-091); R-022 refresh durations / no offline entitlement grace; R-035 calendar EOM; no payment gateway; no interactive Android emulator (R-109); Production HTTPS/MAUI cleartext replacement gate; SQLitePCLRaw NU1903 (R-129); catalog/sales/inventory/expenses/reports online-only by design; report export deferred; no POS operational roles |
+| Current work package | P9-WP02 — Performance and Reliability (**Complete** with documented risks) |
+| Overall status | **Phase 9 in progress** — P9-WP01/P9-WP02 complete with documented risks; not production-ready; next P9-WP03 when authorized |
+| Latest verified commit | 46a4ac7bacfad0736fba4741817958862fadf9e2 |
+| Open blockers | Missing production auth (JWT/MFA/SSO/AD) (R-091); R-022 refresh durations / no offline entitlement grace; R-035 calendar EOM; no payment gateway; no interactive Android emulator (R-109); Production HTTPS/MAUI cleartext replacement gate; SQLitePCLRaw NU1903 (R-129); catalog/sales/inventory/expenses/reports online-only by design; report export deferred; no POS operational roles; full MVP-scale load/soak not proven in CI |
 | Last updated | 2026-07-31 |
 
 ## Delivery sequence
 
 ```text
-P8-WP07 ✓ Basic Store Closeout (Phase 8 closed)
-        ↓
 P9-WP01 ✓ Security and Privacy Hardening (complete with risks)
         ↓
-P9-WP02 ○ Performance and Reliability (not started — do not begin until authorized)
+P9-WP02 ✓ Performance and Reliability (complete with risks)
+        ↓
+P9-WP03 ○ Backup and Restore (not started — do not begin until authorized)
 ```
 
 ## Phase progress
@@ -41,17 +41,17 @@ P9-WP02 ○ Performance and Reliability (not started — do not begin until auth
 | 6 | Utang MVP | **Complete with documented risks** | 6 | 6 | 100% | [Open](phases/phase-06-utang-mvp.md) |
 | 7 | Offline Synchronization | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-07-offline-sync.md) |
 | 8 | Basic Store | **Complete with documented risks** | 7 | 7 | 100% | [Open](phases/phase-08-basic-store.md) |
-| 9 | MVP Hardening and Release | **In Progress** | 1 | 6 | ~17% | [Open](phases/phase-09-mvp-hardening.md) |
+| 9 | MVP Hardening and Release | **In Progress** | 2 | 6 | ~33% | [Open](phases/phase-09-mvp-hardening.md) |
 | 10 | Full POS | Future | 0 | 8 | 0% | [Open](phases/phase-10-full-pos.md) |
 
-**MVP phases 0–9:** 46 / 52 = **88.46%**.
+**MVP phases 0–9:** 47 / 52 = **90.38%**.
 
 ## Phase 9 work packages
 
 | WP | Status | Key commit |
 |---|---|---|
 | P9-WP01 | Complete with risks | de4fac64739f5b368a6b1f2490223fa032201b65 |
-| P9-WP02 | Not Started | — |
+| P9-WP02 | Complete with risks | 46a4ac7bacfad0736fba4741817958862fadf9e2 |
 | P9-WP03 | Not Started | — |
 | P9-WP04 | Not Started | — |
 | P9-WP05 | Not Started | — |
