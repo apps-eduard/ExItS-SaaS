@@ -42,6 +42,12 @@ public sealed partial class FeatureCode : IEquatable<FeatureCode>
     /// <summary>POS Basic Store: record and void expenses and manage expense categories.</summary>
     public const string StoreExpensesManage = "store-expenses-manage";
 
+    /// <summary>POS Basic Store: view the operational dashboard (read-only projections).</summary>
+    public const string StoreDashboardView = "store-dashboard-view";
+
+    /// <summary>POS Basic Store: view operational reports (read-only projections).</summary>
+    public const string StoreReportsView = "store-reports-view";
+
     private static readonly Regex ValidPattern = CreateValidPattern();
 
     public string Value { get; }

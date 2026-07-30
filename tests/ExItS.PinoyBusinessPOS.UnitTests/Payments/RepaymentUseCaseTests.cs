@@ -144,6 +144,12 @@ public sealed class RepaymentUseCaseTests
                 .ThenBy(e => e.Id.Value)
                 .ToList());
 
+        public Task<IReadOnlyList<CreditEntry>> ListRecordedInRangeAsync(
+            PosOrganizationId organizationId,
+            DateOnly fromDateUtc,
+            DateOnly toDateUtc,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult((IReadOnlyList<CreditEntry>)Array.Empty<CreditEntry>());
         public Task<decimal> SumActiveAmountAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
             Task.FromResult(_items.Where(e => e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == CreditEntryStatus.Active).Sum(e => e.Amount));
 
@@ -204,6 +210,13 @@ public sealed class RepaymentUseCaseTests
             var ordered = list.OrderBy(e => e.RecordedAtUtc).ThenBy(e => e.Id).ToList();
             return Task.FromResult(((IReadOnlyList<Repayment>)ordered.Skip(skip).Take(take).ToList(), ordered.Count));
         }
+
+        public Task<IReadOnlyList<Repayment>> ListRecordedInRangeAsync(
+            PosOrganizationId organizationId,
+            DateOnly fromDateUtc,
+            DateOnly toDateUtc,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult((IReadOnlyList<Repayment>)Array.Empty<Repayment>());
 
         public Task<decimal> SumActiveAmountAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
             Task.FromResult(_items.Where(e => e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == RepaymentStatus.Active).Sum(e => e.Amount));

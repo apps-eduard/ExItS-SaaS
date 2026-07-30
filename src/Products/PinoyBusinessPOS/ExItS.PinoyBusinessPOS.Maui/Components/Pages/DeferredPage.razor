@@ -26,6 +26,18 @@
                 <Button Variant="ButtonVariant.Primary" OnClick="GoExpenses">@L["Nav_Expenses"]</Button>
             </Stack>
         </Section>
+        <Section Title="@L["Dashboard_Title"]">
+            <Stack Gap="3">
+                <div class="pos-muted">@L["Dashboard_Subtitle"]</div>
+                <Button Variant="ButtonVariant.Primary" OnClick="GoDashboard">@L["Nav_Dashboard"]</Button>
+            </Stack>
+        </Section>
+        <Section Title="@L["Reports_Title"]">
+            <Stack Gap="3">
+                <div class="pos-muted">@L["Reports_Subtitle"]</div>
+                <Button Variant="ButtonVariant.Primary" OnClick="GoReports">@L["Nav_Reports"]</Button>
+            </Stack>
+        </Section>
     }
 
     <EmptyState IconName="@IconName" Title="@L["Deferred_Title"]" Message="@string.Format(L["Deferred_Message"], FeatureName)">
@@ -64,4 +76,6 @@
     private void GoOverdue() => Nav.NavigateTo("/overdue");
     private void GoInventory() => Nav.NavigateTo("/inventory");
     private void GoExpenses() => Nav.NavigateTo("/expenses");
+    private void GoDashboard() => Nav.NavigateTo("/dashboard");
+    private void GoReports() => Nav.NavigateTo("/reports");
 }

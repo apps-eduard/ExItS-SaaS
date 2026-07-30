@@ -82,6 +82,9 @@ internal static class PosApiResults
             or ApplicationErrorCodes.CategoryNotAssignable
             or ApplicationErrorCodes.ExpenseCategoryNotAssignable => StatusCodes.Status400BadRequest,
 
+        ApplicationErrorCodes.ReportInvalidDateRange
+            or ApplicationErrorCodes.ReportRangeTooLarge => StatusCodes.Status400BadRequest,
+
         ApplicationErrorCodes.CommercialAccessUnknown
             or ApplicationErrorCodes.CommercialCapabilityDenied => StatusCodes.Status403Forbidden,
 

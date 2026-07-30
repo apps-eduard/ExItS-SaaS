@@ -1,0 +1,249 @@
+@page "/dashboard"
+@using ExItS.PinoyBusinessPOS.Application.Commercial
+@using ExItS.PinoyBusinessPOS.Application.Reporting
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosReportingClient Reports
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+<Page>
+    <PageHeader Title="@L["Dashboard_Title"]" Subtitle="@L["Dashboard_Subtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoReports">@L["Nav_Reports"]</Button>
+            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Dashboard_Refresh"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Dashboard_OfflineTitle"]" Message="@L["Dashboard_OfflineMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Dashboard_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Dashboard_FiltersTitle"]">
+        <Stack Gap="3">
+            <DateInput Label="@L["Dashboard_FromDate"]" Value="@_fromDate" ValueChanged="OnFromDateChanged" />
+            <DateInput Label="@L["Dashboard_ToDate"]" Value="@_toDate" ValueChanged="OnToDateChanged" />
+        </Stack>
+    </Section>
+
+    @if (_dashboard is not null)
+    {
+        <Section Title="@L["Dashboard_KpisTitle"]">
+            <Stack Gap="3">
+                <div>
+                    <span class="pos-muted">@L["Dashboard_CompletedSales"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@_dashboard.CompletedSalesTotal" CurrencyCode="PHP" /></div>
+                    <div class="pos-muted">@_dashboard.CompletedSaleCount</div>
+                </div>
+                <div>
+                    <span class="pos-muted">@L["Dashboard_CashSales"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@_dashboard.CashSalesTotal" CurrencyCode="PHP" /></div>
+                </div>
+                <div>
+                    <span class="pos-muted">@L["Dashboard_GCashSales"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@_dashboard.ManualGCashSalesTotal" CurrencyCode="PHP" /></div>
+                </div>
+                <div>
+                    <span class="pos-muted">@L["Dashboard_UtangSales"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@_dashboard.UtangSalesTotal" CurrencyCode="PHP" /></div>
+                </div>
+                <div>
+                    <span class="pos-muted">@L["Dashboard_UtangOutstanding"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@_dashboard.ActiveCustomerUtangOutstanding" CurrencyCode="PHP" /></div>
+                </div>
+                <div>
+                    <span class="pos-muted">@L["Dashboard_OverdueUtang"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@_dashboard.OverdueUtangAmount" CurrencyCode="PHP" /></div>
+                </div>
+                <div>
+                    <span class="pos-muted">@L["Dashboard_Expenses"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@_dashboard.RecordedExpenseTotal" CurrencyCode="PHP" /></div>
+                </div>
+                <div class="pos-row">
+                    <span class="pos-muted">@L["Dashboard_LowStock"]</span>
+                    <span class="pos-value-md">@_dashboard.LowStockProductCount</span>
+                </div>
+                <div class="pos-row">
+                    <span class="pos-muted">@L["Dashboard_VoidedSales"]</span>
+                    <span class="pos-value-md">@_dashboard.VoidedSaleCount</span>
+                </div>
+                <div class="pos-row">
+                    <span class="pos-muted">@L["Dashboard_VoidedExpenses"]</span>
+                    <span class="pos-value-md">@_dashboard.VoidedExpenseCount</span>
+                </div>
+            </Stack>
+        </Section>
+
+        @if (_dashboard.SalesTotalComparison is not null)
+        {
+            <Section Title="@L["Dashboard_ComparisonTitle"]">
+                <Stack Gap="3">
+                    <div>
+                        <span class="pos-muted">@L["Dashboard_SalesChange"]</span>
+                        <div class="pos-value-md">
+                            <MoneyDisplay Amount="@_dashboard.SalesTotalComparison.AbsoluteChange.GetValueOrDefault()" CurrencyCode="PHP" />
+                            @if (_dashboard.SalesTotalComparison.PercentageAvailable)
+                            {
+                                <span class="pos-muted"> (@_dashboard.SalesTotalComparison.PercentageChange!.Value.ToString("0.##")%)</span>
+                            }
+                            else
+                            {
+                                <span class="pos-muted"> (@L["Dashboard_PctNotAvailable"])</span>
+                            }
+                        </div>
+                    </div>
+                    @if (_dashboard.ExpenseTotalComparison is not null)
+                    {
+                        <div>
+                            <span class="pos-muted">@L["Dashboard_ExpenseChange"]</span>
+                            <div class="pos-value-md">
+                                <MoneyDisplay Amount="@_dashboard.ExpenseTotalComparison.AbsoluteChange.GetValueOrDefault()" CurrencyCode="PHP" />
+                                @if (_dashboard.ExpenseTotalComparison.PercentageAvailable)
+                                {
+                                    <span class="pos-muted"> (@_dashboard.ExpenseTotalComparison.PercentageChange!.Value.ToString("0.##")%)</span>
+                                }
+                                else
+                                {
+                                    <span class="pos-muted"> (@L["Dashboard_PctNotAvailable"])</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </Stack>
+            </Section>
+        }
+
+        <Section Title="@L["Dashboard_PaymentBreakdown"]">
+            @if (_dashboard.PaymentMethodBreakdown.Count == 0)
+            {
+                <EmptyState IconName="inbox" Title="@L["Dashboard_EmptyTitle"]" Message="@L["Dashboard_EmptyMessage"]" />
+            }
+            else
+            {
+                <Stack Gap="3">
+                    @foreach (var row in _dashboard.PaymentMethodBreakdown)
+                    {
+                        <div class="pos-row">
+                            <span class="pos-value-md">@row.PaymentMethod</span>
+                            <span class="pos-muted">@row.Count</span>
+                            <MoneyDisplay Amount="@row.Amount" CurrencyCode="PHP" />
+                        </div>
+                    }
+                </Stack>
+            }
+        </Section>
+
+        <Section Title="@L["Dashboard_SalesByDay"]">
+            <Stack Gap="2">
+                @foreach (var row in _dashboard.SalesByDay.Where(i => i.Count > 0 || i.Amount > 0m).Take(14))
+                {
+                    <div class="pos-row">
+                        <span class="pos-muted">@row.Date.ToString("yyyy-MM-dd")</span>
+                        <span class="pos-muted">@row.Count</span>
+                        <MoneyDisplay Amount="@row.Amount" CurrencyCode="PHP" />
+                    </div>
+                }
+            </Stack>
+        </Section>
+
+        <Section Title="@L["Dashboard_ExpensesByDay"]">
+            <Stack Gap="2">
+                @foreach (var row in _dashboard.ExpensesByDay.Where(i => i.Count > 0 || i.Amount > 0m).Take(14))
+                {
+                    <div class="pos-row">
+                        <span class="pos-muted">@row.Date.ToString("yyyy-MM-dd")</span>
+                        <span class="pos-muted">@row.Count</span>
+                        <MoneyDisplay Amount="@row.Amount" CurrencyCode="PHP" />
+                    </div>
+                }
+            </Stack>
+        </Section>
+    }
+    else if (_loading)
+    {
+        <Spinner /><span>@L["Dashboard_Loading"]</span>
+    }
+</Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _loading;
+    private bool _isOffline;
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private DateOnly? _fromDate;
+    private DateOnly? _toDate;
+    private PosDashboardDto? _dashboard;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ViewDashboard))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        _fromDate = today;
+        _toDate = today;
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task OnFromDateChanged(DateOnly? value)
+    {
+        _fromDate = value;
+        await ReloadAsync();
+    }
+
+    private async Task OnToDateChanged(DateOnly? value)
+    {
+        _toDate = value;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        _dashboard = null;
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _loading = false;
+            return;
+        }
+
+        var result = await Reports.GetDashboardAsync(_fromDate, _toDate);
+        if (result.IsSuccess)
+        {
+            _dashboard = result.Data;
+        }
+        else
+        {
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private void GoReports() => Nav.NavigateTo("/reports");
+}

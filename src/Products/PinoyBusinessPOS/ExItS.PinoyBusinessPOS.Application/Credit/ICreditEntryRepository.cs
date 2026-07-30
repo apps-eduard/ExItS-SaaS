@@ -34,6 +34,15 @@ public interface ICreditEntryRepository
         PosOrganizationId organizationId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Credits whose UTC calendar <c>CreatedAtUtc</c> falls in the inclusive range (all statuses).
+    /// </summary>
+    Task<IReadOnlyList<CreditEntry>> ListRecordedInRangeAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        CancellationToken cancellationToken = default);
+
     Task<decimal> SumActiveAmountAsync(
         PosOrganizationId organizationId,
         POSCustomerId customerId,

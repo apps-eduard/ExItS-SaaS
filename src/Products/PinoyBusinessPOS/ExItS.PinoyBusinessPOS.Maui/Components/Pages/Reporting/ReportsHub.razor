@@ -1,0 +1,41 @@
+@page "/reports"
+@using ExItS.PinoyBusinessPOS.Application.Commercial
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Reports_Title"]" Subtitle="@L["Reports_Subtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoDashboard">@L["Nav_Dashboard"]</Button>
+        </Actions>
+    </PageHeader>
+
+    <Section Title="@L["Reports_MenuTitle"]">
+        <Stack Gap="3">
+            <Button Variant="ButtonVariant.Primary" OnClick="GoSales">@L["Reports_Sales"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick="GoUtang">@L["Reports_Utang"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick="GoInventory">@L["Reports_Inventory"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick="GoExpenses">@L["Reports_Expenses"]</Button>
+        </Stack>
+    </Section>
+
+    <Alert Tone="AlertTone.Info" Title="@L["Reports_ExportDeferredTitle"]" Message="@L["Reports_ExportDeferredMessage"]" />
+</Page>
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ViewReports))
+        {
+            Nav.NavigateTo("/home", replace: true);
+        }
+    }
+
+    private void GoDashboard() => Nav.NavigateTo("/dashboard");
+    private void GoSales() => Nav.NavigateTo("/reports/sales");
+    private void GoUtang() => Nav.NavigateTo("/reports/utang");
+    private void GoInventory() => Nav.NavigateTo("/reports/inventory");
+    private void GoExpenses() => Nav.NavigateTo("/reports/expenses");
+}

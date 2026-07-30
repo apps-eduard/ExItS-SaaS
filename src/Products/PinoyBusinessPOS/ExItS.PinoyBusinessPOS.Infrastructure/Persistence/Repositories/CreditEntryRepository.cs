@@ -108,6 +108,29 @@ internal sealed class CreditEntryRepository : ICreditEntryRepository
         return records.Select(CreditEntryEntityMapper.ToDomain).ToList();
     }
 
+    public async Task<IReadOnlyList<CreditEntry>> ListRecordedInRangeAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        CancellationToken cancellationToken = default)
+    {
+        var from = new DateTimeOffset(fromDateUtc.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var exclusiveTo = new DateTimeOffset(
+            toDateUtc.AddDays(1).ToDateTime(TimeOnly.MinValue),
+            TimeSpan.Zero);
+
+        var records = await _db.CreditEntries.AsNoTracking()
+            .Where(e => e.OrganizationId == organizationId.Value
+                        && e.CreatedAtUtc >= from
+                        && e.CreatedAtUtc < exclusiveTo)
+            .OrderBy(e => e.CreatedAtUtc)
+            .ThenBy(e => e.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return records.Select(CreditEntryEntityMapper.ToDomain).ToList();
+    }
+
     public async Task<decimal> SumActiveAmountAsync(
         PosOrganizationId organizationId,
         POSCustomerId customerId,

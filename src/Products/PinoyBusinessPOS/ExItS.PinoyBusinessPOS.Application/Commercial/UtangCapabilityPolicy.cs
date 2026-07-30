@@ -15,6 +15,8 @@ public static class PosFeatureCodes
     public const string StoreInventoryManage = "store-inventory-manage";
     public const string StoreExpensesView = "store-expenses-view";
     public const string StoreExpensesManage = "store-expenses-manage";
+    public const string StoreDashboardView = "store-dashboard-view";
+    public const string StoreReportsView = "store-reports-view";
 }
 
 /// <summary>Subscription status names mirrored from Platform (string-stable for headers/session).</summary>
@@ -51,7 +53,9 @@ public enum UtangCapability
     ViewInventory = 16,
     ManageInventory = 17,
     ViewExpenses = 18,
-    ManageExpenses = 19
+    ManageExpenses = 19,
+    ViewDashboard = 20,
+    ViewReports = 21
 }
 
 /// <summary>
@@ -154,6 +158,13 @@ public static class UtangCapabilityPolicy
                 IsFullCommercialState(status)
                 && HasFeature(grants, PosFeatureCodes.StoreExpensesManage),
 
+            // Continuity/read: available in PastDue/Cancelled/Expired when granted (not Suspended).
+            UtangCapability.ViewDashboard =>
+                CanEnter(status, grants) && HasFeature(grants, PosFeatureCodes.StoreDashboardView),
+
+            UtangCapability.ViewReports =>
+                CanEnter(status, grants) && HasFeature(grants, PosFeatureCodes.StoreReportsView),
+
             _ => false
         };
     }
@@ -182,7 +193,9 @@ public static class UtangCapabilityPolicy
                 || HasFeature(grants, PosFeatureCodes.StoreCatalogManage)
                 || HasFeature(grants, PosFeatureCodes.StoreSalesView)
                 || HasFeature(grants, PosFeatureCodes.StoreInventoryView)
-                || HasFeature(grants, PosFeatureCodes.StoreExpensesView),
+                || HasFeature(grants, PosFeatureCodes.StoreExpensesView)
+                || HasFeature(grants, PosFeatureCodes.StoreDashboardView)
+                || HasFeature(grants, PosFeatureCodes.StoreReportsView),
             _ => false
         };
     }
@@ -200,7 +213,9 @@ public static class UtangCapabilityPolicy
         PosFeatureCodes.StoreInventoryView,
         PosFeatureCodes.StoreInventoryManage,
         PosFeatureCodes.StoreExpensesView,
-        PosFeatureCodes.StoreExpensesManage
+        PosFeatureCodes.StoreExpensesManage,
+        PosFeatureCodes.StoreDashboardView,
+        PosFeatureCodes.StoreReportsView
     ];
 
     private static string Normalize(string? subscriptionStatus) =>

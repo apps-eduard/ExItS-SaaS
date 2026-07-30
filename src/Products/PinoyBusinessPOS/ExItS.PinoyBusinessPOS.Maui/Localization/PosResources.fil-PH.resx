@@ -928,4 +928,67 @@
   <data name="Expenses_Category_ReactivatedSuccess" xml:space="preserve"><value>Na-reactivate ang kategorya.</value></data>
   <data name="Expenses_CategoryStatus_Active" xml:space="preserve"><value>Active</value></data>
   <data name="Expenses_CategoryStatus_Inactive" xml:space="preserve"><value>Inactive</value></data>
+  <data name="Nav_Dashboard" xml:space="preserve"><value>Dashboard</value></data>
+  <data name="Nav_Reports" xml:space="preserve"><value>Reports</value></data>
+  <data name="Dashboard_Title" xml:space="preserve"><value>Dashboard</value></data>
+  <data name="Dashboard_Subtitle" xml:space="preserve"><value>Operational totals for the selected period</value></data>
+  <data name="Dashboard_Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Dashboard_OfflineTitle" xml:space="preserve"><value>Reconnect required</value></data>
+  <data name="Dashboard_OfflineMessage" xml:space="preserve"><value>Dashboard and reports need a live connection. Stale totals are not shown as authoritative.</value></data>
+  <data name="Dashboard_ErrorTitle" xml:space="preserve"><value>Could not load</value></data>
+  <data name="Dashboard_ErrorMessage" xml:space="preserve"><value>The report request failed.</value></data>
+  <data name="Dashboard_FiltersTitle" xml:space="preserve"><value>Period</value></data>
+  <data name="Dashboard_FromDate" xml:space="preserve"><value>From</value></data>
+  <data name="Dashboard_ToDate" xml:space="preserve"><value>To</value></data>
+  <data name="Dashboard_KpisTitle" xml:space="preserve"><value>Key figures</value></data>
+  <data name="Dashboard_CompletedSales" xml:space="preserve"><value>Completed sales</value></data>
+  <data name="Dashboard_CashSales" xml:space="preserve"><value>Cash sales</value></data>
+  <data name="Dashboard_GCashSales" xml:space="preserve"><value>Manual GCash sales</value></data>
+  <data name="Dashboard_UtangSales" xml:space="preserve"><value>Product-Based Utang sales</value></data>
+  <data name="Dashboard_UtangOutstanding" xml:space="preserve"><value>Active Utang outstanding</value></data>
+  <data name="Dashboard_OverdueUtang" xml:space="preserve"><value>Overdue Utang</value></data>
+  <data name="Dashboard_Expenses" xml:space="preserve"><value>Recorded expenses</value></data>
+  <data name="Dashboard_LowStock" xml:space="preserve"><value>Low-stock products</value></data>
+  <data name="Dashboard_VoidedSales" xml:space="preserve"><value>Voided sales</value></data>
+  <data name="Dashboard_VoidedExpenses" xml:space="preserve"><value>Voided expenses</value></data>
+  <data name="Dashboard_ComparisonTitle" xml:space="preserve"><value>Versus prior period</value></data>
+  <data name="Dashboard_SalesChange" xml:space="preserve"><value>Sales change</value></data>
+  <data name="Dashboard_ExpenseChange" xml:space="preserve"><value>Expense change</value></data>
+  <data name="Dashboard_PctNotAvailable" xml:space="preserve"><value>Not available</value></data>
+  <data name="Dashboard_PaymentBreakdown" xml:space="preserve"><value>Payment methods</value></data>
+  <data name="Dashboard_SalesByDay" xml:space="preserve"><value>Sales by day</value></data>
+  <data name="Dashboard_ExpensesByDay" xml:space="preserve"><value>Expenses by day</value></data>
+  <data name="Dashboard_EmptyTitle" xml:space="preserve"><value>No activity</value></data>
+  <data name="Dashboard_EmptyMessage" xml:space="preserve"><value>No completed activity in this period.</value></data>
+  <data name="Dashboard_Loading" xml:space="preserve"><value>Loading...</value></data>
+  <data name="Reports_Title" xml:space="preserve"><value>Reports</value></data>
+  <data name="Reports_Subtitle" xml:space="preserve"><value>Read-only operational reports</value></data>
+  <data name="Reports_MenuTitle" xml:space="preserve"><value>Choose a report</value></data>
+  <data name="Reports_Sales" xml:space="preserve"><value>Sales</value></data>
+  <data name="Reports_Utang" xml:space="preserve"><value>Utang</value></data>
+  <data name="Reports_Inventory" xml:space="preserve"><value>Inventory</value></data>
+  <data name="Reports_Expenses" xml:space="preserve"><value>Expenses</value></data>
+  <data name="Reports_Back" xml:space="preserve"><value>All reports</value></data>
+  <data name="Reports_SalesSubtitle" xml:space="preserve"><value>Completed versus voided sales from immutable snapshots</value></data>
+  <data name="Reports_UtangSubtitle" xml:space="preserve"><value>Outstanding, overdue, and period credits/repayments</value></data>
+  <data name="Reports_InventorySubtitle" xml:space="preserve"><value>On-hand, low stock, and movement totals</value></data>
+  <data name="Reports_ExpensesSubtitle" xml:space="preserve"><value>Active and voided store expenses</value></data>
+  <data name="Reports_SummaryTitle" xml:space="preserve"><value>Summary</value></data>
+  <data name="Reports_VoidedSales" xml:space="preserve"><value>Voided sales</value></data>
+  <data name="Reports_TopProductsAmount" xml:space="preserve"><value>Top products by amount</value></data>
+  <data name="Reports_ByCategory" xml:space="preserve"><value>By category</value></data>
+  <data name="Reports_CreditsInPeriod" xml:space="preserve"><value>Credits in period</value></data>
+  <data name="Reports_RepaymentsInPeriod" xml:space="preserve"><value>Repayments in period</value></data>
+  <data name="Reports_ProductUtangSales" xml:space="preserve"><value>Product-Based Utang sales</value></data>
+  <data name="Reports_CustomersWithBalances" xml:space="preserve"><value>Customers with balances</value></data>
+  <data name="Reports_CustomersOverdue" xml:space="preserve"><value>Customers with overdue</value></data>
+  <data name="Reports_TrackedCount" xml:space="preserve"><value>Tracked products</value></data>
+  <data name="Reports_OutOfStock" xml:space="preserve"><value>Out of stock</value></data>
+  <data name="Reports_MovementsByType" xml:space="preserve"><value>Movements by type</value></data>
+  <data name="Reports_LowStockList" xml:space="preserve"><value>Low-stock list</value></data>
+  <data name="Reports_ActiveExpenses" xml:space="preserve"><value>Active expenses</value></data>
+  <data name="Reports_VoidedExpenses" xml:space="preserve"><value>Voided expenses</value></data>
+  <data name="Reports_ExpenseDetails" xml:space="preserve"><value>Expense details</value></data>
+  <data name="Reports_ExportDeferredTitle" xml:space="preserve"><value>File export deferred</value></data>
+  <data name="Reports_ExportDeferredMessage" xml:space="preserve"><value>Report contracts are export-ready. CSV/PDF/Excel file generation is not included in this work package.</value></data>
 </root>

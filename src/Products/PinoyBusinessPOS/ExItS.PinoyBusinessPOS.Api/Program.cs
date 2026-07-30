@@ -6,6 +6,7 @@ using ExItS.PinoyBusinessPOS.Api.Expenses;
 using ExItS.PinoyBusinessPOS.Api.Inventory;
 using ExItS.PinoyBusinessPOS.Api.Offline;
 using ExItS.PinoyBusinessPOS.Api.Payments;
+using ExItS.PinoyBusinessPOS.Api.Reporting;
 using ExItS.PinoyBusinessPOS.Api.Sales;
 using ExItS.PinoyBusinessPOS.Api.Statements;
 using ExItS.PinoyBusinessPOS.Application.Catalog;
@@ -69,6 +70,11 @@ builder.Services.AddScoped<ExpenseQueryService>();
 builder.Services.AddScoped<RecordExpense>();
 builder.Services.AddScoped<VoidExpense>();
 builder.Services.AddScoped<ExpenseSummaryService>();
+builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.DashboardQueryService>();
+builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.SalesReportService>();
+builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.UtangReportService>();
+builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.InventoryReportService>();
+builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.ExpensesReportService>();
 
 var app = builder.Build();
 
@@ -85,9 +91,10 @@ app.MapCatalogEndpoints();
 app.MapSaleEndpoints();
 app.MapInventoryEndpoints();
 app.MapExpenseEndpoints();
+app.MapReportingEndpoints();
 app.MapDevOfflineProbeEndpoints();
 
-// Phase marker: P8-WP05-expenses
+// Phase marker: P8-WP06-dashboard-and-reports
 
 app.Run();
 

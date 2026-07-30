@@ -152,6 +152,12 @@ public sealed class CreditEntryUseCaseTests
                 .ThenBy(e => e.Id.Value)
                 .ToList());
 
+        public Task<IReadOnlyList<CreditEntry>> ListRecordedInRangeAsync(
+            PosOrganizationId organizationId,
+            DateOnly fromDateUtc,
+            DateOnly toDateUtc,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult((IReadOnlyList<CreditEntry>)Array.Empty<CreditEntry>());
         public Task<decimal> SumActiveAmountAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
@@ -214,6 +220,13 @@ public sealed class CreditEntryUseCaseTests
             int take,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(((IReadOnlyList<Repayment>)Array.Empty<Repayment>(), 0));
+
+        public Task<IReadOnlyList<Repayment>> ListRecordedInRangeAsync(
+            PosOrganizationId organizationId,
+            DateOnly fromDateUtc,
+            DateOnly toDateUtc,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult((IReadOnlyList<Repayment>)Array.Empty<Repayment>());
 
         public Task<decimal> SumActiveAmountAsync(
             PosOrganizationId organizationId,

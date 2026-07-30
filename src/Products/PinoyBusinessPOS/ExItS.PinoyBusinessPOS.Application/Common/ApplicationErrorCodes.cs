@@ -42,6 +42,9 @@ public static class ApplicationErrorCodes
     public const string ExpenseNotFound = "pos.expense.not_found";
     public const string ExpenseNumberConflict = "pos.expense.number.conflict";
     public const string ExpenseConcurrencyConflict = "pos.expense.concurrency_conflict";
+
+    public const string ReportInvalidDateRange = "pos.report.invalid_date_range";
+    public const string ReportRangeTooLarge = "pos.report.range_too_large";
 }
 
 public sealed class PersistenceConflictException : Exception

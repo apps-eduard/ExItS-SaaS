@@ -31,6 +31,20 @@ public interface ISaleRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Loads all organization sales (with lines) whose UTC calendar <c>RecordedAtUtc</c> falls in the
+    /// inclusive range. Callers must enforce <see cref="Reporting.PosReportOptions.MaxInclusiveDaySpan"/>.
+    /// </summary>
+    Task<IReadOnlyList<Sale>> ListForReportAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        SaleStatus? status = null,
+        SalePaymentMethod? paymentMethod = null,
+        Guid? productId = null,
+        Guid? customerId = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Reserves the next organization- and business-date-scoped sale number, builds the sale through
     /// <paramref name="createSale"/>, optionally runs <paramref name="afterSaleCreated"/> (e.g. to
     /// attach a Product-Based Utang credit) before a single SaveChanges, then persists everything in

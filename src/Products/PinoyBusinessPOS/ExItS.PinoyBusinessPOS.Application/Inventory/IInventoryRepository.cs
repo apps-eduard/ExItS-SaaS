@@ -31,6 +31,11 @@ public interface IInventoryRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    /// <summary>All inventory accounts for the organization (report projection; MVP-scale).</summary>
+    Task<IReadOnlyList<InventoryAccount>> ListAllAccountsAsync(
+        PosOrganizationId organizationId,
+        CancellationToken cancellationToken = default);
+
     Task AddAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default);
 
     Task UpdateAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default);
@@ -52,6 +57,16 @@ public interface IInventoryRepository
         CatalogProductId productId,
         int skip,
         int take,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Organization-wide stock movements whose UTC calendar <c>RecordedAtUtc</c> falls in the
+    /// inclusive range. Callers must enforce report max span.
+    /// </summary>
+    Task<IReadOnlyList<StockMovement>> ListMovementsForReportAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<StockMovement>> ListSaleDeductionsAsync(

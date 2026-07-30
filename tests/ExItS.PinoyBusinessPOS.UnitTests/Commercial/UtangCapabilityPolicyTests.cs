@@ -281,6 +281,43 @@ public sealed class UtangCapabilityPolicyTests
         Assert.Contains(PosFeatureCodes.StoreExpensesManage, UtangCapabilityPolicy.DefaultDevelopmentGrants);
     }
 
+    private static readonly string[] ReportingGrants =
+    [
+        PosFeatureCodes.StoreDashboardView,
+        PosFeatureCodes.StoreReportsView
+    ];
+
+    [Theory]
+    [InlineData(PosSubscriptionStatuses.Trialing)]
+    [InlineData(PosSubscriptionStatuses.Active)]
+    [InlineData(PosSubscriptionStatuses.GracePeriod)]
+    [InlineData(PosSubscriptionStatuses.PastDue)]
+    [InlineData(PosSubscriptionStatuses.Cancelled)]
+    [InlineData(PosSubscriptionStatuses.Expired)]
+    public void Continuity_and_full_states_allow_dashboard_and_reports_when_granted(string status)
+    {
+        Assert.True(UtangCapabilityPolicy.CanEnter(status, ReportingGrants));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewDashboard, status, ReportingGrants));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewReports, status, ReportingGrants));
+    }
+
+    [Theory]
+    [InlineData(PosSubscriptionStatuses.Suspended)]
+    [InlineData(null)]
+    [InlineData("Unknown")]
+    public void Suspended_missing_or_unknown_deny_dashboard_and_reports(string? status)
+    {
+        Assert.False(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewDashboard, status, ReportingGrants));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewReports, status, ReportingGrants));
+    }
+
+    [Fact]
+    public void Development_grants_include_dashboard_and_report_codes()
+    {
+        Assert.Contains(PosFeatureCodes.StoreDashboardView, UtangCapabilityPolicy.DefaultDevelopmentGrants);
+        Assert.Contains(PosFeatureCodes.StoreReportsView, UtangCapabilityPolicy.DefaultDevelopmentGrants);
+    }
+
     [Fact]
     public void Feature_grants_required_even_in_active()
     {
@@ -308,5 +345,13 @@ public sealed class UtangCapabilityPolicyTests
             UtangCapability.ManageExpenses,
             PosSubscriptionStatuses.Active,
             [PosFeatureCodes.StoreExpensesView]));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.ViewDashboard,
+            PosSubscriptionStatuses.Active,
+            ViewOnly));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.ViewReports,
+            PosSubscriptionStatuses.Active,
+            [PosFeatureCodes.StoreDashboardView]));
     }
 }

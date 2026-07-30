@@ -1,0 +1,135 @@
+@page "/reports/inventory"
+@using ExItS.PinoyBusinessPOS.Application.Commercial
+@using ExItS.PinoyBusinessPOS.Application.Reporting
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosReportingClient Reports
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+<Page>
+    <PageHeader Title="@L["Reports_Inventory"]" Subtitle="@L["Reports_InventorySubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoHub">@L["Reports_Back"]</Button>
+            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Dashboard_Refresh"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Dashboard_OfflineTitle"]" Message="@L["Dashboard_OfflineMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Dashboard_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Dashboard_FiltersTitle"]">
+        <Stack Gap="3">
+            <DateInput Label="@L["Dashboard_FromDate"]" Value="@_fromDate" ValueChanged="OnFromDateChanged" />
+            <DateInput Label="@L["Dashboard_ToDate"]" Value="@_toDate" ValueChanged="OnToDateChanged" />
+        </Stack>
+    </Section>
+
+    @if (_report is not null)
+    {
+        <Section Title="@L["Reports_SummaryTitle"]">
+            <Stack Gap="3">
+                <div class="pos-row"><span class="pos-muted">@L["Reports_TrackedCount"]</span><span class="pos-value-md">@_report.TrackedProductCount</span></div>
+                <div class="pos-row"><span class="pos-muted">@L["Dashboard_LowStock"]</span><span class="pos-value-md">@_report.LowStockProductCount</span></div>
+                <div class="pos-row"><span class="pos-muted">@L["Reports_OutOfStock"]</span><span class="pos-value-md">@_report.OutOfStockProductCount</span></div>
+            </Stack>
+        </Section>
+
+        <Section Title="@L["Reports_MovementsByType"]">
+            <Stack Gap="3">
+                @foreach (var row in _report.MovementsByType)
+                {
+                    <div class="pos-row">
+                        <span class="pos-value-md">@row.MovementType</span>
+                        <span class="pos-muted">@row.Count</span>
+                        <span class="pos-value-md">@row.QuantityTotal</span>
+                    </div>
+                }
+            </Stack>
+        </Section>
+
+        <Section Title="@L["Reports_LowStockList"]">
+            <Stack Gap="3">
+                @foreach (var row in _report.LowStockProducts.Take(50))
+                {
+                    <div class="pos-row" @onclick="() => GoInventory(row.CatalogProductId)">
+                        <span class="pos-value-md">@row.ProductName</span>
+                        <span class="pos-muted">@row.OnHandQuantity</span>
+                    </div>
+                }
+            </Stack>
+        </Section>
+    }
+    else if (_loading)
+    {
+        <Spinner /><span>@L["Dashboard_Loading"]</span>
+    }
+</Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _loading;
+    private bool _isOffline;
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private DateOnly? _fromDate;
+    private DateOnly? _toDate;
+    private PosInventoryReportDto? _report;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ViewReports))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        _fromDate = today;
+        _toDate = today;
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task OnFromDateChanged(DateOnly? value) { _fromDate = value; await ReloadAsync(); }
+    private async Task OnToDateChanged(DateOnly? value) { _toDate = value; await ReloadAsync(); }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        _report = null;
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline) { _loading = false; return; }
+
+        var result = await Reports.GetInventoryReportAsync(_fromDate, _toDate);
+        if (result.IsSuccess) { _report = result.Data; }
+        else
+        {
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+        _loading = false;
+    }
+
+    private void GoHub() => Nav.NavigateTo("/reports");
+    private void GoInventory(Guid productId) => Nav.NavigateTo($"/inventory/{productId:D}");
+}

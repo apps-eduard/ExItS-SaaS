@@ -130,6 +130,73 @@ internal sealed class SaleRepository : ISaleRepository
         return (sales, total);
     }
 
+    public async Task<IReadOnlyList<Sale>> ListForReportAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        SaleStatus? status = null,
+        SalePaymentMethod? paymentMethod = null,
+        Guid? productId = null,
+        Guid? customerId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var from = new DateTimeOffset(fromDateUtc.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var exclusiveTo = new DateTimeOffset(
+            toDateUtc.AddDays(1).ToDateTime(TimeOnly.MinValue),
+            TimeSpan.Zero);
+
+        var query = _db.Sales.AsNoTracking()
+            .Where(s => s.OrganizationId == organizationId.Value
+                        && s.RecordedAtUtc >= from
+                        && s.RecordedAtUtc < exclusiveTo);
+
+        if (status is not null)
+        {
+            var statusName = status.Value.ToString();
+            query = query.Where(s => s.Status == statusName);
+        }
+
+        if (paymentMethod is not null)
+        {
+            var methodCode = SalePaymentMethods.ToCode(paymentMethod.Value);
+            query = query.Where(s => s.PaymentMethod == methodCode);
+        }
+
+        if (customerId is not null)
+        {
+            query = query.Where(s => s.CustomerId == customerId.Value);
+        }
+
+        if (productId is not null)
+        {
+            var saleIdsWithProduct = _db.SaleLines.AsNoTracking()
+                .Where(l => l.OrganizationId == organizationId.Value && l.ProductId == productId.Value)
+                .Select(l => l.SaleId);
+            query = query.Where(s => saleIdsWithProduct.Contains(s.Id));
+        }
+
+        var records = await query
+            .OrderBy(s => s.RecordedAtUtc)
+            .ThenBy(s => s.SaleNumber)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (records.Count == 0)
+        {
+            return [];
+        }
+
+        var lines = await LoadLinesAsync(
+                records.Select(r => r.Id).ToList(),
+                organizationId,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return records
+            .Select(r => SaleEntityMapper.ToDomain(r, lines.TryGetValue(r.Id, out var found) ? found : []))
+            .ToList();
+    }
+
     public async Task<Sale> CheckoutAsync(
         PosOrganizationId organizationId,
         DateOnly businessDateUtc,

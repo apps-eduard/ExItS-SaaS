@@ -148,6 +148,18 @@ internal sealed class InventoryRepository : IInventoryRepository
                 cancellationToken)
             .ConfigureAwait(false);
 
+    public async Task<IReadOnlyList<InventoryAccount>> ListAllAccountsAsync(
+        PosOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await _db.InventoryAccounts.AsNoTracking()
+            .Where(a => a.OrganizationId == organizationId.Value)
+            .OrderBy(a => a.ProductId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(InventoryEntityMapper.ToDomain).ToList();
+    }
+
     public Task AddAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default)
     {
         _db.InventoryAccounts.Add(InventoryEntityMapper.ToRecord(account));
@@ -213,6 +225,29 @@ internal sealed class InventoryRepository : IInventoryRepository
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
         return (records.Select(InventoryEntityMapper.ToDomain).ToList(), total);
+    }
+
+    public async Task<IReadOnlyList<StockMovement>> ListMovementsForReportAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        CancellationToken cancellationToken = default)
+    {
+        var from = new DateTimeOffset(fromDateUtc.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var exclusiveTo = new DateTimeOffset(
+            toDateUtc.AddDays(1).ToDateTime(TimeOnly.MinValue),
+            TimeSpan.Zero);
+
+        var records = await _db.StockMovements.AsNoTracking()
+            .Where(m => m.OrganizationId == organizationId.Value
+                        && m.RecordedAtUtc >= from
+                        && m.RecordedAtUtc < exclusiveTo)
+            .OrderBy(m => m.RecordedAtUtc)
+            .ThenBy(m => m.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return records.Select(InventoryEntityMapper.ToDomain).ToList();
     }
 
     public async Task<IReadOnlyList<StockMovement>> ListSaleDeductionsAsync(
