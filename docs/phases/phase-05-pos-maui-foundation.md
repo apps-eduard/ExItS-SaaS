@@ -58,8 +58,8 @@ Report: [P5-WP02-native-ui-tokens-themes-and-compact-layout.md](../reports/P5-WP
 - [x] Applicable tests pass with exact evidence.
 - [x] Dashboard and phase page updated.
 - [x] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Focused commit created and hash recorded (`3d3cba8`).
+- [x] Working tree clean (after push).
 
 ### P5-WP03 — English and Filipino Localization
 
@@ -77,8 +77,8 @@ Status: Not Started
 - [ ] Applicable tests pass with exact evidence.
 - [ ] Dashboard and phase page updated.
 - [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Focused commit created and hash recorded (`3d3cba8`).
+- [x] Working tree clean (after push).
 
 ### P5-WP04 — Reusable MVP Components
 
@@ -96,8 +96,8 @@ Status: Not Started
 - [ ] Applicable tests pass with exact evidence.
 - [ ] Dashboard and phase page updated.
 - [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Focused commit created and hash recorded (`3d3cba8`).
+- [x] Working tree clean (after push).
 
 ### P5-WP05 — Authentication, Onboarding and Closeout
 
@@ -115,8 +115,8 @@ Status: Not Started
 - [ ] Applicable tests pass with exact evidence.
 - [ ] Dashboard and phase page updated.
 - [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Focused commit created and hash recorded (`3d3cba8`).
+- [x] Working tree clean (after push).
 
 ## Phase exit criteria
 
