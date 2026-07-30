@@ -57,7 +57,7 @@ public sealed class MauiFoundationGuardTests
     }
 
     [Fact]
-    public void Customer_routes_cover_list_create_detail_edit_without_credit_controls()
+    public void Customer_routes_cover_list_create_detail_edit_credit_payment_and_ledger()
     {
         var root = FindRepoRoot();
         var customers = Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
@@ -67,16 +67,21 @@ public sealed class MauiFoundationGuardTests
         Assert.True(File.Exists(Path.Combine(customers, "CustomerDetail.razor")));
         Assert.True(File.Exists(Path.Combine(customers, "CustomerEdit.razor")));
         Assert.True(File.Exists(Path.Combine(customers, "CustomerForm.razor")));
+        Assert.True(File.Exists(Path.Combine(customers, "CreditCreate.razor")));
+        Assert.True(File.Exists(Path.Combine(customers, "RepaymentCreate.razor")));
+        Assert.True(File.Exists(Path.Combine(customers, "RepaymentDetail.razor")));
+        Assert.True(File.Exists(Path.Combine(customers, "CustomerLedger.razor")));
 
         foreach (var file in Directory.EnumerateFiles(customers, "*.razor"))
         {
             var text = File.ReadAllText(file);
-            Assert.DoesNotContain("UtangBalance", text, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("LedgerEntry", text, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("RecordRepayment", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("UtangBalanceField", text, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("RecordSale", text, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("SQLite", text, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("SyncQueue", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("DueDate", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("PrintReceipt", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("PaymentGateway", text, StringComparison.OrdinalIgnoreCase);
         }
 
         var list = File.ReadAllText(Path.Combine(customers, "CustomersList.razor"));
@@ -91,9 +96,18 @@ public sealed class MauiFoundationGuardTests
         Assert.Contains("@page \"/customers/{CustomerId:guid}\"", detail, StringComparison.Ordinal);
         Assert.Contains("Deactivate", detail, StringComparison.Ordinal);
         Assert.Contains("Reactivate", detail, StringComparison.Ordinal);
+        Assert.Contains("GetUtangSummaryAsync", detail, StringComparison.Ordinal);
+        Assert.Contains("GoAddPayment", detail, StringComparison.Ordinal);
+        Assert.Contains("GoLedger", detail, StringComparison.Ordinal);
 
         var edit = File.ReadAllText(Path.Combine(customers, "CustomerEdit.razor"));
         Assert.Contains("@page \"/customers/{CustomerId:guid}/edit\"", edit, StringComparison.Ordinal);
+
+        var ledger = File.ReadAllText(Path.Combine(customers, "CustomerLedger.razor"));
+        Assert.Contains("@page \"/customers/{CustomerId:guid}/ledger\"", ledger, StringComparison.Ordinal);
+
+        var repaymentCreate = File.ReadAllText(Path.Combine(customers, "RepaymentCreate.razor"));
+        Assert.Contains("@page \"/customers/{CustomerId:guid}/repayments/new\"", repaymentCreate, StringComparison.Ordinal);
 
         var en = File.ReadAllText(Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
             "ExItS.PinoyBusinessPOS.Maui", "Localization", "PosResources.resx"));
@@ -101,8 +115,12 @@ public sealed class MauiFoundationGuardTests
             "ExItS.PinoyBusinessPOS.Maui", "Localization", "PosResources.fil-PH.resx"));
         Assert.Contains("Customers_Title", en, StringComparison.Ordinal);
         Assert.Contains("Customers_Title", fil, StringComparison.Ordinal);
-        Assert.Contains("Customers_CreditDeferredMessage", en, StringComparison.Ordinal);
-        Assert.Contains("Customers_CreditDeferredMessage", fil, StringComparison.Ordinal);
+        Assert.Contains("Payment_Record", en, StringComparison.Ordinal);
+        Assert.Contains("Payment_Record", fil, StringComparison.Ordinal);
+        Assert.Contains("Ledger_Title", en, StringComparison.Ordinal);
+        Assert.Contains("Ledger_Title", fil, StringComparison.Ordinal);
+        Assert.Contains("Utang_DeferredMessage", en, StringComparison.Ordinal);
+        Assert.Contains("Utang_DeferredMessage", fil, StringComparison.Ordinal);
     }
 
     [Fact]

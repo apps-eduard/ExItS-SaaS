@@ -30,4 +30,8 @@ public interface IPOSCustomerRepository
 public interface IPosUnitOfWork
 {
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    Task<T> ExecuteInSerializableTransactionAsync<T>(
+        Func<CancellationToken, Task<T>> action,
+        CancellationToken cancellationToken = default);
 }

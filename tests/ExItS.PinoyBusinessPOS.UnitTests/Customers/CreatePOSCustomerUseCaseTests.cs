@@ -43,6 +43,11 @@ public sealed class CreatePOSCustomerUseCaseTests
     private sealed class ImmediateUnitOfWork : IPosUnitOfWork
     {
         public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task<T> ExecuteInSerializableTransactionAsync<T>(
+            Func<CancellationToken, Task<T>> action,
+            CancellationToken cancellationToken = default) =>
+            action(cancellationToken);
     }
 
     private sealed class InMemoryCustomerRepository : IPOSCustomerRepository

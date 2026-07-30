@@ -24,15 +24,21 @@ internal static class PosApiResults
     public static int MapStatusCode(string errorCode) => errorCode switch
     {
         ApplicationErrorCodes.CustomerNotFound
-            or ApplicationErrorCodes.CreditEntryNotFound => StatusCodes.Status404NotFound,
+            or ApplicationErrorCodes.CreditEntryNotFound
+            or ApplicationErrorCodes.RepaymentNotFound => StatusCodes.Status404NotFound,
 
         ApplicationErrorCodes.MobileConflict
             or ApplicationErrorCodes.ConcurrencyConflict
             or DomainErrorCodes.InvalidCustomerStatusTransition
             or DomainErrorCodes.CustomerNotActive
-            or DomainErrorCodes.InvalidCreditEntryStatusTransition => StatusCodes.Status409Conflict,
+            or DomainErrorCodes.InvalidCreditEntryStatusTransition
+            or DomainErrorCodes.InvalidRepaymentStatusTransition
+            or DomainErrorCodes.RepaymentExceedsOutstanding
+            or DomainErrorCodes.RepaymentOutstandingZero
+            or DomainErrorCodes.CreditReversalWouldMakeOutstandingNegative => StatusCodes.Status409Conflict,
 
-        ApplicationErrorCodes.OrganizationRequired => StatusCodes.Status400BadRequest,
+        ApplicationErrorCodes.OrganizationRequired
+            or ApplicationErrorCodes.ActorRequired => StatusCodes.Status400BadRequest,
 
         _ when errorCode.Contains("not_found", StringComparison.OrdinalIgnoreCase) => StatusCodes.Status404NotFound,
         _ when errorCode.Contains("conflict", StringComparison.OrdinalIgnoreCase) => StatusCodes.Status409Conflict,

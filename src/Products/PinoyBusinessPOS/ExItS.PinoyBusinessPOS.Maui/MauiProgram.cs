@@ -14,10 +14,10 @@ namespace ExItS.PinoyBusinessPOS.Maui;
 public static class MauiProgram
 {
     /// <summary>
-    /// Development-stage notice (P6-WP02): authentication uses the approved Development/Testing
+    /// Development-stage notice (P6-WP03): authentication uses the approved Development/Testing
     /// Platform identity mechanism only (<c>X-Dev-Platform-User-Id</c>). Production JWT/MFA/SSO
-    /// authentication is not implemented. Remarks-based credit is available; repayments, sales,
-    /// inventory, and offline sync are not.
+    /// authentication is not implemented. Remarks-based credit, repayments, and unified ledger are
+    /// available; due dates, statements, receipts, sales, inventory, and offline sync are not.
     /// </summary>
     public static MauiApp CreateMauiApp()
     {

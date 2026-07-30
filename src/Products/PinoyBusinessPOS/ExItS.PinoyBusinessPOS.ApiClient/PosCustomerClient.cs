@@ -6,6 +6,7 @@ using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Payments;
 
 namespace ExItS.PinoyBusinessPOS.ApiClient;
 
@@ -95,6 +96,58 @@ public sealed class PosCustomerClient(HttpClient httpClient, IConnectivityServic
         SendAsync<PosCreditEntryDto>(
             HttpMethod.Post,
             $"/api/v1/pos/customers/{customerId:D}/credit-entries/{entryId:D}/reverse",
+            request,
+            ct);
+
+    public Task<ApiResult<PosCustomerUtangSummaryDto>> GetUtangSummaryAsync(Guid customerId, CancellationToken ct = default) =>
+        SendAsync<PosCustomerUtangSummaryDto>(
+            HttpMethod.Get,
+            $"/api/v1/pos/customers/{customerId:D}/utang-summary",
+            null,
+            ct);
+
+    public Task<ApiResult<PosLedgerPagedResult>> ListLedgerAsync(
+        Guid customerId,
+        int page = 1,
+        int pageSize = 50,
+        CancellationToken ct = default) =>
+        SendAsync<PosLedgerPagedResult>(
+            HttpMethod.Get,
+            $"/api/v1/pos/customers/{customerId:D}/ledger?page={page}&pageSize={pageSize}",
+            null,
+            ct);
+
+    public Task<ApiResult<PosRepaymentPagedResult>> ListRepaymentsAsync(
+        Guid customerId,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default) =>
+        SendAsync<PosRepaymentPagedResult>(
+            HttpMethod.Get,
+            $"/api/v1/pos/customers/{customerId:D}/repayments?page={page}&pageSize={pageSize}",
+            null,
+            ct);
+
+    public Task<ApiResult<PosRepaymentDto>> CreateRepaymentAsync(
+        Guid customerId,
+        CreatePosRepaymentRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<PosRepaymentDto>(
+            HttpMethod.Post,
+            $"/api/v1/pos/customers/{customerId:D}/repayments",
+            request,
+            ct);
+
+    public Task<ApiResult<PosRepaymentDto>> GetRepaymentAsync(Guid repaymentId, CancellationToken ct = default) =>
+        SendAsync<PosRepaymentDto>(HttpMethod.Get, $"/api/v1/pos/repayments/{repaymentId:D}", null, ct);
+
+    public Task<ApiResult<PosRepaymentDto>> ReverseRepaymentAsync(
+        Guid repaymentId,
+        ReversePosRepaymentRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<PosRepaymentDto>(
+            HttpMethod.Post,
+            $"/api/v1/pos/repayments/{repaymentId:D}/reverse",
             request,
             ct);
 

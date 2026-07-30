@@ -297,10 +297,54 @@
   <data name="Customers_AddressHint" xml:space="preserve"><value>Opsiyonal na maikling deskripsyon ng lokasyon.</value></data>
   <data name="Customers_NotesHint" xml:space="preserve"><value>Para sa pagkilala lang — hindi credit record.</value></data>
   <data name="Customers_DisplayNameRequired" xml:space="preserve"><value>Kailangan ang display name.</value></data>
-  <data name="Customers_CreditDeferredTitle" xml:space="preserve"><value>Darating pa ang bayad</value></data>
-  <data name="Customers_CreditDeferredMessage" xml:space="preserve"><value>Available na ang remarks-based credit sa customer detail. Hindi pa available ang repayments at ledger allocation sa work package na ito.</value></data>
-  <data name="Customers_RepaymentDeferredTitle" xml:space="preserve"><value>Darating pa ang bayad</value></data>
-  <data name="Customers_RepaymentDeferredMessage" xml:space="preserve"><value>Ang outstanding ay kabuuan ng active credit entries lang. Hindi pa available ang repayments, payment allocation, at ledger journals.</value></data>
+  <data name="Customers_CreditDeferredTitle" xml:space="preserve"><value>Mga susunod na Utang feature</value></data>
+  <data name="Customers_CreditDeferredMessage" xml:space="preserve"><value>Hindi pa available ang due dates, statements, at receipts. Available na ang payments at ledger sa customer detail.</value></data>
+  <data name="Customers_RepaymentDeferredTitle" xml:space="preserve"><value>Mga susunod na Utang feature</value></data>
+  <data name="Customers_RepaymentDeferredMessage" xml:space="preserve"><value>Hindi pa available ang due dates, statements, at receipts. Available na ang payments at ledger sa customer detail.</value></data>
+  <data name="Utang_DeferredTitle" xml:space="preserve"><value>Mga susunod na Utang feature</value></data>
+  <data name="Utang_DeferredMessage" xml:space="preserve"><value>Hindi pa available ang due dates, statements, printable receipts, interest, at credit limits sa work package na ito.</value></data>
+  <data name="Utang_SectionTitle" xml:space="preserve"><value>Utang balance</value></data>
+  <data name="Utang_CreditsTotal" xml:space="preserve"><value>Active credit</value></data>
+  <data name="Utang_PaymentsTotal" xml:space="preserve"><value>Active payments</value></data>
+  <data name="Payment_Record" xml:space="preserve"><value>Magtala ng bayad</value></data>
+  <data name="Payment_AddTitle" xml:space="preserve"><value>Magtala ng repayment</value></data>
+  <data name="Payment_AddSubtitle" xml:space="preserve"><value>Ilagay ang positive payment laban sa outstanding Utang.</value></data>
+  <data name="Payment_OutstandingSection" xml:space="preserve"><value>Kasalukuyang outstanding</value></data>
+  <data name="Payment_EntrySection" xml:space="preserve"><value>Bayad</value></data>
+  <data name="Payment_Field_Amount" xml:space="preserve"><value>Halaga</value></data>
+  <data name="Payment_Field_Remarks" xml:space="preserve"><value>Remarks / reference</value></data>
+  <data name="Payment_AmountHint" xml:space="preserve"><value>Dapat positive at hindi lalampas sa outstanding.</value></data>
+  <data name="Payment_RemarksHint" xml:space="preserve"><value>Opsiyonal na tala o reference para sa bayad na ito.</value></data>
+  <data name="Payment_AmountInvalid" xml:space="preserve"><value>Maglagay ng positive na halaga na may hanggang dalawang decimal.</value></data>
+  <data name="Payment_Overpayment" xml:space="preserve"><value>Hindi maaaring lampasan ng bayad ang kasalukuyang outstanding.</value></data>
+  <data name="Payment_Save" xml:space="preserve"><value>Itala ang bayad</value></data>
+  <data name="Payment_ConfirmTitle" xml:space="preserve"><value>Itala ang bayad na ito?</value></data>
+  <data name="Payment_ConfirmMessage" xml:space="preserve"><value>Idadagdag ang bayad sa immutable Utang ledger at hindi na mae-edit.</value></data>
+  <data name="Payment_ErrorTitle" xml:space="preserve"><value>Hindi natuloy ang payment action</value></data>
+  <data name="Payment_Loading" xml:space="preserve"><value>Nilo-load ang bayad…</value></data>
+  <data name="Payment_NotFoundTitle" xml:space="preserve"><value>Hindi nahanap ang bayad</value></data>
+  <data name="Payment_NotFoundMessage" xml:space="preserve"><value>Hindi available ang repayment na ito para sa napiling organization.</value></data>
+  <data name="Payment_DetailTitle" xml:space="preserve"><value>Detalye ng bayad</value></data>
+  <data name="Payment_DetailSubtitle" xml:space="preserve"><value>Append-only na repayment record</value></data>
+  <data name="Payment_RecordedAt" xml:space="preserve"><value>Naitala</value></data>
+  <data name="Payment_View" xml:space="preserve"><value>Tingnan ang bayad</value></data>
+  <data name="Payment_Reverse" xml:space="preserve"><value>I-reverse ang bayad</value></data>
+  <data name="Payment_ReverseTitle" xml:space="preserve"><value>I-reverse ang bayad na ito?</value></data>
+  <data name="Payment_ReverseMessage" xml:space="preserve"><value>Mananatili ang orihinal na bayad sa history. Tataas ang outstanding ayon sa halaga nito.</value></data>
+  <data name="Payment_ReversedSuccess" xml:space="preserve"><value>Na-reverse ang bayad.</value></data>
+  <data name="Payment_InactiveAllowedTitle" xml:space="preserve"><value>Inactive ang customer</value></data>
+  <data name="Payment_InactiveAllowedMessage" xml:space="preserve"><value>Kailangan active ang customer para sa bagong credit, pero pinapayagan pa rin ang bayad sa existing debt.</value></data>
+  <data name="Ledger_Open" xml:space="preserve"><value>Buksan ang ledger</value></data>
+  <data name="Ledger_Title" xml:space="preserve"><value>Utang ledger</value></data>
+  <data name="Ledger_Subtitle" xml:space="preserve"><value>Chronological na credit at payment history</value></data>
+  <data name="Ledger_HistoryTitle" xml:space="preserve"><value>Kasaysayan ng ledger</value></data>
+  <data name="Ledger_Loading" xml:space="preserve"><value>Nilo-load ang ledger…</value></data>
+  <data name="Ledger_EmptyTitle" xml:space="preserve"><value>Wala pang ledger entry</value></data>
+  <data name="Ledger_EmptyMessage" xml:space="preserve"><value>Lilitaw dito ang credit at payment activity ayon sa oras.</value></data>
+  <data name="Ledger_ErrorTitle" xml:space="preserve"><value>Hindi ma-load ang ledger</value></data>
+  <data name="Ledger_TypeCredit" xml:space="preserve"><value>Credit</value></data>
+  <data name="Ledger_TypePayment" xml:space="preserve"><value>Bayad</value></data>
+  <data name="Ledger_RunningBalance" xml:space="preserve"><value>Running balance</value></data>
   <data name="Credit_SectionTitle" xml:space="preserve"><value>Credit ng customer</value></data>
   <data name="Credit_Outstanding" xml:space="preserve"><value>Outstanding</value></data>
   <data name="Credit_ActiveCount" xml:space="preserve"><value>{0} active</value></data>

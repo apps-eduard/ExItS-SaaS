@@ -17,4 +17,14 @@ public static class DomainErrorCodes
     public const string InvalidCreditRemarks = "pos.credit_entry.remarks.invalid";
     public const string InvalidCreditReversalReason = "pos.credit_entry.reversal_reason.invalid";
     public const string InvalidCreditEntryStatusTransition = "pos.credit_entry.status.invalid_transition";
+    public const string CreditReversalWouldMakeOutstandingNegative = "pos.credit_entry.reversal.outstanding_negative";
+
+    public const string InvalidRepaymentId = "pos.repayment.id.invalid";
+    public const string InvalidRepaymentAmount = "pos.repayment.amount.invalid";
+    public const string InvalidRepaymentRemarks = "pos.repayment.remarks.invalid";
+    public const string InvalidRepaymentReversalReason = "pos.repayment.reversal_reason.invalid";
+    public const string InvalidRepaymentStatusTransition = "pos.repayment.status.invalid_transition";
+    public const string InvalidRepaymentActor = "pos.repayment.actor.invalid";
+    public const string RepaymentExceedsOutstanding = "pos.repayment.exceeds_outstanding";
+    public const string RepaymentOutstandingZero = "pos.repayment.outstanding_zero";
 }

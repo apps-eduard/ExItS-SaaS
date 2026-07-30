@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
@@ -28,8 +29,13 @@ public sealed record CustomerCreditSummaryDto(
 public sealed class CreditEntryQueryService
 {
     private readonly ICreditEntryRepository _entries;
+    private readonly IOutstandingBalanceService _outstanding;
 
-    public CreditEntryQueryService(ICreditEntryRepository entries) => _entries = entries;
+    public CreditEntryQueryService(ICreditEntryRepository entries, IOutstandingBalanceService outstanding)
+    {
+        _entries = entries;
+        _outstanding = outstanding;
+    }
 
     public async Task<CreditEntryDto?> GetByIdAsync(
         Guid organizationId,
@@ -78,7 +84,7 @@ public sealed class CreditEntryQueryService
     {
         var orgId = PosOrganizationId.From(organizationId);
         var custId = POSCustomerId.From(customerId);
-        var outstanding = await _entries.SumActiveAmountAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
+        var outstanding = await _outstanding.GetOutstandingAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
         var activeCount = await _entries.CountActiveAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
         var (_, total) = await _entries.ListByCustomerAsync(orgId, custId, 0, 1, cancellationToken).ConfigureAwait(false);
 
@@ -163,17 +169,20 @@ public sealed class ReverseCreditEntry
 {
     private readonly IPOSCustomerRepository _customers;
     private readonly ICreditEntryRepository _entries;
+    private readonly IOutstandingBalanceService _outstanding;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public ReverseCreditEntry(
         IPOSCustomerRepository customers,
         ICreditEntryRepository entries,
+        IOutstandingBalanceService outstanding,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
         _customers = customers;
         _entries = entries;
+        _outstanding = outstanding;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -208,10 +217,37 @@ public sealed class ReverseCreditEntry
 
         try
         {
-            entry.Reverse(reason, _clock.UtcNow);
-            await _entries.UpdateAsync(entry, cancellationToken).ConfigureAwait(false);
-            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<CreditEntry>.Success(entry);
+            return await _unitOfWork
+                .ExecuteInSerializableTransactionAsync(async ct =>
+                {
+                    // Re-load inside the transaction for a consistent outstanding check.
+                    var current = await _entries
+                        .GetByIdAsync(orgId, custId, CreditEntryId.From(entryId), ct)
+                        .ConfigureAwait(false);
+                    if (current is null)
+                    {
+                        return ApplicationResult<CreditEntry>.Failure(
+                            ApplicationErrorCodes.CreditEntryNotFound,
+                            "Credit entry was not found.");
+                    }
+
+                    if (current.Status == CreditEntryStatus.Active)
+                    {
+                        var outstanding = await _outstanding.GetOutstandingAsync(orgId, custId, ct).ConfigureAwait(false);
+                        if (outstanding - current.Amount < 0m)
+                        {
+                            return ApplicationResult<CreditEntry>.Failure(
+                                DomainErrorCodes.CreditReversalWouldMakeOutstandingNegative,
+                                "Reversing this credit would make outstanding negative because active repayments exceed remaining credits.");
+                        }
+                    }
+
+                    current.Reverse(reason, _clock.UtcNow);
+                    await _entries.UpdateAsync(current, ct).ConfigureAwait(false);
+                    await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
+                    return ApplicationResult<CreditEntry>.Success(current);
+                }, cancellationToken)
+                .ConfigureAwait(false);
         }
         catch (DomainException ex)
         {

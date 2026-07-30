@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Repositories;
 
@@ -128,11 +129,43 @@ internal sealed class PosUnitOfWork : IPosUnitOfWork
         {
             throw new PersistenceConflictException(
                 ApplicationErrorCodes.ConcurrencyConflict,
-                "The customer was modified by another request. Reload and try again.");
+                "The record was modified by another request. Reload and try again.");
         }
         catch (DbUpdateException ex) when (PersistenceExceptionMapper.TryMapUniqueViolation(ex, out var errorCode, out var message))
         {
             throw new PersistenceConflictException(errorCode, message);
         }
+    }
+
+    public async Task<T> ExecuteInSerializableTransactionAsync<T>(
+        Func<CancellationToken, Task<T>> action,
+        CancellationToken cancellationToken = default)
+    {
+        var strategy = _db.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await _db.Database
+                .BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken)
+                .ConfigureAwait(false);
+            try
+            {
+                var result = await action(cancellationToken).ConfigureAwait(false);
+                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+                return result;
+            }
+            catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.SerializationFailure
+                                               || ex.SqlState == PostgresErrorCodes.DeadlockDetected)
+            {
+                await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                throw new PersistenceConflictException(
+                    ApplicationErrorCodes.ConcurrencyConflict,
+                    "Concurrent balance activity changed the available outstanding. Reload and try again.");
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                throw;
+            }
+        }).ConfigureAwait(false);
     }
 }

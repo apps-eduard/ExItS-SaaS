@@ -7,6 +7,7 @@ namespace ExItS.PinoyBusinessPOS.Api.Common;
 public static class PosOrganizationHeaders
 {
     public const string OrganizationHeaderName = "X-Pos-Organization-Id";
+    public const string ActorHeaderName = "X-Dev-Platform-User-Id";
 }
 
 internal static class PosOrganizationScope
@@ -31,6 +32,33 @@ internal static class PosOrganizationScope
             problem = PosApiResults.Problem(
                 DomainErrorCodes.InvalidOrganizationId,
                 "Organization id must be a non-empty GUID.",
+                StatusCodes.Status400BadRequest);
+            return false;
+        }
+
+        return true;
+    }
+
+    public static bool TryGetActorId(HttpRequest request, out Guid actorId, out IResult? problem)
+    {
+        actorId = default;
+        problem = null;
+
+        if (!request.Headers.TryGetValue(PosOrganizationHeaders.ActorHeaderName, out var values)
+            || string.IsNullOrWhiteSpace(values.FirstOrDefault()))
+        {
+            problem = PosApiResults.Problem(
+                ApplicationErrorCodes.ActorRequired,
+                $"Header '{PosOrganizationHeaders.ActorHeaderName}' is required for repayment recording and reversal.",
+                StatusCodes.Status400BadRequest);
+            return false;
+        }
+
+        if (!Guid.TryParse(values.First(), out actorId) || actorId == Guid.Empty)
+        {
+            problem = PosApiResults.Problem(
+                DomainErrorCodes.InvalidRepaymentActor,
+                "Actor id must be a non-empty GUID.",
                 StatusCodes.Status400BadRequest);
             return false;
         }

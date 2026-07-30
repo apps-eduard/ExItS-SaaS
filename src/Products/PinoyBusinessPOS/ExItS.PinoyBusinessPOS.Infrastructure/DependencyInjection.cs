@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Repositories;
@@ -23,6 +24,9 @@ public static class DependencyInjection
 
         services.AddScoped<IPOSCustomerRepository, POSCustomerRepository>();
         services.AddScoped<ICreditEntryRepository, CreditEntryRepository>();
+        services.AddScoped<IRepaymentRepository, RepaymentRepository>();
+        services.AddScoped<IUtangLedgerQuery, UtangLedgerQuery>();
+        services.AddScoped<IOutstandingBalanceService, OutstandingBalanceService>();
         services.AddScoped<IPosUnitOfWork, PosUnitOfWork>();
         services.AddSingleton<IClock, SystemClock>();
 

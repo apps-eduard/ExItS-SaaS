@@ -297,10 +297,54 @@
   <data name="Customers_AddressHint" xml:space="preserve"><value>Optional short location description.</value></data>
   <data name="Customers_NotesHint" xml:space="preserve"><value>General identification only — not a credit record.</value></data>
   <data name="Customers_DisplayNameRequired" xml:space="preserve"><value>Display name is required.</value></data>
-  <data name="Customers_CreditDeferredTitle" xml:space="preserve"><value>Repayments coming later</value></data>
-  <data name="Customers_CreditDeferredMessage" xml:space="preserve"><value>Remarks-based credit is available on the customer detail page. Repayments and ledger allocation are not in this work package.</value></data>
-  <data name="Customers_RepaymentDeferredTitle" xml:space="preserve"><value>Repayments coming later</value></data>
-  <data name="Customers_RepaymentDeferredMessage" xml:space="preserve"><value>Outstanding is the sum of active credit entries only. Repayments, payment allocation, and ledger journals are not available yet.</value></data>
+  <data name="Customers_CreditDeferredTitle" xml:space="preserve"><value>Later Utang features</value></data>
+  <data name="Customers_CreditDeferredMessage" xml:space="preserve"><value>Due dates, statements, and receipts are not available yet. Payments and ledger are on the customer detail page.</value></data>
+  <data name="Customers_RepaymentDeferredTitle" xml:space="preserve"><value>Later Utang features</value></data>
+  <data name="Customers_RepaymentDeferredMessage" xml:space="preserve"><value>Due dates, statements, and receipts are not available yet. Payments and ledger are available on the customer detail page.</value></data>
+  <data name="Utang_DeferredTitle" xml:space="preserve"><value>Later Utang features</value></data>
+  <data name="Utang_DeferredMessage" xml:space="preserve"><value>Due dates, statements, printable receipts, interest, and credit limits are not available in this work package.</value></data>
+  <data name="Utang_SectionTitle" xml:space="preserve"><value>Utang balance</value></data>
+  <data name="Utang_CreditsTotal" xml:space="preserve"><value>Active credit</value></data>
+  <data name="Utang_PaymentsTotal" xml:space="preserve"><value>Active payments</value></data>
+  <data name="Payment_Record" xml:space="preserve"><value>Record payment</value></data>
+  <data name="Payment_AddTitle" xml:space="preserve"><value>Record repayment</value></data>
+  <data name="Payment_AddSubtitle" xml:space="preserve"><value>Apply a positive payment against outstanding Utang.</value></data>
+  <data name="Payment_OutstandingSection" xml:space="preserve"><value>Current outstanding</value></data>
+  <data name="Payment_EntrySection" xml:space="preserve"><value>Payment</value></data>
+  <data name="Payment_Field_Amount" xml:space="preserve"><value>Amount</value></data>
+  <data name="Payment_Field_Remarks" xml:space="preserve"><value>Remarks / reference</value></data>
+  <data name="Payment_AmountHint" xml:space="preserve"><value>Must be positive and not exceed outstanding.</value></data>
+  <data name="Payment_RemarksHint" xml:space="preserve"><value>Optional note or reference for this payment.</value></data>
+  <data name="Payment_AmountInvalid" xml:space="preserve"><value>Enter a positive amount with at most two decimal places.</value></data>
+  <data name="Payment_Overpayment" xml:space="preserve"><value>Payment cannot exceed the current outstanding balance.</value></data>
+  <data name="Payment_Save" xml:space="preserve"><value>Record payment</value></data>
+  <data name="Payment_ConfirmTitle" xml:space="preserve"><value>Record this payment?</value></data>
+  <data name="Payment_ConfirmMessage" xml:space="preserve"><value>The payment will be appended to the immutable Utang ledger and cannot be edited.</value></data>
+  <data name="Payment_ErrorTitle" xml:space="preserve"><value>Payment action failed</value></data>
+  <data name="Payment_Loading" xml:space="preserve"><value>Loading payment…</value></data>
+  <data name="Payment_NotFoundTitle" xml:space="preserve"><value>Payment not found</value></data>
+  <data name="Payment_NotFoundMessage" xml:space="preserve"><value>This repayment is not available for the selected organization.</value></data>
+  <data name="Payment_DetailTitle" xml:space="preserve"><value>Payment detail</value></data>
+  <data name="Payment_DetailSubtitle" xml:space="preserve"><value>Append-only repayment record</value></data>
+  <data name="Payment_RecordedAt" xml:space="preserve"><value>Recorded</value></data>
+  <data name="Payment_View" xml:space="preserve"><value>View payment</value></data>
+  <data name="Payment_Reverse" xml:space="preserve"><value>Reverse payment</value></data>
+  <data name="Payment_ReverseTitle" xml:space="preserve"><value>Reverse this payment?</value></data>
+  <data name="Payment_ReverseMessage" xml:space="preserve"><value>The original payment stays in history. Outstanding will increase by this amount.</value></data>
+  <data name="Payment_ReversedSuccess" xml:space="preserve"><value>Payment reversed.</value></data>
+  <data name="Payment_InactiveAllowedTitle" xml:space="preserve"><value>Inactive customer</value></data>
+  <data name="Payment_InactiveAllowedMessage" xml:space="preserve"><value>New credit requires an active customer, but repayments against existing debt are still allowed.</value></data>
+  <data name="Ledger_Open" xml:space="preserve"><value>Open ledger</value></data>
+  <data name="Ledger_Title" xml:space="preserve"><value>Utang ledger</value></data>
+  <data name="Ledger_Subtitle" xml:space="preserve"><value>Chronological credit and payment history</value></data>
+  <data name="Ledger_HistoryTitle" xml:space="preserve"><value>Ledger history</value></data>
+  <data name="Ledger_Loading" xml:space="preserve"><value>Loading ledger…</value></data>
+  <data name="Ledger_EmptyTitle" xml:space="preserve"><value>No ledger entries yet</value></data>
+  <data name="Ledger_EmptyMessage" xml:space="preserve"><value>Credit and payment activity will appear here in chronological order.</value></data>
+  <data name="Ledger_ErrorTitle" xml:space="preserve"><value>Could not load ledger</value></data>
+  <data name="Ledger_TypeCredit" xml:space="preserve"><value>Credit</value></data>
+  <data name="Ledger_TypePayment" xml:space="preserve"><value>Payment</value></data>
+  <data name="Ledger_RunningBalance" xml:space="preserve"><value>Running balance</value></data>
   <data name="Credit_SectionTitle" xml:space="preserve"><value>Customer credit</value></data>
   <data name="Credit_Outstanding" xml:space="preserve"><value>Outstanding</value></data>
   <data name="Credit_ActiveCount" xml:space="preserve"><value>{0} active</value></data>

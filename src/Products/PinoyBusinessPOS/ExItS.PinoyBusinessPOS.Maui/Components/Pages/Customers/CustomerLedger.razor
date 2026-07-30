@@ -1,0 +1,131 @@
+@page "/customers/{CustomerId:guid}/ledger"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCustomerClient Customers
+@inject ICurrentUserContext CurrentUser
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+<Page>
+    <PageHeader Title="@L["Ledger_Title"]" Subtitle="@L["Ledger_Subtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
+            <Button Variant="ButtonVariant.Primary"
+                    Disabled="@(_utang is null || _utang.OutstandingAmount <= 0m)"
+                    OnClick="GoAddPayment">@L["Payment_Record"]</Button>
+        </Actions>
+    </PageHeader>
+
+    <Alert Tone="AlertTone.Info" Title="@L["Utang_DeferredTitle"]" Message="@L["Utang_DeferredMessage"]" />
+
+    @if (_utang is not null)
+    {
+        <Section Title="@L["Credit_Outstanding"]">
+            <div class="pos-value-md"><MoneyDisplay Amount="@_utang.OutstandingAmount" CurrencyCode="PHP" /></div>
+        </Section>
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Ledger_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Ledger_HistoryTitle"]">
+        @if (_loading)
+        {
+            <Spinner /><span>@L["Ledger_Loading"]</span>
+        }
+        else if (_entries.Count == 0)
+        {
+            <EmptyState Title="@L["Ledger_EmptyTitle"]" Message="@L["Ledger_EmptyMessage"]" />
+        }
+        else
+        {
+            <Stack Gap="3">
+                @foreach (var entry in _entries)
+                {
+                    <div class="pos-ledger-entry">
+                        <div class="pos-value-md">
+                            <Badge Tone="@(entry.EntryType == "Credit" ? BadgeTone.Info : BadgeTone.Success)">
+                                @(entry.EntryType == "Credit" ? L["Ledger_TypeCredit"] : L["Ledger_TypePayment"])
+                            </Badge>
+                            <MoneyDisplay Amount="@entry.Amount" CurrencyCode="PHP" />
+                            <Badge Tone="@(entry.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@entry.Status</Badge>
+                        </div>
+                        <div class="pos-wrap">@(string.IsNullOrWhiteSpace(entry.Remarks) ? L["Customers_NoValue"] : entry.Remarks)</div>
+                        <div class="pos-muted">@entry.RecordedAtUtc.ToLocalTime().ToString("g")</div>
+                        @if (entry.RunningBalance is not null)
+                        {
+                            <div class="pos-muted">@L["Ledger_RunningBalance"]: <MoneyDisplay Amount="@entry.RunningBalance.Value" CurrencyCode="PHP" /></div>
+                        }
+                        @if (entry.Status == "Reversed")
+                        {
+                            <div class="pos-muted pos-wrap">@L["Credit_ReversalReason"]: @entry.ReversalReason</div>
+                        }
+                        else if (entry.EntryType == "Repayment")
+                        {
+                            <Button Variant="ButtonVariant.Secondary" OnClick="() => GoRepayment(entry.EntryId)">@L["Payment_View"]</Button>
+                        }
+                    </div>
+                }
+            </Stack>
+        }
+    </Section>
+</Page>
+}
+
+@code {
+    [Parameter] public Guid CustomerId { get; set; }
+
+    private bool _ready;
+    private bool _loading = true;
+    private PosCustomerUtangSummaryDto? _utang;
+    private List<PosLedgerEntryDto> _entries = [];
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        var summary = await Customers.GetUtangSummaryAsync(CustomerId);
+        if (summary.IsSuccess)
+        {
+            _utang = summary.Data;
+        }
+
+        var ledger = await Customers.ListLedgerAsync(CustomerId, page: 1, pageSize: 100);
+        if (ledger.IsSuccess && ledger.Data is not null)
+        {
+            _entries = ledger.Data.Items;
+        }
+        else if (!ledger.IsSuccess)
+        {
+            _errorTitle = L["Ledger_ErrorTitle"];
+            _errorMessage = ledger.Error?.Detail ?? ApiLocalizer.Describe(ledger.Status, ledger.Error).Message;
+        }
+
+        _loading = false;
+    }
+
+    private void GoBack() => Nav.NavigateTo($"/customers/{CustomerId:D}");
+    private void GoAddPayment() => Nav.NavigateTo($"/customers/{CustomerId:D}/repayments/new");
+    private void GoRepayment(Guid repaymentId) => Nav.NavigateTo($"/customers/{CustomerId:D}/repayments/{repaymentId:D}");
+}

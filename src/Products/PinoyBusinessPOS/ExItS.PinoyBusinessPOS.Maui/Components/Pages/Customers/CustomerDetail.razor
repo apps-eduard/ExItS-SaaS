@@ -45,7 +45,7 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Customers_ErrorTitle"])" Message="@_errorMessage" />
     }
 
-    <Alert Tone="AlertTone.Info" Title="@L["Customers_RepaymentDeferredTitle"]" Message="@L["Customers_RepaymentDeferredMessage"]" />
+    <Alert Tone="AlertTone.Info" Title="@L["Utang_DeferredTitle"]" Message="@L["Utang_DeferredMessage"]" />
 
     <Section Title="@L["Customers_ProfileSection"]">
         <Stack Gap="3">
@@ -72,32 +72,41 @@ else
         </Stack>
     </Section>
 
-    <Section Title="@L["Credit_SectionTitle"]">
+    <Section Title="@L["Utang_SectionTitle"]">
         <Stack Gap="3">
             <div>
                 <span class="pos-muted">@L["Credit_Outstanding"]</span>
                 <div class="pos-value-md">
-                    @if (_summary is null)
+                    @if (_utang is null)
                     {
                         <Spinner />
                     }
                     else
                     {
-                        <MoneyDisplay Amount="@_summary.OutstandingAmount" CurrencyCode="PHP" />
+                        <MoneyDisplay Amount="@_utang.OutstandingAmount" CurrencyCode="PHP" />
                     }
                 </div>
             </div>
-            @if (_summary is not null)
+            @if (_utang is not null)
             {
-                <div class="pos-muted">@L["Credit_ActiveCount", _summary.ActiveEntryCount] · @L["Credit_TotalCount", _summary.TotalEntryCount]</div>
+                <div class="pos-muted">
+                    @L["Utang_CreditsTotal"] <MoneyDisplay Amount="@_utang.ActiveCreditTotal" CurrencyCode="PHP" />
+                    · @L["Utang_PaymentsTotal"] <MoneyDisplay Amount="@_utang.ActiveRepaymentTotal" CurrencyCode="PHP" />
+                </div>
             }
-            @if (customer.Status == "Active")
+            <FormActions>
+                @if (customer.Status == "Active")
+                {
+                    <Button Variant="ButtonVariant.Secondary" OnClick="GoAddCredit">@L["Credit_Add"]</Button>
+                }
+                <Button Variant="ButtonVariant.Primary"
+                        Disabled="@(_utang is null || _utang.OutstandingAmount <= 0m)"
+                        OnClick="GoAddPayment">@L["Payment_Record"]</Button>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoLedger">@L["Ledger_Open"]</Button>
+            </FormActions>
+            @if (customer.Status != "Active")
             {
-                <Button Variant="ButtonVariant.Primary" OnClick="GoAddCredit">@L["Credit_Add"]</Button>
-            }
-            else
-            {
-                <Alert Tone="AlertTone.Warning" Title="@L["Credit_InactiveTitle"]" Message="@L["Credit_InactiveMessage"]" />
+                <Alert Tone="AlertTone.Info" Title="@L["Payment_InactiveAllowedTitle"]" Message="@L["Payment_InactiveAllowedMessage"]" />
             }
         </Stack>
     </Section>
@@ -129,7 +138,7 @@ else
                         }
                         else
                         {
-                            <Button Variant="ButtonVariant.Danger" OnClick="() => BeginReverse(entry)">@L["Credit_Reverse"]</Button>
+                            <Button Variant="ButtonVariant.Danger" OnClick="() => BeginReverseCredit(entry)">@L["Credit_Reverse"]</Button>
                         }
                     </div>
                 }
@@ -165,18 +174,18 @@ else
                    IsLoading="@_acting"
                    OnConfirm="ReactivateAsync" />
 
-    <ConfirmDialog Visible="@_confirmReverse"
-                   VisibleChanged="OnReverseVisibleChanged"
+    <ConfirmDialog Visible="@_confirmReverseCredit"
+                   VisibleChanged="OnReverseCreditVisibleChanged"
                    Title="@L["Credit_ReverseTitle"]"
                    Message="@L["Credit_ReverseMessage"]"
                    Danger="true"
                    ShowReason="true"
-                   Reason="@_reversalReason"
-                   ReasonChanged="v => _reversalReason = v"
+                   Reason="@_creditReversalReason"
+                   ReasonChanged="v => _creditReversalReason = v"
                    ReasonLabel="@L["Credit_Field_ReversalReason"]"
                    ConfirmLabel="@L["Credit_Reverse"]"
                    IsLoading="@_acting"
-                   OnConfirm="ReverseAsync" />
+                   OnConfirm="ReverseCreditAsync" />
 </Page>
 }
 
@@ -189,13 +198,12 @@ else
     private bool _acting;
     private bool _confirmDeactivate;
     private bool _confirmReactivate;
-    private bool _confirmReverse;
+    private bool _confirmReverseCredit;
     private PosCustomerDetailDto? _customer;
-    private PosCustomerCreditSummaryDto? _summary;
+    private PosCustomerUtangSummaryDto? _utang;
     private List<PosCreditEntryDto> _entries = [];
-    private PosCreditEntryDto? _reverseTarget;
-    private string? _reversalReason;
-    private string? _reversalReasonError;
+    private PosCreditEntryDto? _reverseCreditTarget;
+    private string? _creditReversalReason;
     private string? _errorTitle;
     private string? _errorMessage;
     private string? _banner;
@@ -223,7 +231,7 @@ else
         if (result.IsSuccess)
         {
             _customer = result.Data;
-            await LoadCreditAsync();
+            await LoadUtangAsync();
         }
         else
         {
@@ -236,13 +244,13 @@ else
         _loading = false;
     }
 
-    private async Task LoadCreditAsync()
+    private async Task LoadUtangAsync()
     {
         _entriesLoading = true;
-        var summaryResult = await Customers.GetCreditSummaryAsync(CustomerId);
+        var summaryResult = await Customers.GetUtangSummaryAsync(CustomerId);
         if (summaryResult.IsSuccess)
         {
-            _summary = summaryResult.Data;
+            _utang = summaryResult.Data;
         }
 
         var entriesResult = await Customers.ListCreditEntriesAsync(CustomerId, page: 1, pageSize: 50);
@@ -300,52 +308,49 @@ else
         }
     }
 
-    private void BeginReverse(PosCreditEntryDto entry)
+    private void BeginReverseCredit(PosCreditEntryDto entry)
     {
-        _reverseTarget = entry;
-        _reversalReason = null;
-        _reversalReasonError = null;
-        _confirmReverse = true;
+        _reverseCreditTarget = entry;
+        _creditReversalReason = null;
+        _confirmReverseCredit = true;
     }
 
-    private void OnReverseVisibleChanged(bool visible)
+    private void OnReverseCreditVisibleChanged(bool visible)
     {
-        _confirmReverse = visible;
+        _confirmReverseCredit = visible;
         if (!visible)
         {
-            _reverseTarget = null;
-            _reversalReason = null;
-            _reversalReasonError = null;
+            _reverseCreditTarget = null;
+            _creditReversalReason = null;
         }
     }
 
-    private async Task ReverseAsync()
+    private async Task ReverseCreditAsync()
     {
-        if (_reverseTarget is null)
+        if (_reverseCreditTarget is null)
         {
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(_reversalReason))
+        if (string.IsNullOrWhiteSpace(_creditReversalReason))
         {
-            _reversalReasonError = L["Credit_ReversalReasonRequired"];
             return;
         }
 
         _acting = true;
         var result = await Customers.ReverseCreditEntryAsync(
             CustomerId,
-            _reverseTarget.CreditEntryId,
-            new ReversePosCreditEntryRequest(_reversalReason!));
+            _reverseCreditTarget.CreditEntryId,
+            new ReversePosCreditEntryRequest(_creditReversalReason!));
         _acting = false;
-        _confirmReverse = false;
-        _reverseTarget = null;
-        _reversalReason = null;
+        _confirmReverseCredit = false;
+        _reverseCreditTarget = null;
+        _creditReversalReason = null;
 
         if (result.IsSuccess)
         {
             _banner = L["Credit_ReversedSuccess"];
-            await LoadCreditAsync();
+            await LoadUtangAsync();
         }
         else
         {
@@ -357,4 +362,6 @@ else
     private void GoList() => Nav.NavigateTo("/customers");
     private void GoEdit() => Nav.NavigateTo($"/customers/{CustomerId:D}/edit");
     private void GoAddCredit() => Nav.NavigateTo($"/customers/{CustomerId:D}/credit/new");
+    private void GoAddPayment() => Nav.NavigateTo($"/customers/{CustomerId:D}/repayments/new");
+    private void GoLedger() => Nav.NavigateTo($"/customers/{CustomerId:D}/ledger");
 }

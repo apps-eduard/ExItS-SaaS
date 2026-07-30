@@ -1,0 +1,169 @@
+@page "/customers/{CustomerId:guid}/repayments/{RepaymentId:guid}"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCustomerClient Customers
+@inject ICurrentUserContext CurrentUser
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (_loading)
+{
+    <Page><Spinner /><span>@L["Payment_Loading"]</span></Page>
+}
+else if (_repayment is null)
+{
+    <Page>
+        <ErrorState Title="@(_errorTitle ?? L["Payment_NotFoundTitle"])" Message="@(_errorMessage ?? L["Payment_NotFoundMessage"])" RetryLabel="@L["Api_Retry"]" OnRetry="LoadAsync" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoLedger">@L["Ledger_Open"]</Button>
+    </Page>
+}
+else
+{
+    var repayment = _repayment;
+<Page>
+    <PageHeader Title="@L["Payment_DetailTitle"]" Subtitle="@L["Payment_DetailSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoLedger">@L["Ledger_Open"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (!string.IsNullOrEmpty(_banner))
+    {
+        <Alert Tone="AlertTone.Success" Title="@L["Customers_SuccessTitle"]" Message="@_banner" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Payment_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Payment_EntrySection"]">
+        <Stack Gap="3">
+            <div>
+                <span class="pos-muted">@L["Payment_Field_Amount"]</span>
+                <div class="pos-value-md"><MoneyDisplay Amount="@repayment.Amount" CurrencyCode="PHP" /></div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Customers_Field_Status"]</span>
+                <Badge Tone="@(repayment.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@repayment.Status</Badge>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Payment_Field_Remarks"]</span>
+                <div class="pos-value-md pos-wrap">@(string.IsNullOrWhiteSpace(repayment.Remarks) ? L["Customers_NoValue"] : repayment.Remarks)</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Payment_RecordedAt"]</span>
+                <div class="pos-value-md">@repayment.RecordedAtUtc.ToLocalTime().ToString("g")</div>
+            </div>
+            @if (repayment.Status == "Reversed")
+            {
+                <div>
+                    <span class="pos-muted">@L["Credit_ReversalReason"]</span>
+                    <div class="pos-value-md pos-wrap">@repayment.ReversalReason</div>
+                </div>
+            }
+        </Stack>
+    </Section>
+
+    @if (repayment.Status == "Active")
+    {
+        <FormActions>
+            <Button Variant="ButtonVariant.Danger" OnClick="() => _confirmReverse = true">@L["Payment_Reverse"]</Button>
+        </FormActions>
+    }
+
+    <ConfirmDialog Visible="@_confirmReverse"
+                   VisibleChanged="v => _confirmReverse = v"
+                   Title="@L["Payment_ReverseTitle"]"
+                   Message="@L["Payment_ReverseMessage"]"
+                   Danger="true"
+                   ShowReason="true"
+                   Reason="@_reversalReason"
+                   ReasonChanged="v => _reversalReason = v"
+                   ReasonLabel="@L["Credit_Field_ReversalReason"]"
+                   ConfirmLabel="@L["Payment_Reverse"]"
+                   IsLoading="@_acting"
+                   OnConfirm="ReverseAsync" />
+</Page>
+}
+
+@code {
+    [Parameter] public Guid CustomerId { get; set; }
+    [Parameter] public Guid RepaymentId { get; set; }
+
+    private bool _ready;
+    private bool _loading = true;
+    private bool _acting;
+    private bool _confirmReverse;
+    private PosRepaymentDto? _repayment;
+    private string? _reversalReason;
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private string? _banner;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        var result = await Customers.GetRepaymentAsync(RepaymentId);
+        if (result.IsSuccess && result.Data is not null && result.Data.CustomerId == CustomerId)
+        {
+            _repayment = result.Data;
+            _errorTitle = null;
+            _errorMessage = null;
+        }
+        else
+        {
+            _repayment = null;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private async Task ReverseAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_reversalReason))
+        {
+            return;
+        }
+
+        _acting = true;
+        var result = await Customers.ReverseRepaymentAsync(RepaymentId, new ReversePosRepaymentRequest(_reversalReason!));
+        _acting = false;
+        _confirmReverse = false;
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _repayment = result.Data;
+            _banner = L["Payment_ReversedSuccess"];
+            _reversalReason = null;
+        }
+        else
+        {
+            _errorTitle = L["Payment_ErrorTitle"];
+            _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        }
+    }
+
+    private void GoBack() => Nav.NavigateTo($"/customers/{CustomerId:D}");
+    private void GoLedger() => Nav.NavigateTo($"/customers/{CustomerId:D}/ledger");
+}

@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Payments;
 
 namespace ExItS.PinoyBusinessPOS.Application.Abstractions;
 
@@ -43,5 +44,31 @@ public interface IPosCustomerClient
         Guid customerId,
         Guid entryId,
         ReversePosCreditEntryRequest request,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosCustomerUtangSummaryDto>> GetUtangSummaryAsync(Guid customerId, CancellationToken ct = default);
+
+    Task<ApiResult<PosLedgerPagedResult>> ListLedgerAsync(
+        Guid customerId,
+        int page = 1,
+        int pageSize = 50,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosRepaymentPagedResult>> ListRepaymentsAsync(
+        Guid customerId,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosRepaymentDto>> CreateRepaymentAsync(
+        Guid customerId,
+        CreatePosRepaymentRequest request,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosRepaymentDto>> GetRepaymentAsync(Guid repaymentId, CancellationToken ct = default);
+
+    Task<ApiResult<PosRepaymentDto>> ReverseRepaymentAsync(
+        Guid repaymentId,
+        ReversePosRepaymentRequest request,
         CancellationToken ct = default);
 }

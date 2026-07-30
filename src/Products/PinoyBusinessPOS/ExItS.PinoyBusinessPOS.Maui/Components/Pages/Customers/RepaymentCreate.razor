@@ -1,0 +1,150 @@
+@page "/customers/{CustomerId:guid}/repayments/new"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCustomerClient Customers
+@inject ICurrentUserContext CurrentUser
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+<Page>
+    <PageHeader Title="@L["Payment_AddTitle"]" Subtitle="@L["Payment_AddSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
+        </Actions>
+    </PageHeader>
+
+    <Alert Tone="AlertTone.Info" Title="@L["Utang_DeferredTitle"]" Message="@L["Utang_DeferredMessage"]" />
+
+    @if (_utang is not null)
+    {
+        <Section Title="@L["Payment_OutstandingSection"]">
+            <div class="pos-value-md"><MoneyDisplay Amount="@_utang.OutstandingAmount" CurrencyCode="PHP" /></div>
+        </Section>
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Payment_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Payment_EntrySection"]">
+        <Stack Gap="3">
+            <TextInput Label="@L["Payment_Field_Amount"]"
+                       Value="@_amountText"
+                       ValueChanged="v => _amountText = v"
+                       Required="true"
+                       Hint="@L["Payment_AmountHint"]"
+                       IsInvalid="@(!string.IsNullOrEmpty(_amountError))"
+                       ErrorText="@_amountError"
+                       Disabled="@_saving" />
+
+            <TextArea Label="@L["Payment_Field_Remarks"]"
+                      Value="@_remarks"
+                      ValueChanged="v => _remarks = v"
+                      Hint="@L["Payment_RemarksHint"]"
+                      Rows="3"
+                      Disabled="@_saving" />
+        </Stack>
+    </Section>
+
+    <FormActions>
+        <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="GoBack">@L["Customers_Cancel"]</Button>
+        <Button Variant="ButtonVariant.Primary"
+                IsLoading="@_saving"
+                Disabled="@(_utang is null || _utang.OutstandingAmount <= 0m)"
+                OnClick="() => _confirm = true">@L["Payment_Save"]</Button>
+    </FormActions>
+
+    <ConfirmDialog Visible="@_confirm"
+                   VisibleChanged="v => _confirm = v"
+                   Title="@L["Payment_ConfirmTitle"]"
+                   Message="@L["Payment_ConfirmMessage"]"
+                   ConfirmLabel="@L["Payment_Save"]"
+                   IsLoading="@_saving"
+                   OnConfirm="SaveAsync" />
+</Page>
+}
+
+@code {
+    [Parameter] public Guid CustomerId { get; set; }
+
+    private bool _ready;
+    private bool _saving;
+    private bool _confirm;
+    private PosCustomerUtangSummaryDto? _utang;
+    private string? _amountText;
+    private string? _remarks;
+    private string? _amountError;
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        var summary = await Customers.GetUtangSummaryAsync(CustomerId);
+        if (summary.IsSuccess)
+        {
+            _utang = summary.Data;
+        }
+        else
+        {
+            _errorTitle = L["Payment_ErrorTitle"];
+            _errorMessage = summary.Error?.Detail ?? ApiLocalizer.Describe(summary.Status, summary.Error).Message;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _amountError = null;
+        _errorTitle = null;
+        _errorMessage = null;
+        _confirm = false;
+
+        if (string.IsNullOrWhiteSpace(_amountText) || !decimal.TryParse(_amountText.Trim(), out var amount) || amount <= 0)
+        {
+            _amountError = L["Payment_AmountInvalid"];
+            return;
+        }
+
+        if (_utang is not null && amount > _utang.OutstandingAmount)
+        {
+            _amountError = L["Payment_Overpayment"];
+            return;
+        }
+
+        _saving = true;
+        var result = await Customers.CreateRepaymentAsync(CustomerId, new CreatePosRepaymentRequest(amount, _remarks));
+        _saving = false;
+
+        if (result.IsSuccess)
+        {
+            Nav.NavigateTo($"/customers/{CustomerId:D}/ledger");
+            return;
+        }
+
+        _errorTitle = L["Payment_ErrorTitle"];
+        _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        if (result.Status == ApiCallStatus.Conflict)
+        {
+            var refreshed = await Customers.GetUtangSummaryAsync(CustomerId);
+            if (refreshed.IsSuccess)
+            {
+                _utang = refreshed.Data;
+            }
+        }
+    }
+
+    private void GoBack() => Nav.NavigateTo($"/customers/{CustomerId:D}");
+}

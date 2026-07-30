@@ -1,10 +1,12 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Payments;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Credit;
 
@@ -18,6 +20,8 @@ public sealed class CreditEntryUseCaseTests
     {
         var customers = new InMemoryCustomerRepository();
         var entries = new InMemoryCreditRepository();
+        var repayments = new InMemoryRepaymentRepository();
+        var outstanding = new OutstandingBalanceService(entries, repayments);
         var clock = new FixedClock(Now);
         var customer = POSCustomer.Create(PosOrganizationId.From(OrgId), "Rosa", Now);
         await customers.AddAsync(customer);
@@ -34,11 +38,16 @@ public sealed class CreditEntryUseCaseTests
         Assert.False(inactive.IsSuccess);
         Assert.Equal(DomainErrorCodes.CustomerNotActive, inactive.ErrorCode);
 
-        var reverse = new ReverseCreditEntry(customers, entries, new ImmediateUnitOfWork(), new FixedClock(Now.AddMinutes(2)));
+        var reverse = new ReverseCreditEntry(
+            customers,
+            entries,
+            outstanding,
+            new ImmediateUnitOfWork(),
+            new FixedClock(Now.AddMinutes(2)));
         var reversed = await reverse.ExecuteAsync(OrgId, customer.Id.Value, first.Value!.Id.Value, "Mistake", default);
         Assert.True(reversed.IsSuccess);
 
-        var queries = new CreditEntryQueryService(entries);
+        var queries = new CreditEntryQueryService(entries, outstanding);
         var summary = await queries.GetSummaryAsync(OrgId, customer.Id.Value);
         Assert.Equal(40m, summary.OutstandingAmount);
         Assert.Equal(1, summary.ActiveEntryCount);
@@ -53,6 +62,11 @@ public sealed class CreditEntryUseCaseTests
     private sealed class ImmediateUnitOfWork : IPosUnitOfWork
     {
         public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task<T> ExecuteInSerializableTransactionAsync<T>(
+            Func<CancellationToken, Task<T>> action,
+            CancellationToken cancellationToken = default) =>
+            action(cancellationToken);
     }
 
     private sealed class InMemoryCustomerRepository : IPOSCustomerRepository
@@ -141,5 +155,35 @@ public sealed class CreditEntryUseCaseTests
         }
 
         public Task UpdateAsync(CreditEntry entry, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
+
+    private sealed class InMemoryRepaymentRepository : IRepaymentRepository
+    {
+        public Task<Repayment?> GetByIdAsync(PosOrganizationId organizationId, RepaymentId repaymentId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<Repayment?>(null);
+
+        public Task<(IReadOnlyList<Repayment> Items, int TotalCount)> ListByCustomerAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(((IReadOnlyList<Repayment>)Array.Empty<Repayment>(), 0));
+
+        public Task<decimal> SumActiveAmountAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
+
+        public Task<int> CountActiveAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0);
+
+        public Task AddAsync(Repayment repayment, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task UpdateAsync(Repayment repayment, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }
