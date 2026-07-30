@@ -97,7 +97,7 @@ POS Domain/Application/Infrastructure/Api/ApiClient/Maui credit slice; phase-06 
 ## Git evidence
 
 - Feature commit: `ead6942187ca9a9c507dcf706bbece2e507a8645`
-- Docs commit: _(recorded after docs commit)_
+- Docs commit: `d76eb3574fadae0e8358109994ba8d750acbb4ad`
 - Phase marker: `P6-WP02-remarks-based-credit`
 - Pushed to `origin/main`; local and remote `main` match; working tree clean
 
