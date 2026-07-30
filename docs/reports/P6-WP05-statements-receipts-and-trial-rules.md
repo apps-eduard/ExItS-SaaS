@@ -130,9 +130,9 @@ Platform access eligibility continuity for POS; POS Commercial/Statements Applic
 | Field | Value |
 |---|---|
 | Feature commit | `271c518cb8c4051502d6370ec71e6498fbbfd6b5` |
-| Docs commit | TBD |
+| Docs commit | `157786b4c6b7f537c82ecb028abbc05c3f33f42c` |
 | Phase marker | `P6-WP05-statements-receipts-and-trial-rules` |
-| Final working tree | TBD (pending finalize) |
+| Final working tree | Clean after finalize (pending push) |
 
 ## Exact next work package
 
