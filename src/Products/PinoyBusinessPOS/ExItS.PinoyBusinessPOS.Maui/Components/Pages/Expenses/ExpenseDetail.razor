@@ -1,0 +1,232 @@
+@page "/expenses/{ExpenseId:guid}"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosExpenseClient Expenses
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (_loading)
+{
+    <Page><Spinner /><span>@L["Expenses_Loading"]</span></Page>
+}
+else if (_expense is null)
+{
+    <Page>
+        <ErrorState Title="@(_errorTitle ?? L["Expenses_NotFoundTitle"])"
+                    Message="@(_errorMessage ?? L["Expenses_NotFoundMessage"])"
+                    RetryLabel="@L["Api_Retry"]"
+                    OnRetry="LoadAsync" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Expenses_BackToList"]</Button>
+    </Page>
+}
+else
+{
+    var expense = _expense;
+    var isRecorded = expense.Status == PosExpenseOptions.RecordedStatus;
+    var canVoid = Capabilities.IsAllowed(UtangCapability.ManageExpenses)
+        && isRecorded
+        && !_isOffline;
+<Page>
+    <PageHeader Title="@expense.ExpenseNumber" Subtitle="@L["Expenses_DetailTitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Expenses_BackToList"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Expenses_OfflineTitle"]" Message="@L["Expenses_OfflineMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_banner))
+    {
+        <Alert Tone="AlertTone.Success" Title="@L["Expenses_SuccessTitle"]" Message="@_banner" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Expenses_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Expenses_DetailSection"]">
+        <Stack Gap="3">
+            <div>
+                <span class="pos-muted">@L["Expenses_Col_Status"]</span>
+                <div class="pos-value-md">
+                    <Badge Tone="@(isRecorded ? BadgeTone.Success : BadgeTone.Neutral)">@ExpensesUiOptions.StatusLabel(L, expense.Status)</Badge>
+                </div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Expenses_ExpenseDate"]</span>
+                <div class="pos-value-md">@expense.ExpenseDate.ToString("d")</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Expenses_Category"]</span>
+                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(expense.CategoryName) ? expense.CategoryId.ToString("D") : expense.CategoryName)</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Expenses_Payment"]</span>
+                <div class="pos-value-md">@ExpensesUiOptions.PaymentMethodLabel(L, expense.PaymentMethod)</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Expenses_Amount"]</span>
+                <div class="pos-value-md"><MoneyDisplay Amount="@expense.Amount" CurrencyCode="PHP" /></div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Expenses_Description"]</span>
+                <div class="pos-value-md pos-wrap">@expense.Description</div>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(expense.Payee))
+            {
+                <div>
+                    <span class="pos-muted">@L["Expenses_Payee"]</span>
+                    <div class="pos-value-md pos-wrap">@expense.Payee</div>
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(expense.GCashReference))
+            {
+                <div>
+                    <span class="pos-muted">@L["Expenses_GCashReference"]</span>
+                    <div class="pos-value-md pos-wrap">@expense.GCashReference</div>
+                    <div class="pos-muted">@L["Expenses_GCash_ManualWarning"]</div>
+                </div>
+            }
+            <div>
+                <span class="pos-muted">@L["Expenses_RecordedAt"]</span>
+                <div class="pos-value-md">@expense.RecordedAtUtc.ToLocalTime().ToString("g")</div>
+            </div>
+            @if (!isRecorded)
+            {
+                <div>
+                    <span class="pos-muted">@L["Expenses_VoidReason"]</span>
+                    <div class="pos-value-md pos-wrap">@expense.VoidReason</div>
+                </div>
+                <div>
+                    <span class="pos-muted">@L["Expenses_VoidedAt"]</span>
+                    <div class="pos-value-md">@(expense.VoidedAtUtc?.ToLocalTime().ToString("g"))</div>
+                </div>
+            }
+        </Stack>
+    </Section>
+
+    @if (isRecorded)
+    {
+        <FormActions>
+            <Button Variant="ButtonVariant.Danger" Disabled="@(!canVoid)" OnClick="() => _confirmVoid = true">@L["Expenses_Void"]</Button>
+        </FormActions>
+    }
+
+    <ConfirmDialog Visible="@_confirmVoid"
+                   VisibleChanged="v => _confirmVoid = v"
+                   Title="@L["Expenses_VoidTitle"]"
+                   Message="@L["Expenses_VoidMessage"]"
+                   Danger="true"
+                   ShowReason="true"
+                   Reason="@_voidReason"
+                   ReasonChanged="v => _voidReason = v"
+                   ReasonLabel="@L["Expenses_VoidReason"]"
+                   ConfirmLabel="@L["Expenses_Void"]"
+                   IsLoading="@_acting"
+                   OnConfirm="VoidAsync" />
+</Page>
+}
+
+@code {
+    [Parameter] public Guid ExpenseId { get; set; }
+
+    private bool _ready;
+    private bool _loading = true;
+    private bool _acting;
+    private bool _confirmVoid;
+    private bool _isOffline;
+    private PosExpenseDto? _expense;
+    private string? _voidReason;
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private string? _banner;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewExpenses))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        _ready = true;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _expense = null;
+            _errorTitle = L["Expenses_OfflineTitle"];
+            _errorMessage = L["Expenses_OfflineMessage"];
+            _loading = false;
+            return;
+        }
+
+        var result = await Expenses.GetExpenseAsync(ExpenseId);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _expense = result.Data;
+        }
+        else
+        {
+            _expense = null;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private async Task VoidAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_voidReason))
+        {
+            return;
+        }
+
+        _acting = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        var result = await Expenses.VoidExpenseAsync(ExpenseId, new VoidExpenseRequest(_voidReason!));
+        _acting = false;
+        _confirmVoid = false;
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _expense = result.Data;
+            _voidReason = null;
+            _banner = L["Expenses_VoidedSuccess"];
+            return;
+        }
+
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _errorTitle = described.Title;
+        _errorMessage = result.Error?.Detail ?? described.Message;
+    }
+
+    private void GoList() => Nav.NavigateTo("/expenses");
+}

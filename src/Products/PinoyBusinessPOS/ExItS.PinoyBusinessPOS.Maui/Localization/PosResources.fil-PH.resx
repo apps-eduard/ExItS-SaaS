@@ -832,4 +832,100 @@
   <data name="Inventory_InsufficientStockTitle" xml:space="preserve"><value>Kulang ang stock</value></data>
   <data name="Inventory_InsufficientStockMessage" xml:space="preserve"><value>Walang sapat na on-hand quantity ang isa o higit pang tracked na produkto para sa bentang ito.</value></data>
   <data name="Nav_Inventory" xml:space="preserve"><value>Imbentaryo</value></data>
+  <data name="Nav_Expenses" xml:space="preserve"><value>Mga Gastos</value></data>
+  <data name="Expenses_Title" xml:space="preserve"><value>Mga Gastos</value></data>
+  <data name="Expenses_Subtitle" xml:space="preserve"><value>Itala ang mga gastos ng tindahan (online lamang).</value></data>
+  <data name="Expenses_New" xml:space="preserve"><value>Bagong gastos</value></data>
+  <data name="Expenses_Refresh" xml:space="preserve"><value>I-refresh</value></data>
+  <data name="Expenses_Cancel" xml:space="preserve"><value>Kanselahin</value></data>
+  <data name="Expenses_Save" xml:space="preserve"><value>I-save ang gastos</value></data>
+  <data name="Expenses_BackToList" xml:space="preserve"><value>Bumalik sa mga gastos</value></data>
+  <data name="Expenses_Loading" xml:space="preserve"><value>Nilo-load ang mga gastos…</value></data>
+  <data name="Expenses_SearchPlaceholder" xml:space="preserve"><value>Maghanap ayon sa expense number</value></data>
+  <data name="Expenses_FiltersTitle" xml:space="preserve"><value>Mga filter</value></data>
+  <data name="Expenses_Filter_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Expenses_Filter_Payment" xml:space="preserve"><value>Paraan ng bayad</value></data>
+  <data name="Expenses_Filter_FromDate" xml:space="preserve"><value>Mula sa petsa</value></data>
+  <data name="Expenses_Filter_ToDate" xml:space="preserve"><value>Hanggang petsa</value></data>
+  <data name="Expenses_Filter_AllStatuses" xml:space="preserve"><value>Lahat ng status</value></data>
+  <data name="Expenses_Filter_AllPayments" xml:space="preserve"><value>Lahat ng paraan ng bayad</value></data>
+  <data name="Expenses_Status_Recorded" xml:space="preserve"><value>Naitala</value></data>
+  <data name="Expenses_Status_Voided" xml:space="preserve"><value>Kinansela</value></data>
+  <data name="Expenses_Payment_Cash" xml:space="preserve"><value>Cash</value></data>
+  <data name="Expenses_Payment_ManualGCash" xml:space="preserve"><value>GCash (manual)</value></data>
+  <data name="Expenses_Col_ExpenseNumber" xml:space="preserve"><value>Expense number</value></data>
+  <data name="Expenses_Col_Date" xml:space="preserve"><value>Petsa</value></data>
+  <data name="Expenses_Col_Category" xml:space="preserve"><value>Kategorya</value></data>
+  <data name="Expenses_Col_Payment" xml:space="preserve"><value>Bayad</value></data>
+  <data name="Expenses_Col_Amount" xml:space="preserve"><value>Halaga</value></data>
+  <data name="Expenses_Col_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Expenses_Col_Actions" xml:space="preserve"><value>Mga aksyon</value></data>
+  <data name="Expenses_EmptyTitle" xml:space="preserve"><value>Wala pang gastos</value></data>
+  <data name="Expenses_EmptyMessage" xml:space="preserve"><value>Makikita rito ang naitalang gastos. Magdagdag muna ng kategorya, pagkatapos magtala ng gastos.</value></data>
+  <data name="Expenses_ErrorTitle" xml:space="preserve"><value>May problema sa gastos</value></data>
+  <data name="Expenses_SuccessTitle" xml:space="preserve"><value>Tapos na</value></data>
+  <data name="Expenses_OfflineTitle" xml:space="preserve"><value>Kailangan mag-reconnect</value></data>
+  <data name="Expenses_OfflineMessage" xml:space="preserve"><value>Kailangan ng koneksyon ang mga gastos. Mag-reconnect para makita o magtala.</value></data>
+  <data name="Expenses_NotFoundTitle" xml:space="preserve"><value>Hindi nahanap ang gastos</value></data>
+  <data name="Expenses_NotFoundMessage" xml:space="preserve"><value>Hindi available ang gastos na ito para sa inyong tindahan.</value></data>
+  <data name="Expenses_CreateTitle" xml:space="preserve"><value>Bagong gastos</value></data>
+  <data name="Expenses_DetailTitle" xml:space="preserve"><value>Detalye ng gastos</value></data>
+  <data name="Expenses_DetailSection" xml:space="preserve"><value>Gastos</value></data>
+  <data name="Expenses_CategoriesTitle" xml:space="preserve"><value>Mga kategorya ng gastos</value></data>
+  <data name="Expenses_CategoriesSubtitle" xml:space="preserve"><value>Pangkatin ang mga gastos para mas madaling subaybayan.</value></data>
+  <data name="Expenses_SummaryTitle" xml:space="preserve"><value>Buod ng gastos</value></data>
+  <data name="Expenses_SummarySubtitle" xml:space="preserve"><value>Mga kabuuan para sa napiling petsa (hindi kasama ang kinansela sa net).</value></data>
+  <data name="Expenses_SummaryTotals" xml:space="preserve"><value>Mga kabuuan</value></data>
+  <data name="Expenses_SummaryByCategory" xml:space="preserve"><value>Ayon sa kategorya</value></data>
+  <data name="Expenses_SummaryByPayment" xml:space="preserve"><value>Ayon sa paraan ng bayad</value></data>
+  <data name="Expenses_SummaryEmptyTitle" xml:space="preserve"><value>Wala pang kabuuan</value></data>
+  <data name="Expenses_SummaryEmptyMessage" xml:space="preserve"><value>Walang naitalang gastos sa petsang ito.</value></data>
+  <data name="Expenses_OpenCategories" xml:space="preserve"><value>Mga kategorya</value></data>
+  <data name="Expenses_OpenSummary" xml:space="preserve"><value>Buod</value></data>
+  <data name="Expenses_Amount" xml:space="preserve"><value>Halaga</value></data>
+  <data name="Expenses_Description" xml:space="preserve"><value>Paglalarawan</value></data>
+  <data name="Expenses_Payee" xml:space="preserve"><value>Pinagbayaran</value></data>
+  <data name="Expenses_PayeeHint" xml:space="preserve"><value>Opsyonal. Sino ang tumanggap ng bayad.</value></data>
+  <data name="Expenses_GCashReference" xml:space="preserve"><value>GCash reference</value></data>
+  <data name="Expenses_ExpenseDate" xml:space="preserve"><value>Petsa ng gastos</value></data>
+  <data name="Expenses_Category" xml:space="preserve"><value>Kategorya</value></data>
+  <data name="Expenses_Payment" xml:space="preserve"><value>Paraan ng bayad</value></data>
+  <data name="Expenses_SelectCategory" xml:space="preserve"><value>Pumili ng kategorya</value></data>
+  <data name="Expenses_CategoryRequired" xml:space="preserve"><value>Pumili ng active na kategorya.</value></data>
+  <data name="Expenses_AmountRequired" xml:space="preserve"><value>Maglagay ng halagang higit sa zero.</value></data>
+  <data name="Expenses_DescriptionRequired" xml:space="preserve"><value>Kailangan ang paglalarawan.</value></data>
+  <data name="Expenses_DateRequired" xml:space="preserve"><value>Kailangan ang petsa ng gastos.</value></data>
+  <data name="Expenses_RecordedAt" xml:space="preserve"><value>Naitala noong</value></data>
+  <data name="Expenses_Void" xml:space="preserve"><value>Kanselahin ang gastos</value></data>
+  <data name="Expenses_VoidTitle" xml:space="preserve"><value>Kanselahin ang gastos na ito?</value></data>
+  <data name="Expenses_VoidMessage" xml:space="preserve"><value>Hindi na isasama ang kinanselang gastos sa net na kabuuan. Magtala ng kapalit kung may koreksyon. Maglagay ng dahilan.</value></data>
+  <data name="Expenses_VoidReason" xml:space="preserve"><value>Dahilan ng pagkansela</value></data>
+  <data name="Expenses_VoidedAt" xml:space="preserve"><value>Kinansela noong</value></data>
+  <data name="Expenses_VoidedSuccess" xml:space="preserve"><value>Nakansela ang gastos.</value></data>
+  <data name="Expenses_GrossTotal" xml:space="preserve"><value>Gross na kabuuan</value></data>
+  <data name="Expenses_VoidedTotal" xml:space="preserve"><value>Kabuuang kinansela</value></data>
+  <data name="Expenses_NetTotal" xml:space="preserve"><value>Net na kabuuan</value></data>
+  <data name="Expenses_RecordedCount" xml:space="preserve"><value>Bilang ng naitala</value></data>
+  <data name="Expenses_VoidedCount" xml:space="preserve"><value>Bilang ng kinansela</value></data>
+  <data name="Expenses_GCash_ManualTitle" xml:space="preserve"><value>Manual na GCash</value></data>
+  <data name="Expenses_GCash_ManualWarning" xml:space="preserve"><value>Ikaw ang nagta-type ng reference na ito at hindi ito sine-verify sa GCash. Kumpirmahin muna ang bayad sa sarili mong GCash app.</value></data>
+  <data name="Expenses_GCash_ReferenceHint" xml:space="preserve"><value>Opsyonal. Kopyahin ang reference mula sa GCash app.</value></data>
+  <data name="Expenses_GCash_ReferenceTooLong" xml:space="preserve"><value>Masyadong mahaba ang GCash reference.</value></data>
+  <data name="Expenses_CategoryName" xml:space="preserve"><value>Pangalan ng kategorya</value></data>
+  <data name="Expenses_Category_AddTitle" xml:space="preserve"><value>Bagong kategorya</value></data>
+  <data name="Expenses_Category_EditTitle" xml:space="preserve"><value>Palitan ang pangalan</value></data>
+  <data name="Expenses_Category_Add" xml:space="preserve"><value>Magdagdag ng kategorya</value></data>
+  <data name="Expenses_Category_Rename" xml:space="preserve"><value>Palitan ang pangalan</value></data>
+  <data name="Expenses_Category_Deactivate" xml:space="preserve"><value>I-deactivate</value></data>
+  <data name="Expenses_Category_Reactivate" xml:space="preserve"><value>I-reactivate</value></data>
+  <data name="Expenses_Category_SearchPlaceholder" xml:space="preserve"><value>Maghanap ng kategorya</value></data>
+  <data name="Expenses_Category_EmptyTitle" xml:space="preserve"><value>Wala pang kategorya</value></data>
+  <data name="Expenses_Category_EmptyMessage" xml:space="preserve"><value>Magdagdag muna ng kategorya bago magtala ng gastos.</value></data>
+  <data name="Expenses_Category_NameRequired" xml:space="preserve"><value>Kailangan ang pangalan ng kategorya.</value></data>
+  <data name="Expenses_Category_CreatedSuccess" xml:space="preserve"><value>Nagawa ang kategorya.</value></data>
+  <data name="Expenses_Category_UpdatedSuccess" xml:space="preserve"><value>Na-update ang kategorya.</value></data>
+  <data name="Expenses_Category_DeactivatedSuccess" xml:space="preserve"><value>Na-deactivate ang kategorya.</value></data>
+  <data name="Expenses_Category_ReactivatedSuccess" xml:space="preserve"><value>Na-reactivate ang kategorya.</value></data>
+  <data name="Expenses_CategoryStatus_Active" xml:space="preserve"><value>Active</value></data>
+  <data name="Expenses_CategoryStatus_Inactive" xml:space="preserve"><value>Inactive</value></data>
 </root>

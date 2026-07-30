@@ -13,6 +13,8 @@ public static class PosFeatureCodes
     public const string StoreSalesVoid = "store-sales-void";
     public const string StoreInventoryView = "store-inventory-view";
     public const string StoreInventoryManage = "store-inventory-manage";
+    public const string StoreExpensesView = "store-expenses-view";
+    public const string StoreExpensesManage = "store-expenses-manage";
 }
 
 /// <summary>Subscription status names mirrored from Platform (string-stable for headers/session).</summary>
@@ -47,7 +49,9 @@ public enum UtangCapability
     CreateSale = 14,
     VoidSale = 15,
     ViewInventory = 16,
-    ManageInventory = 17
+    ManageInventory = 17,
+    ViewExpenses = 18,
+    ManageExpenses = 19
 }
 
 /// <summary>
@@ -143,6 +147,13 @@ public static class UtangCapabilityPolicy
                 IsFullCommercialState(status)
                 && HasFeature(grants, PosFeatureCodes.StoreInventoryManage),
 
+            UtangCapability.ViewExpenses =>
+                CanEnter(status, grants) && HasFeature(grants, PosFeatureCodes.StoreExpensesView),
+
+            UtangCapability.ManageExpenses =>
+                IsFullCommercialState(status)
+                && HasFeature(grants, PosFeatureCodes.StoreExpensesManage),
+
             _ => false
         };
     }
@@ -170,7 +181,8 @@ public static class UtangCapabilityPolicy
                 || HasFeature(grants, PosFeatureCodes.StoreCatalogView)
                 || HasFeature(grants, PosFeatureCodes.StoreCatalogManage)
                 || HasFeature(grants, PosFeatureCodes.StoreSalesView)
-                || HasFeature(grants, PosFeatureCodes.StoreInventoryView),
+                || HasFeature(grants, PosFeatureCodes.StoreInventoryView)
+                || HasFeature(grants, PosFeatureCodes.StoreExpensesView),
             _ => false
         };
     }
@@ -186,7 +198,9 @@ public static class UtangCapabilityPolicy
         PosFeatureCodes.StoreSalesCreate,
         PosFeatureCodes.StoreSalesVoid,
         PosFeatureCodes.StoreInventoryView,
-        PosFeatureCodes.StoreInventoryManage
+        PosFeatureCodes.StoreInventoryManage,
+        PosFeatureCodes.StoreExpensesView,
+        PosFeatureCodes.StoreExpensesManage
     ];
 
     private static string Normalize(string? subscriptionStatus) =>

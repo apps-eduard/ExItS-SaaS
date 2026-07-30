@@ -35,6 +35,13 @@ public static class ApplicationErrorCodes
     public const string InventoryProductNotFound = "pos.inventory.product.not_found";
     public const string InventoryConcurrencyConflict = "pos.inventory.concurrency_conflict";
     public const string InsufficientStock = "pos.inventory.insufficient_stock";
+
+    public const string ExpenseCategoryNotFound = "pos.expense_category.not_found";
+    public const string ExpenseCategoryNameConflict = "pos.expense_category.name.conflict";
+    public const string ExpenseCategoryNotAssignable = "pos.expense_category.not_assignable";
+    public const string ExpenseNotFound = "pos.expense.not_found";
+    public const string ExpenseNumberConflict = "pos.expense.number.conflict";
+    public const string ExpenseConcurrencyConflict = "pos.expense.concurrency_conflict";
 }
 
 public sealed class PersistenceConflictException : Exception

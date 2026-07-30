@@ -1,0 +1,193 @@
+@page "/expenses/summary"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosExpenseClient Expenses
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+<Page>
+    <PageHeader Title="@L["Expenses_SummaryTitle"]" Subtitle="@L["Expenses_SummarySubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoExpenses">@L["Expenses_BackToList"]</Button>
+            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Expenses_Refresh"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Expenses_OfflineTitle"]" Message="@L["Expenses_OfflineMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Expenses_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Expenses_FiltersTitle"]">
+        <Stack Gap="3">
+            <DateInput Label="@L["Expenses_Filter_FromDate"]"
+                       Value="@_fromDate"
+                       ValueChanged="OnFromDateChanged" />
+            <DateInput Label="@L["Expenses_Filter_ToDate"]"
+                       Value="@_toDate"
+                       ValueChanged="OnToDateChanged" />
+        </Stack>
+    </Section>
+
+    @if (_summary is not null)
+    {
+        <Section Title="@L["Expenses_SummaryTotals"]">
+            <Stack Gap="3">
+                <div>
+                    <span class="pos-muted">@L["Expenses_GrossTotal"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@_summary.GrossTotal" CurrencyCode="PHP" /></div>
+                </div>
+                <div>
+                    <span class="pos-muted">@L["Expenses_VoidedTotal"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@_summary.VoidedTotal" CurrencyCode="PHP" /></div>
+                </div>
+                <div>
+                    <span class="pos-muted">@L["Expenses_NetTotal"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@_summary.NetTotal" CurrencyCode="PHP" /></div>
+                </div>
+                <div>
+                    <span class="pos-muted">@L["Expenses_RecordedCount"]</span>
+                    <div class="pos-value-md">@_summary.RecordedCount</div>
+                </div>
+                <div>
+                    <span class="pos-muted">@L["Expenses_VoidedCount"]</span>
+                    <div class="pos-value-md">@_summary.VoidedCount</div>
+                </div>
+            </Stack>
+        </Section>
+
+        <Section Title="@L["Expenses_SummaryByCategory"]">
+            @if (_summary.ByCategory.Count == 0)
+            {
+                <EmptyState IconName="inbox" Title="@L["Expenses_SummaryEmptyTitle"]" Message="@L["Expenses_SummaryEmptyMessage"]" />
+            }
+            else
+            {
+                <Stack Gap="3">
+                    @foreach (var row in _summary.ByCategory)
+                    {
+                        <div class="pos-row">
+                            <span class="pos-value-md">@(string.IsNullOrWhiteSpace(row.CategoryName) ? row.CategoryId.ToString("D") : row.CategoryName)</span>
+                            <span class="pos-muted">@row.Count</span>
+                            <MoneyDisplay Amount="@row.TotalAmount" CurrencyCode="PHP" />
+                        </div>
+                    }
+                </Stack>
+            }
+        </Section>
+
+        <Section Title="@L["Expenses_SummaryByPayment"]">
+            @if (_summary.ByPaymentMethod.Count == 0)
+            {
+                <EmptyState IconName="inbox" Title="@L["Expenses_SummaryEmptyTitle"]" Message="@L["Expenses_SummaryEmptyMessage"]" />
+            }
+            else
+            {
+                <Stack Gap="3">
+                    @foreach (var row in _summary.ByPaymentMethod)
+                    {
+                        <div class="pos-row">
+                            <span class="pos-value-md">@ExpensesUiOptions.PaymentMethodLabel(L, row.PaymentMethod)</span>
+                            <span class="pos-muted">@row.Count</span>
+                            <MoneyDisplay Amount="@row.TotalAmount" CurrencyCode="PHP" />
+                        </div>
+                    }
+                </Stack>
+            }
+        </Section>
+    }
+    else if (_loading)
+    {
+        <Spinner /><span>@L["Expenses_Loading"]</span>
+    }
+</Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _loading;
+    private bool _isOffline;
+    private DateOnly? _fromDate;
+    private DateOnly? _toDate;
+    private PosExpenseSummaryDto? _summary;
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewExpenses))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task OnFromDateChanged(DateOnly? value)
+    {
+        _fromDate = value;
+        await ReloadAsync();
+    }
+
+    private async Task OnToDateChanged(DateOnly? value)
+    {
+        _toDate = value;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        StateHasChanged();
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _summary = null;
+            _errorTitle = L["Expenses_OfflineTitle"];
+            _errorMessage = L["Expenses_OfflineMessage"];
+            _loading = false;
+            return;
+        }
+
+        var result = await Expenses.GetSummaryAsync(_fromDate, _toDate);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _summary = result.Data;
+        }
+        else
+        {
+            _summary = null;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private void GoExpenses() => Nav.NavigateTo("/expenses");
+}

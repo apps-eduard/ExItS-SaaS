@@ -1,0 +1,250 @@
+@page "/expenses"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosExpenseClient Expenses
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageExpenses);
+<Page>
+    <PageHeader Title="@L["Expenses_Title"]" Subtitle="@L["Expenses_Subtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="GoNew">@L["Expenses_New"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoCategories">@L["Expenses_OpenCategories"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoSummary">@L["Expenses_OpenSummary"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Expenses_OfflineTitle"]" Message="@L["Expenses_OfflineMessage"]" />
+    }
+
+    <SearchToolbar SearchText="@_expenseNumber" SearchTextChanged="OnExpenseNumberChanged" Placeholder="@L["Expenses_SearchPlaceholder"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Expenses_Refresh"]</Button>
+        </Actions>
+    </SearchToolbar>
+
+    <Section Title="@L["Expenses_FiltersTitle"]">
+        <Stack Gap="3">
+            <Select Label="@L["Expenses_Filter_Status"]"
+                    Value="@_statusFilter"
+                    ValueChanged="OnStatusFilterChanged"
+                    Options="@ExpensesUiOptions.StatusFilters(L)" />
+            <Select Label="@L["Expenses_Filter_Payment"]"
+                    Value="@_paymentFilter"
+                    ValueChanged="OnPaymentFilterChanged"
+                    Options="@ExpensesUiOptions.PaymentMethodFilters(L)" />
+            <DateInput Label="@L["Expenses_Filter_FromDate"]"
+                       Value="@_fromDate"
+                       ValueChanged="OnFromDateChanged" />
+            <DateInput Label="@L["Expenses_Filter_ToDate"]"
+                       Value="@_toDate"
+                       ValueChanged="OnToDateChanged" />
+        </Stack>
+    </Section>
+
+    <ResponsiveDataList TItem="PosExpenseDto"
+                        Items="@_items"
+                        Columns="@Columns"
+                        CellTemplate="@CellTemplate"
+                        IsLoading="@_loading"
+                        LoadingLabel="@L["Expenses_Loading"]"
+                        EmptyTitle="@L["Expenses_EmptyTitle"]"
+                        EmptyMessage="@L["Expenses_EmptyMessage"]"
+                        ErrorTitle="@_errorTitle"
+                        ErrorMessage="@_errorMessage"
+                        RetryLabel="@L["Api_Retry"]"
+                        OnRetry="ReloadAsync"
+                        AriaLabel="@L["Expenses_Title"]" />
+
+    @if (!_loading && _totalCount > 0)
+    {
+        <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
+    }
+</Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _loading;
+    private bool _isOffline;
+    private string? _expenseNumber;
+    private string? _statusFilter;
+    private string? _paymentFilter;
+    private DateOnly? _fromDate;
+    private DateOnly? _toDate;
+    private int _page = 1;
+    private const int _pageSize = 20;
+    private int _totalCount;
+    private IReadOnlyList<PosExpenseDto> _items = Array.Empty<PosExpenseDto>();
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    private IReadOnlyList<DataColumnDefinition> Columns =>
+    [
+        new("expenseNumber", L["Expenses_Col_ExpenseNumber"], Primary: true, Width: "22%"),
+        new("date", L["Expenses_Col_Date"], Width: "16%"),
+        new("category", L["Expenses_Col_Category"], Width: "18%"),
+        new("payment", L["Expenses_Col_Payment"], Width: "14%"),
+        new("amount", L["Expenses_Col_Amount"], Width: "14%"),
+        new("status", L["Expenses_Col_Status"], Width: "16%"),
+    ];
+
+    private RenderFragment<(PosExpenseDto Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
+    {
+        switch (context.Column.Key)
+        {
+            case "expenseNumber":
+                builder.OpenElement(0, "a");
+                builder.AddAttribute(1, "class", "pos-link");
+                builder.AddAttribute(2, "href", $"/expenses/{context.Item.ExpenseId:D}");
+                builder.AddContent(3, context.Item.ExpenseNumber);
+                builder.CloseElement();
+                break;
+            case "date":
+                builder.AddContent(0, context.Item.ExpenseDate.ToString("d"));
+                break;
+            case "category":
+                builder.AddContent(0, string.IsNullOrWhiteSpace(context.Item.CategoryName)
+                    ? context.Item.CategoryId.ToString("D")
+                    : context.Item.CategoryName);
+                break;
+            case "payment":
+                builder.AddContent(0, ExpensesUiOptions.PaymentMethodLabel(L, context.Item.PaymentMethod));
+                break;
+            case "amount":
+                builder.OpenComponent<MoneyDisplay>(0);
+                builder.AddAttribute(1, "Amount", context.Item.Amount);
+                builder.AddAttribute(2, "CurrencyCode", "PHP");
+                builder.CloseComponent();
+                break;
+            default:
+                builder.OpenComponent<Badge>(0);
+                builder.AddAttribute(1, "Tone", context.Item.Status == PosExpenseOptions.RecordedStatus
+                    ? BadgeTone.Success
+                    : BadgeTone.Neutral);
+                builder.AddAttribute(2, "ChildContent", (RenderFragment)(b =>
+                    b.AddContent(0, ExpensesUiOptions.StatusLabel(L, context.Item.Status))));
+                builder.CloseComponent();
+                break;
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewExpenses))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task OnExpenseNumberChanged(string? value)
+    {
+        _expenseNumber = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnStatusFilterChanged(string? value)
+    {
+        _statusFilter = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnPaymentFilterChanged(string? value)
+    {
+        _paymentFilter = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnFromDateChanged(DateOnly? value)
+    {
+        _fromDate = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnToDateChanged(DateOnly? value)
+    {
+        _toDate = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _page = page;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        StateHasChanged();
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _items = Array.Empty<PosExpenseDto>();
+            _totalCount = 0;
+            _errorTitle = L["Expenses_OfflineTitle"];
+            _errorMessage = L["Expenses_OfflineMessage"];
+            _loading = false;
+            return;
+        }
+
+        var result = await Expenses.ListExpensesAsync(
+            string.IsNullOrWhiteSpace(_statusFilter) ? null : _statusFilter,
+            string.IsNullOrWhiteSpace(_paymentFilter) ? null : _paymentFilter,
+            categoryId: null,
+            _fromDate,
+            _toDate,
+            _expenseNumber,
+            _page,
+            _pageSize);
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _items = result.Data.Items;
+            _totalCount = result.Data.TotalCount;
+        }
+        else
+        {
+            _items = Array.Empty<PosExpenseDto>();
+            _totalCount = 0;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private void GoNew() => Nav.NavigateTo("/expenses/new");
+    private void GoCategories() => Nav.NavigateTo("/expenses/categories");
+    private void GoSummary() => Nav.NavigateTo("/expenses/summary");
+}

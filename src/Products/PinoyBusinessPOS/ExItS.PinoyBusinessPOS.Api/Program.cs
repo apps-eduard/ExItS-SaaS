@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Api.Catalog;
 using ExItS.PinoyBusinessPOS.Api.Common;
 using ExItS.PinoyBusinessPOS.Api.Credit;
 using ExItS.PinoyBusinessPOS.Api.Customers;
+using ExItS.PinoyBusinessPOS.Api.Expenses;
 using ExItS.PinoyBusinessPOS.Api.Inventory;
 using ExItS.PinoyBusinessPOS.Api.Offline;
 using ExItS.PinoyBusinessPOS.Api.Payments;
@@ -11,6 +12,7 @@ using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Expenses;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Application.Sales;
@@ -58,6 +60,15 @@ builder.Services.AddScoped<InventoryQueryService>();
 builder.Services.AddScoped<EnableInventoryTracking>();
 builder.Services.AddScoped<DisableInventoryTracking>();
 builder.Services.AddScoped<AdjustInventoryStock>();
+builder.Services.AddScoped<ExpenseCategoryQueryService>();
+builder.Services.AddScoped<CreateExpenseCategory>();
+builder.Services.AddScoped<UpdateExpenseCategory>();
+builder.Services.AddScoped<DeactivateExpenseCategory>();
+builder.Services.AddScoped<ReactivateExpenseCategory>();
+builder.Services.AddScoped<ExpenseQueryService>();
+builder.Services.AddScoped<RecordExpense>();
+builder.Services.AddScoped<VoidExpense>();
+builder.Services.AddScoped<ExpenseSummaryService>();
 
 var app = builder.Build();
 
@@ -73,9 +84,10 @@ app.MapStatementEndpoints();
 app.MapCatalogEndpoints();
 app.MapSaleEndpoints();
 app.MapInventoryEndpoints();
+app.MapExpenseEndpoints();
 app.MapDevOfflineProbeEndpoints();
 
-// Phase marker: P8-WP04-basic-inventory
+// Phase marker: P8-WP05-expenses
 
 app.Run();
 

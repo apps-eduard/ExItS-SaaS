@@ -30,7 +30,9 @@ internal static class PosApiResults
             or ApplicationErrorCodes.ProductNotFound
             or ApplicationErrorCodes.SaleNotFound
             or ApplicationErrorCodes.InventoryAccountNotFound
-            or ApplicationErrorCodes.InventoryProductNotFound => StatusCodes.Status404NotFound,
+            or ApplicationErrorCodes.InventoryProductNotFound
+            or ApplicationErrorCodes.ExpenseCategoryNotFound
+            or ApplicationErrorCodes.ExpenseNotFound => StatusCodes.Status404NotFound,
 
         ApplicationErrorCodes.MobileConflict
             or ApplicationErrorCodes.ConcurrencyConflict
@@ -64,14 +66,21 @@ internal static class PosApiResults
             or DomainErrorCodes.InventoryOpeningDuplicate
             or DomainErrorCodes.InventoryUomChangeBlocked
             or DomainErrorCodes.InventoryAlreadyTracked
-            or DomainErrorCodes.InventoryNotTracked => StatusCodes.Status409Conflict,
+            or DomainErrorCodes.InventoryNotTracked
+            or ApplicationErrorCodes.ExpenseCategoryNameConflict
+            or ApplicationErrorCodes.ExpenseNumberConflict
+            or ApplicationErrorCodes.ExpenseConcurrencyConflict
+            or DomainErrorCodes.InvalidExpenseCategoryStatusTransition
+            or DomainErrorCodes.ExpenseCategoryNotActive
+            or DomainErrorCodes.InvalidExpenseStatusTransition => StatusCodes.Status409Conflict,
 
         ApplicationErrorCodes.SaleProductNotFound => StatusCodes.Status400BadRequest,
 
         ApplicationErrorCodes.OrganizationRequired
             or ApplicationErrorCodes.ActorRequired
             or ApplicationErrorCodes.StatementInvalidPeriod
-            or ApplicationErrorCodes.CategoryNotAssignable => StatusCodes.Status400BadRequest,
+            or ApplicationErrorCodes.CategoryNotAssignable
+            or ApplicationErrorCodes.ExpenseCategoryNotAssignable => StatusCodes.Status400BadRequest,
 
         ApplicationErrorCodes.CommercialAccessUnknown
             or ApplicationErrorCodes.CommercialCapabilityDenied => StatusCodes.Status403Forbidden,

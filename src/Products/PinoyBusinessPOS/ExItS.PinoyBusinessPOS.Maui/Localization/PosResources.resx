@@ -832,4 +832,100 @@
   <data name="Inventory_InsufficientStockTitle" xml:space="preserve"><value>Insufficient stock</value></data>
   <data name="Inventory_InsufficientStockMessage" xml:space="preserve"><value>One or more tracked products do not have enough on-hand quantity for this sale.</value></data>
   <data name="Nav_Inventory" xml:space="preserve"><value>Inventory</value></data>
+  <data name="Nav_Expenses" xml:space="preserve"><value>Expenses</value></data>
+  <data name="Expenses_Title" xml:space="preserve"><value>Expenses</value></data>
+  <data name="Expenses_Subtitle" xml:space="preserve"><value>Record store expenses (online only).</value></data>
+  <data name="Expenses_New" xml:space="preserve"><value>New expense</value></data>
+  <data name="Expenses_Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Expenses_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Expenses_Save" xml:space="preserve"><value>Save expense</value></data>
+  <data name="Expenses_BackToList" xml:space="preserve"><value>Back to expenses</value></data>
+  <data name="Expenses_Loading" xml:space="preserve"><value>Loading expenses…</value></data>
+  <data name="Expenses_SearchPlaceholder" xml:space="preserve"><value>Search by expense number</value></data>
+  <data name="Expenses_FiltersTitle" xml:space="preserve"><value>Filters</value></data>
+  <data name="Expenses_Filter_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Expenses_Filter_Payment" xml:space="preserve"><value>Payment method</value></data>
+  <data name="Expenses_Filter_FromDate" xml:space="preserve"><value>From date</value></data>
+  <data name="Expenses_Filter_ToDate" xml:space="preserve"><value>To date</value></data>
+  <data name="Expenses_Filter_AllStatuses" xml:space="preserve"><value>All statuses</value></data>
+  <data name="Expenses_Filter_AllPayments" xml:space="preserve"><value>All payment methods</value></data>
+  <data name="Expenses_Status_Recorded" xml:space="preserve"><value>Recorded</value></data>
+  <data name="Expenses_Status_Voided" xml:space="preserve"><value>Voided</value></data>
+  <data name="Expenses_Payment_Cash" xml:space="preserve"><value>Cash</value></data>
+  <data name="Expenses_Payment_ManualGCash" xml:space="preserve"><value>GCash (manual)</value></data>
+  <data name="Expenses_Col_ExpenseNumber" xml:space="preserve"><value>Expense number</value></data>
+  <data name="Expenses_Col_Date" xml:space="preserve"><value>Date</value></data>
+  <data name="Expenses_Col_Category" xml:space="preserve"><value>Category</value></data>
+  <data name="Expenses_Col_Payment" xml:space="preserve"><value>Payment</value></data>
+  <data name="Expenses_Col_Amount" xml:space="preserve"><value>Amount</value></data>
+  <data name="Expenses_Col_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Expenses_Col_Actions" xml:space="preserve"><value>Actions</value></data>
+  <data name="Expenses_EmptyTitle" xml:space="preserve"><value>No expenses yet</value></data>
+  <data name="Expenses_EmptyMessage" xml:space="preserve"><value>Recorded expenses appear here. Add a category first, then record an expense.</value></data>
+  <data name="Expenses_ErrorTitle" xml:space="preserve"><value>Expense error</value></data>
+  <data name="Expenses_SuccessTitle" xml:space="preserve"><value>Done</value></data>
+  <data name="Expenses_OfflineTitle" xml:space="preserve"><value>Reconnect required</value></data>
+  <data name="Expenses_OfflineMessage" xml:space="preserve"><value>Expenses need a connection. Reconnect to view or record expenses.</value></data>
+  <data name="Expenses_NotFoundTitle" xml:space="preserve"><value>Expense not found</value></data>
+  <data name="Expenses_NotFoundMessage" xml:space="preserve"><value>This expense is not available for your store.</value></data>
+  <data name="Expenses_CreateTitle" xml:space="preserve"><value>New expense</value></data>
+  <data name="Expenses_DetailTitle" xml:space="preserve"><value>Expense details</value></data>
+  <data name="Expenses_DetailSection" xml:space="preserve"><value>Expense</value></data>
+  <data name="Expenses_CategoriesTitle" xml:space="preserve"><value>Expense categories</value></data>
+  <data name="Expenses_CategoriesSubtitle" xml:space="preserve"><value>Group expenses for easier tracking.</value></data>
+  <data name="Expenses_SummaryTitle" xml:space="preserve"><value>Expense summary</value></data>
+  <data name="Expenses_SummarySubtitle" xml:space="preserve"><value>Totals for the selected date range (voided excluded from net).</value></data>
+  <data name="Expenses_SummaryTotals" xml:space="preserve"><value>Totals</value></data>
+  <data name="Expenses_SummaryByCategory" xml:space="preserve"><value>By category</value></data>
+  <data name="Expenses_SummaryByPayment" xml:space="preserve"><value>By payment method</value></data>
+  <data name="Expenses_SummaryEmptyTitle" xml:space="preserve"><value>No totals yet</value></data>
+  <data name="Expenses_SummaryEmptyMessage" xml:space="preserve"><value>No recorded expenses match this date range.</value></data>
+  <data name="Expenses_OpenCategories" xml:space="preserve"><value>Categories</value></data>
+  <data name="Expenses_OpenSummary" xml:space="preserve"><value>Summary</value></data>
+  <data name="Expenses_Amount" xml:space="preserve"><value>Amount</value></data>
+  <data name="Expenses_Description" xml:space="preserve"><value>Description</value></data>
+  <data name="Expenses_Payee" xml:space="preserve"><value>Payee</value></data>
+  <data name="Expenses_PayeeHint" xml:space="preserve"><value>Optional. Who received the payment.</value></data>
+  <data name="Expenses_GCashReference" xml:space="preserve"><value>GCash reference</value></data>
+  <data name="Expenses_ExpenseDate" xml:space="preserve"><value>Expense date</value></data>
+  <data name="Expenses_Category" xml:space="preserve"><value>Category</value></data>
+  <data name="Expenses_Payment" xml:space="preserve"><value>Payment method</value></data>
+  <data name="Expenses_SelectCategory" xml:space="preserve"><value>Select a category</value></data>
+  <data name="Expenses_CategoryRequired" xml:space="preserve"><value>Select an active category.</value></data>
+  <data name="Expenses_AmountRequired" xml:space="preserve"><value>Enter an amount greater than zero.</value></data>
+  <data name="Expenses_DescriptionRequired" xml:space="preserve"><value>Description is required.</value></data>
+  <data name="Expenses_DateRequired" xml:space="preserve"><value>Expense date is required.</value></data>
+  <data name="Expenses_RecordedAt" xml:space="preserve"><value>Recorded</value></data>
+  <data name="Expenses_Void" xml:space="preserve"><value>Void expense</value></data>
+  <data name="Expenses_VoidTitle" xml:space="preserve"><value>Void this expense?</value></data>
+  <data name="Expenses_VoidMessage" xml:space="preserve"><value>A voided expense stops counting toward net totals. Record a replacement if you need a correction. Give a reason.</value></data>
+  <data name="Expenses_VoidReason" xml:space="preserve"><value>Void reason</value></data>
+  <data name="Expenses_VoidedAt" xml:space="preserve"><value>Voided</value></data>
+  <data name="Expenses_VoidedSuccess" xml:space="preserve"><value>Expense voided.</value></data>
+  <data name="Expenses_GrossTotal" xml:space="preserve"><value>Gross total</value></data>
+  <data name="Expenses_VoidedTotal" xml:space="preserve"><value>Voided total</value></data>
+  <data name="Expenses_NetTotal" xml:space="preserve"><value>Net total</value></data>
+  <data name="Expenses_RecordedCount" xml:space="preserve"><value>Recorded count</value></data>
+  <data name="Expenses_VoidedCount" xml:space="preserve"><value>Voided count</value></data>
+  <data name="Expenses_GCash_ManualTitle" xml:space="preserve"><value>Manual GCash entry</value></data>
+  <data name="Expenses_GCash_ManualWarning" xml:space="preserve"><value>This reference is typed by you and is never verified with GCash. Confirm the payment in your own GCash app.</value></data>
+  <data name="Expenses_GCash_ReferenceHint" xml:space="preserve"><value>Optional. Copy the reference from your GCash app.</value></data>
+  <data name="Expenses_GCash_ReferenceTooLong" xml:space="preserve"><value>The GCash reference is too long.</value></data>
+  <data name="Expenses_CategoryName" xml:space="preserve"><value>Category name</value></data>
+  <data name="Expenses_Category_AddTitle" xml:space="preserve"><value>New category</value></data>
+  <data name="Expenses_Category_EditTitle" xml:space="preserve"><value>Rename category</value></data>
+  <data name="Expenses_Category_Add" xml:space="preserve"><value>Add category</value></data>
+  <data name="Expenses_Category_Rename" xml:space="preserve"><value>Rename</value></data>
+  <data name="Expenses_Category_Deactivate" xml:space="preserve"><value>Deactivate</value></data>
+  <data name="Expenses_Category_Reactivate" xml:space="preserve"><value>Reactivate</value></data>
+  <data name="Expenses_Category_SearchPlaceholder" xml:space="preserve"><value>Search categories</value></data>
+  <data name="Expenses_Category_EmptyTitle" xml:space="preserve"><value>No categories yet</value></data>
+  <data name="Expenses_Category_EmptyMessage" xml:space="preserve"><value>Add a category before recording expenses.</value></data>
+  <data name="Expenses_Category_NameRequired" xml:space="preserve"><value>Category name is required.</value></data>
+  <data name="Expenses_Category_CreatedSuccess" xml:space="preserve"><value>Category created.</value></data>
+  <data name="Expenses_Category_UpdatedSuccess" xml:space="preserve"><value>Category updated.</value></data>
+  <data name="Expenses_Category_DeactivatedSuccess" xml:space="preserve"><value>Category deactivated.</value></data>
+  <data name="Expenses_Category_ReactivatedSuccess" xml:space="preserve"><value>Category reactivated.</value></data>
+  <data name="Expenses_CategoryStatus_Active" xml:space="preserve"><value>Active</value></data>
+  <data name="Expenses_CategoryStatus_Inactive" xml:space="preserve"><value>Inactive</value></data>
 </root>

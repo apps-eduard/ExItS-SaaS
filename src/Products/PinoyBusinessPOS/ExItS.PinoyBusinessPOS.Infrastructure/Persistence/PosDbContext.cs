@@ -1,12 +1,14 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Expenses;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Customers;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Expenses;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Idempotency;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Payments;
@@ -36,6 +38,9 @@ public sealed class PosDbContext : DbContext
     internal DbSet<SaleNumberSequenceRecord> SaleNumberSequences => Set<SaleNumberSequenceRecord>();
     internal DbSet<InventoryAccountRecord> InventoryAccounts => Set<InventoryAccountRecord>();
     internal DbSet<StockMovementRecord> StockMovements => Set<StockMovementRecord>();
+    internal DbSet<ExpenseCategoryRecord> ExpenseCategories => Set<ExpenseCategoryRecord>();
+    internal DbSet<ExpenseRecord> Expenses => Set<ExpenseRecord>();
+    internal DbSet<ExpenseNumberSequenceRecord> ExpenseNumberSequences => Set<ExpenseNumberSequenceRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -671,6 +676,144 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_stock_movements_products");
+        });
+
+        modelBuilder.Entity<ExpenseCategoryRecord>(entity =>
+        {
+            entity.ToTable("expense_categories", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_expense_categories_status",
+                    "status IN ('Active', 'Inactive')");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.Name)
+                .HasColumnName("name")
+                .HasMaxLength(ExpenseCategory.NameMaxLength)
+                .IsRequired();
+            entity.Property(e => e.NormalizedName)
+                .HasColumnName("normalized_name")
+                .HasMaxLength(ExpenseCategory.NameMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.NormalizedName })
+                .IsUnique()
+                .HasDatabaseName("ux_expense_categories_org_active_name")
+                .HasFilter($"status = '{nameof(ExpenseCategoryStatus.Active)}'");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.Name })
+                .HasDatabaseName("ix_expense_categories_org_name");
+        });
+
+        modelBuilder.Entity<ExpenseRecord>(entity =>
+        {
+            entity.ToTable("expenses", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_expenses_status",
+                    "status IN ('Recorded', 'Voided')");
+                tb.HasCheckConstraint(
+                    "ck_expenses_payment_method",
+                    $"payment_method IN ({string.Join(", ", ExpensePaymentMethods.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_expenses_amount_positive",
+                    "amount > 0");
+                tb.HasCheckConstraint(
+                    "ck_expenses_void_consistency",
+                    "(status = 'Recorded' AND voided_at_utc IS NULL AND voided_by IS NULL AND void_reason IS NULL) OR (status = 'Voided' AND voided_at_utc IS NOT NULL AND voided_by IS NOT NULL AND void_reason IS NOT NULL)");
+                // Cash: no GCash reference. ManualGCash: optional reference.
+                tb.HasCheckConstraint(
+                    "ck_expenses_tender_consistency",
+                    "(payment_method = 'Cash' AND gcash_reference IS NULL) OR (payment_method = 'ManualGCash')");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.ExpenseNumber)
+                .HasColumnName("expense_number")
+                .HasMaxLength(ExpenseNumbers.MaxLength)
+                .IsRequired();
+            entity.Property(e => e.CategoryId).HasColumnName("category_id").IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.PaymentMethod)
+                .HasColumnName("payment_method")
+                .HasMaxLength(ExpensePaymentMethods.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Amount).HasColumnName("amount").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.Description)
+                .HasColumnName("description")
+                .HasMaxLength(Expense.DescriptionMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Payee)
+                .HasColumnName("payee")
+                .HasMaxLength(Expense.PayeeMaxLength);
+            entity.Property(e => e.GcashReference)
+                .HasColumnName("gcash_reference")
+                .HasMaxLength(Expense.GCashReferenceMaxLength);
+            entity.Property(e => e.ExpenseDate).HasColumnName("expense_date").HasColumnType("date").IsRequired();
+            entity.Property(e => e.RecordedAtUtc).HasColumnName("recorded_at_utc");
+            entity.Property(e => e.RecordedBy).HasColumnName("recorded_by").IsRequired();
+            entity.Property(e => e.VoidedAtUtc).HasColumnName("voided_at_utc");
+            entity.Property(e => e.VoidedBy).HasColumnName("voided_by");
+            entity.Property(e => e.VoidReason)
+                .HasColumnName("void_reason")
+                .HasMaxLength(Expense.VoidReasonMaxLength);
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ExpenseNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_expenses_org_expense_number");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ExpenseDate })
+                .HasDatabaseName("ix_expenses_org_expense_date");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.Status })
+                .HasDatabaseName("ix_expenses_org_status");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.PaymentMethod })
+                .HasDatabaseName("ix_expenses_org_payment_method");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.CategoryId })
+                .HasDatabaseName("ix_expenses_org_category_id");
+
+            entity.HasOne<ExpenseCategoryRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_expenses_expense_categories");
+        });
+
+        modelBuilder.Entity<ExpenseNumberSequenceRecord>(entity =>
+        {
+            entity.ToTable("expense_number_sequences", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_expense_number_sequences_last_value_positive",
+                    "last_value > 0");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BusinessDate })
+                .HasName("pk_expense_number_sequences");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date");
+            entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
         });
     }
 }

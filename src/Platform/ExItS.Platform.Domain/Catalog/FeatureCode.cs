@@ -36,6 +36,12 @@ public sealed partial class FeatureCode : IEquatable<FeatureCode>
     /// <summary>POS Basic Store: enable/disable tracking and record manual stock adjustments.</summary>
     public const string StoreInventoryManage = "store-inventory-manage";
 
+    /// <summary>POS Basic Store: view expense history, categories, and period summaries.</summary>
+    public const string StoreExpensesView = "store-expenses-view";
+
+    /// <summary>POS Basic Store: record and void expenses and manage expense categories.</summary>
+    public const string StoreExpensesManage = "store-expenses-manage";
+
     private static readonly Regex ValidPattern = CreateValidPattern();
 
     public string Value { get; }

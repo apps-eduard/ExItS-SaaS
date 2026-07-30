@@ -1,0 +1,264 @@
+@page "/expenses/new"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosExpenseClient Expenses
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageExpenses);
+    var isGCash = _paymentMethod == PosExpenseOptions.ManualGCashPaymentMethod;
+    var blocked = _isOffline || !canManage;
+<Page>
+    <PageHeader Title="@L["Expenses_CreateTitle"]" Subtitle="@L["Expenses_Subtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Expenses_BackToList"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Expenses_OfflineTitle"]" Message="@L["Expenses_OfflineMessage"]" />
+    }
+    else if (!canManage)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Expenses_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Expenses_CreateTitle"]">
+        <Stack Gap="3">
+            <Select Label="@L["Expenses_Category"]"
+                    Value="@_categoryId"
+                    ValueChanged="v => _categoryId = v"
+                    Options="@_categoryOptions"
+                    Required="true"
+                    IsInvalid="@(!string.IsNullOrEmpty(_categoryError))"
+                    ErrorText="@_categoryError"
+                    Disabled="@(blocked || _saving || _loadingCategories)" />
+            <Select Label="@L["Expenses_Payment"]"
+                    Value="@_paymentMethod"
+                    ValueChanged="OnPaymentMethodChanged"
+                    Options="@ExpensesUiOptions.PaymentMethods(L)"
+                    Required="true"
+                    Disabled="@blocked" />
+            <CurrencyInput Label="@L["Expenses_Amount"]"
+                           Value="@_amount"
+                           ValueChanged="v => _amount = v"
+                           CurrencyCode="PHP"
+                           Required="true"
+                           IsInvalid="@(!string.IsNullOrEmpty(_amountError))"
+                           ErrorText="@_amountError"
+                           Disabled="@blocked" />
+            <TextArea Label="@L["Expenses_Description"]"
+                      Value="@_description"
+                      ValueChanged="v => _description = v"
+                      Required="true"
+                      Rows="3"
+                      IsInvalid="@(!string.IsNullOrEmpty(_descriptionError))"
+                      ErrorText="@_descriptionError"
+                      Disabled="@blocked" />
+            <DateInput Label="@L["Expenses_ExpenseDate"]"
+                       Value="@_expenseDate"
+                       ValueChanged="v => _expenseDate = v"
+                       Required="true"
+                       IsInvalid="@(!string.IsNullOrEmpty(_dateError))"
+                       ErrorText="@_dateError"
+                       Disabled="@blocked" />
+            <TextInput Label="@L["Expenses_Payee"]"
+                       Value="@_payee"
+                       ValueChanged="v => _payee = v"
+                       Hint="@L["Expenses_PayeeHint"]"
+                       Disabled="@blocked" />
+            @if (isGCash)
+            {
+                <Alert Tone="AlertTone.Warning" Title="@L["Expenses_GCash_ManualTitle"]" Message="@L["Expenses_GCash_ManualWarning"]" />
+                <TextInput Label="@L["Expenses_GCashReference"]"
+                           Value="@_gcashReference"
+                           ValueChanged="v => _gcashReference = v"
+                           Hint="@L["Expenses_GCash_ReferenceHint"]"
+                           IsInvalid="@(!string.IsNullOrEmpty(_gcashError))"
+                           ErrorText="@_gcashError"
+                           Disabled="@blocked" />
+            }
+        </Stack>
+    </Section>
+
+    <FormActions>
+        <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="GoList">@L["Expenses_Cancel"]</Button>
+        <Button Variant="ButtonVariant.Primary"
+                IsLoading="@_saving"
+                Disabled="@blocked"
+                OnClick="SaveAsync">@L["Expenses_Save"]</Button>
+    </FormActions>
+</Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _saving;
+    private bool _isOffline;
+    private bool _loadingCategories;
+    private string? _categoryId;
+    private string _paymentMethod = PosExpenseOptions.CashPaymentMethod;
+    private decimal? _amount;
+    private string? _description;
+    private DateOnly? _expenseDate = DateOnly.FromDateTime(DateTime.Today);
+    private string? _payee;
+    private string? _gcashReference;
+    private string? _categoryError;
+    private string? _amountError;
+    private string? _descriptionError;
+    private string? _dateError;
+    private string? _gcashError;
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private IReadOnlyList<SelectOption> _categoryOptions = Array.Empty<SelectOption>();
+    private Guid _attemptExpenseId = Guid.NewGuid();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ManageExpenses))
+        {
+            Nav.NavigateTo("/expenses", replace: true);
+            return;
+        }
+
+        _ready = true;
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (!_isOffline)
+        {
+            await LoadCategoriesAsync();
+        }
+    }
+
+    private async Task LoadCategoriesAsync()
+    {
+        _loadingCategories = true;
+        var result = await Expenses.ListCategoriesAsync(
+            ExpensesUiOptions.ActiveCategoryStatus,
+            search: null,
+            page: 1,
+            pageSize: 100);
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _categoryOptions = ExpensesUiOptions.CategoryChoices(L, result.Data.Items);
+        }
+        else
+        {
+            _categoryOptions = ExpensesUiOptions.CategoryChoices(L, Array.Empty<PosExpenseCategoryDto>());
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loadingCategories = false;
+    }
+
+    private void OnPaymentMethodChanged(string? value)
+    {
+        _paymentMethod = string.IsNullOrWhiteSpace(value)
+            ? PosExpenseOptions.CashPaymentMethod
+            : value;
+        _gcashError = null;
+        if (_paymentMethod != PosExpenseOptions.ManualGCashPaymentMethod)
+        {
+            _gcashReference = null;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _categoryError = null;
+        _amountError = null;
+        _descriptionError = null;
+        _dateError = null;
+        _gcashError = null;
+        _errorTitle = null;
+        _errorMessage = null;
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline || !Capabilities.IsAllowed(UtangCapability.ManageExpenses))
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_categoryId) || !Guid.TryParse(_categoryId, out var categoryId))
+        {
+            _categoryError = L["Expenses_CategoryRequired"];
+            return;
+        }
+
+        if (_amount is null || _amount.Value <= 0m)
+        {
+            _amountError = L["Expenses_AmountRequired"];
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_description))
+        {
+            _descriptionError = L["Expenses_DescriptionRequired"];
+            return;
+        }
+
+        if (_expenseDate is null)
+        {
+            _dateError = L["Expenses_DateRequired"];
+            return;
+        }
+
+        if (_paymentMethod == PosExpenseOptions.ManualGCashPaymentMethod
+            && _gcashReference?.Trim().Length > PosExpenseOptions.GCashReferenceMaxLength)
+        {
+            _gcashError = L["Expenses_GCash_ReferenceTooLong"];
+            return;
+        }
+
+        _saving = true;
+        var request = new RecordExpenseRequest(
+            categoryId,
+            _paymentMethod,
+            _amount.Value,
+            _description.Trim(),
+            _expenseDate.Value,
+            string.IsNullOrWhiteSpace(_payee) ? null : _payee.Trim(),
+            _paymentMethod == PosExpenseOptions.ManualGCashPaymentMethod
+                ? (string.IsNullOrWhiteSpace(_gcashReference) ? null : _gcashReference.Trim())
+                : null,
+            _attemptExpenseId);
+
+        var result = await Expenses.RecordExpenseAsync(request);
+        _saving = false;
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            Nav.NavigateTo($"/expenses/{result.Data.ExpenseId:D}");
+            return;
+        }
+
+        _attemptExpenseId = Guid.NewGuid();
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _errorTitle = described.Title;
+        _errorMessage = result.Error?.Detail ?? described.Message;
+    }
+
+    private void GoList() => Nav.NavigateTo("/expenses");
+}

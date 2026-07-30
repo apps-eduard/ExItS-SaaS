@@ -85,4 +85,22 @@ public static class DomainErrorCodes
     public const string InventoryReorderLevelInvalid = "pos.inventory.reorder_level.invalid";
     public const string InventoryOpeningDuplicate = "pos.inventory.opening_duplicate";
     public const string InventoryUomChangeBlocked = "pos.inventory.uom_change_blocked";
+
+    public const string InvalidExpenseCategoryId = "pos.expense_category.id.invalid";
+    public const string InvalidExpenseCategoryName = "pos.expense_category.name.invalid";
+    public const string InvalidExpenseCategoryStatus = "pos.expense_category.status.invalid";
+    public const string InvalidExpenseCategoryStatusTransition = "pos.expense_category.status.invalid_transition";
+    public const string ExpenseCategoryNotActive = "pos.expense_category.not_active";
+
+    public const string InvalidExpenseId = "pos.expense.id.invalid";
+    public const string InvalidExpenseNumber = "pos.expense.number.invalid";
+    public const string InvalidExpenseStatus = "pos.expense.status.invalid";
+    public const string InvalidExpenseStatusTransition = "pos.expense.status.invalid_transition";
+    public const string InvalidExpensePaymentMethod = "pos.expense.payment_method.invalid";
+    public const string InvalidExpenseActor = "pos.expense.actor.invalid";
+    public const string InvalidExpenseAmount = "pos.expense.amount.invalid";
+    public const string InvalidExpenseDescription = "pos.expense.description.invalid";
+    public const string InvalidExpensePayee = "pos.expense.payee.invalid";
+    public const string InvalidExpenseGCashReference = "pos.expense.gcash_reference.invalid";
+    public const string InvalidExpenseVoidReason = "pos.expense.void_reason.invalid";
 }

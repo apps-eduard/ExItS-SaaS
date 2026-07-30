@@ -1,0 +1,325 @@
+@page "/expenses/categories"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosExpenseClient Expenses
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageExpenses);
+<Page>
+    <PageHeader Title="@L["Expenses_CategoriesTitle"]" Subtitle="@L["Expenses_CategoriesSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoExpenses">@L["Expenses_BackToList"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Expenses_OfflineTitle"]" Message="@L["Expenses_OfflineMessage"]" />
+    }
+    else if (!canManage)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_banner))
+    {
+        <Alert Tone="AlertTone.Success" Title="@L["Expenses_SuccessTitle"]" Message="@_banner" />
+    }
+
+    @if (!string.IsNullOrEmpty(_formError))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@L["Expenses_ErrorTitle"]" Message="@_formError" />
+    }
+
+    <Section Title="@(_editingId is null ? L["Expenses_Category_AddTitle"] : L["Expenses_Category_EditTitle"])">
+        <Stack Gap="3">
+            <TextInput Label="@L["Expenses_CategoryName"]"
+                       Value="@_name"
+                       ValueChanged="v => _name = v"
+                       Required="true"
+                       IsInvalid="@(!string.IsNullOrEmpty(_nameError))"
+                       ErrorText="@_nameError"
+                       Disabled="@(!canManage || _isOffline || _saving)" />
+            <FormActions>
+                @if (_editingId is not null)
+                {
+                    <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="CancelEdit">@L["Expenses_Cancel"]</Button>
+                }
+                <Button Variant="ButtonVariant.Primary"
+                        Disabled="@(!canManage || _isOffline)"
+                        IsLoading="@_saving"
+                        OnClick="SaveAsync">@(_editingId is null ? L["Expenses_Category_Add"] : L["Expenses_Save"])</Button>
+            </FormActions>
+        </Stack>
+    </Section>
+
+    <SearchToolbar SearchText="@_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Expenses_Category_SearchPlaceholder"]">
+        <Actions>
+            <Select Value="@_statusFilter"
+                    ValueChanged="OnStatusFilterChanged"
+                    Options="@ExpensesUiOptions.CategoryStatusFilters(L)"
+                    aria-label="@L["Expenses_Filter_Status"]" />
+            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Expenses_Refresh"]</Button>
+        </Actions>
+    </SearchToolbar>
+
+    <ResponsiveDataList TItem="PosExpenseCategoryDto"
+                        Items="@_items"
+                        Columns="@Columns"
+                        CellTemplate="@CellTemplate"
+                        IsLoading="@_loading"
+                        LoadingLabel="@L["Expenses_Loading"]"
+                        EmptyTitle="@L["Expenses_Category_EmptyTitle"]"
+                        EmptyMessage="@L["Expenses_Category_EmptyMessage"]"
+                        ErrorTitle="@_errorTitle"
+                        ErrorMessage="@_errorMessage"
+                        RetryLabel="@L["Api_Retry"]"
+                        OnRetry="ReloadAsync"
+                        AriaLabel="@L["Expenses_CategoriesTitle"]" />
+
+    @if (!_loading && _totalCount > 0)
+    {
+        <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
+    }
+</Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _loading;
+    private bool _saving;
+    private bool _isOffline;
+    private string? _search;
+    private string? _statusFilter = ExpensesUiOptions.ActiveCategoryStatus;
+    private int _page = 1;
+    private const int _pageSize = 20;
+    private int _totalCount;
+    private IReadOnlyList<PosExpenseCategoryDto> _items = Array.Empty<PosExpenseCategoryDto>();
+    private Guid? _editingId;
+    private DateTimeOffset? _editingUpdatedAtUtc;
+    private string? _name;
+    private string? _nameError;
+    private string? _formError;
+    private string? _banner;
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    private IReadOnlyList<DataColumnDefinition> Columns =>
+    [
+        new("name", L["Expenses_CategoryName"], Primary: true, Width: "48%"),
+        new("status", L["Expenses_Col_Status"], Width: "22%"),
+        new("actions", L["Expenses_Col_Actions"], Width: "30%"),
+    ];
+
+    private RenderFragment<(PosExpenseCategoryDto Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
+    {
+        switch (context.Column.Key)
+        {
+            case "name":
+                builder.AddContent(0, context.Item.Name);
+                break;
+            case "status":
+                builder.OpenComponent<Badge>(0);
+                builder.AddAttribute(1, "Tone", context.Item.Status == ExpensesUiOptions.ActiveCategoryStatus
+                    ? BadgeTone.Success
+                    : BadgeTone.Neutral);
+                builder.AddAttribute(2, "ChildContent", (RenderFragment)(b =>
+                    b.AddContent(0, ExpensesUiOptions.CategoryStatusLabel(L, context.Item.Status))));
+                builder.CloseComponent();
+                break;
+            default:
+                var item = context.Item;
+                builder.OpenComponent<Button>(0);
+                builder.AddAttribute(1, "Variant", ButtonVariant.Ghost);
+                builder.AddAttribute(2, "Size", ButtonSize.Sm);
+                builder.AddAttribute(3, "OnClick", EventCallback.Factory.Create(this, () => BeginEdit(item)));
+                builder.AddAttribute(4, "ChildContent", (RenderFragment)(b => b.AddContent(0, L["Expenses_Category_Rename"].Value)));
+                builder.CloseComponent();
+
+                var isActive = item.Status == ExpensesUiOptions.ActiveCategoryStatus;
+                builder.OpenComponent<Button>(5);
+                builder.AddAttribute(6, "Variant", isActive ? ButtonVariant.Danger : ButtonVariant.Secondary);
+                builder.AddAttribute(7, "Size", ButtonSize.Sm);
+                builder.AddAttribute(8, "OnClick", EventCallback.Factory.Create(this, () => ToggleStatusAsync(item)));
+                builder.AddAttribute(9, "ChildContent", (RenderFragment)(b => b.AddContent(
+                    0,
+                    isActive ? L["Expenses_Category_Deactivate"].Value : L["Expenses_Category_Reactivate"].Value)));
+                builder.CloseComponent();
+                break;
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewExpenses))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task OnSearchChanged(string? value)
+    {
+        _search = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnStatusFilterChanged(string? value)
+    {
+        _statusFilter = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _page = page;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        StateHasChanged();
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _items = Array.Empty<PosExpenseCategoryDto>();
+            _totalCount = 0;
+            _errorTitle = L["Expenses_OfflineTitle"];
+            _errorMessage = L["Expenses_OfflineMessage"];
+            _loading = false;
+            return;
+        }
+
+        var result = await Expenses.ListCategoriesAsync(
+            string.IsNullOrWhiteSpace(_statusFilter) ? null : _statusFilter,
+            _search,
+            _page,
+            _pageSize);
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _items = result.Data.Items;
+            _totalCount = result.Data.TotalCount;
+        }
+        else
+        {
+            _items = Array.Empty<PosExpenseCategoryDto>();
+            _totalCount = 0;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private void BeginEdit(PosExpenseCategoryDto category)
+    {
+        _editingId = category.CategoryId;
+        _editingUpdatedAtUtc = category.UpdatedAtUtc;
+        _name = category.Name;
+        _nameError = null;
+        _formError = null;
+        _banner = null;
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = null;
+        _editingUpdatedAtUtc = null;
+        _name = null;
+        _nameError = null;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (!Capabilities.IsAllowed(UtangCapability.ManageExpenses))
+        {
+            _formError = L["Access_RestrictedMessage"];
+            return;
+        }
+
+        _nameError = null;
+        _formError = null;
+        _banner = null;
+
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _nameError = L["Expenses_Category_NameRequired"];
+            return;
+        }
+
+        _saving = true;
+        var result = _editingId is { } editingId
+            ? await Expenses.UpdateCategoryAsync(editingId, new UpdatePosExpenseCategoryRequest(_name.Trim(), _editingUpdatedAtUtc))
+            : await Expenses.CreateCategoryAsync(new CreatePosExpenseCategoryRequest(_name.Trim()));
+        _saving = false;
+
+        if (result.IsSuccess)
+        {
+            _banner = _editingId is null
+                ? L["Expenses_Category_CreatedSuccess"]
+                : L["Expenses_Category_UpdatedSuccess"];
+            CancelEdit();
+            await ReloadAsync();
+            return;
+        }
+
+        _formError = result.Error?.Detail
+            ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+    }
+
+    private async Task ToggleStatusAsync(PosExpenseCategoryDto category)
+    {
+        if (!Capabilities.IsAllowed(UtangCapability.ManageExpenses) || _isOffline)
+        {
+            _formError = L["Access_RestrictedMessage"];
+            return;
+        }
+
+        _formError = null;
+        _banner = null;
+
+        var result = category.Status == ExpensesUiOptions.ActiveCategoryStatus
+            ? await Expenses.DeactivateCategoryAsync(category.CategoryId)
+            : await Expenses.ReactivateCategoryAsync(category.CategoryId);
+
+        if (result.IsSuccess)
+        {
+            _banner = category.Status == ExpensesUiOptions.ActiveCategoryStatus
+                ? L["Expenses_Category_DeactivatedSuccess"]
+                : L["Expenses_Category_ReactivatedSuccess"];
+            await ReloadAsync();
+            return;
+        }
+
+        _formError = result.Error?.Detail
+            ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+    }
+
+    private void GoExpenses() => Nav.NavigateTo("/expenses");
+}
