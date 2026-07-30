@@ -163,6 +163,7 @@ Status: **Complete** with documented risks
 Report: [P9-WP04-accessibility-localization-theme-qa.md](../reports/P9-WP04-accessibility-localization-theme-qa.md)
 
 Feature commit: f7b3aecec614eea8b1de601cd08e843f4aea91f8
+Docs commit: a28adb46b95e8a38651a0b8f32119a06f102aae2
 
 Phase marker: `P9-WP04-accessibility-localization-theme-qa`
 
