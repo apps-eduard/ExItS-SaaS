@@ -43,7 +43,7 @@ This workspace does **not** contain a nested HealthCare product tree. Platform `
 
 **Phase 8** is **complete** with documented risks ([P8-WP07 closeout](docs/reports/P8-WP07-basic-store-closeout.md)). Online-only Basic Store MVP is closed.
 
-**Phase 9** is **complete with documented risks** ([P9-WP01](docs/reports/P9-WP01-security-and-privacy-hardening.md)–[P9-WP06](docs/reports/P9-WP06-commercial-mvp-closeout.md)). **Phase 10 — Full POS** is **complete with documented risks** ([P10-WP08 closeout](docs/reports/P10-WP08-phase-10-closeout.md)). Pre-Phase-11 Platform Admin UI recovery and theme persistence reopen are **complete** ([UI recovery](docs/reports/PRE-P11-admin-ui-recovery.md), [theme persistence reopen](docs/reports/PRE-P11-admin-theme-persistence-reopen.md)). Exact next: **Phase 11 — Web UI and Reporting Design System** (do not begin until authorized). **Not production-ready.**
+**Phase 9** is **complete with documented risks** ([P9-WP01](docs/reports/P9-WP01-security-and-privacy-hardening.md)–[P9-WP06](docs/reports/P9-WP06-commercial-mvp-closeout.md)). **Phase 10 — Full POS** is **complete with documented risks** ([P10-WP08 closeout](docs/reports/P10-WP08-phase-10-closeout.md)). **Phase 11** is **in progress** — [P11-WP01 audit](docs/reports/P11-WP01-web-ui-audit-and-component-inventory.md) complete. Exact next: **P11-WP02 — Global Web Layout and Navigation** (do not begin until authorized). **Not production-ready.**
 
 Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`.
 

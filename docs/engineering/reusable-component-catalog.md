@@ -4,6 +4,8 @@
 
 Documentation-only catalog originally authored in P0-WP03. **P5-WP04 implemented** the shared DesignSystem MVP foundation components listed below (forms, validation, responsive data, money, confirm/feedback). Ant Design remains only inside existing HealthCare Staff Web. Business-specific POS controls (PasswordBox, cart, pickers, Utang, payments) remain deferred.
 
+**P11-WP01** produced an authoritative runtime inventory of Admin, DesignSystem, and POS MAUI surfaces, including consolidation candidates and the recommended shared-component boundary. See [P11-WP01 report](../reports/P11-WP01-web-ui-audit-and-component-inventory.md). This catalog remains the historical planned-component list; P11-WP01 is the source of truth for *what exists today*.
+
 Phase labels:
 
 - **MVP foundation** — Phase 5 MAUI / early POS shell

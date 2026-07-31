@@ -11,10 +11,10 @@
 | Portfolio | ExITS SaaS |
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 10 — Full POS (**complete with documented risks**) |
-| Current work package | P10-WP08 — Phase 10 Closeout (**complete**) |
-| Overall status | **Phase 10 closed.** Pre-Phase-11 Admin UI recovery + theme persistence reopen complete (Dark survives sidebar nav; Light visibility strengthened). Exact next: Phase 11 — Web UI and Reporting Design System. Do not begin Phase 11 or Phase 12 until authorized. |
-| Latest verified commit | `46b99a7f6baa87977fb0ed37e678231fa1eb1344` |
+| Current phase | Phase 11 — Web UI and Reporting Design System (**in progress**) |
+| Current work package | P11-WP01 — Web UI Audit and Component Inventory (**complete**) |
+| Overall status | **Phase 11 started.** P11-WP01 audit/inventory complete. Pre-P11 Admin shell/theme baseline locked. Exact next: P11-WP02 — Global Web Layout and Navigation (do not begin until authorized). |
+| Latest verified commit | _(P11-WP01 tip after commit)_ |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred |
 | Last updated | 2026-07-31 |
 
@@ -49,7 +49,9 @@ P10-WP07 ✓ Multiple Registers
         ↓
 P10-WP08 ✓ Phase 10 Closeout (complete with risks — Phase 10 closed)
         ↓
-Phase 11 ○ Web UI and Reporting Design System (do not begin)
+P11-WP01 ✓ Web UI Audit and Component Inventory
+        ↓
+P11-WP02 ○ Global Web Layout and Navigation (do not begin until authorized)
 ```
 
 ## Phase progress
@@ -67,9 +69,16 @@ Phase 11 ○ Web UI and Reporting Design System (do not begin)
 | 8 | Basic Store | **Complete with documented risks** | 7 | 7 | 100% | [Open](phases/phase-08-basic-store.md) |
 | 9 | MVP Hardening and Release | **Complete with documented risks** | 6 | 6 | 100% | [Open](phases/phase-09-mvp-hardening.md) |
 | 10 | Full POS | **Complete with documented risks** | 8 | 8 | 100% | [Open](phases/phase-10-full-pos.md) |
+| 11 | Web UI and Reporting Design System | **In progress** | 1 | — | — | [Open](phases/phase-11-web-ui-reporting-design-system.md) |
 
 **MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).  
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
+
+## Phase 11 work packages
+
+| WP | Status | Key commit |
+|---|---|---|
+| P11-WP01 — Web UI Audit and Component Inventory | Complete | _(after commit)_ |
 
 ## Phase 10 work packages
 
@@ -97,4 +106,4 @@ Phase 11 ○ Web UI and Reporting Design System (do not begin)
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **Phase 11 — Web UI and Reporting Design System** or Phase 12 until explicitly authorized.
+Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P11-WP02** or Phase 12 until explicitly authorized.
