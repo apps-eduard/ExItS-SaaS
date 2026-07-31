@@ -1,0 +1,118 @@
+@page "/permissions"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosPermissionClient Permissions
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ICurrentUserContext CurrentUser
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (!Capabilities.IsAllowed(UtangCapability.ViewPermissions))
+{
+    <Page>
+        <ErrorState Title="@L["Permissions_DeniedTitle"]" Message="@L["Permissions_DeniedMessage"]" />
+    </Page>
+}
+else
+{
+    <Page>
+        <PageHeader Title="@L["Permissions_Title"]" Subtitle="@L["Permissions_Subtitle"]">
+            <Actions>
+                @if (Capabilities.IsAllowed(UtangCapability.ManagePermissions))
+                {
+                    <Button Variant="ButtonVariant.Primary" OnClick="GoNew">@L["Permissions_Assign"]</Button>
+                }
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoMyAccess">@L["Permissions_MyAccess"]</Button>
+            </Actions>
+        </PageHeader>
+
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Permissions_OfflineTitle"]" Message="@L["Permissions_OfflineMessage"]" />
+        }
+
+        @if (_errorMessage is not null)
+        {
+            <Alert Tone="AlertTone.Danger" Title="@L["Permissions_ErrorTitle"]" Message="@_errorMessage" />
+        }
+
+        <Section Title="@L["Permissions_AssignmentsSection"]">
+            @if (_loading)
+            {
+                <Spinner />
+            }
+            else if (_items.Count == 0)
+            {
+                <EmptyState Title="@L["Permissions_EmptyTitle"]" Message="@L["Permissions_EmptyMessage"]" />
+            }
+            else
+            {
+                <Stack Gap="2">
+                    @foreach (var item in _items)
+                    {
+                        <div class="pos-row">
+                            <span class="pos-value-md">@item.RoleDisplayName</span>
+                            <span class="pos-muted">@item.Status</span>
+                            <span class="pos-muted">@item.ActorId.ToString("D")[..8]</span>
+                            <Button Variant="ButtonVariant.Secondary" OnClick="() => GoDetail(item.AssignmentId)">@L["Permissions_Open"]</Button>
+                        </div>
+                    }
+                </Stack>
+            }
+        </Section>
+    </Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _loading = true;
+    private bool _isOffline;
+    private string? _errorMessage;
+    private IReadOnlyList<PosRoleAssignmentDto> _items = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        await LoadAsync();
+    }
+
+    private void GoNew() => Nav.NavigateTo("/permissions/assignments/new");
+    private void GoMyAccess() => Nav.NavigateTo("/permissions/my-access");
+    private void GoDetail(Guid id) => Nav.NavigateTo($"/permissions/assignments/{id:D}");
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _errorMessage = null;
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _items = [];
+            _loading = false;
+            return;
+        }
+
+        var result = await Permissions.ListAssignmentsAsync();
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _errorMessage = result.Error?.Detail ?? L["Permissions_LoadFailed"];
+            _items = [];
+        }
+        else
+        {
+            _items = result.Data.Items;
+        }
+
+        _loading = false;
+    }
+}

@@ -92,7 +92,9 @@ internal static class PosApiResults
             or ApplicationErrorCodes.CashierShiftMismatch
             or DomainErrorCodes.CashierShiftCancelBlockedByActivity
             or DomainErrorCodes.CashierShiftExpectedCashNegative
-            or DomainErrorCodes.InvalidCashierShiftStatusTransition => StatusCodes.Status409Conflict,
+            or DomainErrorCodes.InvalidCashierShiftStatusTransition
+            or DomainErrorCodes.PosRoleAssignmentConflict
+            or DomainErrorCodes.PosRoleLastOwnerProtected => StatusCodes.Status409Conflict,
 
         ApplicationErrorCodes.SaleProductNotFound => StatusCodes.Status400BadRequest,
 

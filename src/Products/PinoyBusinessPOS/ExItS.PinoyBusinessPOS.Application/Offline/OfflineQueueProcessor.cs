@@ -391,4 +391,10 @@ public static class OfflineOperationTypes
 
     /// <summary>Server-side idempotency operation type for sale returns. Online-only.</summary>
     public const string SaleReturnCreate = "sale_return.create";
+
+    /// <summary>Server-side idempotency for POS role assignment. Online-only.</summary>
+    public const string PosRoleAssign = "pos_role.assign";
+
+    /// <summary>Server-side idempotency for POS role revocation. Online-only.</summary>
+    public const string PosRoleRevoke = "pos_role.revoke";
 }

@@ -26,6 +26,8 @@ public sealed class BasicStoreCapabilityMatrixTests
         PosFeatureCodes.StoreShiftsManage,
         PosFeatureCodes.StoreReturnsView,
         PosFeatureCodes.StoreReturnsManage,
+        PosFeatureCodes.StorePermissionsView,
+        PosFeatureCodes.StorePermissionsManage,
         PosFeatureCodes.StoreDashboardView,
         PosFeatureCodes.StoreReportsView
     ];
@@ -69,6 +71,8 @@ public sealed class BasicStoreCapabilityMatrixTests
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManageShifts, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewReturns, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ProcessReturn, status, AllStoreGrants));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewPermissions, status, AllStoreGrants));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManagePermissions, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewDashboard, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewReports, status, AllStoreGrants));
     }
@@ -86,6 +90,7 @@ public sealed class BasicStoreCapabilityMatrixTests
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewPurchasing, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewShifts, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewReturns, status, AllStoreGrants));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewPermissions, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewDashboard, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewReports, status, AllStoreGrants));
 
@@ -98,6 +103,7 @@ public sealed class BasicStoreCapabilityMatrixTests
         Assert.False(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManagePurchasing, status, AllStoreGrants));
         Assert.False(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManageShifts, status, AllStoreGrants));
         Assert.False(UtangCapabilityPolicy.IsAllowed(UtangCapability.ProcessReturn, status, AllStoreGrants));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManagePermissions, status, AllStoreGrants));
     }
 
     [Theory]
@@ -140,6 +146,7 @@ public sealed class BasicStoreCapabilityMatrixTests
     [InlineData(PosFeatureCodes.StoreShiftsView)]
     [InlineData(PosFeatureCodes.StoreDashboardView)]
     [InlineData(PosFeatureCodes.StoreReportsView)]
+    [InlineData(PosFeatureCodes.StorePermissionsView)]
     [InlineData(PosFeatureCodes.StoreCatalogManage)]
     public void Continuity_entry_allowed_with_each_approved_store_grant(string grant)
     {
@@ -205,6 +212,10 @@ public sealed class BasicStoreCapabilityMatrixTests
         Assert.Equal("store-purchasing-manage", PosFeatureCodes.StorePurchasingManage);
         Assert.Equal("store-shifts-view", PosFeatureCodes.StoreShiftsView);
         Assert.Equal("store-shifts-manage", PosFeatureCodes.StoreShiftsManage);
+        Assert.Equal("store-returns-view", PosFeatureCodes.StoreReturnsView);
+        Assert.Equal("store-returns-manage", PosFeatureCodes.StoreReturnsManage);
+        Assert.Equal("store-permissions-view", PosFeatureCodes.StorePermissionsView);
+        Assert.Equal("store-permissions-manage", PosFeatureCodes.StorePermissionsManage);
         Assert.Equal("store-dashboard-view", PosFeatureCodes.StoreDashboardView);
         Assert.Equal("store-reports-view", PosFeatureCodes.StoreReportsView);
     }

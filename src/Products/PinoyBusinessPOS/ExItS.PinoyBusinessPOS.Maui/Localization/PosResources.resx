@@ -1033,6 +1033,25 @@
   <data name="Reports_ExpenseDetails" xml:space="preserve"><value>Expense details</value></data>
   <data name="Reports_ExportDeferredTitle" xml:space="preserve"><value>File export deferred</value></data>
   <data name="Reports_ExportDeferredMessage" xml:space="preserve"><value>Report contracts are export-ready. CSV/PDF/Excel file generation is not included in this work package.</value></data>
+  <data name="Reports_LegacyMenuTitle" xml:space="preserve"><value>Classic reports</value></data>
+  <data name="Reports_OperationalSubtitle" xml:space="preserve"><value>Role-aware operational projection (online only)</value></data>
+  <data name="Reports_ResultsTitle" xml:space="preserve"><value>Results</value></data>
+  <data name="Reports_UnknownKind" xml:space="preserve"><value>Unknown report.</value></data>
+  <data name="Reports_Overview" xml:space="preserve"><value>Operational overview</value></data>
+  <data name="Reports_SalesSummary" xml:space="preserve"><value>Sales summary</value></data>
+  <data name="Reports_SalesByPayment" xml:space="preserve"><value>Sales by payment</value></data>
+  <data name="Reports_SalesByProduct" xml:space="preserve"><value>Sales by product</value></data>
+  <data name="Reports_Returns" xml:space="preserve"><value>Returns and refunds</value></data>
+  <data name="Reports_ShiftSummary" xml:space="preserve"><value>Cashier shift summary</value></data>
+  <data name="Reports_CashVariance" xml:space="preserve"><value>Cash variance</value></data>
+  <data name="Reports_InventoryStatus" xml:space="preserve"><value>Inventory status</value></data>
+  <data name="Reports_InventoryMovements" xml:space="preserve"><value>Inventory movements</value></data>
+  <data name="Reports_StockCountVariance" xml:space="preserve"><value>Stock count variance</value></data>
+  <data name="Reports_PurchasingSummary" xml:space="preserve"><value>Purchasing summary</value></data>
+  <data name="Reports_PurchaseOutstanding" xml:space="preserve"><value>PO outstanding</value></data>
+  <data name="Reports_SupplierPurchasing" xml:space="preserve"><value>Supplier purchasing</value></data>
+  <data name="Reports_ExpenseSummary" xml:space="preserve"><value>Expense summary</value></data>
+  <data name="Reports_UtangByProduct" xml:space="preserve"><value>Product-based utang summary</value></data>
   <data name="Nav_Suppliers" xml:space="preserve"><value>Suppliers</value></data>
   <data name="Suppliers_Title" xml:space="preserve"><value>Suppliers</value></data>
   <data name="Suppliers_Subtitle" xml:space="preserve"><value>Manage supplier contact and reference data (online only).</value></data>
@@ -1185,4 +1204,32 @@
   <data name="Nav_SkipToContent" xml:space="preserve">
     <value>Skip to main content</value>
   </data>
+  <data name="Permissions_Title" xml:space="preserve"><value>Permissions</value></data>
+  <data name="Permissions_Subtitle" xml:space="preserve"><value>Product-local POS role assignments</value></data>
+  <data name="Nav_Permissions" xml:space="preserve"><value>Permissions</value></data>
+  <data name="Permissions_Assign" xml:space="preserve"><value>Assign role</value></data>
+  <data name="Permissions_AssignSubtitle" xml:space="preserve"><value>Assign an organization-scoped POS role</value></data>
+  <data name="Permissions_MyAccess" xml:space="preserve"><value>My access</value></data>
+  <data name="Permissions_MyAccessSubtitle" xml:space="preserve"><value>Effective role and feature codes</value></data>
+  <data name="Permissions_AssignmentsSection" xml:space="preserve"><value>Assignments</value></data>
+  <data name="Permissions_EffectiveSection" xml:space="preserve"><value>Effective permissions</value></data>
+  <data name="Permissions_AssignmentDetail" xml:space="preserve"><value>Assignment</value></data>
+  <data name="Permissions_Back" xml:space="preserve"><value>Back</value></data>
+  <data name="Permissions_Open" xml:space="preserve"><value>Open</value></data>
+  <data name="Permissions_Revoke" xml:space="preserve"><value>Revoke</value></data>
+  <data name="Permissions_ActorId" xml:space="preserve"><value>Actor id</value></data>
+  <data name="Permissions_Role" xml:space="preserve"><value>Role</value></data>
+  <data name="Permissions_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Permissions_NoRole" xml:space="preserve"><value>No active role</value></data>
+  <data name="Permissions_DeniedTitle" xml:space="preserve"><value>Access denied</value></data>
+  <data name="Permissions_DeniedMessage" xml:space="preserve"><value>Your role cannot manage permissions.</value></data>
+  <data name="Permissions_OfflineTitle" xml:space="preserve"><value>Offline</value></data>
+  <data name="Permissions_OfflineMessage" xml:space="preserve"><value>Permissions require an online connection.</value></data>
+  <data name="Permissions_ErrorTitle" xml:space="preserve"><value>Permissions error</value></data>
+  <data name="Permissions_EmptyTitle" xml:space="preserve"><value>No assignments</value></data>
+  <data name="Permissions_EmptyMessage" xml:space="preserve"><value>No role assignments for this organization yet.</value></data>
+  <data name="Permissions_LoadFailed" xml:space="preserve"><value>Unable to load permissions.</value></data>
+  <data name="Permissions_InvalidActor" xml:space="preserve"><value>Enter a valid actor GUID.</value></data>
+  <data name="Permissions_AssignFailed" xml:space="preserve"><value>Unable to assign the role.</value></data>
+  <data name="Permissions_RevokeFailed" xml:space="preserve"><value>Unable to revoke the assignment.</value></data>
 </root>

@@ -5,6 +5,7 @@ using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.Permissions;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 
 namespace ExItS.PinoyBusinessPOS.Api.Purchasing;
@@ -60,7 +61,8 @@ internal static class PurchaseOrderEndpoints
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
-            if (!TryAuthorize(request, access, UtangCapability.ManagePurchasing, out var organizationId, out var problem))
+            if (!TryAuthorize(request, access, UtangCapability.ManagePurchasing, out var organizationId, out var problem)
+                || !DenyInventoryStaffPoMutation(out problem))
             {
                 return problem!;
             }
@@ -100,7 +102,8 @@ internal static class PurchaseOrderEndpoints
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
-            if (!TryAuthorize(request, access, UtangCapability.ManagePurchasing, out var organizationId, out var problem))
+            if (!TryAuthorize(request, access, UtangCapability.ManagePurchasing, out var organizationId, out var problem)
+                || !DenyInventoryStaffPoMutation(out problem))
             {
                 return problem!;
             }
@@ -117,7 +120,8 @@ internal static class PurchaseOrderEndpoints
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
-            if (!TryAuthorize(request, access, UtangCapability.ManagePurchasing, out var organizationId, out var problem))
+            if (!TryAuthorize(request, access, UtangCapability.ManagePurchasing, out var organizationId, out var problem)
+                || !DenyInventoryStaffPoMutation(out problem))
             {
                 return problem!;
             }
@@ -146,7 +150,8 @@ internal static class PurchaseOrderEndpoints
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
-            if (!TryAuthorize(request, access, UtangCapability.ManagePurchasing, out var organizationId, out var problem))
+            if (!TryAuthorize(request, access, UtangCapability.ManagePurchasing, out var organizationId, out var problem)
+                || !DenyInventoryStaffPoMutation(out problem))
             {
                 return problem!;
             }
@@ -224,6 +229,21 @@ internal static class PurchaseOrderEndpoints
         }
 
         return PosCommercialScope.TryAuthorize(access, capability, out problem);
+    }
+
+    private static bool DenyInventoryStaffPoMutation(out IResult? problem)
+    {
+        problem = null;
+        if (PosRoleRequestContext.CurrentRole == PosRole.InventoryStaff)
+        {
+            problem = PosApiResults.Problem(
+                DomainErrorCodes.PosRoleDenied,
+                "InventoryStaff may receive purchase orders but cannot create, edit, submit, or cancel them.",
+                StatusCodes.Status403Forbidden);
+            return false;
+        }
+
+        return true;
     }
 
     private static bool TryParseStatus(

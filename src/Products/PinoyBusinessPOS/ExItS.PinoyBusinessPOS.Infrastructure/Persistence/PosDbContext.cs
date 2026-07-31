@@ -67,6 +67,7 @@ public sealed class PosDbContext : DbContext
     internal DbSet<CashierShiftRecord> CashierShifts => Set<CashierShiftRecord>();
     internal DbSet<CashierShiftMovementRecord> CashierShiftMovements => Set<CashierShiftMovementRecord>();
     internal DbSet<CashierShiftNumberSequenceRecord> CashierShiftNumberSequences => Set<CashierShiftNumberSequenceRecord>();
+    internal DbSet<Permissions.PosRoleAssignmentRecord> PosRoleAssignments => Set<Permissions.PosRoleAssignmentRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -1569,6 +1570,56 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
             entity.Property(e => e.BusinessDate).HasColumnName("business_date");
             entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
+        });
+
+        modelBuilder.Entity<Permissions.PosRoleAssignmentRecord>(entity =>
+        {
+            entity.ToTable("pos_role_assignments", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_pos_role_assignments_role",
+                    "role IN ('Owner', 'Admin', 'StoreManager', 'Cashier', 'InventoryStaff', 'ReportingUser')");
+                tb.HasCheckConstraint(
+                    "ck_pos_role_assignments_status",
+                    "status IN ('Active', 'Revoked')");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.ActorId).HasColumnName("actor_id").IsRequired();
+            entity.Property(e => e.Role).HasColumnName("role").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.AssignedAtUtc).HasColumnName("assigned_at_utc");
+            entity.Property(e => e.AssignedBy).HasColumnName("assigned_by").IsRequired();
+            entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
+            entity.Property(e => e.RevokedBy).HasColumnName("revoked_by");
+            entity.Property(e => e.RevocationReason)
+                .HasColumnName("revocation_reason")
+                .HasMaxLength(Domain.Permissions.PosRoleAssignment.RevocationReasonMaxLength);
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ActorId })
+                .IsUnique()
+                .HasDatabaseName("ux_pos_role_assignments_org_actor_active")
+                .HasFilter("status = 'Active'");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.Status, e.AssignedAtUtc })
+                .HasDatabaseName("ix_pos_role_assignments_org_status_assigned");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.Role, e.Status })
+                .HasDatabaseName("ix_pos_role_assignments_org_role_status");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ActorId, e.Status })
+                .HasDatabaseName("ix_pos_role_assignments_org_actor_status");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.RevokedAtUtc })
+                .HasDatabaseName("ix_pos_role_assignments_org_revoked");
         });
     }
 }

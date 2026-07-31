@@ -8,7 +8,7 @@ public sealed class CommercialMvpCloseoutTests
     public void Closeout_phase_marker_is_p9_wp06()
     {
         Assert.Equal("P9-WP06-commercial-mvp-closeout", CloseoutConstants.PhaseMarker);
-        Assert.Equal("P10-WP05-returns-refunds", DeploymentConstants.PhaseMarker);
+        Assert.Equal("P10-WP06-advanced-permissions-operational-reports", DeploymentConstants.PhaseMarker);
         Assert.Equal("Phase 10 — Full POS", CloseoutConstants.ExactNextPhase);
     }
 

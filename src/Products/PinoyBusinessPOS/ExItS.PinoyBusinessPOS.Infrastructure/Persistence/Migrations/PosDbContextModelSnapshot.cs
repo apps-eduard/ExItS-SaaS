@@ -1348,6 +1348,91 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Permissions.PosRoleAssignmentRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_id");
+
+                    b.Property<DateTimeOffset>("AssignedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("assigned_at_utc");
+
+                    b.Property<Guid>("AssignedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assigned_by");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("RevocationReason")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("revocation_reason");
+
+                    b.Property<DateTimeOffset?>("RevokedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at_utc");
+
+                    b.Property<Guid?>("RevokedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("revoked_by");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("role");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "ActorId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_pos_role_assignments_org_actor_active")
+                        .HasFilter("status = 'Active'");
+
+                    b.HasIndex("OrganizationId", "RevokedAtUtc")
+                        .HasDatabaseName("ix_pos_role_assignments_org_revoked");
+
+                    b.HasIndex("OrganizationId", "ActorId", "Status")
+                        .HasDatabaseName("ix_pos_role_assignments_org_actor_status");
+
+                    b.HasIndex("OrganizationId", "Role", "Status")
+                        .HasDatabaseName("ix_pos_role_assignments_org_role_status");
+
+                    b.HasIndex("OrganizationId", "Status", "AssignedAtUtc")
+                        .HasDatabaseName("ix_pos_role_assignments_org_status_assigned");
+
+                    b.ToTable("pos_role_assignments", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_pos_role_assignments_role", "role IN ('Owner', 'Admin', 'StoreManager', 'Cashier', 'InventoryStaff', 'ReportingUser')");
+
+                            t.HasCheckConstraint("ck_pos_role_assignments_status", "status IN ('Active', 'Revoked')");
+                        });
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Purchasing.GoodsReceiptLineRecord", b =>
                 {
                     b.Property<Guid>("Id")

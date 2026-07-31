@@ -1,0 +1,69 @@
+@page "/permissions/my-access"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosPermissionClient Permissions
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ICurrentUserContext CurrentUser
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Permissions_MyAccess"]" Subtitle="@L["Permissions_MyAccessSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Permissions_Back"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (_effective is null)
+    {
+        <ErrorState Title="@L["Permissions_ErrorTitle"]" Message="@(_error ?? L["Permissions_LoadFailed"])" />
+    }
+    else
+    {
+        <Section Title="@L["Permissions_EffectiveSection"]">
+            <div class="pos-row"><span>@L["Permissions_Role"]</span><span>@(_effective.RoleDisplayName ?? L["Permissions_NoRole"])</span></div>
+            <div class="pos-row"><span>@L["Permissions_Status"]</span><span>@_effective.Status</span></div>
+            <div class="pos-muted">@string.Join(", ", _effective.AllowedFeatureCodes)</div>
+        </Section>
+    }
+</Page>
+
+@code {
+    private bool _loading = true;
+    private string? _error;
+    private PosEffectivePermissionsDto? _effective;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ViewPermissions))
+        {
+            Nav.NavigateTo("/permissions");
+            return;
+        }
+
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            _error = L["Permissions_OfflineMessage"];
+            _loading = false;
+            return;
+        }
+
+        var result = await Permissions.GetEffectiveAsync();
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _error = result.Error?.Detail ?? L["Permissions_LoadFailed"];
+        }
+        else
+        {
+            _effective = result.Data;
+        }
+
+        _loading = false;
+    }
+
+    private void GoBack() => Nav.NavigateTo("/permissions");
+}

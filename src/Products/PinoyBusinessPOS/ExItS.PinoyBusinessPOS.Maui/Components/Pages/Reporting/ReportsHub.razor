@@ -14,10 +14,30 @@
 
     <Section Title="@L["Reports_MenuTitle"]">
         <Stack Gap="3">
-            <Button Variant="ButtonVariant.Primary" OnClick="GoSales">@L["Reports_Sales"]</Button>
-            <Button Variant="ButtonVariant.Primary" OnClick="GoUtang">@L["Reports_Utang"]</Button>
-            <Button Variant="ButtonVariant.Primary" OnClick="GoInventory">@L["Reports_Inventory"]</Button>
-            <Button Variant="ButtonVariant.Primary" OnClick="GoExpenses">@L["Reports_Expenses"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/overview")'>@L["Reports_Overview"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/sales-summary")'>@L["Reports_SalesSummary"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/sales-by-payment")'>@L["Reports_SalesByPayment"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/sales-by-product")'>@L["Reports_SalesByProduct"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/returns")'>@L["Reports_Returns"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/shifts")'>@L["Reports_ShiftSummary"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/cash-variance")'>@L["Reports_CashVariance"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/inventory-status")'>@L["Reports_InventoryStatus"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/inventory-movements")'>@L["Reports_InventoryMovements"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/stock-count-variance")'>@L["Reports_StockCountVariance"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/purchasing-summary")'>@L["Reports_PurchasingSummary"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/purchase-outstanding")'>@L["Reports_PurchaseOutstanding"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/supplier-purchasing")'>@L["Reports_SupplierPurchasing"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/expenses-summary")'>@L["Reports_ExpenseSummary"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/utang-by-product")'>@L["Reports_UtangByProduct"]</Button>
+        </Stack>
+    </Section>
+
+    <Section Title="@L["Reports_LegacyMenuTitle"]">
+        <Stack Gap="3">
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoSales">@L["Reports_Sales"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoUtang">@L["Reports_Utang"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoInventory">@L["Reports_Inventory"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoExpenses">@L["Reports_Expenses"]</Button>
         </Stack>
     </Section>
 
@@ -27,13 +47,19 @@
 @code {
     protected override void OnInitialized()
     {
-        if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ViewReports))
+        if (!Gate.CanEnterProtectedShell
+            || !(Capabilities.IsAllowed(UtangCapability.ViewReports)
+                 || Capabilities.IsAllowed(UtangCapability.ViewShifts)
+                 || Capabilities.IsAllowed(UtangCapability.ViewInventory)
+                 || Capabilities.IsAllowed(UtangCapability.ViewPurchasing)
+                 || Capabilities.IsAllowed(UtangCapability.ViewExpenses)))
         {
             Nav.NavigateTo("/home", replace: true);
         }
     }
 
     private void GoDashboard() => Nav.NavigateTo("/dashboard");
+    private void Go(string path) => Nav.NavigateTo(path);
     private void GoSales() => Nav.NavigateTo("/reports/sales");
     private void GoUtang() => Nav.NavigateTo("/reports/utang");
     private void GoInventory() => Nav.NavigateTo("/reports/inventory");

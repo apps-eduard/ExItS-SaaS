@@ -188,5 +188,16 @@ public static class DomainErrorCodes
     public const string SaleReturnCashShiftRequired = "pos.sale_return.cash_shift.required";
     public const string SaleReturnNonCashMustNotLinkShift = "pos.sale_return.non_cash_must_not_link_shift";
     public const string SaleReturnUtangOutstandingInsufficient = "pos.sale_return.utang.outstanding_insufficient";
+
+    public const string InvalidPosRoleAssignmentId = "pos.role_assignment.id.invalid";
+    public const string InvalidPosRole = "pos.role.invalid";
+    public const string InvalidPosRoleRevocationReason = "pos.role_assignment.revocation_reason.invalid";
+    public const string PosRoleAssignmentAlreadyRevoked = "pos.role_assignment.already_revoked";
+    public const string PosRoleAssignmentConflict = "pos.role_assignment.conflict";
+    public const string PosRoleRequired = "pos.role.required";
+    public const string PosRoleDenied = "pos.role.denied";
+    public const string PosRoleLastOwnerProtected = "pos.role.last_owner.protected";
+    public const string PosRoleBootstrapRequired = "pos.role.bootstrap.required";
+    public const string PosRoleAssignForbidden = "pos.role.assign.forbidden";
     public const string CreditReduceWouldMakeOutstandingNegative = "pos.credit_entry.reduce.outstanding_negative";
 }

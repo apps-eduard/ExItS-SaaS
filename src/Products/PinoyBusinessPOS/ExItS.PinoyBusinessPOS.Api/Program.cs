@@ -24,8 +24,10 @@ using ExItS.PinoyBusinessPOS.Application.Statements;
 using ExItS.PinoyBusinessPOS.Application.Suppliers;
 using ExItS.PinoyBusinessPOS.Application.Purchasing;
 using ExItS.PinoyBusinessPOS.Application.Returns;
+using ExItS.PinoyBusinessPOS.Application.Permissions;
 using ExItS.PinoyBusinessPOS.Api.Purchasing;
 using ExItS.PinoyBusinessPOS.Api.Returns;
+using ExItS.PinoyBusinessPOS.Api.Permissions;
 using ExItS.PinoyBusinessPOS.Infrastructure;
 using ExItS.PinoyBusinessPOS.Infrastructure.Health;
 using Microsoft.AspNetCore.RateLimiting;
@@ -116,11 +118,16 @@ builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.SalesRep
 builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.UtangReportService>();
 builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.InventoryReportService>();
 builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.ExpensesReportService>();
+builder.Services.AddScoped<PosRoleAssignmentQueryService>();
+builder.Services.AddScoped<AssignPosRole>();
+builder.Services.AddScoped<RevokePosRole>();
+builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.OperationalReportService>();
 
 var app = builder.Build();
 
 app.UsePosSecurity();
 app.UseMiddleware<PosCommercialAccessMiddleware>();
+app.UseMiddleware<PosRoleResolutionMiddleware>();
 
 app.MapPosHealthEndpoints();
 app.MapCustomerEndpoints();
@@ -137,10 +144,11 @@ app.MapExpenseEndpoints();
 app.MapSupplierEndpoints();
 app.MapPurchaseOrderEndpoints();
 app.MapCashierShiftEndpoints();
+app.MapPermissionEndpoints();
 app.MapReportingEndpoints();
 app.MapDevOfflineProbeEndpoints();
 
-// Phase marker: P10-WP05-returns-refunds
+// Phase marker: P10-WP06-advanced-permissions-operational-reports
 
 app.Run();
 

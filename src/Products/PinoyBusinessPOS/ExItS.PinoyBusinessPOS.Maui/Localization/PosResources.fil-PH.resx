@@ -1033,6 +1033,25 @@
   <data name="Reports_ExpenseDetails" xml:space="preserve"><value>Expense details</value></data>
   <data name="Reports_ExportDeferredTitle" xml:space="preserve"><value>File export deferred</value></data>
   <data name="Reports_ExportDeferredMessage" xml:space="preserve"><value>Report contracts are export-ready. CSV/PDF/Excel file generation is not included in this work package.</value></data>
+  <data name="Reports_LegacyMenuTitle" xml:space="preserve"><value>Mga dating report</value></data>
+  <data name="Reports_OperationalSubtitle" xml:space="preserve"><value>Operational report ayon sa role (online lang)</value></data>
+  <data name="Reports_ResultsTitle" xml:space="preserve"><value>Mga resulta</value></data>
+  <data name="Reports_UnknownKind" xml:space="preserve"><value>Hindi kilalang report.</value></data>
+  <data name="Reports_Overview" xml:space="preserve"><value>Operational overview</value></data>
+  <data name="Reports_SalesSummary" xml:space="preserve"><value>Buod ng benta</value></data>
+  <data name="Reports_SalesByPayment" xml:space="preserve"><value>Benta ayon sa bayad</value></data>
+  <data name="Reports_SalesByProduct" xml:space="preserve"><value>Benta ayon sa produkto</value></data>
+  <data name="Reports_Returns" xml:space="preserve"><value>Mga return at refund</value></data>
+  <data name="Reports_ShiftSummary" xml:space="preserve"><value>Buod ng shift</value></data>
+  <data name="Reports_CashVariance" xml:space="preserve"><value>Cash variance</value></data>
+  <data name="Reports_InventoryStatus" xml:space="preserve"><value>Katayuan ng imbentaryo</value></data>
+  <data name="Reports_InventoryMovements" xml:space="preserve"><value>Mga galaw ng imbentaryo</value></data>
+  <data name="Reports_StockCountVariance" xml:space="preserve"><value>Stock count variance</value></data>
+  <data name="Reports_PurchasingSummary" xml:space="preserve"><value>Buod ng purchasing</value></data>
+  <data name="Reports_PurchaseOutstanding" xml:space="preserve"><value>Outstanding na PO</value></data>
+  <data name="Reports_SupplierPurchasing" xml:space="preserve"><value>Purchasing ayon sa supplier</value></data>
+  <data name="Reports_ExpenseSummary" xml:space="preserve"><value>Buod ng gastos</value></data>
+  <data name="Reports_UtangByProduct" xml:space="preserve"><value>Buod ng utang ayon sa produkto</value></data>
   <data name="Nav_Suppliers" xml:space="preserve"><value>Mga Supplier</value></data>
   <data name="Suppliers_Title" xml:space="preserve"><value>Mga Supplier</value></data>
   <data name="Suppliers_Subtitle" xml:space="preserve"><value>Pamahalaan ang contact at reference data ng supplier (online lang).</value></data>
@@ -1185,4 +1204,32 @@
   <data name="Nav_SkipToContent" xml:space="preserve">
     <value>Lumaktaw papunta sa pangunahing nilalaman</value>
   </data>
+  <data name="Permissions_Title" xml:space="preserve"><value>Mga permiso</value></data>
+  <data name="Permissions_Subtitle" xml:space="preserve"><value>Mga lokal na POS role assignment</value></data>
+  <data name="Nav_Permissions" xml:space="preserve"><value>Mga permiso</value></data>
+  <data name="Permissions_Assign" xml:space="preserve"><value>Mag-assign ng role</value></data>
+  <data name="Permissions_AssignSubtitle" xml:space="preserve"><value>Mag-assign ng org-scoped POS role</value></data>
+  <data name="Permissions_MyAccess" xml:space="preserve"><value>Aking access</value></data>
+  <data name="Permissions_MyAccessSubtitle" xml:space="preserve"><value>Epektibong role at feature codes</value></data>
+  <data name="Permissions_AssignmentsSection" xml:space="preserve"><value>Mga assignment</value></data>
+  <data name="Permissions_EffectiveSection" xml:space="preserve"><value>Epektibong permiso</value></data>
+  <data name="Permissions_AssignmentDetail" xml:space="preserve"><value>Assignment</value></data>
+  <data name="Permissions_Back" xml:space="preserve"><value>Bumalik</value></data>
+  <data name="Permissions_Open" xml:space="preserve"><value>Buksan</value></data>
+  <data name="Permissions_Revoke" xml:space="preserve"><value>I-revoke</value></data>
+  <data name="Permissions_ActorId" xml:space="preserve"><value>Actor id</value></data>
+  <data name="Permissions_Role" xml:space="preserve"><value>Role</value></data>
+  <data name="Permissions_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Permissions_NoRole" xml:space="preserve"><value>Walang aktibong role</value></data>
+  <data name="Permissions_DeniedTitle" xml:space="preserve"><value>Hindi pinapayagan</value></data>
+  <data name="Permissions_DeniedMessage" xml:space="preserve"><value>Hindi maaaring i-manage ng role mo ang mga permiso.</value></data>
+  <data name="Permissions_OfflineTitle" xml:space="preserve"><value>Offline</value></data>
+  <data name="Permissions_OfflineMessage" xml:space="preserve"><value>Kailangan ng online connection ang mga permiso.</value></data>
+  <data name="Permissions_ErrorTitle" xml:space="preserve"><value>Error sa permiso</value></data>
+  <data name="Permissions_EmptyTitle" xml:space="preserve"><value>Walang assignment</value></data>
+  <data name="Permissions_EmptyMessage" xml:space="preserve"><value>Wala pang role assignment sa organisasyong ito.</value></data>
+  <data name="Permissions_LoadFailed" xml:space="preserve"><value>Hindi ma-load ang mga permiso.</value></data>
+  <data name="Permissions_InvalidActor" xml:space="preserve"><value>Maglagay ng wastong actor GUID.</value></data>
+  <data name="Permissions_AssignFailed" xml:space="preserve"><value>Hindi ma-assign ang role.</value></data>
+  <data name="Permissions_RevokeFailed" xml:space="preserve"><value>Hindi ma-revoke ang assignment.</value></data>
 </root>

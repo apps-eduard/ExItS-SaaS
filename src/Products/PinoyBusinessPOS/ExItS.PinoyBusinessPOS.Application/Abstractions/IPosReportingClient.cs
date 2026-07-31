@@ -45,4 +45,74 @@ public interface IPosReportingClient
         string? paymentMethod = null,
         string? status = null,
         CancellationToken ct = default);
+
+    Task<ApiResult<PosOperationalOverviewDto>> GetOperationalOverviewAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosSalesSummaryReportDto>> GetSalesSummaryReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosSalesByPaymentReportDto>> GetSalesByPaymentReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosSalesByProductReportDto>> GetSalesByProductOperationalAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        Guid? productId = null,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosReturnsReportDto>> GetReturnsReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosShiftSummaryReportDto>> GetShiftSummaryReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosCashVarianceReportDto>> GetCashVarianceReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosInventoryStatusReportDto>> GetInventoryStatusReportAsync(CancellationToken ct = default);
+
+    Task<ApiResult<PosInventoryMovementsReportDto>> GetInventoryMovementsReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosStockCountVarianceReportDto>> GetStockCountVarianceReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosPurchasingSummaryReportDto>> GetPurchasingSummaryReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosPurchaseOutstandingReportDto>> GetPurchaseOutstandingReportAsync(CancellationToken ct = default);
+
+    Task<ApiResult<PosSupplierPurchasingReportDto>> GetSupplierPurchasingReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosExpenseSummaryReportDto>> GetExpenseSummaryReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PosProductUtangSummaryReportDto>> GetProductUtangSummaryReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default);
 }

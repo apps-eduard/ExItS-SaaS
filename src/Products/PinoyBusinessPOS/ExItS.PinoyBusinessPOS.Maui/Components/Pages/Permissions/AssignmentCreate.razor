@@ -1,0 +1,91 @@
+@page "/permissions/assignments/new"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosPermissionClient Permissions
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ICurrentUserContext CurrentUser
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Permissions_Assign"]" Subtitle="@L["Permissions_AssignSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Permissions_Back"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (!Capabilities.IsAllowed(UtangCapability.ManagePermissions))
+    {
+        <ErrorState Title="@L["Permissions_DeniedTitle"]" Message="@L["Permissions_DeniedMessage"]" />
+    }
+    else
+    {
+        <TextInput Label="@L["Permissions_ActorId"]" @bind-Value="_actorIdText" Required="true" />
+        <select class="pos-input" @bind="_role">
+            @foreach (var role in _roles)
+            {
+                <option value="@role.Role">@role.DisplayName</option>
+            }
+        </select>
+        @if (_error is not null)
+        {
+            <Alert Tone="AlertTone.Danger" Title="@L["Permissions_ErrorTitle"]" Message="@_error" />
+        }
+        <FormActions>
+            <Button Variant="ButtonVariant.Primary" Disabled="@_acting" IsLoading="@_acting" OnClick="SubmitAsync">@L["Permissions_Assign"]</Button>
+        </FormActions>
+    }
+</Page>
+
+@code {
+    private string _actorIdText = string.Empty;
+    private string _role = "Cashier";
+    private bool _acting;
+    private string? _error;
+    private IReadOnlyList<PosRoleDto> _roles = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ManagePermissions))
+        {
+            Nav.NavigateTo("/permissions");
+            return;
+        }
+
+        var roles = await Permissions.ListRolesAsync();
+        if (roles.IsSuccess && roles.Data is not null)
+        {
+            _roles = roles.Data;
+            _role = _roles[0].Role;
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        _error = null;
+        if (!Guid.TryParse(_actorIdText.Trim(), out var actorId))
+        {
+            _error = L["Permissions_InvalidActor"];
+            return;
+        }
+
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            _error = L["Permissions_OfflineMessage"];
+            return;
+        }
+
+        _acting = true;
+        var result = await Permissions.AssignAsync(new AssignPosRoleRequest(actorId, _role));
+        _acting = false;
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _error = result.Error?.Detail ?? L["Permissions_AssignFailed"];
+            return;
+        }
+
+        Nav.NavigateTo($"/permissions/assignments/{result.Data.AssignmentId:D}");
+    }
+
+    private void GoBack() => Nav.NavigateTo("/permissions");
+}

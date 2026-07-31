@@ -103,6 +103,96 @@ public sealed class PosReportingClient(HttpClient httpClient, IConnectivityServi
         return SendAsync<PosExpensesReportDto>(HttpMethod.Get, TrimQuery(query), null, ct);
     }
 
+    public Task<ApiResult<PosOperationalOverviewDto>> GetOperationalOverviewAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default) =>
+        SendAsync<PosOperationalOverviewDto>(HttpMethod.Get, BuildPath($"{ReportsPath}/overview", fromDate, toDate), null, ct);
+
+    public Task<ApiResult<PosSalesSummaryReportDto>> GetSalesSummaryReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default) =>
+        SendAsync<PosSalesSummaryReportDto>(HttpMethod.Get, BuildPath($"{ReportsPath}/sales-summary", fromDate, toDate), null, ct);
+
+    public Task<ApiResult<PosSalesByPaymentReportDto>> GetSalesByPaymentReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default) =>
+        SendAsync<PosSalesByPaymentReportDto>(HttpMethod.Get, BuildPath($"{ReportsPath}/sales-by-payment", fromDate, toDate), null, ct);
+
+    public Task<ApiResult<PosSalesByProductReportDto>> GetSalesByProductOperationalAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        Guid? productId = null,
+        CancellationToken ct = default)
+    {
+        var query = new StringBuilder($"{ReportsPath}/sales-by-product?");
+        AppendDates(query, fromDate, toDate);
+        AppendGuid(query, "productId", productId);
+        return SendAsync<PosSalesByProductReportDto>(HttpMethod.Get, TrimQuery(query), null, ct);
+    }
+
+    public Task<ApiResult<PosReturnsReportDto>> GetReturnsReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default) =>
+        SendAsync<PosReturnsReportDto>(HttpMethod.Get, BuildPath($"{ReportsPath}/returns", fromDate, toDate), null, ct);
+
+    public Task<ApiResult<PosShiftSummaryReportDto>> GetShiftSummaryReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default) =>
+        SendAsync<PosShiftSummaryReportDto>(HttpMethod.Get, BuildPath($"{ReportsPath}/shifts-summary", fromDate, toDate), null, ct);
+
+    public Task<ApiResult<PosCashVarianceReportDto>> GetCashVarianceReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default) =>
+        SendAsync<PosCashVarianceReportDto>(HttpMethod.Get, BuildPath($"{ReportsPath}/cash-variance", fromDate, toDate), null, ct);
+
+    public Task<ApiResult<PosInventoryStatusReportDto>> GetInventoryStatusReportAsync(CancellationToken ct = default) =>
+        SendAsync<PosInventoryStatusReportDto>(HttpMethod.Get, $"{ReportsPath}/inventory-status", null, ct);
+
+    public Task<ApiResult<PosInventoryMovementsReportDto>> GetInventoryMovementsReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default) =>
+        SendAsync<PosInventoryMovementsReportDto>(HttpMethod.Get, BuildPath($"{ReportsPath}/inventory-movements", fromDate, toDate), null, ct);
+
+    public Task<ApiResult<PosStockCountVarianceReportDto>> GetStockCountVarianceReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default) =>
+        SendAsync<PosStockCountVarianceReportDto>(HttpMethod.Get, BuildPath($"{ReportsPath}/stock-count-variance", fromDate, toDate), null, ct);
+
+    public Task<ApiResult<PosPurchasingSummaryReportDto>> GetPurchasingSummaryReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default) =>
+        SendAsync<PosPurchasingSummaryReportDto>(HttpMethod.Get, BuildPath($"{ReportsPath}/purchasing-summary", fromDate, toDate), null, ct);
+
+    public Task<ApiResult<PosPurchaseOutstandingReportDto>> GetPurchaseOutstandingReportAsync(CancellationToken ct = default) =>
+        SendAsync<PosPurchaseOutstandingReportDto>(HttpMethod.Get, $"{ReportsPath}/purchase-outstanding", null, ct);
+
+    public Task<ApiResult<PosSupplierPurchasingReportDto>> GetSupplierPurchasingReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default) =>
+        SendAsync<PosSupplierPurchasingReportDto>(HttpMethod.Get, BuildPath($"{ReportsPath}/supplier-purchasing", fromDate, toDate), null, ct);
+
+    public Task<ApiResult<PosExpenseSummaryReportDto>> GetExpenseSummaryReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default) =>
+        SendAsync<PosExpenseSummaryReportDto>(HttpMethod.Get, BuildPath($"{ReportsPath}/expenses-summary", fromDate, toDate), null, ct);
+
+    public Task<ApiResult<PosProductUtangSummaryReportDto>> GetProductUtangSummaryReportAsync(
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        CancellationToken ct = default) =>
+        SendAsync<PosProductUtangSummaryReportDto>(HttpMethod.Get, BuildPath($"{ReportsPath}/utang-by-product", fromDate, toDate), null, ct);
+
     private static string BuildPath(string basePath, DateOnly? fromDate, DateOnly? toDate)
     {
         var query = new StringBuilder(basePath).Append('?');

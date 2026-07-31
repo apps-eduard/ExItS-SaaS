@@ -8,6 +8,7 @@ using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Application.Purchasing;
 using ExItS.PinoyBusinessPOS.Application.Returns;
+using ExItS.PinoyBusinessPOS.Application.Permissions;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Repositories;
@@ -41,6 +42,7 @@ public static class DependencyInjection
         services.AddScoped<IInventoryReorderChangeRepository, InventoryReorderChangeRepository>();
         services.AddScoped<IStockCountRepository, StockCountRepository>();
         services.AddScoped<ICashierShiftRepository, CashierShiftRepository>();
+        services.AddScoped<IPosRoleAssignmentRepository, PosRoleAssignmentRepository>();
         services.AddScoped<IExpenseCategoryRepository, ExpenseCategoryRepository>();
         services.AddScoped<IExpenseRepository, ExpenseRepository>();
         services.AddScoped<ISupplierRepository, SupplierRepository>();

@@ -1,0 +1,93 @@
+@page "/permissions/assignments/{AssignmentId:guid}"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosPermissionClient Permissions
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Permissions_AssignmentDetail"]" Subtitle="@AssignmentId.ToString("D")">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Permissions_Back"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (_item is null)
+    {
+        <ErrorState Title="@L["Permissions_ErrorTitle"]" Message="@(_error ?? L["Permissions_LoadFailed"])" />
+    }
+    else
+    {
+        <Section Title="@_item.RoleDisplayName">
+            <div class="pos-row"><span>@L["Permissions_Status"]</span><span>@_item.Status</span></div>
+            <div class="pos-row"><span>@L["Permissions_ActorId"]</span><span>@_item.ActorId</span></div>
+        </Section>
+        @if (_item.Status == "Active" && Capabilities.IsAllowed(UtangCapability.ManagePermissions))
+        {
+            <FormActions>
+                <Button Variant="ButtonVariant.Danger" Disabled="@_acting" IsLoading="@_acting" OnClick="RevokeAsync">@L["Permissions_Revoke"]</Button>
+            </FormActions>
+        }
+        @if (_error is not null)
+        {
+            <Alert Tone="AlertTone.Danger" Title="@L["Permissions_ErrorTitle"]" Message="@_error" />
+        }
+    }
+</Page>
+
+@code {
+    [Parameter] public Guid AssignmentId { get; set; }
+
+    private bool _loading = true;
+    private bool _acting;
+    private string? _error;
+    private PosRoleAssignmentDto? _item;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ViewPermissions))
+        {
+            Nav.NavigateTo("/permissions");
+            return;
+        }
+
+        var result = await Permissions.GetAssignmentAsync(AssignmentId);
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _error = result.Error?.Detail ?? L["Permissions_LoadFailed"];
+        }
+        else
+        {
+            _item = result.Data;
+        }
+
+        _loading = false;
+    }
+
+    private async Task RevokeAsync()
+    {
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            _error = L["Permissions_OfflineMessage"];
+            return;
+        }
+
+        _acting = true;
+        var result = await Permissions.RevokeAsync(AssignmentId);
+        _acting = false;
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _error = result.Error?.Detail ?? L["Permissions_RevokeFailed"];
+            return;
+        }
+
+        _item = result.Data;
+    }
+
+    private void GoBack() => Nav.NavigateTo("/permissions");
+}

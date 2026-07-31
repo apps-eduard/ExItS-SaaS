@@ -63,16 +63,16 @@ internal static class PosCommercialScope
     {
         problem = null;
         var gate = CommercialAccessGuard.Require(accessor, capability);
-        if (gate.IsSuccess)
+        if (!gate.IsSuccess)
         {
-            return true;
+            problem = PosApiResults.Problem(
+                gate.ErrorCode!,
+                gate.ErrorMessage!,
+                PosApiResults.MapStatusCode(gate.ErrorCode!));
+            return false;
         }
 
-        problem = PosApiResults.Problem(
-            gate.ErrorCode!,
-            gate.ErrorMessage!,
-            PosApiResults.MapStatusCode(gate.ErrorCode!));
-        return false;
+        return PosRoleAuth.TryAuthorizeRole(capability, out problem);
     }
 }
 

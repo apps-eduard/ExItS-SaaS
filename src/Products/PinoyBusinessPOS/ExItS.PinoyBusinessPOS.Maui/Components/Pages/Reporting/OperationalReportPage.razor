@@ -1,0 +1,290 @@
+@page "/reports/operational/{Kind}"
+@using ExItS.PinoyBusinessPOS.Application.Commercial
+@using ExItS.PinoyBusinessPOS.Application.Common
+@using ExItS.PinoyBusinessPOS.Application.Reporting
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosReportingClient Reports
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    <Page>
+        <PageHeader Title="@_title" Subtitle="@L["Reports_OperationalSubtitle"]">
+            <Actions>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoHub">@L["Reports_Back"]</Button>
+                <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Dashboard_Refresh"]</Button>
+            </Actions>
+        </PageHeader>
+
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Dashboard_OfflineTitle"]" Message="@L["Dashboard_OfflineMessage"]" />
+        }
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Dashboard_ErrorTitle"])" Message="@_errorMessage" />
+        }
+
+        <Section Title="@L["Dashboard_FiltersTitle"]">
+            <Stack Gap="3">
+                <DateInput Label="@L["Dashboard_FromDate"]" Value="@_fromDate" ValueChanged="OnFromDateChanged" />
+                <DateInput Label="@L["Dashboard_ToDate"]" Value="@_toDate" ValueChanged="OnToDateChanged" />
+            </Stack>
+        </Section>
+
+        @if (_loading)
+        {
+            <Spinner />
+        }
+        else if (_lines.Count > 0)
+        {
+            <Section Title="@L["Reports_ResultsTitle"]">
+                <Stack Gap="2">
+                    @foreach (var line in _lines)
+                    {
+                        <div class="pos-row">
+                            <span class="pos-muted">@line.Label</span>
+                            <span class="pos-value-md">@line.Value</span>
+                        </div>
+                    }
+                </Stack>
+            </Section>
+        }
+    </Page>
+}
+
+@code {
+    [Parameter] public string Kind { get; set; } = "overview";
+
+    private bool _ready;
+    private bool _loading;
+    private bool _isOffline;
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private string _title = "";
+    private DateOnly? _fromDate;
+    private DateOnly? _toDate;
+    private readonly List<(string Label, string Value)> _lines = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        _title = Kind switch
+        {
+            "overview" => L["Reports_Overview"],
+            "sales-summary" => L["Reports_SalesSummary"],
+            "sales-by-payment" => L["Reports_SalesByPayment"],
+            "sales-by-product" => L["Reports_SalesByProduct"],
+            "returns" => L["Reports_Returns"],
+            "shifts" => L["Reports_ShiftSummary"],
+            "cash-variance" => L["Reports_CashVariance"],
+            "inventory-status" => L["Reports_InventoryStatus"],
+            "inventory-movements" => L["Reports_InventoryMovements"],
+            "stock-count-variance" => L["Reports_StockCountVariance"],
+            "purchasing-summary" => L["Reports_PurchasingSummary"],
+            "purchase-outstanding" => L["Reports_PurchaseOutstanding"],
+            "supplier-purchasing" => L["Reports_SupplierPurchasing"],
+            "expenses-summary" => L["Reports_ExpenseSummary"],
+            "utang-by-product" => L["Reports_UtangByProduct"],
+            _ => L["Reports_Title"]
+        };
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _errorMessage = null;
+        _errorTitle = null;
+        _lines.Clear();
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _loading = false;
+            return;
+        }
+
+        switch (Kind)
+        {
+            case "overview":
+                await BindAsync(await Reports.GetOperationalOverviewAsync(_fromDate, _toDate), d =>
+                {
+                    Add("Net sales", d.NetSales);
+                    Add("Gross", d.CompletedGrossSales);
+                    Add("Refunds", d.Refunds);
+                    AddCount("Txns", d.CompletedTransactionCount);
+                });
+                break;
+            case "sales-summary":
+                await BindAsync(await Reports.GetSalesSummaryReportAsync(_fromDate, _toDate), d =>
+                {
+                    Add("Net sales", d.NetSales);
+                    Add("Gross", d.CompletedGrossSales);
+                    Add("Returns", d.CompletedReturnsRefunds);
+                    AddCount("Txns", d.CompletedTransactionCount);
+                });
+                break;
+            case "sales-by-payment":
+                await BindAsync(await Reports.GetSalesByPaymentReportAsync(_fromDate, _toDate), d =>
+                {
+                    foreach (var row in d.Rows)
+                    {
+                        Add(row.PaymentMethod, row.Net);
+                    }
+                });
+                break;
+            case "sales-by-product":
+                await BindAsync(await Reports.GetSalesByProductOperationalAsync(_fromDate, _toDate), d =>
+                {
+                    foreach (var row in d.Rows.Take(25))
+                    {
+                        Add(row.ProductName, row.NetAmount);
+                    }
+                });
+                break;
+            case "returns":
+                await BindAsync(await Reports.GetReturnsReportAsync(_fromDate, _toDate), d =>
+                {
+                    AddCount("Count", d.ReturnCount);
+                    Add("Qty", d.ReturnedQuantity);
+                    Add("Amount", d.RefundAmount);
+                });
+                break;
+            case "shifts":
+                await BindAsync(await Reports.GetShiftSummaryReportAsync(_fromDate, _toDate), d =>
+                {
+                    AddCount("Shifts", d.ShiftCount);
+                    Add("Variance total", d.TotalCashVariance);
+                    foreach (var row in d.Rows.Take(20))
+                    {
+                        _lines.Add((row.ShiftNumber, row.CashVarianceAmount?.ToString("N2") ?? row.Status));
+                    }
+                });
+                break;
+            case "cash-variance":
+                await BindAsync(await Reports.GetCashVarianceReportAsync(_fromDate, _toDate), d =>
+                {
+                    AddCount("Closed", d.ClosedShiftCount);
+                    Add("Abs variance", d.TotalAbsoluteVariance);
+                    Add("Signed", d.TotalSignedVariance);
+                });
+                break;
+            case "inventory-status":
+                await BindAsync(await Reports.GetInventoryStatusReportAsync(), d =>
+                {
+                    AddCount("Tracked", d.TrackedCount);
+                    AddCount("Low", d.LowStockCount);
+                    AddCount("Out", d.OutOfStockCount);
+                });
+                break;
+            case "inventory-movements":
+                await BindAsync(await Reports.GetInventoryMovementsReportAsync(_fromDate, _toDate), d =>
+                {
+                    AddCount("Movements", d.MovementCount);
+                    foreach (var t in d.ByType)
+                    {
+                        _lines.Add((t.MovementType, $"{t.Count}/{t.QuantityTotal:N2}"));
+                    }
+                });
+                break;
+            case "stock-count-variance":
+                await BindAsync(await Reports.GetStockCountVarianceReportAsync(_fromDate, _toDate), d =>
+                {
+                    AddCount("Counts", d.CompletedCount);
+                    AddCount("Variance lines", d.VarianceLineCount);
+                });
+                break;
+            case "purchasing-summary":
+                await BindAsync(await Reports.GetPurchasingSummaryReportAsync(_fromDate, _toDate), d =>
+                {
+                    AddCount("Orders", d.OrderCount);
+                    Add("Ordered", d.OrderedQuantity);
+                    Add("Outstanding", d.OutstandingQuantity);
+                });
+                break;
+            case "purchase-outstanding":
+                await BindAsync(await Reports.GetPurchaseOutstandingReportAsync(), d =>
+                {
+                    AddCount("Orders", d.OutstandingOrderCount);
+                    Add("Qty", d.OutstandingQuantity);
+                });
+                break;
+            case "supplier-purchasing":
+                await BindAsync(await Reports.GetSupplierPurchasingReportAsync(_fromDate, _toDate), d =>
+                {
+                    foreach (var row in d.Rows.Take(25))
+                    {
+                        Add(row.SupplierName ?? row.SupplierId.ToString("D")[..8], row.OrderedQuantity);
+                    }
+                });
+                break;
+            case "expenses-summary":
+                await BindAsync(await Reports.GetExpenseSummaryReportAsync(_fromDate, _toDate), d =>
+                {
+                    Add("Recorded", d.RecordedTotal);
+                    Add("Voided", d.VoidedTotal);
+                    AddCount("Count", d.RecordedCount);
+                });
+                break;
+            case "utang-by-product":
+                await BindAsync(await Reports.GetProductUtangSummaryReportAsync(_fromDate, _toDate), d =>
+                {
+                    Add("Utang sales", d.UtangSalesTotal);
+                    Add("Outstanding", d.OutstandingTotal);
+                    Add("Overdue", d.OverdueTotal);
+                });
+                break;
+            default:
+                _errorMessage = L["Reports_UnknownKind"];
+                break;
+        }
+
+        _loading = false;
+    }
+
+    private Task BindAsync<T>(ApiResult<T> result, Action<T> map)
+    {
+        if (!result.IsSuccess || result.Data is null)
+        {
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+            return Task.CompletedTask;
+        }
+
+        map(result.Data);
+        return Task.CompletedTask;
+    }
+
+    private void Add(string label, decimal value) => _lines.Add((label, value.ToString("N2")));
+    private void AddCount(string label, int value) => _lines.Add((label, value.ToString()));
+
+    private Task OnFromDateChanged(DateOnly? value)
+    {
+        _fromDate = value;
+        return ReloadAsync();
+    }
+
+    private Task OnToDateChanged(DateOnly? value)
+    {
+        _toDate = value;
+        return ReloadAsync();
+    }
+
+    private void GoHub() => Nav.NavigateTo("/reports");
+}

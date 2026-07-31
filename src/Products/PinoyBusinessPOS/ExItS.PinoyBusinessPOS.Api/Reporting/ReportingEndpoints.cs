@@ -2,6 +2,7 @@ using System.Globalization;
 using ExItS.PinoyBusinessPOS.Api.Common;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Permissions;
 using ExItS.PinoyBusinessPOS.Application.Reporting;
 
 namespace ExItS.PinoyBusinessPOS.Api.Reporting;
@@ -23,6 +24,21 @@ internal static class ReportingEndpoints
         reports.MapGet("/utang", GetUtangReport);
         reports.MapGet("/inventory", GetInventoryReport);
         reports.MapGet("/expenses", GetExpensesReport);
+        reports.MapGet("/overview", GetOperationalOverview);
+        reports.MapGet("/sales-summary", GetSalesSummary);
+        reports.MapGet("/sales-by-payment", GetSalesByPayment);
+        reports.MapGet("/sales-by-product", GetSalesByProductOperational);
+        reports.MapGet("/returns", GetReturnsReport);
+        reports.MapGet("/shifts-summary", GetShiftSummary);
+        reports.MapGet("/cash-variance", GetCashVariance);
+        reports.MapGet("/inventory-status", GetInventoryStatus);
+        reports.MapGet("/inventory-movements", GetInventoryMovements);
+        reports.MapGet("/stock-count-variance", GetStockCountVariance);
+        reports.MapGet("/purchasing-summary", GetPurchasingSummary);
+        reports.MapGet("/purchase-outstanding", GetPurchaseOutstanding);
+        reports.MapGet("/supplier-purchasing", GetSupplierPurchasing);
+        reports.MapGet("/expenses-summary", GetExpenseSummary);
+        reports.MapGet("/utang-by-product", GetProductUtangSummary);
         return app;
     }
 
@@ -207,6 +223,360 @@ internal static class ReportingEndpoints
             .GetAsync(organizationId, from, to, expenseCategoryId, paymentMethod, status, ct)
             .ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetOperationalOverview(
+        HttpRequest request,
+        string? fromDate,
+        string? toDate,
+        OperationalReportService reports,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorizeReport(request, access, PosOperationalReportKind.Overview, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        if (!TryParseOptionalDates(fromDate, toDate, out var from, out var to, out problem))
+        {
+            return problem!;
+        }
+
+        var result = await reports.GetOverviewAsync(organizationId, from, to, ct).ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetSalesSummary(
+        HttpRequest request,
+        string? fromDate,
+        string? toDate,
+        OperationalReportService reports,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorizeReport(request, access, PosOperationalReportKind.SalesSummary, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        if (!TryParseOptionalDates(fromDate, toDate, out var from, out var to, out problem))
+        {
+            return problem!;
+        }
+
+        var result = await reports.GetSalesSummaryAsync(organizationId, from, to, ct).ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetSalesByPayment(
+        HttpRequest request,
+        string? fromDate,
+        string? toDate,
+        OperationalReportService reports,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorizeReport(request, access, PosOperationalReportKind.SalesByPayment, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        if (!TryParseOptionalDates(fromDate, toDate, out var from, out var to, out problem))
+        {
+            return problem!;
+        }
+
+        var result = await reports.GetSalesByPaymentAsync(organizationId, from, to, ct).ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetSalesByProductOperational(
+        HttpRequest request,
+        string? fromDate,
+        string? toDate,
+        Guid? productId,
+        OperationalReportService reports,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorizeReport(request, access, PosOperationalReportKind.SalesByProduct, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        if (!TryParseOptionalDates(fromDate, toDate, out var from, out var to, out problem))
+        {
+            return problem!;
+        }
+
+        var result = await reports.GetSalesByProductAsync(organizationId, from, to, productId, ct).ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetReturnsReport(
+        HttpRequest request,
+        string? fromDate,
+        string? toDate,
+        OperationalReportService reports,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorizeReport(request, access, PosOperationalReportKind.Returns, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        if (!TryParseOptionalDates(fromDate, toDate, out var from, out var to, out problem))
+        {
+            return problem!;
+        }
+
+        var result = await reports.GetReturnsAsync(organizationId, from, to, ct).ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetShiftSummary(
+        HttpRequest request,
+        string? fromDate,
+        string? toDate,
+        OperationalReportService reports,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorizeReport(request, access, PosOperationalReportKind.ShiftSummary, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        if (!TryParseOptionalDates(fromDate, toDate, out var from, out var to, out problem))
+        {
+            return problem!;
+        }
+
+        PosOrganizationScope.TryGetActorId(request, out var actorId, out _);
+        var restrict = OperationalReportService.RestrictShiftActor(PosRoleRequestContext.CurrentRole, actorId);
+        var result = await reports.GetShiftSummaryAsync(organizationId, from, to, restrict, ct).ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetCashVariance(
+        HttpRequest request,
+        string? fromDate,
+        string? toDate,
+        OperationalReportService reports,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorizeReport(request, access, PosOperationalReportKind.CashVariance, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        if (!TryParseOptionalDates(fromDate, toDate, out var from, out var to, out problem))
+        {
+            return problem!;
+        }
+
+        PosOrganizationScope.TryGetActorId(request, out var actorId, out _);
+        var restrict = OperationalReportService.RestrictShiftActor(PosRoleRequestContext.CurrentRole, actorId);
+        var result = await reports.GetCashVarianceAsync(organizationId, from, to, restrict, ct).ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetInventoryStatus(
+        HttpRequest request,
+        OperationalReportService reports,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorizeReport(request, access, PosOperationalReportKind.InventoryStatus, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        var result = await reports.GetInventoryStatusAsync(organizationId, ct).ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetInventoryMovements(
+        HttpRequest request,
+        string? fromDate,
+        string? toDate,
+        OperationalReportService reports,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorizeReport(request, access, PosOperationalReportKind.InventoryMovements, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        if (!TryParseOptionalDates(fromDate, toDate, out var from, out var to, out problem))
+        {
+            return problem!;
+        }
+
+        var result = await reports.GetInventoryMovementsAsync(organizationId, from, to, ct).ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetStockCountVariance(
+        HttpRequest request,
+        string? fromDate,
+        string? toDate,
+        OperationalReportService reports,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorizeReport(request, access, PosOperationalReportKind.StockCountVariance, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        if (!TryParseOptionalDates(fromDate, toDate, out var from, out var to, out problem))
+        {
+            return problem!;
+        }
+
+        var result = await reports.GetStockCountVarianceAsync(organizationId, from, to, ct).ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetPurchasingSummary(
+        HttpRequest request,
+        string? fromDate,
+        string? toDate,
+        OperationalReportService reports,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorizeReport(request, access, PosOperationalReportKind.PurchasingSummary, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        if (!TryParseOptionalDates(fromDate, toDate, out var from, out var to, out problem))
+        {
+            return problem!;
+        }
+
+        var result = await reports.GetPurchasingSummaryAsync(organizationId, from, to, ct).ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetPurchaseOutstanding(
+        HttpRequest request,
+        OperationalReportService reports,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorizeReport(request, access, PosOperationalReportKind.PurchaseOutstanding, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        var result = await reports.GetPurchaseOutstandingAsync(organizationId, ct).ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetSupplierPurchasing(
+        HttpRequest request,
+        string? fromDate,
+        string? toDate,
+        OperationalReportService reports,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorizeReport(request, access, PosOperationalReportKind.SupplierPurchasing, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        if (!TryParseOptionalDates(fromDate, toDate, out var from, out var to, out problem))
+        {
+            return problem!;
+        }
+
+        var result = await reports.GetSupplierPurchasingAsync(organizationId, from, to, ct).ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetExpenseSummary(
+        HttpRequest request,
+        string? fromDate,
+        string? toDate,
+        OperationalReportService reports,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorizeReport(request, access, PosOperationalReportKind.Expenses, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        if (!TryParseOptionalDates(fromDate, toDate, out var from, out var to, out problem))
+        {
+            return problem!;
+        }
+
+        var result = await reports.GetExpenseSummaryAsync(organizationId, from, to, ct).ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetProductUtangSummary(
+        HttpRequest request,
+        string? fromDate,
+        string? toDate,
+        OperationalReportService reports,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorizeReport(request, access, PosOperationalReportKind.Utang, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        if (!TryParseOptionalDates(fromDate, toDate, out var from, out var to, out problem))
+        {
+            return problem!;
+        }
+
+        var result = await reports.GetProductUtangSummaryAsync(organizationId, from, to, ct).ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static bool TryAuthorizeReport(
+        HttpRequest request,
+        IPosCommercialAccessAccessor access,
+        PosOperationalReportKind kind,
+        out Guid organizationId,
+        out IResult? problem)
+    {
+        if (!TryAuthorize(request, access, OperationalReportService.CapabilityForReport(kind), out organizationId, out problem))
+        {
+            return false;
+        }
+
+        if (!PosRoleRequestContext.HasActorHeader || PosRoleRequestContext.CurrentRole is null)
+        {
+            problem = PosApiResults.Problem(
+                Domain.Common.DomainErrorCodes.PosRoleRequired,
+                "An active POS role assignment is required for operational reports.",
+                StatusCodes.Status403Forbidden);
+            return false;
+        }
+
+        if (!OperationalReportService.ActorMayAccessReport(PosRoleRequestContext.CurrentRole, kind))
+        {
+            problem = PosApiResults.Problem(
+                Domain.Common.DomainErrorCodes.PosRoleDenied,
+                "The active POS role cannot access this report.",
+                StatusCodes.Status403Forbidden);
+            return false;
+        }
+
+        return true;
     }
 
     private static bool TryAuthorize(
