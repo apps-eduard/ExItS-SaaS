@@ -28,6 +28,20 @@ public sealed class ProductAccessResolver(IPlatformAccessClient accessClient) : 
 
     public async Task<IReadOnlyList<EligibleOrganization>> ListEligibleOrganizationsAsync(Guid userId, CancellationToken ct = default)
     {
+        var authOrgs = await accessClient.GetAuthEligibleOrganizationsAsync(ct).ConfigureAwait(false);
+        if (authOrgs.IsSuccess && authOrgs.Data is not null)
+        {
+            return authOrgs.Data
+                .Select(o => new EligibleOrganization(
+                    o.OrganizationId,
+                    o.DisplayName,
+                    o.MembershipId,
+                    "Active",
+                    AccessAllowed: true,
+                    AccessReasonCode: "allowed"))
+                .ToArray();
+        }
+
         var memberships = await accessClient.GetUserMembershipsAsync(userId, ct).ConfigureAwait(false);
         if (!memberships.IsSuccess || memberships.Data is null)
         {

@@ -12,6 +12,15 @@ public sealed class SecureSessionStore(ISecureTokenStore tokens) : ISessionStore
         await tokens.SetAsync(SecureTokenKeys.IssuedAtUtc, session.IssuedAtUtc.UtcDateTime.ToString("O", CultureInfo.InvariantCulture), ct).ConfigureAwait(false);
         await tokens.SetAsync(SecureTokenKeys.ExpiresAtUtc, session.ExpiresAtUtc.UtcDateTime.ToString("O", CultureInfo.InvariantCulture), ct).ConfigureAwait(false);
 
+        if (string.IsNullOrWhiteSpace(session.AccessToken))
+        {
+            await tokens.ClearAsync(SecureTokenKeys.AccessToken, ct).ConfigureAwait(false);
+        }
+        else
+        {
+            await tokens.SetAsync(SecureTokenKeys.AccessToken, session.AccessToken, ct).ConfigureAwait(false);
+        }
+
         if (string.IsNullOrWhiteSpace(session.SubscriptionStatus))
         {
             await tokens.ClearAsync(SecureTokenKeys.SubscriptionStatus, ct).ConfigureAwait(false);
@@ -57,6 +66,7 @@ public sealed class SecureSessionStore(ISecureTokenStore tokens) : ISessionStore
                 return (null, null);
             }
 
+            var accessToken = await tokens.GetAsync(SecureTokenKeys.AccessToken, ct).ConfigureAwait(false);
             var subscriptionStatus = await tokens.GetAsync(SecureTokenKeys.SubscriptionStatus, ct).ConfigureAwait(false);
             var grantsText = await tokens.GetAsync(SecureTokenKeys.FeatureGrants, ct).ConfigureAwait(false);
             IReadOnlyList<string>? grants = null;
@@ -81,7 +91,8 @@ public sealed class SecureSessionStore(ISecureTokenStore tokens) : ISessionStore
                 HasPosAccess: false,
                 AccessReasonCode: null,
                 SubscriptionStatus: string.IsNullOrWhiteSpace(subscriptionStatus) ? null : subscriptionStatus.Trim(),
-                EnabledFeatureCodes: grants);
+                EnabledFeatureCodes: grants,
+                AccessToken: string.IsNullOrWhiteSpace(accessToken) ? null : accessToken);
 
             return (shell, marker);
         }

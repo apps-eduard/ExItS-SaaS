@@ -10,7 +10,7 @@ Feature tip: `e64f352161bb20447a99ae762d1a69ec1a3846fe`
 
 **Complete.** After Platform login, trusted server-side organization context is established from **active** organization memberships (and active organizations). Supports none / one (auto-select) / many (selection required), select/switch/clear, and invalidation when membership or organization eligibility ends. **R-091 remains open** (bearer tokens, product-client wiring, MFA, closeout remain).
 
-Exact next: **P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS)** when authorized (do **not** begin).
+Exact next: **P13-WP07 — MFA Readiness and Auth Hardening** when authorized (do **not** begin).
 
 ## 1. Delivered capability
 
@@ -48,4 +48,4 @@ Product launch protection; bearer tokens; MFA; external IdP; broad PlatformAuthz
 
 ## Exact next work package
 
-**P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS)** when explicitly authorized. Do not begin P13-WP06.
+**P13-WP07 — MFA Readiness and Auth Hardening** when explicitly authorized. Do not begin P13-WP07.

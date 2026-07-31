@@ -35,6 +35,9 @@ public static class PlatformAuditActions
     public const string PlatformAuthEmailVerificationCompleted = "platform.auth.email_verification_completed";
     public const string PlatformAuthLockoutStarted = "platform.auth.lockout_started";
     public const string PlatformAuthOrganizationContextChanged = "platform.auth.organization_context_changed";
+    public const string PlatformAuthAccessTokenIssued = "platform.auth.access_token_issued";
+    public const string PlatformAuthAccessTokenBound = "platform.auth.access_token_bound";
+    public const string PlatformAuthAccessTokenRevoked = "platform.auth.access_token_revoked";
 
     public const string MembershipAdded = "platform.membership.added";
     public const string MembershipRoleChanged = "platform.membership.role_changed";

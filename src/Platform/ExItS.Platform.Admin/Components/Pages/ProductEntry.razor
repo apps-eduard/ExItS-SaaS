@@ -1,0 +1,204 @@
+@page "/admin/product-entry"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IPlatformApiClient Api
+@inject IStringLocalizer<AdminResources> L
+@inject IJSRuntime Js
+
+<PageTitle>@L["Brand_Name"] — @L["Nav_ProductEntry"]</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+        <div class="page-frame page-frame--form">
+            <PageHeader Title="@L["Nav_ProductEntry"]"
+                        Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Products"]} / {L["Nav_ProductEntry"]}")"
+                        Description="Issue a one-time product entry access token for the selected organization session context." />
+
+            @if (_loading)
+            {
+                <p class="muted">Loading session…</p>
+            }
+            else if (!string.IsNullOrWhiteSpace(_loadError))
+            {
+                <div class="form-validation-summary" role="alert">@_loadError</div>
+            }
+            else
+            {
+                <dl class="key-value-list">
+                    <dt>Session user</dt>
+                    <dd>@_session?.DisplayName (@_session?.Username)</dd>
+                    <dt>Selected organization</dt>
+                    <dd>
+                        @if (_session?.SelectedOrganizationId is Guid orgId)
+                        {
+                            <text>@(_session.SelectedOrganizationDisplayName ?? orgId.ToString("D"))</text>
+                        }
+                        else
+                        {
+                            <span class="muted">None — select an organization in the header switcher first.</span>
+                        }
+                    </dd>
+                </dl>
+
+                @if (_session?.SelectedOrganizationId is null)
+                {
+                    <div class="form-validation-summary" role="status">
+                        Select an organization in the header organization switcher before issuing a product entry token.
+                    </div>
+                }
+                else
+                {
+                    <div class="form-field">
+                        <label class="form-field-label" for="product-code">Product code</label>
+                        <input id="product-code" class="form-control" @bind="_productCode" autocomplete="off" />
+                        <p class="form-field-help">Default: pinoy-business-pos</p>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-primary" disabled="@_busy" @onclick="IssueTokenAsync">
+                            @(_busy ? "Issuing…" : "Issue product entry token")
+                        </button>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(_issueError))
+                {
+                    <div class="form-validation-summary" role="alert">@_issueError</div>
+                }
+
+                @if (_issued is not null)
+                {
+                    <DetailSection Title="Issued access token">
+                        <p class="muted">Shown once. Copy and store securely. Do not commit tokens.</p>
+                        <div class="form-field">
+                            <label class="form-field-label" for="access-token">Access token</label>
+                            <textarea id="access-token" class="form-control" rows="4" readonly>@_issued.AccessToken</textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn-primary" @onclick="CopyTokenAsync">Copy token</button>
+                        </div>
+                        <dl class="key-value-list">
+                            <dt>Expires (UTC)</dt>
+                            <dd>@_issued.ExpiresAtUtc.ToString("u")</dd>
+                            <dt>Product access allowed</dt>
+                            <dd>@(_issued.ProductAccessAllowed?.ToString() ?? "n/a")</dd>
+                            <dt>Product code</dt>
+                            <dd>@(_issued.ProductCode ?? "—")</dd>
+                            <dt>Reason</dt>
+                            <dd>@(_issued.ProductAccessReasonCode ?? "—")</dd>
+                        </dl>
+                    </DetailSection>
+                }
+            }
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <p><a href="/admin/login">Sign in</a> to issue a product entry token.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private AuthSessionInfoDto? _session;
+    private string _productCode = "pinoy-business-pos";
+    private AccessTokenIssueDto? _issued;
+    private string? _loadError;
+    private string? _issueError;
+    private bool _loading = true;
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+        _loadError = null;
+        try
+        {
+            var me = await Api.GetAuthMeAsync();
+            if (!me.IsSuccess || me.Data is null)
+            {
+                _loadError = me.Error?.Detail ?? "Unable to load authentication session.";
+                return;
+            }
+
+            _session = me.Data;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task IssueTokenAsync()
+    {
+        _issueError = null;
+        _issued = null;
+
+        if (_session?.SelectedOrganizationId is not Guid orgId)
+        {
+            _issueError = "Select an organization in the header switcher first.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_productCode))
+        {
+            _issueError = "Product code is required.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Api.IssueAccessTokenAsync(new IssueAccessTokenRequest(
+                GrantType: "session",
+                UsernameOrEmail: null,
+                Password: null,
+                OrganizationId: orgId,
+                ProductCode: _productCode.Trim()));
+
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _issueError = result.Error?.Detail
+                    ?? result.Error?.Title
+                    ?? "Product entry token was denied.";
+                return;
+            }
+
+            if (result.Data.ProductAccessAllowed == false)
+            {
+                _issueError = result.Data.ProductAccessReasonCode is { Length: > 0 } reason
+                    ? $"Product access denied ({reason})."
+                    : "Product access denied.";
+                _issued = result.Data;
+                return;
+            }
+
+            _issued = result.Data;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task CopyTokenAsync()
+    {
+        if (_issued is null || string.IsNullOrWhiteSpace(_issued.AccessToken))
+        {
+            return;
+        }
+
+        try
+        {
+            await Js.InvokeVoidAsync("navigator.clipboard.writeText", _issued.AccessToken);
+        }
+        catch (JSException)
+        {
+            // Clipboard may be unavailable; token remains selectable in the textarea.
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+    }
+}

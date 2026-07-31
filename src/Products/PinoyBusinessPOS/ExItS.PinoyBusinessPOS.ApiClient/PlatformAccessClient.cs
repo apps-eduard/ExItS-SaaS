@@ -24,4 +24,29 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
         api.GetAsync<EffectiveAccessDto>(
             $"/api/v1/platform/access/evaluate?userId={userId:D}&organizationId={organizationId:D}&productCode={Uri.EscapeDataString(productCode)}",
             ct);
+
+    public Task<ApiResult<PlatformAccessTokenIssueDto>> IssueTokenAsync(
+        IssuePlatformAccessTokenRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<PlatformAccessTokenIssueDto>(HttpMethod.Post, "/api/v1/platform/auth/token", request, ct);
+
+    public Task<ApiResult<PlatformAccessTokenIssueDto>> BindTokenAsync(
+        BindPlatformAccessTokenRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<PlatformAccessTokenIssueDto>(HttpMethod.Post, "/api/v1/platform/auth/token/bind", request, ct);
+
+    public Task<ApiResult<PlatformAccessTokenIntrospectionDto>> IntrospectTokenAsync(
+        string? token = null,
+        CancellationToken ct = default) =>
+        api.SendAsync<PlatformAccessTokenIntrospectionDto>(
+            HttpMethod.Post,
+            "/api/v1/platform/auth/introspect",
+            new { token },
+            ct);
+
+    public Task<ApiResult<IReadOnlyList<PlatformAuthEligibleOrganizationDto>>> GetAuthEligibleOrganizationsAsync(
+        CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<PlatformAuthEligibleOrganizationDto>>(
+            "/api/v1/platform/auth/organizations",
+            ct);
 }

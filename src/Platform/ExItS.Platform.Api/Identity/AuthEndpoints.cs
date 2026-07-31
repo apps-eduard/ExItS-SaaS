@@ -163,7 +163,84 @@ internal static class AuthEndpoints
         })
         .AllowAnonymous();
 
+        app.MapPost("/api/v1/platform/auth/token", async (
+            IssueAccessTokenRequest body,
+            HttpContext http,
+            IssuePlatformAccessToken useCase,
+            IOptions<PlatformSessionOptions> sessionOptions,
+            CancellationToken ct) =>
+        {
+            var grant = (body.GrantType ?? "password").Trim();
+            ApplicationResult<PlatformAccessTokenIssueDto> result;
+            if (string.Equals(grant, "session", StringComparison.OrdinalIgnoreCase))
+            {
+                var sessionToken = ExtractSessionToken(http, sessionOptions.Value);
+                result = await useCase
+                    .ExecuteSessionGrantAsync(sessionToken, body.OrganizationId, body.ProductCode, ct)
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                result = await useCase
+                    .ExecutePasswordGrantAsync(body.UsernameOrEmail, body.Password, body.OrganizationId, body.ProductCode, ct)
+                    .ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        })
+        .RequireRateLimiting(PlatformSecurityPipeline.AuthLoginRateLimitPolicy)
+        .AllowAnonymous();
+
+        app.MapPost("/api/v1/platform/auth/token/bind", async (
+            BindAccessTokenRequest body,
+            HttpContext http,
+            BindPlatformAccessTokenProductContext useCase,
+            CancellationToken ct) =>
+        {
+            var token = ExtractBearerToken(http) ?? body.AccessToken;
+            var result = await useCase
+                .ExecuteAsync(token, body.OrganizationId, body.ProductCode ?? string.Empty, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        })
+        .AllowAnonymous();
+
+        app.MapPost("/api/v1/platform/auth/introspect", async (
+            IntrospectAccessTokenRequest body,
+            HttpContext http,
+            IntrospectPlatformAccessToken useCase,
+            CancellationToken ct) =>
+        {
+            var token = ExtractBearerToken(http) ?? body.Token;
+            var dto = await useCase.ExecuteAsync(token, ct).ConfigureAwait(false);
+            return Results.Ok(dto);
+        })
+        .AllowAnonymous();
+
+        app.MapPost("/api/v1/platform/auth/token/revoke", async (
+            HttpContext http,
+            RevokePlatformAccessToken useCase,
+            CancellationToken ct) =>
+        {
+            var token = ExtractBearerToken(http);
+            var result = await useCase.ExecuteAsync(token, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, _ => Results.NoContent());
+        })
+        .AllowAnonymous();
+
         return app;
+    }
+
+    private static string? ExtractBearerToken(HttpContext http)
+    {
+        var authorization = http.Request.Headers.Authorization.ToString();
+        if (!string.IsNullOrWhiteSpace(authorization)
+            && authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            return authorization["Bearer ".Length..].Trim();
+        }
+
+        return null;
     }
 
     private static bool TryGetAuthenticatedUserId(HttpContext http, out Guid userId)
@@ -245,4 +322,12 @@ internal static class AuthEndpoints
     internal sealed record ResetPasswordRequest(string? Token, string? NewPassword);
     internal sealed record ConfirmEmailVerificationRequest(string? Token);
     internal sealed record SetOrganizationContextRequest(Guid? OrganizationId);
+    internal sealed record IssueAccessTokenRequest(
+        string? GrantType,
+        string? UsernameOrEmail,
+        string? Password,
+        Guid? OrganizationId,
+        string? ProductCode);
+    internal sealed record BindAccessTokenRequest(string? AccessToken, Guid OrganizationId, string? ProductCode);
+    internal sealed record IntrospectAccessTokenRequest(string? Token);
 }

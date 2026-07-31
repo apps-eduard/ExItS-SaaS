@@ -214,13 +214,19 @@
   <data name="Onboarding_DevNoticeMessage" xml:space="preserve"><value>This build uses the approved Development/Testing Platform identity mechanism. Production JWT, MFA, and SSO are not implemented.</value></data>
   <data name="Onboarding_DevConfirmLabel" xml:space="preserve"><value>I understand this is Development/Testing only</value></data>
   <data name="SignIn_Title" xml:space="preserve"><value>Sign in</value></data>
-  <data name="SignIn_Subtitle" xml:space="preserve"><value>Use your Platform user identity for this device.</value></data>
+  <data name="SignIn_Subtitle" xml:space="preserve"><value>Sign in with your Platform username and password.</value></data>
   <data name="SignIn_DevTitle" xml:space="preserve"><value>Development/Testing identity</value></data>
-  <data name="SignIn_DevMessage" xml:space="preserve"><value>Enter an active Platform User Id. No password is collected. This is not production authentication.</value></data>
-  <data name="SignIn_FormTitle" xml:space="preserve"><value>Platform user</value></data>
+  <data name="SignIn_DevMessage" xml:space="preserve"><value>Optional GUID fallback for Development/Testing only. Prefer username and password above.</value></data>
+  <data name="SignIn_FormTitle" xml:space="preserve"><value>Platform user (Dev)</value></data>
+  <data name="SignIn_PasswordFormTitle" xml:space="preserve"><value>Platform credentials</value></data>
+  <data name="SignIn_UsernameLabel" xml:space="preserve"><value>Username or email</value></data>
+  <data name="SignIn_UsernameHint" xml:space="preserve"><value>Platform account username or email</value></data>
+  <data name="SignIn_PasswordLabel" xml:space="preserve"><value>Password</value></data>
+  <data name="SignIn_PasswordHint" xml:space="preserve"><value>Password is never stored on device</value></data>
   <data name="SignIn_UserIdLabel" xml:space="preserve"><value>Platform User Id</value></data>
   <data name="SignIn_UserIdHint" xml:space="preserve"><value>GUID from Platform Admin users directory</value></data>
   <data name="SignIn_Submit" xml:space="preserve"><value>Sign in</value></data>
+  <data name="SignIn_DevSubmit" xml:space="preserve"><value>Sign in with User Id</value></data>
   <data name="OrgSelect_Title" xml:space="preserve"><value>Select organization</value></data>
   <data name="OrgSelect_Subtitle" xml:space="preserve"><value>Only organizations with active PinoyBusinessPOS commercial access are listed.</value></data>
   <data name="OrgSelect_Hint" xml:space="preserve"><value>Organization selection is a preference. Access is revalidated by the Platform.</value></data>

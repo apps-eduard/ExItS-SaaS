@@ -59,17 +59,20 @@ public sealed class SuspendPlatformOrganization
 {
     private readonly IPlatformOrganizationRepository _organizations;
     private readonly IPlatformAuthSessionRepository _sessions;
+    private readonly IPlatformAccessTokenRepository _accessTokens;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public SuspendPlatformOrganization(
         IPlatformOrganizationRepository organizations,
         IPlatformAuthSessionRepository sessions,
+        IPlatformAccessTokenRepository accessTokens,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _organizations = organizations;
         _sessions = sessions;
+        _accessTokens = accessTokens;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -93,6 +96,9 @@ public sealed class SuspendPlatformOrganization
             await _organizations.UpdateAsync(organization, cancellationToken).ConfigureAwait(false);
             await _sessions
                 .ClearSelectedOrganizationForOrganizationAsync(organizationId, cancellationToken)
+                .ConfigureAwait(false);
+            await _accessTokens
+                .ClearOrganizationBindingForOrganizationAsync(organizationId, cancellationToken)
                 .ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<PlatformOrganization>.Success(organization);

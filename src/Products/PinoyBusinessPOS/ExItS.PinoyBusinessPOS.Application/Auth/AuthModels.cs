@@ -14,6 +14,7 @@ public static class SecureTokenKeys
     public const string ExpiresAtUtc = "pos.session.expiresAtUtc";
     public const string SubscriptionStatus = "pos.session.subscriptionStatus";
     public const string FeatureGrants = "pos.session.featureGrants";
+    public const string AccessToken = "pos.session.accessToken";
 
     /// <summary>
     /// Durable installation DeviceId. Not a session key — must survive logout and ClearAllSessionKeysAsync.
@@ -76,7 +77,8 @@ public sealed record AuthSession(
     bool HasPosAccess,
     string? AccessReasonCode,
     string? SubscriptionStatus = null,
-    IReadOnlyList<string>? EnabledFeatureCodes = null);
+    IReadOnlyList<string>? EnabledFeatureCodes = null,
+    string? AccessToken = null);
 
 public sealed record EligibleOrganization(
     Guid OrganizationId,
@@ -86,7 +88,10 @@ public sealed record EligibleOrganization(
     bool AccessAllowed,
     string AccessReasonCode);
 
-public sealed record SignInRequest(Guid PlatformUserId);
+public sealed record SignInRequest(
+    string? UsernameOrEmail,
+    string? Password,
+    Guid? PlatformUserId = null);
 
 public sealed record AuthResult(
     bool Succeeded,

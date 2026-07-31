@@ -67,6 +67,7 @@
   <data name="Nav_SectionCompliance" xml:space="preserve"><value>Pagsunod (Audit)</value></data>
   <data name="Nav_Dashboard" xml:space="preserve"><value>Dashboard</value></data>
   <data name="Nav_Products" xml:space="preserve"><value>Mga Produkto</value></data>
+  <data name="Nav_ProductEntry" xml:space="preserve"><value>Product entry</value></data>
   <data name="Nav_Organizations" xml:space="preserve"><value>Mga Organisasyon</value></data>
   <data name="Nav_Subscriptions" xml:space="preserve"><value>Mga Subscription</value></data>
   <data name="Nav_Payments" xml:space="preserve"><value>Mga Bayad</value></data>

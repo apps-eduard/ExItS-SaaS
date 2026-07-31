@@ -214,13 +214,19 @@
   <data name="Onboarding_DevNoticeMessage" xml:space="preserve"><value>Ginagamit ng build na ito ang approved Development/Testing Platform identity. Hindi pa implemented ang production JWT, MFA, at SSO.</value></data>
   <data name="Onboarding_DevConfirmLabel" xml:space="preserve"><value>Naiintindihan kong Development/Testing lang ito</value></data>
   <data name="SignIn_Title" xml:space="preserve"><value>Mag-sign in</value></data>
-  <data name="SignIn_Subtitle" xml:space="preserve"><value>Gamitin ang Platform user identity para sa device na ito.</value></data>
+  <data name="SignIn_Subtitle" xml:space="preserve"><value>Mag-sign in gamit ang Platform username at password.</value></data>
   <data name="SignIn_DevTitle" xml:space="preserve"><value>Development/Testing identity</value></data>
-  <data name="SignIn_DevMessage" xml:space="preserve"><value>Ilagay ang active Platform User Id. Walang password na kinukuha. Hindi ito production authentication.</value></data>
-  <data name="SignIn_FormTitle" xml:space="preserve"><value>Platform user</value></data>
+  <data name="SignIn_DevMessage" xml:space="preserve"><value>Opsyonal na GUID fallback para sa Development/Testing lang. Mas mainam ang username at password sa itaas.</value></data>
+  <data name="SignIn_FormTitle" xml:space="preserve"><value>Platform user (Dev)</value></data>
+  <data name="SignIn_PasswordFormTitle" xml:space="preserve"><value>Platform credentials</value></data>
+  <data name="SignIn_UsernameLabel" xml:space="preserve"><value>Username o email</value></data>
+  <data name="SignIn_UsernameHint" xml:space="preserve"><value>Platform account username o email</value></data>
+  <data name="SignIn_PasswordLabel" xml:space="preserve"><value>Password</value></data>
+  <data name="SignIn_PasswordHint" xml:space="preserve"><value>Hindi sine-save ang password sa device</value></data>
   <data name="SignIn_UserIdLabel" xml:space="preserve"><value>Platform User Id</value></data>
   <data name="SignIn_UserIdHint" xml:space="preserve"><value>GUID mula sa Platform Admin users directory</value></data>
   <data name="SignIn_Submit" xml:space="preserve"><value>Mag-sign in</value></data>
+  <data name="SignIn_DevSubmit" xml:space="preserve"><value>Mag-sign in gamit ang User Id</value></data>
   <data name="OrgSelect_Title" xml:space="preserve"><value>Pumili ng organization</value></data>
   <data name="OrgSelect_Subtitle" xml:space="preserve"><value>Mga organization lang na may active PinoyBusinessPOS commercial access ang ipinapakita.</value></data>
   <data name="OrgSelect_Hint" xml:space="preserve"><value>Preference ang pagpili ng organization. Muli-validate ng Platform ang access.</value></data>

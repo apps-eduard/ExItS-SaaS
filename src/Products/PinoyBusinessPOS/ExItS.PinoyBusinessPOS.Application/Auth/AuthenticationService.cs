@@ -6,8 +6,8 @@ using ExItS.PinoyBusinessPOS.Application.Platform;
 namespace ExItS.PinoyBusinessPOS.Application.Auth;
 
 /// <summary>
-/// Development/Testing authentication using Platform User Id selection and
-/// <c>X-Dev-Platform-User-Id</c>. Disabled outside Development/Testing. Not production authentication.
+/// Platform password grant authentication plus Development/Testing GUID fallback via
+/// <c>X-Dev-Platform-User-Id</c>. Password/bearer path is available outside Development/Testing.
 /// </summary>
 public sealed class AuthenticationService(
     IAppInfoService appInfo,
@@ -31,19 +31,86 @@ public sealed class AuthenticationService(
 
     public async Task<AuthResult> SignInAsync(SignInRequest request, CancellationToken ct = default)
     {
+        var hasPassword = !string.IsNullOrWhiteSpace(request.UsernameOrEmail)
+                          && !string.IsNullOrWhiteSpace(request.Password);
+        if (hasPassword)
+        {
+            return await SignInWithPasswordAsync(request.UsernameOrEmail!, request.Password!, ct)
+                .ConfigureAwait(false);
+        }
+
+        if (request.PlatformUserId is Guid userId && userId != Guid.Empty)
+        {
+            return await SignInWithDevUserIdAsync(userId, ct).ConfigureAwait(false);
+        }
+
+        events.Record("signin_failure", Dict(("reason", "invalid_credentials")));
+        return new AuthResult(false, AuthFailureReason.InvalidCredentials, SafeMessageKey: "Auth_InvalidCredentials");
+    }
+
+    private async Task<AuthResult> SignInWithPasswordAsync(
+        string usernameOrEmail,
+        string password,
+        CancellationToken ct)
+    {
+        var tokenResult = await accessClient
+            .IssueTokenAsync(
+                new IssuePlatformAccessTokenRequest(
+                    GrantType: "password",
+                    UsernameOrEmail: usernameOrEmail.Trim(),
+                    Password: password,
+                    OrganizationId: null,
+                    ProductCode: null),
+                ct)
+            .ConfigureAwait(false);
+
+        if (!tokenResult.IsSuccess || tokenResult.Data is null)
+        {
+            var failure = MapTransport(tokenResult.Status);
+            events.Record("signin_failure", Dict(("reason", failure.FailureReason.ToString())));
+            return failure;
+        }
+
+        var issued = tokenResult.Data;
+        var now = _clock.GetUtcNow();
+        var marker = Guid.NewGuid().ToString("N");
+        var session = new AuthSession(
+            issued.UserId,
+            issued.DisplayName,
+            issued.Username,
+            issued.Email,
+            OrganizationId: issued.OrganizationId,
+            OrganizationDisplayName: issued.OrganizationDisplayName,
+            IssuedAtUtc: now,
+            ExpiresAtUtc: issued.ExpiresAtUtc,
+            HasPosAccess: issued.ProductAccessAllowed == true && issued.OrganizationId is not null,
+            AccessReasonCode: issued.ProductAccessReasonCode,
+            AccessToken: issued.AccessToken);
+
+        try
+        {
+            await sessionStore.SaveAsync(session, marker, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            events.Record("secure_storage_failure", Dict(("operation", "signin_password_save")));
+            return new AuthResult(false, AuthFailureReason.SecureStorageFailure, SafeMessageKey: "Auth_SecureStorageFailure");
+        }
+
+        currentUser.Set(session);
+        events.Record("signin_success", Dict(("userId", session.UserId.ToString("D")), ("grant", "password")));
+        return new AuthResult(true, AuthFailureReason.None, session);
+    }
+
+    private async Task<AuthResult> SignInWithDevUserIdAsync(Guid platformUserId, CancellationToken ct)
+    {
         if (!IsDevelopmentAuthenticationEnabled)
         {
             events.Record("signin_blocked_production", EmptyProps());
             return new AuthResult(false, AuthFailureReason.ProductionAuthUnavailable, SafeMessageKey: "Auth_ProductionUnavailable");
         }
 
-        if (request.PlatformUserId == Guid.Empty)
-        {
-            events.Record("signin_failure", Dict(("reason", "invalid_user_id")));
-            return new AuthResult(false, AuthFailureReason.InvalidCredentials, SafeMessageKey: "Auth_InvalidCredentials");
-        }
-
-        var userResult = await accessClient.GetUserAsync(request.PlatformUserId, ct).ConfigureAwait(false);
+        var userResult = await accessClient.GetUserAsync(platformUserId, ct).ConfigureAwait(false);
         if (!userResult.IsSuccess || userResult.Data is null)
         {
             var failure = MapTransport(userResult.Status);
@@ -82,18 +149,12 @@ public sealed class AuthenticationService(
         }
 
         currentUser.Set(session);
-        events.Record("signin_success", Dict(("userId", session.UserId.ToString("D"))));
+        events.Record("signin_success", Dict(("userId", session.UserId.ToString("D")), ("grant", "dev_user_id")));
         return new AuthResult(true, AuthFailureReason.None, session);
     }
 
     public async Task<AuthResult> RestoreSessionAsync(CancellationToken ct = default)
     {
-        if (!IsDevelopmentAuthenticationEnabled)
-        {
-            await ClearLocalAsync(ct).ConfigureAwait(false);
-            return new AuthResult(false, AuthFailureReason.ProductionAuthUnavailable, SafeMessageKey: "Auth_ProductionUnavailable");
-        }
-
         AuthSession? shell;
         string? marker;
         try
@@ -112,6 +173,13 @@ public sealed class AuthenticationService(
             return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
         }
 
+        var hasAccessToken = !string.IsNullOrWhiteSpace(shell.AccessToken);
+        if (!IsDevelopmentAuthenticationEnabled && !hasAccessToken)
+        {
+            await ClearLocalAsync(ct).ConfigureAwait(false);
+            return new AuthResult(false, AuthFailureReason.ProductionAuthUnavailable, SafeMessageKey: "Auth_ProductionUnavailable");
+        }
+
         if (shell.ExpiresAtUtc <= _clock.GetUtcNow())
         {
             await LogoutAsync(ct).ConfigureAwait(false);
@@ -119,22 +187,104 @@ public sealed class AuthenticationService(
             return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
         }
 
-        // Close any leftover in-memory local context; reopen only after online access validation.
+        if (hasAccessToken)
+        {
+            return await RestoreBearerSessionAsync(shell, ct).ConfigureAwait(false);
+        }
+
         await CloseLocalContextAsync(ct).ConfigureAwait(false);
-        return await RebuildSessionAsync(shell.UserId, shell.IssuedAtUtc, shell.ExpiresAtUtc, ct).ConfigureAwait(false);
+        return await RebuildSessionAsync(shell.UserId, shell.IssuedAtUtc, shell.ExpiresAtUtc, accessToken: null, ct)
+            .ConfigureAwait(false);
+    }
+
+    private async Task<AuthResult> RestoreBearerSessionAsync(AuthSession shell, CancellationToken ct)
+    {
+        // Seed context so PlatformBearerHandler can attach the token for introspect/org calls.
+        currentUser.Set(shell);
+
+        try
+        {
+            var introspect = await accessClient.IntrospectTokenAsync(shell.AccessToken, ct).ConfigureAwait(false);
+            if (introspect.IsSuccess && introspect.Data is { Active: false })
+            {
+                await LogoutAsync(ct).ConfigureAwait(false);
+                events.Record("session_expired", Dict(("reason", "token_inactive")));
+                return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
+            }
+
+            if (introspect.IsSuccess && introspect.Data is { Active: true } active)
+            {
+                var orgId = active.OrganizationId ?? await preferences.GetSelectedOrganizationIdAsync(ct).ConfigureAwait(false);
+                var hasAccess = active.ProductAccessAllowed == true && orgId is not null;
+                var restored = new AuthSession(
+                    active.UserId ?? shell.UserId,
+                    active.DisplayName ?? shell.DisplayName,
+                    active.Username ?? shell.Username,
+                    shell.Email,
+                    orgId,
+                    active.OrganizationDisplayName,
+                    shell.IssuedAtUtc,
+                    active.ExpiresAtUtc ?? shell.ExpiresAtUtc,
+                    hasAccess,
+                    active.ProductAccessReasonCode,
+                    active.SubscriptionStatus,
+                    active.EnabledFeatureCodes,
+                    shell.AccessToken);
+
+                try
+                {
+                    var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
+                    marker ??= Guid.NewGuid().ToString("N");
+                    await sessionStore.SaveAsync(restored, marker, ct).ConfigureAwait(false);
+                }
+                catch
+                {
+                    events.Record("secure_storage_failure", Dict(("operation", "restore_bearer_save")));
+                    return new AuthResult(false, AuthFailureReason.SecureStorageFailure, SafeMessageKey: "Auth_SecureStorageFailure");
+                }
+
+                currentUser.Set(restored);
+                if (hasAccess && orgId is Guid validatedOrg)
+                {
+                    await OpenLocalContextAsync(restored.UserId, validatedOrg, ct).ConfigureAwait(false);
+                }
+                else
+                {
+                    await CloseLocalContextAsync(ct).ConfigureAwait(false);
+                }
+
+                return new AuthResult(true, AuthFailureReason.None, restored);
+            }
+        }
+        catch
+        {
+            // Fall through to expiry-only restore when introspect is unreachable.
+        }
+
+        // Offline / introspect unavailable: keep durable bearer session shell (expiry already checked).
+        var selectedOrg = await preferences.GetSelectedOrganizationIdAsync(ct).ConfigureAwait(false);
+        var offlineShell = shell with
+        {
+            OrganizationId = selectedOrg ?? shell.OrganizationId,
+            HasPosAccess = false,
+            AccessReasonCode = "reconnect_required"
+        };
+        currentUser.Set(offlineShell);
+        await CloseLocalContextAsync(ct).ConfigureAwait(false);
+        return new AuthResult(false, AuthFailureReason.Offline, offlineShell, SafeMessageKey: "SyncStatus_Reconnect");
     }
 
     public async Task<AuthResult> RefreshSessionAsync(CancellationToken ct = default)
     {
-        if (!IsDevelopmentAuthenticationEnabled)
-        {
-            return new AuthResult(false, AuthFailureReason.ProductionAuthUnavailable, SafeMessageKey: "Auth_ProductionUnavailable");
-        }
-
         var existing = currentUser.Session;
         if (existing is null)
         {
             return await RestoreSessionAsync(ct).ConfigureAwait(false);
+        }
+
+        if (!IsDevelopmentAuthenticationEnabled && string.IsNullOrWhiteSpace(existing.AccessToken))
+        {
+            return new AuthResult(false, AuthFailureReason.ProductionAuthUnavailable, SafeMessageKey: "Auth_ProductionUnavailable");
         }
 
         if (existing.ExpiresAtUtc <= _clock.GetUtcNow())
@@ -144,9 +294,15 @@ public sealed class AuthenticationService(
             return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
         }
 
+        if (!string.IsNullOrWhiteSpace(existing.AccessToken))
+        {
+            return await RestoreBearerSessionAsync(existing, ct).ConfigureAwait(false);
+        }
+
         var now = _clock.GetUtcNow();
         var refreshedExpiry = now.Add(SessionLifetime);
-        var result = await RebuildSessionAsync(existing.UserId, now, refreshedExpiry, ct).ConfigureAwait(false);
+        var result = await RebuildSessionAsync(existing.UserId, now, refreshedExpiry, accessToken: null, ct)
+            .ConfigureAwait(false);
         if (!result.Succeeded)
         {
             events.Record("refresh_failure", Dict(("reason", result.FailureReason.ToString())));
@@ -169,6 +325,11 @@ public sealed class AuthenticationService(
         if (session is null)
         {
             return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
+        }
+
+        if (!string.IsNullOrWhiteSpace(session.AccessToken))
+        {
+            return await SelectOrganizationWithBindAsync(session, organizationId, ct).ConfigureAwait(false);
         }
 
         var accessResult = await accessClient
@@ -212,6 +373,71 @@ public sealed class AuthenticationService(
             EnabledFeatureCodes = accessResult.Data.EnabledFeatureCodes
         };
 
+        return await PersistOrganizationSelectionAsync(session, updated, organizationId, ct).ConfigureAwait(false);
+    }
+
+    private async Task<AuthResult> SelectOrganizationWithBindAsync(
+        AuthSession session,
+        Guid organizationId,
+        CancellationToken ct)
+    {
+        var bindResult = await accessClient
+            .BindTokenAsync(
+                new BindPlatformAccessTokenRequest(
+                    AccessToken: session.AccessToken,
+                    OrganizationId: organizationId,
+                    ProductCode: PosProductCodes.PinoyBusinessPos),
+                ct)
+            .ConfigureAwait(false);
+
+        if (!bindResult.IsSuccess || bindResult.Data is null)
+        {
+            var transport = MapTransport(bindResult.Status);
+            events.Record("access_denial", Dict(
+                ("userId", session.UserId.ToString("D")),
+                ("organizationId", organizationId.ToString("D")),
+                ("reason", transport.SafeMessageKey)));
+            return transport;
+        }
+
+        var issued = bindResult.Data;
+        if (issued.ProductAccessAllowed == false)
+        {
+            var denial = new AuthResult(
+                false,
+                AuthFailureReason.AccessDenied,
+                SafeMessageKey: ProductAccessResolver.MapReasonKey(issued.ProductAccessReasonCode));
+            events.Record("access_denial", Dict(
+                ("userId", session.UserId.ToString("D")),
+                ("organizationId", organizationId.ToString("D")),
+                ("reason", denial.SafeMessageKey)));
+            return denial;
+        }
+
+        await preferences.SetSelectedOrganizationIdAsync(organizationId, ct).ConfigureAwait(false);
+
+        var updated = session with
+        {
+            AccessToken = issued.AccessToken,
+            OrganizationId = issued.OrganizationId ?? organizationId,
+            OrganizationDisplayName = issued.OrganizationDisplayName,
+            ExpiresAtUtc = issued.ExpiresAtUtc,
+            HasPosAccess = issued.ProductAccessAllowed == true,
+            AccessReasonCode = issued.ProductAccessReasonCode ?? "allowed",
+            DisplayName = issued.DisplayName,
+            Username = issued.Username,
+            Email = issued.Email
+        };
+
+        return await PersistOrganizationSelectionAsync(session, updated, organizationId, ct).ConfigureAwait(false);
+    }
+
+    private async Task<AuthResult> PersistOrganizationSelectionAsync(
+        AuthSession previous,
+        AuthSession updated,
+        Guid organizationId,
+        CancellationToken ct)
+    {
         try
         {
             var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
@@ -227,7 +453,7 @@ public sealed class AuthenticationService(
         currentUser.Set(updated);
         await OpenLocalContextAsync(updated.UserId, organizationId, ct).ConfigureAwait(false);
         events.Record("organization_selected", Dict(
-            ("userId", session.UserId.ToString("D")),
+            ("userId", previous.UserId.ToString("D")),
             ("organizationId", organizationId.ToString("D"))));
         return new AuthResult(true, AuthFailureReason.None, updated);
     }
@@ -236,16 +462,15 @@ public sealed class AuthenticationService(
         Guid userId,
         DateTimeOffset issuedAt,
         DateTimeOffset expiresAt,
+        string? accessToken,
         CancellationToken ct)
     {
         var userResult = await accessClient.GetUserAsync(userId, ct).ConfigureAwait(false);
         if (!userResult.IsSuccess || userResult.Data is null)
         {
-            // Offline / transport failure: keep durable session secrets but deny protected access
-            // until online revalidation. Do not open local context from SQLite alone.
             if (userResult.Status is ApiCallStatus.Offline or ApiCallStatus.Timeout or ApiCallStatus.Cancelled)
             {
-                var offlineSession = await BuildUnvalidatedShellAsync(userId, issuedAt, expiresAt, ct)
+                var offlineSession = await BuildUnvalidatedShellAsync(userId, issuedAt, expiresAt, accessToken, ct)
                     .ConfigureAwait(false);
                 if (offlineSession is not null)
                 {
@@ -315,7 +540,8 @@ public sealed class AuthenticationService(
             hasAccess,
             reason,
             subscriptionStatus,
-            enabledFeatureCodes);
+            enabledFeatureCodes,
+            accessToken);
 
         try
         {
@@ -346,6 +572,7 @@ public sealed class AuthenticationService(
         Guid userId,
         DateTimeOffset issuedAt,
         DateTimeOffset expiresAt,
+        string? accessToken,
         CancellationToken ct)
     {
         try
@@ -363,7 +590,8 @@ public sealed class AuthenticationService(
                     issuedAt,
                     expiresAt,
                     HasPosAccess: false,
-                    AccessReasonCode: "reconnect_required");
+                    AccessReasonCode: "reconnect_required",
+                    AccessToken: accessToken);
             }
 
             return shell with
@@ -371,7 +599,8 @@ public sealed class AuthenticationService(
                 HasPosAccess = false,
                 AccessReasonCode = "reconnect_required",
                 SubscriptionStatus = null,
-                EnabledFeatureCodes = null
+                EnabledFeatureCodes = null,
+                AccessToken = accessToken ?? shell.AccessToken
             };
         }
         catch

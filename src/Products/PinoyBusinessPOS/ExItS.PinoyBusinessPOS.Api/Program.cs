@@ -44,6 +44,17 @@ builder.AddPosSecurity();
 builder.Services.AddPosPersistence(builder.Configuration);
 
 builder.Services.AddScoped<IPosCommercialAccessAccessor, PosCommercialAccessAccessor>();
+builder.Services.Configure<PlatformAuthOptions>(builder.Configuration.GetSection(PlatformAuthOptions.SectionName));
+builder.Services.AddHttpClient<IPlatformTokenIntrospectionClient, PlatformTokenIntrospectionClient>((provider, client) =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+    {
+        client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+    }
+
+    client.Timeout = TimeSpan.FromSeconds(15);
+});
 builder.Services.AddScoped<POSCustomerQueryService>();
 builder.Services.AddScoped<CreatePOSCustomer>();
 builder.Services.AddScoped<UpdatePOSCustomer>();
@@ -133,6 +144,7 @@ builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.Operatio
 var app = builder.Build();
 
 app.UsePosSecurity();
+app.UseMiddleware<PosPlatformBearerMiddleware>();
 app.UseMiddleware<PosCommercialAccessMiddleware>();
 app.UseMiddleware<PosRoleResolutionMiddleware>();
 

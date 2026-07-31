@@ -169,6 +169,12 @@ public sealed class PlatformApiClient(HttpClient httpClient) : IPlatformApiClien
     public Task<ApiCallResult<OrganizationContextResultDto>> SetOrganizationContextAsync(SetOrganizationContextRequest request, CancellationToken ct = default) =>
         SendAsync<OrganizationContextResultDto>(HttpMethod.Put, "/api/v1/platform/auth/organization-context", request, ct);
 
+    public Task<ApiCallResult<AccessTokenIssueDto>> IssueAccessTokenAsync(IssueAccessTokenRequest request, CancellationToken ct = default) =>
+        SendAsync<AccessTokenIssueDto>(HttpMethod.Post, "/api/v1/platform/auth/token", request, ct);
+
+    public Task<ApiCallResult<AccessTokenIntrospectionDto>> IntrospectAccessTokenAsync(IntrospectAccessTokenRequest request, CancellationToken ct = default) =>
+        SendAsync<AccessTokenIntrospectionDto>(HttpMethod.Post, "/api/v1/platform/auth/introspect", request, ct);
+
     private static MembershipLifecycleRequest WithActor(MembershipLifecycleRequest request) =>
         request with { ActorReference = string.IsNullOrWhiteSpace(request.ActorReference) ? DevActor : request.ActorReference };
 

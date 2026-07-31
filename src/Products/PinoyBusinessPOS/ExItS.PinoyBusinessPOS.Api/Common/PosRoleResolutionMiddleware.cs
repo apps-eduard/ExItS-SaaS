@@ -9,7 +9,7 @@ namespace ExItS.PinoyBusinessPOS.Api.Common;
 /// <summary>
 /// Resolves the active POS role for the request actor. In Development/Testing, when an organization
 /// has no active Owner, the current actor is auto-bootstrapped as Owner (trusted primary-owner aid).
-/// Production identity provisioning remains out of scope (R-091).
+/// Production resolves assignments only — no auto-bootstrap (R-091).
 /// </summary>
 internal sealed class PosRoleResolutionMiddleware(RequestDelegate next)
 {
@@ -24,12 +24,6 @@ internal sealed class PosRoleResolutionMiddleware(RequestDelegate next)
 
         try
         {
-            if (!PosDevelopmentEnvironment.IsApprovedDevelopmentEnvironment(environment))
-            {
-                await next(context).ConfigureAwait(false);
-                return;
-            }
-
             if (!PosOrganizationScope.TryGetOrganizationId(context.Request, out var organizationId, out _)
                 || !PosOrganizationScope.TryGetActorId(context.Request, out var actorId, out _))
             {
@@ -44,6 +38,13 @@ internal sealed class PosRoleResolutionMiddleware(RequestDelegate next)
             if (active is not null)
             {
                 PosRoleRequestContext.CurrentRole = active.Role;
+                await next(context).ConfigureAwait(false);
+                return;
+            }
+
+            // Owner auto-bootstrap remains Development/Testing only.
+            if (!PosDevelopmentEnvironment.IsApprovedDevelopmentEnvironment(environment))
+            {
                 await next(context).ConfigureAwait(false);
                 return;
             }

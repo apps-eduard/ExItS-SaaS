@@ -17,6 +17,20 @@ internal static class PosOrganizationScope
         organizationId = default;
         problem = null;
 
+        if (IsBearerDenied(request.HttpContext))
+        {
+            problem = PosApiResults.Problem(
+                ApplicationErrorCodes.ActorRequired,
+                "Bearer access token is inactive or invalid.",
+                StatusCodes.Status401Unauthorized);
+            return false;
+        }
+
+        if (TryGetBearerOrganizationId(request.HttpContext, out organizationId))
+        {
+            return true;
+        }
+
         var environment = request.HttpContext.RequestServices.GetRequiredService<IHostEnvironment>();
         if (!PosDevelopmentEnvironment.IsApprovedDevelopmentEnvironment(environment))
         {
@@ -51,6 +65,20 @@ internal static class PosOrganizationScope
         actorId = default;
         problem = null;
 
+        if (IsBearerDenied(request.HttpContext))
+        {
+            problem = PosApiResults.Problem(
+                ApplicationErrorCodes.ActorRequired,
+                "Bearer access token is inactive or invalid.",
+                StatusCodes.Status401Unauthorized);
+            return false;
+        }
+
+        if (TryGetBearerUserId(request.HttpContext, out actorId))
+        {
+            return true;
+        }
+
         var environment = request.HttpContext.RequestServices.GetRequiredService<IHostEnvironment>();
         if (!PosDevelopmentEnvironment.IsApprovedDevelopmentEnvironment(environment))
         {
@@ -78,5 +106,34 @@ internal static class PosOrganizationScope
         }
 
         return true;
+    }
+
+    private static bool IsBearerDenied(HttpContext context) =>
+        context.Items.TryGetValue(PosAuthItems.Denied, out var denied) && denied is true;
+
+    private static bool TryGetBearerUserId(HttpContext context, out Guid userId)
+    {
+        userId = default;
+        if (context.Items.TryGetValue(PosAuthItems.UserId, out var value) && value is Guid id && id != Guid.Empty)
+        {
+            userId = id;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryGetBearerOrganizationId(HttpContext context, out Guid organizationId)
+    {
+        organizationId = default;
+        if (context.Items.TryGetValue(PosAuthItems.OrganizationId, out var value)
+            && value is Guid id
+            && id != Guid.Empty)
+        {
+            organizationId = id;
+            return true;
+        }
+
+        return false;
     }
 }

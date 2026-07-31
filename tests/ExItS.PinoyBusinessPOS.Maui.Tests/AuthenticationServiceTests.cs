@@ -12,7 +12,7 @@ public sealed class AuthenticationServiceTests
     public async Task SignIn_is_blocked_outside_development_testing()
     {
         var sut = CreateSut(environment: "Production", access: new FakeAccessClient());
-        var result = await sut.SignInAsync(new SignInRequest(Guid.NewGuid()));
+        var result = await sut.SignInAsync(new SignInRequest(null, null, Guid.NewGuid()));
         Assert.False(result.Succeeded);
         Assert.Equal(AuthFailureReason.ProductionAuthUnavailable, result.FailureReason);
     }
@@ -22,7 +22,7 @@ public sealed class AuthenticationServiceTests
     {
         var access = new FakeAccessClient { UserResult = ApiResult<PlatformUserDto>.NotFound() };
         var sut = CreateSut("Development", access);
-        var result = await sut.SignInAsync(new SignInRequest(Guid.NewGuid()));
+        var result = await sut.SignInAsync(new SignInRequest(null, null, Guid.NewGuid()));
         Assert.False(result.Succeeded);
         Assert.Equal(AuthFailureReason.InvalidCredentials, result.FailureReason);
     }
@@ -36,7 +36,7 @@ public sealed class AuthenticationServiceTests
             UserResult = ApiResult<PlatformUserDto>.Success(User(userId, "Suspended"))
         };
         var sut = CreateSut("Development", access);
-        var result = await sut.SignInAsync(new SignInRequest(userId));
+        var result = await sut.SignInAsync(new SignInRequest(null, null, userId));
         Assert.False(result.Succeeded);
         Assert.Equal(AuthFailureReason.UserInactive, result.FailureReason);
     }
@@ -52,7 +52,7 @@ public sealed class AuthenticationServiceTests
             UserResult = ApiResult<PlatformUserDto>.Success(User(userId, "Active"))
         };
         var sut = CreateSut("Development", access, tokens, prefs);
-        var result = await sut.SignInAsync(new SignInRequest(userId));
+        var result = await sut.SignInAsync(new SignInRequest(null, null, userId));
         Assert.True(result.Succeeded);
         Assert.Equal(userId.ToString("D"), await tokens.GetAsync(SecureTokenKeys.UserId));
         Assert.False(string.IsNullOrWhiteSpace(await tokens.GetAsync(SecureTokenKeys.SessionMarker)));
@@ -70,7 +70,7 @@ public sealed class AuthenticationServiceTests
         };
         var current = new CurrentUserContext();
         var sut = CreateSut("Development", access, tokens, currentUser: current);
-        await sut.SignInAsync(new SignInRequest(userId));
+        await sut.SignInAsync(new SignInRequest(null, null, userId));
         await sut.LogoutAsync();
         Assert.Null(await tokens.GetAsync(SecureTokenKeys.UserId));
         Assert.Null(await tokens.GetAsync(SecureTokenKeys.SessionMarker));
@@ -88,7 +88,7 @@ public sealed class AuthenticationServiceTests
             UserResult = ApiResult<PlatformUserDto>.Success(User(userId, "Active"))
         };
         var sut = CreateSut("Development", access, tokens, time: clock);
-        await sut.SignInAsync(new SignInRequest(userId));
+        await sut.SignInAsync(new SignInRequest(null, null, userId));
         clock.SetUtcNow(DateTimeOffset.Parse("2026-01-02T00:00:00Z"));
         var restore = await sut.RestoreSessionAsync();
         Assert.False(restore.Succeeded);
@@ -112,7 +112,7 @@ public sealed class AuthenticationServiceTests
                 null, null, null, null, DateTimeOffset.UtcNow))
         };
         var sut = CreateSut("Development", access, tokens, prefs);
-        await sut.SignInAsync(new SignInRequest(userId));
+        await sut.SignInAsync(new SignInRequest(null, null, userId));
         var select = await sut.SelectOrganizationAsync(orgId);
         Assert.False(select.Succeeded);
         Assert.Equal(AuthFailureReason.AccessDenied, select.FailureReason);
@@ -137,7 +137,7 @@ public sealed class AuthenticationServiceTests
                 EnabledFeatureCodes: ["customer-credit-view", "customer-credit-repay", "customer-credit-create"]))
         };
         var sut = CreateSut("Development", access, tokens, prefs);
-        await sut.SignInAsync(new SignInRequest(userId));
+        await sut.SignInAsync(new SignInRequest(null, null, userId));
         var select = await sut.SelectOrganizationAsync(orgId);
         Assert.True(select.Succeeded);
         Assert.Equal(orgId, await prefs.GetSelectedOrganizationIdAsync());
@@ -146,6 +146,37 @@ public sealed class AuthenticationServiceTests
         Assert.Equal(3, select.Session.EnabledFeatureCodes!.Count);
         Assert.Equal("Active", await tokens.GetAsync(SecureTokenKeys.SubscriptionStatus));
         Assert.Contains("customer-credit-view", await tokens.GetAsync(SecureTokenKeys.FeatureGrants) ?? string.Empty);
+    }
+
+    [Fact]
+    public async Task SignIn_password_grant_works_in_production()
+    {
+        var userId = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var access = new FakeAccessClient
+        {
+            IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
+                "opaque-token",
+                "Bearer",
+                Guid.NewGuid(),
+                userId,
+                "cashier",
+                "Cashier",
+                "c@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                null,
+                null,
+                null,
+                "none",
+                2,
+                null,
+                null))
+        };
+        var sut = CreateSut("Production", access, tokens);
+        var result = await sut.SignInAsync(new SignInRequest("cashier", "secret"));
+        Assert.True(result.Succeeded);
+        Assert.Equal("opaque-token", result.Session!.AccessToken);
+        Assert.Equal("opaque-token", await tokens.GetAsync(SecureTokenKeys.AccessToken));
     }
 
     [Fact]
@@ -197,6 +228,8 @@ public sealed class AuthenticationServiceTests
         public ApiResult<PlatformUserDto> UserResult { get; set; } = ApiResult<PlatformUserDto>.Unavailable();
         public ApiResult<PlatformOrganizationDto> OrganizationResult { get; set; } = ApiResult<PlatformOrganizationDto>.Unavailable();
         public ApiResult<EffectiveAccessDto> EvaluateResult { get; set; } = ApiResult<EffectiveAccessDto>.Unavailable();
+        public ApiResult<PlatformAccessTokenIssueDto> IssueTokenResult { get; set; } = ApiResult<PlatformAccessTokenIssueDto>.Unavailable();
+        public ApiResult<PlatformAccessTokenIssueDto> BindTokenResult { get; set; } = ApiResult<PlatformAccessTokenIssueDto>.Unavailable();
 
         public Task<ApiResult<PlatformUserDto>> GetUserAsync(Guid userId, CancellationToken ct = default) =>
             Task.FromResult(UserResult);
@@ -210,6 +243,18 @@ public sealed class AuthenticationServiceTests
 
         public Task<ApiResult<EffectiveAccessDto>> EvaluateAccessAsync(Guid userId, Guid organizationId, string productCode, CancellationToken ct = default) =>
             Task.FromResult(EvaluateResult);
+
+        public Task<ApiResult<PlatformAccessTokenIssueDto>> IssueTokenAsync(IssuePlatformAccessTokenRequest request, CancellationToken ct = default) =>
+            Task.FromResult(IssueTokenResult);
+
+        public Task<ApiResult<PlatformAccessTokenIssueDto>> BindTokenAsync(BindPlatformAccessTokenRequest request, CancellationToken ct = default) =>
+            Task.FromResult(BindTokenResult);
+
+        public Task<ApiResult<PlatformAccessTokenIntrospectionDto>> IntrospectTokenAsync(string? token = null, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PlatformAccessTokenIntrospectionDto>.Unavailable());
+
+        public Task<ApiResult<IReadOnlyList<PlatformAuthEligibleOrganizationDto>>> GetAuthEligibleOrganizationsAsync(CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<IReadOnlyList<PlatformAuthEligibleOrganizationDto>>.Unavailable());
     }
 
     private sealed class MemorySecureTokenStore : ISecureTokenStore

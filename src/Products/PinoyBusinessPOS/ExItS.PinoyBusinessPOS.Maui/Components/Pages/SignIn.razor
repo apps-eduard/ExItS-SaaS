@@ -8,35 +8,80 @@
 <Page>
     <PageHeader Title="@L["SignIn_Title"]" Subtitle="@L["SignIn_Subtitle"]" />
 
-    @if (!Auth.IsDevelopmentAuthenticationEnabled)
-    {
-        <ErrorState Title="@L["Auth_ProductionUnavailableTitle"]" Message="@L["Auth_ProductionUnavailable"]" />
-    }
-    else
+    <FormValidationSummary Messages="_errors" />
+    <FormGroup Title="@L["SignIn_PasswordFormTitle"]">
+        <TextInput Label="@L["SignIn_UsernameLabel"]"
+                   Hint="@L["SignIn_UsernameHint"]"
+                   @bind-Value="_username"
+                   IsInvalid="@_invalid"
+                   Disabled="_busy" />
+        <TextInput Label="@L["SignIn_PasswordLabel"]"
+                   Hint="@L["SignIn_PasswordHint"]"
+                   @bind-Value="_password"
+                   Type="password"
+                   IsInvalid="@_invalid"
+                   ErrorText="@(_invalid ? L["Auth_InvalidCredentials"].Value : null)"
+                   Disabled="_busy" />
+    </FormGroup>
+    <FormActions>
+        <Button IsLoading="_busy" Disabled="_busy" OnClick="SignInPasswordAsync">@L["SignIn_Submit"]</Button>
+    </FormActions>
+
+    @if (Auth.IsDevelopmentAuthenticationEnabled)
     {
         <Alert Tone="AlertTone.Warning" Title="@L["SignIn_DevTitle"]" Message="@L["SignIn_DevMessage"]" />
-        <FormValidationSummary Messages="_errors" />
         <FormGroup Title="@L["SignIn_FormTitle"]">
             <TextInput Label="@L["SignIn_UserIdLabel"]"
                        Hint="@L["SignIn_UserIdHint"]"
                        @bind-Value="_userIdText"
-                       IsInvalid="@_invalid"
-                       ErrorText="@(_invalid ? L["Auth_InvalidCredentials"].Value : null)"
                        Disabled="_busy" />
         </FormGroup>
         <FormActions>
-            <Button IsLoading="_busy" Disabled="_busy" OnClick="SignInAsync">@L["SignIn_Submit"]</Button>
+            <Button IsLoading="_busy" Disabled="_busy" OnClick="SignInDevAsync" Variant="ButtonVariant.Secondary">@L["SignIn_DevSubmit"]</Button>
         </FormActions>
     }
 </Page>
 
 @code {
+    private string? _username;
+    private string? _password;
     private string? _userIdText;
     private bool _busy;
     private bool _invalid;
     private List<string> _errors = [];
 
-    private async Task SignInAsync()
+    private async Task SignInPasswordAsync()
+    {
+        _errors = [];
+        _invalid = false;
+        if (string.IsNullOrWhiteSpace(_username) || string.IsNullOrWhiteSpace(_password))
+        {
+            _invalid = true;
+            _errors.Add(L["Auth_InvalidCredentials"]);
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Auth.SignInAsync(new SignInRequest(_username.Trim(), _password));
+            if (!result.Succeeded)
+            {
+                _invalid = true;
+                _errors.Add(L[result.SafeMessageKey ?? "Auth_InvalidCredentials"]);
+                return;
+            }
+
+            await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.OrganizationSelect));
+            Nav.NavigateTo("/organization-select");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SignInDevAsync()
     {
         _errors = [];
         _invalid = false;
@@ -50,7 +95,7 @@
         _busy = true;
         try
         {
-            var result = await Auth.SignInAsync(new SignInRequest(userId));
+            var result = await Auth.SignInAsync(new SignInRequest(null, null, userId));
             if (!result.Succeeded)
             {
                 _invalid = true;

@@ -6,7 +6,8 @@ namespace ExItS.PinoyBusinessPOS.Api.Common;
 /// <summary>
 /// Development-stage commercial entitlement headers for POS APIs.
 /// Not production authentication. Missing headers default to Active + full grants only in
-/// Development/Testing so local and integration tests continue; Production fails closed.
+/// Development/Testing so local and integration tests continue; Production fails closed unless
+/// bearer introspection already bound commercial access.
 /// </summary>
 public static class PosCommercialHeaders
 {
@@ -21,10 +22,23 @@ internal static class PosCommercialScope
         IPosCommercialAccessAccessor accessor,
         IHostEnvironment environment)
     {
+        // Bearer middleware may already bind commercial access from Platform introspection.
+        if (accessor.Current.IsKnown
+            || (request.HttpContext.Items.TryGetValue(PosAuthItems.CommercialBound, out var bound) && bound is true))
+        {
+            return;
+        }
+
+        // Inactive bearer must not fall through to Dev header forge.
+        if (request.HttpContext.Items.TryGetValue(PosAuthItems.Denied, out var denied) && denied is true)
+        {
+            accessor.Current = PosCommercialAccess.Unknown;
+            return;
+        }
+
         var isDevLike = PosDevelopmentEnvironment.IsApprovedDevelopmentEnvironment(environment);
 
         // Outside Development/Testing, commercial headers are ignored and access fails closed.
-        // Not production authentication — Platform-backed commercial evaluation is required later.
         if (!isDevLike)
         {
             accessor.Current = PosCommercialAccess.Unknown;

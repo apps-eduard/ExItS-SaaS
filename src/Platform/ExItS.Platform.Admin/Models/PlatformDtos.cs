@@ -254,6 +254,47 @@ public sealed record OrganizationContextResultDto(
 
 public sealed record SetOrganizationContextRequest(Guid? OrganizationId);
 
+public sealed record IssueAccessTokenRequest(
+    string? GrantType,
+    string? UsernameOrEmail,
+    string? Password,
+    Guid? OrganizationId,
+    string? ProductCode);
+
+public sealed record IntrospectAccessTokenRequest(string? Token);
+
+public sealed record AccessTokenIssueDto(
+    string AccessToken,
+    string TokenType,
+    Guid TokenId,
+    Guid UserId,
+    string Username,
+    string DisplayName,
+    string Email,
+    DateTimeOffset ExpiresAtUtc,
+    Guid? OrganizationId,
+    string? OrganizationDisplayName,
+    string? ProductCode,
+    string OrganizationSelectionState,
+    int ActiveOrganizationCount,
+    bool? ProductAccessAllowed,
+    string? ProductAccessReasonCode);
+
+public sealed record AccessTokenIntrospectionDto(
+    bool Active,
+    Guid? TokenId,
+    Guid? UserId,
+    string? Username,
+    string? DisplayName,
+    Guid? OrganizationId,
+    string? OrganizationDisplayName,
+    string? ProductCode,
+    DateTimeOffset? ExpiresAtUtc,
+    bool? ProductAccessAllowed,
+    string? ProductAccessReasonCode,
+    string? SubscriptionStatus,
+    IReadOnlyList<string>? EnabledFeatureCodes);
+
 public sealed record OrganizationMembershipDto(
     Guid Id,
     Guid OrganizationId,

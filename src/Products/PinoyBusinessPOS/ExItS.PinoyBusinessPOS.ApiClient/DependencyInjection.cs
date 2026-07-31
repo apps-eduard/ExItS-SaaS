@@ -11,7 +11,7 @@ public static class DependencyInjection
 {
     /// <summary>
     /// Registers Platform API client (health/access), POS business API customer client,
-    /// Development/Testing <c>X-Dev-Platform-User-Id</c>, and organization scope header.
+    /// Bearer token forwarding, Development/Testing <c>X-Dev-Platform-User-Id</c>, and organization scope header.
     /// Register <see cref="ICurrentUserContext"/> and <see cref="IConnectivityService"/> beforehand.
     /// </summary>
     public static IServiceCollection AddPosApiClient(this IServiceCollection services, IConfiguration configuration)
@@ -26,6 +26,7 @@ public static class DependencyInjection
             .Validate(o => !string.IsNullOrWhiteSpace(o.BaseUrl), "PosBusinessApi:BaseUrl must be configured.")
             .Validate(o => o.TimeoutSeconds > 0, "PosBusinessApi:TimeoutSeconds must be greater than zero.");
 
+        services.AddTransient<PlatformBearerHandler>();
         services.AddTransient<DevPlatformUserHeaderHandler>();
         services.AddTransient<PosOrganizationHeaderHandler>();
         services.AddTransient<PosCommercialHeaderHandler>();
@@ -36,140 +37,41 @@ public static class DependencyInjection
                 client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
                 client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
             })
-            .AddHttpMessageHandler<DevPlatformUserHeaderHandler>();
-
-        services.AddHttpClient<IPosCustomerClient, PosCustomerClient>((provider, client) =>
-            {
-                var options = provider.GetRequiredService<IOptions<PosBusinessApiOptions>>().Value;
-                client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
-                client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
-            })
             .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
-            .AddHttpMessageHandler<PosOrganizationHeaderHandler>()
-            .AddHttpMessageHandler<PosCommercialHeaderHandler>();
+            .AddHttpMessageHandler<PlatformBearerHandler>();
 
-        services.AddHttpClient<IPosCatalogClient, PosCatalogClient>((provider, client) =>
-            {
-                var options = provider.GetRequiredService<IOptions<PosBusinessApiOptions>>().Value;
-                client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
-                client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
-            })
-            .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
-            .AddHttpMessageHandler<PosOrganizationHeaderHandler>()
-            .AddHttpMessageHandler<PosCommercialHeaderHandler>();
-
-        services.AddHttpClient<IPosSaleClient, PosSaleClient>((provider, client) =>
-            {
-                var options = provider.GetRequiredService<IOptions<PosBusinessApiOptions>>().Value;
-                client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
-                client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
-            })
-            .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
-            .AddHttpMessageHandler<PosOrganizationHeaderHandler>()
-            .AddHttpMessageHandler<PosCommercialHeaderHandler>();
-
-        services.AddHttpClient<IPosInventoryClient, PosInventoryClient>((provider, client) =>
-            {
-                var options = provider.GetRequiredService<IOptions<PosBusinessApiOptions>>().Value;
-                client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
-                client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
-            })
-            .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
-            .AddHttpMessageHandler<PosOrganizationHeaderHandler>()
-            .AddHttpMessageHandler<PosCommercialHeaderHandler>();
-
-        services.AddHttpClient<IPosExpenseClient, PosExpenseClient>((provider, client) =>
-            {
-                var options = provider.GetRequiredService<IOptions<PosBusinessApiOptions>>().Value;
-                client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
-                client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
-            })
-            .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
-            .AddHttpMessageHandler<PosOrganizationHeaderHandler>()
-            .AddHttpMessageHandler<PosCommercialHeaderHandler>();
-
-        services.AddHttpClient<IPosSupplierClient, PosSupplierClient>((provider, client) =>
-            {
-                var options = provider.GetRequiredService<IOptions<PosBusinessApiOptions>>().Value;
-                client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
-                client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
-            })
-            .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
-            .AddHttpMessageHandler<PosOrganizationHeaderHandler>()
-            .AddHttpMessageHandler<PosCommercialHeaderHandler>();
-
-        services.AddHttpClient<IPosRegisterClient, PosRegisterClient>((provider, client) =>
-            {
-                var options = provider.GetRequiredService<IOptions<PosBusinessApiOptions>>().Value;
-                client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
-                client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
-            })
-            .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
-            .AddHttpMessageHandler<PosOrganizationHeaderHandler>()
-            .AddHttpMessageHandler<PosCommercialHeaderHandler>();
-
-        services.AddHttpClient<IPosPurchaseOrderClient, PosPurchaseOrderClient>((provider, client) =>
-            {
-                var options = provider.GetRequiredService<IOptions<PosBusinessApiOptions>>().Value;
-                client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
-                client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
-            })
-            .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
-            .AddHttpMessageHandler<PosOrganizationHeaderHandler>()
-            .AddHttpMessageHandler<PosCommercialHeaderHandler>();
-
-        services.AddHttpClient<IPosCashierShiftClient, PosCashierShiftClient>((provider, client) =>
-            {
-                var options = provider.GetRequiredService<IOptions<PosBusinessApiOptions>>().Value;
-                client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
-                client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
-            })
-            .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
-            .AddHttpMessageHandler<PosOrganizationHeaderHandler>()
-            .AddHttpMessageHandler<PosCommercialHeaderHandler>();
-
-        services.AddHttpClient<IPosSaleReturnClient, PosSaleReturnClient>((provider, client) =>
-            {
-                var options = provider.GetRequiredService<IOptions<PosBusinessApiOptions>>().Value;
-                client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
-                client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
-            })
-            .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
-            .AddHttpMessageHandler<PosOrganizationHeaderHandler>()
-            .AddHttpMessageHandler<PosCommercialHeaderHandler>();
-
-        services.AddHttpClient<IPosPermissionClient, PosPermissionClient>((provider, client) =>
-            {
-                var options = provider.GetRequiredService<IOptions<PosBusinessApiOptions>>().Value;
-                client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
-                client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
-            })
-            .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
-            .AddHttpMessageHandler<PosOrganizationHeaderHandler>()
-            .AddHttpMessageHandler<PosCommercialHeaderHandler>();
-
-        services.AddHttpClient<IPosReportingClient, PosReportingClient>((provider, client) =>
-            {
-                var options = provider.GetRequiredService<IOptions<PosBusinessApiOptions>>().Value;
-                client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
-                client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
-            })
-            .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
-            .AddHttpMessageHandler<PosOrganizationHeaderHandler>()
-            .AddHttpMessageHandler<PosCommercialHeaderHandler>();
-
-        services.AddHttpClient<IPosOfflineProbeClient, PosOfflineProbeClient>((provider, client) =>
-            {
-                var options = provider.GetRequiredService<IOptions<PosBusinessApiOptions>>().Value;
-                client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
-                client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
-            })
-            .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
-            .AddHttpMessageHandler<PosOrganizationHeaderHandler>()
-            .AddHttpMessageHandler<PosCommercialHeaderHandler>();
+        AddBusinessClient<IPosCustomerClient, PosCustomerClient>(services);
+        AddBusinessClient<IPosCatalogClient, PosCatalogClient>(services);
+        AddBusinessClient<IPosSaleClient, PosSaleClient>(services);
+        AddBusinessClient<IPosInventoryClient, PosInventoryClient>(services);
+        AddBusinessClient<IPosExpenseClient, PosExpenseClient>(services);
+        AddBusinessClient<IPosSupplierClient, PosSupplierClient>(services);
+        AddBusinessClient<IPosRegisterClient, PosRegisterClient>(services);
+        AddBusinessClient<IPosPurchaseOrderClient, PosPurchaseOrderClient>(services);
+        AddBusinessClient<IPosCashierShiftClient, PosCashierShiftClient>(services);
+        AddBusinessClient<IPosSaleReturnClient, PosSaleReturnClient>(services);
+        AddBusinessClient<IPosPermissionClient, PosPermissionClient>(services);
+        AddBusinessClient<IPosReportingClient, PosReportingClient>(services);
+        AddBusinessClient<IPosOfflineProbeClient, PosOfflineProbeClient>(services);
 
         services.AddSingleton<IPlatformAccessClient, PlatformAccessClient>();
 
         return services;
+    }
+
+    private static void AddBusinessClient<TClient, TImplementation>(IServiceCollection services)
+        where TClient : class
+        where TImplementation : class, TClient
+    {
+        services.AddHttpClient<TClient, TImplementation>((provider, client) =>
+            {
+                var options = provider.GetRequiredService<IOptions<PosBusinessApiOptions>>().Value;
+                client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
+                client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+            })
+            .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
+            .AddHttpMessageHandler<PosOrganizationHeaderHandler>()
+            .AddHttpMessageHandler<PosCommercialHeaderHandler>()
+            .AddHttpMessageHandler<PlatformBearerHandler>();
     }
 }

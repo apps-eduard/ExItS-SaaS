@@ -93,4 +93,6 @@ public static class ApplicationErrorCodes
     public const string CredentialTokenInvalid = "application.auth.credential_token_invalid";
     public const string CredentialTokenExpired = "application.auth.credential_token_expired";
     public const string CurrentPasswordInvalid = "application.auth.current_password_invalid";
+    public const string AccessTokenInvalid = "application.auth.access_token_invalid";
+    public const string ProductEntryDenied = "application.auth.product_entry_denied";
 }

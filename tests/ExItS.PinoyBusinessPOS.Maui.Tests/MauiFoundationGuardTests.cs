@@ -213,7 +213,11 @@ public sealed class MauiFoundationGuardTests
         Assert.Contains("IsDevelopmentAuthenticationEnabled", authService, StringComparison.Ordinal);
         Assert.DoesNotContain("Cashier", authService, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Store Manager", authService, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("password", authService, StringComparison.OrdinalIgnoreCase);
+        // Password grant is authorized (P13-WP06); passwords must never be persisted to SecureStorage.
+        Assert.Contains("IssueTokenAsync", authService, StringComparison.Ordinal);
+        Assert.Contains("GrantType: \"password\"", authService, StringComparison.Ordinal);
+        Assert.DoesNotContain("SecureTokenKeys.Password", authService, StringComparison.Ordinal);
+        Assert.DoesNotContain("tokens.SetAsync(SecureTokenKeys.AccessToken, password", authService, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

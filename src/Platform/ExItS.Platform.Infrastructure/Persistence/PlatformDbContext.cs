@@ -45,6 +45,7 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PlatformUserRecord> PlatformUsers => Set<PlatformUserRecord>();
     internal DbSet<PlatformUserCredentialRecord> PlatformUserCredentials => Set<PlatformUserCredentialRecord>();
     internal DbSet<PlatformAuthSessionRecord> PlatformAuthSessions => Set<PlatformAuthSessionRecord>();
+    internal DbSet<PlatformAccessTokenRecord> PlatformAccessTokens => Set<PlatformAccessTokenRecord>();
     internal DbSet<PlatformCredentialTokenRecord> PlatformCredentialTokens => Set<PlatformCredentialTokenRecord>();
     internal DbSet<OrganizationMembershipRecord> OrganizationMemberships => Set<OrganizationMembershipRecord>();
     internal DbSet<ProductAccessAssignmentRecord> ProductAccessAssignments => Set<ProductAccessAssignmentRecord>();
@@ -484,6 +485,39 @@ public sealed class PlatformDbContext : DbContext
             entity.HasOne<PlatformOrganizationRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.SelectedOrganizationId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<PlatformAccessTokenRecord>(entity =>
+        {
+            entity.ToTable("platform_access_tokens");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.TokenHash).HasColumnName("token_hash").HasMaxLength(128).IsRequired();
+            entity.HasIndex(e => e.TokenHash).IsUnique();
+            entity.HasIndex(e => e.UserId);
+            entity.Property(e => e.SecurityStampAtIssue).HasColumnName("security_stamp_at_issue").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
+            entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.HasIndex(e => e.OrganizationId);
+            entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(64);
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
 

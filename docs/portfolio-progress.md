@@ -12,8 +12,8 @@
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 13 — Production Authentication and Identity (**in progress**) |
-| Current work package | P13-WP05 — Trusted API Actor and Organization Context (**complete**) |
-| Overall status | **Phase 13 in progress.** P13-WP01–WP05 complete (architecture + credentials + browser session + password lifecycle + trusted org context). Bearer/product-client/MFA/closeout remain. R-091 open. Exact next: P13-WP06 — Product Client Auth Integration (do not begin until authorized). **Not production-ready.** |
+| Current work package | P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS) (**complete**) |
+| Overall status | **Phase 13 in progress.** P13-WP01–WP06 complete (architecture + credentials + browser session + password lifecycle + trusted org context + product-client bearer). MFA/closeout remain. R-091 open. Exact next: P13-WP07 — MFA Readiness and Auth Hardening (do not begin until authorized). **Not production-ready.** |
 | Latest verified commit | `65b261eca7353a7efea2f8f1899c252f0dcee6dc` |
 | Open blockers | Missing production auth (R-091); D-P12-03 commercial-state transport; D-P12-04 matrix hygiene; R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-07-31 |
@@ -89,7 +89,9 @@ P13-WP04 ✓ Password Lifecycle, Lockout, and Verification
         ↓
 P13-WP05 ✓ Trusted API Actor and Organization Context
         ↓
-P13-WP06 ○ Product Client Auth Integration (Admin + MAUI/POS) (do not begin until authorized)
+P13-WP06 ✓ Product Client Auth Integration (Admin + MAUI/POS)
+        ↓
+P13-WP07 ○ MFA Readiness and Auth Hardening (do not begin until authorized)
 ```
 
 ## Phase progress
@@ -109,13 +111,13 @@ P13-WP06 ○ Product Client Auth Integration (Admin + MAUI/POS) (do not begin un
 | 10 | Full POS | **Complete with documented risks** | 8 | 8 | 100% | [Open](phases/phase-10-full-pos.md) |
 | 11 | Web UI and Reporting Design System | **Complete with documented risks** | 8 | 8 | 100% | [Open](phases/phase-11-web-ui-reporting-design-system.md) |
 | 12 | Reusable SaaS Product Foundation and Bootstrap | **Complete with documented open decisions** | 7 | 7 | 100% | [Open](phases/phase-12-product-foundation-and-bootstrap.md) |
-| 13 | Production Authentication and Identity | **In progress** | 5 | 8 | — | [Open](phases/phase-13-production-authentication-and-identity.md) |
+| 13 | Production Authentication and Identity | **In progress** | 6 | 8 | — | [Open](phases/phase-13-production-authentication-and-identity.md) |
 
 **MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
 **Phase 11 Web UI / Reporting Design System:** 8 / 8 = **100%** (with documented risks; not Production-ready; no formal WCAG certification).
 **Phase 12 Product Foundation:** 7 / 7 = **100%** (with documented open decisions; not Production-ready; no real product scaffold; R-091 open).
-**Phase 13 Production Authentication:** 5 / 8 WPs complete (credentials, session, password lifecycle, trusted org context; bearer/product-client/MFA/closeout remain; R-091 still open).
+**Phase 13 Production Authentication:** 6 / 8 WPs complete (through product-client bearer; MFA/closeout remain; R-091 still open).
 
 ## Phase 13 work packages
 
@@ -126,6 +128,7 @@ P13-WP06 ○ Product Client Auth Integration (Admin + MAUI/POS) (do not begin un
 | P13-WP03 — Platform Login, Logout, and Browser Session | Complete | `6298b668c5d0555a84eb206b2a2313b138c9b892` |
 | P13-WP04 — Password Lifecycle, Lockout, and Verification | Complete | `65b261eca7353a7efea2f8f1899c252f0dcee6dc` |
 | P13-WP05 — Trusted API Actor and Organization Context | Complete | `e64f352161bb20447a99ae762d1a69ec1a3846fe` |
+| P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS) | Complete | *(feature tip recorded after commit)* |
 
 ## Phase 12 work packages
 
@@ -178,4 +181,4 @@ P13-WP06 ○ Product Client Auth Integration (Admin + MAUI/POS) (do not begin un
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS)** until explicitly authorized.
+Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P13-WP07 — MFA Readiness and Auth Hardening** until explicitly authorized.

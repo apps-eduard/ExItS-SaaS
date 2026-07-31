@@ -158,6 +158,7 @@ public sealed class RevokeOrganizationMembership
     private readonly IOrganizationMembershipRepository _memberships;
     private readonly IProductAccessAssignmentRepository _assignments;
     private readonly IPlatformAuthSessionRepository _sessions;
+    private readonly IPlatformAccessTokenRepository _accessTokens;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -165,12 +166,14 @@ public sealed class RevokeOrganizationMembership
         IOrganizationMembershipRepository memberships,
         IProductAccessAssignmentRepository assignments,
         IPlatformAuthSessionRepository sessions,
+        IPlatformAccessTokenRepository accessTokens,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _memberships = memberships;
         _assignments = assignments;
         _sessions = sessions;
+        _accessTokens = accessTokens;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -206,6 +209,9 @@ public sealed class RevokeOrganizationMembership
 
             await _sessions
                 .ClearSelectedOrganizationAsync(membership.UserId, membership.OrganizationId, cancellationToken)
+                .ConfigureAwait(false);
+            await _accessTokens
+                .ClearOrganizationBindingAsync(membership.UserId, membership.OrganizationId, cancellationToken)
                 .ConfigureAwait(false);
 
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

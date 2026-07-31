@@ -134,7 +134,12 @@ public sealed class UseCaseTests
         Assert.Equal(OrganizationRole.OrganizationAdministrator, roleChanged.Value!.Role);
 
         clock.UtcNow = T0.AddMinutes(2);
-        var suspended = await new SuspendOrganizationMembership(memberships, new InMemoryPlatformAuthSessionRepository(), uow, clock)
+        var suspended = await new SuspendOrganizationMembership(
+            memberships,
+            new InMemoryPlatformAuthSessionRepository(),
+            new InMemoryPlatformAccessTokenRepository(),
+            uow,
+            clock)
             .ExecuteAsync(membership.Id);
         Assert.True(suspended.IsSuccess);
         Assert.Equal(MembershipStatus.Suspended, suspended.Value!.Status);

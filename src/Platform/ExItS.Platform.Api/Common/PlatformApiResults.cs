@@ -28,14 +28,16 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.BootstrapUnauthorized
             or ApplicationErrorCodes.BootstrapForbiddenInEnvironment
             or ApplicationErrorCodes.AccountNotEligibleForLogin
-            or ApplicationErrorCodes.OrganizationContextNotEligible => StatusCodes.Status403Forbidden,
+            or ApplicationErrorCodes.OrganizationContextNotEligible
+            or ApplicationErrorCodes.ProductEntryDenied => StatusCodes.Status403Forbidden,
 
         ApplicationErrorCodes.LoginFailed
             or ApplicationErrorCodes.SessionInvalid
             or ApplicationErrorCodes.SessionExpired
             or ApplicationErrorCodes.CurrentPasswordInvalid
             or ApplicationErrorCodes.CredentialTokenInvalid
-            or ApplicationErrorCodes.CredentialTokenExpired => StatusCodes.Status401Unauthorized,
+            or ApplicationErrorCodes.CredentialTokenExpired
+            or ApplicationErrorCodes.AccessTokenInvalid => StatusCodes.Status401Unauthorized,
 
         ApplicationErrorCodes.OrganizationNotFound
             or ApplicationErrorCodes.UserNotFound

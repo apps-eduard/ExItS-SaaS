@@ -13,14 +13,16 @@ internal static class CredentialSessionInvalidation
 {
     public static async Task RevokeAllAsync(
         IPlatformAuthSessionRepository sessions,
+        IPlatformAccessTokenRepository accessTokens,
         IAuditWriter auditWriter,
         PlatformUserId userId,
         DateTimeOffset utcNow,
         string summary,
         CancellationToken cancellationToken)
     {
-        var count = await sessions.RevokeAllActiveForUserAsync(userId, utcNow, cancellationToken).ConfigureAwait(false);
-        if (count <= 0)
+        var sessionCount = await sessions.RevokeAllActiveForUserAsync(userId, utcNow, cancellationToken).ConfigureAwait(false);
+        var tokenCount = await accessTokens.RevokeAllActiveForUserAsync(userId, utcNow, cancellationToken).ConfigureAwait(false);
+        if (sessionCount <= 0 && tokenCount <= 0)
         {
             return;
         }
@@ -42,6 +44,7 @@ public sealed class ChangePlatformUserPassword
     private readonly IPlatformUserRepository _users;
     private readonly IPlatformUserCredentialRepository _credentials;
     private readonly IPlatformAuthSessionRepository _sessions;
+    private readonly IPlatformAccessTokenRepository _accessTokens;
     private readonly IPlatformPasswordHasher _hasher;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
@@ -53,6 +56,7 @@ public sealed class ChangePlatformUserPassword
         IPlatformUserRepository users,
         IPlatformUserCredentialRepository credentials,
         IPlatformAuthSessionRepository sessions,
+        IPlatformAccessTokenRepository accessTokens,
         IPlatformPasswordHasher hasher,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
@@ -63,6 +67,7 @@ public sealed class ChangePlatformUserPassword
         _users = users;
         _credentials = credentials;
         _sessions = sessions;
+        _accessTokens = accessTokens;
         _hasher = hasher;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
@@ -128,6 +133,7 @@ public sealed class ChangePlatformUserPassword
         await _credentials.UpdateAsync(credential, cancellationToken).ConfigureAwait(false);
         await CredentialSessionInvalidation.RevokeAllAsync(
             _sessions,
+            _accessTokens,
             _auditWriter,
             id,
             utcNow,
@@ -280,6 +286,7 @@ public sealed class ResetPasswordWithToken
     private readonly IPlatformUserCredentialRepository _credentials;
     private readonly IPlatformCredentialTokenRepository _tokens;
     private readonly IPlatformAuthSessionRepository _sessions;
+    private readonly IPlatformAccessTokenRepository _accessTokens;
     private readonly IPlatformSessionTokenService _tokenService;
     private readonly IPlatformPasswordHasher _hasher;
     private readonly IAuditWriter _auditWriter;
@@ -292,6 +299,7 @@ public sealed class ResetPasswordWithToken
         IPlatformUserCredentialRepository credentials,
         IPlatformCredentialTokenRepository tokens,
         IPlatformAuthSessionRepository sessions,
+        IPlatformAccessTokenRepository accessTokens,
         IPlatformSessionTokenService tokenService,
         IPlatformPasswordHasher hasher,
         IAuditWriter auditWriter,
@@ -303,6 +311,7 @@ public sealed class ResetPasswordWithToken
         _credentials = credentials;
         _tokens = tokens;
         _sessions = sessions;
+        _accessTokens = accessTokens;
         _tokenService = tokenService;
         _hasher = hasher;
         _auditWriter = auditWriter;
@@ -378,6 +387,7 @@ public sealed class ResetPasswordWithToken
         await _credentials.UpdateAsync(credential, cancellationToken).ConfigureAwait(false);
         await CredentialSessionInvalidation.RevokeAllAsync(
             _sessions,
+            _accessTokens,
             _auditWriter,
             user.Id,
             utcNow,
