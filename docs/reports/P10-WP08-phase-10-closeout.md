@@ -18,7 +18,8 @@ Exact next phase: **Phase 11 — Web UI and Reporting Design System** (do **not*
 Prior tip before closeout: `43bea6fc003bdde05af484f5fe7b5d9d5055850e`
 
 Closeout validation commit: `32395ff1a03b56949f81a33f850308a26cc50429`  
-Docs tip commit: recorded after documentation commit.
+Docs tip commit: `de09f97b0045636f9da004f1b7cc95bf7be17441`  
+Final Phase 10 tip (after hash-record, if any): recorded on portfolio dashboard.
 
 ## 1. Phase 10 objective
 
