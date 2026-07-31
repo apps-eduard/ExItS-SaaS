@@ -194,7 +194,7 @@ Payroll, accounting journals, bank reconciliation, cash deposits, branch registe
 
 Status: **Complete**
 
-Prior tip: `7a6a2e4eb6d2f8074bb923dd6a0a5eca6654f706` (P10-WP04 complete). Baseline: **1097 / 0 / 0**. Suite now **1110 / 0 / 0**.
+Prior tip: `7a6a2e4eb6d2f8074bb923dd6a0a5eca6654f706` (P10-WP04 complete). Baseline: **1097 / 0 / 0**. Suite now **1110 / 0 / 0**. Tip after Android using fix: `6cb06cc`.
 
 #### Required outcomes (approved)
 

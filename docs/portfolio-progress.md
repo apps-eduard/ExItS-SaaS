@@ -14,7 +14,7 @@
 | Current phase | Phase 10 — Full POS |
 | Current work package | P10-WP05 — Returns and Refunds (**complete**) |
 | Overall status | **P10-WP05 complete.** Do not begin P10-WP06. |
-| Latest verified commit | `485f23e` |
+| Latest verified commit | `6cb06cc` |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; POS operational roles; Manual GCash unverified; online-only Basic Store limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/refund/accounting deferred |
 | Last updated | 2026-07-31 |
 
@@ -72,7 +72,7 @@ P10-WP06 ○ Advanced Permissions and Reports (not started)
 | P10-WP02 — Purchasing | Complete | c0f8130ef99e958bceaee98024a69339b7e8e41a |
 | P10-WP03 — Advanced Inventory | Complete | 5c62133 (+ gap-fix 31d809c) |
 | P10-WP04 — Cashier Shifts | Complete | 4076485 |
-| P10-WP05 — Returns and Refunds | Complete | 58dd6bf |
+| P10-WP05 — Returns and Refunds | Complete | 58dd6bf (+ Android using fix 6cb06cc) |
 | P10-WP06 — Advanced Permissions and Reports | Not Started | — |
 | P10-WP07 — Multiple Registers | Not Started | — |
 | P10-WP08 — Full POS Closeout | Not Started | — |
