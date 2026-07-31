@@ -141,7 +141,9 @@ P9-WP06 closed Phase 9 with an honest Commercial MVP readiness board: Developmen
 
 ## Phase 12 — Product foundation (in progress)
 
-P12-WP04 added `.cursor/rules/exits-product-context.mdc` for narrow product context loading. Exact next: **P12-WP05 — Product Bootstrap Prompt** (do not begin). **Not production-ready.**
+P12-WP05 published `docs/Product-Foundation/product-bootstrap-prompt.md` (docs-only product bootstrap; no SampleProduct folder). Exact next: **P12-WP06 — Reference Product Dry Run** (do not begin). **Not production-ready.**
+
+P12-WP04 added `.cursor/rules/exits-product-context.mdc` for narrow product context loading.
 
 P12-WP03 published reusable product documentation templates under `docs/Product-Foundation/Templates/`. D-P12-03 and R-091 remain open (marked in templates; not invented).
 

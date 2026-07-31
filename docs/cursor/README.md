@@ -15,6 +15,7 @@
 
 - `.cursor/rules/exits-workflow.mdc` — always apply (repo safety, Git, build, security)
 - `.cursor/rules/exits-product-context.mdc` — product work context loading (see [Product Foundation](../Product-Foundation/exits-product-foundation-reference.md))
+- [Product bootstrap prompt](../Product-Foundation/product-bootstrap-prompt.md) — docs-only new-product bootstrap (P12-WP05)
 
 - [First Cursor command](first-cursor-command.md)
 - [Reusable prompt template](cursor-prompt-template.md)

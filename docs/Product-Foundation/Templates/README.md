@@ -13,6 +13,8 @@ Authoritative contract (always load with these docs):
 
 Do **not** create product folders or fill templates for a product until that product is authorized. Do **not** copy PinoyBusinessPOS source or history to invent policy.
 
+Authorized docs-only bootstrap: use [../product-bootstrap-prompt.md](../product-bootstrap-prompt.md).
+
 ## Placeholder convention
 
 | Form | Meaning |

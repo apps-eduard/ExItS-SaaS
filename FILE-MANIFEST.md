@@ -187,6 +187,7 @@ docs/phases/phase-11-web-ui-reporting-design-system.md
 docs/phases/phase-12-product-foundation-and-bootstrap.md
 docs/Product-Foundation/README.md
 docs/Product-Foundation/exits-product-foundation-reference.md
+docs/Product-Foundation/product-bootstrap-prompt.md
 docs/Product-Foundation/Templates/README.md
 docs/Product-Foundation/Templates/product-definition.md
 docs/Product-Foundation/Templates/architecture.md
@@ -201,6 +202,7 @@ docs/Product-Foundation/Templates/FILE-MANIFEST.md
 docs/Product-Foundation/Templates/product-docs-readme.md
 docs/reports/P12-WP03-product-documentation-templates.md
 docs/reports/P12-WP04-cursor-product-context-rule.md
+docs/reports/P12-WP05-product-bootstrap-prompt.md
 docs/reports/PRE-P11-admin-ui-recovery.md
 docs/reports/PRE-P11-admin-theme-visual-polish.md
 docs/operations/backup-restore/README.md

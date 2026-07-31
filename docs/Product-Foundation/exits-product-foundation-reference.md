@@ -201,6 +201,7 @@ Do **not** create `_ProductTemplate` or new product folders from this WP.
 docs/Product-Foundation/
 ├── README.md
 ├── exits-product-foundation-reference.md   # this file (authoritative)
+├── product-bootstrap-prompt.md             # P12-WP05 docs-only bootstrap prompt
 └── Templates/                              # P12-WP03 reusable product doc templates
 ```
 

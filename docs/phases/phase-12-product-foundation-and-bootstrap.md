@@ -4,9 +4,9 @@
 
 ## Status
 
-**In progress.** **P12-WP01**–**P12-WP04** are **complete**. Exact next: **P12-WP05 — Product Bootstrap Prompt** when authorized (do not begin).
+**In progress.** **P12-WP01**–**P12-WP05** are **complete**. Exact next: **P12-WP06 — Reference Product Dry Run** when authorized (do not begin).
 
-Phase 11 remains closed. Authoritative foundation: [`docs/Product-Foundation/exits-product-foundation-reference.md`](../Product-Foundation/exits-product-foundation-reference.md). Templates: [`docs/Product-Foundation/Templates/`](../Product-Foundation/Templates/README.md). Product context rule: `.cursor/rules/exits-product-context.mdc`.
+Phase 11 remains closed. Authoritative foundation: [`docs/Product-Foundation/exits-product-foundation-reference.md`](../Product-Foundation/exits-product-foundation-reference.md). Templates: [`docs/Product-Foundation/Templates/`](../Product-Foundation/Templates/README.md). Product context rule: `.cursor/rules/exits-product-context.mdc`. Bootstrap prompt: [`docs/Product-Foundation/product-bootstrap-prompt.md`](../Product-Foundation/product-bootstrap-prompt.md).
 
 ## Progress
 
@@ -16,7 +16,7 @@ Phase 11 remains closed. Authoritative foundation: [`docs/Product-Foundation/exi
 | P12-WP02 — Authoritative Product Foundation Reference | **Complete** | [report](../reports/P12-WP02-authoritative-product-foundation-reference.md) · `8f151d658011a3ad0854aab9f8774361f8a788a6` |
 | P12-WP03 — Product Documentation Templates | **Complete** | [report](../reports/P12-WP03-product-documentation-templates.md) · `65b02a1dd9336b39b79fc41527969f6289ad7072` |
 | P12-WP04 — Cursor Product Context Rule | **Complete** | [report](../reports/P12-WP04-cursor-product-context-rule.md) · `1243c78d65e347b23949b19ce2edf564fe972aad` |
-| P12-WP05 — Product Bootstrap Prompt | Not started | — |
+| P12-WP05 — Product Bootstrap Prompt | **Complete** | [report](../reports/P12-WP05-product-bootstrap-prompt.md) · *(tip filled after commit)* |
 | P12-WP06 — Reference Product Dry Run | Not started | — |
 | P12-WP07 — Foundation Hardening and Closeout | Not started | — |
 
@@ -250,7 +250,7 @@ docs/Product-Foundation/
     └── product-docs-readme.md
 ```
 
-Bootstrap prompt arrives in a later work package (P12-WP05).
+Bootstrap prompt arrives in P12-WP05: `docs/Product-Foundation/product-bootstrap-prompt.md`.
 
 The authoritative reusable reference is:
 
@@ -508,6 +508,10 @@ The rule must instruct Cursor to:
 - architecture tests or documentation checks prevent accidental weakening where practical
 
 ### P12-WP05 — Product Bootstrap Prompt
+
+#### Status
+
+**Complete** — see [P12-WP05 report](../reports/P12-WP05-product-bootstrap-prompt.md). Prompt: [`docs/Product-Foundation/product-bootstrap-prompt.md`](../Product-Foundation/product-bootstrap-prompt.md).
 
 #### Objective
 
