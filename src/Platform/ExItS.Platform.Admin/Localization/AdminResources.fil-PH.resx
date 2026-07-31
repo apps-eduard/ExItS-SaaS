@@ -292,9 +292,34 @@
   <data name="NotFound_Message" xml:space="preserve"><value>Paumanhin, ang content na hinahanap mo ay hindi umiiral.</value></data>
 
   <data name="Dashboard_Title" xml:space="preserve"><value>Portfolio dashboard</value></data>
-  <data name="Dashboard_Description" xml:space="preserve"><value>Read-only commercial summary mula sa Platform APIs. Ang mga nabigong seksyon ay nakalista — hindi ginagawang zero ang mga count kapag nabigo ang isang seksyon.</value></data>
+  <data name="Dashboard_Description" xml:space="preserve"><value>Landing ng commercial portfolio — mga bilang mula sa Platform APIs. Ang nabigong seksyon ay unavailable, hindi ginagawang zero.</value></data>
   <data name="Dashboard_Loading" xml:space="preserve"><value>Naglo-load ng portfolio summary…</value></data>
   <data name="Dashboard_AriaPortfolioCounts" xml:space="preserve"><value>Mga portfolio count</value></data>
+  <data name="Dashboard_AriaPrimary" xml:space="preserve"><value>Pangunahing metriks ng portfolio</value></data>
+  <data name="Dashboard_AriaLifecycle" xml:space="preserve"><value>Metriks ng subscription at catalog</value></data>
+  <data name="Dashboard_AriaOperations" xml:space="preserve"><value>Mga awtorisadong operational shortcut</value></data>
+  <data name="Dashboard_Section_Primary" xml:space="preserve"><value>Portfolio sa isang tingin</value></data>
+  <data name="Dashboard_Section_PrimaryDetail" xml:space="preserve"><value>Mga authoritative commercial count na unang tinitingnan ng mga operator.</value></data>
+  <data name="Dashboard_Section_Lifecycle" xml:space="preserve"><value>Lifecycle at catalog</value></data>
+  <data name="Dashboard_Section_LifecycleDetail" xml:space="preserve"><value>Mga estado ng subscription, published plans, at entitlement snapshots.</value></data>
+  <data name="Dashboard_Section_Operations" xml:space="preserve"><value>Magpatuloy sa Admin</value></data>
+  <data name="Dashboard_Section_OperationsDetail" xml:space="preserve"><value>Mga shortcut sa umiiral na awtorisadong Admin surfaces — walang bagong kalkulasyon.</value></data>
+  <data name="Dashboard_Support_Catalog" xml:space="preserve"><value>Active product catalog</value></data>
+  <data name="Dashboard_Support_Tenants" xml:space="preserve"><value>Mga tenant organization</value></data>
+  <data name="Dashboard_Support_Commercial" xml:space="preserve"><value>Bayad na active commercial access</value></data>
+  <data name="Dashboard_Support_Attention" xml:space="preserve"><value>Naghihintay ng manual confirmation</value></data>
+  <data name="Dashboard_Support_GraceCombo" xml:space="preserve"><value>Grace / past due / suspended</value></data>
+  <data name="Dashboard_Link_SubscriptionsHint" xml:space="preserve"><value>Suriin at pamahalaan ang subscription lifecycle.</value></data>
+  <data name="Dashboard_Link_PaymentsHint" xml:space="preserve"><value>Pila ng manual SaaS payment confirmation.</value></data>
+  <data name="Dashboard_Link_CatalogHint" xml:space="preserve"><value>Mga produkto, organisasyon, at entitlement snapshots.</value></data>
+  <data name="Dashboard_Link_AuditHint" xml:space="preserve"><value>Compliance at platform identity.</value></data>
+  <data name="Dashboard_Link_AllSubscriptions" xml:space="preserve"><value>Buksan ang subscriptions</value></data>
+  <data name="Dashboard_Link_PendingPayments" xml:space="preserve"><value>Mga pending manual payment</value></data>
+  <data name="Dashboard_Link_BrowseProducts" xml:space="preserve"><value>Tingnan ang mga produkto</value></data>
+  <data name="Dashboard_Link_BrowseOrganizations" xml:space="preserve"><value>Tingnan ang mga organisasyon</value></data>
+  <data name="Dashboard_Link_BrowseEntitlements" xml:space="preserve"><value>Pinakabagong entitlements</value></data>
+  <data name="Dashboard_Link_OpenAudit" xml:space="preserve"><value>Buksan ang audit log</value></data>
+  <data name="Dashboard_Link_BrowseUsers" xml:space="preserve"><value>Tingnan ang mga user</value></data>
   <data name="Dashboard_Card_ActiveProducts" xml:space="preserve"><value>Mga active na produkto</value></data>
   <data name="Dashboard_Card_PublishedPlanVersions" xml:space="preserve"><value>Mga published plan version</value></data>
   <data name="Dashboard_Card_Organizations" xml:space="preserve"><value>Mga Organisasyon</value></data>

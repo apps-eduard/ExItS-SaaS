@@ -15,68 +15,63 @@ else if (!Permissions.HasPermission(PlatformPermissionCodes.ViewAuditRecords))
 }
 else if (AuditId is null)
 {
-    <PageHeader Title="@L["Audit_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Audit"]}")" Description="@L["Audit_Description"]" />
+    <ReportPageShell>
+        <ReportHeader Title="@L["Audit_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Audit"]}")" Description="@L["Audit_Description"]" />
 
-    <FilterBar>
-        <label>@L["Audit_FilterDateFrom"] <input @bind="_fromText" placeholder="yyyy-MM-ddTHH:mm:ssZ" /></label>
-        <label>@L["Audit_FilterDateTo"] <input @bind="_toText" placeholder="yyyy-MM-ddTHH:mm:ssZ" /></label>
-        <label>@L["Audit_FilterActor"] <input @bind="_actor" placeholder="dev-admin" /></label>
-        <label>@L["Audit_FilterAction"] <input @bind="_action" placeholder="platform.subscription.activated" /></label>
-        <label>@L["Audit_FilterOrganization"] <input @bind="_organizationId" placeholder="GUID" /></label>
-        <label>@L["Audit_FilterProduct"] <input @bind="_productCode" /></label>
-        <label>@L["Audit_FilterOutcome"]
-            <select @bind="_outcome">
-                <option value="">@L["Common_All"]</option>
-                <option value="Succeeded">@L["Audit_OutcomeSucceeded"]</option>
-                <option value="Denied">@L["Audit_OutcomeDenied"]</option>
-                <option value="Failed">@L["Audit_OutcomeFailed"]</option>
-            </select>
-        </label>
-        <button type="button" @onclick="LoadAsync">@L["Common_Apply"]</button>
-        <button type="button" class="ghost" @onclick="ClearFiltersAsync">@L["Common_ClearFilters"]</button>
-    </FilterBar>
-
-    @if (_list is null)
-    {
-        <LoadingState />
-    }
-    else if (!_list.IsSuccess)
-    {
-        <ErrorState Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" />
-        <p class="muted">@L["Audit_NotReady"]</p>
-    }
-    else if (_list.Data!.Items.Count == 0)
-    {
-        <EmptyState Message="@L["Audit_Empty"]" />
-    }
-    else
-    {
-        <table class="data-table responsive-table">
-            <caption class="sr-only">@L["Audit_Title"]</caption>
-            <thead>
-                <tr>
-                    <th scope="col">@L["Audit_ColumnOccurred"]</th>
-                    <th scope="col">@L["Audit_ColumnActor"]</th>
-                    <th scope="col">@L["Audit_ColumnAction"]</th>
-                    <th scope="col">@L["Audit_ColumnTarget"]</th>
-                    <th scope="col">@L["Audit_ColumnOutcome"]</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in _list.Data.Items)
-                {
-                    <tr>
-                        <td data-label="@L["Audit_ColumnOccurred"]"><a href="/admin/audit/@item.Id"><UtcTimestamp Value="@item.OccurredAtUtc" /></a></td>
-                        <td data-label="@L["Audit_ColumnActor"]">@item.ActorIdentifier</td>
-                        <td data-label="@L["Audit_ColumnAction"]">@item.ActionCode</td>
-                        <td data-label="@L["Audit_ColumnTarget"]">@item.TargetType @item.TargetId</td>
-                        <td data-label="@L["Audit_ColumnOutcome"]"><StatusBadge Value="@item.Outcome" /></td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-        <p class="muted">@string.Format(L["Common_ShowingCount"], _list.Data.Items.Count, _list.Data.TotalCount)</p>
-    }
+        <ResponsiveReportLayout>
+            <Filters>
+                <ReportFilterBar Busy="_listBusy" OnApply="LoadAsync" OnReset="ClearFiltersAsync">
+                    <FormField Label="@L["Audit_FilterDateFrom"]" FieldId="audit-from">
+                        <AdminInput @bind-Value="_fromText" Placeholder="yyyy-MM-ddTHH:mm:ssZ" Disabled="_listBusy" />
+                    </FormField>
+                    <FormField Label="@L["Audit_FilterDateTo"]" FieldId="audit-to">
+                        <AdminInput @bind-Value="_toText" Placeholder="yyyy-MM-ddTHH:mm:ssZ" Disabled="_listBusy" />
+                    </FormField>
+                    <FormField Label="@L["Audit_FilterActor"]" FieldId="audit-actor">
+                        <AdminInput @bind-Value="_actor" Placeholder="dev-admin" Disabled="_listBusy" />
+                    </FormField>
+                    <FormField Label="@L["Audit_FilterAction"]" FieldId="audit-action">
+                        <AdminInput @bind-Value="_action" Placeholder="platform.subscription.activated" Disabled="_listBusy" />
+                    </FormField>
+                    <FormField Label="@L["Audit_FilterOrganization"]" FieldId="audit-org">
+                        <AdminInput @bind-Value="_organizationId" Placeholder="GUID" Disabled="_listBusy" />
+                    </FormField>
+                    <FormField Label="@L["Audit_FilterProduct"]" FieldId="audit-product">
+                        <AdminInput @bind-Value="_productCode" Disabled="_listBusy" />
+                    </FormField>
+                    <FormField Label="@L["Audit_FilterOutcome"]" FieldId="audit-outcome">
+                        <AdminSelect @bind-Value="_outcome" Disabled="_listBusy">
+                            <option value="">@L["Common_All"]</option>
+                            <option value="Succeeded">@L["Audit_OutcomeSucceeded"]</option>
+                            <option value="Denied">@L["Audit_OutcomeDenied"]</option>
+                            <option value="Failed">@L["Audit_OutcomeFailed"]</option>
+                        </AdminSelect>
+                    </FormField>
+                </ReportFilterBar>
+            </Filters>
+            <ChildContent>
+                <ReportSection Title="@L["Audit_Title"]">
+                    <ReportDataPanel IsLoading="@(_list is null || _listBusy)"
+                                    HasError="@(_list is { IsSuccess: false })"
+                                    IsEmpty="@(_list is { IsSuccess: true, Data.Items.Count: 0 })"
+                                    LoadingMessage="@L["Audit_Title"]"
+                                    EmptyMessage="@L["Audit_Empty"]"
+                                    ErrorTitle="@(_list?.Error?.Title ?? L["Common_Error"])"
+                                    ErrorDetail="@AuditErrorDetail"
+                                    ErrorCorrelationId="@_list?.Error?.CorrelationId"
+                                    ErrorUnavailable="@(_list?.Status == ApiCallStatus.Unavailable)">
+                        <ReportTable TItem="AuditRecordDto"
+                                     Items="_list!.Data!.Items"
+                                     Columns="_auditColumns"
+                                     Caption="@L["Audit_Title"]"
+                                     ItemKey="a => a.Id"
+                                     CellTemplate="AuditCell" />
+                        <ReportTotalsRow Label="@L["Report_PaymentsTotals"]" Value="@($"{_list.Data.Items.Count}")" />
+                    </ReportDataPanel>
+                </ReportSection>
+            </ChildContent>
+        </ResponsiveReportLayout>
+    </ReportPageShell>
 }
 else
 {
@@ -116,6 +111,8 @@ else
 
     private ApiCallResult<PagedResult<AuditRecordDto>>? _list;
     private ApiCallResult<AuditRecordDto>? _detail;
+    private bool _listBusy;
+    private List<AdminColumnDefinition> _auditColumns = new();
 
     private string _fromText = "";
     private string _toText = "";
@@ -124,6 +121,18 @@ else
     private string _organizationId = "";
     private string _productCode = "";
     private string _outcome = "";
+
+    protected override void OnInitialized()
+    {
+        _auditColumns =
+        [
+            new("occurred", L["Audit_ColumnOccurred"], Primary: true),
+            new("actor", L["Audit_ColumnActor"]),
+            new("action", L["Audit_ColumnAction"]),
+            new("target", L["Audit_ColumnTarget"]),
+            new("outcome", L["Audit_ColumnOutcome"])
+        ];
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -145,15 +154,23 @@ else
 
     private async Task LoadAsync()
     {
-        var query = new AuditQuery(
-            OccurredFromUtc: DateTimeOffset.TryParse(_fromText, out var from) ? from.ToUniversalTime() : null,
-            OccurredToUtc: DateTimeOffset.TryParse(_toText, out var to) ? to.ToUniversalTime() : null,
-            ActorIdentifier: string.IsNullOrWhiteSpace(_actor) ? null : _actor,
-            ActionCode: string.IsNullOrWhiteSpace(_action) ? null : _action,
-            OrganizationId: Guid.TryParse(_organizationId, out var orgId) ? orgId : null,
-            ProductCode: string.IsNullOrWhiteSpace(_productCode) ? null : _productCode,
-            Outcome: string.IsNullOrWhiteSpace(_outcome) ? null : _outcome);
-        _list = await Api.GetAuditRecordsAsync(query);
+        _listBusy = true;
+        try
+        {
+            var query = new AuditQuery(
+                OccurredFromUtc: DateTimeOffset.TryParse(_fromText, out var from) ? from.ToUniversalTime() : null,
+                OccurredToUtc: DateTimeOffset.TryParse(_toText, out var to) ? to.ToUniversalTime() : null,
+                ActorIdentifier: string.IsNullOrWhiteSpace(_actor) ? null : _actor,
+                ActionCode: string.IsNullOrWhiteSpace(_action) ? null : _action,
+                OrganizationId: Guid.TryParse(_organizationId, out var orgId) ? orgId : null,
+                ProductCode: string.IsNullOrWhiteSpace(_productCode) ? null : _productCode,
+                Outcome: string.IsNullOrWhiteSpace(_outcome) ? null : _outcome);
+            _list = await Api.GetAuditRecordsAsync(query);
+        }
+        finally
+        {
+            _listBusy = false;
+        }
     }
 
     private async Task ClearFiltersAsync()
@@ -161,4 +178,38 @@ else
         _fromText = _toText = _actor = _action = _organizationId = _productCode = _outcome = "";
         await LoadAsync();
     }
+
+    private string AuditErrorDetail =>
+        string.IsNullOrWhiteSpace(_list?.Error?.Detail)
+            ? L["Audit_NotReady"]
+            : $"{_list.Error.Detail} {L["Audit_NotReady"]}";
+
+    private RenderFragment<(AuditRecordDto Item, AdminColumnDefinition Column)> AuditCell => ctx => b =>
+    {
+        switch (ctx.Column.Key)
+        {
+            case "occurred":
+                b.OpenElement(0, "a");
+                b.AddAttribute(1, "href", $"/admin/audit/{ctx.Item.Id}");
+                b.OpenComponent<UtcTimestamp>(2);
+                b.AddAttribute(3, nameof(UtcTimestamp.Value), ctx.Item.OccurredAtUtc);
+                b.CloseComponent();
+                b.CloseElement();
+                break;
+            case "actor":
+                b.AddContent(0, ctx.Item.ActorIdentifier);
+                break;
+            case "action":
+                b.AddContent(0, ctx.Item.ActionCode);
+                break;
+            case "target":
+                b.AddContent(0, $"{ctx.Item.TargetType} {ctx.Item.TargetId}");
+                break;
+            case "outcome":
+                b.OpenComponent<ReportStatusBadge>(0);
+                b.AddAttribute(1, nameof(ReportStatusBadge.Value), ctx.Item.Outcome);
+                b.CloseComponent();
+                break;
+        }
+    };
 }

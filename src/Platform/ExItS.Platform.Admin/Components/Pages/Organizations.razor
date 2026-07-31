@@ -6,27 +6,31 @@
 
 @if (Id is null)
 {
-    <PageHeader Title="@L["Organizations_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Organizations"]}")" Description="@L["Organizations_Description"]" />
-    <AdminDataPanel IsLoading="@(_list is null)"
-                    HasError="@(_list is { IsSuccess: false })"
-                    IsEmpty="@(_list is { IsSuccess: true, Data.Items.Count: 0 })"
-                    LoadingMessage="@L["Organizations_Loading"]"
-                    EmptyMessage="@L["Organizations_Empty"]"
-                    ErrorTitle="@(_list?.Error?.Title ?? L["Common_Error"])"
-                    ErrorDetail="@_list?.Error?.Detail"
-                    ErrorCorrelationId="@_list?.Error?.CorrelationId"
-                    ErrorUnavailable="@(_list?.Status == ApiCallStatus.Unavailable)">
-        <AdminDataTable TItem="OrganizationDto"
-                        Items="_list!.Data!.Items"
-                        Columns="_orgColumns"
-                        Caption="@L["Organizations_Title"]"
-                        ItemKey="o => o.Id"
-                        CellTemplate="OrgCell" />
-        <AdminPagination Page="_list!.Data!.Page"
-                         PageSize="_list.Data.PageSize"
-                         TotalCount="_list.Data.TotalCount"
-                         PageChanged="OnOrgPageAsync" />
-    </AdminDataPanel>
+    <ReportPageShell>
+        <ReportHeader Title="@L["Organizations_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Organizations"]}")" Description="@L["Organizations_Description"]" />
+        <ReportSection Title="@L["Organizations_Title"]">
+            <ReportDataPanel IsLoading="@(_list is null)"
+                            HasError="@(_list is { IsSuccess: false })"
+                            IsEmpty="@(_list is { IsSuccess: true, Data.Items.Count: 0 })"
+                            LoadingMessage="@L["Organizations_Loading"]"
+                            EmptyMessage="@L["Organizations_Empty"]"
+                            ErrorTitle="@(_list?.Error?.Title ?? L["Common_Error"])"
+                            ErrorDetail="@_list?.Error?.Detail"
+                            ErrorCorrelationId="@_list?.Error?.CorrelationId"
+                            ErrorUnavailable="@(_list?.Status == ApiCallStatus.Unavailable)">
+                <ReportTable TItem="OrganizationDto"
+                             Items="_list!.Data!.Items"
+                             Columns="_orgColumns"
+                             Caption="@L["Organizations_Title"]"
+                             ItemKey="o => o.Id"
+                             CellTemplate="OrgCell" />
+                <AdminPagination Page="_list!.Data!.Page"
+                                 PageSize="_list.Data.PageSize"
+                                 TotalCount="_list.Data.TotalCount"
+                                 PageChanged="OnOrgPageAsync" />
+            </ReportDataPanel>
+        </ReportSection>
+    </ReportPageShell>
 }
 else
 {

@@ -7,60 +7,78 @@
 
 @if (Id is null)
 {
-    <PageHeader Title="@L["Users_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Users"]}")" Description="@L["Users_Description"]" />
-    <div class="warning" role="note">@L["Users_Warning"]</div>
+    <ReportPageShell>
+        <ReportHeader Title="@L["Users_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Users"]}")" Description="@L["Users_Description"]" />
+        <div class="warning" role="note">@L["Users_Warning"]</div>
 
-    <div class="filters">
-        <label>@L["Common_Search"] <input @bind="_search" @bind:event="oninput" placeholder="@L["Users_SearchPlaceholder"]" /></label>
-        <label>@L["Common_Status"]
-            <select @bind="_status">
-                <option value="">@L["Common_All"]</option>
-                <option>Active</option>
-                <option>Suspended</option>
-                <option>Deactivated</option>
-            </select>
-        </label>
-        <button type="button" @onclick="ApplyUserFiltersAsync">@L["Common_Apply"]</button>
-        <button type="button" class="secondary" @onclick="ToggleCreate">@(_showCreate ? L["Users_HideCreate"] : L["Users_CreateUser"])</button>
-    </div>
+        <ResponsiveReportLayout>
+            <Filters>
+                <ReportFilterBar OnApply="ApplyUserFiltersAsync" OnReset="ClearUserFiltersAsync">
+                    <ChildContent>
+                        <FormField Label="@L["Common_Search"]" FieldId="users-search">
+                            <AdminInput @bind-Value="_search" Placeholder="@L["Users_SearchPlaceholder"]" />
+                        </FormField>
+                        <FormField Label="@L["Common_Status"]" FieldId="users-status">
+                            <AdminSelect @bind-Value="_status">
+                                <option value="">@L["Common_All"]</option>
+                                <option>Active</option>
+                                <option>Suspended</option>
+                                <option>Deactivated</option>
+                            </AdminSelect>
+                        </FormField>
+                    </ChildContent>
+                    <Secondary>
+                        <button type="button" class="secondary" @onclick="ToggleCreate">@(_showCreate ? L["Users_HideCreate"] : L["Users_CreateUser"])</button>
+                    </Secondary>
+                </ReportFilterBar>
+            </Filters>
+            <ChildContent>
+                @if (_showCreate)
+                {
+                    <FormSection Title="@L["Users_CreateSection"]">
+                        <FormValidationSummary Title="@L["Users_CreateFailed"]" Message="@_formError" IsConflict="_formConflict" />
+                        <div class="form-grid">
+                            <FormField Label="@L["Common_Username"]" FieldId="user-create-username" Required="true" Error="@_fieldUsername">
+                                <AdminInput @bind-Value="_newUsername" Autocomplete="off" Disabled="_busy" />
+                            </FormField>
+                            <FormField Label="@L["Common_DisplayName"]" FieldId="user-create-displayname" Required="true" Error="@_fieldDisplayName">
+                                <AdminInput @bind-Value="_newDisplayName" Disabled="_busy" />
+                            </FormField>
+                            <FormField Label="@L["Common_Email"]" FieldId="user-create-email" Required="true" Error="@_fieldEmail">
+                                <AdminInput @bind-Value="_newEmail" Type="email" Autocomplete="off" Disabled="_busy" />
+                            </FormField>
+                        </div>
+                        <FormActions PrimaryText="@L["Common_Create"]" Busy="_busy" OnPrimary="CreateAsync"
+                                    SecondaryText="@L["Common_Cancel"]" OnSecondary="HideCreate" />
+                    </FormSection>
+                }
 
-    @if (_showCreate)
-    {
-        <FormSection Title="@L["Users_CreateSection"]">
-            <FormValidationSummary Title="@L["Users_CreateFailed"]" Message="@_formError" IsConflict="_formConflict" />
-            <div class="form-grid">
-                <FormField Label="@L["Common_Username"]" FieldId="user-create-username" Required="true" Error="@_fieldUsername">
-                    <AdminInput @bind-Value="_newUsername" Autocomplete="off" Disabled="_busy" />
-                </FormField>
-                <FormField Label="@L["Common_DisplayName"]" FieldId="user-create-displayname" Required="true" Error="@_fieldDisplayName">
-                    <AdminInput @bind-Value="_newDisplayName" Disabled="_busy" />
-                </FormField>
-                <FormField Label="@L["Common_Email"]" FieldId="user-create-email" Required="true" Error="@_fieldEmail">
-                    <AdminInput @bind-Value="_newEmail" Type="email" Autocomplete="off" Disabled="_busy" />
-                </FormField>
-            </div>
-            <FormActions PrimaryText="@L["Common_Create"]" Busy="_busy" OnPrimary="CreateAsync"
-                        SecondaryText="@L["Common_Cancel"]" OnSecondary="HideCreate" />
-        </FormSection>
-    }
-
-    @if (_list is null) { <LoadingState Message="@L["Users_Loading"]" /> }
-    else if (!_list.IsSuccess) { <ErrorState Title="@(_list.Error?.Title ?? L["Common_Error"])" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" /> }
-    else if (_list.Data!.Items.Count == 0) { <EmptyState Message="@L["Users_Empty"]" /> }
-    else
-    {
-        <AdminFilterSummary Items="_userFilterChips" />
-        <AdminDataTable TItem="PlatformUserDto"
-                        Items="_list.Data.Items"
-                        Columns="_userColumns"
-                        Caption="@L["Users_Title"]"
-                        ItemKey="u => u.Id"
-                        CellTemplate="UserCell" />
-        <AdminPagination Page="_list.Data.Page"
-                         PageSize="_list.Data.PageSize"
-                         TotalCount="_list.Data.TotalCount"
-                         PageChanged="OnUserPageAsync" />
-    }
+                <ReportSection Title="@L["Users_Title"]">
+                    <ReportDataPanel IsLoading="@(_list is null)"
+                                    HasError="@(_list is { IsSuccess: false })"
+                                    IsEmpty="@(_list is { IsSuccess: true, Data.Items.Count: 0 })"
+                                    LoadingMessage="@L["Users_Loading"]"
+                                    EmptyMessage="@L["Users_Empty"]"
+                                    ErrorTitle="@(_list?.Error?.Title ?? L["Common_Error"])"
+                                    ErrorDetail="@_list?.Error?.Detail"
+                                    ErrorCorrelationId="@_list?.Error?.CorrelationId"
+                                    ErrorUnavailable="@(_list?.Status == ApiCallStatus.Unavailable)">
+                        <AdminFilterSummary Items="_userFilterChips" />
+                        <ReportTable TItem="PlatformUserDto"
+                                     Items="_list!.Data!.Items"
+                                     Columns="_userColumns"
+                                     Caption="@L["Users_Title"]"
+                                     ItemKey="u => u.Id"
+                                     CellTemplate="UserCell" />
+                        <AdminPagination Page="_list.Data.Page"
+                                         PageSize="_list.Data.PageSize"
+                                         TotalCount="_list.Data.TotalCount"
+                                         PageChanged="OnUserPageAsync" />
+                    </ReportDataPanel>
+                </ReportSection>
+            </ChildContent>
+        </ResponsiveReportLayout>
+    </ReportPageShell>
 }
 else
 {
@@ -250,6 +268,14 @@ else
 
     private async Task ApplyUserFiltersAsync()
     {
+        _page = 1;
+        await ReloadListAsync();
+    }
+
+    private async Task ClearUserFiltersAsync()
+    {
+        _search = "";
+        _status = "";
         _page = 1;
         await ReloadListAsync();
     }

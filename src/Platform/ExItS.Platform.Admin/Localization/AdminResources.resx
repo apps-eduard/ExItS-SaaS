@@ -292,9 +292,34 @@
   <data name="NotFound_Message" xml:space="preserve"><value>Sorry, the content you are looking for does not exist.</value></data>
 
   <data name="Dashboard_Title" xml:space="preserve"><value>Portfolio dashboard</value></data>
-  <data name="Dashboard_Description" xml:space="preserve"><value>Read-only commercial summary composed from Platform APIs. Failed sections are listed — counts are not invented when a section fails.</value></data>
+  <data name="Dashboard_Description" xml:space="preserve"><value>Commercial portfolio landing — server-authored counts from Platform APIs. Failed sections show as unavailable, never as invented zeros.</value></data>
   <data name="Dashboard_Loading" xml:space="preserve"><value>Loading portfolio summary…</value></data>
   <data name="Dashboard_AriaPortfolioCounts" xml:space="preserve"><value>Portfolio counts</value></data>
+  <data name="Dashboard_AriaPrimary" xml:space="preserve"><value>Primary portfolio metrics</value></data>
+  <data name="Dashboard_AriaLifecycle" xml:space="preserve"><value>Subscription and catalog metrics</value></data>
+  <data name="Dashboard_AriaOperations" xml:space="preserve"><value>Authorized operational shortcuts</value></data>
+  <data name="Dashboard_Section_Primary" xml:space="preserve"><value>Portfolio at a glance</value></data>
+  <data name="Dashboard_Section_PrimaryDetail" xml:space="preserve"><value>Authoritative commercial counts that operators check first.</value></data>
+  <data name="Dashboard_Section_Lifecycle" xml:space="preserve"><value>Lifecycle and catalog</value></data>
+  <data name="Dashboard_Section_LifecycleDetail" xml:space="preserve"><value>Subscription states, published plans, and entitlement snapshot coverage.</value></data>
+  <data name="Dashboard_Section_Operations" xml:space="preserve"><value>Continue in Admin</value></data>
+  <data name="Dashboard_Section_OperationsDetail" xml:space="preserve"><value>Shortcuts to existing authorized Admin surfaces — no new calculations.</value></data>
+  <data name="Dashboard_Support_Catalog" xml:space="preserve"><value>Active product catalog</value></data>
+  <data name="Dashboard_Support_Tenants" xml:space="preserve"><value>Tenant organizations</value></data>
+  <data name="Dashboard_Support_Commercial" xml:space="preserve"><value>Paid active commercial access</value></data>
+  <data name="Dashboard_Support_Attention" xml:space="preserve"><value>Awaiting manual confirmation</value></data>
+  <data name="Dashboard_Support_GraceCombo" xml:space="preserve"><value>Grace / past due / suspended</value></data>
+  <data name="Dashboard_Link_SubscriptionsHint" xml:space="preserve"><value>Review and manage subscription lifecycle.</value></data>
+  <data name="Dashboard_Link_PaymentsHint" xml:space="preserve"><value>Manual SaaS payment confirmation queue.</value></data>
+  <data name="Dashboard_Link_CatalogHint" xml:space="preserve"><value>Products, organizations, and entitlement snapshots.</value></data>
+  <data name="Dashboard_Link_AuditHint" xml:space="preserve"><value>Compliance and platform identity.</value></data>
+  <data name="Dashboard_Link_AllSubscriptions" xml:space="preserve"><value>Open subscriptions</value></data>
+  <data name="Dashboard_Link_PendingPayments" xml:space="preserve"><value>Pending manual payments</value></data>
+  <data name="Dashboard_Link_BrowseProducts" xml:space="preserve"><value>Browse products</value></data>
+  <data name="Dashboard_Link_BrowseOrganizations" xml:space="preserve"><value>Browse organizations</value></data>
+  <data name="Dashboard_Link_BrowseEntitlements" xml:space="preserve"><value>Latest entitlements</value></data>
+  <data name="Dashboard_Link_OpenAudit" xml:space="preserve"><value>Open audit log</value></data>
+  <data name="Dashboard_Link_BrowseUsers" xml:space="preserve"><value>Browse users</value></data>
   <data name="Dashboard_Card_ActiveProducts" xml:space="preserve"><value>Active products</value></data>
   <data name="Dashboard_Card_PublishedPlanVersions" xml:space="preserve"><value>Published plan versions</value></data>
   <data name="Dashboard_Card_Organizations" xml:space="preserve"><value>Organizations</value></data>

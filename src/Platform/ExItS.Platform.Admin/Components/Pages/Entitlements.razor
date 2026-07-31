@@ -79,64 +79,59 @@
 }
 else if (OrganizationId is not null && ProductCode is not null)
 {
-    <PageHeader Title="@L["Entitlements_HistoryTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Entitlements"]} / {L["Common_History"]}")" Description="@L["Entitlements_HistoryDescription"]" />
-    @if (_history is null) { <LoadingState Message="@L["Entitlements_HistoryLoading"]" /> }
-    else if (!_history.IsSuccess) { <ErrorState Title="@(_history.Error?.Title ?? L["Common_Error"])" Detail="@_history.Error?.Detail" CorrelationId="@_history.Error?.CorrelationId" Unavailable="@(_history.Status == ApiCallStatus.Unavailable)" /> }
-    else if (_history.Data!.Items.Count == 0) { <EmptyState Message="@L["Entitlements_HistoryEmpty"]" /> }
-    else
-    {
-        <table class="data-table responsive-table">
-            <thead><tr><th>@L["Common_Version"]</th><th>@L["Entitlements_SchemaVersion"]</th><th>@L["Common_Status"]</th><th>@L["Common_GeneratedUtc"]</th></tr></thead>
-            <tbody>
-            @foreach (var x in _history.Data.Items)
-            {
-                <tr>
-                    <td data-label="@L["Common_Version"]"><a href="/admin/entitlements/@x.Id">@x.SnapshotVersion</a></td>
-                    <td data-label="@L["Entitlements_SchemaVersion"]">@x.SchemaVersion</td>
-                    <td data-label="@L["Common_Status"]"><StatusBadge Value="@x.SubscriptionStatus" /></td>
-                    <td data-label="@L["Common_GeneratedUtc"]"><UtcTimestamp Value="@x.GeneratedAtUtc" /></td>
-                </tr>
-            }
-            </tbody>
-        </table>
-    }
+    <ReportPageShell>
+        <ReportHeader Title="@L["Entitlements_HistoryTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Entitlements"]} / {L["Common_History"]}")" Description="@L["Entitlements_HistoryDescription"]" />
+        <ReportSection Title="@L["Entitlements_HistoryTitle"]">
+            <ReportDataPanel IsLoading="@(_history is null)"
+                            HasError="@(_history is { IsSuccess: false })"
+                            IsEmpty="@(_history is { IsSuccess: true, Data.Items.Count: 0 })"
+                            LoadingMessage="@L["Entitlements_HistoryLoading"]"
+                            EmptyMessage="@L["Entitlements_HistoryEmpty"]"
+                            ErrorTitle="@(_history?.Error?.Title ?? L["Common_Error"])"
+                            ErrorDetail="@_history?.Error?.Detail"
+                            ErrorCorrelationId="@_history?.Error?.CorrelationId"
+                            ErrorUnavailable="@(_history?.Status == ApiCallStatus.Unavailable)">
+                <ReportTable TItem="EntitlementSnapshotDto"
+                             Items="_history!.Data!.Items"
+                             Columns="_historyColumns"
+                             Caption="@L["Entitlements_HistoryTitle"]"
+                             ItemKey="x => x.Id"
+                             CellTemplate="HistoryCell" />
+                <ReportTotalsRow Label="@L["Report_PaymentsTotals"]" Value="@($"{_history.Data.Items.Count}")" />
+            </ReportDataPanel>
+        </ReportSection>
+    </ReportPageShell>
 }
 else
 {
-    <PageHeader Title="@L["Entitlements_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Entitlements"]}")" Description="@L["Entitlements_Description"]" />
-    <section class="warning" role="note">@L["Entitlements_Warning"]</section>
-    @if (_latest is null) { <LoadingState Message="@L["Entitlements_Loading"]" /> }
-    else if (!_latest.IsSuccess) { <ErrorState Title="@(_latest.Error?.Title ?? L["Common_Error"])" Detail="@_latest.Error?.Detail" CorrelationId="@_latest.Error?.CorrelationId" Unavailable="@(_latest.Status == ApiCallStatus.Unavailable)" /> }
-    else if (_latest.Data!.Items.Count == 0) { <EmptyState Message="@L["Entitlements_Empty"]" /> }
-    else
-    {
-        <table class="data-table responsive-table">
-            <thead>
-                <tr>
-                    <th scope="col">@L["Common_Product"]</th>
-                    <th scope="col">@L["Common_Organization"]</th>
-                    <th scope="col">@L["Common_Version"]</th>
-                    <th scope="col">@L["Common_Status"]</th>
-                    <th scope="col">@L["Common_GeneratedUtc"]</th>
-                    <th scope="col">@L["Common_History"]</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var x in _latest.Data.Items)
-                {
-                    <tr>
-                        <td data-label="@L["Common_Product"]">@x.ProductCode</td>
-                        <td data-label="@L["Common_Organization"]"><a href="/admin/organizations/@x.OrganizationId">@x.OrganizationId</a></td>
-                        <td data-label="@L["Common_Version"]"><a href="/admin/entitlements/@x.Id">@x.SnapshotVersion</a></td>
-                        <td data-label="@L["Common_Status"]"><StatusBadge Value="@x.SubscriptionStatus" /></td>
-                        <td data-label="@L["Common_GeneratedUtc"]"><UtcTimestamp Value="@x.GeneratedAtUtc" /></td>
-                        <td data-label="@L["Common_History"]"><a href="/admin/entitlements/history/@x.OrganizationId/@x.ProductCode">@L["Common_History"]</a></td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-        <p class="muted">@string.Format(L["Common_ShowingCount"], _latest.Data.Items.Count, _latest.Data.TotalCount)</p>
-    }
+    <ReportPageShell>
+        <ReportHeader Title="@L["Entitlements_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Entitlements"]}")" Description="@L["Entitlements_Description"]" />
+        <section class="warning" role="note">@L["Entitlements_Warning"]</section>
+        <ReportSection Title="@L["Entitlements_Title"]">
+            <ReportDataPanel IsLoading="@(_latest is null || _listBusy)"
+                            HasError="@(_latest is { IsSuccess: false })"
+                            IsEmpty="@(_latest is { IsSuccess: true, Data.Items.Count: 0 })"
+                            LoadingMessage="@L["Entitlements_Loading"]"
+                            EmptyMessage="@L["Entitlements_Empty"]"
+                            ErrorTitle="@(_latest?.Error?.Title ?? L["Common_Error"])"
+                            ErrorDetail="@_latest?.Error?.Detail"
+                            ErrorCorrelationId="@_latest?.Error?.CorrelationId"
+                            ErrorUnavailable="@(_latest?.Status == ApiCallStatus.Unavailable)">
+                <ReportTable TItem="EntitlementLatestSummaryDto"
+                             Items="_latest!.Data!.Items"
+                             Columns="_latestColumns"
+                             Caption="@L["Entitlements_Title"]"
+                             ItemKey="x => x.Id"
+                             CellTemplate="LatestCell" />
+                <ReportTotalsRow Label="@L["Report_PaymentsTotals"]" Value="@($"{_latest.Data.Items.Count}")" />
+                <AdminPagination Page="_latest.Data.Page"
+                                 PageSize="_latest.Data.PageSize"
+                                 TotalCount="_latest.Data.TotalCount"
+                                 PageChanged="OnLatestPageAsync"
+                                 Disabled="_listBusy" />
+            </ReportDataPanel>
+        </ReportSection>
+    </ReportPageShell>
 }
 
 @code {
@@ -148,6 +143,30 @@ else
     private ApiCallResult<EntitlementSnapshotDto>? _detail;
     private ApiCallResult<PagedResult<EntitlementSnapshotDto>>? _history;
     private ApiCallResult<PagedResult<FeatureOverrideDto>>? _overrides;
+    private bool _listBusy;
+    private int _page = 1;
+    private List<AdminColumnDefinition> _latestColumns = new();
+    private List<AdminColumnDefinition> _historyColumns = new();
+
+    protected override void OnInitialized()
+    {
+        _latestColumns =
+        [
+            new("product", L["Common_Product"], Primary: true),
+            new("org", L["Common_Organization"]),
+            new("version", L["Common_Version"]),
+            new("status", L["Common_Status"]),
+            new("generated", L["Common_GeneratedUtc"]),
+            new("history", L["Common_History"])
+        ];
+        _historyColumns =
+        [
+            new("version", L["Common_Version"], Primary: true),
+            new("schema", L["Entitlements_SchemaVersion"]),
+            new("status", L["Common_Status"]),
+            new("generated", L["Common_GeneratedUtc"])
+        ];
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -165,7 +184,90 @@ else
         }
         else
         {
-            _latest = await Api.GetLatestEntitlementsAsync();
+            await LoadLatestAsync();
         }
     }
+
+    private async Task LoadLatestAsync()
+    {
+        _listBusy = true;
+        try
+        {
+            _latest = await Api.GetLatestEntitlementsAsync(page: _page);
+        }
+        finally
+        {
+            _listBusy = false;
+        }
+    }
+
+    private async Task OnLatestPageAsync(int page)
+    {
+        _page = page;
+        await LoadLatestAsync();
+    }
+
+    private RenderFragment<(EntitlementLatestSummaryDto Item, AdminColumnDefinition Column)> LatestCell => ctx => b =>
+    {
+        switch (ctx.Column.Key)
+        {
+            case "product":
+                b.AddContent(0, ctx.Item.ProductCode);
+                break;
+            case "org":
+                b.OpenElement(0, "a");
+                b.AddAttribute(1, "href", $"/admin/organizations/{ctx.Item.OrganizationId}");
+                b.AddContent(2, ctx.Item.OrganizationId);
+                b.CloseElement();
+                break;
+            case "version":
+                b.OpenElement(0, "a");
+                b.AddAttribute(1, "href", $"/admin/entitlements/{ctx.Item.Id}");
+                b.AddContent(2, ctx.Item.SnapshotVersion);
+                b.CloseElement();
+                break;
+            case "status":
+                b.OpenComponent<ReportStatusBadge>(0);
+                b.AddAttribute(1, nameof(ReportStatusBadge.Value), ctx.Item.SubscriptionStatus);
+                b.CloseComponent();
+                break;
+            case "generated":
+                b.OpenComponent<UtcTimestamp>(0);
+                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.GeneratedAtUtc);
+                b.CloseComponent();
+                break;
+            case "history":
+                b.OpenElement(0, "a");
+                b.AddAttribute(1, "href", $"/admin/entitlements/history/{ctx.Item.OrganizationId}/{ctx.Item.ProductCode}");
+                b.AddContent(2, L["Common_History"].Value);
+                b.CloseElement();
+                break;
+        }
+    };
+
+    private RenderFragment<(EntitlementSnapshotDto Item, AdminColumnDefinition Column)> HistoryCell => ctx => b =>
+    {
+        switch (ctx.Column.Key)
+        {
+            case "version":
+                b.OpenElement(0, "a");
+                b.AddAttribute(1, "href", $"/admin/entitlements/{ctx.Item.Id}");
+                b.AddContent(2, ctx.Item.SnapshotVersion);
+                b.CloseElement();
+                break;
+            case "schema":
+                b.AddContent(0, ctx.Item.SchemaVersion);
+                break;
+            case "status":
+                b.OpenComponent<ReportStatusBadge>(0);
+                b.AddAttribute(1, nameof(ReportStatusBadge.Value), ctx.Item.SubscriptionStatus);
+                b.CloseComponent();
+                break;
+            case "generated":
+                b.OpenComponent<UtcTimestamp>(0);
+                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.GeneratedAtUtc);
+                b.CloseComponent();
+                break;
+        }
+    };
 }

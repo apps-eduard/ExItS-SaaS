@@ -3,7 +3,7 @@
 @inject IPlatformApiClient Api
 @inject IStringLocalizer<AdminResources> L
 
-<ReportPageShell>
+<ReportPageShell CssClass="dashboard-landing">
     <ReportHeader Title="@L["Dashboard_Title"]"
                   Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Dashboard"]}")"
                   Description="@L["Dashboard_Description"]" />
@@ -24,21 +24,76 @@
             else
             {
                 var data = _result.Data!;
-                <ReportKpiGrid AriaLabel="@L["Dashboard_AriaPortfolioCounts"]">
-                    <ReportKpiCard Title="@L["Dashboard_Card_ActiveProducts"]" Value="@Format(data.ActiveProductCount, "activeProducts")" />
-                    <ReportKpiCard Title="@L["Dashboard_Card_PublishedPlanVersions"]" Value="@Format(data.PublishedPlanVersionCount, "publishedPlanVersions")" />
-                    <ReportKpiCard Title="@L["Dashboard_Card_Organizations"]" Value="@Format(data.OrganizationCount, "organizations")" />
-                    <ReportKpiCard Title="@L["Dashboard_Card_TrialingSubscriptions"]" Value="@Format(data.TrialingSubscriptionCount, "trialingSubscriptions")" />
-                    <ReportKpiCard Title="@L["Dashboard_Card_ActiveSubscriptions"]" Value="@Format(data.ActiveSubscriptionCount, "activeSubscriptions")" />
-                    <ReportKpiCard Title="@L["Dashboard_Card_GracePastDueSuspended"]" Value="@GraceCombo(data)" />
-                    <ReportKpiCard Title="@L["Dashboard_Card_PendingManualPayments"]" Value="@Format(data.PendingManualPaymentCount, "pendingManualPayments")" />
-                    <ReportKpiCard Title="@L["Dashboard_Card_LatestEntitlementSnapshots"]" Value="@Format(data.LatestEntitlementSnapshotCount, "latestEntitlementSnapshots")" />
-                </ReportKpiGrid>
+
+                <ReportSection Title="@L["Dashboard_Section_Primary"]" Description="@L["Dashboard_Section_PrimaryDetail"]">
+                    <ReportKpiGrid AriaLabel="@L["Dashboard_AriaPrimary"]" CssClass="dashboard-kpi-primary">
+                        <ReportKpiCard Title="@L["Dashboard_Card_ActiveProducts"]"
+                                       Value="@Format(data.ActiveProductCount, "activeProducts")"
+                                       SupportingText="@L["Dashboard_Support_Catalog"]"
+                                       Emphasis="primary" />
+                        <ReportKpiCard Title="@L["Dashboard_Card_Organizations"]"
+                                       Value="@Format(data.OrganizationCount, "organizations")"
+                                       SupportingText="@L["Dashboard_Support_Tenants"]"
+                                       Emphasis="primary" />
+                        <ReportKpiCard Title="@L["Dashboard_Card_ActiveSubscriptions"]"
+                                       Value="@Format(data.ActiveSubscriptionCount, "activeSubscriptions")"
+                                       SupportingText="@L["Dashboard_Support_Commercial"]"
+                                       Emphasis="primary" />
+                        <ReportKpiCard Title="@L["Dashboard_Card_PendingManualPayments"]"
+                                       Value="@Format(data.PendingManualPaymentCount, "pendingManualPayments")"
+                                       SupportingText="@L["Dashboard_Support_Attention"]"
+                                       Emphasis="primary" />
+                    </ReportKpiGrid>
+                </ReportSection>
+
+                <ReportSection Title="@L["Dashboard_Section_Lifecycle"]" Description="@L["Dashboard_Section_LifecycleDetail"]">
+                    <ReportKpiGrid AriaLabel="@L["Dashboard_AriaLifecycle"]" CssClass="dashboard-kpi-secondary">
+                        <ReportKpiCard Title="@L["Dashboard_Card_TrialingSubscriptions"]"
+                                       Value="@Format(data.TrialingSubscriptionCount, "trialingSubscriptions")" />
+                        <ReportKpiCard Title="@L["Dashboard_Card_GracePastDueSuspended"]"
+                                       Value="@GraceCombo(data)"
+                                       SupportingText="@L["Dashboard_Support_GraceCombo"]" />
+                        <ReportKpiCard Title="@L["Dashboard_Card_PublishedPlanVersions"]"
+                                       Value="@Format(data.PublishedPlanVersionCount, "publishedPlanVersions")" />
+                        <ReportKpiCard Title="@L["Dashboard_Card_LatestEntitlementSnapshots"]"
+                                       Value="@Format(data.LatestEntitlementSnapshotCount, "latestEntitlementSnapshots")" />
+                    </ReportKpiGrid>
+                </ReportSection>
+
+                <ReportSection Title="@L["Dashboard_Section_Operations"]" Description="@L["Dashboard_Section_OperationsDetail"]">
+                    <div class="dashboard-ops-grid" role="list" aria-label="@L["Dashboard_AriaOperations"]">
+                        <ReportSummaryCard Title="@L["Nav_Subscriptions"]" Subtitle="@L["Dashboard_Link_SubscriptionsHint"]">
+                            <nav class="dashboard-link-list" aria-label="@L["Nav_Subscriptions"]">
+                                <a href="/admin/subscriptions">@L["Dashboard_Link_AllSubscriptions"]</a>
+                                <a href="/admin/subscriptions?status=Trialing">@L["Dashboard_Card_TrialingSubscriptions"] (@Format(data.TrialingSubscriptionCount, "trialingSubscriptions"))</a>
+                                <a href="/admin/subscriptions?status=Active">@L["Dashboard_Card_ActiveSubscriptions"] (@Format(data.ActiveSubscriptionCount, "activeSubscriptions"))</a>
+                            </nav>
+                        </ReportSummaryCard>
+                        <ReportSummaryCard Title="@L["Nav_Payments"]" Subtitle="@L["Dashboard_Link_PaymentsHint"]">
+                            <nav class="dashboard-link-list" aria-label="@L["Nav_Payments"]">
+                                <a href="/admin/payments">@L["Dashboard_Link_PendingPayments"] (@Format(data.PendingManualPaymentCount, "pendingManualPayments"))</a>
+                            </nav>
+                        </ReportSummaryCard>
+                        <ReportSummaryCard Title="@L["Nav_Products"]" Subtitle="@L["Dashboard_Link_CatalogHint"]">
+                            <nav class="dashboard-link-list" aria-label="@L["Nav_Products"]">
+                                <a href="/admin/products">@L["Dashboard_Link_BrowseProducts"]</a>
+                                <a href="/admin/organizations">@L["Dashboard_Link_BrowseOrganizations"]</a>
+                                <a href="/admin/entitlements">@L["Dashboard_Link_BrowseEntitlements"]</a>
+                            </nav>
+                        </ReportSummaryCard>
+                        <ReportSummaryCard Title="@L["Nav_Audit"]" Subtitle="@L["Dashboard_Link_AuditHint"]">
+                            <nav class="dashboard-link-list" aria-label="@L["Nav_Audit"]">
+                                <a href="/admin/audit">@L["Dashboard_Link_OpenAudit"]</a>
+                                <a href="/admin/users">@L["Dashboard_Link_BrowseUsers"]</a>
+                            </nav>
+                        </ReportSummaryCard>
+                    </div>
+                </ReportSection>
 
                 @if (data.PartialFailures.Count > 0)
                 {
                     <ReportSection Title="@L["Dashboard_PartialUnavailable"]" Description="@L["Dashboard_PartialUnavailableDetail"]">
-                        <ul>
+                        <ul class="dashboard-partial-list">
                             @foreach (var failure in data.PartialFailures)
                             {
                                 <li>@failure</li>

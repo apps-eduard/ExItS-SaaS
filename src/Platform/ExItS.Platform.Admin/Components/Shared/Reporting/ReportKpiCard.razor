@@ -1,4 +1,4 @@
-<article class="report-kpi-card summary-card metric-card" role="listitem">
+<article class="report-kpi-card summary-card metric-card @(Emphasis == "primary" ? "report-kpi-card--primary" : null) @CssClass" role="listitem">
     <span class="report-kpi-label">@Title</span>
     <strong class="report-kpi-value is-numeric">@Value</strong>
     @if (!string.IsNullOrWhiteSpace(SupportingText))
@@ -17,4 +17,7 @@
     [Parameter] public string? SupportingText { get; set; }
     /// <summary>Optional authoritative status/trend text from the server — never invent client-side percentages.</summary>
     [Parameter] public string? StatusText { get; set; }
+    /// <summary>Use "primary" for landing hierarchy emphasis. Cards remain non-clickable.</summary>
+    [Parameter] public string? Emphasis { get; set; }
+    [Parameter] public string? CssClass { get; set; }
 }

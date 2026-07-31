@@ -4,30 +4,33 @@
 @inject IPlatformApiClient Api
 @inject IStringLocalizer<AdminResources> L
 
-<PageFrame>
 @if (Id is null)
 {
-    <PageHeader Title="@L["Products_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Products"]}")" Description="@L["Products_Description"]" />
-    <AdminDataPanel IsLoading="@(_list is null)"
-                    HasError="@(_list is { IsSuccess: false })"
-                    IsEmpty="@(_list is { IsSuccess: true, Data.Items.Count: 0 })"
-                    LoadingMessage="@L["Products_Loading"]"
-                    EmptyMessage="@L["Products_Empty"]"
-                    ErrorTitle="@(_list?.Error?.Title ?? L["Common_Error"])"
-                    ErrorDetail="@_list?.Error?.Detail"
-                    ErrorCorrelationId="@_list?.Error?.CorrelationId"
-                    ErrorUnavailable="@(_list?.Status == ApiCallStatus.Unavailable)">
-        <AdminDataTable TItem="ProductDto"
-                        Items="_list!.Data!.Items"
-                        Columns="_productColumns"
-                        Caption="@L["Products_Title"]"
-                        ItemKey="p => p.Id"
-                        CellTemplate="ProductCell" />
-        <AdminPagination Page="_list!.Data!.Page"
-                         PageSize="_list.Data.PageSize"
-                         TotalCount="_list.Data.TotalCount"
-                         PageChanged="OnProductPageAsync" />
-    </AdminDataPanel>
+    <ReportPageShell>
+        <ReportHeader Title="@L["Products_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Products"]}")" Description="@L["Products_Description"]" />
+        <ReportSection Title="@L["Products_Title"]">
+            <ReportDataPanel IsLoading="@(_list is null)"
+                            HasError="@(_list is { IsSuccess: false })"
+                            IsEmpty="@(_list is { IsSuccess: true, Data.Items.Count: 0 })"
+                            LoadingMessage="@L["Products_Loading"]"
+                            EmptyMessage="@L["Products_Empty"]"
+                            ErrorTitle="@(_list?.Error?.Title ?? L["Common_Error"])"
+                            ErrorDetail="@_list?.Error?.Detail"
+                            ErrorCorrelationId="@_list?.Error?.CorrelationId"
+                            ErrorUnavailable="@(_list?.Status == ApiCallStatus.Unavailable)">
+                <ReportTable TItem="ProductDto"
+                             Items="_list!.Data!.Items"
+                             Columns="_productColumns"
+                             Caption="@L["Products_Title"]"
+                             ItemKey="p => p.Id"
+                             CellTemplate="ProductCell" />
+                <AdminPagination Page="_list!.Data!.Page"
+                                 PageSize="_list.Data.PageSize"
+                                 TotalCount="_list.Data.TotalCount"
+                                 PageChanged="OnProductPageAsync" />
+            </ReportDataPanel>
+        </ReportSection>
+    </ReportPageShell>
 }
 else
 {
@@ -105,7 +108,6 @@ else
         </DetailSection>
     </AdminDataPanel>
 }
-</PageFrame>
 
 @code {
     [Parameter] public Guid? Id { get; set; }

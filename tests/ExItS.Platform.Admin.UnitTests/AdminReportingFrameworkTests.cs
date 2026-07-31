@@ -49,6 +49,8 @@ public sealed class AdminReportingFrameworkTests
         Assert.Contains("ReportKpiCard", dashboard, StringComparison.Ordinal);
         Assert.Contains("ReportLoadingState", dashboard, StringComparison.Ordinal);
         Assert.Contains("ReportErrorState", dashboard, StringComparison.Ordinal);
+        Assert.Contains("ReportSummaryCard", dashboard, StringComparison.Ordinal);
+        Assert.Contains("dashboard-landing", dashboard, StringComparison.Ordinal);
         Assert.Contains("GetPortfolioSummaryAsync", dashboard, StringComparison.Ordinal);
         Assert.DoesNotContain("profit", dashboard, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("COGS", dashboard, StringComparison.OrdinalIgnoreCase);

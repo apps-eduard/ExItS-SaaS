@@ -39,13 +39,13 @@ public sealed class AdminDataDisplayTests
         var pages = Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages");
 
         var products = File.ReadAllText(Path.Combine(pages, "Products.razor"));
-        Assert.Contains("AdminDataTable", products, StringComparison.Ordinal);
+        Assert.Contains("ReportTable", products, StringComparison.Ordinal);
         Assert.Contains("AdminPagination", products, StringComparison.Ordinal);
-        Assert.Contains("AdminDataPanel", products, StringComparison.Ordinal);
+        Assert.Contains("ReportDataPanel", products, StringComparison.Ordinal);
         Assert.Contains("KeyValueList", products, StringComparison.Ordinal);
 
         var orgs = File.ReadAllText(Path.Combine(pages, "Organizations.razor"));
-        Assert.Contains("AdminDataTable", orgs, StringComparison.Ordinal);
+        Assert.Contains("ReportTable", orgs, StringComparison.Ordinal);
         Assert.Contains("AmountDisplay", orgs, StringComparison.Ordinal);
 
         var payments = File.ReadAllText(Path.Combine(pages, "Payments.razor"));
@@ -55,7 +55,7 @@ public sealed class AdminDataDisplayTests
         Assert.Contains("AdminPagination", payments, StringComparison.Ordinal);
 
         var users = File.ReadAllText(Path.Combine(pages, "Users.razor"));
-        Assert.Contains("AdminDataTable", users, StringComparison.Ordinal);
+        Assert.Contains("ReportTable", users, StringComparison.Ordinal);
         Assert.Contains("AdminPagination", users, StringComparison.Ordinal);
 
         var members = File.ReadAllText(Path.Combine(pages, "OrganizationMembers.razor"));

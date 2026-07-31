@@ -7,87 +7,89 @@
 
 @if (Id is null)
 {
-    <PageHeader Title="@L["Subscriptions_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Subscriptions"]}")" Description="@L["Subscriptions_Description"]" />
-    <div class="warning" role="note">@L["Subscriptions_Warning"]</div>
+    <ReportPageShell>
+        <ReportHeader Title="@L["Subscriptions_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Subscriptions"]}")" Description="@L["Subscriptions_Description"]" />
+        <div class="warning" role="note">@L["Subscriptions_Warning"]</div>
 
-    <section class="panel" aria-label="@L["Subscriptions_AriaStartTrial"]">
-        <h2>@L["Subscriptions_StartTrial"]</h2>
-        <p class="muted">@L["Subscriptions_StartTrialHint"]</p>
-        @if (!string.IsNullOrWhiteSpace(_formError) && _showStartTrial) { <ErrorState Title="@L["Subscriptions_StartTrialFailed"]" Detail="@_formError" /> }
-        <div class="form-grid">
-            <label>@L["Common_Organization"] ID <input @bind="_trialOrgId" placeholder="GUID" /></label>
-            <label>@L["OrgProductAccess_ProductCode"] <input @bind="_trialProductCode" placeholder="e.g. pinoy-business-pos" /></label>
-            <label>@L["Common_Plan"] ID <input @bind="_trialPlanId" placeholder="GUID" /></label>
-            <label>Plan version ID <input @bind="_trialPlanVersionId" placeholder="GUID" /></label>
-            <label>Trial definition ID <input @bind="_trialDefinitionId" placeholder="GUID" /></label>
-        </div>
-        <div class="actions">
-            <button type="button" class="secondary" @onclick="LoadTrialCatalogAsync" disabled="@_busy">@L["Subscriptions_LoadCatalog"]</button>
-            <button type="button" @onclick="StartTrialAsync" disabled="@_busy">@L["Subscriptions_StartTrialButton"]</button>
-        </div>
-        @if (_overview is { IsSuccess: true })
-        {
-            <p class="muted">Active trials: @_overview.Data!.Trials.Count(t => t.Status == "Active") · Published plan versions: @_overview.Data.PublishedPlanVersions.Count</p>
-            @if (_overview.Data.Trials.Any(t => t.Status == "Active"))
+        <section class="panel" aria-label="@L["Subscriptions_AriaStartTrial"]">
+            <h2>@L["Subscriptions_StartTrial"]</h2>
+            <p class="muted">@L["Subscriptions_StartTrialHint"]</p>
+            @if (!string.IsNullOrWhiteSpace(_formError) && _showStartTrial) { <ErrorState Title="@L["Subscriptions_StartTrialFailed"]" Detail="@_formError" /> }
+            <div class="form-grid">
+                <label>@L["Common_Organization"] ID <input @bind="_trialOrgId" placeholder="GUID" /></label>
+                <label>@L["OrgProductAccess_ProductCode"] <input @bind="_trialProductCode" placeholder="e.g. pinoy-business-pos" /></label>
+                <label>@L["Common_Plan"] ID <input @bind="_trialPlanId" placeholder="GUID" /></label>
+                <label>Plan version ID <input @bind="_trialPlanVersionId" placeholder="GUID" /></label>
+                <label>Trial definition ID <input @bind="_trialDefinitionId" placeholder="GUID" /></label>
+            </div>
+            <div class="actions">
+                <button type="button" class="secondary" @onclick="LoadTrialCatalogAsync" disabled="@_busy">@L["Subscriptions_LoadCatalog"]</button>
+                <button type="button" @onclick="StartTrialAsync" disabled="@_busy">@L["Subscriptions_StartTrialButton"]</button>
+            </div>
+            @if (_overview is { IsSuccess: true })
             {
-                <ul class="muted">
-                    @foreach (var t in _overview.Data.Trials.Where(t => t.Status == "Active"))
-                    {
-                        <li>@t.DisplayName — @_overview.Data.Product.Code — duration @FormatDuration(t.DurationTicks) (id @t.Id)</li>
-                    }
-                </ul>
-            }
-        }
-        @if (!string.IsNullOrWhiteSpace(_toast) && Id is null) { <p class="toast" role="status">@_toast</p> }
-    </section>
-
-    <form class="filters" @onsubmit="LoadListAsync" @onsubmit:preventDefault>
-        <label>@L["Common_Status"]
-            <select @bind="_status">
-                <option value="Active">Active</option>
-                <option value="Trialing">Trialing</option>
-                <option value="GracePeriod">GracePeriod</option>
-                <option value="PastDue">PastDue</option>
-                <option value="Suspended">Suspended</option>
-                <option value="Cancelled">Cancelled</option>
-                <option value="Expired">Expired</option>
-            </select>
-        </label>
-        <label>@L["OrgProductAccess_ProductCode"] <input @bind="_productCode" placeholder="optional" /></label>
-        <button type="submit">@L["Common_ApplyFilters"]</button>
-    </form>
-
-    @if (_list is null) { <LoadingState Message="@L["Subscriptions_Loading"]" /> }
-    else if (!_list.IsSuccess) { <ErrorState Title="@(_list.Error?.Title ?? L["Common_Error"])" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" /> }
-    else if (_list.Data!.Items.Count == 0) { <EmptyState Message="@L["Subscriptions_Empty"]" /> }
-    else
-    {
-        <table class="data-table responsive-table">
-            <caption class="sr-only">@L["Subscriptions_Title"]</caption>
-            <thead>
-                <tr>
-                    <th scope="col">@L["Common_Product"]</th>
-                    <th scope="col">@L["Common_Status"]</th>
-                    <th scope="col">@L["Common_Organization"]</th>
-                    <th scope="col">@L["Subscriptions_Column_TrialEndUtc"]</th>
-                    <th scope="col">@L["Common_UpdatedUtc"]</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in _list.Data.Items)
+                <p class="muted">Active trials: @_overview.Data!.Trials.Count(t => t.Status == "Active") · Published plan versions: @_overview.Data.PublishedPlanVersions.Count</p>
+                @if (_overview.Data.Trials.Any(t => t.Status == "Active"))
                 {
-                    <tr>
-                        <td data-label="@L["Common_Product"]"><a href="/admin/subscriptions/@item.Id">@item.ProductCode</a></td>
-                        <td data-label="@L["Common_Status"]"><StatusBadge Value="@item.Status" /></td>
-                        <td data-label="@L["Common_Organization"]"><a href="/admin/organizations/@item.OrganizationId">@item.OrganizationId</a></td>
-                        <td data-label="@L["Subscriptions_Column_TrialEndUtc"]"><UtcTimestamp Value="@item.TrialEndUtc" /></td>
-                        <td data-label="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@item.UpdatedAtUtc" /></td>
-                    </tr>
+                    <ul class="muted">
+                        @foreach (var t in _overview.Data.Trials.Where(t => t.Status == "Active"))
+                        {
+                            <li>@t.DisplayName — @_overview.Data.Product.Code — duration @FormatDuration(t.DurationTicks) (id @t.Id)</li>
+                        }
+                    </ul>
                 }
-            </tbody>
-        </table>
-        <p class="muted">@string.Format(L["Common_ShowingCount"], _list.Data.Items.Count, _list.Data.TotalCount)</p>
-    }
+            }
+            @if (!string.IsNullOrWhiteSpace(_toast) && Id is null) { <p class="toast" role="status">@_toast</p> }
+        </section>
+
+        <ResponsiveReportLayout>
+            <Filters>
+                <ReportFilterBar Busy="_listBusy" OnApply="ApplyFiltersAsync" OnReset="ClearFiltersAsync">
+                    <FormField Label="@L["Common_Status"]" FieldId="sub-filter-status">
+                        <AdminSelect @bind-Value="_status" Disabled="_listBusy">
+                            <option value="Active">Active</option>
+                            <option value="Trialing">Trialing</option>
+                            <option value="GracePeriod">GracePeriod</option>
+                            <option value="PastDue">PastDue</option>
+                            <option value="Suspended">Suspended</option>
+                            <option value="Cancelled">Cancelled</option>
+                            <option value="Expired">Expired</option>
+                        </AdminSelect>
+                    </FormField>
+                    <FormField Label="@L["OrgProductAccess_ProductCode"]" FieldId="sub-filter-product">
+                        <AdminInput @bind-Value="_productCode" Placeholder="optional" Disabled="_listBusy" />
+                    </FormField>
+                </ReportFilterBar>
+            </Filters>
+            <ChildContent>
+                <ReportSection Title="@L["Subscriptions_Title"]">
+                    <ReportDataPanel IsLoading="@(_list is null || _listBusy)"
+                                    HasError="@(_list is { IsSuccess: false })"
+                                    IsEmpty="@(_list is { IsSuccess: true, Data.Items.Count: 0 })"
+                                    LoadingMessage="@L["Subscriptions_Loading"]"
+                                    EmptyMessage="@L["Subscriptions_Empty"]"
+                                    ErrorTitle="@(_list?.Error?.Title ?? L["Common_Error"])"
+                                    ErrorDetail="@_list?.Error?.Detail"
+                                    ErrorCorrelationId="@_list?.Error?.CorrelationId"
+                                    ErrorUnavailable="@(_list?.Status == ApiCallStatus.Unavailable)">
+                        <ReportTable TItem="SubscriptionDto"
+                                     Items="_list!.Data!.Items"
+                                     Columns="_subscriptionColumns"
+                                     Caption="@L["Subscriptions_Title"]"
+                                     ItemKey="s => s.Id"
+                                     CellTemplate="SubscriptionCell" />
+                        <ReportTotalsRow Label="@L["Report_PaymentsTotals"]"
+                                         Value="@($"{_list.Data.Items.Count}")" />
+                        <AdminPagination Page="_list.Data.Page"
+                                         PageSize="_list.Data.PageSize"
+                                         TotalCount="_list.Data.TotalCount"
+                                         PageChanged="OnSubscriptionPageAsync"
+                                         Disabled="_listBusy" />
+                    </ReportDataPanel>
+                </ReportSection>
+            </ChildContent>
+        </ResponsiveReportLayout>
+    </ReportPageShell>
 }
 else
 {
@@ -200,15 +202,47 @@ else
     private string? _toast;
     private string? _formError;
     private bool _busy;
+    private bool _listBusy;
     private ConfirmState? _confirm;
+    private int _page = 1;
+    private List<AdminColumnDefinition> _subscriptionColumns = new();
+
+    protected override void OnInitialized()
+    {
+        _subscriptionColumns =
+        [
+            new("product", L["Common_Product"], Primary: true),
+            new("status", L["Common_Status"]),
+            new("org", L["Common_Organization"]),
+            new("trialEnd", L["Subscriptions_Column_TrialEndUtc"]),
+            new("updated", L["Common_UpdatedUtc"])
+        ];
+    }
 
     protected override async Task OnParametersSetAsync()
     {
         _toast = null;
         _formError = null;
         PrefillPeriods();
-        if (Id is null) await LoadListAsync();
-        else _detail = await Api.GetSubscriptionAsync(Id.Value);
+        if (Id is null)
+        {
+            var uri = Nav.ToAbsoluteUri(Nav.Uri);
+            var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+            if (query.TryGetValue("status", out var statusValues))
+            {
+                var status = statusValues.FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(status))
+                {
+                    _status = status!;
+                }
+            }
+
+            await LoadListAsync();
+        }
+        else
+        {
+            _detail = await Api.GetSubscriptionAsync(Id.Value);
+        }
     }
 
     private void PrefillPeriods()
@@ -219,10 +253,75 @@ else
         if (string.IsNullOrWhiteSpace(_graceEndText)) _graceEndText = now.AddDays(37).ToString("yyyy-MM-ddTHH:mm:ssZ");
     }
 
-    private async Task LoadListAsync() =>
-        _list = await Api.GetSubscriptionsAsync(
-            string.IsNullOrWhiteSpace(_status) ? "Active" : _status,
-            string.IsNullOrWhiteSpace(_productCode) ? null : _productCode);
+    private async Task LoadListAsync()
+    {
+        _listBusy = true;
+        try
+        {
+            _list = await Api.GetSubscriptionsAsync(
+                string.IsNullOrWhiteSpace(_status) ? "Active" : _status,
+                string.IsNullOrWhiteSpace(_productCode) ? null : _productCode,
+                page: _page);
+        }
+        finally
+        {
+            _listBusy = false;
+        }
+    }
+
+    private async Task ApplyFiltersAsync()
+    {
+        _page = 1;
+        await LoadListAsync();
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        _status = "Active";
+        _productCode = null;
+        _page = 1;
+        await LoadListAsync();
+    }
+
+    private async Task OnSubscriptionPageAsync(int page)
+    {
+        _page = page;
+        await LoadListAsync();
+    }
+
+    private RenderFragment<(SubscriptionDto Item, AdminColumnDefinition Column)> SubscriptionCell => ctx => b =>
+    {
+        switch (ctx.Column.Key)
+        {
+            case "product":
+                b.OpenElement(0, "a");
+                b.AddAttribute(1, "href", $"/admin/subscriptions/{ctx.Item.Id}");
+                b.AddContent(2, ctx.Item.ProductCode);
+                b.CloseElement();
+                break;
+            case "status":
+                b.OpenComponent<ReportStatusBadge>(0);
+                b.AddAttribute(1, nameof(ReportStatusBadge.Value), ctx.Item.Status);
+                b.CloseComponent();
+                break;
+            case "org":
+                b.OpenElement(0, "a");
+                b.AddAttribute(1, "href", $"/admin/organizations/{ctx.Item.OrganizationId}");
+                b.AddContent(2, ctx.Item.OrganizationId);
+                b.CloseElement();
+                break;
+            case "trialEnd":
+                b.OpenComponent<UtcTimestamp>(0);
+                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.TrialEndUtc);
+                b.CloseComponent();
+                break;
+            case "updated":
+                b.OpenComponent<UtcTimestamp>(0);
+                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.UpdatedAtUtc);
+                b.CloseComponent();
+                break;
+        }
+    };
 
     private async Task LoadTrialCatalogAsync()
     {
