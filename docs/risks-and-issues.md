@@ -126,7 +126,7 @@
 | R-120 | Development identity mistaken for production authentication | Critical | Sign-in disabled outside Dev/Testing; UI labels non-production; R-091 remains OPEN | Open — introduced P5-WP05 |
 | R-121 | Token/session leakage via Preferences, logs, or UI | Critical | SecureStorage only for session secrets; event sink forbids token/password keys; no password capture | Open — introduced P5-WP05; related R-106 |
 | R-122 | Stale commercial access after session restore or org switch | High | Re-evaluate on restore/select; clear org preference on deny; fail closed | Open — introduced P5-WP05 |
-| R-123 | Commercial POS access confused with operational roles | High | Explicit UI/docs: no Cashier/Manager/Admin assignment; product-local roles deferred | Open — introduced P5-WP05 |
+| R-123 | Commercial POS access confused with operational roles | High | Product-local roles delivered in P10-WP06 (`PosRoleMatrix` + assignments); keep commercial grants distinct from operational roles; R-091 still required for production identity | **Mitigated** (P10-WP06) — product-local only |
 | R-124 | POS customer API organization header mistaken for production authz | Critical | Document Dev/Testing-only scope; production JWT still required (R-091); fail closed cross-org 404 | Open — introduced P6-WP01 |
 | R-125 | Customer notes misused as credit/utang records | High | Notes hint forbids credit meaning; dedicated `credit_entries` + UI copy | Open — introduced P6-WP01; mitigated further in P6-WP02 |
 | R-126 | Duplicate mobile MVP rule too strict/loose for real stores | Medium | Document MVP active-mobile uniqueness; refine later | Open — introduced P6-WP01 |

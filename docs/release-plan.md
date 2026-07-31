@@ -107,7 +107,7 @@ Non-production deployment packaging, config validation, backup-before-migrate, s
 
 Environment board: Dev/Testing/internal pilot Ready with documented risks; restricted external pilot and Production **Blocked**. Risk register classifies R-091/R-109/R-129/TLS/MAUI-HTTPS/POS-ROLES as release blockers. **Not production-ready.**
 
-**Next:** **P10-WP06 — Advanced Permissions and Operational Reports** authorized. Do not begin P10-WP07. See [phase-10-full-pos](phases/phase-10-full-pos.md).
+**Next:** **P10-WP07 — Multiple Registers** — do not begin until authorized. See [phase-10-full-pos](phases/phase-10-full-pos.md). P10-WP06 complete (product-local POS-ROLES closed; R-091 remains open).
 
 ## R4 — Commercial MVP
 

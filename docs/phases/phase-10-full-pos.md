@@ -4,7 +4,7 @@
 
 ## Status
 
-**In Progress** — **P10-WP06 — Advanced Permissions and Operational Reports** authorized (prior tip `f18f8f5` / WP05 complete). Do **not** begin P10-WP07.
+**In Progress** — **P10-WP06 — Advanced Permissions and Operational Reports** complete. Do **not** begin P10-WP07.
 
 ## Objective
 
@@ -226,7 +226,7 @@ Exchanges, store credit, gift cards, different/split refund methods, unlinked re
 
 ### P10-WP06 — Advanced Permissions and Operational Reports
 
-Status: **Authorized — In Progress**
+Status: **Complete**
 
 Prior tip: `f18f8f52318b8b991b2f3b4c9a538c24d56e33a0` (P10-WP05 complete). Baseline: **1110 / 0 / 0**.
 Phase marker: `P10-WP06-advanced-permissions-operational-reports`
@@ -257,13 +257,13 @@ Production auth (R-091), MFA/IdP, Platform membership admin, Windows MAUI, Phase
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence (baseline 1110 preserved + focused coverage).
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created (`docs/reports/P10-WP06-advanced-permissions-operational-reports.md`).
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean (after push).
-- [ ] Exact next WP recorded: **P10-WP07 — Multiple Registers** (do not begin).
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (baseline 1110 → **1138 / 0 / 0**).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created (`docs/reports/P10-WP06-advanced-permissions-operational-reports.md`).
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean (after push).
+- [x] Exact next WP recorded: **P10-WP07 — Multiple Registers** (do not begin).
 
 ### P10-WP07 — Multiple Registers
 
