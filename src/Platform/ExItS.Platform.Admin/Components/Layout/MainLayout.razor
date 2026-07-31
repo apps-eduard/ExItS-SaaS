@@ -1,9 +1,6 @@
 ﻿@inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
-@using Microsoft.Extensions.Options
 @using AntDesign
-@inject IOptions<DevelopmentOperatorOptions> OperatorOptions
-@inject IHostEnvironment Env
 @inject IStringLocalizer<AdminResources> L
 @inject NavigationManager Nav
 
@@ -29,7 +26,7 @@
                 <span class="exits-brand-text">@L["Brand_Name"]</span>
             }
         </div>
-        <AdminNav @rendermode="InteractiveServer" Collapsed="_collapsed" />
+        <AdminNav Collapsed="_collapsed" />
     </Sider>
 
     <Layout>
@@ -37,19 +34,13 @@
             <div class="exits-header-left">
                 <Button Type="@ButtonType.Text"
                         Icon="@(_collapsed ? "menu-unfold" : "menu-fold")"
-                        OnClick="ToggleCollapsed"
-                        AriaLabel="@(_collapsed ? L["Nav_OpenDrawer"] : L["Nav_CollapseSidebar"])" />
+                        OnClick="ToggleCollapsed" />
                 <span class="exits-header-title">@L["Brand_Name"]</span>
-                @if (!string.IsNullOrWhiteSpace(ActorDisplayName))
-                {
-                    <Tag Color="@("blue")">@ActorDisplayName</Tag>
-                }
                 <OrganizationContextSwitcher />
             </div>
             <div class="exits-header-right">
-                <ThemeSelector @rendermode="InteractiveServer" />
-                <LanguageSelector @rendermode="InteractiveServer" />
-                <EnvironmentBanner ActorDisplayName="@ActorDisplayName" />
+                <ThemeSelector />
+                <LanguageSelector />
                 <AuthorizeView>
                     <Authorized>
                         <Dropdown>
@@ -63,7 +54,7 @@
                             </Overlay>
                             <ChildContent>
                                 <Button Type="@ButtonType.Text" Class="exits-account-btn">
-                                    <Avatar Size="AvatarSize.Small" Style="background:#085652">@AvatarInitial</Avatar>
+                                    <Avatar Size="AvatarSize.Small" Style="background:#1677ff">@AvatarInitial</Avatar>
                                     <span class="exits-account-label">Account</span>
                                 </Button>
                             </ChildContent>
@@ -81,15 +72,11 @@
 
         <Footer Class="exits-admin-footer">
             <span>@L["Footer_Text"]</span>
-            @if (!string.IsNullOrWhiteSpace(ActorDisplayName))
-            {
-                <span class="muted"> — @string.Format(L["Footer_ActorContext"].Value, ActorDisplayName)</span>
-            }
         </Footer>
     </Layout>
 </Layout>
 
-<ToastHost @rendermode="InteractiveServer" />
+<ToastHost />
 
 <div id="blazor-error-ui" data-nosnippet role="alert">
     @L["Error_Unhandled"]
@@ -117,24 +104,8 @@
         }
     }
 
-    private string? ActorDisplayName
-    {
-        get
-        {
-            if (!string.IsNullOrWhiteSpace(_authDisplayName))
-            {
-                return _authDisplayName;
-            }
-
-            return (Env.IsDevelopment() || Env.IsEnvironment("Testing"))
-                   && !string.IsNullOrWhiteSpace(OperatorOptions.Value.DisplayName)
-                ? OperatorOptions.Value.DisplayName
-                : null;
-        }
-    }
-
     private string AvatarInitial =>
-        string.IsNullOrWhiteSpace(ActorDisplayName) ? "A" : ActorDisplayName.Trim()[0].ToString().ToUpperInvariant();
+        string.IsNullOrWhiteSpace(_authDisplayName) ? "A" : _authDisplayName.Trim()[0].ToString().ToUpperInvariant();
 
     private void ToggleCollapsed() => _collapsed = !_collapsed;
 }

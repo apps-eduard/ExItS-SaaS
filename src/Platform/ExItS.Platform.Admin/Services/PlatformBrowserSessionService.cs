@@ -9,9 +9,11 @@ namespace ExItS.Platform.Admin.Services;
 public sealed class PlatformBrowserSessionService(
     IHttpClientFactory httpClientFactory,
     IHttpContextAccessor httpContextAccessor,
-    IHostEnvironment environment)
+    IHostEnvironment environment,
+    IConfiguration configuration)
 {
     public const string SessionTokenClaimType = "exits_session_token";
+    public const string SessionTokenCookieName = ".ExItS.Admin.Session";
     public const string CookieScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
@@ -39,24 +41,13 @@ public sealed class PlatformBrowserSessionService(
             return (false, "Login response was invalid.");
         }
 
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, login.UserId.ToString("D")),
-            new(ClaimTypes.Name, login.Username),
-            new(ClaimTypes.Email, login.Email ?? string.Empty),
-            new(SessionTokenClaimType, login.SessionToken)
-        };
-
-        var identity = new ClaimsIdentity(claims, CookieScheme);
-        var principal = new ClaimsPrincipal(identity);
-        var props = new AuthenticationProperties
-        {
-            IsPersistent = true,
-            ExpiresUtc = login.ExpiresAtUtc,
-            AllowRefresh = true
-        };
-
-        await http.SignInAsync(CookieScheme, principal, props).ConfigureAwait(false);
+        await EstablishBrowserSessionAsync(
+            http,
+            login.UserId,
+            login.Username,
+            login.Email,
+            login.SessionToken,
+            login.ExpiresAtUtc).ConfigureAwait(false);
         return (true, null);
     }
 
@@ -83,24 +74,13 @@ public sealed class PlatformBrowserSessionService(
             return (false, "Live preview login response was invalid.");
         }
 
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, login.UserId.ToString("D")),
-            new(ClaimTypes.Name, login.Username),
-            new(ClaimTypes.Email, login.Email ?? string.Empty),
-            new(SessionTokenClaimType, login.SessionToken)
-        };
-
-        var identity = new ClaimsIdentity(claims, CookieScheme);
-        var principal = new ClaimsPrincipal(identity);
-        var props = new AuthenticationProperties
-        {
-            IsPersistent = true,
-            ExpiresUtc = login.ExpiresAtUtc,
-            AllowRefresh = true
-        };
-
-        await http.SignInAsync(CookieScheme, principal, props).ConfigureAwait(false);
+        await EstablishBrowserSessionAsync(
+            http,
+            login.UserId,
+            login.Username,
+            login.Email,
+            login.SessionToken,
+            login.ExpiresAtUtc).ConfigureAwait(false);
         return (true, null);
     }
 
@@ -147,24 +127,13 @@ public sealed class PlatformBrowserSessionService(
             return (false, "External session response was invalid.");
         }
 
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, me.UserId.ToString("D")),
-            new(ClaimTypes.Name, me.Username ?? string.Empty),
-            new(ClaimTypes.Email, me.Email ?? string.Empty),
-            new(SessionTokenClaimType, sessionToken)
-        };
-
-        var identity = new ClaimsIdentity(claims, CookieScheme);
-        var principal = new ClaimsPrincipal(identity);
-        var props = new AuthenticationProperties
-        {
-            IsPersistent = true,
-            ExpiresUtc = me.ExpiresAtUtc,
-            AllowRefresh = true
-        };
-
-        await http.SignInAsync(CookieScheme, principal, props).ConfigureAwait(false);
+        await EstablishBrowserSessionAsync(
+            http,
+            me.UserId,
+            me.Username ?? string.Empty,
+            me.Email,
+            sessionToken,
+            me.ExpiresAtUtc).ConfigureAwait(false);
         return (true, null);
     }
 
@@ -176,7 +145,7 @@ public sealed class PlatformBrowserSessionService(
             return;
         }
 
-        var token = http.User.FindFirstValue(SessionTokenClaimType);
+        var token = ResolveSessionToken(http);
         if (!string.IsNullOrWhiteSpace(token))
         {
             var client = httpClientFactory.CreateClient("PlatformApi");
@@ -192,11 +161,70 @@ public sealed class PlatformBrowserSessionService(
             }
         }
 
+        ClearSessionTokenCookie(http);
         await http.SignOutAsync(CookieScheme).ConfigureAwait(false);
     }
 
     public bool RequireAuthenticationInThisEnvironment =>
         !(environment.IsDevelopment() || environment.IsEnvironment("Testing"));
+
+    public static string? ResolveSessionToken(HttpContext http) =>
+        http.User.FindFirstValue(SessionTokenClaimType)
+        ?? (http.Request.Cookies.TryGetValue(SessionTokenCookieName, out var cookie) ? cookie : null);
+
+    private async Task EstablishBrowserSessionAsync(
+        HttpContext http,
+        Guid userId,
+        string username,
+        string? email,
+        string sessionToken,
+        DateTimeOffset expiresAtUtc)
+    {
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, userId.ToString("D")),
+            new(ClaimTypes.Name, username),
+            new(ClaimTypes.Email, email ?? string.Empty),
+            new(SessionTokenClaimType, sessionToken)
+        };
+
+        var identity = new ClaimsIdentity(claims, CookieScheme);
+        var principal = new ClaimsPrincipal(identity);
+        var props = new AuthenticationProperties
+        {
+            IsPersistent = true,
+            ExpiresUtc = expiresAtUtc,
+            AllowRefresh = true
+        };
+
+        await http.SignInAsync(CookieScheme, principal, props).ConfigureAwait(false);
+        AppendSessionTokenCookie(http, sessionToken, expiresAtUtc);
+    }
+
+    private void AppendSessionTokenCookie(HttpContext http, string sessionToken, DateTimeOffset expiresAtUtc)
+    {
+        var livePreviewEnabled = configuration.GetValue<bool>("LivePreview:Enabled")
+            && !environment.IsProduction();
+
+        http.Response.Cookies.Append(
+            SessionTokenCookieName,
+            sessionToken,
+            new CookieOptions
+            {
+                HttpOnly = true,
+                IsEssential = true,
+                SameSite = SameSiteMode.Lax,
+                Secure = !(environment.IsDevelopment()
+                    || environment.IsEnvironment("Testing")
+                    || livePreviewEnabled),
+                Expires = expiresAtUtc
+            });
+    }
+
+    private static void ClearSessionTokenCookie(HttpContext http)
+    {
+        http.Response.Cookies.Delete(SessionTokenCookieName);
+    }
 
     private sealed record LoginResponse(
         string SessionToken,
@@ -222,7 +250,7 @@ public sealed class PlatformSessionForwardingHandler(IHttpContextAccessor httpCo
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var http = httpContextAccessor.HttpContext;
-        var token = http?.User.FindFirstValue(PlatformBrowserSessionService.SessionTokenClaimType);
+        var token = http is null ? null : PlatformBrowserSessionService.ResolveSessionToken(http);
         if (!string.IsNullOrWhiteSpace(token)
             && !request.Headers.Contains("X-ExItS-Session-Token"))
         {

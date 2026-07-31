@@ -1,6 +1,7 @@
 using ExItS.Platform.Admin.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Components.Server.Circuits;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Options;
@@ -109,6 +110,9 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddTransient<PlatformSessionForwardingHandler>();
 builder.Services.AddScoped<PlatformBrowserSessionService>();
+builder.Services.AddScoped<PlatformCircuitSession>();
+builder.Services.AddScoped<CircuitHandler, PlatformSessionCircuitHandler>();
+
 
 builder.Services.AddHttpClient<IPlatformApiClient, PlatformApiClient>((services, client) =>
 {
@@ -163,7 +167,10 @@ app.UseAntiforgery();
 // FallbackPolicy RequireAuthenticatedUser applies to MapStaticAssets; login CSS/JS must stay anonymous.
 app.MapStaticAssets().AllowAnonymous();
 
-app.MapGet("/", () => Results.Redirect("/admin"));
+app.MapGet("/", (HttpContext http) =>
+    http.User.Identity?.IsAuthenticated == true
+        ? Results.Redirect("/admin")
+        : Results.Redirect("/admin/login"));
 
 app.MapPost("/admin/login/credentials", async (
     HttpContext http,

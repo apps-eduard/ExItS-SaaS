@@ -35,6 +35,12 @@ public sealed class CultureService(IJSRuntime js, NavigationManager nav)
     public async Task SetCultureAsync(string cultureCode)
     {
         var normalized = cultureCode == Filipino ? Filipino : English;
+        var current = await GetCurrentAsync();
+        if (string.Equals(current, normalized, StringComparison.Ordinal))
+        {
+            return;
+        }
+
         await js.InvokeVoidAsync("exitsAdminTheme.set", StorageKey, normalized);
 
         var uri = new Uri(nav.Uri);

@@ -158,8 +158,8 @@
   <data name="State_CorrelationId" xml:space="preserve"><value>Correlation ID</value></data>
   <data name="State_Retry" xml:space="preserve"><value>Retry</value></data>
 
-  <data name="Banner_DevSecurityCompact" xml:space="preserve"><value>Development-stage — unauthenticated</value></data>
-  <data name="Banner_DevSecurityDetail" xml:space="preserve"><value>Development-stage security warning: Platform Admin and Platform APIs are currently unauthenticated. This surface is not production-secure and must not be exposed as an authorized operator console.</value></data>
+  <data name="Banner_DevSecurityCompact" xml:space="preserve"><value>Platform Admin</value></data>
+  <data name="Banner_DevSecurityDetail" xml:space="preserve"><value>Signed-in operators use Platform session authentication. Authorization is enforced by the Platform API.</value></data>
 
   <data name="Theme_Label" xml:space="preserve"><value>Theme</value></data>
   <data name="Theme_System" xml:space="preserve"><value>System</value></data>
@@ -192,7 +192,7 @@
   <data name="Unauthorized_Title" xml:space="preserve"><value>You don't have access to this section</value></data>
   <data name="Unauthorized_Message" xml:space="preserve"><value>Your current Platform permissions do not include this section. This is a UI convenience check only — the Platform API remains the source of truth and enforces its own authorization.</value></data>
 
-  <data name="Footer_Text" xml:space="preserve"><value>ExItS Platform Admin — portfolio, subscriptions, payments, trials, authorization, and audit (P4-WP04). Development-stage.</value></data>
+  <data name="Footer_Text" xml:space="preserve"><value>ExItS Platform Admin — portfolio, subscriptions, payments, trials, authorization, and audit.</value></data>
   <data name="Footer_ActorContext" xml:space="preserve"><value>Actor context (dev only): {0} — not authorization.</value></data>
 
   <data name="Aria_AdminNav" xml:space="preserve"><value>Platform Admin navigation</value></data>
@@ -373,7 +373,7 @@
   <data name="Organizations_EntitlementsEmpty" xml:space="preserve"><value>No entitlement snapshots for this organization.</value></data>
 
   <data name="OrgMembers_Title" xml:space="preserve"><value>Organization members</value></data>
-  <data name="OrgMembers_Description" xml:space="preserve"><value>Platform organization membership and roles. Development-stage; unauthenticated.</value></data>
+  <data name="OrgMembers_Description" xml:space="preserve"><value>Platform organization membership and roles.</value></data>
   <data name="OrgMembers_Warning" xml:space="preserve"><value>Platform organization roles (Owner, Administrator, Member) are not product-local roles. Removing membership revokes product-access assignments for this organization.</value></data>
   <data name="OrgMembers_Loading" xml:space="preserve"><value>Loading organization…</value></data>
   <data name="OrgMembers_AddSection" xml:space="preserve"><value>Add existing Platform user</value></data>
@@ -388,7 +388,7 @@
   <data name="OrgMembers_ReactivateMembership" xml:space="preserve"><value>Reactivate membership</value></data>
 
   <data name="OrgProductAccess_Title" xml:space="preserve"><value>Product access</value></data>
-  <data name="OrgProductAccess_Description" xml:space="preserve"><value>Commercial product-access assignments. Development-stage; unauthenticated.</value></data>
+  <data name="OrgProductAccess_Description" xml:space="preserve"><value>Commercial product-access assignments.</value></data>
   <data name="OrgProductAccess_Warning" xml:space="preserve"><value>Product access grants commercial entry eligibility only. It does not assign Doctor, Nurse, Clinic Admin, Cashier, Store Manager, POS Administrator, Patient, or any other product-local role. Effective access also requires active user, membership, product, Trialing/Active subscription, and a current entitlement snapshot.</value></data>
   <data name="OrgProductAccess_Loading" xml:space="preserve"><value>Loading organization…</value></data>
   <data name="OrgProductAccess_GrantSection" xml:space="preserve"><value>Grant product access</value></data>
@@ -412,7 +412,7 @@
   <data name="Common_BackToSummary" xml:space="preserve"><value>Back to commercial summary</value></data>
 
   <data name="Users_Title" xml:space="preserve"><value>Platform users</value></data>
-  <data name="Users_Description" xml:space="preserve"><value>Development-stage Platform user administration. APIs remain unauthenticated; server-side authorization is still required before production.</value></data>
+  <data name="Users_Description" xml:space="preserve"><value>Platform user administration.</value></data>
   <data name="Users_Warning" xml:space="preserve"><value>Platform membership is not product operational authorization. No passwords, invitations, or identity-provider linkage in this work package.</value></data>
   <data name="Users_SearchPlaceholder" xml:space="preserve"><value>Username, email, or name</value></data>
   <data name="Users_HideCreate" xml:space="preserve"><value>Hide create</value></data>
@@ -423,7 +423,7 @@
   <data name="Users_Loading" xml:space="preserve"><value>Loading users…</value></data>
   <data name="Users_Empty" xml:space="preserve"><value>No Platform users match the current filters.</value></data>
   <data name="Users_DetailTitle" xml:space="preserve"><value>Platform user detail</value></data>
-  <data name="Users_DetailDescription" xml:space="preserve"><value>Profile, memberships, and commercial product-access assignments. Development-stage only.</value></data>
+  <data name="Users_DetailDescription" xml:space="preserve"><value>Profile, memberships, and commercial product-access assignments.</value></data>
   <data name="Users_DetailLoading" xml:space="preserve"><value>Loading user…</value></data>
   <data name="Users_SuspendedUtc" xml:space="preserve"><value>Suspended (UTC)</value></data>
   <data name="Users_SuspensionReason" xml:space="preserve"><value>Suspension reason</value></data>
@@ -446,7 +446,7 @@
   <data name="Users_ProductAccessEmpty" xml:space="preserve"><value>No product-access assignments for this user.</value></data>
 
   <data name="Subscriptions_Title" xml:space="preserve"><value>Subscriptions</value></data>
-  <data name="Subscriptions_Description" xml:space="preserve"><value>Development-stage subscription administration. Lifecycle mutations call Platform APIs; server-side authorization is still required before production.</value></data>
+  <data name="Subscriptions_Description" xml:space="preserve"><value>Subscription administration. Lifecycle mutations call Platform APIs.</value></data>
   <data name="Subscriptions_Warning" xml:space="preserve"><value>Subscription changes affect commercial eligibility only. They do not assign product-local roles or deliver entitlements to HealthCare or POS.</value></data>
   <data name="Subscriptions_StartTrial" xml:space="preserve"><value>Start organization trial</value></data>
   <data name="Subscriptions_StartTrialHint" xml:space="preserve"><value>Trial duration comes from the selected trial definition. Repeat-trial policy is provisional — review before starting another trial for the same organization and product.</value></data>
@@ -456,7 +456,7 @@
   <data name="Subscriptions_Loading" xml:space="preserve"><value>Loading subscriptions…</value></data>
   <data name="Subscriptions_Empty" xml:space="preserve"><value>No subscriptions match the current filters.</value></data>
   <data name="Subscriptions_DetailTitle" xml:space="preserve"><value>Subscription detail</value></data>
-  <data name="Subscriptions_DetailDescription" xml:space="preserve"><value>Commercial lifecycle administration. Development-stage; unauthenticated.</value></data>
+  <data name="Subscriptions_DetailDescription" xml:space="preserve"><value>Commercial lifecycle administration.</value></data>
   <data name="Subscriptions_DetailWarning" xml:space="preserve"><value>Cancelled and Expired are terminal. Subscription eligibility is not product provisioning and does not assign product-local roles.</value></data>
   <data name="Subscriptions_DetailLoading" xml:space="preserve"><value>Loading subscription…</value></data>
   <data name="Subscriptions_AriaStartTrial" xml:space="preserve"><value>Start organization trial</value></data>
@@ -465,7 +465,7 @@
   <data name="Subscriptions_Column_TrialEndUtc" xml:space="preserve"><value>Trial end (UTC)</value></data>
 
   <data name="Payments_Title" xml:space="preserve"><value>Manual SaaS payments</value></data>
-  <data name="Payments_Description" xml:space="preserve"><value>Cash, bank transfer, and manual GCash reference records only. Development-stage; unauthenticated.</value></data>
+  <data name="Payments_Description" xml:space="preserve"><value>Cash, bank transfer, and manual GCash reference records only.</value></data>
   <data name="Payments_Warning" xml:space="preserve"><value>Manual SaaS payment confirmation is operator attestation only — not automatic provider verification. This UI never displays card numbers, CVV, PIN, OTP, gateway secrets, or GCash credentials. There is no payment gateway, webhook, QR, invoice engine, or POS/Utang payment integration here.</value></data>
   <data name="Payments_CreateSection" xml:space="preserve"><value>Create manual SaaS payment</value></data>
   <data name="Payments_CreateFailed" xml:space="preserve"><value>Could not create payment</value></data>
@@ -473,7 +473,7 @@
   <data name="Payments_Loading" xml:space="preserve"><value>Loading payments…</value></data>
   <data name="Payments_Empty" xml:space="preserve"><value>No payments match the current filters.</value></data>
   <data name="Payments_DetailTitle" xml:space="preserve"><value>Payment detail</value></data>
-  <data name="Payments_DetailDescription" xml:space="preserve"><value>Manual SaaS payment lifecycle. Development-stage; unauthenticated.</value></data>
+  <data name="Payments_DetailDescription" xml:space="preserve"><value>Manual SaaS payment lifecycle.</value></data>
   <data name="Payments_DetailWarning" xml:space="preserve"><value>Manual confirmation is not automatic provider verification. Confirmed payments may activate an eligible subscription atomically. Confirmed payments cannot be reused. No gateway, card, invoice, POS, or HealthCare payment behavior.</value></data>
   <data name="Payments_DetailLoading" xml:space="preserve"><value>Loading payment…</value></data>
   <data name="Payments_AriaCreate" xml:space="preserve"><value>Create manual SaaS payment</value></data>

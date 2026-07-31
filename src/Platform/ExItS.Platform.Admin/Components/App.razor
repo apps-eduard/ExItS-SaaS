@@ -9,10 +9,11 @@
     <meta name="color-scheme" content="light dark" />
     <base href="/" />
     <ResourcePreloader />
-    @* Root-absolute assets: relative URLs from /admin/* hit FallbackPolicy. AntDesign + branding. *@
+    @* Root-absolute assets: relative URLs from /admin/* hit FallbackPolicy. AntDesign + branding.
+       Ant Design light/dark CSS is swapped by theme-boot.js (id=exits-antd-theme). *@
+    <link id="exits-antd-theme" href="/_content/AntDesign/css/ant-design-blazor.css" rel="stylesheet" />
     <script src="@RootAsset("theme-boot.js")"></script>
     <script src="@RootAsset("admin-a11y.js")"></script>
-    <link href="/_content/AntDesign/css/ant-design-blazor.css" rel="stylesheet" />
     <link rel="stylesheet" href="@RootAsset("app.css")" />
     <link rel="stylesheet" href="@RootAsset("ExItS.Platform.Admin.styles.css")" />
     <ImportMap />
@@ -21,7 +22,7 @@
 
 <body>
     <CascadingAuthenticationState>
-        <Routes />
+        <Routes @rendermode="InteractiveServer" />
     </CascadingAuthenticationState>
     <AntContainer />
     <ReconnectModal />

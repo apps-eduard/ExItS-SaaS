@@ -14,58 +14,64 @@
         @L["Nav_Dashboard"]
     </MenuItem>
 
-    <SubMenu Key="users" TitleTemplate="@UsersTitle">
-        @if (CanView(PlatformPermissionCodes.ManagePlatformUsers))
-        {
-            <MenuItem Key="platform-users" RouterLink="/admin/users" Icon="user">
-                Platform Users
-            </MenuItem>
-        }
-        @if (CanView(PlatformPermissionCodes.ViewPortfolio))
-        {
-            <MenuItem Key="org-users" RouterLink="/admin/organizations" Icon="team">
-                Organization Users
-            </MenuItem>
-        }
-    </SubMenu>
+    @if (_permissionsReady && ShowUsersSection)
+    {
+        <SubMenu Key="users" TitleTemplate="@UsersTitle">
+            @if (CanView(PlatformPermissionCodes.ManagePlatformUsers))
+            {
+                <MenuItem Key="platform-users" RouterLink="/admin/users" Icon="user">
+                    @L["Nav_Users"]
+                </MenuItem>
+            }
+            @if (CanView(PlatformPermissionCodes.ViewPortfolio))
+            {
+                <MenuItem Key="org-users" RouterLink="/admin/organizations" Icon="team">
+                    @L["Nav_Organizations"]
+                </MenuItem>
+            }
+        </SubMenu>
+    }
 
-    <SubMenu Key="commercial" TitleTemplate="@CommercialTitle">
-        @if (CanView(PlatformPermissionCodes.ViewPortfolio))
-        {
-            <MenuItem Key="organizations" RouterLink="/admin/organizations" Icon="bank">
-                @L["Nav_Organizations"]
-            </MenuItem>
-            <MenuItem Key="products" RouterLink="/admin/products" Icon="appstore">
-                @L["Nav_Products"]
-            </MenuItem>
-            <MenuItem Key="product-entry" RouterLink="/admin/product-entry" Icon="plus-square">
-                @L["Nav_ProductEntry"]
-            </MenuItem>
-            <MenuItem Key="plans" RouterLink="/admin/products" Icon="profile">
-                Plans
-            </MenuItem>
-        }
-        @if (CanView(PlatformPermissionCodes.ManageSubscriptions))
-        {
-            <MenuItem Key="subscriptions" RouterLink="/admin/subscriptions" Icon="calendar">
-                @L["Nav_Subscriptions"]
-            </MenuItem>
-        }
-        @if (CanView(PlatformPermissionCodes.ManageManualPayments))
-        {
-            <MenuItem Key="payments" RouterLink="/admin/payments" Icon="dollar">
-                @L["Nav_Payments"]
-            </MenuItem>
-        }
-        @if (CanView(PlatformPermissionCodes.ViewPortfolio))
-        {
-            <MenuItem Key="entitlements" RouterLink="/admin/entitlements" Icon="key">
-                @L["Nav_Entitlements"]
-            </MenuItem>
-        }
-    </SubMenu>
+    @if (_permissionsReady && ShowCommercialSection)
+    {
+        <SubMenu Key="commercial" TitleTemplate="@CommercialTitle">
+            @if (CanView(PlatformPermissionCodes.ViewPortfolio))
+            {
+                <MenuItem Key="organizations" RouterLink="/admin/organizations" Icon="bank">
+                    @L["Nav_Organizations"]
+                </MenuItem>
+                <MenuItem Key="products" RouterLink="/admin/products" Icon="appstore">
+                    @L["Nav_Products"]
+                </MenuItem>
+                <MenuItem Key="product-entry" RouterLink="/admin/product-entry" Icon="plus-square">
+                    @L["Nav_ProductEntry"]
+                </MenuItem>
+                <MenuItem Key="plans" RouterLink="/admin/products" Icon="profile">
+                    @L["Nav_Products"]
+                </MenuItem>
+            }
+            @if (CanView(PlatformPermissionCodes.ManageSubscriptions))
+            {
+                <MenuItem Key="subscriptions" RouterLink="/admin/subscriptions" Icon="calendar">
+                    @L["Nav_Subscriptions"]
+                </MenuItem>
+            }
+            @if (CanView(PlatformPermissionCodes.ManageManualPayments))
+            {
+                <MenuItem Key="payments" RouterLink="/admin/payments" Icon="dollar">
+                    @L["Nav_Payments"]
+                </MenuItem>
+            }
+            @if (CanView(PlatformPermissionCodes.ViewPortfolio))
+            {
+                <MenuItem Key="entitlements" RouterLink="/admin/entitlements" Icon="key">
+                    @L["Nav_Entitlements"]
+                </MenuItem>
+            }
+        </SubMenu>
+    }
 
-    @if (CanView(PlatformPermissionCodes.ViewAuditRecords))
+    @if (_permissionsReady && CanView(PlatformPermissionCodes.ViewAuditRecords))
     {
         <SubMenu Key="ops" TitleTemplate="@OpsTitle">
             <MenuItem Key="audit" RouterLink="/admin/audit" Icon="audit">
@@ -78,16 +84,38 @@
 @code {
     [Parameter] public bool Collapsed { get; set; }
 
+    private bool _permissionsReady;
     private string[] _selected = ["dashboard"];
     private string[] _openKeys = ["users", "commercial", "ops"];
 
-    private RenderFragment UsersTitle => @<span><Icon Type="team" Theme="IconThemeType.Outline" /><span>Users</span></span>;
-    private RenderFragment CommercialTitle => @<span><Icon Type="shop" Theme="IconThemeType.Outline" /><span>@L["Nav_SectionCommercial"]</span></span>;
-    private RenderFragment OpsTitle => @<span><Icon Type="safety" Theme="IconThemeType.Outline" /><span>Operations</span></span>;
+    private RenderFragment UsersTitle => __builder =>
+    {
+        <span><Icon Type="team" Theme="IconThemeType.Outline" /><span>@L["Nav_Users"]</span></span>
+    };
+
+    private RenderFragment CommercialTitle => __builder =>
+    {
+        <span><Icon Type="shop" Theme="IconThemeType.Outline" /><span>@L["Nav_SectionCommercial"]</span></span>
+    };
+
+    private RenderFragment OpsTitle => __builder =>
+    {
+        <span><Icon Type="safety" Theme="IconThemeType.Outline" /><span>@L["Nav_SectionCompliance"]</span></span>
+    };
+
+    private bool ShowUsersSection =>
+        CanView(PlatformPermissionCodes.ManagePlatformUsers)
+        || CanView(PlatformPermissionCodes.ViewPortfolio);
+
+    private bool ShowCommercialSection =>
+        CanView(PlatformPermissionCodes.ViewPortfolio)
+        || CanView(PlatformPermissionCodes.ManageSubscriptions)
+        || CanView(PlatformPermissionCodes.ManageManualPayments);
 
     protected override async Task OnInitializedAsync()
     {
         await Permissions.EnsureLoadedAsync();
+        _permissionsReady = true;
         SyncSelection();
         Nav.LocationChanged += OnLocationChanged;
     }
@@ -101,7 +129,7 @@
     private void SyncSelection()
     {
         var path = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/');
-        _selected = path switch
+        string[] next = path switch
         {
             "/admin" => ["dashboard"],
             var p when p.StartsWith("/admin/users", StringComparison.Ordinal) => ["platform-users"],
@@ -114,9 +142,17 @@
             var p when p.StartsWith("/admin/audit", StringComparison.Ordinal) => ["audit"],
             _ => _selected
         };
+
+        if (next.Length == _selected.Length
+            && next.SequenceEqual(_selected, StringComparer.Ordinal))
+        {
+            return;
+        }
+
+        _selected = next;
     }
 
-    private bool CanView(string permission) => !Permissions.Loaded || Permissions.HasPermission(permission);
+    private bool CanView(string permission) => Permissions.HasPermission(permission);
 
     public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
 }

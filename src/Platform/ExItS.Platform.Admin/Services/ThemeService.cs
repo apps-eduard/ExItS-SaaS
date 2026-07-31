@@ -5,31 +5,34 @@ namespace ExItS.Platform.Admin.Services;
 public enum AdminTheme { System, Light, Dark }
 
 /// <summary>
-/// Circuit-scoped theme preference. Persisted in localStorage as lowercase
-/// <c>system</c>/<c>light</c>/<c>dark</c> (<c>exits-admin-theme</c>).
-/// Applied by <c>theme-boot.js</c> before first paint and re-applied after
-/// Blazor enhanced navigation so <c>data-theme</c> is not lost.
+/// Circuit-scoped light/dark preference for Platform Admin (Ant Design Pro–inspired shell).
+/// Persisted in localStorage as lowercase <c>light</c>/<c>dark</c>.
 /// </summary>
 public sealed class ThemeService(IJSRuntime js)
 {
     public const string StorageKey = "exits-admin-theme";
 
-    public AdminTheme Current { get; private set; } = AdminTheme.System;
+    public AdminTheme Current { get; private set; } = AdminTheme.Light;
     public event Func<Task>? Changed;
+
+    public bool IsDark => Current == AdminTheme.Dark;
 
     public async Task InitializeAsync()
     {
         var stored = await js.InvokeAsync<string?>("exitsAdminTheme.get", StorageKey);
-        Current = Parse(stored);
-        // Re-apply after SSR/enhanced navigation — storage alone is not enough because
-        // documentElement data-theme can be replaced when Blazor swaps page HTML.
+        Current = NormalizeBinary(Parse(stored));
+        await js.InvokeVoidAsync("exitsAdminTheme.set", StorageKey, ToStorageValue(Current));
         await js.InvokeVoidAsync("exitsAdminTheme.applyTheme", ToStorageValue(Current));
+        if (Changed is not null)
+        {
+            await Changed.Invoke();
+        }
     }
 
     public async Task SetThemeAsync(AdminTheme theme)
     {
-        Current = theme;
-        var value = ToStorageValue(theme);
+        Current = NormalizeBinary(theme);
+        var value = ToStorageValue(Current);
         await js.InvokeVoidAsync("exitsAdminTheme.set", StorageKey, value);
         await js.InvokeVoidAsync("exitsAdminTheme.applyTheme", value);
         if (Changed is not null)
@@ -38,27 +41,29 @@ public sealed class ThemeService(IJSRuntime js)
         }
     }
 
-    public static string ToStorageValue(AdminTheme theme) => theme switch
-    {
-        AdminTheme.Light => "light",
-        AdminTheme.Dark => "dark",
-        _ => "system"
-    };
+    public Task ToggleLightDarkAsync() =>
+        SetThemeAsync(IsDark ? AdminTheme.Light : AdminTheme.Dark);
 
-    /// <summary>Accepts authoritative lowercase values and legacy PascalCase values.</summary>
+    public static string ToStorageValue(AdminTheme theme) =>
+        theme == AdminTheme.Dark ? "dark" : "light";
+
+    /// <summary>Accepts authoritative lowercase values and legacy PascalCase / system values.</summary>
     public static AdminTheme Parse(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            return AdminTheme.System;
+            return AdminTheme.Light;
         }
 
         return value.Trim().ToLowerInvariant() switch
         {
-            "light" => AdminTheme.Light,
             "dark" => AdminTheme.Dark,
+            "light" => AdminTheme.Light,
             "system" => AdminTheme.System,
-            _ => AdminTheme.System
+            _ => AdminTheme.Light
         };
     }
+
+    private static AdminTheme NormalizeBinary(AdminTheme theme) =>
+        theme == AdminTheme.Dark ? AdminTheme.Dark : AdminTheme.Light;
 }

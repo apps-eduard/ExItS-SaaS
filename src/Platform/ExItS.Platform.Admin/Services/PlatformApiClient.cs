@@ -1,14 +1,22 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Claims;
 using System.Text.Json;
 using ExItS.Platform.Admin.Models;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Http;
 
 namespace ExItS.Platform.Admin.Services;
 
-public sealed class PlatformApiClient(HttpClient httpClient) : IPlatformApiClient
+public sealed class PlatformApiClient(
+    HttpClient httpClient,
+    IHttpContextAccessor httpContextAccessor,
+    AuthenticationStateProvider authenticationStateProvider,
+    PlatformCircuitSession circuitSession) : IPlatformApiClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
     private const string DevActor = "dev-admin";
+    private const string SessionTokenHeader = "X-ExItS-Session-Token";
 
     public Task<ApiCallResult<PortfolioSummaryDto>> GetPortfolioSummaryAsync(CancellationToken ct = default) =>
         GetAsync<PortfolioSummaryDto>("/api/v1/platform/admin/portfolio-summary", ct);
@@ -201,6 +209,13 @@ public sealed class PlatformApiClient(HttpClient httpClient) : IPlatformApiClien
                 request.Content = JsonContent.Create(body);
             }
 
+            var sessionToken = await ResolveSessionTokenAsync().ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(sessionToken)
+                && !request.Headers.Contains(SessionTokenHeader))
+            {
+                request.Headers.TryAddWithoutValidation(SessionTokenHeader, sessionToken);
+            }
+
             using var response = await httpClient.SendAsync(request, ct).ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
             {
@@ -236,6 +251,46 @@ public sealed class PlatformApiClient(HttpClient httpClient) : IPlatformApiClien
         catch (JsonException) { }
         response.Headers.TryGetValues("X-Correlation-ID", out var ids);
         return new PlatformApiException(response.StatusCode, title ?? response.ReasonPhrase ?? "Platform API request failed", detail, ids?.FirstOrDefault());
+    }
+
+    private async Task<string?> ResolveSessionTokenAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(circuitSession.SessionToken))
+        {
+            return circuitSession.SessionToken;
+        }
+
+        try
+        {
+            var fromHttp = httpContextAccessor.HttpContext is { } http
+                ? PlatformBrowserSessionService.ResolveSessionToken(http)
+                : null;
+            if (!string.IsNullOrWhiteSpace(fromHttp))
+            {
+                circuitSession.SessionToken = fromHttp;
+                return fromHttp;
+            }
+        }
+        catch
+        {
+            // HttpContext can be disposed mid-circuit.
+        }
+
+        try
+        {
+            var state = await authenticationStateProvider.GetAuthenticationStateAsync().ConfigureAwait(false);
+            var fromAuth = state.User.FindFirstValue(PlatformBrowserSessionService.SessionTokenClaimType);
+            if (!string.IsNullOrWhiteSpace(fromAuth))
+            {
+                circuitSession.SessionToken = fromAuth;
+            }
+
+            return fromAuth;
+        }
+        catch
+        {
+            return circuitSession.SessionToken;
+        }
     }
 
     private static string Escape(string value) => Uri.EscapeDataString(value);

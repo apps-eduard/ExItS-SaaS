@@ -37,7 +37,20 @@
 
     private async Task OnChangedAsync(string value)
     {
-        _current = value ?? CultureService.English;
+        // Ant Design Select often raises ValueChanged when it becomes enabled after first render.
+        // CultureService.SetCultureAsync force-loads the page — that must not run on init.
+        if (!_ready)
+        {
+            return;
+        }
+
+        var next = value ?? CultureService.English;
+        if (string.Equals(next, _current, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _current = next;
         await Culture.SetCultureAsync(_current);
     }
 }

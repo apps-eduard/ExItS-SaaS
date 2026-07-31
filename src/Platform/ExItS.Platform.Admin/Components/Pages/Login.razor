@@ -47,12 +47,17 @@
 
             @if (_livePreviewEnabled)
             {
-                <Divider>Live Preview Test User</Divider>
-                <form method="post" action="/admin/login/live-preview" class="exits-login-form">
+                <Divider>Test identity</Divider>
+                <form method="post" action="/admin/login/live-preview" class="exits-login-form" id="live-preview-login-form">
                     <AntiforgeryToken />
                     <div class="ant-form-item">
-                        <label class="ant-form-item-label" for="live-preview-user">Select a test identity</label>
-                        <select id="live-preview-user" name="IdentityKey" class="exits-native-select" required>
+                        <label class="ant-form-item-label" for="live-preview-user">Select a test identity to sign in</label>
+                        <select id="live-preview-user"
+                                name="IdentityKey"
+                                class="exits-native-select"
+                                required
+                                disabled="@(_identities.Count == 0)"
+                                onchange="if (this.value) this.form.requestSubmit()">
                             <option value="">Select a test identity</option>
                             @foreach (var identity in _identities)
                             {
@@ -60,11 +65,8 @@
                             }
                         </select>
                     </div>
-                    <button type="submit" class="ant-btn ant-btn-primary ant-btn-sm ant-btn-block" disabled="@(_identities.Count == 0)">
-                        Sign in as test user
-                    </button>
                     <Paragraph Type="@TextElementType.Secondary" Style="margin-top:.5rem; font-size:12px;">
-                        Creates a real Platform session. Membership, product access, and POS-local roles remain enforced.
+                        Choosing an identity signs you in with a Platform session.
                     </Paragraph>
                 </form>
             }

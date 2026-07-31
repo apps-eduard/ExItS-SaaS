@@ -1,6 +1,7 @@
 @page "/admin"
-@rendermode InteractiveServer
 @using AntDesign
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 @inject IPlatformApiClient Api
 @inject IStringLocalizer<AdminResources> L
 @inject NavigationManager Nav

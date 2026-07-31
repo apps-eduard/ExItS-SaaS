@@ -1,7 +1,8 @@
 @page "/admin/organizations"
 @page "/admin/organizations/{Id:guid}"
-@rendermode InteractiveServer
 @using AntDesign
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 @inject IPlatformApiClient Api
 @inject IStringLocalizer<AdminResources> L
 

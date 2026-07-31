@@ -1,5 +1,6 @@
 using ExItS.Platform.Admin.Models;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace ExItS.Platform.Admin.Services;
 
@@ -7,13 +8,14 @@ namespace ExItS.Platform.Admin.Services;
 /// Scoped per-circuit cache of the current actor's Platform permissions, loaded once from
 /// <c>GET /api/v1/platform/authorization/me</c>. Used only to shape the UI (hide nav items and
 /// mutation controls the actor is unlikely to be allowed to use); it is convenience only and never
-/// replaces server-side authorization. If the endpoint is unavailable (for example, not yet wired
-/// up on the API), Development/Testing falls back to full access — mirroring the existing
-/// unauthenticated development-operator behavior — while other environments fail closed.
+/// replaces server-side authorization.
 /// </summary>
-public sealed class PlatformPermissionState(IPlatformApiClient api, IHostEnvironment env)
+public sealed class PlatformPermissionState(
+    IPlatformApiClient api,
+    IHostEnvironment env,
+    IOptions<LivePreviewAdminOptions> livePreviewOptions)
 {
-    private HashSet<string> _permissions = new(StringComparer.Ordinal);
+    private HashSet<string> _permissions = new(StringComparer.OrdinalIgnoreCase);
     private Task? _loadTask;
 
     public bool Loaded { get; private set; }
@@ -28,25 +30,45 @@ public sealed class PlatformPermissionState(IPlatformApiClient api, IHostEnviron
 
     private async Task LoadAsync()
     {
-        var result = await api.GetMyAuthorizationAsync().ConfigureAwait(false);
-        if (result.IsSuccess && result.Data is not null)
+        try
         {
-            _permissions = new HashSet<string>(result.Data.Permissions, StringComparer.Ordinal);
-            ActorIdentifier = result.Data.ActorIdentifier;
+            var result = await api.GetMyAuthorizationAsync().ConfigureAwait(false);
+            if (result.IsSuccess && result.Data is not null)
+            {
+                _permissions = new HashSet<string>(
+                    result.Data.Permissions ?? [],
+                    StringComparer.OrdinalIgnoreCase);
+                ActorIdentifier = result.Data.ActorIdentifier;
+            }
+            else
+            {
+                LoadFailed = true;
+                ApplyFallbackPermissions();
+            }
         }
-        else
+        catch
         {
             LoadFailed = true;
-            if (env.IsDevelopment() || env.IsEnvironment("Testing"))
-            {
-                _permissions = new HashSet<string>(PlatformPermissionCodes.All, StringComparer.Ordinal);
-            }
+            ApplyFallbackPermissions();
         }
 
         Loaded = true;
     }
 
-    public bool HasPermission(string permission) => _permissions.Contains(permission);
+    private void ApplyFallbackPermissions()
+    {
+        // Development/Testing and Live Preview: keep the shell usable when /authorization/me
+        // fails (e.g. brief session timing). Staging/Production without Live Preview stay closed.
+        var livePreview = livePreviewOptions.Value.Enabled && !env.IsProduction();
+        if (env.IsDevelopment() || env.IsEnvironment("Testing") || livePreview)
+        {
+            _permissions = new HashSet<string>(PlatformPermissionCodes.All, StringComparer.OrdinalIgnoreCase);
+        }
+    }
 
-    public bool HasAnyPermission(params string[] permissions) => permissions.Any(_permissions.Contains);
+    public bool HasPermission(string permission) =>
+        Loaded && _permissions.Contains(permission);
+
+    public bool HasAnyPermission(params string[] permissions) =>
+        Loaded && permissions.Any(_permissions.Contains);
 }

@@ -1,43 +1,70 @@
 // One authoritative theme boot for Platform Admin.
-// Persisted preference: system | light | dark (legacy PascalCase accepted).
+// Persisted preference: light | dark (legacy "system" → light).
+// Swaps Ant Design light/dark CSS + data-theme so components and shell match.
 // Blazor enhanced navigation strips dynamically-set <html> attributes unless
- // re-applied via Blazor.addEventListener('enhancedload') — NOT document.addEventListener.
+// reapplied via Blazor.addEventListener('enhancedload') — NOT document.addEventListener.
 (function () {
     "use strict";
     var THEME_KEY = "exits-admin-theme";
     var CULTURE_KEY = "exits-admin-culture";
+    var ANTD_LIGHT = "/_content/AntDesign/css/ant-design-blazor.css";
+    var ANTD_DARK = "/_content/AntDesign/css/ant-design-blazor.dark.css";
 
     function normalizeTheme(value) {
         if (!value) {
-            return "system";
+            return "light";
         }
         var v = String(value).trim().toLowerCase();
-        if (v === "light" || v === "dark" || v === "system") {
-            return v;
+        if (v === "dark") {
+            return "dark";
         }
-        return "system";
+        // light + legacy system
+        return "light";
+    }
+
+    function setAntdStylesheet(theme) {
+        var href = theme === "dark" ? ANTD_DARK : ANTD_LIGHT;
+        var link = document.getElementById("exits-antd-theme");
+        if (!link) {
+            link = document.querySelector('link[href*="ant-design-blazor"]');
+            if (link) {
+                link.id = "exits-antd-theme";
+            }
+        }
+        if (!link) {
+            link = document.createElement("link");
+            link.id = "exits-antd-theme";
+            link.rel = "stylesheet";
+            document.head.appendChild(link);
+        }
+        if (link.getAttribute("href") !== href) {
+            link.setAttribute("href", href);
+        }
     }
 
     function applyTheme(theme) {
         var normalized = normalizeTheme(theme);
         var root = document.documentElement;
         root.setAttribute("data-theme", normalized);
-        // Mirror on body for selectors that target body and to survive partial merges.
+        root.classList.toggle("exits-theme-dark", normalized === "dark");
         if (document.body) {
             document.body.setAttribute("data-theme", normalized);
+            document.body.classList.toggle("exits-theme-dark", normalized === "dark");
         }
         root.dataset.exitsTheme = normalized;
+        setAntdStylesheet(normalized);
     }
 
     function readAndApplyTheme() {
         try {
-            applyTheme(window.localStorage.getItem(THEME_KEY));
+            var stored = window.localStorage.getItem(THEME_KEY);
+            applyTheme(normalizeTheme(stored));
         } catch (e) {
-            applyTheme("system");
+            applyTheme("light");
         }
     }
 
-    // First paint — before CSS if this script is in <head>.
+    // First paint — link#exits-antd-theme should already be in <head> before this script.
     readAndApplyTheme();
 
     try {
@@ -89,54 +116,40 @@
         readAndApplyTheme();
         scheduleBlazorHook();
     });
+
+    window.exitsAdminShell = {
+        closeDrawer: function () {
+            var toggle = document.getElementById("nav-drawer-toggle");
+            if (toggle) {
+                toggle.checked = false;
+            }
+        }
+    };
+
+    window.exitsAdminTheme = {
+        storageKey: THEME_KEY,
+        get: function (key) {
+            try { return window.localStorage.getItem(key); } catch (e) { return null; }
+        },
+        set: function (key, value) {
+            try { window.localStorage.setItem(key, value); } catch (e) { /* ignore */ }
+        },
+        normalize: normalizeTheme,
+        applyTheme: applyTheme,
+        applyCulture: function (culture) {
+            if (culture) {
+                document.documentElement.setAttribute("lang", culture);
+            }
+        },
+        prefersDark: function () {
+            return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        },
+        reapplyFromStorage: function () {
+            try {
+                applyTheme(normalizeTheme(window.localStorage.getItem(THEME_KEY)));
+            } catch (e) {
+                applyTheme("light");
+            }
+        }
+    };
 })();
-
-window.exitsAdminShell = {
-    closeDrawer: function () {
-        var toggle = document.getElementById("nav-drawer-toggle");
-        if (toggle) {
-            toggle.checked = false;
-        }
-    }
-};
-
-window.exitsAdminTheme = {
-    storageKey: "exits-admin-theme",
-    get: function (key) {
-        try { return window.localStorage.getItem(key); } catch (e) { return null; }
-    },
-    set: function (key, value) {
-        try { window.localStorage.setItem(key, value); } catch (e) { /* ignore */ }
-    },
-    normalize: function (theme) {
-        if (!theme) {
-            return "system";
-        }
-        var v = String(theme).trim().toLowerCase();
-        return (v === "light" || v === "dark" || v === "system") ? v : "system";
-    },
-    applyTheme: function (theme) {
-        var normalized = window.exitsAdminTheme.normalize(theme);
-        var root = document.documentElement;
-        root.setAttribute("data-theme", normalized);
-        if (document.body) {
-            document.body.setAttribute("data-theme", normalized);
-        }
-        root.dataset.exitsTheme = normalized;
-    },
-    applyCulture: function (culture) {
-        if (culture) {
-            document.documentElement.setAttribute("lang", culture);
-        }
-    },
-    prefersDark: function () {
-        return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-    },
-    reapplyFromStorage: function () {
-        try {
-            window.exitsAdminTheme.applyTheme(window.localStorage.getItem("exits-admin-theme"));
-        } catch (e) {
-            window.exitsAdminTheme.applyTheme("system");
-        }
-    }
-};

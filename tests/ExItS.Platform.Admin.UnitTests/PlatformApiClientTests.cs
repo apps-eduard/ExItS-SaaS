@@ -1,7 +1,10 @@
 using System.Net;
+using System.Security.Claims;
 using System.Text;
 using ExItS.Platform.Admin.Models;
 using ExItS.Platform.Admin.Services;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Http;
 
 namespace ExItS.Platform.Admin.UnitTests;
 
@@ -14,7 +17,7 @@ public sealed class PlatformApiClientTests
         {
             Content = new StringContent("""{"items":[],"totalCount":0,"page":2,"pageSize":25}""", Encoding.UTF8, "application/json")
         });
-        var client = new PlatformApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://platform.test") });
+        var client = CreateClient(handler);
 
         var result = await client.GetProductsAsync(2, 25, "Active");
 
@@ -34,7 +37,7 @@ public sealed class PlatformApiClientTests
             response.Headers.Add("X-Correlation-ID", "corr-123");
             return response;
         });
-        var client = new PlatformApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://platform.test") });
+        var client = CreateClient(handler);
 
         var result = await client.GetProductAsync(Guid.NewGuid());
 
@@ -53,7 +56,7 @@ public sealed class PlatformApiClientTests
                 Encoding.UTF8,
                 "application/json")
         });
-        var client = new PlatformApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://platform.test") });
+        var client = CreateClient(handler);
         var result = await client.GetPortfolioSummaryAsync();
         Assert.True(result.IsSuccess);
         Assert.Equal("/api/v1/platform/admin/portfolio-summary", handler.Request!.AbsolutePath);
@@ -66,14 +69,14 @@ public sealed class PlatformApiClientTests
         using var cts = new CancellationTokenSource();
         cts.Cancel();
         var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK));
-        var client = new PlatformApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://platform.test") });
+        var client = CreateClient(handler);
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.GetProductsAsync(ct: cts.Token));
     }
 
     [Fact]
     public async Task Transport_failure_returns_unavailable()
     {
-        var client = new PlatformApiClient(new HttpClient(new StubHandler(_ => throw new HttpRequestException("offline"))) { BaseAddress = new Uri("http://platform.test") });
+        var client = CreateClient(new StubHandler(_ => throw new HttpRequestException("offline")));
         var result = await client.GetPortfolioSummaryAsync();
         Assert.Equal(ApiCallStatus.Unavailable, result.Status);
     }
@@ -259,7 +262,17 @@ public sealed class PlatformApiClientTests
     }
 
     private static PlatformApiClient CreateClient(StubHandler handler) =>
-        new(new HttpClient(handler) { BaseAddress = new Uri("http://platform.test") });
+        new(
+            new HttpClient(handler) { BaseAddress = new Uri("http://platform.test") },
+            new HttpContextAccessor(),
+            new AnonymousAuthenticationStateProvider(),
+            new PlatformCircuitSession());
+
+    private sealed class AnonymousAuthenticationStateProvider : AuthenticationStateProvider
+    {
+        public override Task<AuthenticationState> GetAuthenticationStateAsync() =>
+            Task.FromResult(new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity())));
+    }
 
     private static StubHandler OkHandler() =>
         new(_ => new HttpResponseMessage(HttpStatusCode.OK)

@@ -158,8 +158,8 @@
   <data name="State_CorrelationId" xml:space="preserve"><value>Correlation ID</value></data>
   <data name="State_Retry" xml:space="preserve"><value>Subukan muli</value></data>
 
-  <data name="Banner_DevSecurityCompact" xml:space="preserve"><value>Development-stage — walang authentication</value></data>
-  <data name="Banner_DevSecurityDetail" xml:space="preserve"><value>Babala sa seguridad (development-stage): Ang Platform Admin at Platform API ay kasalukuyang walang authentication. Ang surface na ito ay hindi production-secure at hindi dapat ilantad bilang authorized operator console.</value></data>
+  <data name="Banner_DevSecurityCompact" xml:space="preserve"><value>Platform Admin</value></data>
+  <data name="Banner_DevSecurityDetail" xml:space="preserve"><value>Ang mga naka-sign-in na operator ay gumagamit ng Platform session authentication. Ang authorization ay ipinatutupad ng Platform API.</value></data>
 
   <data name="Theme_Label" xml:space="preserve"><value>Tema</value></data>
   <data name="Theme_System" xml:space="preserve"><value>System</value></data>
@@ -192,7 +192,7 @@
   <data name="Unauthorized_Title" xml:space="preserve"><value>Wala kang access sa seksyong ito</value></data>
   <data name="Unauthorized_Message" xml:space="preserve"><value>Ang iyong kasalukuyang mga Platform permission ay hindi kasama ang seksyong ito. Ito ay UI convenience check lamang — ang Platform API pa rin ang source of truth at nagpapatupad ng sarili nitong authorization.</value></data>
 
-  <data name="Footer_Text" xml:space="preserve"><value>ExItS Platform Admin — portfolio, subscriptions, payments, trials, authorization, and audit (P4-WP04). Development-stage.</value></data>
+  <data name="Footer_Text" xml:space="preserve"><value>ExItS Platform Admin — portfolio, subscriptions, payments, trials, authorization, and audit.</value></data>
   <data name="Footer_ActorContext" xml:space="preserve"><value>Konteksto ng actor (dev lang): {0} — hindi ito authorization.</value></data>
 
   <data name="Aria_AdminNav" xml:space="preserve"><value>Platform Admin navigation</value></data>
@@ -373,7 +373,7 @@
   <data name="Organizations_EntitlementsEmpty" xml:space="preserve"><value>Walang entitlement snapshot para sa organisasyong ito.</value></data>
 
   <data name="OrgMembers_Title" xml:space="preserve"><value>Mga miyembro ng organisasyon</value></data>
-  <data name="OrgMembers_Description" xml:space="preserve"><value>Platform organization membership at mga role. Development-stage; walang authentication.</value></data>
+  <data name="OrgMembers_Description" xml:space="preserve"><value>Platform organization membership at mga role.</value></data>
   <data name="OrgMembers_Warning" xml:space="preserve"><value>Ang mga Platform organization role (Owner, Administrator, Member) ay hindi product-local role. Ang pag-alis ng membership ay nagre-revoke ng product-access assignment para sa organisasyong ito.</value></data>
   <data name="OrgMembers_Loading" xml:space="preserve"><value>Naglo-load ng organisasyon…</value></data>
   <data name="OrgMembers_AddSection" xml:space="preserve"><value>Magdagdag ng umiiral na Platform user</value></data>
@@ -388,7 +388,7 @@
   <data name="OrgMembers_ReactivateMembership" xml:space="preserve"><value>I-reactivate ang membership</value></data>
 
   <data name="OrgProductAccess_Title" xml:space="preserve"><value>Product access</value></data>
-  <data name="OrgProductAccess_Description" xml:space="preserve"><value>Mga commercial product-access assignment. Development-stage; walang authentication.</value></data>
+  <data name="OrgProductAccess_Description" xml:space="preserve"><value>Mga commercial product-access assignment.</value></data>
   <data name="OrgProductAccess_Warning" xml:space="preserve"><value>Ang product access ay nagbibigay ng commercial entry eligibility lamang. Hindi ito nag-a-assign ng Doctor, Nurse, Clinic Admin, Cashier, Store Manager, POS Administrator, Patient, o anumang product-local role. Kailangan din ng active user, membership, produkto, Trialing/Active subscription, at current entitlement snapshot para maging epektibo ang access.</value></data>
   <data name="OrgProductAccess_Loading" xml:space="preserve"><value>Naglo-load ng organisasyon…</value></data>
   <data name="OrgProductAccess_GrantSection" xml:space="preserve"><value>I-grant ang product access</value></data>
@@ -412,7 +412,7 @@
   <data name="Common_BackToSummary" xml:space="preserve"><value>Bumalik sa commercial summary</value></data>
 
   <data name="Users_Title" xml:space="preserve"><value>Mga Platform user</value></data>
-  <data name="Users_Description" xml:space="preserve"><value>Development-stage Platform user administration. Ang mga API ay nananatiling walang authentication; kailangan pa rin ng server-side authorization bago ang production.</value></data>
+  <data name="Users_Description" xml:space="preserve"><value>Pamamahala ng Platform user.</value></data>
   <data name="Users_Warning" xml:space="preserve"><value>Ang Platform membership ay hindi product operational authorization. Walang password, invitation, o identity-provider linkage sa work package na ito.</value></data>
   <data name="Users_SearchPlaceholder" xml:space="preserve"><value>Username, email, o pangalan</value></data>
   <data name="Users_HideCreate" xml:space="preserve"><value>Itago ang create</value></data>
@@ -423,7 +423,7 @@
   <data name="Users_Loading" xml:space="preserve"><value>Naglo-load ng mga user…</value></data>
   <data name="Users_Empty" xml:space="preserve"><value>Walang Platform user na tumugma sa kasalukuyang filter.</value></data>
   <data name="Users_DetailTitle" xml:space="preserve"><value>Detalye ng Platform user</value></data>
-  <data name="Users_DetailDescription" xml:space="preserve"><value>Profile, membership, at commercial product-access assignment. Development-stage lamang.</value></data>
+  <data name="Users_DetailDescription" xml:space="preserve"><value>Profile, membership, at commercial product-access assignment.</value></data>
   <data name="Users_DetailLoading" xml:space="preserve"><value>Naglo-load ng user…</value></data>
   <data name="Users_SuspendedUtc" xml:space="preserve"><value>Na-suspend (UTC)</value></data>
   <data name="Users_SuspensionReason" xml:space="preserve"><value>Dahilan ng suspension</value></data>
@@ -446,7 +446,7 @@
   <data name="Users_ProductAccessEmpty" xml:space="preserve"><value>Walang product-access assignment para sa user na ito.</value></data>
 
   <data name="Subscriptions_Title" xml:space="preserve"><value>Mga Subscription</value></data>
-  <data name="Subscriptions_Description" xml:space="preserve"><value>Development-stage subscription administration. Ang lifecycle mutation ay tumatawag sa Platform APIs; kailangan pa rin ng server-side authorization bago ang production.</value></data>
+  <data name="Subscriptions_Description" xml:space="preserve"><value>Pamamahala ng subscription. Ang lifecycle mutation ay tumatawag sa Platform APIs.</value></data>
   <data name="Subscriptions_Warning" xml:space="preserve"><value>Ang mga pagbabago sa subscription ay nakakaapekto sa commercial eligibility lamang. Hindi ito nag-a-assign ng product-local role o nagde-deliver ng entitlement sa HealthCare o POS.</value></data>
   <data name="Subscriptions_StartTrial" xml:space="preserve"><value>Simulan ang organization trial</value></data>
   <data name="Subscriptions_StartTrialHint" xml:space="preserve"><value>Ang tagal ng trial ay mula sa napiling trial definition. Ang repeat-trial policy ay provisional — suriin bago magsimula ng isa pang trial para sa parehong organisasyon at produkto.</value></data>
@@ -456,7 +456,7 @@
   <data name="Subscriptions_Loading" xml:space="preserve"><value>Naglo-load ng mga subscription…</value></data>
   <data name="Subscriptions_Empty" xml:space="preserve"><value>Walang subscription na tumugma sa kasalukuyang filter.</value></data>
   <data name="Subscriptions_DetailTitle" xml:space="preserve"><value>Detalye ng subscription</value></data>
-  <data name="Subscriptions_DetailDescription" xml:space="preserve"><value>Commercial lifecycle administration. Development-stage; walang authentication.</value></data>
+  <data name="Subscriptions_DetailDescription" xml:space="preserve"><value>Commercial lifecycle administration.</value></data>
   <data name="Subscriptions_DetailWarning" xml:space="preserve"><value>Ang Cancelled at Expired ay terminal. Ang subscription eligibility ay hindi product provisioning at hindi nag-a-assign ng product-local role.</value></data>
   <data name="Subscriptions_DetailLoading" xml:space="preserve"><value>Naglo-load ng subscription…</value></data>
   <data name="Subscriptions_AriaStartTrial" xml:space="preserve"><value>Simulan ang organization trial</value></data>
@@ -465,7 +465,7 @@
   <data name="Subscriptions_Column_TrialEndUtc" xml:space="preserve"><value>Katapusan ng trial (UTC)</value></data>
 
   <data name="Payments_Title" xml:space="preserve"><value>Mga manual SaaS payment</value></data>
-  <data name="Payments_Description" xml:space="preserve"><value>Mga record ng cash, bank transfer, at manual GCash reference lamang. Development-stage; walang authentication.</value></data>
+  <data name="Payments_Description" xml:space="preserve"><value>Mga record ng cash, bank transfer, at manual GCash reference lamang.</value></data>
   <data name="Payments_Warning" xml:space="preserve"><value>Ang manual SaaS payment confirmation ay operator attestation lamang — hindi automatic provider verification. Hindi kailanman ipinapakita ng UI na ito ang mga card number, CVV, PIN, OTP, gateway secret, o GCash credential. Walang payment gateway, webhook, QR, invoice engine, o POS/Utang payment integration dito.</value></data>
   <data name="Payments_CreateSection" xml:space="preserve"><value>Gumawa ng manual SaaS payment</value></data>
   <data name="Payments_CreateFailed" xml:space="preserve"><value>Hindi makagawa ng payment</value></data>
@@ -473,7 +473,7 @@
   <data name="Payments_Loading" xml:space="preserve"><value>Naglo-load ng mga bayad…</value></data>
   <data name="Payments_Empty" xml:space="preserve"><value>Walang bayad na tumugma sa kasalukuyang filter.</value></data>
   <data name="Payments_DetailTitle" xml:space="preserve"><value>Detalye ng bayad</value></data>
-  <data name="Payments_DetailDescription" xml:space="preserve"><value>Manual SaaS payment lifecycle. Development-stage; walang authentication.</value></data>
+  <data name="Payments_DetailDescription" xml:space="preserve"><value>Manual SaaS payment lifecycle.</value></data>
   <data name="Payments_DetailWarning" xml:space="preserve"><value>Ang manual confirmation ay hindi automatic provider verification. Maaaring i-activate ng confirmed payment ang eligible subscription nang sabay-sabay. Hindi maaaring gamitin muli ang confirmed payment. Walang gateway, card, invoice, POS, o HealthCare payment behavior.</value></data>
   <data name="Payments_DetailLoading" xml:space="preserve"><value>Naglo-load ng bayad…</value></data>
   <data name="Payments_AriaCreate" xml:space="preserve"><value>Gumawa ng manual SaaS payment</value></data>

@@ -57,7 +57,7 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("grace", resx, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("past due", resx, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Suspend", resx, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("development-stage", resx, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("development-stage", resx, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("type=\"password\"", subscriptions, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Doctor", subscriptions, StringComparison.OrdinalIgnoreCase);
 
@@ -103,25 +103,24 @@ public sealed class AdminArchitectureGuardTests
         }
 
         Assert.Contains("Credentials", File.ReadAllText(Path.Combine(pagesDir, "Users.razor")), StringComparison.Ordinal);
-        Assert.Contains("development-stage", resx, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("development-stage", resx, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("product-local", resx, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("OrgProductAccess_Warning", File.ReadAllText(Path.Combine(pagesDir, "OrganizationProductAccess.razor")), StringComparison.Ordinal);
         Assert.Contains("OrganizationOwner", File.ReadAllText(Path.Combine(pagesDir, "OrganizationMembers.razor")), StringComparison.Ordinal);
     }
 
     [Fact]
-    public void Admin_shell_includes_development_security_and_delivery_warnings()
+    public void Admin_shell_omits_development_stage_banner_and_keeps_delivery_warnings()
     {
         var root = FindRepositoryRoot();
         var bannerResx = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Localization", "AdminResources.resx"));
-        Assert.Contains("unauthenticated", bannerResx, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("not production-secure", bannerResx, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("development-stage", bannerResx, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("not production-secure", bannerResx, StringComparison.OrdinalIgnoreCase);
 
-        var banner = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Shared", "EnvironmentBanner.razor"));
-        Assert.Contains("Banner_DevSecurityCompact", banner, StringComparison.Ordinal);
-        Assert.Contains("Banner_DevSecurityDetail", banner, StringComparison.Ordinal);
-        Assert.False(File.Exists(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Shared", "DevSecurityBanner.razor")),
-            "DevSecurityBanner.razor should be superseded by the compact EnvironmentBanner in P4-WP04.");
+        var layout = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "MainLayout.razor"));
+        Assert.DoesNotContain("EnvironmentBanner", layout, StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Shared", "EnvironmentBanner.razor")));
+        Assert.False(File.Exists(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Shared", "DevSecurityBanner.razor")));
 
         var entitlements = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Entitlements.razor"));
         Assert.Contains("Entitlements_Warning", entitlements, StringComparison.Ordinal);
@@ -136,6 +135,7 @@ public sealed class AdminArchitectureGuardTests
 
         Assert.True(File.Exists(Path.Combine(adminRoot, "wwwroot", "theme-boot.js")));
         Assert.True(File.Exists(Path.Combine(adminRoot, "Components", "Shared", "ThemeSelector.razor")));
+        Assert.False(File.Exists(Path.Combine(adminRoot, "Components", "Shared", "ThemeHost.razor")));
         Assert.True(File.Exists(Path.Combine(adminRoot, "Components", "Shared", "LanguageSelector.razor")));
         Assert.True(File.Exists(Path.Combine(adminRoot, "Components", "Layout", "MainLayout.razor")));
         Assert.False(File.Exists(Path.Combine(adminRoot, "Components", "Layout", "AppShell.razor")),
@@ -163,20 +163,23 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("normalize", themeBoot, StringComparison.Ordinal);
         Assert.Contains("\"light\"", themeBoot, StringComparison.Ordinal);
         Assert.Contains("\"dark\"", themeBoot, StringComparison.Ordinal);
-        Assert.Contains("\"system\"", themeBoot, StringComparison.Ordinal);
+        Assert.Contains("ant-design-blazor.dark.css", themeBoot, StringComparison.Ordinal);
+        Assert.Contains("exits-antd-theme", themeBoot, StringComparison.Ordinal);
 
         var themeService = File.ReadAllText(Path.Combine(adminRoot, "Services", "ThemeService.cs"));
         Assert.Contains("ToStorageValue", themeService, StringComparison.Ordinal);
         Assert.Contains("applyTheme", themeService, StringComparison.Ordinal);
         Assert.Contains("\"light\"", themeService, StringComparison.Ordinal);
+        Assert.Contains("ToggleLightDarkAsync", themeService, StringComparison.Ordinal);
 
         var selector = File.ReadAllText(Path.Combine(adminRoot, "Components", "Shared", "ThemeSelector.razor"));
-        Assert.Contains("Value=\"@(\"system\")\"", selector, StringComparison.Ordinal);
-        Assert.Contains("Value=\"@(\"light\")\"", selector, StringComparison.Ordinal);
-        Assert.Contains("Value=\"@(\"dark\")\"", selector, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Select", selector, StringComparison.Ordinal);
+        Assert.Contains("exits-theme-icon", selector, StringComparison.Ordinal);
+        Assert.Contains("sun", selector, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("moon", selector, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("LocationChanged", selector, StringComparison.Ordinal);
         Assert.Contains("reapplyFromStorage", selector, StringComparison.Ordinal);
-        Assert.Contains("<Select", selector, StringComparison.Ordinal);
+        Assert.Contains("ToggleLightDarkAsync", selector, StringComparison.Ordinal);
 
         var app = File.ReadAllText(Path.Combine(adminRoot, "Components", "App.razor"));
         Assert.DoesNotContain("data-permanent", app, StringComparison.Ordinal);
@@ -270,6 +273,7 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("ExItS.Platform.Admin.styles.css", app, StringComparison.Ordinal);
         Assert.Contains("RootAsset(", app, StringComparison.Ordinal);
         Assert.Contains("/_content/AntDesign/css/ant-design-blazor.css", app, StringComparison.Ordinal);
+        Assert.Contains("exits-antd-theme", app, StringComparison.Ordinal);
         Assert.Contains("/_content/AntDesign/js/ant-design-blazor.js", app, StringComparison.Ordinal);
         Assert.Contains("<AntContainer", app, StringComparison.Ordinal);
 
@@ -279,15 +283,17 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("<Header", layout, StringComparison.Ordinal);
         Assert.Contains("AdminNav", layout, StringComparison.Ordinal);
         Assert.Contains("ThemeSelector", layout, StringComparison.Ordinal);
+        Assert.DoesNotContain("ThemeHost", layout, StringComparison.Ordinal);
+        Assert.DoesNotContain("ActorDisplayName", layout, StringComparison.Ordinal);
         Assert.Contains("LanguageSelector", layout, StringComparison.Ordinal);
-        Assert.Contains("EnvironmentBanner", layout, StringComparison.Ordinal);
+        Assert.DoesNotContain("EnvironmentBanner", layout, StringComparison.Ordinal);
         Assert.DoesNotContain("app-shell", layout, StringComparison.Ordinal);
         Assert.DoesNotContain("Fluent", layout, StringComparison.OrdinalIgnoreCase);
 
         var css = File.ReadAllText(Path.Combine(adminRoot, "wwwroot", "app.css"));
         Assert.Contains("exits-admin-layout", css, StringComparison.Ordinal);
         Assert.Contains("[data-theme=\"dark\"]", css, StringComparison.Ordinal);
-        Assert.Contains("[data-theme=\"system\"]", css, StringComparison.Ordinal);
+        Assert.Contains("--exits-surface", css, StringComparison.Ordinal);
         Assert.DoesNotContain("@import url(\"https://fonts.googleapis.com", css, StringComparison.Ordinal);
         Assert.DoesNotContain("@tailwind", css, StringComparison.OrdinalIgnoreCase);
 
@@ -304,6 +310,8 @@ public sealed class AdminArchitectureGuardTests
         var themeBoot = File.ReadAllText(Path.Combine(adminRoot, "wwwroot", "theme-boot.js"));
         Assert.Contains("exitsAdminTheme", themeBoot, StringComparison.Ordinal);
         Assert.Contains("data-theme", themeBoot, StringComparison.Ordinal);
+        Assert.Contains("ant-design-blazor.dark.css", themeBoot, StringComparison.Ordinal);
+        Assert.Contains("exits-antd-theme", themeBoot, StringComparison.Ordinal);
     }
 
     [Fact]

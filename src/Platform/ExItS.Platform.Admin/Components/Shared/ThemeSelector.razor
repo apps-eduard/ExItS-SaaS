@@ -2,30 +2,44 @@
 @inject NavigationManager Nav
 @inject IJSRuntime Js
 @inject IStringLocalizer<AdminResources> L
-@using AntDesign
 @implements IDisposable
 
-<Select TItem="string"
-        TItemValue="string"
-        Value="@_selected"
-        ValueChanged="OnChangedAsync"
-        Disabled="@(!_ready)"
-        Size="@InputSize.Small"
-        Style="width: 7.5rem;"
-        Placeholder="@L["Theme_Label"]"
-        AllowClear="false">
-    <SelectOptions>
-        <SelectOption TItem="string" TItemValue="string" Value="@("system")" Label="@L["Theme_System"]" />
-        <SelectOption TItem="string" TItemValue="string" Value="@("light")" Label="@L["Theme_Light"]" />
-        <SelectOption TItem="string" TItemValue="string" Value="@("dark")" Label="@L["Theme_Dark"]" />
-    </SelectOptions>
-</Select>
+@*
+  Light/dark toggle with sun / moon icons — not a dropdown.
+  Native button so `title` works (AntDesign.Button has no Title parameter).
+*@
+
+<button type="button"
+        class="exits-theme-toggle"
+        @onclick="ToggleAsync"
+        title="@(_ready ? (Theme.IsDark ? L["Theme_Light"] : L["Theme_Dark"]) : L["Theme_Label"])">
+    @if (_ready && Theme.IsDark)
+    {
+        @* Sun — click to switch to light *@
+        <svg class="exits-theme-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.75" />
+            <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+                  d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+        </svg>
+    }
+    else
+    {
+        @* Moon — click to switch to dark *@
+        <svg class="exits-theme-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+                  d="M21 14.5A8.5 8.5 0 0 1 9.5 3 7 7 0 1 0 21 14.5z" />
+        </svg>
+    }
+</button>
 
 @code {
     private bool _ready;
-    private string _selected = "system";
 
-    protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
+    protected override void OnInitialized()
+    {
+        Nav.LocationChanged += OnLocationChanged;
+        Theme.Changed += OnThemeChangedAsync;
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -35,10 +49,21 @@
         }
 
         await Theme.InitializeAsync();
-        _selected = ThemeService.ToStorageValue(Theme.Current);
         _ready = true;
         StateHasChanged();
     }
+
+    private async Task ToggleAsync()
+    {
+        if (!_ready)
+        {
+            return;
+        }
+
+        await Theme.ToggleLightDarkAsync();
+    }
+
+    private async Task OnThemeChangedAsync() => await InvokeAsync(StateHasChanged);
 
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
@@ -47,11 +72,9 @@
         catch (ObjectDisposedException) { }
     }
 
-    private async Task OnChangedAsync(string value)
+    public void Dispose()
     {
-        _selected = value ?? "system";
-        await Theme.SetThemeAsync(ThemeService.Parse(_selected));
+        Nav.LocationChanged -= OnLocationChanged;
+        Theme.Changed -= OnThemeChangedAsync;
     }
-
-    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
 }
