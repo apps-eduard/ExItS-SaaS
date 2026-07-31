@@ -2,9 +2,9 @@
 
 [Home](../index.md) | [Threat model](authentication-threat-model.md) | [Security](security.md) | [Authorization](authorization-matrix.md) | [Product Foundation](../Product-Foundation/exits-product-foundation-reference.md) | [Phase 13](../phases/phase-13-production-authentication-and-identity.md) | [P13-WP01 report](../reports/P13-WP01-authentication-architecture-and-threat-model.md)
 
-**Status:** Authoritative architecture direction (**P13-WP01**). Credential persistence delivered in **P13-WP02**. Login/session not yet implemented. **R-091** remains open until later Phase 13 work packages ship and are evidenced.
+**Status:** Authoritative architecture direction (**P13-WP01**). Credentials (**P13-WP02**) and browser login/session (**P13-WP03**) delivered. Bearer tokens / MFA / password-reset delivery remain later WPs. **R-091** remains open until Phase 13 closeout evidences production readiness.
 
-**Scope of this document:** identity model, trust boundaries, target session/token model, Dev vs Production behavior, and decisions. Credential storage arrived in P13-WP02; cookies/tokens/login UI remain later WPs.
+**Scope of this document:** identity model, trust boundaries, target session/token model, Dev vs Production behavior, and decisions. Cookie/session login arrived in P13-WP03; API bearer tokens and product client wiring remain later WPs.
 
 ---
 
@@ -48,12 +48,13 @@ Platform User
 | Surface | Today | Production behavior |
 |---|---|---|
 | Platform User profile | Exists (`PlatformUser`) — username/email/status | Profile remains SoR for identity attributes |
-| Credentials | **Implemented (P13-WP02):** `platform_user_credentials` + ASP.NET Core `PasswordHasher<TUser>`, lockout, email-verified flag | Ready for login WP |
-| Platform actor | `DevelopmentPlatformActorAccessor` + optional `X-Dev-Platform-User-Id` | Header ignored; DevelopmentOperator without full access → fail closed |
-| Platform Authz | `PlatformAuthz` + role assignments | Still authorization-only until login binds actor |
-| Platform Admin | Unauthenticated Blazor; Dev Operator label | Same — not production-secure |
+| Credentials | **Implemented (P13-WP02):** `platform_user_credentials` + ASP.NET Core `PasswordHasher<TUser>`, lockout, email-verified flag | Ready |
+| Browser session | **Implemented (P13-WP03):** `platform_auth_sessions` + login/logout/me + Admin cookie | Ready for lifecycle/API hardening WPs |
+| Platform actor | Session principal when authenticated; Dev/Testing may still use header / DevelopmentOperator | Production Admin requires login; Dev headers still ignored in Production |
+| Platform Authz | `PlatformAuthz` + role assignments | AuthN binds actor when session present |
+| Platform Admin | Login/logout UI; Production requires authenticated user | Not full production-ready portfolio claim |
 | POS / MAUI | GUID sign-in → SecureStorage session → Dev headers | Org/actor/commercial headers rejected or fail closed |
-| ASP.NET auth middleware | **Absent** (no cookie/JWT pipeline under `src/`) | N/A |
+| ASP.NET auth middleware | **PlatformSession** scheme + Admin cookie auth | Bearer tokens later |
 
 Dev/Testing identity is **not** production authentication (**R-091**, **R-120**, **D-P12-05**).
 
@@ -218,4 +219,4 @@ POS remains non-PHI by default (Product Foundation).
 
 ## 12. Recommended next work package
 
-**P13-WP03 — Platform Login, Logout, and Browser Session** when explicitly authorized.
+**Recommended next work package:** **P13-WP04 — Password Lifecycle, Lockout, and Verification** when explicitly authorized.

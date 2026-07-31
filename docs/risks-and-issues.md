@@ -94,7 +94,7 @@
 | R-088 | Subscription Admin changes mistaken for product provisioning | High | UI warnings; no entitlement delivery routes; fail-closed access evaluation only | Open — introduced P4-WP03 |
 | R-089 | Provisional repeat-trial policy misapplied as automatic approval | Medium | Conflict/warning only; no automatic repeat-trial approval rules | Open — introduced P4-WP03 |
 | R-090 | Concurrent Admin commercial lifecycle mutations | Medium | Domain concurrency + 409 ProblemDetails; UI refreshes after success | Open — introduced P4-WP03 |
-| R-091 | Missing production authentication (JWT / passwords / MFA / SSO / AD) | Critical | Server-side `PlatformAuthz` + role assignments for development; **P13-WP02** credential/`PasswordHasher`/lockout persistence + hardened bootstrap delivered; require login/session WPs before production; no fake login | Open — introduced P4-WP04; production blocker; Phase 13 in progress |
+| R-091 | Missing production authentication (JWT / passwords / MFA / SSO / AD) | Critical | Server-side `PlatformAuthz` + role assignments for development; **P13-WP02** credentials; **P13-WP03** browser login/session; require remaining Phase 13 WPs before production; no fake login | Open — introduced P4-WP04; production blocker; Phase 13 in progress |
 | R-092 | Authorization policy gaps (permission catalog / scope edge cases) | High | Fail-closed catalog; org-scoped vs platform-wide assignments; expand policy tests as roles evolve | Open — introduced P4-WP04 |
 | R-093 | UI-only authorization assumptions (hiding nav treated as security) | High | Docs + UI copy: visibility is convenience; `PlatformAuthz.EnsureAsync` is authoritative → 403 + denied audit | Open — introduced P4-WP04; awareness |
 | R-094 | Translation mistakes or incomplete Admin localization | Medium | `AdminResources` en/fil-PH + terminology guide; resource-completeness tests; English fallback | Open — introduced P4-WP04 |
@@ -141,7 +141,7 @@ P9-WP06 closed Phase 9 with an honest Commercial MVP readiness board: Developmen
 
 ## Phase 13 — Production Authentication and Identity (in progress)
 
-**P13-WP02** added Platform credential persistence (`platform.platform_user_credentials`), ASP.NET Core `PasswordHasher<TUser>`, lockout/email-verified state, hardened first-admin bootstrap (disabled by default; shared secret; Production forbid), and credential APIs. **No login/session.** **R-091 remains open.** Exact next: **P13-WP03 — Platform Login, Logout, and Browser Session** (do not begin). **Not production-ready.**
+**P13-WP03** added Platform browser login/logout, `platform.platform_auth_sessions`, HttpOnly session cookie + session header, sliding/absolute expiry, Admin `/admin/login` (Production-required), and auth audit events. **No bearer tokens / MFA / password-reset delivery.** **R-091 remains open.** Exact next: **P13-WP04 — Password Lifecycle, Lockout, and Verification** (do not begin). **Not production-ready.**
 
 **P13-WP01** published authoritative authentication architecture and threat model. Locked access chain User → Membership → Product Access → Product-Local Role. Decisions D-P13-01…06 recorded.
 

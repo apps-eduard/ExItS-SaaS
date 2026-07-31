@@ -1,6 +1,7 @@
 using ExItS.Platform.Api.Access;
 using ExItS.Platform.Api.Admin;
 using ExItS.Platform.Api.Audit;
+using ExItS.Platform.Api.Authentication;
 using ExItS.Platform.Api.Authorization;
 using ExItS.Platform.Api.Catalog;
 using ExItS.Platform.Api.Common;
@@ -21,7 +22,6 @@ using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Infrastructure;
 using ExItS.Platform.Infrastructure.Health;
-using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +31,12 @@ builder.Services.AddProblemDetails();
 builder.Services.AddPlatformHealthChecks();
 builder.AddPlatformSecurity();
 builder.Services.AddPlatformPersistence(builder.Configuration);
+
+builder.Services.AddAuthentication(PlatformSessionDefaults.AuthenticationScheme)
+    .AddScheme<PlatformSessionAuthenticationOptions, PlatformSessionAuthenticationHandler>(
+        PlatformSessionDefaults.AuthenticationScheme,
+        _ => { });
+builder.Services.AddAuthorization();
 
 // Development-stage only: DevelopmentOperator actors receive full Platform permissions so existing
 // unauthenticated development/testing workflows continue while permission enforcement is exercised.
@@ -78,6 +84,9 @@ builder.Services.AddScoped<UnlockPlatformUserCredential>();
 builder.Services.AddScoped<MarkPlatformUserEmailVerified>();
 builder.Services.AddScoped<VerifyPlatformUserPassword>();
 builder.Services.AddScoped<BootstrapFirstPlatformAdministrator>();
+builder.Services.AddScoped<LoginPlatformUser>();
+builder.Services.AddScoped<LogoutPlatformSession>();
+builder.Services.AddScoped<ValidateAndRenewPlatformSession>();
 
 builder.Services.AddScoped<MembershipQueryService>();
 builder.Services.AddScoped<AddOrganizationMembership>();
@@ -128,6 +137,8 @@ builder.Services.AddScoped<PlatformAuthz>();
 var app = builder.Build();
 
 app.UsePlatformSecurity();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseStatusCodePages();
 
 app.MapGet("/", () => Results.Json(new
@@ -142,6 +153,7 @@ app.MapCatalogEndpoints();
 app.MapOrganizationEndpoints();
 app.MapIdentityEndpoints();
 app.MapCredentialEndpoints();
+app.MapAuthEndpoints();
 app.MapMembershipEndpoints();
 app.MapAccessEndpoints();
 app.MapSubscriptionEndpoints();

@@ -177,7 +177,7 @@ public sealed class PlatformUser
         }
     }
 
-    internal static (string Display, string Normalized) NormalizeUsername(string username)
+    public static (string Display, string Normalized) NormalizeUsername(string username)
     {
         if (string.IsNullOrWhiteSpace(username))
         {

@@ -12,9 +12,9 @@
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 13 — Production Authentication and Identity (**in progress**) |
-| Current work package | P13-WP02 — Identity Credentials and Auth Persistence (**complete**) |
-| Overall status | **Phase 13 in progress.** P13-WP01–WP02 complete (architecture + credential persistence + hasher/bootstrap hardening). No login/session yet. R-091 open. Exact next: P13-WP03 — Platform Login, Logout, and Browser Session (do not begin until authorized). **Not production-ready.** |
-| Latest verified commit | `51ace5b90fc6c0bcb33fe483826481529bdfeb77` |
+| Current work package | P13-WP03 — Platform Login, Logout, and Browser Session (**complete**) |
+| Overall status | **Phase 13 in progress.** P13-WP01–WP03 complete (architecture + credentials + browser session). Bearer/product-client/MFA/closeout remain. R-091 open. Exact next: P13-WP04 — Password Lifecycle, Lockout, and Verification (do not begin until authorized). **Not production-ready.** |
+| Latest verified commit | `2bec853da67114905bbdf690a0fe2b3568ffc728` |
 | Open blockers | Missing production auth (R-091); D-P12-03 commercial-state transport; D-P12-04 matrix hygiene; R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-07-31 |
 
@@ -83,7 +83,9 @@ P13-WP01 ✓ Authentication Architecture and Threat Model
         ↓
 P13-WP02 ✓ Identity Credentials and Auth Persistence
         ↓
-P13-WP03 ○ Platform Login, Logout, and Browser Session (do not begin until authorized)
+P13-WP03 ✓ Platform Login, Logout, and Browser Session
+        ↓
+P13-WP04 ○ Password Lifecycle, Lockout, and Verification (do not begin until authorized)
 ```
 
 ## Phase progress
@@ -117,6 +119,7 @@ P13-WP03 ○ Platform Login, Logout, and Browser Session (do not begin until aut
 |---|---|---|
 | P13-WP01 — Authentication Architecture and Threat Model | Complete | `40a48349ae2a42e9dc267bde0df64afb004af3ae` |
 | P13-WP02 — Identity Credentials and Auth Persistence | Complete | `51ace5b90fc6c0bcb33fe483826481529bdfeb77` |
+| P13-WP03 — Platform Login, Logout, and Browser Session | Complete | _(tip after commit)_ |
 
 ## Phase 12 work packages
 
@@ -169,4 +172,4 @@ P13-WP03 ○ Platform Login, Logout, and Browser Session (do not begin until aut
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P13-WP03 — Platform Login, Logout, and Browser Session** until explicitly authorized.
+Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P13-WP04 — Password Lifecycle, Lockout, and Verification** until explicitly authorized.

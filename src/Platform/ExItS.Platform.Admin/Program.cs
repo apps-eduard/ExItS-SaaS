@@ -1,15 +1,18 @@
+using System.Globalization;
 using ExItS.Platform.Admin.Components;
 using ExItS.Platform.Admin.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Options;
-using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddLocalization();
 
 var supportedCultures = new[]
@@ -41,7 +44,50 @@ builder.Services.Configure<DevelopmentOperatorOptions>(options =>
         options.DisplayName = string.Empty;
     }
 });
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = ".ExItS.Admin.Auth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing")
+            ? CookieSecurePolicy.SameAsRequest
+            : CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.LoginPath = "/admin/login";
+        options.LogoutPath = "/admin/logout";
+        options.SlidingExpiration = true;
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    if (!(builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing")))
+    {
+        options.FallbackPolicy = new AuthorizationPolicyBuilder()
+            .RequireAuthenticatedUser()
+            .Build();
+    }
+});
+
+builder.Services.AddTransient<PlatformSessionForwardingHandler>();
+builder.Services.AddScoped<PlatformBrowserSessionService>();
+
 builder.Services.AddHttpClient<IPlatformApiClient, PlatformApiClient>((services, client) =>
+{
+    var options = services.GetRequiredService<IOptions<PlatformApiOptions>>().Value;
+    client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
+    client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+}).AddHttpMessageHandler<PlatformSessionForwardingHandler>();
+
+builder.Services.AddHttpClient("PlatformApi", (services, client) =>
+{
+    var options = services.GetRequiredService<IOptions<PlatformApiOptions>>().Value;
+    client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
+    client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+}).AddHttpMessageHandler<PlatformSessionForwardingHandler>();
+
+builder.Services.AddHttpClient("PlatformApiUnauthenticated", (services, client) =>
 {
     var options = services.GetRequiredService<IOptions<PlatformApiOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
@@ -55,24 +101,34 @@ builder.Services.AddScoped<ToastService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
 app.UseRequestLocalization();
-
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
 
-// Prefer an immediate HTTP redirect over the Blazor template-style home page.
 app.MapGet("/", () => Results.Redirect("/admin"));
+
+app.MapPost("/admin/logout", async (PlatformBrowserSessionService sessions) =>
+{
+    await sessions.LogoutAsync().ConfigureAwait(false);
+    return Results.Redirect("/admin/login");
+}).DisableAntiforgery();
+
+app.MapGet("/admin/logout", async (PlatformBrowserSessionService sessions) =>
+{
+    await sessions.LogoutAsync().ConfigureAwait(false);
+    return Results.Redirect("/admin/login");
+});
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

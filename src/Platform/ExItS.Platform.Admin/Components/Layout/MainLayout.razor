@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.Extensions.Options
 @inject IOptions<DevelopmentOperatorOptions> OperatorOptions
 @inject IHostEnvironment Env
@@ -49,6 +50,11 @@
                 <ThemeSelector @rendermode="InteractiveServer" />
                 <LanguageSelector @rendermode="InteractiveServer" />
                 <EnvironmentBanner ActorDisplayName="@ActorDisplayName" />
+                <AuthorizeView>
+                    <Authorized>
+                        <a class="icon-btn" href="/admin/logout" title="Sign out" aria-label="Sign out">Out</a>
+                    </Authorized>
+                </AuthorizeView>
             </div>
         </header>
 
@@ -75,8 +81,37 @@
 </div>
 
 @code {
-    private string? ActorDisplayName =>
-        (Env.IsDevelopment() || Env.IsEnvironment("Testing")) && !string.IsNullOrWhiteSpace(OperatorOptions.Value.DisplayName)
-            ? OperatorOptions.Value.DisplayName
-            : null;
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    private string? _authDisplayName;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _authDisplayName = null;
+        if (AuthenticationStateTask is not null)
+        {
+            var state = await AuthenticationStateTask;
+            if (state.User.Identity?.IsAuthenticated == true)
+            {
+                _authDisplayName = state.User.Identity.Name;
+            }
+        }
+    }
+
+    private string? ActorDisplayName
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(_authDisplayName))
+            {
+                return _authDisplayName;
+            }
+
+            return (Env.IsDevelopment() || Env.IsEnvironment("Testing"))
+                   && !string.IsNullOrWhiteSpace(OperatorOptions.Value.DisplayName)
+                ? OperatorOptions.Value.DisplayName
+                : null;
+        }
+    }
 }

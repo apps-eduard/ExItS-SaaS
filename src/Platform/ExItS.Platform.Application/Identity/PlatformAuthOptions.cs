@@ -38,3 +38,15 @@ public sealed class PlatformAuthBootstrapOptions
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
 }
+
+/// <summary>Browser session lifetimes and cookie/header names for Platform interactive auth.</summary>
+public sealed class PlatformSessionOptions
+{
+    public const string SectionName = "PlatformAuthentication:Session";
+
+    public string CookieName { get; set; } = ".ExItS.Platform.Auth";
+    public string SessionTokenHeaderName { get; set; } = "X-ExItS-Session-Token";
+    public int IdleTimeoutMinutes { get; set; } = 30;
+    public int AbsoluteLifetimeHours { get; set; } = 12;
+    public bool SlidingRenewal { get; set; } = true;
+}

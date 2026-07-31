@@ -84,4 +84,9 @@ public static class ApplicationErrorCodes
     public const string BootstrapConfigurationInvalid = "application.auth.bootstrap_configuration_invalid";
     public const string BootstrapUnauthorized = "application.auth.bootstrap_unauthorized";
     public const string BootstrapForbiddenInEnvironment = "application.auth.bootstrap_forbidden_environment";
+
+    public const string LoginFailed = "application.auth.login_failed";
+    public const string SessionInvalid = "application.auth.session_invalid";
+    public const string SessionExpired = "application.auth.session_expired";
+    public const string AccountNotEligibleForLogin = "application.auth.account_not_eligible";
 }

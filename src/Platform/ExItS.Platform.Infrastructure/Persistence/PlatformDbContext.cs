@@ -44,6 +44,7 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<EntitlementSnapshotGrantRecord> EntitlementSnapshotGrants => Set<EntitlementSnapshotGrantRecord>();
     internal DbSet<PlatformUserRecord> PlatformUsers => Set<PlatformUserRecord>();
     internal DbSet<PlatformUserCredentialRecord> PlatformUserCredentials => Set<PlatformUserCredentialRecord>();
+    internal DbSet<PlatformAuthSessionRecord> PlatformAuthSessions => Set<PlatformAuthSessionRecord>();
     internal DbSet<OrganizationMembershipRecord> OrganizationMemberships => Set<OrganizationMembershipRecord>();
     internal DbSet<ProductAccessAssignmentRecord> ProductAccessAssignments => Set<ProductAccessAssignmentRecord>();
     internal DbSet<PlatformRoleAssignmentRecord> PlatformRoleAssignments => Set<PlatformRoleAssignmentRecord>();
@@ -446,6 +447,35 @@ public sealed class PlatformDbContext : DbContext
             entity.HasOne<PlatformUserRecord>()
                 .WithOne()
                 .HasForeignKey<PlatformUserCredentialRecord>(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PlatformAuthSessionRecord>(entity =>
+        {
+            entity.ToTable("platform_auth_sessions");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.TokenHash).HasColumnName("token_hash").HasMaxLength(128).IsRequired();
+            entity.HasIndex(e => e.TokenHash).IsUnique();
+            entity.HasIndex(e => e.UserId);
+            entity.Property(e => e.SecurityStampAtIssue).HasColumnName("security_stamp_at_issue").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
+            entity.Property(e => e.AbsoluteExpiresAtUtc).HasColumnName("absolute_expires_at_utc");
+            entity.Property(e => e.LastActivityAtUtc).HasColumnName("last_activity_at_utc");
+            entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
+            entity.Property(e => e.IpAddress).HasColumnName("ip_address").HasMaxLength(64);
+            entity.Property(e => e.UserAgentHash).HasColumnName("user_agent_hash").HasMaxLength(128);
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

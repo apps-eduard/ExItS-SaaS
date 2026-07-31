@@ -2,7 +2,7 @@
 
 [Architecture](authentication-architecture.md) | [Security](security.md) | [Authorization](authorization-matrix.md) | [P13-WP01 report](../reports/P13-WP01-authentication-architecture-and-threat-model.md)
 
-**Status:** Authoritative threat model for Phase 13 production authentication (**P13-WP01**). Controls listed as **Target** are not yet implemented. Current Production posture is **fail closed without authentication** (P9-WP01), which blocks anonymous abuse but does **not** close R-091.
+**Status:** Authoritative threat model for Phase 13 production authentication (**P13-WP01**). Browser session controls from **P13-WP03** are implemented for Admin interactive auth; bearer/MFA/reset remain **Target**. Current Production posture still includes fail-closed Dev-header rejection (P9-WP01). **R-091** remains open until Phase 13 closeout.
 
 Method: asset-centric STRIDE with ExItS trust boundaries. Residual risks remain explicit.
 

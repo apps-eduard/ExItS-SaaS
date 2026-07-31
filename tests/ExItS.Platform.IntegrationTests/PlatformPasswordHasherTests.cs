@@ -37,3 +37,18 @@ public sealed class BootstrapSecretComparerTests
         Assert.False(BootstrapSecretComparer.EqualsConfigured(secret, null));
     }
 }
+
+public sealed class PlatformSessionTokenServiceTests
+{
+    private readonly PlatformSessionTokenService _tokens = new();
+
+    [Fact]
+    public void Opaque_tokens_are_unique_and_hashed_consistently()
+    {
+        var a = _tokens.CreateOpaqueToken();
+        var b = _tokens.CreateOpaqueToken();
+        Assert.NotEqual(a, b);
+        Assert.Equal(_tokens.HashToken(a), _tokens.HashToken(a));
+        Assert.NotEqual(_tokens.HashToken(a), _tokens.HashToken(b));
+    }
+}

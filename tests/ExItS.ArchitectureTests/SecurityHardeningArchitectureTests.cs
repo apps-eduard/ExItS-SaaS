@@ -122,6 +122,7 @@ public sealed class SecurityHardeningArchitectureTests
         var pipeline = File.ReadAllText(Path.Combine(root,
             "src", "Platform", "ExItS.Platform.Api", "Common", "PlatformSecurityPipeline.cs"));
         Assert.Contains("AuthBootstrapRateLimitPolicy", pipeline, StringComparison.Ordinal);
+        Assert.Contains("AuthLoginRateLimitPolicy", pipeline, StringComparison.Ordinal);
         Assert.Contains("PlatformAuthentication:Bootstrap:Enabled", pipeline, StringComparison.Ordinal);
         Assert.Contains("must not enable", pipeline, StringComparison.OrdinalIgnoreCase);
 
@@ -131,9 +132,16 @@ public sealed class SecurityHardeningArchitectureTests
         Assert.Contains("SharedSecretHeaderName", endpoints, StringComparison.Ordinal);
         Assert.Contains("IsProduction()", endpoints, StringComparison.Ordinal);
 
+        var authEndpoints = File.ReadAllText(Path.Combine(root,
+            "src", "Platform", "ExItS.Platform.Api", "Identity", "AuthEndpoints.cs"));
+        Assert.Contains("/api/v1/platform/auth/login", authEndpoints, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/platform/auth/logout", authEndpoints, StringComparison.Ordinal);
+        Assert.Contains("AuthLoginRateLimitPolicy", authEndpoints, StringComparison.Ordinal);
+
         var appsettings = File.ReadAllText(Path.Combine(root,
             "src", "Platform", "ExItS.Platform.Api", "appsettings.json"));
         Assert.Contains("\"Enabled\": false", appsettings, StringComparison.Ordinal);
+        Assert.Contains("\"CookieName\": \".ExItS.Platform.Auth\"", appsettings, StringComparison.Ordinal);
     }
 
     private static string FindRepositoryRoot()

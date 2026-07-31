@@ -283,6 +283,27 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .page-frame--wide { max-width: 90rem; }
 .page-frame--form { max-width: 40rem; }
 
+.login-shell {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+    background:
+        radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--color-primary) 18%, transparent), transparent 42%),
+        radial-gradient(circle at 88% 12%, color-mix(in srgb, var(--color-accent, var(--color-primary)) 12%, transparent), transparent 36%),
+        linear-gradient(160deg, var(--color-bg), color-mix(in srgb, var(--color-surface) 70%, var(--color-bg)));
+}
+.login-panel {
+    width: min(100%, 26rem);
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 1.5rem 1.4rem;
+    box-shadow: var(--shadow-md);
+}
+.login-panel h1 { margin: 0 0 .35rem; font-size: 1.55rem; }
+.login-panel .muted { margin-bottom: 1rem; }
+
 .page-header { border-bottom: 1px solid var(--color-border); margin-bottom: 1.25rem; padding-bottom: .7rem; }
 .page-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .page-header h1 { margin: .15rem 0; font-size: 1.45rem; font-weight: 700; letter-spacing: -.015em; color: var(--color-text); }

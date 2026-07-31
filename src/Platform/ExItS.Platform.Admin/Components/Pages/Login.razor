@@ -1,0 +1,75 @@
+@page "/admin/login"
+@layout EmptyLayout
+@rendermode InteractiveServer
+@using ExItS.Platform.Admin.Services
+@using Microsoft.AspNetCore.Authorization
+@attribute [AllowAnonymous]
+@inject PlatformBrowserSessionService SessionService
+@inject NavigationManager Nav
+@inject IStringLocalizer<AdminResources> L
+
+<PageTitle>@L["Brand_Name"] — Login</PageTitle>
+
+<div class="login-shell">
+    <div class="login-panel page-frame page-frame--form">
+        <h1 class="brand-text">@L["Brand_Name"]</h1>
+        <p class="muted">Sign in with your Platform User credentials.</p>
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <div class="form-validation-summary" role="alert">@_error</div>
+        }
+
+        <EditForm Model="_model" OnValidSubmit="OnSubmitAsync" FormName="admin-login">
+            <DataAnnotationsValidator />
+            <div class="form-field">
+                <label class="form-field-label" for="login-user">
+                    <span class="form-field-label-text">Username or email</span>
+                </label>
+                <InputText id="login-user" class="form-control" @bind-Value="_model.UsernameOrEmail" autocomplete="username" />
+            </div>
+            <div class="form-field">
+                <label class="form-field-label" for="login-password">
+                    <span class="form-field-label-text">Password</span>
+                </label>
+                <InputText id="login-password" type="password" class="form-control" @bind-Value="_model.Password" autocomplete="current-password" />
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary" disabled="@_busy">@(_busy ? "Signing in…" : "Sign in")</button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private readonly LoginModel _model = new();
+    private string? _error;
+    private bool _busy;
+
+    private async Task OnSubmitAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var (ok, error) = await SessionService.LoginAsync(_model.UsernameOrEmail, _model.Password);
+            if (!ok)
+            {
+                _error = error ?? "Invalid username/email or password.";
+                return;
+            }
+
+            Nav.NavigateTo("/admin", forceLoad: true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private sealed class LoginModel
+    {
+        public string UsernameOrEmail { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}

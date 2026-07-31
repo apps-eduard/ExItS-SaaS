@@ -26,7 +26,12 @@ internal static class PlatformApiResults
     {
         DomainErrorCodes.AuthorizationDenied
             or ApplicationErrorCodes.BootstrapUnauthorized
-            or ApplicationErrorCodes.BootstrapForbiddenInEnvironment => StatusCodes.Status403Forbidden,
+            or ApplicationErrorCodes.BootstrapForbiddenInEnvironment
+            or ApplicationErrorCodes.AccountNotEligibleForLogin => StatusCodes.Status403Forbidden,
+
+        ApplicationErrorCodes.LoginFailed
+            or ApplicationErrorCodes.SessionInvalid
+            or ApplicationErrorCodes.SessionExpired => StatusCodes.Status401Unauthorized,
 
         ApplicationErrorCodes.OrganizationNotFound
             or ApplicationErrorCodes.UserNotFound

@@ -1,0 +1,118 @@
+using System.Net.Http.Json;
+using System.Security.Claims;
+using System.Text.Json;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+
+namespace ExItS.Platform.Admin.Services;
+
+public sealed class PlatformBrowserSessionService(
+    IHttpClientFactory httpClientFactory,
+    IHttpContextAccessor httpContextAccessor,
+    IHostEnvironment environment)
+{
+    public const string SessionTokenClaimType = "exits_session_token";
+    public const string CookieScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+
+    public async Task<(bool Ok, string? Error)> LoginAsync(string usernameOrEmail, string password, CancellationToken ct = default)
+    {
+        var http = httpContextAccessor.HttpContext
+            ?? throw new InvalidOperationException("HTTP context is required for login.");
+
+        var client = httpClientFactory.CreateClient("PlatformApiUnauthenticated");
+        using var response = await client.PostAsJsonAsync(
+            "/api/v1/platform/auth/login",
+            new { usernameOrEmail, password },
+            ct).ConfigureAwait(false);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return (false, "Invalid username/email or password.");
+        }
+
+        await using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        var login = await JsonSerializer.DeserializeAsync<LoginResponse>(stream, JsonOptions, ct).ConfigureAwait(false);
+        if (login is null || string.IsNullOrWhiteSpace(login.SessionToken))
+        {
+            return (false, "Login response was invalid.");
+        }
+
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, login.UserId.ToString("D")),
+            new(ClaimTypes.Name, login.Username),
+            new(ClaimTypes.Email, login.Email ?? string.Empty),
+            new(SessionTokenClaimType, login.SessionToken)
+        };
+
+        var identity = new ClaimsIdentity(claims, CookieScheme);
+        var principal = new ClaimsPrincipal(identity);
+        var props = new AuthenticationProperties
+        {
+            IsPersistent = true,
+            ExpiresUtc = login.ExpiresAtUtc,
+            AllowRefresh = true
+        };
+
+        await http.SignInAsync(CookieScheme, principal, props).ConfigureAwait(false);
+        return (true, null);
+    }
+
+    public async Task LogoutAsync(CancellationToken ct = default)
+    {
+        var http = httpContextAccessor.HttpContext;
+        if (http is null)
+        {
+            return;
+        }
+
+        var token = http.User.FindFirstValue(SessionTokenClaimType);
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            var client = httpClientFactory.CreateClient("PlatformApi");
+            using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/platform/auth/logout");
+            request.Headers.TryAddWithoutValidation("X-ExItS-Session-Token", token);
+            try
+            {
+                await client.SendAsync(request, ct).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Local cookie sign-out still proceeds.
+            }
+        }
+
+        await http.SignOutAsync(CookieScheme).ConfigureAwait(false);
+    }
+
+    public bool RequireAuthenticationInThisEnvironment =>
+        !(environment.IsDevelopment() || environment.IsEnvironment("Testing"));
+
+    private sealed record LoginResponse(
+        string SessionToken,
+        Guid SessionId,
+        Guid UserId,
+        string Username,
+        string DisplayName,
+        string Email,
+        DateTimeOffset ExpiresAtUtc,
+        DateTimeOffset AbsoluteExpiresAtUtc);
+}
+
+public sealed class PlatformSessionForwardingHandler(IHttpContextAccessor httpContextAccessor) : DelegatingHandler
+{
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var http = httpContextAccessor.HttpContext;
+        var token = http?.User.FindFirstValue(PlatformBrowserSessionService.SessionTokenClaimType);
+        if (!string.IsNullOrWhiteSpace(token)
+            && !request.Headers.Contains("X-ExItS-Session-Token"))
+        {
+            request.Headers.TryAddWithoutValidation("X-ExItS-Session-Token", token);
+        }
+
+        return base.SendAsync(request, cancellationToken);
+    }
+}

@@ -8,6 +8,7 @@ internal static class PlatformSecurityPipeline
 {
     public const string CorsPolicyName = "platform-cors";
     public const string AuthBootstrapRateLimitPolicy = "auth-bootstrap";
+    public const string AuthLoginRateLimitPolicy = "auth-login";
     public const string KnownDevelopmentPasswordMarker = "exits_platform_dev_only";
 
     public static void ValidateProductionConfigurationOrThrow(WebApplicationBuilder builder)
@@ -61,7 +62,8 @@ internal static class PlatformSecurityPipeline
 
                 policy.WithOrigins(origins)
                     .AllowAnyHeader()
-                    .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS");
+                    .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                    .AllowCredentials();
             });
         });
 
@@ -91,6 +93,20 @@ internal static class PlatformSecurityPipeline
                     {
                         AutoReplenishment = true,
                         PermitLimit = 5,
+                        Window = TimeSpan.FromMinutes(15),
+                        QueueLimit = 0
+                    });
+            });
+
+            options.AddPolicy(AuthLoginRateLimitPolicy, httpContext =>
+            {
+                var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    "login:" + ip,
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        AutoReplenishment = true,
+                        PermitLimit = 20,
                         Window = TimeSpan.FromMinutes(15),
                         QueueLimit = 0
                     });
