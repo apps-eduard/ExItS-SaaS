@@ -156,7 +156,7 @@ P14-WP03 ○ Reverse Proxy, TLS, and Network Hardening (do not begin until autho
 | P14-WP01 — Deployment Architecture and Production Readiness Audit | Complete | `e0e2da2d03babc01dd6efab9d44c6c2a2668457a` |
 | P14-WP02 — Production Packaging and Compose Baseline | Complete | `fa04ee2e9decd200b4dc1407f4f1b88f91f93afe` |
 | P14-WP02 Gap Fix — Separate Live Preview Stack | Complete | `16342195ff4999f7c0fc99fa15306fc3fa530074` |
-| P14-WP02A — Live Preview Test Users and Quick Login | Complete | `10e77e13c1702db4a75d163a847112e0064ef3b8` |
+| P14-WP02A — Live Preview Test Users and Quick Login | Complete | `ffe12b1ffe73f8e202079c3ed76b7c1f39bd6e9d` |
 
 ## Phase 12 work packages
 
