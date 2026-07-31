@@ -3,7 +3,7 @@
 Package: **P11-WP05 — Shared Reporting Framework**  
 Prior tip: `ab216eabc73546bbc3c8b52bb2668afebec4911b`  
 Feature tip (this WP): `4d832b39d85d7f8db55234f609188666035f34c5`  
-Docs tip: _(recorded after docs commit)_
+Docs tip: `ac0eac5755cac83e3c263629ac4ef6ba05b500db`
 
 ## Status
 
