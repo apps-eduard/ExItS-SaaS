@@ -4,7 +4,7 @@ Phase marker: `P14-WP02A-live-preview-test-users-and-quick-login`
 
 Package: **P14-WP02A — Reliable local Live Preview launcher (one command)**
 Prior tip: `d2513bf4b778e6366c636210961b1f988fc768fc`
-Feature tip: _(recorded after push)_
+Feature tip: `ffe12b1ffe73f8e202079c3ed76b7c1f39bd6e9d`
 
 ## Status
 
