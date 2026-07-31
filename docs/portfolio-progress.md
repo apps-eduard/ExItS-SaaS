@@ -99,7 +99,7 @@ P12-WP03 ○ Product Documentation Templates (do not begin until authorized)
 | WP | Status | Key commit |
 |---|---|---|
 | P12-WP01 — Platform–Product Contract Audit | Complete | `32889be0851fa0969e8abfa6b7c66784b12e9e8b` |
-| P12-WP02 — Authoritative Product Foundation Reference | Complete | *(tip filled after commit)* |
+| P12-WP02 — Authoritative Product Foundation Reference | Complete | `8f151d658011a3ad0854aab9f8774361f8a788a6` |
 
 ## Phase 11 work packages
 
