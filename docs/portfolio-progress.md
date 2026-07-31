@@ -14,7 +14,7 @@
 | Current phase | Phase 13 — Production Authentication and Identity (**in progress**) |
 | Current work package | P13-WP07 — MFA Readiness and Auth Hardening (**complete**) |
 | Overall status | **Phase 13 in progress.** P13-WP01–WP07 complete (architecture + credentials + browser session + password lifecycle + trusted org context + product-client bearer + MFA readiness/hardening). Closeout remains. R-091 open. Exact next: P13-WP08 — Phase 13 Closeout (do not begin until authorized). **Not production-ready.** |
-| Latest verified commit | `FEATURE_TIP_PLACEHOLDER` |
+| Latest verified commit | `7b767f664e63c5c296e0444062129acd7ee36727` |
 | Open blockers | Missing production auth (R-091); D-P12-03 commercial-state transport; D-P12-04 matrix hygiene; R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-07-31 |
 
@@ -131,7 +131,7 @@ P13-WP08 ○ Phase 13 Closeout (do not begin until authorized)
 | P13-WP04 — Password Lifecycle, Lockout, and Verification | Complete | `65b261eca7353a7efea2f8f1899c252f0dcee6dc` |
 | P13-WP05 — Trusted API Actor and Organization Context | Complete | `e64f352161bb20447a99ae762d1a69ec1a3846fe` |
 | P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS) | Complete | `68f13c0a4281071087e526ecf8e51414f2a78b12` |
-| P13-WP07 — MFA Readiness and Auth Hardening | Complete | `FEATURE_TIP_PLACEHOLDER` |
+| P13-WP07 — MFA Readiness and Auth Hardening | Complete | `7b767f664e63c5c296e0444062129acd7ee36727` |
 
 ## Phase 12 work packages
 

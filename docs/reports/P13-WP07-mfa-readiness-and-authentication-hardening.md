@@ -4,7 +4,7 @@ Phase marker: `P13-WP07-mfa-readiness-and-authentication-hardening`
 
 Package: **P13-WP07 — MFA Readiness and Auth Hardening**
 Prior tip: `cb6a348253aecdde42ed2d39287dad3ac11a1a3d`
-Feature tip: `FEATURE_TIP_PLACEHOLDER`
+Feature tip: `7b767f664e63c5c296e0444062129acd7ee36727`
 
 ## Status
 
