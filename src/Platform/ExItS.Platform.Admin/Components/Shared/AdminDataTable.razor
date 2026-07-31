@@ -1,0 +1,113 @@
+@typeparam TItem
+@inject IStringLocalizer<AdminResources> L
+
+<div class="admin-data-table" @attributes="AdditionalAttributes">
+    <div class="admin-data-table-wrap" role="region" aria-label="@(AriaLabel ?? L["Data_TableAria"])">
+        <table class="data-table responsive-table">
+            @if (!string.IsNullOrWhiteSpace(Caption))
+            {
+                <caption class="sr-only">@Caption</caption>
+            }
+            <thead>
+                <tr>
+                    @foreach (var column in ColumnList)
+                    {
+                        <th scope="col"
+                            class="@(column.Numeric ? "is-numeric" : null)"
+                            style="@(string.IsNullOrEmpty(column.Width) ? null : $"width:{column.Width}")">
+                            @if (column.Sortable)
+                            {
+                                <AdminSortHeader ColumnKey="@column.Key"
+                                                 Title="@column.Title"
+                                                 Sort="@Sort"
+                                                 OnSort="OnSort" />
+                            }
+                            else
+                            {
+                                @column.Title
+                            }
+                        </th>
+                    }
+                    @if (RowActions is not null)
+                    {
+                        <th scope="col" class="col-actions">@ActionsHeader</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in ItemList)
+                {
+                    <tr @key="GetKey(item)">
+                        @foreach (var column in ColumnList)
+                        {
+                            <td data-label="@column.Title" class="@(column.Numeric ? "is-numeric" : null) @(column.Primary ? "is-primary" : null)">
+                                @if (CellTemplate is not null)
+                                {
+                                    @CellTemplate((item, column))
+                                }
+                            </td>
+                        }
+                        @if (RowActions is not null)
+                        {
+                            <td data-label="@ActionsHeader" class="col-actions">
+                                <RowActions>
+                                    @RowActions(item)
+                                </RowActions>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="admin-data-cards" aria-label="@(AriaLabel ?? L["Data_ListAria"])">
+        @foreach (var item in ItemList)
+        {
+            <article class="admin-row-card" @key="GetKey(item)">
+                @foreach (var column in ColumnList)
+                {
+                    <div class="admin-row-card-field @(column.Primary ? "is-primary" : null) @(column.Numeric ? "is-numeric" : null)">
+                        <span class="admin-row-card-label">@column.Title</span>
+                        <span class="admin-row-card-value">
+                            @if (CellTemplate is not null)
+                            {
+                                @CellTemplate((item, column))
+                            }
+                        </span>
+                    </div>
+                }
+                @if (RowActions is not null)
+                {
+                    <div class="admin-row-card-actions">
+                        <RowActions>
+                            @RowActions(item)
+                        </RowActions>
+                    </div>
+                }
+            </article>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<TItem>? Items { get; set; }
+    [Parameter] public IReadOnlyList<AdminColumnDefinition>? Columns { get; set; }
+    [Parameter] public RenderFragment<(TItem Item, AdminColumnDefinition Column)>? CellTemplate { get; set; }
+    [Parameter] public RenderFragment<TItem>? RowActions { get; set; }
+    [Parameter] public Func<TItem, object>? ItemKey { get; set; }
+    [Parameter] public string? Caption { get; set; }
+    [Parameter] public string? AriaLabel { get; set; }
+    [Parameter] public string? ActionsHeader { get; set; }
+    [Parameter] public AdminSortState? Sort { get; set; }
+    [Parameter] public EventCallback<AdminSortState> OnSort { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private IReadOnlyList<AdminColumnDefinition> ColumnList => Columns ?? Array.Empty<AdminColumnDefinition>();
+    private IEnumerable<TItem> ItemList => Items ?? Array.Empty<TItem>();
+
+    protected override void OnParametersSet() =>
+        ActionsHeader ??= L["Common_Actions"];
+
+    private object GetKey(TItem item) => ItemKey?.Invoke(item) ?? item!;
+}

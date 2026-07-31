@@ -1,0 +1,10 @@
+<dl class="key-value-list @CssClass">
+    @ChildContent
+</dl>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public bool Compact { get; set; }
+
+    private string? CssClass => Compact ? "is-compact" : null;
+}

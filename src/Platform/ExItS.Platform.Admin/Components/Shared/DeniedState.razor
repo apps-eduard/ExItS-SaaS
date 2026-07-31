@@ -1,0 +1,16 @@
+@inject IStringLocalizer<AdminResources> L
+
+<section class="state denied" role="alert">
+    <h2>@(Title ?? L["Unauthorized_Title"])</h2>
+    <p>@(Message ?? L["Unauthorized_Message"])</p>
+    @if (!string.IsNullOrWhiteSpace(RequiredPermission))
+    {
+        <p class="muted">@RequiredPermission</p>
+    }
+</section>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public string? RequiredPermission { get; set; }
+}

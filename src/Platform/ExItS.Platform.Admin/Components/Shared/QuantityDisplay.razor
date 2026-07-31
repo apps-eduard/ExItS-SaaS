@@ -1,0 +1,25 @@
+@using System.Globalization
+@inject IStringLocalizer<AdminResources> L
+
+<span class="@CssClass" aria-label="@AccessibleLabel">
+    @DisplayText
+</span>
+
+@code {
+    [Parameter] public decimal? Value { get; set; }
+    [Parameter] public int Decimals { get; set; }
+    [Parameter] public bool Unavailable { get; set; }
+
+    private string CssClass => Unavailable || Value is null ? "quantity-display is-unavailable" : "quantity-display";
+
+    private string DisplayText
+    {
+        get
+        {
+            if (Unavailable || Value is null) return L["Data_ValueUnavailable"];
+            return Value.Value.ToString($"N{Math.Clamp(Decimals, 0, 6)}", CultureInfo.CurrentUICulture);
+        }
+    }
+
+    private string AccessibleLabel => DisplayText;
+}

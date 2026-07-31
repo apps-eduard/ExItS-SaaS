@@ -1,9 +1,11 @@
-<article class="summary-card">
+<article class="summary-card metric-card @(Clickable ? "is-clickable" : null)">
     <span>@Label</span>
-    <strong>@Value</strong>
+    <strong class="@(Numeric ? "is-numeric" : null)">@Value</strong>
 </article>
 
 @code {
     [Parameter, EditorRequired] public string Label { get; set; } = "";
     [Parameter, EditorRequired] public string Value { get; set; } = "";
+    [Parameter] public bool Numeric { get; set; } = true;
+    [Parameter] public bool Clickable { get; set; }
 }

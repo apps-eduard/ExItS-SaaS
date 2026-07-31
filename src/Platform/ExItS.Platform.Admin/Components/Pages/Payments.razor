@@ -43,7 +43,7 @@
         <FormActions PrimaryText="@L["Payments_CreateButton"]" Busy="_busy" OnPrimary="CreatePaymentAsync" />
     </FormSection>
 
-    <form class="filters" @onsubmit="LoadListAsync" @onsubmit:preventDefault>
+    <form class="filters" @onsubmit="ApplyFiltersAsync" @onsubmit:preventDefault>
         <label>@L["Common_Status"]
             <select @bind="_status">
                 <option value="PendingConfirmation">PendingConfirmation</option>
@@ -59,36 +59,26 @@
 
     @if (_list is null) { <LoadingState Message="@L["Payments_Loading"]" /> }
     else if (!_list.IsSuccess) { <ErrorState Title="@(_list.Error?.Title ?? L["Common_Error"])" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" /> }
-    else if (_list.Data!.Items.Count == 0) { <EmptyState Message="@L["Payments_Empty"]" /> }
     else
     {
-        <table class="data-table responsive-table">
-            <caption class="sr-only">@L["Payments_Title"]</caption>
-            <thead>
-                <tr>
-                    <th scope="col">@L["Common_Reference"]</th>
-                    <th scope="col">@L["Common_Amount"]</th>
-                    <th scope="col">@L["Common_Method"]</th>
-                    <th scope="col">@L["Common_Status"]</th>
-                    <th scope="col">@L["Common_Organization"]</th>
-                    <th scope="col">@L["Common_PaidUtc"]</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in _list.Data.Items)
-                {
-                    <tr>
-                        <td data-label="@L["Common_Reference"]"><a href="/admin/payments/@item.Id">@item.ExternalReference</a></td>
-                        <td data-label="@L["Common_Amount"]">@item.Amount @item.CurrencyCode</td>
-                        <td data-label="@L["Common_Method"]">@item.Method</td>
-                        <td data-label="@L["Common_Status"]"><StatusBadge Value="@item.Status" /></td>
-                        <td data-label="@L["Common_Organization"]"><a href="/admin/organizations/@item.OrganizationId">@item.OrganizationId</a></td>
-                        <td data-label="@L["Common_PaidUtc"]"><UtcTimestamp Value="@item.PaidAtUtc" /></td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-        <p class="muted">@string.Format(L["Common_ShowingCount"], _list.Data.Items.Count, _list.Data.TotalCount)</p>
+        <AdminFilterSummary Items="_filterChips" OnClear="ClearFiltersAsync" />
+        @if (_list.Data!.Items.Count == 0)
+        {
+            <EmptyState Message="@L["Payments_Empty"]" />
+        }
+        else
+        {
+            <AdminDataTable TItem="PaymentDto"
+                            Items="_list.Data.Items"
+                            Columns="_paymentColumns"
+                            Caption="@L["Payments_Title"]"
+                            ItemKey="p => p.Id"
+                            CellTemplate="PaymentCell" />
+            <AdminPagination Page="_list.Data.Page"
+                             PageSize="_list.Data.PageSize"
+                             TotalCount="_list.Data.TotalCount"
+                             PageChanged="OnPaymentPageAsync" />
+        }
     }
 }
 else
@@ -210,6 +200,43 @@ else
     private string? _fieldPaidAt;
     private bool _busy;
     private ConfirmState? _confirm;
+    private int _page = 1;
+    private List<AdminColumnDefinition> _paymentColumns = new();
+
+    protected override void OnInitialized()
+    {
+        _paymentColumns =
+        [
+            new("ref", L["Common_Reference"], Primary: true),
+            new("amount", L["Common_Amount"], Numeric: true),
+            new("method", L["Common_Method"]),
+            new("status", L["Common_Status"]),
+            new("org", L["Common_Organization"]),
+            new("paid", L["Common_PaidUtc"])
+        ];
+    }
+
+    private IReadOnlyList<AdminFilterChip> _filterChips
+    {
+        get
+        {
+            var chips = new List<AdminFilterChip>
+            {
+                new(L["Common_Status"], string.IsNullOrWhiteSpace(_status) ? "PendingConfirmation" : _status)
+            };
+            if (!string.IsNullOrWhiteSpace(_productCode))
+            {
+                chips.Add(new(L["OrgProductAccess_ProductCode"], _productCode));
+            }
+
+            if (!string.IsNullOrWhiteSpace(_organizationIdText))
+            {
+                chips.Add(new(L["Common_Organization"], _organizationIdText));
+            }
+
+            return chips;
+        }
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -239,8 +266,68 @@ else
         _list = await Api.GetPaymentsAsync(
             string.IsNullOrWhiteSpace(_status) ? "PendingConfirmation" : _status,
             string.IsNullOrWhiteSpace(_productCode) ? null : _productCode,
-            orgId);
+            orgId,
+            page: _page);
     }
+
+    private async Task ApplyFiltersAsync()
+    {
+        _page = 1;
+        await LoadListAsync();
+    }
+
+    private async Task OnPaymentPageAsync(int page)
+    {
+        _page = page;
+        await LoadListAsync();
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        _status = "PendingConfirmation";
+        _productCode = null;
+        _organizationIdText = null;
+        _page = 1;
+        await LoadListAsync();
+    }
+
+    private RenderFragment<(PaymentDto Item, AdminColumnDefinition Column)> PaymentCell => ctx => b =>
+    {
+        switch (ctx.Column.Key)
+        {
+            case "ref":
+                b.OpenElement(0, "a");
+                b.AddAttribute(1, "href", $"/admin/payments/{ctx.Item.Id}");
+                b.AddContent(2, ctx.Item.ExternalReference);
+                b.CloseElement();
+                break;
+            case "amount":
+                b.OpenComponent<AmountDisplay>(0);
+                b.AddAttribute(1, nameof(AmountDisplay.Amount), (decimal?)ctx.Item.Amount);
+                b.AddAttribute(2, nameof(AmountDisplay.CurrencyCode), ctx.Item.CurrencyCode);
+                b.CloseComponent();
+                break;
+            case "method":
+                b.AddContent(0, ctx.Item.Method);
+                break;
+            case "status":
+                b.OpenComponent<StatusBadge>(0);
+                b.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
+                b.CloseComponent();
+                break;
+            case "org":
+                b.OpenElement(0, "a");
+                b.AddAttribute(1, "href", $"/admin/organizations/{ctx.Item.OrganizationId}");
+                b.AddContent(2, ctx.Item.OrganizationId);
+                b.CloseElement();
+                break;
+            case "paid":
+                b.OpenComponent<UtcTimestamp>(0);
+                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.PaidAtUtc);
+                b.CloseComponent();
+                break;
+        }
+    };
 
     private async Task CreatePaymentAsync()
     {

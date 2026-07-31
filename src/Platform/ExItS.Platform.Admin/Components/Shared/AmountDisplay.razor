@@ -1,0 +1,38 @@
+@using System.Globalization
+@inject IStringLocalizer<AdminResources> L
+
+<span class="@CssClass"
+      title="@Title"
+      aria-label="@AccessibleLabel">
+    @DisplayText
+</span>
+
+@code {
+    [Parameter] public decimal? Amount { get; set; }
+    [Parameter] public string CurrencyCode { get; set; } = "PHP";
+    [Parameter] public bool Unavailable { get; set; }
+
+    private string CssClass
+    {
+        get
+        {
+            if (Unavailable || Amount is null) return "amount-display is-unavailable";
+            if (Amount < 0) return "amount-display is-negative";
+            if (Amount == 0) return "amount-display is-zero";
+            return "amount-display";
+        }
+    }
+
+    private string DisplayText
+    {
+        get
+        {
+            if (Unavailable || Amount is null) return L["Data_ValueUnavailable"];
+            var amount = Amount.Value.ToString("N2", CultureInfo.CurrentUICulture);
+            return $"{CurrencyCode} {amount}";
+        }
+    }
+
+    private string AccessibleLabel => DisplayText;
+    private string? Title => Unavailable || Amount is null ? L["Data_ValueUnavailable"].Value : null;
+}

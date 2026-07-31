@@ -91,6 +91,16 @@
   <data name="Form_Required" xml:space="preserve"><value>kailangan</value></data>
   <data name="Form_ValidationSummary" xml:space="preserve"><value>Pakiusap ayusin ang mga sumusunod</value></data>
   <data name="Form_ActionsAria" xml:space="preserve"><value>Mga aksyon ng form</value></data>
+  <data name="Data_TableAria" xml:space="preserve"><value>Talahanayan ng datos</value></data>
+  <data name="Data_ListAria" xml:space="preserve"><value>Listahan ng datos</value></data>
+  <data name="Data_PaginationAria" xml:space="preserve"><value>Pagination</value></data>
+  <data name="Data_Previous" xml:space="preserve"><value>Nakaraan</value></data>
+  <data name="Data_Next" xml:space="preserve"><value>Susunod</value></data>
+  <data name="Data_PageSummary" xml:space="preserve"><value>Pahina {0} ng {1} ({2} kabuuan)</value></data>
+  <data name="Data_FilterSummaryAria" xml:space="preserve"><value>Aktibong mga filter</value></data>
+  <data name="Data_ActiveFilters" xml:space="preserve"><value>Mga filter</value></data>
+  <data name="Data_ValueUnavailable" xml:space="preserve"><value>Hindi available</value></data>
+  <data name="Data_ConflictMessage" xml:space="preserve"><value>Nagbago ang record na ito. I-reload at subukan ulit.</value></data>
   <data name="Dialog_ConflictTitle" xml:space="preserve"><value>Conflict</value></data>
   <data name="Dialog_UnsavedTitle" xml:space="preserve"><value>May hindi nai-save na pagbabago</value></data>
   <data name="Dialog_UnsavedMessage" xml:space="preserve"><value>May hindi nai-save na pagbabago. I-discard at iwanan ang form na ito?</value></data>

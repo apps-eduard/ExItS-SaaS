@@ -8,140 +8,102 @@
 @if (Id is null)
 {
     <PageHeader Title="@L["Products_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Products"]}")" Description="@L["Products_Description"]" />
-    @if (_list is null)
-    {
-        <LoadingState Message="@L["Products_Loading"]" />
-    }
-    else if (!_list.IsSuccess)
-    {
-        <ErrorState Title="@(_list.Error?.Title ?? L["Common_Error"])" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" />
-    }
-    else if (_list.Data!.Items.Count == 0)
-    {
-        <EmptyState Message="@L["Products_Empty"]" />
-    }
-    else
-    {
-        <table class="data-table responsive-table">
-            <caption class="sr-only">@L["Products_Title"]</caption>
-            <thead>
-                <tr>
-                    <th scope="col">@L["Common_Code"]</th>
-                    <th scope="col">@L["Common_DisplayName"]</th>
-                    <th scope="col">@L["Common_Status"]</th>
-                    <th scope="col">@L["Common_UpdatedUtc"]</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in _list.Data.Items)
-                {
-                    <tr>
-                        <td data-label="@L["Common_Code"]"><a href="/admin/products/@item.Id">@item.Code</a></td>
-                        <td data-label="@L["Common_DisplayName"]">@item.DisplayName</td>
-                        <td data-label="@L["Common_Status"]"><StatusBadge Value="@item.Status" /></td>
-                        <td data-label="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@item.UpdatedAtUtc" /></td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-        <p class="muted">@string.Format(L["Common_ShowingCount"], _list.Data.Items.Count, _list.Data.TotalCount)</p>
-    }
+    <AdminDataPanel IsLoading="@(_list is null)"
+                    HasError="@(_list is { IsSuccess: false })"
+                    IsEmpty="@(_list is { IsSuccess: true, Data.Items.Count: 0 })"
+                    LoadingMessage="@L["Products_Loading"]"
+                    EmptyMessage="@L["Products_Empty"]"
+                    ErrorTitle="@(_list?.Error?.Title ?? L["Common_Error"])"
+                    ErrorDetail="@_list?.Error?.Detail"
+                    ErrorCorrelationId="@_list?.Error?.CorrelationId"
+                    ErrorUnavailable="@(_list?.Status == ApiCallStatus.Unavailable)">
+        <AdminDataTable TItem="ProductDto"
+                        Items="_list!.Data!.Items"
+                        Columns="_productColumns"
+                        Caption="@L["Products_Title"]"
+                        ItemKey="p => p.Id"
+                        CellTemplate="ProductCell" />
+        <AdminPagination Page="_list!.Data!.Page"
+                         PageSize="_list.Data.PageSize"
+                         TotalCount="_list.Data.TotalCount"
+                         PageChanged="OnProductPageAsync" />
+    </AdminDataPanel>
 }
 else
 {
     <PageHeader Title="@L["Products_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Products"]} / {L["Common_Detail"]}")" Description="@L["Products_DetailDescription"]" />
-    @if (_overview is null)
-    {
-        <LoadingState Message="@L["Products_DetailLoading"]" />
-    }
-    else if (!_overview.IsSuccess)
-    {
-        <ErrorState Title="@(_overview.Error?.Title ?? L["Common_Error"])" Detail="@_overview.Error?.Detail" CorrelationId="@_overview.Error?.CorrelationId" Unavailable="@(_overview.Status == ApiCallStatus.Unavailable)" />
-    }
-    else
-    {
-        var o = _overview.Data!;
-        <dl>
+    <AdminDataPanel IsLoading="@(_overview is null)"
+                    HasError="@(_overview is { IsSuccess: false })"
+                    LoadingMessage="@L["Products_DetailLoading"]"
+                    ErrorTitle="@(_overview?.Error?.Title ?? L["Common_Error"])"
+                    ErrorDetail="@_overview?.Error?.Detail"
+                    ErrorCorrelationId="@_overview?.Error?.CorrelationId"
+                    ErrorUnavailable="@(_overview?.Status == ApiCallStatus.Unavailable)">
+        @{
+            var o = _overview!.Data!;
+        }
+        <KeyValueList>
             <dt>@L["Common_Code"]</dt><dd>@o.Product.Code</dd>
             <dt>@L["Common_DisplayName"]</dt><dd>@o.Product.DisplayName</dd>
             <dt>@L["Common_Status"]</dt><dd><StatusBadge Value="@o.Product.Status" /></dd>
             <dt>@L["Common_CreatedUtc"]</dt><dd><UtcTimestamp Value="@o.Product.CreatedAtUtc" /></dd>
             <dt>@L["Common_UpdatedUtc"]</dt><dd><UtcTimestamp Value="@o.Product.UpdatedAtUtc" /></dd>
-            <dt>@L["Products_FeatureCount"]</dt><dd>@o.Features.Count</dd>
-            <dt>@L["Products_PlanCount"]</dt><dd>@o.Plans.Count</dd>
-        </dl>
+            <dt>@L["Products_FeatureCount"]</dt><dd><QuantityDisplay Value="@o.Features.Count" Decimals="0" /></dd>
+            <dt>@L["Products_PlanCount"]</dt><dd><QuantityDisplay Value="@o.Plans.Count" Decimals="0" /></dd>
+        </KeyValueList>
 
-        <h2>@L["Products_FeatureDefinitions"]</h2>
-        @if (o.Features.Count == 0) { <EmptyState Message="@L["Products_FeatureDefinitionsEmpty"]" /> }
-        else
-        {
-            <table>
-                <thead><tr><th>@L["Common_Code"]</th><th>@L["Common_Name"]</th><th>@L["Common_Type"]</th><th>@L["Common_Status"]</th></tr></thead>
-                <tbody>
-                @foreach (var f in o.Features)
-                {
-                    <tr><td>@f.FeatureCode</td><td>@f.DisplayName</td><td>@f.ValueType</td><td><StatusBadge Value="@f.Status" /></td></tr>
-                }
-                </tbody>
-            </table>
-        }
+        <DetailSection Title="@L["Products_FeatureDefinitions"]">
+            @if (o.Features.Count == 0) { <EmptyState Message="@L["Products_FeatureDefinitionsEmpty"]" /> }
+            else
+            {
+                <AdminDataTable TItem="FeatureDefinitionDto"
+                                Items="o.Features"
+                                Columns="_featureColumns"
+                                Caption="@L["Products_FeatureDefinitions"]"
+                                ItemKey="f => f.FeatureCode"
+                                CellTemplate="FeatureCell" />
+            }
+        </DetailSection>
 
-        <h2>@L["Products_Plans"]</h2>
-        @if (o.Plans.Count == 0) { <EmptyState Message="@L["Products_PlansEmpty"]" /> }
-        else
-        {
-            <table>
-                <thead><tr><th>@L["Common_Code"]</th><th>@L["Common_Name"]</th><th>@L["Common_Status"]</th></tr></thead>
-                <tbody>
-                @foreach (var p in o.Plans)
-                {
-                    <tr><td>@p.Code</td><td>@p.DisplayName</td><td><StatusBadge Value="@p.Status" /></td></tr>
-                }
-                </tbody>
-            </table>
-        }
+        <DetailSection Title="@L["Products_Plans"]">
+            @if (o.Plans.Count == 0) { <EmptyState Message="@L["Products_PlansEmpty"]" /> }
+            else
+            {
+                <AdminDataTable TItem="PlanDto"
+                                Items="o.Plans"
+                                Columns="_planColumns"
+                                Caption="@L["Products_Plans"]"
+                                ItemKey="p => p.Id"
+                                CellTemplate="PlanCell" />
+            }
+        </DetailSection>
 
-        <h2>@L["Products_PublishedPlanVersions"]</h2>
-        @if (o.PublishedPlanVersions.Count == 0) { <EmptyState Message="@L["Products_PublishedPlanVersionsEmpty"]" /> }
-        else
-        {
-            <table>
-                <thead><tr><th>@L["Common_Plan"]</th><th>@L["Common_Version"]</th><th>@L["Products_Column_Billing"]</th><th>@L["Products_Column_TrialEligible"]</th><th>@L["Common_Grants"]</th></tr></thead>
-                <tbody>
-                @foreach (var v in o.PublishedPlanVersions)
-                {
-                    <tr>
-                        <td>@v.PlanId</td>
-                        <td>@v.VersionNumber</td>
-                        <td>@v.BillingPeriod</td>
-                        <td>@v.TrialEligible</td>
-                        <td>@v.Grants.Count</td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        }
+        <DetailSection Title="@L["Products_PublishedPlanVersions"]">
+            @if (o.PublishedPlanVersions.Count == 0) { <EmptyState Message="@L["Products_PublishedPlanVersionsEmpty"]" /> }
+            else
+            {
+                <AdminDataTable TItem="PlanVersionDto"
+                                Items="o.PublishedPlanVersions"
+                                Columns="_versionColumns"
+                                Caption="@L["Products_PublishedPlanVersions"]"
+                                ItemKey="v => v.Id"
+                                CellTemplate="VersionCell" />
+            }
+        </DetailSection>
 
-        <h2>@L["Products_TrialDefinitions"]</h2>
-        @if (o.Trials.Count == 0) { <EmptyState Message="@L["Products_TrialDefinitionsEmpty"]" /> }
-        else
-        {
-            <table>
-                <thead><tr><th>@L["Common_Name"]</th><th>@L["Common_Duration"]</th><th>@L["Common_Status"]</th><th>@L["Common_Grants"]</th></tr></thead>
-                <tbody>
-                @foreach (var t in o.Trials)
-                {
-                    <tr>
-                        <td>@t.DisplayName</td>
-                        <td>@t.DurationIso</td>
-                        <td><StatusBadge Value="@t.Status" /></td>
-                        <td>@t.FeatureGrants.Count</td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        }
-    }
+        <DetailSection Title="@L["Products_TrialDefinitions"]">
+            @if (o.Trials.Count == 0) { <EmptyState Message="@L["Products_TrialDefinitionsEmpty"]" /> }
+            else
+            {
+                <AdminDataTable TItem="TrialDefinitionDto"
+                                Items="o.Trials"
+                                Columns="_trialColumns"
+                                Caption="@L["Products_TrialDefinitions"]"
+                                ItemKey="t => t.Id"
+                                CellTemplate="TrialCell" />
+            }
+        </DetailSection>
+    </AdminDataPanel>
 }
 </PageFrame>
 
@@ -150,12 +112,58 @@ else
 
     private ApiCallResult<PagedResult<ProductDto>>? _list;
     private ApiCallResult<ProductOverviewDto>? _overview;
+    private int _page = 1;
+
+    private List<AdminColumnDefinition> _productColumns = new();
+    private List<AdminColumnDefinition> _featureColumns = new();
+    private List<AdminColumnDefinition> _planColumns = new();
+    private List<AdminColumnDefinition> _versionColumns = new();
+    private List<AdminColumnDefinition> _trialColumns = new();
+
+    protected override void OnInitialized()
+    {
+        _productColumns =
+        [
+            new("code", L["Common_Code"], Primary: true),
+            new("name", L["Common_DisplayName"]),
+            new("status", L["Common_Status"]),
+            new("updated", L["Common_UpdatedUtc"])
+        ];
+        _featureColumns =
+        [
+            new("code", L["Common_Code"], Primary: true),
+            new("name", L["Common_Name"]),
+            new("type", L["Common_Type"]),
+            new("status", L["Common_Status"])
+        ];
+        _planColumns =
+        [
+            new("code", L["Common_Code"], Primary: true),
+            new("name", L["Common_Name"]),
+            new("status", L["Common_Status"])
+        ];
+        _versionColumns =
+        [
+            new("plan", L["Common_Plan"], Primary: true),
+            new("version", L["Common_Version"]),
+            new("billing", L["Products_Column_Billing"]),
+            new("trial", L["Products_Column_TrialEligible"]),
+            new("grants", L["Common_Grants"], Numeric: true)
+        ];
+        _trialColumns =
+        [
+            new("name", L["Common_Name"], Primary: true),
+            new("duration", L["Common_Duration"]),
+            new("status", L["Common_Status"]),
+            new("grants", L["Common_Grants"], Numeric: true)
+        ];
+    }
 
     protected override async Task OnParametersSetAsync()
     {
         if (Id is null)
         {
-            _list = await Api.GetProductsAsync();
+            await LoadProductsAsync();
             return;
         }
 
@@ -168,4 +176,127 @@ else
 
         _overview = await Api.GetProductOverviewAsync(product.Data.Code);
     }
+
+    private async Task LoadProductsAsync() =>
+        _list = await Api.GetProductsAsync(page: _page);
+
+    private async Task OnProductPageAsync(int page)
+    {
+        _page = page;
+        await LoadProductsAsync();
+    }
+
+    private RenderFragment<(ProductDto Item, AdminColumnDefinition Column)> ProductCell => ctx => __builder =>
+    {
+        switch (ctx.Column.Key)
+        {
+            case "code":
+                __builder.OpenElement(0, "a");
+                __builder.AddAttribute(1, "href", $"/admin/products/{ctx.Item.Id}");
+                __builder.AddContent(2, ctx.Item.Code);
+                __builder.CloseElement();
+                break;
+            case "name":
+                __builder.AddContent(0, ctx.Item.DisplayName);
+                break;
+            case "status":
+                __builder.OpenComponent<StatusBadge>(0);
+                __builder.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
+                __builder.CloseComponent();
+                break;
+            case "updated":
+                __builder.OpenComponent<UtcTimestamp>(0);
+                __builder.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.UpdatedAtUtc);
+                __builder.CloseComponent();
+                break;
+        }
+    };
+
+    private RenderFragment<(FeatureDefinitionDto Item, AdminColumnDefinition Column)> FeatureCell => ctx => __builder =>
+    {
+        switch (ctx.Column.Key)
+        {
+            case "code":
+                __builder.AddContent(0, ctx.Item.FeatureCode);
+                break;
+            case "name":
+                __builder.AddContent(0, ctx.Item.DisplayName);
+                break;
+            case "type":
+                __builder.AddContent(0, ctx.Item.ValueType);
+                break;
+            case "status":
+                __builder.OpenComponent<StatusBadge>(0);
+                __builder.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
+                __builder.CloseComponent();
+                break;
+        }
+    };
+
+    private RenderFragment<(PlanDto Item, AdminColumnDefinition Column)> PlanCell => ctx => __builder =>
+    {
+        switch (ctx.Column.Key)
+        {
+            case "code":
+                __builder.AddContent(0, ctx.Item.Code);
+                break;
+            case "name":
+                __builder.AddContent(0, ctx.Item.DisplayName);
+                break;
+            case "status":
+                __builder.OpenComponent<StatusBadge>(0);
+                __builder.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
+                __builder.CloseComponent();
+                break;
+        }
+    };
+
+    private RenderFragment<(PlanVersionDto Item, AdminColumnDefinition Column)> VersionCell => ctx => __builder =>
+    {
+        switch (ctx.Column.Key)
+        {
+            case "plan":
+                __builder.AddContent(0, ctx.Item.PlanId);
+                break;
+            case "version":
+                __builder.AddContent(0, ctx.Item.VersionNumber);
+                break;
+            case "billing":
+                __builder.AddContent(0, ctx.Item.BillingPeriod);
+                break;
+            case "trial":
+                __builder.AddContent(0, ctx.Item.TrialEligible);
+                break;
+            case "grants":
+                __builder.OpenComponent<QuantityDisplay>(0);
+                __builder.AddAttribute(1, nameof(QuantityDisplay.Value), (decimal?)ctx.Item.Grants.Count);
+                __builder.AddAttribute(2, nameof(QuantityDisplay.Decimals), 0);
+                __builder.CloseComponent();
+                break;
+        }
+    };
+
+    private RenderFragment<(TrialDefinitionDto Item, AdminColumnDefinition Column)> TrialCell => ctx => __builder =>
+    {
+        switch (ctx.Column.Key)
+        {
+            case "name":
+                __builder.AddContent(0, ctx.Item.DisplayName);
+                break;
+            case "duration":
+                __builder.AddContent(0, ctx.Item.DurationIso);
+                break;
+            case "status":
+                __builder.OpenComponent<StatusBadge>(0);
+                __builder.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
+                __builder.CloseComponent();
+                break;
+            case "grants":
+                __builder.OpenComponent<QuantityDisplay>(0);
+                __builder.AddAttribute(1, nameof(QuantityDisplay.Value), (decimal?)ctx.Item.FeatureGrants.Count);
+                __builder.AddAttribute(2, nameof(QuantityDisplay.Decimals), 0);
+                __builder.CloseComponent();
+                break;
+        }
+    };
 }

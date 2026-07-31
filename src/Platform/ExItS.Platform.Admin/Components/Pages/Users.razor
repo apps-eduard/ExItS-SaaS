@@ -20,7 +20,7 @@
                 <option>Deactivated</option>
             </select>
         </label>
-        <button type="button" @onclick="ReloadListAsync">@L["Common_Apply"]</button>
+        <button type="button" @onclick="ApplyUserFiltersAsync">@L["Common_Apply"]</button>
         <button type="button" class="secondary" @onclick="ToggleCreate">@(_showCreate ? L["Users_HideCreate"] : L["Users_CreateUser"])</button>
     </div>
 
@@ -49,34 +49,17 @@
     else if (_list.Data!.Items.Count == 0) { <EmptyState Message="@L["Users_Empty"]" /> }
     else
     {
-        <table class="data-table responsive-table">
-            <caption class="sr-only">@L["Users_Title"]</caption>
-            <thead>
-                <tr>
-                    <th scope="col">@L["Common_User"]</th>
-                    <th scope="col">@L["Common_Username"]</th>
-                    <th scope="col">@L["Common_Email"]</th>
-                    <th scope="col">@L["Common_Status"]</th>
-                    <th scope="col">@L["Common_UpdatedUtc"]</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in _list.Data.Items)
-                {
-                    <tr>
-                        <td data-label="@L["Common_User"]">
-                            <span class="avatar" aria-hidden="true">@Initials(item.DisplayName)</span>
-                            <a href="/admin/users/@item.Id">@item.DisplayName</a>
-                        </td>
-                        <td data-label="@L["Common_Username"]">@item.Username</td>
-                        <td data-label="@L["Common_Email"]">@item.Email</td>
-                        <td data-label="@L["Common_Status"]"><StatusBadge Value="@item.Status" /></td>
-                        <td data-label="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@item.UpdatedAtUtc" /></td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-        <p class="muted">@string.Format(L["Common_ShowingCount"], _list.Data.Items.Count, _list.Data.TotalCount)</p>
+        <AdminFilterSummary Items="_userFilterChips" />
+        <AdminDataTable TItem="PlatformUserDto"
+                        Items="_list.Data.Items"
+                        Columns="_userColumns"
+                        Caption="@L["Users_Title"]"
+                        ItemKey="u => u.Id"
+                        CellTemplate="UserCell" />
+        <AdminPagination Page="_list.Data.Page"
+                         PageSize="_list.Data.PageSize"
+                         TotalCount="_list.Data.TotalCount"
+                         PageChanged="OnUserPageAsync" />
     }
 }
 else
@@ -216,6 +199,39 @@ else
     private bool _busy;
     private ConfirmState? _confirm;
     private bool _unsavedVisible;
+    private int _page = 1;
+    private List<AdminColumnDefinition> _userColumns = new();
+
+    private IReadOnlyList<AdminFilterChip> _userFilterChips
+    {
+        get
+        {
+            var chips = new List<AdminFilterChip>();
+            if (!string.IsNullOrWhiteSpace(_search))
+            {
+                chips.Add(new(L["Common_Search"], _search));
+            }
+
+            if (!string.IsNullOrWhiteSpace(_status))
+            {
+                chips.Add(new(L["Common_Status"], _status));
+            }
+
+            return chips;
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        _userColumns =
+        [
+            new("user", L["Common_User"], Primary: true),
+            new("username", L["Common_Username"]),
+            new("email", L["Common_Email"]),
+            new("status", L["Common_Status"]),
+            new("updated", L["Common_UpdatedUtc"])
+        ];
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -227,7 +243,57 @@ else
     }
 
     private async Task ReloadListAsync() =>
-        _list = await Api.GetUsersAsync(status: string.IsNullOrWhiteSpace(_status) ? null : _status, search: string.IsNullOrWhiteSpace(_search) ? null : _search);
+        _list = await Api.GetUsersAsync(
+            page: _page,
+            status: string.IsNullOrWhiteSpace(_status) ? null : _status,
+            search: string.IsNullOrWhiteSpace(_search) ? null : _search);
+
+    private async Task ApplyUserFiltersAsync()
+    {
+        _page = 1;
+        await ReloadListAsync();
+    }
+
+    private async Task OnUserPageAsync(int page)
+    {
+        _page = page;
+        await ReloadListAsync();
+    }
+
+    private RenderFragment<(PlatformUserDto Item, AdminColumnDefinition Column)> UserCell => ctx => b =>
+    {
+        switch (ctx.Column.Key)
+        {
+            case "user":
+                b.OpenElement(0, "span");
+                b.AddAttribute(1, "class", "avatar");
+                b.AddAttribute(2, "aria-hidden", "true");
+                b.AddContent(3, Initials(ctx.Item.DisplayName));
+                b.CloseElement();
+                b.AddContent(4, " ");
+                b.OpenElement(5, "a");
+                b.AddAttribute(6, "href", $"/admin/users/{ctx.Item.Id}");
+                b.AddContent(7, ctx.Item.DisplayName);
+                b.CloseElement();
+                break;
+            case "username":
+                b.AddContent(0, ctx.Item.Username);
+                break;
+            case "email":
+                b.AddContent(0, ctx.Item.Email);
+                break;
+            case "status":
+                b.OpenComponent<StatusBadge>(0);
+                b.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
+                b.CloseComponent();
+                break;
+            case "updated":
+                b.OpenComponent<UtcTimestamp>(0);
+                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.UpdatedAtUtc);
+                b.CloseComponent();
+                break;
+        }
+    };
 
     private async Task ReloadDetailAsync()
     {

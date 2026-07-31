@@ -91,6 +91,16 @@
   <data name="Form_Required" xml:space="preserve"><value>required</value></data>
   <data name="Form_ValidationSummary" xml:space="preserve"><value>Please correct the following</value></data>
   <data name="Form_ActionsAria" xml:space="preserve"><value>Form actions</value></data>
+  <data name="Data_TableAria" xml:space="preserve"><value>Data table</value></data>
+  <data name="Data_ListAria" xml:space="preserve"><value>Data list</value></data>
+  <data name="Data_PaginationAria" xml:space="preserve"><value>Pagination</value></data>
+  <data name="Data_Previous" xml:space="preserve"><value>Previous</value></data>
+  <data name="Data_Next" xml:space="preserve"><value>Next</value></data>
+  <data name="Data_PageSummary" xml:space="preserve"><value>Page {0} of {1} ({2} total)</value></data>
+  <data name="Data_FilterSummaryAria" xml:space="preserve"><value>Active filters</value></data>
+  <data name="Data_ActiveFilters" xml:space="preserve"><value>Filters</value></data>
+  <data name="Data_ValueUnavailable" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="Data_ConflictMessage" xml:space="preserve"><value>This record changed. Reload and try again.</value></data>
   <data name="Dialog_ConflictTitle" xml:space="preserve"><value>Conflict</value></data>
   <data name="Dialog_UnsavedTitle" xml:space="preserve"><value>Unsaved changes</value></data>
   <data name="Dialog_UnsavedMessage" xml:space="preserve"><value>You have unsaved changes. Discard them and leave this form?</value></data>

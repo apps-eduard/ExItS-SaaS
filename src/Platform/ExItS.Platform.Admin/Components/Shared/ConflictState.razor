@@ -1,0 +1,18 @@
+@inject IStringLocalizer<AdminResources> L
+
+<section class="state conflict" role="alert">
+    <h2>@(Title ?? L["Dialog_ConflictTitle"])</h2>
+    @if (!string.IsNullOrWhiteSpace(Message))
+    {
+        <p>@Message</p>
+    }
+    else
+    {
+        <p>@L["Data_ConflictMessage"]</p>
+    }
+</section>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Message { get; set; }
+}

@@ -1,0 +1,15 @@
+@*
+  Date-only display. Prefer UtcTimestamp for full date/time UTC values.
+*@
+@if (Value is null)
+{
+    <span class="muted">—</span>
+}
+else
+{
+    <time datetime="@Value.Value.ToString("yyyy-MM-dd")">@Value.Value.ToString("yyyy-MM-dd")</time>
+}
+
+@code {
+    [Parameter] public DateOnly? Value { get; set; }
+}

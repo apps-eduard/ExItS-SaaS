@@ -39,7 +39,7 @@ else
                 <option>Removed</option>
             </select>
         </label>
-        <button type="button" @onclick="ReloadAsync">@L["Common_Apply"]</button>
+        <button type="button" @onclick="ApplyMemberFiltersAsync">@L["Common_Apply"]</button>
     </div>
 
     @if (_members is null) { <LoadingState Message="@L["OrgMembers_LoadingMembers"]" /> }
@@ -47,38 +47,17 @@ else
     else if (_members.Data!.Items.Count == 0) { <EmptyState Message="@L["OrgMembers_Empty"]" /> }
     else
     {
-        <table class="data-table responsive-table">
-            <thead><tr><th>@L["Common_User"]</th><th>@L["Common_Role"]</th><th>@L["Common_Status"]</th><th>@L["Common_UpdatedUtc"]</th><th>@L["Common_Actions"]</th></tr></thead>
-            <tbody>
-            @foreach (var m in _members.Data.Items)
-            {
-                <tr>
-                    <td data-label="@L["Common_User"]"><a href="/admin/users/@m.UserId">@m.UserId</a></td>
-                    <td data-label="@L["Common_Role"]">
-                        <select value="@m.Role" @onchange="e => ChangeRoleAsync(m.Id, e.Value?.ToString())" disabled="@(_busy || m.Status == "Removed")">
-                            <option>OrganizationOwner</option>
-                            <option>OrganizationAdministrator</option>
-                            <option>OrganizationMember</option>
-                        </select>
-                    </td>
-                    <td data-label="@L["Common_Status"]"><StatusBadge Value="@m.Status" /></td>
-                    <td data-label="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@m.UpdatedAtUtc" /></td>
-                    <td data-label="@L["Common_Actions"]" class="actions">
-                        @if (m.Status == "Active")
-                        {
-                            <button type="button" class="secondary" @onclick='() => Ask(L["OrgMembers_SuspendMembership"], L["OrgMembers_SuspendConfirmMessage"], () => SuspendAsync(m.Id), AdminDialogKind.Destructive)'>@L["Common_Suspend"]</button>
-                            <button type="button" class="danger" @onclick='() => Ask(L["OrgMembers_RevokeMembership"], L["OrgMembers_RevokeConfirmMessage"], () => RevokeAsync(m.Id), AdminDialogKind.Destructive)'>@L["Common_Revoke"]</button>
-                        }
-                        else if (m.Status == "Suspended")
-                        {
-                            <button type="button" class="secondary" @onclick="() => ReactivateAsync(m.Id)">@L["OrgMembers_ReactivateMembership"]</button>
-                            <button type="button" class="danger" @onclick='() => Ask(L["OrgMembers_RevokeMembership"], L["OrgMembers_RevokeSuspendedConfirmMessage"], () => RevokeAsync(m.Id), AdminDialogKind.Destructive)'>@L["Common_Revoke"]</button>
-                        }
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
+        <AdminDataTable TItem="OrganizationMembershipDto"
+                        Items="_members.Data.Items"
+                        Columns="_memberColumns"
+                        Caption="@L["OrgMembers_Title"]"
+                        ItemKey="m => m.Id"
+                        CellTemplate="MemberCell"
+                        RowActions="MemberActions" />
+        <AdminPagination Page="_members.Data.Page"
+                         PageSize="_members.Data.PageSize"
+                         TotalCount="_members.Data.TotalCount"
+                         PageChanged="OnMembersPageAsync" />
     }
 }
 
@@ -105,14 +84,119 @@ else
     private string? _fieldUserId;
     private bool _busy;
     private ConfirmState? _confirm;
+    private int _page = 1;
+    private List<AdminColumnDefinition> _memberColumns = new();
+
+    protected override void OnInitialized()
+    {
+        _memberColumns =
+        [
+            new("user", L["Common_User"], Primary: true),
+            new("role", L["Common_Role"]),
+            new("status", L["Common_Status"]),
+            new("updated", L["Common_UpdatedUtc"])
+        ];
+    }
 
     protected override async Task OnParametersSetAsync() => await ReloadAsync();
 
     private async Task ReloadAsync()
     {
         _org = await Api.GetOrganizationAsync(OrganizationId);
-        _members = await Api.GetOrganizationMembersAsync(OrganizationId, status: string.IsNullOrWhiteSpace(_status) ? null : _status);
+        _members = await Api.GetOrganizationMembersAsync(
+            OrganizationId,
+            page: _page,
+            status: string.IsNullOrWhiteSpace(_status) ? null : _status);
     }
+
+    private async Task OnMembersPageAsync(int page)
+    {
+        _page = page;
+        await ReloadAsync();
+    }
+
+    private async Task ApplyMemberFiltersAsync()
+    {
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private RenderFragment<(OrganizationMembershipDto Item, AdminColumnDefinition Column)> MemberCell => ctx => b =>
+    {
+        switch (ctx.Column.Key)
+        {
+            case "user":
+                b.OpenElement(0, "a");
+                b.AddAttribute(1, "href", $"/admin/users/{ctx.Item.UserId}");
+                b.AddContent(2, ctx.Item.UserId);
+                b.CloseElement();
+                break;
+            case "role":
+                b.OpenElement(0, "select");
+                b.AddAttribute(1, "value", ctx.Item.Role);
+                b.AddAttribute(2, "disabled", _busy || ctx.Item.Status == "Removed");
+                b.AddAttribute(3, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, e => ChangeRoleAsync(ctx.Item.Id, e.Value?.ToString())));
+                foreach (var role in new[] { "OrganizationOwner", "OrganizationAdministrator", "OrganizationMember" })
+                {
+                    b.OpenElement(4, "option");
+                    b.AddAttribute(5, "value", role);
+                    if (role == ctx.Item.Role)
+                    {
+                        b.AddAttribute(6, "selected", true);
+                    }
+
+                    b.AddContent(7, role);
+                    b.CloseElement();
+                }
+
+                b.CloseElement();
+                break;
+            case "status":
+                b.OpenComponent<StatusBadge>(0);
+                b.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
+                b.CloseComponent();
+                break;
+            case "updated":
+                b.OpenComponent<UtcTimestamp>(0);
+                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.UpdatedAtUtc);
+                b.CloseComponent();
+                break;
+        }
+    };
+
+    private RenderFragment<OrganizationMembershipDto> MemberActions => m => __builder =>
+    {
+        if (m.Status == "Active")
+        {
+            __builder.OpenElement(0, "button");
+            __builder.AddAttribute(1, "type", "button");
+            __builder.AddAttribute(2, "class", "secondary");
+            __builder.AddAttribute(3, "onclick", EventCallback.Factory.Create(this, () => Ask(L["OrgMembers_SuspendMembership"], L["OrgMembers_SuspendConfirmMessage"], () => SuspendAsync(m.Id), AdminDialogKind.Destructive)));
+            __builder.AddContent(4, L["Common_Suspend"]);
+            __builder.CloseElement();
+            __builder.OpenElement(5, "button");
+            __builder.AddAttribute(6, "type", "button");
+            __builder.AddAttribute(7, "class", "danger");
+            __builder.AddAttribute(8, "onclick", EventCallback.Factory.Create(this, () => Ask(L["OrgMembers_RevokeMembership"], L["OrgMembers_RevokeConfirmMessage"], () => RevokeAsync(m.Id), AdminDialogKind.Destructive)));
+            __builder.AddContent(9, L["Common_Revoke"]);
+            __builder.CloseElement();
+        }
+        else if (m.Status == "Suspended")
+        {
+            __builder.OpenElement(0, "button");
+            __builder.AddAttribute(1, "type", "button");
+            __builder.AddAttribute(2, "class", "secondary");
+            __builder.AddAttribute(3, "onclick", EventCallback.Factory.Create(this, () => ReactivateAsync(m.Id)));
+            __builder.AddContent(4, L["OrgMembers_ReactivateMembership"]);
+            __builder.CloseElement();
+            __builder.OpenElement(5, "button");
+            __builder.AddAttribute(6, "type", "button");
+            __builder.AddAttribute(7, "class", "danger");
+            __builder.AddAttribute(8, "onclick", EventCallback.Factory.Create(this, () => Ask(L["OrgMembers_RevokeMembership"], L["OrgMembers_RevokeSuspendedConfirmMessage"], () => RevokeAsync(m.Id), AdminDialogKind.Destructive)));
+            __builder.AddContent(9, L["Common_Revoke"]);
+            __builder.CloseElement();
+        }
+    };
 
     private async Task AddMemberAsync()
     {

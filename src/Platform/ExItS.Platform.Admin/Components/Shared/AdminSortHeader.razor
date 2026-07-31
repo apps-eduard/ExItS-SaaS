@@ -1,0 +1,49 @@
+@inject IStringLocalizer<AdminResources> L
+
+<button type="button"
+        class="sort-header @(IsActive ? "is-active" : null)"
+        aria-sort="@AriaSort"
+        @onclick="ToggleAsync">
+    <span>@Title</span>
+    <span class="sort-header-indicator" aria-hidden="true">@Indicator</span>
+</button>
+
+@code {
+    [Parameter, EditorRequired] public string ColumnKey { get; set; } = "";
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public AdminSortState? Sort { get; set; }
+    [Parameter] public EventCallback<AdminSortState> OnSort { get; set; }
+
+    private bool IsActive => string.Equals(Sort?.ColumnKey, ColumnKey, StringComparison.OrdinalIgnoreCase)
+                             && Sort?.Direction is not null and not AdminSortDirection.None;
+
+    private string AriaSort => !IsActive
+        ? "none"
+        : Sort!.Direction == AdminSortDirection.Ascending ? "ascending" : "descending";
+
+    private string Indicator => !IsActive
+        ? "↕"
+        : Sort!.Direction == AdminSortDirection.Ascending ? "↑" : "↓";
+
+    private async Task ToggleAsync()
+    {
+        var next = Sort is not null
+                   && string.Equals(Sort.ColumnKey, ColumnKey, StringComparison.OrdinalIgnoreCase)
+            ? Sort.Direction switch
+            {
+                AdminSortDirection.Ascending => AdminSortDirection.Descending,
+                AdminSortDirection.Descending => AdminSortDirection.None,
+                _ => AdminSortDirection.Ascending
+            }
+            : AdminSortDirection.Ascending;
+
+        var state = next == AdminSortDirection.None
+            ? new AdminSortState(null, AdminSortDirection.None)
+            : new AdminSortState(ColumnKey, next);
+
+        if (OnSort.HasDelegate)
+        {
+            await OnSort.InvokeAsync(state);
+        }
+    }
+}

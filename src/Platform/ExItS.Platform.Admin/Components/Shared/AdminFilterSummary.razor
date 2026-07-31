@@ -1,0 +1,27 @@
+@inject IStringLocalizer<AdminResources> L
+
+@if (Items.Count > 0)
+{
+    <div class="filter-summary" role="status" aria-label="@(AriaLabel ?? L["Data_FilterSummaryAria"])">
+        <span class="filter-summary-label">@L["Data_ActiveFilters"]</span>
+        <ul class="filter-summary-list">
+            @foreach (var item in Items)
+            {
+                <li class="filter-summary-chip">
+                    <span class="filter-summary-chip-label">@item.Label</span>
+                    <span class="filter-summary-chip-value">@item.Value</span>
+                </li>
+            }
+        </ul>
+        @if (OnClear.HasDelegate)
+        {
+            <button type="button" class="ghost" @onclick="OnClear">@L["Common_ClearFilters"]</button>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public IReadOnlyList<AdminFilterChip> Items { get; set; } = Array.Empty<AdminFilterChip>();
+    [Parameter] public EventCallback OnClear { get; set; }
+    [Parameter] public string? AriaLabel { get; set; }
+}
