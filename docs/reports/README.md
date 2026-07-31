@@ -74,3 +74,6 @@ The dashboard links to the latest accepted report.
 | [P10-WP01-suppliers.md](P10-WP01-suppliers.md) | P10-WP01 Suppliers | Complete (Option A — master data only) |
 | [P10-WP02-purchasing.md](P10-WP02-purchasing.md) | P10-WP02 Purchasing | Complete |
 | [P10-WP02-healthcare-workspace-cleanup.md](P10-WP02-healthcare-workspace-cleanup.md) | P10-WP02 Part A workspace cleanup | Complete |
+| [P11-WP01-web-ui-audit-and-component-inventory.md](P11-WP01-web-ui-audit-and-component-inventory.md) | P11-WP01 Web UI Audit | Complete |
+| [P11-WP02-global-web-layout-and-navigation.md](P11-WP02-global-web-layout-and-navigation.md) | P11-WP02 Global Web Layout and Navigation | Complete |
+| [P11-WP03-shared-forms-validation-and-dialogs.md](P11-WP03-shared-forms-validation-and-dialogs.md) | P11-WP03 Shared Forms, Validation, and Dialogs | Complete |

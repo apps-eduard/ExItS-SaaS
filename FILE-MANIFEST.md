@@ -19,7 +19,7 @@ src/Platform/ExItS.Platform.Domain/ (+ Authorization; Audit; FeatureCode include
 src/Platform/ExItS.Platform.Application/ (+ Catalog; Admin portfolio queries; Authorization; Audit; Contracts; Projections; MigrationValidation; Integration/HealthCare)
 src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog + organization/subscription + payment + entitlement + role-assignment + audit persistence, Admin portfolio read store, migrations including `AddPlatformAuthorizationAndAudit`; `Health/PlatformDatabaseReadyHealthCheck`)
 src/Platform/ExItS.Platform.Api/ (`/` + `/health` + `/health/ready` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs; `PlatformAuthz`; Production security pipeline; phase marker `P10-WP08-phase-10-closeout`)
-src/Platform/ExItS.Platform.Admin/ (Blazor Web App — redesigned native CSS shell; typed API client; portfolio + users/memberships/product-access + subscription/payment/trial + audit views; themes; AdminResources en/fil-PH)
+src/Platform/ExItS.Platform.Admin/ (Blazor Web App — redesigned native CSS shell; shared form/field/actions/dialog foundation; typed API client; portfolio + users/memberships/product-access + subscription/payment/trial + audit views; themes; AdminResources en/fil-PH)
 src/Shared/ExItS.DesignSystem/ (semantic tokens; forms/data/feedback overlays; DesignSystem/Validation/Error resources en/fil-PH; Blazor primitives; `IDensityPreferenceStore`)
 src/Shared/ExItS.BackupRestore/ (PostgreSQL logical backup/restore helpers: manifests, SHA-256, retention, AES-GCM protect, restore validation)
 src/Shared/ExItS.Deployment/ (pilot/deployment config validation, backup gates, readiness, rollback advisor, Commercial MVP closeout board — P9-WP05/P9-WP06; phase marker `P10-WP08-phase-10-closeout`)
@@ -172,6 +172,10 @@ docs/reports/P10-WP05-returns-refunds.md
 docs/reports/P10-WP06-advanced-permissions-operational-reports.md
 docs/reports/P10-WP07-multiple-registers.md
 docs/reports/P10-WP08-phase-10-closeout.md
+docs/reports/P11-WP01-web-ui-audit-and-component-inventory.md
+docs/reports/P11-WP02-global-web-layout-and-navigation.md
+docs/reports/P11-WP03-shared-forms-validation-and-dialogs.md
+docs/phases/phase-11-web-ui-reporting-design-system.md
 docs/reports/PRE-P11-admin-ui-recovery.md
 docs/reports/PRE-P11-admin-theme-visual-polish.md
 docs/operations/backup-restore/README.md
@@ -190,6 +194,5 @@ docs/risks-and-issues.md
 ## Not tracked
 
 **/bin/, **/obj/
-docs/phases/phase-11-web-ui-reporting-design-system.md (intentional untracked planning)
 docs/phases/phase-12-product-foundation-and-bootstrap.md (intentional untracked planning)
 docs/Product-Foundation/ (intentional untracked planning)

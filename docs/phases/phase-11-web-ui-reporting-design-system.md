@@ -4,7 +4,7 @@
 
 ## Status
 
-**In progress.** **P11-WP01** and **P11-WP02** are **complete**. Exact next: **P11-WP03 — Shared Forms, Validation, and Dialogs** when authorized.
+**In progress.** **P11-WP01**, **P11-WP02**, and **P11-WP03** are **complete**. Exact next: **P11-WP04 — Shared Tables, Lists, Cards, and Status Components** when authorized.
 
 Pre-Phase-11 Admin shell/theme baseline remains locked (feature tip `46b99a7f6baa87977fb0ed37e678231fa1eb1344`). Theme reapply uses `Blazor.enhancedload` — do **not** reintroduce document-wide permanence attributes on `<html>`.
 
@@ -14,8 +14,8 @@ Pre-Phase-11 Admin shell/theme baseline remains locked (feature tip `46b99a7f6ba
 |---|---|---|
 | P11-WP01 — Web UI Audit and Component Inventory | **Complete** | [report](../reports/P11-WP01-web-ui-audit-and-component-inventory.md) · `221fe69ab179956e8a73411cf3eb58fd6f199c3c` |
 | P11-WP02 — Global Web Layout and Navigation | **Complete** | [report](../reports/P11-WP02-global-web-layout-and-navigation.md) · `7ce7df139a9494c9aab7d189900e96d5e43fdc1d` |
-| P11-WP03 — Shared Forms, Validation, and Dialogs | Not started | — |
-| P11-WP04 — Shared Feedback, Dialog and State Components | Not started | — |
+| P11-WP03 — Shared Forms, Validation, and Dialogs | **Complete** | [report](../reports/P11-WP03-shared-forms-validation-and-dialogs.md) · `6825b8eb423e73cd5d3dc24e393e7201b04232bc` |
+| P11-WP04 — Shared Tables, Lists, Cards, and Status Components | Not started | — |
 | P11-WP05 — Localization, Theme and Accessibility Hardening | Not started | — |
 | P11-WP06+ — Reporting framework and closeout | Not started | — |
 
@@ -262,11 +262,9 @@ Standardize data-entry and confirmation experiences across all web modules.
 - shared localization
 - shared theme behavior
 
-#### Acceptance
+#### Implementation status
 
-- feature-specific duplicate form controls are removed where safe
-- completed Phase 10 workflows still behave correctly
-- validation behavior is consistent
+**Complete** — see [P11-WP03 report](../reports/P11-WP03-shared-forms-validation-and-dialogs.md). Shared Admin form/field/actions/dialog foundation; Users, OrganizationMembers, Payments migrated as proof.
 
 ---
 
