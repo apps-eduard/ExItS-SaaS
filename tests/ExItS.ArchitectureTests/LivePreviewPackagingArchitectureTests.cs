@@ -21,7 +21,8 @@ public sealed class LivePreviewPackagingArchitectureTests
         Assert.Contains("exits_live_preview_platform_db_data", live, StringComparison.Ordinal);
         Assert.Contains("exits_live_preview_pos_db_data", live, StringComparison.Ordinal);
         Assert.Contains("NOT Production", live, StringComparison.Ordinal);
-        Assert.Contains("ASPNETCORE_ENVIRONMENT: Development", live, StringComparison.Ordinal);
+        Assert.Contains("ASPNETCORE_ENVIRONMENT: Staging", live, StringComparison.Ordinal);
+        Assert.Contains("LivePreview__Enabled", live, StringComparison.Ordinal);
         Assert.DoesNotContain("HealthCare/", live, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(".Migrate(", live, StringComparison.Ordinal);
 

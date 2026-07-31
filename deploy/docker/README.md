@@ -60,7 +60,9 @@ docker compose -f compose.live-preview.yaml --env-file .env.live-preview down
 | platform-db | 15533 | Postgres (ops tooling) |
 | pos-db | 15534 | Postgres (ops tooling) |
 
-Uses `ASPNETCORE_ENVIRONMENT=Development` so Admin can call Platform API over local HTTP (Admin HTTPS guard). **Not** packaging Staging. **Not** Production-secure. Do **not** reuse packaging ports. Do **not** treat as P14-WP03.
+Uses `ASPNETCORE_ENVIRONMENT=Staging` with `LivePreview:Enabled=true` so Admin requires login and quick-login test users are seeded. **Not** Production-secure. Do **not** reuse packaging ports. Do **not** treat as P14-WP03.
+
+Open **http://localhost:8090/** → `/admin/login` → **Live Preview Test User** dropdown.
 
 ## Pilot stack (P9-WP05)
 

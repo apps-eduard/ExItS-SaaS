@@ -60,6 +60,65 @@ public sealed class PlatformBrowserSessionService(
         return (true, null);
     }
 
+    public async Task<(bool Ok, string? Error)> LivePreviewLoginAsync(string identityKey, CancellationToken ct = default)
+    {
+        var http = httpContextAccessor.HttpContext
+            ?? throw new InvalidOperationException("HTTP context is required for live preview login.");
+
+        var client = httpClientFactory.CreateClient("PlatformApiUnauthenticated");
+        using var response = await client.PostAsJsonAsync(
+            "/api/v1/platform/live-preview/sessions",
+            new { identityKey },
+            ct).ConfigureAwait(false);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return (false, "Live preview sign-in failed.");
+        }
+
+        await using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        var login = await JsonSerializer.DeserializeAsync<LoginResponse>(stream, JsonOptions, ct).ConfigureAwait(false);
+        if (login is null || string.IsNullOrWhiteSpace(login.SessionToken))
+        {
+            return (false, "Live preview login response was invalid.");
+        }
+
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, login.UserId.ToString("D")),
+            new(ClaimTypes.Name, login.Username),
+            new(ClaimTypes.Email, login.Email ?? string.Empty),
+            new(SessionTokenClaimType, login.SessionToken)
+        };
+
+        var identity = new ClaimsIdentity(claims, CookieScheme);
+        var principal = new ClaimsPrincipal(identity);
+        var props = new AuthenticationProperties
+        {
+            IsPersistent = true,
+            ExpiresUtc = login.ExpiresAtUtc,
+            AllowRefresh = true
+        };
+
+        await http.SignInAsync(CookieScheme, principal, props).ConfigureAwait(false);
+        return (true, null);
+    }
+
+    public async Task<IReadOnlyList<LivePreviewIdentityOptionDto>> ListLivePreviewIdentitiesAsync(CancellationToken ct = default)
+    {
+        var client = httpClientFactory.CreateClient("PlatformApiUnauthenticated");
+        using var response = await client.GetAsync("/api/v1/platform/live-preview/identities", ct).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            return [];
+        }
+
+        await using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        var list = await JsonSerializer.DeserializeAsync<List<LivePreviewIdentityOptionDto>>(stream, JsonOptions, ct)
+            .ConfigureAwait(false);
+        return list ?? [];
+    }
+
     public async Task<(bool Ok, string? Error)> EstablishFromSessionTokenAsync(
         string sessionToken,
         CancellationToken ct = default)

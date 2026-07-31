@@ -1,3 +1,4 @@
+using ExItS.Platform.Api.LivePreview;
 using ExItS.Platform.Api.Access;
 using ExItS.Platform.Api.Admin;
 using ExItS.Platform.Api.Audit;
@@ -10,6 +11,7 @@ using ExItS.Platform.Api.Identity;
 using ExItS.Platform.Api.Organizations;
 using ExItS.Platform.Api.Payments;
 using ExItS.Platform.Api.Subscriptions;
+using ExItS.Platform.Application.LivePreview;
 using ExItS.Platform.Application.Access;
 using ExItS.Platform.Application.Admin;
 using ExItS.Platform.Application.Audit;
@@ -21,6 +23,7 @@ using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Infrastructure;
+using ExItS.Platform.Infrastructure.LivePreview;
 using ExItS.Platform.Infrastructure.Health;
 using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Authentication.Google;
@@ -28,6 +31,10 @@ using Microsoft.AspNetCore.Authentication.Google;
 var builder = WebApplication.CreateBuilder(args);
 
 PlatformSecurityPipeline.ValidateProductionConfigurationOrThrow(builder);
+if (builder.Configuration.GetValue<bool>("LivePreview:Enabled") && builder.Environment.IsProduction())
+{
+    throw new InvalidOperationException("LivePreview:Enabled=true is forbidden in Production.");
+}
 
 builder.Services.AddProblemDetails();
 builder.Services.AddPlatformHealthChecks();
@@ -201,6 +208,12 @@ builder.Services.AddScoped<QueryAuditRecords>();
 builder.Services.AddScoped<GetAuditRecord>();
 builder.Services.AddScoped<PlatformAuthz>();
 
+builder.Services.Configure<LivePreviewOptions>(builder.Configuration.GetSection(LivePreviewOptions.SectionName));
+builder.Services.AddScoped<InitializeLivePreviewDataset>();
+builder.Services.AddScoped<ListLivePreviewIdentities>();
+builder.Services.AddScoped<LoginLivePreviewIdentity>();
+builder.Services.AddHostedService<LivePreviewHostedService>();
+
 var app = builder.Build();
 
 app.UsePlatformSecurity();
@@ -230,6 +243,7 @@ app.MapEntitlementEndpoints();
 app.MapAdminEndpoints();
 app.MapAuthorizationEndpoints();
 app.MapAuditEndpoints();
+app.MapLivePreviewEndpoints();
 
 app.Run();
 

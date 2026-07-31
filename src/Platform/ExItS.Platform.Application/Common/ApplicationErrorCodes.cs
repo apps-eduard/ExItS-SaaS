@@ -101,4 +101,8 @@ public static class ApplicationErrorCodes
     public const string ExternalAuthProviderUnsupported = "application.auth.external_provider_unsupported";
     public const string RecoveryEmailConflict = "application.auth.recovery_email_conflict";
     public const string RecoveryEmailInvalid = "application.auth.recovery_email_invalid";
+
+    public const string LivePreviewUnavailable = "application.live_preview.unavailable";
+    public const string LivePreviewNotInitialized = "application.live_preview.not_initialized";
+    public const string LivePreviewIdentityUnknown = "application.live_preview.identity_unknown";
 }

@@ -1,5 +1,5 @@
 # ExItS LIVE PREVIEW stack — personal local UI/API preview ONLY.
-# Phase: P14-WP02-gap-fix-separate-live-preview-stack
+# Phase: P14-WP02A-live-preview-test-users-and-quick-login
 #
 # Completely independent from exits-packaging (compose.yaml) and exits-pilot.
 # NOT Production. NOT a substitute for P14-WP03 TLS/proxy work.
@@ -16,8 +16,8 @@
 #   admin-web 8090 · platform-api 8091 · pos-api 8092 · platform-db 15533 · pos-db 15534
 #
 # Boundaries: separate Platform and POS databases; no nested clinical product tree.
-# ASPNETCORE_ENVIRONMENT=Development — personal preview only (Admin HTTPS guard / local HTTP).
-# Not Staging packaging; not Production. Do not auto-apply EF migrations at application startup.
+# ASPNETCORE_ENVIRONMENT=Staging + LivePreview:Enabled=true (real auth; quick-login identities).
+# LivePreview path may apply migrations only when Enabled (not Production packaging path).
 
 name: exits-live-preview
 
@@ -66,17 +66,19 @@ services:
       context: ../..
       dockerfile: deploy/docker/Dockerfile.platform-api
       args:
-        EXITS_IMAGE_LABEL: p14-wp02-live-preview
+        EXITS_IMAGE_LABEL: p14-wp02a-live-preview
     image: exits/platform-api:${LIVE_PREVIEW_IMAGE_TAG:-live-preview}
     depends_on:
       platform-db:
         condition: service_healthy
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__PlatformDatabase: Host=platform-db;Port=5432;Database=exits_platform;Username=${LIVE_PREVIEW_PLATFORM_DB_USER};Password=${LIVE_PREVIEW_PLATFORM_DB_PASSWORD}
-      AllowedHosts: ${LIVE_PREVIEW_ALLOWED_HOSTS:-localhost;127.0.0.1}
+      AllowedHosts: ${LIVE_PREVIEW_ALLOWED_HOSTS:-localhost;127.0.0.1;platform-api;admin-web;pos-api}
       Cors__AllowedOrigins__0: ${LIVE_PREVIEW_ADMIN_ORIGIN:-http://localhost:8090}
       Security__EnforceHttps: "false"
+      LivePreview__Enabled: "true"
+      LivePreview__SharedPassword: ${LIVE_PREVIEW_SHARED_PASSWORD}
     ports:
       - "${LIVE_PREVIEW_PLATFORM_API_HOST_PORT:-8091}:8080"
     networks:
@@ -92,17 +94,21 @@ services:
       context: ../..
       dockerfile: deploy/docker/Dockerfile.pos-api
       args:
-        EXITS_IMAGE_LABEL: p14-wp02-live-preview
+        EXITS_IMAGE_LABEL: p14-wp02a-live-preview
     image: exits/pos-api:${LIVE_PREVIEW_IMAGE_TAG:-live-preview}
     depends_on:
       pos-db:
         condition: service_healthy
+      platform-api:
+        condition: service_started
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__PosDatabase: Host=pos-db;Port=5432;Database=exits_pos;Username=${LIVE_PREVIEW_POS_DB_USER};Password=${LIVE_PREVIEW_POS_DB_PASSWORD}
-      AllowedHosts: ${LIVE_PREVIEW_ALLOWED_HOSTS:-localhost;127.0.0.1}
+      AllowedHosts: ${LIVE_PREVIEW_ALLOWED_HOSTS:-localhost;127.0.0.1;platform-api;admin-web;pos-api}
       Cors__AllowedOrigins__0: ${LIVE_PREVIEW_ADMIN_ORIGIN:-http://localhost:8090}
       Security__EnforceHttps: "false"
+      LivePreview__Enabled: "true"
+      LivePreview__PlatformApiBaseUrl: ${LIVE_PREVIEW_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
     ports:
       - "${LIVE_PREVIEW_POS_API_HOST_PORT:-8092}:8080"
     networks:
@@ -121,10 +127,11 @@ services:
     depends_on:
       - platform-api
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
-      AllowedHosts: ${LIVE_PREVIEW_ALLOWED_HOSTS:-localhost;127.0.0.1}
+      ASPNETCORE_ENVIRONMENT: Staging
+      AllowedHosts: ${LIVE_PREVIEW_ALLOWED_HOSTS:-localhost;127.0.0.1;platform-api;admin-web;pos-api}
       PlatformApi__BaseUrl: ${LIVE_PREVIEW_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
       PlatformApi__TimeoutSeconds: "30"
+      LivePreview__Enabled: "true"
     ports:
       - "${LIVE_PREVIEW_ADMIN_HOST_PORT:-8090}:8080"
     networks:

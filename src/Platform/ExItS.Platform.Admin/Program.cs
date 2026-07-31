@@ -1,14 +1,18 @@
-using System.Globalization;
-using ExItS.Platform.Admin.Components;
 using ExItS.Platform.Admin.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Options;
+using System.Globalization;
+using ExItS.Platform.Admin.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
 AdminProductionSecurityGuard.ValidateOrThrow(builder);
+if (builder.Configuration.GetValue<bool>("LivePreview:Enabled") && builder.Environment.IsProduction())
+{
+    throw new InvalidOperationException("LivePreview:Enabled=true is forbidden in Production.");
+}
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -35,6 +39,7 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 });
 
 builder.Services.Configure<PlatformApiOptions>(builder.Configuration.GetSection(PlatformApiOptions.SectionName));
+builder.Services.Configure<LivePreviewAdminOptions>(builder.Configuration.GetSection(LivePreviewAdminOptions.SectionName));
 builder.Services.Configure<DevelopmentOperatorOptions>(options =>
 {
     if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing"))
@@ -47,12 +52,17 @@ builder.Services.Configure<DevelopmentOperatorOptions>(options =>
     }
 });
 
+var livePreviewEnabled = builder.Configuration.GetValue<bool>("LivePreview:Enabled")
+    && !builder.Environment.IsProduction();
+
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.Cookie.Name = ".ExItS.Admin.Auth";
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing")
+        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+            || builder.Environment.IsEnvironment("Testing")
+            || livePreviewEnabled
             ? CookieSecurePolicy.SameAsRequest
             : CookieSecurePolicy.Always;
         options.Cookie.SameSite = SameSiteMode.Lax;
@@ -64,7 +74,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 builder.Services.AddAuthorization(options =>
 {
-    if (!(builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing")))
+    // Live preview and Staging/Production require authentication; Development/Testing remain open unless LivePreview is on.
+    if (livePreviewEnabled
+        || !(builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing")))
     {
         options.FallbackPolicy = new AuthorizationPolicyBuilder()
             .RequireAuthenticatedUser()
@@ -106,10 +118,16 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    app.UseHsts();
+    if (!livePreviewEnabled)
+    {
+        app.UseHsts();
+    }
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-app.UseHttpsRedirection();
+if (!livePreviewEnabled)
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseRequestLocalization();
 app.UseAuthentication();
