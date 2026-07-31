@@ -3,7 +3,7 @@ namespace ExItS.Platform.Admin.UnitTests;
 public sealed class AdminQaHardeningTests
 {
     [Fact]
-    public void Confirm_dialog_implements_focus_trap_and_return()
+    public void Confirm_dialog_implements_focus_trap_and_return_for_residual_pages()
     {
         var root = FindRepositoryRoot();
         var confirm = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Shared", "ConfirmDialog.razor"));
@@ -16,37 +16,35 @@ public sealed class AdminQaHardeningTests
         Assert.Contains("dialogOpen", js, StringComparison.Ordinal);
         Assert.Contains("dialogClose", js, StringComparison.Ordinal);
         Assert.Contains("Tab", js, StringComparison.Ordinal);
-        Assert.Contains("aria-expanded", js, StringComparison.Ordinal);
-        Assert.Contains("bindDrawer", js, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void App_loads_a11y_helper_and_shell_exposes_drawer_controls()
+    public void App_loads_antdesign_assets_and_shell_exposes_skip_link()
     {
         var root = FindRepositoryRoot();
         var app = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "App.razor"));
         Assert.Contains("admin-a11y.js", app, StringComparison.Ordinal);
         Assert.Contains("theme-boot.js", app, StringComparison.Ordinal);
+        Assert.Contains("/_content/AntDesign/css/ant-design-blazor.css", app, StringComparison.Ordinal);
+        Assert.Contains("<AntContainer", app, StringComparison.Ordinal);
 
         var layout = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "MainLayout.razor"));
-        Assert.Contains("id=\"app-sidebar\"", layout, StringComparison.Ordinal);
-        Assert.Contains("aria-controls=\"app-sidebar\"", layout, StringComparison.Ordinal);
-        Assert.Contains("role=\"banner\"", layout, StringComparison.Ordinal);
         Assert.Contains("skip-link", layout, StringComparison.Ordinal);
+        Assert.Contains("exits-admin-layout", layout, StringComparison.Ordinal);
+        Assert.Contains("<Sider", layout, StringComparison.Ordinal);
         Assert.DoesNotContain("data-permanent", layout, StringComparison.Ordinal);
+        Assert.DoesNotContain("app-shell", layout, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void Css_guards_touch_targets_header_overflow_and_reduced_motion()
+    public void Css_guards_density_theme_and_reduced_motion_without_tailwind()
     {
         var root = FindRepositoryRoot();
         var css = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "wwwroot", "app.css"));
-        Assert.Contains("min-width: 2.75rem", css, StringComparison.Ordinal);
-        Assert.Contains("min-height: 2.75rem", css, StringComparison.Ordinal);
-        Assert.Contains("app-header-controls", css, StringComparison.Ordinal);
-        Assert.Contains("flex-wrap: wrap", css, StringComparison.Ordinal);
-        Assert.Contains("text-overflow: ellipsis", css, StringComparison.Ordinal);
+        Assert.Contains("exits-admin-layout", css, StringComparison.Ordinal);
+        Assert.Contains("exits-native-input", css, StringComparison.Ordinal);
         Assert.Contains("prefers-reduced-motion", css, StringComparison.Ordinal);
+        Assert.Contains("[data-theme=\"dark\"]", css, StringComparison.Ordinal);
         Assert.DoesNotContain("@tailwind", css, StringComparison.OrdinalIgnoreCase);
     }
 

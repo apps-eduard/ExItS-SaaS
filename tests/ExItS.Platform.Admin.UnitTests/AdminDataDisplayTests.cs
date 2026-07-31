@@ -45,8 +45,10 @@ public sealed class AdminDataDisplayTests
         Assert.Contains("KeyValueList", products, StringComparison.Ordinal);
 
         var orgs = File.ReadAllText(Path.Combine(pages, "Organizations.razor"));
-        Assert.Contains("ReportTable", orgs, StringComparison.Ordinal);
+        Assert.Contains("<Table", orgs, StringComparison.Ordinal);
         Assert.Contains("AmountDisplay", orgs, StringComparison.Ordinal);
+        Assert.Contains("RemoteDataSource", orgs, StringComparison.Ordinal);
+        Assert.DoesNotContain("ReportTable", orgs, StringComparison.Ordinal);
 
         var payments = File.ReadAllText(Path.Combine(pages, "Payments.razor"));
         Assert.Contains("ReportTable", payments, StringComparison.Ordinal);
@@ -55,8 +57,11 @@ public sealed class AdminDataDisplayTests
         Assert.Contains("AdminPagination", payments, StringComparison.Ordinal);
 
         var users = File.ReadAllText(Path.Combine(pages, "Users.razor"));
-        Assert.Contains("ReportTable", users, StringComparison.Ordinal);
-        Assert.Contains("AdminPagination", users, StringComparison.Ordinal);
+        Assert.Contains("<Table", users, StringComparison.Ordinal);
+        Assert.Contains("RemoteDataSource", users, StringComparison.Ordinal);
+        Assert.Contains("OnPageIndexChange", users, StringComparison.Ordinal);
+        Assert.DoesNotContain("ReportTable", users, StringComparison.Ordinal);
+        Assert.DoesNotContain("AdminPagination", users, StringComparison.Ordinal);
 
         var members = File.ReadAllText(Path.Combine(pages, "OrganizationMembers.razor"));
         Assert.Contains("AdminDataTable", members, StringComparison.Ordinal);

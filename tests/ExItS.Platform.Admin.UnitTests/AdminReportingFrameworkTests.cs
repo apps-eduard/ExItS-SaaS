@@ -44,14 +44,13 @@ public sealed class AdminReportingFrameworkTests
         var pages = Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages");
 
         var dashboard = File.ReadAllText(Path.Combine(pages, "AdminDashboard.razor"));
-        Assert.Contains("ReportPageShell", dashboard, StringComparison.Ordinal);
-        Assert.Contains("ReportKpiGrid", dashboard, StringComparison.Ordinal);
-        Assert.Contains("ReportKpiCard", dashboard, StringComparison.Ordinal);
-        Assert.Contains("ReportLoadingState", dashboard, StringComparison.Ordinal);
-        Assert.Contains("ReportErrorState", dashboard, StringComparison.Ordinal);
-        Assert.Contains("ReportSummaryCard", dashboard, StringComparison.Ordinal);
-        Assert.Contains("dashboard-landing", dashboard, StringComparison.Ordinal);
+        Assert.Contains("<Statistic", dashboard, StringComparison.Ordinal);
+        Assert.Contains("<PageHeader", dashboard, StringComparison.Ordinal);
+        Assert.Contains("<Spin", dashboard, StringComparison.Ordinal);
+        Assert.Contains("ResultStatus.Error", dashboard, StringComparison.Ordinal);
         Assert.Contains("GetPortfolioSummaryAsync", dashboard, StringComparison.Ordinal);
+        Assert.DoesNotContain("ReportPageShell", dashboard, StringComparison.Ordinal);
+        Assert.DoesNotContain("ReportKpiGrid", dashboard, StringComparison.Ordinal);
         Assert.DoesNotContain("profit", dashboard, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("COGS", dashboard, StringComparison.OrdinalIgnoreCase);
 
@@ -123,20 +122,19 @@ public sealed class AdminReportingFrameworkTests
     }
 
     [Fact]
-    public void App_css_includes_reporting_styles_without_tailwind()
+    public void App_css_includes_antdesign_branding_and_residual_report_hooks_without_tailwind()
     {
         var root = FindRepositoryRoot();
         var css = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "wwwroot", "app.css"));
-        Assert.Contains(".report-page", css, StringComparison.Ordinal);
-        Assert.Contains(".report-filter-bar", css, StringComparison.Ordinal);
-        Assert.Contains(".report-kpi-grid", css, StringComparison.Ordinal);
-        Assert.Contains(".report-totals-row", css, StringComparison.Ordinal);
-        Assert.Contains(".responsive-report-layout", css, StringComparison.Ordinal);
+        Assert.Contains("exits-admin-layout", css, StringComparison.Ordinal);
+        Assert.Contains("exits-login", css, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("@tailwind", css, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("tailwindcss", css, StringComparison.OrdinalIgnoreCase);
 
         var csproj = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "ExItS.Platform.Admin.csproj"));
+        Assert.Contains("AntDesign", csproj, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Tailwind", csproj, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("FluentUI", csproj, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("shadcn", csproj, StringComparison.OrdinalIgnoreCase);
     }
 

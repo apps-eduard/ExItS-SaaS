@@ -53,11 +53,13 @@ public sealed class AdminFormErrorMapperTests
         Assert.Contains("exitsAdminA11y.dialogClose", confirm, StringComparison.Ordinal);
 
         var users = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Users.razor"));
-        Assert.Contains("FormSection", users, StringComparison.Ordinal);
-        Assert.Contains("FormField", users, StringComparison.Ordinal);
+        Assert.Contains("FormValidationSummary", users, StringComparison.Ordinal);
         Assert.Contains("AdminFormErrorMapper.TryBeginSubmit", users, StringComparison.Ordinal);
-        Assert.Contains("AdminDialogKind.UnsavedChanges", users, StringComparison.Ordinal);
-        Assert.Contains("ToastService", users, StringComparison.Ordinal);
+        Assert.Contains("ConfirmService", users, StringComparison.Ordinal);
+        Assert.Contains("IMessageService", users, StringComparison.Ordinal);
+        Assert.Contains("<Table", users, StringComparison.Ordinal);
+        Assert.DoesNotContain("ToastService", users, StringComparison.Ordinal);
+        Assert.DoesNotContain("FormSection", users, StringComparison.Ordinal);
 
         var members = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "OrganizationMembers.razor"));
         Assert.Contains("FormSection", members, StringComparison.Ordinal);

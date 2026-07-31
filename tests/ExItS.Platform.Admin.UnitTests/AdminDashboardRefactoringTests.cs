@@ -5,19 +5,19 @@ namespace ExItS.Platform.Admin.UnitTests;
 public sealed class AdminDashboardRefactoringTests
 {
     [Fact]
-    public void Dashboard_uses_polished_landing_composition()
+    public void Dashboard_uses_antdesign_landing_composition()
     {
         var root = FindRepositoryRoot();
         var dashboard = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "AdminDashboard.razor"));
 
-        Assert.Contains("dashboard-landing", dashboard, StringComparison.Ordinal);
         Assert.Contains("Dashboard_Section_Primary", dashboard, StringComparison.Ordinal);
         Assert.Contains("Dashboard_Section_Lifecycle", dashboard, StringComparison.Ordinal);
         Assert.Contains("Dashboard_Section_Operations", dashboard, StringComparison.Ordinal);
-        Assert.Contains("ReportSummaryCard", dashboard, StringComparison.Ordinal);
-        Assert.Contains("dashboard-ops-grid", dashboard, StringComparison.Ordinal);
-        Assert.Contains("Emphasis=\"primary\"", dashboard, StringComparison.Ordinal);
+        Assert.Contains("<Statistic", dashboard, StringComparison.Ordinal);
+        Assert.Contains("<PageHeader", dashboard, StringComparison.Ordinal);
         Assert.Contains("GetPortfolioSummaryAsync", dashboard, StringComparison.Ordinal);
+        Assert.DoesNotContain("ReportPageShell", dashboard, StringComparison.Ordinal);
+        Assert.DoesNotContain("ReportKpiCard", dashboard, StringComparison.Ordinal);
         Assert.DoesNotContain("forecast", dashboard, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("profit", dashboard, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("trend", dashboard, StringComparison.OrdinalIgnoreCase);
@@ -25,18 +25,19 @@ public sealed class AdminDashboardRefactoringTests
     }
 
     [Fact]
-    public void Migrated_admin_list_pages_use_report_shell()
+    public void Migrated_foundation_pages_use_antdesign_tables_remaining_lists_keep_report_shell()
     {
         var root = FindRepositoryRoot();
         var pages = Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages");
+
         foreach (var (file, markers) in new (string, string[])[]
                  {
+                     ("Users.razor", ["<Table", "RemoteDataSource", "GetUsersAsync", "OnPageIndexChange"]),
+                     ("Organizations.razor", ["<Table", "RemoteDataSource", "GetOrganizationsAsync", "OnPageIndexChange"]),
                      ("Subscriptions.razor", ["ReportPageShell", "ReportFilterBar", "ReportTable", "GetSubscriptionsAsync"]),
                      ("Entitlements.razor", ["ReportPageShell", "ReportTable", "GetLatestEntitlementsAsync"]),
                      ("Audit.razor", ["ReportPageShell", "ReportFilterBar", "ReportTable", "GetAuditRecordsAsync"]),
                      ("Products.razor", ["ReportPageShell", "ReportTable"]),
-                     ("Organizations.razor", ["ReportPageShell", "ReportTable"]),
-                     ("Users.razor", ["ReportPageShell", "ReportFilterBar", "ReportTable"]),
                      ("Payments.razor", ["ReportPageShell", "ReportTable"]),
                  })
         {
@@ -48,6 +49,15 @@ public sealed class AdminDashboardRefactoringTests
 
             Assert.DoesNotContain("Sum(", text, StringComparison.Ordinal);
         }
+
+        var users = File.ReadAllText(Path.Combine(pages, "Users.razor"));
+        Assert.DoesNotContain("ReportPageShell", users, StringComparison.Ordinal);
+        Assert.DoesNotContain("ReportTable", users, StringComparison.Ordinal);
+        Assert.DoesNotContain("Fluent", users, StringComparison.OrdinalIgnoreCase);
+
+        var orgs = File.ReadAllText(Path.Combine(pages, "Organizations.razor"));
+        Assert.DoesNotContain("ReportPageShell", orgs, StringComparison.Ordinal);
+        Assert.DoesNotContain("ReportTable", orgs, StringComparison.Ordinal);
     }
 
     [Fact]

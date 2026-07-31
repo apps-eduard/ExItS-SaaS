@@ -753,10 +753,13 @@ public sealed class LayerDependencyTests
     {
         var root = FindRepositoryRoot();
         var adminCsproj = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "ExItS.Platform.Admin.csproj"));
+        var packages = File.ReadAllText(Path.Combine(root, "Directory.Packages.props"));
+        Assert.Contains("AntDesign", adminCsproj, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Include=\"AntDesign\" Version=\"1.6.2\"", packages, StringComparison.Ordinal);
         Assert.DoesNotContain("ExItS.Platform.Infrastructure", adminCsproj, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("EntityFrameworkCore", adminCsproj, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Npgsql", adminCsproj, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("AntDesign", adminCsproj, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("FluentUI", adminCsproj, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Tailwind", adminCsproj, StringComparison.OrdinalIgnoreCase);
 
         var adminSources = Directory.GetFiles(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin"), "*.cs", SearchOption.AllDirectories)
