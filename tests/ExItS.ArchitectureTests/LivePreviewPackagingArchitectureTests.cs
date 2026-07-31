@@ -18,6 +18,7 @@ public sealed class LivePreviewPackagingArchitectureTests
         Assert.Contains("name: exits-packaging", packaging, StringComparison.Ordinal);
         Assert.Contains("admin-web:", live, StringComparison.Ordinal);
         Assert.Contains("exits-live-preview-admin-web", live, StringComparison.Ordinal);
+        Assert.Contains("profiles: [\"apps\"]", live, StringComparison.Ordinal);
         Assert.Contains("exits_live_preview_platform_db_data", live, StringComparison.Ordinal);
         Assert.Contains("exits_live_preview_pos_db_data", live, StringComparison.Ordinal);
         Assert.Contains("NOT Production", live, StringComparison.Ordinal);
@@ -25,6 +26,10 @@ public sealed class LivePreviewPackagingArchitectureTests
         Assert.Contains("LivePreview__Enabled", live, StringComparison.Ordinal);
         Assert.DoesNotContain("HealthCare/", live, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(".Migrate(", live, StringComparison.Ordinal);
+
+        Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "README.live-preview.md")));
+        Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Start-LivePreviewLocal.ps1")));
+        Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Stop-LivePreviewLocal.ps1")));
 
         Assert.Contains("${LIVE_PREVIEW_ADMIN_HOST_PORT:-8090}:8080", live, StringComparison.Ordinal);
         Assert.Contains("${LIVE_PREVIEW_PLATFORM_API_HOST_PORT:-8091}:8080", live, StringComparison.Ordinal);

@@ -74,7 +74,7 @@ Authentication SoR remains Platform (**D-P13-02**). Deployment does not grant me
 |---|---|---|
 | Pilot packaging | `deploy/docker/docker-compose.pilot.yml`, nginx `pilot.conf` | **Non-production only** |
 | Packaging baseline | `deploy/docker/compose.yaml` (P14-WP02) | Local Compose testing; **not** Production cutover |
-| Live preview (personal) | `deploy/docker/compose.live-preview.yaml` (`exits-live-preview`) | Separate Admin+API+DB preview ports; **not** Production; **not** packaging |
+| Live preview (personal) | `deploy/docker/compose.live-preview.yaml` (`exits-live-preview`) | **Default:** Docker DBs only (ports 15533/15534); local Platform/POS/Admin via `Start-LivePreviewLocal.ps1`. Optional `--profile apps` for containerized APIs/Admin. **Not** Production; **not** packaging |
 | Ops scripts | `ops/deploy/*`, `ops/backup/*` | Pilot/ops helpers; Production cutover **not** evidenced |
 | Deployment library | `ExItS.Deployment` + CLI | Validation, backup gate, migration order, readiness evaluator |
 | AuthN | Phase 13 sessions + Bearer + external login | **R-091 closed for Phase 13 scope**; residuals remain |

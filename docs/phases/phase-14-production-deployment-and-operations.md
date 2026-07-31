@@ -4,7 +4,7 @@
 
 ## Status
 
-**Status:** **In progress.** **P14-WP01**–**P14-WP02** complete (including live-preview gap fix). Exact next: **P14-WP03** when authorized. Portfolio remains **not Production-ready**.
+**Status:** **In progress.** **P14-WP01**–**P14-WP02** complete (including live-preview quick-login + DB-only local workflow). Exact next: **P14-WP03** when authorized. Portfolio remains **not Production-ready**.
 
 Authoritative docs:
 

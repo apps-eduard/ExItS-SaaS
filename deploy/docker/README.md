@@ -1,11 +1,14 @@
-# ExItS Docker packaging + live preview (P14-WP02)
+# ExItS Docker packaging + live preview (P14-WP02 / P14-WP02A)
 
 ## Layout
 
 | File | Purpose |
 |---|---|
 | `compose.yaml` | **Default** packaging baseline (Platform API + POS API + separate PostgreSQL). Local deployment testing. **Not Production-ready.** |
-| `compose.live-preview.yaml` | **Separate** personal live-preview stack (`exits-live-preview`) with Admin + APIs + DBs. Independent ports/volumes/env. **Not Production.** |
+| `compose.live-preview.yaml` | Live-preview project `exits-live-preview`. **Default `up` = DBs only**; app services behind profile `apps`. |
+| `README.live-preview.md` | Authoritative daily workflow: Docker DBs + local .NET APIs/Admin |
+| `Start-LivePreviewLocal.ps1` | Bring up DBs (if needed) and start local Platform/POS/Admin |
+| `Stop-LivePreviewLocal.ps1` | Stop DBs without deleting volumes |
 | `docker-compose.pilot.yml` | Controlled **pilot** stack with Admin + nginx TLS template (NON-PRODUCTION) |
 | `Dockerfile.platform-api` | Platform API image |
 | `Dockerfile.pos-api` | PinoyBusinessPOS API image |
@@ -38,31 +41,32 @@ Notes:
 - TLS / reverse proxy are **not** included here (**P14-WP03**).
 - Portfolio remains **not Production-ready**.
 
-## Live preview stack (P14-WP02 gap fix)
+## Live preview (P14-WP02A) — recommended daily workflow
 
-Independent Compose project for opening Admin in a browser while packaging can stay up. Uses **different** project name, container names, volumes, ports, and env file.
+**Docker: databases only. Host: Platform API + POS API + Admin.**
+
+Full instructions: [`README.live-preview.md`](README.live-preview.md).
 
 ```powershell
 Copy-Item .env.live-preview.example .env.live-preview
 # Edit .env.live-preview — replace REPLACE_* passwords; never commit
 
-docker compose -f compose.live-preview.yaml --env-file .env.live-preview build
+# Databases only (reuses exits_live_preview_* volumes; never down -v)
 docker compose -f compose.live-preview.yaml --env-file .env.live-preview up -d
-docker compose -f compose.live-preview.yaml --env-file .env.live-preview ps
-docker compose -f compose.live-preview.yaml --env-file .env.live-preview down
+
+# Local APIs + Admin (new windows)
+.\Start-LivePreviewLocal.ps1
 ```
 
-| Service | Default host port | Open |
+| Surface | Default | Open |
 |---|---|---|
-| **admin-web** | **8090** | http://localhost:8090/ (redirects to `/admin`) |
-| platform-api | 8091 | http://localhost:8091/ and `/health` |
-| pos-api | 8092 | http://localhost:8092/health |
-| platform-db | 15533 | Postgres (ops tooling) |
-| pos-db | 15534 | Postgres (ops tooling) |
+| **Admin (local)** | **8090** | http://localhost:8090/ |
+| Platform API (local) | 8091 | http://localhost:8091/health |
+| POS API (local) | 8092 | http://localhost:8092/health |
+| platform-db (Docker) | 15533 | Postgres volume preserved |
+| pos-db (Docker) | 15534 | Postgres volume preserved |
 
-Uses `ASPNETCORE_ENVIRONMENT=Staging` with `LivePreview:Enabled=true` so Admin requires login and quick-login test users are seeded. **Not** Production-secure. Do **not** reuse packaging ports. Do **not** treat as P14-WP03.
-
-Open **http://localhost:8090/** → `/admin/login` → **Live Preview Test User** dropdown.
+Optional containerized apps: `--profile apps`. Do **not** reuse packaging ports. **Not** Production-secure. Do **not** treat as P14-WP03.
 
 ## Pilot stack (P9-WP05)
 
@@ -74,7 +78,9 @@ See `ops/deploy/README.md` and `docs/operations/pilot-and-deployment/`.
 
 ## Related docs
 
+- [Live preview workflow](README.live-preview.md)
 - [Production deployment architecture](../../docs/engineering/production-deployment-architecture.md)
 - [Production readiness audit](../../docs/engineering/production-readiness-audit.md)
 - [P14-WP02 report](../../docs/reports/P14-WP02-production-packaging-and-compose-baseline.md)
 - [P14-WP02 live-preview gap fix](../../docs/reports/P14-WP02-gap-fix-separate-live-preview-stack.md)
+- [P14-WP02A quick login](../../docs/reports/P14-WP02A-live-preview-test-users-and-quick-login.md)

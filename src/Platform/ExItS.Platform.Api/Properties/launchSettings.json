@@ -9,6 +9,19 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
+    },
+    "LivePreview": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:8091",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Staging",
+        "LivePreview__Enabled": "true",
+        "Security__EnforceHttps": "false",
+        "AllowedHosts": "localhost;127.0.0.1",
+        "Cors__AllowedOrigins__0": "http://localhost:8090"
+      }
     }
   }
 }

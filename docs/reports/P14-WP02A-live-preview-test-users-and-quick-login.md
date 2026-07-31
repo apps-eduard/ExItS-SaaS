@@ -2,48 +2,63 @@
 
 Phase marker: `P14-WP02A-live-preview-test-users-and-quick-login`
 
-Package: **P14-WP02A Gap Fix — Quick Login and Login CSS**
-Prior tip: `a0c7aaa2cf5154d096d45b8b978426ff122c814b`
-Feature tip: `494629ac419dbb2c17747487637cea21cba2a6bd`
+Package: **P14-WP02A Development Workflow Adjustment — Docker Databases Only, Local Web/API Execution**
+Prior tip: `844fdf17bece466d52228defdb03c2ae5c13b579`
+Feature tip: _(recorded after push)_
 
 ## Status
 
-**Complete.** Live-preview login at `http://localhost:8090/admin/login` loads CSS/JS anonymously, lists allowlisted test identities, and creates a real Platform Admin cookie session via HTTP form POST (membership/org context preserved). **Not Production.** **P14-WP03 not started.**
+**Complete.** Daily live-preview workflow is **Docker PostgreSQL only** (existing `exits_live_preview_*` volumes preserved) with **Platform API, POS API, and Platform Admin** run as local .NET processes. Optional containerized apps remain behind Compose profile `apps`. Quick-login / login CSS fixes from prior tips remain in effect. **Not Production.** **P14-WP03 not started.**
 
-## Root cause (gap fix)
+## Delivered workflow
 
-| Defect | Cause |
+```text
+Docker
+├── Platform PostgreSQL  (:15533, volume exits_live_preview_platform_db_data)
+└── POS PostgreSQL       (:15534, volume exits_live_preview_pos_db_data)
+
+Local .NET
+├── Platform API         (:8091, LivePreview profile)
+├── POS API              (:8092, LivePreview profile)
+└── Platform Admin       (:8090, LivePreview profile)
+```
+
+| Artifact | Role |
 |---|---|
-| Broken login CSS / dead Blazor | (1) `FallbackPolicy` + `MapStaticAssets()` required auth; (2) relative asset hrefs from `/admin/login` resolved to `/admin/*.css` → auth **302** (HTML as stylesheet) |
-| Quick-login did not sign in | Interactive Server `SignInAsync` cannot set cookies after the response has started; with assets blocked, the circuit never started |
+| `compose.live-preview.yaml` | Default `up` = DBs only; `platform-api` / `pos-api` / `admin-web` use `profiles: ["apps"]` |
+| `README.live-preview.md` | Operator doc for the workflow |
+| `Start-LivePreviewLocal.ps1` | DB up (no app containers) + local `dotnet run` windows |
+| `Stop-LivePreviewLocal.ps1` | `stop` / `down` **without** `-v` |
+| Launch profiles `LivePreview` | Staging + LivePreview ports on Platform/POS/Admin |
 
-## Fix
+## Operator
 
-| Change | Evidence |
-|---|---|
-| Anonymous static assets | `MapStaticAssets().AllowAnonymous()` |
-| Root-absolute asset URLs | `App.razor` `RootAsset(...)` so `/admin/*` never resolves CSS/JS under `/admin/` |
-| Cookie login via HTTP POST | `POST /admin/login/credentials`, `POST /admin/login/live-preview` → Platform API session + Admin cookie → redirect `/admin` |
-| Login UI | SSR forms (no InteractiveServer on login); antiforgery token; identities still from Platform API |
-| DataProtection (live preview) | File-system key ring under `DataProtection:KeysPath` (`/tmp/exits-admin-dp-keys` in compose) |
+```powershell
+cd deploy\docker
+# .env.live-preview already filled; never commit
+docker compose -f compose.live-preview.yaml --env-file .env.live-preview up -d
+.\Start-LivePreviewLocal.ps1
+```
+
+Open **http://localhost:8090/admin/login**.
+
+Do **not** `docker compose down -v` (preserves seeded preview identities).
+
+## Explicit exclusions
+
+- P14-WP03 TLS/proxy
+- Resetting or deleting live-preview DB volumes
+- Changing packaging compose ports/DBs
+- Phase 15 Admin UX
 
 ## Validation
 
 | Check | Result |
 |---|---|
-| `GET` fingerprinted CSS / `blazor.web.js` | **200** (no login redirect) |
-| Identities in login HTML | 5 allowlisted options |
-| `POST /admin/login/live-preview` (`platform-admin`) | **302** → `/admin` + `.ExItS.Admin.Auth` cookie |
-| Dashboard as platform-admin | **200**; chip `preview-platform-admin`; org context **No organization** |
-| Dashboard as org-admin | **200**; org context **Preview Organization A** |
+| `docker compose ... up -d` (no profile) | Only `platform-db` + `pos-db` |
+| Volumes `exits_live_preview_*_db_data` | Present / unchanged |
+| Architecture tests | Live-preview profile + README/scripts asserted |
 | Full Release tests | **1267 passed / 0 failed / 0 skipped** |
-
-## Explicit exclusions
-
-- P14-WP03 TLS/proxy
-- Production `LivePreview:Enabled`
-- Packaging compose port/DB changes
-- Phase 15 Admin nav/user UX
 
 ## Exact next
 

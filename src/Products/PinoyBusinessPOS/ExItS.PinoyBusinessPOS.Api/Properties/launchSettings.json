@@ -9,6 +9,21 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
+    },
+    "LivePreview": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:8092",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Staging",
+        "LivePreview__Enabled": "true",
+        "Security__EnforceHttps": "false",
+        "AllowedHosts": "localhost;127.0.0.1",
+        "Cors__AllowedOrigins__0": "http://localhost:8090",
+        "LivePreview__PlatformApiBaseUrl": "http://localhost:8091",
+        "PlatformAuth__BaseUrl": "http://localhost:8091"
+      }
     }
   }
 }
