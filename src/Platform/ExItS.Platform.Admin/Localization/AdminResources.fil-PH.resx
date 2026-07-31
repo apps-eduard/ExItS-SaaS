@@ -65,6 +65,11 @@
   <data name="Nav_SectionCommercial" xml:space="preserve"><value>Komersyal</value></data>
   <data name="Nav_SectionAccess" xml:space="preserve"><value>Access</value></data>
   <data name="Nav_SectionCompliance" xml:space="preserve"><value>Pagsunod (Audit)</value></data>
+  <data name="Nav_SectionOperations" xml:space="preserve"><value>Operasyon</value></data>
+  <data name="Nav_SectionOrganization" xml:space="preserve"><value>Organisasyon</value></data>
+  <data name="Nav_SectionProducts" xml:space="preserve"><value>Mga Produkto</value></data>
+  <data name="Nav_SectionSubscription" xml:space="preserve"><value>Subscription</value></data>
+  <data name="Nav_SectionSecurity" xml:space="preserve"><value>Seguridad</value></data>
   <data name="Nav_Dashboard" xml:space="preserve"><value>Dashboard</value></data>
   <data name="Nav_Products" xml:space="preserve"><value>Mga Produkto</value></data>
   <data name="Nav_ProductEntry" xml:space="preserve"><value>Product entry</value></data>
@@ -72,6 +77,21 @@
   <data name="Nav_Subscriptions" xml:space="preserve"><value>Mga Subscription</value></data>
   <data name="Nav_Payments" xml:space="preserve"><value>Mga Bayad</value></data>
   <data name="Nav_Users" xml:space="preserve"><value>Mga User</value></data>
+  <data name="Nav_PlatformUsers" xml:space="preserve"><value>Mga Platform User</value></data>
+  <data name="Nav_OrganizationUsers" xml:space="preserve"><value>Mga User ng Organisasyon</value></data>
+  <data name="Nav_Plans" xml:space="preserve"><value>Mga Plano</value></data>
+  <data name="Nav_ProductAccess" xml:space="preserve"><value>Access sa Produkto</value></data>
+  <data name="Nav_SystemStatus" xml:space="preserve"><value>Katayuan ng Sistema</value></data>
+  <data name="Nav_AuditLogs" xml:space="preserve"><value>Mga Audit Log</value></data>
+  <data name="Nav_OrganizationProfile" xml:space="preserve"><value>Profile ng Organisasyon</value></data>
+  <data name="Nav_Members" xml:space="preserve"><value>Mga Miyembro</value></data>
+  <data name="Nav_MyProducts" xml:space="preserve"><value>Aking Mga Produkto</value></data>
+  <data name="Nav_LaunchProduct" xml:space="preserve"><value>Ilunsad ang Produkto</value></data>
+  <data name="Nav_CurrentPlan" xml:space="preserve"><value>Kasalukuyang Plano</value></data>
+  <data name="Nav_Usage" xml:space="preserve"><value>Paggamit</value></data>
+  <data name="Nav_BillingRenewal" xml:space="preserve"><value>Billing / Renewal</value></data>
+  <data name="Nav_ActivityLog" xml:space="preserve"><value>Activity Log</value></data>
+  <data name="Nav_Phase15" xml:space="preserve"><value>Phase 15</value></data>
   <data name="Nav_Entitlements" xml:space="preserve"><value>Mga Entitlement</value></data>
   <data name="Nav_Audit" xml:space="preserve"><value>Audit</value></data>
   <data name="Nav_Toggle" xml:space="preserve"><value>Menu</value></data>
@@ -79,6 +99,15 @@
   <data name="Nav_ExpandSidebar" xml:space="preserve"><value>I-expand ang sidebar</value></data>
   <data name="Nav_CloseDrawer" xml:space="preserve"><value>Isara ang navigation</value></data>
   <data name="Nav_OpenDrawer" xml:space="preserve"><value>Buksan ang navigation</value></data>
+  <data name="Header_Account" xml:space="preserve"><value>Account</value></data>
+  <data name="Header_NotificationsEmpty" xml:space="preserve"><value>Walang notification</value></data>
+  <data name="Account_MyProfile" xml:space="preserve"><value>Aking Profile</value></data>
+  <data name="Account_AccountSettings" xml:space="preserve"><value>Mga Setting ng Account</value></data>
+  <data name="Account_Preferences" xml:space="preserve"><value>Mga Preference</value></data>
+  <data name="Account_ChangePassword" xml:space="preserve"><value>Palitan ang Password</value></data>
+  <data name="Account_PlatformSettings" xml:space="preserve"><value>Mga Setting ng Platform</value></data>
+  <data name="Account_OrganizationSettings" xml:space="preserve"><value>Mga Setting ng Organisasyon</value></data>
+  <data name="Account_SignOut" xml:space="preserve"><value>Mag-sign out</value></data>
 
   <data name="Common_Save" xml:space="preserve"><value>I-save</value></data>
   <data name="Common_Cancel" xml:space="preserve"><value>Kanselahin</value></data>

@@ -138,6 +138,7 @@ builder.Services.AddHttpClient("PlatformApiUnauthenticated", (services, client) 
 builder.Services.AddScoped<ThemeService>();
 builder.Services.AddScoped<CultureService>();
 builder.Services.AddScoped<PlatformPermissionState>();
+builder.Services.AddScoped<AdminShellContext>();
 builder.Services.AddScoped<ToastService>();
 
 var app = builder.Build();

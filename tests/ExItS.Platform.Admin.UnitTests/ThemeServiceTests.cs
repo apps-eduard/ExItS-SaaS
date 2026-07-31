@@ -20,10 +20,10 @@ public sealed class ThemeServiceTests
     }
 
     [Theory]
-    [InlineData(AdminTheme.System, "light")]
+    [InlineData(AdminTheme.System, "system")]
     [InlineData(AdminTheme.Light, "light")]
     [InlineData(AdminTheme.Dark, "dark")]
-    public void ToStorageValue_writes_binary_light_or_dark(AdminTheme theme, string expected)
+    public void ToStorageValue_writes_light_dark_or_system(AdminTheme theme, string expected)
     {
         Assert.Equal(expected, ThemeService.ToStorageValue(theme));
     }

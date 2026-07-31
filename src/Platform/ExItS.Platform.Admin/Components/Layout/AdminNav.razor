@@ -1,123 +1,204 @@
 @inject PlatformPermissionState Permissions
+@inject AdminShellContext Shell
 @inject IStringLocalizer<AdminResources> L
 @inject NavigationManager Nav
 @using AntDesign
 @implements IDisposable
+
+@*
+  Business navigation only. Session / profile / sign-out live in the header.
+  Platform vs Organization menus are mutually exclusive (platform permissions win).
+*@
 
 <Menu Theme="MenuTheme.Dark"
       Mode="MenuMode.Inline"
       InlineCollapsed="Collapsed"
       SelectedKeys="_selected"
       DefaultOpenKeys="_openKeys"
-      Class="exits-admin-menu">
+      Class="exits-admin-menu"
+      OnMenuItemClicked="OnMenuItemClicked">
     <MenuItem Key="dashboard" RouterLink="/admin" RouterMatch="NavLinkMatch.All" Icon="dashboard">
         @L["Nav_Dashboard"]
     </MenuItem>
 
-    @if (_permissionsReady && ShowUsersSection)
+    @if (_ready && Shell.IsPlatformShell)
     {
-        <SubMenu Key="users" TitleTemplate="@UsersTitle">
-            @if (CanView(PlatformPermissionCodes.ManagePlatformUsers))
-            {
-                <MenuItem Key="platform-users" RouterLink="/admin/users" Icon="user">
-                    @L["Nav_Users"]
-                </MenuItem>
-            }
-            @if (CanView(PlatformPermissionCodes.ViewPortfolio))
-            {
-                <MenuItem Key="org-users" RouterLink="/admin/organizations" Icon="team">
-                    @L["Nav_Organizations"]
-                </MenuItem>
-            }
-        </SubMenu>
-    }
+        @if (ShowPlatformUsersSection)
+        {
+            <SubMenu Key="users" TitleTemplate="@UsersTitle">
+                @if (CanView(PlatformPermissionCodes.ManagePlatformUsers))
+                {
+                    <MenuItem Key="platform-users" RouterLink="/admin/users" Icon="user">
+                        @L["Nav_PlatformUsers"]
+                    </MenuItem>
+                }
+                @* Dedicated Organization Users list is Phase 15 — no route yet. *@
+                @if (CanView(PlatformPermissionCodes.ManageMemberships))
+                {
+                    <MenuItem Key="org-users" Disabled Class="exits-nav-phase15">
+                        @L["Nav_OrganizationUsers"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                    </MenuItem>
+                }
+            </SubMenu>
+        }
 
-    @if (_permissionsReady && ShowCommercialSection)
-    {
-        <SubMenu Key="commercial" TitleTemplate="@CommercialTitle">
-            @if (CanView(PlatformPermissionCodes.ViewPortfolio))
-            {
-                <MenuItem Key="organizations" RouterLink="/admin/organizations" Icon="bank">
-                    @L["Nav_Organizations"]
-                </MenuItem>
-                <MenuItem Key="products" RouterLink="/admin/products" Icon="appstore">
-                    @L["Nav_Products"]
-                </MenuItem>
-                <MenuItem Key="product-entry" RouterLink="/admin/product-entry" Icon="plus-square">
-                    @L["Nav_ProductEntry"]
-                </MenuItem>
-                <MenuItem Key="plans" RouterLink="/admin/products" Icon="profile">
-                    @L["Nav_Products"]
-                </MenuItem>
-            }
-            @if (CanView(PlatformPermissionCodes.ManageSubscriptions))
-            {
-                <MenuItem Key="subscriptions" RouterLink="/admin/subscriptions" Icon="calendar">
-                    @L["Nav_Subscriptions"]
-                </MenuItem>
-            }
-            @if (CanView(PlatformPermissionCodes.ManageManualPayments))
-            {
-                <MenuItem Key="payments" RouterLink="/admin/payments" Icon="dollar">
-                    @L["Nav_Payments"]
-                </MenuItem>
-            }
-            @if (CanView(PlatformPermissionCodes.ViewPortfolio))
-            {
-                <MenuItem Key="entitlements" RouterLink="/admin/entitlements" Icon="key">
-                    @L["Nav_Entitlements"]
-                </MenuItem>
-            }
-        </SubMenu>
-    }
+        @if (ShowCommercialSection)
+        {
+            <SubMenu Key="commercial" TitleTemplate="@CommercialTitle">
+                @if (CanView(PlatformPermissionCodes.ViewPortfolio))
+                {
+                    <MenuItem Key="organizations" RouterLink="/admin/organizations" Icon="bank">
+                        @L["Nav_Organizations"]
+                    </MenuItem>
+                    <MenuItem Key="products" RouterLink="/admin/products" Icon="appstore">
+                        @L["Nav_Products"]
+                    </MenuItem>
+                    <MenuItem Key="plans" Disabled Class="exits-nav-phase15">
+                        @L["Nav_Plans"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                    </MenuItem>
+                }
+                @if (CanView(PlatformPermissionCodes.ManageSubscriptions))
+                {
+                    <MenuItem Key="subscriptions" RouterLink="/admin/subscriptions" Icon="calendar">
+                        @L["Nav_Subscriptions"]
+                    </MenuItem>
+                }
+            </SubMenu>
+        }
 
-    @if (_permissionsReady && CanView(PlatformPermissionCodes.ViewAuditRecords))
-    {
-        <SubMenu Key="ops" TitleTemplate="@OpsTitle">
-            <MenuItem Key="audit" RouterLink="/admin/audit" Icon="audit">
-                @L["Nav_Audit"]
+        <SubMenu Key="operations" TitleTemplate="@OperationsTitle">
+            @if (CanView(PlatformPermissionCodes.ManageProductAccess))
+            {
+                <MenuItem Key="product-access" Disabled Class="exits-nav-phase15">
+                    @L["Nav_ProductAccess"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                </MenuItem>
+            }
+            <MenuItem Key="system-status" Disabled Class="exits-nav-phase15">
+                @L["Nav_SystemStatus"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
             </MenuItem>
+            @if (CanView(PlatformPermissionCodes.ViewAuditRecords))
+            {
+                <MenuItem Key="audit" RouterLink="/admin/audit" Icon="audit">
+                    @L["Nav_AuditLogs"]
+                </MenuItem>
+            }
+        </SubMenu>
+    }
+    else if (_ready && Shell.IsOrganizationShell)
+    {
+        <SubMenu Key="organization" TitleTemplate="@OrganizationTitle">
+            @if (Shell.SelectedOrganizationId is Guid orgId && CanView(PlatformPermissionCodes.ViewPortfolio))
+            {
+                <MenuItem Key="org-profile" RouterLink="@($"/admin/organizations/{orgId}")" Icon="bank">
+                    @L["Nav_OrganizationProfile"]
+                </MenuItem>
+            }
+            else
+            {
+                <MenuItem Key="org-profile" Disabled Class="exits-nav-phase15">
+                    @L["Nav_OrganizationProfile"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                </MenuItem>
+            }
+            @if (Shell.SelectedOrganizationId is Guid membersOrg && CanView(PlatformPermissionCodes.ManageMemberships))
+            {
+                <MenuItem Key="org-members" RouterLink="@($"/admin/organizations/{membersOrg}/members")" Icon="team">
+                    @L["Nav_Members"]
+                </MenuItem>
+            }
+            else
+            {
+                <MenuItem Key="org-members" Disabled Class="exits-nav-phase15">
+                    @L["Nav_Members"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                </MenuItem>
+            }
+        </SubMenu>
+
+        <SubMenu Key="org-products" TitleTemplate="@OrgProductsTitle">
+            @if (Shell.SelectedOrganizationId is Guid accessOrg && CanView(PlatformPermissionCodes.ManageProductAccess))
+            {
+                <MenuItem Key="my-products" RouterLink="@($"/admin/organizations/{accessOrg}/product-access")" Icon="appstore">
+                    @L["Nav_MyProducts"]
+                </MenuItem>
+            }
+            else
+            {
+                <MenuItem Key="my-products" Disabled Class="exits-nav-phase15">
+                    @L["Nav_MyProducts"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                </MenuItem>
+            }
+            <MenuItem Key="launch-product" Disabled Class="exits-nav-phase15">
+                @L["Nav_LaunchProduct"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+            </MenuItem>
+        </SubMenu>
+
+        <SubMenu Key="subscription" TitleTemplate="@SubscriptionTitle">
+            <MenuItem Key="current-plan" Disabled Class="exits-nav-phase15">
+                @L["Nav_CurrentPlan"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+            </MenuItem>
+            <MenuItem Key="usage" Disabled Class="exits-nav-phase15">
+                @L["Nav_Usage"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+            </MenuItem>
+            <MenuItem Key="billing" Disabled Class="exits-nav-phase15">
+                @L["Nav_BillingRenewal"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+            </MenuItem>
+        </SubMenu>
+
+        <SubMenu Key="security" TitleTemplate="@SecurityTitle">
+            @if (CanView(PlatformPermissionCodes.ViewAuditRecords))
+            {
+                <MenuItem Key="activity-log" RouterLink="/admin/audit" Icon="audit">
+                    @L["Nav_ActivityLog"]
+                </MenuItem>
+            }
+            else
+            {
+                <MenuItem Key="activity-log" Disabled Class="exits-nav-phase15">
+                    @L["Nav_ActivityLog"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                </MenuItem>
+            }
         </SubMenu>
     }
 </Menu>
 
 @code {
     [Parameter] public bool Collapsed { get; set; }
+    [Parameter] public EventCallback OnNavigate { get; set; }
 
-    private bool _permissionsReady;
+    private bool _ready;
     private string[] _selected = ["dashboard"];
-    private string[] _openKeys = ["users", "commercial", "ops"];
+    private string[] _openKeys = ["users", "commercial", "operations", "organization", "org-products", "subscription", "security"];
 
-    private RenderFragment UsersTitle => __builder =>
-    {
-        <span><Icon Type="team" Theme="IconThemeType.Outline" /><span>@L["Nav_Users"]</span></span>
-    };
+    private RenderFragment UsersTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_Users"]); b.CloseElement(); };
+    private RenderFragment CommercialTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionCommercial"]); b.CloseElement(); };
+    private RenderFragment OperationsTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionOperations"]); b.CloseElement(); };
+    private RenderFragment OrganizationTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionOrganization"]); b.CloseElement(); };
+    private RenderFragment OrgProductsTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionProducts"]); b.CloseElement(); };
+    private RenderFragment SubscriptionTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionSubscription"]); b.CloseElement(); };
+    private RenderFragment SecurityTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionSecurity"]); b.CloseElement(); };
 
-    private RenderFragment CommercialTitle => __builder =>
-    {
-        <span><Icon Type="shop" Theme="IconThemeType.Outline" /><span>@L["Nav_SectionCommercial"]</span></span>
-    };
-
-    private RenderFragment OpsTitle => __builder =>
-    {
-        <span><Icon Type="safety" Theme="IconThemeType.Outline" /><span>@L["Nav_SectionCompliance"]</span></span>
-    };
-
-    private bool ShowUsersSection =>
+    private bool ShowPlatformUsersSection =>
         CanView(PlatformPermissionCodes.ManagePlatformUsers)
-        || CanView(PlatformPermissionCodes.ViewPortfolio);
+        || CanView(PlatformPermissionCodes.ManageMemberships);
 
     private bool ShowCommercialSection =>
         CanView(PlatformPermissionCodes.ViewPortfolio)
-        || CanView(PlatformPermissionCodes.ManageSubscriptions)
-        || CanView(PlatformPermissionCodes.ManageManualPayments);
+        || CanView(PlatformPermissionCodes.ManageSubscriptions);
 
     protected override async Task OnInitializedAsync()
     {
         await Permissions.EnsureLoadedAsync();
-        _permissionsReady = true;
+        await Shell.EnsureLoadedAsync();
+        _ready = true;
         SyncSelection();
         Nav.LocationChanged += OnLocationChanged;
+    }
+
+    private async Task OnMenuItemClicked(MenuItem item)
+    {
+        if (OnNavigate.HasDelegate)
+        {
+            await OnNavigate.InvokeAsync();
+        }
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
@@ -133,18 +214,18 @@
         {
             "/admin" => ["dashboard"],
             var p when p.StartsWith("/admin/users", StringComparison.Ordinal) => ["platform-users"],
-            var p when p.StartsWith("/admin/organizations", StringComparison.Ordinal) => ["organizations"],
+            var p when p.Contains("/members", StringComparison.Ordinal) => Shell.IsOrganizationShell ? ["org-members"] : ["organizations"],
+            var p when p.Contains("/product-access", StringComparison.Ordinal) => Shell.IsOrganizationShell ? ["my-products"] : ["organizations"],
+            var p when p.StartsWith("/admin/organizations", StringComparison.Ordinal) =>
+                Shell.IsOrganizationShell ? ["org-profile"] : ["organizations"],
             var p when p.StartsWith("/admin/products", StringComparison.Ordinal) => ["products"],
-            var p when p.StartsWith("/admin/product-entry", StringComparison.Ordinal) => ["product-entry"],
             var p when p.StartsWith("/admin/subscriptions", StringComparison.Ordinal) => ["subscriptions"],
-            var p when p.StartsWith("/admin/payments", StringComparison.Ordinal) => ["payments"],
-            var p when p.StartsWith("/admin/entitlements", StringComparison.Ordinal) => ["entitlements"],
-            var p when p.StartsWith("/admin/audit", StringComparison.Ordinal) => ["audit"],
+            var p when p.StartsWith("/admin/audit", StringComparison.Ordinal) =>
+                Shell.IsOrganizationShell ? ["activity-log"] : ["audit"],
             _ => _selected
         };
 
-        if (next.Length == _selected.Length
-            && next.SequenceEqual(_selected, StringComparer.Ordinal))
+        if (next.Length == _selected.Length && next.SequenceEqual(_selected, StringComparer.Ordinal))
         {
             return;
         }

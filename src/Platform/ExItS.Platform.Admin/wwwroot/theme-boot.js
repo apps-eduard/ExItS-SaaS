@@ -1,8 +1,6 @@
 // One authoritative theme boot for Platform Admin.
-// Persisted preference: light | dark (legacy "system" → light).
-// Swaps Ant Design light/dark CSS + data-theme so components and shell match.
-// Blazor enhanced navigation strips dynamically-set <html> attributes unless
-// reapplied via Blazor.addEventListener('enhancedload') — NOT document.addEventListener.
+// Persisted preference: light | dark | system.
+// Swaps Ant Design light/dark CSS; data-theme keeps the preference (system resolves for CSS).
 (function () {
     "use strict";
     var THEME_KEY = "exits-admin-theme";
@@ -10,20 +8,28 @@
     var ANTD_LIGHT = "/_content/AntDesign/css/ant-design-blazor.css";
     var ANTD_DARK = "/_content/AntDesign/css/ant-design-blazor.dark.css";
 
-    function normalizeTheme(value) {
+    function normalizePreference(value) {
         if (!value) {
             return "light";
         }
         var v = String(value).trim().toLowerCase();
-        if (v === "dark") {
-            return "dark";
+        if (v === "dark" || v === "light" || v === "system") {
+            return v;
         }
-        // light + legacy system
         return "light";
     }
 
-    function setAntdStylesheet(theme) {
-        var href = theme === "dark" ? ANTD_DARK : ANTD_LIGHT;
+    function resolveAppearance(preference) {
+        if (preference === "system") {
+            return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+        }
+        return preference === "dark" ? "dark" : "light";
+    }
+
+    function setAntdStylesheet(appearance) {
+        var href = appearance === "dark" ? ANTD_DARK : ANTD_LIGHT;
         var link = document.getElementById("exits-antd-theme");
         if (!link) {
             link = document.querySelector('link[href*="ant-design-blazor"]');
@@ -43,28 +49,27 @@
     }
 
     function applyTheme(theme) {
-        var normalized = normalizeTheme(theme);
+        var preference = normalizePreference(theme);
+        var appearance = resolveAppearance(preference);
         var root = document.documentElement;
-        root.setAttribute("data-theme", normalized);
-        root.classList.toggle("exits-theme-dark", normalized === "dark");
+        root.setAttribute("data-theme", preference);
+        root.classList.toggle("exits-theme-dark", appearance === "dark");
         if (document.body) {
-            document.body.setAttribute("data-theme", normalized);
-            document.body.classList.toggle("exits-theme-dark", normalized === "dark");
+            document.body.setAttribute("data-theme", preference);
+            document.body.classList.toggle("exits-theme-dark", appearance === "dark");
         }
-        root.dataset.exitsTheme = normalized;
-        setAntdStylesheet(normalized);
+        root.dataset.exitsTheme = preference;
+        setAntdStylesheet(appearance);
     }
 
     function readAndApplyTheme() {
         try {
-            var stored = window.localStorage.getItem(THEME_KEY);
-            applyTheme(normalizeTheme(stored));
+            applyTheme(normalizePreference(window.localStorage.getItem(THEME_KEY)));
         } catch (e) {
             applyTheme("light");
         }
     }
 
-    // First paint — link#exits-antd-theme should already be in <head> before this script.
     readAndApplyTheme();
 
     try {
@@ -72,9 +77,7 @@
         if (culture === "fil-PH" || culture === "en") {
             document.documentElement.setAttribute("lang", culture);
         }
-    } catch (e) {
-        /* ignore */
-    }
+    } catch (e) { /* ignore */ }
 
     function attachBlazorEnhancedLoad() {
         if (!window.Blazor || typeof window.Blazor.addEventListener !== "function") {
@@ -101,6 +104,16 @@
                 window.clearInterval(timer);
             }
         }, 25);
+    }
+
+    if (window.matchMedia) {
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
+            try {
+                if (normalizePreference(window.localStorage.getItem(THEME_KEY)) === "system") {
+                    readAndApplyTheme();
+                }
+            } catch (e) { /* ignore */ }
+        });
     }
 
     if (document.readyState === "loading") {
@@ -134,7 +147,7 @@
         set: function (key, value) {
             try { window.localStorage.setItem(key, value); } catch (e) { /* ignore */ }
         },
-        normalize: normalizeTheme,
+        normalize: normalizePreference,
         applyTheme: applyTheme,
         applyCulture: function (culture) {
             if (culture) {
@@ -146,7 +159,7 @@
         },
         reapplyFromStorage: function () {
             try {
-                applyTheme(normalizeTheme(window.localStorage.getItem(THEME_KEY)));
+                applyTheme(normalizePreference(window.localStorage.getItem(THEME_KEY)));
             } catch (e) {
                 applyTheme("light");
             }

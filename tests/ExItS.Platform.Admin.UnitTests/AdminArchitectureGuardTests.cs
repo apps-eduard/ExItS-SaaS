@@ -170,16 +170,17 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("ToStorageValue", themeService, StringComparison.Ordinal);
         Assert.Contains("applyTheme", themeService, StringComparison.Ordinal);
         Assert.Contains("\"light\"", themeService, StringComparison.Ordinal);
-        Assert.Contains("ToggleLightDarkAsync", themeService, StringComparison.Ordinal);
+        Assert.Contains("\"system\"", themeService, StringComparison.Ordinal);
+        Assert.Contains("AdminTheme.System", themeService, StringComparison.Ordinal);
 
         var selector = File.ReadAllText(Path.Combine(adminRoot, "Components", "Shared", "ThemeSelector.razor"));
-        Assert.DoesNotContain("<Select", selector, StringComparison.Ordinal);
-        Assert.Contains("exits-theme-icon", selector, StringComparison.Ordinal);
-        Assert.Contains("sun", selector, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("moon", selector, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("<Select", selector, StringComparison.Ordinal);
+        Assert.Contains("Theme_System", selector, StringComparison.Ordinal);
+        Assert.Contains("Theme_Light", selector, StringComparison.Ordinal);
+        Assert.Contains("Theme_Dark", selector, StringComparison.Ordinal);
         Assert.Contains("LocationChanged", selector, StringComparison.Ordinal);
         Assert.Contains("reapplyFromStorage", selector, StringComparison.Ordinal);
-        Assert.Contains("ToggleLightDarkAsync", selector, StringComparison.Ordinal);
+        Assert.DoesNotContain("ToggleLightDarkAsync", selector, StringComparison.Ordinal);
 
         var app = File.ReadAllText(Path.Combine(adminRoot, "Components", "App.razor"));
         Assert.DoesNotContain("data-permanent", app, StringComparison.Ordinal);
@@ -204,6 +205,9 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("skip-link", layout, StringComparison.Ordinal);
         Assert.Contains("<Sider", layout, StringComparison.Ordinal);
         Assert.Contains("<Header", layout, StringComparison.Ordinal);
+        Assert.Contains("<Drawer", layout, StringComparison.Ordinal);
+        Assert.Contains("Account_SignOut", layout, StringComparison.Ordinal);
+        Assert.Contains("OrganizationContextSwitcher", layout, StringComparison.Ordinal);
         Assert.DoesNotContain("data-permanent", layout, StringComparison.Ordinal);
 
         foreach (var path in Directory.EnumerateFiles(Path.Combine(adminRoot, "Components"), "*.razor", SearchOption.AllDirectories))
@@ -286,6 +290,8 @@ public sealed class AdminArchitectureGuardTests
         Assert.DoesNotContain("ThemeHost", layout, StringComparison.Ordinal);
         Assert.DoesNotContain("ActorDisplayName", layout, StringComparison.Ordinal);
         Assert.Contains("LanguageSelector", layout, StringComparison.Ordinal);
+        Assert.Contains("AdminShellContext", layout, StringComparison.Ordinal);
+        Assert.Contains("Account_SignOut", layout, StringComparison.Ordinal);
         Assert.DoesNotContain("EnvironmentBanner", layout, StringComparison.Ordinal);
         Assert.DoesNotContain("app-shell", layout, StringComparison.Ordinal);
         Assert.DoesNotContain("Fluent", layout, StringComparison.OrdinalIgnoreCase);
@@ -319,14 +325,27 @@ public sealed class AdminArchitectureGuardTests
     {
         var root = FindRepositoryRoot();
         var nav = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "AdminNav.razor"));
-        foreach (var href in new[] { "/admin", "/admin/products", "/admin/organizations", "/admin/subscriptions", "/admin/payments", "/admin/entitlements", "/admin/users", "/admin/audit" })
+        foreach (var href in new[] { "/admin", "/admin/products", "/admin/organizations", "/admin/subscriptions", "/admin/users", "/admin/audit" })
         {
             Assert.Contains($"RouterLink=\"{href}\"", nav, StringComparison.Ordinal);
         }
 
+        Assert.Contains("Nav_PlatformUsers", nav, StringComparison.Ordinal);
+        Assert.Contains("Nav_OrganizationUsers", nav, StringComparison.Ordinal);
+        Assert.Contains("Nav_Phase15", nav, StringComparison.Ordinal);
+        Assert.Contains("IsPlatformShell", nav, StringComparison.Ordinal);
+        Assert.Contains("IsOrganizationShell", nav, StringComparison.Ordinal);
+        Assert.DoesNotContain("Sign out", nav, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("/admin/logout", nav, StringComparison.Ordinal);
+        Assert.DoesNotContain("RouterLink=\"/admin/payments\"", nav, StringComparison.Ordinal);
+        Assert.DoesNotContain("RouterLink=\"/admin/entitlements\"", nav, StringComparison.Ordinal);
         Assert.Contains("PlatformPermissionCodes", nav, StringComparison.Ordinal);
         Assert.Contains("<Menu", nav, StringComparison.Ordinal);
         Assert.Contains("<SubMenu", nav, StringComparison.Ordinal);
+
+        Assert.Contains("AddScoped<AdminShellContext>",
+            File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Program.cs")),
+            StringComparison.Ordinal);
     }
 
     private static string FindRepositoryRoot()

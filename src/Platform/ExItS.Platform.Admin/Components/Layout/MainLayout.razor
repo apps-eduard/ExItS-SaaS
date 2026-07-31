@@ -3,62 +3,116 @@
 @using AntDesign
 @inject IStringLocalizer<AdminResources> L
 @inject NavigationManager Nav
+@inject AdminShellContext Shell
+@implements IDisposable
 
 @*
-  Authoritative Platform Admin shell (P15-WP01 Ant Design Pro–inspired).
-  Single shell — do not introduce a parallel layout.
+  Authoritative Admin shell — business nav in sider; session chrome in header.
 *@
 
 <a class="skip-link" href="#main-content">@L["Nav_SkipToContent"]</a>
 
 <Layout Class="exits-admin-layout">
-    <Sider Collapsible
-           @bind-Collapsed="_collapsed"
-           Theme="SiderTheme.Dark"
-           Width="220"
-           CollapsedWidth="64"
-           Breakpoint="@BreakpointType.Lg"
-           Class="exits-admin-sider">
-        <div class="exits-brand" @onclick='() => Nav.NavigateTo("/admin")'>
-            <span class="exits-brand-mark">EA</span>
-            @if (!_collapsed)
-            {
-                <span class="exits-brand-text">@L["Brand_Name"]</span>
-            }
-        </div>
-        <AdminNav Collapsed="_collapsed" />
-    </Sider>
+    @if (!_mobile)
+    {
+        <Sider Collapsible
+               @bind-Collapsed="_collapsed"
+               Theme="SiderTheme.Dark"
+               Width="220"
+               CollapsedWidth="64"
+               Breakpoint="@BreakpointType.Lg"
+               OnBreakpoint="OnBreakpoint"
+               Class="exits-admin-sider">
+            <div class="exits-brand" @onclick='() => Nav.NavigateTo("/admin")'>
+                <span class="exits-brand-mark">EA</span>
+                @if (!_collapsed)
+                {
+                    <span class="exits-brand-text">@L["Brand_Name"]</span>
+                }
+            </div>
+            <AdminNav Collapsed="_collapsed" />
+        </Sider>
+    }
 
     <Layout>
         <Header Class="exits-admin-header">
             <div class="exits-header-left">
-                <Button Type="@ButtonType.Text"
-                        Icon="@(_collapsed ? "menu-unfold" : "menu-fold")"
-                        OnClick="ToggleCollapsed" />
-                <span class="exits-header-title">@L["Brand_Name"]</span>
-                <OrganizationContextSwitcher />
+                @if (_mobile)
+                {
+                    <Button Type="@ButtonType.Text" Icon="menu" OnClick="OpenDrawer" />
+                }
+                else
+                {
+                    <Button Type="@ButtonType.Text"
+                            Icon="@(_collapsed ? "menu-unfold" : "menu-fold")"
+                            OnClick="ToggleCollapsed" />
+                }
+                <span class="exits-header-title">@_pageTitle</span>
             </div>
             <div class="exits-header-right">
+                <span title="@L["Header_NotificationsEmpty"]">
+                    <Button Type="@ButtonType.Text" Icon="bell" Class="exits-header-icon-btn" />
+                </span>
                 <ThemeSelector />
                 <LanguageSelector />
+                <OrganizationContextSwitcher />
                 <AuthorizeView>
                     <Authorized>
-                        <Dropdown>
-                            <Overlay>
-                                <Menu>
-                                    <MenuItem OnClick='() => Nav.NavigateTo("/admin/account/change-password")'>Change password</MenuItem>
-                                    <MenuItem OnClick='() => Nav.NavigateTo("/admin/account/recovery-email")'>Recovery email</MenuItem>
-                                    <MenuDivider />
-                                    <MenuItem OnClick='() => Nav.NavigateTo("/admin/logout", forceLoad: true)'>Sign out</MenuItem>
-                                </Menu>
-                            </Overlay>
-                            <ChildContent>
-                                <Button Type="@ButtonType.Text" Class="exits-account-btn">
-                                    <Avatar Size="AvatarSize.Small" Style="background:#1677ff">@AvatarInitial</Avatar>
-                                    <span class="exits-account-label">Account</span>
-                                </Button>
-                            </ChildContent>
-                        </Dropdown>
+                        <div class="exits-identity" title="@IdentityTooltip">
+                            <div class="exits-identity-text">
+                                <span class="exits-identity-name">@(_shellReady ? (Shell.DisplayName ?? L["Header_Account"]) : L["Header_Account"])</span>
+                                <span class="exits-identity-meta">
+                                    @if (_shellReady)
+                                    {
+                                        @Shell.RoleLabel
+                                        @if (!string.IsNullOrWhiteSpace(Shell.SelectedOrganizationName))
+                                        {
+                                            <text> · @Shell.SelectedOrganizationName</text>
+                                        }
+                                    }
+                                </span>
+                            </div>
+                            <Dropdown>
+                                <Overlay>
+                                    <Menu Class="exits-account-menu">
+                                        <MenuItem Disabled Class="exits-nav-phase15">
+                                            @L["Account_MyProfile"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                                        </MenuItem>
+                                        <MenuItem OnClick='() => Nav.NavigateTo("/admin/account/recovery-email")'>
+                                            @L["Account_AccountSettings"]
+                                        </MenuItem>
+                                        <MenuItem Disabled Class="exits-nav-phase15">
+                                            @L["Account_Preferences"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                                        </MenuItem>
+                                        <MenuItem OnClick='() => Nav.NavigateTo("/admin/account/change-password")'>
+                                            @L["Account_ChangePassword"]
+                                        </MenuItem>
+                                        <MenuDivider />
+                                        @if (_shellReady && Shell.IsOrganizationShell)
+                                        {
+                                            <MenuItem Disabled Class="exits-nav-phase15">
+                                                @L["Account_OrganizationSettings"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                                            </MenuItem>
+                                        }
+                                        else
+                                        {
+                                            <MenuItem Disabled Class="exits-nav-phase15">
+                                                @L["Account_PlatformSettings"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                                            </MenuItem>
+                                        }
+                                        <MenuDivider />
+                                        <MenuItem OnClick='() => Nav.NavigateTo("/admin/logout", forceLoad: true)'>
+                                            @L["Account_SignOut"]
+                                        </MenuItem>
+                                    </Menu>
+                                </Overlay>
+                                <ChildContent>
+                                    <Button Type="@ButtonType.Text" Class="exits-account-btn">
+                                        <Avatar Size="AvatarSize.Small" Style="background:#1677ff">@AvatarInitial</Avatar>
+                                    </Button>
+                                </ChildContent>
+                            </Dropdown>
+                        </div>
                     </Authorized>
                 </AuthorizeView>
             </div>
@@ -76,6 +130,16 @@
     </Layout>
 </Layout>
 
+<Drawer Placement="DrawerPlacement.Left"
+        Closable
+        Visible="_drawerOpen"
+        Title="@L["Brand_Name"].Value"
+        Width="240"
+        OnClose="CloseDrawer"
+        Class="exits-nav-drawer">
+    <AdminNav Collapsed="false" OnNavigate="CloseDrawer" />
+</Drawer>
+
 <ToastHost />
 
 <div id="blazor-error-ui" data-nosnippet role="alert">
@@ -85,27 +149,75 @@
 </div>
 
 @code {
-    [CascadingParameter]
-    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
-
-    private string? _authDisplayName;
     private bool _collapsed;
+    private bool _mobile;
+    private bool _drawerOpen;
+    private bool _shellReady;
+    private string _pageTitle = "Platform Admin";
 
-    protected override async Task OnParametersSetAsync()
+    protected override async Task OnInitializedAsync()
     {
-        _authDisplayName = null;
-        if (AuthenticationStateTask is not null)
+        Nav.LocationChanged += OnLocationChanged;
+        UpdatePageTitle();
+        await Shell.EnsureLoadedAsync();
+        _shellReady = true;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        UpdatePageTitle();
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdatePageTitle()
+    {
+        var path = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/');
+        _pageTitle = path switch
         {
-            var state = await AuthenticationStateTask;
-            if (state.User.Identity?.IsAuthenticated == true)
-            {
-                _authDisplayName = state.User.Identity.Name;
-            }
+            "/admin" => L["Nav_Dashboard"],
+            var p when p.StartsWith("/admin/users", StringComparison.Ordinal) => L["Nav_PlatformUsers"],
+            var p when p.Contains("/members", StringComparison.Ordinal) => L["Nav_Members"],
+            var p when p.Contains("/product-access", StringComparison.Ordinal) => L["Nav_ProductAccess"],
+            var p when p.StartsWith("/admin/organizations", StringComparison.Ordinal) => L["Nav_Organizations"],
+            var p when p.StartsWith("/admin/products", StringComparison.Ordinal) => L["Nav_Products"],
+            var p when p.StartsWith("/admin/subscriptions", StringComparison.Ordinal) => L["Nav_Subscriptions"],
+            var p when p.StartsWith("/admin/payments", StringComparison.Ordinal) => L["Nav_Payments"],
+            var p when p.StartsWith("/admin/entitlements", StringComparison.Ordinal) => L["Nav_Entitlements"],
+            var p when p.StartsWith("/admin/audit", StringComparison.Ordinal) => L["Nav_AuditLogs"],
+            var p when p.StartsWith("/admin/account/change-password", StringComparison.Ordinal) => L["Account_ChangePassword"],
+            var p when p.StartsWith("/admin/account", StringComparison.Ordinal) => L["Account_AccountSettings"],
+            var p when p.StartsWith("/admin/product-entry", StringComparison.Ordinal) => L["Nav_ProductEntry"],
+            _ => L["Brand_Name"]
+        };
+    }
+
+    private string AvatarInitial
+    {
+        get
+        {
+            var name = Shell.DisplayName;
+            return string.IsNullOrWhiteSpace(name) ? "A" : name.Trim()[0].ToString().ToUpperInvariant();
         }
     }
 
-    private string AvatarInitial =>
-        string.IsNullOrWhiteSpace(_authDisplayName) ? "A" : _authDisplayName.Trim()[0].ToString().ToUpperInvariant();
+    private string IdentityTooltip =>
+        _shellReady
+            ? $"{Shell.DisplayName} · {Shell.RoleLabel}" +
+              (string.IsNullOrWhiteSpace(Shell.SelectedOrganizationName) ? "" : $" · {Shell.SelectedOrganizationName}")
+            : L["Header_Account"];
 
     private void ToggleCollapsed() => _collapsed = !_collapsed;
+    private void OpenDrawer() => _drawerOpen = true;
+    private void CloseDrawer() => _drawerOpen = false;
+
+    private void OnBreakpoint(bool broken)
+    {
+        _mobile = broken;
+        if (!_mobile)
+        {
+            _drawerOpen = false;
+        }
+    }
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
 }

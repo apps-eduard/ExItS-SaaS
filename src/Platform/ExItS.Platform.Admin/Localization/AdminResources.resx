@@ -65,6 +65,11 @@
   <data name="Nav_SectionCommercial" xml:space="preserve"><value>Commercial</value></data>
   <data name="Nav_SectionAccess" xml:space="preserve"><value>Access</value></data>
   <data name="Nav_SectionCompliance" xml:space="preserve"><value>Compliance</value></data>
+  <data name="Nav_SectionOperations" xml:space="preserve"><value>Operations</value></data>
+  <data name="Nav_SectionOrganization" xml:space="preserve"><value>Organization</value></data>
+  <data name="Nav_SectionProducts" xml:space="preserve"><value>Products</value></data>
+  <data name="Nav_SectionSubscription" xml:space="preserve"><value>Subscription</value></data>
+  <data name="Nav_SectionSecurity" xml:space="preserve"><value>Security</value></data>
   <data name="Nav_Dashboard" xml:space="preserve"><value>Dashboard</value></data>
   <data name="Nav_Products" xml:space="preserve"><value>Products</value></data>
   <data name="Nav_ProductEntry" xml:space="preserve"><value>Product entry</value></data>
@@ -72,6 +77,21 @@
   <data name="Nav_Subscriptions" xml:space="preserve"><value>Subscriptions</value></data>
   <data name="Nav_Payments" xml:space="preserve"><value>Payments</value></data>
   <data name="Nav_Users" xml:space="preserve"><value>Users</value></data>
+  <data name="Nav_PlatformUsers" xml:space="preserve"><value>Platform Users</value></data>
+  <data name="Nav_OrganizationUsers" xml:space="preserve"><value>Organization Users</value></data>
+  <data name="Nav_Plans" xml:space="preserve"><value>Plans</value></data>
+  <data name="Nav_ProductAccess" xml:space="preserve"><value>Product Access</value></data>
+  <data name="Nav_SystemStatus" xml:space="preserve"><value>System Status</value></data>
+  <data name="Nav_AuditLogs" xml:space="preserve"><value>Audit Logs</value></data>
+  <data name="Nav_OrganizationProfile" xml:space="preserve"><value>Organization Profile</value></data>
+  <data name="Nav_Members" xml:space="preserve"><value>Members</value></data>
+  <data name="Nav_MyProducts" xml:space="preserve"><value>My Products</value></data>
+  <data name="Nav_LaunchProduct" xml:space="preserve"><value>Launch Product</value></data>
+  <data name="Nav_CurrentPlan" xml:space="preserve"><value>Current Plan</value></data>
+  <data name="Nav_Usage" xml:space="preserve"><value>Usage</value></data>
+  <data name="Nav_BillingRenewal" xml:space="preserve"><value>Billing / Renewal</value></data>
+  <data name="Nav_ActivityLog" xml:space="preserve"><value>Activity Log</value></data>
+  <data name="Nav_Phase15" xml:space="preserve"><value>Phase 15</value></data>
   <data name="Nav_Entitlements" xml:space="preserve"><value>Entitlements</value></data>
   <data name="Nav_Audit" xml:space="preserve"><value>Audit</value></data>
   <data name="Nav_Toggle" xml:space="preserve"><value>Menu</value></data>
@@ -79,6 +99,15 @@
   <data name="Nav_ExpandSidebar" xml:space="preserve"><value>Expand sidebar</value></data>
   <data name="Nav_CloseDrawer" xml:space="preserve"><value>Close navigation</value></data>
   <data name="Nav_OpenDrawer" xml:space="preserve"><value>Open navigation</value></data>
+  <data name="Header_Account" xml:space="preserve"><value>Account</value></data>
+  <data name="Header_NotificationsEmpty" xml:space="preserve"><value>No notifications</value></data>
+  <data name="Account_MyProfile" xml:space="preserve"><value>My Profile</value></data>
+  <data name="Account_AccountSettings" xml:space="preserve"><value>Account Settings</value></data>
+  <data name="Account_Preferences" xml:space="preserve"><value>Preferences</value></data>
+  <data name="Account_ChangePassword" xml:space="preserve"><value>Change Password</value></data>
+  <data name="Account_PlatformSettings" xml:space="preserve"><value>Platform Settings</value></data>
+  <data name="Account_OrganizationSettings" xml:space="preserve"><value>Organization Settings</value></data>
+  <data name="Account_SignOut" xml:space="preserve"><value>Sign out</value></data>
 
   <data name="Common_Save" xml:space="preserve"><value>Save</value></data>
   <data name="Common_Cancel" xml:space="preserve"><value>Cancel</value></data>

@@ -2,38 +2,38 @@
 @inject NavigationManager Nav
 @inject IJSRuntime Js
 @inject IStringLocalizer<AdminResources> L
+@using AntDesign
 @implements IDisposable
 
 @*
-  Light/dark toggle with sun / moon icons — not a dropdown.
-  Native button so `title` works (AntDesign.Button has no Title parameter).
+  Compact Light / Dark / System selector for the Admin header.
 *@
 
-<button type="button"
-        class="exits-theme-toggle"
-        @onclick="ToggleAsync"
-        title="@(_ready ? (Theme.IsDark ? L["Theme_Light"] : L["Theme_Dark"]) : L["Theme_Label"])">
-    @if (_ready && Theme.IsDark)
-    {
-        @* Sun — click to switch to light *@
-        <svg class="exits-theme-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.75" />
-            <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-                  d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-        </svg>
-    }
-    else
-    {
-        @* Moon — click to switch to dark *@
-        <svg class="exits-theme-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
-                  d="M21 14.5A8.5 8.5 0 0 1 9.5 3 7 7 0 1 0 21 14.5z" />
-        </svg>
-    }
-</button>
+@if (_ready)
+{
+    <Select TItemValue="string"
+            TItem="string"
+            Value="@_value"
+            ValueChanged="OnValueChangedAsync"
+            Style="width: 104px"
+            Size="@InputSize.Small"
+            Class="exits-theme-select"
+            Placeholder="@L["Theme_Label"]">
+        <SelectOptions>
+            <SelectOption TItemValue="string" TItem="string" Value="@("light")" Label="@L["Theme_Light"]" />
+            <SelectOption TItemValue="string" TItem="string" Value="@("dark")" Label="@L["Theme_Dark"]" />
+            <SelectOption TItemValue="string" TItem="string" Value="@("system")" Label="@L["Theme_System"]" />
+        </SelectOptions>
+    </Select>
+}
+else
+{
+    <span class="exits-theme-select-placeholder muted">@L["Theme_Label"]</span>
+}
 
 @code {
     private bool _ready;
+    private string _value = "light";
 
     protected override void OnInitialized()
     {
@@ -49,21 +49,27 @@
         }
 
         await Theme.InitializeAsync();
+        _value = ThemeService.ToStorageValue(Theme.Current);
         _ready = true;
         StateHasChanged();
     }
 
-    private async Task ToggleAsync()
+    private async Task OnValueChangedAsync(string value)
     {
-        if (!_ready)
+        if (!_ready || string.Equals(value, _value, StringComparison.Ordinal))
         {
             return;
         }
 
-        await Theme.ToggleLightDarkAsync();
+        _value = value;
+        await Theme.SetThemeAsync(ThemeService.Parse(value));
     }
 
-    private async Task OnThemeChangedAsync() => await InvokeAsync(StateHasChanged);
+    private async Task OnThemeChangedAsync()
+    {
+        _value = ThemeService.ToStorageValue(Theme.Current);
+        await InvokeAsync(StateHasChanged);
+    }
 
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {

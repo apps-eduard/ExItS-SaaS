@@ -5,8 +5,8 @@ namespace ExItS.Platform.Admin.Services;
 public enum AdminTheme { System, Light, Dark }
 
 /// <summary>
-/// Circuit-scoped light/dark preference for Platform Admin (Ant Design Pro–inspired shell).
-/// Persisted in localStorage as lowercase <c>light</c>/<c>dark</c>.
+/// Circuit-scoped Light / Dark / System preference for Platform Admin.
+/// Persisted in localStorage as lowercase <c>light</c>/<c>dark</c>/<c>system</c>.
 /// </summary>
 public sealed class ThemeService(IJSRuntime js)
 {
@@ -20,7 +20,7 @@ public sealed class ThemeService(IJSRuntime js)
     public async Task InitializeAsync()
     {
         var stored = await js.InvokeAsync<string?>("exitsAdminTheme.get", StorageKey);
-        Current = NormalizeBinary(Parse(stored));
+        Current = Parse(stored);
         await js.InvokeVoidAsync("exitsAdminTheme.set", StorageKey, ToStorageValue(Current));
         await js.InvokeVoidAsync("exitsAdminTheme.applyTheme", ToStorageValue(Current));
         if (Changed is not null)
@@ -31,7 +31,9 @@ public sealed class ThemeService(IJSRuntime js)
 
     public async Task SetThemeAsync(AdminTheme theme)
     {
-        Current = NormalizeBinary(theme);
+        Current = theme == AdminTheme.System || theme == AdminTheme.Dark || theme == AdminTheme.Light
+            ? theme
+            : AdminTheme.Light;
         var value = ToStorageValue(Current);
         await js.InvokeVoidAsync("exitsAdminTheme.set", StorageKey, value);
         await js.InvokeVoidAsync("exitsAdminTheme.applyTheme", value);
@@ -41,13 +43,14 @@ public sealed class ThemeService(IJSRuntime js)
         }
     }
 
-    public Task ToggleLightDarkAsync() =>
-        SetThemeAsync(IsDark ? AdminTheme.Light : AdminTheme.Dark);
+    public static string ToStorageValue(AdminTheme theme) => theme switch
+    {
+        AdminTheme.Dark => "dark",
+        AdminTheme.System => "system",
+        _ => "light"
+    };
 
-    public static string ToStorageValue(AdminTheme theme) =>
-        theme == AdminTheme.Dark ? "dark" : "light";
-
-    /// <summary>Accepts authoritative lowercase values and legacy PascalCase / system values.</summary>
+    /// <summary>Accepts authoritative lowercase values and legacy PascalCase.</summary>
     public static AdminTheme Parse(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -58,12 +61,9 @@ public sealed class ThemeService(IJSRuntime js)
         return value.Trim().ToLowerInvariant() switch
         {
             "dark" => AdminTheme.Dark,
-            "light" => AdminTheme.Light,
             "system" => AdminTheme.System,
+            "light" => AdminTheme.Light,
             _ => AdminTheme.Light
         };
     }
-
-    private static AdminTheme NormalizeBinary(AdminTheme theme) =>
-        theme == AdminTheme.Dark ? AdminTheme.Dark : AdminTheme.Light;
 }
