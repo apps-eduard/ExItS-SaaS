@@ -192,9 +192,9 @@ Payroll, accounting journals, bank reconciliation, cash deposits, branch registe
 
 ### P10-WP05 — Returns and Refunds
 
-Status: **In Progress** (authorized)
+Status: **Complete**
 
-Prior tip: `7a6a2e4eb6d2f8074bb923dd6a0a5eca6654f706` (P10-WP04 complete). Baseline: **1097 / 0 / 0**.
+Prior tip: `7a6a2e4eb6d2f8074bb923dd6a0a5eca6654f706` (P10-WP04 complete). Baseline: **1097 / 0 / 0**. Suite now **1110 / 0 / 0**.
 
 #### Required outcomes (approved)
 
@@ -216,13 +216,13 @@ Exchanges, store credit, gift cards, different/split refund methods, unlinked re
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
-- [ ] Exact next WP recorded: **P10-WP06 — Advanced Permissions and Reports** (do not begin).
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (baseline 1097 → suite now 1110 / 0 / 0).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created (`docs/reports/P10-WP05-returns-refunds.md`).
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean (after push).
+- [x] Exact next WP recorded: **P10-WP06 — Advanced Permissions and Reports** (do not begin).
 
 ### P10-WP06 — Advanced Permissions and Reports
 
