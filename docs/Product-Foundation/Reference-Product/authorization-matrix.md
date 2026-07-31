@@ -1,6 +1,6 @@
 # ReferenceLoan — Authorization Matrix
 
-> **FICTIONAL** P12-WP06. Foundation: [exits-product-foundation-reference.md](../exits-product-foundation-reference.md)  
+> **FICTIONAL** P12-WP06. Foundation: [exits-product-foundation-reference.md](../exits-product-foundation-reference.md)
 > Platform access ≠ product operational permission. Sample roles only — not POS roles.
 
 | Field | Value |

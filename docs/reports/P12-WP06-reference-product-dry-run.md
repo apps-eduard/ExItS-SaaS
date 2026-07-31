@@ -4,7 +4,7 @@ Phase marker: `P12-WP06-reference-product-dry-run`
 
 Package: **P12-WP06 — Reference Product Dry Run**
 Prior tip: `51026a07faf7e5a69674c5c7a0f1379c240d9d7f`
-Docs tip: *(recorded after docs commit)*
+Docs tip: `5debab509c52ecdbed1cf9bba1ec02147ece693b`
 
 ## Status
 
@@ -55,18 +55,18 @@ Retained under `docs/Product-Foundation/Reference-Product/`:
 
 ## Defects fixed
 
-1. Template foundation relative links  
-2. Development-plan report template path  
-3. product-definition / FILE-MANIFEST docs-root notes for dry runs  
+1. Template foundation relative links
+2. Development-plan report template path
+3. product-definition / FILE-MANIFEST docs-root notes for dry runs
 
 ## Context-efficiency result
 
-Loaded: workflow + product-context rules, foundation, templates, generated Reference-Product docs.  
+Loaded: workflow + product-context rules, foundation, templates, generated Reference-Product docs.
 Did **not** open POS source, historical reports tree, or HealthCare product content.
 
 ## Cleanup / retention decision
 
-**Outcome 1 — retain** under `docs/Product-Foundation/Reference-Product/` with FICTIONAL banners and explicit “must not exist: `src/Products/ReferenceLoan/`”.  
+**Outcome 1 — retain** under `docs/Product-Foundation/Reference-Product/` with FICTIONAL banners and explicit “must not exist: `src/Products/ReferenceLoan/`”.
 Reason: durable proof artifact for closeout; clearly not an active product tree.
 
 ## Validation

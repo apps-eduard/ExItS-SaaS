@@ -9,7 +9,7 @@
 
 ## Authoritative docs (this dry run)
 
-Location: `docs/Product-Foundation/Reference-Product/`  
+Location: `docs/Product-Foundation/Reference-Product/`
 (Intended real-product docs root if ever authorized: `src/Products/ReferenceLoan/Docs/`)
 
 | Path | Purpose | Status |

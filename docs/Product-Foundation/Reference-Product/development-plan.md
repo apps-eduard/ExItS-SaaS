@@ -1,6 +1,6 @@
 # ReferenceLoan — Development Plan
 
-> **FICTIONAL** P12-WP06. Foundation: [exits-product-foundation-reference.md](../exits-product-foundation-reference.md)  
+> **FICTIONAL** P12-WP06. Foundation: [exits-product-foundation-reference.md](../exits-product-foundation-reference.md)
 > Do not prescribe real lending phases or copy POS phases.
 
 | Field | Value |

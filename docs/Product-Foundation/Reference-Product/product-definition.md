@@ -1,6 +1,6 @@
 # ReferenceLoan — Product Definition
 
-> **FICTIONAL** P12-WP06 dry run. Contract: [exits-product-foundation-reference.md](../exits-product-foundation-reference.md)  
+> **FICTIONAL** P12-WP06 dry run. Contract: [exits-product-foundation-reference.md](../exits-product-foundation-reference.md)
 > Not production. No code. Do not invent lending regulation or underwriting policy.
 
 | Field | Value |

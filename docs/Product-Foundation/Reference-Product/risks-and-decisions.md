@@ -1,6 +1,6 @@
 # ReferenceLoan — Risks and Decisions
 
-> **FICTIONAL** P12-WP06. Foundation: [exits-product-foundation-reference.md](../exits-product-foundation-reference.md)  
+> **FICTIONAL** P12-WP06. Foundation: [exits-product-foundation-reference.md](../exits-product-foundation-reference.md)
 > Close items only with evidence. Do not invent answers for portfolio-open items.
 
 | Field | Value |
