@@ -14,7 +14,7 @@
 | Current phase | Phase 13 — Production Authentication and Identity (**in progress**) |
 | Current work package | P13-WP02 — Identity Credentials and Auth Persistence (**complete**) |
 | Overall status | **Phase 13 in progress.** P13-WP01–WP02 complete (architecture + credential persistence). No login/session yet. R-091 open. Exact next: P13-WP03 — Platform Login, Logout, and Browser Session (do not begin until authorized). **Not production-ready.** |
-| Latest verified commit | *(docs tip after commit)* |
+| Latest verified commit | `367defab6fcf523086d7b13d98e1d04579b250ef` |
 | Open blockers | Missing production auth (R-091); D-P12-03 commercial-state transport; D-P12-04 matrix hygiene; R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-07-31 |
 
@@ -116,7 +116,7 @@ P13-WP03 ○ Platform Login, Logout, and Browser Session (do not begin until aut
 | WP | Status | Key commit |
 |---|---|---|
 | P13-WP01 — Authentication Architecture and Threat Model | Complete | `40a48349ae2a42e9dc267bde0df64afb004af3ae` |
-| P13-WP02 — Identity Credentials and Auth Persistence | Complete | *(docs tip after commit)* |
+| P13-WP02 — Identity Credentials and Auth Persistence | Complete | `367defab6fcf523086d7b13d98e1d04579b250ef` |
 
 ## Phase 12 work packages
 

@@ -4,7 +4,7 @@ Phase marker: `P13-WP02-identity-credentials-and-auth-persistence`
 
 Package: **P13-WP02 — Identity Credentials and Auth Persistence**
 Prior tip: `407d913484c15a76858ea8152e87a6b0b5bbabcd`
-Docs tip: *(recorded after docs commit)*
+Docs tip: `367defab6fcf523086d7b13d98e1d04579b250ef`
 
 ## Status
 
