@@ -14,7 +14,7 @@
 | Current phase | Phase 10 — Full POS |
 | Current work package | P10-WP07 — Multiple Registers (**not started**) |
 | Overall status | **P10-WP06 complete.** Do not begin P10-WP07 until authorized. |
-| Latest verified commit | `6acf92e` |
+| Latest verified commit | `2540d9e` |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only Basic Store limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/refund/accounting deferred |
 | Last updated | 2026-07-31 |
 
