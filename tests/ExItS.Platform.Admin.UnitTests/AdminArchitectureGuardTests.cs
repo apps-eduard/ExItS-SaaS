@@ -151,7 +151,9 @@ public sealed class AdminArchitectureGuardTests
         var themeBoot = File.ReadAllText(Path.Combine(adminRoot, "wwwroot", "theme-boot.js"));
         Assert.Contains("exits-admin-theme", themeBoot, StringComparison.Ordinal);
         Assert.Contains("exits-admin-culture", themeBoot, StringComparison.Ordinal);
+        Assert.Contains("Blazor.addEventListener", themeBoot, StringComparison.Ordinal);
         Assert.Contains("enhancedload", themeBoot, StringComparison.Ordinal);
+        Assert.DoesNotContain("document.addEventListener(\"enhancedload\"", themeBoot, StringComparison.Ordinal);
         Assert.Contains("normalize", themeBoot, StringComparison.Ordinal);
         Assert.Contains("\"light\"", themeBoot, StringComparison.Ordinal);
         Assert.Contains("\"dark\"", themeBoot, StringComparison.Ordinal);
@@ -166,6 +168,11 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("value=\"system\"", selector, StringComparison.Ordinal);
         Assert.Contains("value=\"light\"", selector, StringComparison.Ordinal);
         Assert.Contains("value=\"dark\"", selector, StringComparison.Ordinal);
+        Assert.Contains("LocationChanged", selector, StringComparison.Ordinal);
+        Assert.Contains("reapplyFromStorage", selector, StringComparison.Ordinal);
+
+        var app = File.ReadAllText(Path.Combine(adminRoot, "Components", "App.razor"));
+        Assert.Contains("data-permanent", app, StringComparison.Ordinal);
     }
 
     [Fact]

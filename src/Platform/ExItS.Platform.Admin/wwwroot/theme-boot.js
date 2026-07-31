@@ -1,6 +1,7 @@
-// Applies persisted theme + culture before CSS/render to avoid a flash of the wrong theme.
-// Must load synchronously in <head>, before app.css.
-// Authoritative storage values: system | light | dark (legacy PascalCase still accepted).
+// One authoritative theme boot for Platform Admin.
+// Persisted preference: system | light | dark (legacy PascalCase accepted).
+// Blazor enhanced navigation strips dynamically-set <html> attributes unless
+ // re-applied via Blazor.addEventListener('enhancedload') — NOT document.addEventListener.
 (function () {
     "use strict";
     var THEME_KEY = "exits-admin-theme";
@@ -18,7 +19,14 @@
     }
 
     function applyTheme(theme) {
-        document.documentElement.setAttribute("data-theme", normalizeTheme(theme));
+        var normalized = normalizeTheme(theme);
+        var root = document.documentElement;
+        root.setAttribute("data-theme", normalized);
+        // Mirror on body for selectors that target body and to survive partial merges.
+        if (document.body) {
+            document.body.setAttribute("data-theme", normalized);
+        }
+        root.dataset.exitsTheme = normalized;
     }
 
     function readAndApplyTheme() {
@@ -29,6 +37,7 @@
         }
     }
 
+    // First paint — before CSS if this script is in <head>.
     readAndApplyTheme();
 
     try {
@@ -37,17 +46,48 @@
             document.documentElement.setAttribute("lang", culture);
         }
     } catch (e) {
-        /* ignore — fall back to server-rendered lang attribute */
+        /* ignore */
     }
 
-    // Blazor enhanced navigation can replace document attributes from SSR HTML
-    // without re-running this boot script — re-apply from storage.
-    document.addEventListener("enhancedload", function () {
-        readAndApplyTheme();
-    });
+    function attachBlazorEnhancedLoad() {
+        if (!window.Blazor || typeof window.Blazor.addEventListener !== "function") {
+            return false;
+        }
+        if (window.__exitsThemeEnhancedBound) {
+            return true;
+        }
+        window.Blazor.addEventListener("enhancedload", function () {
+            readAndApplyTheme();
+        });
+        window.__exitsThemeEnhancedBound = true;
+        return true;
+    }
+
+    function scheduleBlazorHook() {
+        if (attachBlazorEnhancedLoad()) {
+            return;
+        }
+        var attempts = 0;
+        var timer = window.setInterval(function () {
+            attempts += 1;
+            if (attachBlazorEnhancedLoad() || attempts >= 200) {
+                window.clearInterval(timer);
+            }
+        }, 25);
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", function () {
+            readAndApplyTheme();
+            scheduleBlazorHook();
+        });
+    } else {
+        scheduleBlazorHook();
+    }
 
     window.addEventListener("pageshow", function () {
         readAndApplyTheme();
+        scheduleBlazorHook();
     });
 })();
 
@@ -61,6 +101,7 @@ window.exitsAdminShell = {
 };
 
 window.exitsAdminTheme = {
+    storageKey: "exits-admin-theme",
     get: function (key) {
         try { return window.localStorage.getItem(key); } catch (e) { return null; }
     },
@@ -75,7 +116,13 @@ window.exitsAdminTheme = {
         return (v === "light" || v === "dark" || v === "system") ? v : "system";
     },
     applyTheme: function (theme) {
-        document.documentElement.setAttribute("data-theme", window.exitsAdminTheme.normalize(theme));
+        var normalized = window.exitsAdminTheme.normalize(theme);
+        var root = document.documentElement;
+        root.setAttribute("data-theme", normalized);
+        if (document.body) {
+            document.body.setAttribute("data-theme", normalized);
+        }
+        root.dataset.exitsTheme = normalized;
     },
     applyCulture: function (culture) {
         if (culture) {

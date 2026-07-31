@@ -1,5 +1,8 @@
 @inject ThemeService Theme
+@inject NavigationManager Nav
+@inject IJSRuntime Js
 @inject IStringLocalizer<AdminResources> L
+@implements IDisposable
 
 <div class="selector-group">
     <label class="sr-only" for="theme-selector">@L["Theme_Label"]</label>
@@ -17,6 +20,13 @@
 @code {
     private bool _ready;
 
+    protected override void OnInitialized()
+    {
+        // Enhanced navigation can strip documentElement data-theme without remounting
+        // this interactive island — re-apply from the authoritative preference.
+        Nav.LocationChanged += OnLocationChanged;
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender || _ready)
@@ -29,10 +39,31 @@
         StateHasChanged();
     }
 
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        try
+        {
+            await Js.InvokeVoidAsync("exitsAdminTheme.reapplyFromStorage");
+        }
+        catch (JSDisconnectedException)
+        {
+            // Circuit gone — ignore.
+        }
+        catch (ObjectDisposedException)
+        {
+            // Circuit disposed — ignore.
+        }
+    }
+
     private async Task OnChangedAsync(ChangeEventArgs e)
     {
         var raw = e.Value?.ToString();
         var theme = ThemeService.Parse(raw);
         await Theme.SetThemeAsync(theme);
+    }
+
+    public void Dispose()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
     }
 }
