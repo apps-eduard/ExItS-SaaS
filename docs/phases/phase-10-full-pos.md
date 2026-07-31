@@ -4,7 +4,7 @@
 
 ## Status
 
-**In Progress** — **P10-WP05 — Returns and Refunds** authorized (prior tip `7a6a2e4` / WP04 complete). Do **not** begin P10-WP06.
+**In Progress** — Phase 10 through **P10-WP05 — Returns and Refunds** complete. Do **not** begin P10-WP06.
 
 ## Objective
 

@@ -48,7 +48,7 @@ Down migration deletes SaleReturn stock movements before narrowing constraints.
 
 Prior baseline: **1097 / 0 / 0** (post P10-WP04). Net new tests: **+13**.
 
-Release build of POS API succeeds. MAUI `net10.0-android` Release requires Android SDK (R-109). R-129 (NU1903) unchanged.
+Release build of POS API succeeds. MAUI `net10.0-android` Release succeeds after adding `@using ExItS.PinoyBusinessPOS.Application.Returns` to Maui `_Imports.razor` (gap-fix; DTOs were unresolved on Android TFM). R-129 (NU1903) unchanged.
 
 ## Security limitations
 
