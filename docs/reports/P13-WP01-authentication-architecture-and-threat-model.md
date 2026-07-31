@@ -4,7 +4,7 @@ Phase marker: `P13-WP01-authentication-architecture-and-threat-model`
 
 Package: **P13-WP01 — Authentication Architecture and Threat Model**
 Prior tip: `77f63f2409b64c3919eafa5485cd12b31a5486a5`
-Docs tip: *(recorded after docs commit)*
+Docs tip: `40a48349ae2a42e9dc267bde0df64afb004af3ae`
 
 ## Status
 
