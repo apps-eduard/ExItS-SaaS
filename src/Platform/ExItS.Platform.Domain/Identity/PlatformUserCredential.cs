@@ -8,6 +8,9 @@ namespace ExItS.Platform.Domain.Identity;
 /// </summary>
 public sealed class PlatformUserCredential
 {
+    public const string AspNetCoreIdentityV3 = "ASPNET-CORE-IDENTITY-V3";
+
+    /// <summary>Legacy label from the initial P13-WP02 custom PBKDF2 format (superseded; do not write new hashes).</summary>
     public const string Pbkdf2Sha256V1 = "PBKDF2-SHA256-V1";
 
     public PlatformUserId UserId { get; }

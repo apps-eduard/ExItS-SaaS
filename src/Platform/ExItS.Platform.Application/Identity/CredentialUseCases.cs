@@ -353,8 +353,8 @@ public sealed class VerifyPlatformUserPassword
                 "Credential is locked out.");
         }
 
-        var ok = _hasher.VerifyHashedPassword(credential.PasswordHash, password ?? string.Empty);
-        if (!ok)
+        var verification = _hasher.VerifyHashedPassword(credential.PasswordHash, password ?? string.Empty);
+        if (verification == PlatformPasswordVerificationResult.Failed)
         {
             credential.RegisterFailedAccess(
                 _lockoutOptions.MaxFailedAccessAttempts,
@@ -373,6 +373,12 @@ public sealed class VerifyPlatformUserPassword
             return ApplicationResult<PlatformCredentialStatusDto>.Failure(
                 ApplicationErrorCodes.PasswordInvalid,
                 "Password verification failed.");
+        }
+
+        if (verification == PlatformPasswordVerificationResult.SuccessRehashNeeded)
+        {
+            var rehash = _hasher.HashPassword(password!);
+            credential.ReplacePasswordHash(rehash, _hasher.Algorithm, utcNow);
         }
 
         credential.RegisterSuccessfulAccess(utcNow);
@@ -420,13 +426,37 @@ public sealed class BootstrapFirstPlatformAdministrator
     }
 
     public async Task<ApplicationResult<PlatformUserDto>> ExecuteAsync(
+        string? providedSharedSecret,
+        bool isProductionEnvironment,
         CancellationToken cancellationToken = default)
     {
+        if (isProductionEnvironment)
+        {
+            return ApplicationResult<PlatformUserDto>.Failure(
+                ApplicationErrorCodes.BootstrapForbiddenInEnvironment,
+                "First-admin bootstrap is forbidden in Production.");
+        }
+
         if (!_bootstrap.Enabled)
         {
             return ApplicationResult<PlatformUserDto>.Failure(
                 ApplicationErrorCodes.BootstrapDisabled,
                 "First-admin bootstrap is disabled.");
+        }
+
+        if (string.IsNullOrWhiteSpace(_bootstrap.SharedSecret)
+            || _bootstrap.SharedSecret.Length < PlatformAuthBootstrapOptions.MinimumSharedSecretLength)
+        {
+            return ApplicationResult<PlatformUserDto>.Failure(
+                ApplicationErrorCodes.BootstrapConfigurationInvalid,
+                "Bootstrap SharedSecret must be configured (minimum 32 characters).");
+        }
+
+        if (!BootstrapSecretComparer.EqualsConfigured(_bootstrap.SharedSecret, providedSharedSecret))
+        {
+            return ApplicationResult<PlatformUserDto>.Failure(
+                ApplicationErrorCodes.BootstrapUnauthorized,
+                "Bootstrap authorization failed.");
         }
 
         var (_, adminCount) = await _roles.ListAsync(
@@ -503,10 +533,20 @@ public sealed class BootstrapFirstPlatformAdministrator
                 nameof(PlatformUser),
                 user.Id.Value.ToString("D"),
                 AuditOutcome.Succeeded,
-                summary: "Bootstrapped first Platform Administrator (credentials set; password not recorded).",
+                summary: "Bootstrapped first Platform Administrator (credentials set; password and bootstrap secret not recorded).",
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
             return ApplicationResult<PlatformUserDto>.Success(PlatformUserQueryService.Map(user));
+        }
+        catch (PersistenceConflictException ex) when (
+            ex.ErrorCode is ApplicationErrorCodes.RoleAssignmentConflict
+                or ApplicationErrorCodes.UsernameConflict
+                or ApplicationErrorCodes.EmailConflict
+                or ApplicationErrorCodes.DomainViolation)
+        {
+            return ApplicationResult<PlatformUserDto>.Failure(
+                ApplicationErrorCodes.BootstrapAlreadyCompleted,
+                "A Platform Administrator already exists.");
         }
         catch (DomainException ex)
         {

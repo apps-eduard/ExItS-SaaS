@@ -24,7 +24,9 @@ internal static class PlatformApiResults
 
     public static int MapStatusCode(string errorCode) => errorCode switch
     {
-        DomainErrorCodes.AuthorizationDenied => StatusCodes.Status403Forbidden,
+        DomainErrorCodes.AuthorizationDenied
+            or ApplicationErrorCodes.BootstrapUnauthorized
+            or ApplicationErrorCodes.BootstrapForbiddenInEnvironment => StatusCodes.Status403Forbidden,
 
         ApplicationErrorCodes.OrganizationNotFound
             or ApplicationErrorCodes.UserNotFound

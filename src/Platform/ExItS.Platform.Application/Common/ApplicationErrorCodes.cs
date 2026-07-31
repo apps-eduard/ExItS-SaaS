@@ -82,4 +82,6 @@ public static class ApplicationErrorCodes
     public const string BootstrapDisabled = "application.auth.bootstrap_disabled";
     public const string BootstrapAlreadyCompleted = "application.auth.bootstrap_already_completed";
     public const string BootstrapConfigurationInvalid = "application.auth.bootstrap_configuration_invalid";
+    public const string BootstrapUnauthorized = "application.auth.bootstrap_unauthorized";
+    public const string BootstrapForbiddenInEnvironment = "application.auth.bootstrap_forbidden_environment";
 }

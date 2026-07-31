@@ -7,6 +7,7 @@ namespace ExItS.Platform.Api.Common;
 internal static class PlatformSecurityPipeline
 {
     public const string CorsPolicyName = "platform-cors";
+    public const string AuthBootstrapRateLimitPolicy = "auth-bootstrap";
     public const string KnownDevelopmentPasswordMarker = "exits_platform_dev_only";
 
     public static void ValidateProductionConfigurationOrThrow(WebApplicationBuilder builder)
@@ -35,6 +36,13 @@ internal static class PlatformSecurityPipeline
         {
             throw new InvalidOperationException(
                 "Production requires an explicit AllowedHosts value (wildcard '*' is not allowed).");
+        }
+
+        var bootstrapEnabled = builder.Configuration.GetValue<bool>("PlatformAuthentication:Bootstrap:Enabled");
+        if (bootstrapEnabled)
+        {
+            throw new InvalidOperationException(
+                "Production must not enable PlatformAuthentication:Bootstrap:Enabled (first-admin bootstrap is forbidden in Production).");
         }
     }
 
@@ -73,6 +81,20 @@ internal static class PlatformSecurityPipeline
                     },
                     cancellationToken).ConfigureAwait(false);
             };
+
+            options.AddPolicy(AuthBootstrapRateLimitPolicy, httpContext =>
+            {
+                var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    "bootstrap:" + ip,
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        AutoReplenishment = true,
+                        PermitLimit = 5,
+                        Window = TimeSpan.FromMinutes(15),
+                        QueueLimit = 0
+                    });
+            });
 
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
             {

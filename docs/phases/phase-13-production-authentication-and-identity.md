@@ -115,7 +115,7 @@ Add Platform persistence for credentials, verification, and lockout state withou
 
 #### Status
 
-**Complete.** `platform_user_credentials`, PBKDF2 hasher, bootstrap controls, credential APIs. No login/session.
+**Complete.** `platform_user_credentials`, ASP.NET Core `PasswordHasher<TUser>`, hardened bootstrap controls, credential APIs. No login/session.
 
 ### P13-WP03 — Platform Login, Logout, and Browser Session
 

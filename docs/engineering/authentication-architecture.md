@@ -48,7 +48,7 @@ Platform User
 | Surface | Today | Production behavior |
 |---|---|---|
 | Platform User profile | Exists (`PlatformUser`) — username/email/status | Profile remains SoR for identity attributes |
-| Credentials | **Implemented (P13-WP02):** `platform_user_credentials` + PBKDF2 hash, lockout, email-verified flag | Ready for login WP |
+| Credentials | **Implemented (P13-WP02):** `platform_user_credentials` + ASP.NET Core `PasswordHasher<TUser>`, lockout, email-verified flag | Ready for login WP |
 | Platform actor | `DevelopmentPlatformActorAccessor` + optional `X-Dev-Platform-User-Id` | Header ignored; DevelopmentOperator without full access → fail closed |
 | Platform Authz | `PlatformAuthz` + role assignments | Still authorization-only until login binds actor |
 | Platform Admin | Unauthenticated Blazor; Dev Operator label | Same — not production-secure |

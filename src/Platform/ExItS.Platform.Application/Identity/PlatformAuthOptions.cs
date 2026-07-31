@@ -22,13 +22,17 @@ public sealed class PlatformLockoutOptions
 
 /// <summary>
 /// One-time first Platform Administrator bootstrap. Disabled by default.
-/// Password must come from configuration / environment — never commit real secrets.
+/// Requires a shared secret header when enabled. Must never be enabled in Production.
+/// Password and SharedSecret must come from configuration / environment — never commit real secrets.
 /// </summary>
 public sealed class PlatformAuthBootstrapOptions
 {
     public const string SectionName = "PlatformAuthentication:Bootstrap";
+    public const string SharedSecretHeaderName = "X-ExItS-Bootstrap-Secret";
+    public const int MinimumSharedSecretLength = 32;
 
     public bool Enabled { get; set; }
+    public string SharedSecret { get; set; } = string.Empty;
     public string Username { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;

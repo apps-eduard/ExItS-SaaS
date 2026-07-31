@@ -3,13 +3,14 @@ using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ExItS.Platform.Api.Identity;
 
 /// <summary>
 /// Credential status and password-set endpoints. No login cookies/tokens.
-/// Bootstrap is intentionally ungated by PlatformAuthz (chicken-and-egg) but requires
-/// configuration enablement and fails when an administrator already exists.
+/// Bootstrap requires Enabled + SharedSecret header, is rate-limited, refused in Production,
+/// and fails when an administrator already exists.
 /// </summary>
 internal static class CredentialEndpoints
 {
@@ -133,14 +134,21 @@ internal static class CredentialEndpoints
         });
 
         app.MapPost("/api/v1/platform/auth/bootstrap", async (
+            HttpRequest request,
             BootstrapFirstPlatformAdministrator useCase,
+            IHostEnvironment env,
             CancellationToken ct) =>
         {
-            var result = await useCase.ExecuteAsync(ct).ConfigureAwait(false);
+            request.Headers.TryGetValue(PlatformAuthBootstrapOptions.SharedSecretHeaderName, out var secretValues);
+            var providedSecret = secretValues.Count > 0 ? secretValues.ToString() : null;
+            var result = await useCase
+                .ExecuteAsync(providedSecret, env.IsProduction(), ct)
+                .ConfigureAwait(false);
             return PlatformApiResults.FromResult(
                 result,
                 dto => Results.Created($"/api/v1/platform/users/{dto.Id}", dto));
-        });
+        })
+        .RequireRateLimiting(PlatformSecurityPipeline.AuthBootstrapRateLimitPolicy);
 
         return app;
     }

@@ -101,6 +101,41 @@ public sealed class SecurityHardeningArchitectureTests
         Assert.DoesNotContain("Patient", pipeline, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Platform_password_hasher_uses_aspnet_core_password_hasher_not_custom_pbkdf2()
+    {
+        var root = FindRepositoryRoot();
+        var hasherPath = Path.Combine(root,
+            "src", "Platform", "ExItS.Platform.Infrastructure", "Identity", "AspNetCorePlatformPasswordHasher.cs");
+        Assert.True(File.Exists(hasherPath));
+        var hasher = File.ReadAllText(hasherPath);
+        Assert.Contains("PasswordHasher<PlatformPasswordUser>", hasher, StringComparison.Ordinal);
+        Assert.Contains("SuccessRehashNeeded", hasher, StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(root,
+            "src", "Platform", "ExItS.Platform.Infrastructure", "Identity", "Pbkdf2PlatformPasswordHasher.cs")));
+    }
+
+    [Fact]
+    public void Platform_bootstrap_is_rate_limited_and_forbidden_when_enabled_in_production()
+    {
+        var root = FindRepositoryRoot();
+        var pipeline = File.ReadAllText(Path.Combine(root,
+            "src", "Platform", "ExItS.Platform.Api", "Common", "PlatformSecurityPipeline.cs"));
+        Assert.Contains("AuthBootstrapRateLimitPolicy", pipeline, StringComparison.Ordinal);
+        Assert.Contains("PlatformAuthentication:Bootstrap:Enabled", pipeline, StringComparison.Ordinal);
+        Assert.Contains("must not enable", pipeline, StringComparison.OrdinalIgnoreCase);
+
+        var endpoints = File.ReadAllText(Path.Combine(root,
+            "src", "Platform", "ExItS.Platform.Api", "Identity", "CredentialEndpoints.cs"));
+        Assert.Contains("RequireRateLimiting(PlatformSecurityPipeline.AuthBootstrapRateLimitPolicy)", endpoints, StringComparison.Ordinal);
+        Assert.Contains("SharedSecretHeaderName", endpoints, StringComparison.Ordinal);
+        Assert.Contains("IsProduction()", endpoints, StringComparison.Ordinal);
+
+        var appsettings = File.ReadAllText(Path.Combine(root,
+            "src", "Platform", "ExItS.Platform.Api", "appsettings.json"));
+        Assert.Contains("\"Enabled\": false", appsettings, StringComparison.Ordinal);
+    }
+
     private static string FindRepositoryRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
