@@ -1,0 +1,34 @@
+@inject IStringLocalizer<AdminResources> L
+
+<div class="report-filter-bar" role="search" aria-label="@(AriaLabel ?? L["Report_FiltersAria"])">
+    <div class="report-filter-fields">
+        @ChildContent
+    </div>
+    <div class="report-filter-actions actions" role="group" aria-label="@L["Form_ActionsAria"]">
+        @if (Secondary is not null)
+        {
+            @Secondary
+        }
+        else if (!string.IsNullOrWhiteSpace(ResetText) || OnReset.HasDelegate)
+        {
+            <button type="button" class="secondary" disabled="@(Busy || Disabled)" @onclick="OnReset">
+                @(ResetText ?? L["Common_ClearFilters"])
+            </button>
+        }
+        <button type="button" disabled="@(Busy || Disabled)" @onclick="OnApply">
+            @(Busy ? L["Common_Saving"] : (ApplyText ?? L["Common_Apply"]))
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Secondary { get; set; }
+    [Parameter] public string? ApplyText { get; set; }
+    [Parameter] public string? ResetText { get; set; }
+    [Parameter] public string? AriaLabel { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public EventCallback OnApply { get; set; }
+    [Parameter] public EventCallback OnReset { get; set; }
+}

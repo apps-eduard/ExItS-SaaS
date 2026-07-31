@@ -3,45 +3,53 @@
 @inject IPlatformApiClient Api
 @inject IStringLocalizer<AdminResources> L
 
-<PageFrame Width="PageFrame.ContentWidth.Wide">
-    <PageHeader Title="@L["Dashboard_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Dashboard"]}")" Description="@L["Dashboard_Description"]" />
+<ReportPageShell>
+    <ReportHeader Title="@L["Dashboard_Title"]"
+                  Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Dashboard"]}")"
+                  Description="@L["Dashboard_Description"]" />
 
-    @if (_result is null)
-    {
-        <LoadingState Message="@L["Dashboard_Loading"]" />
-    }
-    else if (!_result.IsSuccess)
-    {
-        <ErrorState Title="@(_result.Error?.Title ?? L["Common_Unavailable"])" Detail="@_result.Error?.Detail" CorrelationId="@_result.Error?.CorrelationId" Unavailable="@(_result.Status == ApiCallStatus.Unavailable)" />
-    }
-    else
-    {
-        var data = _result.Data!;
-        <div class="summary-grid" aria-label="@L["Dashboard_AriaPortfolioCounts"]">
-            <SummaryCard Label="@L["Dashboard_Card_ActiveProducts"]" Value="@Format(data.ActiveProductCount, "activeProducts")" />
-            <SummaryCard Label="@L["Dashboard_Card_PublishedPlanVersions"]" Value="@Format(data.PublishedPlanVersionCount, "publishedPlanVersions")" />
-            <SummaryCard Label="@L["Dashboard_Card_Organizations"]" Value="@Format(data.OrganizationCount, "organizations")" />
-            <SummaryCard Label="@L["Dashboard_Card_TrialingSubscriptions"]" Value="@Format(data.TrialingSubscriptionCount, "trialingSubscriptions")" />
-            <SummaryCard Label="@L["Dashboard_Card_ActiveSubscriptions"]" Value="@Format(data.ActiveSubscriptionCount, "activeSubscriptions")" />
-            <SummaryCard Label="@L["Dashboard_Card_GracePastDueSuspended"]" Value="@GraceCombo(data)" />
-            <SummaryCard Label="@L["Dashboard_Card_PendingManualPayments"]" Value="@Format(data.PendingManualPaymentCount, "pendingManualPayments")" />
-            <SummaryCard Label="@L["Dashboard_Card_LatestEntitlementSnapshots"]" Value="@Format(data.LatestEntitlementSnapshotCount, "latestEntitlementSnapshots")" />
-        </div>
+    <ResponsiveReportLayout>
+        <Kpis>
+            @if (_result is null)
+            {
+                <ReportLoadingState Message="@L["Dashboard_Loading"]" />
+            }
+            else if (!_result.IsSuccess)
+            {
+                <ReportErrorState Title="@(_result.Error?.Title ?? L["Common_Unavailable"])"
+                                  Detail="@_result.Error?.Detail"
+                                  CorrelationId="@_result.Error?.CorrelationId"
+                                  Unavailable="@(_result.Status == ApiCallStatus.Unavailable)" />
+            }
+            else
+            {
+                var data = _result.Data!;
+                <ReportKpiGrid AriaLabel="@L["Dashboard_AriaPortfolioCounts"]">
+                    <ReportKpiCard Title="@L["Dashboard_Card_ActiveProducts"]" Value="@Format(data.ActiveProductCount, "activeProducts")" />
+                    <ReportKpiCard Title="@L["Dashboard_Card_PublishedPlanVersions"]" Value="@Format(data.PublishedPlanVersionCount, "publishedPlanVersions")" />
+                    <ReportKpiCard Title="@L["Dashboard_Card_Organizations"]" Value="@Format(data.OrganizationCount, "organizations")" />
+                    <ReportKpiCard Title="@L["Dashboard_Card_TrialingSubscriptions"]" Value="@Format(data.TrialingSubscriptionCount, "trialingSubscriptions")" />
+                    <ReportKpiCard Title="@L["Dashboard_Card_ActiveSubscriptions"]" Value="@Format(data.ActiveSubscriptionCount, "activeSubscriptions")" />
+                    <ReportKpiCard Title="@L["Dashboard_Card_GracePastDueSuspended"]" Value="@GraceCombo(data)" />
+                    <ReportKpiCard Title="@L["Dashboard_Card_PendingManualPayments"]" Value="@Format(data.PendingManualPaymentCount, "pendingManualPayments")" />
+                    <ReportKpiCard Title="@L["Dashboard_Card_LatestEntitlementSnapshots"]" Value="@Format(data.LatestEntitlementSnapshotCount, "latestEntitlementSnapshots")" />
+                </ReportKpiGrid>
 
-        @if (data.PartialFailures.Count > 0)
-        {
-            <section class="warning" role="status">
-                <strong>@L["Dashboard_PartialUnavailable"]</strong> @L["Dashboard_PartialUnavailableDetail"]
-                <ul>
-                    @foreach (var failure in data.PartialFailures)
-                    {
-                        <li>@failure</li>
-                    }
-                </ul>
-            </section>
-        }
-    }
-</PageFrame>
+                @if (data.PartialFailures.Count > 0)
+                {
+                    <ReportSection Title="@L["Dashboard_PartialUnavailable"]" Description="@L["Dashboard_PartialUnavailableDetail"]">
+                        <ul>
+                            @foreach (var failure in data.PartialFailures)
+                            {
+                                <li>@failure</li>
+                            }
+                        </ul>
+                    </ReportSection>
+                }
+            }
+        </Kpis>
+    </ResponsiveReportLayout>
+</ReportPageShell>
 
 @code {
     private ApiCallResult<PortfolioSummaryDto>? _result;

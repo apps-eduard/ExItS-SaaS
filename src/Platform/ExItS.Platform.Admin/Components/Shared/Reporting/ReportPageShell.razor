@@ -1,0 +1,15 @@
+@*
+  Tailwind-inspired report page shell without Tailwind.
+*@
+<PageFrame Width="Width">
+    <div class="report-page @CssClass" @attributes="AdditionalAttributes">
+        @ChildContent
+    </div>
+</PageFrame>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public PageFrame.ContentWidth Width { get; set; } = PageFrame.ContentWidth.Wide;
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+}

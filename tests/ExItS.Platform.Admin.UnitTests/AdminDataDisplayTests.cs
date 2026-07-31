@@ -49,9 +49,10 @@ public sealed class AdminDataDisplayTests
         Assert.Contains("AmountDisplay", orgs, StringComparison.Ordinal);
 
         var payments = File.ReadAllText(Path.Combine(pages, "Payments.razor"));
-        Assert.Contains("AdminDataTable", payments, StringComparison.Ordinal);
+        Assert.Contains("ReportTable", payments, StringComparison.Ordinal);
         Assert.Contains("AdminFilterSummary", payments, StringComparison.Ordinal);
         Assert.Contains("AmountDisplay", payments, StringComparison.Ordinal);
+        Assert.Contains("AdminPagination", payments, StringComparison.Ordinal);
 
         var users = File.ReadAllText(Path.Combine(pages, "Users.razor"));
         Assert.Contains("AdminDataTable", users, StringComparison.Ordinal);

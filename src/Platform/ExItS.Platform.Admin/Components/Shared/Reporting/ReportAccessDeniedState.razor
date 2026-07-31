@@ -1,0 +1,7 @@
+<DeniedState Title="@Title" Message="@Message" RequiredPermission="@RequiredPermission" />
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public string? RequiredPermission { get; set; }
+}

@@ -1,0 +1,23 @@
+@inject IStringLocalizer<AdminResources> L
+
+<div class="report-quick-ranges" role="group" aria-label="@(AriaLabel ?? L["Report_QuickRangesAria"])">
+    <button type="button" class="ghost @(Active == ReportQuickRange.Today ? "is-active" : null)" disabled="@Disabled" @onclick="() => SelectAsync(ReportQuickRange.Today)">@L["Report_Quick_Today"]</button>
+    <button type="button" class="ghost @(Active == ReportQuickRange.Last7Days ? "is-active" : null)" disabled="@Disabled" @onclick="() => SelectAsync(ReportQuickRange.Last7Days)">@L["Report_Quick_Last7"]</button>
+    <button type="button" class="ghost @(Active == ReportQuickRange.Last30Days ? "is-active" : null)" disabled="@Disabled" @onclick="() => SelectAsync(ReportQuickRange.Last30Days)">@L["Report_Quick_Last30"]</button>
+    <button type="button" class="ghost @(Active == ReportQuickRange.ThisMonth ? "is-active" : null)" disabled="@Disabled" @onclick="() => SelectAsync(ReportQuickRange.ThisMonth)">@L["Report_Quick_ThisMonth"]</button>
+</div>
+
+@code {
+    [Parameter] public ReportQuickRange? Active { get; set; }
+    [Parameter] public EventCallback<ReportQuickRange> RangeSelected { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? AriaLabel { get; set; }
+
+    private async Task SelectAsync(ReportQuickRange range)
+    {
+        if (RangeSelected.HasDelegate)
+        {
+            await RangeSelected.InvokeAsync(range);
+        }
+    }
+}

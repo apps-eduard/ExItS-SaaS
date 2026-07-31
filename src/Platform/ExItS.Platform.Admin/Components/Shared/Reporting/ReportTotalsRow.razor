@@ -1,0 +1,15 @@
+<div class="report-totals-row is-numeric" role="group" aria-label="@AriaLabel">
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <span class="report-totals-label">@Label</span>
+    }
+    <span class="report-totals-value">@Value</span>
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public string? AriaLabel { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

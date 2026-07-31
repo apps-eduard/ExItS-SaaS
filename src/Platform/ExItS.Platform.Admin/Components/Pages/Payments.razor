@@ -8,78 +8,103 @@
 
 @if (Id is null)
 {
-    <PageHeader Title="@L["Payments_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Payments"]}")" Description="@L["Payments_Description"]" />
-    <section class="warning" role="note">@L["Payments_Warning"]</section>
+    <ReportPageShell>
+        <ReportHeader Title="@L["Payments_Title"]"
+                      Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Payments"]}")"
+                      Description="@L["Payments_Description"]" />
+        <section class="warning" role="note">@L["Payments_Warning"]</section>
 
-    <FormSection Title="@L["Payments_CreateSection"]">
-        <FormValidationSummary Title="@L["Payments_CreateFailed"]" Message="@(_showCreate ? _formError : null)" IsConflict="_formConflict" />
-        <div class="form-grid">
-            <FormField Label="@($"{L["Common_Organization"]} ID")" FieldId="pay-org" Required="true" Error="@_fieldOrg">
-                <AdminInput @bind-Value="_createOrgId" Placeholder="GUID" Disabled="_busy" />
-            </FormField>
-            <FormField Label="@L["OrgProductAccess_ProductCode"]" FieldId="pay-product" Required="true">
-                <AdminInput @bind-Value="_createProductCode" Disabled="_busy" />
-            </FormField>
-            <FormField Label="@L["Common_Amount"]" FieldId="pay-amount" Required="true" Error="@_fieldAmount" Help="Decimal amount; server remains authoritative.">
-                <AdminInput @bind-Value="_createAmount" Type="number" InputMode="decimal" Step="0.01" Disabled="_busy" />
-            </FormField>
-            <FormField Label="Currency" FieldId="pay-currency">
-                <AdminInput @bind-Value="_createCurrency" Placeholder="PHP" Disabled="_busy" />
-            </FormField>
-            <FormField Label="@L["Common_Method"]" FieldId="pay-method" Required="true">
-                <AdminSelect @bind-Value="_createMethod" Disabled="_busy">
-                    <option>Cash</option>
-                    <option>BankTransfer</option>
-                    <option>GCash</option>
-                </AdminSelect>
-            </FormField>
-            <FormField Label="@L["Common_Reference"]" FieldId="pay-ref">
-                <AdminInput @bind-Value="_createReference" Autocomplete="off" Disabled="_busy" />
-            </FormField>
-            <FormField Label="@L["Common_PaidUtc"]" FieldId="pay-paid" Required="true" Error="@_fieldPaidAt" Help="UTC timestamp (yyyy-MM-ddTHH:mm:ssZ)">
-                <AdminInput @bind-Value="_createPaidAt" Placeholder="yyyy-MM-ddTHH:mm:ssZ" Disabled="_busy" />
-            </FormField>
-        </div>
-        <FormActions PrimaryText="@L["Payments_CreateButton"]" Busy="_busy" OnPrimary="CreatePaymentAsync" />
-    </FormSection>
+        <FormSection Title="@L["Payments_CreateSection"]">
+            <FormValidationSummary Title="@L["Payments_CreateFailed"]" Message="@(_showCreate ? _formError : null)" IsConflict="_formConflict" />
+            <div class="form-grid">
+                <FormField Label="@($"{L["Common_Organization"]} ID")" FieldId="pay-org" Required="true" Error="@_fieldOrg">
+                    <AdminInput @bind-Value="_createOrgId" Placeholder="GUID" Disabled="_busy" />
+                </FormField>
+                <FormField Label="@L["OrgProductAccess_ProductCode"]" FieldId="pay-product" Required="true">
+                    <AdminInput @bind-Value="_createProductCode" Disabled="_busy" />
+                </FormField>
+                <FormField Label="@L["Common_Amount"]" FieldId="pay-amount" Required="true" Error="@_fieldAmount" Help="Decimal amount; server remains authoritative.">
+                    <AdminInput @bind-Value="_createAmount" Type="number" InputMode="decimal" Step="0.01" Disabled="_busy" />
+                </FormField>
+                <FormField Label="Currency" FieldId="pay-currency">
+                    <AdminInput @bind-Value="_createCurrency" Placeholder="PHP" Disabled="_busy" />
+                </FormField>
+                <FormField Label="@L["Common_Method"]" FieldId="pay-method" Required="true">
+                    <AdminSelect @bind-Value="_createMethod" Disabled="_busy">
+                        <option>Cash</option>
+                        <option>BankTransfer</option>
+                        <option>GCash</option>
+                    </AdminSelect>
+                </FormField>
+                <FormField Label="@L["Common_Reference"]" FieldId="pay-ref">
+                    <AdminInput @bind-Value="_createReference" Autocomplete="off" Disabled="_busy" />
+                </FormField>
+                <FormField Label="@L["Common_PaidUtc"]" FieldId="pay-paid" Required="true" Error="@_fieldPaidAt" Help="UTC timestamp (yyyy-MM-ddTHH:mm:ssZ)">
+                    <AdminInput @bind-Value="_createPaidAt" Placeholder="yyyy-MM-ddTHH:mm:ssZ" Disabled="_busy" />
+                </FormField>
+            </div>
+            <FormActions PrimaryText="@L["Payments_CreateButton"]" Busy="_busy" OnPrimary="CreatePaymentAsync" />
+        </FormSection>
 
-    <form class="filters" @onsubmit="ApplyFiltersAsync" @onsubmit:preventDefault>
-        <label>@L["Common_Status"]
-            <select @bind="_status">
-                <option value="PendingConfirmation">PendingConfirmation</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="Rejected">Rejected</option>
-                <option value="Voided">Voided</option>
-            </select>
-        </label>
-        <label>@L["OrgProductAccess_ProductCode"] <input @bind="_productCode" placeholder="optional" /></label>
-        <label>@L["Common_Organization"] id <input @bind="_organizationIdText" placeholder="optional GUID" /></label>
-        <button type="submit">@L["Common_ApplyFilters"]</button>
-    </form>
-
-    @if (_list is null) { <LoadingState Message="@L["Payments_Loading"]" /> }
-    else if (!_list.IsSuccess) { <ErrorState Title="@(_list.Error?.Title ?? L["Common_Error"])" Detail="@_list.Error?.Detail" CorrelationId="@_list.Error?.CorrelationId" Unavailable="@(_list.Status == ApiCallStatus.Unavailable)" /> }
-    else
-    {
-        <AdminFilterSummary Items="_filterChips" OnClear="ClearFiltersAsync" />
-        @if (_list.Data!.Items.Count == 0)
-        {
-            <EmptyState Message="@L["Payments_Empty"]" />
-        }
-        else
-        {
-            <AdminDataTable TItem="PaymentDto"
-                            Items="_list.Data.Items"
-                            Columns="_paymentColumns"
-                            Caption="@L["Payments_Title"]"
-                            ItemKey="p => p.Id"
-                            CellTemplate="PaymentCell" />
-            <AdminPagination Page="_list.Data.Page"
-                             PageSize="_list.Data.PageSize"
-                             TotalCount="_list.Data.TotalCount"
-                             PageChanged="OnPaymentPageAsync" />
-        }
-    }
+        <ResponsiveReportLayout>
+            <Filters>
+                <ReportFilterBar Busy="_listBusy" OnApply="ApplyFiltersAsync" OnReset="ClearFiltersAsync">
+                    <ReportQuickRangeSelector Active="_quickRange" RangeSelected="OnQuickRangeAsync" Disabled="_listBusy" />
+                    <ReportDateRangeFilter @bind-FromDate="_fromDate"
+                                          @bind-ToDate="_toDate"
+                                          FromError="@_fromError"
+                                          ToError="@_toError"
+                                          Help="@L["Report_PaidRangeHelp"]"
+                                          Disabled="_listBusy" />
+                    <FormField Label="@L["Common_Status"]" FieldId="pay-filter-status">
+                        <AdminSelect @bind-Value="_status" Disabled="_listBusy">
+                            <option value="PendingConfirmation">PendingConfirmation</option>
+                            <option value="Confirmed">Confirmed</option>
+                            <option value="Rejected">Rejected</option>
+                            <option value="Voided">Voided</option>
+                        </AdminSelect>
+                    </FormField>
+                    <FormField Label="@L["OrgProductAccess_ProductCode"]" FieldId="pay-filter-product">
+                        <AdminInput @bind-Value="_productCode" Placeholder="optional" Disabled="_listBusy" />
+                    </FormField>
+                    <FormField Label="@($"{L["Common_Organization"]} id")" FieldId="pay-filter-org">
+                        <AdminInput @bind-Value="_organizationIdText" Placeholder="optional GUID" Disabled="_listBusy" />
+                    </FormField>
+                </ReportFilterBar>
+                <AdminFilterSummary Items="_filterChips" OnClear="ClearFiltersAsync" />
+            </Filters>
+            <ChildContent>
+                <ReportSection Title="@L["Report_PaymentsSection"]">
+                    <ReportDataPanel IsLoading="@(_list is null || _listBusy)"
+                                    HasError="@(_list is { IsSuccess: false })"
+                                    IsEmpty="@(_list is { IsSuccess: true, Data.Items.Count: 0 })"
+                                    LoadingMessage="@L["Payments_Loading"]"
+                                    EmptyMessage="@L["Payments_Empty"]"
+                                    ErrorTitle="@(_list?.Error?.Title ?? L["Common_Error"])"
+                                    ErrorDetail="@_list?.Error?.Detail"
+                                    ErrorCorrelationId="@_list?.Error?.CorrelationId"
+                                    ErrorUnavailable="@(_list?.Status == ApiCallStatus.Unavailable)">
+                        <ReportGroupHeader Title="@L["Report_PageResults"]"
+                                           Meta="@L["Report_PaidRangeHelp"]" />
+                        <ReportTable TItem="PaymentDto"
+                                     Items="_list!.Data!.Items"
+                                     Columns="_paymentColumns"
+                                     Caption="@L["Payments_Title"]"
+                                     ItemKey="p => p.Id"
+                                     CellTemplate="PaymentCell" />
+                        <ReportTotalsRow Label="@L["Report_PaymentsTotals"]"
+                                         Value="@($"{_list.Data.Items.Count}")"
+                                         AriaLabel="@L["Report_PaymentsTotals"]" />
+                        <AdminPagination Page="_list!.Data!.Page"
+                                         PageSize="_list.Data.PageSize"
+                                         TotalCount="_list.Data.TotalCount"
+                                         PageChanged="OnPaymentPageAsync"
+                                         Disabled="_listBusy" />
+                    </ReportDataPanel>
+                </ReportSection>
+            </ChildContent>
+        </ResponsiveReportLayout>
+    </ReportPageShell>
 }
 else
 {
@@ -199,12 +224,22 @@ else
     private string? _fieldAmount;
     private string? _fieldPaidAt;
     private bool _busy;
+    private bool _listBusy;
     private ConfirmState? _confirm;
     private int _page = 1;
     private List<AdminColumnDefinition> _paymentColumns = new();
+    private DateOnly? _fromDate;
+    private DateOnly? _toDate;
+    private ReportQuickRange? _quickRange;
+    private string? _fromError;
+    private string? _toError;
+    private const int MaxInclusiveReportDays = 366;
 
     protected override void OnInitialized()
     {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        (_fromDate, _toDate) = ReportQuickRangeHelper.Resolve(ReportQuickRange.Last30Days, today);
+        _quickRange = ReportQuickRange.Last30Days;
         _paymentColumns =
         [
             new("ref", L["Common_Reference"], Primary: true),
@@ -232,6 +267,12 @@ else
             if (!string.IsNullOrWhiteSpace(_organizationIdText))
             {
                 chips.Add(new(L["Common_Organization"], _organizationIdText));
+            }
+
+            if (_fromDate is not null && _toDate is not null)
+            {
+                chips.Add(new(L["Report_FromDate"], _fromDate.Value.ToString("yyyy-MM-dd")));
+                chips.Add(new(L["Report_ToDate"], _toDate.Value.ToString("yyyy-MM-dd")));
             }
 
             return chips;
@@ -262,18 +303,63 @@ else
 
     private async Task LoadListAsync()
     {
-        Guid? orgId = Guid.TryParse(_organizationIdText, out var parsed) ? parsed : null;
-        _list = await Api.GetPaymentsAsync(
-            string.IsNullOrWhiteSpace(_status) ? "PendingConfirmation" : _status,
-            string.IsNullOrWhiteSpace(_productCode) ? null : _productCode,
-            orgId,
-            page: _page);
+        _listBusy = true;
+        try
+        {
+            Guid? orgId = Guid.TryParse(_organizationIdText, out var parsed) ? parsed : null;
+            _list = await Api.GetPaymentsAsync(
+                string.IsNullOrWhiteSpace(_status) ? "PendingConfirmation" : _status,
+                string.IsNullOrWhiteSpace(_productCode) ? null : _productCode,
+                orgId,
+                page: _page);
+        }
+        finally
+        {
+            _listBusy = false;
+        }
+    }
+
+    private bool ValidateDateRange()
+    {
+        _fromError = _toError = null;
+        if (_fromDate is null || _toDate is null)
+        {
+            return true;
+        }
+
+        if (_toDate < _fromDate)
+        {
+            _toError = L["Report_DateRangeInvalid"];
+            return false;
+        }
+
+        if (!ReportQuickRangeHelper.IsWithinMaxSpan(_fromDate.Value, _toDate.Value, MaxInclusiveReportDays))
+        {
+            _toError = string.Format(L["Report_DateRangeTooLarge"], MaxInclusiveReportDays);
+            return false;
+        }
+
+        return true;
     }
 
     private async Task ApplyFiltersAsync()
     {
+        if (!ValidateDateRange())
+        {
+            return;
+        }
+
         _page = 1;
         await LoadListAsync();
+    }
+
+    private async Task OnQuickRangeAsync(ReportQuickRange range)
+    {
+        _quickRange = range;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        (_fromDate, _toDate) = ReportQuickRangeHelper.Resolve(range, today);
+        _fromError = _toError = null;
+        await ApplyFiltersAsync();
     }
 
     private async Task OnPaymentPageAsync(int page)
@@ -288,6 +374,10 @@ else
         _productCode = null;
         _organizationIdText = null;
         _page = 1;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        _quickRange = ReportQuickRange.Last30Days;
+        (_fromDate, _toDate) = ReportQuickRangeHelper.Resolve(ReportQuickRange.Last30Days, today);
+        _fromError = _toError = null;
         await LoadListAsync();
     }
 
@@ -311,8 +401,8 @@ else
                 b.AddContent(0, ctx.Item.Method);
                 break;
             case "status":
-                b.OpenComponent<StatusBadge>(0);
-                b.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
+                b.OpenComponent<ReportStatusBadge>(0);
+                b.AddAttribute(1, nameof(ReportStatusBadge.Value), ctx.Item.Status);
                 b.CloseComponent();
                 break;
             case "org":

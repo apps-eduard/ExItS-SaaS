@@ -1,0 +1,20 @@
+<article class="report-kpi-card summary-card metric-card" role="listitem">
+    <span class="report-kpi-label">@Title</span>
+    <strong class="report-kpi-value is-numeric">@Value</strong>
+    @if (!string.IsNullOrWhiteSpace(SupportingText))
+    {
+        <p class="report-kpi-support muted">@SupportingText</p>
+    }
+    @if (!string.IsNullOrWhiteSpace(StatusText))
+    {
+        <p class="report-kpi-status muted">@StatusText</p>
+    }
+</article>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter, EditorRequired] public string Value { get; set; } = "";
+    [Parameter] public string? SupportingText { get; set; }
+    /// <summary>Optional authoritative status/trend text from the server — never invent client-side percentages.</summary>
+    [Parameter] public string? StatusText { get; set; }
+}

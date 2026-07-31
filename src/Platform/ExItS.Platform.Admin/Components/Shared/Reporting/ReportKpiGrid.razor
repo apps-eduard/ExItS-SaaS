@@ -1,0 +1,8 @@
+<div class="report-kpi-grid summary-grid" role="list" aria-label="@AriaLabel">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? AriaLabel { get; set; }
+}

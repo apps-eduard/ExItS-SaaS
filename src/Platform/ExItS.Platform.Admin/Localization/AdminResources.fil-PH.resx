@@ -101,6 +101,20 @@
   <data name="Data_ActiveFilters" xml:space="preserve"><value>Mga filter</value></data>
   <data name="Data_ValueUnavailable" xml:space="preserve"><value>Hindi available</value></data>
   <data name="Data_ConflictMessage" xml:space="preserve"><value>Nagbago ang record na ito. I-reload at subukan ulit.</value></data>
+  <data name="Report_FiltersAria" xml:space="preserve"><value>Mga filter ng ulat</value></data>
+  <data name="Report_FromDate" xml:space="preserve"><value>Mula sa petsa</value></data>
+  <data name="Report_ToDate" xml:space="preserve"><value>Hanggang petsa</value></data>
+  <data name="Report_QuickRangesAria" xml:space="preserve"><value>Mabilisang saklaw ng petsa</value></data>
+  <data name="Report_Quick_Today" xml:space="preserve"><value>Ngayon</value></data>
+  <data name="Report_Quick_Last7" xml:space="preserve"><value>Huling 7 araw</value></data>
+  <data name="Report_Quick_Last30" xml:space="preserve"><value>Huling 30 araw</value></data>
+  <data name="Report_Quick_ThisMonth" xml:space="preserve"><value>Buwan na ito</value></data>
+  <data name="Report_DateRangeInvalid" xml:space="preserve"><value>Dapat ang hanggang petsa ay pareho o pagkatapos ng mula sa petsa.</value></data>
+  <data name="Report_DateRangeTooLarge" xml:space="preserve"><value>Hindi maaaring lumampas sa {0} araw ang saklaw ng petsa.</value></data>
+  <data name="Report_PaidRangeHelp" xml:space="preserve"><value>Na-validate ang saklaw ng petsa para sa apply/reset. Ginagamit ng listahan ang status, produkto, at organisasyon sa server. Wala pang paid-at date query sa API na ito — nananatiling authoritative ang mga halaga mula sa server.</value></data>
+  <data name="Report_PaymentsSection" xml:space="preserve"><value>Mga resulta ng payment</value></data>
+  <data name="Report_PaymentsTotals" xml:space="preserve"><value>Mga row sa pahinang ito</value></data>
+  <data name="Report_PageResults" xml:space="preserve"><value>Mga resulta sa pahina</value></data>
   <data name="Dialog_ConflictTitle" xml:space="preserve"><value>Conflict</value></data>
   <data name="Dialog_UnsavedTitle" xml:space="preserve"><value>May hindi nai-save na pagbabago</value></data>
   <data name="Dialog_UnsavedMessage" xml:space="preserve"><value>May hindi nai-save na pagbabago. I-discard at iwanan ang form na ito?</value></data>

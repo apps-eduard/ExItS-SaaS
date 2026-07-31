@@ -1,0 +1,22 @@
+<article class="report-summary-card entity-summary-card">
+    @if (!string.IsNullOrWhiteSpace(Title))
+    {
+        <h3 class="entity-summary-title">@Title</h3>
+    }
+    @if (!string.IsNullOrWhiteSpace(Subtitle))
+    {
+        <p class="entity-summary-subtitle muted">@Subtitle</p>
+    }
+    @if (!string.IsNullOrWhiteSpace(Value))
+    {
+        <strong class="report-summary-value is-numeric">@Value</strong>
+    }
+    @ChildContent
+</article>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

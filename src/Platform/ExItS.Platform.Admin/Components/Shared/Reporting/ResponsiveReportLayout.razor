@@ -1,0 +1,23 @@
+@*
+  Responsive report layout: stacks filters/KPIs on narrow viewports via CSS.
+*@
+<div class="responsive-report-layout @CssClass">
+    @if (Filters is not null)
+    {
+        <div class="responsive-report-filters">@Filters</div>
+    }
+    @if (Kpis is not null)
+    {
+        <div class="responsive-report-kpis">@Kpis</div>
+    }
+    <div class="responsive-report-body">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter] public RenderFragment? Filters { get; set; }
+    [Parameter] public RenderFragment? Kpis { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+}

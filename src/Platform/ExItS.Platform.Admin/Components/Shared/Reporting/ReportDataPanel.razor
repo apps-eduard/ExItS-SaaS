@@ -1,0 +1,39 @@
+@*
+  Shared gate for report data views — reuses AdminDataPanel semantics.
+*@
+<AdminDataPanel IsLoading="IsLoading"
+                IsDenied="IsDenied"
+                IsConflict="IsConflict"
+                HasError="HasError"
+                IsEmpty="IsEmpty"
+                LoadingMessage="@LoadingMessage"
+                EmptyMessage="@EmptyMessage"
+                ErrorTitle="@ErrorTitle"
+                ErrorDetail="@ErrorDetail"
+                ErrorCorrelationId="@ErrorCorrelationId"
+                ErrorUnavailable="ErrorUnavailable"
+                DeniedPermission="@DeniedPermission"
+                DeniedMessage="@DeniedMessage"
+                ConflictTitle="@ConflictTitle"
+                ConflictMessage="@ConflictMessage">
+    @ChildContent
+</AdminDataPanel>
+
+@code {
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public bool IsDenied { get; set; }
+    [Parameter] public bool IsConflict { get; set; }
+    [Parameter] public bool HasError { get; set; }
+    [Parameter] public bool IsEmpty { get; set; }
+    [Parameter] public string? LoadingMessage { get; set; }
+    [Parameter] public string? EmptyMessage { get; set; }
+    [Parameter] public string? ErrorTitle { get; set; }
+    [Parameter] public string? ErrorDetail { get; set; }
+    [Parameter] public string? ErrorCorrelationId { get; set; }
+    [Parameter] public bool ErrorUnavailable { get; set; }
+    [Parameter] public string? DeniedPermission { get; set; }
+    [Parameter] public string? DeniedMessage { get; set; }
+    [Parameter] public string? ConflictTitle { get; set; }
+    [Parameter] public string? ConflictMessage { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

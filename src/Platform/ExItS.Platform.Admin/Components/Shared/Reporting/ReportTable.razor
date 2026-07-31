@@ -1,0 +1,28 @@
+@typeparam TItem
+
+<div class="report-table">
+    <AdminDataTable TItem="TItem"
+                    Items="Items"
+                    Columns="Columns"
+                    CellTemplate="CellTemplate"
+                    RowActions="RowActions"
+                    ItemKey="ItemKey"
+                    Caption="@Caption"
+                    AriaLabel="@AriaLabel"
+                    ActionsHeader="@ActionsHeader"
+                    Sort="Sort"
+                    OnSort="OnSort" />
+</div>
+
+@code {
+    [Parameter] public IEnumerable<TItem>? Items { get; set; }
+    [Parameter] public IReadOnlyList<AdminColumnDefinition>? Columns { get; set; }
+    [Parameter] public RenderFragment<(TItem Item, AdminColumnDefinition Column)>? CellTemplate { get; set; }
+    [Parameter] public RenderFragment<TItem>? RowActions { get; set; }
+    [Parameter] public Func<TItem, object>? ItemKey { get; set; }
+    [Parameter] public string? Caption { get; set; }
+    [Parameter] public string? AriaLabel { get; set; }
+    [Parameter] public string? ActionsHeader { get; set; }
+    [Parameter] public AdminSortState? Sort { get; set; }
+    [Parameter] public EventCallback<AdminSortState> OnSort { get; set; }
+}

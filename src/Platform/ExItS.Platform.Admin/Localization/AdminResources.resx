@@ -101,6 +101,20 @@
   <data name="Data_ActiveFilters" xml:space="preserve"><value>Filters</value></data>
   <data name="Data_ValueUnavailable" xml:space="preserve"><value>Unavailable</value></data>
   <data name="Data_ConflictMessage" xml:space="preserve"><value>This record changed. Reload and try again.</value></data>
+  <data name="Report_FiltersAria" xml:space="preserve"><value>Report filters</value></data>
+  <data name="Report_FromDate" xml:space="preserve"><value>From date</value></data>
+  <data name="Report_ToDate" xml:space="preserve"><value>To date</value></data>
+  <data name="Report_QuickRangesAria" xml:space="preserve"><value>Quick date ranges</value></data>
+  <data name="Report_Quick_Today" xml:space="preserve"><value>Today</value></data>
+  <data name="Report_Quick_Last7" xml:space="preserve"><value>Last 7 days</value></data>
+  <data name="Report_Quick_Last30" xml:space="preserve"><value>Last 30 days</value></data>
+  <data name="Report_Quick_ThisMonth" xml:space="preserve"><value>This month</value></data>
+  <data name="Report_DateRangeInvalid" xml:space="preserve"><value>To date must be on or after from date.</value></data>
+  <data name="Report_DateRangeTooLarge" xml:space="preserve"><value>Date range cannot exceed {0} inclusive days.</value></data>
+  <data name="Report_PaidRangeHelp" xml:space="preserve"><value>Date range is validated for apply/reset UX. List results use status, product, and organization on the server. Paid-at date query is not on this API yet — values stay server-authoritative.</value></data>
+  <data name="Report_PaymentsSection" xml:space="preserve"><value>Payment results</value></data>
+  <data name="Report_PaymentsTotals" xml:space="preserve"><value>Rows on this page</value></data>
+  <data name="Report_PageResults" xml:space="preserve"><value>Page results</value></data>
   <data name="Dialog_ConflictTitle" xml:space="preserve"><value>Conflict</value></data>
   <data name="Dialog_UnsavedTitle" xml:space="preserve"><value>Unsaved changes</value></data>
   <data name="Dialog_UnsavedMessage" xml:space="preserve"><value>You have unsaved changes. Discard them and leave this form?</value></data>
