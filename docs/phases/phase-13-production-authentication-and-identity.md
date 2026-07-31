@@ -4,22 +4,22 @@
 
 ## Status
 
-**In progress.** **P13-WP01** is **complete** (architecture and threat model only). Exact next: **P13-WP02 — Identity Credentials and Auth Persistence** when authorized (do **not** begin).
+**In progress.** **P13-WP01** and **P13-WP02** are **complete**. Exact next: **P13-WP03 — Platform Login, Logout, and Browser Session** when authorized (do **not** begin).
 
-Phase 12 remains closed. **R-091** remains open — no production authentication code in this phase yet.
+Phase 12 remains closed. **R-091** remains open — credential persistence exists; login/session not yet implemented.
 
 Authoritative docs:
 
 - [`authentication-architecture.md`](../engineering/authentication-architecture.md)
 - [`authentication-threat-model.md`](../engineering/authentication-threat-model.md)
-- Report: [`P13-WP01`](../reports/P13-WP01-authentication-architecture-and-threat-model.md)
+- Reports: [`P13-WP01`](../reports/P13-WP01-authentication-architecture-and-threat-model.md), [`P13-WP02`](../reports/P13-WP02-identity-credentials-and-auth-persistence.md)
 
 ## Progress
 
 | WP | Status | Report / tip |
 |---|---|---|
 | P13-WP01 — Authentication Architecture and Threat Model | **Complete** | [report](../reports/P13-WP01-authentication-architecture-and-threat-model.md) · `40a48349ae2a42e9dc267bde0df64afb004af3ae` |
-| P13-WP02 — Identity Credentials and Auth Persistence | Not started | — |
+| P13-WP02 — Identity Credentials and Auth Persistence | **Complete** | [report](../reports/P13-WP02-identity-credentials-and-auth-persistence.md) · *(docs tip after commit)* |
 | P13-WP03 — Platform Login, Logout, and Browser Session | Not started | — |
 | P13-WP04 — Password Lifecycle, Lockout, and Verification | Not started | — |
 | P13-WP05 — Trusted API Actor and Organization Context | Not started | — |
@@ -107,13 +107,15 @@ Define authoritative production authentication architecture and threat model bef
 
 ### P13-WP02 — Identity Credentials and Auth Persistence
 
+**Complete** — see [P13-WP02 report](../reports/P13-WP02-identity-credentials-and-auth-persistence.md).
+
 #### Objective
 
 Add Platform persistence for credentials, verification, and lockout state without public login UI (unless separately authorized).
 
 #### Status
 
-Not started — begin only when authorized.
+**Complete.** `platform_user_credentials`, PBKDF2 hasher, bootstrap controls, credential APIs. No login/session.
 
 ### P13-WP03 — Platform Login, Logout, and Browser Session
 
@@ -184,6 +186,6 @@ Not started — begin only when authorized.
 - Tests pass; `main = origin/main`; working tree clean
 - Portfolio not falsely claimed Production-ready
 
-## Exact next after P13-WP01
+## Exact next after P13-WP02
 
-**P13-WP02 — Identity Credentials and Auth Persistence** when explicitly authorized. Do not begin P13-WP02.
+**P13-WP03 — Platform Login, Logout, and Browser Session** when explicitly authorized. Do not begin P13-WP03.

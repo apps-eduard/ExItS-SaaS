@@ -123,7 +123,7 @@ Future products must preserve “no direct Platform table reads” while obtaini
 
 ### Production authentication — R-091
 
-**Unresolved.** No production JWT/cookie/password authentication exists in code. **P13-WP01** recorded the authoritative architecture and threat model (`docs/engineering/authentication-architecture.md`). Implementation begins only in authorized later Phase 13 WPs. Do not claim production-secure identity. Do not invent fake production login. Keep Dev/Testing vs Production language honest (**D-P12-05**).
+**Unresolved for login/session.** Credential persistence shipped in **P13-WP02** (`platform_user_credentials`, PBKDF2). No production cookie/JWT login yet. Implementation of login begins only in authorized later Phase 13 WPs. Do not claim production-secure identity. Do not invent fake production login. Keep Dev/Testing vs Production language honest (**D-P12-05**).
 
 ---
 

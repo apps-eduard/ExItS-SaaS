@@ -215,6 +215,7 @@ docs/reports/P12-WP05-product-bootstrap-prompt.md
 docs/reports/P12-WP06-reference-product-dry-run.md
 docs/reports/P12-WP07-foundation-hardening-and-closeout.md
 docs/reports/P13-WP01-authentication-architecture-and-threat-model.md
+docs/reports/P13-WP02-identity-credentials-and-auth-persistence.md
 docs/phases/phase-13-production-authentication-and-identity.md
 docs/engineering/authentication-architecture.md
 docs/engineering/authentication-threat-model.md

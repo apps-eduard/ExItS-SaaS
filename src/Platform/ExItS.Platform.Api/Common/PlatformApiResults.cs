@@ -40,7 +40,8 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.EntitlementSnapshotNotFound
             or ApplicationErrorCodes.PaymentNotFound
             or ApplicationErrorCodes.RoleAssignmentNotFound
-            or ApplicationErrorCodes.AuditRecordNotFound => StatusCodes.Status404NotFound,
+            or ApplicationErrorCodes.AuditRecordNotFound
+            or ApplicationErrorCodes.CredentialNotFound => StatusCodes.Status404NotFound,
 
         ApplicationErrorCodes.SlugConflict
             or ApplicationErrorCodes.EmailConflict
@@ -70,6 +71,9 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.EntitlementProductMismatch
             or ApplicationErrorCodes.EntitlementSubscriptionInvalid
             or ApplicationErrorCodes.RoleAssignmentConflict
+            or ApplicationErrorCodes.CredentialAlreadyExists
+            or ApplicationErrorCodes.BootstrapAlreadyCompleted
+            or ApplicationErrorCodes.CredentialLockedOut
             or DomainErrorCodes.UserNotActive
             or DomainErrorCodes.OrganizationNotActive
             or DomainErrorCodes.MembershipNotActive

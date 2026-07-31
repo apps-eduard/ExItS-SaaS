@@ -74,4 +74,12 @@ public static class ApplicationErrorCodes
     public const string RoleAssignmentNotFound = "application.role_assignment.not_found";
     public const string RoleAssignmentConflict = "application.role_assignment.conflict";
     public const string AuditRecordNotFound = "application.audit_record.not_found";
+
+    public const string CredentialNotFound = "application.credential.not_found";
+    public const string CredentialAlreadyExists = "application.credential.already_exists";
+    public const string PasswordInvalid = "application.credential.password_invalid";
+    public const string CredentialLockedOut = "application.credential.locked_out";
+    public const string BootstrapDisabled = "application.auth.bootstrap_disabled";
+    public const string BootstrapAlreadyCompleted = "application.auth.bootstrap_already_completed";
+    public const string BootstrapConfigurationInvalid = "application.auth.bootstrap_configuration_invalid";
 }

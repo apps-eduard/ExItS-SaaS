@@ -43,6 +43,7 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<EntitlementSnapshotRecord> EntitlementSnapshots => Set<EntitlementSnapshotRecord>();
     internal DbSet<EntitlementSnapshotGrantRecord> EntitlementSnapshotGrants => Set<EntitlementSnapshotGrantRecord>();
     internal DbSet<PlatformUserRecord> PlatformUsers => Set<PlatformUserRecord>();
+    internal DbSet<PlatformUserCredentialRecord> PlatformUserCredentials => Set<PlatformUserCredentialRecord>();
     internal DbSet<OrganizationMembershipRecord> OrganizationMemberships => Set<OrganizationMembershipRecord>();
     internal DbSet<ProductAccessAssignmentRecord> ProductAccessAssignments => Set<ProductAccessAssignmentRecord>();
     internal DbSet<PlatformRoleAssignmentRecord> PlatformRoleAssignments => Set<PlatformRoleAssignmentRecord>();
@@ -420,6 +421,32 @@ public sealed class PlatformDbContext : DbContext
                 .HasColumnType("xid")
                 .ValueGeneratedOnAddOrUpdate()
                 .IsConcurrencyToken();
+        });
+
+        modelBuilder.Entity<PlatformUserCredentialRecord>(entity =>
+        {
+            entity.ToTable("platform_user_credentials");
+            entity.HasKey(e => e.UserId);
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.PasswordHash).HasColumnName("password_hash").HasMaxLength(512).IsRequired();
+            entity.Property(e => e.PasswordHashAlgorithm).HasColumnName("password_hash_algorithm").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.SecurityStamp).HasColumnName("security_stamp").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.PasswordChangedAtUtc).HasColumnName("password_changed_at_utc");
+            entity.Property(e => e.EmailVerifiedAtUtc).HasColumnName("email_verified_at_utc");
+            entity.Property(e => e.FailedAccessCount).HasColumnName("failed_access_count");
+            entity.Property(e => e.LockoutEndUtc).HasColumnName("lockout_end_utc");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithOne()
+                .HasForeignKey<PlatformUserCredentialRecord>(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<OrganizationMembershipRecord>(entity =>

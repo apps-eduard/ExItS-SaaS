@@ -131,6 +131,6 @@ Offline synchronization, Basic Store and production hardening.
 
 ## R6 — Production Authentication and Identity (Phase 13)
 
-**In progress.** **P13-WP01 complete** — architecture and threat model only (`docs/engineering/authentication-architecture.md`, `authentication-threat-model.md`). No login/cookies/tokens/migrations. **R-091 remains open.**
+**In progress.** **P13-WP01–WP02 complete** — architecture/threat model + credential persistence (`platform_user_credentials`, PBKDF2, bootstrap). No login/cookies/tokens. **R-091 remains open.**
 
-**Next:** **P13-WP02 — Identity Credentials and Auth Persistence** when authorized. Do not begin P13-WP02.
+**Next:** **P13-WP03 — Platform Login, Logout, and Browser Session** when authorized. Do not begin P13-WP03.

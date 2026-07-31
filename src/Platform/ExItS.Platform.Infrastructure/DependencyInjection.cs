@@ -10,6 +10,7 @@ using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Infrastructure.Authorization;
+using ExItS.Platform.Infrastructure.Identity;
 using ExItS.Platform.Infrastructure.Persistence;
 using ExItS.Platform.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -41,6 +42,8 @@ public static class DependencyInjection
         services.AddScoped<IEntitlementSnapshotRepository, EntitlementSnapshotRepository>();
         services.AddScoped<IAdminPortfolioReadStore, AdminPortfolioReadStore>();
         services.AddScoped<IPlatformUserRepository, PlatformUserRepository>();
+        services.AddScoped<IPlatformUserCredentialRepository, PlatformUserCredentialRepository>();
+        services.AddSingleton<IPlatformPasswordHasher, Pbkdf2PlatformPasswordHasher>();
         services.AddScoped<IOrganizationMembershipRepository, OrganizationMembershipRepository>();
         services.AddScoped<IProductAccessAssignmentRepository, ProductAccessAssignmentRepository>();
         services.AddScoped<IPlatformRoleAssignmentRepository, PlatformRoleAssignmentRepository>();
@@ -52,6 +55,10 @@ public static class DependencyInjection
         services.AddScoped<IPlatformActorAccessor, DevelopmentPlatformActorAccessor>();
         services.AddScoped<IPlatformAuthorizationService, PlatformAuthorizationService>();
         services.AddScoped<IAuditWriter, AuditWriter>();
+
+        services.Configure<PlatformPasswordOptions>(config.GetSection(PlatformPasswordOptions.SectionName));
+        services.Configure<PlatformLockoutOptions>(config.GetSection(PlatformLockoutOptions.SectionName));
+        services.Configure<PlatformAuthBootstrapOptions>(config.GetSection(PlatformAuthBootstrapOptions.SectionName));
 
         return services;
     }

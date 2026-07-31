@@ -72,6 +72,13 @@ builder.Services.AddScoped<SuspendPlatformUser>();
 builder.Services.AddScoped<ReactivatePlatformUser>();
 builder.Services.AddScoped<DeactivatePlatformUser>();
 
+builder.Services.AddScoped<GetPlatformCredentialStatus>();
+builder.Services.AddScoped<SetPlatformUserPassword>();
+builder.Services.AddScoped<UnlockPlatformUserCredential>();
+builder.Services.AddScoped<MarkPlatformUserEmailVerified>();
+builder.Services.AddScoped<VerifyPlatformUserPassword>();
+builder.Services.AddScoped<BootstrapFirstPlatformAdministrator>();
+
 builder.Services.AddScoped<MembershipQueryService>();
 builder.Services.AddScoped<AddOrganizationMembership>();
 builder.Services.AddScoped<ChangeOrganizationRole>();
@@ -134,6 +141,7 @@ app.MapPlatformHealthEndpoints();
 app.MapCatalogEndpoints();
 app.MapOrganizationEndpoints();
 app.MapIdentityEndpoints();
+app.MapCredentialEndpoints();
 app.MapMembershipEndpoints();
 app.MapAccessEndpoints();
 app.MapSubscriptionEndpoints();

@@ -2,9 +2,9 @@
 
 [Home](../index.md) | [Threat model](authentication-threat-model.md) | [Security](security.md) | [Authorization](authorization-matrix.md) | [Product Foundation](../Product-Foundation/exits-product-foundation-reference.md) | [Phase 13](../phases/phase-13-production-authentication-and-identity.md) | [P13-WP01 report](../reports/P13-WP01-authentication-architecture-and-threat-model.md)
 
-**Status:** Authoritative architecture direction (**P13-WP01**). **Not implemented.** R-091 remains open until later Phase 13 work packages ship and are evidenced.
+**Status:** Authoritative architecture direction (**P13-WP01**). Credential persistence delivered in **P13-WP02**. Login/session not yet implemented. **R-091** remains open until later Phase 13 work packages ship and are evidenced.
 
-**Scope of this document:** identity model, trust boundaries, target session/token model, Dev vs Production behavior, and decisions. No code, migrations, cookies, tokens, or login UI are delivered by P13-WP01.
+**Scope of this document:** identity model, trust boundaries, target session/token model, Dev vs Production behavior, and decisions. Credential storage arrived in P13-WP02; cookies/tokens/login UI remain later WPs.
 
 ---
 
@@ -47,9 +47,10 @@ Platform User
 
 | Surface | Today | Production behavior |
 |---|---|---|
-| Platform User profile | Exists (`PlatformUser`) — username/email/status; **no credentials** | Profile remains SoR for identity attributes |
+| Platform User profile | Exists (`PlatformUser`) — username/email/status | Profile remains SoR for identity attributes |
+| Credentials | **Implemented (P13-WP02):** `platform_user_credentials` + PBKDF2 hash, lockout, email-verified flag | Ready for login WP |
 | Platform actor | `DevelopmentPlatformActorAccessor` + optional `X-Dev-Platform-User-Id` | Header ignored; DevelopmentOperator without full access → fail closed |
-| Platform Authz | `PlatformAuthz` + role assignments | Still authorization-only; **no authentication** |
+| Platform Authz | `PlatformAuthz` + role assignments | Still authorization-only until login binds actor |
 | Platform Admin | Unauthenticated Blazor; Dev Operator label | Same — not production-secure |
 | POS / MAUI | GUID sign-in → SecureStorage session → Dev headers | Org/actor/commercial headers rejected or fail closed |
 | ASP.NET auth middleware | **Absent** (no cookie/JWT pipeline under `src/`) | N/A |
@@ -67,10 +68,10 @@ Platform owns:
 - immutable Platform User ID
 - username / email (normalized uniqueness)
 - account status (active / suspended / disabled as already modeled)
-- **credential and verification state** (future persistence — not in domain aggregate today)
-- lockout / failed-attempt state (future)
-- session / security metadata needed for revocation (future)
-- **authentication audit events** (Platform audit; no secrets in payloads)
+- **credential and verification state** (**Implemented P13-WP02** — `PlatformUserCredential`)
+- lockout / failed-attempt state (**Implemented P13-WP02**)
+- session / security metadata needed for revocation (security stamp stored; session revoke later)
+- **authentication audit events** (password set / unlock / email verified / bootstrap; login events later)
 
 Platform User is **not** a POS Customer, HealthCare Patient, or org-local duplicate account.
 
@@ -217,4 +218,4 @@ POS remains non-PHI by default (Product Foundation).
 
 ## 12. Recommended next work package
 
-**P13-WP02 — Identity Credentials and Auth Persistence** when explicitly authorized: Platform credential/verification/lockout persistence design and migrations — still no public login UI until the authorized session WP.
+**P13-WP03 — Platform Login, Logout, and Browser Session** when explicitly authorized.

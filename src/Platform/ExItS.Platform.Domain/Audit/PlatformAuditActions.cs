@@ -20,6 +20,11 @@ public static class PlatformAuditActions
     public const string PlatformUserReactivated = "platform.user.reactivated";
     public const string PlatformUserDeactivated = "platform.user.deactivated";
 
+    public const string PlatformUserPasswordSet = "platform.user.password_set";
+    public const string PlatformUserCredentialUnlocked = "platform.user.credential_unlocked";
+    public const string PlatformUserEmailVerified = "platform.user.email_verified";
+    public const string PlatformAuthBootstrapCompleted = "platform.auth.bootstrap_completed";
+
     public const string MembershipAdded = "platform.membership.added";
     public const string MembershipRoleChanged = "platform.membership.role_changed";
     public const string MembershipSuspended = "platform.membership.suspended";
