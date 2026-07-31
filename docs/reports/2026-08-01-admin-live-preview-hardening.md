@@ -1,6 +1,6 @@
 # Platform Admin — Live Preview hardening notes (2026-08-01)
 
-Post–P15-WP01 session fixes on `main`. **Do not roll back** these changes; they stabilize Interactive Server auth, nav, culture, and theme.
+Post–P15-WP01 session fixes on `main` at tip `6145953f34e28ff5a5b4c90130b93638096946f8`. **Do not roll back** these changes; they stabilize Interactive Server auth, nav, culture, and theme.
 
 [Portfolio](../portfolio-progress.md) | [P15-WP01](P15-WP01-antdesign-admin-foundation.md)
 
