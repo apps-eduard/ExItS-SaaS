@@ -23,7 +23,7 @@ Authoritative docs:
 | P13-WP03 — Platform Login, Logout, and Browser Session | **Complete** | [report](../reports/P13-WP03-platform-login-logout-and-browser-session.md) · `6298b668c5d0555a84eb206b2a2313b138c9b892` |
 | P13-WP04 — Password Lifecycle, Lockout, and Verification | **Complete** | [report](../reports/P13-WP04-password-verification-and-lockout-lifecycle.md) · `65b261eca7353a7efea2f8f1899c252f0dcee6dc` |
 | P13-WP05 — Trusted API Actor and Organization Context | **Complete** | [report](../reports/P13-WP05-trusted-organization-context-and-membership-selection.md) · `e64f352161bb20447a99ae762d1a69ec1a3846fe` |
-| P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS) | **Complete** | [report](../reports/P13-WP06-product-client-auth-integration.md) |
+| P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS) | **Complete** | [report](../reports/P13-WP06-product-client-auth-integration.md) · `68f13c0a4281071087e526ecf8e51414f2a78b12` |
 | P13-WP07 — MFA Readiness and Auth Hardening | Not started | — |
 | P13-WP08 — Phase 13 Closeout | Not started | — |
 

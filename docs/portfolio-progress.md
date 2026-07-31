@@ -128,7 +128,7 @@ P13-WP07 ○ MFA Readiness and Auth Hardening (do not begin until authorized)
 | P13-WP03 — Platform Login, Logout, and Browser Session | Complete | `6298b668c5d0555a84eb206b2a2313b138c9b892` |
 | P13-WP04 — Password Lifecycle, Lockout, and Verification | Complete | `65b261eca7353a7efea2f8f1899c252f0dcee6dc` |
 | P13-WP05 — Trusted API Actor and Organization Context | Complete | `e64f352161bb20447a99ae762d1a69ec1a3846fe` |
-| P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS) | Complete | *(feature tip recorded after commit)* |
+| P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS) | Complete | `68f13c0a4281071087e526ecf8e51414f2a78b12` |
 
 ## Phase 12 work packages
 

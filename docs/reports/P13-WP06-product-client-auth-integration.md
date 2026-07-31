@@ -4,6 +4,7 @@ Phase marker: `P13-WP06-product-client-auth-integration`
 
 Package: **P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS)**
 Prior tip: `0cad6f9674c0f0e98dadc06081efc9e951517702`
+Feature tip: `68f13c0a4281071087e526ecf8e51414f2a78b12`
 
 ## Status
 
