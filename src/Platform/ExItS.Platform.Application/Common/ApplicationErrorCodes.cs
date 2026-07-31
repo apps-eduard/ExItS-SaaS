@@ -89,4 +89,7 @@ public static class ApplicationErrorCodes
     public const string SessionInvalid = "application.auth.session_invalid";
     public const string SessionExpired = "application.auth.session_expired";
     public const string AccountNotEligibleForLogin = "application.auth.account_not_eligible";
+    public const string CredentialTokenInvalid = "application.auth.credential_token_invalid";
+    public const string CredentialTokenExpired = "application.auth.credential_token_expired";
+    public const string CurrentPasswordInvalid = "application.auth.current_password_invalid";
 }

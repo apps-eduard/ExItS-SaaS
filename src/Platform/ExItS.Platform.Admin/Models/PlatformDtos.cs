@@ -204,6 +204,27 @@ public sealed record PlatformUserDto(
     DateTimeOffset? SuspendedAtUtc,
     string? SuspensionReason);
 
+public sealed record PlatformCredentialStatusDto(
+    Guid UserId,
+    bool HasPassword,
+    bool EmailVerified,
+    DateTimeOffset? EmailVerifiedAtUtc,
+    bool IsLockedOut,
+    DateTimeOffset? LockoutEndUtc,
+    int FailedAccessCount,
+    DateTimeOffset? PasswordChangedAtUtc);
+
+public sealed record CredentialWorkflowAckDto(
+    string Message,
+    string? DebugToken,
+    DateTimeOffset? ExpiresAtUtc);
+
+public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);
+public sealed record ForgotPasswordRequest(string UsernameOrEmail);
+public sealed record ResetPasswordRequest(string Token, string NewPassword);
+public sealed record ConfirmEmailVerificationRequest(string Token);
+public sealed record SetUserPasswordRequest(string Password);
+
 public sealed record OrganizationMembershipDto(
     Guid Id,
     Guid OrganizationId,

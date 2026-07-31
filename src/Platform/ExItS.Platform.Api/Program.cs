@@ -87,6 +87,11 @@ builder.Services.AddScoped<BootstrapFirstPlatformAdministrator>();
 builder.Services.AddScoped<LoginPlatformUser>();
 builder.Services.AddScoped<LogoutPlatformSession>();
 builder.Services.AddScoped<ValidateAndRenewPlatformSession>();
+builder.Services.AddScoped<ChangePlatformUserPassword>();
+builder.Services.AddScoped<RequestPasswordReset>();
+builder.Services.AddScoped<ResetPasswordWithToken>();
+builder.Services.AddScoped<RequestEmailVerification>();
+builder.Services.AddScoped<ConfirmEmailVerification>();
 
 builder.Services.AddScoped<MembershipQueryService>();
 builder.Services.AddScoped<AddOrganizationMembership>();

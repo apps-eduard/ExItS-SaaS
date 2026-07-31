@@ -141,7 +141,7 @@ P9-WP06 closed Phase 9 with an honest Commercial MVP readiness board: Developmen
 
 ## Phase 13 — Production Authentication and Identity (in progress)
 
-**P13-WP03** added Platform browser login/logout, `platform.platform_auth_sessions`, HttpOnly session cookie + session header, sliding/absolute expiry, Admin `/admin/login` (Production-required), and auth audit events. **No bearer tokens / MFA / password-reset delivery.** **R-091 remains open.** Exact next: **P13-WP04 — Password Lifecycle, Lockout, and Verification** (do not begin). **Not production-ready.**
+**P13-WP04** added authenticated password change, forgot/reset tokens (`platform_credential_tokens`), email-verification token workflow (no email vendor), lockout/unlock UI+API, and session revocation after sensitive changes. **No bearer tokens / MFA.** **R-091 remains open.** Exact next: **P13-WP05 — Trusted API Actor and Organization Context** (do not begin). **Not production-ready.**
 
 **P13-WP01** published authoritative authentication architecture and threat model. Locked access chain User → Membership → Product Access → Product-Local Role. Decisions D-P13-01…06 recorded.
 

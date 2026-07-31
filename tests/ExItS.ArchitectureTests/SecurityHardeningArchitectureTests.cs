@@ -123,6 +123,7 @@ public sealed class SecurityHardeningArchitectureTests
             "src", "Platform", "ExItS.Platform.Api", "Common", "PlatformSecurityPipeline.cs"));
         Assert.Contains("AuthBootstrapRateLimitPolicy", pipeline, StringComparison.Ordinal);
         Assert.Contains("AuthLoginRateLimitPolicy", pipeline, StringComparison.Ordinal);
+        Assert.Contains("AuthPasswordResetRateLimitPolicy", pipeline, StringComparison.Ordinal);
         Assert.Contains("PlatformAuthentication:Bootstrap:Enabled", pipeline, StringComparison.Ordinal);
         Assert.Contains("must not enable", pipeline, StringComparison.OrdinalIgnoreCase);
 

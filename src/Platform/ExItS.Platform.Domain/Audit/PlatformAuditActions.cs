@@ -28,6 +28,12 @@ public static class PlatformAuditActions
     public const string PlatformAuthLoginFailed = "platform.auth.login_failed";
     public const string PlatformAuthLogout = "platform.auth.logout";
     public const string PlatformAuthSessionRevoked = "platform.auth.session_revoked";
+    public const string PlatformAuthPasswordChanged = "platform.auth.password_changed";
+    public const string PlatformAuthPasswordResetRequested = "platform.auth.password_reset_requested";
+    public const string PlatformAuthPasswordResetCompleted = "platform.auth.password_reset_completed";
+    public const string PlatformAuthEmailVerificationRequested = "platform.auth.email_verification_requested";
+    public const string PlatformAuthEmailVerificationCompleted = "platform.auth.email_verification_completed";
+    public const string PlatformAuthLockoutStarted = "platform.auth.lockout_started";
 
     public const string MembershipAdded = "platform.membership.added";
     public const string MembershipRoleChanged = "platform.membership.role_changed";

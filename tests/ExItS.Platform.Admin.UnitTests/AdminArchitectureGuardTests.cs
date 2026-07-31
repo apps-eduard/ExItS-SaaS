@@ -68,36 +68,38 @@ public sealed class AdminArchitectureGuardTests
     }
 
     [Fact]
-    public void Admin_user_and_access_pages_exclude_product_local_roles_and_login()
+    public void Admin_user_and_access_pages_exclude_product_local_roles_and_external_idp()
     {
         var root = FindRepositoryRoot();
         var pagesDir = Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages");
         var resx = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Localization", "AdminResources.resx"));
         var files = new[] { "Users.razor", "OrganizationMembers.razor", "OrganizationProductAccess.razor" };
-        var forbidden = new[]
+        var forbiddenRoles = new[]
         {
-            "Doctor", "Nurse", "Cashier", "Store Manager", "Clinic Admin", "POS Administrator", "Patient",
-            "type=\"password\"", "MFA", "SSO", "Active Directory"
+            "Doctor", "Nurse", "Cashier", "Store Manager", "Clinic Admin", "POS Administrator", "Patient"
         };
 
         foreach (var file in files)
         {
             var text = File.ReadAllText(Path.Combine(pagesDir, file));
-            foreach (var phrase in forbidden)
+            foreach (var phrase in forbiddenRoles)
             {
-                if (phrase is "Doctor" or "Nurse" or "Cashier" or "Store Manager" or "Clinic Admin" or "POS Administrator" or "Patient")
-                {
-                    Assert.DoesNotContain($"option>{phrase}", text, StringComparison.OrdinalIgnoreCase);
-                    Assert.DoesNotContain($"value=\"{phrase}\"", text, StringComparison.OrdinalIgnoreCase);
-                    continue;
-                }
-
-                Assert.DoesNotContain(phrase, text, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain($"option>{phrase}", text, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain($"value=\"{phrase}\"", text, StringComparison.OrdinalIgnoreCase);
             }
 
-            Assert.DoesNotContain("type=\"password\"", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("MFA", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("SSO", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Active Directory", text, StringComparison.OrdinalIgnoreCase);
+
+            // Credential password fields are allowed on Users detail (P13-WP04); not on membership/access pages.
+            if (!string.Equals(file, "Users.razor", StringComparison.Ordinal))
+            {
+                Assert.DoesNotContain("type=\"password\"", text, StringComparison.OrdinalIgnoreCase);
+            }
         }
 
+        Assert.Contains("Credentials", File.ReadAllText(Path.Combine(pagesDir, "Users.razor")), StringComparison.Ordinal);
         Assert.Contains("development-stage", resx, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("product-local", resx, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("OrgProductAccess_Warning", File.ReadAllText(Path.Combine(pagesDir, "OrganizationProductAccess.razor")), StringComparison.Ordinal);

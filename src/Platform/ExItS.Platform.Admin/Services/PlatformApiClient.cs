@@ -141,6 +141,25 @@ public sealed class PlatformApiClient(HttpClient httpClient) : IPlatformApiClien
     public Task<ApiCallResult<IReadOnlyList<PlatformRoleCatalogEntryDto>>> GetAuthorizationRolesAsync(CancellationToken ct = default) =>
         GetAsync<IReadOnlyList<PlatformRoleCatalogEntryDto>>("/api/v1/platform/authorization/roles", ct);
 
+    public Task<ApiCallResult<PlatformCredentialStatusDto>> GetUserCredentialsAsync(Guid userId, CancellationToken ct = default) =>
+        GetAsync<PlatformCredentialStatusDto>($"/api/v1/platform/users/{userId}/credentials", ct);
+    public Task<ApiCallResult<PlatformCredentialStatusDto>> SetUserPasswordAsync(Guid userId, SetUserPasswordRequest request, CancellationToken ct = default) =>
+        SendAsync<PlatformCredentialStatusDto>(HttpMethod.Put, $"/api/v1/platform/users/{userId}/credentials/password", request, ct);
+    public Task<ApiCallResult<PlatformCredentialStatusDto>> UnlockUserCredentialAsync(Guid userId, CancellationToken ct = default) =>
+        SendAsync<PlatformCredentialStatusDto>(HttpMethod.Post, $"/api/v1/platform/users/{userId}/credentials/unlock", null, ct);
+    public Task<ApiCallResult<PlatformCredentialStatusDto>> MarkUserEmailVerifiedAsync(Guid userId, CancellationToken ct = default) =>
+        SendAsync<PlatformCredentialStatusDto>(HttpMethod.Post, $"/api/v1/platform/users/{userId}/credentials/email-verified", null, ct);
+    public Task<ApiCallResult<PlatformCredentialStatusDto>> ChangePasswordAsync(ChangePasswordRequest request, CancellationToken ct = default) =>
+        SendAsync<PlatformCredentialStatusDto>(HttpMethod.Post, "/api/v1/platform/auth/change-password", request, ct);
+    public Task<ApiCallResult<CredentialWorkflowAckDto>> ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken ct = default) =>
+        SendAsync<CredentialWorkflowAckDto>(HttpMethod.Post, "/api/v1/platform/auth/forgot-password", request, ct);
+    public Task<ApiCallResult<PlatformCredentialStatusDto>> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken ct = default) =>
+        SendAsync<PlatformCredentialStatusDto>(HttpMethod.Post, "/api/v1/platform/auth/reset-password", request, ct);
+    public Task<ApiCallResult<CredentialWorkflowAckDto>> RequestEmailVerificationAsync(CancellationToken ct = default) =>
+        SendAsync<CredentialWorkflowAckDto>(HttpMethod.Post, "/api/v1/platform/auth/email-verification/request", null, ct);
+    public Task<ApiCallResult<PlatformCredentialStatusDto>> ConfirmEmailVerificationAsync(ConfirmEmailVerificationRequest request, CancellationToken ct = default) =>
+        SendAsync<PlatformCredentialStatusDto>(HttpMethod.Post, "/api/v1/platform/auth/email-verification/confirm", request, ct);
+
     private static MembershipLifecycleRequest WithActor(MembershipLifecycleRequest request) =>
         request with { ActorReference = string.IsNullOrWhiteSpace(request.ActorReference) ? DevActor : request.ActorReference };
 

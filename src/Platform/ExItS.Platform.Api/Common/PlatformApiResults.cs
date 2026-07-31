@@ -31,7 +31,10 @@ internal static class PlatformApiResults
 
         ApplicationErrorCodes.LoginFailed
             or ApplicationErrorCodes.SessionInvalid
-            or ApplicationErrorCodes.SessionExpired => StatusCodes.Status401Unauthorized,
+            or ApplicationErrorCodes.SessionExpired
+            or ApplicationErrorCodes.CurrentPasswordInvalid
+            or ApplicationErrorCodes.CredentialTokenInvalid
+            or ApplicationErrorCodes.CredentialTokenExpired => StatusCodes.Status401Unauthorized,
 
         ApplicationErrorCodes.OrganizationNotFound
             or ApplicationErrorCodes.UserNotFound

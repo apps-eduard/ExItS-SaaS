@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using ExItS.Platform.Api.Authentication;
 using ExItS.Platform.Api.Common;
+using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
@@ -43,14 +45,8 @@ internal static class AuthEndpoints
             CancellationToken ct) =>
         {
             var token = ExtractSessionToken(http, sessionOptions.Value);
-            var result = await useCase.ExecuteAsync(token, ct).ConfigureAwait(false);
+            await useCase.ExecuteAsync(token, ct).ConfigureAwait(false);
             DeleteSessionCookie(http, sessionOptions.Value);
-            if (!result.IsSuccess)
-            {
-                // Idempotent logout: missing/invalid session still clears cookie.
-                return Results.NoContent();
-            }
-
             return Results.NoContent();
         })
         .AllowAnonymous();
@@ -67,12 +63,99 @@ internal static class AuthEndpoints
         })
         .AllowAnonymous();
 
+        app.MapPost("/api/v1/platform/auth/change-password", async (
+            ChangePasswordRequest body,
+            HttpContext http,
+            ChangePlatformUserPassword useCase,
+            IOptions<PlatformSessionOptions> sessionOptions,
+            CancellationToken ct) =>
+        {
+            if (!TryGetAuthenticatedUserId(http, out var userId))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authentication is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var result = await useCase
+                .ExecuteAsync(userId, body.CurrentPassword, body.NewPassword, ct)
+                .ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                DeleteSessionCookie(http, sessionOptions.Value);
+            }
+
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        app.MapPost("/api/v1/platform/auth/forgot-password", async (
+            ForgotPasswordRequest body,
+            RequestPasswordReset useCase,
+            CancellationToken ct) =>
+        {
+            var result = await useCase.ExecuteAsync(body.UsernameOrEmail, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        })
+        .RequireRateLimiting(PlatformSecurityPipeline.AuthPasswordResetRateLimitPolicy)
+        .AllowAnonymous();
+
+        app.MapPost("/api/v1/platform/auth/reset-password", async (
+            ResetPasswordRequest body,
+            ResetPasswordWithToken useCase,
+            CancellationToken ct) =>
+        {
+            var result = await useCase.ExecuteAsync(body.Token, body.NewPassword, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        })
+        .RequireRateLimiting(PlatformSecurityPipeline.AuthPasswordResetRateLimitPolicy)
+        .AllowAnonymous();
+
+        app.MapPost("/api/v1/platform/auth/email-verification/request", async (
+            HttpContext http,
+            RequestEmailVerification useCase,
+            CancellationToken ct) =>
+        {
+            if (!TryGetAuthenticatedUserId(http, out var userId))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authentication is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var result = await useCase.ExecuteAsync(userId, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        app.MapPost("/api/v1/platform/auth/email-verification/confirm", async (
+            ConfirmEmailVerificationRequest body,
+            ConfirmEmailVerification useCase,
+            CancellationToken ct) =>
+        {
+            var result = await useCase.ExecuteAsync(body.Token, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        })
+        .AllowAnonymous();
+
         return app;
+    }
+
+    private static bool TryGetAuthenticatedUserId(HttpContext http, out Guid userId)
+    {
+        userId = Guid.Empty;
+        if (http.User.Identity?.IsAuthenticated != true)
+        {
+            return false;
+        }
+
+        var raw = http.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return Guid.TryParse(raw, out userId) && userId != Guid.Empty;
     }
 
     internal static string? ExtractSessionToken(HttpContext http, PlatformSessionOptions options)
     {
-            if (http.Items.TryGetValue(PlatformSessionClaimTypes.RequestTokenItemKey, out var cached)
+        if (http.Items.TryGetValue(PlatformSessionClaimTypes.RequestTokenItemKey, out var cached)
             && cached is string cachedToken
             && !string.IsNullOrWhiteSpace(cachedToken))
         {
@@ -132,4 +215,8 @@ internal static class AuthEndpoints
     }
 
     internal sealed record LoginRequest(string? UsernameOrEmail, string? Password);
+    internal sealed record ChangePasswordRequest(string? CurrentPassword, string? NewPassword);
+    internal sealed record ForgotPasswordRequest(string? UsernameOrEmail);
+    internal sealed record ResetPasswordRequest(string? Token, string? NewPassword);
+    internal sealed record ConfirmEmailVerificationRequest(string? Token);
 }

@@ -123,6 +123,32 @@ else
             </div>
         </FormSection>
 
+        <FormSection Title="Credentials" Description="Password, lockout, and email-verification state. Admin set-password and unlock invalidate browser sessions.">
+            @if (_credentials is null) { <LoadingState Message="Loading credentials…" /> }
+            else if (!_credentials.IsSuccess) { <ErrorState Title="Credentials unavailable" Detail="@_credentials.Error?.Detail" /> }
+            else
+            {
+                var c = _credentials.Data!;
+                <dl>
+                    <dt>Has password</dt><dd>@(c.HasPassword ? "Yes" : "No")</dd>
+                    <dt>Email verified</dt><dd>@(c.EmailVerified ? "Yes" : "No")</dd>
+                    <dt>Locked out</dt><dd>@(c.IsLockedOut ? $"Yes until {c.LockoutEndUtc}" : "No")</dd>
+                    <dt>Failed attempts</dt><dd>@c.FailedAccessCount</dd>
+                    <dt>Password changed</dt><dd>@(c.PasswordChangedAtUtc?.ToString("u") ?? "—")</dd>
+                </dl>
+                <div class="form-grid">
+                    <FormField Label="Set / replace password" FieldId="user-set-password">
+                        <AdminInput @bind-Value="_setPassword" Type="password" Disabled="_busy" />
+                    </FormField>
+                </div>
+                <div class="actions">
+                    <button type="button" class="secondary" @onclick="SetPasswordAsync" disabled="@_busy">Set password</button>
+                    <button type="button" class="secondary" @onclick="UnlockCredentialAsync" disabled="@_busy">Unlock</button>
+                    <button type="button" class="secondary" @onclick="MarkEmailVerifiedAsync" disabled="@_busy">Mark email verified</button>
+                </div>
+            }
+        </FormSection>
+
         <h2>@L["Users_OrgMemberships"]</h2>
         <p class="muted">@L["Users_OrgMembershipsHint"]</p>
         @if (_memberships is null) { <LoadingState Message="@L["Users_LoadingMemberships"]" /> }
@@ -199,6 +225,8 @@ else
     private ApiCallResult<PlatformUserDto>? _detail;
     private ApiCallResult<PagedResult<OrganizationMembershipDto>>? _memberships;
     private ApiCallResult<PagedResult<ProductAccessAssignmentDto>>? _access;
+    private ApiCallResult<PlatformCredentialStatusDto>? _credentials;
+    private string _setPassword = "";
     private string _search = "";
     private string _status = "";
     private bool _showCreate;
@@ -334,6 +362,70 @@ else
         }
         _memberships = await Api.GetUserMembershipsAsync(Id.Value);
         _access = await Api.GetUserProductAccessAsync(Id.Value);
+        _credentials = await Api.GetUserCredentialsAsync(Id.Value);
+        _setPassword = "";
+    }
+
+    private async Task SetPasswordAsync()
+    {
+        if (Id is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        _formConflict = false;
+        var result = await Api.SetUserPasswordAsync(Id.Value, new SetUserPasswordRequest(_setPassword));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        Toasts.Show("Password set.", ToastKind.Success);
+        await ReloadDetailAsync();
+    }
+
+    private async Task UnlockCredentialAsync()
+    {
+        if (Id is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        var result = await Api.UnlockUserCredentialAsync(Id.Value);
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        Toasts.Show("Credential unlocked.", ToastKind.Success);
+        await ReloadDetailAsync();
+    }
+
+    private async Task MarkEmailVerifiedAsync()
+    {
+        if (Id is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        var result = await Api.MarkUserEmailVerifiedAsync(Id.Value);
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        Toasts.Show("Email marked verified.", ToastKind.Success);
+        await ReloadDetailAsync();
     }
 
     private void ToggleCreate()

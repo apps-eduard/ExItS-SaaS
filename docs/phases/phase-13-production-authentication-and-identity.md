@@ -4,15 +4,15 @@
 
 ## Status
 
-**In progress.** **P13-WP01**, **P13-WP02**, and **P13-WP03** are **complete**. Exact next: **P13-WP04 — Password Lifecycle, Lockout, and Verification** when authorized (do **not** begin).
+**In progress.** **P13-WP01**–**P13-WP04** are **complete**. Exact next: **P13-WP05 — Trusted API Actor and Organization Context** when authorized (do **not** begin).
 
-Phase 12 remains closed. **R-091** remains open — login/session shipped; password lifecycle, trusted API actor hardening, product client wiring, and closeout remain.
+Phase 12 remains closed. **R-091** remains open — credentials, browser session, and password lifecycle shipped; trusted API actor, product clients, MFA readiness, and closeout remain.
 
 Authoritative docs:
 
 - [`authentication-architecture.md`](../engineering/authentication-architecture.md)
 - [`authentication-threat-model.md`](../engineering/authentication-threat-model.md)
-- Reports: [`P13-WP01`](../reports/P13-WP01-authentication-architecture-and-threat-model.md), [`P13-WP02`](../reports/P13-WP02-identity-credentials-and-auth-persistence.md), [`P13-WP03`](../reports/P13-WP03-platform-login-logout-and-browser-session.md)
+- Reports: [`P13-WP01`](../reports/P13-WP01-authentication-architecture-and-threat-model.md), [`P13-WP02`](../reports/P13-WP02-identity-credentials-and-auth-persistence.md), [`P13-WP03`](../reports/P13-WP03-platform-login-logout-and-browser-session.md), [`P13-WP04`](../reports/P13-WP04-password-verification-and-lockout-lifecycle.md)
 
 ## Progress
 
@@ -21,7 +21,7 @@ Authoritative docs:
 | P13-WP01 — Authentication Architecture and Threat Model | **Complete** | [report](../reports/P13-WP01-authentication-architecture-and-threat-model.md) · `40a48349ae2a42e9dc267bde0df64afb004af3ae` |
 | P13-WP02 — Identity Credentials and Auth Persistence | **Complete** | [report](../reports/P13-WP02-identity-credentials-and-auth-persistence.md) · `51ace5b90fc6c0bcb33fe483826481529bdfeb77` |
 | P13-WP03 — Platform Login, Logout, and Browser Session | **Complete** | [report](../reports/P13-WP03-platform-login-logout-and-browser-session.md) · `6298b668c5d0555a84eb206b2a2313b138c9b892` |
-| P13-WP04 — Password Lifecycle, Lockout, and Verification | Not started | — |
+| P13-WP04 — Password Lifecycle, Lockout, and Verification | **Complete** | [report](../reports/P13-WP04-password-verification-and-lockout-lifecycle.md) · _(tip after commit)_ |
 | P13-WP05 — Trusted API Actor and Organization Context | Not started | — |
 | P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS) | Not started | — |
 | P13-WP07 — MFA Readiness and Auth Hardening | Not started | — |
@@ -131,13 +131,15 @@ Implement Admin interactive login/logout and cookie/server session.
 
 ### P13-WP04 — Password Lifecycle, Lockout, and Verification
 
+**Complete** — see [P13-WP04 report](../reports/P13-WP04-password-verification-and-lockout-lifecycle.md).
+
 #### Objective
 
 Password change/reset, lockout, and email verification flows as authorized.
 
 #### Status
 
-Not started — begin only when authorized.
+**Complete.** Change/forgot/reset, verification tokens, lockout/unlock, session revoke after sensitive changes, Admin UI. No MFA / bearer / email vendor.
 
 ### P13-WP05 — Trusted API Actor and Organization Context
 
@@ -188,6 +190,6 @@ Not started — begin only when authorized.
 - Tests pass; `main = origin/main`; working tree clean
 - Portfolio not falsely claimed Production-ready
 
-## Exact next after P13-WP03
+## Exact next after P13-WP04
 
-**P13-WP04 — Password Lifecycle, Lockout, and Verification** when explicitly authorized. Do not begin P13-WP04.
+**P13-WP05 — Trusted API Actor and Organization Context** when explicitly authorized. Do not begin P13-WP05.

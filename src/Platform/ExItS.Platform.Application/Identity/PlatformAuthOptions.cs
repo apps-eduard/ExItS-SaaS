@@ -50,3 +50,21 @@ public sealed class PlatformSessionOptions
     public int AbsoluteLifetimeHours { get; set; } = 12;
     public bool SlidingRenewal { get; set; } = true;
 }
+
+/// <summary>
+/// Password-reset and email-verification token lifetimes.
+/// Email delivery is an explicit boundary — tokens are created and hashed; outbound delivery is optional/no-op without a vendor.
+/// </summary>
+public sealed class PlatformCredentialLifecycleOptions
+{
+    public const string SectionName = "PlatformAuthentication:Lifecycle";
+
+    public int PasswordResetTokenLifetimeMinutes { get; set; } = 60;
+    public int EmailVerificationTokenLifetimeHours { get; set; } = 24;
+
+    /// <summary>
+    /// When true (Development/Testing only), auth workflow responses may include a debug token for local verification.
+    /// Must remain false in Production (startup rejects otherwise).
+    /// </summary>
+    public bool ExposeDebugTokens { get; set; }
+}

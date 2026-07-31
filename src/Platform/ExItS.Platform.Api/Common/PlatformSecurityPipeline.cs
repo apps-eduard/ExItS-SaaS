@@ -9,6 +9,7 @@ internal static class PlatformSecurityPipeline
     public const string CorsPolicyName = "platform-cors";
     public const string AuthBootstrapRateLimitPolicy = "auth-bootstrap";
     public const string AuthLoginRateLimitPolicy = "auth-login";
+    public const string AuthPasswordResetRateLimitPolicy = "auth-password-reset";
     public const string KnownDevelopmentPasswordMarker = "exits_platform_dev_only";
 
     public static void ValidateProductionConfigurationOrThrow(WebApplicationBuilder builder)
@@ -44,6 +45,13 @@ internal static class PlatformSecurityPipeline
         {
             throw new InvalidOperationException(
                 "Production must not enable PlatformAuthentication:Bootstrap:Enabled (first-admin bootstrap is forbidden in Production).");
+        }
+
+        var exposeDebugTokens = builder.Configuration.GetValue<bool>("PlatformAuthentication:Lifecycle:ExposeDebugTokens");
+        if (exposeDebugTokens)
+        {
+            throw new InvalidOperationException(
+                "Production must not enable PlatformAuthentication:Lifecycle:ExposeDebugTokens.");
         }
     }
 
@@ -107,6 +115,20 @@ internal static class PlatformSecurityPipeline
                     {
                         AutoReplenishment = true,
                         PermitLimit = 20,
+                        Window = TimeSpan.FromMinutes(15),
+                        QueueLimit = 0
+                    });
+            });
+
+            options.AddPolicy(AuthPasswordResetRateLimitPolicy, httpContext =>
+            {
+                var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    "password-reset:" + ip,
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        AutoReplenishment = true,
+                        PermitLimit = 10,
                         Window = TimeSpan.FromMinutes(15),
                         QueueLimit = 0
                     });

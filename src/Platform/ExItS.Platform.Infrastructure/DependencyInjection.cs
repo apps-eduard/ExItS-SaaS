@@ -44,8 +44,10 @@ public static class DependencyInjection
         services.AddScoped<IPlatformUserRepository, PlatformUserRepository>();
         services.AddScoped<IPlatformUserCredentialRepository, PlatformUserCredentialRepository>();
         services.AddScoped<IPlatformAuthSessionRepository, PlatformAuthSessionRepository>();
+        services.AddScoped<IPlatformCredentialTokenRepository, PlatformCredentialTokenRepository>();
         services.AddSingleton<IPlatformPasswordHasher, AspNetCorePlatformPasswordHasher>();
         services.AddSingleton<IPlatformSessionTokenService, PlatformSessionTokenService>();
+        services.AddSingleton<IPlatformAuthOutboundMessageSink, NullPlatformAuthOutboundMessageSink>();
         services.AddScoped<IOrganizationMembershipRepository, OrganizationMembershipRepository>();
         services.AddScoped<IProductAccessAssignmentRepository, ProductAccessAssignmentRepository>();
         services.AddScoped<IPlatformRoleAssignmentRepository, PlatformRoleAssignmentRepository>();
@@ -62,6 +64,7 @@ public static class DependencyInjection
         services.Configure<PlatformLockoutOptions>(config.GetSection(PlatformLockoutOptions.SectionName));
         services.Configure<PlatformAuthBootstrapOptions>(config.GetSection(PlatformAuthBootstrapOptions.SectionName));
         services.Configure<PlatformSessionOptions>(config.GetSection(PlatformSessionOptions.SectionName));
+        services.Configure<PlatformCredentialLifecycleOptions>(config.GetSection(PlatformCredentialLifecycleOptions.SectionName));
 
         return services;
     }

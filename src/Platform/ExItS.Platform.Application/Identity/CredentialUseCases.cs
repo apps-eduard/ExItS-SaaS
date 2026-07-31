@@ -125,7 +125,9 @@ public sealed class SetPlatformUserPassword
 {
     private readonly IPlatformUserRepository _users;
     private readonly IPlatformUserCredentialRepository _credentials;
+    private readonly IPlatformAuthSessionRepository _sessions;
     private readonly IPlatformPasswordHasher _hasher;
+    private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly PlatformPasswordOptions _passwordOptions;
@@ -133,14 +135,18 @@ public sealed class SetPlatformUserPassword
     public SetPlatformUserPassword(
         IPlatformUserRepository users,
         IPlatformUserCredentialRepository credentials,
+        IPlatformAuthSessionRepository sessions,
         IPlatformPasswordHasher hasher,
+        IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
         IOptions<PlatformPasswordOptions> passwordOptions)
     {
         _users = users;
         _credentials = credentials;
+        _sessions = sessions;
         _hasher = hasher;
+        _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _passwordOptions = passwordOptions.Value;
@@ -170,18 +176,27 @@ public sealed class SetPlatformUserPassword
 
         try
         {
+            var utcNow = _clock.UtcNow;
             var hash = _hasher.HashPassword(password);
             var existing = await _credentials.GetByUserIdAsync(id, cancellationToken).ConfigureAwait(false);
             if (existing is null)
             {
-                var created = PlatformUserCredential.Create(id, hash, _hasher.Algorithm, _clock.UtcNow);
+                var created = PlatformUserCredential.Create(id, hash, _hasher.Algorithm, utcNow);
                 await _credentials.AddAsync(created, cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                existing.ReplacePasswordHash(hash, _hasher.Algorithm, _clock.UtcNow);
+                existing.ReplacePasswordHash(hash, _hasher.Algorithm, utcNow);
                 await _credentials.UpdateAsync(existing, cancellationToken).ConfigureAwait(false);
             }
+
+            await CredentialSessionInvalidation.RevokeAllAsync(
+                _sessions,
+                _auditWriter,
+                id,
+                utcNow,
+                "All browser sessions revoked after administrative password set.",
+                cancellationToken).ConfigureAwait(false);
 
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }

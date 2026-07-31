@@ -141,6 +141,16 @@ public sealed class LoginPlatformUser
 
             if (credential.IsLockedOut(_clock.UtcNow))
             {
+                await _auditWriter.WriteAsync(
+                    $"platform-user:{user.Id.Value:D}",
+                    AuditActorType.PlatformUser,
+                    PlatformAuditActions.PlatformAuthLockoutStarted,
+                    nameof(PlatformUserCredential),
+                    user.Id.Value.ToString("D"),
+                    AuditOutcome.Denied,
+                    summary: "Credential lockout started after failed login attempts.",
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
+
                 return ApplicationResult<PlatformLoginResultDto>.Failure(
                     ApplicationErrorCodes.CredentialLockedOut,
                     "Credential is locked out.");
