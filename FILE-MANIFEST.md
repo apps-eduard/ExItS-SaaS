@@ -172,6 +172,7 @@ docs/reports/P10-WP05-returns-refunds.md
 docs/reports/P10-WP06-advanced-permissions-operational-reports.md
 docs/reports/P10-WP07-multiple-registers.md
 docs/reports/P10-WP08-phase-10-closeout.md
+docs/reports/PRE-P11-admin-ui-recovery.md
 docs/operations/backup-restore/README.md
 docs/operations/pilot-and-deployment/README.md
 docs/reports/phase-02-extraction-closeout.md

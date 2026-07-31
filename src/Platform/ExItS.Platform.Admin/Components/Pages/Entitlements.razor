@@ -34,18 +34,18 @@
         @if (s.Grants.Count == 0) { <EmptyState Message="@L["Entitlements_NoGrants"]" /> }
         else
         {
-            <table>
+            <table class="data-table responsive-table">
                 <thead><tr><th>@L["Common_Feature"]</th><th>@L["Common_Enabled"]</th><th>@L["Common_Limit"]</th><th>@L["Common_Source"]</th><th>@L["Common_EffectiveUtc"]</th><th>@L["Common_ExpiresUtc"]</th></tr></thead>
                 <tbody>
                 @foreach (var g in s.Grants)
                 {
                     <tr>
-                        <td>@g.FeatureCode</td>
-                        <td>@g.Enabled</td>
-                        <td>@(g.NumericLimit?.ToString() ?? "—")</td>
-                        <td>@g.Source</td>
-                        <td><UtcTimestamp Value="@g.EffectiveAtUtc" /></td>
-                        <td><UtcTimestamp Value="@g.ExpiresAtUtc" /></td>
+                        <td data-label="@L["Common_Feature"]">@g.FeatureCode</td>
+                        <td data-label="@L["Common_Enabled"]">@g.Enabled</td>
+                        <td data-label="@L["Common_Limit"]">@(g.NumericLimit?.ToString() ?? "—")</td>
+                        <td data-label="@L["Common_Source"]">@g.Source</td>
+                        <td data-label="@L["Common_EffectiveUtc"]"><UtcTimestamp Value="@g.EffectiveAtUtc" /></td>
+                        <td data-label="@L["Common_ExpiresUtc"]"><UtcTimestamp Value="@g.ExpiresAtUtc" /></td>
                     </tr>
                 }
                 </tbody>
@@ -58,18 +58,18 @@
         else if (_overrides.Data!.Items.Count == 0) { <EmptyState Message="@L["Entitlements_NoOverrides"]" /> }
         else
         {
-            <table>
+            <table class="data-table responsive-table">
                 <thead><tr><th>@L["Common_Feature"]</th><th>@L["Common_Enabled"]</th><th>@L["Common_Limit"]</th><th>@L["Common_Status"]</th><th>@L["Common_Reason"]</th><th>@L["Entitlements_Column_EffectiveFromUtc"]</th></tr></thead>
                 <tbody>
                 @foreach (var o in _overrides.Data.Items)
                 {
                     <tr>
-                        <td>@o.FeatureCode</td>
-                        <td>@o.Enabled</td>
-                        <td>@(o.NumericLimit?.ToString() ?? "—")</td>
-                        <td><StatusBadge Value="@o.Status" /></td>
-                        <td>@o.Reason</td>
-                        <td><UtcTimestamp Value="@o.EffectiveFromUtc" /></td>
+                        <td data-label="@L["Common_Feature"]">@o.FeatureCode</td>
+                        <td data-label="@L["Common_Enabled"]">@o.Enabled</td>
+                        <td data-label="@L["Common_Limit"]">@(o.NumericLimit?.ToString() ?? "—")</td>
+                        <td data-label="@L["Common_Status"]"><StatusBadge Value="@o.Status" /></td>
+                        <td data-label="@L["Common_Reason"]">@o.Reason</td>
+                        <td data-label="@L["Entitlements_Column_EffectiveFromUtc"]"><UtcTimestamp Value="@o.EffectiveFromUtc" /></td>
                     </tr>
                 }
                 </tbody>
@@ -85,16 +85,16 @@ else if (OrganizationId is not null && ProductCode is not null)
     else if (_history.Data!.Items.Count == 0) { <EmptyState Message="@L["Entitlements_HistoryEmpty"]" /> }
     else
     {
-        <table>
+        <table class="data-table responsive-table">
             <thead><tr><th>@L["Common_Version"]</th><th>@L["Entitlements_SchemaVersion"]</th><th>@L["Common_Status"]</th><th>@L["Common_GeneratedUtc"]</th></tr></thead>
             <tbody>
             @foreach (var x in _history.Data.Items)
             {
                 <tr>
-                    <td><a href="/admin/entitlements/@x.Id">@x.SnapshotVersion</a></td>
-                    <td>@x.SchemaVersion</td>
-                    <td><StatusBadge Value="@x.SubscriptionStatus" /></td>
-                    <td><UtcTimestamp Value="@x.GeneratedAtUtc" /></td>
+                    <td data-label="@L["Common_Version"]"><a href="/admin/entitlements/@x.Id">@x.SnapshotVersion</a></td>
+                    <td data-label="@L["Entitlements_SchemaVersion"]">@x.SchemaVersion</td>
+                    <td data-label="@L["Common_Status"]"><StatusBadge Value="@x.SubscriptionStatus" /></td>
+                    <td data-label="@L["Common_GeneratedUtc"]"><UtcTimestamp Value="@x.GeneratedAtUtc" /></td>
                 </tr>
             }
             </tbody>
@@ -110,7 +110,7 @@ else
     else if (_latest.Data!.Items.Count == 0) { <EmptyState Message="@L["Entitlements_Empty"]" /> }
     else
     {
-        <table>
+        <table class="data-table responsive-table">
             <thead>
                 <tr>
                     <th scope="col">@L["Common_Product"]</th>
@@ -125,12 +125,12 @@ else
                 @foreach (var x in _latest.Data.Items)
                 {
                     <tr>
-                        <td>@x.ProductCode</td>
-                        <td><a href="/admin/organizations/@x.OrganizationId">@x.OrganizationId</a></td>
-                        <td><a href="/admin/entitlements/@x.Id">@x.SnapshotVersion</a></td>
-                        <td><StatusBadge Value="@x.SubscriptionStatus" /></td>
-                        <td><UtcTimestamp Value="@x.GeneratedAtUtc" /></td>
-                        <td><a href="/admin/entitlements/history/@x.OrganizationId/@x.ProductCode">@L["Common_History"]</a></td>
+                        <td data-label="@L["Common_Product"]">@x.ProductCode</td>
+                        <td data-label="@L["Common_Organization"]"><a href="/admin/organizations/@x.OrganizationId">@x.OrganizationId</a></td>
+                        <td data-label="@L["Common_Version"]"><a href="/admin/entitlements/@x.Id">@x.SnapshotVersion</a></td>
+                        <td data-label="@L["Common_Status"]"><StatusBadge Value="@x.SubscriptionStatus" /></td>
+                        <td data-label="@L["Common_GeneratedUtc"]"><UtcTimestamp Value="@x.GeneratedAtUtc" /></td>
+                        <td data-label="@L["Common_History"]"><a href="/admin/entitlements/history/@x.OrganizationId/@x.ProductCode">@L["Common_History"]</a></td>
                     </tr>
                 }
             </tbody>

@@ -182,6 +182,52 @@ public sealed class AdminArchitectureGuardTests
     }
 
     [Fact]
+    public void Admin_shell_recovery_rejects_template_remnants_and_requires_wired_assets()
+    {
+        var root = FindRepositoryRoot();
+        var adminRoot = Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin");
+        var pages = Directory.EnumerateFiles(Path.Combine(adminRoot, "Components"), "*.razor", SearchOption.AllDirectories);
+        foreach (var page in pages)
+        {
+            var text = File.ReadAllText(page);
+            Assert.DoesNotContain("Hello, world!", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Welcome to your new app", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("admin-shell", text, StringComparison.Ordinal);
+        }
+
+        var app = File.ReadAllText(Path.Combine(adminRoot, "Components", "App.razor"));
+        Assert.Contains("theme-boot.js", app, StringComparison.Ordinal);
+        Assert.Contains("app.css", app, StringComparison.Ordinal);
+        Assert.Contains("ExItS.Platform.Admin.styles.css", app, StringComparison.Ordinal);
+
+        var layout = File.ReadAllText(Path.Combine(adminRoot, "Components", "Layout", "MainLayout.razor"));
+        Assert.Contains("app-shell", layout, StringComparison.Ordinal);
+        Assert.Contains("app-sidebar", layout, StringComparison.Ordinal);
+        Assert.Contains("app-header", layout, StringComparison.Ordinal);
+        Assert.Contains("AdminNav", layout, StringComparison.Ordinal);
+        Assert.Contains("ThemeSelector", layout, StringComparison.Ordinal);
+        Assert.Contains("LanguageSelector", layout, StringComparison.Ordinal);
+        Assert.Contains("EnvironmentBanner", layout, StringComparison.Ordinal);
+
+        var css = File.ReadAllText(Path.Combine(adminRoot, "wwwroot", "app.css"));
+        Assert.Contains(".app-shell", css, StringComparison.Ordinal);
+        Assert.Contains(".app-sidebar", css, StringComparison.Ordinal);
+        Assert.Contains("[data-theme=\"dark\"]", css, StringComparison.Ordinal);
+        Assert.Contains("[data-theme=\"system\"]", css, StringComparison.Ordinal);
+        Assert.DoesNotContain("@import url(\"https://fonts.googleapis.com", css, StringComparison.Ordinal);
+
+        var program = File.ReadAllText(Path.Combine(adminRoot, "Program.cs"));
+        Assert.Contains("MapStaticAssets", program, StringComparison.Ordinal);
+        Assert.Contains("Results.Redirect(\"/admin\")", program, StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(adminRoot, "Components", "Pages", "Home.razor")),
+            "Template Home.razor must remain removed; '/' redirects to /admin.");
+
+        var themeBoot = File.ReadAllText(Path.Combine(adminRoot, "wwwroot", "theme-boot.js"));
+        Assert.Contains("exitsAdminShell", themeBoot, StringComparison.Ordinal);
+        Assert.Contains("closeDrawer", themeBoot, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Admin_nav_exposes_required_routes()
     {
         var root = FindRepositoryRoot();

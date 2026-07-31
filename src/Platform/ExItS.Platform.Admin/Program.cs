@@ -70,6 +70,10 @@ app.UseRequestLocalization();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+
+// Prefer an immediate HTTP redirect over the Blazor template-style home page.
+app.MapGet("/", () => Results.Redirect("/admin"));
+
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

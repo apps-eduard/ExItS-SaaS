@@ -1,31 +1,32 @@
 @inject PlatformPermissionState Permissions
 @inject IStringLocalizer<AdminResources> L
+@inject IJSRuntime Js
 
 <nav class="admin-nav-scroll" aria-label="@L["Aria_AdminNav"]">
     <div class="nav-section">@L["Nav_SectionOverview"]</div>
-    <NavLink class="nav-item" href="/admin" Match="NavLinkMatch.All">
+    <NavLink class="nav-item" href="/admin" Match="NavLinkMatch.All" @onclick="OnNavigateAsync">
         <NavIcon Name="dashboard" /><span class="nav-label">@L["Nav_Dashboard"]</span>
     </NavLink>
 
     <div class="nav-section">@L["Nav_SectionCommercial"]</div>
     @if (CanView(PlatformPermissionCodes.ViewPortfolio))
     {
-        <NavLink class="nav-item" href="/admin/products">
+        <NavLink class="nav-item" href="/admin/products" @onclick="OnNavigateAsync">
             <NavIcon Name="products" /><span class="nav-label">@L["Nav_Products"]</span>
         </NavLink>
-        <NavLink class="nav-item" href="/admin/organizations">
+        <NavLink class="nav-item" href="/admin/organizations" @onclick="OnNavigateAsync">
             <NavIcon Name="organizations" /><span class="nav-label">@L["Nav_Organizations"]</span>
         </NavLink>
     }
     @if (CanView(PlatformPermissionCodes.ManageSubscriptions))
     {
-        <NavLink class="nav-item" href="/admin/subscriptions">
+        <NavLink class="nav-item" href="/admin/subscriptions" @onclick="OnNavigateAsync">
             <NavIcon Name="subscriptions" /><span class="nav-label">@L["Nav_Subscriptions"]</span>
         </NavLink>
     }
     @if (CanView(PlatformPermissionCodes.ManageManualPayments))
     {
-        <NavLink class="nav-item" href="/admin/payments">
+        <NavLink class="nav-item" href="/admin/payments" @onclick="OnNavigateAsync">
             <NavIcon Name="payments" /><span class="nav-label">@L["Nav_Payments"]</span>
         </NavLink>
     }
@@ -33,13 +34,13 @@
     <div class="nav-section">@L["Nav_SectionAccess"]</div>
     @if (CanView(PlatformPermissionCodes.ManagePlatformUsers))
     {
-        <NavLink class="nav-item" href="/admin/users">
+        <NavLink class="nav-item" href="/admin/users" @onclick="OnNavigateAsync">
             <NavIcon Name="users" /><span class="nav-label">@L["Nav_Users"]</span>
         </NavLink>
     }
     @if (CanView(PlatformPermissionCodes.ViewPortfolio))
     {
-        <NavLink class="nav-item" href="/admin/entitlements">
+        <NavLink class="nav-item" href="/admin/entitlements" @onclick="OnNavigateAsync">
             <NavIcon Name="entitlements" /><span class="nav-label">@L["Nav_Entitlements"]</span>
         </NavLink>
     }
@@ -47,14 +48,41 @@
     @if (CanView(PlatformPermissionCodes.ViewAuditRecords))
     {
         <div class="nav-section">@L["Nav_SectionCompliance"]</div>
-        <NavLink class="nav-item" href="/admin/audit">
+        <NavLink class="nav-item" href="/admin/audit" @onclick="OnNavigateAsync">
             <NavIcon Name="audit" /><span class="nav-label">@L["Nav_Audit"]</span>
         </NavLink>
     }
 </nav>
 
 @code {
+    [Parameter] public EventCallback OnNavigateRequested { get; set; }
+
     protected override async Task OnInitializedAsync() => await Permissions.EnsureLoadedAsync();
 
     private bool CanView(string permission) => !Permissions.Loaded || Permissions.HasPermission(permission);
+
+    private async Task OnNavigateAsync()
+    {
+        if (OnNavigateRequested.HasDelegate)
+        {
+            await OnNavigateRequested.InvokeAsync();
+        }
+
+        try
+        {
+            await Js.InvokeVoidAsync("exitsAdminShell.closeDrawer");
+        }
+        catch (JSException)
+        {
+            // Ignore when script not yet available during first paint.
+        }
+        catch (JSDisconnectedException)
+        {
+            // Ignore when circuit is gone.
+        }
+        catch (InvalidOperationException)
+        {
+            // Ignore during static prerender.
+        }
+    }
 }

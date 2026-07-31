@@ -1,8 +1,8 @@
-/* ExItS Platform Admin — P4-WP04 design tokens.
+/* ExItS Platform Admin — design tokens + shell.
    Semantic --color-*/--shadow-*/--radius-*/--motion-* tokens are canonical.
    --exits-* aliases match docs/engineering/theme-system.md. Legacy --bg/--surface/--ink/etc.
-   aliases are kept so pages migrated before P4-WP04 keep working unchanged. */
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap");
+   aliases are kept so pages migrated before P4-WP04 keep working unchanged.
+   Fonts are loaded from App.razor (<link display=swap>) — do not @import here. */
 
 :root {
     color-scheme: light;
@@ -89,7 +89,8 @@
 }
 
 @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    :root:not([data-theme="light"]):not([data-theme="dark"]),
+    :root[data-theme="system"] {
         color-scheme: dark;
         --color-background: #0f1a1c;
         --color-surface: #16262a;
@@ -203,18 +204,22 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 /* Compact environment / dev banner (header chip) */
+.env-banner-wrap { position: relative; }
 .env-chip {
     display: inline-flex; align-items: center; gap: .4rem; font-size: .74rem; font-weight: 600;
     padding: .3rem .6rem; border-radius: 999px; background: var(--color-warning-bg); color: var(--color-warning);
     border: 1px solid color-mix(in srgb, var(--color-warning) 35%, transparent);
-    cursor: default; white-space: nowrap;
+    cursor: pointer; white-space: nowrap;
 }
 .env-chip .dot { width: .45rem; height: .45rem; border-radius: 50%; background: var(--color-warning); flex-shrink: 0; }
 .env-banner-detail {
+    position: absolute; top: calc(100% + .5rem); right: 0; width: min(20rem, calc(100vw - 2rem)); z-index: 60;
     background: var(--color-warning-bg); border: 1px solid color-mix(in srgb, var(--color-warning) 30%, transparent);
-    border-radius: var(--radius-md); padding: .8rem 1rem; margin-bottom: 1.1rem; font-size: .85rem;
-    color: var(--color-text);
+    border-radius: var(--radius-md); padding: .8rem 1rem; margin: 0; font-size: .85rem;
+    color: var(--color-text); box-shadow: var(--shadow-md);
 }
+.env-banner-detail p { margin: 0; }
+.env-banner-detail .muted { margin: .4rem 0 0; }
 .env-banner-detail strong { color: var(--color-warning); }
 
 /* ---------- Theme / language selectors ---------- */

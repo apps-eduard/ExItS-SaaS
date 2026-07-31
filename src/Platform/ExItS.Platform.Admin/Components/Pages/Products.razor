@@ -21,7 +21,7 @@
     }
     else
     {
-        <table>
+        <table class="data-table responsive-table">
             <caption class="sr-only">@L["Products_Title"]</caption>
             <thead>
                 <tr>
@@ -35,10 +35,10 @@
                 @foreach (var item in _list.Data.Items)
                 {
                     <tr>
-                        <td><a href="/admin/products/@item.Id">@item.Code</a></td>
-                        <td>@item.DisplayName</td>
-                        <td><StatusBadge Value="@item.Status" /></td>
-                        <td><UtcTimestamp Value="@item.UpdatedAtUtc" /></td>
+                        <td data-label="@L["Common_Code"]"><a href="/admin/products/@item.Id">@item.Code</a></td>
+                        <td data-label="@L["Common_DisplayName"]">@item.DisplayName</td>
+                        <td data-label="@L["Common_Status"]"><StatusBadge Value="@item.Status" /></td>
+                        <td data-label="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@item.UpdatedAtUtc" /></td>
                     </tr>
                 }
             </tbody>
