@@ -283,7 +283,9 @@ public sealed class AdminArchitectureGuardTests
         Assert.DoesNotContain("@import url(\"https://fonts.googleapis.com", css, StringComparison.Ordinal);
 
         var program = File.ReadAllText(Path.Combine(adminRoot, "Program.cs"));
-        Assert.Contains("MapStaticAssets", program, StringComparison.Ordinal);
+        Assert.Contains("MapStaticAssets().AllowAnonymous()", program, StringComparison.Ordinal);
+        Assert.Contains("/admin/login/credentials", program, StringComparison.Ordinal);
+        Assert.Contains("/admin/login/live-preview", program, StringComparison.Ordinal);
         Assert.Contains("Results.Redirect(\"/admin\")", program, StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(adminRoot, "Components", "Pages", "Home.razor")),
             "Template Home.razor must remain removed; '/' redirects to /admin.");

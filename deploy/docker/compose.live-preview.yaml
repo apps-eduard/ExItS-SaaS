@@ -132,6 +132,7 @@ services:
       PlatformApi__BaseUrl: ${LIVE_PREVIEW_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
       PlatformApi__TimeoutSeconds: "30"
       LivePreview__Enabled: "true"
+      DataProtection__KeysPath: /tmp/exits-admin-dp-keys
     ports:
       - "${LIVE_PREVIEW_ADMIN_HOST_PORT:-8090}:8080"
     networks:

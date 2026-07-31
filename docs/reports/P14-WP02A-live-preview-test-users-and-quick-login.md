@@ -2,63 +2,48 @@
 
 Phase marker: `P14-WP02A-live-preview-test-users-and-quick-login`
 
-Package: **P14-WP02A Gap Fix — Live Preview Test Users and Quick Login**
-Prior tip: `cb380fa969932eaeadd1c90ec8ec9d00038a9d75`
-Feature tip: `c0d29daf533e7afaf79781771c79f103c6f28dc4`
+Package: **P14-WP02A Gap Fix — Quick Login and Login CSS**
+Prior tip: `a0c7aaa2cf5154d096d45b8b978426ff122c814b`
+Feature tip: _(recorded after push)_
 
 ## Status
 
-**Complete.** Live-preview stack (`exits-live-preview`) exercises real Platform authentication: anonymous Admin redirects to `/admin/login`, deterministic preview identities are seeded (Platform + POS-owned DBs), and the login page offers **Live Preview Test User** quick-login that creates a real Platform session. **Not Production.** **P14-WP03 not started.**
+**Complete.** Live-preview login at `http://localhost:8090/admin/login` loads CSS/JS anonymously, lists allowlisted test identities, and creates a real Platform Admin cookie session via HTTP form POST (membership/org context preserved). **Not Production.** **P14-WP03 not started.**
 
-## 1. Delivered capability
+## Root cause (gap fix)
 
-| Area | Evidence |
+| Defect | Cause |
 |---|---|
-| Auth gate | Admin `FallbackPolicy` when `LivePreview:Enabled` (Staging compose) |
-| Platform seed | `InitializeLivePreviewDataset` + `LivePreviewHostedService` (migrate + seed when Enabled) |
-| POS seed | `InitializePosLivePreviewRoles` + `PosLivePreviewHostedService` (own DB; discovers IDs via Platform API) |
-| Quick login | `GET/POST /api/v1/platform/live-preview/*` + Admin login dropdown |
-| Guards | Production rejects `LivePreview:Enabled=true` |
-| Compose | Staging + `LivePreview__Enabled=true` + shared password env |
+| Broken login CSS / dead Blazor | `FallbackPolicy` + `MapStaticAssets()` required auth → `/app.css`, fingerprinted CSS, and `_framework/blazor.web.js` redirected to `/admin/login` |
+| Quick-login did not sign in | Interactive Server `SignInAsync` cannot set cookies after the response has started; with assets blocked, the circuit never started |
 
-## 2. Preview identities
+## Fix
 
-| Key | Display | Outcome |
-|---|---|---|
-| `platform-admin` | Preview Platform Administrator | `PlatformAdministrator`; no POS-local role |
-| `org-admin` | Preview Organization Administrator | Org admin + POS access + POS `Owner` |
-| `pos-cashier` | Preview POS Cashier | Member + POS access + POS `Cashier` |
-| `no-pos` | Preview User — No POS Access | Membership; no product access |
-| `no-org` | Preview User — No Organization | User only |
+| Change | Evidence |
+|---|---|
+| Anonymous static assets | `MapStaticAssets().AllowAnonymous()` |
+| Cookie login via HTTP POST | `POST /admin/login/credentials`, `POST /admin/login/live-preview` → Platform API session + Admin cookie → redirect `/admin` |
+| Login UI | SSR forms (no InteractiveServer on login); antiforgery token; identities still from Platform API |
+| DataProtection (live preview) | File-system key ring under `DataProtection:KeysPath` (`/tmp/exits-admin-dp-keys` in compose) |
 
-## 3. Operator
-
-```powershell
-cd deploy\docker
-# ensure LIVE_PREVIEW_SHARED_PASSWORD is set (min 12 chars) in .env.live-preview
-docker compose -f compose.live-preview.yaml --env-file .env.live-preview up -d --build
-```
-
-Open **http://localhost:8090/** → redirected to `/admin/login` → select test user → **Sign in as test user**.
-
-## 4. Explicit exclusions
-
-- P14-WP03 TLS/proxy
-- Production enablement of LivePreview
-- Changing packaging stack ports/DBs
-- Invented role names (uses existing Platform/POS roles)
-
-## 5. Validation
+## Validation
 
 | Check | Result |
 |---|---|
-| Admin anonymous → `/admin/login` | 302 |
-| Identities API | 5 identities returned |
-| Quick-login session | Real `sessionToken` for `platform-admin` |
-| POS role seed | Owner + Cashier assigned |
+| `GET` fingerprinted CSS / `blazor.web.js` | **200** (no login redirect) |
+| Identities in login HTML | 5 allowlisted options |
+| `POST /admin/login/live-preview` (`platform-admin`) | **302** → `/admin` + `.ExItS.Admin.Auth` cookie |
+| Dashboard as platform-admin | **200**; chip `preview-platform-admin`; org context **No organization** |
+| Dashboard as org-admin | **200**; org context **Preview Organization A** |
 | Full Release tests | **1267 passed / 0 failed / 0 skipped** |
+
+## Explicit exclusions
+
+- P14-WP03 TLS/proxy
+- Production `LivePreview:Enabled`
+- Packaging compose port/DB changes
+- Phase 15 Admin nav/user UX
 
 ## Exact next
 
 **P14-WP03 — Reverse Proxy, TLS, and Network Hardening** when authorized.
-

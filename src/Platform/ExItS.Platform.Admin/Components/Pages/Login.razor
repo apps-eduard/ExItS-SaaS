@@ -1,6 +1,5 @@
 @page "/admin/login"
 @layout EmptyLayout
-@rendermode InteractiveServer
 @using ExItS.Platform.Admin.Services
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.Extensions.Options
@@ -22,53 +21,52 @@
             <div class="form-validation-summary" role="alert">@_error</div>
         }
 
-        <EditForm Model="_model" OnValidSubmit="OnSubmitAsync" FormName="admin-login">
-            <DataAnnotationsValidator />
+        <form method="post" action="/admin/login/credentials" class="login-credentials-form">
+            <AntiforgeryToken />
             <div class="form-field">
                 <label class="form-field-label" for="login-user">
                     <span class="form-field-label-text">Username or email</span>
                 </label>
-                <InputText id="login-user" class="form-control" @bind-Value="_model.UsernameOrEmail" autocomplete="username" />
+                <input id="login-user" name="UsernameOrEmail" class="form-control" autocomplete="username" />
             </div>
             <div class="form-field">
                 <label class="form-field-label" for="login-password">
                     <span class="form-field-label-text">Password</span>
                 </label>
-                <InputText id="login-password" type="password" class="form-control" @bind-Value="_model.Password" autocomplete="current-password" />
+                <input id="login-password" name="Password" type="password" class="form-control" autocomplete="current-password" />
             </div>
             <div class="form-actions">
-                <button type="submit" class="btn-primary" disabled="@_busy">@(_busy ? "Signing in…" : "Sign in")</button>
+                <button type="submit" class="btn-primary">Sign in</button>
             </div>
             <p class="muted"><a href="/admin/forgot-password">Forgot password</a></p>
-        </EditForm>
+        </form>
 
         @if (_livePreviewEnabled)
         {
-            <div class="form-actions" style="margin-top: 1.5rem; flex-direction: column; align-items: stretch; gap: 0.75rem;">
-                <p class="muted" style="margin: 0;">Live Preview Test User</p>
-                <div class="form-field">
-                    <label class="form-field-label" for="live-preview-user">
-                        <span class="form-field-label-text">Select a test identity</span>
-                    </label>
-                    <select id="live-preview-user" class="form-control" @bind="_selectedPreviewKey" disabled="@(_busy || _identities.Count == 0)">
-                        <option value="">Select a test identity</option>
-                        @foreach (var identity in _identities)
-                        {
-                            <option value="@identity.Key">@identity.DisplayName</option>
-                        }
-                    </select>
+            <form method="post" action="/admin/login/live-preview" class="login-live-preview-form" style="margin-top: 1.5rem;">
+                <AntiforgeryToken />
+                <div class="form-actions" style="flex-direction: column; align-items: stretch; gap: 0.75rem;">
+                    <p class="muted" style="margin: 0;">Live Preview Test User</p>
+                    <div class="form-field">
+                        <label class="form-field-label" for="live-preview-user">
+                            <span class="form-field-label-text">Select a test identity</span>
+                        </label>
+                        <select id="live-preview-user" name="IdentityKey" class="form-control" required>
+                            <option value="">Select a test identity</option>
+                            @foreach (var identity in _identities)
+                            {
+                                <option value="@identity.Key">@identity.DisplayName</option>
+                            }
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary" disabled="@(_identities.Count == 0)">
+                        Sign in as test user
+                    </button>
+                    <p class="muted" style="margin: 0; font-size: 0.85rem;">
+                        Creates a real Platform session. Membership, product access, and POS-local roles remain enforced.
+                    </p>
                 </div>
-                @if (!string.IsNullOrWhiteSpace(_selectedSummary))
-                {
-                    <p class="muted" style="margin: 0; font-size: 0.85rem;">@_selectedSummary</p>
-                }
-                <button type="button" class="btn-primary" disabled="@(_busy || string.IsNullOrWhiteSpace(_selectedPreviewKey))" @onclick="OnLivePreviewSignInAsync">
-                    @(_busy ? "Signing in…" : "Sign in as test user")
-                </button>
-                <p class="muted" style="margin: 0; font-size: 0.85rem;">
-                    Creates a real Platform session. Membership, product access, and POS-local roles remain enforced.
-                </p>
-            </div>
+            </form>
         }
 
         <div class="form-actions" style="margin-top: 1.5rem; flex-direction: column; align-items: stretch; gap: 0.5rem;">
@@ -83,23 +81,21 @@
 </div>
 
 @code {
-    private readonly LoginModel _model = new();
     private string? _error;
-    private bool _busy;
     private bool _livePreviewEnabled;
-    private string _selectedPreviewKey = string.Empty;
     private IReadOnlyList<LivePreviewIdentityOptionDto> _identities = [];
 
     [Inject] private IOptions<PlatformApiOptions> PlatformApi { get; set; } = default!;
 
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? ErrorQuery { get; set; }
+
     private string GoogleChallengeUrl => BuildChallengeUrl("google");
     private string FacebookChallengeUrl => BuildChallengeUrl("facebook");
 
-    private string? _selectedSummary =>
-        _identities.FirstOrDefault(i => i.Key == _selectedPreviewKey)?.Summary;
-
     protected override async Task OnInitializedAsync()
     {
+        _error = string.IsNullOrWhiteSpace(ErrorQuery) ? null : ErrorQuery;
         _livePreviewEnabled = LivePreviewOptions.Value.Enabled;
         if (_livePreviewEnabled)
         {
@@ -112,59 +108,5 @@
         var baseUrl = PlatformApi.Value.BaseUrl.TrimEnd('/');
         var returnUrl = Uri.EscapeDataString(Nav.ToAbsoluteUri("/admin/external-login-callback").ToString());
         return $"{baseUrl}/api/v1/platform/auth/external/{provider}/challenge?returnUrl={returnUrl}";
-    }
-
-    private async Task OnSubmitAsync()
-    {
-        _busy = true;
-        _error = null;
-        try
-        {
-            var (ok, error) = await SessionService.LoginAsync(_model.UsernameOrEmail, _model.Password);
-            if (!ok)
-            {
-                _error = error ?? "Invalid username/email or password.";
-                return;
-            }
-
-            Nav.NavigateTo("/admin", forceLoad: true);
-        }
-        finally
-        {
-            _busy = false;
-        }
-    }
-
-    private async Task OnLivePreviewSignInAsync()
-    {
-        if (string.IsNullOrWhiteSpace(_selectedPreviewKey))
-        {
-            _error = "Select a live preview test identity.";
-            return;
-        }
-
-        _busy = true;
-        _error = null;
-        try
-        {
-            var (ok, error) = await SessionService.LivePreviewLoginAsync(_selectedPreviewKey);
-            if (!ok)
-            {
-                _error = error ?? "Live preview sign-in failed.";
-                return;
-            }
-
-            Nav.NavigateTo("/admin", forceLoad: true);
-        }
-        finally
-        {
-            _busy = false;
-        }
-    }
-
-    private sealed class LoginModel
-    {
-        public string UsernameOrEmail { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
     }
 }

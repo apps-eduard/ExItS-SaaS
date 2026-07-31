@@ -1,6 +1,7 @@
 using ExItS.Platform.Admin.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Options;
 using System.Globalization;
@@ -54,6 +55,17 @@ builder.Services.Configure<DevelopmentOperatorOptions>(options =>
 
 var livePreviewEnabled = builder.Configuration.GetValue<bool>("LivePreview:Enabled")
     && !builder.Environment.IsProduction();
+
+if (livePreviewEnabled)
+{
+    // File-system key ring for the container lifetime (tmpfs-friendly) so antiforgery stays consistent while up.
+    var keysPath = builder.Configuration["DataProtection:KeysPath"]
+        ?? Path.Combine(Path.GetTempPath(), "exits-admin-dp-keys");
+    Directory.CreateDirectory(keysPath);
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
+        .SetApplicationName("ExItS.Platform.Admin");
+}
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -134,9 +146,55 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
 
-app.MapStaticAssets();
+// FallbackPolicy RequireAuthenticatedUser applies to MapStaticAssets; login CSS/JS must stay anonymous.
+app.MapStaticAssets().AllowAnonymous();
 
 app.MapGet("/", () => Results.Redirect("/admin"));
+
+app.MapPost("/admin/login/credentials", async (
+    HttpContext http,
+    PlatformBrowserSessionService sessions) =>
+{
+    var form = await http.Request.ReadFormAsync().ConfigureAwait(false);
+    var usernameOrEmail = form["UsernameOrEmail"].ToString();
+    var password = form["Password"].ToString();
+    var (ok, error) = await sessions.LoginAsync(usernameOrEmail, password).ConfigureAwait(false);
+    if (!ok)
+    {
+        return Results.Redirect(
+            "/admin/login?error=" + Uri.EscapeDataString(error ?? "Invalid username/email or password."));
+    }
+
+    return Results.Redirect("/admin");
+}).AllowAnonymous();
+
+app.MapPost("/admin/login/live-preview", async (
+    HttpContext http,
+    PlatformBrowserSessionService sessions,
+    IOptions<LivePreviewAdminOptions> livePreview) =>
+{
+    if (!livePreview.Value.Enabled)
+    {
+        return Results.NotFound();
+    }
+
+    var form = await http.Request.ReadFormAsync().ConfigureAwait(false);
+    var identityKey = form["IdentityKey"].ToString();
+    if (string.IsNullOrWhiteSpace(identityKey))
+    {
+        return Results.Redirect(
+            "/admin/login?error=" + Uri.EscapeDataString("Select a live preview test identity."));
+    }
+
+    var (ok, error) = await sessions.LivePreviewLoginAsync(identityKey).ConfigureAwait(false);
+    if (!ok)
+    {
+        return Results.Redirect(
+            "/admin/login?error=" + Uri.EscapeDataString(error ?? "Live preview sign-in failed."));
+    }
+
+    return Results.Redirect("/admin");
+}).AllowAnonymous();
 
 app.MapPost("/admin/logout", async (PlatformBrowserSessionService sessions) =>
 {
