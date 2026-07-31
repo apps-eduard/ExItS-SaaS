@@ -150,6 +150,10 @@ builder.Services.AddScoped<RequestPasswordReset>();
 builder.Services.AddScoped<ResetPasswordWithToken>();
 builder.Services.AddScoped<RequestEmailVerification>();
 builder.Services.AddScoped<ConfirmEmailVerification>();
+builder.Services.AddScoped<RequestRecoveryEmailChange>();
+builder.Services.AddScoped<ConfirmRecoveryEmailChange>();
+builder.Services.AddScoped<SkipRecoveryEmailPrompt>();
+builder.Services.AddScoped<ClearRecoveryEmail>();
 
 builder.Services.AddScoped<MembershipQueryService>();
 builder.Services.AddScoped<AddOrganizationMembership>();

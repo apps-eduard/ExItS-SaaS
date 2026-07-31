@@ -237,6 +237,7 @@ internal sealed class LifecycleApiFactory(string connectionString) : WebApplicat
                 ["ConnectionStrings:PlatformDatabase"] = connectionString,
                 ["Security:EnforceHttps"] = "false",
                 ["PlatformAuthentication:Lifecycle:ExposeDebugTokens"] = "true",
+                ["PlatformAuthentication:External:TestingEndpointEnabled"] = "true",
                 ["PlatformAuthentication:Lockout:MaxFailedAccessAttempts"] = "5",
                 ["PlatformAuthentication:Lockout:LockoutMinutes"] = "15"
             });

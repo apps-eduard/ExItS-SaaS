@@ -44,4 +44,5 @@ public static class PlatformAuthOutboundMessageKinds
 {
     public const string PasswordReset = "password_reset";
     public const string EmailVerification = "email_verification";
+    public const string RecoveryEmailVerification = "recovery_email_verification";
 }

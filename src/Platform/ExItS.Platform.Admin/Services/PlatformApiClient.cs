@@ -159,6 +159,16 @@ public sealed class PlatformApiClient(HttpClient httpClient) : IPlatformApiClien
         SendAsync<CredentialWorkflowAckDto>(HttpMethod.Post, "/api/v1/platform/auth/email-verification/request", null, ct);
     public Task<ApiCallResult<PlatformCredentialStatusDto>> ConfirmEmailVerificationAsync(ConfirmEmailVerificationRequest request, CancellationToken ct = default) =>
         SendAsync<PlatformCredentialStatusDto>(HttpMethod.Post, "/api/v1/platform/auth/email-verification/confirm", request, ct);
+    public Task<ApiCallResult<PlatformCredentialStatusDto>> GetMyCredentialsAsync(CancellationToken ct = default) =>
+        GetAsync<PlatformCredentialStatusDto>("/api/v1/platform/auth/credentials", ct);
+    public Task<ApiCallResult<CredentialWorkflowAckDto>> RequestRecoveryEmailAsync(RequestRecoveryEmailRequest request, CancellationToken ct = default) =>
+        SendAsync<CredentialWorkflowAckDto>(HttpMethod.Post, "/api/v1/platform/auth/recovery-email/request", request, ct);
+    public Task<ApiCallResult<PlatformCredentialStatusDto>> ConfirmRecoveryEmailAsync(ConfirmRecoveryEmailRequest request, CancellationToken ct = default) =>
+        SendAsync<PlatformCredentialStatusDto>(HttpMethod.Post, "/api/v1/platform/auth/recovery-email/confirm", request, ct);
+    public Task<ApiCallResult<PlatformCredentialStatusDto>> SkipRecoveryEmailAsync(CancellationToken ct = default) =>
+        SendAsync<PlatformCredentialStatusDto>(HttpMethod.Post, "/api/v1/platform/auth/recovery-email/skip", null, ct);
+    public Task<ApiCallResult<PlatformCredentialStatusDto>> ClearRecoveryEmailAsync(CancellationToken ct = default) =>
+        SendAsync<PlatformCredentialStatusDto>(HttpMethod.Post, "/api/v1/platform/auth/recovery-email/clear", null, ct);
 
     public Task<ApiCallResult<AuthSessionInfoDto>> GetAuthMeAsync(CancellationToken ct = default) =>
         GetAsync<AuthSessionInfoDto>("/api/v1/platform/auth/me", ct);

@@ -63,6 +63,23 @@ internal static class AuthEndpoints
         })
         .AllowAnonymous();
 
+        app.MapGet("/api/v1/platform/auth/credentials", async (
+            HttpContext http,
+            GetPlatformCredentialStatus useCase,
+            CancellationToken ct) =>
+        {
+            if (!TryGetAuthenticatedUserId(http, out var userId))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authentication is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var result = await useCase.ExecuteAsync(userId, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
         app.MapGet("/api/v1/platform/auth/organizations", async (
             HttpContext http,
             ListEligibleOrganizationsForSession useCase,
@@ -164,6 +181,72 @@ internal static class AuthEndpoints
         })
         .RequireRateLimiting(PlatformSecurityPipeline.AuthPasswordResetRateLimitPolicy)
         .AllowAnonymous();
+
+        app.MapPost("/api/v1/platform/auth/recovery-email/request", async (
+            RequestRecoveryEmailRequest body,
+            HttpContext http,
+            RequestRecoveryEmailChange useCase,
+            CancellationToken ct) =>
+        {
+            if (!TryGetAuthenticatedUserId(http, out var userId))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authentication is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var result = await useCase.ExecuteAsync(userId, body.RecoveryEmail, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        })
+        .RequireRateLimiting(PlatformSecurityPipeline.AuthPasswordResetRateLimitPolicy);
+
+        app.MapPost("/api/v1/platform/auth/recovery-email/confirm", async (
+            ConfirmRecoveryEmailRequest body,
+            ConfirmRecoveryEmailChange useCase,
+            CancellationToken ct) =>
+        {
+            var result = await useCase.ExecuteAsync(body.Token, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        })
+        .RequireRateLimiting(PlatformSecurityPipeline.AuthPasswordResetRateLimitPolicy)
+        .AllowAnonymous();
+
+        app.MapPost("/api/v1/platform/auth/recovery-email/skip", async (
+            HttpContext http,
+            SkipRecoveryEmailPrompt useCase,
+            CancellationToken ct) =>
+        {
+            if (!TryGetAuthenticatedUserId(http, out var userId))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authentication is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var result = await useCase.ExecuteAsync(userId, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        })
+        .RequireRateLimiting(PlatformSecurityPipeline.AuthPasswordResetRateLimitPolicy);
+
+        app.MapPost("/api/v1/platform/auth/recovery-email/clear", async (
+            HttpContext http,
+            ClearRecoveryEmail useCase,
+            CancellationToken ct) =>
+        {
+            if (!TryGetAuthenticatedUserId(http, out var userId))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authentication is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var result = await useCase.ExecuteAsync(userId, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        })
+        .RequireRateLimiting(PlatformSecurityPipeline.AuthPasswordResetRateLimitPolicy);
 
         app.MapPost("/api/v1/platform/auth/token", async (
             IssueAccessTokenRequest body,
@@ -326,6 +409,8 @@ internal static class AuthEndpoints
     internal sealed record ForgotPasswordRequest(string? UsernameOrEmail);
     internal sealed record ResetPasswordRequest(string? Token, string? NewPassword);
     internal sealed record ConfirmEmailVerificationRequest(string? Token);
+    internal sealed record RequestRecoveryEmailRequest(string? RecoveryEmail);
+    internal sealed record ConfirmRecoveryEmailRequest(string? Token);
     internal sealed record SetOrganizationContextRequest(Guid? OrganizationId);
     internal sealed record IssueAccessTokenRequest(
         string? GrantType,

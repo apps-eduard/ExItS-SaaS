@@ -19,7 +19,12 @@ public sealed record PlatformCredentialStatusDto(
     bool IsLockedOut,
     DateTimeOffset? LockoutEndUtc,
     int FailedAccessCount,
-    DateTimeOffset? PasswordChangedAtUtc);
+    DateTimeOffset? PasswordChangedAtUtc,
+    string? PendingRecoveryEmail = null,
+    string? RecoveryEmail = null,
+    bool RecoveryEmailVerified = false,
+    DateTimeOffset? RecoveryEmailVerifiedAtUtc = null,
+    bool NeedsRecoveryEmailPrompt = false);
 
 public static class PlatformPasswordPolicy
 {
@@ -117,7 +122,12 @@ public sealed class GetPlatformCredentialStatus
                 IsLockedOut: credential.IsLockedOut(_clock.UtcNow),
                 LockoutEndUtc: credential.LockoutEndUtc,
                 FailedAccessCount: credential.FailedAccessCount,
-                PasswordChangedAtUtc: credential.PasswordChangedAtUtc));
+                PasswordChangedAtUtc: credential.PasswordChangedAtUtc,
+                PendingRecoveryEmail: credential.PendingRecoveryNormalizedEmail,
+                RecoveryEmail: credential.RecoveryNormalizedEmail,
+                RecoveryEmailVerified: credential.HasVerifiedRecoveryEmail,
+                RecoveryEmailVerifiedAtUtc: credential.RecoveryEmailVerifiedAtUtc,
+                NeedsRecoveryEmailPrompt: credential.NeedsRecoveryEmailPrompt));
     }
 }
 

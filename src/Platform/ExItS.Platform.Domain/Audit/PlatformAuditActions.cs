@@ -33,6 +33,10 @@ public static class PlatformAuditActions
     public const string PlatformAuthPasswordResetCompleted = "platform.auth.password_reset_completed";
     public const string PlatformAuthEmailVerificationRequested = "platform.auth.email_verification_requested";
     public const string PlatformAuthEmailVerificationCompleted = "platform.auth.email_verification_completed";
+    public const string PlatformAuthRecoveryEmailRequested = "platform.auth.recovery_email_requested";
+    public const string PlatformAuthRecoveryEmailConfirmed = "platform.auth.recovery_email_confirmed";
+    public const string PlatformAuthRecoveryEmailSkipped = "platform.auth.recovery_email_skipped";
+    public const string PlatformAuthRecoveryEmailCleared = "platform.auth.recovery_email_cleared";
     public const string PlatformAuthLockoutStarted = "platform.auth.lockout_started";
     public const string PlatformAuthOrganizationContextChanged = "platform.auth.organization_context_changed";
     public const string PlatformAuthAccessTokenIssued = "platform.auth.access_token_issued";

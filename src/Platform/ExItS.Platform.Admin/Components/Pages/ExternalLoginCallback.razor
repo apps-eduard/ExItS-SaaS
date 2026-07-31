@@ -6,6 +6,7 @@
 @using Microsoft.AspNetCore.WebUtilities
 @attribute [AllowAnonymous]
 @inject PlatformBrowserSessionService SessionService
+@inject IPlatformApiClient Api
 @inject NavigationManager Nav
 @inject IStringLocalizer<AdminResources> L
 
@@ -32,7 +33,8 @@
     protected override async Task OnInitializedAsync()
     {
         var uri = Nav.ToAbsoluteUri(Nav.Uri);
-        if (!QueryHelpers.ParseQuery(uri.Query).TryGetValue("sessionToken", out var tokenValues)
+        var query = QueryHelpers.ParseQuery(uri.Query);
+        if (!query.TryGetValue("sessionToken", out var tokenValues)
             || string.IsNullOrWhiteSpace(tokenValues.FirstOrDefault()))
         {
             _error = "External sign-in did not return a session.";
@@ -44,6 +46,32 @@
         {
             _error = error ?? "External sign-in failed.";
             return;
+        }
+
+        var me = await Api.GetAuthMeAsync();
+        if (me.IsSuccess && me.Data is not null)
+        {
+            var credentials = await Api.GetMyCredentialsAsync();
+            if (credentials.IsSuccess
+                && credentials.Data is not null
+                && credentials.Data.NeedsRecoveryEmailPrompt)
+            {
+                var suggest = query.TryGetValue("suggestRecoveryEmail", out var suggestValues)
+                    ? suggestValues.FirstOrDefault()
+                    : null;
+                if (string.IsNullOrWhiteSpace(suggest)
+                    && !string.IsNullOrWhiteSpace(me.Data.Email)
+                    && me.Data.Email.Contains("@gmail.", StringComparison.OrdinalIgnoreCase))
+                {
+                    suggest = me.Data.Email;
+                }
+
+                var target = string.IsNullOrWhiteSpace(suggest)
+                    ? "/admin/recovery-email"
+                    : $"/admin/recovery-email?suggest={Uri.EscapeDataString(suggest)}";
+                Nav.NavigateTo(target, forceLoad: true);
+                return;
+            }
         }
 
         Nav.NavigateTo("/admin", forceLoad: true);

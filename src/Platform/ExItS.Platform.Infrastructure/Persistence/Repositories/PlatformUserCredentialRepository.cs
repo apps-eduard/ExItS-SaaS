@@ -22,6 +22,35 @@ internal sealed class PlatformUserCredentialRepository : IPlatformUserCredential
         return record is null ? null : ToDomain(record);
     }
 
+    public async Task<PlatformUserId?> FindUserIdByVerifiedRecoveryEmailAsync(
+        string normalizedRecoveryEmail,
+        CancellationToken cancellationToken = default)
+    {
+        var email = normalizedRecoveryEmail.Trim().ToLowerInvariant();
+        var userId = await _db.PlatformUserCredentials.AsNoTracking()
+            .Where(c => c.RecoveryNormalizedEmail == email && c.RecoveryEmailVerifiedAtUtc != null)
+            .Select(c => (Guid?)c.UserId)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return userId is Guid id ? PlatformUserId.From(id) : null;
+    }
+
+    public async Task<bool> IsRecoveryEmailInUseAsync(
+        string normalizedRecoveryEmail,
+        PlatformUserId? excludingUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var email = normalizedRecoveryEmail.Trim().ToLowerInvariant();
+        var query = _db.PlatformUserCredentials.AsNoTracking()
+            .Where(c => c.RecoveryNormalizedEmail == email && c.RecoveryEmailVerifiedAtUtc != null);
+        if (excludingUserId is not null)
+        {
+            query = query.Where(c => c.UserId != excludingUserId.Value);
+        }
+
+        return await query.AnyAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     public Task AddAsync(PlatformUserCredential credential, CancellationToken cancellationToken = default)
     {
         _db.PlatformUserCredentials.Add(ToRecord(credential));
@@ -54,7 +83,11 @@ internal sealed class PlatformUserCredentialRepository : IPlatformUserCredential
             record.FailedAccessCount,
             record.LockoutEndUtc,
             record.CreatedAtUtc,
-            record.UpdatedAtUtc);
+            record.UpdatedAtUtc,
+            record.PendingRecoveryNormalizedEmail,
+            record.RecoveryNormalizedEmail,
+            record.RecoveryEmailVerifiedAtUtc,
+            record.RecoveryEmailPromptSkippedAtUtc);
 
     private static PlatformUserCredentialRecord ToRecord(PlatformUserCredential credential) =>
         new()
@@ -65,6 +98,10 @@ internal sealed class PlatformUserCredentialRepository : IPlatformUserCredential
             SecurityStamp = credential.SecurityStamp,
             PasswordChangedAtUtc = credential.PasswordChangedAtUtc,
             EmailVerifiedAtUtc = credential.EmailVerifiedAtUtc,
+            PendingRecoveryNormalizedEmail = credential.PendingRecoveryNormalizedEmail,
+            RecoveryNormalizedEmail = credential.RecoveryNormalizedEmail,
+            RecoveryEmailVerifiedAtUtc = credential.RecoveryEmailVerifiedAtUtc,
+            RecoveryEmailPromptSkippedAtUtc = credential.RecoveryEmailPromptSkippedAtUtc,
             FailedAccessCount = credential.FailedAccessCount,
             LockoutEndUtc = credential.LockoutEndUtc,
             CreatedAtUtc = credential.CreatedAtUtc,
@@ -78,6 +115,10 @@ internal sealed class PlatformUserCredentialRepository : IPlatformUserCredential
         record.SecurityStamp = credential.SecurityStamp;
         record.PasswordChangedAtUtc = credential.PasswordChangedAtUtc;
         record.EmailVerifiedAtUtc = credential.EmailVerifiedAtUtc;
+        record.PendingRecoveryNormalizedEmail = credential.PendingRecoveryNormalizedEmail;
+        record.RecoveryNormalizedEmail = credential.RecoveryNormalizedEmail;
+        record.RecoveryEmailVerifiedAtUtc = credential.RecoveryEmailVerifiedAtUtc;
+        record.RecoveryEmailPromptSkippedAtUtc = credential.RecoveryEmailPromptSkippedAtUtc;
         record.FailedAccessCount = credential.FailedAccessCount;
         record.LockoutEndUtc = credential.LockoutEndUtc;
         record.UpdatedAtUtc = credential.UpdatedAtUtc;

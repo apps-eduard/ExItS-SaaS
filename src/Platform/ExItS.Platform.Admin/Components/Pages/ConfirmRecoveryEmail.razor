@@ -1,0 +1,77 @@
+@page "/admin/recovery-email/confirm"
+@layout EmptyLayout
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@attribute [AllowAnonymous]
+@inject IPlatformApiClient Api
+@inject NavigationManager Nav
+@inject IStringLocalizer<AdminResources> L
+
+<PageTitle>@L["Brand_Name"] — Confirm recovery email</PageTitle>
+
+<div class="login-shell">
+    <div class="login-panel page-frame page-frame--form">
+        <h1>Confirm recovery email</h1>
+        <p class="muted">Enter the verification token sent to your pending recovery address. Confirmation enables recovery use only.</p>
+        @if (!string.IsNullOrWhiteSpace(_error)) { <div class="form-validation-summary" role="alert">@_error</div> }
+        @if (_done)
+        {
+            <p>Recovery email confirmed.</p>
+            <p><a href="/admin">Continue</a></p>
+        }
+        else
+        {
+            <EditForm Model="_model" OnValidSubmit="OnSubmitAsync" FormName="confirm-recovery-email">
+                <div class="form-field">
+                    <label class="form-field-label" for="tok">Verification token</label>
+                    <InputText id="tok" class="form-control" @bind-Value="_model.Token" autocomplete="one-time-code" />
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary" disabled="@_busy">@(_busy ? "Confirming…" : "Confirm")</button>
+                    <a href="/admin">Cancel</a>
+                </div>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    private readonly Model _model = new();
+    private string? _error;
+    private bool _busy;
+    private bool _done;
+
+    [SupplyParameterFromQuery(Name = "token")]
+    public string? Token { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (!string.IsNullOrWhiteSpace(Token))
+        {
+            _model.Token = Token;
+        }
+    }
+
+    private async Task OnSubmitAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = await Api.ConfirmRecoveryEmailAsync(new ConfirmRecoveryEmailRequest(_model.Token));
+            if (!result.IsSuccess)
+            {
+                _error = result.Error?.Detail ?? "Recovery email confirmation failed.";
+                return;
+            }
+
+            _done = true;
+        }
+        finally { _busy = false; }
+    }
+
+    private sealed class Model
+    {
+        public string Token { get; set; } = string.Empty;
+    }
+}

@@ -99,4 +99,6 @@ public static class ApplicationErrorCodes
     public const string ExternalAuthFailed = "application.auth.external_failed";
     public const string ExternalAuthEmailUnverified = "application.auth.external_email_unverified";
     public const string ExternalAuthProviderUnsupported = "application.auth.external_provider_unsupported";
+    public const string RecoveryEmailConflict = "application.auth.recovery_email_conflict";
+    public const string RecoveryEmailInvalid = "application.auth.recovery_email_invalid";
 }

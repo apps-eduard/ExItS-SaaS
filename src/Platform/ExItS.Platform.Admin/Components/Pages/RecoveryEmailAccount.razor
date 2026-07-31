@@ -1,0 +1,129 @@
+@page "/admin/account/recovery-email"
+@layout EmptyLayout
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@attribute [AllowAnonymous]
+@inject IPlatformApiClient Api
+@inject NavigationManager Nav
+@inject IStringLocalizer<AdminResources> L
+
+<PageTitle>@L["Brand_Name"] — Recovery email</PageTitle>
+
+<div class="login-shell">
+    <div class="login-panel page-frame page-frame--form">
+        <h1>Recovery email</h1>
+        <p class="muted">
+            Recovery email is optional and used only for account recovery after verification.
+            It never grants roles, membership, entitlements, subscriptions, or product roles.
+        </p>
+        @if (!string.IsNullOrWhiteSpace(_error)) { <div class="form-validation-summary" role="alert">@_error</div> }
+        @if (!string.IsNullOrWhiteSpace(_info)) { <p class="muted" role="status">@_info</p> }
+
+        @if (_status is not null)
+        {
+            <dl class="detail-list">
+                <dt>Verified recovery email</dt>
+                <dd>@(_status.RecoveryEmailVerified ? _status.RecoveryEmail : "None")</dd>
+                <dt>Pending verification</dt>
+                <dd>@(string.IsNullOrWhiteSpace(_status.PendingRecoveryEmail) ? "None" : _status.PendingRecoveryEmail)</dd>
+            </dl>
+        }
+
+        <EditForm Model="_model" OnValidSubmit="OnSubmitAsync" FormName="account-recovery-email">
+            <div class="form-field">
+                <label class="form-field-label" for="re">New recovery email</label>
+                <InputText id="re" type="email" class="form-control" @bind-Value="_model.RecoveryEmail" autocomplete="email" />
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary" disabled="@_busy">@(_busy ? "Saving…" : "Request verification")</button>
+                <button type="button" class="btn-secondary" disabled="@_busy" @onclick="OnClearAsync">Clear recovery email</button>
+                <a href="/admin/recovery-email/confirm">Confirm token</a>
+                <a href="/admin">Cancel</a>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private readonly Model _model = new();
+    private PlatformCredentialStatusDto? _status;
+    private string? _error;
+    private string? _info;
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var credentials = await Api.GetMyCredentialsAsync();
+        if (!credentials.IsSuccess)
+        {
+            _error = credentials.Error?.Detail ?? "Sign in required.";
+            return;
+        }
+
+        _status = credentials.Data;
+        if (!string.IsNullOrWhiteSpace(_status?.RecoveryEmail))
+        {
+            _model.RecoveryEmail = _status.RecoveryEmail!;
+        }
+    }
+
+    private async Task OnSubmitAsync()
+    {
+        _busy = true;
+        _error = null;
+        _info = null;
+        try
+        {
+            var result = await Api.RequestRecoveryEmailAsync(new RequestRecoveryEmailRequest(_model.RecoveryEmail));
+            if (!result.IsSuccess)
+            {
+                _error = result.Error?.Detail ?? "Could not request recovery email verification.";
+                return;
+            }
+
+            _info = result.Data?.Message;
+            if (!string.IsNullOrWhiteSpace(result.Data?.DebugToken))
+            {
+                _info = $"{_info} Debug token: {result.Data.DebugToken}";
+            }
+
+            await ReloadStatusAsync();
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task OnClearAsync()
+    {
+        _busy = true;
+        _error = null;
+        _info = null;
+        try
+        {
+            var result = await Api.ClearRecoveryEmailAsync();
+            if (!result.IsSuccess)
+            {
+                _error = result.Error?.Detail ?? "Could not clear recovery email.";
+                return;
+            }
+
+            _status = result.Data;
+            _info = "Recovery email cleared.";
+            _model.RecoveryEmail = string.Empty;
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task ReloadStatusAsync()
+    {
+        var credentials = await Api.GetMyCredentialsAsync();
+        if (credentials.IsSuccess)
+        {
+            _status = credentials.Data;
+        }
+    }
+
+    private sealed class Model
+    {
+        public string RecoveryEmail { get; set; } = string.Empty;
+    }
+}

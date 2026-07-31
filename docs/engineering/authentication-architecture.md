@@ -2,7 +2,7 @@
 
 [Home](../index.md) | [Threat model](authentication-threat-model.md) | [Security](security.md) | [Authorization](authorization-matrix.md) | [Product Foundation](../Product-Foundation/exits-product-foundation-reference.md) | [Phase 13](../phases/phase-13-production-authentication-and-identity.md) | [P13-WP01 report](../reports/P13-WP01-authentication-architecture-and-threat-model.md)
 
-**Status:** Authoritative architecture direction (**P13-WP01**). Credentials (**P13-WP02**), browser login/session (**P13-WP03**), password/verification lifecycle (**P13-WP04**), trusted organization context (**P13-WP05**), product-client bearer integration (**P13-WP06**), MFA readiness / auth hardening (**P13-WP07**), and Google/Facebook external login (**P13-WP08**) delivered. Phase closeout remains **P13-WP09**. **R-091** remains open until closeout evidences production readiness.
+**Status:** Authoritative architecture for Phase 13 production authentication (**P13-WP01**–**P13-WP09** closed). Credentials, browser session, password lifecycle, org context, product Bearer tokens, MFA readiness/hardening, Google/Facebook external login, and optional verified recovery email are delivered. **R-091 closed for Phase 13 scope** with residuals (MFA enforcement, email vendor, enterprise SSO/AD beyond Google/Facebook). Portfolio remains **not Production-ready**.
 
 **Scope of this document:** identity model, trust boundaries, session/token model, Dev vs Production behavior, MFA readiness (non-enforcing), and decisions.
 
@@ -48,18 +48,19 @@ Platform User
 | Surface | Today | Production behavior |
 |---|---|---|
 | Platform User profile | Exists (`PlatformUser`) — username/email/status | Profile remains SoR for identity attributes |
-| Credentials | **Implemented (P13-WP02):** `platform_user_credentials` + ASP.NET Core `PasswordHasher<TUser>`, lockout, email-verified flag | Ready |
+| Credentials | **Implemented (P13-WP02 + WP09):** `platform_user_credentials` + optional verified recovery email; ASP.NET Core `PasswordHasher<TUser>`, lockout | Ready |
 | Browser session | **Implemented (P13-WP03):** `platform_auth_sessions` + login/logout/me + Admin cookie | Ready |
 | Access tokens | **Implemented (P13-WP06):** `platform_access_tokens` + issue/bind/introspect/revoke | Ready |
 | MFA | **Readiness only (P13-WP07):** contracts/options/DTO signals; no enrollment/challenge; Production forbids enabling enforcement | Enforcement deferred |
 | External login | **Implemented (P13-WP08):** Google/Facebook create/link Platform User + browser session; no auto privilege grants | Secrets via config when Enabled |
+| Recovery email | **Implemented (P13-WP09):** optional post-social prompt; skip allowed; verify via credential tokens; recovery-only | Email vendor not selected |
 | Platform actor | Session principal when authenticated; Dev/Testing may still use header / DevelopmentOperator | Production Admin requires login; Dev headers still ignored in Production |
 | Platform Authz | `PlatformAuthz` + role assignments | AuthN binds actor when session present |
 | Platform Admin | Login/logout UI; Production requires authenticated user + HTTPS Platform API BaseUrl | Not full production-ready portfolio claim |
 | POS / MAUI | Password+Bearer with introspect; Dev GUID/header fallback Dev/Testing-only; Production HTTPS PlatformAuth BaseUrl when set | Org/actor/commercial headers rejected or fail closed |
 | ASP.NET auth middleware | **PlatformSession** scheme + Admin cookie auth + POS bearer middleware | — |
 
-Dev/Testing identity is **not** production authentication (**R-091**, **R-120**, **D-P12-05**).
+Dev/Testing identity is **not** production authentication (**R-120**, **D-P12-05**). Production authentication for Phase 13 scope is shipped (**R-091 closed**); Dev headers remain Dev/Testing-only.
 
 ---
 
@@ -206,18 +207,17 @@ POS remains non-PHI by default (Product Foundation).
 | **D-P13-04** | Phase 13 MVP = local password auth; enterprise SSO/AD deferred; Google/Facebook authorized in P13-WP08 | **Closed** (scope revised by P13-WP08) |
 | **D-P13-05** | MFA readiness in Phase 13; enforcement deferred unless authorized | **Closed** (scope) |
 | **D-P13-06** | Dev headers never become Production authentication | **Closed** |
-| **R-091** | Production authentication missing in code | **Open** until shipped |
+| **R-091** | Production authentication missing in code | **Closed (Phase 13 scope)** — residuals: MFA enforcement, email vendor, enterprise SSO/AD beyond Google/Facebook |
 | **D-P12-03** | Commercial-state transport | **Open** (preserved) |
-| **D-P12-05** | Honest Dev vs Production language | **Open** until R-091 evidenced |
+| **D-P12-05** | Honest Dev vs Production language | **Closed** for auth existence; portfolio still not Production-ready |
 
 ---
 
-## 11. Explicit non-goals (this WP and Phase 13 unless authorized)
+## 11. Explicit non-goals (Phase 13 residuals)
 
-- Implementing login/logout, cookies, tokens, or migrations (later WPs)
 - Email provider selection and delivery infrastructure
-- Full MFA enforcement
-- SSO / AD / external IdP
+- Full MFA enforcement / enrollment UI
+- Enterprise SSO / AD beyond authorized Google/Facebook
 - Customer (POS) or Patient login as Platform User
 - Shared cross-product operational roles
 - Claiming Production-ready portfolio status
@@ -226,4 +226,4 @@ POS remains non-PHI by default (Product Foundation).
 
 ## 12. Recommended next work package
 
-**Recommended next work package:** **P13-WP09 — Phase 13 Closeout** when explicitly authorized.
+**Recommended next:** await explicit authorization for the next phase (scope TBD). Do **not** begin Phase 14 from this document alone.

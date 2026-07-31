@@ -212,7 +212,12 @@ public sealed record PlatformCredentialStatusDto(
     bool IsLockedOut,
     DateTimeOffset? LockoutEndUtc,
     int FailedAccessCount,
-    DateTimeOffset? PasswordChangedAtUtc);
+    DateTimeOffset? PasswordChangedAtUtc,
+    string? PendingRecoveryEmail = null,
+    string? RecoveryEmail = null,
+    bool RecoveryEmailVerified = false,
+    DateTimeOffset? RecoveryEmailVerifiedAtUtc = null,
+    bool NeedsRecoveryEmailPrompt = false);
 
 public sealed record CredentialWorkflowAckDto(
     string Message,
@@ -223,6 +228,8 @@ public sealed record ChangePasswordRequest(string CurrentPassword, string NewPas
 public sealed record ForgotPasswordRequest(string UsernameOrEmail);
 public sealed record ResetPasswordRequest(string Token, string NewPassword);
 public sealed record ConfirmEmailVerificationRequest(string Token);
+public sealed record RequestRecoveryEmailRequest(string RecoveryEmail);
+public sealed record ConfirmRecoveryEmailRequest(string Token);
 public sealed record SetUserPasswordRequest(string Password);
 
 public sealed record AuthSessionInfoDto(

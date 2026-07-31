@@ -12,6 +12,30 @@ internal sealed class InMemoryPlatformUserCredentialRepository : IPlatformUserCr
         CancellationToken cancellationToken = default) =>
         Task.FromResult(_byUserId.TryGetValue(userId.Value, out var credential) ? credential : null);
 
+    public Task<PlatformUserId?> FindUserIdByVerifiedRecoveryEmailAsync(
+        string normalizedRecoveryEmail,
+        CancellationToken cancellationToken = default)
+    {
+        var email = normalizedRecoveryEmail.Trim().ToLowerInvariant();
+        var match = _byUserId.Values.FirstOrDefault(c =>
+            c.HasVerifiedRecoveryEmail
+            && string.Equals(c.RecoveryNormalizedEmail, email, StringComparison.Ordinal));
+        return Task.FromResult(match?.UserId);
+    }
+
+    public Task<bool> IsRecoveryEmailInUseAsync(
+        string normalizedRecoveryEmail,
+        PlatformUserId? excludingUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var email = normalizedRecoveryEmail.Trim().ToLowerInvariant();
+        var inUse = _byUserId.Values.Any(c =>
+            c.HasVerifiedRecoveryEmail
+            && string.Equals(c.RecoveryNormalizedEmail, email, StringComparison.Ordinal)
+            && (excludingUserId is null || c.UserId != excludingUserId));
+        return Task.FromResult(inUse);
+    }
+
     public Task AddAsync(PlatformUserCredential credential, CancellationToken cancellationToken = default)
     {
         _byUserId[credential.UserId.Value] = credential;

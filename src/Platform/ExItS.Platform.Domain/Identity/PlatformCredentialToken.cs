@@ -5,7 +5,8 @@ namespace ExItS.Platform.Domain.Identity;
 public enum PlatformCredentialTokenPurpose
 {
     PasswordReset = 1,
-    EmailVerification = 2
+    EmailVerification = 2,
+    RecoveryEmailVerification = 3
 }
 
 /// <summary>

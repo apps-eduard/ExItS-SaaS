@@ -1,4 +1,4 @@
-using ExItS.Platform.Application.Audit;
+﻿using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Domain.Abstractions;
@@ -203,7 +203,8 @@ public sealed class RequestPasswordReset
             return ApplicationResult<CredentialWorkflowAckDto>.Success(ack);
         }
 
-        var user = await ResolveUserAsync(identifier, cancellationToken).ConfigureAwait(false);
+        var (user, matchedViaRecoveryEmail) = await ResolveUserAsync(identifier, cancellationToken)
+            .ConfigureAwait(false);
         if (user is null || user.Status is not AccountStatus.Active)
         {
             return ApplicationResult<CredentialWorkflowAckDto>.Success(ack);
@@ -213,6 +214,14 @@ public sealed class RequestPasswordReset
         if (credential is null)
         {
             return ApplicationResult<CredentialWorkflowAckDto>.Success(ack);
+        }
+
+        var deliveryEmail = user.NormalizedEmail;
+        if (matchedViaRecoveryEmail
+            && !string.IsNullOrWhiteSpace(credential.RecoveryNormalizedEmail)
+            && credential.HasVerifiedRecoveryEmail)
+        {
+            deliveryEmail = credential.RecoveryNormalizedEmail!;
         }
 
         var utcNow = _clock.UtcNow;
@@ -237,7 +246,7 @@ public sealed class RequestPasswordReset
             new PlatformAuthOutboundMessage(
                 PlatformAuthOutboundMessageKinds.PasswordReset,
                 user.Id.Value,
-                user.NormalizedEmail,
+                deliveryEmail,
                 opaque,
                 token.ExpiresAtUtc),
             cancellationToken).ConfigureAwait(false);
@@ -259,23 +268,44 @@ public sealed class RequestPasswordReset
                 token.ExpiresAtUtc));
     }
 
-    private async Task<PlatformUser?> ResolveUserAsync(string identifier, CancellationToken cancellationToken)
+    private async Task<(PlatformUser? User, bool MatchedViaRecoveryEmail)> ResolveUserAsync(
+        string identifier,
+        CancellationToken cancellationToken)
     {
         try
         {
             if (identifier.Contains('@', StringComparison.Ordinal))
             {
-                return await _users
-                    .GetByNormalizedEmailAsync(PlatformUser.NormalizeEmail(identifier), cancellationToken)
+                var normalizedEmail = PlatformUser.NormalizeEmail(identifier);
+                var byPrimary = await _users
+                    .GetByNormalizedEmailAsync(normalizedEmail, cancellationToken)
                     .ConfigureAwait(false);
+                if (byPrimary is not null)
+                {
+                    return (byPrimary, false);
+                }
+
+                var recoveryUserId = await _credentials
+                    .FindUserIdByVerifiedRecoveryEmailAsync(normalizedEmail, cancellationToken)
+                    .ConfigureAwait(false);
+                if (recoveryUserId is null)
+                {
+                    return (null, false);
+                }
+
+                var byRecovery = await _users.GetByIdAsync(recoveryUserId, cancellationToken).ConfigureAwait(false);
+                return (byRecovery, byRecovery is not null);
             }
 
             var (_, normalized) = PlatformUser.NormalizeUsername(identifier);
-            return await _users.GetByNormalizedUsernameAsync(normalized, cancellationToken).ConfigureAwait(false);
+            var byUsername = await _users
+                .GetByNormalizedUsernameAsync(normalized, cancellationToken)
+                .ConfigureAwait(false);
+            return (byUsername, false);
         }
         catch (DomainException)
         {
-            return null;
+            return (null, false);
         }
     }
 }

@@ -437,6 +437,13 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.SecurityStamp).HasColumnName("security_stamp").HasMaxLength(64).IsRequired();
             entity.Property(e => e.PasswordChangedAtUtc).HasColumnName("password_changed_at_utc");
             entity.Property(e => e.EmailVerifiedAtUtc).HasColumnName("email_verified_at_utc");
+            entity.Property(e => e.PendingRecoveryNormalizedEmail).HasColumnName("pending_recovery_normalized_email").HasMaxLength(320);
+            entity.Property(e => e.RecoveryNormalizedEmail).HasColumnName("recovery_normalized_email").HasMaxLength(320);
+            entity.Property(e => e.RecoveryEmailVerifiedAtUtc).HasColumnName("recovery_email_verified_at_utc");
+            entity.Property(e => e.RecoveryEmailPromptSkippedAtUtc).HasColumnName("recovery_email_prompt_skipped_at_utc");
+            entity.HasIndex(e => e.RecoveryNormalizedEmail)
+                .IsUnique()
+                .HasFilter("recovery_normalized_email IS NOT NULL");
             entity.Property(e => e.FailedAccessCount).HasColumnName("failed_access_count");
             entity.Property(e => e.LockoutEndUtc).HasColumnName("lockout_end_utc");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");

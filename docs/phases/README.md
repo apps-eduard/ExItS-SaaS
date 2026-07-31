@@ -17,4 +17,4 @@
 | 10 | Full POS | **Complete with documented risks** | [Open](phase-10-full-pos.md) |
 | 11 | Web UI and Reporting Design System | **Complete with documented risks** | [Open](phase-11-web-ui-reporting-design-system.md) |
 | 12 | Reusable SaaS Product Foundation and Bootstrap | **Complete with documented open decisions** | [Open](phase-12-product-foundation-and-bootstrap.md) |
-| 13 | Production Authentication and Identity | **In progress** (P13-WP01–WP02 complete) | [Open](phase-13-production-authentication-and-identity.md) |
+| 13 | Production Authentication and Identity | **Complete with documented residuals** | [Open](phase-13-production-authentication-and-identity.md) |

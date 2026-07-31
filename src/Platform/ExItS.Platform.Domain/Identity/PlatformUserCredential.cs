@@ -5,7 +5,7 @@ namespace ExItS.Platform.Domain.Identity;
 /// <summary>
 /// Platform-owned local credential and lockout state for a single <see cref="PlatformUser"/>.
 /// Stores only hashed secrets — never plaintext passwords, reset tokens, or MFA secrets.
-/// MFA factor secrets belong in a future dedicated store behind <c>IPlatformMfaFactorStore</c> (readiness only in P13-WP07).
+/// Optional recovery email is for account recovery only (never grants roles/membership/entitlements).
 /// </summary>
 public sealed class PlatformUserCredential
 {
@@ -25,6 +25,10 @@ public sealed class PlatformUserCredential
     public string SecurityStamp { get; private set; }
     public DateTimeOffset PasswordChangedAtUtc { get; private set; }
     public DateTimeOffset? EmailVerifiedAtUtc { get; private set; }
+    public string? PendingRecoveryNormalizedEmail { get; private set; }
+    public string? RecoveryNormalizedEmail { get; private set; }
+    public DateTimeOffset? RecoveryEmailVerifiedAtUtc { get; private set; }
+    public DateTimeOffset? RecoveryEmailPromptSkippedAtUtc { get; private set; }
     public int FailedAccessCount { get; private set; }
     public DateTimeOffset? LockoutEndUtc { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
@@ -33,6 +37,14 @@ public sealed class PlatformUserCredential
     public bool SupportsPasswordLogin =>
         !string.Equals(PasswordHashAlgorithm, ExternalNoPassword, StringComparison.Ordinal);
 
+    public bool HasVerifiedRecoveryEmail =>
+        !string.IsNullOrWhiteSpace(RecoveryNormalizedEmail) && RecoveryEmailVerifiedAtUtc is not null;
+
+    public bool NeedsRecoveryEmailPrompt =>
+        !SupportsPasswordLogin
+        && !HasVerifiedRecoveryEmail
+        && RecoveryEmailPromptSkippedAtUtc is null;
+
     private PlatformUserCredential(
         PlatformUserId userId,
         string passwordHash,
@@ -40,6 +52,10 @@ public sealed class PlatformUserCredential
         string securityStamp,
         DateTimeOffset passwordChangedAtUtc,
         DateTimeOffset? emailVerifiedAtUtc,
+        string? pendingRecoveryNormalizedEmail,
+        string? recoveryNormalizedEmail,
+        DateTimeOffset? recoveryEmailVerifiedAtUtc,
+        DateTimeOffset? recoveryEmailPromptSkippedAtUtc,
         int failedAccessCount,
         DateTimeOffset? lockoutEndUtc,
         DateTimeOffset createdAtUtc,
@@ -51,6 +67,10 @@ public sealed class PlatformUserCredential
         SecurityStamp = securityStamp;
         PasswordChangedAtUtc = passwordChangedAtUtc;
         EmailVerifiedAtUtc = emailVerifiedAtUtc;
+        PendingRecoveryNormalizedEmail = pendingRecoveryNormalizedEmail;
+        RecoveryNormalizedEmail = recoveryNormalizedEmail;
+        RecoveryEmailVerifiedAtUtc = recoveryEmailVerifiedAtUtc;
+        RecoveryEmailPromptSkippedAtUtc = recoveryEmailPromptSkippedAtUtc;
         FailedAccessCount = failedAccessCount;
         LockoutEndUtc = lockoutEndUtc;
         CreatedAtUtc = createdAtUtc;
@@ -75,15 +95,16 @@ public sealed class PlatformUserCredential
             NewSecurityStamp(),
             utcNow,
             emailVerifiedAtUtc: null,
+            pendingRecoveryNormalizedEmail: null,
+            recoveryNormalizedEmail: null,
+            recoveryEmailVerifiedAtUtc: null,
+            recoveryEmailPromptSkippedAtUtc: null,
             failedAccessCount: 0,
             lockoutEndUtc: null,
             createdAtUtc: utcNow,
             updatedAtUtc: utcNow);
     }
 
-    /// <summary>
-    /// Creates a credential that holds a security stamp for sessions but rejects password authentication.
-    /// </summary>
     public static PlatformUserCredential CreateForExternalLogin(
         PlatformUserId userId,
         DateTimeOffset utcNow,
@@ -99,6 +120,10 @@ public sealed class PlatformUserCredential
             NewSecurityStamp(),
             utcNow,
             emailVerifiedAtUtc: emailVerified ? utcNow : null,
+            pendingRecoveryNormalizedEmail: null,
+            recoveryNormalizedEmail: null,
+            recoveryEmailVerifiedAtUtc: null,
+            recoveryEmailPromptSkippedAtUtc: null,
             failedAccessCount: 0,
             lockoutEndUtc: null,
             createdAtUtc: utcNow,
@@ -115,7 +140,11 @@ public sealed class PlatformUserCredential
         int failedAccessCount,
         DateTimeOffset? lockoutEndUtc,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc) =>
+        DateTimeOffset updatedAtUtc,
+        string? pendingRecoveryNormalizedEmail = null,
+        string? recoveryNormalizedEmail = null,
+        DateTimeOffset? recoveryEmailVerifiedAtUtc = null,
+        DateTimeOffset? recoveryEmailPromptSkippedAtUtc = null) =>
         new(
             userId,
             passwordHash,
@@ -123,6 +152,10 @@ public sealed class PlatformUserCredential
             securityStamp,
             passwordChangedAtUtc,
             emailVerifiedAtUtc,
+            pendingRecoveryNormalizedEmail,
+            recoveryNormalizedEmail,
+            recoveryEmailVerifiedAtUtc,
+            recoveryEmailPromptSkippedAtUtc,
             failedAccessCount,
             lockoutEndUtc,
             createdAtUtc,
@@ -151,6 +184,52 @@ public sealed class PlatformUserCredential
     {
         EnsureUtc(utcNow);
         EmailVerifiedAtUtc = null;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void BeginRecoveryEmailChange(string pendingNormalizedEmail, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (string.IsNullOrWhiteSpace(pendingNormalizedEmail))
+        {
+            throw new DomainException(DomainErrorCodes.InvalidEmail, "Recovery email cannot be blank.");
+        }
+
+        PendingRecoveryNormalizedEmail = pendingNormalizedEmail.Trim().ToLowerInvariant();
+        RecoveryEmailPromptSkippedAtUtc = null;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void ConfirmRecoveryEmail(DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (string.IsNullOrWhiteSpace(PendingRecoveryNormalizedEmail))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidAccountStatusTransition,
+                "No pending recovery email to confirm.");
+        }
+
+        RecoveryNormalizedEmail = PendingRecoveryNormalizedEmail;
+        RecoveryEmailVerifiedAtUtc = utcNow;
+        PendingRecoveryNormalizedEmail = null;
+        RecoveryEmailPromptSkippedAtUtc = null;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void ClearRecoveryEmail(DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        PendingRecoveryNormalizedEmail = null;
+        RecoveryNormalizedEmail = null;
+        RecoveryEmailVerifiedAtUtc = null;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void SkipRecoveryEmailPrompt(DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        RecoveryEmailPromptSkippedAtUtc = utcNow;
         UpdatedAtUtc = utcNow;
     }
 
@@ -208,7 +287,7 @@ public sealed class PlatformUserCredential
         UpdatedAtUtc = utcNow;
     }
 
-    private static string NewSecurityStamp() => Guid.NewGuid().ToString("N");
+    private static string NewSecurityStamp() => Convert.ToHexString(Guid.NewGuid().ToByteArray());
 
     private static string NormalizeHash(string passwordHash)
     {

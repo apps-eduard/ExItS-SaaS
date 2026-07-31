@@ -2,7 +2,7 @@
 
 [Architecture](authentication-architecture.md) | [Security](security.md) | [Authorization](authorization-matrix.md) | [P13-WP01 report](../reports/P13-WP01-authentication-architecture-and-threat-model.md)
 
-**Status:** Authoritative threat model for Phase 13 production authentication (**P13-WP01**). Browser session (**P13-WP03**), password lifecycle (**P13-WP04**), org context (**P13-WP05**), bearer tokens (**P13-WP06**), and MFA readiness / hardening (**P13-WP07**) are implemented for their authorized scopes. MFA enrollment/challenge remains **deferred**. Production posture includes fail-closed Dev-header rejection (P9-WP01) plus MFA-flag and HTTPS BaseUrl guards. **R-091** remains open until Phase 13 closeout.
+**Status:** Authoritative threat model for Phase 13 production authentication (**P13-WP01**–**P13-WP09**). Browser session, password lifecycle, org context, bearer tokens, MFA readiness/hardening, external login, and recovery-email verification are implemented for authorized scopes. MFA enrollment/challenge remains **deferred**. Production posture includes fail-closed Dev-header rejection plus MFA-flag and HTTPS BaseUrl guards. **R-091 closed for Phase 13 scope** with residuals.
 
 Method: asset-centric STRIDE with ExItS trust boundaries. Residual risks remain explicit.
 

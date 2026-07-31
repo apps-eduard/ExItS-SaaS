@@ -1,0 +1,113 @@
+@page "/admin/recovery-email"
+@layout EmptyLayout
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@attribute [AllowAnonymous]
+@inject IPlatformApiClient Api
+@inject NavigationManager Nav
+@inject IStringLocalizer<AdminResources> L
+
+<PageTitle>@L["Brand_Name"] — Recovery email</PageTitle>
+
+<div class="login-shell">
+    <div class="login-panel page-frame page-frame--form">
+        <h1>Optional recovery email</h1>
+        <p class="muted">
+            Add a recovery address for account recovery only. This does not grant Platform roles, organization membership, product access, or product roles.
+            You can skip and continue now; any supported valid email may be used later.
+        </p>
+        @if (!string.IsNullOrWhiteSpace(_error)) { <div class="form-validation-summary" role="alert">@_error</div> }
+        @if (!string.IsNullOrWhiteSpace(_info)) { <p class="muted" role="status">@_info</p> }
+        @if (_done)
+        {
+            <p>Recovery email verification was requested. Confirm the token when you receive it. You can continue using Admin meanwhile.</p>
+            <p><a href="/admin">Continue</a></p>
+        }
+        else
+        {
+            <EditForm Model="_model" OnValidSubmit="OnSubmitAsync" FormName="recovery-email-prompt">
+                <div class="form-field">
+                    <label class="form-field-label" for="re">Recovery email</label>
+                    <InputText id="re" type="email" class="form-control" @bind-Value="_model.RecoveryEmail" autocomplete="email" />
+                    @if (!string.IsNullOrWhiteSpace(_suggestion))
+                    {
+                        <p class="muted">Suggested (optional): @_suggestion</p>
+                    }
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary" disabled="@_busy">@(_busy ? "Saving…" : "Save and verify")</button>
+                    <button type="button" class="btn-secondary" disabled="@_busy" @onclick="OnSkipAsync">Skip for now</button>
+                </div>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    private readonly Model _model = new();
+    private string? _error;
+    private string? _info;
+    private string? _suggestion;
+    private bool _busy;
+    private bool _done;
+
+    [SupplyParameterFromQuery(Name = "suggest")]
+    public string? Suggest { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (!string.IsNullOrWhiteSpace(Suggest) && Suggest.Contains('@', StringComparison.Ordinal))
+        {
+            _suggestion = Suggest.Trim();
+            _model.RecoveryEmail = _suggestion;
+        }
+    }
+
+    private async Task OnSubmitAsync()
+    {
+        _busy = true;
+        _error = null;
+        _info = null;
+        try
+        {
+            var result = await Api.RequestRecoveryEmailAsync(new RequestRecoveryEmailRequest(_model.RecoveryEmail));
+            if (!result.IsSuccess)
+            {
+                _error = result.Error?.Detail ?? "Could not request recovery email verification.";
+                return;
+            }
+
+            _info = result.Data?.Message;
+            if (!string.IsNullOrWhiteSpace(result.Data?.DebugToken))
+            {
+                _info = $"{_info} Debug token: {result.Data.DebugToken}";
+            }
+
+            _done = true;
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task OnSkipAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = await Api.SkipRecoveryEmailAsync();
+            if (!result.IsSuccess)
+            {
+                _error = result.Error?.Detail ?? "Could not skip recovery email prompt.";
+                return;
+            }
+
+            Nav.NavigateTo("/admin", forceLoad: true);
+        }
+        finally { _busy = false; }
+    }
+
+    private sealed class Model
+    {
+        public string RecoveryEmail { get; set; } = string.Empty;
+    }
+}
