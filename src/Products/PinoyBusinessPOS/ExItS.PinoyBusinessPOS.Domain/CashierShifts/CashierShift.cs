@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Registers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.Domain.CashierShifts;
@@ -7,6 +8,7 @@ namespace ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 /// <summary>
 /// Organization-owned cashier shift. Opens directly in Open status with an opening cash float.
 /// Close captures expected cash snapshot and variance; Cancel is allowed only before financial activity.
+/// Every new shift links to exactly one Active Register (P10-WP07); legacy rows may have null RegisterId.
 /// </summary>
 public sealed class CashierShift
 {
@@ -16,6 +18,7 @@ public sealed class CashierShift
     public PosOrganizationId OrganizationId { get; }
     public string ShiftNumber { get; }
     public Guid ActorId { get; }
+    public RegisterId? RegisterId { get; }
     public CashierShiftStatus Status { get; private set; }
     public DateOnly BusinessDate { get; }
     public decimal OpeningCashAmount { get; private set; }
@@ -37,6 +40,7 @@ public sealed class CashierShift
         PosOrganizationId organizationId,
         string shiftNumber,
         Guid actorId,
+        RegisterId? registerId,
         CashierShiftStatus status,
         DateOnly businessDate,
         decimal openingCashAmount,
@@ -57,6 +61,7 @@ public sealed class CashierShift
         OrganizationId = organizationId;
         ShiftNumber = shiftNumber;
         ActorId = actorId;
+        RegisterId = registerId;
         Status = status;
         BusinessDate = businessDate;
         OpeningCashAmount = openingCashAmount;
@@ -74,11 +79,12 @@ public sealed class CashierShift
         UpdatedAtUtc = updatedAtUtc;
     }
 
-    /// <summary>Opens a shift directly in Open status with a non-negative opening float.</summary>
+    /// <summary>Opens a shift directly in Open status with a non-negative opening float on an Active Register.</summary>
     public static CashierShift Open(
         PosOrganizationId organizationId,
         string shiftNumber,
         Guid actorId,
+        RegisterId registerId,
         decimal openingCashAmount,
         DateTimeOffset utcNow,
         DateOnly? businessDate = null,
@@ -89,6 +95,7 @@ public sealed class CashierShift
         SaleMoney.EnsureActor(actorId);
         var opener = openedBy ?? actorId;
         SaleMoney.EnsureActor(opener);
+        ArgumentNullException.ThrowIfNull(registerId);
 
         ValidateOpeningCash(openingCashAmount);
 
@@ -97,6 +104,7 @@ public sealed class CashierShift
             organizationId,
             CashierShiftNumbers.Normalize(shiftNumber),
             actorId,
+            registerId,
             CashierShiftStatus.Open,
             businessDate ?? CashierShiftNumbers.BusinessDateOf(utcNow),
             SaleMoney.RoundMoney(openingCashAmount),
@@ -119,6 +127,7 @@ public sealed class CashierShift
         PosOrganizationId organizationId,
         string shiftNumber,
         Guid actorId,
+        RegisterId? registerId,
         CashierShiftStatus status,
         DateOnly businessDate,
         decimal openingCashAmount,
@@ -139,6 +148,7 @@ public sealed class CashierShift
             organizationId,
             shiftNumber,
             actorId,
+            registerId,
             status,
             businessDate,
             openingCashAmount,

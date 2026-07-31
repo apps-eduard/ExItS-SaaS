@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Registers;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.CashierShifts;
 
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
@@ -12,6 +13,7 @@ internal static class CashierShiftEntityMapper
             PosOrganizationId.From(record.OrganizationId),
             record.ShiftNumber,
             record.ActorId,
+            record.RegisterId is null ? null : RegisterId.From(record.RegisterId.Value),
             Enum.Parse<CashierShiftStatus>(record.Status, ignoreCase: true),
             record.BusinessDate,
             record.OpeningCashAmount,
@@ -35,6 +37,7 @@ internal static class CashierShiftEntityMapper
             OrganizationId = shift.OrganizationId.Value,
             ShiftNumber = shift.ShiftNumber,
             ActorId = shift.ActorId,
+            RegisterId = shift.RegisterId?.Value,
             Status = shift.Status.ToString(),
             BusinessDate = shift.BusinessDate,
             OpeningCashAmount = shift.OpeningCashAmount,

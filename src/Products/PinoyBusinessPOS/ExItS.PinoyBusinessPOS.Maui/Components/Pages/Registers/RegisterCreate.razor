@@ -1,0 +1,97 @@
+@page "/registers/new"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosRegisterClient Registers
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageRegisters);
+    var blocked = !canManage || _isOffline;
+<Page>
+    <PageHeader Title="@L["Registers_CreateTitle"]" Subtitle="@L["Registers_CreateSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Registers_Cancel"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Registers_OfflineTitle"]" Message="@L["Registers_OfflineMessage"]" />
+    }
+    else if (!canManage)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_formError))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@L["Registers_ErrorTitle"]" Message="@_formError" />
+    }
+
+    <Section Title="@L["Registers_FormSection"]">
+        <TextInput Label="@L["Registers_Name"]" Value="@_name" ValueChanged="v => _name = v" Disabled="@blocked" />
+        <TextInput Label="@L["Registers_Description"]" Value="@_description" ValueChanged="v => _description = v" Disabled="@blocked" />
+        <FormActions>
+            <Button Variant="ButtonVariant.Primary" IsLoading="@_saving" Disabled="@blocked" OnClick="SaveAsync">@L["Registers_Save"]</Button>
+        </FormActions>
+    </Section>
+</Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _saving;
+    private bool _isOffline;
+    private string? _name;
+    private string? _description;
+    private string? _formError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewRegisters))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        _ready = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_saving || _isOffline || !Capabilities.IsAllowed(UtangCapability.ManageRegisters))
+        {
+            return;
+        }
+
+        _saving = true;
+        _formError = null;
+        var result = await Registers.CreateAsync(new CreateRegisterRequest(_name ?? string.Empty, _description));
+        _saving = false;
+        if (result.IsSuccess && result.Data is not null)
+        {
+            Nav.NavigateTo($"/registers/{result.Data.RegisterId:D}", replace: true);
+            return;
+        }
+
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _formError = result.Error?.Detail ?? described.Message;
+    }
+
+    private void GoBack() => Nav.NavigateTo("/registers");
+}

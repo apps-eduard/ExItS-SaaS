@@ -17,6 +17,9 @@ public sealed record PosCashierShiftDto(
     string ShiftNumber,
     string Status,
     Guid ActorId,
+    Guid? RegisterId,
+    string? RegisterCode,
+    string? RegisterName,
     DateOnly BusinessDate,
     decimal OpeningCashAmount,
     DateTimeOffset OpenedAtUtc,
@@ -54,7 +57,10 @@ public sealed record PosCashierShiftSummaryDto(
     int CompletedUtangCount,
     IReadOnlyList<PosCashierShiftMovementDto> Movements);
 
-public sealed record OpenCashierShiftRequest(decimal OpeningCashAmount, DateOnly? BusinessDate = null);
+public sealed record OpenCashierShiftRequest(
+    Guid RegisterId,
+    decimal OpeningCashAmount,
+    DateOnly? BusinessDate = null);
 
 public sealed record CloseCashierShiftRequest(decimal ClosingCashAmount, string? Notes = null);
 

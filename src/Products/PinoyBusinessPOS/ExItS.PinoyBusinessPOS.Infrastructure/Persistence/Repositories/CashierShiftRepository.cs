@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using ExItS.PinoyBusinessPOS.Application.CashierShifts;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
+using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.CashierShifts;
@@ -46,6 +47,21 @@ internal sealed class CashierShiftRepository : ICashierShiftRepository
         return record is null ? null : CashierShiftEntityMapper.ToDomain(record);
     }
 
+    public async Task<CashierShift?> FindOpenForRegisterAsync(
+        PosOrganizationId organizationId,
+        Guid registerId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await _db.CashierShifts.AsNoTracking()
+            .FirstOrDefaultAsync(
+                s => s.OrganizationId == organizationId.Value
+                     && s.RegisterId == registerId
+                     && s.Status == nameof(CashierShiftStatus.Open),
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : CashierShiftEntityMapper.ToDomain(record);
+    }
+
     public async Task<(IReadOnlyList<CashierShift> Items, int TotalCount)> ListAsync(
         PosOrganizationId organizationId,
         CashierShiftFilter filter,
@@ -65,6 +81,11 @@ internal sealed class CashierShiftRepository : ICashierShiftRepository
         if (filter.ActorId is not null)
         {
             query = query.Where(s => s.ActorId == filter.ActorId.Value);
+        }
+
+        if (filter.RegisterId is not null)
+        {
+            query = query.Where(s => s.RegisterId == filter.RegisterId.Value);
         }
 
         if (!string.IsNullOrWhiteSpace(filter.ShiftNumber))
@@ -304,6 +325,13 @@ internal sealed class CashierShiftRepository : ICashierShiftRepository
         }
         catch (DbUpdateException ex) when (IsOpenShiftConflict(ex))
         {
+            if (IsOpenRegisterConflict(ex))
+            {
+                throw new PersistenceConflictException(
+                    DomainErrorCodes.CashierShiftRegisterConflict,
+                    "This register already has an open shift.");
+            }
+
             throw new PersistenceConflictException(openConflictCode, openConflictMessage);
         }
         catch (DbUpdateException ex) when (IsShiftNumberConflict(ex))
@@ -369,7 +397,12 @@ internal sealed class CashierShiftRepository : ICashierShiftRepository
 
     private static bool IsOpenShiftConflict(DbUpdateException exception) =>
         exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } pg
-        && (pg.ConstraintName ?? string.Empty).Contains("ux_cashier_shifts_org_actor_open", StringComparison.OrdinalIgnoreCase);
+        && ((pg.ConstraintName ?? string.Empty).Contains("ux_cashier_shifts_org_actor_open", StringComparison.OrdinalIgnoreCase)
+            || (pg.ConstraintName ?? string.Empty).Contains("ux_cashier_shifts_org_register_open", StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsOpenRegisterConflict(DbUpdateException exception) =>
+        exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } pg
+        && (pg.ConstraintName ?? string.Empty).Contains("ux_cashier_shifts_org_register_open", StringComparison.OrdinalIgnoreCase);
 
     private static bool IsMovementConflict(DbUpdateException exception) =>
         exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } pg

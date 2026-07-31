@@ -4,7 +4,7 @@
 
 ## Status
 
-**In Progress** — **P10-WP07 — Multiple Registers** authorized (prior tip `084cf1b` / WP06 complete). Do **not** begin P10-WP08 or Phase 11.
+**In Progress** — **P10-WP07 — Multiple Registers** complete. Exact next: **P10-WP08 — Phase 10 Closeout**. Do **not** begin P10-WP08 or Phase 11.
 
 ## Objective
 
@@ -267,9 +267,9 @@ Production auth (R-091), MFA/IdP, Platform membership admin, Windows MAUI, Phase
 
 ### P10-WP07 — Multiple Registers
 
-Status: **Authorized — In Progress**
+Status: **Complete**
 
-Prior tip: `084cf1b3a0764a82a43cd04d3e230654f7a5555b` (P10-WP06 complete). Baseline: **1138 / 0 / 0**.
+Prior tip: `be40eb5021903959c21f25a307bfb1b6d1394c05` (P10-WP07 authorized). Baseline: **1138 / 0 / 0**.
 Phase marker: `P10-WP07-multiple-registers`
 
 Product-owner decision record (this session) authorizes **Multiple Registers** as logical org-owned POS sales stations.
@@ -291,13 +291,13 @@ Branches, warehouses, drawers, devices/printers, denomination counting, deposits
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence (baseline 1138 preserved + focused coverage).
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created (`docs/reports/P10-WP07-multiple-registers.md`).
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean (after push; Phase 11 doc may remain untracked).
-- [ ] Exact next WP recorded: **P10-WP08 — Phase 10 Closeout** (do not begin).
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (baseline 1138 → suite now **1142 / 0 / 0**).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created (`docs/reports/P10-WP07-multiple-registers.md`).
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean (after push; Phase 11 doc may remain untracked).
+- [x] Exact next WP recorded: **P10-WP08 — Phase 10 Closeout** (do not begin).
 
 ### P10-WP08 — Full POS Closeout
 

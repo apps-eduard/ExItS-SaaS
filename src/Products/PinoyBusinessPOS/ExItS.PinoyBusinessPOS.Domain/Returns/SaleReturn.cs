@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Registers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Returns;
@@ -24,6 +25,10 @@ public sealed class SaleReturn
     public string ReturnNumber { get; }
     public SaleId SaleId { get; }
     public CashierShiftId? CashierShiftId { get; }
+    /// <summary>Register from the original sale; null for legacy unassigned sales.</summary>
+    public RegisterId? SourceRegisterId { get; }
+    /// <summary>Register from the cash-refund Open shift when applicable; otherwise null.</summary>
+    public RegisterId? RefundRegisterId { get; }
     public SalePaymentMethod RefundMethod { get; }
     public SaleReturnStatus Status { get; }
     public DateOnly ReturnDate { get; }
@@ -42,6 +47,8 @@ public sealed class SaleReturn
         string returnNumber,
         SaleId saleId,
         CashierShiftId? cashierShiftId,
+        RegisterId? sourceRegisterId,
+        RegisterId? refundRegisterId,
         SalePaymentMethod refundMethod,
         SaleReturnStatus status,
         DateOnly returnDate,
@@ -58,6 +65,8 @@ public sealed class SaleReturn
         ReturnNumber = returnNumber;
         SaleId = saleId;
         CashierShiftId = cashierShiftId;
+        SourceRegisterId = sourceRegisterId;
+        RefundRegisterId = refundRegisterId;
         RefundMethod = refundMethod;
         Status = status;
         ReturnDate = returnDate;
@@ -84,6 +93,7 @@ public sealed class SaleReturn
         Guid createdBy,
         DateTimeOffset utcNow,
         CashierShiftId? cashierShiftId = null,
+        RegisterId? refundRegisterId = null,
         DateOnly? returnDate = null,
         string? notes = null,
         SaleReturnId? id = null)
@@ -180,6 +190,8 @@ public sealed class SaleReturn
             normalizedNumber,
             sale.Id,
             cashierShiftId,
+            sale.RegisterId,
+            refundRegisterId,
             refundMethod,
             SaleReturnStatus.Completed,
             businessDate,
@@ -198,6 +210,8 @@ public sealed class SaleReturn
         string returnNumber,
         SaleId saleId,
         CashierShiftId? cashierShiftId,
+        RegisterId? sourceRegisterId,
+        RegisterId? refundRegisterId,
         SalePaymentMethod refundMethod,
         SaleReturnStatus status,
         DateOnly returnDate,
@@ -214,6 +228,8 @@ public sealed class SaleReturn
             returnNumber,
             saleId,
             cashierShiftId,
+            sourceRegisterId,
+            refundRegisterId,
             refundMethod,
             status,
             returnDate,

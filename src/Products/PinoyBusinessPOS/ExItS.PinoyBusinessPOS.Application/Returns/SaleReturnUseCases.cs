@@ -12,6 +12,7 @@ using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Registers;
 using ExItS.PinoyBusinessPOS.Domain.Returns;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 
@@ -235,6 +236,7 @@ public sealed class ProcessSaleReturn
             }
 
             CashierShiftId? linkedShiftId = null;
+            RegisterId? refundRegisterId = null;
             if (sale.PaymentMethod == SalePaymentMethod.Cash)
             {
                 var openShift = await _shifts
@@ -248,6 +250,7 @@ public sealed class ProcessSaleReturn
                 }
 
                 linkedShiftId = openShift.Id;
+                refundRegisterId = openShift.RegisterId;
             }
 
             var lineDrafts = lines
@@ -268,6 +271,7 @@ public sealed class ProcessSaleReturn
                 kvp => kvp.Key,
                 kvp => (kvp.Value.ReturnedQuantity, kvp.Value.RefundedAmount));
             var capturedShiftId = linkedShiftId;
+            var capturedRefundRegisterId = refundRegisterId;
             var capturedActorId = actorId;
 
             var saleReturn = await _returns
@@ -284,6 +288,7 @@ public sealed class ProcessSaleReturn
                         capturedActorId,
                         utcNow,
                         capturedShiftId,
+                        capturedRefundRegisterId,
                         notes: notes,
                         id: clientReturnId is null ? null : SaleReturnId.From(clientReturnId.Value)),
                     async (created, ct) =>

@@ -1,0 +1,181 @@
+@page "/registers"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosRegisterClient Registers
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageRegisters);
+<Page>
+    <PageHeader Title="@L["Registers_Title"]" Subtitle="@L["Registers_Subtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="GoNew">@L["Registers_Add"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Registers_OfflineTitle"]" Message="@L["Registers_OfflineMessage"]" />
+    }
+
+    <SearchToolbar SearchText="@_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Registers_SearchPlaceholder"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Registers_Refresh"]</Button>
+        </Actions>
+    </SearchToolbar>
+
+    <Section Title="@L["Registers_FiltersTitle"]">
+        <Select Label="@L["Registers_Filter_Status"]"
+                Value="@_statusFilter"
+                ValueChanged="OnStatusFilterChanged"
+                Options="@RegisterUiOptions.StatusFilters(L)" />
+    </Section>
+
+    <ResponsiveDataList TItem="PosRegisterDto"
+                        Items="@_items"
+                        Columns="@Columns"
+                        CellTemplate="@CellTemplate"
+                        IsLoading="@_loading"
+                        LoadingLabel="@L["Registers_Loading"]"
+                        EmptyTitle="@L["Registers_EmptyTitle"]"
+                        EmptyMessage="@L["Registers_EmptyMessage"]"
+                        ErrorTitle="@_errorTitle"
+                        ErrorMessage="@_errorMessage"
+                        RetryLabel="@L["Api_Retry"]"
+                        OnRetry="ReloadAsync"
+                        AriaLabel="@L["Registers_Title"]" />
+
+    @if (!_loading && _totalCount > 0)
+    {
+        <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
+    }
+</Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _loading;
+    private bool _isOffline;
+    private string? _search;
+    private string? _statusFilter;
+    private int _page = 1;
+    private const int _pageSize = 20;
+    private int _totalCount;
+    private IReadOnlyList<PosRegisterDto> _items = Array.Empty<PosRegisterDto>();
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    private IReadOnlyList<DataColumnDefinition> Columns =>
+    [
+        new("name", L["Registers_Col_Name"], Primary: true, Width: "34%"),
+        new("code", L["Registers_Col_Code"], Width: "22%"),
+        new("status", L["Registers_Col_Status"], Width: "22%"),
+        new("open", L["Registers_Col_OpenShift"], Width: "22%"),
+    ];
+
+    private RenderFragment<(PosRegisterDto Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
+    {
+        switch (context.Column.Key)
+        {
+            case "name":
+                builder.OpenElement(0, "a");
+                builder.AddAttribute(1, "class", "pos-link");
+                builder.AddAttribute(2, "href", $"/registers/{context.Item.RegisterId:D}");
+                builder.AddContent(3, context.Item.Name);
+                builder.CloseElement();
+                break;
+            case "code":
+                builder.AddContent(0, context.Item.RegisterCode);
+                break;
+            case "status":
+                builder.AddContent(0, context.Item.Status);
+                break;
+            case "open":
+                builder.AddContent(0, context.Item.HasOpenShift ? L["Registers_Yes"] : L["Registers_No"]);
+                break;
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewRegisters))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _items = Array.Empty<PosRegisterDto>();
+            _totalCount = 0;
+            _loading = false;
+            return;
+        }
+
+        var result = await Registers.ListAsync(
+            name: _search,
+            status: string.IsNullOrWhiteSpace(_statusFilter) ? null : _statusFilter,
+            page: _page,
+            pageSize: _pageSize);
+        _loading = false;
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _items = result.Data.Items;
+            _totalCount = result.Data.TotalCount;
+            return;
+        }
+
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _errorTitle = described.Title;
+        _errorMessage = result.Error?.Detail ?? described.Message;
+        _items = Array.Empty<PosRegisterDto>();
+        _totalCount = 0;
+    }
+
+    private async Task OnSearchChanged(string? value)
+    {
+        _search = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnStatusFilterChanged(string? value)
+    {
+        _statusFilter = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _page = page;
+        await ReloadAsync();
+    }
+
+    private void GoNew() => Nav.NavigateTo("/registers/new");
+}

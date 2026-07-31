@@ -1,0 +1,121 @@
+@page "/registers/{RegisterId:guid}/edit"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosRegisterClient Registers
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (_register is null)
+{
+    <Page>
+        <Alert Tone="AlertTone.Danger" Title="@L["Registers_ErrorTitle"]" Message="@(_errorMessage ?? L["Registers_NotFound"])" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Registers_BackToList"]</Button>
+    </Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageRegisters);
+    var blocked = !canManage || _isOffline;
+<Page>
+    <PageHeader Title="@L["Registers_EditTitle"]" Subtitle="@_register.RegisterCode">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Registers_Cancel"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Registers_OfflineTitle"]" Message="@L["Registers_OfflineMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_formError))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@L["Registers_ErrorTitle"]" Message="@_formError" />
+    }
+
+    <Section Title="@L["Registers_FormSection"]">
+        <TextInput Label="@L["Registers_Name"]" Value="@_name" ValueChanged="v => _name = v" Disabled="@blocked" />
+        <TextInput Label="@L["Registers_Description"]" Value="@_description" ValueChanged="v => _description = v" Disabled="@blocked" />
+        <FormActions>
+            <Button Variant="ButtonVariant.Primary" IsLoading="@_saving" Disabled="@blocked" OnClick="SaveAsync">@L["Registers_Save"]</Button>
+        </FormActions>
+    </Section>
+</Page>
+}
+
+@code {
+    [Parameter] public Guid RegisterId { get; set; }
+
+    private bool _ready;
+    private bool _saving;
+    private bool _isOffline;
+    private PosRegisterDto? _register;
+    private string? _name;
+    private string? _description;
+    private string? _errorMessage;
+    private string? _formError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ManageRegisters))
+        {
+            Nav.NavigateTo($"/registers/{RegisterId:D}", replace: true);
+            return;
+        }
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (!_isOffline)
+        {
+            var result = await Registers.GetAsync(RegisterId);
+            if (result.IsSuccess && result.Data is not null)
+            {
+                _register = result.Data;
+                _name = result.Data.Name;
+                _description = result.Data.Description;
+            }
+            else
+            {
+                _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+            }
+        }
+
+        _ready = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_saving || _register is null || _isOffline)
+        {
+            return;
+        }
+
+        _saving = true;
+        _formError = null;
+        var result = await Registers.UpdateAsync(
+            RegisterId,
+            new UpdateRegisterRequest(_name ?? string.Empty, _register.UpdatedAtUtc, _description));
+        _saving = false;
+        if (result.IsSuccess && result.Data is not null)
+        {
+            Nav.NavigateTo($"/registers/{RegisterId:D}", replace: true);
+            return;
+        }
+
+        _formError = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+    }
+
+    private void GoList() => Nav.NavigateTo("/registers");
+    private void GoDetail() => Nav.NavigateTo($"/registers/{RegisterId:D}");
+}

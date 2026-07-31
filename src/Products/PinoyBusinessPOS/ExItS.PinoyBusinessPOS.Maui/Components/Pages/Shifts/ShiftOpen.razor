@@ -2,6 +2,7 @@
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosCashierShiftClient Shifts
+@inject IPosRegisterClient Registers
 @inject IUtangCapabilityEvaluator Capabilities
 @inject IConnectivityService Connectivity
 @inject ApiStatusLocalizer ApiLocalizer
@@ -31,6 +32,21 @@ else
         <Alert Tone="AlertTone.Danger" Title="@L["Shifts_ErrorTitle"]" Message="@_errorMessage" />
     }
 
+    <Section Title="@L["Shifts_RegisterSection"]">
+        @if (_available.Count == 0 && !_loadingRegisters)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Shifts_NoRegisterTitle"]" Message="@L["Shifts_NoRegisterMessage"]" />
+        }
+        else
+        {
+            <Select Label="@L["Shifts_RegisterLabel"]"
+                    Value="@_selectedRegisterId"
+                    ValueChanged="OnRegisterChanged"
+                    Options="@RegisterOptions"
+                    Disabled="@(blocked || _loadingRegisters)" />
+        }
+    </Section>
+
     <Section Title="@L["Shifts_OpeningCashSection"]">
         <NumberInput Label="@L["Shifts_OpeningCashLabel"]"
                      Value="@_openingCash"
@@ -38,7 +54,10 @@ else
                      DecimalPlaces="2"
                      Disabled="@blocked" />
         <FormActions>
-            <Button Variant="ButtonVariant.Primary" IsLoading="@_saving" Disabled="@blocked" OnClick="OpenAsync">@L["Shifts_OpenConfirm"]</Button>
+            <Button Variant="ButtonVariant.Primary"
+                    IsLoading="@_saving"
+                    Disabled="@(blocked || _selectedRegisterGuid == Guid.Empty || _available.Count == 0)"
+                    OnClick="OpenAsync">@L["Shifts_OpenConfirm"]</Button>
         </FormActions>
     </Section>
 </Page>
@@ -48,9 +67,17 @@ else
     private bool _ready;
     private bool _saving;
     private bool _isOffline;
+    private bool _loadingRegisters;
     private decimal _openingCash;
     private string? _errorMessage;
-    private bool _canManage;
+    private string? _selectedRegisterId;
+    private Guid _selectedRegisterGuid;
+    private IReadOnlyList<PosRegisterSummaryDto> _available = Array.Empty<PosRegisterSummaryDto>();
+
+    private IReadOnlyList<SelectOption> RegisterOptions =>
+        _available
+            .Select(r => new SelectOption(r.RegisterId.ToString("D"), $"{r.RegisterCode} — {r.Name}"))
+            .ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -60,33 +87,59 @@ else
             return;
         }
 
-        if (!Capabilities.IsAllowed(UtangCapability.ViewShifts))
-        {
-            Nav.NavigateTo("/home", replace: true);
-            return;
-        }
-
-        if (!Capabilities.IsAllowed(UtangCapability.ManageShifts))
+        if (!Capabilities.IsAllowed(UtangCapability.ViewShifts)
+            || !Capabilities.IsAllowed(UtangCapability.ManageShifts))
         {
             Nav.NavigateTo("/home", replace: true);
             return;
         }
 
         _isOffline = !await Connectivity.IsConnectedAsync();
-        _canManage = Capabilities.IsAllowed(UtangCapability.ManageShifts);
+        if (!_isOffline)
+        {
+            await LoadAvailableRegistersAsync();
+        }
+
         _ready = true;
+    }
+
+    private async Task LoadAvailableRegistersAsync()
+    {
+        _loadingRegisters = true;
+        var result = await Registers.ListAvailableForShiftAsync();
+        _loadingRegisters = false;
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _available = result.Data;
+            if (_available.Count == 1)
+            {
+                _selectedRegisterGuid = _available[0].RegisterId;
+                _selectedRegisterId = _selectedRegisterGuid.ToString("D");
+            }
+        }
+        else
+        {
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+    }
+
+    private void OnRegisterChanged(string? value)
+    {
+        _selectedRegisterId = value;
+        _selectedRegisterGuid = Guid.TryParse(value, out var id) ? id : Guid.Empty;
     }
 
     private async Task OpenAsync()
     {
-        if (_saving || _isOffline)
+        if (_saving || _isOffline || _selectedRegisterGuid == Guid.Empty)
         {
             return;
         }
 
         _saving = true;
         _errorMessage = null;
-        var result = await Shifts.OpenAsync(new OpenCashierShiftRequest(_openingCash));
+        var result = await Shifts.OpenAsync(new OpenCashierShiftRequest(_selectedRegisterGuid, _openingCash));
         _saving = false;
 
         if (result.IsSuccess && result.Data is not null)
@@ -97,6 +150,10 @@ else
 
         var described = ApiLocalizer.Describe(result.Status, result.Error);
         _errorMessage = result.Error?.Detail ?? described.Message;
+        if (!_isOffline)
+        {
+            await LoadAvailableRegistersAsync();
+        }
     }
 
     private void GoList() => Nav.NavigateTo("/shifts");

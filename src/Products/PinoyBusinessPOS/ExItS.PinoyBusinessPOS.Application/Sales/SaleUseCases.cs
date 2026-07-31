@@ -246,6 +246,14 @@ public sealed class CheckoutSale
             }
 
             var linkedShiftId = openShift.Id;
+            if (openShift.RegisterId is null)
+            {
+                return ApplicationResult<Sale>.Failure(
+                    DomainErrorCodes.SaleRegisterRequired,
+                    "Checkout requires a register inherited from the open shift. Re-open the shift on an Active register.");
+            }
+
+            var linkedRegisterId = openShift.RegisterId;
 
             if (clientSaleId is not null)
             {
@@ -396,7 +404,8 @@ public sealed class CheckoutSale
                         clientSaleId is null ? null : SaleId.From(clientSaleId.Value),
                         capturedCustomerId,
                         capturedCreditEntryId,
-                        linkedShiftId),
+                        linkedShiftId,
+                        linkedRegisterId),
                     async (createdSale, ct) =>
                     {
                         await _saleStock

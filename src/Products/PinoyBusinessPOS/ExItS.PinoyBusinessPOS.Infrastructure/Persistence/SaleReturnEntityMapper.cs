@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Registers;
 using ExItS.PinoyBusinessPOS.Domain.Returns;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Returns;
@@ -37,6 +38,8 @@ internal static class SaleReturnEntityMapper
             record.ReturnNumber,
             SaleId.From(record.SaleId),
             record.CashierShiftId is null ? null : CashierShiftId.From(record.CashierShiftId.Value),
+            record.SourceRegisterId is null ? null : RegisterId.From(record.SourceRegisterId.Value),
+            record.RefundRegisterId is null ? null : RegisterId.From(record.RefundRegisterId.Value),
             SalePaymentMethods.Parse(record.RefundMethod),
             SaleReturnStatuses.Parse(record.Status),
             record.ReturnDate,
@@ -57,6 +60,8 @@ internal static class SaleReturnEntityMapper
             ReturnNumber = saleReturn.ReturnNumber,
             SaleId = saleReturn.SaleId.Value,
             CashierShiftId = saleReturn.CashierShiftId?.Value,
+            SourceRegisterId = saleReturn.SourceRegisterId?.Value,
+            RefundRegisterId = saleReturn.RefundRegisterId?.Value,
             RefundMethod = SalePaymentMethods.ToCode(saleReturn.RefundMethod),
             Status = SaleReturnStatuses.ToCode(saleReturn.Status),
             ReturnDate = saleReturn.ReturnDate,

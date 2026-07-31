@@ -178,6 +178,10 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("organization_id");
 
+                    b.Property<Guid?>("RegisterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("register_id");
+
                     b.Property<string>("ShiftNumber")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -202,10 +206,18 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("RegisterId")
+                        .HasDatabaseName("ix_cashier_shifts_register_id");
+
                     b.HasIndex("OrganizationId", "ActorId")
                         .IsUnique()
                         .HasDatabaseName("ux_cashier_shifts_org_actor_open")
                         .HasFilter("status = 'Open'");
+
+                    b.HasIndex("OrganizationId", "RegisterId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_cashier_shifts_org_register_open")
+                        .HasFilter("status = 'Open' AND register_id IS NOT NULL");
 
                     b.HasIndex("OrganizationId", "ShiftNumber")
                         .IsUnique()
@@ -1793,6 +1805,112 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Registers.RegisterCodeSequenceRecord", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<long>("NextValue")
+                        .HasColumnType("bigint")
+                        .HasColumnName("next_value");
+
+                    b.HasKey("OrganizationId")
+                        .HasName("pk_register_code_sequences");
+
+                    b.ToTable("register_code_sequences", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_register_code_sequences_next_value_positive", "next_value > 0");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Registers.RegisterRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("normalized_name");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("RegisterCode")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("register_code");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("ix_registers_organization_id");
+
+                    b.HasIndex("OrganizationId", "NormalizedName")
+                        .IsUnique()
+                        .HasDatabaseName("ux_registers_org_normalized_name");
+
+                    b.HasIndex("OrganizationId", "RegisterCode")
+                        .IsUnique()
+                        .HasDatabaseName("ux_registers_org_register_code");
+
+                    b.HasIndex("OrganizationId", "Status")
+                        .HasDatabaseName("ix_registers_org_status");
+
+                    b.ToTable("registers", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_registers_code_format", "register_code ~ '^REG-[0-9]{6}$'");
+
+                            t.HasCheckConstraint("ck_registers_status", "status IN ('Active', 'Inactive')");
+                        });
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Returns.SaleReturnLineRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1950,6 +2068,10 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(32)")
                         .HasColumnName("refund_method");
 
+                    b.Property<Guid?>("RefundRegisterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("refund_register_id");
+
                     b.Property<DateOnly>("ReturnDate")
                         .HasColumnType("date")
                         .HasColumnName("return_date");
@@ -1963,6 +2085,10 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("SaleId")
                         .HasColumnType("uuid")
                         .HasColumnName("sale_id");
+
+                    b.Property<Guid?>("SourceRegisterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_register_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -1985,7 +2111,13 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("CashierShiftId");
 
+                    b.HasIndex("RefundRegisterId")
+                        .HasDatabaseName("ix_sale_returns_refund_register_id");
+
                     b.HasIndex("SaleId");
+
+                    b.HasIndex("SourceRegisterId")
+                        .HasDatabaseName("ix_sale_returns_source_register_id");
 
                     b.HasIndex("OrganizationId", "CashierShiftId")
                         .HasDatabaseName("ix_sale_returns_org_shift")
@@ -2166,6 +2298,10 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("recorded_by");
 
+                    b.Property<Guid?>("RegisterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("register_id");
+
                     b.Property<string>("SaleNumber")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -2223,6 +2359,9 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_sales_linked_credit_entry_id")
                         .HasFilter("linked_credit_entry_id IS NOT NULL");
+
+                    b.HasIndex("RegisterId")
+                        .HasDatabaseName("ix_sales_register_id");
 
                     b.HasIndex("OrganizationId", "PaymentMethod")
                         .HasDatabaseName("ix_sales_org_payment_method");
@@ -2430,6 +2569,15 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_cashier_shift_movements_shifts");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.CashierShifts.CashierShiftRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Registers.RegisterRecord", null)
+                        .WithMany()
+                        .HasForeignKey("RegisterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_cashier_shifts_registers");
                 });
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", b =>
@@ -2641,12 +2789,24 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_sale_returns_cashier_shifts");
 
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Registers.RegisterRecord", null)
+                        .WithMany()
+                        .HasForeignKey("RefundRegisterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_sale_returns_refund_registers");
+
                     b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Sales.SaleRecord", null)
                         .WithMany()
                         .HasForeignKey("SaleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_sale_returns_sales");
+
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Registers.RegisterRecord", null)
+                        .WithMany()
+                        .HasForeignKey("SourceRegisterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_sale_returns_source_registers");
                 });
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Sales.SaleLineRecord", b =>
@@ -2679,6 +2839,12 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_sales_customers");
+
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Registers.RegisterRecord", null)
+                        .WithMany()
+                        .HasForeignKey("RegisterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_sales_registers");
                 });
 #pragma warning restore 612, 618
         }

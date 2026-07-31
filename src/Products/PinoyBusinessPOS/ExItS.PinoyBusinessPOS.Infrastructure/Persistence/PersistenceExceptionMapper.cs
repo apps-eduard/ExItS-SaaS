@@ -59,6 +59,20 @@ internal static class PersistenceExceptionMapper
             return true;
         }
 
+        if (constraint.Contains("ux_registers_org_normalized_name", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.RegisterNameConflict;
+            message = "A register with this name already exists in this organization.";
+            return true;
+        }
+
+        if (constraint.Contains("ux_registers_org_register_code", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.RegisterCodeConflict;
+            message = "A register code was allocated concurrently. Retry the create.";
+            return true;
+        }
+
         if (constraint.Contains("ux_expense_categories_org_active_name", StringComparison.OrdinalIgnoreCase))
         {
             errorCode = ApplicationErrorCodes.ExpenseCategoryNameConflict;

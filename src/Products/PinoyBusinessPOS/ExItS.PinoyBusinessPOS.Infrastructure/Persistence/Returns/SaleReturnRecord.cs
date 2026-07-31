@@ -7,6 +7,8 @@ internal sealed class SaleReturnRecord
     public string ReturnNumber { get; set; } = string.Empty;
     public Guid SaleId { get; set; }
     public Guid? CashierShiftId { get; set; }
+    public Guid? SourceRegisterId { get; set; }
+    public Guid? RefundRegisterId { get; set; }
     public string RefundMethod { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public DateOnly ReturnDate { get; set; }

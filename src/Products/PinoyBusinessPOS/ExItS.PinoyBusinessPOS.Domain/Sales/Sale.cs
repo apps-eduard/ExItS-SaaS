@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Registers;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Sales;
 
@@ -55,6 +56,9 @@ public sealed class Sale
     /// <summary>Open cashier shift at checkout; null for legacy pre-migration sales.</summary>
     public CashierShiftId? CashierShiftId { get; }
 
+    /// <summary>Register inherited from the open shift; null for legacy pre-migration sales.</summary>
+    public RegisterId? RegisterId { get; }
+
     public DateTimeOffset RecordedAtUtc { get; }
     public Guid RecordedBy { get; }
     public DateTimeOffset? VoidedAtUtc { get; private set; }
@@ -80,6 +84,7 @@ public sealed class Sale
         POSCustomerId? customerId,
         CreditEntryId? linkedCreditEntryId,
         CashierShiftId? cashierShiftId,
+        RegisterId? registerId,
         DateTimeOffset recordedAtUtc,
         Guid recordedBy,
         DateTimeOffset? voidedAtUtc,
@@ -101,6 +106,7 @@ public sealed class Sale
         CustomerId = customerId;
         LinkedCreditEntryId = linkedCreditEntryId;
         CashierShiftId = cashierShiftId;
+        RegisterId = registerId;
         RecordedAtUtc = recordedAtUtc;
         RecordedBy = recordedBy;
         VoidedAtUtc = voidedAtUtc;
@@ -126,7 +132,8 @@ public sealed class Sale
         SaleId? id = null,
         POSCustomerId? customerId = null,
         CreditEntryId? linkedCreditEntryId = null,
-        CashierShiftId? cashierShiftId = null)
+        CashierShiftId? cashierShiftId = null,
+        RegisterId? registerId = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(recordedBy);
@@ -136,6 +143,13 @@ public sealed class Sale
             throw new DomainException(
                 DomainErrorCodes.SaleCashierShiftRequired,
                 "Checkout requires an open cashier shift.");
+        }
+
+        if (registerId is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.SaleRegisterRequired,
+                "Checkout requires a register inherited from the open shift.");
         }
 
         if (lines is null || lines.Count == 0)
@@ -189,6 +203,7 @@ public sealed class Sale
             customerId,
             linkedCreditEntryId,
             cashierShiftId,
+            registerId,
             utcNow,
             recordedBy,
             null,
@@ -218,7 +233,8 @@ public sealed class Sale
         IEnumerable<SaleLine> lines,
         POSCustomerId? customerId = null,
         CreditEntryId? linkedCreditEntryId = null,
-        CashierShiftId? cashierShiftId = null) =>
+        CashierShiftId? cashierShiftId = null,
+        RegisterId? registerId = null) =>
         new(
             id,
             organizationId,
@@ -233,6 +249,7 @@ public sealed class Sale
             customerId,
             linkedCreditEntryId,
             cashierShiftId,
+            registerId,
             recordedAtUtc,
             recordedBy,
             voidedAtUtc,

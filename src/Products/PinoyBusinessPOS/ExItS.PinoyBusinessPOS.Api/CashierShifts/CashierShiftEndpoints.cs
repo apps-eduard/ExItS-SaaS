@@ -131,7 +131,7 @@ internal static class CashierShiftEndpoints
             }
 
             var result = await useCase
-                .ExecuteAsync(organizationId, actorId, body.OpeningCashAmount, body.BusinessDate, ct)
+                .ExecuteAsync(organizationId, actorId, body.RegisterId, body.OpeningCashAmount, body.BusinessDate, ct)
                 .ConfigureAwait(false);
             return PosApiResults.FromResult(
                 result,

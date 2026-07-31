@@ -1232,4 +1232,46 @@
   <data name="Permissions_InvalidActor" xml:space="preserve"><value>Maglagay ng wastong actor GUID.</value></data>
   <data name="Permissions_AssignFailed" xml:space="preserve"><value>Hindi ma-assign ang role.</value></data>
   <data name="Permissions_RevokeFailed" xml:space="preserve"><value>Hindi ma-revoke ang assignment.</value></data>
+  <data name="Nav_Registers" xml:space="preserve"><value>Mga Rehistro</value></data>
+  <data name="Registers_Title" xml:space="preserve"><value>Mga Rehistro</value></data>
+  <data name="Registers_Subtitle" xml:space="preserve"><value>Logical POS sales stations for shifts and sales (online only).</value></data>
+  <data name="Registers_Add" xml:space="preserve"><value>Magdagdag ng rehistro</value></data>
+  <data name="Registers_Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Registers_SearchPlaceholder" xml:space="preserve"><value>Search by name</value></data>
+  <data name="Registers_FiltersTitle" xml:space="preserve"><value>Filters</value></data>
+  <data name="Registers_Filter_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Registers_Filter_All" xml:space="preserve"><value>All</value></data>
+  <data name="Registers_Status_Active" xml:space="preserve"><value>Active</value></data>
+  <data name="Registers_Status_Inactive" xml:space="preserve"><value>Inactive</value></data>
+  <data name="Registers_Loading" xml:space="preserve"><value>Loading registers...</value></data>
+  <data name="Registers_EmptyTitle" xml:space="preserve"><value>No registers yet</value></data>
+  <data name="Registers_EmptyMessage" xml:space="preserve"><value>Create a register before opening a cashier shift.</value></data>
+  <data name="Registers_OfflineTitle" xml:space="preserve"><value>Offline</value></data>
+  <data name="Registers_OfflineMessage" xml:space="preserve"><value>Register management requires an online connection.</value></data>
+  <data name="Registers_ErrorTitle" xml:space="preserve"><value>Register error</value></data>
+  <data name="Registers_Col_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Registers_Col_Code" xml:space="preserve"><value>Code</value></data>
+  <data name="Registers_Col_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Registers_Col_OpenShift" xml:space="preserve"><value>Open shift</value></data>
+  <data name="Registers_Yes" xml:space="preserve"><value>Yes</value></data>
+  <data name="Registers_No" xml:space="preserve"><value>No</value></data>
+  <data name="Registers_CreateTitle" xml:space="preserve"><value>New register</value></data>
+  <data name="Registers_CreateSubtitle" xml:space="preserve"><value>Server allocates REG-NNNNNN. Starts Active.</value></data>
+  <data name="Registers_EditTitle" xml:space="preserve"><value>Edit register</value></data>
+  <data name="Registers_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Registers_Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Registers_FormSection" xml:space="preserve"><value>Register details</value></data>
+  <data name="Registers_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Registers_Description" xml:space="preserve"><value>Description</value></data>
+  <data name="Registers_DetailSection" xml:space="preserve"><value>Details</value></data>
+  <data name="Registers_LifecycleSection" xml:space="preserve"><value>Lifecycle</value></data>
+  <data name="Registers_Activate" xml:space="preserve"><value>Activate</value></data>
+  <data name="Registers_Deactivate" xml:space="preserve"><value>Deactivate</value></data>
+  <data name="Registers_Edit" xml:space="preserve"><value>Edit</value></data>
+  <data name="Registers_BackToList" xml:space="preserve"><value>Back to registers</value></data>
+  <data name="Registers_NotFound" xml:space="preserve"><value>Register was not found.</value></data>
+  <data name="Shifts_RegisterSection" xml:space="preserve"><value>Register</value></data>
+  <data name="Shifts_RegisterLabel" xml:space="preserve"><value>Pumili ng rehistro</value></data>
+  <data name="Shifts_NoRegisterTitle" xml:space="preserve"><value>No available register</value></data>
+  <data name="Shifts_NoRegisterMessage" xml:space="preserve"><value>Create an Active register without an open shift before opening.</value></data>
 </root>

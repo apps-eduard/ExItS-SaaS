@@ -26,8 +26,10 @@ using ExItS.PinoyBusinessPOS.Application.Purchasing;
 using ExItS.PinoyBusinessPOS.Application.Returns;
 using ExItS.PinoyBusinessPOS.Application.Permissions;
 using ExItS.PinoyBusinessPOS.Api.Purchasing;
+using ExItS.PinoyBusinessPOS.Api.Registers;
 using ExItS.PinoyBusinessPOS.Api.Returns;
 using ExItS.PinoyBusinessPOS.Api.Permissions;
+using ExItS.PinoyBusinessPOS.Application.Registers;
 using ExItS.PinoyBusinessPOS.Infrastructure;
 using ExItS.PinoyBusinessPOS.Infrastructure.Health;
 using Microsoft.AspNetCore.RateLimiting;
@@ -106,6 +108,11 @@ builder.Services.AddScoped<CreateSupplier>();
 builder.Services.AddScoped<UpdateSupplier>();
 builder.Services.AddScoped<ActivateSupplier>();
 builder.Services.AddScoped<DeactivateSupplier>();
+builder.Services.AddScoped<RegisterQueryService>();
+builder.Services.AddScoped<CreateRegister>();
+builder.Services.AddScoped<UpdateRegister>();
+builder.Services.AddScoped<ActivateRegister>();
+builder.Services.AddScoped<DeactivateRegister>();
 builder.Services.AddScoped<PurchaseOrderQueryService>();
 builder.Services.AddScoped<GoodsReceiptQueryService>();
 builder.Services.AddScoped<CreatePurchaseOrder>();
@@ -142,13 +149,14 @@ app.MapSaleReturnEndpoints();
 app.MapInventoryEndpoints();
 app.MapExpenseEndpoints();
 app.MapSupplierEndpoints();
+app.MapRegisterEndpoints();
 app.MapPurchaseOrderEndpoints();
 app.MapCashierShiftEndpoints();
 app.MapPermissionEndpoints();
 app.MapReportingEndpoints();
 app.MapDevOfflineProbeEndpoints();
 
-// Phase marker: P10-WP06-advanced-permissions-operational-reports
+// Phase marker: P10-WP07-multiple-registers
 
 app.Run();
 

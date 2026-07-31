@@ -1,0 +1,179 @@
+@page "/registers/{RegisterId:guid}"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosRegisterClient Registers
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (_register is null)
+{
+    <Page>
+        <PageHeader Title="@L["Registers_Title"]" />
+        <Alert Tone="AlertTone.Danger" Title="@L["Registers_ErrorTitle"]" Message="@(_errorMessage ?? L["Registers_NotFound"])" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Registers_BackToList"]</Button>
+    </Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageRegisters);
+    var blocked = !canManage || _isOffline;
+<Page>
+    <PageHeader Title="@_register.Name" Subtitle="@_register.RegisterCode">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Registers_BackToList"]</Button>
+            @if (canManage)
+            {
+                <Button Variant="ButtonVariant.Secondary" Disabled="@blocked" OnClick="GoEdit">@L["Registers_Edit"]</Button>
+            }
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Registers_OfflineTitle"]" Message="@L["Registers_OfflineMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_actionError))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@L["Registers_ErrorTitle"]" Message="@_actionError" />
+    }
+
+    <Section Title="@L["Registers_DetailSection"]">
+        <Stack Gap="3">
+            <div>
+                <span class="pos-muted">@L["Registers_Col_Code"]</span>
+                <div class="pos-value-md">@_register.RegisterCode</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Registers_Col_Status"]</span>
+                <div class="pos-value-md">@_register.Status</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Registers_Col_OpenShift"]</span>
+                <div class="pos-value-md">@(_register.HasOpenShift ? L["Registers_Yes"] : L["Registers_No"])</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Registers_Description"]</span>
+                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(_register.Description) ? "—" : _register.Description)</div>
+            </div>
+        </Stack>
+    </Section>
+
+    @if (canManage)
+    {
+        <Section Title="@L["Registers_LifecycleSection"]">
+            <FormActions>
+                @if (_register.Status == "Active")
+                {
+                    <Button Variant="ButtonVariant.Danger" IsLoading="@_acting" Disabled="@blocked" OnClick="DeactivateAsync">@L["Registers_Deactivate"]</Button>
+                }
+                else
+                {
+                    <Button Variant="ButtonVariant.Primary" IsLoading="@_acting" Disabled="@blocked" OnClick="ActivateAsync">@L["Registers_Activate"]</Button>
+                }
+            </FormActions>
+        </Section>
+    }
+</Page>
+}
+
+@code {
+    [Parameter] public Guid RegisterId { get; set; }
+
+    private bool _ready;
+    private bool _acting;
+    private bool _isOffline;
+    private PosRegisterDto? _register;
+    private string? _errorMessage;
+    private string? _actionError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewRegisters))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        await LoadAsync();
+        _ready = true;
+    }
+
+    private async Task LoadAsync()
+    {
+        _actionError = null;
+        if (_isOffline)
+        {
+            _errorMessage = L["Registers_OfflineMessage"];
+            return;
+        }
+
+        var result = await Registers.GetAsync(RegisterId);
+        if (result.IsSuccess)
+        {
+            _register = result.Data;
+            return;
+        }
+
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _errorMessage = result.Error?.Detail ?? described.Message;
+        _register = null;
+    }
+
+    private async Task ActivateAsync()
+    {
+        if (_acting || blockedAction())
+        {
+            return;
+        }
+
+        _acting = true;
+        var result = await Registers.ActivateAsync(RegisterId);
+        _acting = false;
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _register = result.Data;
+            return;
+        }
+
+        _actionError = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+    }
+
+    private async Task DeactivateAsync()
+    {
+        if (_acting || blockedAction())
+        {
+            return;
+        }
+
+        _acting = true;
+        var result = await Registers.DeactivateAsync(RegisterId);
+        _acting = false;
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _register = result.Data;
+            return;
+        }
+
+        _actionError = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+    }
+
+    private bool blockedAction() =>
+        _isOffline || !Capabilities.IsAllowed(UtangCapability.ManageRegisters);
+
+    private void GoList() => Nav.NavigateTo("/registers");
+    private void GoEdit() => Nav.NavigateTo($"/registers/{RegisterId:D}/edit");
+}

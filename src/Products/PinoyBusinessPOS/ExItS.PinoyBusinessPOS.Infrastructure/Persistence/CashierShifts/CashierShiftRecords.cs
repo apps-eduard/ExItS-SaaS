@@ -6,6 +6,7 @@ internal sealed class CashierShiftRecord
     public Guid OrganizationId { get; set; }
     public string ShiftNumber { get; set; } = string.Empty;
     public Guid ActorId { get; set; }
+    public Guid? RegisterId { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateOnly BusinessDate { get; set; }
     public decimal OpeningCashAmount { get; set; }

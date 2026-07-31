@@ -78,6 +78,11 @@ public static class ApplicationErrorCodes
     public const string SaleReturnNotFound = "pos.sale_return.not_found";
     public const string SaleReturnNumberConflict = "pos.sale_return.number.conflict";
     public const string SaleVoidBlockedByReturns = "pos.sale.void.blocked_by_returns";
+
+    public const string RegisterNotFound = "pos.register.not_found";
+    public const string RegisterNameConflict = "pos.register.name.conflict";
+    public const string RegisterCodeConflict = "pos.register.code.conflict";
+    public const string RegisterConcurrencyConflict = "pos.register.concurrency_conflict";
 }
 
 public sealed class PersistenceConflictException : Exception

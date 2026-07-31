@@ -200,4 +200,17 @@ public static class DomainErrorCodes
     public const string PosRoleBootstrapRequired = "pos.role.bootstrap.required";
     public const string PosRoleAssignForbidden = "pos.role.assign.forbidden";
     public const string CreditReduceWouldMakeOutstandingNegative = "pos.credit_entry.reduce.outstanding_negative";
+
+    public const string InvalidRegisterId = "pos.register.id.invalid";
+    public const string InvalidRegisterCode = "pos.register.code.invalid";
+    public const string InvalidRegisterName = "pos.register.name.invalid";
+    public const string InvalidRegisterDescription = "pos.register.description.invalid";
+    public const string InvalidRegisterStatus = "pos.register.status.invalid";
+    public const string InvalidRegisterStatusTransition = "pos.register.status.invalid_transition";
+    public const string RegisterNotActive = "pos.register.not_active";
+    public const string RegisterDeactivateBlockedByOpenShift = "pos.register.deactivate.blocked_by_open_shift";
+    public const string RegisterRequired = "pos.register.required";
+    public const string CashierShiftRegisterRequired = "pos.cashier_shift.register.required";
+    public const string CashierShiftRegisterConflict = "pos.cashier_shift.register.open_conflict";
+    public const string SaleRegisterRequired = "pos.sale.register.required";
 }

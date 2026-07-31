@@ -15,6 +15,7 @@ internal sealed class SaleRecord
     public Guid? CustomerId { get; set; }
     public Guid? LinkedCreditEntryId { get; set; }
     public Guid? CashierShiftId { get; set; }
+    public Guid? RegisterId { get; set; }
     public DateTimeOffset RecordedAtUtc { get; set; }
     public Guid RecordedBy { get; set; }
     public DateTimeOffset? VoidedAtUtc { get; set; }

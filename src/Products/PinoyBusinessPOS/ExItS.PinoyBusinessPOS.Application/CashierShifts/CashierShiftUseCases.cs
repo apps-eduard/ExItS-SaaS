@@ -3,14 +3,20 @@ using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Registers;
 
 namespace ExItS.PinoyBusinessPOS.Application.CashierShifts;
 
 public sealed class CashierShiftQueryService
 {
     private readonly ICashierShiftRepository _shifts;
+    private readonly IRegisterRepository _registers;
 
-    public CashierShiftQueryService(ICashierShiftRepository shifts) => _shifts = shifts;
+    public CashierShiftQueryService(ICashierShiftRepository shifts, IRegisterRepository registers)
+    {
+        _shifts = shifts;
+        _registers = registers;
+    }
 
     public async Task<PosCashierShiftDto?> GetByIdAsync(
         Guid organizationId,
@@ -20,7 +26,7 @@ public sealed class CashierShiftQueryService
         var shift = await _shifts
             .GetByIdAsync(PosOrganizationId.From(organizationId), CashierShiftId.From(shiftId), cancellationToken)
             .ConfigureAwait(false);
-        return shift is null ? null : Map(shift);
+        return shift is null ? null : await MapAsync(shift, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<PosCashierShiftDto?> GetCurrentOpenForActorAsync(
@@ -31,7 +37,7 @@ public sealed class CashierShiftQueryService
         var shift = await _shifts
             .FindOpenForActorAsync(PosOrganizationId.From(organizationId), actorId, cancellationToken)
             .ConfigureAwait(false);
-        return shift is null ? null : Map(shift);
+        return shift is null ? null : await MapAsync(shift, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<PagedResult<PosCashierShiftDto>> ListAsync(
@@ -46,8 +52,14 @@ public sealed class CashierShiftQueryService
             .ListAsync(PosOrganizationId.From(organizationId), filter, skip, take, cancellationToken)
             .ConfigureAwait(false);
 
+        var mapped = new List<PosCashierShiftDto>(items.Count);
+        foreach (var shift in items)
+        {
+            mapped.Add(await MapAsync(shift, cancellationToken).ConfigureAwait(false));
+        }
+
         return new PagedResult<PosCashierShiftDto>(
-            items.Select(Map).ToList(),
+            mapped,
             total,
             Math.Max(page ?? 1, 1),
             take);
@@ -100,12 +112,18 @@ public sealed class CashierShiftQueryService
     }
 
     public static PosCashierShiftDto Map(CashierShift shift) =>
+        Map(shift, null);
+
+    public static PosCashierShiftDto Map(CashierShift shift, Register? register) =>
         new(
             shift.Id.Value,
             shift.OrganizationId.Value,
             shift.ShiftNumber,
             shift.Status.ToString(),
             shift.ActorId,
+            shift.RegisterId?.Value,
+            register?.RegisterCode,
+            register?.Name,
             shift.BusinessDate,
             shift.OpeningCashAmount,
             shift.OpenedAtUtc,
@@ -120,6 +138,19 @@ public sealed class CashierShiftQueryService
             shift.CancelledBy,
             shift.CreatedAtUtc,
             shift.UpdatedAtUtc);
+
+    private async Task<PosCashierShiftDto> MapAsync(CashierShift shift, CancellationToken cancellationToken)
+    {
+        Register? register = null;
+        if (shift.RegisterId is not null)
+        {
+            register = await _registers
+                .GetByIdAsync(shift.OrganizationId, shift.RegisterId, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        return Map(shift, register);
+    }
 
     public static PosCashierShiftMovementDto MapMovement(CashierShiftMovement movement) =>
         new(
@@ -137,17 +168,20 @@ public sealed class CashierShiftQueryService
 public sealed class OpenCashierShift
 {
     private readonly ICashierShiftRepository _shifts;
+    private readonly IRegisterRepository _registers;
     private readonly IClock _clock;
 
-    public OpenCashierShift(ICashierShiftRepository shifts, IClock clock)
+    public OpenCashierShift(ICashierShiftRepository shifts, IRegisterRepository registers, IClock clock)
     {
         _shifts = shifts;
+        _registers = registers;
         _clock = clock;
     }
 
     public async Task<ApplicationResult<CashierShift>> ExecuteAsync(
         Guid organizationId,
         Guid actorId,
+        Guid registerId,
         decimal openingCashAmount,
         DateOnly? businessDate = null,
         CancellationToken cancellationToken = default)
@@ -162,14 +196,35 @@ public sealed class OpenCashierShift
         try
         {
             var orgId = PosOrganizationId.From(organizationId);
-            var existing = await _shifts
+            var regId = RegisterId.From(registerId);
+            var register = await _registers.GetByIdAsync(orgId, regId, cancellationToken).ConfigureAwait(false);
+            if (register is null)
+            {
+                return ApplicationResult<CashierShift>.Failure(
+                    ApplicationErrorCodes.RegisterNotFound,
+                    "Register was not found in this organization.");
+            }
+
+            register.EnsureActiveForShift();
+
+            var existingActor = await _shifts
                 .FindOpenForActorAsync(orgId, actorId, cancellationToken)
                 .ConfigureAwait(false);
-            if (existing is not null)
+            if (existingActor is not null)
             {
                 return ApplicationResult<CashierShift>.Failure(
                     ApplicationErrorCodes.CashierShiftOpenConflict,
                     "This cashier already has an open shift.");
+            }
+
+            var existingRegister = await _shifts
+                .FindOpenForRegisterAsync(orgId, registerId, cancellationToken)
+                .ConfigureAwait(false);
+            if (existingRegister is not null)
+            {
+                return ApplicationResult<CashierShift>.Failure(
+                    DomainErrorCodes.CashierShiftRegisterConflict,
+                    "This register already has an open shift.");
             }
 
             var utcNow = _clock.UtcNow;
@@ -181,7 +236,7 @@ public sealed class OpenCashierShift
                     actorId,
                     openingCashAmount,
                     actorId,
-                    number => CashierShift.Open(orgId, number, actorId, openingCashAmount, utcNow, date),
+                    number => CashierShift.Open(orgId, number, actorId, regId, openingCashAmount, utcNow, date),
                     cancellationToken)
                 .ConfigureAwait(false);
 

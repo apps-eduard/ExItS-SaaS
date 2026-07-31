@@ -41,6 +41,8 @@ else
         <Stack Gap="2">
             <div class="pos-muted">@L["Shifts_Status"]</div>
             <div class="pos-value-md">@_shift.Status</div>
+            <div class="pos-muted">@L["Shifts_RegisterLabel"]</div>
+            <div class="pos-value-md">@(string.IsNullOrWhiteSpace(_shift.RegisterCode) ? "—" : $"{_shift.RegisterCode} — {_shift.RegisterName}")</div>
             <div class="pos-muted">@L["Shifts_OpeningCashLabel"]</div>
             <MoneyDisplay Amount="@_shift.OpeningCashAmount" CurrencyCode="PHP" />
             @if (_summary is not null)

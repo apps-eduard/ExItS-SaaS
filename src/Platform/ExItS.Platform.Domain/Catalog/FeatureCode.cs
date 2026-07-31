@@ -72,6 +72,12 @@ public sealed partial class FeatureCode : IEquatable<FeatureCode>
     /// <summary>POS Full POS: assign and revoke product-local POS roles.</summary>
     public const string StorePermissionsManage = "store-permissions-manage";
 
+    /// <summary>POS Full POS: view organization registers (logical sales stations).</summary>
+    public const string StoreRegistersView = "store-registers-view";
+
+    /// <summary>POS Full POS: create, edit, activate, and deactivate registers.</summary>
+    public const string StoreRegistersManage = "store-registers-manage";
+
     private static readonly Regex ValidPattern = CreateValidPattern();
 
     public string Value { get; }

@@ -5,6 +5,7 @@ using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Expenses;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
+using ExItS.PinoyBusinessPOS.Domain.Registers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
@@ -17,6 +18,7 @@ using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Expenses;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Idempotency;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Payments;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Registers;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Sales;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Suppliers;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Purchasing;
@@ -68,6 +70,8 @@ public sealed class PosDbContext : DbContext
     internal DbSet<CashierShiftMovementRecord> CashierShiftMovements => Set<CashierShiftMovementRecord>();
     internal DbSet<CashierShiftNumberSequenceRecord> CashierShiftNumberSequences => Set<CashierShiftNumberSequenceRecord>();
     internal DbSet<Permissions.PosRoleAssignmentRecord> PosRoleAssignments => Set<Permissions.PosRoleAssignmentRecord>();
+    internal DbSet<RegisterRecord> Registers => Set<RegisterRecord>();
+    internal DbSet<RegisterCodeSequenceRecord> RegisterCodeSequences => Set<RegisterCodeSequenceRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -471,6 +475,7 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.CustomerId).HasColumnName("customer_id");
             entity.Property(e => e.LinkedCreditEntryId).HasColumnName("linked_credit_entry_id");
             entity.Property(e => e.CashierShiftId).HasColumnName("cashier_shift_id");
+            entity.Property(e => e.RegisterId).HasColumnName("register_id");
             entity.Property(e => e.RecordedAtUtc).HasColumnName("recorded_at_utc");
             entity.Property(e => e.RecordedBy).HasColumnName("recorded_by").IsRequired();
             entity.Property(e => e.VoidedAtUtc).HasColumnName("voided_at_utc");
@@ -510,11 +515,20 @@ public sealed class PosDbContext : DbContext
             entity.HasIndex(e => e.CashierShiftId)
                 .HasDatabaseName("ix_sales_cashier_shift_id");
 
+            entity.HasIndex(e => e.RegisterId)
+                .HasDatabaseName("ix_sales_register_id");
+
             entity.HasOne<CashierShiftRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.CashierShiftId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_sales_cashier_shifts");
+
+            entity.HasOne<RegisterRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.RegisterId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_sales_registers");
 
             // No FK from linked_credit_entry_id → credit_entries (circular with source_sale_id).
             // Application + unique filter index enforce one-to-one linkage.
@@ -628,6 +642,8 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.ReturnNumber).HasColumnName("return_number").HasMaxLength(ReturnNumbers.MaxLength).IsRequired();
             entity.Property(e => e.SaleId).HasColumnName("sale_id").IsRequired();
             entity.Property(e => e.CashierShiftId).HasColumnName("cashier_shift_id");
+            entity.Property(e => e.SourceRegisterId).HasColumnName("source_register_id");
+            entity.Property(e => e.RefundRegisterId).HasColumnName("refund_register_id");
             entity.Property(e => e.RefundMethod).HasColumnName("refund_method").HasMaxLength(SalePaymentMethods.CodeMaxLength).IsRequired();
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(SaleReturnStatuses.CodeMaxLength).IsRequired();
             entity.Property(e => e.ReturnDate).HasColumnName("return_date").HasColumnType("date").IsRequired();
@@ -654,6 +670,12 @@ public sealed class PosDbContext : DbContext
                 .HasDatabaseName("ix_sale_returns_org_shift")
                 .HasFilter("cashier_shift_id IS NOT NULL");
 
+            entity.HasIndex(e => e.SourceRegisterId)
+                .HasDatabaseName("ix_sale_returns_source_register_id");
+
+            entity.HasIndex(e => e.RefundRegisterId)
+                .HasDatabaseName("ix_sale_returns_refund_register_id");
+
             entity.HasOne<SaleRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.SaleId)
@@ -665,6 +687,18 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.CashierShiftId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_sale_returns_cashier_shifts");
+
+            entity.HasOne<RegisterRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SourceRegisterId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_sale_returns_source_registers");
+
+            entity.HasOne<RegisterRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.RefundRegisterId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_sale_returns_refund_registers");
         });
 
         modelBuilder.Entity<SaleReturnLineRecord>(entity =>
@@ -1482,6 +1516,7 @@ public sealed class PosDbContext : DbContext
                 .HasMaxLength(CashierShiftNumbers.MaxLength)
                 .IsRequired();
             entity.Property(e => e.ActorId).HasColumnName("actor_id").IsRequired();
+            entity.Property(e => e.RegisterId).HasColumnName("register_id");
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date").IsRequired();
             entity.Property(e => e.OpeningCashAmount).HasColumnName("opening_cash_amount").HasPrecision(18, 2).IsRequired();
@@ -1514,8 +1549,22 @@ public sealed class PosDbContext : DbContext
                 .HasDatabaseName("ux_cashier_shifts_org_actor_open")
                 .HasFilter("status = 'Open'");
 
+            entity.HasIndex(e => new { e.OrganizationId, e.RegisterId })
+                .IsUnique()
+                .HasDatabaseName("ux_cashier_shifts_org_register_open")
+                .HasFilter("status = 'Open' AND register_id IS NOT NULL");
+
             entity.HasIndex(e => new { e.OrganizationId, e.Status, e.OpenedAtUtc })
                 .HasDatabaseName("ix_cashier_shifts_org_status_opened");
+
+            entity.HasIndex(e => e.RegisterId)
+                .HasDatabaseName("ix_cashier_shifts_register_id");
+
+            entity.HasOne<RegisterRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.RegisterId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_cashier_shifts_registers");
         });
 
         modelBuilder.Entity<CashierShiftMovementRecord>(entity =>
@@ -1620,6 +1669,77 @@ public sealed class PosDbContext : DbContext
 
             entity.HasIndex(e => new { e.OrganizationId, e.RevokedAtUtc })
                 .HasDatabaseName("ix_pos_role_assignments_org_revoked");
+        });
+
+        modelBuilder.Entity<RegisterRecord>(entity =>
+        {
+            entity.ToTable("registers", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_registers_status",
+                    "status IN ('Active', 'Inactive')");
+                tb.HasCheckConstraint(
+                    "ck_registers_code_format",
+                    "register_code ~ '^REG-[0-9]{6}$'");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.RegisterCode)
+                .HasColumnName("register_code")
+                .HasMaxLength(RegisterCodes.MaxLength)
+                .IsRequired();
+            entity.Property(e => e.Name)
+                .HasColumnName("name")
+                .HasMaxLength(Register.NameMaxLength)
+                .IsRequired();
+            entity.Property(e => e.NormalizedName)
+                .HasColumnName("normalized_name")
+                .HasMaxLength(Register.NameMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Description)
+                .HasColumnName("description")
+                .HasMaxLength(Register.DescriptionMaxLength);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by").IsRequired();
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").IsRequired();
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.RegisterCode })
+                .IsUnique()
+                .HasDatabaseName("ux_registers_org_register_code");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.NormalizedName })
+                .IsUnique()
+                .HasDatabaseName("ux_registers_org_normalized_name");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.Status })
+                .HasDatabaseName("ix_registers_org_status");
+
+            entity.HasIndex(e => e.OrganizationId)
+                .HasDatabaseName("ix_registers_organization_id");
+        });
+
+        modelBuilder.Entity<RegisterCodeSequenceRecord>(entity =>
+        {
+            entity.ToTable("register_code_sequences", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_register_code_sequences_next_value_positive",
+                    "next_value > 0");
+            });
+
+            entity.HasKey(e => e.OrganizationId)
+                .HasName("pk_register_code_sequences");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.NextValue).HasColumnName("next_value").IsRequired();
         });
     }
 }

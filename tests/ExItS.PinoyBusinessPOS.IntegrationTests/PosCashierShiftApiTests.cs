@@ -34,15 +34,17 @@ public sealed class PosCashierShiftApiTests(PosPostgreSqlFixture fixture)
         var client = factory.CreateClient();
         var org = Guid.NewGuid();
 
+        var register = await PosShiftIntegrationSupport.EnsureRegisterAsync(client, org, Actor);
         using var open = Scoped(HttpMethod.Post, Shifts, org);
-        open.Content = JsonContent.Create(new OpenCashierShiftRequest(100m), options: JsonOptions);
+        open.Content = JsonContent.Create(new OpenCashierShiftRequest(register.RegisterId, 100m), options: JsonOptions);
         using var openResponse = await client.SendAsync(open);
         openResponse.EnsureSuccessStatusCode();
         var shift = await openResponse.Content.ReadFromJsonAsync<PosCashierShiftDto>(JsonOptions);
         Assert.StartsWith("SHIFT-", shift!.ShiftNumber, StringComparison.Ordinal);
+        Assert.Equal(register.RegisterId, shift.RegisterId);
 
         using var duplicateOpen = Scoped(HttpMethod.Post, Shifts, org);
-        duplicateOpen.Content = JsonContent.Create(new OpenCashierShiftRequest(50m), options: JsonOptions);
+        duplicateOpen.Content = JsonContent.Create(new OpenCashierShiftRequest(register.RegisterId, 50m), options: JsonOptions);
         using var duplicateResponse = await client.SendAsync(duplicateOpen);
         Assert.Equal(HttpStatusCode.Conflict, duplicateResponse.StatusCode);
         Assert.Equal(ApplicationErrorCodes.CashierShiftOpenConflict, await ReadErrorCodeAsync(duplicateResponse));

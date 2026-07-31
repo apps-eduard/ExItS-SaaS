@@ -12,9 +12,9 @@
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 10 — Full POS |
-| Current work package | P10-WP07 — Multiple Registers (**authorized**) |
-| Overall status | **P10-WP07 authorized.** Do not begin P10-WP08 or Phase 11. |
-| Latest verified commit | `084cf1b` |
+| Current work package | P10-WP07 — Multiple Registers (**complete**) |
+| Overall status | **P10-WP07 complete.** Exact next: P10-WP08 — Phase 10 Closeout. Do not begin P10-WP08 or Phase 11. |
+| Latest verified commit | *(pending push tip)* |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only Basic Store limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/refund/accounting deferred |
 | Last updated | 2026-07-31 |
 
@@ -45,7 +45,9 @@ P10-WP05 ✓ Returns and Refunds
         ↓
 P10-WP06 ✓ Advanced Permissions and Operational Reports
         ↓
-P10-WP07 ● Multiple Registers (authorized — in progress)
+P10-WP07 ✓ Multiple Registers (complete)
+        ↓
+P10-WP08 ● Phase 10 Closeout (do not begin)
         ↓
 P10-WP08 ○ Phase 10 Closeout (do not begin)
 ```
@@ -64,7 +66,7 @@ P10-WP08 ○ Phase 10 Closeout (do not begin)
 | 7 | Offline Synchronization | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-07-offline-sync.md) |
 | 8 | Basic Store | **Complete with documented risks** | 7 | 7 | 100% | [Open](phases/phase-08-basic-store.md) |
 | 9 | MVP Hardening and Release | **Complete with documented risks** | 6 | 6 | 100% | [Open](phases/phase-09-mvp-hardening.md) |
-| 10 | Full POS | **In Progress** | 6 | 8 | 75% | [Open](phases/phase-10-full-pos.md) |
+| 10 | Full POS | **In Progress** | 7 | 8 | 88% | [Open](phases/phase-10-full-pos.md) |
 
 **MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 
@@ -78,7 +80,8 @@ P10-WP08 ○ Phase 10 Closeout (do not begin)
 | P10-WP04 — Cashier Shifts | Complete | 4076485 |
 | P10-WP05 — Returns and Refunds | Complete | 58dd6bf (+ Android using fix 6cb06cc) |
 | P10-WP06 — Advanced Permissions and Operational Reports | Complete | 1e46f6eb142d1c14455f954e7c8286abeb1ddff3 |
-| P10-WP07 — Multiple Registers | Authorized | — |
+| P10-WP07 — Multiple Registers | Complete | [Report](reports/P10-WP07-multiple-registers.md) |
+| P10-WP08 — Phase 10 Closeout | Not started | — |
 | P10-WP08 — Full POS Closeout | Not Started | — |
 
 ## Phase 9 work packages

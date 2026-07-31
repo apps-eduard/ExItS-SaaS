@@ -9,7 +9,8 @@ public sealed record CashierShiftFilter(
     Guid? ActorId = null,
     string? ShiftNumber = null,
     DateOnly? FromBusinessDate = null,
-    DateOnly? ToBusinessDate = null);
+    DateOnly? ToBusinessDate = null,
+    Guid? RegisterId = null);
 
 public interface ICashierShiftRepository
 {
@@ -21,6 +22,11 @@ public interface ICashierShiftRepository
     Task<CashierShift?> FindOpenForActorAsync(
         PosOrganizationId organizationId,
         Guid actorId,
+        CancellationToken cancellationToken = default);
+
+    Task<CashierShift?> FindOpenForRegisterAsync(
+        PosOrganizationId organizationId,
+        Guid registerId,
         CancellationToken cancellationToken = default);
 
     Task<(IReadOnlyList<CashierShift> Items, int TotalCount)> ListAsync(

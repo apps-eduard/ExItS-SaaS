@@ -95,6 +95,8 @@ public static class PosRoleAssignmentMapping
         UtangCapability.ProcessReturn => [PosFeatureCodes.StoreReturnsManage],
         UtangCapability.ViewPermissions => [PosFeatureCodes.StorePermissionsView],
         UtangCapability.ManagePermissions => [PosFeatureCodes.StorePermissionsManage],
+        UtangCapability.ViewRegisters => [PosFeatureCodes.StoreRegistersView],
+        UtangCapability.ManageRegisters => [PosFeatureCodes.StoreRegistersManage],
         UtangCapability.ViewCustomersAndHistory
             or UtangCapability.ViewGenerateStatement
             or UtangCapability.ViewGenerateReceipt

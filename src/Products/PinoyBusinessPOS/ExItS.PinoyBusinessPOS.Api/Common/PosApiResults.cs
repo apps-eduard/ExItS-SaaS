@@ -33,7 +33,8 @@ internal static class PosApiResults
             or ApplicationErrorCodes.InventoryProductNotFound
             or ApplicationErrorCodes.ExpenseCategoryNotFound
             or ApplicationErrorCodes.ExpenseNotFound
-            or ApplicationErrorCodes.SupplierNotFound => StatusCodes.Status404NotFound,
+            or ApplicationErrorCodes.SupplierNotFound
+            or ApplicationErrorCodes.RegisterNotFound => StatusCodes.Status404NotFound,
 
         ApplicationErrorCodes.MobileConflict
             or ApplicationErrorCodes.ConcurrencyConflict
@@ -94,7 +95,14 @@ internal static class PosApiResults
             or DomainErrorCodes.CashierShiftExpectedCashNegative
             or DomainErrorCodes.InvalidCashierShiftStatusTransition
             or DomainErrorCodes.PosRoleAssignmentConflict
-            or DomainErrorCodes.PosRoleLastOwnerProtected => StatusCodes.Status409Conflict,
+            or DomainErrorCodes.PosRoleLastOwnerProtected
+            or ApplicationErrorCodes.RegisterNameConflict
+            or ApplicationErrorCodes.RegisterCodeConflict
+            or ApplicationErrorCodes.RegisterConcurrencyConflict
+            or DomainErrorCodes.RegisterDeactivateBlockedByOpenShift
+            or DomainErrorCodes.RegisterNotActive
+            or DomainErrorCodes.CashierShiftRegisterConflict
+            or DomainErrorCodes.InvalidRegisterStatusTransition => StatusCodes.Status409Conflict,
 
         ApplicationErrorCodes.SaleProductNotFound => StatusCodes.Status400BadRequest,
 

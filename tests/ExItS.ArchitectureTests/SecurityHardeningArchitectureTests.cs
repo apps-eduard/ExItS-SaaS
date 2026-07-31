@@ -11,8 +11,8 @@ public sealed class SecurityHardeningArchitectureTests
         var platform = File.ReadAllText(Path.Combine(FindRepositoryRoot(),
             "src", "Platform", "ExItS.Platform.Api", "Program.cs"));
 
-        Assert.Contains("P10-WP06-advanced-permissions-operational-reports", pos, StringComparison.Ordinal);
-        Assert.Contains("P10-WP06-advanced-permissions-operational-reports", platform, StringComparison.Ordinal);
+        Assert.Contains("P10-WP07-multiple-registers", pos, StringComparison.Ordinal);
+        Assert.Contains("P10-WP07-multiple-registers", platform, StringComparison.Ordinal);
         Assert.Contains("AddPosSecurity", pos, StringComparison.Ordinal);
         Assert.Contains("UsePosSecurity", pos, StringComparison.Ordinal);
         Assert.Contains("AddPlatformSecurity", platform, StringComparison.Ordinal);

@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Registers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Sales;
 
@@ -51,7 +52,8 @@ internal static class SaleEntityMapper
             lines,
             record.CustomerId is null ? null : POSCustomerId.From(record.CustomerId.Value),
             record.LinkedCreditEntryId is null ? null : CreditEntryId.From(record.LinkedCreditEntryId.Value),
-            record.CashierShiftId is null ? null : CashierShiftId.From(record.CashierShiftId.Value));
+            record.CashierShiftId is null ? null : CashierShiftId.From(record.CashierShiftId.Value),
+            record.RegisterId is null ? null : RegisterId.From(record.RegisterId.Value));
     }
 
     public static SaleRecord ToRecord(Sale sale) =>
@@ -70,6 +72,7 @@ internal static class SaleEntityMapper
             CustomerId = sale.CustomerId?.Value,
             LinkedCreditEntryId = sale.LinkedCreditEntryId?.Value,
             CashierShiftId = sale.CashierShiftId?.Value,
+            RegisterId = sale.RegisterId?.Value,
             RecordedAtUtc = sale.RecordedAtUtc,
             RecordedBy = sale.RecordedBy,
             VoidedAtUtc = sale.VoidedAtUtc,
