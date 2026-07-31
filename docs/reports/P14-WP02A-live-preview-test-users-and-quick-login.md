@@ -4,7 +4,7 @@ Phase marker: `P14-WP02A-live-preview-test-users-and-quick-login`
 
 Package: **P14-WP02A Gap Fix — Live Preview Test Users and Quick Login**
 Prior tip: `cb380fa969932eaeadd1c90ec8ec9d00038a9d75`
-Feature tip: *(recorded after feature commit)*
+Feature tip: `c0d29daf533e7afaf79781771c79f103c6f28dc4`
 
 ## Status
 
@@ -48,4 +48,17 @@ Open **http://localhost:8090/** → redirected to `/admin/login` → select test
 - Changing packaging stack ports/DBs
 - Invented role names (uses existing Platform/POS roles)
 
+## 5. Validation
+
+| Check | Result |
+|---|---|
+| Admin anonymous → `/admin/login` | 302 |
+| Identities API | 5 identities returned |
+| Quick-login session | Real `sessionToken` for `platform-admin` |
+| POS role seed | Owner + Cashier assigned |
 | Full Release tests | **1267 passed / 0 failed / 0 skipped** |
+
+## Exact next
+
+**P14-WP03 — Reverse Proxy, TLS, and Network Hardening** when authorized.
+
