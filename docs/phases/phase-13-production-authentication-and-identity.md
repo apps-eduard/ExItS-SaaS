@@ -24,7 +24,7 @@ Authoritative docs:
 | P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS) | **Complete** | [report](../reports/P13-WP06-product-client-auth-integration.md) · `68f13c0a4281071087e526ecf8e51414f2a78b12` |
 | P13-WP07 — MFA Readiness and Auth Hardening | **Complete** | [report](../reports/P13-WP07-mfa-readiness-and-authentication-hardening.md) · `7b767f664e63c5c296e0444062129acd7ee36727` |
 | P13-WP08 — Google and Facebook External Authentication | **Complete** | [report](../reports/P13-WP08-google-facebook-external-authentication.md) · `7c9338090f55b0fc2e289fe3b95fb3b4ce5d7938` |
-| P13-WP09 — Phase 13 Closeout | **Complete** | [report](../reports/P13-WP09-phase-13-closeout.md) · *(feature tip recorded after commit)* |
+| P13-WP09 — Phase 13 Closeout | **Complete** | [report](../reports/P13-WP09-phase-13-closeout.md) · `ef949b78c2a8e2271dfd7f1e5b54e72092db74d1` |
 
 ## Purpose
 
