@@ -3,7 +3,7 @@
 Package: **P11-WP07 — Localization, Theme, Accessibility, and Responsive QA**  
 Prior tip: `e7c037942870623f9d879777b8925fafcfcdd40b`  
 Feature tip (this WP): `24ee744fa15152bc325568ba6c5a99de78359921`  
-Docs tip: _(recorded after docs commit)_
+Docs tip: `497b2d1fd977494847e8dc826af5bbe88bc08fb3`
 
 ## Status
 
