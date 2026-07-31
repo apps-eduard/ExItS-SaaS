@@ -4,7 +4,7 @@ Phase marker: `P12-WP02-authoritative-product-foundation-reference`
 
 Package: **P12-WP02 — Authoritative Product Foundation Reference**  
 Prior tip: `9f239d35ec659fcbb15edd933497031228d2537a`  
-Docs tip: *(recorded after docs commit)*
+Docs tip: `8f151d658011a3ad0854aab9f8774361f8a788a6`
 
 ## Status
 

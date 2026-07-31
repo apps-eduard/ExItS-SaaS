@@ -14,7 +14,7 @@
 | Current phase | Phase 12 — Reusable SaaS Product Foundation and Bootstrap (**in progress**) |
 | Current work package | P12-WP02 — Authoritative Product Foundation Reference (**complete**) |
 | Overall status | **Phase 12 in progress.** P12-WP01–WP02 complete. Authoritative Product Foundation reference finalized. Exact next: P12-WP03 — Product Documentation Templates (do not begin until authorized). **Not production-ready.** |
-| Latest verified commit | *(filled after tip-hash)* |
+| Latest verified commit | `8f151d658011a3ad0854aab9f8774361f8a788a6` |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-07-31 |
 

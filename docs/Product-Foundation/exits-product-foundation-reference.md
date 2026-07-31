@@ -99,14 +99,14 @@ Integration across boundaries uses approved contracts or APIs only.
 
 Effective operational access requires **all** applicable checks:
 
-1. trusted actor  
-2. trusted organization context  
-3. Platform product access  
-4. allowed commercial state  
-5. required product entitlement  
-6. active product-local role  
-7. required product-local grant  
-8. resource ownership and workflow invariants  
+1. trusted actor
+2. trusted organization context
+3. Platform product access
+4. allowed commercial state
+5. required product entitlement
+6. active product-local role
+7. required product-local grant
+8. resource ownership and workflow invariants
 
 No check bypasses another.
 
