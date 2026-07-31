@@ -6,6 +6,7 @@
 
 - [Portfolio vision](product/portfolio-vision.md)
 - [ExItS Product Foundation reference](Product-Foundation/exits-product-foundation-reference.md)
+- [Product documentation templates](Product-Foundation/Templates/README.md)
 - [PinoyBusinessPOS requirements](product/pinoy-business-pos-requirements.md)
 - [Products, plans, trials and billing](product/subscriptions-and-billing.md)
 - [Release plan](release-plan.md)

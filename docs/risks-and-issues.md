@@ -141,7 +141,9 @@ P9-WP06 closed Phase 9 with an honest Commercial MVP readiness board: Developmen
 
 ## Phase 12 — Product foundation (in progress)
 
-P12-WP02 finalized the authoritative Product Foundation reference at `docs/Product-Foundation/exits-product-foundation-reference.md`. D-P12-01/D-P12-02 intent closed; D-P12-03 commercial transport and R-091 remain open. Exact next: **P12-WP03 — Product Documentation Templates** (do not begin). **Not production-ready.**
+P12-WP03 published reusable product documentation templates under `docs/Product-Foundation/Templates/`. D-P12-03 and R-091 remain open (marked in templates; not invented). Exact next: **P12-WP04 — Cursor Product Context Rule** (do not begin). **Not production-ready.**
+
+P12-WP02 finalized the authoritative Product Foundation reference at `docs/Product-Foundation/exits-product-foundation-reference.md`. D-P12-01/D-P12-02 intent closed.
 
 P12-WP01 completed a Platform–Product contract audit from repository evidence (separate DBs, SaaS vs operational money, product-local roles, pilot multi-image deploy). No application code.
 

@@ -84,3 +84,4 @@ The dashboard links to the latest accepted report.
 | [P11-WP08-phase-11-closeout.md](P11-WP08-phase-11-closeout.md) | P11-WP08 Phase 11 Closeout | Complete with documented risks (Phase 11 closed) |
 | [P12-WP01-platform-product-contract-audit.md](P12-WP01-platform-product-contract-audit.md) | P12-WP01 Platform–Product Contract Audit | Complete |
 | [P12-WP02-authoritative-product-foundation-reference.md](P12-WP02-authoritative-product-foundation-reference.md) | P12-WP02 Authoritative Product Foundation Reference | Complete |
+| [P12-WP03-product-documentation-templates.md](P12-WP03-product-documentation-templates.md) | P12-WP03 Product Documentation Templates | Complete |

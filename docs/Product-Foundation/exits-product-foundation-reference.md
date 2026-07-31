@@ -200,7 +200,8 @@ Do **not** create `_ProductTemplate` or new product folders from this WP.
 ```text
 docs/Product-Foundation/
 ├── README.md
-└── exits-product-foundation-reference.md   # this file (authoritative)
+├── exits-product-foundation-reference.md   # this file (authoritative)
+└── Templates/                              # P12-WP03 reusable product doc templates
 ```
 
 ---

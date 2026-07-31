@@ -4,9 +4,9 @@
 
 ## Status
 
-**In progress.** **P12-WP01**–**P12-WP02** are **complete**. Exact next: **P12-WP03 — Product Documentation Templates** when authorized (do not begin).
+**In progress.** **P12-WP01**–**P12-WP03** are **complete**. Exact next: **P12-WP04 — Cursor Product Context Rule** when authorized (do not begin).
 
-Phase 11 remains closed. Authoritative foundation: [`docs/Product-Foundation/exits-product-foundation-reference.md`](../Product-Foundation/exits-product-foundation-reference.md).
+Phase 11 remains closed. Authoritative foundation: [`docs/Product-Foundation/exits-product-foundation-reference.md`](../Product-Foundation/exits-product-foundation-reference.md). Templates: [`docs/Product-Foundation/Templates/`](../Product-Foundation/Templates/README.md).
 
 ## Progress
 
@@ -14,7 +14,7 @@ Phase 11 remains closed. Authoritative foundation: [`docs/Product-Foundation/exi
 |---|---|---|
 | P12-WP01 — Platform–Product Contract Audit | **Complete** | [report](../reports/P12-WP01-platform-product-contract-audit.md) · `32889be0851fa0969e8abfa6b7c66784b12e9e8b` |
 | P12-WP02 — Authoritative Product Foundation Reference | **Complete** | [report](../reports/P12-WP02-authoritative-product-foundation-reference.md) · `8f151d658011a3ad0854aab9f8774361f8a788a6` |
-| P12-WP03 — Product Documentation Templates | Not started | — |
+| P12-WP03 — Product Documentation Templates | **Complete** | [report](../reports/P12-WP03-product-documentation-templates.md) · *(tip filled after commit)* |
 | P12-WP04 — Cursor Product Context Rule | Not started | — |
 | P12-WP05 — Product Bootstrap Prompt | Not started | — |
 | P12-WP06 — Reference Product Dry Run | Not started | — |
@@ -229,28 +229,28 @@ Do not place these in shared libraries:
 
 ## Product Foundation Files
 
-Authoritative (P12-WP02):
+Authoritative (P12-WP02) and templates (P12-WP03):
 
 ```text
 docs/Product-Foundation/
 ├── README.md
-└── exits-product-foundation-reference.md
+├── exits-product-foundation-reference.md
+└── Templates/
+    ├── README.md
+    ├── product-definition.md
+    ├── architecture.md
+    ├── security.md
+    ├── authorization-matrix.md
+    ├── development-plan.md
+    ├── roadmap.md
+    ├── work-package-report.md
+    ├── risks-and-decisions.md
+    ├── deployment-notes.md
+    ├── FILE-MANIFEST.md
+    └── product-docs-readme.md
 ```
 
-Templates and bootstrap prompt arrive in later work packages (P12-WP03+):
-
-```text
-docs/Product-Foundation/
-├── product-definition-template.md
-├── product-architecture-template.md
-├── product-security-template.md
-├── product-authorization-template.md
-├── product-development-plan-template.md
-├── product-roadmap-template.md
-├── product-testing-template.md
-├── product-file-manifest-template.md
-└── product-bootstrap-prompt.md
-```
+Bootstrap prompt arrives in a later work package (P12-WP05).
 
 The authoritative reusable reference is:
 
@@ -264,16 +264,20 @@ Each **new** product should maintain a concise authoritative documentation pack 
 
 ```text
 src/Products/<ProductName>/Docs/
+├── README.md                 # optional
 ├── product-definition.md
 ├── architecture.md
 ├── security.md
 ├── authorization-matrix.md
 ├── development-plan.md
 ├── roadmap.md
-├── testing-strategy.md
-├── phase-progress.md
-└── FILE-MANIFEST.md
+├── risks-and-decisions.md
+├── FILE-MANIFEST.md
+├── deployment-notes.md       # optional until packaging
+└── reports/
 ```
+
+Testing expectations live in `development-plan.md` (no separate testing template).
 
 (D-P12-02: intended root for new products. Existing PinoyBusinessPOS portfolio docs under `docs/` are not mass-migrated by Phase 12 foundation WPs.)
 
@@ -450,6 +454,10 @@ Create `docs/Product-Foundation/exits-product-foundation-reference.md` as the co
 - file contains no product-specific business assumptions
 
 ### P12-WP03 — Product Documentation Templates
+
+#### Status
+
+**Complete** — see [P12-WP03 report](../reports/P12-WP03-product-documentation-templates.md). Pack: [`docs/Product-Foundation/Templates/`](../Product-Foundation/Templates/README.md).
 
 #### Objective
 
