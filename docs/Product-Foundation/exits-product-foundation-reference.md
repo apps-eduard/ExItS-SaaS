@@ -208,13 +208,16 @@ docs/Product-Foundation/
 
 ## 10. Context-loading rule
 
+Permanent Cursor rule: `.cursor/rules/exits-product-context.mdc` (globs: product trees, Product Foundation, Phase 12).
+
 For a product work package, read **only**:
 
 1. `.cursor/rules/exits-workflow.mdc`
-2. this Product Foundation reference
-3. the active product’s architecture / security / roadmap / definition docs
-4. the current work-package report or prompt
-5. files directly required for implementation
+2. `.cursor/rules/exits-product-context.mdc`
+3. this Product Foundation reference
+4. the active product’s Docs under `src/Products/<ProductName>/Docs/`
+5. the current work-package report or prompt
+6. files directly required for implementation
 
 Do **not** routinely scan:
 
@@ -226,7 +229,7 @@ Do **not** routinely scan:
 
 Before expanding context, state the reason (contract reference, project dependency, compile/test failure, architecture invariant, or approved shared component).
 
-Permanent Cursor rule packaging for this policy is **P12-WP04** — until then, this section is binding documentation.
+Conflict precedence and expansion gate: see `exits-product-context.mdc`.
 
 ---
 

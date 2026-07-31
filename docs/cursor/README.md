@@ -11,6 +11,11 @@
 7. Cursor creates one focused commit and reports the hash.
 8. The owner pastes Cursor’s report into ChatGPT for review and the next prompt.
 
+## Permanent rules
+
+- `.cursor/rules/exits-workflow.mdc` — always apply (repo safety, Git, build, security)
+- `.cursor/rules/exits-product-context.mdc` — product work context loading (see [Product Foundation](../Product-Foundation/exits-product-foundation-reference.md))
+
 - [First Cursor command](first-cursor-command.md)
 - [Reusable prompt template](cursor-prompt-template.md)
 - [Completion report template](completion-report-template.md)

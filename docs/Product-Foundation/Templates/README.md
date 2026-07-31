@@ -41,7 +41,7 @@ Approved product docs must not retain unresolved `{{…}}` or open `DECISION:` i
 
 ## Context loading
 
-For product work, load only: workflow rules → foundation reference → this product’s filled docs → current WP prompt → files needed for the task. Do not scan unrelated products or historical reports by default.
+For product work, load only: workflow rules → `.cursor/rules/exits-product-context.mdc` → foundation reference → this product’s filled docs → current WP prompt → files needed for the task. Do not scan unrelated products or historical reports by default.
 
 ## Safeguards embedded in every template
 

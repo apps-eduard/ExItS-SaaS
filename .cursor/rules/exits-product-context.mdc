@@ -1,0 +1,92 @@
+---
+description: Narrow ExItS product-development context loading — prefer foundation + active product docs over repository-wide scans
+globs: src/Products/**,docs/Product-Foundation/**,docs/phases/phase-12*
+alwaysApply: false
+---
+
+# ExItS Product Context Loading
+
+Applies to **product** work (new or existing products under `src/Products/`, Product Foundation docs, Phase 12 product-foundation activity).
+
+Does **not** replace `.cursor/rules/exits-workflow.mdc` (always on). For Platform-only maintenance outside these globs, do not force Product Foundation loading.
+
+Authoritative contract: `docs/Product-Foundation/exits-product-foundation-reference.md`  
+Templates: `docs/Product-Foundation/Templates/`
+
+## Context order (smallest sufficient set)
+
+1. `.cursor/rules/exits-workflow.mdc`
+2. This rule (`.cursor/rules/exits-product-context.mdc`)
+3. `docs/Product-Foundation/exits-product-foundation-reference.md`
+4. Active product docs: `src/Products/<ProductName>/Docs/`
+5. Current phase / work-package document or authorized prompt
+6. Only source, tests, contracts, migrations, and reports **directly required** by the task
+
+Prefer the smallest sufficient context. Do not open the full Platform or POS trees by default.
+
+## Do not routinely scan
+
+- Unrelated products under `src/Products/`
+- Completed phase reports or the entire `docs/reports/` tree
+- Full Platform or POS history, all migrations, or all tests
+- Removed HealthCare **product** content (Platform `Integration/HealthCare` contracts are not a product tree — open only if the task names them)
+- Generated artifacts, build output, archived/superseded docs
+
+Inspect these only when the active task **directly** depends on them.
+
+## Ambiguous dependency
+
+If the task seems to need another product or Platform implementation:
+
+1. Active product contract / Docs first
+2. Shared contracts or abstractions **directly referenced**
+3. Smallest relevant Platform or other-product files
+4. State briefly why broader context was required
+
+Do **not** assume copying another product is correct. Do **not** load PinoyBusinessPOS merely as a template for Loan, Pawnshop, BNPL, or another product unless verifying a specific reusable **technical** pattern.
+
+Missing product policy → use Phase 12 templates and stop for product-owner decisions. Do not invent Loan/Pawnshop/BNPL/POS business rules.
+
+## Boundaries (summary — details in foundation)
+
+Reinforce; do not restate the full foundation:
+
+- Platform = SaaS administration and commercial access; product = operational domain
+- Independent subscription and separate database/migrations per product
+- No direct Platform-table reads; no cross-product FKs
+- Product-local roles/grants authoritative; Platform access ≠ operational permission
+- SaaS billing money ≠ product operational money
+- Shared primitives ≠ shared authoritative domain model
+- No customer-specific source forks
+
+Unresolved portfolio items (e.g. **R-091**, **D-P12-03**) stay open — do not invent answers.
+
+## Context expansion gate
+
+Broader context is allowed only for: shared-contract compatibility; architecture/security validation; migration-chain verification; cross-cutting regression investigation; shared design-system changes; deployment/integration contracts explicitly in scope.
+
+Before broadening, state briefly:
+
+- what information is missing
+- which files or area will be inspected
+- why that context is necessary
+
+Do not require user confirmation for normal narrow repository discovery within the active product.
+
+## New product bootstrap (docs first)
+
+Before implementing a **new** product, require (or create from templates — do not copy POS architecture):
+
+- product name and identifier; Docs root; product definition; architecture; security/privacy; authorization matrix; database name/schema; subscription boundary; operational-money definition; exclusions and unresolved decisions
+
+Do **not** create a new product tree unless the work package explicitly authorizes scaffolding.
+
+## Conflict precedence
+
+1. Active user / work-package authorization  
+2. `.cursor/rules/exits-workflow.mdc`  
+3. Product Foundation reference  
+4. Active product architecture / security / roadmap / definition  
+5. Historical reports and examples (evidence only — not permanent architecture authority)
+
+On conflict: report it and follow the higher-authority source; do not silently merge contradictions.

@@ -8,6 +8,7 @@ Broken links: none found in spot-check of new paths
 
 .gitignore (also ignores `*.dump` / encrypted backup artifacts; no nested HealthCare product path)
 .cursor/rules/exits-workflow.mdc
+.cursor/rules/exits-product-context.mdc
 .dockerignore
 README.md
 FILE-MANIFEST.md
@@ -199,6 +200,7 @@ docs/Product-Foundation/Templates/deployment-notes.md
 docs/Product-Foundation/Templates/FILE-MANIFEST.md
 docs/Product-Foundation/Templates/product-docs-readme.md
 docs/reports/P12-WP03-product-documentation-templates.md
+docs/reports/P12-WP04-cursor-product-context-rule.md
 docs/reports/PRE-P11-admin-ui-recovery.md
 docs/reports/PRE-P11-admin-theme-visual-polish.md
 docs/operations/backup-restore/README.md

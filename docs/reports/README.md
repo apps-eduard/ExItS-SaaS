@@ -85,3 +85,4 @@ The dashboard links to the latest accepted report.
 | [P12-WP01-platform-product-contract-audit.md](P12-WP01-platform-product-contract-audit.md) | P12-WP01 Platform–Product Contract Audit | Complete |
 | [P12-WP02-authoritative-product-foundation-reference.md](P12-WP02-authoritative-product-foundation-reference.md) | P12-WP02 Authoritative Product Foundation Reference | Complete |
 | [P12-WP03-product-documentation-templates.md](P12-WP03-product-documentation-templates.md) | P12-WP03 Product Documentation Templates | Complete |
+| [P12-WP04-cursor-product-context-rule.md](P12-WP04-cursor-product-context-rule.md) | P12-WP04 Cursor Product Context Rule | Complete |
