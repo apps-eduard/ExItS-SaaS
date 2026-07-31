@@ -4,6 +4,7 @@
 @inject IPlatformApiClient Api
 @inject IStringLocalizer<AdminResources> L
 
+<PageFrame>
 @if (Id is null)
 {
     <PageHeader Title="@L["Products_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Products"]}")" Description="@L["Products_Description"]" />
@@ -142,6 +143,7 @@ else
         }
     }
 }
+</PageFrame>
 
 @code {
     [Parameter] public Guid? Id { get; set; }

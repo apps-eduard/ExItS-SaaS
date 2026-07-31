@@ -1,0 +1,26 @@
+@*
+  Page composition frame (P11-WP02).
+  Width: Standard (default) | Wide | Form
+*@
+<div class="page-frame page-frame--@WidthCss">
+    @ChildContent
+</div>
+
+@code {
+    public enum ContentWidth
+    {
+        Standard,
+        Wide,
+        Form
+    }
+
+    [Parameter] public ContentWidth Width { get; set; } = ContentWidth.Standard;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string WidthCss => Width switch
+    {
+        ContentWidth.Wide => "wide",
+        ContentWidth.Form => "form",
+        _ => "standard"
+    };
+}

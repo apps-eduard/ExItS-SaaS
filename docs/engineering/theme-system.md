@@ -54,7 +54,8 @@ Admin implements **System / Light / Dark** with **one authority**:
 - Semantic tokens (`--color-*`, `--shadow-*`, `--radius-*`, `--motion-*`) in `wwwroot/app.css`
 - Header `ThemeSelector` + scoped `ThemeService` write storage and call `exitsAdminTheme.applyTheme`
 - `theme-boot.js` applies before first paint
-- **Enhanced navigation** strips client-set document attributes unless re-applied: register **`Blazor.addEventListener('enhancedload', …)`** (not `document.addEventListener`), keep `<html data-permanent>`, and re-apply from storage on `NavigationManager.LocationChanged`
+- **Enhanced navigation** strips client-set document attributes unless re-applied: register **`Blazor.addEventListener('enhancedload', …)`** (not `document.addEventListener`), and re-apply from storage on `NavigationManager.LocationChanged` / `pageshow`
+- Do **not** put `data-permanent` on `<html>` or the route body — that freezes enhanced-nav content updates (P11-WP02 defect). Theme attributes are reapplied by script, not by preserving the whole document.
 - Legacy PascalCase storage values (`Light`/`Dark`/`System`) remain readable for migration
 - Focus visibility and contrast remain production risks (R-095 / R-008) until a11y hardening
 

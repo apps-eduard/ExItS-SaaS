@@ -136,6 +136,7 @@
   <data name="Footer_ActorContext" xml:space="preserve"><value>Konteksto ng actor (dev lang): {0} — hindi ito authorization.</value></data>
 
   <data name="Aria_AdminNav" xml:space="preserve"><value>Platform Admin navigation</value></data>
+  <data name="Aria_Breadcrumb" xml:space="preserve"><value>Breadcrumb</value></data>
   <data name="Common_ActionFailed" xml:space="preserve"><value>Nabigo ang aksyon</value></data>
   <data name="Common_Error" xml:space="preserve"><value>Error</value></data>
   <data name="Common_Detail" xml:space="preserve"><value>Detalye</value></data>

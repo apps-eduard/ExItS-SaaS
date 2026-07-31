@@ -4,6 +4,12 @@
 @inject IHostEnvironment Env
 @inject IStringLocalizer<AdminResources> L
 
+@*
+  Authoritative Platform Admin shell (P11-WP02).
+  Do not introduce a second layout/shell. Theme persistence relies on theme-boot.js
+  (Blazor.enhancedload + pageshow) and ThemeSelector LocationChanged — not document-wide permanence attributes.
+*@
+
 <a class="skip-link" href="#main-content">@L["Nav_SkipToContent"]</a>
 
 <div class="app-shell" id="app-shell">
@@ -12,10 +18,10 @@
 
     <label class="drawer-backdrop" for="nav-drawer-toggle" aria-hidden="true"></label>
 
-    <aside class="app-sidebar">
+    <aside class="app-sidebar" aria-label="@L["Aria_AdminNav"]">
         <div class="brand-row">
-            <a class="brand-mark" href="/admin" aria-hidden="true">EA</a>
-            <span class="brand-text">@L["Brand_Name"]</span>
+            <a class="brand-mark" href="/admin" aria-hidden="true" tabindex="-1">EA</a>
+            <a class="brand-text" href="/admin">@L["Brand_Name"]</a>
             <label class="icon-btn drawer-close" for="nav-drawer-toggle" aria-label="@L["Nav_CloseDrawer"]">
                 <NavIcon Name="close" />
             </label>
@@ -31,6 +37,13 @@
             <label class="icon-btn collapse-toggle" for="nav-collapse-toggle" aria-label="@L["Nav_CollapseSidebar"]" title="@L["Nav_CollapseSidebar"]">
                 <NavIcon Name="collapse" />
             </label>
+            <div class="app-header-context" aria-live="polite">
+                <span class="app-header-title">@L["Brand_Name"]</span>
+                @if (!string.IsNullOrWhiteSpace(ActorDisplayName))
+                {
+                    <span class="app-header-chip">@ActorDisplayName</span>
+                }
+            </div>
             <span class="app-header-spacer"></span>
             <div class="app-header-controls">
                 <ThemeSelector @rendermode="InteractiveServer" />

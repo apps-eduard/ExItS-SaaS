@@ -132,7 +132,9 @@ public sealed class AdminArchitectureGuardTests
         Assert.True(File.Exists(Path.Combine(adminRoot, "wwwroot", "theme-boot.js")));
         Assert.True(File.Exists(Path.Combine(adminRoot, "Components", "Shared", "ThemeSelector.razor")));
         Assert.True(File.Exists(Path.Combine(adminRoot, "Components", "Shared", "LanguageSelector.razor")));
-        Assert.True(File.Exists(Path.Combine(adminRoot, "Components", "Layout", "AppShell.razor")));
+        Assert.True(File.Exists(Path.Combine(adminRoot, "Components", "Layout", "MainLayout.razor")));
+        Assert.False(File.Exists(Path.Combine(adminRoot, "Components", "Layout", "AppShell.razor")),
+            "Duplicate AppShell must remain removed; MainLayout is the sole Admin shell.");
         Assert.True(File.Exists(Path.Combine(adminRoot, "Components", "Pages", "Audit.razor")));
         Assert.True(File.Exists(Path.Combine(adminRoot, "Localization", "AdminResources.resx")));
         Assert.True(File.Exists(Path.Combine(adminRoot, "Localization", "AdminResources.fil-PH.resx")));
@@ -147,6 +149,12 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("--motion-fast", css, StringComparison.Ordinal);
         Assert.Contains("data-theme=\"dark\"", css, StringComparison.Ordinal);
         Assert.Contains("prefers-reduced-motion", css, StringComparison.Ordinal);
+        Assert.Contains("--sidebar-width: 16rem", css, StringComparison.Ordinal);
+        Assert.Contains("--sidebar-width-collapsed: 4.25rem", css, StringComparison.Ordinal);
+        Assert.Contains("IBM Plex Sans", css, StringComparison.Ordinal);
+        Assert.Contains(".page-frame--standard", css, StringComparison.Ordinal);
+        Assert.Contains(".page-frame--wide", css, StringComparison.Ordinal);
+        Assert.Contains(".page-frame--form", css, StringComparison.Ordinal);
 
         var themeBoot = File.ReadAllText(Path.Combine(adminRoot, "wwwroot", "theme-boot.js"));
         Assert.Contains("exits-admin-theme", themeBoot, StringComparison.Ordinal);
@@ -172,7 +180,41 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("reapplyFromStorage", selector, StringComparison.Ordinal);
 
         var app = File.ReadAllText(Path.Combine(adminRoot, "Components", "App.razor"));
-        Assert.Contains("data-permanent", app, StringComparison.Ordinal);
+        Assert.DoesNotContain("data-permanent", app, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Admin_has_single_shell_and_no_route_body_data_permanent()
+    {
+        var root = FindRepositoryRoot();
+        var adminRoot = Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin");
+
+        Assert.True(File.Exists(Path.Combine(adminRoot, "Components", "Layout", "MainLayout.razor")));
+        Assert.False(File.Exists(Path.Combine(adminRoot, "Components", "Layout", "AppShell.razor")));
+
+        var routes = File.ReadAllText(Path.Combine(adminRoot, "Components", "Routes.razor"));
+        Assert.Contains("DefaultLayout=\"typeof(Layout.MainLayout)\"", routes, StringComparison.Ordinal);
+
+        var layout = File.ReadAllText(Path.Combine(adminRoot, "Components", "Layout", "MainLayout.razor"));
+        Assert.Contains("@Body", layout, StringComparison.Ordinal);
+        Assert.Contains("id=\"main-content\"", layout, StringComparison.Ordinal);
+        Assert.Contains("skip-link", layout, StringComparison.Ordinal);
+        Assert.DoesNotContain("data-permanent", layout, StringComparison.Ordinal);
+
+        foreach (var path in Directory.EnumerateFiles(Path.Combine(adminRoot, "Components"), "*.razor", SearchOption.AllDirectories))
+        {
+            var text = File.ReadAllText(path);
+            Assert.DoesNotContain("data-permanent", text, StringComparison.Ordinal);
+        }
+
+        var pageHeader = File.ReadAllText(Path.Combine(adminRoot, "Components", "Shared", "PageHeader.razor"));
+        Assert.Contains("<PageTitle>", pageHeader, StringComparison.Ordinal);
+        Assert.Contains("breadcrumb", pageHeader, StringComparison.Ordinal);
+        Assert.Contains("page-actions", pageHeader, StringComparison.Ordinal);
+
+        var nav = File.ReadAllText(Path.Combine(adminRoot, "Components", "Layout", "AdminNav.razor"));
+        Assert.Contains("exitsAdminShell.closeDrawer", nav, StringComparison.Ordinal);
+        Assert.Contains("<nav", nav, StringComparison.Ordinal);
     }
 
     [Fact]

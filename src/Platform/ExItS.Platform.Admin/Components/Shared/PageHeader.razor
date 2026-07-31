@@ -1,13 +1,19 @@
 @inject IStringLocalizer<AdminResources> L
 
+<PageTitle>@(string.IsNullOrWhiteSpace(DocumentTitle) ? $"{Title} — {L["Brand_Name"]}" : DocumentTitle)</PageTitle>
+
 <header class="page-header">
-    <p class="breadcrumb">@(string.IsNullOrWhiteSpace(Breadcrumb) ? L["Brand_Name"] : Breadcrumb)</p>
+    <nav class="breadcrumb" aria-label="@L["Aria_Breadcrumb"]">@(string.IsNullOrWhiteSpace(Breadcrumb) ? L["Brand_Name"] : Breadcrumb)</nav>
     <div class="page-header-row">
-        <div>
+        <div class="page-header-copy">
             <h1 tabindex="-1">@Title</h1>
             @if (!string.IsNullOrWhiteSpace(Description))
             {
                 <p>@Description</p>
+            }
+            @if (Status is not null)
+            {
+                <div class="page-header-status">@Status</div>
             }
         </div>
         @if (Actions is not null)
@@ -21,5 +27,7 @@
     [Parameter, EditorRequired] public string Title { get; set; } = "";
     [Parameter] public string? Description { get; set; }
     [Parameter] public string? Breadcrumb { get; set; }
+    [Parameter] public string? DocumentTitle { get; set; }
     [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter] public RenderFragment? Status { get; set; }
 }

@@ -166,7 +166,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
     transition: transform var(--motion-fast) var(--motion-easing), box-shadow var(--motion-fast) var(--motion-easing);
 }
 .app-sidebar .brand-mark:hover { transform: translateY(-1px); }
-.app-sidebar .brand-text { font-weight: 700; font-size: 1.02rem; color: #fff; white-space: nowrap; overflow: hidden; letter-spacing: -.01em; }
+.app-sidebar .brand-text {
+    font-weight: 700; font-size: 1.02rem; color: #fff; white-space: nowrap; overflow: hidden; letter-spacing: -.01em;
+    text-decoration: none;
+}
+.app-sidebar .brand-text:hover { color: #fff; text-decoration: underline; text-underline-offset: 2px; }
 #nav-collapse-toggle:checked ~ .app-sidebar .brand-text,
 #nav-collapse-toggle:checked ~ .app-sidebar .nav-section,
 #nav-collapse-toggle:checked ~ .app-sidebar .nav-label { display: none; }
@@ -202,6 +206,14 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 .app-header .icon-btn { display: none; }
 .app-header-title { font-weight: 600; font-size: .95rem; color: var(--color-text); }
+.app-header-context { display: flex; align-items: center; gap: .55rem; min-width: 0; }
+.app-header-chip {
+    display: inline-flex; align-items: center; max-width: 12rem;
+    font-size: .74rem; font-weight: 600; color: var(--color-text-muted);
+    background: var(--color-surface-elevated); border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm); padding: .2rem .5rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .app-header-spacer { flex: 1; }
 .app-header-controls { display: flex; align-items: center; gap: .55rem; }
 
@@ -262,11 +274,17 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .app-sidebar .drawer-close { display: none; margin-left: auto; color: #d7ecec; }
 
 /* ---------- Page structure ---------- */
+.page-frame { width: 100%; }
+.page-frame--standard { max-width: 72rem; }
+.page-frame--wide { max-width: 90rem; }
+.page-frame--form { max-width: 40rem; }
+
 .page-header { border-bottom: 1px solid var(--color-border); margin-bottom: 1.25rem; padding-bottom: .7rem; }
 .page-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .page-header h1 { margin: .15rem 0; font-size: 1.45rem; font-weight: 700; letter-spacing: -.015em; color: var(--color-text); }
 .page-header p { color: var(--color-text-muted); margin: .25rem 0; max-width: 68ch; }
 .page-header .page-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+.page-header-status { margin-top: .45rem; }
 .breadcrumb { font-size: .78rem; color: var(--color-text-muted); }
 
 .panel {
