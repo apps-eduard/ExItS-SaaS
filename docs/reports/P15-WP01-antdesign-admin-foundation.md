@@ -4,7 +4,7 @@
 
 ## Status
 
-**Complete** at tip `0ee125487cba83747f36fd260c404249700ae858`. Fluent UI Phase 15 direction cancelled/superseded before any push.
+**Complete** at tip `eebd325e7a429c3c9ac1a1348e201ba631a60ef1`. Fluent UI Phase 15 direction cancelled/superseded before any push.
 
 ## Cancellation / revert
 

@@ -14,7 +14,7 @@
 | Current phase | Phase 15 — Ant Design Platform Administration (**in progress**) |
 | Current work package | P15-WP01 — Ant Design Admin Foundation (**complete**) |
 | Overall status | **Phase 15 in progress.** P15-WP01 complete (Ant Design Admin foundation). Fluent UI Admin direction cancelled/superseded (never pushed). Phase 14 Production remains **Blocked** pending P14-WP03+. Exact next: P15-WP02 or P14-WP03 only when authorized. **Not production-ready.** |
-| Latest verified commit | `0ee125487cba83747f36fd260c404249700ae858` |
+| Latest verified commit | `eebd325e7a429c3c9ac1a1348e201ba631a60ef1` |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-08-01 |
 
