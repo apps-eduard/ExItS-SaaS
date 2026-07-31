@@ -54,6 +54,12 @@ public sealed partial class FeatureCode : IEquatable<FeatureCode>
     /// <summary>POS Full POS: create, edit, activate, and deactivate suppliers.</summary>
     public const string StoreSuppliersManage = "store-suppliers-manage";
 
+    /// <summary>POS Full POS: view cashier shift history and summaries.</summary>
+    public const string StoreShiftsView = "store-shifts-view";
+
+    /// <summary>POS Full POS: open, close, cancel shifts and record cash movements.</summary>
+    public const string StoreShiftsManage = "store-shifts-manage";
+
     private static readonly Regex ValidPattern = CreateValidPattern();
 
     public string Value { get; }

@@ -1,0 +1,80 @@
+@page "/shifts"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCashierShiftClient Shifts
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageShifts);
+<Page>
+    <PageHeader Title="@L["Shifts_Title"]" Subtitle="@L["Shifts_Subtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="GoOpen">@L["Shifts_Open"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Shifts_OfflineTitle"]" Message="@L["Shifts_OfflineMessage"]" />
+    }
+
+    <ResponsiveDataList TItem="PosCashierShiftDto"
+                        Items="@_items"
+                        IsLoading="@_loading"
+                        EmptyTitle="@L["Shifts_EmptyTitle"]"
+                        EmptyMessage="@L["Shifts_EmptyMessage"]"
+                        AriaLabel="@L["Shifts_Title"]" />
+</Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _loading;
+    private bool _isOffline;
+    private IReadOnlyList<PosCashierShiftDto> _items = Array.Empty<PosCashierShiftDto>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewShifts))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (_isOffline)
+        {
+            return;
+        }
+
+        _loading = true;
+        var result = await Shifts.ListAsync();
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _items = result.Data.Items;
+        }
+
+        _loading = false;
+    }
+
+    private void GoOpen() => Nav.NavigateTo("/shifts/open");
+}

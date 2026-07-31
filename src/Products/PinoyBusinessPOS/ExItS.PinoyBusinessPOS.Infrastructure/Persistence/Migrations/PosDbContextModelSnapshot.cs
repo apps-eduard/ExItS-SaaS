@@ -23,6 +23,207 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.CashierShifts.CashierShiftMovementRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<string>("MovementType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("movement_type");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTimeOffset>("RecordedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("recorded_at_utc");
+
+                    b.Property<Guid>("RecordedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recorded_by");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("reference");
+
+                    b.Property<Guid>("ShiftId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shift_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ShiftId");
+
+                    b.HasIndex("OrganizationId", "ShiftId", "RecordedAtUtc")
+                        .HasDatabaseName("ix_cashier_shift_movements_org_shift_recorded");
+
+                    b.ToTable("cashier_shift_movements", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_cashier_shift_movements_amount_positive", "amount > 0");
+
+                            t.HasCheckConstraint("ck_cashier_shift_movements_type", "movement_type IN ('CashIn', 'CashOut')");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.CashierShifts.CashierShiftNumberSequenceRecord", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("LastValue")
+                        .HasColumnType("bigint")
+                        .HasColumnName("last_value");
+
+                    b.HasKey("OrganizationId", "BusinessDate")
+                        .HasName("pk_cashier_shift_number_sequences");
+
+                    b.ToTable("cashier_shift_number_sequences", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_cashier_shift_number_sequences_last_value_positive", "last_value > 0");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.CashierShifts.CashierShiftRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_id");
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<DateTimeOffset?>("CancelledAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at_utc");
+
+                    b.Property<Guid?>("CancelledBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cancelled_by");
+
+                    b.Property<decimal?>("CashVarianceAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("cash_variance_amount");
+
+                    b.Property<DateTimeOffset?>("ClosedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("closed_at_utc");
+
+                    b.Property<Guid?>("ClosedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("closed_by");
+
+                    b.Property<decimal?>("ClosingCashAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("closing_cash_amount");
+
+                    b.Property<string>("ClosingNotes")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("closing_notes");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<decimal?>("ExpectedCashAmountSnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("expected_cash_amount_snapshot");
+
+                    b.Property<DateTimeOffset>("OpenedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("opened_at_utc");
+
+                    b.Property<Guid>("OpenedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("opened_by");
+
+                    b.Property<decimal>("OpeningCashAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("opening_cash_amount");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("ShiftNumber")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("shift_number");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "ActorId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_cashier_shifts_org_actor_open")
+                        .HasFilter("status = 'Open'");
+
+                    b.HasIndex("OrganizationId", "ShiftNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ux_cashier_shifts_org_shift_number");
+
+                    b.HasIndex("OrganizationId", "Status", "OpenedAtUtc")
+                        .HasDatabaseName("ix_cashier_shifts_org_status_opened");
+
+                    b.ToTable("cashier_shifts", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_cashier_shifts_close_consistency", "(status = 'Open' AND closing_cash_amount IS NULL AND expected_cash_amount_snapshot IS NULL AND cash_variance_amount IS NULL AND closed_at_utc IS NULL AND closed_by IS NULL AND cancelled_at_utc IS NULL AND cancelled_by IS NULL) OR (status = 'Closed' AND closing_cash_amount IS NOT NULL AND expected_cash_amount_snapshot IS NOT NULL AND cash_variance_amount IS NOT NULL AND closed_at_utc IS NOT NULL AND closed_by IS NOT NULL AND cancelled_at_utc IS NULL AND cancelled_by IS NULL) OR (status = 'Cancelled' AND closing_cash_amount IS NULL AND expected_cash_amount_snapshot IS NULL AND cash_variance_amount IS NULL AND closed_at_utc IS NULL AND closed_by IS NULL AND cancelled_at_utc IS NOT NULL AND cancelled_by IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_cashier_shifts_opening_cash_non_negative", "opening_cash_amount >= 0");
+
+                            t.HasCheckConstraint("ck_cashier_shifts_status", "status IN ('Open', 'Closed', 'Cancelled')");
+                        });
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1625,6 +1826,10 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("amount_tendered");
 
+                    b.Property<Guid?>("CashierShiftId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cashier_shift_id");
+
                     b.Property<decimal?>("ChangeAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)")
@@ -1707,6 +1912,9 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnName("xmin");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CashierShiftId")
+                        .HasDatabaseName("ix_sales_cashier_shift_id");
 
                     b.HasIndex("CustomerId")
                         .HasDatabaseName("ix_sales_customer_id");
@@ -1914,6 +2122,16 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.CashierShifts.CashierShiftMovementRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.CashierShifts.CashierShiftRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ShiftId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_cashier_shift_movements_shifts");
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", b =>
                 {
                     b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.ProductCategoryRecord", null)
@@ -2110,6 +2328,12 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Sales.SaleRecord", b =>
                 {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.CashierShifts.CashierShiftRecord", null)
+                        .WithMany()
+                        .HasForeignKey("CashierShiftId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_sales_cashier_shifts");
+
                     b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Customers.POSCustomerRecord", null)
                         .WithMany()
                         .HasForeignKey("CustomerId")

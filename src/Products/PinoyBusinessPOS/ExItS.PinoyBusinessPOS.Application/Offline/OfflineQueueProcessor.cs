@@ -385,4 +385,7 @@ public static class OfflineOperationTypes
     /// Server-side idempotency operation type for purchase order receive. Purchasing is online-only.
     /// </summary>
     public const string PurchaseOrderReceive = "purchase_order.receive";
+
+    /// <summary>Server-side idempotency operation type for cashier shift cash movements. Online-only.</summary>
+    public const string CashierShiftMovement = "cashier_shift.movement";
 }

@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
@@ -19,11 +20,14 @@ public sealed class SaleDomainTests
         string name = "Sardinas") =>
         new(CatalogProductId.New(), name, "SKU-1", "4801234567890", unit, unitPrice, quantity);
 
+    private static readonly CashierShiftId Shift = CashierShiftId.New();
+
     private static Sale Checkout(
         IReadOnlyList<SaleLineDraft> lines,
         SalePaymentMethod method = SalePaymentMethod.Cash,
         decimal? tendered = 10_000m,
-        string? reference = null) =>
+        string? reference = null,
+        CashierShiftId? shiftId = null) =>
         Sale.Checkout(
             Org,
             SaleNumbers.Format(new DateOnly(2026, 7, 30), 1),
@@ -32,7 +36,8 @@ public sealed class SaleDomainTests
             Actor,
             Now,
             method == SalePaymentMethod.Cash ? tendered : null,
-            reference);
+            reference,
+            cashierShiftId: shiftId ?? Shift);
 
     [Fact]
     public void Checkout_records_completed_sale_with_numbered_lines_and_totals()
@@ -72,7 +77,8 @@ public sealed class SaleDomainTests
             [Draft(0.05m, 2.5m, UnitOfMeasure.Kilogram)],
             Actor,
             Now,
-            10m);
+            10m,
+            cashierShiftId: Shift);
 
         Assert.Equal(0.13m, sale.Lines[0].LineTotal);
         Assert.Equal(0.13m, sale.Total);
@@ -224,7 +230,8 @@ public sealed class SaleDomainTests
             [Draft(50m, 1m)],
             Actor,
             Now,
-            amountTendered: 50m));
+            amountTendered: 50m,
+            cashierShiftId: Shift));
         Assert.Equal(DomainErrorCodes.InvalidSaleAmountTendered, error.ErrorCode);
     }
 
@@ -288,7 +295,8 @@ public sealed class SaleDomainTests
             [Draft(50m, 1m)],
             Actor,
             localTime,
-            50m));
+            50m,
+            cashierShiftId: Shift));
         Assert.Equal(DomainErrorCodes.InvalidUtcTimestamp, notUtc.ErrorCode);
 
         var noActor = Assert.Throws<DomainException>(() => Sale.Checkout(
@@ -298,7 +306,8 @@ public sealed class SaleDomainTests
             [Draft(50m, 1m)],
             Guid.Empty,
             Now,
-            50m));
+            50m,
+            cashierShiftId: Shift));
         Assert.Equal(DomainErrorCodes.InvalidSaleActor, noActor.ErrorCode);
     }
 
@@ -313,7 +322,8 @@ public sealed class SaleDomainTests
             [new SaleLineDraft(productId, "  Bigas  ", "  SKU-9  ", "  4800000000017  ", UnitOfMeasure.Kilogram, 62m, 1.5m)],
             Actor,
             Now,
-            100m);
+            100m,
+            cashierShiftId: Shift);
 
         var line = Assert.Single(sale.Lines);
         Assert.Equal(productId, line.ProductId);
@@ -386,7 +396,8 @@ public sealed class SaleDomainTests
             Now,
             amountTendered: null,
             customerId: customerId,
-            linkedCreditEntryId: creditEntryId);
+            linkedCreditEntryId: creditEntryId,
+            cashierShiftId: Shift);
 
         Assert.Equal(SalePaymentMethod.Utang, sale.PaymentMethod);
         Assert.Equal(100m, sale.Total);
@@ -408,7 +419,8 @@ public sealed class SaleDomainTests
             Actor,
             Now,
             customerId: POSCustomerId.New(),
-            linkedCreditEntryId: CreditEntryId.New()));
+            linkedCreditEntryId: CreditEntryId.New(),
+            cashierShiftId: Shift));
         Assert.Equal(DomainErrorCodes.SaleUtangTotalMustBePositive, error.ErrorCode);
     }
 
@@ -422,7 +434,8 @@ public sealed class SaleDomainTests
             [Draft(50m, 1m)],
             Actor,
             Now,
-            linkedCreditEntryId: CreditEntryId.New()));
+            linkedCreditEntryId: CreditEntryId.New(),
+            cashierShiftId: Shift));
         Assert.Equal(DomainErrorCodes.SaleUtangCustomerRequired, missingCustomer.ErrorCode);
 
         var missingCredit = Assert.Throws<DomainException>(() => Sale.Checkout(
@@ -432,7 +445,8 @@ public sealed class SaleDomainTests
             [Draft(50m, 1m)],
             Actor,
             Now,
-            customerId: POSCustomerId.New()));
+            customerId: POSCustomerId.New(),
+            cashierShiftId: Shift));
         Assert.Equal(DomainErrorCodes.SaleUtangLinkageInvalid, missingCredit.ErrorCode);
     }
 
@@ -448,7 +462,8 @@ public sealed class SaleDomainTests
             Now,
             amountTendered: 50m,
             customerId: POSCustomerId.New(),
-            linkedCreditEntryId: CreditEntryId.New()));
+            linkedCreditEntryId: CreditEntryId.New(),
+            cashierShiftId: Shift));
         Assert.Equal(DomainErrorCodes.InvalidSaleAmountTendered, error.ErrorCode);
     }
 

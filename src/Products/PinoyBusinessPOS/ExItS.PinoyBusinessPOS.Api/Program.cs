@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Api.CashierShifts;
 using ExItS.PinoyBusinessPOS.Api.Catalog;
 using ExItS.PinoyBusinessPOS.Api.Common;
 using ExItS.PinoyBusinessPOS.Api.Credit;
@@ -10,6 +11,7 @@ using ExItS.PinoyBusinessPOS.Api.Reporting;
 using ExItS.PinoyBusinessPOS.Api.Sales;
 using ExItS.PinoyBusinessPOS.Api.Statements;
 using ExItS.PinoyBusinessPOS.Api.Suppliers;
+using ExItS.PinoyBusinessPOS.Application.CashierShifts;
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Credit;
@@ -79,6 +81,11 @@ builder.Services.AddScoped<UpdateStockCountInProgress>();
 builder.Services.AddScoped<StartStockCount>();
 builder.Services.AddScoped<CompleteStockCount>();
 builder.Services.AddScoped<CancelStockCount>();
+builder.Services.AddScoped<CashierShiftQueryService>();
+builder.Services.AddScoped<OpenCashierShift>();
+builder.Services.AddScoped<CloseCashierShift>();
+builder.Services.AddScoped<CancelCashierShift>();
+builder.Services.AddScoped<RecordCashierShiftMovement>();
 builder.Services.AddScoped<ExpenseCategoryQueryService>();
 builder.Services.AddScoped<CreateExpenseCategory>();
 builder.Services.AddScoped<UpdateExpenseCategory>();
@@ -124,10 +131,11 @@ app.MapInventoryEndpoints();
 app.MapExpenseEndpoints();
 app.MapSupplierEndpoints();
 app.MapPurchaseOrderEndpoints();
+app.MapCashierShiftEndpoints();
 app.MapReportingEndpoints();
 app.MapDevOfflineProbeEndpoints();
 
-// Phase marker: P10-WP02-purchasing
+// Phase marker: P10-WP04-cashier-shifts
 
 app.Run();
 

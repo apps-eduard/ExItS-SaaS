@@ -389,6 +389,7 @@ public sealed class PosProductBasedUtangApiTests(PosPostgreSqlFixture fixture)
 
     private static async Task<PosSaleDto> CheckoutAsync(HttpClient client, Guid org, CheckoutSaleRequest body)
     {
+        await PosShiftIntegrationSupport.EnsureOpenShiftAsync(client, org, Actor).ConfigureAwait(false);
         using var response = await PostCheckoutAsync(client, org, body);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var sale = await response.Content.ReadFromJsonAsync<PosSaleDto>(JsonOptions);
@@ -401,6 +402,7 @@ public sealed class PosProductBasedUtangApiTests(PosPostgreSqlFixture fixture)
         Guid org,
         CheckoutSaleRequest body)
     {
+        await PosShiftIntegrationSupport.EnsureOpenShiftAsync(client, org, Actor).ConfigureAwait(false);
         using var request = Scoped(HttpMethod.Post, Sales, org);
         request.Content = JsonContent.Create(body, options: JsonOptions);
         return await client.SendAsync(request);
@@ -414,6 +416,7 @@ public sealed class PosProductBasedUtangApiTests(PosPostgreSqlFixture fixture)
         string payloadHash,
         Guid operationId)
     {
+        await PosShiftIntegrationSupport.EnsureOpenShiftAsync(client, org, Actor).ConfigureAwait(false);
         using var request = Scoped(HttpMethod.Post, Sales, org);
         request.Headers.TryAddWithoutValidation("Idempotency-Key", idempotencyKey);
         request.Headers.TryAddWithoutValidation("X-Pos-Payload-Hash", payloadHash);

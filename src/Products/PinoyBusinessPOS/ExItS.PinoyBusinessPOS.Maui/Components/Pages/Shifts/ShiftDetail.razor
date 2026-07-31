@@ -1,0 +1,224 @@
+@page "/shifts/{ShiftId:guid}"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCashierShiftClient Shifts
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IConnectivityService Connectivity
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (_shift is null)
+{
+    <Page><EmptyState IconName="inbox" Title="@L["Shifts_NotFoundTitle"]" Message="@L["Shifts_NotFoundMessage"]" /></Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageShifts);
+    var isOpen = string.Equals(_shift.Status, "Open", StringComparison.Ordinal);
+    var blocked = _isOffline || !canManage;
+<Page>
+    <PageHeader Title="@_shift.ShiftNumber" Subtitle="@L["Shifts_DetailSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Shifts_BackToList"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Shifts_OfflineTitle"]" Message="@L["Shifts_OfflineMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@L["Shifts_ErrorTitle"]" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Shifts_SummarySection"]">
+        <Stack Gap="2">
+            <div class="pos-muted">@L["Shifts_Status"]</div>
+            <div class="pos-value-md">@_shift.Status</div>
+            <div class="pos-muted">@L["Shifts_OpeningCashLabel"]</div>
+            <MoneyDisplay Amount="@_shift.OpeningCashAmount" CurrencyCode="PHP" />
+            @if (_summary is not null)
+            {
+                <div class="pos-muted">@L["Shifts_ExpectedCash"]</div>
+                <MoneyDisplay Amount="@_summary.ExpectedCashAmount" CurrencyCode="PHP" />
+                <div class="pos-muted">@L["Shifts_NetCashSales"]</div>
+                <MoneyDisplay Amount="@_summary.NetCashSales" CurrencyCode="PHP" />
+            }
+            @if (_shift.CashVarianceAmount is not null)
+            {
+                <div class="pos-muted">@L["Shifts_Variance"]</div>
+                <MoneyDisplay Amount="@_shift.CashVarianceAmount.Value" CurrencyCode="PHP" />
+            }
+        </Stack>
+    </Section>
+
+    @if (isOpen && canManage)
+    {
+        <Section Title="@L["Shifts_MovementSection"]">
+            <Stack Gap="3">
+                <Select Label="@L["Shifts_MovementType"]"
+                        Value="@_movementType"
+                        ValueChanged="v => _movementType = v ?? _movementType"
+                        Options="@_movementOptions"
+                        Disabled="@blocked" />
+                <NumberInput Label="@L["Shifts_MovementAmount"]" Value="@_movementAmount" ValueChanged="v => _movementAmount = v" DecimalPlaces="2" Disabled="@blocked" />
+                <TextInput Label="@L["Shifts_MovementReason"]" Value="@_movementReason" ValueChanged="v => _movementReason = v" Disabled="@blocked" />
+                <FormActions>
+                    <Button Variant="ButtonVariant.Secondary" Disabled="@blocked" IsLoading="@_recording" OnClick="RecordMovementAsync">@L["Shifts_RecordMovement"]</Button>
+                </FormActions>
+            </Stack>
+        </Section>
+
+        <Section Title="@L["Shifts_CloseSection"]">
+            <Stack Gap="3">
+                <NumberInput Label="@L["Shifts_ClosingCashLabel"]" Value="@_closingCash" ValueChanged="v => _closingCash = v" DecimalPlaces="2" Disabled="@blocked" />
+                <TextInput Label="@L["Shifts_ClosingNotes"]" Value="@_closingNotes" ValueChanged="v => _closingNotes = v" Disabled="@blocked" />
+                <FormActions>
+                    <Button Variant="ButtonVariant.Primary" Disabled="@blocked" IsLoading="@_closing" OnClick="CloseAsync">@L["Shifts_CloseConfirm"]</Button>
+                    <Button Variant="ButtonVariant.Danger" Disabled="@blocked" IsLoading="@_cancelling" OnClick="CancelAsync">@L["Shifts_CancelConfirm"]</Button>
+                </FormActions>
+            </Stack>
+        </Section>
+    }
+</Page>
+}
+
+@code {
+    [Parameter] public Guid ShiftId { get; set; }
+
+    private bool _ready;
+    private bool _isOffline;
+    private bool _recording;
+    private bool _closing;
+    private bool _cancelling;
+    private PosCashierShiftDto? _shift;
+    private PosCashierShiftSummaryDto? _summary;
+    private string? _errorMessage;
+    private string _movementType = "CashIn";
+    private readonly IReadOnlyList<SelectOption> _movementOptions =
+    [
+        new("CashIn", "Cash In"),
+        new("CashOut", "Cash Out")
+    ];
+    private decimal _movementAmount;
+    private string? _movementReason;
+    private decimal _closingCash;
+    private string? _closingNotes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewShifts))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        await ReloadAsync();
+        _ready = true;
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (_isOffline)
+        {
+            return;
+        }
+
+        var shiftResult = await Shifts.GetAsync(ShiftId);
+        if (shiftResult.IsSuccess)
+        {
+            _shift = shiftResult.Data;
+        }
+
+        var summaryResult = await Shifts.GetSummaryAsync(ShiftId);
+        if (summaryResult.IsSuccess)
+        {
+            _summary = summaryResult.Data;
+        }
+    }
+
+    private async Task RecordMovementAsync()
+    {
+        if (_recording || _isOffline || string.IsNullOrWhiteSpace(_movementReason))
+        {
+            return;
+        }
+
+        _recording = true;
+        _errorMessage = null;
+        var result = await Shifts.RecordMovementAsync(
+            ShiftId,
+            new RecordCashierShiftMovementRequest(_movementType, _movementAmount, _movementReason, MovementId: Guid.NewGuid()));
+        _recording = false;
+
+        if (result.IsSuccess)
+        {
+            _movementAmount = 0m;
+            _movementReason = null;
+            await ReloadAsync();
+            return;
+        }
+
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _errorMessage = result.Error?.Detail ?? described.Message;
+    }
+
+    private async Task CloseAsync()
+    {
+        if (_closing || _isOffline)
+        {
+            return;
+        }
+
+        _closing = true;
+        _errorMessage = null;
+        var result = await Shifts.CloseAsync(ShiftId, new CloseCashierShiftRequest(_closingCash, _closingNotes));
+        _closing = false;
+
+        if (result.IsSuccess)
+        {
+            await ReloadAsync();
+            return;
+        }
+
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _errorMessage = result.Error?.Detail ?? described.Message;
+    }
+
+    private async Task CancelAsync()
+    {
+        if (_cancelling || _isOffline)
+        {
+            return;
+        }
+
+        _cancelling = true;
+        _errorMessage = null;
+        var result = await Shifts.CancelAsync(ShiftId);
+        _cancelling = false;
+
+        if (result.IsSuccess)
+        {
+            await ReloadAsync();
+            return;
+        }
+
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _errorMessage = result.Error?.Detail ?? described.Message;
+    }
+
+    private void GoList() => Nav.NavigateTo("/shifts");
+}

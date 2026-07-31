@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -51,6 +52,9 @@ public sealed class Sale
     /// <summary>Linked credit entry for Product-Based Utang; null for Cash and ManualGCash.</summary>
     public CreditEntryId? LinkedCreditEntryId { get; }
 
+    /// <summary>Open cashier shift at checkout; null for legacy pre-migration sales.</summary>
+    public CashierShiftId? CashierShiftId { get; }
+
     public DateTimeOffset RecordedAtUtc { get; }
     public Guid RecordedBy { get; }
     public DateTimeOffset? VoidedAtUtc { get; private set; }
@@ -75,6 +79,7 @@ public sealed class Sale
         string? gcashReference,
         POSCustomerId? customerId,
         CreditEntryId? linkedCreditEntryId,
+        CashierShiftId? cashierShiftId,
         DateTimeOffset recordedAtUtc,
         Guid recordedBy,
         DateTimeOffset? voidedAtUtc,
@@ -95,6 +100,7 @@ public sealed class Sale
         GCashReference = gcashReference;
         CustomerId = customerId;
         LinkedCreditEntryId = linkedCreditEntryId;
+        CashierShiftId = cashierShiftId;
         RecordedAtUtc = recordedAtUtc;
         RecordedBy = recordedBy;
         VoidedAtUtc = voidedAtUtc;
@@ -119,10 +125,18 @@ public sealed class Sale
         string? gcashReference = null,
         SaleId? id = null,
         POSCustomerId? customerId = null,
-        CreditEntryId? linkedCreditEntryId = null)
+        CreditEntryId? linkedCreditEntryId = null,
+        CashierShiftId? cashierShiftId = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(recordedBy);
+
+        if (cashierShiftId is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.SaleCashierShiftRequired,
+                "Checkout requires an open cashier shift.");
+        }
 
         if (lines is null || lines.Count == 0)
         {
@@ -174,6 +188,7 @@ public sealed class Sale
             reference,
             customerId,
             linkedCreditEntryId,
+            cashierShiftId,
             utcNow,
             recordedBy,
             null,
@@ -202,7 +217,8 @@ public sealed class Sale
         DateTimeOffset updatedAtUtc,
         IEnumerable<SaleLine> lines,
         POSCustomerId? customerId = null,
-        CreditEntryId? linkedCreditEntryId = null) =>
+        CreditEntryId? linkedCreditEntryId = null,
+        CashierShiftId? cashierShiftId = null) =>
         new(
             id,
             organizationId,
@@ -216,6 +232,7 @@ public sealed class Sale
             gcashReference,
             customerId,
             linkedCreditEntryId,
+            cashierShiftId,
             recordedAtUtc,
             recordedBy,
             voidedAtUtc,

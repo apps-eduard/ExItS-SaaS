@@ -1127,6 +1127,43 @@
   <data name="Purchasing_InvalidReceiveQty" xml:space="preserve"><value>Enter a positive receive quantity.</value></data>
   <data name="Purchasing_OverReceiveQty" xml:space="preserve"><value>Receive quantity cannot exceed outstanding quantity.</value></data>
   <data name="Purchasing_ReceiveRequiresLines" xml:space="preserve"><value>Enter at least one positive receive quantity.</value></data>
+  <data name="Nav_Shifts" xml:space="preserve"><value>Shifts</value></data>
+  <data name="Shifts_Title" xml:space="preserve"><value>Cashier shifts</value></data>
+  <data name="Shifts_Subtitle" xml:space="preserve"><value>Open, close, and reconcile cashier shifts (online only).</value></data>
+  <data name="Shifts_Open" xml:space="preserve"><value>Open shift</value></data>
+  <data name="Shifts_OpenTitle" xml:space="preserve"><value>Open cashier shift</value></data>
+  <data name="Shifts_OpenSubtitle" xml:space="preserve"><value>Record the opening cash float before sales.</value></data>
+  <data name="Shifts_OpeningCashSection" xml:space="preserve"><value>Opening float</value></data>
+  <data name="Shifts_OpeningCashLabel" xml:space="preserve"><value>Opening cash</value></data>
+  <data name="Shifts_OpenConfirm" xml:space="preserve"><value>Start shift</value></data>
+  <data name="Shifts_BackToList" xml:space="preserve"><value>Back to shifts</value></data>
+  <data name="Shifts_EmptyTitle" xml:space="preserve"><value>No shifts yet</value></data>
+  <data name="Shifts_EmptyMessage" xml:space="preserve"><value>Open a shift to begin recording sales against a cash drawer session.</value></data>
+  <data name="Shifts_OfflineTitle" xml:space="preserve"><value>Offline</value></data>
+  <data name="Shifts_OfflineMessage" xml:space="preserve"><value>Shift management requires an online connection.</value></data>
+  <data name="Shifts_ErrorTitle" xml:space="preserve"><value>Shift error</value></data>
+  <data name="Shifts_RequiredTitle" xml:space="preserve"><value>Open shift required</value></data>
+  <data name="Shifts_RequiredMessage" xml:space="preserve"><value>Checkout requires an open cashier shift for this user.</value></data>
+  <data name="Shifts_DetailSubtitle" xml:space="preserve"><value>Shift summary, movements, and close.</value></data>
+  <data name="Shifts_SummarySection" xml:space="preserve"><value>Summary</value></data>
+  <data name="Shifts_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Shifts_ExpectedCash" xml:space="preserve"><value>Expected cash</value></data>
+  <data name="Shifts_NetCashSales" xml:space="preserve"><value>Net cash sales</value></data>
+  <data name="Shifts_Variance" xml:space="preserve"><value>Variance</value></data>
+  <data name="Shifts_MovementSection" xml:space="preserve"><value>Cash movement</value></data>
+  <data name="Shifts_MovementType" xml:space="preserve"><value>Movement type</value></data>
+  <data name="Shifts_CashIn" xml:space="preserve"><value>Cash in</value></data>
+  <data name="Shifts_CashOut" xml:space="preserve"><value>Cash out</value></data>
+  <data name="Shifts_MovementAmount" xml:space="preserve"><value>Amount</value></data>
+  <data name="Shifts_MovementReason" xml:space="preserve"><value>Reason</value></data>
+  <data name="Shifts_RecordMovement" xml:space="preserve"><value>Record movement</value></data>
+  <data name="Shifts_CloseSection" xml:space="preserve"><value>Close shift</value></data>
+  <data name="Shifts_ClosingCashLabel" xml:space="preserve"><value>Closing cash counted</value></data>
+  <data name="Shifts_ClosingNotes" xml:space="preserve"><value>Closing notes</value></data>
+  <data name="Shifts_CloseConfirm" xml:space="preserve"><value>Close shift</value></data>
+  <data name="Shifts_CancelConfirm" xml:space="preserve"><value>Cancel shift</value></data>
+  <data name="Shifts_NotFoundTitle" xml:space="preserve"><value>Shift not found</value></data>
+  <data name="Shifts_NotFoundMessage" xml:space="preserve"><value>This shift could not be loaded.</value></data>
   <data name="Nav_SkipToContent" xml:space="preserve">
     <value>Skip to main content</value>
   </data>

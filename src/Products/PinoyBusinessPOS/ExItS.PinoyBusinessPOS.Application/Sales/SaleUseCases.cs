@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Application.CashierShifts;
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
@@ -5,6 +6,7 @@ using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
+using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
@@ -19,17 +21,20 @@ public sealed class SaleQueryService
     private readonly IPOSCustomerRepository _customers;
     private readonly ICreditEntryRepository _credits;
     private readonly IOutstandingBalanceService _outstanding;
+    private readonly ICashierShiftRepository _shifts;
 
     public SaleQueryService(
         ISaleRepository sales,
         IPOSCustomerRepository customers,
         ICreditEntryRepository credits,
-        IOutstandingBalanceService outstanding)
+        IOutstandingBalanceService outstanding,
+        ICashierShiftRepository shifts)
     {
         _sales = sales;
         _customers = customers;
         _credits = credits;
         _outstanding = outstanding;
+        _shifts = shifts;
     }
 
     public async Task<PosSaleDto?> GetByIdAsync(
@@ -101,44 +106,58 @@ public sealed class SaleQueryService
                     l.LineTotal))
                 .ToList(),
             sale.CustomerId?.Value,
-            sale.LinkedCreditEntryId?.Value);
+            sale.LinkedCreditEntryId?.Value,
+            ShiftId: sale.CashierShiftId?.Value);
 
     private async Task<PosSaleDto> MapEnrichedAsync(Sale sale, CancellationToken cancellationToken)
     {
         var dto = Map(sale);
-        if (sale.CustomerId is null)
-        {
-            return dto;
-        }
-
         string? displayName = null;
         decimal? outstandingAfter = null;
         DateOnly? linkedDueDate = null;
 
-        var customer = await _customers
-            .GetByIdAsync(sale.OrganizationId, sale.CustomerId, cancellationToken)
-            .ConfigureAwait(false);
-        if (customer is not null)
+        if (sale.CustomerId is not null)
         {
-            displayName = customer.DisplayName;
-            outstandingAfter = await _outstanding
-                .GetOutstandingAsync(sale.OrganizationId, sale.CustomerId, cancellationToken)
+            var customer = await _customers
+                .GetByIdAsync(sale.OrganizationId, sale.CustomerId, cancellationToken)
                 .ConfigureAwait(false);
+            if (customer is not null)
+            {
+                displayName = customer.DisplayName;
+                outstandingAfter = await _outstanding
+                    .GetOutstandingAsync(sale.OrganizationId, sale.CustomerId, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            if (sale.LinkedCreditEntryId is not null)
+            {
+                var credit = await _credits
+                    .GetByIdAsync(sale.OrganizationId, sale.CustomerId, sale.LinkedCreditEntryId, cancellationToken)
+                    .ConfigureAwait(false);
+                linkedDueDate = credit?.CurrentDueDate;
+            }
         }
 
-        if (sale.LinkedCreditEntryId is not null)
+        string? shiftNumber = null;
+        if (sale.CashierShiftId is not null)
         {
-            var credit = await _credits
-                .GetByIdAsync(sale.OrganizationId, sale.CustomerId, sale.LinkedCreditEntryId, cancellationToken)
+            var shift = await _shifts
+                .GetByIdAsync(sale.OrganizationId, sale.CashierShiftId.Value, cancellationToken)
                 .ConfigureAwait(false);
-            linkedDueDate = credit?.CurrentDueDate;
+            shiftNumber = shift?.ShiftNumber;
+        }
+
+        if (sale.CustomerId is null && shiftNumber is null)
+        {
+            return dto;
         }
 
         return dto with
         {
             CustomerDisplayName = displayName,
             LinkedCreditDueDate = linkedDueDate,
-            CustomerOutstandingAfter = outstandingAfter
+            CustomerOutstandingAfter = outstandingAfter,
+            ShiftNumber = shiftNumber
         };
     }
 }
@@ -161,6 +180,7 @@ public sealed class CheckoutSale
     private readonly ICreditEntryRepository _credits;
     private readonly ICreditDueDateChangeRepository _dueDateChanges;
     private readonly ISaleStockService _saleStock;
+    private readonly ICashierShiftRepository _shifts;
     private readonly IClock _clock;
 
     public CheckoutSale(
@@ -170,6 +190,7 @@ public sealed class CheckoutSale
         ICreditEntryRepository credits,
         ICreditDueDateChangeRepository dueDateChanges,
         ISaleStockService saleStock,
+        ICashierShiftRepository shifts,
         IClock clock)
     {
         _sales = sales;
@@ -178,6 +199,7 @@ public sealed class CheckoutSale
         _credits = credits;
         _dueDateChanges = dueDateChanges;
         _saleStock = saleStock;
+        _shifts = shifts;
         _clock = clock;
     }
 
@@ -192,6 +214,7 @@ public sealed class CheckoutSale
         Guid? customerId = null,
         DateOnly? dueDate = null,
         Guid? creditEntryId = null,
+        Guid? shiftId = null,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -204,6 +227,25 @@ public sealed class CheckoutSale
         try
         {
             var orgId = PosOrganizationId.From(organizationId);
+
+            var openShift = await _shifts
+                .FindOpenForActorAsync(orgId, actorId, cancellationToken)
+                .ConfigureAwait(false);
+            if (openShift is null)
+            {
+                return ApplicationResult<Sale>.Failure(
+                    ApplicationErrorCodes.CashierShiftNoOpenShift,
+                    "Checkout requires an open cashier shift for this actor.");
+            }
+
+            if (shiftId is not null && shiftId.Value != openShift.Id.Value)
+            {
+                return ApplicationResult<Sale>.Failure(
+                    ApplicationErrorCodes.CashierShiftMismatch,
+                    "The supplied shift id does not match the actor's open shift.");
+            }
+
+            var linkedShiftId = openShift.Id;
 
             if (clientSaleId is not null)
             {
@@ -353,7 +395,8 @@ public sealed class CheckoutSale
                         gcashReference,
                         clientSaleId is null ? null : SaleId.From(clientSaleId.Value),
                         capturedCustomerId,
-                        capturedCreditEntryId),
+                        capturedCreditEntryId,
+                        linkedShiftId),
                     async (createdSale, ct) =>
                     {
                         await _saleStock

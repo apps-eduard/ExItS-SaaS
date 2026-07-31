@@ -156,4 +156,19 @@ public static class DomainErrorCodes
     public const string PurchaseOverReceipt = "pos.purchase_order.receive.over_receipt";
     public const string InvalidGoodsReceiptLine = "pos.goods_receipt.line.invalid";
     public const string InvalidGoodsReceiptNotes = "pos.goods_receipt.notes.invalid";
+
+    public const string InvalidCashierShiftId = "pos.cashier_shift.id.invalid";
+    public const string InvalidCashierShiftMovementId = "pos.cashier_shift_movement.id.invalid";
+    public const string InvalidCashierShiftNumber = "pos.cashier_shift.number.invalid";
+    public const string InvalidCashierShiftStatus = "pos.cashier_shift.status.invalid";
+    public const string InvalidCashierShiftStatusTransition = "pos.cashier_shift.status.invalid_transition";
+    public const string InvalidCashierShiftOpeningCash = "pos.cashier_shift.opening_cash.invalid";
+    public const string InvalidCashierShiftClosingCash = "pos.cashier_shift.closing_cash.invalid";
+    public const string InvalidCashierShiftClosingNotes = "pos.cashier_shift.closing_notes.invalid";
+    public const string InvalidCashierShiftMovementAmount = "pos.cashier_shift_movement.amount.invalid";
+    public const string InvalidCashierShiftMovementReason = "pos.cashier_shift_movement.reason.invalid";
+    public const string InvalidCashierShiftMovementReference = "pos.cashier_shift_movement.reference.invalid";
+    public const string CashierShiftCancelBlockedByActivity = "pos.cashier_shift.cancel.blocked_by_activity";
+    public const string CashierShiftExpectedCashNegative = "pos.cashier_shift.expected_cash.negative";
+    public const string SaleCashierShiftRequired = "pos.sale.cashier_shift.required";
 }

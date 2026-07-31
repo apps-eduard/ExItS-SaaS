@@ -80,7 +80,17 @@ internal static class PosApiResults
             or ApplicationErrorCodes.SupplierMobileConflict
             or ApplicationErrorCodes.SupplierTaxConflict
             or ApplicationErrorCodes.SupplierConcurrencyConflict
-            or DomainErrorCodes.InvalidSupplierStatusTransition => StatusCodes.Status409Conflict,
+            or DomainErrorCodes.InvalidSupplierStatusTransition
+            or ApplicationErrorCodes.CashierShiftNotFound
+            or ApplicationErrorCodes.CashierShiftNumberConflict
+            or ApplicationErrorCodes.CashierShiftOpenConflict
+            or ApplicationErrorCodes.CashierShiftConcurrencyConflict
+            or ApplicationErrorCodes.CashierShiftMovementConflict
+            or ApplicationErrorCodes.CashierShiftNoOpenShift
+            or ApplicationErrorCodes.CashierShiftMismatch
+            or DomainErrorCodes.CashierShiftCancelBlockedByActivity
+            or DomainErrorCodes.CashierShiftExpectedCashNegative
+            or DomainErrorCodes.InvalidCashierShiftStatusTransition => StatusCodes.Status409Conflict,
 
         ApplicationErrorCodes.SaleProductNotFound => StatusCodes.Status400BadRequest,
 

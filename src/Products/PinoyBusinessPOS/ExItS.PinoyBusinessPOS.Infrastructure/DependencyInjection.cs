@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Application.CashierShifts;
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
@@ -37,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<IInventoryRepository, InventoryRepository>();
         services.AddScoped<IInventoryReorderChangeRepository, InventoryReorderChangeRepository>();
         services.AddScoped<IStockCountRepository, StockCountRepository>();
+        services.AddScoped<ICashierShiftRepository, CashierShiftRepository>();
         services.AddScoped<IExpenseCategoryRepository, ExpenseCategoryRepository>();
         services.AddScoped<IExpenseRepository, ExpenseRepository>();
         services.AddScoped<ISupplierRepository, SupplierRepository>();

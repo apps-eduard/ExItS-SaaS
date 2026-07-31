@@ -114,6 +114,7 @@ public sealed class PosInventoryApiTests(PosPostgreSqlFixture fixture)
         enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(10m), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
 
+        await PosShiftIntegrationSupport.EnsureOpenShiftAsync(client, org, Actor);
         using var checkout = Scoped(HttpMethod.Post, Sales, org);
         checkout.Content = JsonContent.Create(
             new CheckoutSaleRequest(
@@ -152,6 +153,7 @@ public sealed class PosInventoryApiTests(PosPostgreSqlFixture fixture)
         enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(1m), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
 
+        await PosShiftIntegrationSupport.EnsureOpenShiftAsync(client, org, Actor);
         using var checkout = Scoped(HttpMethod.Post, Sales, org);
         checkout.Content = JsonContent.Create(
             new CheckoutSaleRequest(
@@ -182,6 +184,7 @@ public sealed class PosInventoryApiTests(PosPostgreSqlFixture fixture)
         enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(5m), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
 
+        await PosShiftIntegrationSupport.EnsureOpenShiftAsync(client, org, Actor);
         var body = new CheckoutSaleRequest(
             [new CheckoutSaleLineRequest(product.ProductId, 2m)],
             "Cash",
@@ -222,6 +225,7 @@ public sealed class PosInventoryApiTests(PosPostgreSqlFixture fixture)
         enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(8m), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
 
+        await PosShiftIntegrationSupport.EnsureOpenShiftAsync(client, org, Actor);
         using var checkout = Scoped(HttpMethod.Post, Sales, org);
         checkout.Content = JsonContent.Create(
             new CheckoutSaleRequest(

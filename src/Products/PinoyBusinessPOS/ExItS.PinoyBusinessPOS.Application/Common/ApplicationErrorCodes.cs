@@ -65,6 +65,15 @@ public static class ApplicationErrorCodes
     public const string PurchaseSupplierNotActive = "pos.purchase_order.supplier.not_active";
     public const string PurchaseProductNotFound = "pos.purchase_order.product.not_found";
     public const string PurchaseProductNotActive = "pos.purchase_order.product.not_active";
+
+    public const string CashierShiftNotFound = "pos.cashier_shift.not_found";
+    public const string CashierShiftNumberConflict = "pos.cashier_shift.number.conflict";
+    public const string CashierShiftOpenConflict = "pos.cashier_shift.open.conflict";
+    public const string CashierShiftConcurrencyConflict = "pos.cashier_shift.concurrency_conflict";
+    public const string CashierShiftMovementNotFound = "pos.cashier_shift_movement.not_found";
+    public const string CashierShiftMovementConflict = "pos.cashier_shift_movement.conflict";
+    public const string CashierShiftNoOpenShift = "pos.cashier_shift.no_open_shift";
+    public const string CashierShiftMismatch = "pos.cashier_shift.mismatch";
 }
 
 public sealed class PersistenceConflictException : Exception

@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -7,6 +8,7 @@ using ExItS.PinoyBusinessPOS.Domain.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.CashierShifts;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Customers;
@@ -57,6 +59,9 @@ public sealed class PosDbContext : DbContext
     internal DbSet<GoodsReceiptRecord> GoodsReceipts => Set<GoodsReceiptRecord>();
     internal DbSet<GoodsReceiptLineRecord> GoodsReceiptLines => Set<GoodsReceiptLineRecord>();
     internal DbSet<GoodsReceiptNumberSequenceRecord> GoodsReceiptNumberSequences => Set<GoodsReceiptNumberSequenceRecord>();
+    internal DbSet<CashierShiftRecord> CashierShifts => Set<CashierShiftRecord>();
+    internal DbSet<CashierShiftMovementRecord> CashierShiftMovements => Set<CashierShiftMovementRecord>();
+    internal DbSet<CashierShiftNumberSequenceRecord> CashierShiftNumberSequences => Set<CashierShiftNumberSequenceRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -459,6 +464,7 @@ public sealed class PosDbContext : DbContext
                 .HasMaxLength(Sale.GCashReferenceMaxLength);
             entity.Property(e => e.CustomerId).HasColumnName("customer_id");
             entity.Property(e => e.LinkedCreditEntryId).HasColumnName("linked_credit_entry_id");
+            entity.Property(e => e.CashierShiftId).HasColumnName("cashier_shift_id");
             entity.Property(e => e.RecordedAtUtc).HasColumnName("recorded_at_utc");
             entity.Property(e => e.RecordedBy).HasColumnName("recorded_by").IsRequired();
             entity.Property(e => e.VoidedAtUtc).HasColumnName("voided_at_utc");
@@ -494,6 +500,15 @@ public sealed class PosDbContext : DbContext
 
             entity.HasIndex(e => e.CustomerId)
                 .HasDatabaseName("ix_sales_customer_id");
+
+            entity.HasIndex(e => e.CashierShiftId)
+                .HasDatabaseName("ix_sales_cashier_shift_id");
+
+            entity.HasOne<CashierShiftRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CashierShiftId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_sales_cashier_shifts");
 
             // No FK from linked_credit_entry_id → credit_entries (circular with source_sale_id).
             // Application + unique filter index enforce one-to-one linkage.
@@ -1292,6 +1307,119 @@ public sealed class PosDbContext : DbContext
 
             entity.HasKey(e => new { e.OrganizationId, e.BusinessDate })
                 .HasName("pk_grn_number_sequences");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BusinessDate).HasColumnName("business_date");
+            entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
+        });
+
+        modelBuilder.Entity<CashierShiftRecord>(entity =>
+        {
+            entity.ToTable("cashier_shifts", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_cashier_shifts_status",
+                    "status IN ('Open', 'Closed', 'Cancelled')");
+                tb.HasCheckConstraint(
+                    "ck_cashier_shifts_opening_cash_non_negative",
+                    "opening_cash_amount >= 0");
+                tb.HasCheckConstraint(
+                    "ck_cashier_shifts_close_consistency",
+                    "(status = 'Open' AND closing_cash_amount IS NULL AND expected_cash_amount_snapshot IS NULL AND cash_variance_amount IS NULL AND closed_at_utc IS NULL AND closed_by IS NULL AND cancelled_at_utc IS NULL AND cancelled_by IS NULL) OR (status = 'Closed' AND closing_cash_amount IS NOT NULL AND expected_cash_amount_snapshot IS NOT NULL AND cash_variance_amount IS NOT NULL AND closed_at_utc IS NOT NULL AND closed_by IS NOT NULL AND cancelled_at_utc IS NULL AND cancelled_by IS NULL) OR (status = 'Cancelled' AND closing_cash_amount IS NULL AND expected_cash_amount_snapshot IS NULL AND cash_variance_amount IS NULL AND closed_at_utc IS NULL AND closed_by IS NULL AND cancelled_at_utc IS NOT NULL AND cancelled_by IS NOT NULL)");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.ShiftNumber)
+                .HasColumnName("shift_number")
+                .HasMaxLength(CashierShiftNumbers.MaxLength)
+                .IsRequired();
+            entity.Property(e => e.ActorId).HasColumnName("actor_id").IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date").IsRequired();
+            entity.Property(e => e.OpeningCashAmount).HasColumnName("opening_cash_amount").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.OpenedAtUtc).HasColumnName("opened_at_utc");
+            entity.Property(e => e.OpenedBy).HasColumnName("opened_by").IsRequired();
+            entity.Property(e => e.ClosingCashAmount).HasColumnName("closing_cash_amount").HasPrecision(18, 2);
+            entity.Property(e => e.ExpectedCashAmountSnapshot).HasColumnName("expected_cash_amount_snapshot").HasPrecision(18, 2);
+            entity.Property(e => e.CashVarianceAmount).HasColumnName("cash_variance_amount").HasPrecision(18, 2);
+            entity.Property(e => e.ClosingNotes)
+                .HasColumnName("closing_notes")
+                .HasMaxLength(CashierShift.ClosingNotesMaxLength);
+            entity.Property(e => e.ClosedAtUtc).HasColumnName("closed_at_utc");
+            entity.Property(e => e.ClosedBy).HasColumnName("closed_by");
+            entity.Property(e => e.CancelledAtUtc).HasColumnName("cancelled_at_utc");
+            entity.Property(e => e.CancelledBy).HasColumnName("cancelled_by");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ShiftNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_cashier_shifts_org_shift_number");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ActorId })
+                .IsUnique()
+                .HasDatabaseName("ux_cashier_shifts_org_actor_open")
+                .HasFilter("status = 'Open'");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.Status, e.OpenedAtUtc })
+                .HasDatabaseName("ix_cashier_shifts_org_status_opened");
+        });
+
+        modelBuilder.Entity<CashierShiftMovementRecord>(entity =>
+        {
+            entity.ToTable("cashier_shift_movements", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_cashier_shift_movements_type",
+                    "movement_type IN ('CashIn', 'CashOut')");
+                tb.HasCheckConstraint(
+                    "ck_cashier_shift_movements_amount_positive",
+                    "amount > 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ShiftId).HasColumnName("shift_id").IsRequired();
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.MovementType).HasColumnName("movement_type").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.Amount).HasColumnName("amount").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.Reason)
+                .HasColumnName("reason")
+                .HasMaxLength(CashierShiftMovement.ReasonMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Reference)
+                .HasColumnName("reference")
+                .HasMaxLength(CashierShiftMovement.ReferenceMaxLength);
+            entity.Property(e => e.RecordedAtUtc).HasColumnName("recorded_at_utc");
+            entity.Property(e => e.RecordedBy).HasColumnName("recorded_by").IsRequired();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ShiftId, e.RecordedAtUtc })
+                .HasDatabaseName("ix_cashier_shift_movements_org_shift_recorded");
+
+            entity.HasOne<CashierShiftRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ShiftId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_cashier_shift_movements_shifts");
+        });
+
+        modelBuilder.Entity<CashierShiftNumberSequenceRecord>(entity =>
+        {
+            entity.ToTable("cashier_shift_number_sequences", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_cashier_shift_number_sequences_last_value_positive",
+                    "last_value > 0");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BusinessDate })
+                .HasName("pk_cashier_shift_number_sequences");
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
             entity.Property(e => e.BusinessDate).HasColumnName("business_date");
             entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();

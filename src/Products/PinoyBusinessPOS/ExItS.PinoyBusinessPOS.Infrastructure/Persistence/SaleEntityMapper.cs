@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -49,7 +50,8 @@ internal static class SaleEntityMapper
             record.UpdatedAtUtc,
             lines,
             record.CustomerId is null ? null : POSCustomerId.From(record.CustomerId.Value),
-            record.LinkedCreditEntryId is null ? null : CreditEntryId.From(record.LinkedCreditEntryId.Value));
+            record.LinkedCreditEntryId is null ? null : CreditEntryId.From(record.LinkedCreditEntryId.Value),
+            record.CashierShiftId is null ? null : CashierShiftId.From(record.CashierShiftId.Value));
     }
 
     public static SaleRecord ToRecord(Sale sale) =>
@@ -67,6 +69,7 @@ internal static class SaleEntityMapper
             GcashReference = sale.GCashReference,
             CustomerId = sale.CustomerId?.Value,
             LinkedCreditEntryId = sale.LinkedCreditEntryId?.Value,
+            CashierShiftId = sale.CashierShiftId?.Value,
             RecordedAtUtc = sale.RecordedAtUtc,
             RecordedBy = sale.RecordedBy,
             VoidedAtUtc = sale.VoidedAtUtc,

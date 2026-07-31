@@ -2,6 +2,7 @@
 @implements IDisposable
 @inject NavigationManager Nav
 @inject NavigationGate Gate
+@inject IPosCashierShiftClient ShiftClient
 @inject IPosSaleClient Sales
 @inject IPosCatalogClient Catalog
 @inject IPosCustomerClient Customers
@@ -23,13 +24,21 @@ else
     var canCreateCash = Capabilities.IsAllowed(UtangCapability.CreateSale);
     var canCreateUtang = canCreateCash && Capabilities.IsAllowed(UtangCapability.CreateCredit);
     var paymentSelectBlocked = _isOffline || !canCreateCash;
-    var blocked = _isOffline || (isUtang ? !canCreateUtang : !canCreateCash);
+    var blocked = _isOffline || (isUtang ? !canCreateUtang : !canCreateCash) || _openShift is null;
 <Page>
     <PageHeader Title="@L["Sales_Checkout_Title"]" Subtitle="@L["Sales_Checkout_Subtitle"]">
         <Actions>
             <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Sales_BackToList"]</Button>
         </Actions>
     </PageHeader>
+
+    @if (_shiftRequired && _openShift is null && !_isOffline && canCreateCash)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Shifts_RequiredTitle"]" Message="@L["Shifts_RequiredMessage"]" />
+        <FormActions>
+            <Button Variant="ButtonVariant.Primary" OnClick="GoOpenShift">@L["Shifts_Open"]</Button>
+        </FormActions>
+    }
 
     @if (_isOffline)
     {
@@ -262,6 +271,8 @@ else
     private decimal? _selectedOutstanding;
     private IReadOnlyList<PosCatalogProductDto> _matches = Array.Empty<PosCatalogProductDto>();
     private IReadOnlyList<PosCustomerListItemDto> _customerMatches = Array.Empty<PosCustomerListItemDto>();
+    private PosCashierShiftDto? _openShift;
+    private bool _shiftRequired = true;
 
     /// <summary>
     /// Stable per-attempt sale identifier. Re-sending the same identifier after a failed or unclear
@@ -308,6 +319,14 @@ else
         Cart.Changed += OnCartChanged;
         _ready = true;
         _isOffline = !await Connectivity.IsConnectedAsync();
+        if (!_isOffline)
+        {
+            var shiftResult = await ShiftClient.GetCurrentAsync();
+            if (shiftResult.IsSuccess)
+            {
+                _openShift = shiftResult.Data;
+            }
+        }
     }
 
     private void OnCartChanged() => StateHasChanged();
@@ -551,7 +570,7 @@ else
         var canCreate = isUtang
             ? Capabilities.IsAllowed(UtangCapability.CreateSale) && Capabilities.IsAllowed(UtangCapability.CreateCredit)
             : Capabilities.IsAllowed(UtangCapability.CreateSale);
-        if (_isOffline || !canCreate || !Cart.IsCheckoutReady)
+        if (_isOffline || !canCreate || !Cart.IsCheckoutReady || _openShift is null)
         {
             return;
         }
@@ -570,7 +589,8 @@ else
             _attemptSaleId,
             isUtang ? _selectedCustomer!.CustomerId : null,
             isUtang ? _dueDate : null,
-            isUtang ? _attemptCreditEntryId : null);
+            isUtang ? _attemptCreditEntryId : null,
+            _openShift?.ShiftId);
 
         var result = await Sales.CheckoutAsync(request);
         _saving = false;
@@ -591,6 +611,8 @@ else
     }
 
     private void GoList() => Nav.NavigateTo("/sales");
+
+    private void GoOpenShift() => Nav.NavigateTo("/shifts/open");
 
     public void Dispose() => Cart.Changed -= OnCartChanged;
 }

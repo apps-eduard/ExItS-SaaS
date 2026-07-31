@@ -46,6 +46,7 @@ public sealed class PosReportingApiTests(PosPostgreSqlFixture fixture)
         var day = today.ToString("yyyy-MM-dd");
 
         var product = await CreateProductAsync(client, orgA, "Bigas", "Kilogram", 50m, "rice-rpt");
+        await PosShiftIntegrationSupport.EnsureOpenShiftAsync(client, orgA, Actor);
         using var saleReq = Scoped(HttpMethod.Post, Sales, orgA);
         saleReq.Content = JsonContent.Create(
             new CheckoutSaleRequest(

@@ -34,7 +34,9 @@ public sealed record PosSaleDto(
     Guid? LinkedCreditEntryId = null,
     string? CustomerDisplayName = null,
     DateOnly? LinkedCreditDueDate = null,
-    decimal? CustomerOutstandingAfter = null);
+    decimal? CustomerOutstandingAfter = null,
+    Guid? ShiftId = null,
+    string? ShiftNumber = null);
 
 /// <summary>
 /// One requested checkout line. Only the product identity and quantity are accepted — name, unit of
@@ -56,7 +58,8 @@ public sealed record CheckoutSaleRequest(
     Guid? SaleId = null,
     Guid? CustomerId = null,
     DateOnly? DueDate = null,
-    Guid? CreditEntryId = null);
+    Guid? CreditEntryId = null,
+    Guid? ShiftId = null);
 
 public sealed record VoidSaleRequest(string Reason);
 

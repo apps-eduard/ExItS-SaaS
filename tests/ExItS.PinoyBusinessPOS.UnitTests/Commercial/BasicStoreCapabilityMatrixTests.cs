@@ -22,6 +22,8 @@ public sealed class BasicStoreCapabilityMatrixTests
         PosFeatureCodes.StoreSuppliersManage,
         PosFeatureCodes.StorePurchasingView,
         PosFeatureCodes.StorePurchasingManage,
+        PosFeatureCodes.StoreShiftsView,
+        PosFeatureCodes.StoreShiftsManage,
         PosFeatureCodes.StoreDashboardView,
         PosFeatureCodes.StoreReportsView
     ];
@@ -61,6 +63,8 @@ public sealed class BasicStoreCapabilityMatrixTests
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManageSuppliers, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewPurchasing, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManagePurchasing, status, AllStoreGrants));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewShifts, status, AllStoreGrants));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManageShifts, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewDashboard, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewReports, status, AllStoreGrants));
     }
@@ -76,6 +80,7 @@ public sealed class BasicStoreCapabilityMatrixTests
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewExpenses, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewSuppliers, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewPurchasing, status, AllStoreGrants));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewShifts, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewDashboard, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewReports, status, AllStoreGrants));
 
@@ -86,6 +91,7 @@ public sealed class BasicStoreCapabilityMatrixTests
         Assert.False(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManageExpenses, status, AllStoreGrants));
         Assert.False(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManageSuppliers, status, AllStoreGrants));
         Assert.False(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManagePurchasing, status, AllStoreGrants));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManageShifts, status, AllStoreGrants));
     }
 
     [Theory]
@@ -107,6 +113,8 @@ public sealed class BasicStoreCapabilityMatrixTests
                      UtangCapability.ManageSuppliers,
                      UtangCapability.ViewPurchasing,
                      UtangCapability.ManagePurchasing,
+                     UtangCapability.ViewShifts,
+                     UtangCapability.ManageShifts,
                      UtangCapability.ViewDashboard,
                      UtangCapability.ViewReports,
                      UtangCapability.EnterPos
@@ -123,6 +131,7 @@ public sealed class BasicStoreCapabilityMatrixTests
     [InlineData(PosFeatureCodes.StoreExpensesView)]
     [InlineData(PosFeatureCodes.StoreSuppliersView)]
     [InlineData(PosFeatureCodes.StorePurchasingView)]
+    [InlineData(PosFeatureCodes.StoreShiftsView)]
     [InlineData(PosFeatureCodes.StoreDashboardView)]
     [InlineData(PosFeatureCodes.StoreReportsView)]
     [InlineData(PosFeatureCodes.StoreCatalogManage)]
@@ -188,6 +197,8 @@ public sealed class BasicStoreCapabilityMatrixTests
         Assert.Equal("store-suppliers-manage", PosFeatureCodes.StoreSuppliersManage);
         Assert.Equal("store-purchasing-view", PosFeatureCodes.StorePurchasingView);
         Assert.Equal("store-purchasing-manage", PosFeatureCodes.StorePurchasingManage);
+        Assert.Equal("store-shifts-view", PosFeatureCodes.StoreShiftsView);
+        Assert.Equal("store-shifts-manage", PosFeatureCodes.StoreShiftsManage);
         Assert.Equal("store-dashboard-view", PosFeatureCodes.StoreDashboardView);
         Assert.Equal("store-reports-view", PosFeatureCodes.StoreReportsView);
     }

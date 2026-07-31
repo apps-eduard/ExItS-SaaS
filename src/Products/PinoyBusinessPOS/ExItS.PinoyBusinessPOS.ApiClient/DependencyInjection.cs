@@ -108,6 +108,16 @@ public static class DependencyInjection
             .AddHttpMessageHandler<PosOrganizationHeaderHandler>()
             .AddHttpMessageHandler<PosCommercialHeaderHandler>();
 
+        services.AddHttpClient<IPosCashierShiftClient, PosCashierShiftClient>((provider, client) =>
+            {
+                var options = provider.GetRequiredService<IOptions<PosBusinessApiOptions>>().Value;
+                client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
+                client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+            })
+            .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
+            .AddHttpMessageHandler<PosOrganizationHeaderHandler>()
+            .AddHttpMessageHandler<PosCommercialHeaderHandler>();
+
         services.AddHttpClient<IPosReportingClient, PosReportingClient>((provider, client) =>
             {
                 var options = provider.GetRequiredService<IOptions<PosBusinessApiOptions>>().Value;

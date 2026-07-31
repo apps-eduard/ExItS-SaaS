@@ -1127,6 +1127,43 @@
   <data name="Purchasing_InvalidReceiveQty" xml:space="preserve"><value>Maglagay ng positibong dami.</value></data>
   <data name="Purchasing_OverReceiveQty" xml:space="preserve"><value>Hindi maaaring lampasan ng dami ang natitira.</value></data>
   <data name="Purchasing_ReceiveRequiresLines" xml:space="preserve"><value>Maglagay ng kahit isang positibong dami.</value></data>
+  <data name="Nav_Shifts" xml:space="preserve"><value>Mga shift</value></data>
+  <data name="Shifts_Title" xml:space="preserve"><value>Mga shift ng cashier</value></data>
+  <data name="Shifts_Subtitle" xml:space="preserve"><value>Magbukas, magsara, at mag-reconcile ng shift (online lang).</value></data>
+  <data name="Shifts_Open" xml:space="preserve"><value>Buksan ang shift</value></data>
+  <data name="Shifts_OpenTitle" xml:space="preserve"><value>Buksan ang shift</value></data>
+  <data name="Shifts_OpenSubtitle" xml:space="preserve"><value>Itala ang opening cash bago magbenta.</value></data>
+  <data name="Shifts_OpeningCashSection" xml:space="preserve"><value>Opening float</value></data>
+  <data name="Shifts_OpeningCashLabel" xml:space="preserve"><value>Opening cash</value></data>
+  <data name="Shifts_OpenConfirm" xml:space="preserve"><value>Simulan ang shift</value></data>
+  <data name="Shifts_BackToList" xml:space="preserve"><value>Bumalik sa mga shift</value></data>
+  <data name="Shifts_EmptyTitle" xml:space="preserve"><value>Wala pang shift</value></data>
+  <data name="Shifts_EmptyMessage" xml:space="preserve"><value>Magbukas ng shift bago mag-record ng benta.</value></data>
+  <data name="Shifts_OfflineTitle" xml:space="preserve"><value>Offline</value></data>
+  <data name="Shifts_OfflineMessage" xml:space="preserve"><value>Kailangan ng online connection ang shift management.</value></data>
+  <data name="Shifts_ErrorTitle" xml:space="preserve"><value>Error sa shift</value></data>
+  <data name="Shifts_RequiredTitle" xml:space="preserve"><value>Kailangan ng bukas na shift</value></data>
+  <data name="Shifts_RequiredMessage" xml:space="preserve"><value>Kailangan ng bukas na cashier shift bago mag-checkout.</value></data>
+  <data name="Shifts_DetailSubtitle" xml:space="preserve"><value>Buod, galaw ng pera, at pagsara.</value></data>
+  <data name="Shifts_SummarySection" xml:space="preserve"><value>Buod</value></data>
+  <data name="Shifts_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Shifts_ExpectedCash" xml:space="preserve"><value>Inaasahang cash</value></data>
+  <data name="Shifts_NetCashSales" xml:space="preserve"><value>Net cash sales</value></data>
+  <data name="Shifts_Variance" xml:space="preserve"><value>Variance</value></data>
+  <data name="Shifts_MovementSection" xml:space="preserve"><value>Galaw ng pera</value></data>
+  <data name="Shifts_MovementType" xml:space="preserve"><value>Uri ng galaw</value></data>
+  <data name="Shifts_CashIn" xml:space="preserve"><value>Cash in</value></data>
+  <data name="Shifts_CashOut" xml:space="preserve"><value>Cash out</value></data>
+  <data name="Shifts_MovementAmount" xml:space="preserve"><value>Halaga</value></data>
+  <data name="Shifts_MovementReason" xml:space="preserve"><value>Dahilan</value></data>
+  <data name="Shifts_RecordMovement" xml:space="preserve"><value>Itala ang galaw</value></data>
+  <data name="Shifts_CloseSection" xml:space="preserve"><value>Isara ang shift</value></data>
+  <data name="Shifts_ClosingCashLabel" xml:space="preserve"><value>Binibilang na closing cash</value></data>
+  <data name="Shifts_ClosingNotes" xml:space="preserve"><value>Mga tala sa pagsara</value></data>
+  <data name="Shifts_CloseConfirm" xml:space="preserve"><value>Isara ang shift</value></data>
+  <data name="Shifts_CancelConfirm" xml:space="preserve"><value>Kanselahin ang shift</value></data>
+  <data name="Shifts_NotFoundTitle" xml:space="preserve"><value>Hindi natagpuan ang shift</value></data>
+  <data name="Shifts_NotFoundMessage" xml:space="preserve"><value>Hindi ma-load ang shift na ito.</value></data>
   <data name="Nav_SkipToContent" xml:space="preserve">
     <value>Lumaktaw papunta sa pangunahing nilalaman</value>
   </data>
