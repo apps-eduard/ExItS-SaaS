@@ -4,7 +4,7 @@
 
 ## Status
 
-**In progress.** **P11-WP01**–**P11-WP05** are **complete**. Exact next: **P11-WP06 — Dashboard and Report Refactoring** when authorized.
+**In progress.** **P11-WP01**–**P11-WP06** are **complete**. Exact next: **P11-WP07 — Localization, Theme, Accessibility, and Responsive QA** when authorized.
 
 Pre-Phase-11 Admin shell/theme baseline remains locked (feature tip `46b99a7f6baa87977fb0ed37e678231fa1eb1344`). Theme reapply uses `Blazor.enhancedload` — do **not** reintroduce document-wide permanence attributes on `<html>`.
 
@@ -17,7 +17,7 @@ Pre-Phase-11 Admin shell/theme baseline remains locked (feature tip `46b99a7f6ba
 | P11-WP03 — Shared Forms, Validation, and Dialogs | **Complete** | [report](../reports/P11-WP03-shared-forms-validation-and-dialogs.md) · `6825b8eb423e73cd5d3dc24e393e7201b04232bc` |
 | P11-WP04 — Shared Tables, Lists, Cards, and Status Components | **Complete** | [report](../reports/P11-WP04-shared-tables-lists-cards-and-status-components.md) · `0351f547457522a97a168b802ec050ef6f37ee83` |
 | P11-WP05 — Shared Reporting Framework | **Complete** | [report](../reports/P11-WP05-shared-reporting-framework.md) · `4d832b39d85d7f8db55234f609188666035f34c5` |
-| P11-WP06 — Dashboard and Report Refactoring | Not started | — |
+| P11-WP06 — Dashboard and Report Refactoring | **Complete** | [report](../reports/P11-WP06-dashboard-and-report-refactoring.md) · `6688fa674e5edc139a931dae3faefeb8b25a806b` |
 | P11-WP07 — Localization, Theme, Accessibility, and Responsive QA | Not started | — |
 | P11-WP08 — Phase 11 Closeout | Not started | — |
 
@@ -476,6 +476,10 @@ Refactor the existing dashboard and report pages onto the shared reporting frame
 - accounting reports
 - tax reports
 - inventory valuation
+
+#### Implementation status
+
+**Complete** — see [P11-WP06 report](../reports/P11-WP06-dashboard-and-report-refactoring.md). Admin dashboard polished landing; Subscriptions/Entitlements/Audit/Products/Organizations/Users lists on shared reporting framework. POS operational reports remain MAUI-only debt.
 
 ---
 
