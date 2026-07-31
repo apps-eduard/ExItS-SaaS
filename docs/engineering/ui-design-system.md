@@ -13,19 +13,23 @@ Validated against HealthCare evidence in **P0-WP03**. No application UI was impl
 | HealthCare Staff Web | **Ant Design Blazor** (retain) | No rewrite/modernization in current ExITS work |
 | HealthCare PatientWeb | Native CSS (retain) | Product-specific; pattern source for new native apps |
 | HealthCare MAUI | Existing native CSS (retain) | No rewrite in current work |
-| **New ExItS Platform Admin** | **Native CSS + CSS isolation + Razor components** | Blazor Web App; **no Ant Design**; **no Tailwind** |
-| PinoyBusinessPOS | **Same native foundation** (MAUI Blazor Hybrid) | Shared tokens/localization/models with Platform Admin; **no Ant**; **no Tailwind** |
-| Shared | Models, token **names**, localization keys, validation/formatting | Not one framework-switching component; **not** Ant |
+| **New ExItS Platform Admin** | **Ant Design Blazor** (`AntDesign`, ADR-015) | Pro Blazor as design reference only; **no Tailwind**; **no Fluent UI**; compact enterprise console |
+| PinoyBusinessPOS | **Native foundation** (MAUI Blazor Hybrid) | Shared DesignSystem tokens/localization with POS; **no Ant**; **no Tailwind** |
+| Shared | Models, token **names**, localization keys, validation/formatting | Not one framework-switching component; Admin uses Ant; POS uses DesignSystem |
 
-Visual consistency across **new** Platform Admin and POS comes from shared semantic tokens, typography, spacing, theme/localization/accessibility/motion standards, and UI-independent models — **not** from Ant Design.
+Visual consistency for **POS** comes from DesignSystem semantic tokens. **Platform Admin** uses Ant Design Blazor (ADR-015) with restrained ExItS branding tokens — not a dual visible design system and not Fluent UI.
 
-### Platform Admin redesign (P4-WP04)
+### Platform Admin (P15-WP01 — Ant Design)
 
-Commercial Admin shell: collapsible sidebar (checkbox CSS), mobile drawer, sticky header, environment chip, shared design-system components (page header, filters, empty/loading/error, audit timeline, theme/language selectors), responsive tables/cards (≈320–1920px). Permission-aware nav is UI convenience only. Keyboard-usable controls; `prefers-reduced-motion` respected. No Ant Design; no Tailwind.
+Commercial Admin shell: Ant Design `Layout` / `Sider` / `Header` / `Content` / `Menu`, compact tables/forms, Light/Dark/System theme. Permission-aware nav is UI convenience only. SSR credential + Live Preview login preserved. Residual native/report controls remain only on pages not yet migrated (later Phase 15 WPs). **No Tailwind. No Fluent UI.**
+
+### Historical note (P4-WP04 native shell)
+
+P4-WP04 delivered a native-CSS Admin shell. That direction is **superseded for Admin UI chrome** by ADR-015 / P15-WP01. Do not reinstate native-only or Fluent Admin requirements.
 
 ### Shared DesignSystem library (P5-WP01–P5-WP04)
 
-`src/Shared/ExItS.DesignSystem` is a `net10.0` Razor class library with semantic `--exits-*` tokens (including secondary, accent, info, disabled, z-index, easing, breakpoints), System/Light/Dark theme hooks, Compact/Comfortable density (Compact default for POS), shared Blazor primitives plus MVP forms/feedback/data components, and `DesignSystemResources` (`en` + `fil-PH`). Density preference is an abstraction (`IDensityPreferenceStore`); hosts implement storage. No Ant Design, Tailwind, Bootstrap CSS framework imports, EF Core, or Platform/product Infrastructure references. Consumed by PinoyBusinessPOS MAUI; Platform Admin continues native Admin CSS tokens (`--color-*`) while sharing semantic conventions and terminology. Dev-only component showcase lives in the MAUI host (`/dev/components`), not in DesignSystem.
+`src/Shared/ExItS.DesignSystem` is a `net10.0` Razor class library with semantic `--exits-*` tokens (including secondary, accent, info, disabled, z-index, easing, breakpoints), System/Light/Dark theme hooks, Compact/Comfortable density (Compact default for POS), shared Blazor primitives plus MVP forms/feedback/data components, and `DesignSystemResources` (`en` + `fil-PH`). Density preference is an abstraction (`IDensityPreferenceStore`); hosts implement storage. No Ant Design, Tailwind, Bootstrap CSS framework imports, EF Core, or Platform/product Infrastructure references. Consumed by PinoyBusinessPOS MAUI. **Platform Admin uses Ant Design Blazor (ADR-015)** with minimal branding CSS — DesignSystem remains the POS/shared-native library, not the Admin chrome stack. Dev-only component showcase lives in the MAUI host (`/dev/components`), not in DesignSystem.
 
 ### Proposed project boundaries (updated P5-WP01)
 
@@ -34,7 +38,7 @@ Shared/
 └── ExItS.DesignSystem          # tokens, primitives, DesignSystemResources (P5-WP01)
 
 Platform/
-└── ExItS.Platform.Admin (Blazor Web App — native UI; P4-WP01–04)
+└── ExItS.Platform.Admin (Blazor Web App — Ant Design Blazor; ADR-015 / P15-WP01)
 
 Products/PinoyBusinessPOS/
 ├── ExItS.PinoyBusinessPOS.Domain

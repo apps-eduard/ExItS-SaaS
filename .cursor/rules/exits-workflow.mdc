@@ -45,7 +45,7 @@ alwaysApply: true
 - Development-stage unauthenticated APIs must not be described as production-secure.
 - Do not invent fake production authentication.
 - UI projects must not reference Infrastructure, EF Core, or Npgsql.
-- Platform Admin uses native CSS / Razor / Blazor — no Ant Design, no Tailwind.
+- Platform Admin uses Ant Design Blazor (`AntDesign`, ADR-015) — **no Tailwind**, **no Fluent UI**. PinoyBusinessPOS remains native CSS / DesignSystem unless a later ADR authorizes otherwise.
 
 ## Documentation and Reporting
 
