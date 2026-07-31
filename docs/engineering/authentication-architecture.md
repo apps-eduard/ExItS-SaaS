@@ -226,4 +226,4 @@ POS remains non-PHI by default (Product Foundation).
 
 ## 12. Recommended next work package
 
-**Recommended next:** await explicit authorization for the next phase (scope TBD). Do **not** begin Phase 14 from this document alone.
+**Recommended next:** **P14-WP02 — Production Packaging and Compose Baseline** when explicitly authorized. Do **not** begin from authentication docs alone. Production deployment direction: [production-deployment-architecture.md](production-deployment-architecture.md).

@@ -4,7 +4,7 @@ Controlled **non-production** deployment packaging and pilot process for Platfor
 
 ## Important
 
-- This is **not** a Production cutover kit while R-091, R-109, R-129, and Production TLS remain open.
+- This is **not** a Production cutover kit. Authoritative Production direction: `docs/engineering/production-deployment-architecture.md` (P14-WP01). Production readiness: `docs/engineering/production-readiness-audit.md`.
 - Do not expose Development/Testing identity headers on StagingPilot/Production.
 - Do not commit secrets, dumps, or certificates.
 

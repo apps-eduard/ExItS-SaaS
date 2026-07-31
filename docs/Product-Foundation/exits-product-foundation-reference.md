@@ -156,7 +156,7 @@ Two verified consumers + product-neutral design remain the bar for new shared pa
 
 ## 8. Deployment and versioning
 
-Architectural model (**Implemented** for Platform + POS pilot images; **Required** for future products):
+Architectural model (**Implemented** for Platform + POS **pilot** images; **Required** for future products; **Production packaging** directed by [production-deployment-architecture.md](../engineering/production-deployment-architecture.md) — P14-WP01 docs; implementation in later Phase 14 WPs):
 
 - one Platform deployable (API; Admin as Platform surface)
 - one independently versioned image per product
@@ -165,8 +165,9 @@ Architectural model (**Implemented** for Platform + POS pilot images; **Required
 - customer-specific **configuration**, never customer-specific source forks
 - immutable versioned images
 - independent upgrade/rollback per product where compatibility allows
+- customer on-prem host with reverse-proxy HTTPS (Production direction)
 
-Do not create Dockerfiles or Compose profiles from this reference alone. Production TLS and readiness remain open portfolio risks.
+Do not create Dockerfiles or Compose profiles from this reference alone. Production TLS and overall Production readiness remain open portfolio risks — see [production-readiness-audit.md](../engineering/production-readiness-audit.md).
 
 ---
 

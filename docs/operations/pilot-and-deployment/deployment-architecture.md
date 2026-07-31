@@ -2,6 +2,8 @@
 
 Phase: `P9-WP05-pilot-and-deployment`
 
+> **Production topology** is defined in [`docs/engineering/production-deployment-architecture.md`](../../engineering/production-deployment-architecture.md) (**P14-WP01**). This page remains the **pilot / non-production** reference. Do not treat `docker-compose.pilot.yml` as a Production cutover kit.
+
 ## Topology
 
 ```text

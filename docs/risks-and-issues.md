@@ -139,6 +139,10 @@
 
 P9-WP06 closed Phase 9 with an honest Commercial MVP readiness board: Development/Testing/CI and controlled internal technical pilot are **Ready with documented non-blocking risks**; restricted external pilot and Production remain **Blocked** (R-091, R-109, R-129, TLS-PROD, MAUI-HTTPS). Product-local POS-ROLES later closed in P10-WP06; production authentication (R-091) remains open. **P10-WP08** closed Phase 10 Full POS with documented risks — see [P10-WP08-phase-10-closeout.md](reports/P10-WP08-phase-10-closeout.md). Exact next: **Phase 11** (do not begin). **Not production-ready.**
 
+## Phase 14 — Production Deployment and Operations (in progress)
+
+**P14-WP01** published authoritative Production deployment architecture (customer on-prem; Platform + per-product PostgreSQL; reverse-proxy HTTPS) and Production readiness audit. Pilot Docker/Compose remain non-production. Production and restricted external pilot remain **Blocked** (TLS-PROD, MAUI-HTTPS, R-109, R-129, auth email, evaluator drift, D-P12-03, …). **Docs only — no packaging implementation.** Exact next: **P14-WP02 — Production Packaging and Compose Baseline** (do not begin). **Not production-ready.**
+
 ## Phase 13 — Production Authentication and Identity (complete with residuals)
 
 **P13-WP09** closed Phase 13. Reconciled WP01–WP08; closed the WP08 recovery-email gap (optional post-social recovery email with skip/verify/later-change; recovery-only; reuses credential tokens). **R-091 closed for Phase 13 scope** with residuals (MFA enforcement, email vendor, enterprise SSO/AD beyond Google/Facebook). Access chain preserved. Tests **1261 / 0 / 0**. Exact next: await authorization for next phase (scope TBD). **Not production-ready.**

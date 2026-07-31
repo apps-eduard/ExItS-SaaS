@@ -60,4 +60,4 @@ Platform User → Active Organization Membership → Product Access / Entitlemen
 
 ## Exact next after P13-WP09
 
-**Await explicit authorization for the next phase** (Phase 14 scope not defined in-repo). Do **not** begin Phase 14, MFA enforcement, email-vendor selection, or D-P12-03 from this closeout alone.
+**Await explicit authorization for the next phase.** Phase 14 started via authorized **P14-WP01**. Do **not** begin P14-WP02+ from Phase 13 docs alone.

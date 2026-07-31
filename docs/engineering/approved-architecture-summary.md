@@ -24,7 +24,7 @@
 | Rollback | L0–L6 | [rollback plan](extraction-rollback-plan.md) |
 | Shared code | Two consumers + product-neutral only | Phase 1 approval §14 |
 | Phase 2 | Closed with documented risks — foundations only | [Phase 2 closeout](../reports/phase-02-extraction-closeout.md) · [evidence matrix](phase-02-evidence-matrix.md) |
-| Next WP | **P12-WP07 — Foundation Hardening and Closeout** (not started; requires authorization). P12-WP01–WP06 complete. | [Phase 12](../phases/phase-12-product-foundation-and-bootstrap.md) · [ReferenceLoan dry run](../Product-Foundation/Reference-Product/README.md) |
+| Next WP | **P14-WP02 — Production Packaging and Compose Baseline** (not started; requires authorization). P14-WP01 complete (docs/audit). | [Phase 14](../phases/phase-14-production-deployment-and-operations.md) · [Production deployment architecture](production-deployment-architecture.md) |
 
 ## Prohibited
 

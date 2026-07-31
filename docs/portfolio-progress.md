@@ -11,11 +11,11 @@
 | Portfolio | ExITS SaaS |
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 13 — Production Authentication and Identity (**complete with residuals**) |
-| Current work package | P13-WP09 — Phase 13 Closeout (**complete**) |
-| Overall status | **Phase 13 closed.** P13-WP01–WP09 complete. **R-091 closed for Phase 13 scope** (residuals: MFA enforcement, email vendor, enterprise SSO/AD beyond Google/Facebook). Exact next: await authorization for next phase (scope TBD). **Not production-ready.** |
-| Latest verified commit | `ef949b78c2a8e2271dfd7f1e5b54e72092db74d1` |
-| Open blockers | D-P12-03 commercial-state transport; D-P12-04 matrix hygiene; R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred; formal WCAG cert not claimed; MFA enforcement deferred; auth email vendor not selected |
+| Current phase | Phase 14 — Production Deployment and Operations (**in progress**) |
+| Current work package | P14-WP01 — Deployment Architecture and Production Readiness Audit (**complete**) |
+| Overall status | **Phase 14 in progress.** P14-WP01 complete (docs/discovery only). Production topology = customer on-prem + per-product DBs + reverse-proxy HTTPS. Production and restricted external pilot remain **Blocked**. Exact next: P14-WP02 — Production Packaging and Compose Baseline (do not begin until authorized). **Not production-ready.** |
+| Latest verified commit | *(feature tip recorded after commit)* |
+| Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT (Deployment evaluator still hard-blocks on R-091); Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-07-31 |
 
 ## Delivery sequence
@@ -96,6 +96,10 @@ P13-WP07 ✓ MFA Readiness and Auth Hardening
 P13-WP08 ✓ Google and Facebook External Authentication
         ↓
 P13-WP09 ✓ Phase 13 Closeout (complete with residuals — Phase 13 closed)
+        ↓
+P14-WP01 ✓ Deployment Architecture and Production Readiness Audit
+        ↓
+P14-WP02 ○ Production Packaging and Compose Baseline (do not begin until authorized)
 ```
 
 ## Phase progress
@@ -116,12 +120,14 @@ P13-WP09 ✓ Phase 13 Closeout (complete with residuals — Phase 13 closed)
 | 11 | Web UI and Reporting Design System | **Complete with documented risks** | 8 | 8 | 100% | [Open](phases/phase-11-web-ui-reporting-design-system.md) |
 | 12 | Reusable SaaS Product Foundation and Bootstrap | **Complete with documented open decisions** | 7 | 7 | 100% | [Open](phases/phase-12-product-foundation-and-bootstrap.md) |
 | 13 | Production Authentication and Identity | **Complete with documented residuals** | 9 | 9 | 100% | [Open](phases/phase-13-production-authentication-and-identity.md) |
+| 14 | Production Deployment and Operations | **In progress** | 1 | 7 | — | [Open](phases/phase-14-production-deployment-and-operations.md) |
 
 **MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
 **Phase 11 Web UI / Reporting Design System:** 8 / 8 = **100%** (with documented risks; not Production-ready; no formal WCAG certification).
 **Phase 12 Product Foundation:** 7 / 7 = **100%** (with documented open decisions; not Production-ready; no real product scaffold).
 **Phase 13 Production Authentication:** 9 / 9 = **100%** (R-091 closed for Phase 13 scope; residuals documented; not Production-ready).
+**Phase 14 Production Deployment:** 1 / 7 WPs complete (architecture/audit only; Production blocked).
 
 ## Phase 13 work packages
 
@@ -136,6 +142,12 @@ P13-WP09 ✓ Phase 13 Closeout (complete with residuals — Phase 13 closed)
 | P13-WP07 — MFA Readiness and Auth Hardening | Complete | `7b767f664e63c5c296e0444062129acd7ee36727` |
 | P13-WP08 — Google and Facebook External Authentication | Complete | `7c9338090f55b0fc2e289fe3b95fb3b4ce5d7938` |
 | P13-WP09 — Phase 13 Closeout | Complete | `ef949b78c2a8e2271dfd7f1e5b54e72092db74d1` |
+
+## Phase 14 work packages
+
+| WP | Status | Key commit |
+|---|---|---|
+| P14-WP01 — Deployment Architecture and Production Readiness Audit | Complete | *(feature tip recorded after commit)* |
 
 ## Phase 12 work packages
 
@@ -188,4 +200,4 @@ P13-WP09 ✓ Phase 13 Closeout (complete with residuals — Phase 13 closed)
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. Do **not** begin the next phase until explicitly authorized. Phase 13 is closed; Phase 14 scope is not defined in-repo.
+Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P14-WP02 — Production Packaging and Compose Baseline** until explicitly authorized.
