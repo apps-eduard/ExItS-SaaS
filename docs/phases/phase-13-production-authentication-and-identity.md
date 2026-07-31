@@ -19,7 +19,7 @@ Authoritative docs:
 | WP | Status | Report / tip |
 |---|---|---|
 | P13-WP01 — Authentication Architecture and Threat Model | **Complete** | [report](../reports/P13-WP01-authentication-architecture-and-threat-model.md) · `40a48349ae2a42e9dc267bde0df64afb004af3ae` |
-| P13-WP02 — Identity Credentials and Auth Persistence | **Complete** | [report](../reports/P13-WP02-identity-credentials-and-auth-persistence.md) · `367defab6fcf523086d7b13d98e1d04579b250ef` |
+| P13-WP02 — Identity Credentials and Auth Persistence | **Complete** | [report](../reports/P13-WP02-identity-credentials-and-auth-persistence.md) · `51ace5b90fc6c0bcb33fe483826481529bdfeb77` |
 | P13-WP03 — Platform Login, Logout, and Browser Session | Not started | — |
 | P13-WP04 — Password Lifecycle, Lockout, and Verification | Not started | — |
 | P13-WP05 — Trusted API Actor and Organization Context | Not started | — |
