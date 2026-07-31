@@ -45,15 +45,17 @@ Use semantic variables rather than page-specific colors:
 
 New ExITS Platform Admin and PinoyBusinessPOS share the same semantic CSS custom-property approach (`--exits-*` / Admin `--color-*` tokens). Existing HealthCare Staff Web keeps its Ant/`--hc-*` styling without a forced migration.
 
-## Platform Admin themes (P4-WP04)
+## Platform Admin themes (P4-WP04 + Pre-P11 theme gap fix)
 
 Admin implements **System / Light / Dark**:
 
 - Semantic tokens (`--color-*`, `--shadow-*`, `--radius-*`, `--motion-*`) in `wwwroot/app.css`
-- Header `ThemeSelector`; preference in `localStorage`
-- `theme-boot.js` prevents incorrect-theme flash before first paint
+- Header `ThemeSelector`; preference in `localStorage` as lowercase `system` | `light` | `dark`
+- `theme-boot.js` prevents incorrect-theme flash before first paint and re-applies on Blazor `enhancedload`
+- `ThemeService.InitializeAsync` re-applies `data-theme` after interactive remount (navigation must not drop Dark/Light)
 - Theme change does not full-reload the Blazor app
 - Focus visibility and contrast remain production risks (R-095 / R-008) until a11y hardening
+- Legacy PascalCase storage values (`Light`/`Dark`/`System`) remain readable for migration
 
 ## PinoyBusinessPOS themes and density (P5-WP01 / P5-WP02)
 

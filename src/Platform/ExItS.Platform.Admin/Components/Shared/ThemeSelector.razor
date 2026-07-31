@@ -3,10 +3,14 @@
 
 <div class="selector-group">
     <label class="sr-only" for="theme-selector">@L["Theme_Label"]</label>
-    <select id="theme-selector" value="@Theme.Current" @onchange="OnChangedAsync" disabled="@(!_ready)">
-        <option value="@AdminTheme.System">@L["Theme_System"]</option>
-        <option value="@AdminTheme.Light">@L["Theme_Light"]</option>
-        <option value="@AdminTheme.Dark">@L["Theme_Dark"]</option>
+    <select id="theme-selector"
+            value="@ThemeService.ToStorageValue(Theme.Current)"
+            @onchange="OnChangedAsync"
+            disabled="@(!_ready)"
+            aria-label="@L["Theme_Label"]">
+        <option value="system">@L["Theme_System"]</option>
+        <option value="light">@L["Theme_Light"]</option>
+        <option value="dark">@L["Theme_Dark"]</option>
     </select>
 </div>
 
@@ -27,9 +31,8 @@
 
     private async Task OnChangedAsync(ChangeEventArgs e)
     {
-        if (Enum.TryParse<AdminTheme>(e.Value?.ToString(), out var theme))
-        {
-            await Theme.SetThemeAsync(theme);
-        }
+        var raw = e.Value?.ToString();
+        var theme = ThemeService.Parse(raw);
+        await Theme.SetThemeAsync(theme);
     }
 }

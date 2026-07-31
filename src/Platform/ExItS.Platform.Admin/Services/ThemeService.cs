@@ -5,9 +5,10 @@ namespace ExItS.Platform.Admin.Services;
 public enum AdminTheme { System, Light, Dark }
 
 /// <summary>
-/// Scoped per-circuit theme preference. Persisted client-side in localStorage
-/// (<c>exits-admin-theme</c>) and applied by <c>wwwroot/theme-boot.js</c> before render to avoid
-/// a flash of the wrong theme. Convenience only — does not affect server-side authorization.
+/// Circuit-scoped theme preference. Persisted in localStorage as lowercase
+/// <c>system</c>/<c>light</c>/<c>dark</c> (<c>exits-admin-theme</c>).
+/// Applied by <c>theme-boot.js</c> before first paint and re-applied after
+/// Blazor enhanced navigation so <c>data-theme</c> is not lost.
 /// </summary>
 public sealed class ThemeService(IJSRuntime js)
 {
@@ -20,23 +21,44 @@ public sealed class ThemeService(IJSRuntime js)
     {
         var stored = await js.InvokeAsync<string?>("exitsAdminTheme.get", StorageKey);
         Current = Parse(stored);
+        // Re-apply after SSR/enhanced navigation — storage alone is not enough because
+        // documentElement data-theme can be replaced when Blazor swaps page HTML.
+        await js.InvokeVoidAsync("exitsAdminTheme.applyTheme", ToStorageValue(Current));
     }
 
     public async Task SetThemeAsync(AdminTheme theme)
     {
         Current = theme;
-        await js.InvokeVoidAsync("exitsAdminTheme.set", StorageKey, theme.ToString());
-        await js.InvokeVoidAsync("exitsAdminTheme.applyTheme", theme.ToString());
+        var value = ToStorageValue(theme);
+        await js.InvokeVoidAsync("exitsAdminTheme.set", StorageKey, value);
+        await js.InvokeVoidAsync("exitsAdminTheme.applyTheme", value);
         if (Changed is not null)
         {
             await Changed.Invoke();
         }
     }
 
-    private static AdminTheme Parse(string? value) => value switch
+    public static string ToStorageValue(AdminTheme theme) => theme switch
     {
-        "Light" => AdminTheme.Light,
-        "Dark" => AdminTheme.Dark,
-        _ => AdminTheme.System
+        AdminTheme.Light => "light",
+        AdminTheme.Dark => "dark",
+        _ => "system"
     };
+
+    /// <summary>Accepts authoritative lowercase values and legacy PascalCase values.</summary>
+    public static AdminTheme Parse(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return AdminTheme.System;
+        }
+
+        return value.Trim().ToLowerInvariant() switch
+        {
+            "light" => AdminTheme.Light,
+            "dark" => AdminTheme.Dark,
+            "system" => AdminTheme.System,
+            _ => AdminTheme.System
+        };
+    }
 }

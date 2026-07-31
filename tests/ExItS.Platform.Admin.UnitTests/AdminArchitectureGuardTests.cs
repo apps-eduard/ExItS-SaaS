@@ -151,6 +151,21 @@ public sealed class AdminArchitectureGuardTests
         var themeBoot = File.ReadAllText(Path.Combine(adminRoot, "wwwroot", "theme-boot.js"));
         Assert.Contains("exits-admin-theme", themeBoot, StringComparison.Ordinal);
         Assert.Contains("exits-admin-culture", themeBoot, StringComparison.Ordinal);
+        Assert.Contains("enhancedload", themeBoot, StringComparison.Ordinal);
+        Assert.Contains("normalize", themeBoot, StringComparison.Ordinal);
+        Assert.Contains("\"light\"", themeBoot, StringComparison.Ordinal);
+        Assert.Contains("\"dark\"", themeBoot, StringComparison.Ordinal);
+        Assert.Contains("\"system\"", themeBoot, StringComparison.Ordinal);
+
+        var themeService = File.ReadAllText(Path.Combine(adminRoot, "Services", "ThemeService.cs"));
+        Assert.Contains("ToStorageValue", themeService, StringComparison.Ordinal);
+        Assert.Contains("applyTheme", themeService, StringComparison.Ordinal);
+        Assert.Contains("\"light\"", themeService, StringComparison.Ordinal);
+
+        var selector = File.ReadAllText(Path.Combine(adminRoot, "Components", "Shared", "ThemeSelector.razor"));
+        Assert.Contains("value=\"system\"", selector, StringComparison.Ordinal);
+        Assert.Contains("value=\"light\"", selector, StringComparison.Ordinal);
+        Assert.Contains("value=\"dark\"", selector, StringComparison.Ordinal);
     }
 
     [Fact]
