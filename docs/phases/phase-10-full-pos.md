@@ -4,7 +4,7 @@
 
 ## Status
 
-**In Progress** — **P10-WP04 — Cashier Shifts** complete (prior tip `a25fe6a` / WP03 complete). Do **not** begin P10-WP05.
+**In Progress** — **P10-WP05 — Returns and Refunds** authorized (prior tip `7a6a2e4` / WP04 complete). Do **not** begin P10-WP06.
 
 ## Objective
 
@@ -192,13 +192,27 @@ Payroll, accounting journals, bank reconciliation, cash deposits, branch registe
 
 ### P10-WP05 — Returns and Refunds
 
-Status: Not Started
+Status: **In Progress** (authorized)
 
-#### Required outcomes
+Prior tip: `7a6a2e4eb6d2f8074bb923dd6a0a5eca6654f706` (P10-WP04 complete). Baseline: **1097 / 0 / 0**.
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+#### Required outcomes (approved)
+
+Organization-isolated post-sale returns/refunds that preserve the original sale:
+
+- Atomic Completed-only `SaleReturn` (`RET-YYYYMMDD-NNNNNN`); no Draft/Pending states
+- Partial/full line returns from sale-line snapshots; server-authoritative refundable qty/amount
+- Refund method matches original sale tender (Cash / ManualGCash / Utang) — no method switch
+- Cash refund through active cashier shift (expected-cash impact); ManualGCash as confirmed external refund; Utang adjusts linked credit
+- RestockDisposition ReturnToStock / DoNotRestock; inventory restoration via new immutable movement for tracked products
+- Void vs return mutual exclusion: voided sales cannot be returned; sales with completed returns cannot be voided
+- Idempotency/concurrency; grants `store-returns-view` / `store-returns-manage`
+- PostgreSQL migration, typed API, MAUI return screens, tests, docs
+- Online-only; ExItS remains independent of removed HealthCare workspace
+
+#### Explicit exclusions
+
+Exchanges, store credit, gift cards, different/split refund methods, unlinked returns, supplier/PO returns, shipping, restocking fees, tax/VAT, promotions recalculation, payment gateways, GCash API verification, manager approval / POS roles, offline returns, **P10-WP06+**.
 
 #### Definition of Done
 
@@ -208,6 +222,7 @@ Status: Not Started
 - [ ] Completion report created.
 - [ ] Focused commit created and hash recorded.
 - [ ] Working tree clean.
+- [ ] Exact next WP recorded: **P10-WP06 — Advanced Permissions and Reports** (do not begin).
 
 ### P10-WP06 — Advanced Permissions and Reports
 
