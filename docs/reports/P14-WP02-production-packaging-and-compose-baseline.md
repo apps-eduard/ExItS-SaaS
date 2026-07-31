@@ -4,7 +4,7 @@ Phase marker: `P14-WP02-production-packaging-and-compose-baseline`
 
 Package: **P14-WP02 — Production Packaging and Compose Baseline**
 Prior tip: `7dbd7bf8835b564e86ec3ced8259bee23cceee4c`
-Feature tip: *(recorded after feature commit)*
+Feature tip: `fa04ee2e9decd200b4dc1407f4f1b88f91f93afe`
 
 ## Status
 
