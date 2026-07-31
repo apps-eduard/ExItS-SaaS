@@ -19,7 +19,7 @@ Authoritative docs:
 | P14-WP01 — Deployment Architecture and Production Readiness Audit | **Complete** | [report](../reports/P14-WP01-deployment-architecture-and-production-readiness-audit.md) · `e0e2da2d03babc01dd6efab9d44c6c2a2668457a` |
 | P14-WP02 — Production Packaging and Compose Baseline | **Complete** | [report](../reports/P14-WP02-production-packaging-and-compose-baseline.md) · `fa04ee2e9decd200b4dc1407f4f1b88f91f93afe` |
 | P14-WP02 Gap Fix — Separate Live Preview Stack | **Complete** | [report](../reports/P14-WP02-gap-fix-separate-live-preview-stack.md) · `16342195ff4999f7c0fc99fa15306fc3fa530074` |
-| P14-WP02A — Live Preview Test Users and Quick Login | **Complete** | [report](../reports/P14-WP02A-live-preview-test-users-and-quick-login.md) · `c0d29daf533e7afaf79781771c79f103c6f28dc4` |
+| P14-WP02A — Live Preview Test Users and Quick Login | **Complete** | [report](../reports/P14-WP02A-live-preview-test-users-and-quick-login.md) · `5f2ffabc75645e583eb4c12be9217b90abff9d0c` |
 | P14-WP03 — Reverse Proxy, TLS, and Network Hardening | Not started | — |
 | P14-WP04 — Production Backup, Restore, and Ops Evidence | Not started | — |
 | P14-WP05 — Monitoring, Alerting, and Support Model | Not started | — |
