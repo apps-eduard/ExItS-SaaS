@@ -12,10 +12,10 @@
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 10 — Full POS |
-| Current work package | P10-WP05 — Returns and Refunds (**complete**) |
-| Overall status | **P10-WP05 complete.** Do not begin P10-WP06. |
-| Latest verified commit | `6cb06cc` |
-| Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; POS operational roles; Manual GCash unverified; online-only Basic Store limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/refund/accounting deferred |
+| Current work package | P10-WP06 — Advanced Permissions and Operational Reports (**authorized**) |
+| Overall status | **P10-WP06 authorized.** Do not begin P10-WP07. |
+| Latest verified commit | `f18f8f5` |
+| Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; POS-ROLES closing in WP06 (product-local only); Manual GCash unverified; online-only Basic Store limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/refund/accounting deferred |
 | Last updated | 2026-07-31 |
 
 ## Delivery sequence
@@ -43,7 +43,7 @@ P10-WP04 ✓ Cashier Shifts
         ↓
 P10-WP05 ✓ Returns and Refunds
         ↓
-P10-WP06 ○ Advanced Permissions and Reports (not started)
+P10-WP06 ● Advanced Permissions and Operational Reports (authorized — in progress)
 ```
 
 ## Phase progress
@@ -60,7 +60,7 @@ P10-WP06 ○ Advanced Permissions and Reports (not started)
 | 7 | Offline Synchronization | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-07-offline-sync.md) |
 | 8 | Basic Store | **Complete with documented risks** | 7 | 7 | 100% | [Open](phases/phase-08-basic-store.md) |
 | 9 | MVP Hardening and Release | **Complete with documented risks** | 6 | 6 | 100% | [Open](phases/phase-09-mvp-hardening.md) |
-| 10 | Full POS | **In Progress** | 4 | 7 | 57% | [Open](phases/phase-10-full-pos.md) |
+| 10 | Full POS | **In Progress** | 5 | 8 | 62% | [Open](phases/phase-10-full-pos.md) |
 
 **MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 
@@ -73,7 +73,7 @@ P10-WP06 ○ Advanced Permissions and Reports (not started)
 | P10-WP03 — Advanced Inventory | Complete | 5c62133 (+ gap-fix 31d809c) |
 | P10-WP04 — Cashier Shifts | Complete | 4076485 |
 | P10-WP05 — Returns and Refunds | Complete | 58dd6bf (+ Android using fix 6cb06cc) |
-| P10-WP06 — Advanced Permissions and Reports | Not Started | — |
+| P10-WP06 — Advanced Permissions and Operational Reports | Authorized | — |
 | P10-WP07 — Multiple Registers | Not Started | — |
 | P10-WP08 — Full POS Closeout | Not Started | — |
 
@@ -90,4 +90,4 @@ P10-WP06 ○ Advanced Permissions and Reports (not started)
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P10-WP06 — Advanced Permissions and Reports** until explicitly authorized.
+Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P10-WP07 — Multiple Registers** until explicitly authorized.

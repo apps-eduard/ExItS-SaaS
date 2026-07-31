@@ -4,7 +4,7 @@
 
 ## Status
 
-**In Progress** — Phase 10 through **P10-WP05 — Returns and Refunds** complete. Do **not** begin P10-WP06.
+**In Progress** — **P10-WP06 — Advanced Permissions and Operational Reports** authorized (prior tip `f18f8f5` / WP05 complete). Do **not** begin P10-WP07.
 
 ## Objective
 
@@ -222,26 +222,48 @@ Exchanges, store credit, gift cards, different/split refund methods, unlinked re
 - [x] Completion report created (`docs/reports/P10-WP05-returns-refunds.md`).
 - [x] Focused commit created and hash recorded.
 - [x] Working tree clean (after push).
-- [x] Exact next WP recorded: **P10-WP06 — Advanced Permissions and Reports** (do not begin).
+- [x] Exact next WP recorded: **P10-WP06 — Advanced Permissions and Operational Reports** (do not begin).
 
-### P10-WP06 — Advanced Permissions and Reports
+### P10-WP06 — Advanced Permissions and Operational Reports
 
-Status: Not Started
+Status: **Authorized — In Progress**
 
-#### Required outcomes
+Prior tip: `f18f8f52318b8b991b2f3b4c9a538c24d56e33a0` (P10-WP05 complete). Baseline: **1110 / 0 / 0**.
+Phase marker: `P10-WP06-advanced-permissions-operational-reports`
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+Product-owner decision record (this session) authorizes the title **Advanced Permissions and Operational Reports** (permissions + reports in one WP; do not split).
+
+#### Required outcomes (approved)
+
+**Product-local POS roles** (org-scoped assignments in `ExItS_PinoyBusinessPOS` / `pos`):
+
+- Roles: `Owner`, `Admin`, `StoreManager`, `Cashier`, `InventoryStaff`, `ReportingUser`
+- One active assignment per org+actor; revoke+replace for changes; audited history; no hard delete
+- First-owner bootstrap by trusted primary owner; last-owner protection; Owner/Admin assignment boundaries
+- Grants: add `store-permissions-view` / `store-permissions-manage`; map decision-record names to existing codes (`store-returns-manage` not `store-returns-create`; inventory count/reorder via `store-inventory-manage`; purchasing receive via `store-purchasing-manage` with role-scoped receive-only for InventoryStaff)
+- Effective auth = org + commercial entitlement/state + feature grant + active role + matrix + resource rules
+- Migration `AddPosOperationalRoles`; typed permissions API; MAUI `/permissions*`; online-only mutations
+- Closes product-local **POS-ROLES** gap only; **R-091 remains open**
+
+**Advanced operational reports** (read-only projections; reuse `store-dashboard-view` / `store-reports-view`):
+
+- Sales Summary; Sales by Payment; Sales by Product; Returns/Refunds; Cashier Shift Summary; Cash Variance; Inventory Status; Inventory Movements; Stock Count Variance; Purchasing Summary; PO Outstanding; Supplier Purchasing; Expense Summary; Product-Based Utang Summary; Operational Overview
+- Role-aware report access (Cashier: own shift only; InventoryStaff: inventory/count/purchasing only; StoreManager/ReportingUser/Owner/Admin: all)
+- Online-only; no export/CSV/PDF; no profit/P&L/valuation/tax/accounting
+
+#### Explicit exclusions
+
+Production auth (R-091), MFA/IdP, Platform membership admin, Windows MAUI, Phase 11 web report redesign, multiple registers (WP07), manager approval workflows, accounting/tax/valuation/P&L, payment gateways, export/scheduled/email reports, offline role/report authority.
 
 #### Definition of Done
 
 - [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
+- [ ] Applicable tests pass with exact evidence (baseline 1110 preserved + focused coverage).
 - [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
+- [ ] Completion report created (`docs/reports/P10-WP06-advanced-permissions-operational-reports.md`).
 - [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [ ] Working tree clean (after push).
+- [ ] Exact next WP recorded: **P10-WP07 — Multiple Registers** (do not begin).
 
 ### P10-WP07 — Multiple Registers
 
