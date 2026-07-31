@@ -4,7 +4,7 @@
 
 ## Status
 
-**In progress.** **P11-WP01**–**P11-WP04** are **complete**. Exact next: **P11-WP05 — Shared Reporting Framework** when authorized.
+**In progress.** **P11-WP01**–**P11-WP05** are **complete**. Exact next: **P11-WP06 — Dashboard and Report Refactoring** when authorized.
 
 Pre-Phase-11 Admin shell/theme baseline remains locked (feature tip `46b99a7f6baa87977fb0ed37e678231fa1eb1344`). Theme reapply uses `Blazor.enhancedload` — do **not** reintroduce document-wide permanence attributes on `<html>`.
 
@@ -16,7 +16,7 @@ Pre-Phase-11 Admin shell/theme baseline remains locked (feature tip `46b99a7f6ba
 | P11-WP02 — Global Web Layout and Navigation | **Complete** | [report](../reports/P11-WP02-global-web-layout-and-navigation.md) · `7ce7df139a9494c9aab7d189900e96d5e43fdc1d` |
 | P11-WP03 — Shared Forms, Validation, and Dialogs | **Complete** | [report](../reports/P11-WP03-shared-forms-validation-and-dialogs.md) · `6825b8eb423e73cd5d3dc24e393e7201b04232bc` |
 | P11-WP04 — Shared Tables, Lists, Cards, and Status Components | **Complete** | [report](../reports/P11-WP04-shared-tables-lists-cards-and-status-components.md) · `0351f547457522a97a168b802ec050ef6f37ee83` |
-| P11-WP05 — Shared Reporting Framework | Not started | — |
+| P11-WP05 — Shared Reporting Framework | **Complete** | [report](../reports/P11-WP05-shared-reporting-framework.md) · `4d832b39d85d7f8db55234f609188666035f34c5` |
 | P11-WP06 — Dashboard and Report Refactoring | Not started | — |
 | P11-WP07 — Localization, Theme, Accessibility, and Responsive QA | Not started | — |
 | P11-WP08 — Phase 11 Closeout | Not started | — |
@@ -431,6 +431,10 @@ Mobile browser:
 - all reports support System, Light, and Dark themes
 - all reports have consistent loading, empty, error, denied, and conflict states
 - responsive behavior is validated
+
+#### Implementation status
+
+**Complete** — see [P11-WP05 report](../reports/P11-WP05-shared-reporting-framework.md). Shared Admin reporting framework composing WP03/WP04; Admin dashboard + Payments list migrated as proof. Broad POS/Admin report rollout reserved for P11-WP06.
 
 ---
 
