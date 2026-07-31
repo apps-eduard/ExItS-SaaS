@@ -265,6 +265,7 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("theme-boot.js", app, StringComparison.Ordinal);
         Assert.Contains("app.css", app, StringComparison.Ordinal);
         Assert.Contains("ExItS.Platform.Admin.styles.css", app, StringComparison.Ordinal);
+        Assert.Contains("RootAsset(", app, StringComparison.Ordinal);
 
         var layout = File.ReadAllText(Path.Combine(adminRoot, "Components", "Layout", "MainLayout.razor"));
         Assert.Contains("app-shell", layout, StringComparison.Ordinal);

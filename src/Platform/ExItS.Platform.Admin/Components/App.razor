@@ -7,13 +7,14 @@
     <meta name="color-scheme" content="light dark" />
     <base href="/" />
     <ResourcePreloader />
-    <script src="@Assets["theme-boot.js"]"></script>
-    <script src="@Assets["admin-a11y.js"]"></script>
+    @* Root-absolute asset URLs: relative hrefs from /admin/* resolve under /admin/ and hit FallbackPolicy (302 → login). *@
+    <script src="@RootAsset("theme-boot.js")"></script>
+    <script src="@RootAsset("admin-a11y.js")"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="@Assets["app.css"]" />
-    <link rel="stylesheet" href="@Assets["ExItS.Platform.Admin.styles.css"]" />
+    <link rel="stylesheet" href="@RootAsset("app.css")" />
+    <link rel="stylesheet" href="@RootAsset("ExItS.Platform.Admin.styles.css")" />
     <ImportMap />
     <HeadOutlet />
 </head>
@@ -23,7 +24,7 @@
         <Routes />
     </CascadingAuthenticationState>
     <ReconnectModal />
-    <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script src="@RootAsset("_framework/blazor.web.js")"></script>
 </body>
 
 </html>
@@ -34,4 +35,15 @@
         "fil-PH" => "fil-PH",
         _ => "en"
     };
+
+    private string RootAsset(string key)
+    {
+        var path = Assets[key].ToString();
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return "/";
+        }
+
+        return path.StartsWith('/') ? path : "/" + path;
+    }
 }

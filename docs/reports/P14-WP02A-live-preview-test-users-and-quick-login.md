@@ -14,7 +14,7 @@ Feature tip: `5f2ffabc75645e583eb4c12be9217b90abff9d0c`
 
 | Defect | Cause |
 |---|---|
-| Broken login CSS / dead Blazor | `FallbackPolicy` + `MapStaticAssets()` required auth → `/app.css`, fingerprinted CSS, and `_framework/blazor.web.js` redirected to `/admin/login` |
+| Broken login CSS / dead Blazor | (1) `FallbackPolicy` + `MapStaticAssets()` required auth; (2) relative asset hrefs from `/admin/login` resolved to `/admin/*.css` → auth **302** (HTML as stylesheet) |
 | Quick-login did not sign in | Interactive Server `SignInAsync` cannot set cookies after the response has started; with assets blocked, the circuit never started |
 
 ## Fix
@@ -22,6 +22,7 @@ Feature tip: `5f2ffabc75645e583eb4c12be9217b90abff9d0c`
 | Change | Evidence |
 |---|---|
 | Anonymous static assets | `MapStaticAssets().AllowAnonymous()` |
+| Root-absolute asset URLs | `App.razor` `RootAsset(...)` so `/admin/*` never resolves CSS/JS under `/admin/` |
 | Cookie login via HTTP POST | `POST /admin/login/credentials`, `POST /admin/login/live-preview` → Platform API session + Admin cookie → redirect `/admin` |
 | Login UI | SSR forms (no InteractiveServer on login); antiforgery token; identities still from Platform API |
 | DataProtection (live preview) | File-system key ring under `DataProtection:KeysPath` (`/tmp/exits-admin-dp-keys` in compose) |
