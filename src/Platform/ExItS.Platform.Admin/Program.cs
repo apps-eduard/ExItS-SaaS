@@ -15,8 +15,18 @@ if (builder.Configuration.GetValue<bool>("LivePreview:Enabled") && builder.Envir
     throw new InvalidOperationException("LivePreview:Enabled=true is forbidden in Production.");
 }
 
+// Live Preview uses Staging locally/in Docker. Package static web assets (AntDesign CSS/JS,
+// scoped CSS, _framework) require UseStaticWebAssets outside Development.
+if (builder.Environment.IsStaging()
+    && builder.Configuration.GetValue<bool>("LivePreview:Enabled"))
+{
+    builder.WebHost.UseStaticWebAssets();
+}
+
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddAntDesign();
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddHttpContextAccessor();

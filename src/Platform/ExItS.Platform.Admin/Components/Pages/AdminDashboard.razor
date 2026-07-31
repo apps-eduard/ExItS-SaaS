@@ -1,110 +1,86 @@
 @page "/admin"
 @rendermode InteractiveServer
+@using AntDesign
 @inject IPlatformApiClient Api
 @inject IStringLocalizer<AdminResources> L
+@inject NavigationManager Nav
 
-<ReportPageShell CssClass="dashboard-landing">
-    <ReportHeader Title="@L["Dashboard_Title"]"
-                  Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Dashboard"]}")"
-                  Description="@L["Dashboard_Description"]" />
+<PageHeader Class="exits-page-header" Title="@L["Dashboard_Title"]" SubTitle="@L["Dashboard_Description"]">
+    <PageHeaderBreadcrumb>
+        <Breadcrumb>
+            <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+            <BreadcrumbItem>@L["Nav_Dashboard"]</BreadcrumbItem>
+        </Breadcrumb>
+    </PageHeaderBreadcrumb>
+</PageHeader>
 
-    <ResponsiveReportLayout>
-        <Kpis>
-            @if (_result is null)
-            {
-                <ReportLoadingState Message="@L["Dashboard_Loading"]" />
-            }
-            else if (!_result.IsSuccess)
-            {
-                <ReportErrorState Title="@(_result.Error?.Title ?? L["Common_Unavailable"])"
-                                  Detail="@_result.Error?.Detail"
-                                  CorrelationId="@_result.Error?.CorrelationId"
-                                  Unavailable="@(_result.Status == ApiCallStatus.Unavailable)" />
-            }
-            else
-            {
-                var data = _result.Data!;
+@if (_result is null)
+{
+    <div style="padding:2rem; text-align:center;"><Spin Tip="@L["Dashboard_Loading"]" /></div>
+}
+else if (!_result.IsSuccess)
+{
+    <Result Status="@ResultStatus.Error"
+            Title="@(_result.Error?.Title ?? L["Common_Unavailable"])"
+            SubTitle="@(_result.Error?.Detail ?? "")" />
+}
+else
+{
+    var data = _result.Data!;
 
-                <ReportSection Title="@L["Dashboard_Section_Primary"]" Description="@L["Dashboard_Section_PrimaryDetail"]">
-                    <ReportKpiGrid AriaLabel="@L["Dashboard_AriaPrimary"]" CssClass="dashboard-kpi-primary">
-                        <ReportKpiCard Title="@L["Dashboard_Card_ActiveProducts"]"
-                                       Value="@Format(data.ActiveProductCount, "activeProducts")"
-                                       SupportingText="@L["Dashboard_Support_Catalog"]"
-                                       Emphasis="primary" />
-                        <ReportKpiCard Title="@L["Dashboard_Card_Organizations"]"
-                                       Value="@Format(data.OrganizationCount, "organizations")"
-                                       SupportingText="@L["Dashboard_Support_Tenants"]"
-                                       Emphasis="primary" />
-                        <ReportKpiCard Title="@L["Dashboard_Card_ActiveSubscriptions"]"
-                                       Value="@Format(data.ActiveSubscriptionCount, "activeSubscriptions")"
-                                       SupportingText="@L["Dashboard_Support_Commercial"]"
-                                       Emphasis="primary" />
-                        <ReportKpiCard Title="@L["Dashboard_Card_PendingManualPayments"]"
-                                       Value="@Format(data.PendingManualPaymentCount, "pendingManualPayments")"
-                                       SupportingText="@L["Dashboard_Support_Attention"]"
-                                       Emphasis="primary" />
-                    </ReportKpiGrid>
-                </ReportSection>
+    <Title Level="5">@L["Dashboard_Section_Primary"]</Title>
+    <Paragraph Type="@TextElementType.Secondary">@L["Dashboard_Section_PrimaryDetail"]</Paragraph>
+    <Row Gutter="(12,12)" Style="margin-bottom:1rem;">
+        <AntDesign.Col Xs="24" Sm="12" Md="6">
+            <Statistic Title="@L["Dashboard_Card_ActiveProducts"]" Value="@StatInt(data.ActiveProductCount, "activeProducts")" />
+        </AntDesign.Col>
+        <AntDesign.Col Xs="24" Sm="12" Md="6">
+            <Statistic Title="@L["Dashboard_Card_Organizations"]" Value="@StatInt(data.OrganizationCount, "organizations")" />
+        </AntDesign.Col>
+        <AntDesign.Col Xs="24" Sm="12" Md="6">
+            <Statistic Title="@L["Dashboard_Card_ActiveSubscriptions"]" Value="@StatInt(data.ActiveSubscriptionCount, "activeSubscriptions")" />
+        </AntDesign.Col>
+        <AntDesign.Col Xs="24" Sm="12" Md="6">
+            <Statistic Title="@L["Dashboard_Card_PendingManualPayments"]" Value="@StatInt(data.PendingManualPaymentCount, "pendingManualPayments")" />
+        </AntDesign.Col>
+    </Row>
 
-                <ReportSection Title="@L["Dashboard_Section_Lifecycle"]" Description="@L["Dashboard_Section_LifecycleDetail"]">
-                    <ReportKpiGrid AriaLabel="@L["Dashboard_AriaLifecycle"]" CssClass="dashboard-kpi-secondary">
-                        <ReportKpiCard Title="@L["Dashboard_Card_TrialingSubscriptions"]"
-                                       Value="@Format(data.TrialingSubscriptionCount, "trialingSubscriptions")" />
-                        <ReportKpiCard Title="@L["Dashboard_Card_GracePastDueSuspended"]"
-                                       Value="@GraceCombo(data)"
-                                       SupportingText="@L["Dashboard_Support_GraceCombo"]" />
-                        <ReportKpiCard Title="@L["Dashboard_Card_PublishedPlanVersions"]"
-                                       Value="@Format(data.PublishedPlanVersionCount, "publishedPlanVersions")" />
-                        <ReportKpiCard Title="@L["Dashboard_Card_LatestEntitlementSnapshots"]"
-                                       Value="@Format(data.LatestEntitlementSnapshotCount, "latestEntitlementSnapshots")" />
-                    </ReportKpiGrid>
-                </ReportSection>
+    <Title Level="5">@L["Dashboard_Section_Lifecycle"]</Title>
+    <Paragraph Type="@TextElementType.Secondary">@L["Dashboard_Section_LifecycleDetail"]</Paragraph>
+    <Row Gutter="(12,12)" Style="margin-bottom:1rem;">
+        <AntDesign.Col Xs="24" Sm="12" Md="6">
+            <Statistic Title="@L["Dashboard_Card_TrialingSubscriptions"]" Value="@StatInt(data.TrialingSubscriptionCount, "trialingSubscriptions")" />
+        </AntDesign.Col>
+        <AntDesign.Col Xs="24" Sm="12" Md="6">
+            <Statistic TValue="string" Title="@L["Dashboard_Card_GracePastDueSuspended"]" Value="@GraceCombo(data)" />
+        </AntDesign.Col>
+        <AntDesign.Col Xs="24" Sm="12" Md="6">
+            <Statistic Title="@L["Dashboard_Card_PublishedPlanVersions"]" Value="@StatInt(data.PublishedPlanVersionCount, "publishedPlanVersions")" />
+        </AntDesign.Col>
+        <AntDesign.Col Xs="24" Sm="12" Md="6">
+            <Statistic Title="@L["Dashboard_Card_LatestEntitlementSnapshots"]" Value="@StatInt(data.LatestEntitlementSnapshotCount, "latestEntitlementSnapshots")" />
+        </AntDesign.Col>
+    </Row>
 
-                <ReportSection Title="@L["Dashboard_Section_Operations"]" Description="@L["Dashboard_Section_OperationsDetail"]">
-                    <div class="dashboard-ops-grid" role="list" aria-label="@L["Dashboard_AriaOperations"]">
-                        <ReportSummaryCard Title="@L["Nav_Subscriptions"]" Subtitle="@L["Dashboard_Link_SubscriptionsHint"]">
-                            <nav class="dashboard-link-list" aria-label="@L["Nav_Subscriptions"]">
-                                <a href="/admin/subscriptions">@L["Dashboard_Link_AllSubscriptions"]</a>
-                                <a href="/admin/subscriptions?status=Trialing">@L["Dashboard_Card_TrialingSubscriptions"] (@Format(data.TrialingSubscriptionCount, "trialingSubscriptions"))</a>
-                                <a href="/admin/subscriptions?status=Active">@L["Dashboard_Card_ActiveSubscriptions"] (@Format(data.ActiveSubscriptionCount, "activeSubscriptions"))</a>
-                            </nav>
-                        </ReportSummaryCard>
-                        <ReportSummaryCard Title="@L["Nav_Payments"]" Subtitle="@L["Dashboard_Link_PaymentsHint"]">
-                            <nav class="dashboard-link-list" aria-label="@L["Nav_Payments"]">
-                                <a href="/admin/payments">@L["Dashboard_Link_PendingPayments"] (@Format(data.PendingManualPaymentCount, "pendingManualPayments"))</a>
-                            </nav>
-                        </ReportSummaryCard>
-                        <ReportSummaryCard Title="@L["Nav_Products"]" Subtitle="@L["Dashboard_Link_CatalogHint"]">
-                            <nav class="dashboard-link-list" aria-label="@L["Nav_Products"]">
-                                <a href="/admin/products">@L["Dashboard_Link_BrowseProducts"]</a>
-                                <a href="/admin/organizations">@L["Dashboard_Link_BrowseOrganizations"]</a>
-                                <a href="/admin/entitlements">@L["Dashboard_Link_BrowseEntitlements"]</a>
-                            </nav>
-                        </ReportSummaryCard>
-                        <ReportSummaryCard Title="@L["Nav_Audit"]" Subtitle="@L["Dashboard_Link_AuditHint"]">
-                            <nav class="dashboard-link-list" aria-label="@L["Nav_Audit"]">
-                                <a href="/admin/audit">@L["Dashboard_Link_OpenAudit"]</a>
-                                <a href="/admin/users">@L["Dashboard_Link_BrowseUsers"]</a>
-                            </nav>
-                        </ReportSummaryCard>
-                    </div>
-                </ReportSection>
+    <Title Level="5">@L["Dashboard_Section_Operations"]</Title>
+    <Space Wrap>
+        <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/subscriptions")'>@L["Nav_Subscriptions"]</Button>
+        <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/payments")'>@L["Nav_Payments"]</Button>
+        <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/products")'>@L["Nav_Products"]</Button>
+        <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/organizations")'>@L["Nav_Organizations"]</Button>
+        <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/users")'>@L["Nav_Users"]</Button>
+        <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/audit")'>@L["Nav_Audit"]</Button>
+    </Space>
 
-                @if (data.PartialFailures.Count > 0)
-                {
-                    <ReportSection Title="@L["Dashboard_PartialUnavailable"]" Description="@L["Dashboard_PartialUnavailableDetail"]">
-                        <ul class="dashboard-partial-list">
-                            @foreach (var failure in data.PartialFailures)
-                            {
-                                <li>@failure</li>
-                            }
-                        </ul>
-                    </ReportSection>
-                }
-            }
-        </Kpis>
-    </ResponsiveReportLayout>
-</ReportPageShell>
+    @if (data.PartialFailures.Count > 0)
+    {
+        <Alert Type="@AlertType.Warning"
+               ShowIcon="true"
+               Style="margin-top:1rem;"
+               Message="@L["Dashboard_PartialUnavailable"]"
+               Description="@string.Join("; ", data.PartialFailures)" />
+    }
+}
 
 @code {
     private ApiCallResult<PortfolioSummaryDto>? _result;
@@ -121,8 +97,8 @@
         }
     }
 
-    private string Format(int value, string sectionKey) =>
-        _failed.Contains(sectionKey) ? "—" : value.ToString();
+    private int StatInt(int value, string sectionKey) =>
+        _failed.Contains(sectionKey) ? 0 : value;
 
     private string GraceCombo(PortfolioSummaryDto data)
     {

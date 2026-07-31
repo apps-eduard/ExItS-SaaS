@@ -1,222 +1,232 @@
 @page "/admin/users"
 @page "/admin/users/{Id:guid}"
 @rendermode InteractiveServer
+@using AntDesign
 @inject IPlatformApiClient Api
-@inject ToastService Toasts
+@inject IMessageService Message
+@inject ConfirmService Confirm
 @inject IStringLocalizer<AdminResources> L
+@inject NavigationManager Nav
 
 @if (Id is null)
 {
-    <ReportPageShell>
-        <ReportHeader Title="@L["Users_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Users"]}")" Description="@L["Users_Description"]" />
-        <div class="warning" role="note">@L["Users_Warning"]</div>
+    <PageHeader Class="exits-page-header" Title="@L["Users_Title"]" SubTitle="@L["Users_Description"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_Users"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+        <PageHeaderExtra>
+            <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ToggleCreate">
+                @(_showCreate ? L["Users_HideCreate"] : L["Users_CreateUser"])
+            </Button>
+        </PageHeaderExtra>
+    </PageHeader>
 
-        <ResponsiveReportLayout>
-            <Filters>
-                <ReportFilterBar OnApply="ApplyUserFiltersAsync" OnReset="ClearUserFiltersAsync">
-                    <ChildContent>
-                        <FormField Label="@L["Common_Search"]" FieldId="users-search">
-                            <AdminInput @bind-Value="_search" Placeholder="@L["Users_SearchPlaceholder"]" />
-                        </FormField>
-                        <FormField Label="@L["Common_Status"]" FieldId="users-status">
-                        <AdminSelect @bind-Value="_status">
-                            <option value="">@L["Common_All"]</option>
-                            <option value="Active">@L["Status_Active"]</option>
-                            <option value="Suspended">@L["Status_Suspended"]</option>
-                            <option value="Deactivated">@L["Status_Deactivated"]</option>
-                        </AdminSelect>
-                        </FormField>
-                    </ChildContent>
-                    <Secondary>
-                        <button type="button" class="secondary" @onclick="ToggleCreate">@(_showCreate ? L["Users_HideCreate"] : L["Users_CreateUser"])</button>
-                    </Secondary>
-                </ReportFilterBar>
-            </Filters>
-            <ChildContent>
-                @if (_showCreate)
-                {
-                    <FormSection Title="@L["Users_CreateSection"]">
-                        <FormValidationSummary Title="@L["Users_CreateFailed"]" Message="@_formError" IsConflict="_formConflict" />
-                        <div class="form-grid">
-                            <FormField Label="@L["Common_Username"]" FieldId="user-create-username" Required="true" Error="@_fieldUsername">
-                                <AdminInput @bind-Value="_newUsername" Autocomplete="off" Disabled="_busy" />
-                            </FormField>
-                            <FormField Label="@L["Common_DisplayName"]" FieldId="user-create-displayname" Required="true" Error="@_fieldDisplayName">
-                                <AdminInput @bind-Value="_newDisplayName" Disabled="_busy" />
-                            </FormField>
-                            <FormField Label="@L["Common_Email"]" FieldId="user-create-email" Required="true" Error="@_fieldEmail">
-                                <AdminInput @bind-Value="_newEmail" Type="email" Autocomplete="off" Disabled="_busy" />
-                            </FormField>
-                        </div>
-                        <FormActions PrimaryText="@L["Common_Create"]" Busy="_busy" OnPrimary="CreateAsync"
-                                    SecondaryText="@L["Common_Cancel"]" OnSecondary="HideCreate" />
-                    </FormSection>
-                }
+    <Alert Type="@AlertType.Warning" ShowIcon="true" Message="@L["Users_Warning"]" Style="margin-bottom:12px;" />
 
-                <ReportSection Title="@L["Users_Title"]">
-                    <ReportDataPanel IsLoading="@(_list is null)"
-                                    HasError="@(_list is { IsSuccess: false })"
-                                    IsEmpty="@(_list is { IsSuccess: true, Data.Items.Count: 0 })"
-                                    LoadingMessage="@L["Users_Loading"]"
-                                    EmptyMessage="@L["Users_Empty"]"
-                                    ErrorTitle="@(_list?.Error?.Title ?? L["Common_Error"])"
-                                    ErrorDetail="@_list?.Error?.Detail"
-                                    ErrorCorrelationId="@_list?.Error?.CorrelationId"
-                                    ErrorUnavailable="@(_list?.Status == ApiCallStatus.Unavailable)">
-                        <AdminFilterSummary Items="_userFilterChips" />
-                        <ReportTable TItem="PlatformUserDto"
-                                     Items="_list!.Data!.Items"
-                                     Columns="_userColumns"
-                                     Caption="@L["Users_Title"]"
-                                     ItemKey="u => u.Id"
-                                     CellTemplate="UserCell" />
-                        <AdminPagination Page="_list.Data.Page"
-                                         PageSize="_list.Data.PageSize"
-                                         TotalCount="_list.Data.TotalCount"
-                                         PageChanged="OnUserPageAsync" />
-                    </ReportDataPanel>
-                </ReportSection>
-            </ChildContent>
-        </ResponsiveReportLayout>
-    </ReportPageShell>
+    <Space Style="margin-bottom:12px; width:100%;" Wrap>
+        <Input @bind-Value="_search" Size="@InputSize.Small" Placeholder="@L["Users_SearchPlaceholder"]" Style="width:220px;" OnPressEnter="ApplyUserFiltersAsync" />
+        <Select TItemValue="string"
+                TItem="string"
+                @bind-Value="_status"
+                Size="@InputSize.Small"
+                Placeholder="@L["Common_Status"]"
+                Style="width:140px;"
+                AllowClear>
+            <SelectOptions>
+                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Active")" Label="@L["Status_Active"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Suspended")" Label="@L["Status_Suspended"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Deactivated")" Label="@L["Status_Deactivated"]" />
+            </SelectOptions>
+        </Select>
+        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ApplyUserFiltersAsync">@L["Common_Apply"]</Button>
+        <Button Size="@ButtonSize.Small" OnClick="ClearUserFiltersAsync">@L["Common_Reset"]</Button>
+    </Space>
+
+    @if (_showCreate)
+    {
+        <Card Size="@CardSize.Small" Title="@L["Users_CreateSection"]" Style="margin-bottom:12px;">
+            <FormValidationSummary Title="@L["Users_CreateFailed"]" Message="@_formError" IsConflict="_formConflict" />
+            <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                <div>
+                    <label class="ant-form-item-label" for="user-create-username">@L["Common_Username"]</label>
+                    <Input Id="user-create-username" @bind-Value="_newUsername" Size="@InputSize.Small" Disabled="_busy" />
+                    @if (_fieldUsername is not null) { <span class="exits-field-error">@_fieldUsername</span> }
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="user-create-displayname">@L["Common_DisplayName"]</label>
+                    <Input Id="user-create-displayname" @bind-Value="_newDisplayName" Size="@InputSize.Small" Disabled="_busy" />
+                    @if (_fieldDisplayName is not null) { <span class="exits-field-error">@_fieldDisplayName</span> }
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="user-create-email">@L["Common_Email"]</label>
+                    <Input Id="user-create-email" @bind-Value="_newEmail" Size="@InputSize.Small" Disabled="_busy" />
+                    @if (_fieldEmail is not null) { <span class="exits-field-error">@_fieldEmail</span> }
+                </div>
+                <Space>
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">@L["Common_Create"]</Button>
+                    <Button Size="@ButtonSize.Small" OnClick="HideCreate" Disabled="_busy">@L["Common_Cancel"]</Button>
+                </Space>
+            </Space>
+        </Card>
+    }
+
+    @if (_list is { IsSuccess: false })
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail" />
+    }
+    else
+    {
+        <Table TItem="PlatformUserDto"
+               DataSource="@(_list?.Data?.Items ?? Array.Empty<PlatformUserDto>())"
+               Total="@(_list?.Data?.TotalCount ?? 0)"
+               @bind-PageIndex="_page"
+               PageSize="@(_list?.Data?.PageSize ?? 20)"
+               Loading="@(_list is null)"
+               Size="@TableSize.Small"
+               Bordered
+               RemoteDataSource
+               OnPageIndexChange="OnUserPageChangedAsync"
+               ScrollX="960">
+            <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_User"]" Sortable>
+                <a href="/admin/users/@context.Id">@context.DisplayName</a>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.Username" Title="@L["Common_Username"]" Sortable />
+            <PropertyColumn Property="c => c.Email" Title="@L["Common_Email"]" Ellipsis Sortable />
+            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable>
+                <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Format="u" Sortable />
+            <ActionColumn Title="@L["Common_Open"]" Width="88">
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" Href="@($"/admin/users/{context.Id}")">@L["Common_Open"]</Button>
+            </ActionColumn>
+        </Table>
+    }
 }
 else
 {
-    <PageHeader Title="@L["Users_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Users"]} / {L["Common_Detail"]}")" Description="@L["Users_DetailDescription"]" />
-    @if (_detail is null) { <LoadingState Message="@L["Users_DetailLoading"]" /> }
-    else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? L["Common_Error"])" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }
+    <PageHeader Class="exits-page-header" Title="@L["Users_DetailTitle"]" SubTitle="@L["Users_DetailDescription"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem Href="/admin/users">@L["Nav_Users"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Common_Detail"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+    </PageHeader>
+    @if (_detail is null) { <div style="padding:2rem;text-align:center;"><Spin Tip="@L["Users_DetailLoading"]" /></div> }
+    else if (!_detail.IsSuccess) { <Result Status="@ResultStatus.Error" Title="@(_detail.Error?.Title ?? L["Common_Error"])" SubTitle="@_detail.Error?.Detail" /> }
     else
     {
         var u = _detail.Data!;
         <FormValidationSummary Title="@L["Common_ActionFailed"]" Message="@_formError" IsConflict="_formConflict" />
 
-        <dl>
-            <dt>@L["Common_Username"]</dt><dd>@u.Username</dd>
-            <dt>@L["Common_Status"]</dt><dd><StatusBadge Value="@u.Status" /></dd>
-            <dt>@L["Common_CreatedUtc"]</dt><dd><UtcTimestamp Value="@u.CreatedAtUtc" /></dd>
-            <dt>@L["Common_UpdatedUtc"]</dt><dd><UtcTimestamp Value="@u.UpdatedAtUtc" /></dd>
+        <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
+            <DescriptionsItem Title="@L["Common_Username"]">@u.Username</DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_Status"]"><Tag Color="@StatusColor(u.Status)">@u.Status</Tag></DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_CreatedUtc"]"><UtcTimestamp Value="@u.CreatedAtUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@u.UpdatedAtUtc" /></DescriptionsItem>
             @if (u.SuspendedAtUtc is not null)
             {
-                <dt>@L["Users_SuspendedUtc"]</dt><dd><UtcTimestamp Value="@u.SuspendedAtUtc.Value" /></dd>
-                <dt>@L["Users_SuspensionReason"]</dt><dd>@(u.SuspensionReason ?? "—")</dd>
+                <DescriptionsItem Title="@L["Users_SuspendedUtc"]"><UtcTimestamp Value="@u.SuspendedAtUtc.Value" /></DescriptionsItem>
+                <DescriptionsItem Title="@L["Users_SuspensionReason"]">@(u.SuspensionReason ?? "—")</DescriptionsItem>
             }
-        </dl>
+        </Descriptions>
 
-        <FormSection Title="@L["Users_EditProfile"]">
-            <div class="form-grid">
-                <FormField Label="@L["Common_DisplayName"]" FieldId="user-edit-displayname" Required="true" Error="@_fieldDisplayName">
-                    <AdminInput @bind-Value="_editDisplayName" Disabled="_busy" />
-                </FormField>
-                <FormField Label="@L["Common_Email"]" FieldId="user-edit-email" Required="true" Error="@_fieldEmail">
-                    <AdminInput @bind-Value="_editEmail" Type="email" Disabled="_busy" />
-                </FormField>
-            </div>
-            <FormActions PrimaryText="@L["Users_SaveProfile"]" Busy="_busy" OnPrimary="SaveProfileAsync"
-                        SecondaryText="@L["Common_Cancel"]" OnSecondary="ResetProfileAsync" />
-        </FormSection>
+        <Card Size="@CardSize.Small" Title="@L["Users_EditProfile"]" Style="margin-bottom:12px;">
+            <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                <div>
+                    <label class="ant-form-item-label" for="user-edit-displayname">@L["Common_DisplayName"]</label>
+                    <Input Id="user-edit-displayname" @bind-Value="_editDisplayName" Size="@InputSize.Small" Disabled="_busy" />
+                    @if (_fieldDisplayName is not null) { <span class="exits-field-error">@_fieldDisplayName</span> }
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="user-edit-email">@L["Common_Email"]</label>
+                    <Input Id="user-edit-email" @bind-Value="_editEmail" Size="@InputSize.Small" Disabled="_busy" />
+                    @if (_fieldEmail is not null) { <span class="exits-field-error">@_fieldEmail</span> }
+                </div>
+                <Space>
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveProfileAsync">@L["Users_SaveProfile"]</Button>
+                    <Button Size="@ButtonSize.Small" OnClick="ResetProfileAsync" Disabled="_busy">@L["Common_Cancel"]</Button>
+                </Space>
+            </Space>
+        </Card>
 
-        <FormSection Title="@L["Users_Lifecycle"]" Description="@L["Users_LifecycleHint"]">
-            <div class="actions">
-                <button type="button" class="secondary" @onclick='() => AskConfirm(L["Users_SuspendUser"], L["Users_SuspendConfirmMessage"], SuspendAsync, AdminDialogKind.Destructive)' disabled="@_busy">@L["Users_SuspendUser"]</button>
-                <button type="button" class="secondary" @onclick="ReactivateAsync" disabled="@_busy">@L["Users_ReactivateUser"]</button>
-                <button type="button" class="danger" @onclick='() => AskConfirm(L["Users_DisableUser"], L["Users_DisableConfirmMessage"], DisableAsync, AdminDialogKind.Destructive)' disabled="@_busy">@L["Users_DisableUser"]</button>
-            </div>
-        </FormSection>
+        <Card Size="@CardSize.Small" Title="@L["Users_Lifecycle"]" Style="margin-bottom:12px;">
+            <Space>
+                <Popconfirm Title="@L["Users_SuspendConfirmMessage"]"
+                            OnConfirm="SuspendAsync"
+                            OkText="@L["Common_Confirm"]"
+                            CancelText="@L["Common_Cancel"]"
+                            Disabled="_busy">
+                    <Button Size="@ButtonSize.Small" Danger Disabled="_busy">@L["Users_SuspendUser"]</Button>
+                </Popconfirm>
+                <Button Size="@ButtonSize.Small" OnClick="ReactivateAsync" Disabled="_busy">@L["Users_ReactivateUser"]</Button>
+                <Popconfirm Title="@L["Users_DisableConfirmMessage"]"
+                            OnConfirm="DisableAsync"
+                            OkText="@L["Common_Confirm"]"
+                            CancelText="@L["Common_Cancel"]"
+                            Disabled="_busy">
+                    <Button Size="@ButtonSize.Small" Danger Disabled="_busy">@L["Users_DisableUser"]</Button>
+                </Popconfirm>
+            </Space>
+        </Card>
 
-        <FormSection Title="Credentials" Description="Password, lockout, and email-verification state. Admin set-password and unlock invalidate browser sessions.">
-            @if (_credentials is null) { <LoadingState Message="Loading credentials…" /> }
-            else if (!_credentials.IsSuccess) { <ErrorState Title="Credentials unavailable" Detail="@_credentials.Error?.Detail" /> }
+        <Card Size="@CardSize.Small" Title="Credentials" Style="margin-bottom:12px;">
+            @if (_credentials is null) { <Spin /> }
+            else if (!_credentials.IsSuccess) { <Alert Type="@AlertType.Error" Message="Credentials unavailable" Description="@_credentials.Error?.Detail" ShowIcon="true" /> }
             else
             {
                 var c = _credentials.Data!;
-                <dl>
-                    <dt>Has password</dt><dd>@(c.HasPassword ? "Yes" : "No")</dd>
-                    <dt>Email verified</dt><dd>@(c.EmailVerified ? "Yes" : "No")</dd>
-                    <dt>Locked out</dt><dd>@(c.IsLockedOut ? $"Yes until {c.LockoutEndUtc}" : "No")</dd>
-                    <dt>Failed attempts</dt><dd>@c.FailedAccessCount</dd>
-                    <dt>Password changed</dt><dd>@(c.PasswordChangedAtUtc?.ToString("u") ?? "—")</dd>
-                </dl>
-                <div class="form-grid">
-                    <FormField Label="Set / replace password" FieldId="user-set-password">
-                        <AdminInput @bind-Value="_setPassword" Type="password" Disabled="_busy" />
-                    </FormField>
-                </div>
-                <div class="actions">
-                    <button type="button" class="secondary" @onclick="SetPasswordAsync" disabled="@_busy">Set password</button>
-                    <button type="button" class="secondary" @onclick="UnlockCredentialAsync" disabled="@_busy">Unlock</button>
-                    <button type="button" class="secondary" @onclick="MarkEmailVerifiedAsync" disabled="@_busy">Mark email verified</button>
-                </div>
+                <Descriptions Size="@DescriptionsSize.Small" Column="2" Bordered Style="margin-bottom:8px;">
+                    <DescriptionsItem Title="Has password">@(c.HasPassword ? "Yes" : "No")</DescriptionsItem>
+                    <DescriptionsItem Title="Email verified">@(c.EmailVerified ? "Yes" : "No")</DescriptionsItem>
+                    <DescriptionsItem Title="Locked out">@(c.IsLockedOut ? $"Yes until {c.LockoutEndUtc}" : "No")</DescriptionsItem>
+                    <DescriptionsItem Title="Failed attempts">@c.FailedAccessCount</DescriptionsItem>
+                </Descriptions>
+                <InputPassword @bind-Value="_setPassword" Size="@InputSize.Small" Placeholder="Set / replace password" Disabled="_busy" Style="margin-bottom:8px; width:100%;" />
+                <Space>
+                    <Button Size="@ButtonSize.Small" OnClick="SetPasswordAsync" Disabled="_busy">Set password</Button>
+                    <Button Size="@ButtonSize.Small" OnClick="UnlockCredentialAsync" Disabled="_busy">Unlock</Button>
+                    <Button Size="@ButtonSize.Small" OnClick="MarkEmailVerifiedAsync" Disabled="_busy">Mark email verified</Button>
+                </Space>
             }
-        </FormSection>
+        </Card>
 
-        <h2>@L["Users_OrgMemberships"]</h2>
-        <p class="muted">@L["Users_OrgMembershipsHint"]</p>
-        @if (_memberships is null) { <LoadingState Message="@L["Users_LoadingMemberships"]" /> }
-        else if (!_memberships.IsSuccess) { <ErrorState Title="@L["Users_MembershipsUnavailable"]" Detail="@_memberships.Error?.Detail" /> }
-        else if (_memberships.Data!.Items.Count == 0) { <EmptyState Message="@L["Users_MembershipsEmpty"]" /> }
+        <Title Level="5">@L["Users_OrgMemberships"]</Title>
+        <Paragraph Type="@TextElementType.Secondary">@L["Users_OrgMembershipsHint"]</Paragraph>
+        @if (_memberships is null) { <Spin /> }
+        else if (!_memberships.IsSuccess) { <Alert Type="@AlertType.Error" Message="@L["Users_MembershipsUnavailable"].Value" ShowIcon="true" /> }
+        else if (_memberships.Data!.Items.Count == 0) { <Empty Description="@L["Users_MembershipsEmpty"].Value" /> }
         else
         {
-            <table class="data-table responsive-table">
-                <thead><tr><th>@L["Common_Organization"]</th><th>@L["Common_Role"]</th><th>@L["Common_Status"]</th><th></th></tr></thead>
-                <tbody>
-                @foreach (var m in _memberships.Data.Items)
-                {
-                    <tr>
-                        <td data-label="@L["Common_Organization"]"><a href="/admin/organizations/@m.OrganizationId/members">@m.OrganizationId</a></td>
-                        <td data-label="@L["Common_Role"]">@m.Role</td>
-                        <td data-label="@L["Common_Status"]"><StatusBadge Value="@m.Status" /></td>
-                        <td data-label="@L["Common_Open"]"><a href="/admin/organizations/@m.OrganizationId/members">@L["Common_Manage"]</a></td>
-                    </tr>
-                }
-                </tbody>
-            </table>
+            <Table TItem="OrganizationMembershipDto" DataSource="_memberships.Data.Items" Size="@TableSize.Small" HidePagination Bordered>
+                <PropertyColumn Property="c => c.OrganizationId" Title="@L["Common_Organization"]">
+                    <a href="/admin/organizations/@context.OrganizationId/members">@context.OrganizationId</a>
+                </PropertyColumn>
+                <PropertyColumn Property="c => c.Role" Title="@L["Common_Role"]" />
+                <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                    <Tag>@context.Status</Tag>
+                </PropertyColumn>
+            </Table>
         }
 
-        <h2>@L["Users_ProductAccess"]</h2>
-        <div class="warning" role="note">@L["Users_ProductAccessWarning"]</div>
-        @if (_access is null) { <LoadingState Message="@L["Users_LoadingProductAccess"]" /> }
-        else if (!_access.IsSuccess) { <ErrorState Title="@L["Users_ProductAccessUnavailable"]" Detail="@_access.Error?.Detail" /> }
-        else if (_access.Data!.Items.Count == 0) { <EmptyState Message="@L["Users_ProductAccessEmpty"]" /> }
+        <Title Level="5">@L["Users_ProductAccess"]</Title>
+        <Alert Type="@AlertType.Warning" ShowIcon="true" Message="@L["Users_ProductAccessWarning"].Value" Style="margin-bottom:8px;" />
+        @if (_access is null) { <Spin /> }
+        else if (!_access.IsSuccess) { <Alert Type="@AlertType.Error" Message="@L["Users_ProductAccessUnavailable"].Value" ShowIcon="true" /> }
+        else if (_access.Data!.Items.Count == 0) { <Empty Description="@L["Users_ProductAccessEmpty"].Value" /> }
         else
         {
-            <table class="data-table responsive-table">
-                <thead><tr><th>@L["Common_Product"]</th><th>@L["Common_Organization"]</th><th>@L["Common_Status"]</th><th>@L["Common_GrantedUtc"]</th><th>@L["Common_RevokedUtc"]</th></tr></thead>
-                <tbody>
-                @foreach (var a in _access.Data.Items)
-                {
-                    <tr>
-                        <td data-label="@L["Common_Product"]">@a.ProductCode</td>
-                        <td data-label="@L["Common_Organization"]"><a href="/admin/organizations/@a.OrganizationId/product-access">@a.OrganizationId</a></td>
-                        <td data-label="@L["Common_Status"]"><StatusBadge Value="@a.Status" /></td>
-                        <td data-label="@L["Common_GrantedUtc"]"><UtcTimestamp Value="@a.GrantedAtUtc" /></td>
-                        <td data-label="@L["Common_RevokedUtc"]">@(a.RevokedAtUtc is null ? "—" : null)@if (a.RevokedAtUtc is not null){<UtcTimestamp Value="@a.RevokedAtUtc.Value" />}</td>
-                    </tr>
-                }
-                </tbody>
-            </table>
+            <Table TItem="ProductAccessAssignmentDto" DataSource="_access.Data.Items" Size="@TableSize.Small" HidePagination Bordered>
+                <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" />
+                <PropertyColumn Property="c => c.OrganizationId" Title="@L["Common_Organization"]" />
+                <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]"><Tag>@context.Status</Tag></PropertyColumn>
+            </Table>
         }
     }
-}
-
-@if (_confirm is not null)
-{
-    <ConfirmDialog Visible="true"
-                   Title="@_confirm.Title"
-                   Message="@_confirm.Message"
-                   Kind="@_confirm.Kind"
-                   OnConfirm="RunConfirmAsync"
-                   OnCancel="CloseConfirm"
-                   Busy="_busy" />
-}
-
-@if (_unsavedVisible)
-{
-    <ConfirmDialog Visible="true"
-                   Kind="AdminDialogKind.UnsavedChanges"
-                   Message="@L["Dialog_UnsavedMessage"]"
-                   OnConfirm="DiscardCreateAsync"
-                   OnCancel="KeepEditingAsync"
-                   Busy="_busy" />
 }
 
 @code {
@@ -243,41 +253,7 @@ else
     private string? _fieldDisplayName;
     private string? _fieldEmail;
     private bool _busy;
-    private ConfirmState? _confirm;
-    private bool _unsavedVisible;
     private int _page = 1;
-    private List<AdminColumnDefinition> _userColumns = new();
-
-    private IReadOnlyList<AdminFilterChip> _userFilterChips
-    {
-        get
-        {
-            var chips = new List<AdminFilterChip>();
-            if (!string.IsNullOrWhiteSpace(_search))
-            {
-                chips.Add(new(L["Common_Search"], _search));
-            }
-
-            if (!string.IsNullOrWhiteSpace(_status))
-            {
-                chips.Add(new(L["Common_Status"], _status));
-            }
-
-            return chips;
-        }
-    }
-
-    protected override void OnInitialized()
-    {
-        _userColumns =
-        [
-            new("user", L["Common_User"], Primary: true),
-            new("username", L["Common_Username"]),
-            new("email", L["Common_Email"]),
-            new("status", L["Common_Status"]),
-            new("updated", L["Common_UpdatedUtc"])
-        ];
-    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -287,6 +263,14 @@ else
         if (Id is null) await ReloadListAsync();
         else await ReloadDetailAsync();
     }
+
+    private static string StatusColor(string status) => status switch
+    {
+        "Active" => "success",
+        "Suspended" => "error",
+        "Deactivated" => "default",
+        _ => "processing"
+    };
 
     private async Task ReloadListAsync() =>
         _list = await Api.GetUsersAsync(
@@ -308,46 +292,11 @@ else
         await ReloadListAsync();
     }
 
-    private async Task OnUserPageAsync(int page)
+    private async Task OnUserPageChangedAsync(PaginationEventArgs args)
     {
-        _page = page;
+        _page = args.Page;
         await ReloadListAsync();
     }
-
-    private RenderFragment<(PlatformUserDto Item, AdminColumnDefinition Column)> UserCell => ctx => b =>
-    {
-        switch (ctx.Column.Key)
-        {
-            case "user":
-                b.OpenElement(0, "span");
-                b.AddAttribute(1, "class", "avatar");
-                b.AddAttribute(2, "aria-hidden", "true");
-                b.AddContent(3, Initials(ctx.Item.DisplayName));
-                b.CloseElement();
-                b.AddContent(4, " ");
-                b.OpenElement(5, "a");
-                b.AddAttribute(6, "href", $"/admin/users/{ctx.Item.Id}");
-                b.AddContent(7, ctx.Item.DisplayName);
-                b.CloseElement();
-                break;
-            case "username":
-                b.AddContent(0, ctx.Item.Username);
-                break;
-            case "email":
-                b.AddContent(0, ctx.Item.Email);
-                break;
-            case "status":
-                b.OpenComponent<StatusBadge>(0);
-                b.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
-                b.CloseComponent();
-                break;
-            case "updated":
-                b.OpenComponent<UtcTimestamp>(0);
-                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.UpdatedAtUtc);
-                b.CloseComponent();
-                break;
-        }
-    };
 
     private async Task ReloadDetailAsync()
     {
@@ -384,7 +333,7 @@ else
             return;
         }
 
-        Toasts.Show("Password set.", ToastKind.Success);
+        await Message.SuccessAsync("Password set.");
         await ReloadDetailAsync();
     }
 
@@ -404,7 +353,7 @@ else
             return;
         }
 
-        Toasts.Show("Credential unlocked.", ToastKind.Success);
+        await Message.SuccessAsync("Credential unlocked.");
         await ReloadDetailAsync();
     }
 
@@ -424,15 +373,26 @@ else
             return;
         }
 
-        Toasts.Show("Email marked verified.", ToastKind.Success);
+        await Message.SuccessAsync("Email marked verified.");
         await ReloadDetailAsync();
     }
 
-    private void ToggleCreate()
+    private async Task ToggleCreate()
     {
         if (_showCreate && HasCreateDraft())
         {
-            _unsavedVisible = true;
+            var result = await Confirm.Show(
+                L["Dialog_UnsavedMessage"].Value,
+                L["Dialog_UnsavedTitle"].Value,
+                ConfirmButtons.OKCancel,
+                ConfirmIcon.Warning);
+            if (result != ConfirmResult.OK)
+            {
+                return;
+            }
+
+            ClearCreate();
+            _showCreate = false;
             return;
         }
 
@@ -443,17 +403,23 @@ else
         }
     }
 
-    private Task HideCreate()
+    private async Task HideCreate()
     {
         if (HasCreateDraft())
         {
-            _unsavedVisible = true;
-            return Task.CompletedTask;
+            var result = await Confirm.Show(
+                L["Dialog_UnsavedMessage"].Value,
+                L["Dialog_UnsavedTitle"].Value,
+                ConfirmButtons.OKCancel,
+                ConfirmIcon.Warning);
+            if (result != ConfirmResult.OK)
+            {
+                return;
+            }
         }
 
         _showCreate = false;
         ClearCreate();
-        return Task.CompletedTask;
     }
 
     private bool HasCreateDraft() =>
@@ -467,20 +433,6 @@ else
         ClearFieldErrors();
         _formError = null;
         _formConflict = false;
-    }
-
-    private Task DiscardCreateAsync()
-    {
-        _unsavedVisible = false;
-        _showCreate = false;
-        ClearCreate();
-        return Task.CompletedTask;
-    }
-
-    private Task KeepEditingAsync()
-    {
-        _unsavedVisible = false;
-        return Task.CompletedTask;
     }
 
     private async Task CreateAsync()
@@ -524,7 +476,7 @@ else
             return;
         }
 
-        Toasts.Show(L["Users_ToastCreated"], ToastKind.Success);
+        await Message.SuccessAsync(L["Users_ToastCreated"].Value);
         _showCreate = false;
         ClearCreate();
         await ReloadListAsync();
@@ -566,7 +518,7 @@ else
             return;
         }
 
-        Toasts.Show(L["Users_ToastProfileUpdated"], ToastKind.Success);
+        await Message.SuccessAsync(L["Users_ToastProfileUpdated"].Value);
         await ReloadDetailAsync();
     }
 
@@ -577,25 +529,6 @@ else
         ClearFieldErrors();
         _formError = null;
         _formConflict = false;
-        return Task.CompletedTask;
-    }
-
-    private void AskConfirm(string title, string message, Func<Task> action, AdminDialogKind kind) =>
-        _confirm = new ConfirmState(title, message, action, kind);
-
-    private async Task RunConfirmAsync()
-    {
-        if (_confirm is null)
-        {
-            return;
-        }
-
-        await _confirm.Action();
-    }
-
-    private Task CloseConfirm()
-    {
-        _confirm = null;
         return Task.CompletedTask;
     }
 
@@ -610,7 +543,6 @@ else
         _formConflict = false;
         var result = await Api.SuspendUserAsync(Id.Value, "Suspended from Platform Admin");
         _busy = false;
-        await CloseConfirm();
         if (!result.IsSuccess)
         {
             _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
@@ -618,7 +550,7 @@ else
             return;
         }
 
-        Toasts.Show(L["Users_ToastSuspended"], ToastKind.Success);
+        await Message.SuccessAsync(L["Users_ToastSuspended"].Value);
         await ReloadDetailAsync();
     }
 
@@ -640,7 +572,7 @@ else
             return;
         }
 
-        Toasts.Show(L["Users_ToastReactivated"], ToastKind.Success);
+        await Message.SuccessAsync(L["Users_ToastReactivated"].Value);
         await ReloadDetailAsync();
     }
 
@@ -655,7 +587,6 @@ else
         _formConflict = false;
         var result = await Api.DisableUserAsync(Id.Value);
         _busy = false;
-        await CloseConfirm();
         if (!result.IsSuccess)
         {
             _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
@@ -663,7 +594,7 @@ else
             return;
         }
 
-        Toasts.Show(L["Users_ToastDisabled"], ToastKind.Success);
+        await Message.SuccessAsync(L["Users_ToastDisabled"].Value);
         await ReloadDetailAsync();
     }
 
@@ -671,14 +602,4 @@ else
     {
         _fieldUsername = _fieldDisplayName = _fieldEmail = null;
     }
-
-    private static string Initials(string name)
-    {
-        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 0) return "?";
-        if (parts.Length == 1) return parts[0][..Math.Min(2, parts[0].Length)].ToUpperInvariant();
-        return $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[^1][0])}";
-    }
-
-    private sealed record ConfirmState(string Title, string Message, Func<Task> Action, AdminDialogKind Kind);
 }

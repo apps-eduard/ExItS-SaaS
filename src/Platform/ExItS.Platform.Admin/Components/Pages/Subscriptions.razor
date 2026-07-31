@@ -93,7 +93,7 @@
 }
 else
 {
-    <PageHeader Title="@L["Subscriptions_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Subscriptions"]} / {L["Common_Detail"]}")" Description="@L["Subscriptions_DetailDescription"]" />
+    <AdminPageHeader Title="@L["Subscriptions_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Subscriptions"]} / {L["Common_Detail"]}")" Description="@L["Subscriptions_DetailDescription"]" />
     <div class="warning" role="note">@L["Subscriptions_DetailWarning"]</div>
 
     @if (_detail is null) { <LoadingState Message="@L["Subscriptions_DetailLoading"]" /> }

@@ -34,7 +34,7 @@
 }
 else
 {
-    <PageHeader Title="@L["Products_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Products"]} / {L["Common_Detail"]}")" Description="@L["Products_DetailDescription"]" />
+    <AdminPageHeader Title="@L["Products_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Products"]} / {L["Common_Detail"]}")" Description="@L["Products_DetailDescription"]" />
     <AdminDataPanel IsLoading="@(_overview is null)"
                     HasError="@(_overview is { IsSuccess: false })"
                     LoadingMessage="@L["Products_DetailLoading"]"

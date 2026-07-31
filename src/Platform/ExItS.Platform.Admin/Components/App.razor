@@ -1,18 +1,18 @@
 ﻿<!DOCTYPE html>
 <html lang="@CultureName">
 
+@using AntDesign
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
     <base href="/" />
     <ResourcePreloader />
-    @* Root-absolute asset URLs: relative hrefs from /admin/* resolve under /admin/ and hit FallbackPolicy (302 → login). *@
+    @* Root-absolute assets: relative URLs from /admin/* hit FallbackPolicy. AntDesign + branding. *@
     <script src="@RootAsset("theme-boot.js")"></script>
     <script src="@RootAsset("admin-a11y.js")"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="/_content/AntDesign/css/ant-design-blazor.css" rel="stylesheet" />
     <link rel="stylesheet" href="@RootAsset("app.css")" />
     <link rel="stylesheet" href="@RootAsset("ExItS.Platform.Admin.styles.css")" />
     <ImportMap />
@@ -23,7 +23,9 @@
     <CascadingAuthenticationState>
         <Routes />
     </CascadingAuthenticationState>
+    <AntContainer />
     <ReconnectModal />
+    <script src="/_content/AntDesign/js/ant-design-blazor.js"></script>
     <script src="@RootAsset("_framework/blazor.web.js")"></script>
 </body>
 

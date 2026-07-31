@@ -108,7 +108,7 @@
 }
 else
 {
-    <PageHeader Title="@L["Payments_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Payments"]} / {L["Common_Detail"]}")" Description="@L["Payments_DetailDescription"]" />
+    <AdminPageHeader Title="@L["Payments_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Payments"]} / {L["Common_Detail"]}")" Description="@L["Payments_DetailDescription"]" />
     <section class="warning" role="note">@L["Payments_DetailWarning"]</section>
 
     @if (_detail is null) { <LoadingState Message="@L["Payments_DetailLoading"]" /> }

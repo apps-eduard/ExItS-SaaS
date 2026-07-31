@@ -1,24 +1,24 @@
 @inject IStringLocalizer<AdminResources> L
+@using AntDesign
 
-<div class="env-banner-wrap">
-    <button type="button" class="env-chip" @onclick="Toggle" aria-expanded="@_expanded" aria-controls="env-banner-detail" title="@L["Banner_DevSecurityDetail"]">
-        <span class="dot" aria-hidden="true"></span>
-        <span>@L["Banner_DevSecurityCompact"]</span>
-    </button>
-    @if (_expanded)
-    {
-        <div id="env-banner-detail" class="env-banner-detail" role="note">
-            <p>@L["Banner_DevSecurityDetail"]</p>
-            @if (!string.IsNullOrWhiteSpace(ActorDisplayName))
-            {
-                <p class="muted">@string.Format(L["Footer_ActorContext"], ActorDisplayName)</p>
-            }
-        </div>
-    }
-</div>
+@if (_show)
+{
+    <Alert Type="@AlertType.Warning"
+           Message="@L["Banner_DevSecurityCompact"]"
+           Description="@Description"
+           Closable="true"
+           OnClose="() => _show = false"
+           ShowIcon="true"
+           Class="exits-env-alert"
+           Style="margin:0; max-width: 18rem;" />
+}
 
 @code {
     [Parameter] public string? ActorDisplayName { get; set; }
-    private bool _expanded;
-    private void Toggle() => _expanded = !_expanded;
+    private bool _show = true;
+
+    private string Description =>
+        string.IsNullOrWhiteSpace(ActorDisplayName)
+            ? L["Banner_DevSecurityDetail"]
+            : $"{L["Banner_DevSecurityDetail"]} {string.Format(L["Footer_ActorContext"], ActorDisplayName)}";
 }

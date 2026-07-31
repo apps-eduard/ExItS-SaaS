@@ -1,15 +1,23 @@
 @inject CultureService Culture
 @inject IStringLocalizer<AdminResources> L
+@using AntDesign
 
-<div class="selector-group">
-    <label class="sr-only" for="language-selector">@L["Language_Label"]</label>
-    <select id="language-selector" value="@_current" @onchange="OnChangedAsync" disabled="@(!_ready)">
+<Select TItem="string"
+        TItemValue="string"
+        Value="@_current"
+        ValueChanged="OnChangedAsync"
+        Disabled="@(!_ready)"
+        Size="@InputSize.Small"
+        Style="width: 7.5rem;"
+        Placeholder="@L["Language_Label"]"
+        AllowClear="false">
+    <SelectOptions>
         @foreach (var option in CultureService.Options)
         {
-            <option value="@option.Code">@option.NativeLabel</option>
+            <SelectOption TItem="string" TItemValue="string" Value="@option.Code" Label="@option.NativeLabel" />
         }
-    </select>
-</div>
+    </SelectOptions>
+</Select>
 
 @code {
     private string _current = CultureService.English;
@@ -27,9 +35,9 @@
         StateHasChanged();
     }
 
-    private async Task OnChangedAsync(ChangeEventArgs e)
+    private async Task OnChangedAsync(string value)
     {
-        var value = e.Value?.ToString() ?? CultureService.English;
-        await Culture.SetCultureAsync(value);
+        _current = value ?? CultureService.English;
+        await Culture.SetCultureAsync(_current);
     }
 }

@@ -7,7 +7,7 @@
 
 @if (Id is not null)
 {
-    <PageHeader Title="@L["Entitlements_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Entitlements"]} / {L["Common_Detail"]}")" Description="@L["Entitlements_DetailDescription"]" />
+    <AdminPageHeader Title="@L["Entitlements_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Entitlements"]} / {L["Common_Detail"]}")" Description="@L["Entitlements_DetailDescription"]" />
     <section class="warning" role="note">@L["Entitlements_DetailWarning"]</section>
     @if (_detail is null) { <LoadingState Message="@L["Entitlements_DetailLoading"]" /> }
     else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? L["Common_Error"])" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }

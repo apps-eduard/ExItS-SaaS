@@ -1,107 +1,156 @@
 @page "/admin/organizations"
 @page "/admin/organizations/{Id:guid}"
 @rendermode InteractiveServer
+@using AntDesign
 @inject IPlatformApiClient Api
 @inject IStringLocalizer<AdminResources> L
 
 @if (Id is null)
 {
-    <ReportPageShell>
-        <ReportHeader Title="@L["Organizations_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Organizations"]}")" Description="@L["Organizations_Description"]" />
-        <ReportSection Title="@L["Organizations_Title"]">
-            <ReportDataPanel IsLoading="@(_list is null)"
-                            HasError="@(_list is { IsSuccess: false })"
-                            IsEmpty="@(_list is { IsSuccess: true, Data.Items.Count: 0 })"
-                            LoadingMessage="@L["Organizations_Loading"]"
-                            EmptyMessage="@L["Organizations_Empty"]"
-                            ErrorTitle="@(_list?.Error?.Title ?? L["Common_Error"])"
-                            ErrorDetail="@_list?.Error?.Detail"
-                            ErrorCorrelationId="@_list?.Error?.CorrelationId"
-                            ErrorUnavailable="@(_list?.Status == ApiCallStatus.Unavailable)">
-                <ReportTable TItem="OrganizationDto"
-                             Items="_list!.Data!.Items"
-                             Columns="_orgColumns"
-                             Caption="@L["Organizations_Title"]"
-                             ItemKey="o => o.Id"
-                             CellTemplate="OrgCell" />
-                <AdminPagination Page="_list!.Data!.Page"
-                                 PageSize="_list.Data.PageSize"
-                                 TotalCount="_list.Data.TotalCount"
-                                 PageChanged="OnOrgPageAsync" />
-            </ReportDataPanel>
-        </ReportSection>
-    </ReportPageShell>
+    <PageHeader Class="exits-page-header" Title="@L["Organizations_Title"]" SubTitle="@L["Organizations_Description"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_Organizations"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+    </PageHeader>
+
+    @if (_list is { IsSuccess: false })
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail" />
+    }
+    else
+    {
+        <Table TItem="OrganizationDto"
+               DataSource="@(_list?.Data?.Items ?? Array.Empty<OrganizationDto>())"
+               Total="@(_list?.Data?.TotalCount ?? 0)"
+               @bind-PageIndex="_page"
+               PageSize="@(_list?.Data?.PageSize ?? 20)"
+               Loading="@(_list is null)"
+               Size="@TableSize.Small"
+               Bordered
+               RemoteDataSource
+               OnPageIndexChange="OnOrgPageChangedAsync"
+               ScrollX="900">
+            <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_DisplayName"]" Sortable>
+                <a href="/admin/organizations/@context.Id">@context.DisplayName</a>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.Slug" Title="@L["Common_Slug"]" Sortable />
+            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable>
+                <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.CreatedAtUtc" Title="@L["Common_CreatedUtc"]" Format="u" Sortable />
+            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Format="u" Sortable />
+            <ActionColumn Title="@L["Common_Open"]" Width="88">
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" Href="@($"/admin/organizations/{context.Id}")">@L["Common_Open"]</Button>
+            </ActionColumn>
+        </Table>
+    }
 }
 else
 {
-    <PageHeader Title="@L["Organizations_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Organizations"]} / {L["Common_Detail"]}")" Description="@L["Organizations_DetailDescription"]" />
-    <AdminDataPanel IsLoading="@(_detail is null)"
-                    HasError="@(_detail is { IsSuccess: false })"
-                    LoadingMessage="@L["Organizations_DetailLoading"]"
-                    ErrorTitle="@(_detail?.Error?.Title ?? L["Common_Error"])"
-                    ErrorDetail="@_detail?.Error?.Detail"
-                    ErrorCorrelationId="@_detail?.Error?.CorrelationId"
-                    ErrorUnavailable="@(_detail?.Status == ApiCallStatus.Unavailable)">
-        @{
-            var d = _detail!.Data!;
+    <PageHeader Class="exits-page-header" Title="@L["Organizations_DetailTitle"]" SubTitle="@L["Organizations_DetailDescription"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem Href="/admin/organizations">@L["Nav_Organizations"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Common_Detail"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+    </PageHeader>
+
+    @if (_detail is null)
+    {
+        <div style="padding:2rem;text-align:center;"><Spin Tip="@L["Organizations_DetailLoading"]" /></div>
+    }
+    else if (!_detail.IsSuccess)
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_detail.Error?.Title ?? L["Common_Error"])" SubTitle="@_detail.Error?.Detail" />
+    }
+    else
+    {
+        var d = _detail.Data!;
+        <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
+            <DescriptionsItem Title="@L["Common_DisplayName"]">@d.Organization.DisplayName</DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_Slug"]">@d.Organization.Slug</DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_Status"]">
+                <Tag Color="@StatusColor(d.Organization.Status)">@d.Organization.Status</Tag>
+            </DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_CreatedUtc"]"><UtcTimestamp Value="@d.Organization.CreatedAtUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@d.Organization.UpdatedAtUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="@L["Organizations_CommercialAdmin"]" Span="2">
+                <Space Wrap>
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" Href="@($"/admin/organizations/{Id}/members")">@L["Common_Members"]</Button>
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" Href="@($"/admin/organizations/{Id}/product-access")">@L["Common_ProductAccess"]</Button>
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" Href="/admin/subscriptions">@L["Organizations_StartTrialSubscriptions"]</Button>
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" Href="@($"/admin/payments?organizationId={Id}")">@L["Organizations_CreateViewPayments"]</Button>
+                </Space>
+            </DescriptionsItem>
+        </Descriptions>
+
+        <Title Level="5">@L["Organizations_SubscriptionsByProduct"]</Title>
+        <Paragraph Type="@TextElementType.Secondary">@L["Organizations_SubscriptionsHint"]</Paragraph>
+        @if (d.Subscriptions.Count == 0)
+        {
+            <Empty Description="@L["Organizations_SubscriptionsEmpty"].Value" />
         }
-        <KeyValueList>
-            <dt>@L["Common_DisplayName"]</dt><dd>@d.Organization.DisplayName</dd>
-            <dt>@L["Common_Slug"]</dt><dd>@d.Organization.Slug</dd>
-            <dt>@L["Common_Status"]</dt><dd><StatusBadge Value="@d.Organization.Status" /></dd>
-            <dt>@L["Common_CreatedUtc"]</dt><dd><UtcTimestamp Value="@d.Organization.CreatedAtUtc" /></dd>
-            <dt>@L["Common_UpdatedUtc"]</dt><dd><UtcTimestamp Value="@d.Organization.UpdatedAtUtc" /></dd>
-            <dt>@L["Organizations_CommercialAdmin"]</dt>
-            <dd>
-                <a href="/admin/organizations/@Id/members">@L["Common_Members"]</a>
-                ·
-                <a href="/admin/organizations/@Id/product-access">@L["Common_ProductAccess"]</a>
-                ·
-                <a href="/admin/subscriptions">@L["Organizations_StartTrialSubscriptions"]</a>
-                ·
-                <a href="/admin/payments?organizationId=@Id">@L["Organizations_CreateViewPayments"]</a>
-            </dd>
-        </KeyValueList>
+        else
+        {
+            <Table TItem="SubscriptionDto" DataSource="d.Subscriptions" Size="@TableSize.Small" HidePagination Bordered Style="margin-bottom:12px;">
+                <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" />
+                <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                    <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                </PropertyColumn>
+                <ActionColumn Title="@L["Common_Detail"]">
+                    <a href="/admin/subscriptions/@context.Id">@L["Organizations_OpenSubscription"]</a>
+                </ActionColumn>
+            </Table>
+        }
 
-        <DetailSection Title="@L["Organizations_SubscriptionsByProduct"]" Description="@L["Organizations_SubscriptionsHint"]">
-            @if (d.Subscriptions.Count == 0) { <EmptyState Message="@L["Organizations_SubscriptionsEmpty"]" /> }
-            else
-            {
-                <AdminDataTable TItem="SubscriptionDto"
-                                Items="d.Subscriptions"
-                                Columns="_subColumns"
-                                Caption="@L["Organizations_SubscriptionsByProduct"]"
-                                ItemKey="s => s.Id"
-                                CellTemplate="SubCell" />
-            }
-        </DetailSection>
+        <Title Level="5">@L["Organizations_PaymentHistory"]</Title>
+        @if (d.Payments.Count == 0)
+        {
+            <Empty Description="@L["Organizations_PaymentsEmpty"].Value" />
+        }
+        else
+        {
+            <Table TItem="PaymentDto" DataSource="d.Payments" Size="@TableSize.Small" HidePagination Bordered Style="margin-bottom:12px;">
+                <PropertyColumn Property="c => c.ExternalReference" Title="@L["Common_Reference"]" />
+                <PropertyColumn Property="c => c.Amount" Title="@L["Common_Amount"]">
+                    <AmountDisplay Amount="@((decimal?)context.Amount)" CurrencyCode="@context.CurrencyCode" />
+                </PropertyColumn>
+                <PropertyColumn Property="c => c.Method" Title="@L["Common_Method"]" />
+                <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                    <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                </PropertyColumn>
+                <ActionColumn Title="@L["Common_Detail"]">
+                    <a href="/admin/payments/@context.Id">@L["Organizations_OpenPayment"]</a>
+                </ActionColumn>
+            </Table>
+        }
 
-        <DetailSection Title="@L["Organizations_PaymentHistory"]">
-            @if (d.Payments.Count == 0) { <EmptyState Message="@L["Organizations_PaymentsEmpty"]" /> }
-            else
-            {
-                <AdminDataTable TItem="PaymentDto"
-                                Items="d.Payments"
-                                Columns="_payColumns"
-                                Caption="@L["Organizations_PaymentHistory"]"
-                                ItemKey="p => p.Id"
-                                CellTemplate="PayCell" />
-            }
-        </DetailSection>
-
-        <DetailSection Title="@L["Organizations_LatestEntitlements"]">
-            @if (d.LatestEntitlements.Count == 0) { <EmptyState Message="@L["Organizations_EntitlementsEmpty"]" /> }
-            else
-            {
-                <AdminDataTable TItem="EntitlementLatestSummaryDto"
-                                Items="d.LatestEntitlements"
-                                Columns="_entColumns"
-                                Caption="@L["Organizations_LatestEntitlements"]"
-                                ItemKey="e => e.Id"
-                                CellTemplate="EntCell" />
-            }
-        </DetailSection>
-    </AdminDataPanel>
+        <Title Level="5">@L["Organizations_LatestEntitlements"]</Title>
+        @if (d.LatestEntitlements.Count == 0)
+        {
+            <Empty Description="@L["Organizations_EntitlementsEmpty"].Value" />
+        }
+        else
+        {
+            <Table TItem="EntitlementLatestSummaryDto" DataSource="d.LatestEntitlements" Size="@TableSize.Small" HidePagination Bordered>
+                <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" />
+                <PropertyColumn Property="c => c.SnapshotVersion" Title="@L["Common_Version"]">
+                    <a href="/admin/entitlements/@context.Id">@context.SnapshotVersion</a>
+                </PropertyColumn>
+                <PropertyColumn Property="c => c.SubscriptionStatus" Title="@L["Common_Status"]">
+                    <Tag Color="@StatusColor(context.SubscriptionStatus)">@context.SubscriptionStatus</Tag>
+                </PropertyColumn>
+                <PropertyColumn Property="c => c.GeneratedAtUtc" Title="@L["Common_GeneratedUtc"]" Format="u" />
+                <ActionColumn Title="@L["Common_History"]">
+                    <a href="/admin/entitlements/history/@context.OrganizationId/@context.ProductCode">@L["Common_History"]</a>
+                </ActionColumn>
+            </Table>
+        }
+    }
 }
 
 @code {
@@ -109,44 +158,6 @@ else
     private ApiCallResult<PagedResult<OrganizationDto>>? _list;
     private ApiCallResult<OrganizationCommercialSummaryDto>? _detail;
     private int _page = 1;
-    private List<AdminColumnDefinition> _orgColumns = new();
-    private List<AdminColumnDefinition> _subColumns = new();
-    private List<AdminColumnDefinition> _payColumns = new();
-    private List<AdminColumnDefinition> _entColumns = new();
-
-    protected override void OnInitialized()
-    {
-        _orgColumns =
-        [
-            new("name", L["Common_DisplayName"], Primary: true),
-            new("slug", L["Common_Slug"]),
-            new("status", L["Common_Status"]),
-            new("created", L["Common_CreatedUtc"]),
-            new("updated", L["Common_UpdatedUtc"])
-        ];
-        _subColumns =
-        [
-            new("product", L["Common_Product"], Primary: true),
-            new("status", L["Common_Status"]),
-            new("detail", L["Common_Detail"])
-        ];
-        _payColumns =
-        [
-            new("ref", L["Common_Reference"], Primary: true),
-            new("amount", L["Common_Amount"], Numeric: true),
-            new("method", L["Common_Method"]),
-            new("status", L["Common_Status"]),
-            new("detail", L["Common_Detail"])
-        ];
-        _entColumns =
-        [
-            new("product", L["Common_Product"], Primary: true),
-            new("version", L["Common_Version"]),
-            new("status", L["Common_Status"]),
-            new("generated", L["Common_GeneratedUtc"]),
-            new("history", L["Common_History"])
-        ];
-    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -156,123 +167,18 @@ else
 
     private async Task LoadOrgsAsync() => _list = await Api.GetOrganizationsAsync(page: _page);
 
-    private async Task OnOrgPageAsync(int page)
+    private async Task OnOrgPageChangedAsync(PaginationEventArgs args)
     {
-        _page = page;
+        _page = args.Page;
         await LoadOrgsAsync();
     }
 
-    private RenderFragment<(OrganizationDto Item, AdminColumnDefinition Column)> OrgCell => ctx => b =>
+    private static string StatusColor(string status) => status switch
     {
-        switch (ctx.Column.Key)
-        {
-            case "name":
-                b.OpenElement(0, "a");
-                b.AddAttribute(1, "href", $"/admin/organizations/{ctx.Item.Id}");
-                b.AddContent(2, ctx.Item.DisplayName);
-                b.CloseElement();
-                break;
-            case "slug":
-                b.AddContent(0, ctx.Item.Slug);
-                break;
-            case "status":
-                b.OpenComponent<StatusBadge>(0);
-                b.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
-                b.CloseComponent();
-                break;
-            case "created":
-                b.OpenComponent<UtcTimestamp>(0);
-                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.CreatedAtUtc);
-                b.CloseComponent();
-                break;
-            case "updated":
-                b.OpenComponent<UtcTimestamp>(0);
-                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.UpdatedAtUtc);
-                b.CloseComponent();
-                break;
-        }
-    };
-
-    private RenderFragment<(SubscriptionDto Item, AdminColumnDefinition Column)> SubCell => ctx => b =>
-    {
-        switch (ctx.Column.Key)
-        {
-            case "product":
-                b.AddContent(0, ctx.Item.ProductCode);
-                break;
-            case "status":
-                b.OpenComponent<StatusBadge>(0);
-                b.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
-                b.CloseComponent();
-                break;
-            case "detail":
-                b.OpenElement(0, "a");
-                b.AddAttribute(1, "href", $"/admin/subscriptions/{ctx.Item.Id}");
-                b.AddContent(2, L["Organizations_OpenSubscription"]);
-                b.CloseElement();
-                break;
-        }
-    };
-
-    private RenderFragment<(PaymentDto Item, AdminColumnDefinition Column)> PayCell => ctx => b =>
-    {
-        switch (ctx.Column.Key)
-        {
-            case "ref":
-                b.AddContent(0, ctx.Item.ExternalReference);
-                break;
-            case "amount":
-                b.OpenComponent<AmountDisplay>(0);
-                b.AddAttribute(1, nameof(AmountDisplay.Amount), (decimal?)ctx.Item.Amount);
-                b.AddAttribute(2, nameof(AmountDisplay.CurrencyCode), ctx.Item.CurrencyCode);
-                b.CloseComponent();
-                break;
-            case "method":
-                b.AddContent(0, ctx.Item.Method);
-                break;
-            case "status":
-                b.OpenComponent<StatusBadge>(0);
-                b.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
-                b.CloseComponent();
-                break;
-            case "detail":
-                b.OpenElement(0, "a");
-                b.AddAttribute(1, "href", $"/admin/payments/{ctx.Item.Id}");
-                b.AddContent(2, L["Organizations_OpenPayment"]);
-                b.CloseElement();
-                break;
-        }
-    };
-
-    private RenderFragment<(EntitlementLatestSummaryDto Item, AdminColumnDefinition Column)> EntCell => ctx => b =>
-    {
-        switch (ctx.Column.Key)
-        {
-            case "product":
-                b.AddContent(0, ctx.Item.ProductCode);
-                break;
-            case "version":
-                b.OpenElement(0, "a");
-                b.AddAttribute(1, "href", $"/admin/entitlements/{ctx.Item.Id}");
-                b.AddContent(2, ctx.Item.SnapshotVersion);
-                b.CloseElement();
-                break;
-            case "status":
-                b.OpenComponent<StatusBadge>(0);
-                b.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.SubscriptionStatus);
-                b.CloseComponent();
-                break;
-            case "generated":
-                b.OpenComponent<UtcTimestamp>(0);
-                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.GeneratedAtUtc);
-                b.CloseComponent();
-                break;
-            case "history":
-                b.OpenElement(0, "a");
-                b.AddAttribute(1, "href", $"/admin/entitlements/history/{ctx.Item.OrganizationId}/{ctx.Item.ProductCode}");
-                b.AddContent(2, L["Common_History"]);
-                b.CloseElement();
-                break;
-        }
+        "Active" => "success",
+        "Trialing" => "processing",
+        "Suspended" or "PastDue" or "GracePeriod" => "warning",
+        "Cancelled" or "Expired" or "Deactivated" => "default",
+        _ => "processing"
     };
 }

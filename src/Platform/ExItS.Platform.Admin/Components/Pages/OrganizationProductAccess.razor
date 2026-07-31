@@ -4,7 +4,7 @@
 @inject ToastService Toasts
 @inject IStringLocalizer<AdminResources> L
 
-<PageHeader Title="@L["OrgProductAccess_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Organizations"]} / {L["Common_ProductAccess"]}")" Description="@L["OrgProductAccess_Description"]" />
+<AdminPageHeader Title="@L["OrgProductAccess_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Organizations"]} / {L["Common_ProductAccess"]}")" Description="@L["OrgProductAccess_Description"]" />
 <div class="warning" role="note">@L["OrgProductAccess_Warning"]</div>
 
 @if (_org is null) { <LoadingState Message="@L["OrgProductAccess_Loading"]" /> }

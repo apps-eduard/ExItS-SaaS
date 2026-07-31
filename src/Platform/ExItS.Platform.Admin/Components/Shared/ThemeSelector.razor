@@ -2,30 +2,30 @@
 @inject NavigationManager Nav
 @inject IJSRuntime Js
 @inject IStringLocalizer<AdminResources> L
+@using AntDesign
 @implements IDisposable
 
-<div class="selector-group">
-    <label class="sr-only" for="theme-selector">@L["Theme_Label"]</label>
-    <select id="theme-selector"
-            value="@ThemeService.ToStorageValue(Theme.Current)"
-            @onchange="OnChangedAsync"
-            disabled="@(!_ready)"
-            aria-label="@L["Theme_Label"]">
-        <option value="system">@L["Theme_System"]</option>
-        <option value="light">@L["Theme_Light"]</option>
-        <option value="dark">@L["Theme_Dark"]</option>
-    </select>
-</div>
+<Select TItem="string"
+        TItemValue="string"
+        Value="@_selected"
+        ValueChanged="OnChangedAsync"
+        Disabled="@(!_ready)"
+        Size="@InputSize.Small"
+        Style="width: 7.5rem;"
+        Placeholder="@L["Theme_Label"]"
+        AllowClear="false">
+    <SelectOptions>
+        <SelectOption TItem="string" TItemValue="string" Value="@("system")" Label="@L["Theme_System"]" />
+        <SelectOption TItem="string" TItemValue="string" Value="@("light")" Label="@L["Theme_Light"]" />
+        <SelectOption TItem="string" TItemValue="string" Value="@("dark")" Label="@L["Theme_Dark"]" />
+    </SelectOptions>
+</Select>
 
 @code {
     private bool _ready;
+    private string _selected = "system";
 
-    protected override void OnInitialized()
-    {
-        // Enhanced navigation can strip documentElement data-theme without remounting
-        // this interactive island — re-apply from the authoritative preference.
-        Nav.LocationChanged += OnLocationChanged;
-    }
+    protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -35,35 +35,23 @@
         }
 
         await Theme.InitializeAsync();
+        _selected = ThemeService.ToStorageValue(Theme.Current);
         _ready = true;
         StateHasChanged();
     }
 
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        try
-        {
-            await Js.InvokeVoidAsync("exitsAdminTheme.reapplyFromStorage");
-        }
-        catch (JSDisconnectedException)
-        {
-            // Circuit gone — ignore.
-        }
-        catch (ObjectDisposedException)
-        {
-            // Circuit disposed — ignore.
-        }
+        try { await Js.InvokeVoidAsync("exitsAdminTheme.reapplyFromStorage"); }
+        catch (JSDisconnectedException) { }
+        catch (ObjectDisposedException) { }
     }
 
-    private async Task OnChangedAsync(ChangeEventArgs e)
+    private async Task OnChangedAsync(string value)
     {
-        var raw = e.Value?.ToString();
-        var theme = ThemeService.Parse(raw);
-        await Theme.SetThemeAsync(theme);
+        _selected = value ?? "system";
+        await Theme.SetThemeAsync(ThemeService.Parse(_selected));
     }
 
-    public void Dispose()
-    {
-        Nav.LocationChanged -= OnLocationChanged;
-    }
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
 }

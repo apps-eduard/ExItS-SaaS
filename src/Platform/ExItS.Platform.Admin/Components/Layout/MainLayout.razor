@@ -1,81 +1,95 @@
 ﻿@inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.Extensions.Options
+@using AntDesign
 @inject IOptions<DevelopmentOperatorOptions> OperatorOptions
 @inject IHostEnvironment Env
 @inject IStringLocalizer<AdminResources> L
+@inject NavigationManager Nav
 
 @*
-  Authoritative Platform Admin shell (P11-WP02).
-  Do not introduce a second layout/shell. Theme persistence relies on theme-boot.js
-  (Blazor.enhancedload + pageshow) and ThemeSelector LocationChanged — not document-wide permanence attributes.
+  Authoritative Platform Admin shell (P15-WP01 Ant Design Pro–inspired).
+  Single shell — do not introduce a parallel layout.
 *@
 
 <a class="skip-link" href="#main-content">@L["Nav_SkipToContent"]</a>
 
-<div class="app-shell" id="app-shell">
-    <input type="checkbox" id="nav-drawer-toggle" class="shell-toggle" />
-    <input type="checkbox" id="nav-collapse-toggle" class="shell-toggle" />
-
-    <label class="drawer-backdrop" for="nav-drawer-toggle" aria-hidden="true"></label>
-
-    <aside class="app-sidebar" id="app-sidebar" aria-label="@L["Aria_AdminNav"]">
-        <div class="brand-row">
-            <a class="brand-mark" href="/admin" aria-hidden="true" tabindex="-1">EA</a>
-            <a class="brand-text" href="/admin">@L["Brand_Name"]</a>
-            <label class="icon-btn drawer-close" for="nav-drawer-toggle" aria-label="@L["Nav_CloseDrawer"]" aria-controls="app-sidebar">
-                <NavIcon Name="close" />
-            </label>
+<Layout Class="exits-admin-layout">
+    <Sider Collapsible
+           @bind-Collapsed="_collapsed"
+           Theme="SiderTheme.Dark"
+           Width="220"
+           CollapsedWidth="64"
+           Breakpoint="@BreakpointType.Lg"
+           Class="exits-admin-sider">
+        <div class="exits-brand" @onclick='() => Nav.NavigateTo("/admin")'>
+            <span class="exits-brand-mark">EA</span>
+            @if (!_collapsed)
+            {
+                <span class="exits-brand-text">@L["Brand_Name"]</span>
+            }
         </div>
-        <AdminNav @rendermode="InteractiveServer" />
-    </aside>
+        <AdminNav @rendermode="InteractiveServer" Collapsed="_collapsed" />
+    </Sider>
 
-    <div class="app-content">
-        <header class="app-header" role="banner">
-            <label class="icon-btn menu-toggle" for="nav-drawer-toggle" aria-label="@L["Nav_OpenDrawer"]" aria-controls="app-sidebar" aria-expanded="false">
-                <NavIcon Name="menu" />
-            </label>
-            <label class="icon-btn collapse-toggle" for="nav-collapse-toggle" aria-label="@L["Nav_CollapseSidebar"]" title="@L["Nav_CollapseSidebar"]">
-                <NavIcon Name="collapse" />
-            </label>
-            <div class="app-header-context" aria-live="polite">
-                <span class="app-header-title">@L["Brand_Name"]</span>
+    <Layout>
+        <Header Class="exits-admin-header">
+            <div class="exits-header-left">
+                <Button Type="@ButtonType.Text"
+                        Icon="@(_collapsed ? "menu-unfold" : "menu-fold")"
+                        OnClick="ToggleCollapsed"
+                        AriaLabel="@(_collapsed ? L["Nav_OpenDrawer"] : L["Nav_CollapseSidebar"])" />
+                <span class="exits-header-title">@L["Brand_Name"]</span>
                 @if (!string.IsNullOrWhiteSpace(ActorDisplayName))
                 {
-                    <span class="app-header-chip">@ActorDisplayName</span>
+                    <Tag Color="@("blue")">@ActorDisplayName</Tag>
                 }
                 <OrganizationContextSwitcher />
             </div>
-            <span class="app-header-spacer"></span>
-            <div class="app-header-controls">
+            <div class="exits-header-right">
                 <ThemeSelector @rendermode="InteractiveServer" />
                 <LanguageSelector @rendermode="InteractiveServer" />
                 <EnvironmentBanner ActorDisplayName="@ActorDisplayName" />
                 <AuthorizeView>
                     <Authorized>
-                        <a class="icon-btn" href="/admin/account/change-password" title="Change password" aria-label="Change password">Pwd</a>
-                        <a class="icon-btn" href="/admin/account/recovery-email" title="Recovery email" aria-label="Recovery email">Rec</a>
-                        <a class="icon-btn" href="/admin/logout" title="Sign out" aria-label="Sign out">Out</a>
+                        <Dropdown>
+                            <Overlay>
+                                <Menu>
+                                    <MenuItem OnClick='() => Nav.NavigateTo("/admin/account/change-password")'>Change password</MenuItem>
+                                    <MenuItem OnClick='() => Nav.NavigateTo("/admin/account/recovery-email")'>Recovery email</MenuItem>
+                                    <MenuDivider />
+                                    <MenuItem OnClick='() => Nav.NavigateTo("/admin/logout", forceLoad: true)'>Sign out</MenuItem>
+                                </Menu>
+                            </Overlay>
+                            <ChildContent>
+                                <Button Type="@ButtonType.Text" Class="exits-account-btn">
+                                    <Avatar Size="AvatarSize.Small" Style="background:#085652">@AvatarInitial</Avatar>
+                                    <span class="exits-account-label">Account</span>
+                                </Button>
+                            </ChildContent>
+                        </Dropdown>
                     </Authorized>
                 </AuthorizeView>
             </div>
-        </header>
+        </Header>
 
-        <main class="app-main" id="main-content" tabindex="-1">
-            @Body
-        </main>
+        <Content Class="exits-admin-content">
+            <div id="main-content" tabindex="-1">
+                @Body
+            </div>
+        </Content>
 
-        <footer class="app-footer">
-            <p>@L["Footer_Text"]</p>
+        <Footer Class="exits-admin-footer">
+            <span>@L["Footer_Text"]</span>
             @if (!string.IsNullOrWhiteSpace(ActorDisplayName))
             {
-                <p class="muted">@string.Format(L["Footer_ActorContext"].Value, ActorDisplayName)</p>
+                <span class="muted"> — @string.Format(L["Footer_ActorContext"].Value, ActorDisplayName)</span>
             }
-        </footer>
-    </div>
+        </Footer>
+    </Layout>
+</Layout>
 
-    <ToastHost @rendermode="InteractiveServer" />
-</div>
+<ToastHost @rendermode="InteractiveServer" />
 
 <div id="blazor-error-ui" data-nosnippet role="alert">
     @L["Error_Unhandled"]
@@ -88,6 +102,7 @@
     private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
 
     private string? _authDisplayName;
+    private bool _collapsed;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -117,4 +132,9 @@
                 : null;
         }
     }
+
+    private string AvatarInitial =>
+        string.IsNullOrWhiteSpace(ActorDisplayName) ? "A" : ActorDisplayName.Trim()[0].ToString().ToUpperInvariant();
+
+    private void ToggleCollapsed() => _collapsed = !_collapsed;
 }
