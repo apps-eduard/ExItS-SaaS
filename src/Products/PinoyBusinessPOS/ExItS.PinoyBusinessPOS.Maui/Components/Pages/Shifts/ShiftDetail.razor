@@ -67,7 +67,7 @@ else
                         ValueChanged="v => _movementType = v ?? _movementType"
                         Options="@_movementOptions"
                         Disabled="@blocked" />
-                <NumberInput Label="@L["Shifts_MovementAmount"]" Value="@_movementAmount" ValueChanged="v => _movementAmount = v" DecimalPlaces="2" Disabled="@blocked" />
+                <NumberInput Label="@L["Shifts_MovementAmount"]" Value="@_movementAmount" ValueChanged="v => _movementAmount = v ?? 0m" DecimalPlaces="2" Disabled="@blocked" />
                 <TextInput Label="@L["Shifts_MovementReason"]" Value="@_movementReason" ValueChanged="v => _movementReason = v" Disabled="@blocked" />
                 <FormActions>
                     <Button Variant="ButtonVariant.Secondary" Disabled="@blocked" IsLoading="@_recording" OnClick="RecordMovementAsync">@L["Shifts_RecordMovement"]</Button>
@@ -77,7 +77,7 @@ else
 
         <Section Title="@L["Shifts_CloseSection"]">
             <Stack Gap="3">
-                <NumberInput Label="@L["Shifts_ClosingCashLabel"]" Value="@_closingCash" ValueChanged="v => _closingCash = v" DecimalPlaces="2" Disabled="@blocked" />
+                <NumberInput Label="@L["Shifts_ClosingCashLabel"]" Value="@_closingCash" ValueChanged="v => _closingCash = v ?? 0m" DecimalPlaces="2" Disabled="@blocked" />
                 <TextInput Label="@L["Shifts_ClosingNotes"]" Value="@_closingNotes" ValueChanged="v => _closingNotes = v" Disabled="@blocked" />
                 <FormActions>
                     <Button Variant="ButtonVariant.Primary" Disabled="@blocked" IsLoading="@_closing" OnClick="CloseAsync">@L["Shifts_CloseConfirm"]</Button>

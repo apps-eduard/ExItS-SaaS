@@ -34,7 +34,7 @@ else
     <Section Title="@L["Shifts_OpeningCashSection"]">
         <NumberInput Label="@L["Shifts_OpeningCashLabel"]"
                      Value="@_openingCash"
-                     ValueChanged="v => _openingCash = v"
+                     ValueChanged="v => _openingCash = v ?? 0m"
                      DecimalPlaces="2"
                      Disabled="@blocked" />
         <FormActions>

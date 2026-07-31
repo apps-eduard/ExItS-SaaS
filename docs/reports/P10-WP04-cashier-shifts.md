@@ -48,7 +48,7 @@ Down migration clears shift-linked sale FKs and shift data before dropping const
 
 Prior baseline: **1079 / 0 / 0** (post P10-WP03). Net new tests: **+18**.
 
-Release build of POS API succeeds. MAUI Android host build requires Android SDK (R-109); guard tests run on `net10.0` without Android host. R-129 (NU1903) unchanged.
+Release build of POS API succeeds. MAUI `net10.0-android` Release compiles after NumberInput `decimal?` ValueChanged coalesce on shift screens. R-129 (NU1903) unchanged.
 
 ## Security limitations
 
