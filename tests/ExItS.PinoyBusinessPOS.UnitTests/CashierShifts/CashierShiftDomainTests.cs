@@ -70,6 +70,18 @@ public sealed class CashierShiftDomainTests
     }
 
     [Fact]
+    public void Expected_cash_subtracts_cash_refunds_on_shift()
+    {
+        var expected = CashierShiftExpectedCash.Compute(
+            openingCashAmount: 100m,
+            netCashSales: 50m,
+            movements: [],
+            cashRefundsOnShift: 15m);
+
+        Assert.Equal(135m, expected);
+    }
+
+    [Fact]
     public void Negative_opening_cash_rejected()
     {
         var ex = Assert.Throws<DomainException>(() =>

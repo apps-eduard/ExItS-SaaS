@@ -17,6 +17,7 @@ public sealed class StockMovement
     public const string SaleVoidRestorationReason = "Sale void restoration";
     public const string PurchaseReceiptReason = "Purchase receipt";
     public const string StockCountVarianceReason = "Stock count variance";
+    public const string SaleReturnRestockReason = "Sale return restock";
 
     public StockMovementId Id { get; }
     public PosOrganizationId OrganizationId { get; }
@@ -315,6 +316,41 @@ public sealed class StockMovement
             StockCountVarianceReason,
             StockMovementSourceType.StockCount,
             stockCountId,
+            utcNow,
+            actorId);
+    }
+
+    public static StockMovement SaleReturnRestock(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid saleReturnId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        StockMovementId? id = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        if (saleReturnId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidSaleReturnId,
+                "SaleReturnId cannot be an empty GUID.");
+        }
+
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.SaleReturnRestock,
+            absolute,
+            SaleReturnRestockReason,
+            StockMovementSourceType.SaleReturn,
+            saleReturnId,
             utcNow,
             actorId);
     }

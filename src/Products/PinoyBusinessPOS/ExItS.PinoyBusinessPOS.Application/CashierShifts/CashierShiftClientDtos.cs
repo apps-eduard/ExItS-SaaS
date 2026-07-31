@@ -41,6 +41,7 @@ public sealed record PosCashierShiftSummaryDto(
     decimal CashSalesTotal,
     decimal GCashSalesTotal,
     decimal UtangSalesTotal,
+    decimal CashRefundsTotal,
     decimal TotalCashIn,
     decimal TotalCashOut,
     decimal ExpectedCashAmount,

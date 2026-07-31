@@ -58,4 +58,10 @@ public interface ISaleRepository
         CancellationToken cancellationToken = default);
 
     Task UpdateAsync(Sale sale, CancellationToken cancellationToken = default);
+
+    /// <summary>True when the sale has one or more completed returns (blocks void).</summary>
+    Task<bool> HasReturnsForSaleAsync(
+        PosOrganizationId organizationId,
+        SaleId saleId,
+        CancellationToken cancellationToken = default);
 }

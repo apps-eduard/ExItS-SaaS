@@ -24,6 +24,8 @@ public sealed class BasicStoreCapabilityMatrixTests
         PosFeatureCodes.StorePurchasingManage,
         PosFeatureCodes.StoreShiftsView,
         PosFeatureCodes.StoreShiftsManage,
+        PosFeatureCodes.StoreReturnsView,
+        PosFeatureCodes.StoreReturnsManage,
         PosFeatureCodes.StoreDashboardView,
         PosFeatureCodes.StoreReportsView
     ];
@@ -65,6 +67,8 @@ public sealed class BasicStoreCapabilityMatrixTests
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManagePurchasing, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewShifts, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManageShifts, status, AllStoreGrants));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewReturns, status, AllStoreGrants));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ProcessReturn, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewDashboard, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewReports, status, AllStoreGrants));
     }
@@ -81,6 +85,7 @@ public sealed class BasicStoreCapabilityMatrixTests
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewSuppliers, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewPurchasing, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewShifts, status, AllStoreGrants));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewReturns, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewDashboard, status, AllStoreGrants));
         Assert.True(UtangCapabilityPolicy.IsAllowed(UtangCapability.ViewReports, status, AllStoreGrants));
 
@@ -92,6 +97,7 @@ public sealed class BasicStoreCapabilityMatrixTests
         Assert.False(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManageSuppliers, status, AllStoreGrants));
         Assert.False(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManagePurchasing, status, AllStoreGrants));
         Assert.False(UtangCapabilityPolicy.IsAllowed(UtangCapability.ManageShifts, status, AllStoreGrants));
+        Assert.False(UtangCapabilityPolicy.IsAllowed(UtangCapability.ProcessReturn, status, AllStoreGrants));
     }
 
     [Theory]

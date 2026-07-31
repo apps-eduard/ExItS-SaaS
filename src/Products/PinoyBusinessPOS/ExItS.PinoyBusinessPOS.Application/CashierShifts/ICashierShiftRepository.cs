@@ -69,6 +69,7 @@ public sealed record CashierShiftSalesTotals(
     decimal CashSalesTotal,
     decimal GCashSalesTotal,
     decimal UtangSalesTotal,
+    decimal CashRefundsTotal,
     int CompletedCashCount,
     int VoidedCashCount,
     int CompletedGCashCount,

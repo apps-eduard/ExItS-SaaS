@@ -2,6 +2,7 @@
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosSaleClient Sales
+@inject IPosSaleReturnClient SaleReturns
 @inject ICurrentUserContext CurrentUser
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
@@ -35,6 +36,10 @@ else
         && isCompleted
         && !_isOffline
         && (!isUtang || Capabilities.IsAllowed(UtangCapability.ReverseCredit));
+    var canReturn = Capabilities.IsAllowed(UtangCapability.ProcessReturn)
+        && Capabilities.IsAllowed(UtangCapability.ViewReturns)
+        && isCompleted
+        && !_isOffline;
 <Page>
     <PageHeader Title="@sale.SaleNumber" Subtitle="@L["Sales_DetailSubtitle"]">
         <Actions>
@@ -165,9 +170,29 @@ else
         </Stack>
     </Section>
 
+    @if (_returns.Count > 0)
+    {
+        <Section Title="@L["Returns_HistorySection"]">
+            <Stack Gap="2">
+                @foreach (var ret in _returns)
+                {
+                    <div class="pos-row">
+                        <span class="pos-value-md">@ret.ReturnNumber</span>
+                        <MoneyDisplay Amount="@ret.TotalRefundAmount" CurrencyCode="PHP" />
+                        <span class="pos-muted">@ret.CreatedAtUtc.ToLocalTime().ToString("g")</span>
+                    </div>
+                }
+            </Stack>
+        </Section>
+    }
+
     @if (isCompleted)
     {
         <FormActions>
+            @if (canReturn)
+            {
+                <Button Variant="ButtonVariant.Primary" OnClick="GoReturn">@L["Returns_StartReturn"]</Button>
+            }
             <Button Variant="ButtonVariant.Danger" Disabled="@(!canVoid)" OnClick="() => _confirmVoid = true">@L["Sales_Void"]</Button>
         </FormActions>
     }
@@ -200,6 +225,7 @@ else
     private string? _errorTitle;
     private string? _errorMessage;
     private string? _banner;
+    private List<PosSaleReturnDto> _returns = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -234,6 +260,14 @@ else
         if (result.IsSuccess && result.Data is not null)
         {
             _sale = result.Data;
+            if (Capabilities.IsAllowed(UtangCapability.ViewReturns))
+            {
+                var returnsResult = await SaleReturns.ListReturnsAsync(saleId: SaleId);
+                if (returnsResult.IsSuccess && returnsResult.Data is not null)
+                {
+                    _returns = returnsResult.Data.Items;
+                }
+            }
         }
         else
         {
@@ -274,4 +308,6 @@ else
     }
 
     private void GoList() => Nav.NavigateTo("/sales");
+
+    private void GoReturn() => Nav.NavigateTo($"/sales/{SaleId:D}/return");
 }

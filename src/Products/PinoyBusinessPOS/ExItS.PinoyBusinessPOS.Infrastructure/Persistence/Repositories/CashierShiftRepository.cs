@@ -211,11 +211,20 @@ internal sealed class CashierShiftRepository : ICashierShiftRepository
         var completedCashTotal = completedCash.Sum(s => s.Total);
         var voidedCashTotal = voidedCash.Sum(s => s.Total);
 
+        var cashCodeForRefund = SalePaymentMethods.ToCode(SalePaymentMethod.Cash);
+        var cashRefunds = await _db.SaleReturns.AsNoTracking()
+            .Where(r => r.OrganizationId == organizationId.Value
+                        && r.CashierShiftId == shiftId.Value
+                        && r.RefundMethod == cashCodeForRefund)
+            .SumAsync(r => r.TotalRefundAmount, cancellationToken)
+            .ConfigureAwait(false);
+
         return new CashierShiftSalesTotals(
             SaleMoney.RoundMoney(completedCashTotal - voidedCashTotal),
             SaleMoney.RoundMoney(completedCashTotal),
             SaleMoney.RoundMoney(completedGCash.Sum(s => s.Total)),
             SaleMoney.RoundMoney(completedUtang.Sum(s => s.Total)),
+            SaleMoney.RoundMoney(cashRefunds),
             completedCash.Count,
             voidedCash.Count,
             completedGCash.Count,

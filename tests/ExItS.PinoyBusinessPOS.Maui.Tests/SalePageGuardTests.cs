@@ -37,6 +37,15 @@ public sealed class SalePageGuardTests
         Assert.Contains("Sales_VoidUtangMessage", detail, StringComparison.Ordinal);
         Assert.Contains("Sales_Detail_LinkedCustomer", detail, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ReverseCredit", detail, StringComparison.Ordinal);
+        Assert.Contains("UtangCapability.ViewReturns", detail, StringComparison.Ordinal);
+        Assert.Contains("UtangCapability.ProcessReturn", detail, StringComparison.Ordinal);
+        Assert.Contains("IPosSaleReturnClient", detail, StringComparison.Ordinal);
+
+        var returnsDir = Path.Combine(MauiProject(), "Components", "Pages", "Returns");
+        Assert.True(Directory.Exists(returnsDir));
+        var returnPage = File.ReadAllText(Path.Combine(returnsDir, "SaleReturn.razor"));
+        Assert.Contains("@page \"/sales/{SaleId:guid}/return\"", returnPage, StringComparison.Ordinal);
+        Assert.Contains("Returns_OfflineMessage", returnPage, StringComparison.Ordinal);
 
         Assert.True(File.Exists(Path.Combine(sales, "SalesUiOptions.cs")));
     }
@@ -62,6 +71,12 @@ public sealed class SalePageGuardTests
         var detail = File.ReadAllText(Path.Combine(SalesPagesDirectory(), "SaleDetail.razor"));
         Assert.Contains("UtangCapability.VoidSale", detail, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ReverseCredit", detail, StringComparison.Ordinal);
+        Assert.Contains("UtangCapability.ProcessReturn", detail, StringComparison.Ordinal);
+
+        var returnPage = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "Returns", "SaleReturn.razor"));
+        Assert.Contains("Gate.CanEnterProtectedShell", returnPage, StringComparison.Ordinal);
+        Assert.Contains("UtangCapability.ProcessReturn", returnPage, StringComparison.Ordinal);
+        Assert.Contains("Connectivity.IsConnectedAsync", returnPage, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -92,7 +107,7 @@ public sealed class SalePageGuardTests
             foreach (var forbidden in new[]
                      {
                          "StockOnHand", "QuantityOnHand", "Reorder", "TaxRate", "DiscountRate",
-                         "DiscountAmount", "Refund", "SplitTender", "PrintReceipt", "PaymentGateway",
+                         "DiscountAmount", "SaleRefund", "RefundId", "ProcessRefund", "SplitTender", "PrintReceipt", "PaymentGateway",
                          "UtangBalance", "Installment", "IOfflineOperationQueue", "SaleCheckoutOffline"
                      })
             {
@@ -190,6 +205,10 @@ public sealed class SalePageGuardTests
                      "Sales_Detail_LinkedCredit",
                      "Sales_Detail_LinkedDueDate",
                      "Sales_Detail_OutstandingAfter",
+                     "Returns_Title",
+                     "Returns_StartReturn",
+                     "Returns_HistorySection",
+                     "Returns_OfflineMessage",
                      "Credit_LinkedSale",
                      "Credit_ReverseViaSaleVoid"
                  })
@@ -208,6 +227,13 @@ public sealed class SalePageGuardTests
         "Components",
         "Pages",
         "Sales");
+
+    private static string MauiProject() => Path.Combine(
+        FindRepoRoot(),
+        "src",
+        "Products",
+        "PinoyBusinessPOS",
+        "ExItS.PinoyBusinessPOS.Maui");
 
     private static string FindRepoRoot()
     {

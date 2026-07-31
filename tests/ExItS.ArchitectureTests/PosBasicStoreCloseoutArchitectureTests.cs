@@ -29,7 +29,7 @@ public sealed class PosBasicStoreCloseoutArchitectureTests
             PosProject("ExItS.PinoyBusinessPOS.Api"), "Program.cs"));
         Assert.DoesNotContain(".Migrate(", program, StringComparison.Ordinal);
         Assert.DoesNotContain(".MigrateAsync(", program, StringComparison.Ordinal);
-        Assert.Contains("P10-WP04-cashier-shifts", program, StringComparison.Ordinal);
+        Assert.Contains("P10-WP05-returns-refunds", program, StringComparison.Ordinal);
     }
 
     [Fact]

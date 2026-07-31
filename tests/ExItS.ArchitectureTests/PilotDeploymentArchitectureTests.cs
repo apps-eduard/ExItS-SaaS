@@ -6,7 +6,7 @@ public sealed class PilotDeploymentArchitectureTests
     public void Deployment_library_phase_marker_is_p9_wp05()
     {
         var source = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Shared", "ExItS.Deployment", "DeploymentCore.cs"));
-        Assert.Contains("P10-WP04-cashier-shifts", source, StringComparison.Ordinal);
+        Assert.Contains("P10-WP05-returns-refunds", source, StringComparison.Ordinal);
         Assert.Contains("DEPLOY_PRODUCTION_CONFIRMED", source, StringComparison.Ordinal);
     }
 
@@ -15,8 +15,8 @@ public sealed class PilotDeploymentArchitectureTests
     {
         var pos = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Api", "Program.cs"));
         var platform = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Platform", "ExItS.Platform.Api", "Program.cs"));
-        Assert.Contains("P10-WP04-cashier-shifts", pos, StringComparison.Ordinal);
-        Assert.Contains("P10-WP04-cashier-shifts", platform, StringComparison.Ordinal);
+        Assert.Contains("P10-WP05-returns-refunds", pos, StringComparison.Ordinal);
+        Assert.Contains("P10-WP05-returns-refunds", platform, StringComparison.Ordinal);
     }
 
     [Fact]

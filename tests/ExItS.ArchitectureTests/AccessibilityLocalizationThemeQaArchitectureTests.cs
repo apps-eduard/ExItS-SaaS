@@ -27,8 +27,8 @@ public sealed class AccessibilityLocalizationThemeQaArchitectureTests
         var root = RepoRoot();
         var pos = File.ReadAllText(Path.Combine(root, "src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/Program.cs"));
         var platform = File.ReadAllText(Path.Combine(root, "src/Platform/ExItS.Platform.Api/Program.cs"));
-        Assert.Contains("P10-WP04-cashier-shifts", pos, StringComparison.Ordinal);
-        Assert.Contains("P10-WP04-cashier-shifts", platform, StringComparison.Ordinal);
+        Assert.Contains("P10-WP05-returns-refunds", pos, StringComparison.Ordinal);
+        Assert.Contains("P10-WP05-returns-refunds", platform, StringComparison.Ordinal);
     }
 
     [Fact]

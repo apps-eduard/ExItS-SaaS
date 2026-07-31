@@ -60,6 +60,8 @@ internal static class PosApiResults
             or DomainErrorCodes.InvalidSaleStatusTransition
             or ApplicationErrorCodes.CreditReversalRequiresSaleVoid
             or ApplicationErrorCodes.SaleVoidBlockedBySubsequentUtangActivity
+            or ApplicationErrorCodes.SaleVoidBlockedByReturns
+            or ApplicationErrorCodes.SaleReturnNumberConflict
             or ApplicationErrorCodes.InsufficientStock
             or ApplicationErrorCodes.InventoryConcurrencyConflict
             or DomainErrorCodes.InventoryInsufficientStock

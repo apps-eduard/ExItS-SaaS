@@ -69,7 +69,11 @@ public sealed class CashierShiftQueryService
         var movements = await _shifts.ListMovementsAsync(orgId, id, cancellationToken).ConfigureAwait(false);
         var salesTotals = await _shifts.GetSalesTotalsAsync(orgId, id, cancellationToken).ConfigureAwait(false);
         var expected = shift.Status == CashierShiftStatus.Open
-            ? CashierShiftExpectedCash.Compute(shift.OpeningCashAmount, salesTotals.NetCashSales, movements)
+            ? CashierShiftExpectedCash.Compute(
+                shift.OpeningCashAmount,
+                salesTotals.NetCashSales,
+                movements,
+                salesTotals.CashRefundsTotal)
             : shift.ExpectedCashAmountSnapshot ?? 0m;
 
         return new PosCashierShiftSummaryDto(
@@ -81,6 +85,7 @@ public sealed class CashierShiftQueryService
             salesTotals.CashSalesTotal,
             salesTotals.GCashSalesTotal,
             salesTotals.UtangSalesTotal,
+            salesTotals.CashRefundsTotal,
             movements.Where(m => m.MovementType == CashierShiftMovementType.CashIn).Sum(m => m.Amount),
             movements.Where(m => m.MovementType == CashierShiftMovementType.CashOut).Sum(m => m.Amount),
             expected,
@@ -242,7 +247,8 @@ public sealed class CloseCashierShift
             var expected = CashierShiftExpectedCash.Compute(
                 shift.OpeningCashAmount,
                 salesTotals.NetCashSales,
-                movements);
+                movements,
+                salesTotals.CashRefundsTotal);
 
             shift.Close(closingCashAmount, expected, actorId, _clock.UtcNow, notes);
             await _shifts.UpdateAsync(shift, cancellationToken).ConfigureAwait(false);
@@ -390,7 +396,8 @@ public sealed class RecordCashierShiftMovement
             var projected = CashierShiftExpectedCash.Compute(
                 shift.OpeningCashAmount,
                 salesTotals.NetCashSales,
-                movements);
+                movements,
+                salesTotals.CashRefundsTotal);
 
             if (parsedType == CashierShiftMovementType.CashOut && projected - amount < 0m)
             {

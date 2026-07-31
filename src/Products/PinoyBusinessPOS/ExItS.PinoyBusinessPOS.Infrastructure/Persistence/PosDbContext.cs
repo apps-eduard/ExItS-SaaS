@@ -8,6 +8,7 @@ using ExItS.PinoyBusinessPOS.Domain.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
+using ExItS.PinoyBusinessPOS.Domain.Returns;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.CashierShifts;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit;
@@ -19,6 +20,7 @@ using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Payments;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Sales;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Suppliers;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Purchasing;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Returns;
 using Microsoft.EntityFrameworkCore;
 
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
@@ -42,6 +44,9 @@ public sealed class PosDbContext : DbContext
     internal DbSet<SaleRecord> Sales => Set<SaleRecord>();
     internal DbSet<SaleLineRecord> SaleLines => Set<SaleLineRecord>();
     internal DbSet<SaleNumberSequenceRecord> SaleNumberSequences => Set<SaleNumberSequenceRecord>();
+    internal DbSet<SaleReturnRecord> SaleReturns => Set<SaleReturnRecord>();
+    internal DbSet<SaleReturnLineRecord> SaleReturnLines => Set<SaleReturnLineRecord>();
+    internal DbSet<SaleReturnNumberSequenceRecord> SaleReturnNumberSequences => Set<SaleReturnNumberSequenceRecord>();
     internal DbSet<InventoryAccountRecord> InventoryAccounts => Set<InventoryAccountRecord>();
     internal DbSet<StockMovementRecord> StockMovements => Set<StockMovementRecord>();
     internal DbSet<InventoryReorderChangeRecord> InventoryReorderChanges => Set<InventoryReorderChangeRecord>();
@@ -601,6 +606,141 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
         });
 
+        modelBuilder.Entity<SaleReturnRecord>(entity =>
+        {
+            entity.ToTable("sale_returns", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_sale_returns_status",
+                    $"status IN ('{nameof(SaleReturnStatus.Completed)}')");
+                tb.HasCheckConstraint(
+                    "ck_sale_returns_refund_method",
+                    $"refund_method IN ('{nameof(SalePaymentMethod.Cash)}', '{nameof(SalePaymentMethod.ManualGCash)}', '{nameof(SalePaymentMethod.Utang)}')");
+                tb.HasCheckConstraint(
+                    "ck_sale_returns_total_refund_positive",
+                    "total_refund_amount > 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.ReturnNumber).HasColumnName("return_number").HasMaxLength(ReturnNumbers.MaxLength).IsRequired();
+            entity.Property(e => e.SaleId).HasColumnName("sale_id").IsRequired();
+            entity.Property(e => e.CashierShiftId).HasColumnName("cashier_shift_id");
+            entity.Property(e => e.RefundMethod).HasColumnName("refund_method").HasMaxLength(SalePaymentMethods.CodeMaxLength).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(SaleReturnStatuses.CodeMaxLength).IsRequired();
+            entity.Property(e => e.ReturnDate).HasColumnName("return_date").HasColumnType("date").IsRequired();
+            entity.Property(e => e.Reason).HasColumnName("reason").HasMaxLength(SaleReturn.ReasonMaxLength).IsRequired();
+            entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(SaleReturn.NotesMaxLength);
+            entity.Property(e => e.TotalRefundAmount).HasColumnName("total_refund_amount").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by").IsRequired();
+            entity.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ReturnNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_sale_returns_org_return_number");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.SaleId, e.CreatedAtUtc })
+                .HasDatabaseName("ix_sale_returns_org_sale_created");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.CashierShiftId })
+                .HasDatabaseName("ix_sale_returns_org_shift")
+                .HasFilter("cashier_shift_id IS NOT NULL");
+
+            entity.HasOne<SaleRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SaleId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_sale_returns_sales");
+
+            entity.HasOne<CashierShiftRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CashierShiftId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_sale_returns_cashier_shifts");
+        });
+
+        modelBuilder.Entity<SaleReturnLineRecord>(entity =>
+        {
+            entity.ToTable("sale_return_lines", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_sale_return_lines_quantity_positive",
+                    "quantity_returned > 0");
+                tb.HasCheckConstraint(
+                    "ck_sale_return_lines_refund_positive",
+                    "refund_amount > 0");
+                tb.HasCheckConstraint(
+                    "ck_sale_return_lines_restock_disposition",
+                    $"restock_disposition IN ('{nameof(RestockDisposition.ReturnToStock)}', '{nameof(RestockDisposition.DoNotRestock)}')");
+                tb.HasCheckConstraint(
+                    "ck_sale_return_lines_uom",
+                    $"uom_snapshot IN ({string.Join(", ", UnitOfMeasures.Codes.Select(c => $"'{c}'"))})");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.SaleReturnId).HasColumnName("sale_return_id").IsRequired();
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.SaleLineId).HasColumnName("sale_line_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.ProductNameSnapshot).HasColumnName("product_name_snapshot").HasMaxLength(SaleReturnLine.NameSnapshotMaxLength).IsRequired();
+            entity.Property(e => e.UomSnapshot).HasColumnName("uom_snapshot").HasMaxLength(UnitOfMeasures.CodeMaxLength).IsRequired();
+            entity.Property(e => e.QuantityReturned).HasColumnName("quantity_returned").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.UnitPriceSnapshot).HasColumnName("unit_price_snapshot").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.RefundAmount).HasColumnName("refund_amount").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.RestockDisposition).HasColumnName("restock_disposition").HasMaxLength(RestockDispositions.CodeMaxLength).IsRequired();
+            entity.Property(e => e.LineReason).HasColumnName("line_reason").HasMaxLength(SaleReturnLine.LineReasonMaxLength);
+            entity.Property(e => e.InventoryMovementId).HasColumnName("inventory_movement_id");
+
+            entity.HasIndex(e => new { e.SaleReturnId, e.SaleLineId })
+                .IsUnique()
+                .HasDatabaseName("ux_sale_return_lines_return_sale_line");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.SaleLineId })
+                .HasDatabaseName("ix_sale_return_lines_org_sale_line");
+
+            entity.HasOne<SaleReturnRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SaleReturnId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_sale_return_lines_returns");
+
+            entity.HasOne<SaleLineRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SaleLineId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_sale_return_lines_sale_lines");
+
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_sale_return_lines_products");
+        });
+
+        modelBuilder.Entity<SaleReturnNumberSequenceRecord>(entity =>
+        {
+            entity.ToTable("sale_return_number_sequences", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_sale_return_number_sequences_last_value_positive",
+                    "last_value > 0");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BusinessDate })
+                .HasName("pk_sale_return_number_sequences");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date");
+            entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
+        });
+
         modelBuilder.Entity<InventoryAccountRecord>(entity =>
         {
             entity.ToTable("inventory_accounts", tb =>
@@ -715,6 +855,12 @@ public sealed class PosDbContext : DbContext
                 .HasDatabaseName("ux_stock_movements_stock_count_source")
                 .HasFilter(
                     $"source_type = '{nameof(StockMovementSourceType.StockCount)}' AND source_id IS NOT NULL");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.SourceId, e.ProductId, e.MovementType })
+                .IsUnique()
+                .HasDatabaseName("ux_stock_movements_sale_return_source")
+                .HasFilter(
+                    $"source_type = '{nameof(StockMovementSourceType.SaleReturn)}' AND source_id IS NOT NULL");
 
             entity.HasIndex(e => new { e.OrganizationId, e.ProductId, e.MovementType })
                 .IsUnique()

@@ -44,7 +44,7 @@ public sealed class PlatformProductionHardeningApiTests(PostgreSqlFixture fixtur
         using var root = await client.GetAsync("/");
         Assert.Equal(HttpStatusCode.OK, root.StatusCode);
         var json = await root.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
-        Assert.Equal("P10-WP04-cashier-shifts", json.GetProperty("phase").GetString());
+        Assert.Equal("P10-WP05-returns-refunds", json.GetProperty("phase").GetString());
     }
 
     [Fact]

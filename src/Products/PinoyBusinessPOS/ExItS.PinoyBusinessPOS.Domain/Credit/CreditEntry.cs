@@ -19,7 +19,7 @@ public sealed class CreditEntry
     public CreditEntryId Id { get; }
     public PosOrganizationId OrganizationId { get; }
     public POSCustomerId CustomerId { get; }
-    public decimal Amount { get; }
+    public decimal Amount => _amount;
     public string Remarks { get; }
     public CreditEntryStatus Status { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
@@ -29,6 +29,8 @@ public sealed class CreditEntry
 
     /// <summary>Originating Product-Based Utang sale when this credit was created at checkout; otherwise null.</summary>
     public SaleId? SourceSaleId { get; }
+
+    private decimal _amount;
 
     private CreditEntry(
         CreditEntryId id,
@@ -46,7 +48,7 @@ public sealed class CreditEntry
         Id = id;
         OrganizationId = organizationId;
         CustomerId = customerId;
-        Amount = amount;
+        _amount = amount;
         Remarks = remarks;
         Status = status;
         CreatedAtUtc = createdAtUtc;
@@ -118,6 +120,37 @@ public sealed class CreditEntry
         Status = CreditEntryStatus.Reversed;
         ReversedAtUtc = utcNow;
         ReversalReason = NormalizeReversalReason(reason);
+    }
+
+    /// <summary>
+    /// Reduces an active credit amount for a partial Product-Based Utang sale return without
+    /// fabricating repayments. When the reduction equals the remaining amount, the entry reverses.
+    /// </summary>
+    public void ReduceForSaleReturn(decimal reductionAmount, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (Status == CreditEntryStatus.Reversed)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCreditEntryStatusTransition,
+                "Reversed credit entries cannot be reduced.");
+        }
+
+        var normalized = NormalizeAmount(reductionAmount);
+        if (normalized > _amount)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCreditAmount,
+                "Reduction amount cannot exceed the credit amount.");
+        }
+
+        if (normalized == _amount)
+        {
+            Reverse("Sale return full refund", utcNow);
+            return;
+        }
+
+        _amount = SaleMoney.RoundMoney(_amount - normalized);
     }
 
     /// <summary>

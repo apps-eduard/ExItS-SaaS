@@ -74,6 +74,10 @@ public static class ApplicationErrorCodes
     public const string CashierShiftMovementConflict = "pos.cashier_shift_movement.conflict";
     public const string CashierShiftNoOpenShift = "pos.cashier_shift.no_open_shift";
     public const string CashierShiftMismatch = "pos.cashier_shift.mismatch";
+
+    public const string SaleReturnNotFound = "pos.sale_return.not_found";
+    public const string SaleReturnNumberConflict = "pos.sale_return.number.conflict";
+    public const string SaleVoidBlockedByReturns = "pos.sale.void.blocked_by_returns";
 }
 
 public sealed class PersistenceConflictException : Exception

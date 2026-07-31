@@ -764,6 +764,24 @@
   <data name="Sales_VoidMessage" xml:space="preserve"><value>Hindi na kasama sa kabuuan ang kanseladong benta. Hindi ito nagsasauli ng pera at hindi nagbabago ng stock. Maglagay ng dahilan.</value></data>
   <data name="Sales_VoidUtangMessage" xml:space="preserve"><value>Kapag kinansela ang Utang na benta, maba-reverse din ang naka-link na credit. Walang isasauling cash at hindi magbabago ang stock. Maglagay ng dahilan.</value></data>
   <data name="Sales_VoidedSuccess" xml:space="preserve"><value>Kinansela ang benta.</value></data>
+  <data name="Returns_Loading" xml:space="preserve"><value>Naglo-load ng detalye ng pagbalik…</value></data>
+  <data name="Returns_NotFoundTitle" xml:space="preserve"><value>Hindi maibalik ang benta</value></data>
+  <data name="Returns_NotFoundMessage" xml:space="preserve"><value>Hindi ma-load ang benta para sa pagbalik.</value></data>
+  <data name="Returns_BackToSale" xml:space="preserve"><value>Bumalik sa benta</value></data>
+  <data name="Returns_Title" xml:space="preserve"><value>Magbalik ng item</value></data>
+  <data name="Returns_OfflineTitle" xml:space="preserve"><value>Offline</value></data>
+  <data name="Returns_OfflineMessage" xml:space="preserve"><value>Online lang ang pagbalik. Kumonekta muli.</value></data>
+  <data name="Returns_ErrorTitle" xml:space="preserve"><value>Nabigo ang pagbalik</value></data>
+  <data name="Returns_LinesSection" xml:space="preserve"><value>Mga linyang ibabalik</value></data>
+  <data name="Returns_RefundableQty" xml:space="preserve"><value>Maibabalik: {0}</value></data>
+  <data name="Returns_Restock" xml:space="preserve"><value>Balik sa stock</value></data>
+  <data name="Returns_NoRestock" xml:space="preserve"><value>Huwag ibalik sa stock</value></data>
+  <data name="Returns_ReasonSection" xml:space="preserve"><value>Dahilan ng pagbalik</value></data>
+  <data name="Returns_ReasonLabel" xml:space="preserve"><value>Dahilan</value></data>
+  <data name="Returns_NotesLabel" xml:space="preserve"><value>Mga tala (opsyonal)</value></data>
+  <data name="Returns_Submit" xml:space="preserve"><value>Kumpletuhin ang pagbalik</value></data>
+  <data name="Returns_HistorySection" xml:space="preserve"><value>Mga pagbalik sa benta na ito</value></data>
+  <data name="Returns_StartReturn" xml:space="preserve"><value>Magbalik ng item</value></data>
   <data name="Sales_Checkout_Title" xml:space="preserve"><value>Bagong benta</value></data>
   <data name="Sales_Checkout_Subtitle" xml:space="preserve"><value>I-scan o hanapin ang produkto, pagkatapos tanggapin ang bayad.</value></data>
   <data name="Sales_Checkout_LookupSection" xml:space="preserve"><value>Magdagdag ng produkto</value></data>

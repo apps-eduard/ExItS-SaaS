@@ -22,7 +22,7 @@ public enum ReleaseReadinessState
 
 public static class DeploymentConstants
 {
-    public const string PhaseMarker = "P10-WP04-cashier-shifts";
+    public const string PhaseMarker = "P10-WP05-returns-refunds";
     public const string ToolVersion = "1.0.0";
     public const string KnownDevPasswordMarker = "exits_platform_dev_only";
     public const string ProductionConfirmationToken = "DEPLOY_PRODUCTION_CONFIRMED";

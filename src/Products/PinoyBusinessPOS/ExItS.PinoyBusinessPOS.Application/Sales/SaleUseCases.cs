@@ -539,6 +539,13 @@ public sealed class VoidSale
                             "Sale was not found.");
                     }
 
+                    if (await _sales.HasReturnsForSaleAsync(orgId, id, ct).ConfigureAwait(false))
+                    {
+                        return ApplicationResult<Sale>.Failure(
+                            ApplicationErrorCodes.SaleVoidBlockedByReturns,
+                            "Voiding is blocked because this sale has one or more returns.");
+                    }
+
                     if (current.PaymentMethod == SalePaymentMethod.Utang)
                     {
                         if (current.LinkedCreditEntryId is null || current.CustomerId is null)

@@ -374,4 +374,13 @@ internal sealed class SaleRepository : ISaleRepository
     private static bool IsSaleNumberConflict(DbUpdateException exception) =>
         exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } pg
         && (pg.ConstraintName ?? string.Empty).Contains("ux_sales_org_sale_number", StringComparison.OrdinalIgnoreCase);
+
+    public Task<bool> HasReturnsForSaleAsync(
+        PosOrganizationId organizationId,
+        SaleId saleId,
+        CancellationToken cancellationToken = default) =>
+        _db.SaleReturns.AsNoTracking()
+            .AnyAsync(
+                r => r.OrganizationId == organizationId.Value && r.SaleId == saleId.Value,
+                cancellationToken);
 }

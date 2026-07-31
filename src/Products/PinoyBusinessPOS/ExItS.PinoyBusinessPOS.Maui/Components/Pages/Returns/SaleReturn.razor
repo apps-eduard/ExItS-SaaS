@@ -1,0 +1,207 @@
+@page "/sales/{SaleId:guid}/return"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosSaleReturnClient Returns
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject ICurrentUserContext CurrentUser
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (_loading)
+{
+    <Page><Spinner /><span>@L["Returns_Loading"]</span></Page>
+}
+else if (_refundable is null)
+{
+    <Page>
+        <ErrorState Title="@(_errorTitle ?? L["Returns_NotFoundTitle"])"
+                    Message="@(_errorMessage ?? L["Returns_NotFoundMessage"])"
+                    RetryLabel="@L["Api_Retry"]"
+                    OnRetry="LoadAsync" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Returns_BackToSale"]</Button>
+    </Page>
+}
+else
+{
+<Page>
+    <PageHeader Title="@L["Returns_Title"]" Subtitle="@_refundable.SaleNumber">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Returns_BackToSale"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Returns_OfflineTitle"]" Message="@L["Returns_OfflineMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Returns_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Returns_LinesSection"]">
+        <Stack Gap="3">
+            @foreach (var line in _refundable.Lines)
+            {
+                var qty = GetQuantity(line.SaleLineId);
+                <div class="pos-row">
+                    <span class="pos-value-md">@line.ProductNameSnapshot</span>
+                    <span class="pos-muted">@L["Returns_RefundableQty", line.RefundableQuantity.ToString("0.###")]</span>
+                    <NumberInput Value="@qty"
+                                 ValueChanged="v => SetQuantity(line.SaleLineId, v)"
+                                 Min="0"
+                                 Max="@line.RefundableQuantity"
+                                 Step="1" />
+                    <select class="pos-input" value="@GetDisposition(line.SaleLineId)" @onchange="e => SetDisposition(line.SaleLineId, e)">
+                        <option value="ReturnToStock">@L["Returns_Restock"]</option>
+                        <option value="DoNotRestock">@L["Returns_NoRestock"]</option>
+                    </select>
+                </div>
+            }
+        </Stack>
+    </Section>
+
+    <Section Title="@L["Returns_ReasonSection"]">
+        <TextInput Label="@L["Returns_ReasonLabel"]" @bind-Value="_reason" Required="true" />
+        <TextInput Label="@L["Returns_NotesLabel"]" @bind-Value="_notes" />
+    </Section>
+
+    <FormActions>
+        <Button Variant="ButtonVariant.Primary"
+                Disabled="@(!CanSubmit)"
+                IsLoading="@_acting"
+                OnClick="SubmitAsync">@L["Returns_Submit"]</Button>
+    </FormActions>
+</Page>
+}
+
+@code {
+    [Parameter] public Guid SaleId { get; set; }
+
+    private bool _ready;
+    private bool _loading = true;
+    private bool _acting;
+    private bool _isOffline;
+    private PosRefundableSaleDto? _refundable;
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private string _reason = string.Empty;
+    private string? _notes;
+    private readonly Dictionary<Guid, decimal> _quantities = new();
+    private readonly Dictionary<Guid, string> _dispositions = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ProcessReturn))
+        {
+            Nav.NavigateTo("/sales");
+            return;
+        }
+
+        _ready = true;
+        await LoadAsync();
+    }
+
+    private bool CanSubmit =>
+        !_isOffline
+        && Capabilities.IsAllowed(UtangCapability.ProcessReturn)
+        && !string.IsNullOrWhiteSpace(_reason)
+        && _quantities.Values.Any(q => q > 0m)
+        && !_acting;
+
+    private decimal GetQuantity(Guid saleLineId) =>
+        _quantities.TryGetValue(saleLineId, out var qty) ? qty : 0m;
+
+    private void SetQuantity(Guid saleLineId, decimal? value) =>
+        _quantities[saleLineId] = Math.Max(0m, value ?? 0m);
+
+    private string GetDisposition(Guid saleLineId) =>
+        _dispositions.TryGetValue(saleLineId, out var d) ? d : "ReturnToStock";
+
+    private void SetDisposition(Guid saleLineId, ChangeEventArgs e) =>
+        _dispositions[saleLineId] = e.Value?.ToString() ?? "ReturnToStock";
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        _isOffline = !await Connectivity.IsConnectedAsync();
+
+        if (_isOffline)
+        {
+            _loading = false;
+            return;
+        }
+
+        var result = await Returns.GetRefundableAsync(SaleId);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _refundable = result.Data;
+            foreach (var line in _refundable.Lines)
+            {
+                _dispositions.TryAdd(line.SaleLineId, "ReturnToStock");
+            }
+        }
+        else
+        {
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_refundable is null || !CanSubmit)
+        {
+            return;
+        }
+
+        _acting = true;
+        _errorTitle = null;
+        _errorMessage = null;
+
+        var lines = _refundable.Lines
+            .Where(l => GetQuantity(l.SaleLineId) > 0m)
+            .Select(l => new CreateSaleReturnLineRequest(
+                l.SaleLineId,
+                GetQuantity(l.SaleLineId),
+                GetDisposition(l.SaleLineId)))
+            .ToList();
+
+        var result = await Returns.CreateReturnAsync(new CreateSaleReturnRequest(
+            SaleId,
+            _reason.Trim(),
+            lines,
+            string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim()));
+
+        _acting = false;
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            Nav.NavigateTo($"/sales/{SaleId:D}");
+            return;
+        }
+
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _errorTitle = described.Title;
+        _errorMessage = result.Error?.Detail ?? described.Message;
+    }
+
+    private void GoDetail() => Nav.NavigateTo($"/sales/{SaleId:D}");
+}

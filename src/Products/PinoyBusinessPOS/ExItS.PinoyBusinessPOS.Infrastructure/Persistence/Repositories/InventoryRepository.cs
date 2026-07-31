@@ -4,6 +4,7 @@ using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
+using ExItS.PinoyBusinessPOS.Domain.Returns;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory;
 using Microsoft.EntityFrameworkCore;
@@ -386,6 +387,19 @@ internal sealed class InventoryRepository : IInventoryRepository
                 && m.ProductId == productId.Value
                 && m.SourceType == nameof(StockMovementSourceType.PurchaseReceipt)
                 && m.MovementType == nameof(StockMovementType.PurchaseReceipt),
+            cancellationToken);
+
+    public Task<bool> HasSaleReturnRestockAsync(
+        PosOrganizationId organizationId,
+        SaleReturnId saleReturnId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.SourceId == saleReturnId.Value
+                && m.ProductId == productId.Value
+                && m.SourceType == nameof(StockMovementSourceType.SaleReturn)
+                && m.MovementType == nameof(StockMovementType.SaleReturnRestock),
             cancellationToken);
 
     public async Task<(DateTimeOffset? LatestAt, int Count)> GetMovementSummaryAsync(

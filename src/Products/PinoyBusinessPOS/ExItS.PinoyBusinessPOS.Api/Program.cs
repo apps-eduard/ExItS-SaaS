@@ -23,7 +23,9 @@ using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Application.Statements;
 using ExItS.PinoyBusinessPOS.Application.Suppliers;
 using ExItS.PinoyBusinessPOS.Application.Purchasing;
+using ExItS.PinoyBusinessPOS.Application.Returns;
 using ExItS.PinoyBusinessPOS.Api.Purchasing;
+using ExItS.PinoyBusinessPOS.Api.Returns;
 using ExItS.PinoyBusinessPOS.Infrastructure;
 using ExItS.PinoyBusinessPOS.Infrastructure.Health;
 using Microsoft.AspNetCore.RateLimiting;
@@ -68,6 +70,8 @@ builder.Services.AddScoped<ReactivateCatalogProduct>();
 builder.Services.AddScoped<SaleQueryService>();
 builder.Services.AddScoped<CheckoutSale>();
 builder.Services.AddScoped<VoidSale>();
+builder.Services.AddScoped<SaleReturnQueryService>();
+builder.Services.AddScoped<ProcessSaleReturn>();
 builder.Services.AddScoped<InventoryQueryService>();
 builder.Services.AddScoped<EnableInventoryTracking>();
 builder.Services.AddScoped<DisableInventoryTracking>();
@@ -127,6 +131,7 @@ app.MapRepaymentEndpoints();
 app.MapStatementEndpoints();
 app.MapCatalogEndpoints();
 app.MapSaleEndpoints();
+app.MapSaleReturnEndpoints();
 app.MapInventoryEndpoints();
 app.MapExpenseEndpoints();
 app.MapSupplierEndpoints();
@@ -135,7 +140,7 @@ app.MapCashierShiftEndpoints();
 app.MapReportingEndpoints();
 app.MapDevOfflineProbeEndpoints();
 
-// Phase marker: P10-WP04-cashier-shifts
+// Phase marker: P10-WP05-returns-refunds
 
 app.Run();
 

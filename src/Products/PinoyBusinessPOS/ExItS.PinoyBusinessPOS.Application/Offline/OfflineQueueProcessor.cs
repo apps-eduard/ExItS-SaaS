@@ -388,4 +388,7 @@ public static class OfflineOperationTypes
 
     /// <summary>Server-side idempotency operation type for cashier shift cash movements. Online-only.</summary>
     public const string CashierShiftMovement = "cashier_shift.movement";
+
+    /// <summary>Server-side idempotency operation type for sale returns. Online-only.</summary>
+    public const string SaleReturnCreate = "sale_return.create";
 }

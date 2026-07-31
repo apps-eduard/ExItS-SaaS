@@ -6,13 +6,14 @@ namespace ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 public static class CashierShiftExpectedCash
 {
     /// <summary>
-    /// ExpectedCash = OpeningCash + NetCashSales + Sum(CashIn) − Sum(CashOut).
+    /// ExpectedCash = OpeningCash + NetCashSales + Sum(CashIn) − Sum(CashOut) − CashRefundsOnShift.
     /// NetCashSales counts Completed Cash sales minus Voided Cash sales (ManualGCash and Utang excluded).
     /// </summary>
     public static decimal Compute(
         decimal openingCashAmount,
         decimal netCashSales,
-        IEnumerable<CashierShiftMovement> movements)
+        IEnumerable<CashierShiftMovement> movements,
+        decimal cashRefundsOnShift = 0m)
     {
         var cashIn = movements
             .Where(m => m.MovementType == CashierShiftMovementType.CashIn)
@@ -21,6 +22,6 @@ public static class CashierShiftExpectedCash
             .Where(m => m.MovementType == CashierShiftMovementType.CashOut)
             .Sum(m => m.Amount);
 
-        return SaleMoney.RoundMoney(openingCashAmount + netCashSales + cashIn - cashOut);
+        return SaleMoney.RoundMoney(openingCashAmount + netCashSales + cashIn - cashOut - cashRefundsOnShift);
     }
 }

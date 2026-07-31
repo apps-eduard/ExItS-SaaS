@@ -60,6 +60,12 @@ public sealed partial class FeatureCode : IEquatable<FeatureCode>
     /// <summary>POS Full POS: open, close, cancel shifts and record cash movements.</summary>
     public const string StoreShiftsManage = "store-shifts-manage";
 
+    /// <summary>POS Full POS: view sale return history and refundable lines.</summary>
+    public const string StoreReturnsView = "store-returns-view";
+
+    /// <summary>POS Full POS: process sale returns and refunds.</summary>
+    public const string StoreReturnsManage = "store-returns-manage";
+
     private static readonly Regex ValidPattern = CreateValidPattern();
 
     public string Value { get; }

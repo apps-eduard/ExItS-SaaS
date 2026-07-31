@@ -171,4 +171,22 @@ public static class DomainErrorCodes
     public const string CashierShiftCancelBlockedByActivity = "pos.cashier_shift.cancel.blocked_by_activity";
     public const string CashierShiftExpectedCashNegative = "pos.cashier_shift.expected_cash.negative";
     public const string SaleCashierShiftRequired = "pos.sale.cashier_shift.required";
+    public const string SaleVoidBlockedByReturns = "pos.sale.void.blocked_by_returns";
+
+    public const string InvalidSaleReturnId = "pos.sale_return.id.invalid";
+    public const string InvalidSaleReturnLineId = "pos.sale_return_line.id.invalid";
+    public const string InvalidSaleReturnNumber = "pos.sale_return.number.invalid";
+    public const string InvalidSaleReturnReason = "pos.sale_return.reason.invalid";
+    public const string InvalidSaleReturnLine = "pos.sale_return_line.invalid";
+    public const string InvalidSaleReturnRefundAmount = "pos.sale_return.refund_amount.invalid";
+    public const string InvalidSaleReturnRestockDisposition = "pos.sale_return.restock_disposition.invalid";
+    public const string SaleReturnRequiresAtLeastOneLine = "pos.sale_return.lines.required";
+    public const string SaleReturnOrganizationMismatch = "pos.sale_return.organization_mismatch";
+    public const string SaleReturnSaleNotReturnable = "pos.sale_return.sale_not_returnable";
+    public const string SaleReturnQuantityExceedsRefundable = "pos.sale_return.quantity.exceeds_refundable";
+    public const string SaleReturnDuplicateSaleLine = "pos.sale_return.duplicate_sale_line";
+    public const string SaleReturnCashShiftRequired = "pos.sale_return.cash_shift.required";
+    public const string SaleReturnNonCashMustNotLinkShift = "pos.sale_return.non_cash_must_not_link_shift";
+    public const string SaleReturnUtangOutstandingInsufficient = "pos.sale_return.utang.outstanding_insufficient";
+    public const string CreditReduceWouldMakeOutstandingNegative = "pos.credit_entry.reduce.outstanding_negative";
 }

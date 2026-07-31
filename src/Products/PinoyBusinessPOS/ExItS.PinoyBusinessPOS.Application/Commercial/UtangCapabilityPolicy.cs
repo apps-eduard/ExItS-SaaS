@@ -23,6 +23,8 @@ public static class PosFeatureCodes
     public const string StorePurchasingManage = "store-purchasing-manage";
     public const string StoreShiftsView = "store-shifts-view";
     public const string StoreShiftsManage = "store-shifts-manage";
+    public const string StoreReturnsView = "store-returns-view";
+    public const string StoreReturnsManage = "store-returns-manage";
 }
 
 /// <summary>Subscription status names mirrored from Platform (string-stable for headers/session).</summary>
@@ -67,7 +69,9 @@ public enum UtangCapability
     ViewPurchasing = 24,
     ManagePurchasing = 25,
     ViewShifts = 26,
-    ManageShifts = 27
+    ManageShifts = 27,
+    ViewReturns = 28,
+    ProcessReturn = 29
 }
 
 /// <summary>
@@ -198,6 +202,13 @@ public static class UtangCapabilityPolicy
                 IsFullCommercialState(status)
                 && HasFeature(grants, PosFeatureCodes.StoreShiftsManage),
 
+            UtangCapability.ViewReturns =>
+                CanEnter(status, grants) && HasFeature(grants, PosFeatureCodes.StoreReturnsView),
+
+            UtangCapability.ProcessReturn =>
+                IsFullCommercialState(status)
+                && HasFeature(grants, PosFeatureCodes.StoreReturnsManage),
+
             _ => false
         };
     }
@@ -234,7 +245,9 @@ public static class UtangCapabilityPolicy
                 || HasFeature(grants, PosFeatureCodes.StorePurchasingView)
                 || HasFeature(grants, PosFeatureCodes.StorePurchasingManage)
                 || HasFeature(grants, PosFeatureCodes.StoreShiftsView)
-                || HasFeature(grants, PosFeatureCodes.StoreShiftsManage),
+                || HasFeature(grants, PosFeatureCodes.StoreShiftsManage)
+                || HasFeature(grants, PosFeatureCodes.StoreReturnsView)
+                || HasFeature(grants, PosFeatureCodes.StoreReturnsManage),
             _ => false
         };
     }
@@ -260,7 +273,9 @@ public static class UtangCapabilityPolicy
         PosFeatureCodes.StorePurchasingView,
         PosFeatureCodes.StorePurchasingManage,
         PosFeatureCodes.StoreShiftsView,
-        PosFeatureCodes.StoreShiftsManage
+        PosFeatureCodes.StoreShiftsManage,
+        PosFeatureCodes.StoreReturnsView,
+        PosFeatureCodes.StoreReturnsManage
     ];
 
     private static string Normalize(string? subscriptionStatus) =>
