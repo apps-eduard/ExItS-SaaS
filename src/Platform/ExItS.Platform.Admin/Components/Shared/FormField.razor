@@ -1,0 +1,65 @@
+@inject IStringLocalizer<AdminResources> L
+
+<div class="form-field @(string.IsNullOrWhiteSpace(Error) ? null : "has-error") @(Disabled ? "is-disabled" : null)">
+    <label class="form-field-label" for="@ResolvedId">
+        <span class="form-field-label-text">@Label</span>
+        @if (Required)
+        {
+            <span class="form-field-required" aria-hidden="true">*</span>
+            <span class="sr-only">@L["Form_Required"]</span>
+        }
+    </label>
+    @if (!string.IsNullOrWhiteSpace(Help))
+    {
+        <p class="form-field-help" id="@_helpId">@Help</p>
+    }
+    <div class="form-field-control">
+        <CascadingValue Value="_context">
+            @ChildContent
+        </CascadingValue>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(Error))
+    {
+        <p class="form-field-error" id="@_errorId" role="alert">@Error</p>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter] public string? FieldId { get; set; }
+    [Parameter] public string? Help { get; set; }
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private readonly string _autoId = $"field-{Guid.NewGuid():N}";
+    private readonly string _helpId = $"help-{Guid.NewGuid():N}";
+    private readonly string _errorId = $"err-{Guid.NewGuid():N}";
+    private FormFieldContext _context = new() { FieldId = "" };
+
+    private string ResolvedId => string.IsNullOrWhiteSpace(FieldId) ? _autoId : FieldId;
+
+    protected override void OnParametersSet()
+    {
+        var described = new List<string>();
+        if (!string.IsNullOrWhiteSpace(Help))
+        {
+            described.Add(_helpId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(Error))
+        {
+            described.Add(_errorId);
+        }
+
+        _context = new FormFieldContext
+        {
+            FieldId = ResolvedId,
+            AriaDescribedBy = described.Count == 0 ? null : string.Join(' ', described),
+            Invalid = !string.IsNullOrWhiteSpace(Error),
+            Disabled = Disabled,
+            Required = Required
+        };
+    }
+}

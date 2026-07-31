@@ -87,6 +87,41 @@
   <data name="Common_Filter" xml:space="preserve"><value>I-filter</value></data>
   <data name="Common_Apply" xml:space="preserve"><value>I-apply</value></data>
   <data name="Common_Close" xml:space="preserve"><value>Isara</value></data>
+  <data name="Common_Saving" xml:space="preserve"><value>Sinese-save…</value></data>
+  <data name="Form_Required" xml:space="preserve"><value>kailangan</value></data>
+  <data name="Form_ValidationSummary" xml:space="preserve"><value>Pakiusap ayusin ang mga sumusunod</value></data>
+  <data name="Form_ActionsAria" xml:space="preserve"><value>Mga aksyon ng form</value></data>
+  <data name="Dialog_ConflictTitle" xml:space="preserve"><value>Conflict</value></data>
+  <data name="Dialog_UnsavedTitle" xml:space="preserve"><value>May hindi nai-save na pagbabago</value></data>
+  <data name="Dialog_UnsavedMessage" xml:space="preserve"><value>May hindi nai-save na pagbabago. I-discard at iwanan ang form na ito?</value></data>
+  <data name="Dialog_KeepEditing" xml:space="preserve"><value>Magpatuloy sa pag-edit</value></data>
+  <data name="Dialog_Discard" xml:space="preserve"><value>I-discard</value></data>
+  <data name="Users_ToastCreated" xml:space="preserve"><value>Nagawa ang user.</value></data>
+  <data name="Users_ToastProfileUpdated" xml:space="preserve"><value>Na-update ang profile.</value></data>
+  <data name="Users_ToastSuspended" xml:space="preserve"><value>Na-suspend ang user.</value></data>
+  <data name="Users_ToastReactivated" xml:space="preserve"><value>Na-reactivate ang user. Kailangan pa rin ng membership, assignment, subscription, at entitlement eligibility.</value></data>
+  <data name="Users_ToastDisabled" xml:space="preserve"><value>Na-disable (deactivated) ang user.</value></data>
+  <data name="Users_UsernameRequired" xml:space="preserve"><value>Kailangan ang username.</value></data>
+  <data name="Users_DisplayNameRequired" xml:space="preserve"><value>Kailangan ang display name.</value></data>
+  <data name="Users_EmailRequired" xml:space="preserve"><value>Kailangan ang email.</value></data>
+  <data name="Users_SuspendConfirmMessage" xml:space="preserve"><value>I-suspend ang Platform user na ito? Tataanggihan ang effective product access habang naka-suspend.</value></data>
+  <data name="Users_DisableConfirmMessage" xml:space="preserve"><value>I-disable (deactivate) nang permanente ang Platform user na ito para sa bagong access? Mananatili ang historical records.</value></data>
+  <data name="OrgMembers_ToastAdded" xml:space="preserve"><value>Naidagdag ang member.</value></data>
+  <data name="OrgMembers_ToastRoleUpdated" xml:space="preserve"><value>Na-update ang role.</value></data>
+  <data name="OrgMembers_ToastSuspended" xml:space="preserve"><value>Na-suspend ang membership.</value></data>
+  <data name="OrgMembers_ToastReactivated" xml:space="preserve"><value>Na-reactivate ang membership pagkatapos ng eligibility revalidation.</value></data>
+  <data name="OrgMembers_ToastRevoked" xml:space="preserve"><value>Na-revoke ang membership; na-revoke din ang related product access.</value></data>
+  <data name="OrgMembers_UserIdInvalid" xml:space="preserve"><value>Dapat valid GUID ang User ID.</value></data>
+  <data name="OrgMembers_SuspendConfirmMessage" xml:space="preserve"><value>I-suspend ang membership na ito? Tataanggihan ang effective product access para sa organisasyong ito.</value></data>
+  <data name="OrgMembers_RevokeConfirmMessage" xml:space="preserve"><value>I-revoke ang membership na ito? Mare-revoke ang active product-access assignments. Mananatili ang historical rows.</value></data>
+  <data name="OrgMembers_RevokeSuspendedConfirmMessage" xml:space="preserve"><value>I-revoke nang permanente ang membership na ito para sa organisasyong ito?</value></data>
+  <data name="Payments_ToastCreated" xml:space="preserve"><value>Nagawa ang manual payment.</value></data>
+  <data name="Payments_OrgIdInvalid" xml:space="preserve"><value>Dapat valid GUID ang Organization ID.</value></data>
+  <data name="Payments_AmountInvalid" xml:space="preserve"><value>Dapat decimal ang amount.</value></data>
+  <data name="Payments_PaidAtInvalid" xml:space="preserve"><value>Dapat valid UTC timestamp ang Paid at.</value></data>
+  <data name="Payments_RejectConfirmMessage" xml:space="preserve"><value>I-reject ang pending payment na ito?</value></data>
+  <data name="Payments_VoidConfirmMessage" xml:space="preserve"><value>I-void ang confirmed payment na ito? Magbigay ng dahilan. Hindi ito gumagawa ng invoice o credit note.</value></data>
+  <data name="Payments_ConfirmPaymentMessage" xml:space="preserve"><value>I-confirm ang manual payment na ito? Operator attestation lang ito, hindi provider verification.</value></data>
   <data name="Common_ClearFilters" xml:space="preserve"><value>I-clear ang mga filter</value></data>
   <data name="Common_ViewDetails" xml:space="preserve"><value>Tingnan ang detalye</value></data>
   <data name="Common_All" xml:space="preserve"><value>Lahat</value></data>

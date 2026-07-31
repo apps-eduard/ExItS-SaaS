@@ -178,7 +178,7 @@ else
 
 @if (_confirm is not null)
 {
-    <ConfirmDialog Visible="true" Title="@_confirm.Title" Message="@_confirm.Message" OnConfirm="_confirm.Action" OnCancel="ClearConfirm" Busy="_busy" />
+    <ConfirmDialog Visible="true" Title="@_confirm.Title" Message="@_confirm.Message" OnConfirm="RunConfirmAsync" OnCancel="ClearConfirm" Busy="_busy" />
 }
 
 @code {
@@ -262,6 +262,17 @@ else
     }
 
     private void Ask(string title, string message, Func<Task> action) => _confirm = new ConfirmState(title, message, action);
+
+    private async Task RunConfirmAsync()
+    {
+        if (_confirm is null)
+        {
+            return;
+        }
+
+        await _confirm.Action();
+    }
+
     private Task ClearConfirm() { _confirm = null; return Task.CompletedTask; }
 
     private bool TryParsePeriod(out DateTimeOffset start, out DateTimeOffset end)

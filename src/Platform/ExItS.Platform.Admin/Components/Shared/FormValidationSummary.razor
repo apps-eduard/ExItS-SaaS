@@ -1,0 +1,19 @@
+@inject IStringLocalizer<AdminResources> L
+
+@if (!string.IsNullOrWhiteSpace(Message) || IsConflict)
+{
+    <div class="form-validation-summary @(IsConflict ? "is-conflict" : null)" role="alert" aria-live="assertive">
+        <strong>@(IsConflict ? (ConflictTitle ?? L["Dialog_ConflictTitle"]) : (Title ?? L["Form_ValidationSummary"]))</strong>
+        @if (!string.IsNullOrWhiteSpace(Message))
+        {
+            <p>@Message</p>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public bool IsConflict { get; set; }
+    [Parameter] public string? ConflictTitle { get; set; }
+}

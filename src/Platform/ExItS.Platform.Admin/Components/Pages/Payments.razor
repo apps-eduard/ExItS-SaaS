@@ -3,6 +3,7 @@
 @rendermode InteractiveServer
 @inject IPlatformApiClient Api
 @inject NavigationManager Nav
+@inject ToastService Toasts
 @inject IStringLocalizer<AdminResources> L
 
 @if (Id is null)
@@ -10,29 +11,37 @@
     <PageHeader Title="@L["Payments_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Payments"]}")" Description="@L["Payments_Description"]" />
     <section class="warning" role="note">@L["Payments_Warning"]</section>
 
-    <section class="panel" aria-label="@L["Payments_AriaCreate"]">
-        <h2>@L["Payments_CreateSection"]</h2>
-        @if (!string.IsNullOrWhiteSpace(_formError) && _showCreate) { <ErrorState Title="@L["Payments_CreateFailed"]" Detail="@_formError" /> }
+    <FormSection Title="@L["Payments_CreateSection"]">
+        <FormValidationSummary Title="@L["Payments_CreateFailed"]" Message="@(_showCreate ? _formError : null)" IsConflict="_formConflict" />
         <div class="form-grid">
-            <label>@L["Common_Organization"] ID <input @bind="_createOrgId" placeholder="GUID" /></label>
-            <label>@L["OrgProductAccess_ProductCode"] <input @bind="_createProductCode" /></label>
-            <label>@L["Common_Amount"] <input @bind="_createAmount" /></label>
-            <label>Currency <input @bind="_createCurrency" placeholder="PHP" /></label>
-            <label>@L["Common_Method"]
-                <select @bind="_createMethod">
+            <FormField Label="@($"{L["Common_Organization"]} ID")" FieldId="pay-org" Required="true" Error="@_fieldOrg">
+                <AdminInput @bind-Value="_createOrgId" Placeholder="GUID" Disabled="_busy" />
+            </FormField>
+            <FormField Label="@L["OrgProductAccess_ProductCode"]" FieldId="pay-product" Required="true">
+                <AdminInput @bind-Value="_createProductCode" Disabled="_busy" />
+            </FormField>
+            <FormField Label="@L["Common_Amount"]" FieldId="pay-amount" Required="true" Error="@_fieldAmount" Help="Decimal amount; server remains authoritative.">
+                <AdminInput @bind-Value="_createAmount" Type="number" InputMode="decimal" Step="0.01" Disabled="_busy" />
+            </FormField>
+            <FormField Label="Currency" FieldId="pay-currency">
+                <AdminInput @bind-Value="_createCurrency" Placeholder="PHP" Disabled="_busy" />
+            </FormField>
+            <FormField Label="@L["Common_Method"]" FieldId="pay-method" Required="true">
+                <AdminSelect @bind-Value="_createMethod" Disabled="_busy">
                     <option>Cash</option>
                     <option>BankTransfer</option>
                     <option>GCash</option>
-                </select>
-            </label>
-            <label>@L["Common_Reference"] <input @bind="_createReference" autocomplete="off" /></label>
-            <label>@L["Common_PaidUtc"] <input @bind="_createPaidAt" placeholder="yyyy-MM-ddTHH:mm:ssZ" /></label>
+                </AdminSelect>
+            </FormField>
+            <FormField Label="@L["Common_Reference"]" FieldId="pay-ref">
+                <AdminInput @bind-Value="_createReference" Autocomplete="off" Disabled="_busy" />
+            </FormField>
+            <FormField Label="@L["Common_PaidUtc"]" FieldId="pay-paid" Required="true" Error="@_fieldPaidAt" Help="UTC timestamp (yyyy-MM-ddTHH:mm:ssZ)">
+                <AdminInput @bind-Value="_createPaidAt" Placeholder="yyyy-MM-ddTHH:mm:ssZ" Disabled="_busy" />
+            </FormField>
         </div>
-        <div class="actions">
-            <button type="button" @onclick="CreatePaymentAsync" disabled="@_busy">@L["Payments_CreateButton"]</button>
-        </div>
-        @if (!string.IsNullOrWhiteSpace(_toast) && Id is null) { <p class="toast" role="status">@_toast</p> }
-    </section>
+        <FormActions PrimaryText="@L["Payments_CreateButton"]" Busy="_busy" OnPrimary="CreatePaymentAsync" />
+    </FormSection>
 
     <form class="filters" @onsubmit="LoadListAsync" @onsubmit:preventDefault>
         <label>@L["Common_Status"]
@@ -130,9 +139,9 @@ else
                     <label>Reject / void reason <input @bind="_actionReason" /></label>
                 </div>
                 <div class="actions">
-                    <button type="button" @onclick='() => Ask("Confirm payment", "Confirm this manual payment? This is operator attestation, not provider verification.", ConfirmAsync)' disabled="@_busy">Confirm payment</button>
+                    <button type="button" @onclick='() => Ask(L["Common_Confirm"], L["Payments_ConfirmPaymentMessage"], ConfirmAsync, AdminDialogKind.Confirm)' disabled="@_busy">Confirm payment</button>
                     <button type="button" @onclick="ConfirmAndActivateAsync" disabled="@_busy">Confirm and activate subscription</button>
-                    <button type="button" class="danger" @onclick='() => Ask("Reject payment", "Reject this pending payment?", RejectAsync)' disabled="@_busy">Reject payment</button>
+                    <button type="button" class="danger" @onclick='() => Ask(L["Common_Confirm"], L["Payments_RejectConfirmMessage"], RejectAsync, AdminDialogKind.Destructive)' disabled="@_busy">Reject payment</button>
                 </div>
             }
             else if (p.Status == "Confirmed")
@@ -148,7 +157,7 @@ else
                     {
                         <button type="button" @onclick="ConfirmAndActivateAsync" disabled="@_busy">Activate subscription with this payment</button>
                     }
-                    <button type="button" class="danger" @onclick='() => Ask("Void payment", "Void this confirmed payment? Provide a reason. This does not create invoices or credit notes.", VoidAsync)' disabled="@_busy">Void payment</button>
+                    <button type="button" class="danger" @onclick='() => Ask(L["Common_Confirm"], L["Payments_VoidConfirmMessage"], VoidAsync, AdminDialogKind.Destructive)' disabled="@_busy">Void payment</button>
                 </div>
                 @if (p.SubscriptionId is not null)
                 {
@@ -165,7 +174,13 @@ else
 
 @if (_confirm is not null)
 {
-    <ConfirmDialog Visible="true" Title="@_confirm.Title" Message="@_confirm.Message" OnConfirm="_confirm.Action" OnCancel="ClearConfirm" Busy="_busy" />
+    <ConfirmDialog Visible="true"
+                   Title="@_confirm.Title"
+                   Message="@_confirm.Message"
+                   Kind="@_confirm.Kind"
+                   OnConfirm="RunConfirmAsync"
+                   OnCancel="ClearConfirm"
+                   Busy="_busy" />
 }
 
 @code {
@@ -189,6 +204,10 @@ else
     private string _actionReason = "";
     private string? _toast;
     private string? _formError;
+    private bool _formConflict;
+    private string? _fieldOrg;
+    private string? _fieldAmount;
+    private string? _fieldPaidAt;
     private bool _busy;
     private ConfirmState? _confirm;
 
@@ -196,6 +215,7 @@ else
     {
         _toast = null;
         _formError = null;
+        _formConflict = false;
         if (Id is null)
         {
             var uri = Nav.ToAbsoluteUri(Nav.Uri);
@@ -224,76 +244,195 @@ else
 
     private async Task CreatePaymentAsync()
     {
-        _formError = null; _toast = null; _showCreate = true;
-        if (!Guid.TryParse(_createOrgId, out var orgId)) { _formError = "Organization ID must be a valid GUID."; return; }
-        if (!decimal.TryParse(_createAmount, out var amount)) { _formError = "Amount must be a decimal."; return; }
-        if (!DateTimeOffset.TryParse(_createPaidAt, out var paidAt)) { _formError = "Paid at must be a valid UTC timestamp."; return; }
-        _busy = true;
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        _formConflict = false;
+        _fieldOrg = _fieldAmount = _fieldPaidAt = null;
+        _showCreate = true;
+
+        if (!Guid.TryParse(_createOrgId, out var orgId))
+        {
+            _fieldOrg = L["Payments_OrgIdInvalid"];
+            _busy = false;
+            return;
+        }
+
+        if (!decimal.TryParse(_createAmount, out var amount))
+        {
+            _fieldAmount = L["Payments_AmountInvalid"];
+            _busy = false;
+            return;
+        }
+
+        if (!DateTimeOffset.TryParse(_createPaidAt, out var paidAt))
+        {
+            _fieldPaidAt = L["Payments_PaidAtInvalid"];
+            _busy = false;
+            return;
+        }
+
         var result = await Api.CreateManualPaymentAsync(new CreateManualPaymentRequest(
             orgId, _createProductCode.Trim(), amount, _createCurrency.Trim(), _createMethod, _createReference.Trim(), paidAt.ToUniversalTime()));
         _busy = false;
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "Manual payment created.";
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        Toasts.Show(L["Payments_ToastCreated"], ToastKind.Success);
         Nav.NavigateTo($"/admin/payments/{result.Data!.Id}");
     }
 
-    private void Ask(string title, string message, Func<Task> action) => _confirm = new ConfirmState(title, message, action);
+    private void Ask(string title, string message, Func<Task> action, AdminDialogKind kind) =>
+        _confirm = new ConfirmState(title, message, action, kind);
+
+    private async Task RunConfirmAsync()
+    {
+        if (_confirm is null)
+        {
+            return;
+        }
+
+        await _confirm.Action();
+    }
+
     private Task ClearConfirm() { _confirm = null; return Task.CompletedTask; }
 
     private async Task ConfirmAsync()
     {
-        if (Id is null) return;
-        _busy = true; _formError = null;
+        if (Id is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        _formConflict = false;
         var result = await Api.ConfirmPaymentAsync(Id.Value, new ConfirmPaymentRequest("dev-admin"));
-        _busy = false; await ClearConfirm();
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "Payment confirmed (manual attestation only).";
+        _busy = false;
+        await ClearConfirm();
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        Toasts.Show("Payment confirmed (manual attestation only).", ToastKind.Success);
         _detail = ApiCallResult<PaymentDto>.Success(result.Data!);
     }
 
     private async Task ConfirmAndActivateAsync()
     {
-        if (Id is null) return;
-        _formError = null;
-        if (!Guid.TryParse(_activateSubscriptionId, out var subscriptionId)) { _formError = "Subscription ID is required for activation."; return; }
-        if (!DateTimeOffset.TryParse(_periodStartText, out var start) || !DateTimeOffset.TryParse(_periodEndText, out var end))
+        if (Id is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
         {
-            _formError = "Paid period start/end must be valid UTC timestamps.";
             return;
         }
 
-        _busy = true;
+        _formError = null;
+        _formConflict = false;
+        if (!Guid.TryParse(_activateSubscriptionId, out var subscriptionId))
+        {
+            _formError = "Subscription ID is required for activation.";
+            _busy = false;
+            return;
+        }
+
+        if (!DateTimeOffset.TryParse(_periodStartText, out var start) || !DateTimeOffset.TryParse(_periodEndText, out var end))
+        {
+            _formError = "Paid period start/end must be valid UTC timestamps.";
+            _busy = false;
+            return;
+        }
+
         var result = await Api.ConfirmPaymentAndActivateAsync(Id.Value, new ActivateSubscriptionForPaymentRequest(
             "dev-admin", subscriptionId, start.ToUniversalTime(), end.ToUniversalTime()));
         _busy = false;
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = $"Payment linked and subscription {result.Data!.Subscription.Status}.";
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        Toasts.Show($"Payment linked and subscription {result.Data!.Subscription.Status}.", ToastKind.Success);
         _detail = ApiCallResult<PaymentDto>.Success(result.Data.Payment);
     }
 
     private async Task RejectAsync()
     {
-        if (Id is null) return;
-        if (string.IsNullOrWhiteSpace(_actionReason)) { _formError = "Rejection reason is required."; await ClearConfirm(); return; }
-        _busy = true; _formError = null;
+        if (Id is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_actionReason))
+        {
+            _formError = "Rejection reason is required.";
+            await ClearConfirm();
+            return;
+        }
+
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        _formConflict = false;
         var result = await Api.RejectPaymentAsync(Id.Value, new RejectPaymentRequest("dev-admin", _actionReason));
-        _busy = false; await ClearConfirm();
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "Payment rejected.";
+        _busy = false;
+        await ClearConfirm();
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        Toasts.Show("Payment rejected.", ToastKind.Success);
         _detail = ApiCallResult<PaymentDto>.Success(result.Data!);
     }
 
     private async Task VoidAsync()
     {
-        if (Id is null) return;
-        if (string.IsNullOrWhiteSpace(_actionReason)) { _formError = "Void reason is required."; await ClearConfirm(); return; }
-        _busy = true; _formError = null;
+        if (Id is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_actionReason))
+        {
+            _formError = "Void reason is required.";
+            await ClearConfirm();
+            return;
+        }
+
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        _formConflict = false;
         var result = await Api.VoidPaymentAsync(Id.Value, new VoidPaymentRequest("dev-admin", _actionReason));
-        _busy = false; await ClearConfirm();
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "Payment voided.";
+        _busy = false;
+        await ClearConfirm();
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        Toasts.Show("Payment voided.", ToastKind.Success);
         _detail = ApiCallResult<PaymentDto>.Success(result.Data!);
     }
 
-    private sealed record ConfirmState(string Title, string Message, Func<Task> Action);
+    private sealed record ConfirmState(string Title, string Message, Func<Task> Action, AdminDialogKind Kind);
 }

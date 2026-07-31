@@ -2,6 +2,7 @@
 @page "/admin/users/{Id:guid}"
 @rendermode InteractiveServer
 @inject IPlatformApiClient Api
+@inject ToastService Toasts
 @inject IStringLocalizer<AdminResources> L
 
 @if (Id is null)
@@ -20,24 +21,27 @@
             </select>
         </label>
         <button type="button" @onclick="ReloadListAsync">@L["Common_Apply"]</button>
-        <button type="button" class="secondary" @onclick="() => _showCreate = !_showCreate">@(_showCreate ? L["Users_HideCreate"] : L["Users_CreateUser"])</button>
+        <button type="button" class="secondary" @onclick="ToggleCreate">@(_showCreate ? L["Users_HideCreate"] : L["Users_CreateUser"])</button>
     </div>
 
     @if (_showCreate)
     {
-        <section class="panel" aria-label="@L["Users_AriaCreate"]">
-            <h2>@L["Users_CreateSection"]</h2>
-            @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="@L["Users_CreateFailed"]" Detail="@_formError" /> }
+        <FormSection Title="@L["Users_CreateSection"]">
+            <FormValidationSummary Title="@L["Users_CreateFailed"]" Message="@_formError" IsConflict="_formConflict" />
             <div class="form-grid">
-                <label>@L["Common_Username"] <input @bind="_newUsername" autocomplete="off" /></label>
-                <label>@L["Common_DisplayName"] <input @bind="_newDisplayName" /></label>
-                <label>@L["Common_Email"] <input @bind="_newEmail" type="email" autocomplete="off" /></label>
+                <FormField Label="@L["Common_Username"]" FieldId="user-create-username" Required="true" Error="@_fieldUsername">
+                    <AdminInput @bind-Value="_newUsername" Autocomplete="off" Disabled="_busy" />
+                </FormField>
+                <FormField Label="@L["Common_DisplayName"]" FieldId="user-create-displayname" Required="true" Error="@_fieldDisplayName">
+                    <AdminInput @bind-Value="_newDisplayName" Disabled="_busy" />
+                </FormField>
+                <FormField Label="@L["Common_Email"]" FieldId="user-create-email" Required="true" Error="@_fieldEmail">
+                    <AdminInput @bind-Value="_newEmail" Type="email" Autocomplete="off" Disabled="_busy" />
+                </FormField>
             </div>
-            <div class="actions">
-                <button type="button" @onclick="CreateAsync" disabled="@_busy">@L["Common_Create"]</button>
-            </div>
-            @if (!string.IsNullOrWhiteSpace(_toast)) { <p class="toast" role="status">@_toast</p> }
-        </section>
+            <FormActions PrimaryText="@L["Common_Create"]" Busy="_busy" OnPrimary="CreateAsync"
+                        SecondaryText="@L["Common_Cancel"]" OnSecondary="HideCreate" />
+        </FormSection>
     }
 
     @if (_list is null) { <LoadingState Message="@L["Users_Loading"]" /> }
@@ -83,8 +87,7 @@ else
     else
     {
         var u = _detail.Data!;
-        @if (!string.IsNullOrWhiteSpace(_toast)) { <p class="toast" role="status">@_toast</p> }
-        @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="@L["Common_ActionFailed"]" Detail="@_formError" /> }
+        <FormValidationSummary Title="@L["Common_ActionFailed"]" Message="@_formError" IsConflict="_formConflict" />
 
         <dl>
             <dt>@L["Common_Username"]</dt><dd>@u.Username</dd>
@@ -98,26 +101,26 @@ else
             }
         </dl>
 
-        <section class="panel" aria-label="@L["Users_EditProfile"]">
-            <h2>@L["Users_EditProfile"]</h2>
+        <FormSection Title="@L["Users_EditProfile"]">
             <div class="form-grid">
-                <label>@L["Common_DisplayName"] <input @bind="_editDisplayName" /></label>
-                <label>@L["Common_Email"] <input @bind="_editEmail" type="email" /></label>
+                <FormField Label="@L["Common_DisplayName"]" FieldId="user-edit-displayname" Required="true" Error="@_fieldDisplayName">
+                    <AdminInput @bind-Value="_editDisplayName" Disabled="_busy" />
+                </FormField>
+                <FormField Label="@L["Common_Email"]" FieldId="user-edit-email" Required="true" Error="@_fieldEmail">
+                    <AdminInput @bind-Value="_editEmail" Type="email" Disabled="_busy" />
+                </FormField>
             </div>
-            <div class="actions">
-                <button type="button" @onclick="SaveProfileAsync" disabled="@_busy">@L["Users_SaveProfile"]</button>
-            </div>
-        </section>
+            <FormActions PrimaryText="@L["Users_SaveProfile"]" Busy="_busy" OnPrimary="SaveProfileAsync"
+                        SecondaryText="@L["Common_Cancel"]" OnSecondary="ResetProfileAsync" />
+        </FormSection>
 
-        <section class="panel" aria-label="@L["Users_Lifecycle"]">
-            <h2>@L["Users_Lifecycle"]</h2>
-            <p class="muted">@L["Users_LifecycleHint"]</p>
+        <FormSection Title="@L["Users_Lifecycle"]" Description="@L["Users_LifecycleHint"]">
             <div class="actions">
-                <button type="button" class="secondary" @onclick='() => AskConfirm(L["Users_SuspendUser"], "Suspend this Platform user? Effective product access will be denied while suspended.", SuspendAsync)' disabled="@_busy">@L["Users_SuspendUser"]</button>
+                <button type="button" class="secondary" @onclick='() => AskConfirm(L["Users_SuspendUser"], L["Users_SuspendConfirmMessage"], SuspendAsync, AdminDialogKind.Destructive)' disabled="@_busy">@L["Users_SuspendUser"]</button>
                 <button type="button" class="secondary" @onclick="ReactivateAsync" disabled="@_busy">@L["Users_ReactivateUser"]</button>
-                <button type="button" class="danger" @onclick='() => AskConfirm(L["Users_DisableUser"], "Disable (deactivate) this Platform user permanently for new access? Historical records remain.", DisableAsync)' disabled="@_busy">@L["Users_DisableUser"]</button>
+                <button type="button" class="danger" @onclick='() => AskConfirm(L["Users_DisableUser"], L["Users_DisableConfirmMessage"], DisableAsync, AdminDialogKind.Destructive)' disabled="@_busy">@L["Users_DisableUser"]</button>
             </div>
-        </section>
+        </FormSection>
 
         <h2>@L["Users_OrgMemberships"]</h2>
         <p class="muted">@L["Users_OrgMembershipsHint"]</p>
@@ -170,7 +173,23 @@ else
 
 @if (_confirm is not null)
 {
-    <ConfirmDialog Visible="true" Title="@_confirm.Title" Message="@_confirm.Message" OnConfirm="_confirm.Action" OnCancel="CloseConfirm" Busy="_busy" />
+    <ConfirmDialog Visible="true"
+                   Title="@_confirm.Title"
+                   Message="@_confirm.Message"
+                   Kind="@_confirm.Kind"
+                   OnConfirm="RunConfirmAsync"
+                   OnCancel="CloseConfirm"
+                   Busy="_busy" />
+}
+
+@if (_unsavedVisible)
+{
+    <ConfirmDialog Visible="true"
+                   Kind="AdminDialogKind.UnsavedChanges"
+                   Message="@L["Dialog_UnsavedMessage"]"
+                   OnConfirm="DiscardCreateAsync"
+                   OnCancel="KeepEditingAsync"
+                   Busy="_busy" />
 }
 
 @code {
@@ -187,15 +206,22 @@ else
     private string _newEmail = "";
     private string _editDisplayName = "";
     private string _editEmail = "";
-    private string? _toast;
+    private string _savedDisplayName = "";
+    private string _savedEmail = "";
     private string? _formError;
+    private bool _formConflict;
+    private string? _fieldUsername;
+    private string? _fieldDisplayName;
+    private string? _fieldEmail;
     private bool _busy;
     private ConfirmState? _confirm;
+    private bool _unsavedVisible;
 
     protected override async Task OnParametersSetAsync()
     {
-        _toast = null;
         _formError = null;
+        _formConflict = false;
+        ClearFieldErrors();
         if (Id is null) await ReloadListAsync();
         else await ReloadDetailAsync();
     }
@@ -211,36 +237,177 @@ else
         {
             _editDisplayName = _detail.Data!.DisplayName;
             _editEmail = _detail.Data.Email;
+            _savedDisplayName = _editDisplayName;
+            _savedEmail = _editEmail;
         }
         _memberships = await Api.GetUserMembershipsAsync(Id.Value);
         _access = await Api.GetUserProductAccessAsync(Id.Value);
     }
 
+    private void ToggleCreate()
+    {
+        if (_showCreate && HasCreateDraft())
+        {
+            _unsavedVisible = true;
+            return;
+        }
+
+        _showCreate = !_showCreate;
+        if (!_showCreate)
+        {
+            ClearCreate();
+        }
+    }
+
+    private Task HideCreate()
+    {
+        if (HasCreateDraft())
+        {
+            _unsavedVisible = true;
+            return Task.CompletedTask;
+        }
+
+        _showCreate = false;
+        ClearCreate();
+        return Task.CompletedTask;
+    }
+
+    private bool HasCreateDraft() =>
+        !string.IsNullOrWhiteSpace(_newUsername)
+        || !string.IsNullOrWhiteSpace(_newDisplayName)
+        || !string.IsNullOrWhiteSpace(_newEmail);
+
+    private void ClearCreate()
+    {
+        _newUsername = _newDisplayName = _newEmail = "";
+        ClearFieldErrors();
+        _formError = null;
+        _formConflict = false;
+    }
+
+    private Task DiscardCreateAsync()
+    {
+        _unsavedVisible = false;
+        _showCreate = false;
+        ClearCreate();
+        return Task.CompletedTask;
+    }
+
+    private Task KeepEditingAsync()
+    {
+        _unsavedVisible = false;
+        return Task.CompletedTask;
+    }
+
     private async Task CreateAsync()
     {
-        _busy = true; _formError = null; _toast = null;
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        ClearFieldErrors();
+        _formError = null;
+        _formConflict = false;
+
+        if (string.IsNullOrWhiteSpace(_newUsername))
+        {
+            _fieldUsername = L["Users_UsernameRequired"];
+        }
+
+        if (string.IsNullOrWhiteSpace(_newDisplayName))
+        {
+            _fieldDisplayName = L["Users_DisplayNameRequired"];
+        }
+
+        if (string.IsNullOrWhiteSpace(_newEmail))
+        {
+            _fieldEmail = L["Users_EmailRequired"];
+        }
+
+        if (_fieldUsername is not null || _fieldDisplayName is not null || _fieldEmail is not null)
+        {
+            _busy = false;
+            return;
+        }
+
         var result = await Api.CreateUserAsync(new CreatePlatformUserRequest(_newUsername, _newDisplayName, _newEmail));
         _busy = false;
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "User created.";
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        Toasts.Show(L["Users_ToastCreated"], ToastKind.Success);
         _showCreate = false;
-        _newUsername = _newDisplayName = _newEmail = "";
+        ClearCreate();
         await ReloadListAsync();
     }
 
     private async Task SaveProfileAsync()
     {
-        if (Id is null) return;
-        _busy = true; _formError = null;
+        if (Id is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        ClearFieldErrors();
+        _formError = null;
+        _formConflict = false;
+
+        if (string.IsNullOrWhiteSpace(_editDisplayName))
+        {
+            _fieldDisplayName = L["Users_DisplayNameRequired"];
+        }
+
+        if (string.IsNullOrWhiteSpace(_editEmail))
+        {
+            _fieldEmail = L["Users_EmailRequired"];
+        }
+
+        if (_fieldDisplayName is not null || _fieldEmail is not null)
+        {
+            _busy = false;
+            return;
+        }
+
         var result = await Api.UpdateUserAsync(Id.Value, new UpdatePlatformUserRequest(_editDisplayName, _editEmail));
         _busy = false;
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "Profile updated.";
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        Toasts.Show(L["Users_ToastProfileUpdated"], ToastKind.Success);
         await ReloadDetailAsync();
     }
 
-    private void AskConfirm(string title, string message, Func<Task> action) =>
-        _confirm = new ConfirmState(title, message, action);
+    private Task ResetProfileAsync()
+    {
+        _editDisplayName = _savedDisplayName;
+        _editEmail = _savedEmail;
+        ClearFieldErrors();
+        _formError = null;
+        _formConflict = false;
+        return Task.CompletedTask;
+    }
+
+    private void AskConfirm(string title, string message, Func<Task> action, AdminDialogKind kind) =>
+        _confirm = new ConfirmState(title, message, action, kind);
+
+    private async Task RunConfirmAsync()
+    {
+        if (_confirm is null)
+        {
+            return;
+        }
+
+        await _confirm.Action();
+    }
 
     private Task CloseConfirm()
     {
@@ -250,35 +417,75 @@ else
 
     private async Task SuspendAsync()
     {
-        if (Id is null) return;
-        _busy = true; _formError = null;
+        if (Id is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        _formConflict = false;
         var result = await Api.SuspendUserAsync(Id.Value, "Suspended from Platform Admin");
-        _busy = false; await CloseConfirm();
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "User suspended.";
+        _busy = false;
+        await CloseConfirm();
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        Toasts.Show(L["Users_ToastSuspended"], ToastKind.Success);
         await ReloadDetailAsync();
     }
 
     private async Task ReactivateAsync()
     {
-        if (Id is null) return;
-        _busy = true; _formError = null;
+        if (Id is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        _formConflict = false;
         var result = await Api.ReactivateUserAsync(Id.Value);
         _busy = false;
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "User reactivated. Effective access still requires membership, assignment, subscription, and entitlement eligibility.";
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        Toasts.Show(L["Users_ToastReactivated"], ToastKind.Success);
         await ReloadDetailAsync();
     }
 
     private async Task DisableAsync()
     {
-        if (Id is null) return;
-        _busy = true; _formError = null;
+        if (Id is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        _formConflict = false;
         var result = await Api.DisableUserAsync(Id.Value);
-        _busy = false; await CloseConfirm();
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "User disabled (deactivated).";
+        _busy = false;
+        await CloseConfirm();
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        Toasts.Show(L["Users_ToastDisabled"], ToastKind.Success);
         await ReloadDetailAsync();
+    }
+
+    private void ClearFieldErrors()
+    {
+        _fieldUsername = _fieldDisplayName = _fieldEmail = null;
     }
 
     private static string Initials(string name)
@@ -289,5 +496,5 @@ else
         return $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[^1][0])}";
     }
 
-    private sealed record ConfirmState(string Title, string Message, Func<Task> Action);
+    private sealed record ConfirmState(string Title, string Message, Func<Task> Action, AdminDialogKind Kind);
 }

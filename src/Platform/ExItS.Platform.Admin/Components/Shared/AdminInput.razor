@@ -1,0 +1,36 @@
+@*
+  Text/email/date/number input that consumes Cascading FormFieldContext when present.
+  Money/quantity/date formatting remains culture-aware at the page/API boundary — this control does not invent business values.
+*@
+<input id="@ResolvedId"
+       class="form-control"
+       type="@Type"
+       value="@Value"
+       @oninput="OnInput"
+       disabled="@IsDisabled"
+       aria-invalid="@(Context?.Invalid == true)"
+       aria-required="@(Context?.Required == true)"
+       aria-describedby="@Context?.AriaDescribedBy"
+       autocomplete="@Autocomplete"
+       placeholder="@Placeholder"
+       inputmode="@InputMode"
+       step="@Step" />
+
+@code {
+    [CascadingParameter] public FormFieldContext? Context { get; set; }
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public string Type { get; set; } = "text";
+    [Parameter] public string? Id { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public string? Autocomplete { get; set; }
+    [Parameter] public string? InputMode { get; set; }
+    [Parameter] public string? Step { get; set; }
+
+    private string ResolvedId => Id ?? Context?.FieldId ?? $"input-{Guid.NewGuid():N}";
+    private bool IsDisabled => Disabled || (Context?.Disabled ?? false);
+
+    private async Task OnInput(ChangeEventArgs e) =>
+        await ValueChanged.InvokeAsync(e.Value?.ToString());
+}

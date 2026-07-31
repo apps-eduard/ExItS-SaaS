@@ -1,0 +1,20 @@
+@inject IStringLocalizer<AdminResources> L
+
+<section class="panel form-section" aria-labelledby="@_headingId">
+    @if (!string.IsNullOrWhiteSpace(Title))
+    {
+        <h2 id="@_headingId">@Title</h2>
+    }
+    @if (!string.IsNullOrWhiteSpace(Description))
+    {
+        <p class="muted form-section-desc">@Description</p>
+    }
+    @ChildContent
+</section>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    private readonly string _headingId = $"form-section-{Guid.NewGuid():N}";
+}

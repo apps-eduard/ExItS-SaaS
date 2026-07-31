@@ -1,6 +1,7 @@
 @page "/admin/organizations/{OrganizationId:guid}/members"
 @rendermode InteractiveServer
 @inject IPlatformApiClient Api
+@inject ToastService Toasts
 @inject IStringLocalizer<AdminResources> L
 
 <PageHeader Title="@L["OrgMembers_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Organizations"]} / {L["Common_Members"]}")" Description="@L["OrgMembers_Description"]" />
@@ -11,25 +12,23 @@ else if (!_org.IsSuccess) { <ErrorState Title="@(_org.Error?.Title ?? L["Common_
 else
 {
     <p><a href="/admin/organizations/@OrganizationId">← @_org.Data!.DisplayName @L["Common_CommercialSummary"]</a> · <a href="/admin/organizations/@OrganizationId/product-access">@L["Common_ProductAccess"]</a></p>
-    @if (!string.IsNullOrWhiteSpace(_toast)) { <p class="toast" role="status">@_toast</p> }
-    @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="@L["Common_ActionFailed"]" Detail="@_formError" /> }
+    <FormValidationSummary Title="@L["Common_ActionFailed"]" Message="@_formError" IsConflict="_formConflict" />
 
-    <section class="panel" aria-label="@L["OrgMembers_AddSection"]">
-        <h2>@L["OrgMembers_AddSection"]</h2>
+    <FormSection Title="@L["OrgMembers_AddSection"]">
         <div class="form-grid">
-            <label>@L["OrgMembers_UserId"] <input @bind="_addUserId" placeholder="GUID" /></label>
-            <label>@L["OrgMembers_OrgRole"]
-                <select @bind="_addRole">
+            <FormField Label="@L["OrgMembers_UserId"]" FieldId="org-add-user" Required="true" Error="@_fieldUserId" Help="GUID">
+                <AdminInput @bind-Value="_addUserId" Placeholder="GUID" Disabled="_busy" />
+            </FormField>
+            <FormField Label="@L["OrgMembers_OrgRole"]" FieldId="org-add-role" Required="true">
+                <AdminSelect @bind-Value="_addRole" Disabled="_busy">
                     <option>OrganizationMember</option>
                     <option>OrganizationAdministrator</option>
                     <option>OrganizationOwner</option>
-                </select>
-            </label>
+                </AdminSelect>
+            </FormField>
         </div>
-        <div class="actions">
-            <button type="button" @onclick="AddMemberAsync" disabled="@_busy">@L["OrgMembers_AddMember"]</button>
-        </div>
-    </section>
+        <FormActions PrimaryText="@L["OrgMembers_AddMember"]" Busy="_busy" OnPrimary="AddMemberAsync" />
+    </FormSection>
 
     <div class="filters">
         <label>@L["Common_Status"]
@@ -67,13 +66,13 @@ else
                     <td data-label="@L["Common_Actions"]" class="actions">
                         @if (m.Status == "Active")
                         {
-                            <button type="button" class="secondary" @onclick='() => Ask(L["OrgMembers_SuspendMembership"], "Suspend this membership? Effective product access for this organization will be denied.", () => SuspendAsync(m.Id))'>@L["Common_Suspend"]</button>
-                            <button type="button" class="danger" @onclick='() => Ask(L["OrgMembers_RevokeMembership"], "Revoke this membership? Active product-access assignments for this organization will be revoked. Historical rows remain.", () => RevokeAsync(m.Id))'>@L["Common_Revoke"]</button>
+                            <button type="button" class="secondary" @onclick='() => Ask(L["OrgMembers_SuspendMembership"], L["OrgMembers_SuspendConfirmMessage"], () => SuspendAsync(m.Id), AdminDialogKind.Destructive)'>@L["Common_Suspend"]</button>
+                            <button type="button" class="danger" @onclick='() => Ask(L["OrgMembers_RevokeMembership"], L["OrgMembers_RevokeConfirmMessage"], () => RevokeAsync(m.Id), AdminDialogKind.Destructive)'>@L["Common_Revoke"]</button>
                         }
                         else if (m.Status == "Suspended")
                         {
                             <button type="button" class="secondary" @onclick="() => ReactivateAsync(m.Id)">@L["OrgMembers_ReactivateMembership"]</button>
-                            <button type="button" class="danger" @onclick='() => Ask(L["OrgMembers_RevokeMembership"], "Revoke this membership permanently for this organization?", () => RevokeAsync(m.Id))'>@L["Common_Revoke"]</button>
+                            <button type="button" class="danger" @onclick='() => Ask(L["OrgMembers_RevokeMembership"], L["OrgMembers_RevokeSuspendedConfirmMessage"], () => RevokeAsync(m.Id), AdminDialogKind.Destructive)'>@L["Common_Revoke"]</button>
                         }
                     </td>
                 </tr>
@@ -85,7 +84,13 @@ else
 
 @if (_confirm is not null)
 {
-    <ConfirmDialog Visible="true" Title="@_confirm.Title" Message="@_confirm.Message" OnConfirm="_confirm.Action" OnCancel="ClearConfirm" Busy="_busy" />
+    <ConfirmDialog Visible="true"
+                   Title="@_confirm.Title"
+                   Message="@_confirm.Message"
+                   Kind="@_confirm.Kind"
+                   OnConfirm="RunConfirmAsync"
+                   OnCancel="ClearConfirm"
+                   Busy="_busy" />
 }
 
 @code {
@@ -95,8 +100,9 @@ else
     private string _status = "";
     private string _addUserId = "";
     private string _addRole = "OrganizationMember";
-    private string? _toast;
     private string? _formError;
+    private bool _formConflict;
+    private string? _fieldUserId;
     private bool _busy;
     private ConfirmState? _confirm;
 
@@ -110,57 +116,135 @@ else
 
     private async Task AddMemberAsync()
     {
-        _formError = null; _toast = null;
-        if (!Guid.TryParse(_addUserId, out var userId)) { _formError = "User ID must be a valid GUID."; return; }
-        _busy = true;
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        _formConflict = false;
+        _fieldUserId = null;
+        if (!Guid.TryParse(_addUserId, out var userId))
+        {
+            _fieldUserId = L["OrgMembers_UserIdInvalid"];
+            _busy = false;
+            return;
+        }
+
         var result = await Api.AddOrganizationMemberAsync(OrganizationId, new AddMemberRequest(userId, _addRole));
         _busy = false;
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "Member added.";
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        Toasts.Show(L["OrgMembers_ToastAdded"], ToastKind.Success);
         _addUserId = "";
         await ReloadAsync();
     }
 
     private async Task ChangeRoleAsync(Guid membershipId, string? role)
     {
-        if (string.IsNullOrWhiteSpace(role)) return;
-        _busy = true; _formError = null;
+        if (string.IsNullOrWhiteSpace(role) || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        _formConflict = false;
         var result = await Api.ChangeMembershipRoleAsync(membershipId, new ChangeRoleRequest(role, "dev-admin"));
         _busy = false;
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "Role updated.";
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        Toasts.Show(L["OrgMembers_ToastRoleUpdated"], ToastKind.Success);
         await ReloadAsync();
     }
 
-    private void Ask(string title, string message, Func<Task> action) => _confirm = new ConfirmState(title, message, action);
+    private void Ask(string title, string message, Func<Task> action, AdminDialogKind kind) =>
+        _confirm = new ConfirmState(title, message, action, kind);
+
+    private async Task RunConfirmAsync()
+    {
+        if (_confirm is null)
+        {
+            return;
+        }
+
+        await _confirm.Action();
+    }
 
     private async Task SuspendAsync(Guid id)
     {
-        _busy = true; _formError = null;
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        _formConflict = false;
         var result = await Api.SuspendMembershipAsync(id, new MembershipLifecycleRequest("Suspended from Admin", "dev-admin"));
-        _busy = false; _confirm = null;
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "Membership suspended.";
+        _busy = false;
+        _confirm = null;
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        Toasts.Show(L["OrgMembers_ToastSuspended"], ToastKind.Success);
         await ReloadAsync();
     }
 
     private async Task ReactivateAsync(Guid id)
     {
-        _busy = true; _formError = null;
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        _formConflict = false;
         var result = await Api.ReactivateMembershipAsync(id, new MembershipLifecycleRequest(null, "dev-admin"));
         _busy = false;
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "Membership reactivated after eligibility revalidation.";
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        Toasts.Show(L["OrgMembers_ToastReactivated"], ToastKind.Success);
         await ReloadAsync();
     }
 
     private async Task RevokeAsync(Guid id)
     {
-        _busy = true; _formError = null;
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        _formConflict = false;
         var result = await Api.RevokeMembershipAsync(id, new MembershipLifecycleRequest("Revoked from Admin", "dev-admin"));
-        _busy = false; _confirm = null;
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "Membership revoked; related product access revoked.";
+        _busy = false;
+        _confirm = null;
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        Toasts.Show(L["OrgMembers_ToastRevoked"], ToastKind.Success);
         await ReloadAsync();
     }
 
@@ -170,5 +254,5 @@ else
         return Task.CompletedTask;
     }
 
-    private sealed record ConfirmState(string Title, string Message, Func<Task> Action);
+    private sealed record ConfirmState(string Title, string Message, Func<Task> Action, AdminDialogKind Kind);
 }

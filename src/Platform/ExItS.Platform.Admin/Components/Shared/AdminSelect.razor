@@ -1,0 +1,28 @@
+@*
+  Select control that consumes Cascading FormFieldContext when present.
+*@
+<select id="@ResolvedId"
+        class="form-control"
+        value="@Value"
+        @onchange="OnChange"
+        disabled="@IsDisabled"
+        aria-invalid="@(Context?.Invalid == true)"
+        aria-required="@(Context?.Required == true)"
+        aria-describedby="@Context?.AriaDescribedBy">
+    @ChildContent
+</select>
+
+@code {
+    [CascadingParameter] public FormFieldContext? Context { get; set; }
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public string? Id { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string ResolvedId => Id ?? Context?.FieldId ?? $"select-{Guid.NewGuid():N}";
+    private bool IsDisabled => Disabled || (Context?.Disabled ?? false);
+
+    private async Task OnChange(ChangeEventArgs e) =>
+        await ValueChanged.InvokeAsync(e.Value?.ToString());
+}

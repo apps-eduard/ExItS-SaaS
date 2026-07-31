@@ -1,14 +1,36 @@
+@using ExItS.Platform.Admin.Forms
 @inject IStringLocalizer<AdminResources> L
 
 @if (Visible)
 {
-    <div class="dialog-backdrop" role="presentation" @onkeydown="OnKeyDownAsync">
-        <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="@_titleId" aria-describedby="@_bodyId">
-            <h2 id="@_titleId">@(Title ?? L["Common_Confirm"])</h2>
+    <div class="dialog-backdrop"
+         role="presentation"
+         @onclick="OnBackdropClickAsync">
+        <div class="dialog dialog--@KindCss"
+             role="@(Kind is AdminDialogKind.Destructive or AdminDialogKind.UnsavedChanges ? "alertdialog" : "dialog")"
+             aria-modal="true"
+             aria-labelledby="@_titleId"
+             aria-describedby="@_bodyId"
+             tabindex="-1"
+             @ref="_dialogRef"
+             @onclick:stopPropagation="true"
+             @onkeydown="OnKeyDownAsync">
+            <h2 id="@_titleId">@ResolvedTitle</h2>
             <p id="@_bodyId">@Message</p>
             <div class="actions">
-                <button type="button" class="secondary" @onclick="CancelAsync" disabled="@Busy">@L["Common_Cancel"]</button>
-                <button type="button" class="danger" @onclick="ConfirmAsync" disabled="@Busy">@L["Common_Confirm"]</button>
+                <button type="button"
+                        class="secondary"
+                        @onclick="CancelAsync"
+                        disabled="@Busy">
+                    @ResolvedCancel
+                </button>
+                <button type="button"
+                        class="@ConfirmCss"
+                        @ref="_confirmRef"
+                        @onclick="ConfirmAsync"
+                        disabled="@Busy">
+                    @(Busy ? L["Common_Saving"] : ResolvedConfirm)
+                </button>
             </div>
         </div>
     </div>
@@ -18,25 +40,105 @@
     [Parameter] public bool Visible { get; set; }
     [Parameter] public string? Title { get; set; }
     [Parameter] public string Message { get; set; } = "";
-    [Parameter] public Func<Task>? OnConfirm { get; set; }
-    [Parameter] public Func<Task>? OnCancel { get; set; }
+    [Parameter] public AdminDialogKind Kind { get; set; } = AdminDialogKind.Destructive;
+    [Parameter] public string? ConfirmText { get; set; }
+    [Parameter] public string? CancelText { get; set; }
+    /// <summary>Prefer EventCallback so the owning page re-renders after confirm/cancel.</summary>
+    [Parameter] public EventCallback OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
     [Parameter] public bool Busy { get; set; }
+    [Parameter] public bool CloseOnBackdrop { get; set; } = true;
+
+    private ElementReference _confirmRef;
+    private ElementReference _dialogRef;
     private readonly string _titleId = $"dlg-title-{Guid.NewGuid():N}";
     private readonly string _bodyId = $"dlg-body-{Guid.NewGuid():N}";
+    private bool _wasVisible;
+
+    private string KindCss => Kind switch
+    {
+        AdminDialogKind.Conflict => "conflict",
+        AdminDialogKind.UnsavedChanges => "unsaved",
+        AdminDialogKind.Confirm => "confirm",
+        _ => "destructive"
+    };
+
+    private string ConfirmCss => Kind switch
+    {
+        AdminDialogKind.Destructive => "danger",
+        AdminDialogKind.UnsavedChanges => "danger",
+        _ => ""
+    };
+
+    private string ResolvedTitle => Title ?? Kind switch
+    {
+        AdminDialogKind.Conflict => L["Dialog_ConflictTitle"],
+        AdminDialogKind.UnsavedChanges => L["Dialog_UnsavedTitle"],
+        _ => L["Common_Confirm"]
+    };
+
+    private string ResolvedConfirm => ConfirmText ?? Kind switch
+    {
+        AdminDialogKind.UnsavedChanges => L["Dialog_Discard"],
+        AdminDialogKind.Conflict => L["Common_Close"],
+        _ => L["Common_Confirm"]
+    };
+
+    private string ResolvedCancel => CancelText ?? Kind switch
+    {
+        AdminDialogKind.UnsavedChanges => L["Dialog_KeepEditing"],
+        _ => L["Common_Cancel"]
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Visible && !_wasVisible)
+        {
+            try
+            {
+                await _confirmRef.FocusAsync();
+            }
+            catch
+            {
+                try
+                {
+                    await _dialogRef.FocusAsync();
+                }
+                catch
+                {
+                    // Focus may fail during circuit transitions.
+                }
+            }
+        }
+
+        _wasVisible = Visible;
+    }
 
     private async Task ConfirmAsync()
     {
-        if (OnConfirm is not null)
+        if (Busy || !OnConfirm.HasDelegate)
         {
-            await OnConfirm();
+            return;
         }
+
+        await OnConfirm.InvokeAsync();
     }
 
     private async Task CancelAsync()
     {
-        if (OnCancel is not null)
+        if (Busy || !OnCancel.HasDelegate)
         {
-            await OnCancel();
+            return;
+        }
+
+        await OnCancel.InvokeAsync();
+    }
+
+    private async Task OnBackdropClickAsync()
+    {
+        if (CloseOnBackdrop && !Busy)
+        {
+            await CancelAsync();
         }
     }
 
