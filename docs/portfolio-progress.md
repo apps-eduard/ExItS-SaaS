@@ -14,7 +14,7 @@
 | Current phase | Phase 12 — Reusable SaaS Product Foundation and Bootstrap (**in progress**) |
 | Current work package | P12-WP01 — Platform–Product Contract Audit (**complete**) |
 | Overall status | **Phase 12 in progress.** P12-WP01 complete (contract audit only). Exact next: P12-WP02 — Authoritative Product Foundation Reference (do not begin until authorized). **Not production-ready.** |
-| Latest verified commit | *(filled after tip-hash)* |
+| Latest verified commit | `32889be0851fa0969e8abfa6b7c66784b12e9e8b` |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-07-31 |
 
@@ -96,7 +96,7 @@ P12-WP02 ○ Authoritative Product Foundation Reference (do not begin until auth
 
 | WP | Status | Key commit |
 |---|---|---|
-| P12-WP01 — Platform–Product Contract Audit | Complete | *(tip filled after commit)* |
+| P12-WP01 — Platform–Product Contract Audit | Complete | `32889be0851fa0969e8abfa6b7c66784b12e9e8b` |
 
 ## Phase 11 work packages
 

@@ -12,7 +12,7 @@ Phase 11 remains closed. Product-Foundation drafts under `docs/Product-Foundatio
 
 | WP | Status | Report / tip |
 |---|---|---|
-| P12-WP01 — Platform–Product Contract Audit | **Complete** | [report](../reports/P12-WP01-platform-product-contract-audit.md) · *(tip filled after commit)* |
+| P12-WP01 — Platform–Product Contract Audit | **Complete** | [report](../reports/P12-WP01-platform-product-contract-audit.md) · `32889be0851fa0969e8abfa6b7c66784b12e9e8b` |
 | P12-WP02 — Authoritative Product Foundation Reference | Not started | — |
 | P12-WP03 — Product Documentation Templates | Not started | — |
 | P12-WP04 — Cursor Product Context Rule | Not started | — |

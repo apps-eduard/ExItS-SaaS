@@ -4,7 +4,7 @@ Phase marker: `P12-WP01-platform-product-contract-audit`
 
 Package: **P12-WP01 — Platform–Product Contract Audit**  
 Prior tip: `0812f01f00d352510fbbba91347675044e3562ad`  
-Docs tip: *(recorded after docs commit)*
+Docs tip: `32889be0851fa0969e8abfa6b7c66784b12e9e8b`
 
 ## Status
 
