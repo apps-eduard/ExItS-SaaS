@@ -3,7 +3,7 @@
 Package: **P11-WP02 — Global Web Layout and Navigation**  
 Prior tip (P11-WP01): `221fe69ab179956e8a73411cf3eb58fd6f199c3c`  
 Feature tip (this WP): `7ce7df139a9494c9aab7d189900e96d5e43fdc1d`  
-Docs tip: _(recorded after docs commit)_
+Docs tip: `2db60f5e65556259d7ab724c84568bfb78a69de5`
 
 ## Status
 
