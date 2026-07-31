@@ -19,4 +19,4 @@ Do not invent product business rules from these files alone.
 Do not create `src/Products/<Name>/` until a product bootstrap is explicitly authorized.
 Default bootstrap outcome is documentation only — no implementation unless separately authorized.
 
-**Phase 12 status:** Complete with documented open decisions (see closeout report). Exact next portfolio phase: **Phase 13 — Production Authentication and Identity** when authorized — do not begin from this foundation alone.
+**Phase 12 status:** Complete with documented open decisions (see closeout report). Phase 13 in progress — [authentication architecture](../engineering/authentication-architecture.md) (P13-WP01). Exact next: **P13-WP02** when authorized — do not begin from this foundation alone.

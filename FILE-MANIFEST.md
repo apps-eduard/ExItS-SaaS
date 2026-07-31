@@ -214,6 +214,10 @@ docs/reports/P12-WP04-cursor-product-context-rule.md
 docs/reports/P12-WP05-product-bootstrap-prompt.md
 docs/reports/P12-WP06-reference-product-dry-run.md
 docs/reports/P12-WP07-foundation-hardening-and-closeout.md
+docs/reports/P13-WP01-authentication-architecture-and-threat-model.md
+docs/phases/phase-13-production-authentication-and-identity.md
+docs/engineering/authentication-architecture.md
+docs/engineering/authentication-threat-model.md
 docs/reports/PRE-P11-admin-ui-recovery.md
 docs/reports/PRE-P11-admin-theme-visual-polish.md
 docs/operations/backup-restore/README.md

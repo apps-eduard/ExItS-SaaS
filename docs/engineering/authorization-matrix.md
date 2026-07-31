@@ -1,8 +1,10 @@
 # Authorization Matrix
 
-[Security](security.md) | [Home](../index.md) | [Capability boundary §12](platform-product-capability-boundary.md) | [Extraction sequence](../reuse/extraction-sequence.md) | [P4-WP04 report](../reports/P4-WP04-audit-authorization-and-closeout.md)
+[Security](security.md) | [Authentication architecture](authentication-architecture.md) | [Home](../index.md) | [Capability boundary §12](platform-product-capability-boundary.md) | [Extraction sequence](../reuse/extraction-sequence.md) | [P4-WP04 report](../reports/P4-WP04-audit-authorization-and-closeout.md)
 
 Platform grants **product access**; each product owns **operational permissions**. Platform Administrator does not automatically receive unrestricted clinical or POS operational access (break-glass deferred).
+
+**P13-WP01 update:** Production authentication architecture locks the chain Platform User → Organization Membership → Product Access / Entitlement → Product-Local Role. See [authentication-architecture.md](authentication-architecture.md). **R-091 remains open** (no auth implementation in P13-WP01).
 
 **P3-WP02 note:** Organization and subscription REST endpoints are development-stage regarding **authentication** (no JWT/passwords/MFA/SSO/AD).
 

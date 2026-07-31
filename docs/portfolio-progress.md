@@ -11,10 +11,10 @@
 | Portfolio | ExITS SaaS |
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 12 — Reusable SaaS Product Foundation and Bootstrap (**complete with documented open decisions**) |
-| Current work package | P12-WP07 — Foundation Hardening and Closeout (**complete**) |
-| Overall status | **Phase 12 complete.** Product Foundation package closed (reference, templates, context rule, bootstrap prompt, fictional ReferenceLoan dry run). No real product scaffold; no production auth. Exact next: **Phase 13 — Production Authentication and Identity** (do not begin until authorized). **Not production-ready.** |
-| Latest verified commit | `2a3de32cb3bcc1c30db34771843c054e74f6a29e` |
+| Current phase | Phase 13 — Production Authentication and Identity (**in progress**) |
+| Current work package | P13-WP01 — Authentication Architecture and Threat Model (**complete**) |
+| Overall status | **Phase 13 in progress.** P13-WP01 complete (architecture + threat model only). No production auth code. R-091 open. Exact next: P13-WP02 — Identity Credentials and Auth Persistence (do not begin until authorized). **Not production-ready.** |
+| Latest verified commit | *(docs tip after commit)* |
 | Open blockers | Missing production auth (R-091); D-P12-03 commercial-state transport; D-P12-04 matrix hygiene; R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-07-31 |
 
@@ -78,6 +78,10 @@ P12-WP05 ✓ Product Bootstrap Prompt
 P12-WP06 ✓ Reference Product Dry Run
         ↓
 P12-WP07 ✓ Foundation Hardening and Closeout (complete with risks — Phase 12 closed)
+        ↓
+P13-WP01 ✓ Authentication Architecture and Threat Model
+        ↓
+P13-WP02 ○ Identity Credentials and Auth Persistence (do not begin until authorized)
 ```
 
 ## Phase progress
@@ -97,11 +101,19 @@ P12-WP07 ✓ Foundation Hardening and Closeout (complete with risks — Phase 12
 | 10 | Full POS | **Complete with documented risks** | 8 | 8 | 100% | [Open](phases/phase-10-full-pos.md) |
 | 11 | Web UI and Reporting Design System | **Complete with documented risks** | 8 | 8 | 100% | [Open](phases/phase-11-web-ui-reporting-design-system.md) |
 | 12 | Reusable SaaS Product Foundation and Bootstrap | **Complete with documented open decisions** | 7 | 7 | 100% | [Open](phases/phase-12-product-foundation-and-bootstrap.md) |
+| 13 | Production Authentication and Identity | **In progress** | 1 | 8 | — | [Open](phases/phase-13-production-authentication-and-identity.md) |
 
 **MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
 **Phase 11 Web UI / Reporting Design System:** 8 / 8 = **100%** (with documented risks; not Production-ready; no formal WCAG certification).
 **Phase 12 Product Foundation:** 7 / 7 = **100%** (with documented open decisions; not Production-ready; no real product scaffold; R-091 open).
+**Phase 13 Production Authentication:** 1 / 8 WPs complete (architecture only; R-091 still open).
+
+## Phase 13 work packages
+
+| WP | Status | Key commit |
+|---|---|---|
+| P13-WP01 — Authentication Architecture and Threat Model | Complete | *(docs tip after commit)* |
 
 ## Phase 12 work packages
 
@@ -154,4 +166,4 @@ P12-WP07 ✓ Foundation Hardening and Closeout (complete with risks — Phase 12
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **Phase 13 — Production Authentication and Identity** until explicitly authorized.
+Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P13-WP02 — Identity Credentials and Auth Persistence** until explicitly authorized.

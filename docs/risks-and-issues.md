@@ -94,7 +94,7 @@
 | R-088 | Subscription Admin changes mistaken for product provisioning | High | UI warnings; no entitlement delivery routes; fail-closed access evaluation only | Open — introduced P4-WP03 |
 | R-089 | Provisional repeat-trial policy misapplied as automatic approval | Medium | Conflict/warning only; no automatic repeat-trial approval rules | Open — introduced P4-WP03 |
 | R-090 | Concurrent Admin commercial lifecycle mutations | Medium | Domain concurrency + 409 ProblemDetails; UI refreshes after success | Open — introduced P4-WP03 |
-| R-091 | Missing production authentication (JWT / passwords / MFA / SSO / AD) | Critical | Server-side `PlatformAuthz` + role assignments for development; require real Platform auth before production; no fake login | Open — introduced P4-WP04; production blocker |
+| R-091 | Missing production authentication (JWT / passwords / MFA / SSO / AD) | Critical | Server-side `PlatformAuthz` + role assignments for development; require real Platform auth before production; no fake login; **P13-WP01** architecture/threat model recorded — implementation in later P13 WPs | Open — introduced P4-WP04; production blocker; Phase 13 in progress |
 | R-092 | Authorization policy gaps (permission catalog / scope edge cases) | High | Fail-closed catalog; org-scoped vs platform-wide assignments; expand policy tests as roles evolve | Open — introduced P4-WP04 |
 | R-093 | UI-only authorization assumptions (hiding nav treated as security) | High | Docs + UI copy: visibility is convenience; `PlatformAuthz.EnsureAsync` is authoritative → 403 + denied audit | Open — introduced P4-WP04; awareness |
 | R-094 | Translation mistakes or incomplete Admin localization | Medium | `AdminResources` en/fil-PH + terminology guide; resource-completeness tests; English fallback | Open — introduced P4-WP04 |
@@ -138,6 +138,10 @@
 ## Phase 9 note (P9-WP06 closeout)
 
 P9-WP06 closed Phase 9 with an honest Commercial MVP readiness board: Development/Testing/CI and controlled internal technical pilot are **Ready with documented non-blocking risks**; restricted external pilot and Production remain **Blocked** (R-091, R-109, R-129, TLS-PROD, MAUI-HTTPS). Product-local POS-ROLES later closed in P10-WP06; production authentication (R-091) remains open. **P10-WP08** closed Phase 10 Full POS with documented risks — see [P10-WP08-phase-10-closeout.md](reports/P10-WP08-phase-10-closeout.md). Exact next: **Phase 11** (do not begin). **Not production-ready.**
+
+## Phase 13 — Production Authentication and Identity (in progress)
+
+**P13-WP01** published authoritative authentication architecture and threat model (`docs/engineering/authentication-architecture.md`, `authentication-threat-model.md`). Locked access chain User → Membership → Product Access → Product-Local Role. Decisions D-P13-01…06 recorded. **No auth code.** **R-091 remains open.** Exact next: **P13-WP02 — Identity Credentials and Auth Persistence** (do not begin). **Not production-ready.**
 
 ## Phase 12 — Product foundation (complete with open decisions)
 

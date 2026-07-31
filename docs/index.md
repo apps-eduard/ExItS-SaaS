@@ -42,6 +42,8 @@
 - [Data classification matrix](engineering/data-classification-matrix.md)
 - [Data ownership](engineering/data-ownership.md)
 - [Security](engineering/security.md)
+- [Authentication architecture](engineering/authentication-architecture.md)
+- [Authentication threat model](engineering/authentication-threat-model.md)
 - [Authorization](engineering/authorization-matrix.md)
 - [UI design system](engineering/ui-design-system.md)
 - [Reusable component catalog](engineering/reusable-component-catalog.md)

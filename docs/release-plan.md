@@ -128,3 +128,9 @@ Offline synchronization, Basic Store and production hardening.
 **Phase 12 complete with documented open decisions** (P12-WP01–P12-WP07). Documentation foundation only — no real product scaffold, no production authentication. See [P12-WP07 closeout](reports/P12-WP07-foundation-hardening-and-closeout.md).
 
 **Next:** **Phase 13 — Production Authentication and Identity** when authorized. Do not begin Phase 13.
+
+## R6 — Production Authentication and Identity (Phase 13)
+
+**In progress.** **P13-WP01 complete** — architecture and threat model only (`docs/engineering/authentication-architecture.md`, `authentication-threat-model.md`). No login/cookies/tokens/migrations. **R-091 remains open.**
+
+**Next:** **P13-WP02 — Identity Credentials and Auth Persistence** when authorized. Do not begin P13-WP02.
