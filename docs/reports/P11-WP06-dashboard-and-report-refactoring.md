@@ -3,7 +3,7 @@
 Package: **P11-WP06 — Dashboard and Report Refactoring**  
 Prior tip: `e5d004000db7ffe4a19743c6f280b0eacd94c5ec`  
 Feature tip (this WP): `6688fa674e5edc139a931dae3faefeb8b25a806b`  
-Docs tip: _(recorded after docs commit)_
+Docs tip: `120fe528e7c7319af41f762f8e03445c641a1794`
 
 ## Status
 
