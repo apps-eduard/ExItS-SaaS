@@ -82,3 +82,4 @@ The dashboard links to the latest accepted report.
 | [P11-WP06-dashboard-and-report-refactoring.md](P11-WP06-dashboard-and-report-refactoring.md) | P11-WP06 Dashboard and Report Refactoring | Complete |
 | [P11-WP07-localization-theme-accessibility-responsive-qa.md](P11-WP07-localization-theme-accessibility-responsive-qa.md) | P11-WP07 Localization, Theme, Accessibility, Responsive QA | Complete |
 | [P11-WP08-phase-11-closeout.md](P11-WP08-phase-11-closeout.md) | P11-WP08 Phase 11 Closeout | Complete with documented risks (Phase 11 closed) |
+| [P12-WP01-platform-product-contract-audit.md](P12-WP01-platform-product-contract-audit.md) | P12-WP01 Platform–Product Contract Audit | Complete |

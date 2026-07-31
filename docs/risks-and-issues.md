@@ -139,9 +139,13 @@
 
 P9-WP06 closed Phase 9 with an honest Commercial MVP readiness board: Development/Testing/CI and controlled internal technical pilot are **Ready with documented non-blocking risks**; restricted external pilot and Production remain **Blocked** (R-091, R-109, R-129, TLS-PROD, MAUI-HTTPS). Product-local POS-ROLES later closed in P10-WP06; production authentication (R-091) remains open. **P10-WP08** closed Phase 10 Full POS with documented risks — see [P10-WP08-phase-10-closeout.md](reports/P10-WP08-phase-10-closeout.md). Exact next: **Phase 11** (do not begin). **Not production-ready.**
 
+## Phase 12 — Product foundation (in progress)
+
+P12-WP01 completed a Platform–Product contract audit from repository evidence (separate DBs, SaaS vs operational money, product-local roles, pilot multi-image deploy). No application code. Product-Foundation drafts remain untracked until P12-WP02+. Exact next: **P12-WP02 — Authoritative Product Foundation Reference** (do not begin). R-091/R-109/R-129/TLS/MAUI-HTTPS remain open. **Not production-ready.**
+
 ## Phase 11 — Web UI and Reporting Design System closeout
 
-P11-WP08 reconciled P11-WP01–P11-WP07 (Admin audit through localization/theme/a11y/responsive QA). Sole `MainLayout`, shared forms/tables/reporting, dashboard/list migration, EN/fil-PH and System/Light/Dark validated. No Tailwind/shadcn/Flowbite/DaisyUI. No business/API/migration changes. R-091/R-109/R-129/TLS/MAUI-HTTPS remain open. Formal WCAG certification not claimed. Tests **1186 / 0 / 0**. Phase 12 / Product-Foundation planning remain intentional untracked files. Exact next: **Phase 12** (do not begin). **Not production-ready.**
+P11-WP08 reconciled P11-WP01–P11-WP07 (Admin audit through localization/theme/a11y/responsive QA). Sole `MainLayout`, shared forms/tables/reporting, dashboard/list migration, EN/fil-PH and System/Light/Dark validated. No Tailwind/shadcn/Flowbite/DaisyUI. No business/API/migration changes. R-091/R-109/R-129/TLS/MAUI-HTTPS remain open. Formal WCAG certification not claimed. Tests **1186 / 0 / 0**. Exact next after Phase 11: **Phase 12** (now in progress via P12-WP01). **Not production-ready.**
 
 ## Phase 10 — Full POS closeout
 

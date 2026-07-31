@@ -43,7 +43,7 @@ This workspace does **not** contain a nested HealthCare product tree. Platform `
 
 **Phase 8** is **complete** with documented risks ([P8-WP07 closeout](docs/reports/P8-WP07-basic-store-closeout.md)). Online-only Basic Store MVP is closed.
 
-**Phase 9** is **complete with documented risks** ([P9-WP01](docs/reports/P9-WP01-security-and-privacy-hardening.md)–[P9-WP06](docs/reports/P9-WP06-commercial-mvp-closeout.md)). **Phase 10 — Full POS** is **complete with documented risks** ([P10-WP08 closeout](docs/reports/P10-WP08-phase-10-closeout.md)). **Phase 11 — Web UI and Reporting Design System** is **complete with documented risks** ([P11-WP08 closeout](docs/reports/P11-WP08-phase-11-closeout.md)). Exact next: **Phase 12 — Reusable SaaS Product Foundation and Bootstrap** (do not begin until authorized). **Not production-ready.**
+**Phase 9** is **complete with documented risks** ([P9-WP01](docs/reports/P9-WP01-security-and-privacy-hardening.md)–[P9-WP06](docs/reports/P9-WP06-commercial-mvp-closeout.md)). **Phase 10 — Full POS** is **complete with documented risks** ([P10-WP08 closeout](docs/reports/P10-WP08-phase-10-closeout.md)). **Phase 11 — Web UI and Reporting Design System** is **complete with documented risks** ([P11-WP08 closeout](docs/reports/P11-WP08-phase-11-closeout.md)). **Phase 12** is **in progress** — [P12-WP01](docs/reports/P12-WP01-platform-product-contract-audit.md) complete. Exact next: **P12-WP02 — Authoritative Product Foundation Reference** (do not begin until authorized). **Not production-ready.**
 
 Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`.
 
