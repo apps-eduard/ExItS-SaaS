@@ -1,6 +1,6 @@
 # {{WP_ID}} — {{WP_TITLE}}
 
-> Template: P12-WP03 work-package report. Foundation: [exits-product-foundation-reference.md](../../exits-product-foundation-reference.md)
+> Template: P12-WP03 work-package report. Foundation: [exits-product-foundation-reference.md](../exits-product-foundation-reference.md)
 
 | Field | Value |
 |---|---|

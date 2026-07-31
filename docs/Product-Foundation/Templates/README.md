@@ -25,6 +25,8 @@ Authorized docs-only bootstrap: use [../product-bootstrap-prompt.md](../product-
 
 Approved product docs must not retain unresolved `{{…}}` or open `DECISION:` items without an explicit open-decision entry.
 
+**Foundation link after copy:** Templates use `../exits-product-foundation-reference.md` (valid under `docs/Product-Foundation/…`). When copying into `src/Products/<Name>/Docs/`, change those links to the repo path `docs/Product-Foundation/exits-product-foundation-reference.md` (same convention as `product-docs-readme.md`).
+
 ## Mandatory vs optional
 
 | Template | Usage | Copied product path |

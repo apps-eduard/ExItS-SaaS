@@ -87,3 +87,4 @@ The dashboard links to the latest accepted report.
 | [P12-WP03-product-documentation-templates.md](P12-WP03-product-documentation-templates.md) | P12-WP03 Product Documentation Templates | Complete |
 | [P12-WP04-cursor-product-context-rule.md](P12-WP04-cursor-product-context-rule.md) | P12-WP04 Cursor Product Context Rule | Complete |
 | [P12-WP05-product-bootstrap-prompt.md](P12-WP05-product-bootstrap-prompt.md) | P12-WP05 Product Bootstrap Prompt | Complete |
+| [P12-WP06-reference-product-dry-run.md](P12-WP06-reference-product-dry-run.md) | P12-WP06 Reference Product Dry Run | Complete |

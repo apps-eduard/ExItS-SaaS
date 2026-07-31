@@ -1,12 +1,12 @@
-# {{PRODUCT_NAME}} — Development Plan
+# ReferenceLoan — Development Plan
 
-> Template: P12-WP03. Foundation: [exits-product-foundation-reference.md](../exits-product-foundation-reference.md)
-> Do not prescribe Loan/Pawnshop/BNPL/POS-specific phases here.
+> **FICTIONAL** P12-WP06. Foundation: [exits-product-foundation-reference.md](../exits-product-foundation-reference.md)  
+> Do not prescribe real lending phases or copy POS phases.
 
 | Field | Value |
 |---|---|
-| Product | {{PRODUCT_NAME}} |
-| Plan status | Draft / Approved |
+| Product | ReferenceLoan |
+| Plan status | Draft — fictional validation only |
 
 ## Delivery approach
 
@@ -18,8 +18,8 @@
 
 | Phase | Objective | Exit criteria |
 |---|---|---|
-| {{PHASE_1}} | {{PHASE_1_OBJ}} | {{PHASE_1_EXIT}} |
-| {{PHASE_2}} | {{PHASE_2_OBJ}} | {{PHASE_2_EXIT}} |
+| RL-P0 Docs | Documentation baseline | Docs approved; no code |
+| RL-P1 Skeleton | Product skeleton when separately authorized | Isolation guards green |
 
 Detail per phase: `roadmap.md`.
 
@@ -33,12 +33,12 @@ Report template: `docs/Product-Foundation/Templates/work-package-report.md` → 
 
 Stop when any of these are missing without an approved decision:
 
-- [ ] Product definition approved
-- [ ] Roles/grants matrix draft
-- [ ] Operational-money definition
-- [ ] DB name/schema
-- [ ] Privacy classification (PHI default none)
-- [ ] Explicit exclusions
+- [x] Product definition approved (fictional)
+- [x] Roles/grants matrix draft
+- [x] Operational-money definition
+- [x] DB name/schema
+- [x] Privacy classification (PHI default none)
+- [x] Explicit exclusions
 
 ## Dependencies
 
@@ -47,35 +47,34 @@ Stop when any of these are missing without an approved decision:
 | Platform catalog / subscription | Platform | Independent subscription required |
 | Commercial-state transport | **DECISION D-P12-03** | Provisional patterns only; do not invent final |
 | Production authentication | **R-091** | Keep Dev/Testing language honest |
-| {{DEP_N}} | {{DEP_TYPE}} | {{DEP_NOTES}} |
+| Lending domain policy | Product owner | **Open** — blocks real MVP |
 
 ## Testing expectations
 
 | Layer | Expectation |
 |---|---|
-| Unit / domain | {{UNIT_EXPECT}} |
+| Unit / domain | Domain rules testable without UI |
 | Architecture guards | Enforce isolation (no Platform EF from product UI/domain, etc.) |
 | Integration | Real product DB (e.g. Testcontainers); no EF InMemory as PostgreSQL proof |
 | Migrations | Apply / rollback / re-apply when persistence changes |
-| UI / device | {{UI_EXPECT}} — do not claim evidence you do not have |
+| UI / device | Do not claim evidence you do not have |
 
 Never weaken tests to pass a WP.
 
 ## Documentation and Git closeout
 
-- [ ] Product docs updated to match code
-- [ ] WP report filed
-- [ ] Risks/decisions updated
-- [ ] Focused commits; push; `main = origin/main`
-- [ ] Working tree clean except intentional deferred files
+- [x] Fictional docs for dry run
+- [ ] WP report filed — N/A (no implementation WP authorized)
+- [x] Risks/decisions updated
+- [ ] Implementation commits — **out of scope**
 
 ## Readiness boundaries
 
 | Environment | Decision |
 |---|---|
-| Development / Testing | {{DEV_READY}} |
-| Production | Blocked while R-091 / TLS / other open risks remain — do not claim ready |
+| Development / Testing | Not started — docs only |
+| Production | Blocked — R-091 / TLS / fictional product |
 
 ## Explicit exclusions from this plan
 
-- {{PLAN_EXCLUSION_1}}
+- Any implementation of ReferenceLoan in this Phase 12 dry run

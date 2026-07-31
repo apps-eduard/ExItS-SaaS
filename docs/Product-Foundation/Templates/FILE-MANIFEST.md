@@ -1,14 +1,14 @@
 # {{PRODUCT_NAME}} — File Manifest / Documentation Index
 
 > Template: P12-WP03. List authoritative product docs and tracked source roots.
-> Foundation: [exits-product-foundation-reference.md](../../exits-product-foundation-reference.md)
+> Foundation: [exits-product-foundation-reference.md](../exits-product-foundation-reference.md)
 
 | Field | Value |
 |---|---|
 | Product | {{PRODUCT_NAME}} |
 | Last updated | {{DATE}} |
 
-## Authoritative docs (`src/Products/{{PRODUCT_NAME}}/Docs/`)
+## Authoritative docs (`src/Products/{{PRODUCT_NAME}}/Docs/` or documented dry-run path)
 
 | Path | Purpose | Status |
 |---|---|---|
@@ -27,7 +27,7 @@
 
 | Path | Role |
 |---|---|
-| `src/Products/{{PRODUCT_NAME}}/` | Product code |
+| `src/Products/{{PRODUCT_NAME}}/` | Product code (omit / mark forbidden for docs-only dry runs) |
 | {{EXTRA_PATH}} | {{EXTRA_ROLE}} |
 
 ## Explicitly not in this product tree

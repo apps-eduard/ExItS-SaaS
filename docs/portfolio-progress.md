@@ -12,9 +12,9 @@
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 12 — Reusable SaaS Product Foundation and Bootstrap (**in progress**) |
-| Current work package | P12-WP05 — Product Bootstrap Prompt (**complete**) |
-| Overall status | **Phase 12 in progress.** P12-WP01–WP05 complete. Product bootstrap prompt published (docs-only). Exact next: P12-WP06 — Reference Product Dry Run (do not begin until authorized). **Not production-ready.** |
-| Latest verified commit | `d57b7be48639e30ffa9fa86624da916ef63a563f` |
+| Current work package | P12-WP06 — Reference Product Dry Run (**complete**) |
+| Overall status | **Phase 12 in progress.** P12-WP01–WP06 complete. Fictional ReferenceLoan dry run retained under Product-Foundation. Exact next: P12-WP07 — Foundation Hardening and Closeout (do not begin until authorized). **Not production-ready.** |
+| Latest verified commit | *(filled after tip-hash)* |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-07-31 |
 
@@ -75,7 +75,9 @@ P12-WP04 ✓ Cursor Product Context Rule
         ↓
 P12-WP05 ✓ Product Bootstrap Prompt
         ↓
-P12-WP06 ○ Reference Product Dry Run (do not begin until authorized)
+P12-WP06 ✓ Reference Product Dry Run
+        ↓
+P12-WP07 ○ Foundation Hardening and Closeout (do not begin until authorized)
 ```
 
 ## Phase progress
@@ -94,7 +96,7 @@ P12-WP06 ○ Reference Product Dry Run (do not begin until authorized)
 | 9 | MVP Hardening and Release | **Complete with documented risks** | 6 | 6 | 100% | [Open](phases/phase-09-mvp-hardening.md) |
 | 10 | Full POS | **Complete with documented risks** | 8 | 8 | 100% | [Open](phases/phase-10-full-pos.md) |
 | 11 | Web UI and Reporting Design System | **Complete with documented risks** | 8 | 8 | 100% | [Open](phases/phase-11-web-ui-reporting-design-system.md) |
-| 12 | Reusable SaaS Product Foundation and Bootstrap | **In progress** | 5 | 7 | — | [Open](phases/phase-12-product-foundation-and-bootstrap.md) |
+| 12 | Reusable SaaS Product Foundation and Bootstrap | **In progress** | 6 | 7 | — | [Open](phases/phase-12-product-foundation-and-bootstrap.md) |
 
 **MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
@@ -109,6 +111,7 @@ P12-WP06 ○ Reference Product Dry Run (do not begin until authorized)
 | P12-WP03 — Product Documentation Templates | Complete | `65b02a1dd9336b39b79fc41527969f6289ad7072` |
 | P12-WP04 — Cursor Product Context Rule | Complete | `1243c78d65e347b23949b19ce2edf564fe972aad` |
 | P12-WP05 — Product Bootstrap Prompt | Complete | `d57b7be48639e30ffa9fa86624da916ef63a563f` |
+| P12-WP06 — Reference Product Dry Run | Complete | *(tip filled after commit)* |
 
 ## Phase 11 work packages
 
@@ -149,4 +152,4 @@ P12-WP06 ○ Reference Product Dry Run (do not begin until authorized)
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P12-WP06** until explicitly authorized.
+Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P12-WP07** until explicitly authorized.

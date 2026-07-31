@@ -1,17 +1,17 @@
-# {{PRODUCT_NAME}} — Security and Privacy
+# ReferenceLoan — Security and Privacy
 
-> Template: P12-WP03. Foundation: [exits-product-foundation-reference.md](../exits-product-foundation-reference.md)
+> **FICTIONAL** P12-WP06. Foundation: [exits-product-foundation-reference.md](../exits-product-foundation-reference.md)
 
 | Field | Value |
 |---|---|
-| Product | {{PRODUCT_NAME}} |
-| Status | Draft / Approved |
+| Product | ReferenceLoan |
+| Status | Draft — fictional validation only |
 
 ## Authentication boundary
 
 | Item | State |
 |---|---|
-| Trusted actor source | {{ACTOR_SOURCE}} |
+| Trusted actor source | Platform-trusted actor when available; Dev/Testing patterns only until R-091 closes |
 | Production auth (JWT/MFA/SSO/…) | **Open — R-091** — do not invent fake production login |
 | Dev/Testing shortcuts | Document honestly; fail closed outside approved environments |
 
@@ -24,55 +24,53 @@
 ## Organization isolation
 
 - Org scope validated server-side
-- Cross-org: {{CROSS_ORG_BEHAVIOR}}
+- Cross-org: 404 concealment
 - Org id stored as Guid reference — no cross-DB FK to Platform
 
 ## Data classification
 
 | Class | In scope? | Handling |
 |---|---|---|
-| PHI | **No** (default) / Yes if authorized | {{PHI_HANDLING}} |
-| PII | {{PII}} | {{PII_HANDLING}} |
-| Operational financial | {{FIN}} | {{FIN_HANDLING}} |
-| Secrets / credentials | Never in git | {{SECRETS_HANDLING}} |
+| PHI | **No** (default) | Not authorized for this fictional product |
+| PII | Yes | Minimize; no logging of raw identity dumps |
+| Operational financial | Yes | Product DB only; not Platform SaaS payment tables |
+| Secrets / credentials | Never in git | Env / secret store |
 
 ## Secrets
 
-- [ ] No secrets in source or docs
-- [ ] Config via environment / secret store: {{SECRET_STORE}}
+- [x] No secrets in source or docs
+- [x] Config via environment / secret store: portfolio conventions when implemented
 
 ## Logging and audit
 
 | Concern | Approach |
 |---|---|
-| Application logs | {{LOG_POLICY}} — no secrets/card/PHI dumps |
-| Product audit / immutable history | {{AUDIT_POLICY}} |
+| Application logs | Safe metadata only — no secrets/card/PHI dumps |
+| Product audit / immutable history | Product-owned when implemented |
 | Platform audit | Platform-owned; do not push operational payloads that violate boundary |
 
 ## Encryption
 
 | At rest / in transit | Approach |
 |---|---|
-| TLS | {{TLS}} — Production TLS remains a portfolio risk until closed |
-| Data at rest | {{AT_REST}} |
-| Local/offline stores | {{LOCAL_CRYPTO}} |
+| TLS | Follow portfolio Production TLS risk until closed |
+| Data at rest | Product DB encryption per future packaging WP |
+| Local/offline stores | None in this dry run |
 
 ## Input / output controls
 
 - Validation at boundary; ProblemDetails conventions
 - No EF entities as API/UI DTOs
-- {{IO_EXTRA}}
 
 ## Concurrency and idempotency
 
 | Operation class | Strategy |
 |---|---|
-| {{OP_CLASS_1}} | {{IDEM_STRATEGY_1}} |
+| Money-affecting commands | Idempotency keys / server authority (when implemented) |
 
 ## Backup / restore
 
 - Product DB backup independent of Platform DB
-- {{BACKUP_NOTES}}
 - Destructive restore guards required for operator tools
 
 ## Production security risks (register)
@@ -80,6 +78,6 @@
 | ID | Risk | Status |
 |---|---|---|
 | R-091 | Production authentication | Open |
-| {{RISK_ID}} | {{RISK_DESC}} | {{RISK_STATUS}} |
+| D-P12-03 | Commercial-state transport | Open |
 
 Full register: `risks-and-decisions.md`.

@@ -1,22 +1,21 @@
-# {{PRODUCT_NAME}} — Architecture
+# ReferenceLoan — Architecture
 
-> Template: P12-WP03. Do not duplicate the foundation; link it.
-> Foundation: [exits-product-foundation-reference.md](../exits-product-foundation-reference.md)
+> **FICTIONAL** P12-WP06. Foundation: [exits-product-foundation-reference.md](../exits-product-foundation-reference.md)
 
 | Field | Value |
 |---|---|
-| Product | {{PRODUCT_NAME}} / {{PRODUCT_CODE}} |
-| Database | {{DATABASE_NAME}} / schema {{SCHEMA_NAME}} |
-| Status | Draft / Approved |
+| Product | ReferenceLoan / `reference-loan` |
+| Database | `ExItS_ReferenceLoan` / schema `loan` |
+| Status | Draft — fictional validation only |
 
 ## System context
 
 ```text
 [Actors] → Platform (identity, org, subscription, entitlements, SaaS billing)
                 ↓ commercial access (contract — see D-P12-03; do not invent)
-         {{PRODUCT_NAME}} API / UI
+         ReferenceLoan API / UI
                 ↓
-         {{DATABASE_NAME}} (product only)
+         ExItS_ReferenceLoan (product only)
 ```
 
 ## Responsibility boundary
@@ -36,8 +35,8 @@
 
 | Module | Responsibility | Notes |
 |---|---|---|
-| {{MODULE_1}} | {{MODULE_1_RESP}} | {{MODULE_1_NOTES}} |
-| {{MODULE_2}} | {{MODULE_2_RESP}} | {{MODULE_2_NOTES}} |
+| Accounts | Illustrative account records | Placeholder only — no schema invented beyond naming |
+| Money movements | Disbursements / repayments / fees | Operational money in product DB |
 
 ## Data ownership
 
@@ -50,41 +49,40 @@
 ## Organization isolation
 
 - Server derives/validates org context; do not trust client org ids as authority alone.
-- Cross-org access: conceal ({{CONCEALMENT_BEHAVIOR}}, e.g. 404).
-- No shared operational DB with other products.
+- Cross-org access: conceal (404).
+- No shared operational DB with other products (including POS).
 
 ## Isolation rules (non-negotiable)
 
-- [ ] No cross-product FKs
-- [ ] No direct Platform table reads from this product
-- [ ] No Platform reads of this product’s operational tables
-- [ ] No shared authoritative operational database
+- [x] No cross-product FKs
+- [x] No direct Platform table reads from this product
+- [x] No Platform reads of this product’s operational tables
+- [x] No shared authoritative operational database
 
 ## External integrations
 
 | System | Direction | Contract | Notes |
 |---|---|---|---|
-| {{INTEGRATION_1}} | in / out / both | {{CONTRACT}} | {{NOTES}} |
+| None | — | — | No external integrations in this dry run |
 
 ## Deployment boundary
 
 | Artifact | Name / notes |
 |---|---|
-| Product image | {{IMAGE_NAME}} (independently versioned) |
+| Product image | `exits-reference-loan` (independently versioned; not built in this WP) |
 | Platform images | Separate — do not fork per customer |
-| Persistent DB | {{DATABASE_NAME}} |
+| Persistent DB | `ExItS_ReferenceLoan` |
 | Config | Environment / secrets — not source forks |
-
-Detail: `deployment-notes.md` when packaging begins.
 
 ## Observability and background work
 
 | Concern | Approach |
 |---|---|
-| Logging / correlation | {{LOGGING}} |
-| Metrics / health | {{HEALTH}} |
-| Background jobs | {{JOBS}} — product-owned workers only; no shared Hangfire DB with other products |
+| Logging / correlation | Correlation ids; no secret/PII dumps |
+| Metrics / health | Product-owned probes when implemented |
+| Background jobs | Product-owned workers only; no shared Hangfire DB with other products |
 
 ## Explicit non-goals
 
-- {{ARCH_EXCLUSION_1}}
+- Implementing lending features, migrations, or APIs in Phase 12
+- Copying POS sales/inventory/utang models

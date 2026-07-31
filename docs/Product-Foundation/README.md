@@ -6,6 +6,7 @@ Authoritative concise reference for creating or modifying ExItS SaaS products:
 - **[Templates/](Templates/README.md)** — reusable product documentation templates (P12-WP03)
 - **Cursor product context:** `.cursor/rules/exits-product-context.mdc` (P12-WP04)
 - **[product-bootstrap-prompt.md](product-bootstrap-prompt.md)** — copy-paste Cursor prompt for docs-only product bootstrap (P12-WP05)
+- **[Reference-Product/](Reference-Product/README.md)** — fictional ReferenceLoan dry-run docs (P12-WP06; **not** a real product)
 
 Related:
 

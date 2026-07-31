@@ -1,12 +1,12 @@
-# {{PRODUCT_NAME}} — Risks and Decisions
+# ReferenceLoan — Risks and Decisions
 
-> Template: P12-WP03. Foundation: [exits-product-foundation-reference.md](../exits-product-foundation-reference.md)
+> **FICTIONAL** P12-WP06. Foundation: [exits-product-foundation-reference.md](../exits-product-foundation-reference.md)  
 > Close items only with evidence. Do not invent answers for portfolio-open items.
 
 | Field | Value |
 |---|---|
-| Product | {{PRODUCT_NAME}} |
-| Last updated | {{DATE}} |
+| Product | ReferenceLoan |
+| Last updated | 2026-07-31 |
 
 ## Portfolio items (always preserve until closed upstream)
 
@@ -19,10 +19,6 @@
 
 | ID | Type (Risk/Decision/Assumption) | Description | Current state | Impact | Owner / decision point | Evidence | Resolution criteria |
 |---|---|---|---|---|---|---|---|
-| {{ID}} | {{TYPE}} | {{DESC}} | Open / Mitigated / Closed | {{IMPACT}} | {{OWNER}} | {{EVIDENCE}} | {{CRITERIA}} |
-
-## Instructions
-
-- Prefer stable IDs (`R-…`, `D-…`, `A-…`).
-- “Closed” requires repository or operator evidence.
-- Unresolved `{{…}}` placeholders in approved docs must appear here as open decisions.
+| RL-D-01 | Decision | Real lending domain / regulatory policy | Open | Blocks any real MVP | Product owner | None — intentionally blank | Written product-owner policy |
+| RL-A-01 | Assumption | This pack is fiction for foundation validation | Open | Misread as real product | Maintainers | This file + README | Keep banner; never add src tree without WP |
+| RL-R-01 | Risk | Premature implementation from dry-run docs | Mitigated | Accidental scaffold | P12-WP06 scope gate | No src/Products/ReferenceLoan | Keep docs-only |

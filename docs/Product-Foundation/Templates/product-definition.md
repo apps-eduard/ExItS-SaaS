@@ -1,13 +1,13 @@
 # {{PRODUCT_NAME}} — Product Definition
 
-> Template: P12-WP03. Contract: [exits-product-foundation-reference.md](../../exits-product-foundation-reference.md)
+> Template: P12-WP03. Contract: [exits-product-foundation-reference.md](../exits-product-foundation-reference.md)
 > Replace all `{{…}}`. Unresolved items → `Docs/risks-and-decisions.md`. Do not invent policy.
 
 | Field | Value |
 |---|---|
 | Product name | {{PRODUCT_NAME}} |
 | Platform product code | {{PRODUCT_CODE}} |
-| Docs root | `src/Products/{{PRODUCT_NAME}}/Docs/` |
+| Docs root | `src/Products/{{PRODUCT_NAME}}/Docs/` (or `docs/Product-Foundation/Reference-Product/` for foundation dry runs only) |
 | Status | Draft / Approved |
 | Last updated | {{DATE}} |
 

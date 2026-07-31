@@ -141,7 +141,9 @@ P9-WP06 closed Phase 9 with an honest Commercial MVP readiness board: Developmen
 
 ## Phase 12 — Product foundation (in progress)
 
-P12-WP05 published `docs/Product-Foundation/product-bootstrap-prompt.md` (docs-only product bootstrap; no SampleProduct folder). Exact next: **P12-WP06 — Reference Product Dry Run** (do not begin). **Not production-ready.**
+P12-WP06 validated the foundation with fictional **ReferenceLoan** docs under `docs/Product-Foundation/Reference-Product/` (no `src/Products/ReferenceLoan/`). Template foundation-link defect fixed. Exact next: **P12-WP07 — Foundation Hardening and Closeout** (do not begin). **Not production-ready.**
+
+P12-WP05 published `docs/Product-Foundation/product-bootstrap-prompt.md` (docs-only product bootstrap; no SampleProduct folder).
 
 P12-WP04 added `.cursor/rules/exits-product-context.mdc` for narrow product context loading.
 

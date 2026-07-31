@@ -16,4 +16,4 @@
 | 9 | MVP Hardening and Release | **Complete with documented risks** | [Open](phase-09-mvp-hardening.md) |
 | 10 | Full POS | **Complete with documented risks** | [Open](phase-10-full-pos.md) |
 | 11 | Web UI and Reporting Design System | **Complete with documented risks** | [Open](phase-11-web-ui-reporting-design-system.md) |
-| 12 | Reusable SaaS Product Foundation and Bootstrap | **In progress** (P12-WP01–WP05 complete) | [Open](phase-12-product-foundation-and-bootstrap.md) |
+| 12 | Reusable SaaS Product Foundation and Bootstrap | **In progress** (P12-WP01–WP06 complete) | [Open](phase-12-product-foundation-and-bootstrap.md) |

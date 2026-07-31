@@ -1,6 +1,6 @@
 # {{PRODUCT_NAME}} — Authorization Matrix
 
-> Template: P12-WP03. Foundation: [exits-product-foundation-reference.md](../../exits-product-foundation-reference.md)
+> Template: P12-WP03. Foundation: [exits-product-foundation-reference.md](../exits-product-foundation-reference.md)
 > Platform access ≠ product operational permission.
 
 | Field | Value |
