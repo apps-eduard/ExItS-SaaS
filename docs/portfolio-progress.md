@@ -14,7 +14,7 @@
 | Current phase | Phase 12 — Reusable SaaS Product Foundation and Bootstrap (**in progress**) |
 | Current work package | P12-WP04 — Cursor Product Context Rule (**complete**) |
 | Overall status | **Phase 12 in progress.** P12-WP01–WP04 complete. Product context Cursor rule published. Exact next: P12-WP05 — Product Bootstrap Prompt (do not begin until authorized). **Not production-ready.** |
-| Latest verified commit | *(filled after tip-hash)* |
+| Latest verified commit | `1243c78d65e347b23949b19ce2edf564fe972aad` |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-07-31 |
 

@@ -10,7 +10,7 @@ Applies to **product** work (new or existing products under `src/Products/`, Pro
 
 Does **not** replace `.cursor/rules/exits-workflow.mdc` (always on). For Platform-only maintenance outside these globs, do not force Product Foundation loading.
 
-Authoritative contract: `docs/Product-Foundation/exits-product-foundation-reference.md`  
+Authoritative contract: `docs/Product-Foundation/exits-product-foundation-reference.md`
 Templates: `docs/Product-Foundation/Templates/`
 
 ## Context order (smallest sufficient set)
@@ -83,10 +83,10 @@ Do **not** create a new product tree unless the work package explicitly authoriz
 
 ## Conflict precedence
 
-1. Active user / work-package authorization  
-2. `.cursor/rules/exits-workflow.mdc`  
-3. Product Foundation reference  
-4. Active product architecture / security / roadmap / definition  
+1. Active user / work-package authorization
+2. `.cursor/rules/exits-workflow.mdc`
+3. Product Foundation reference
+4. Active product architecture / security / roadmap / definition
 5. Historical reports and examples (evidence only — not permanent architecture authority)
 
 On conflict: report it and follow the higher-authority source; do not silently merge contradictions.

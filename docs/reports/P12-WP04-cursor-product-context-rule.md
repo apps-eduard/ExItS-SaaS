@@ -4,7 +4,7 @@ Phase marker: `P12-WP04-cursor-product-context-rule`
 
 Package: **P12-WP04 — Cursor Product Context Rule**
 Prior tip: `5ca2c86fe97d32d0e37fe632a53a65d581e87671`
-Docs tip: *(recorded after docs commit)*
+Docs tip: `1243c78d65e347b23949b19ce2edf564fe972aad`
 
 ## Status
 
