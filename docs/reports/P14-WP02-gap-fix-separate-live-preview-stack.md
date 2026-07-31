@@ -4,7 +4,7 @@ Phase marker: `P14-WP02-gap-fix-separate-live-preview-stack`
 
 Package: **P14-WP02 Gap Fix — Separate ExItS Live Preview Stack**
 Prior tip: `69ddba1f1089d37db474a28981be091f053ab20a`
-Feature tip: *(recorded after feature commit)*
+Feature tip: `16342195ff4999f7c0fc99fa15306fc3fa530074`
 
 ## Status
 

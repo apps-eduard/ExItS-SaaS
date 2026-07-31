@@ -14,7 +14,7 @@
 | Current phase | Phase 14 — Production Deployment and Operations (**in progress**) |
 | Current work package | P14-WP02 Gap Fix — Separate Live Preview Stack (**complete**) |
 | Overall status | **Phase 14 in progress.** P14-WP01–WP02 complete (packaging + separate live-preview stack). Production remains **Blocked**. Exact next: P14-WP03 (do not begin until authorized). **Not production-ready.** |
-| Latest verified commit | *(feature tip recorded after commit)* |
+| Latest verified commit | `16342195ff4999f7c0fc99fa15306fc3fa530074` |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-07-31 |
 
@@ -153,7 +153,7 @@ P14-WP03 ○ Reverse Proxy, TLS, and Network Hardening (do not begin until autho
 |---|---|---|
 | P14-WP01 — Deployment Architecture and Production Readiness Audit | Complete | `e0e2da2d03babc01dd6efab9d44c6c2a2668457a` |
 | P14-WP02 — Production Packaging and Compose Baseline | Complete | `fa04ee2e9decd200b4dc1407f4f1b88f91f93afe` |
-| P14-WP02 Gap Fix — Separate Live Preview Stack | Complete | *(feature tip recorded after commit)* |
+| P14-WP02 Gap Fix — Separate Live Preview Stack | Complete | `16342195ff4999f7c0fc99fa15306fc3fa530074` |
 
 ## Phase 12 work packages
 
