@@ -4,6 +4,7 @@ Phase marker: `P13-WP05-trusted-organization-context-and-membership-selection`
 
 Package: **P13-WP05 — Trusted API Actor and Organization Context** (user objective: Trusted Organization Context and Membership Selection)
 Prior tip: `1148040833b8ec1e6d14d290cba3cd56da322254`
+Feature tip: `e64f352161bb20447a99ae762d1a69ec1a3846fe`
 
 ## Status
 

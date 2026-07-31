@@ -125,7 +125,7 @@ P13-WP06 ○ Product Client Auth Integration (Admin + MAUI/POS) (do not begin un
 | P13-WP02 — Identity Credentials and Auth Persistence | Complete | `51ace5b90fc6c0bcb33fe483826481529bdfeb77` |
 | P13-WP03 — Platform Login, Logout, and Browser Session | Complete | `6298b668c5d0555a84eb206b2a2313b138c9b892` |
 | P13-WP04 — Password Lifecycle, Lockout, and Verification | Complete | `65b261eca7353a7efea2f8f1899c252f0dcee6dc` |
-| P13-WP05 — Trusted API Actor and Organization Context | Complete | *(feature tip recorded after commit)* |
+| P13-WP05 — Trusted API Actor and Organization Context | Complete | `e64f352161bb20447a99ae762d1a69ec1a3846fe` |
 
 ## Phase 12 work packages
 
