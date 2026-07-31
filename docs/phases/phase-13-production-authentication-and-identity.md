@@ -20,7 +20,7 @@ Authoritative docs:
 |---|---|---|
 | P13-WP01 — Authentication Architecture and Threat Model | **Complete** | [report](../reports/P13-WP01-authentication-architecture-and-threat-model.md) · `40a48349ae2a42e9dc267bde0df64afb004af3ae` |
 | P13-WP02 — Identity Credentials and Auth Persistence | **Complete** | [report](../reports/P13-WP02-identity-credentials-and-auth-persistence.md) · `51ace5b90fc6c0bcb33fe483826481529bdfeb77` |
-| P13-WP03 — Platform Login, Logout, and Browser Session | **Complete** | [report](../reports/P13-WP03-platform-login-logout-and-browser-session.md) · _(tip after commit)_ |
+| P13-WP03 — Platform Login, Logout, and Browser Session | **Complete** | [report](../reports/P13-WP03-platform-login-logout-and-browser-session.md) · `6298b668c5d0555a84eb206b2a2313b138c9b892` |
 | P13-WP04 — Password Lifecycle, Lockout, and Verification | Not started | — |
 | P13-WP05 — Trusted API Actor and Organization Context | Not started | — |
 | P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS) | Not started | — |

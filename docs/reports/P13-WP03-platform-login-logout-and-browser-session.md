@@ -4,7 +4,7 @@ Phase marker: `P13-WP03-platform-login-logout-and-browser-session`
 
 Package: **P13-WP03 — Platform Login, Logout, and Browser Session**
 Prior tip: `2bec853da67114905bbdf690a0fe2b3568ffc728`
-Feature tip: _(recorded after commit)_
+Feature tip: `6298b668c5d0555a84eb206b2a2313b138c9b892`
 
 ## Status
 
