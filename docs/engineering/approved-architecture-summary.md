@@ -24,7 +24,7 @@
 | Rollback | L0–L6 | [rollback plan](extraction-rollback-plan.md) |
 | Shared code | Two consumers + product-neutral only | Phase 1 approval §14 |
 | Phase 2 | Closed with documented risks — foundations only | [Phase 2 closeout](../reports/phase-02-extraction-closeout.md) · [evidence matrix](phase-02-evidence-matrix.md) |
-| Next WP | **P12-WP02 — Authoritative Product Foundation Reference** (not started; requires authorization). Phase 11 closed; P12-WP01 contract audit complete. | [Phase 12](../phases/phase-12-product-foundation-and-bootstrap.md) · [P12-WP01](../reports/P12-WP01-platform-product-contract-audit.md) |
+| Next WP | **P12-WP03 — Product Documentation Templates** (not started; requires authorization). P12-WP01–WP02 complete. | [Phase 12](../phases/phase-12-product-foundation-and-bootstrap.md) · [foundation reference](../Product-Foundation/exits-product-foundation-reference.md) |
 
 ## Prohibited
 

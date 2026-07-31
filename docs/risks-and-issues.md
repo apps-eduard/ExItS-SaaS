@@ -141,11 +141,13 @@ P9-WP06 closed Phase 9 with an honest Commercial MVP readiness board: Developmen
 
 ## Phase 12 — Product foundation (in progress)
 
-P12-WP01 completed a Platform–Product contract audit from repository evidence (separate DBs, SaaS vs operational money, product-local roles, pilot multi-image deploy). No application code. Product-Foundation drafts remain untracked until P12-WP02+. Exact next: **P12-WP02 — Authoritative Product Foundation Reference** (do not begin). R-091/R-109/R-129/TLS/MAUI-HTTPS remain open. **Not production-ready.**
+P12-WP02 finalized the authoritative Product Foundation reference at `docs/Product-Foundation/exits-product-foundation-reference.md`. D-P12-01/D-P12-02 intent closed; D-P12-03 commercial transport and R-091 remain open. Exact next: **P12-WP03 — Product Documentation Templates** (do not begin). **Not production-ready.**
+
+P12-WP01 completed a Platform–Product contract audit from repository evidence (separate DBs, SaaS vs operational money, product-local roles, pilot multi-image deploy). No application code.
 
 ## Phase 11 — Web UI and Reporting Design System closeout
 
-P11-WP08 reconciled P11-WP01–P11-WP07 (Admin audit through localization/theme/a11y/responsive QA). Sole `MainLayout`, shared forms/tables/reporting, dashboard/list migration, EN/fil-PH and System/Light/Dark validated. No Tailwind/shadcn/Flowbite/DaisyUI. No business/API/migration changes. R-091/R-109/R-129/TLS/MAUI-HTTPS remain open. Formal WCAG certification not claimed. Tests **1186 / 0 / 0**. Exact next after Phase 11: **Phase 12** (now in progress via P12-WP01). **Not production-ready.**
+P11-WP08 reconciled P11-WP01–P11-WP07 (Admin audit through localization/theme/a11y/responsive QA). Sole `MainLayout`, shared forms/tables/reporting, dashboard/list migration, EN/fil-PH and System/Light/Dark validated. No Tailwind/shadcn/Flowbite/DaisyUI. No business/API/migration changes. R-091/R-109/R-129/TLS/MAUI-HTTPS remain open. Formal WCAG certification not claimed. Tests **1186 / 0 / 0**. Exact next after Phase 11: **Phase 12** (now in progress). **Not production-ready.**
 
 ## Phase 10 — Full POS closeout
 

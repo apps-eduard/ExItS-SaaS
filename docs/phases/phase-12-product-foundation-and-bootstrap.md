@@ -4,16 +4,16 @@
 
 ## Status
 
-**In progress.** **P12-WP01** is **complete**. Exact next: **P12-WP02 — Product Foundation Reference** when authorized (do not begin).
+**In progress.** **P12-WP01**–**P12-WP02** are **complete**. Exact next: **P12-WP03 — Product Documentation Templates** when authorized (do not begin).
 
-Phase 11 remains closed. Product-Foundation drafts under `docs/Product-Foundation/` stay deferred until WP02+ (not finalized by WP01).
+Phase 11 remains closed. Authoritative foundation: [`docs/Product-Foundation/exits-product-foundation-reference.md`](../Product-Foundation/exits-product-foundation-reference.md).
 
 ## Progress
 
 | WP | Status | Report / tip |
 |---|---|---|
 | P12-WP01 — Platform–Product Contract Audit | **Complete** | [report](../reports/P12-WP01-platform-product-contract-audit.md) · `32889be0851fa0969e8abfa6b7c66784b12e9e8b` |
-| P12-WP02 — Authoritative Product Foundation Reference | Not started | — |
+| P12-WP02 — Authoritative Product Foundation Reference | **Complete** | [report](../reports/P12-WP02-authoritative-product-foundation-reference.md) · *(tip filled after commit)* |
 | P12-WP03 — Product Documentation Templates | Not started | — |
 | P12-WP04 — Cursor Product Context Rule | Not started | — |
 | P12-WP05 — Product Bootstrap Prompt | Not started | — |
@@ -229,12 +229,18 @@ Do not place these in shared libraries:
 
 ## Product Foundation Files
 
-Create and maintain:
+Authoritative (P12-WP02):
 
 ```text
-Docs/Product-Foundation/
+docs/Product-Foundation/
 ├── README.md
-├── exits-product-foundation.md
+└── exits-product-foundation-reference.md
+```
+
+Templates and bootstrap prompt arrive in later work packages (P12-WP03+):
+
+```text
+docs/Product-Foundation/
 ├── product-definition-template.md
 ├── product-architecture-template.md
 ├── product-security-template.md
@@ -249,15 +255,15 @@ Docs/Product-Foundation/
 The authoritative reusable reference is:
 
 ```text
-Docs/Product-Foundation/exits-product-foundation.md
+docs/Product-Foundation/exits-product-foundation-reference.md
 ```
 
 ## Product Documentation Structure
 
-Each product should maintain a concise authoritative documentation pack:
+Each **new** product should maintain a concise authoritative documentation pack at:
 
 ```text
-Products/<ProductName>/Docs/
+src/Products/<ProductName>/Docs/
 ├── product-definition.md
 ├── architecture.md
 ├── security.md
@@ -269,14 +275,14 @@ Products/<ProductName>/Docs/
 └── FILE-MANIFEST.md
 ```
 
-The exact path may follow repository conventions, but the responsibility of each file must remain clear.
+(D-P12-02: intended root for new products. Existing PinoyBusinessPOS portfolio docs under `docs/` are not mass-migrated by Phase 12 foundation WPs.)
 
 ## Context Loading Policy
 
 For new product work, Cursor must initially load only:
 
 - permanent workflow rules
-- `Docs/Product-Foundation/exits-product-foundation.md`
+- `docs/Product-Foundation/exits-product-foundation-reference.md`
 - the active product's authoritative documentation
 - files explicitly referenced by the active work package
 
@@ -417,9 +423,13 @@ Inspect the actual Platform and completed POS implementation and document the sm
 
 ### P12-WP02 — Authoritative Product Foundation Reference
 
+#### Status
+
+**Complete** — see [P12-WP02 report](../reports/P12-WP02-authoritative-product-foundation-reference.md). Authoritative file: [`docs/Product-Foundation/exits-product-foundation-reference.md`](../Product-Foundation/exits-product-foundation-reference.md).
+
 #### Objective
 
-Create `Docs/Product-Foundation/exits-product-foundation.md` as the concise permanent reference for future products.
+Create `docs/Product-Foundation/exits-product-foundation-reference.md` as the concise permanent reference for future products.
 
 #### Deliverables
 

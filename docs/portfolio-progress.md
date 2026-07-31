@@ -12,9 +12,9 @@
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 12 — Reusable SaaS Product Foundation and Bootstrap (**in progress**) |
-| Current work package | P12-WP01 — Platform–Product Contract Audit (**complete**) |
-| Overall status | **Phase 12 in progress.** P12-WP01 complete (contract audit only). Exact next: P12-WP02 — Authoritative Product Foundation Reference (do not begin until authorized). **Not production-ready.** |
-| Latest verified commit | `32889be0851fa0969e8abfa6b7c66784b12e9e8b` |
+| Current work package | P12-WP02 — Authoritative Product Foundation Reference (**complete**) |
+| Overall status | **Phase 12 in progress.** P12-WP01–WP02 complete. Authoritative Product Foundation reference finalized. Exact next: P12-WP03 — Product Documentation Templates (do not begin until authorized). **Not production-ready.** |
+| Latest verified commit | *(filled after tip-hash)* |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-07-31 |
 
@@ -67,7 +67,9 @@ P11-WP08 ✓ Phase 11 Closeout (complete with risks — Phase 11 closed)
         ↓
 P12-WP01 ✓ Platform–Product Contract Audit
         ↓
-P12-WP02 ○ Authoritative Product Foundation Reference (do not begin until authorized)
+P12-WP02 ✓ Authoritative Product Foundation Reference
+        ↓
+P12-WP03 ○ Product Documentation Templates (do not begin until authorized)
 ```
 
 ## Phase progress
@@ -86,7 +88,7 @@ P12-WP02 ○ Authoritative Product Foundation Reference (do not begin until auth
 | 9 | MVP Hardening and Release | **Complete with documented risks** | 6 | 6 | 100% | [Open](phases/phase-09-mvp-hardening.md) |
 | 10 | Full POS | **Complete with documented risks** | 8 | 8 | 100% | [Open](phases/phase-10-full-pos.md) |
 | 11 | Web UI and Reporting Design System | **Complete with documented risks** | 8 | 8 | 100% | [Open](phases/phase-11-web-ui-reporting-design-system.md) |
-| 12 | Reusable SaaS Product Foundation and Bootstrap | **In progress** | 1 | 7 | — | [Open](phases/phase-12-product-foundation-and-bootstrap.md) |
+| 12 | Reusable SaaS Product Foundation and Bootstrap | **In progress** | 2 | 7 | — | [Open](phases/phase-12-product-foundation-and-bootstrap.md) |
 
 **MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
@@ -97,6 +99,7 @@ P12-WP02 ○ Authoritative Product Foundation Reference (do not begin until auth
 | WP | Status | Key commit |
 |---|---|---|
 | P12-WP01 — Platform–Product Contract Audit | Complete | `32889be0851fa0969e8abfa6b7c66784b12e9e8b` |
+| P12-WP02 — Authoritative Product Foundation Reference | Complete | *(tip filled after commit)* |
 
 ## Phase 11 work packages
 
@@ -137,4 +140,4 @@ P12-WP02 ○ Authoritative Product Foundation Reference (do not begin until auth
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P12-WP02** until explicitly authorized.
+Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P12-WP03** until explicitly authorized.

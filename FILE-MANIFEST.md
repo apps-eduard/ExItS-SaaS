@@ -181,8 +181,11 @@ docs/reports/P11-WP06-dashboard-and-report-refactoring.md
 docs/reports/P11-WP07-localization-theme-accessibility-responsive-qa.md
 docs/reports/P11-WP08-phase-11-closeout.md
 docs/reports/P12-WP01-platform-product-contract-audit.md
+docs/reports/P12-WP02-authoritative-product-foundation-reference.md
 docs/phases/phase-11-web-ui-reporting-design-system.md
 docs/phases/phase-12-product-foundation-and-bootstrap.md
+docs/Product-Foundation/README.md
+docs/Product-Foundation/exits-product-foundation-reference.md
 docs/reports/PRE-P11-admin-ui-recovery.md
 docs/reports/PRE-P11-admin-theme-visual-polish.md
 docs/operations/backup-restore/README.md
@@ -201,4 +204,3 @@ docs/risks-and-issues.md
 ## Not tracked
 
 **/bin/, **/obj/
-docs/Product-Foundation/ (intentional untracked drafts until P12-WP02+)
