@@ -23,6 +23,9 @@ public sealed class SecurityHardeningArchitectureTests
             "src", "Platform", "ExItS.Platform.Api", "Common", "PlatformSecurityPipeline.cs"));
         Assert.Contains("AddRateLimiter", posPipeline, StringComparison.Ordinal);
         Assert.Contains("AddRateLimiter", platformPipeline, StringComparison.Ordinal);
+        Assert.Contains("PermitLimit = 240", platformPipeline, StringComparison.Ordinal);
+        Assert.Contains("LivePreview:Enabled", platformPipeline, StringComparison.Ordinal);
+        Assert.Contains("PermitLimit = 5000", platformPipeline, StringComparison.Ordinal);
         Assert.DoesNotContain(".Migrate(", pos, StringComparison.Ordinal);
         Assert.DoesNotContain(".Migrate(", platform, StringComparison.Ordinal);
     }

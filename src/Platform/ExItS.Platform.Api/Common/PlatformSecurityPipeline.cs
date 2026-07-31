@@ -192,9 +192,27 @@ internal static class PlatformSecurityPipeline
                     });
             });
 
+            // Live Preview (non-Production) drives many Admin/Blazor circuit requests from one IP.
+            // Keep auth endpoint policies; only relax the global IP ceiling for local power-user use.
+            var livePreviewEnabled = builder.Configuration.GetValue<bool>("LivePreview:Enabled")
+                && !builder.Environment.IsProduction();
+
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
             {
                 var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                if (livePreviewEnabled)
+                {
+                    return RateLimitPartition.GetFixedWindowLimiter(
+                        "live-preview-ip:" + ip,
+                        _ => new FixedWindowRateLimiterOptions
+                        {
+                            AutoReplenishment = true,
+                            PermitLimit = 5000,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueLimit = 0
+                        });
+                }
+
                 return RateLimitPartition.GetFixedWindowLimiter(
                     "ip:" + ip,
                     _ => new FixedWindowRateLimiterOptions
