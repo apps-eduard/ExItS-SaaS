@@ -5,7 +5,7 @@ Phase marker: `P11-WP08-phase-11-closeout`
 Package: **P11-WP08 — Phase 11 Closeout**
 Prior tip: `97cc3d4e83f5802c8c7cec40f48f426677254d19`
 Docs tip: `ff2ad9e2e756f6e011fcf60f14e6350a3c15e32e`
-Final tip: `f9fa2a5564cffbd0c7e54997cf121326dfadbc83`
+Final tip: `0e4ff3436126b6385a02ca6a587576b6f1b87dcd`
 
 ## Status
 
@@ -193,7 +193,7 @@ No listed item was closed without repository evidence.
 | Entering tip | `97cc3d4e83f5802c8c7cec40f48f426677254d19` |
 | Docs / closeout commit | `ff2ad9e2e756f6e011fcf60f14e6350a3c15e32e` |
 | Tip-hash commit | `f9fa2a5564cffbd0c7e54997cf121326dfadbc83` |
-| Final tip | `f9fa2a5564cffbd0c7e54997cf121326dfadbc83` |
+| Final tip | `0e4ff3436126b6385a02ca6a587576b6f1b87dcd` |
 | Working tree | Clean except intentional untracked `docs/Product-Foundation/` and `docs/phases/phase-12-product-foundation-and-bootstrap.md` |
 
 ## Exact next
