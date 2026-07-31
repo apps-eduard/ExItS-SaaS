@@ -66,6 +66,7 @@ Interactive pixel walkthrough across every breakpoint/theme was **not** fully au
 
 ## Git evidence
 
+Feature/recovery commit: `2188596b42f9f699b1a014d92edbaba25887cfc1`  
 Recorded after push on `main`.
 
 ## Phase 11 readiness

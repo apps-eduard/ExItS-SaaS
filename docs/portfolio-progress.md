@@ -14,7 +14,7 @@
 | Current phase | Phase 10 — Full POS (**complete with documented risks**) |
 | Current work package | P10-WP08 — Phase 10 Closeout (**complete**) |
 | Overall status | **Phase 10 closed.** Pre-Phase-11 Admin UI recovery complete. Exact next: Phase 11 — Web UI and Reporting Design System. Do not begin Phase 11 or Phase 12 until authorized. |
-| Latest verified commit | `de09f97b0045636f9da004f1b7cc95bf7be17441` |
+| Latest verified commit | `2188596b42f9f699b1a014d92edbaba25887cfc1` |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred |
 | Last updated | 2026-07-31 |
 
