@@ -16,7 +16,7 @@ Authoritative docs:
 
 | WP | Status | Report / tip |
 |---|---|---|
-| P14-WP01 — Deployment Architecture and Production Readiness Audit | **Complete** | [report](../reports/P14-WP01-deployment-architecture-and-production-readiness-audit.md) · *(feature tip recorded after commit)* |
+| P14-WP01 — Deployment Architecture and Production Readiness Audit | **Complete** | [report](../reports/P14-WP01-deployment-architecture-and-production-readiness-audit.md) · `e0e2da2d03babc01dd6efab9d44c6c2a2668457a` |
 | P14-WP02 — Production Packaging and Compose Baseline | Not started | — |
 | P14-WP03 — Reverse Proxy, TLS, and Network Hardening | Not started | — |
 | P14-WP04 — Production Backup, Restore, and Ops Evidence | Not started | — |

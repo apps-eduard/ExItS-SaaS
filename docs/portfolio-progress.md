@@ -14,7 +14,7 @@
 | Current phase | Phase 14 — Production Deployment and Operations (**in progress**) |
 | Current work package | P14-WP01 — Deployment Architecture and Production Readiness Audit (**complete**) |
 | Overall status | **Phase 14 in progress.** P14-WP01 complete (docs/discovery only). Production topology = customer on-prem + per-product DBs + reverse-proxy HTTPS. Production and restricted external pilot remain **Blocked**. Exact next: P14-WP02 — Production Packaging and Compose Baseline (do not begin until authorized). **Not production-ready.** |
-| Latest verified commit | *(feature tip recorded after commit)* |
+| Latest verified commit | `e0e2da2d03babc01dd6efab9d44c6c2a2668457a` |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT (Deployment evaluator still hard-blocks on R-091); Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-07-31 |
 
@@ -147,7 +147,7 @@ P14-WP02 ○ Production Packaging and Compose Baseline (do not begin until autho
 
 | WP | Status | Key commit |
 |---|---|---|
-| P14-WP01 — Deployment Architecture and Production Readiness Audit | Complete | *(feature tip recorded after commit)* |
+| P14-WP01 — Deployment Architecture and Production Readiness Audit | Complete | `e0e2da2d03babc01dd6efab9d44c6c2a2668457a` |
 
 ## Phase 12 work packages
 
