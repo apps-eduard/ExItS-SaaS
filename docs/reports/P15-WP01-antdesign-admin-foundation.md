@@ -4,7 +4,7 @@
 
 ## Status
 
-**Complete** (local validation + push). Fluent UI Phase 15 direction cancelled/superseded before any push.
+**Complete** at tip `44d3a85adf0f18a7dd0e2b71eb42280181b32388`. Fluent UI Phase 15 direction cancelled/superseded before any push.
 
 ## Cancellation / revert
 
