@@ -4,7 +4,7 @@ Phase marker: `P13-WP04-password-verification-and-lockout-lifecycle`
 
 Package: **P13-WP04 — Password Lifecycle, Lockout, and Verification**
 Prior tip: `cdf109232ccb7e75bfd9443a0ec221b2150acdfc`
-Feature tip: _(recorded after commit)_
+Feature tip: `65b261eca7353a7efea2f8f1899c252f0dcee6dc`
 
 ## Status
 
