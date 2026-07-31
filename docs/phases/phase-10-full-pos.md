@@ -4,7 +4,7 @@
 
 ## Status
 
-**In Progress** — **P10-WP06 — Advanced Permissions and Operational Reports** complete. Do **not** begin P10-WP07.
+**In Progress** — **P10-WP07 — Multiple Registers** authorized (prior tip `084cf1b` / WP06 complete). Do **not** begin P10-WP08 or Phase 11.
 
 ## Objective
 
@@ -267,22 +267,37 @@ Production auth (R-091), MFA/IdP, Platform membership admin, Windows MAUI, Phase
 
 ### P10-WP07 — Multiple Registers
 
-Status: Not Started
+Status: **Authorized — In Progress**
 
-#### Required outcomes
+Prior tip: `084cf1b3a0764a82a43cd04d3e230654f7a5555b` (P10-WP06 complete). Baseline: **1138 / 0 / 0**.
+Phase marker: `P10-WP07-multiple-registers`
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+Product-owner decision record (this session) authorizes **Multiple Registers** as logical org-owned POS sales stations.
+
+#### Required outcomes (approved)
+
+- Register = logical named sales station (`Active`/`Inactive`); code `REG-NNNNNN`; no hard delete; no second cash authority
+- Every new CashierShift links to exactly one Active Register; one Open shift per actor **and** per Register; RegisterId immutable on shift
+- Every new sale inherits RegisterId from Open shift (server-derived); legacy null RegisterId allowed
+- Returns: SourceRegisterId from sale; RefundRegisterId from cash-refund Open shift when applicable
+- Grants: `store-registers-view` / `store-registers-manage`; role matrix per decision record
+- Migration `AddPosRegisters`; typed API + MAUI `/registers*`; shift-open Register selection; online-only management
+- Register operational reports (activity, sales, returns, cash refunds, shift summary, cash variance by Register)
+- Exact next: **P10-WP08 — Phase 10 Closeout** (do not begin)
+
+#### Explicit exclusions
+
+Branches, warehouses, drawers, devices/printers, denomination counting, deposits, accounting/fiscal, manager approvals, production auth (R-091), Windows MAUI, offline Register management, Phase 11, P10-WP08.
 
 #### Definition of Done
 
 - [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
+- [ ] Applicable tests pass with exact evidence (baseline 1138 preserved + focused coverage).
 - [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
+- [ ] Completion report created (`docs/reports/P10-WP07-multiple-registers.md`).
 - [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [ ] Working tree clean (after push; Phase 11 doc may remain untracked).
+- [ ] Exact next WP recorded: **P10-WP08 — Phase 10 Closeout** (do not begin).
 
 ### P10-WP08 — Full POS Closeout
 
