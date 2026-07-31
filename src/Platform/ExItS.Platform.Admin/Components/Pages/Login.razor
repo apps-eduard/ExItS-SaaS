@@ -3,6 +3,7 @@
 @rendermode InteractiveServer
 @using ExItS.Platform.Admin.Services
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Options
 @attribute [AllowAnonymous]
 @inject PlatformBrowserSessionService SessionService
 @inject NavigationManager Nav
@@ -39,6 +40,15 @@
             </div>
             <p class="muted"><a href="/admin/forgot-password">Forgot password</a></p>
         </EditForm>
+
+        <div class="form-actions" style="margin-top: 1.5rem; flex-direction: column; align-items: stretch; gap: 0.5rem;">
+            <p class="muted" style="margin: 0;">Or continue with</p>
+            <a class="secondary" href="@GoogleChallengeUrl">Continue with Google</a>
+            <a class="secondary" href="@FacebookChallengeUrl">Continue with Facebook</a>
+            <p class="muted" style="margin: 0; font-size: 0.85rem;">
+                Social sign-in creates or links a Platform User only. It does not grant administrator, membership, or product access.
+            </p>
+        </div>
     </div>
 </div>
 
@@ -46,6 +56,18 @@
     private readonly LoginModel _model = new();
     private string? _error;
     private bool _busy;
+
+    [Inject] private IOptions<PlatformApiOptions> PlatformApi { get; set; } = default!;
+
+    private string GoogleChallengeUrl => BuildChallengeUrl("google");
+    private string FacebookChallengeUrl => BuildChallengeUrl("facebook");
+
+    private string BuildChallengeUrl(string provider)
+    {
+        var baseUrl = PlatformApi.Value.BaseUrl.TrimEnd('/');
+        var returnUrl = Uri.EscapeDataString(Nav.ToAbsoluteUri("/admin/external-login-callback").ToString());
+        return $"{baseUrl}/api/v1/platform/auth/external/{provider}/challenge?returnUrl={returnUrl}";
+    }
 
     private async Task OnSubmitAsync()
     {

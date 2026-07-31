@@ -38,6 +38,9 @@ public static class PlatformAuditActions
     public const string PlatformAuthAccessTokenIssued = "platform.auth.access_token_issued";
     public const string PlatformAuthAccessTokenBound = "platform.auth.access_token_bound";
     public const string PlatformAuthAccessTokenRevoked = "platform.auth.access_token_revoked";
+    public const string PlatformAuthExternalLoginSucceeded = "platform.auth.external_login_succeeded";
+    public const string PlatformAuthExternalLoginLinked = "platform.auth.external_login_linked";
+    public const string PlatformAuthExternalLoginFailed = "platform.auth.external_login_failed";
     /// <summary>Reserved for a future MFA enrollment WP — not emitted in P13-WP07.</summary>
     public const string PlatformAuthMfaEnrollmentStarted = "platform.auth.mfa_enrollment_started";
     /// <summary>Reserved for a future MFA enrollment WP — not emitted in P13-WP07.</summary>

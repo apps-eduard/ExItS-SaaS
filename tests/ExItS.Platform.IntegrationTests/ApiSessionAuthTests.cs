@@ -199,7 +199,8 @@ internal sealed class SessionApiFactory(string connectionString) : WebApplicatio
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:PlatformDatabase"] = connectionString,
-                ["Security:EnforceHttps"] = "false"
+                ["Security:EnforceHttps"] = "false",
+                ["PlatformAuthentication:External:TestingEndpointEnabled"] = "true"
             });
         });
     }

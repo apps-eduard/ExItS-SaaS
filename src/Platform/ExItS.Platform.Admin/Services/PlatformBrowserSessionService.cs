@@ -60,6 +60,55 @@ public sealed class PlatformBrowserSessionService(
         return (true, null);
     }
 
+    public async Task<(bool Ok, string? Error)> EstablishFromSessionTokenAsync(
+        string sessionToken,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(sessionToken))
+        {
+            return (false, "Session token is missing.");
+        }
+
+        var http = httpContextAccessor.HttpContext
+            ?? throw new InvalidOperationException("HTTP context is required for external login.");
+
+        var client = httpClientFactory.CreateClient("PlatformApiUnauthenticated");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/platform/auth/me");
+        request.Headers.TryAddWithoutValidation("X-ExItS-Session-Token", sessionToken);
+        using var response = await client.SendAsync(request, ct).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            return (false, "External session is invalid.");
+        }
+
+        await using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        var me = await JsonSerializer.DeserializeAsync<MeResponse>(stream, JsonOptions, ct).ConfigureAwait(false);
+        if (me is null || me.UserId == Guid.Empty)
+        {
+            return (false, "External session response was invalid.");
+        }
+
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, me.UserId.ToString("D")),
+            new(ClaimTypes.Name, me.Username ?? string.Empty),
+            new(ClaimTypes.Email, me.Email ?? string.Empty),
+            new(SessionTokenClaimType, sessionToken)
+        };
+
+        var identity = new ClaimsIdentity(claims, CookieScheme);
+        var principal = new ClaimsPrincipal(identity);
+        var props = new AuthenticationProperties
+        {
+            IsPersistent = true,
+            ExpiresUtc = me.ExpiresAtUtc,
+            AllowRefresh = true
+        };
+
+        await http.SignInAsync(CookieScheme, principal, props).ConfigureAwait(false);
+        return (true, null);
+    }
+
     public async Task LogoutAsync(CancellationToken ct = default)
     {
         var http = httpContextAccessor.HttpContext;
@@ -99,6 +148,14 @@ public sealed class PlatformBrowserSessionService(
         string Email,
         DateTimeOffset ExpiresAtUtc,
         DateTimeOffset AbsoluteExpiresAtUtc);
+
+    private sealed record MeResponse(
+        Guid SessionId,
+        Guid UserId,
+        string Username,
+        string DisplayName,
+        string Email,
+        DateTimeOffset ExpiresAtUtc);
 }
 
 public sealed class PlatformSessionForwardingHandler(IHttpContextAccessor httpContextAccessor) : DelegatingHandler

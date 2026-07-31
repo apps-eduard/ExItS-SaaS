@@ -111,7 +111,7 @@ public sealed class GetPlatformCredentialStatus
         return ApplicationResult<PlatformCredentialStatusDto>.Success(
             new PlatformCredentialStatusDto(
                 userId,
-                HasPassword: true,
+                HasPassword: credential.SupportsPasswordLogin,
                 EmailVerified: credential.EmailVerifiedAtUtc is not null,
                 EmailVerifiedAtUtc: credential.EmailVerifiedAtUtc,
                 IsLockedOut: credential.IsLockedOut(_clock.UtcNow),
@@ -357,7 +357,7 @@ public sealed class VerifyPlatformUserPassword
         }
 
         var credential = await _credentials.GetByUserIdAsync(id, cancellationToken).ConfigureAwait(false);
-        if (credential is null)
+        if (credential is null || !credential.SupportsPasswordLogin)
         {
             return ApplicationResult<PlatformCredentialStatusDto>.Failure(
                 ApplicationErrorCodes.CredentialNotFound,

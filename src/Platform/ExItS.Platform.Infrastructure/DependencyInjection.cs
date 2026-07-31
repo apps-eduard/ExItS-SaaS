@@ -45,6 +45,7 @@ public static class DependencyInjection
         services.AddScoped<IPlatformUserCredentialRepository, PlatformUserCredentialRepository>();
         services.AddScoped<IPlatformAuthSessionRepository, PlatformAuthSessionRepository>();
         services.AddScoped<IPlatformAccessTokenRepository, PlatformAccessTokenRepository>();
+        services.AddScoped<IPlatformExternalLoginRepository, PlatformExternalLoginRepository>();
         services.AddScoped<IPlatformCredentialTokenRepository, PlatformCredentialTokenRepository>();
         services.AddSingleton<IPlatformPasswordHasher, AspNetCorePlatformPasswordHasher>();
         services.AddSingleton<IPlatformSessionTokenService, PlatformSessionTokenService>();
@@ -68,6 +69,7 @@ public static class DependencyInjection
         services.Configure<PlatformAccessTokenOptions>(config.GetSection(PlatformAccessTokenOptions.SectionName));
         services.Configure<PlatformCredentialLifecycleOptions>(config.GetSection(PlatformCredentialLifecycleOptions.SectionName));
         services.Configure<PlatformMfaOptions>(config.GetSection(PlatformMfaOptions.SectionName));
+        services.Configure<PlatformExternalAuthOptions>(config.GetSection(PlatformExternalAuthOptions.SectionName));
         services.AddSingleton<IPlatformMfaFactorStore, NullPlatformMfaFactorStore>();
         services.AddScoped<IPlatformMfaReadinessService, PlatformMfaReadinessService>();
 

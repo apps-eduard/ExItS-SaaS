@@ -95,4 +95,8 @@ public static class ApplicationErrorCodes
     public const string CurrentPasswordInvalid = "application.auth.current_password_invalid";
     public const string AccessTokenInvalid = "application.auth.access_token_invalid";
     public const string ProductEntryDenied = "application.auth.product_entry_denied";
+    public const string ExternalAuthDisabled = "application.auth.external_disabled";
+    public const string ExternalAuthFailed = "application.auth.external_failed";
+    public const string ExternalAuthEmailUnverified = "application.auth.external_email_unverified";
+    public const string ExternalAuthProviderUnsupported = "application.auth.external_provider_unsupported";
 }

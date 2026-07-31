@@ -2,7 +2,7 @@
 
 [Home](../index.md) | [Threat model](authentication-threat-model.md) | [Security](security.md) | [Authorization](authorization-matrix.md) | [Product Foundation](../Product-Foundation/exits-product-foundation-reference.md) | [Phase 13](../phases/phase-13-production-authentication-and-identity.md) | [P13-WP01 report](../reports/P13-WP01-authentication-architecture-and-threat-model.md)
 
-**Status:** Authoritative architecture direction (**P13-WP01**). Credentials (**P13-WP02**), browser login/session (**P13-WP03**), password/verification lifecycle (**P13-WP04**), trusted organization context (**P13-WP05**), product-client bearer integration (**P13-WP06**), and MFA readiness / auth hardening (**P13-WP07**) delivered. Phase closeout remains **P13-WP08**. **R-091** remains open until closeout evidences production readiness.
+**Status:** Authoritative architecture direction (**P13-WP01**). Credentials (**P13-WP02**), browser login/session (**P13-WP03**), password/verification lifecycle (**P13-WP04**), trusted organization context (**P13-WP05**), product-client bearer integration (**P13-WP06**), MFA readiness / auth hardening (**P13-WP07**), and Google/Facebook external login (**P13-WP08**) delivered. Phase closeout remains **P13-WP09**. **R-091** remains open until closeout evidences production readiness.
 
 **Scope of this document:** identity model, trust boundaries, session/token model, Dev vs Production behavior, MFA readiness (non-enforcing), and decisions.
 
@@ -52,6 +52,7 @@ Platform User
 | Browser session | **Implemented (P13-WP03):** `platform_auth_sessions` + login/logout/me + Admin cookie | Ready |
 | Access tokens | **Implemented (P13-WP06):** `platform_access_tokens` + issue/bind/introspect/revoke | Ready |
 | MFA | **Readiness only (P13-WP07):** contracts/options/DTO signals; no enrollment/challenge; Production forbids enabling enforcement | Enforcement deferred |
+| External login | **Implemented (P13-WP08):** Google/Facebook create/link Platform User + browser session; no auto privilege grants | Secrets via config when Enabled |
 | Platform actor | Session principal when authenticated; Dev/Testing may still use header / DevelopmentOperator | Production Admin requires login; Dev headers still ignored in Production |
 | Platform Authz | `PlatformAuthz` + role assignments | AuthN binds actor when session present |
 | Platform Admin | Login/logout UI; Production requires authenticated user + HTTPS Platform API BaseUrl | Not full production-ready portfolio claim |
@@ -148,7 +149,9 @@ MAUI replaces GUID/header Dev sign-in with real Platform login and stores tokens
 
 **Direction (D-P13-04):** Platform-local **username or email + password** with server-side salted hash (algorithm chosen in credential WP; not invented here beyond “industry-standard password hashing”).
 
-**Deferred (explicit):** SSO, Active Directory, external OIDC IdP federation — may follow after local auth MVP; do not block architecture on them.
+**Deferred (explicit):** Broad enterprise SSO / Active Directory / arbitrary OIDC IdP federation remain deferred. **Authorized exception (P13-WP08):** Google and Facebook social login for public/store-owner/customer identity, creating or linking Platform User without privilege grants.
+
+**Implemented (P13-WP08):** `platform_external_logins`; OAuth challenge/complete; Admin login entry; testing complete endpoint (Dev/Testing only). Social login must never auto-grant Platform Administrator, membership, entitlement, or product roles.
 
 ### 6.4 MFA
 
@@ -200,7 +203,7 @@ POS remains non-PHI by default (Product Foundation).
 | **D-P13-01** | Access chain locked: User → Membership → Product Access → Product-Local Role | **Closed** |
 | **D-P13-02** | Platform owns authentication SoR; products never own global credentials | **Closed** |
 | **D-P13-03** | Admin interactive session = cookie/server session; APIs/MAUI = Platform bearer tokens | **Closed** (direction) |
-| **D-P13-04** | Phase 13 MVP = local password auth; SSO/AD deferred | **Closed** (MVP scope) |
+| **D-P13-04** | Phase 13 MVP = local password auth; enterprise SSO/AD deferred; Google/Facebook authorized in P13-WP08 | **Closed** (scope revised by P13-WP08) |
 | **D-P13-05** | MFA readiness in Phase 13; enforcement deferred unless authorized | **Closed** (scope) |
 | **D-P13-06** | Dev headers never become Production authentication | **Closed** |
 | **R-091** | Production authentication missing in code | **Open** until shipped |
@@ -223,4 +226,4 @@ POS remains non-PHI by default (Product Foundation).
 
 ## 12. Recommended next work package
 
-**Recommended next work package:** **P13-WP08 — Phase 13 Closeout** when explicitly authorized.
+**Recommended next work package:** **P13-WP09 — Phase 13 Closeout** when explicitly authorized.

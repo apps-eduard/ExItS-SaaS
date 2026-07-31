@@ -14,6 +14,11 @@ public sealed class PlatformUserCredential
     /// <summary>Legacy label from the initial P13-WP02 custom PBKDF2 format (superseded; do not write new hashes).</summary>
     public const string Pbkdf2Sha256V1 = "PBKDF2-SHA256-V1";
 
+    /// <summary>
+    /// Credential exists for session security-stamp only; password login is impossible until a real hash is set.
+    /// </summary>
+    public const string ExternalNoPassword = "EXTERNAL-NO-PASSWORD";
+
     public PlatformUserId UserId { get; }
     public string PasswordHash { get; private set; }
     public string PasswordHashAlgorithm { get; private set; }
@@ -24,6 +29,9 @@ public sealed class PlatformUserCredential
     public DateTimeOffset? LockoutEndUtc { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
+
+    public bool SupportsPasswordLogin =>
+        !string.Equals(PasswordHashAlgorithm, ExternalNoPassword, StringComparison.Ordinal);
 
     private PlatformUserCredential(
         PlatformUserId userId,
@@ -67,6 +75,30 @@ public sealed class PlatformUserCredential
             NewSecurityStamp(),
             utcNow,
             emailVerifiedAtUtc: null,
+            failedAccessCount: 0,
+            lockoutEndUtc: null,
+            createdAtUtc: utcNow,
+            updatedAtUtc: utcNow);
+    }
+
+    /// <summary>
+    /// Creates a credential that holds a security stamp for sessions but rejects password authentication.
+    /// </summary>
+    public static PlatformUserCredential CreateForExternalLogin(
+        PlatformUserId userId,
+        DateTimeOffset utcNow,
+        bool emailVerified)
+    {
+        ArgumentNullException.ThrowIfNull(userId);
+        EnsureUtc(utcNow);
+
+        return new PlatformUserCredential(
+            userId,
+            passwordHash: "!",
+            passwordHashAlgorithm: ExternalNoPassword,
+            NewSecurityStamp(),
+            utcNow,
+            emailVerifiedAtUtc: emailVerified ? utcNow : null,
             failedAccessCount: 0,
             lockoutEndUtc: null,
             createdAtUtc: utcNow,

@@ -120,7 +120,7 @@ public sealed class LoginPlatformUser
         }
 
         var credential = await _credentials.GetByUserIdAsync(user.Id, cancellationToken).ConfigureAwait(false);
-        if (credential is null)
+        if (credential is null || !credential.SupportsPasswordLogin)
         {
             await WriteLoginFailedAsync(user.Id, cancellationToken).ConfigureAwait(false);
             return LoginFailedResult();

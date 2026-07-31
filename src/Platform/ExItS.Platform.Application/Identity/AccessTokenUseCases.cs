@@ -183,7 +183,7 @@ public sealed class IssuePlatformAccessToken
         }
 
         var credential = await _credentials.GetByUserIdAsync(user.Id, cancellationToken).ConfigureAwait(false);
-        if (credential is null)
+        if (credential is null || !credential.SupportsPasswordLogin)
         {
             return ApplicationResult<PlatformAccessTokenIssueDto>.Failure(
                 ApplicationErrorCodes.LoginFailed,

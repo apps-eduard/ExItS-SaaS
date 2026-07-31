@@ -63,12 +63,39 @@ internal static class PlatformSecurityPipeline
                 "Production must not enable PlatformAuthentication:Mfa EnrollmentEnabled/EnforcementEnabled until an authorized MFA enrollment/challenge WP ships.");
         }
 
+        var testingExternal = builder.Configuration.GetValue<bool>("PlatformAuthentication:External:TestingEndpointEnabled");
+        if (testingExternal)
+        {
+            throw new InvalidOperationException(
+                "Production must not enable PlatformAuthentication:External:TestingEndpointEnabled.");
+        }
+
+        ValidateExternalProviderOrThrow(builder, "Google");
+        ValidateExternalProviderOrThrow(builder, "Facebook");
+
         var lifetimeHours = builder.Configuration.GetValue<int?>("PlatformAuthentication:AccessToken:LifetimeHours") ?? 8;
         var maxLifetimeHours = builder.Configuration.GetValue<int?>("PlatformAuthentication:AccessToken:MaxLifetimeHours") ?? 24;
         if (lifetimeHours < 1 || lifetimeHours > maxLifetimeHours || maxLifetimeHours > 168)
         {
             throw new InvalidOperationException(
                 "Production requires PlatformAuthentication:AccessToken LifetimeHours between 1 and MaxLifetimeHours (MaxLifetimeHours ≤ 168).");
+        }
+    }
+
+    private static void ValidateExternalProviderOrThrow(WebApplicationBuilder builder, string provider)
+    {
+        var enabled = builder.Configuration.GetValue<bool>($"PlatformAuthentication:External:{provider}:Enabled");
+        if (!enabled)
+        {
+            return;
+        }
+
+        var clientId = builder.Configuration[$"PlatformAuthentication:External:{provider}:ClientId"];
+        var clientSecret = builder.Configuration[$"PlatformAuthentication:External:{provider}:ClientSecret"];
+        if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(clientSecret))
+        {
+            throw new InvalidOperationException(
+                $"Production requires ClientId and ClientSecret when PlatformAuthentication:External:{provider}:Enabled is true.");
         }
     }
 

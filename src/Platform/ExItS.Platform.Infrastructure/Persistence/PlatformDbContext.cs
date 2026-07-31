@@ -47,6 +47,7 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PlatformAuthSessionRecord> PlatformAuthSessions => Set<PlatformAuthSessionRecord>();
     internal DbSet<PlatformAccessTokenRecord> PlatformAccessTokens => Set<PlatformAccessTokenRecord>();
     internal DbSet<PlatformCredentialTokenRecord> PlatformCredentialTokens => Set<PlatformCredentialTokenRecord>();
+    internal DbSet<PlatformExternalLoginRecord> PlatformExternalLogins => Set<PlatformExternalLoginRecord>();
     internal DbSet<OrganizationMembershipRecord> OrganizationMemberships => Set<OrganizationMembershipRecord>();
     internal DbSet<ProductAccessAssignmentRecord> ProductAccessAssignments => Set<ProductAccessAssignmentRecord>();
     internal DbSet<PlatformRoleAssignmentRecord> PlatformRoleAssignments => Set<PlatformRoleAssignmentRecord>();
@@ -534,6 +535,31 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
             entity.Property(e => e.ConsumedAtUtc).HasColumnName("consumed_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PlatformExternalLoginRecord>(entity =>
+        {
+            entity.ToTable("platform_external_logins");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.Provider).HasColumnName("provider").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.ProviderSubject).HasColumnName("provider_subject").HasMaxLength(256).IsRequired();
+            entity.Property(e => e.ProviderEmail).HasColumnName("provider_email").HasMaxLength(320);
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.HasIndex(e => new { e.Provider, e.ProviderSubject }).IsUnique();
+            entity.HasIndex(e => e.UserId);
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")

@@ -22,6 +22,8 @@ using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Infrastructure;
 using ExItS.Platform.Infrastructure.Health;
+using Microsoft.AspNetCore.Authentication.Facebook;
+using Microsoft.AspNetCore.Authentication.Google;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,10 +34,59 @@ builder.Services.AddPlatformHealthChecks();
 builder.AddPlatformSecurity();
 builder.Services.AddPlatformPersistence(builder.Configuration);
 
-builder.Services.AddAuthentication(PlatformSessionDefaults.AuthenticationScheme)
+var externalAuthOptions = builder.Configuration
+    .GetSection(PlatformExternalAuthOptions.SectionName)
+    .Get<PlatformExternalAuthOptions>() ?? new PlatformExternalAuthOptions();
+
+var authenticationBuilder = builder.Services.AddAuthentication(PlatformSessionDefaults.AuthenticationScheme)
     .AddScheme<PlatformSessionAuthenticationOptions, PlatformSessionAuthenticationHandler>(
         PlatformSessionDefaults.AuthenticationScheme,
-        _ => { });
+        _ => { })
+    .AddCookie(PlatformExternalAuthDefaults.CorrelationScheme, options =>
+    {
+        options.Cookie.Name = ".ExItS.Platform.External";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(15);
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing")
+            ? CookieSecurePolicy.SameAsRequest
+            : CookieSecurePolicy.Always;
+        options.SlidingExpiration = false;
+    });
+
+if (externalAuthOptions.Google.Enabled
+    && !string.IsNullOrWhiteSpace(externalAuthOptions.Google.ClientId)
+    && !string.IsNullOrWhiteSpace(externalAuthOptions.Google.ClientSecret))
+{
+    authenticationBuilder.AddGoogle(options =>
+    {
+        options.ClientId = externalAuthOptions.Google.ClientId;
+        options.ClientSecret = externalAuthOptions.Google.ClientSecret;
+        options.SignInScheme = PlatformExternalAuthDefaults.CorrelationScheme;
+        options.CallbackPath = "/api/v1/platform/auth/external/google/callback";
+        options.SaveTokens = false;
+        options.Scope.Add("email");
+        options.Scope.Add("profile");
+    });
+}
+
+if (externalAuthOptions.Facebook.Enabled
+    && !string.IsNullOrWhiteSpace(externalAuthOptions.Facebook.ClientId)
+    && !string.IsNullOrWhiteSpace(externalAuthOptions.Facebook.ClientSecret))
+{
+    authenticationBuilder.AddFacebook(options =>
+    {
+        options.AppId = externalAuthOptions.Facebook.ClientId;
+        options.AppSecret = externalAuthOptions.Facebook.ClientSecret;
+        options.SignInScheme = PlatformExternalAuthDefaults.CorrelationScheme;
+        options.CallbackPath = "/api/v1/platform/auth/external/facebook/callback";
+        options.SaveTokens = false;
+        options.Fields.Add("email");
+        options.Fields.Add("name");
+        options.Scope.Add("email");
+    });
+}
+
 builder.Services.AddAuthorization();
 
 // Development-stage only: DevelopmentOperator actors receive full Platform permissions so existing
@@ -87,6 +138,7 @@ builder.Services.AddScoped<BootstrapFirstPlatformAdministrator>();
 builder.Services.AddScoped<LoginPlatformUser>();
 builder.Services.AddScoped<LogoutPlatformSession>();
 builder.Services.AddScoped<ValidateAndRenewPlatformSession>();
+builder.Services.AddScoped<CompleteExternalLogin>();
 builder.Services.AddScoped<ListEligibleOrganizationsForSession>();
 builder.Services.AddScoped<SetSessionOrganizationContext>();
 builder.Services.AddScoped<IssuePlatformAccessToken>();
@@ -165,6 +217,7 @@ app.MapOrganizationEndpoints();
 app.MapIdentityEndpoints();
 app.MapCredentialEndpoints();
 app.MapAuthEndpoints();
+app.MapExternalAuthEndpoints();
 app.MapMembershipEndpoints();
 app.MapAccessEndpoints();
 app.MapSubscriptionEndpoints();

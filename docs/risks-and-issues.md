@@ -94,7 +94,7 @@
 | R-088 | Subscription Admin changes mistaken for product provisioning | High | UI warnings; no entitlement delivery routes; fail-closed access evaluation only | Open — introduced P4-WP03 |
 | R-089 | Provisional repeat-trial policy misapplied as automatic approval | Medium | Conflict/warning only; no automatic repeat-trial approval rules | Open — introduced P4-WP03 |
 | R-090 | Concurrent Admin commercial lifecycle mutations | Medium | Domain concurrency + 409 ProblemDetails; UI refreshes after success | Open — introduced P4-WP03 |
-| R-091 | Missing production authentication (JWT / passwords / MFA / SSO / AD) | Critical | Server-side `PlatformAuthz` + role assignments for development; **P13-WP02**–**P13-WP07** credentials/session/password lifecycle/org context/product-client bearer/MFA readiness+hardening; require Phase 13 closeout before production; no fake login; MFA enforcement deferred | Open — introduced P4-WP04; production blocker; Phase 13 in progress |
+| R-091 | Missing production authentication (JWT / passwords / MFA / SSO / AD) | Critical | Server-side `PlatformAuthz` + role assignments for development; **P13-WP02**–**P13-WP08** credentials/session/password lifecycle/org context/product-client bearer/MFA readiness+hardening/Google+Facebook external login; require Phase 13 closeout before production; no fake login; MFA enforcement deferred; enterprise SSO/AD still deferred | Open — introduced P4-WP04; production blocker; Phase 13 in progress |
 | R-092 | Authorization policy gaps (permission catalog / scope edge cases) | High | Fail-closed catalog; org-scoped vs platform-wide assignments; expand policy tests as roles evolve | Open — introduced P4-WP04 |
 | R-093 | UI-only authorization assumptions (hiding nav treated as security) | High | Docs + UI copy: visibility is convenience; `PlatformAuthz.EnsureAsync` is authoritative → 403 + denied audit | Open — introduced P4-WP04; awareness |
 | R-094 | Translation mistakes or incomplete Admin localization | Medium | `AdminResources` en/fil-PH + terminology guide; resource-completeness tests; English fallback | Open — introduced P4-WP04 |
@@ -141,7 +141,9 @@ P9-WP06 closed Phase 9 with an honest Commercial MVP readiness board: Developmen
 
 ## Phase 13 — Production Authentication and Identity (in progress)
 
-**P13-WP07** added MFA readiness contracts/DTO signals (non-enforcing), suspend/deactivate session+token revoke, token-ops/email-verification rate limits, Production MFA-flag and access-token lifetime guards, Admin/POS HTTPS BaseUrl guards. **No MFA enrollment/challenge / IdP.** **R-091 remains open.** Exact next: **P13-WP08 — Phase 13 Closeout** (do not begin). **Not production-ready.**
+**P13-WP08** added Google/Facebook external authentication that creates or links Platform User and issues browser sessions. Social login never grants Platform Administrator, membership, entitlement, or product roles. **R-091 remains open.** Exact next: **P13-WP09 — Phase 13 Closeout** (do not begin). **Not production-ready.**
+
+**P13-WP07** added MFA readiness contracts/DTO signals (non-enforcing), suspend/deactivate session+token revoke, token-ops/email-verification rate limits, Production MFA-flag and access-token lifetime guards, Admin/POS HTTPS BaseUrl guards. **No MFA enrollment/challenge / IdP.** **R-091 remains open.**
 
 **P13-WP06** added Platform opaque Bearer access tokens, Admin product-entry exchange, MAUI password login with Bearer attachment, and POS API introspection (identity + org + product access) before product-local roles. Dev GUID/headers remain Dev/Testing-only. **No MFA / IdP.** **R-091 remains open.**
 

@@ -125,6 +125,7 @@ public sealed class SecurityHardeningArchitectureTests
         Assert.Contains("AuthLoginRateLimitPolicy", pipeline, StringComparison.Ordinal);
         Assert.Contains("AuthPasswordResetRateLimitPolicy", pipeline, StringComparison.Ordinal);
         Assert.Contains("AuthTokenOpsRateLimitPolicy", pipeline, StringComparison.Ordinal);
+        Assert.Contains("PlatformAuthentication:External:TestingEndpointEnabled", pipeline, StringComparison.Ordinal);
         Assert.Contains("PlatformAuthentication:Bootstrap:Enabled", pipeline, StringComparison.Ordinal);
         Assert.Contains("PlatformAuthentication:Mfa", pipeline, StringComparison.Ordinal);
         Assert.Contains("must not enable", pipeline, StringComparison.OrdinalIgnoreCase);
@@ -149,6 +150,16 @@ public sealed class SecurityHardeningArchitectureTests
         Assert.Contains("\"CookieName\": \".ExItS.Platform.Auth\"", appsettings, StringComparison.Ordinal);
         Assert.Contains("\"EnrollmentEnabled\": false", appsettings, StringComparison.Ordinal);
         Assert.Contains("\"EnforcementEnabled\": false", appsettings, StringComparison.Ordinal);
+        Assert.Contains("\"TestingEndpointEnabled\": false", appsettings, StringComparison.Ordinal);
+        Assert.Contains("\"Google\"", appsettings, StringComparison.Ordinal);
+        Assert.Contains("\"Facebook\"", appsettings, StringComparison.Ordinal);
+
+        var external = File.ReadAllText(Path.Combine(root,
+            "src", "Platform", "ExItS.Platform.Application", "Identity", "ExternalLoginUseCases.cs"));
+        Assert.Contains("CompleteExternalLogin", external, StringComparison.Ordinal);
+        Assert.Contains("no roles/membership granted", external, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("BootstrapFirstPlatformAdministrator", external, StringComparison.Ordinal);
+        Assert.DoesNotContain("PlatformRoleAssignment", external, StringComparison.Ordinal);
 
         var mfa = File.ReadAllText(Path.Combine(root,
             "src", "Platform", "ExItS.Platform.Application", "Identity", "PlatformMfaReadiness.cs"));

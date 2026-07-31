@@ -1,0 +1,51 @@
+@page "/admin/external-login-callback"
+@layout EmptyLayout
+@rendermode InteractiveServer
+@using ExItS.Platform.Admin.Services
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.WebUtilities
+@attribute [AllowAnonymous]
+@inject PlatformBrowserSessionService SessionService
+@inject NavigationManager Nav
+@inject IStringLocalizer<AdminResources> L
+
+<PageTitle>@L["Brand_Name"] — External sign-in</PageTitle>
+
+<div class="login-shell">
+    <div class="login-panel page-frame page-frame--form">
+        <h1 class="brand-text">@L["Brand_Name"]</h1>
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <div class="form-validation-summary" role="alert">@_error</div>
+            <p class="muted"><a href="/admin/login">Back to login</a></p>
+        }
+        else
+        {
+            <p class="muted">Completing external sign-in…</p>
+        }
+    </div>
+</div>
+
+@code {
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        if (!QueryHelpers.ParseQuery(uri.Query).TryGetValue("sessionToken", out var tokenValues)
+            || string.IsNullOrWhiteSpace(tokenValues.FirstOrDefault()))
+        {
+            _error = "External sign-in did not return a session.";
+            return;
+        }
+
+        var (ok, error) = await SessionService.EstablishFromSessionTokenAsync(tokenValues.First()!);
+        if (!ok)
+        {
+            _error = error ?? "External sign-in failed.";
+            return;
+        }
+
+        Nav.NavigateTo("/admin", forceLoad: true);
+    }
+}

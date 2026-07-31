@@ -4,15 +4,15 @@
 
 ## Status
 
-**In progress.** **P13-WP01**–**P13-WP07** are **complete**. Exact next: **P13-WP08 — Phase 13 Closeout** when authorized (do **not** begin).
+**In progress.** **P13-WP01**–**P13-WP07** are **complete**. **P13-WP08** is **Google and Facebook External Authentication** (authorized redefinition; closeout deferred to **P13-WP09**). Exact next after WP08: **P13-WP09 — Phase 13 Closeout** (do **not** begin until authorized).
 
-Phase 12 remains closed. **R-091** remains open — credentials, browser session, password lifecycle, trusted organization context, product-client bearer wiring, and MFA readiness/hardening shipped; closeout remains.
+Phase 12 remains closed. **R-091** remains open — credentials, browser session, password lifecycle, trusted organization context, product-client bearer wiring, and MFA readiness/hardening shipped; external login in progress/complete per tip; closeout remains.
 
 Authoritative docs:
 
 - [`authentication-architecture.md`](../engineering/authentication-architecture.md)
 - [`authentication-threat-model.md`](../engineering/authentication-threat-model.md)
-- Reports: [`P13-WP01`](../reports/P13-WP01-authentication-architecture-and-threat-model.md), [`P13-WP02`](../reports/P13-WP02-identity-credentials-and-auth-persistence.md), [`P13-WP03`](../reports/P13-WP03-platform-login-logout-and-browser-session.md), [`P13-WP04`](../reports/P13-WP04-password-verification-and-lockout-lifecycle.md), [`P13-WP05`](../reports/P13-WP05-trusted-organization-context-and-membership-selection.md), [`P13-WP06`](../reports/P13-WP06-product-client-auth-integration.md), [`P13-WP07`](../reports/P13-WP07-mfa-readiness-and-authentication-hardening.md)
+- Reports: [`P13-WP01`](../reports/P13-WP01-authentication-architecture-and-threat-model.md), [`P13-WP02`](../reports/P13-WP02-identity-credentials-and-auth-persistence.md), [`P13-WP03`](../reports/P13-WP03-platform-login-logout-and-browser-session.md), [`P13-WP04`](../reports/P13-WP04-password-verification-and-lockout-lifecycle.md), [`P13-WP05`](../reports/P13-WP05-trusted-organization-context-and-membership-selection.md), [`P13-WP06`](../reports/P13-WP06-product-client-auth-integration.md), [`P13-WP07`](../reports/P13-WP07-mfa-readiness-and-authentication-hardening.md), [`P13-WP08`](../reports/P13-WP08-google-facebook-external-authentication.md)
 
 ## Progress
 
@@ -25,7 +25,8 @@ Authoritative docs:
 | P13-WP05 — Trusted API Actor and Organization Context | **Complete** | [report](../reports/P13-WP05-trusted-organization-context-and-membership-selection.md) · `e64f352161bb20447a99ae762d1a69ec1a3846fe` |
 | P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS) | **Complete** | [report](../reports/P13-WP06-product-client-auth-integration.md) · `68f13c0a4281071087e526ecf8e51414f2a78b12` |
 | P13-WP07 — MFA Readiness and Auth Hardening | **Complete** | [report](../reports/P13-WP07-mfa-readiness-and-authentication-hardening.md) · `7b767f664e63c5c296e0444062129acd7ee36727` |
-| P13-WP08 — Phase 13 Closeout | Not started | — |
+| P13-WP08 — Google and Facebook External Authentication | **Complete** | [report](../reports/P13-WP08-google-facebook-external-authentication.md) · `FEATURE_TIP_PLACEHOLDER` |
+| P13-WP09 — Phase 13 Closeout | Not started | — |
 
 ## Purpose
 
@@ -177,7 +178,19 @@ MFA extension points and auth hardening; enforcement only if authorized.
 
 **Complete.** MFA readiness contracts/DTO signals (non-enforcing); suspend/deactivate revoke sessions+tokens; token-ops and email-verification rate limits; Production MFA-flag / token-lifetime / HTTPS BaseUrl guards. No enrollment/challenge UI; no IdP; R-091 remains open.
 
-### P13-WP08 — Phase 13 Closeout
+### P13-WP08 — Google and Facebook External Authentication
+
+**Complete** — see [P13-WP08 report](../reports/P13-WP08-google-facebook-external-authentication.md).
+
+#### Objective
+
+Secure Google and Facebook authentication that creates or links Platform User identity and establishes the existing browser/session flow for public registration, store owners, customers, and future Utang onboarding — without granting admin, membership, entitlement, or product roles.
+
+#### Status
+
+**Complete.** `platform_external_logins`; Google/Facebook OAuth challenge/complete; testing complete endpoint (Dev/Testing only); Admin login buttons + callback; no auto privilege grants. R-091 remains open.
+
+### P13-WP09 — Phase 13 Closeout
 
 #### Objective
 
@@ -196,6 +209,6 @@ Not started — begin only when authorized.
 - Tests pass; `main = origin/main`; working tree clean
 - Portfolio not falsely claimed Production-ready
 
-## Exact next after P13-WP07
+## Exact next after P13-WP08
 
-**P13-WP08 — Phase 13 Closeout** when explicitly authorized. Do not begin P13-WP08.
+**P13-WP09 — Phase 13 Closeout** when explicitly authorized. Do not begin P13-WP09.
