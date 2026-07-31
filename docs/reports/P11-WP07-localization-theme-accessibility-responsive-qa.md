@@ -87,4 +87,4 @@ Admin unit tests: **66 passed**.
 
 ## Exact next
 
-**P11-WP08 — Phase 11 Closeout** when explicitly authorized.
+**Phase 11 closed** via [P11-WP08](P11-WP08-phase-11-closeout.md). Exact next phase: **Phase 12 — Reusable SaaS Product Foundation and Bootstrap** when explicitly authorized.

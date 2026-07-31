@@ -4,7 +4,7 @@
 
 ## Status
 
-**In progress.** **P11-WP01**–**P11-WP07** are **complete**. Exact next: **P11-WP08 — Phase 11 Closeout** when authorized.
+**Complete with documented risks.** **P11-WP01**–**P11-WP08** are **complete**. Phase 11 closed. Exact next: **Phase 12 — Reusable SaaS Product Foundation and Bootstrap** when authorized (do not begin).
 
 Pre-Phase-11 Admin shell/theme baseline remains locked (feature tip `46b99a7f6baa87977fb0ed37e678231fa1eb1344`). Theme reapply uses `Blazor.enhancedload` — do **not** reintroduce document-wide permanence attributes on `<html>`.
 
@@ -19,7 +19,7 @@ Pre-Phase-11 Admin shell/theme baseline remains locked (feature tip `46b99a7f6ba
 | P11-WP05 — Shared Reporting Framework | **Complete** | [report](../reports/P11-WP05-shared-reporting-framework.md) · `4d832b39d85d7f8db55234f609188666035f34c5` |
 | P11-WP06 — Dashboard and Report Refactoring | **Complete** | [report](../reports/P11-WP06-dashboard-and-report-refactoring.md) · `6688fa674e5edc139a931dae3faefeb8b25a806b` |
 | P11-WP07 — Localization, Theme, Accessibility, and Responsive QA | **Complete** | [report](../reports/P11-WP07-localization-theme-accessibility-responsive-qa.md) · `24ee744fa15152bc325568ba6c5a99de78359921` |
-| P11-WP08 — Phase 11 Closeout | Not started | — |
+| P11-WP08 — Phase 11 Closeout | **Complete** | [report](../reports/P11-WP08-phase-11-closeout.md) · *(tip filled after commit)* |
 
 ## Purpose
 
