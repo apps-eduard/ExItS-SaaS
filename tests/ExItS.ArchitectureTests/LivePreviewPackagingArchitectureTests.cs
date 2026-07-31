@@ -28,8 +28,18 @@ public sealed class LivePreviewPackagingArchitectureTests
         Assert.DoesNotContain(".Migrate(", live, StringComparison.Ordinal);
 
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "README.live-preview.md")));
+        Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "README.live-preview-local-development.md")));
+        Assert.True(File.Exists(Path.Combine(root, "tools", "Start-LivePreviewLocal.ps1")));
+        Assert.True(File.Exists(Path.Combine(root, "tools", "Stop-LivePreviewLocal.ps1")));
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Start-LivePreviewLocal.ps1")));
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Stop-LivePreviewLocal.ps1")));
+
+        var startScript = File.ReadAllText(Path.Combine(root, "tools", "Start-LivePreviewLocal.ps1"));
+        Assert.Contains("dotnet watch", startScript, StringComparison.Ordinal);
+        Assert.Contains("DataProtectionKeys", startScript, StringComparison.Ordinal);
+        Assert.Contains("exits-live-preview-platform-db", startScript, StringComparison.Ordinal);
+        Assert.Contains("volumes preserved", startScript, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("docker compose down -v", startScript, StringComparison.Ordinal);
 
         Assert.Contains("${LIVE_PREVIEW_ADMIN_HOST_PORT:-8090}:8080", live, StringComparison.Ordinal);
         Assert.Contains("${LIVE_PREVIEW_PLATFORM_API_HOST_PORT:-8091}:8080", live, StringComparison.Ordinal);

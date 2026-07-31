@@ -138,12 +138,27 @@ public sealed class PosProductionHardeningApiTests(PosPostgreSqlFixture fixture)
         Assert.Contains("PlatformAuth:BaseUrl", ex.ToString(), StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void Staging_live_preview_allows_http_platform_auth_base_url()
+    {
+        using var factory = new HardeningFactory(
+            fixture.ConnectionString,
+            "Staging",
+            allowedHosts: "localhost",
+            platformAuthBaseUrl: "http://localhost:8091",
+            livePreviewEnabled: true);
+
+        using var client = factory.CreateClient();
+        Assert.NotNull(client);
+    }
+
     private sealed class HardeningFactory(
         string connectionString,
         string environmentName,
         string? allowedHosts = null,
         bool skipDefaultAllowedHostsOverride = false,
-        string? platformAuthBaseUrl = null) : WebApplicationFactory<Program>
+        string? platformAuthBaseUrl = null,
+        bool livePreviewEnabled = false) : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -159,7 +174,8 @@ public sealed class PosProductionHardeningApiTests(PosPostgreSqlFixture fixture)
             var values = new Dictionary<string, string?>
             {
                 ["ConnectionStrings:PosDatabase"] = connectionString,
-                ["Security:EnforceHttps"] = "false"
+                ["Security:EnforceHttps"] = "false",
+                ["LivePreview:Enabled"] = livePreviewEnabled ? "true" : "false"
             };
 
             if (hosts is not null)
@@ -177,6 +193,13 @@ public sealed class PosProductionHardeningApiTests(PosPostgreSqlFixture fixture)
             {
                 builder.UseSetting("PlatformAuth:BaseUrl", platformAuthBaseUrl);
                 values["PlatformAuth:BaseUrl"] = platformAuthBaseUrl;
+            }
+
+            if (livePreviewEnabled)
+            {
+                builder.UseSetting("LivePreview:Enabled", "true");
+                builder.UseSetting("LivePreview:PlatformApiBaseUrl", platformAuthBaseUrl ?? "http://localhost:8091");
+                values["LivePreview:PlatformApiBaseUrl"] = platformAuthBaseUrl ?? "http://localhost:8091";
             }
 
             builder.UseSetting("ConnectionStrings:PosDatabase", connectionString);

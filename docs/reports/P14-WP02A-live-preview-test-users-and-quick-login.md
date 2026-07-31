@@ -2,64 +2,50 @@
 
 Phase marker: `P14-WP02A-live-preview-test-users-and-quick-login`
 
-Package: **P14-WP02A Development Workflow Adjustment — Docker Databases Only, Local Web/API Execution**
-Prior tip: `844fdf17bece466d52228defdb03c2ae5c13b579`
-Feature tip: `10e77e13c1702db4a75d163a847112e0064ef3b8`
+Package: **P14-WP02A — Reliable local Live Preview launcher (one command)**
+Prior tip: `d2513bf4b778e6366c636210961b1f988fc768fc`
+Feature tip: _(recorded after push)_
 
 ## Status
 
-**Complete.** Daily live-preview workflow is **Docker PostgreSQL only** (existing `exits_live_preview_*` volumes preserved) with **Platform API, POS API, and Platform Admin** run as local .NET processes. Optional containerized apps remain behind Compose profile `apps`. Quick-login / login CSS fixes from prior tips remain in effect. **Not Production.** **P14-WP03 not started.**
+**Complete.** One-command local Live Preview: Docker PostgreSQL only + ordered local `dotnet watch` for Platform API, POS API, and Admin. Persistent Admin DataProtection keys under `%LOCALAPPDATA%\ExItS\LivePreview\DataProtectionKeys`. Volumes preserved. **Not Production.** **P14-WP03 not started.**
 
-## Delivered workflow
+## Operator command
 
-```text
-Docker
-├── Platform PostgreSQL  (:15533, volume exits_live_preview_platform_db_data)
-└── POS PostgreSQL       (:15534, volume exits_live_preview_pos_db_data)
-
-Local .NET
-├── Platform API         (:8091, LivePreview profile)
-├── POS API              (:8092, LivePreview profile)
-└── Platform Admin       (:8090, LivePreview profile)
+```powershell
+.\tools\Start-LivePreviewLocal.ps1
 ```
+
+```powershell
+.\tools\Stop-LivePreviewLocal.ps1
+.\tools\Stop-LivePreviewLocal.ps1 -StopDatabases   # volumes kept
+```
+
+Docs: `deploy/docker/README.live-preview-local-development.md`
+
+## Delivered
 
 | Artifact | Role |
 |---|---|
-| `compose.live-preview.yaml` | Default `up` = DBs only; `platform-api` / `pos-api` / `admin-web` use `profiles: ["apps"]` |
-| `README.live-preview.md` | Operator doc for the workflow |
-| `Start-LivePreviewLocal.ps1` | DB up (no app containers) + local `dotnet run` windows |
-| `Stop-LivePreviewLocal.ps1` | `stop` / `down` **without** `-v` |
-| Launch profiles `LivePreview` | Staging + LivePreview ports on Platform/POS/Admin |
-
-## Operator
-
-```powershell
-cd deploy\docker
-# .env.live-preview already filled; never commit
-docker compose -f compose.live-preview.yaml --env-file .env.live-preview up -d
-.\Start-LivePreviewLocal.ps1
-```
-
-Open **http://localhost:8090/admin/login**.
-
-Do **not** `docker compose down -v` (preserves seeded preview identities).
+| `tools/Start-LivePreviewLocal.ps1` | Docker DBs → wait healthy → API → POS → Admin; port/health checks |
+| `tools/Stop-LivePreviewLocal.ps1` | Stop repo-scoped apps; optional DB stop without `-v` |
+| Persistent DP keys | `%LOCALAPPDATA%\ExItS\LivePreview\DataProtectionKeys` (live-preview only) |
+| Compose profile `apps` | Optional containerized apps; default `up` remains DBs only |
 
 ## Explicit exclusions
 
 - P14-WP03 TLS/proxy
-- Resetting or deleting live-preview DB volumes
-- Changing packaging compose ports/DBs
-- Phase 15 Admin UX
+- Volume reset / `down -v`
+- Weakening antiforgery
+- Phase 15
 
 ## Validation
 
 | Check | Result |
 |---|---|
-| `docker compose ... up -d` (no profile) | Only `platform-db` + `pos-db` |
-| Volumes `exits_live_preview_*_db_data` | Present / unchanged |
-| Architecture tests | Live-preview profile + README/scripts asserted |
-| Full Release tests | **1267 passed / 0 failed / 0 skipped** |
+| Architecture tests (scripts/docs) | Pass |
+| Full Release tests | **1268 passed / 0 failed / 0 skipped** |
 
 ## Exact next
 
-**P14-WP03 — Reverse Proxy, TLS, and Network Hardening** when authorized.
+**P14-WP03** when authorized.

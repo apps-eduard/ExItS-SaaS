@@ -12,7 +12,7 @@
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 14 — Production Deployment and Operations (**in progress**) |
-| Current work package | P14-WP02A — Docker DBs only + local Web/API workflow (**complete**) |
+| Current work package | P14-WP02A — Reliable local Live Preview launcher (**complete**) |
 | Overall status | **Phase 14 in progress.** P14-WP01–WP02 + WP02A complete. Production remains **Blocked**. Exact next: P14-WP03 (do not begin until authorized). **Not production-ready.** |
 | Latest verified commit | `10e77e13c1702db4a75d163a847112e0064ef3b8` |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |

@@ -52,13 +52,25 @@ internal static class PosProductionSecurityGuard
                 "Production requires an explicit AllowedHosts value (wildcard '*' is not allowed).");
         }
 
+        var livePreviewEnabled = builder.Configuration.GetValue<bool>("LivePreview:Enabled")
+            && !env.IsProduction();
+
         var platformAuthBaseUrl = builder.Configuration[$"{PlatformAuthOptions.SectionName}:BaseUrl"];
-        if (!string.IsNullOrWhiteSpace(platformAuthBaseUrl)
-            && (!Uri.TryCreate(platformAuthBaseUrl, UriKind.Absolute, out var platformUri)
-                || !string.Equals(platformUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)))
+        if (!string.IsNullOrWhiteSpace(platformAuthBaseUrl))
         {
-            throw new InvalidOperationException(
-                "Production requires PlatformAuth:BaseUrl to use HTTPS when configured.");
+            if (!Uri.TryCreate(platformAuthBaseUrl, UriKind.Absolute, out var platformUri))
+            {
+                throw new InvalidOperationException(
+                    "Production requires PlatformAuth:BaseUrl to be an absolute URI when configured.");
+            }
+
+            // Live preview (non-Production) may call local Platform API over HTTP.
+            if (!livePreviewEnabled
+                && !string.Equals(platformUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    "Production requires PlatformAuth:BaseUrl to use HTTPS when configured.");
+            }
         }
     }
 }

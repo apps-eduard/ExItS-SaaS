@@ -58,7 +58,8 @@ var livePreviewEnabled = builder.Configuration.GetValue<bool>("LivePreview:Enabl
 
 if (livePreviewEnabled)
 {
-    // File-system key ring for the container lifetime (tmpfs-friendly) so antiforgery stays consistent while up.
+    // Live-preview / non-Production only. Local launcher sets DataProtection:KeysPath to
+    // %LOCALAPPDATA%\ExItS\LivePreview\DataProtectionKeys; containers may use tmpfs.
     var keysPath = builder.Configuration["DataProtection:KeysPath"]
         ?? Path.Combine(Path.GetTempPath(), "exits-admin-dp-keys");
     Directory.CreateDirectory(keysPath);

@@ -45,17 +45,16 @@ Notes:
 
 **Docker: databases only. Host: Platform API + POS API + Admin.**
 
-Full instructions: [`README.live-preview.md`](README.live-preview.md).
+```powershell
+# from repository root
+.\tools\Start-LivePreviewLocal.ps1
+```
+
+Full guide: [`README.live-preview-local-development.md`](README.live-preview-local-development.md) · overview: [`README.live-preview.md`](README.live-preview.md).
 
 ```powershell
-Copy-Item .env.live-preview.example .env.live-preview
-# Edit .env.live-preview — replace REPLACE_* passwords; never commit
-
-# Databases only (reuses exits_live_preview_* volumes; never down -v)
-docker compose -f compose.live-preview.yaml --env-file .env.live-preview up -d
-
-# Local APIs + Admin (new windows)
-.\Start-LivePreviewLocal.ps1
+Copy-Item deploy\docker\.env.live-preview.example deploy\docker\.env.live-preview
+# Edit — replace REPLACE_* passwords; never commit
 ```
 
 | Surface | Default | Open |
