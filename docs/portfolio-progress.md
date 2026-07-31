@@ -14,7 +14,7 @@
 | Current phase | Phase 12 — Reusable SaaS Product Foundation and Bootstrap (**in progress**) |
 | Current work package | P12-WP05 — Product Bootstrap Prompt (**complete**) |
 | Overall status | **Phase 12 in progress.** P12-WP01–WP05 complete. Product bootstrap prompt published (docs-only). Exact next: P12-WP06 — Reference Product Dry Run (do not begin until authorized). **Not production-ready.** |
-| Latest verified commit | *(filled after tip-hash)* |
+| Latest verified commit | `d57b7be48639e30ffa9fa86624da916ef63a563f` |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-07-31 |
 
@@ -108,7 +108,7 @@ P12-WP06 ○ Reference Product Dry Run (do not begin until authorized)
 | P12-WP02 — Authoritative Product Foundation Reference | Complete | `8f151d658011a3ad0854aab9f8774361f8a788a6` |
 | P12-WP03 — Product Documentation Templates | Complete | `65b02a1dd9336b39b79fc41527969f6289ad7072` |
 | P12-WP04 — Cursor Product Context Rule | Complete | `1243c78d65e347b23949b19ce2edf564fe972aad` |
-| P12-WP05 — Product Bootstrap Prompt | Complete | *(tip filled after commit)* |
+| P12-WP05 — Product Bootstrap Prompt | Complete | `d57b7be48639e30ffa9fa86624da916ef63a563f` |
 
 ## Phase 11 work packages
 

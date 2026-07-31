@@ -4,7 +4,7 @@ Phase marker: `P12-WP05-product-bootstrap-prompt`
 
 Package: **P12-WP05 — Product Bootstrap Prompt**
 Prior tip: `c348b4a3cbc049d330e5d5aa5e878a2cdcf676ef`
-Docs tip: *(recorded after docs commit)*
+Docs tip: `d57b7be48639e30ffa9fa86624da916ef63a563f`
 
 ## Status
 
@@ -37,7 +37,7 @@ Docs → validate placeholders/decisions → propose first WP → **stop**. Forb
 
 ## Dry-run result (SampleProduct — documentation exercise only)
 
-Fictional product: **SampleProduct** / code `SampleProduct`.  
+Fictional product: **SampleProduct** / code `SampleProduct`.
 **Did not** create `src/Products/SampleProduct/` or any files under `src/Products/`.
 
 | Check | Result |

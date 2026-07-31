@@ -1,6 +1,6 @@
 # ExItS Product Bootstrap Prompt
 
-**Copy everything below the line into Cursor** when authorized to start a **new** product’s documentation baseline.  
+**Copy everything below the line into Cursor** when authorized to start a **new** product’s documentation baseline.
 Do not run this prompt until product bootstrap is explicitly authorized.
 
 ---
