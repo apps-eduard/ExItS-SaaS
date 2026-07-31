@@ -186,7 +186,7 @@ Payroll, accounting journals, bank reconciliation, cash deposits, branch registe
 - [x] Applicable tests pass with exact evidence (baseline 1079 → suite now 1097 / 0 / 0).
 - [x] Dashboard and phase page updated.
 - [x] Completion report created (`docs/reports/P10-WP04-cashier-shifts.md`).
-- [x] Focused commit created and hash recorded.
+- [x] Focused commit created and hash recorded (`4076485`; docs `df0a092`).
 - [x] Working tree clean (after push).
 - [x] Exact next WP recorded: **P10-WP05 — Returns and Refunds** (do not begin).
 

@@ -14,7 +14,7 @@
 | Current phase | Phase 10 — Full POS |
 | Current work package | P10-WP04 — Cashier Shifts (**complete**) |
 | Overall status | **P10-WP04 complete.** Do not begin P10-WP05. |
-| Latest verified commit | _pending push_ |
+| Latest verified commit | `4076485` |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; POS operational roles; Manual GCash unverified; online-only Basic Store limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/refund/accounting deferred |
 | Last updated | 2026-07-31 |
 
@@ -69,7 +69,7 @@ P10-WP05 ○ Returns and Refunds (not started)
 | P10-WP01 — Suppliers | Complete (Option A) | 6f92dd43b2f66709891d82079f9d3fbd0b5c450e |
 | P10-WP02 — Purchasing | Complete | c0f8130ef99e958bceaee98024a69339b7e8e41a |
 | P10-WP03 — Advanced Inventory | Complete | 5c62133 (+ gap-fix 31d809c) |
-| P10-WP04 — Cashier Shifts | Complete | _pending_ |
+| P10-WP04 — Cashier Shifts | Complete | 4076485 |
 | P10-WP05 — Returns and Refunds | Not Started | — |
 | P10-WP06 — Advanced Permissions and Reports | Not Started | — |
 | P10-WP07 — Multiple Registers | Not Started | — |

@@ -7,7 +7,7 @@ Phase marker: `P10-WP04-cashier-shifts`
 **Complete.** Cashier shift aggregate, cash movements, sale linkage, expected-cash close with variance, grants, PostgreSQL migration, typed API/MAUI surfaces, and focused tests. **P10-WP05 not started.** R-091 and POS-ROLES remain open.
 
 Feature commit: `4076485`  
-Docs commit: _pending_
+Docs commit: `df0a092`
 
 ## Delivered capability
 
