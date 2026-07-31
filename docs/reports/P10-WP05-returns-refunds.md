@@ -7,7 +7,7 @@ Phase marker: `P10-WP05-returns-refunds`
 **Complete.** Atomic Completed-only sale returns, refund-method matching, cash-shift impact, Utang credit reduction, optional restock, void/return mutual exclusion, grants, PostgreSQL migration, typed API/MAUI surfaces, and focused tests. **P10-WP06 not started.** R-091 and POS-ROLES remain open.
 
 Feature commit: `58dd6bf`  
-Docs commit: _(hash-record commit)_
+Docs commit: `485f23e`
 
 ## Delivered capability
 
