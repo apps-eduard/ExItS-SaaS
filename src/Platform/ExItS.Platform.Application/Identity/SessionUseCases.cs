@@ -26,6 +26,7 @@ public sealed class LoginPlatformUser
     private readonly IClock _clock;
     private readonly PlatformLockoutOptions _lockout;
     private readonly PlatformSessionOptions _sessionOptions;
+    private readonly IPlatformMfaReadinessService _mfa;
 
     public LoginPlatformUser(
         IPlatformUserRepository users,
@@ -39,7 +40,8 @@ public sealed class LoginPlatformUser
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
         IOptions<PlatformLockoutOptions> lockout,
-        IOptions<PlatformSessionOptions> sessionOptions)
+        IOptions<PlatformSessionOptions> sessionOptions,
+        IPlatformMfaReadinessService mfa)
     {
         _users = users;
         _credentials = credentials;
@@ -53,6 +55,7 @@ public sealed class LoginPlatformUser
         _clock = clock;
         _lockout = lockout.Value;
         _sessionOptions = sessionOptions.Value;
+        _mfa = mfa;
     }
 
     public async Task<ApplicationResult<PlatformLoginResultDto>> ExecuteAsync(
@@ -206,6 +209,7 @@ public sealed class LoginPlatformUser
             summary: "Platform User browser session established (token/password not recorded).",
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
+        var mfa = await _mfa.GetForUserAsync(user.Id, cancellationToken).ConfigureAwait(false);
         return ApplicationResult<PlatformLoginResultDto>.Success(new PlatformLoginResultDto(
             opaqueToken,
             session.Id.Value,
@@ -218,7 +222,8 @@ public sealed class LoginPlatformUser
             orgId,
             orgName,
             selectionState,
-            activeCount));
+            activeCount,
+            mfa));
     }
 
     private static ApplicationResult<PlatformLoginResultDto> LoginFailedResult() =>
@@ -329,6 +334,7 @@ public sealed class ValidateAndRenewPlatformSession
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly PlatformSessionOptions _sessionOptions;
+    private readonly IPlatformMfaReadinessService _mfa;
 
     public ValidateAndRenewPlatformSession(
         IPlatformUserRepository users,
@@ -339,7 +345,8 @@ public sealed class ValidateAndRenewPlatformSession
         IPlatformSessionTokenService tokens,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
-        IOptions<PlatformSessionOptions> sessionOptions)
+        IOptions<PlatformSessionOptions> sessionOptions,
+        IPlatformMfaReadinessService mfa)
     {
         _users = users;
         _credentials = credentials;
@@ -350,6 +357,7 @@ public sealed class ValidateAndRenewPlatformSession
         _unitOfWork = unitOfWork;
         _clock = clock;
         _sessionOptions = sessionOptions.Value;
+        _mfa = mfa;
     }
 
     public async Task<ApplicationResult<PlatformAuthSessionInfoDto>> ExecuteAsync(
@@ -417,6 +425,7 @@ public sealed class ValidateAndRenewPlatformSession
             .ResolveAsync(session, _memberships, _organizations, _sessions, _unitOfWork, cancellationToken)
             .ConfigureAwait(false);
 
+        var mfa = await _mfa.GetForUserAsync(user.Id, cancellationToken).ConfigureAwait(false);
         return ApplicationResult<PlatformAuthSessionInfoDto>.Success(new PlatformAuthSessionInfoDto(
             session.Id.Value,
             user.Id.Value,
@@ -429,6 +438,7 @@ public sealed class ValidateAndRenewPlatformSession
             orgId,
             orgName,
             selectionState,
-            activeCount));
+            activeCount,
+            mfa));
     }
 }

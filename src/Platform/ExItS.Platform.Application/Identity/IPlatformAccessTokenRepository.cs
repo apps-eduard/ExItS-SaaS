@@ -37,6 +37,12 @@ public sealed class PlatformAccessTokenOptions
     public const string SectionName = "PlatformAuthentication:AccessToken";
 
     public int LifetimeHours { get; set; } = 8;
+
+    /// <summary>Upper bound applied when issuing tokens (Production validation forbids LifetimeHours above this).</summary>
+    public int MaxLifetimeHours { get; set; } = 24;
+
+    public int ResolveLifetimeHours() =>
+        Math.Clamp(LifetimeHours, 1, Math.Max(1, MaxLifetimeHours));
 }
 
 public sealed record PlatformAccessTokenIssueDto(
@@ -54,7 +60,8 @@ public sealed record PlatformAccessTokenIssueDto(
     string OrganizationSelectionState,
     int ActiveOrganizationCount,
     bool? ProductAccessAllowed,
-    string? ProductAccessReasonCode);
+    string? ProductAccessReasonCode,
+    PlatformMfaReadinessDto? Mfa = null);
 
 public sealed record PlatformAccessTokenIntrospectionDto(
     bool Active,
@@ -69,4 +76,5 @@ public sealed record PlatformAccessTokenIntrospectionDto(
     bool? ProductAccessAllowed,
     string? ProductAccessReasonCode,
     string? SubscriptionStatus,
-    IReadOnlyList<string>? EnabledFeatureCodes);
+    IReadOnlyList<string>? EnabledFeatureCodes,
+    PlatformMfaReadinessDto? Mfa = null);

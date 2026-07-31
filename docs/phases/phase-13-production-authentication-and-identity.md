@@ -4,15 +4,15 @@
 
 ## Status
 
-**In progress.** **P13-WP01**–**P13-WP06** are **complete**. Exact next: **P13-WP07 — MFA Readiness and Auth Hardening** when authorized (do **not** begin).
+**In progress.** **P13-WP01**–**P13-WP07** are **complete**. Exact next: **P13-WP08 — Phase 13 Closeout** when authorized (do **not** begin).
 
-Phase 12 remains closed. **R-091** remains open — credentials, browser session, password lifecycle, trusted organization context, and product-client bearer wiring shipped; MFA readiness and closeout remain.
+Phase 12 remains closed. **R-091** remains open — credentials, browser session, password lifecycle, trusted organization context, product-client bearer wiring, and MFA readiness/hardening shipped; closeout remains.
 
 Authoritative docs:
 
 - [`authentication-architecture.md`](../engineering/authentication-architecture.md)
 - [`authentication-threat-model.md`](../engineering/authentication-threat-model.md)
-- Reports: [`P13-WP01`](../reports/P13-WP01-authentication-architecture-and-threat-model.md), [`P13-WP02`](../reports/P13-WP02-identity-credentials-and-auth-persistence.md), [`P13-WP03`](../reports/P13-WP03-platform-login-logout-and-browser-session.md), [`P13-WP04`](../reports/P13-WP04-password-verification-and-lockout-lifecycle.md), [`P13-WP05`](../reports/P13-WP05-trusted-organization-context-and-membership-selection.md), [`P13-WP06`](../reports/P13-WP06-product-client-auth-integration.md)
+- Reports: [`P13-WP01`](../reports/P13-WP01-authentication-architecture-and-threat-model.md), [`P13-WP02`](../reports/P13-WP02-identity-credentials-and-auth-persistence.md), [`P13-WP03`](../reports/P13-WP03-platform-login-logout-and-browser-session.md), [`P13-WP04`](../reports/P13-WP04-password-verification-and-lockout-lifecycle.md), [`P13-WP05`](../reports/P13-WP05-trusted-organization-context-and-membership-selection.md), [`P13-WP06`](../reports/P13-WP06-product-client-auth-integration.md), [`P13-WP07`](../reports/P13-WP07-mfa-readiness-and-authentication-hardening.md)
 
 ## Progress
 
@@ -24,7 +24,7 @@ Authoritative docs:
 | P13-WP04 — Password Lifecycle, Lockout, and Verification | **Complete** | [report](../reports/P13-WP04-password-verification-and-lockout-lifecycle.md) · `65b261eca7353a7efea2f8f1899c252f0dcee6dc` |
 | P13-WP05 — Trusted API Actor and Organization Context | **Complete** | [report](../reports/P13-WP05-trusted-organization-context-and-membership-selection.md) · `e64f352161bb20447a99ae762d1a69ec1a3846fe` |
 | P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS) | **Complete** | [report](../reports/P13-WP06-product-client-auth-integration.md) · `68f13c0a4281071087e526ecf8e51414f2a78b12` |
-| P13-WP07 — MFA Readiness and Auth Hardening | Not started | — |
+| P13-WP07 — MFA Readiness and Auth Hardening | **Complete** | [report](../reports/P13-WP07-mfa-readiness-and-authentication-hardening.md) · `FEATURE_TIP_PLACEHOLDER` |
 | P13-WP08 — Phase 13 Closeout | Not started | — |
 
 ## Purpose
@@ -167,13 +167,15 @@ Wire Admin and MAUI/POS clients to real Platform auth; remove Production depende
 
 ### P13-WP07 — MFA Readiness and Auth Hardening
 
+**Complete** — see [P13-WP07 report](../reports/P13-WP07-mfa-readiness-and-authentication-hardening.md).
+
 #### Objective
 
 MFA extension points and auth hardening; enforcement only if authorized.
 
 #### Status
 
-Not started — begin only when authorized.
+**Complete.** MFA readiness contracts/DTO signals (non-enforcing); suspend/deactivate revoke sessions+tokens; token-ops and email-verification rate limits; Production MFA-flag / token-lifetime / HTTPS BaseUrl guards. No enrollment/challenge UI; no IdP; R-091 remains open.
 
 ### P13-WP08 — Phase 13 Closeout
 
@@ -194,6 +196,6 @@ Not started — begin only when authorized.
 - Tests pass; `main = origin/main`; working tree clean
 - Portfolio not falsely claimed Production-ready
 
-## Exact next after P13-WP06
+## Exact next after P13-WP07
 
-**P13-WP07 — MFA Readiness and Auth Hardening** when explicitly authorized. Do not begin P13-WP07.
+**P13-WP08 — Phase 13 Closeout** when explicitly authorized. Do not begin P13-WP08.

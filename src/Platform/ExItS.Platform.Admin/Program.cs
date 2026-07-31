@@ -8,6 +8,8 @@ using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
+AdminProductionSecurityGuard.ValidateOrThrow(builder);
+
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 

@@ -47,10 +47,13 @@ public sealed class UseCaseTests
     public async Task SuspendPlatformUser_handles_missing_and_success()
     {
         var users = new InMemoryPlatformUserRepository();
+        var sessions = new InMemoryPlatformAuthSessionRepository();
+        var accessTokens = new InMemoryPlatformAccessTokenRepository();
+        var audit = new NoOpAuditWriter();
         var uow = new NoOpUnitOfWork();
         var clock = new FixedClock(T0);
         var create = new CreatePlatformUser(users, uow, clock);
-        var suspend = new SuspendPlatformUser(users, uow, clock);
+        var suspend = new SuspendPlatformUser(users, sessions, accessTokens, audit, uow, clock);
 
         var missing = await suspend.ExecuteAsync(PlatformUserId.New());
         Assert.Equal(ApplicationErrorCodes.UserNotFound, missing.ErrorCode);
@@ -61,6 +64,42 @@ public sealed class UseCaseTests
         Assert.True(suspended.IsSuccess);
         Assert.Equal(AccountStatus.Suspended, suspended.Value!.Status);
         Assert.Equal(1, users.UpdateCount);
+    }
+
+    [Fact]
+    public async Task SuspendPlatformUser_revokes_active_sessions_and_access_tokens()
+    {
+        var users = new InMemoryPlatformUserRepository();
+        var sessions = new InMemoryPlatformAuthSessionRepository();
+        var accessTokens = new InMemoryPlatformAccessTokenRepository();
+        var audit = new NoOpAuditWriter();
+        var uow = new NoOpUnitOfWork();
+        var clock = new FixedClock(T0);
+        var create = new CreatePlatformUser(users, uow, clock);
+        var user = (await create.ExecuteAsync("ada", "Ada Lovelace", "ada@example.com")).Value!;
+
+        var session = PlatformAuthSession.Create(
+            user.Id,
+            "hash-session",
+            "stamp",
+            T0,
+            TimeSpan.FromMinutes(30),
+            TimeSpan.FromHours(12));
+        await sessions.AddAsync(session);
+        var token = PlatformAccessToken.Create(
+            user.Id,
+            "hash-token",
+            "stamp",
+            T0,
+            TimeSpan.FromHours(8));
+        await accessTokens.AddAsync(token);
+
+        clock.UtcNow = T0.AddMinutes(1);
+        var suspend = new SuspendPlatformUser(users, sessions, accessTokens, audit, uow, clock);
+        Assert.True((await suspend.ExecuteAsync(user.Id)).IsSuccess);
+        Assert.False(session.IsActive(clock.UtcNow));
+        Assert.False(token.IsActive(clock.UtcNow));
+        Assert.True(audit.WriteCount >= 1);
     }
 
     [Fact]

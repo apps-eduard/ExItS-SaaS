@@ -67,6 +67,9 @@ public static class DependencyInjection
         services.Configure<PlatformSessionOptions>(config.GetSection(PlatformSessionOptions.SectionName));
         services.Configure<PlatformAccessTokenOptions>(config.GetSection(PlatformAccessTokenOptions.SectionName));
         services.Configure<PlatformCredentialLifecycleOptions>(config.GetSection(PlatformCredentialLifecycleOptions.SectionName));
+        services.Configure<PlatformMfaOptions>(config.GetSection(PlatformMfaOptions.SectionName));
+        services.AddSingleton<IPlatformMfaFactorStore, NullPlatformMfaFactorStore>();
+        services.AddScoped<IPlatformMfaReadinessService, PlatformMfaReadinessService>();
 
         return services;
     }

@@ -66,6 +66,7 @@ public sealed class ApiAccessTokenTests(PostgreSqlFixture fixture) : IAsyncLifet
         Assert.False(string.IsNullOrWhiteSpace(accessToken));
         Assert.Equal("Bearer", body.GetProperty("tokenType").GetString());
         Assert.False(body.TryGetProperty("password", out _));
+        Assert.False(body.GetProperty("mfa").GetProperty("challengeRequired").GetBoolean());
 
         var introspect = await _client.PostAsJsonAsync(
             "/api/v1/platform/auth/introspect",
@@ -74,6 +75,26 @@ public sealed class ApiAccessTokenTests(PostgreSqlFixture fixture) : IAsyncLifet
         var info = await introspect.Content.ReadFromJsonAsync<JsonElement>();
         Assert.True(info.GetProperty("active").GetBoolean());
         Assert.Equal(username, info.GetProperty("username").GetString());
+        Assert.Equal("NotEnrolled", info.GetProperty("mfa").GetProperty("readinessState").GetString());
+    }
+
+    [Fact]
+    public async Task Suspend_user_revokes_active_access_token()
+    {
+        var (userId, username, password) = await SeedUserWithPasswordAsync();
+        var issue = await _client.PostAsJsonAsync(
+            "/api/v1/platform/auth/token",
+            new { grantType = "password", usernameOrEmail = username, password });
+        var accessToken = (await issue.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("accessToken").GetString();
+
+        Assert.Equal(HttpStatusCode.OK, (await _admin.PostAsJsonAsync(
+            $"/api/v1/platform/users/{userId}/suspend",
+            new { reason = "hardening" })).StatusCode);
+
+        var introspect = await _client.PostAsJsonAsync(
+            "/api/v1/platform/auth/introspect",
+            new { token = accessToken });
+        Assert.False((await introspect.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("active").GetBoolean());
     }
 
     [Fact]

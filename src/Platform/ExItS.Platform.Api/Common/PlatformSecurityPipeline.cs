@@ -10,6 +10,7 @@ internal static class PlatformSecurityPipeline
     public const string AuthBootstrapRateLimitPolicy = "auth-bootstrap";
     public const string AuthLoginRateLimitPolicy = "auth-login";
     public const string AuthPasswordResetRateLimitPolicy = "auth-password-reset";
+    public const string AuthTokenOpsRateLimitPolicy = "auth-token-ops";
     public const string KnownDevelopmentPasswordMarker = "exits_platform_dev_only";
 
     public static void ValidateProductionConfigurationOrThrow(WebApplicationBuilder builder)
@@ -52,6 +53,22 @@ internal static class PlatformSecurityPipeline
         {
             throw new InvalidOperationException(
                 "Production must not enable PlatformAuthentication:Lifecycle:ExposeDebugTokens.");
+        }
+
+        var mfaEnrollment = builder.Configuration.GetValue<bool>("PlatformAuthentication:Mfa:EnrollmentEnabled");
+        var mfaEnforcement = builder.Configuration.GetValue<bool>("PlatformAuthentication:Mfa:EnforcementEnabled");
+        if (mfaEnrollment || mfaEnforcement)
+        {
+            throw new InvalidOperationException(
+                "Production must not enable PlatformAuthentication:Mfa EnrollmentEnabled/EnforcementEnabled until an authorized MFA enrollment/challenge WP ships.");
+        }
+
+        var lifetimeHours = builder.Configuration.GetValue<int?>("PlatformAuthentication:AccessToken:LifetimeHours") ?? 8;
+        var maxLifetimeHours = builder.Configuration.GetValue<int?>("PlatformAuthentication:AccessToken:MaxLifetimeHours") ?? 24;
+        if (lifetimeHours < 1 || lifetimeHours > maxLifetimeHours || maxLifetimeHours > 168)
+        {
+            throw new InvalidOperationException(
+                "Production requires PlatformAuthentication:AccessToken LifetimeHours between 1 and MaxLifetimeHours (MaxLifetimeHours ≤ 168).");
         }
     }
 
@@ -129,6 +146,20 @@ internal static class PlatformSecurityPipeline
                     {
                         AutoReplenishment = true,
                         PermitLimit = 10,
+                        Window = TimeSpan.FromMinutes(15),
+                        QueueLimit = 0
+                    });
+            });
+
+            options.AddPolicy(AuthTokenOpsRateLimitPolicy, httpContext =>
+            {
+                var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    "token-ops:" + ip,
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        AutoReplenishment = true,
+                        PermitLimit = 60,
                         Window = TimeSpan.FromMinutes(15),
                         QueueLimit = 0
                     });

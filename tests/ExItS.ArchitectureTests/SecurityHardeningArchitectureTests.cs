@@ -124,7 +124,9 @@ public sealed class SecurityHardeningArchitectureTests
         Assert.Contains("AuthBootstrapRateLimitPolicy", pipeline, StringComparison.Ordinal);
         Assert.Contains("AuthLoginRateLimitPolicy", pipeline, StringComparison.Ordinal);
         Assert.Contains("AuthPasswordResetRateLimitPolicy", pipeline, StringComparison.Ordinal);
+        Assert.Contains("AuthTokenOpsRateLimitPolicy", pipeline, StringComparison.Ordinal);
         Assert.Contains("PlatformAuthentication:Bootstrap:Enabled", pipeline, StringComparison.Ordinal);
+        Assert.Contains("PlatformAuthentication:Mfa", pipeline, StringComparison.Ordinal);
         Assert.Contains("must not enable", pipeline, StringComparison.OrdinalIgnoreCase);
 
         var endpoints = File.ReadAllText(Path.Combine(root,
@@ -138,11 +140,31 @@ public sealed class SecurityHardeningArchitectureTests
         Assert.Contains("/api/v1/platform/auth/login", authEndpoints, StringComparison.Ordinal);
         Assert.Contains("/api/v1/platform/auth/logout", authEndpoints, StringComparison.Ordinal);
         Assert.Contains("AuthLoginRateLimitPolicy", authEndpoints, StringComparison.Ordinal);
+        Assert.Contains("AuthTokenOpsRateLimitPolicy", authEndpoints, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/platform/auth/introspect", authEndpoints, StringComparison.Ordinal);
 
         var appsettings = File.ReadAllText(Path.Combine(root,
             "src", "Platform", "ExItS.Platform.Api", "appsettings.json"));
         Assert.Contains("\"Enabled\": false", appsettings, StringComparison.Ordinal);
         Assert.Contains("\"CookieName\": \".ExItS.Platform.Auth\"", appsettings, StringComparison.Ordinal);
+        Assert.Contains("\"EnrollmentEnabled\": false", appsettings, StringComparison.Ordinal);
+        Assert.Contains("\"EnforcementEnabled\": false", appsettings, StringComparison.Ordinal);
+
+        var mfa = File.ReadAllText(Path.Combine(root,
+            "src", "Platform", "ExItS.Platform.Application", "Identity", "PlatformMfaReadiness.cs"));
+        Assert.Contains("ChallengeRequired", mfa, StringComparison.Ordinal);
+        Assert.Contains("NullPlatformMfaFactorStore", mfa, StringComparison.Ordinal);
+        Assert.DoesNotContain("MapPost(\"/api/v1/platform/auth/mfa", authEndpoints, StringComparison.Ordinal);
+
+        var adminGuard = File.ReadAllText(Path.Combine(root,
+            "src", "Platform", "ExItS.Platform.Admin", "Services", "AdminProductionSecurityGuard.cs"));
+        Assert.Contains("PlatformApi:BaseUrl", adminGuard, StringComparison.Ordinal);
+        Assert.Contains("HTTPS", adminGuard, StringComparison.Ordinal);
+
+        var posGuard = File.ReadAllText(Path.Combine(root,
+            "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Api", "Common", "PosDevelopmentEnvironment.cs"));
+        Assert.Contains("PlatformAuth:BaseUrl", posGuard, StringComparison.Ordinal);
+        Assert.Contains("HTTPS", posGuard, StringComparison.Ordinal);
     }
 
     private static string FindRepositoryRoot()

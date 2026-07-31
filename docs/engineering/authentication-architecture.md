@@ -2,9 +2,9 @@
 
 [Home](../index.md) | [Threat model](authentication-threat-model.md) | [Security](security.md) | [Authorization](authorization-matrix.md) | [Product Foundation](../Product-Foundation/exits-product-foundation-reference.md) | [Phase 13](../phases/phase-13-production-authentication-and-identity.md) | [P13-WP01 report](../reports/P13-WP01-authentication-architecture-and-threat-model.md)
 
-**Status:** Authoritative architecture direction (**P13-WP01**). Credentials (**P13-WP02**), browser login/session (**P13-WP03**), password/verification lifecycle (**P13-WP04**), trusted organization context (**P13-WP05**), and product-client bearer integration (**P13-WP06**) delivered. MFA readiness / closeout remain later WPs. **R-091** remains open until Phase 13 closeout evidences production readiness.
+**Status:** Authoritative architecture direction (**P13-WP01**). Credentials (**P13-WP02**), browser login/session (**P13-WP03**), password/verification lifecycle (**P13-WP04**), trusted organization context (**P13-WP05**), product-client bearer integration (**P13-WP06**), and MFA readiness / auth hardening (**P13-WP07**) delivered. Phase closeout remains **P13-WP08**. **R-091** remains open until closeout evidences production readiness.
 
-**Scope of this document:** identity model, trust boundaries, target session/token model, Dev vs Production behavior, and decisions. Cookie/session login arrived in P13-WP03; API bearer tokens and product client wiring remain later WPs.
+**Scope of this document:** identity model, trust boundaries, session/token model, Dev vs Production behavior, MFA readiness (non-enforcing), and decisions.
 
 ---
 
@@ -49,12 +49,14 @@ Platform User
 |---|---|---|
 | Platform User profile | Exists (`PlatformUser`) — username/email/status | Profile remains SoR for identity attributes |
 | Credentials | **Implemented (P13-WP02):** `platform_user_credentials` + ASP.NET Core `PasswordHasher<TUser>`, lockout, email-verified flag | Ready |
-| Browser session | **Implemented (P13-WP03):** `platform_auth_sessions` + login/logout/me + Admin cookie | Ready for lifecycle/API hardening WPs |
+| Browser session | **Implemented (P13-WP03):** `platform_auth_sessions` + login/logout/me + Admin cookie | Ready |
+| Access tokens | **Implemented (P13-WP06):** `platform_access_tokens` + issue/bind/introspect/revoke | Ready |
+| MFA | **Readiness only (P13-WP07):** contracts/options/DTO signals; no enrollment/challenge; Production forbids enabling enforcement | Enforcement deferred |
 | Platform actor | Session principal when authenticated; Dev/Testing may still use header / DevelopmentOperator | Production Admin requires login; Dev headers still ignored in Production |
 | Platform Authz | `PlatformAuthz` + role assignments | AuthN binds actor when session present |
-| Platform Admin | Login/logout UI; Production requires authenticated user | Not full production-ready portfolio claim |
-| POS / MAUI | GUID sign-in → SecureStorage session → Dev headers | Org/actor/commercial headers rejected or fail closed |
-| ASP.NET auth middleware | **PlatformSession** scheme + Admin cookie auth | Bearer tokens later |
+| Platform Admin | Login/logout UI; Production requires authenticated user + HTTPS Platform API BaseUrl | Not full production-ready portfolio claim |
+| POS / MAUI | Password+Bearer with introspect; Dev GUID/header fallback Dev/Testing-only; Production HTTPS PlatformAuth BaseUrl when set | Org/actor/commercial headers rejected or fail closed |
+| ASP.NET auth middleware | **PlatformSession** scheme + Admin cookie auth + POS bearer middleware | — |
 
 Dev/Testing identity is **not** production authentication (**R-091**, **R-120**, **D-P12-05**).
 
@@ -152,6 +154,8 @@ MAUI replaces GUID/header Dev sign-in with real Platform login and stores tokens
 
 **Direction (D-P13-05):** Phase 13 designs **MFA readiness** (extension points, threat coverage). Full MFA enforcement is a later authorized WP unless the owner expands scope. Do not claim MFA shipped by architecture alone.
 
+**Implemented (P13-WP07):** `PlatformMfaOptions`, `IPlatformMfaFactorStore` (null store), `IPlatformMfaReadinessService`, and MFA signals on login/me/token/introspect DTOs (`challengeRequired` always false). Production startup forbids `EnrollmentEnabled` / `EnforcementEnabled`. Reserved audit action codes exist but are not emitted. No enrollment/challenge endpoints.
+
 ---
 
 ## 7. Dev/Testing vs Production
@@ -219,4 +223,4 @@ POS remains non-PHI by default (Product Foundation).
 
 ## 12. Recommended next work package
 
-**Recommended next work package:** **P13-WP07 — MFA Readiness and Auth Hardening** when explicitly authorized.
+**Recommended next work package:** **P13-WP08 — Phase 13 Closeout** when explicitly authorized.

@@ -5,6 +5,7 @@ namespace ExItS.Platform.Domain.Identity;
 /// <summary>
 /// Platform-owned local credential and lockout state for a single <see cref="PlatformUser"/>.
 /// Stores only hashed secrets — never plaintext passwords, reset tokens, or MFA secrets.
+/// MFA factor secrets belong in a future dedicated store behind <c>IPlatformMfaFactorStore</c> (readiness only in P13-WP07).
 /// </summary>
 public sealed class PlatformUserCredential
 {

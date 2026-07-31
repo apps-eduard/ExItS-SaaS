@@ -125,11 +125,25 @@ public sealed class PosProductionHardeningApiTests(PosPostgreSqlFixture fixture)
         Assert.Contains("PosDatabase", ex.ToString(), StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void Production_startup_fails_when_platform_auth_base_url_is_not_https()
+    {
+        using var factory = new HardeningFactory(
+            fixture.ConnectionString,
+            "Production",
+            allowedHosts: "localhost",
+            platformAuthBaseUrl: "http://localhost:5288");
+
+        var ex = Assert.ThrowsAny<Exception>(() => factory.CreateClient());
+        Assert.Contains("PlatformAuth:BaseUrl", ex.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+
     private sealed class HardeningFactory(
         string connectionString,
         string environmentName,
         string? allowedHosts = null,
-        bool skipDefaultAllowedHostsOverride = false) : WebApplicationFactory<Program>
+        bool skipDefaultAllowedHostsOverride = false,
+        string? platformAuthBaseUrl = null) : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -157,6 +171,12 @@ public sealed class PosProductionHardeningApiTests(PosPostgreSqlFixture fixture)
             {
                 builder.UseSetting("AllowedHosts", "*");
                 values["AllowedHosts"] = "*";
+            }
+
+            if (platformAuthBaseUrl is not null)
+            {
+                builder.UseSetting("PlatformAuth:BaseUrl", platformAuthBaseUrl);
+                values["PlatformAuth:BaseUrl"] = platformAuthBaseUrl;
             }
 
             builder.UseSetting("ConnectionStrings:PosDatabase", connectionString);

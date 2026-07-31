@@ -34,7 +34,7 @@ internal static class CredentialSessionInvalidation
             nameof(PlatformAuthSession),
             userId.Value.ToString("D"),
             AuditOutcome.Succeeded,
-            summary: summary,
+            summary: $"{summary} (sessions={sessionCount}, accessTokens={tokenCount}).",
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 }

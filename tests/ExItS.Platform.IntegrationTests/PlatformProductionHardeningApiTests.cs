@@ -71,10 +71,44 @@ public sealed class PlatformProductionHardeningApiTests(PostgreSqlFixture fixtur
         Assert.Contains("development database password", ex.ToString(), StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void Production_startup_fails_when_mfa_enforcement_enabled()
+    {
+        using var factory = new HardeningFactory(
+            fixture.ConnectionString,
+            "Production",
+            allowedHosts: "localhost",
+            extraSettings: new Dictionary<string, string?>
+            {
+                ["PlatformAuthentication:Mfa:EnforcementEnabled"] = "true"
+            });
+
+        var ex = Assert.ThrowsAny<Exception>(() => factory.CreateClient());
+        Assert.Contains("Mfa", ex.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Production_startup_fails_when_access_token_lifetime_exceeds_max()
+    {
+        using var factory = new HardeningFactory(
+            fixture.ConnectionString,
+            "Production",
+            allowedHosts: "localhost",
+            extraSettings: new Dictionary<string, string?>
+            {
+                ["PlatformAuthentication:AccessToken:LifetimeHours"] = "48",
+                ["PlatformAuthentication:AccessToken:MaxLifetimeHours"] = "24"
+            });
+
+        var ex = Assert.ThrowsAny<Exception>(() => factory.CreateClient());
+        Assert.Contains("LifetimeHours", ex.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+
     private sealed class HardeningFactory(
         string connectionString,
         string environmentName,
-        string? allowedHosts = null) : WebApplicationFactory<Program>
+        string? allowedHosts = null,
+        IReadOnlyDictionary<string, string?>? extraSettings = null) : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -96,6 +130,15 @@ public sealed class PlatformProductionHardeningApiTests(PostgreSqlFixture fixtur
             {
                 builder.UseSetting("AllowedHosts", hosts);
                 values["AllowedHosts"] = hosts;
+            }
+
+            if (extraSettings is not null)
+            {
+                foreach (var pair in extraSettings)
+                {
+                    builder.UseSetting(pair.Key, pair.Value);
+                    values[pair.Key] = pair.Value;
+                }
             }
 
             builder.UseSetting("ConnectionStrings:PlatformDatabase", connectionString);

@@ -75,7 +75,8 @@ public sealed record PlatformAuthSessionInfoDto(
     Guid? SelectedOrganizationId,
     string? SelectedOrganizationDisplayName,
     string OrganizationSelectionState,
-    int ActiveOrganizationCount);
+    int ActiveOrganizationCount,
+    PlatformMfaReadinessDto? Mfa = null);
 
 /// <summary>Returned only from login — includes the opaque session token once.</summary>
 public sealed record PlatformLoginResultDto(
@@ -90,7 +91,8 @@ public sealed record PlatformLoginResultDto(
     Guid? SelectedOrganizationId,
     string? SelectedOrganizationDisplayName,
     string OrganizationSelectionState,
-    int ActiveOrganizationCount);
+    int ActiveOrganizationCount,
+    PlatformMfaReadinessDto? Mfa = null);
 
 public sealed record EligibleOrganizationDto(
     Guid OrganizationId,

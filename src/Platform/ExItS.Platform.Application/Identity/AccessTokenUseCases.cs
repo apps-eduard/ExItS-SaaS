@@ -29,6 +29,7 @@ public sealed class IssuePlatformAccessToken
     private readonly PlatformLockoutOptions _lockout;
     private readonly PlatformAccessTokenOptions _tokenOptions;
     private readonly ListEligibleOrganizationsForSession _eligible;
+    private readonly IPlatformMfaReadinessService _mfa;
 
     public IssuePlatformAccessToken(
         IPlatformUserRepository users,
@@ -45,7 +46,8 @@ public sealed class IssuePlatformAccessToken
         IClock clock,
         IOptions<PlatformLockoutOptions> lockout,
         IOptions<PlatformAccessTokenOptions> tokenOptions,
-        ListEligibleOrganizationsForSession eligible)
+        ListEligibleOrganizationsForSession eligible,
+        IPlatformMfaReadinessService mfa)
     {
         _users = users;
         _credentials = credentials;
@@ -62,6 +64,7 @@ public sealed class IssuePlatformAccessToken
         _lockout = lockout.Value;
         _tokenOptions = tokenOptions.Value;
         _eligible = eligible;
+        _mfa = mfa;
     }
 
     public Task<ApplicationResult<PlatformAccessTokenIssueDto>> ExecutePasswordGrantAsync(
@@ -310,7 +313,7 @@ public sealed class IssuePlatformAccessToken
 
         var opaque = _tokenService.CreateOpaqueToken();
         var hash = _tokenService.HashToken(opaque);
-        var lifetime = TimeSpan.FromHours(Math.Max(1, _tokenOptions.LifetimeHours));
+        var lifetime = TimeSpan.FromHours(_tokenOptions.ResolveLifetimeHours());
         var token = PlatformAccessToken.Create(
             user.Id,
             hash,
@@ -335,6 +338,7 @@ public sealed class IssuePlatformAccessToken
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
         var selectionState = SetSessionOrganizationContext.ResolveSelectionState(orgId, eligible.Count);
+        var mfa = await _mfa.GetForUserAsync(user.Id, cancellationToken).ConfigureAwait(false);
         return ApplicationResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
             opaque,
             "Bearer",
@@ -350,7 +354,8 @@ public sealed class IssuePlatformAccessToken
             selectionState,
             eligible.Count,
             productAllowed,
-            productReason));
+            productReason,
+            mfa));
     }
 }
 
@@ -367,6 +372,7 @@ public sealed class BindPlatformAccessTokenProductContext
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly ListEligibleOrganizationsForSession _eligible;
+    private readonly IPlatformMfaReadinessService _mfa;
 
     public BindPlatformAccessTokenProductContext(
         IPlatformAccessTokenRepository tokens,
@@ -379,7 +385,8 @@ public sealed class BindPlatformAccessTokenProductContext
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
-        ListEligibleOrganizationsForSession eligible)
+        ListEligibleOrganizationsForSession eligible,
+        IPlatformMfaReadinessService mfa)
     {
         _tokens = tokens;
         _users = users;
@@ -392,6 +399,7 @@ public sealed class BindPlatformAccessTokenProductContext
         _unitOfWork = unitOfWork;
         _clock = clock;
         _eligible = eligible;
+        _mfa = mfa;
     }
 
     public async Task<ApplicationResult<PlatformAccessTokenIssueDto>> ExecuteAsync(
@@ -469,6 +477,7 @@ public sealed class BindPlatformAccessTokenProductContext
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
         var eligible = await _eligible.LoadEligibleAsync(user.Id, cancellationToken).ConfigureAwait(false);
+        var mfa = await _mfa.GetForUserAsync(user.Id, cancellationToken).ConfigureAwait(false);
         return ApplicationResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
             opaqueAccessToken!,
             "Bearer",
@@ -484,7 +493,8 @@ public sealed class BindPlatformAccessTokenProductContext
             OrganizationSelectionStates.Selected,
             eligible.Count,
             true,
-            access.ReasonCode));
+            access.ReasonCode,
+            mfa));
     }
 
     private async Task<ApplicationResult<(PlatformAccessToken Token, PlatformUser User)>> ResolveActiveTokenAsync(
@@ -540,6 +550,7 @@ public sealed class IntrospectPlatformAccessToken
     private readonly IPlatformSessionTokenService _tokenService;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IPlatformMfaReadinessService _mfa;
 
     public IntrospectPlatformAccessToken(
         IPlatformAccessTokenRepository tokens,
@@ -550,7 +561,8 @@ public sealed class IntrospectPlatformAccessToken
         EvaluateEffectiveProductAccess evaluate,
         IPlatformSessionTokenService tokenService,
         IPlatformUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IPlatformMfaReadinessService mfa)
     {
         _tokens = tokens;
         _users = users;
@@ -561,6 +573,7 @@ public sealed class IntrospectPlatformAccessToken
         _tokenService = tokenService;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _mfa = mfa;
     }
 
     public async Task<PlatformAccessTokenIntrospectionDto> ExecuteAsync(
@@ -640,6 +653,7 @@ public sealed class IntrospectPlatformAccessToken
             }
         }
 
+        var mfa = await _mfa.GetForUserAsync(user.Id, cancellationToken).ConfigureAwait(false);
         return new PlatformAccessTokenIntrospectionDto(
             Active: true,
             token.Id.Value,
@@ -653,11 +667,12 @@ public sealed class IntrospectPlatformAccessToken
             allowed,
             reason,
             subscriptionStatus,
-            features);
+            features,
+            mfa);
     }
 
     private static PlatformAccessTokenIntrospectionDto Inactive() =>
-        new(false, null, null, null, null, null, null, null, null, null, null, null, null);
+        new(false, null, null, null, null, null, null, null, null, null, null, null, null, null);
 }
 
 public sealed class RevokePlatformAccessToken

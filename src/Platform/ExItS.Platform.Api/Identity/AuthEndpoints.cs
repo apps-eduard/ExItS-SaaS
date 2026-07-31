@@ -151,7 +151,8 @@ internal static class AuthEndpoints
 
             var result = await useCase.ExecuteAsync(userId, ct).ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
-        });
+        })
+        .RequireRateLimiting(PlatformSecurityPipeline.AuthPasswordResetRateLimitPolicy);
 
         app.MapPost("/api/v1/platform/auth/email-verification/confirm", async (
             ConfirmEmailVerificationRequest body,
@@ -161,6 +162,7 @@ internal static class AuthEndpoints
             var result = await useCase.ExecuteAsync(body.Token, ct).ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         })
+        .RequireRateLimiting(PlatformSecurityPipeline.AuthPasswordResetRateLimitPolicy)
         .AllowAnonymous();
 
         app.MapPost("/api/v1/platform/auth/token", async (
@@ -203,6 +205,7 @@ internal static class AuthEndpoints
                 .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         })
+        .RequireRateLimiting(PlatformSecurityPipeline.AuthTokenOpsRateLimitPolicy)
         .AllowAnonymous();
 
         app.MapPost("/api/v1/platform/auth/introspect", async (
@@ -215,6 +218,7 @@ internal static class AuthEndpoints
             var dto = await useCase.ExecuteAsync(token, ct).ConfigureAwait(false);
             return Results.Ok(dto);
         })
+        .RequireRateLimiting(PlatformSecurityPipeline.AuthTokenOpsRateLimitPolicy)
         .AllowAnonymous();
 
         app.MapPost("/api/v1/platform/auth/token/revoke", async (
@@ -226,6 +230,7 @@ internal static class AuthEndpoints
             var result = await useCase.ExecuteAsync(token, ct).ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, _ => Results.NoContent());
         })
+        .RequireRateLimiting(PlatformSecurityPipeline.AuthTokenOpsRateLimitPolicy)
         .AllowAnonymous();
 
         return app;

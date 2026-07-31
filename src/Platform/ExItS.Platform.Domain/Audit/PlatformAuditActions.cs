@@ -38,6 +38,14 @@ public static class PlatformAuditActions
     public const string PlatformAuthAccessTokenIssued = "platform.auth.access_token_issued";
     public const string PlatformAuthAccessTokenBound = "platform.auth.access_token_bound";
     public const string PlatformAuthAccessTokenRevoked = "platform.auth.access_token_revoked";
+    /// <summary>Reserved for a future MFA enrollment WP — not emitted in P13-WP07.</summary>
+    public const string PlatformAuthMfaEnrollmentStarted = "platform.auth.mfa_enrollment_started";
+    /// <summary>Reserved for a future MFA enrollment WP — not emitted in P13-WP07.</summary>
+    public const string PlatformAuthMfaEnrollmentCompleted = "platform.auth.mfa_enrollment_completed";
+    /// <summary>Reserved for a future MFA challenge WP — not emitted in P13-WP07.</summary>
+    public const string PlatformAuthMfaChallengeSucceeded = "platform.auth.mfa_challenge_succeeded";
+    /// <summary>Reserved for a future MFA challenge WP — not emitted in P13-WP07.</summary>
+    public const string PlatformAuthMfaChallengeFailed = "platform.auth.mfa_challenge_failed";
 
     public const string MembershipAdded = "platform.membership.added";
     public const string MembershipRoleChanged = "platform.membership.role_changed";

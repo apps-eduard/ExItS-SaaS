@@ -64,6 +64,10 @@ public sealed class ApiSessionAuthTests(PostgreSqlFixture fixture) : IAsyncLifet
         var token = body.GetProperty("sessionToken").GetString();
         Assert.False(string.IsNullOrWhiteSpace(token));
         Assert.False(body.TryGetProperty("password", out _));
+        var loginMfa = body.GetProperty("mfa");
+        Assert.False(loginMfa.GetProperty("mfaEnabled").GetBoolean());
+        Assert.False(loginMfa.GetProperty("challengeRequired").GetBoolean());
+        Assert.Equal("NotEnrolled", loginMfa.GetProperty("readinessState").GetString());
 
         using var meRequest = new HttpRequestMessage(HttpMethod.Get, "/api/v1/platform/auth/me");
         meRequest.Headers.Add("X-ExItS-Session-Token", token);
@@ -71,6 +75,7 @@ public sealed class ApiSessionAuthTests(PostgreSqlFixture fixture) : IAsyncLifet
         Assert.Equal(HttpStatusCode.OK, me.StatusCode);
         var meBody = await me.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(username, meBody.GetProperty("username").GetString());
+        Assert.False(meBody.GetProperty("mfa").GetProperty("challengeRequired").GetBoolean());
 
         using var logoutRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/platform/auth/logout");
         logoutRequest.Headers.Add("X-ExItS-Session-Token", token);

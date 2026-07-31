@@ -2,7 +2,7 @@
 
 [Architecture](authentication-architecture.md) | [Security](security.md) | [Authorization](authorization-matrix.md) | [P13-WP01 report](../reports/P13-WP01-authentication-architecture-and-threat-model.md)
 
-**Status:** Authoritative threat model for Phase 13 production authentication (**P13-WP01**). Browser session controls from **P13-WP03** are implemented for Admin interactive auth; bearer/MFA/reset remain **Target**. Current Production posture still includes fail-closed Dev-header rejection (P9-WP01). **R-091** remains open until Phase 13 closeout.
+**Status:** Authoritative threat model for Phase 13 production authentication (**P13-WP01**). Browser session (**P13-WP03**), password lifecycle (**P13-WP04**), org context (**P13-WP05**), bearer tokens (**P13-WP06**), and MFA readiness / hardening (**P13-WP07**) are implemented for their authorized scopes. MFA enrollment/challenge remains **deferred**. Production posture includes fail-closed Dev-header rejection (P9-WP01) plus MFA-flag and HTTPS BaseUrl guards. **R-091** remains open until Phase 13 closeout.
 
 Method: asset-centric STRIDE with ExItS trust boundaries. Residual risks remain explicit.
 
@@ -55,9 +55,9 @@ Method: asset-centric STRIDE with ExItS trust boundaries. Residual risks remain 
 |---|---|---|
 | Forge `X-Dev-Platform-User-Id` | Ignored in Production; powerful in Dev | Keep Dev-only; Production uses session/token only (**D-P13-06**) |
 | Forge org / commercial headers | Rejected / Unknown fail-closed in Production | Replace with server-derived membership + approved commercial contract (**D-P12-03** open) |
-| Impersonate Platform User without password | Production has no login — APIs deny sensitive ops | Password (or later IdP) + rate-limited auth |
-| Steal Admin session cookie | N/A (no cookie auth yet) | HttpOnly Secure cookie; session revoke; CSRF strategy for cookie APIs |
-| Steal MAUI bearer token | Dev session in SecureStorage | Short access TTL; rotating refresh; logout revoke |
+| Impersonate Platform User without password | Rate-limited login/token + password hash | Preserve; MFA challenge later |
+| Steal Admin session cookie | HttpOnly cookie + session revoke | CSRF strategy for cookie APIs as needed |
+| Steal MAUI bearer token | Opaque hashed tokens; short TTL clamp; explicit revoke; suspend/deactivate revoke-all | Refresh rotation deferred |
 
 ### 4.2 Tampering
 
@@ -86,8 +86,8 @@ Method: asset-centric STRIDE with ExItS trust boundaries. Residual risks remain 
 
 | Threat | Current exposure | Target control |
 |---|---|---|
-| Auth endpoint flooding | Partitioned rate limits exist | Auth-specific limits + lockout backoff |
-| Lockout abuse (DoS accounts) | N/A | Progressive delay; admin unlock; monitor |
+| Auth endpoint flooding | Login/bootstrap/password-reset/token-ops rate limits + global IP limiter | Monitor and tune |
+| Lockout abuse (DoS accounts) | Credential lockout + admin unlock | Progressive delay / monitor |
 
 ### 4.6 Elevation of privilege
 
@@ -95,7 +95,7 @@ Method: asset-centric STRIDE with ExItS trust boundaries. Residual risks remain 
 |---|---|---|
 | DevelopmentOperator full access in Production | Disabled (`GrantDevelopmentOperatorFullAccess=false`) | Keep disabled forever in Production |
 | Platform Admin → POS Cashier | Not automatic | Preserve product-local Authz |
-| Suspended user retains session | N/A | Session/token validation checks account + membership status |
+| Suspended user retains session | Suspend/deactivate revoke sessions + access tokens; login/token reject suspended | Preserve |
 | PastDue commercial continuity misuse | Feature-grant matrix | Unchanged commercial rules; authenticated principal only |
 
 ---
@@ -122,7 +122,8 @@ Method: asset-centric STRIDE with ExItS trust boundaries. Residual risks remain 
 | **R-098** | DevOperator misuse on misconfigured hosts | Config discipline |
 | **R-109** | Interactive Android validation | Device auth UX later |
 | **R-129** | Full local DB encryption | Offline token/data at rest |
-| Email phishing / SIM swap | Out of MVP | MFA readiness helps later |
+| Email phishing / SIM swap | Out of MVP | MFA readiness contracts present; enforcement deferred |
+| Browser logout leaves API tokens | Opaque tokens outlive browser logout by design | Explicit `/auth/token/revoke`, password change, or suspend/deactivate |
 | No formal pen-test | Process | Do not claim certified |
 
 ---

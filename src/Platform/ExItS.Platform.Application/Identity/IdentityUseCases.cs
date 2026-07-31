@@ -1,3 +1,4 @@
+using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Domain.Abstractions;
@@ -160,12 +161,24 @@ public sealed class UpdatePlatformUserProfile
 public sealed class SuspendPlatformUser
 {
     private readonly IPlatformUserRepository _users;
+    private readonly IPlatformAuthSessionRepository _sessions;
+    private readonly IPlatformAccessTokenRepository _accessTokens;
+    private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
-    public SuspendPlatformUser(IPlatformUserRepository users, IPlatformUnitOfWork unitOfWork, IClock clock)
+    public SuspendPlatformUser(
+        IPlatformUserRepository users,
+        IPlatformAuthSessionRepository sessions,
+        IPlatformAccessTokenRepository accessTokens,
+        IAuditWriter auditWriter,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
     {
         _users = users;
+        _sessions = sessions;
+        _accessTokens = accessTokens;
+        _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -183,8 +196,17 @@ public sealed class SuspendPlatformUser
 
         try
         {
-            user.Suspend(_clock.UtcNow, reason);
+            var utcNow = _clock.UtcNow;
+            user.Suspend(utcNow, reason);
             await _users.UpdateAsync(user, cancellationToken).ConfigureAwait(false);
+            await CredentialSessionInvalidation.RevokeAllAsync(
+                _sessions,
+                _accessTokens,
+                _auditWriter,
+                userId,
+                utcNow,
+                "All active sessions and access tokens revoked after Platform User suspend.",
+                cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<PlatformUser>.Success(user);
         }
@@ -235,12 +257,24 @@ public sealed class ReactivatePlatformUser
 public sealed class DeactivatePlatformUser
 {
     private readonly IPlatformUserRepository _users;
+    private readonly IPlatformAuthSessionRepository _sessions;
+    private readonly IPlatformAccessTokenRepository _accessTokens;
+    private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
-    public DeactivatePlatformUser(IPlatformUserRepository users, IPlatformUnitOfWork unitOfWork, IClock clock)
+    public DeactivatePlatformUser(
+        IPlatformUserRepository users,
+        IPlatformAuthSessionRepository sessions,
+        IPlatformAccessTokenRepository accessTokens,
+        IAuditWriter auditWriter,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
     {
         _users = users;
+        _sessions = sessions;
+        _accessTokens = accessTokens;
+        _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -257,8 +291,17 @@ public sealed class DeactivatePlatformUser
 
         try
         {
-            user.Deactivate(_clock.UtcNow);
+            var utcNow = _clock.UtcNow;
+            user.Deactivate(utcNow);
             await _users.UpdateAsync(user, cancellationToken).ConfigureAwait(false);
+            await CredentialSessionInvalidation.RevokeAllAsync(
+                _sessions,
+                _accessTokens,
+                _auditWriter,
+                userId,
+                utcNow,
+                "All active sessions and access tokens revoked after Platform User deactivate.",
+                cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<PlatformUser>.Success(user);
         }

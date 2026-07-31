@@ -51,5 +51,14 @@ internal static class PosProductionSecurityGuard
             throw new InvalidOperationException(
                 "Production requires an explicit AllowedHosts value (wildcard '*' is not allowed).");
         }
+
+        var platformAuthBaseUrl = builder.Configuration[$"{PlatformAuthOptions.SectionName}:BaseUrl"];
+        if (!string.IsNullOrWhiteSpace(platformAuthBaseUrl)
+            && (!Uri.TryCreate(platformAuthBaseUrl, UriKind.Absolute, out var platformUri)
+                || !string.Equals(platformUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new InvalidOperationException(
+                "Production requires PlatformAuth:BaseUrl to use HTTPS when configured.");
+        }
     }
 }
