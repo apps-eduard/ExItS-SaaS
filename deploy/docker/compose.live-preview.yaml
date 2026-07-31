@@ -1,0 +1,145 @@
+# ExItS LIVE PREVIEW stack — personal local UI/API preview ONLY.
+# Phase: P14-WP02-gap-fix-separate-live-preview-stack
+#
+# Completely independent from exits-packaging (compose.yaml) and exits-pilot.
+# NOT Production. NOT a substitute for P14-WP03 TLS/proxy work.
+#
+# Usage (from this directory):
+#   copy .env.live-preview.example .env.live-preview
+#   # fill REPLACE_* passwords; never commit .env.live-preview
+#   docker compose -f compose.live-preview.yaml --env-file .env.live-preview build
+#   docker compose -f compose.live-preview.yaml --env-file .env.live-preview up -d
+#   docker compose -f compose.live-preview.yaml --env-file .env.live-preview ps
+#   docker compose -f compose.live-preview.yaml --env-file .env.live-preview down
+#
+# Default host ports (do not collide with packaging baseline host ports):
+#   admin-web 8090 · platform-api 8091 · pos-api 8092 · platform-db 15533 · pos-db 15534
+#
+# Boundaries: separate Platform and POS databases; no nested clinical product tree.
+# ASPNETCORE_ENVIRONMENT=Development — personal preview only (Admin HTTPS guard / local HTTP).
+# Not Staging packaging; not Production. Do not auto-apply EF migrations at application startup.
+
+name: exits-live-preview
+
+services:
+  platform-db:
+    container_name: exits-live-preview-platform-db
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${LIVE_PREVIEW_PLATFORM_DB_USER}
+      POSTGRES_PASSWORD: ${LIVE_PREVIEW_PLATFORM_DB_PASSWORD}
+      POSTGRES_DB: exits_platform
+    volumes:
+      - exits_live_preview_platform_db_data:/var/lib/postgresql/data
+    ports:
+      - "${LIVE_PREVIEW_PLATFORM_DB_HOST_PORT:-15533}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d exits_platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - exits-live-preview
+
+  pos-db:
+    container_name: exits-live-preview-pos-db
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${LIVE_PREVIEW_POS_DB_USER}
+      POSTGRES_PASSWORD: ${LIVE_PREVIEW_POS_DB_PASSWORD}
+      POSTGRES_DB: exits_pos
+    volumes:
+      - exits_live_preview_pos_db_data:/var/lib/postgresql/data
+    ports:
+      - "${LIVE_PREVIEW_POS_DB_HOST_PORT:-15534}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d exits_pos"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - exits-live-preview
+
+  platform-api:
+    container_name: exits-live-preview-platform-api
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.platform-api
+      args:
+        EXITS_IMAGE_LABEL: p14-wp02-live-preview
+    image: exits/platform-api:${LIVE_PREVIEW_IMAGE_TAG:-live-preview}
+    depends_on:
+      platform-db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__PlatformDatabase: Host=platform-db;Port=5432;Database=exits_platform;Username=${LIVE_PREVIEW_PLATFORM_DB_USER};Password=${LIVE_PREVIEW_PLATFORM_DB_PASSWORD}
+      AllowedHosts: ${LIVE_PREVIEW_ALLOWED_HOSTS:-localhost;127.0.0.1}
+      Cors__AllowedOrigins__0: ${LIVE_PREVIEW_ADMIN_ORIGIN:-http://localhost:8090}
+      Security__EnforceHttps: "false"
+    ports:
+      - "${LIVE_PREVIEW_PLATFORM_API_HOST_PORT:-8091}:8080"
+    networks:
+      - exits-live-preview
+    read_only: true
+    tmpfs:
+      - /tmp
+    stop_grace_period: 30s
+
+  pos-api:
+    container_name: exits-live-preview-pos-api
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.pos-api
+      args:
+        EXITS_IMAGE_LABEL: p14-wp02-live-preview
+    image: exits/pos-api:${LIVE_PREVIEW_IMAGE_TAG:-live-preview}
+    depends_on:
+      pos-db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__PosDatabase: Host=pos-db;Port=5432;Database=exits_pos;Username=${LIVE_PREVIEW_POS_DB_USER};Password=${LIVE_PREVIEW_POS_DB_PASSWORD}
+      AllowedHosts: ${LIVE_PREVIEW_ALLOWED_HOSTS:-localhost;127.0.0.1}
+      Cors__AllowedOrigins__0: ${LIVE_PREVIEW_ADMIN_ORIGIN:-http://localhost:8090}
+      Security__EnforceHttps: "false"
+    ports:
+      - "${LIVE_PREVIEW_POS_API_HOST_PORT:-8092}:8080"
+    networks:
+      - exits-live-preview
+    read_only: true
+    tmpfs:
+      - /tmp
+    stop_grace_period: 30s
+
+  admin-web:
+    container_name: exits-live-preview-admin-web
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.platform-admin
+    image: exits/platform-admin:${LIVE_PREVIEW_IMAGE_TAG:-live-preview}
+    depends_on:
+      - platform-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      AllowedHosts: ${LIVE_PREVIEW_ALLOWED_HOSTS:-localhost;127.0.0.1}
+      PlatformApi__BaseUrl: ${LIVE_PREVIEW_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
+      PlatformApi__TimeoutSeconds: "30"
+    ports:
+      - "${LIVE_PREVIEW_ADMIN_HOST_PORT:-8090}:8080"
+    networks:
+      - exits-live-preview
+    read_only: true
+    tmpfs:
+      - /tmp
+    stop_grace_period: 30s
+
+volumes:
+  exits_live_preview_platform_db_data:
+    name: exits_live_preview_platform_db_data
+  exits_live_preview_pos_db_data:
+    name: exits_live_preview_pos_db_data
+
+networks:
+  exits-live-preview:
+    name: exits-live-preview

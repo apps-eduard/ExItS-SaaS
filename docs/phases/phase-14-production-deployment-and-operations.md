@@ -4,13 +4,13 @@
 
 ## Status
 
-**Status:** **In progress.** **P14-WP01**–**P14-WP02** complete. Exact next: **P14-WP03** when authorized. Portfolio remains **not Production-ready**.
+**Status:** **In progress.** **P14-WP01**–**P14-WP02** complete (including live-preview gap fix). Exact next: **P14-WP03** when authorized. Portfolio remains **not Production-ready**.
 
 Authoritative docs:
 
 - [`production-deployment-architecture.md`](../engineering/production-deployment-architecture.md)
 - [`production-readiness-audit.md`](../engineering/production-readiness-audit.md)
-- Reports: [`P14-WP01`](../reports/P14-WP01-deployment-architecture-and-production-readiness-audit.md), [`P14-WP02`](../reports/P14-WP02-production-packaging-and-compose-baseline.md)
+- Reports: [`P14-WP01`](../reports/P14-WP01-deployment-architecture-and-production-readiness-audit.md), [`P14-WP02`](../reports/P14-WP02-production-packaging-and-compose-baseline.md), [`P14-WP02 live-preview gap fix`](../reports/P14-WP02-gap-fix-separate-live-preview-stack.md)
 
 ## Progress
 
@@ -18,6 +18,7 @@ Authoritative docs:
 |---|---|---|
 | P14-WP01 — Deployment Architecture and Production Readiness Audit | **Complete** | [report](../reports/P14-WP01-deployment-architecture-and-production-readiness-audit.md) · `e0e2da2d03babc01dd6efab9d44c6c2a2668457a` |
 | P14-WP02 — Production Packaging and Compose Baseline | **Complete** | [report](../reports/P14-WP02-production-packaging-and-compose-baseline.md) · `fa04ee2e9decd200b4dc1407f4f1b88f91f93afe` |
+| P14-WP02 Gap Fix — Separate Live Preview Stack | **Complete** | [report](../reports/P14-WP02-gap-fix-separate-live-preview-stack.md) · *(feature tip recorded after commit)* |
 | P14-WP03 — Reverse Proxy, TLS, and Network Hardening | Not started | — |
 | P14-WP04 — Production Backup, Restore, and Ops Evidence | Not started | — |
 | P14-WP05 — Monitoring, Alerting, and Support Model | Not started | — |
@@ -65,7 +66,7 @@ Unless a later WP explicitly authorizes:
 
 ### P14-WP02 — Production Packaging and Compose Baseline
 
-**Complete.** Default `deploy/docker/compose.yaml` for local packaging tests (Platform/POS APIs + separate PostgreSQL). Pilot Compose preserved as NON-PRODUCTION.
+**Complete.** Default `deploy/docker/compose.yaml` for local packaging tests (Platform/POS APIs + separate PostgreSQL). Pilot Compose preserved as NON-PRODUCTION. Gap fix: separate `compose.live-preview.yaml` (`exits-live-preview`) with Admin on port **8090** — does not reuse packaging ports.
 
 ### P14-WP03 — Reverse Proxy, TLS, and Network Hardening
 
