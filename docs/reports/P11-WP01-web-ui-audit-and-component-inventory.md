@@ -3,8 +3,8 @@
 Package: **P11-WP01 — Web UI Audit and Component Inventory**  
 Phase: Phase 11 — Web UI and Reporting Design System  
 Baseline tip (Pre-P11 theme persistence): `46b99a7f6baa87977fb0ed37e678231fa1eb1344`  
-Feature tip (this WP): _(recorded after commit)_  
-Docs tip: _(recorded after commit)_
+Feature tip (this WP): `221fe69ab179956e8a73411cf3eb58fd6f199c3c`  
+Docs tip: `221fe69ab179956e8a73411cf3eb58fd6f199c3c`
 
 ## Status
 

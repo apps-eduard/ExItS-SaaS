@@ -12,7 +12,7 @@ Pre-Phase-11 Admin shell/theme baseline remains locked (feature tip `46b99a7f6ba
 
 | WP | Status | Report / tip |
 |---|---|---|
-| P11-WP01 — Web UI Audit and Component Inventory | **Complete** | [report](../reports/P11-WP01-web-ui-audit-and-component-inventory.md) |
+| P11-WP01 — Web UI Audit and Component Inventory | **Complete** | [report](../reports/P11-WP01-web-ui-audit-and-component-inventory.md) · `221fe69ab179956e8a73411cf3eb58fd6f199c3c` |
 | P11-WP02 — Global Web Layout and Navigation | Not started | — |
 | P11-WP03 — Shared Forms, Tables and Data Components | Not started | — |
 | P11-WP04 — Shared Feedback, Dialog and State Components | Not started | — |

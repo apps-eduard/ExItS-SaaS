@@ -14,7 +14,7 @@
 | Current phase | Phase 11 — Web UI and Reporting Design System (**in progress**) |
 | Current work package | P11-WP01 — Web UI Audit and Component Inventory (**complete**) |
 | Overall status | **Phase 11 started.** P11-WP01 audit/inventory complete. Pre-P11 Admin shell/theme baseline locked. Exact next: P11-WP02 — Global Web Layout and Navigation (do not begin until authorized). |
-| Latest verified commit | _(P11-WP01 tip after commit)_ |
+| Latest verified commit | `221fe69ab179956e8a73411cf3eb58fd6f199c3c` |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred |
 | Last updated | 2026-07-31 |
 
@@ -78,7 +78,7 @@ P11-WP02 ○ Global Web Layout and Navigation (do not begin until authorized)
 
 | WP | Status | Key commit |
 |---|---|---|
-| P11-WP01 — Web UI Audit and Component Inventory | Complete | _(after commit)_ |
+| P11-WP01 — Web UI Audit and Component Inventory | Complete | `221fe69ab179956e8a73411cf3eb58fd6f199c3c` |
 
 ## Phase 10 work packages
 
