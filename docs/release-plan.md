@@ -107,7 +107,7 @@ Non-production deployment packaging, config validation, backup-before-migrate, s
 
 Environment board: Dev/Testing/internal pilot Ready with documented risks; restricted external pilot and Production **Blocked**. Risk register classifies R-091/R-109/R-129/TLS/MAUI-HTTPS/POS-ROLES as release blockers. **Not production-ready.**
 
-**Next:** **P10-WP08 — Phase 10 Closeout** when approved. Do not begin Phase 11. See [phase-10-full-pos](phases/phase-10-full-pos.md).
+**Next:** **Phase 11 — Web UI and Reporting Design System** when approved. Do not begin Phase 11 until authorized. See [P10-WP08 closeout](reports/P10-WP08-phase-10-closeout.md) and [phase-10-full-pos](phases/phase-10-full-pos.md).
 
 ## R4 — Commercial MVP
 
@@ -115,6 +115,6 @@ Offline synchronization, Basic Store and production hardening.
 
 ## R5 — Full POS
 
-**First work package (roadmap):** **P10-WP01 — Suppliers** (formally numbered). Then purchasing, advanced inventory, cashier shifts, returns/refunds, advanced permissions/reports, multiple registers, and closeout.
+**Phase 10 complete with documented risks** (P10-WP01–P10-WP08). Delivered: suppliers, purchasing, advanced inventory, cashier shifts, returns/refunds, product-local operational roles and operational reports, multiple registers, and closeout. **Not production-ready** (R-091, R-109, R-129, TLS, MAUI HTTPS remain open). Product-local POS-ROLES closed; production authentication remains open.
 
-Product docs historically phrase “Suppliers and purchasing” together; the authoritative phase roadmap keeps them as separate WPs (`P10-WP01` / `P10-WP02`). Implementation of WP01 is blocked until approved scope is clarified.
+**Next:** Phase 11 when authorized. Do not begin Phase 12.

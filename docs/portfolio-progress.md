@@ -11,11 +11,11 @@
 | Portfolio | ExITS SaaS |
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 10 — Full POS |
-| Current work package | P10-WP07 — Multiple Registers (**complete**) |
-| Overall status | **P10-WP07 complete.** Exact next: P10-WP08 — Phase 10 Closeout. Do not begin P10-WP08 or Phase 11. |
-| Latest verified commit | `7dda3ba` |
-| Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only Basic Store limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/refund/accounting deferred |
+| Current phase | Phase 10 — Full POS (**complete with documented risks**) |
+| Current work package | P10-WP08 — Phase 10 Closeout (**complete**) |
+| Overall status | **Phase 10 closed.** Exact next: Phase 11 — Web UI and Reporting Design System. Do not begin Phase 11 or Phase 12. |
+| Latest verified commit | `32395ff1a03b56949f81a33f850308a26cc50429` |
+| Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred |
 | Last updated | 2026-07-31 |
 
 ## Delivery sequence
@@ -45,11 +45,11 @@ P10-WP05 ✓ Returns and Refunds
         ↓
 P10-WP06 ✓ Advanced Permissions and Operational Reports
         ↓
-P10-WP07 ✓ Multiple Registers (complete)
+P10-WP07 ✓ Multiple Registers
         ↓
-P10-WP08 ● Phase 10 Closeout (do not begin)
+P10-WP08 ✓ Phase 10 Closeout (complete with risks — Phase 10 closed)
         ↓
-P10-WP08 ○ Phase 10 Closeout (do not begin)
+Phase 11 ○ Web UI and Reporting Design System (do not begin)
 ```
 
 ## Phase progress
@@ -66,9 +66,10 @@ P10-WP08 ○ Phase 10 Closeout (do not begin)
 | 7 | Offline Synchronization | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-07-offline-sync.md) |
 | 8 | Basic Store | **Complete with documented risks** | 7 | 7 | 100% | [Open](phases/phase-08-basic-store.md) |
 | 9 | MVP Hardening and Release | **Complete with documented risks** | 6 | 6 | 100% | [Open](phases/phase-09-mvp-hardening.md) |
-| 10 | Full POS | **In Progress** | 7 | 8 | 88% | [Open](phases/phase-10-full-pos.md) |
+| 10 | Full POS | **Complete with documented risks** | 8 | 8 | 100% | [Open](phases/phase-10-full-pos.md) |
 
-**MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
+**MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).  
+**Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
 
 ## Phase 10 work packages
 
@@ -80,9 +81,8 @@ P10-WP08 ○ Phase 10 Closeout (do not begin)
 | P10-WP04 — Cashier Shifts | Complete | 4076485 |
 | P10-WP05 — Returns and Refunds | Complete | 58dd6bf (+ Android using fix 6cb06cc) |
 | P10-WP06 — Advanced Permissions and Operational Reports | Complete | 1e46f6eb142d1c14455f954e7c8286abeb1ddff3 |
-| P10-WP07 — Multiple Registers | Complete | [Report](reports/P10-WP07-multiple-registers.md) |
-| P10-WP08 — Phase 10 Closeout | Not started | — |
-| P10-WP08 — Full POS Closeout | Not Started | — |
+| P10-WP07 — Multiple Registers | Complete | 7dda3baedd452b39cb5d4fab55fb700ef67a9639 |
+| P10-WP08 — Phase 10 Closeout | Complete | 32395ff1a03b56949f81a33f850308a26cc50429 (+ docs tip) |
 
 ## Phase 9 work packages
 
@@ -97,4 +97,4 @@ P10-WP08 ○ Phase 10 Closeout (do not begin)
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P10-WP08 — Phase 10 Closeout** or Phase 11 until explicitly authorized.
+Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **Phase 11 — Web UI and Reporting Design System** or Phase 12 until explicitly authorized.

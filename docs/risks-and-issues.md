@@ -137,7 +137,11 @@
 
 ## Phase 9 note (P9-WP06 closeout)
 
-P9-WP06 closed Phase 9 with an honest Commercial MVP readiness board: Development/Testing/CI and controlled internal technical pilot are **Ready with documented non-blocking risks**; restricted external pilot and Production remain **Blocked** (R-091, R-109, R-129, TLS-PROD, MAUI-HTTPS, POS-ROLES). No risks closed merely to improve the result. **P10-WP02 — Purchasing** is complete; next authorized package is **P10-WP03 — Advanced Inventory** (do not begin until authorized). Completion: [P10-WP02-purchasing.md](reports/P10-WP02-purchasing.md).
+P9-WP06 closed Phase 9 with an honest Commercial MVP readiness board: Development/Testing/CI and controlled internal technical pilot are **Ready with documented non-blocking risks**; restricted external pilot and Production remain **Blocked** (R-091, R-109, R-129, TLS-PROD, MAUI-HTTPS). Product-local POS-ROLES later closed in P10-WP06; production authentication (R-091) remains open. **P10-WP08** closed Phase 10 Full POS with documented risks — see [P10-WP08-phase-10-closeout.md](reports/P10-WP08-phase-10-closeout.md). Exact next: **Phase 11** (do not begin). **Not production-ready.**
+
+## Phase 10 — Full POS closeout
+
+P10-WP08 reconciled P10-WP01–P10-WP07 (suppliers through multiple registers). Migration chain apply/rollback/re-apply validated. Product-local roles closed; R-091/R-109/R-129/TLS/MAUI-HTTPS remain open. ManualGCash remains unverified. Android Release build succeeded; interactive device validation not claimed. Tests **1147 / 0 / 0**. Phase 11/12 planning docs remain intentional untracked files. **Not production-ready.**
 
 ## Phase 9 note (P9-WP05)
 

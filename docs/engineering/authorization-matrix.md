@@ -75,13 +75,26 @@ Source of truth: `PlatformPermission` + `PlatformRolePermissionCatalog` in Domai
 
 ## PinoyBusinessPOS roles
 
-| Capability | Owner | Manager | Cashier | Inventory Staff |
-|---|---:|---:|---:|---:|
-| Manage subscription | Yes | No | No | No |
-| Record Utang/payment | Yes | Yes | Yes | No |
-| Manage products | Yes | Yes | Conditional | Yes |
-| View profit | Yes | Yes | No | No |
-| Refund completed sale | Yes | Yes | No | No |
-| Adjust inventory | Yes | Yes | No | Yes |
+Product-local operational roles live in `ExItS_PinoyBusinessPOS` / schema `pos` (P10-WP06). They are **not** Platform roles. Authoritative matrix: `PosRoleMatrix` + `store-*` feature grants + commercial state.
 
-Exact permissions are finalized in product phases and enforced by API tests. Platform Admin never assigns these roles.
+Roles: **Owner**, **Admin**, **StoreManager**, **Cashier**, **InventoryStaff**, **ReportingUser**.
+
+| Concern | Status |
+|---|---|
+| Product-local POS roles | Implemented (P10-WP06) |
+| First-owner bootstrap / last-owner protection | Implemented |
+| Register permissions | `store-registers-view/manage` (P10-WP07) |
+| Production authentication (JWT/MFA/SSO) | **Open — R-091** |
+
+Platform Admin never assigns POS operational roles. Exact capability intersections are enforced by API/unit tests; UI hiding is not authorization.
+
+Historical note: older “Manager / View profit” rows below are superseded by the product-local matrix (no P&L/profit reports in Full POS).
+
+| Capability (illustrative) | Owner/Admin | StoreManager | Cashier | InventoryStaff | ReportingUser |
+|---|---:|---:|---:|---:|---:|
+| Manage POS role assignments | Yes | No | No | No | No |
+| Catalog / sales / shifts / returns (ops) | Yes | Yes | Partial | Partial | View-oriented |
+| Inventory manage / stock counts | Yes | Yes | No | Yes | View |
+| Purchasing manage (receive-scoped for InventoryStaff) | Yes | Yes | No | Partial | View |
+| Registers manage | Yes | Yes | No | No | No |
+| Operational reports | All | All | Own shift/cash variance | Inventory/purchasing family | All |

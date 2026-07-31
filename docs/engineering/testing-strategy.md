@@ -62,8 +62,13 @@
 - Suppliers master data (P10-WP01 Option A) ? domain/lifecycle; `SUP-NNNNNN` codes; duplicate guards; capability matrix; `AddPosSuppliers` migrate apply/rollback/re-apply; API org isolation; MAUI online-only page guards; architecture purchasing exclusions; full suite **1047 / 0 / 0**
 - Purchasing (P10-WP02) ? PO/GRN lifecycle; `PO-`/`GRN-` numbers; over-receipt denial; idempotent submit/receive; `PurchaseReceipt` inventory hook; `store-purchasing-view`/`manage` matrix; `AddPosPurchasing` migrate apply/rollback/re-apply; API org isolation; MAUI online-only page guards; architecture scope guards; full suite **1067 / 0 / 0**
 - Advanced inventory (P10-WP03) ? reorder audit; derived stock states; stock counts (`CNT-` numbers); variance movements; reconciliation; `AddPosAdvancedInventory`; MAUI reorder/counts pages; full suite **1073 / 0 / 0**
+- Cashier shifts (P10-WP04) ? Open/close; CashIn/Out; expected cash; sales require Open shift; `AddPosCashierShifts`; full suite **1097 / 0 / 0**
+- Returns/refunds (P10-WP05) ? Completed returns; tender-matched refunds; void/return exclusion; `AddPosSaleReturns`; full suite **1110 / 0 / 0**
+- Permissions/reports (P10-WP06) ? product-local roles; role-aware operational reports; `AddPosOperationalRoles`; full suite **1138 / 0 / 0**
+- Multiple registers (P10-WP07) ? Register lifecycle; one Open/Register; sale/return linkage; `AddPosRegisters`; full suite **1142 / 0 / 0**
+- Full POS closeout (P10-WP08) ? WP01–WP07 reconciliation; Phase 10 migration-chain apply/rollback/re-apply; Full POS architecture guards; inventories; honest R-109; full suite **1147 / 0 / 0**
 - Tenant isolation
-- Subscription feature enforcement (P6-WP05 matrix + grants; P8-WP01?P8-WP07 store grants; P10-WP01 supplier grants; P10-WP02 purchasing grants)
+- Subscription feature enforcement (P6-WP05 matrix + grants; P8–P10 `store-*` grants including registers/permissions)
 - Offline queue and idempotency *(Phase 7)*
 - Inventory movements
 - Cashier permissions

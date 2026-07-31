@@ -30,7 +30,7 @@ Approved at Phase 0 closeout (P0-WP04). Capability ownership: P1-WP01. Contracts
 | Customers / CustomerCredit / ledgers | — | — | Own | — | Not Patient |
 | Products / barcodes / sales / inventory | — | — | Own | — | Generic retail |
 | Expenses / suppliers / purchasing | — | — | Own | Basic Store / Full POS | |
-| Shifts / returns / multi-register | — | — | Own | Full POS deferred | |
+| Shifts / returns / multi-register | — | — | Own | Full POS (Phase 10 complete) | |
 | Offline DB / sync state | — | — | Own | Sync contracts later | Phase 7 |
 | Offline synchronization | — | — | Own | Idempotency rules | |
 | Ant Design Blazor | — | Staff Web only | Forbidden | — | Forbidden in Platform Admin |

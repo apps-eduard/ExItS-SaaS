@@ -4,7 +4,7 @@
 
 ## Status
 
-**In Progress** — **P10-WP07 — Multiple Registers** complete. Exact next: **P10-WP08 — Phase 10 Closeout**. Do **not** begin P10-WP08 or Phase 11.
+**Complete with documented risks** — **P10-WP08 — Phase 10 Closeout** complete. Phase 10 Full POS business scope closed for Development/Testing and controlled internal validation. Exact next: **Phase 11 — Web UI and Reporting Design System**. Do **not** begin Phase 11 or Phase 12.
 
 ## Objective
 
@@ -46,7 +46,7 @@ Decision record: [P10-WP01-scope-ambiguity.md](../reports/P10-WP01-scope-ambigui
 
 ### P10-WP01 — Suppliers
 
-Status: **In Progress** (authorized — Option A)
+Status: **Complete** (Option A)
 
 Phase marker: `P10-WP01-suppliers`
 
@@ -299,28 +299,42 @@ Branches, warehouses, drawers, devices/printers, denomination counting, deposits
 - [x] Working tree clean (after push; Phase 11 doc may remain untracked).
 - [x] Exact next WP recorded: **P10-WP08 — Phase 10 Closeout** (do not begin).
 
-### P10-WP08 — Full POS Closeout
+### P10-WP08 — Phase 10 Closeout
 
-Status: Not Started
+Status: **Complete**
 
-#### Required outcomes
+Prior tip: `43bea6fc003bdde05af484f5fe7b5d9d5055850e` (P10-WP07 complete). Baseline: **1142 / 0 / 0**.
+Phase marker: `P10-WP08-phase-10-closeout`
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+#### Required outcomes (approved)
+
+Documentation, validation, reconciliation, and sign-off only:
+
+- Reconcile P10-WP01–P10-WP07 against repository evidence
+- Migration-chain apply/rollback/re-apply to pre-Phase-10 checkpoint
+- Authorization/role/API/MAUI inventories
+- Full Release suite + MAUI Android Release build
+- Honest Android interactive limitation (R-109)
+- No new business capability unless a confirmed Phase 10 defect requires a minimal gap fix
+- Leave Phase 11/12 and Product-Foundation planning docs untracked and untouched
+
+#### Explicit exclusions
+
+New POS features; Phase 11 web redesign; Phase 12; Windows MAUI; Production-ready claims; force-push/history rewrite.
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (baseline 1142 → suite now **1147 / 0 / 0**).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created (`docs/reports/P10-WP08-phase-10-closeout.md`).
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean except intentional untracked Phase 11/12/Product-Foundation docs.
+- [x] Exact next phase recorded: **Phase 11 — Web UI and Reporting Design System** (do not begin).
 
 ## Phase exit criteria
 
-- [ ] Every work package is complete or explicitly deferred.
-- [ ] Risks and decisions are recorded.
-- [ ] Required regression/security tests pass.
-- [ ] Next phase is explicitly approved.
+- [x] Every work package is complete or explicitly deferred.
+- [x] Risks and decisions are recorded.
+- [x] Required regression/security tests pass.
+- [x] Next phase is explicitly identified for later start only: **Phase 11** (do not begin until authorized).
