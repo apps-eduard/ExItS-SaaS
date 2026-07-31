@@ -49,6 +49,8 @@ public sealed class AdminFormErrorMapperTests
         Assert.Contains("EventCallback", confirm, StringComparison.Ordinal);
         Assert.Contains("FocusAsync", confirm, StringComparison.Ordinal);
         Assert.Contains("Escape", confirm, StringComparison.Ordinal);
+        Assert.Contains("exitsAdminA11y.dialogOpen", confirm, StringComparison.Ordinal);
+        Assert.Contains("exitsAdminA11y.dialogClose", confirm, StringComparison.Ordinal);
 
         var users = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Users.razor"));
         Assert.Contains("FormSection", users, StringComparison.Ordinal);

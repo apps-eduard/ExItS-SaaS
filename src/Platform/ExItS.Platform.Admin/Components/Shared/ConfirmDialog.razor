@@ -1,5 +1,6 @@
 @using ExItS.Platform.Admin.Forms
 @inject IStringLocalizer<AdminResources> L
+@inject IJSRuntime Js
 
 @if (Visible)
 {
@@ -20,6 +21,7 @@
             <div class="actions">
                 <button type="button"
                         class="secondary"
+                        @ref="_cancelRef"
                         @onclick="CancelAsync"
                         disabled="@Busy">
                     @ResolvedCancel
@@ -50,10 +52,12 @@
     [Parameter] public bool CloseOnBackdrop { get; set; } = true;
 
     private ElementReference _confirmRef;
+    private ElementReference _cancelRef;
     private ElementReference _dialogRef;
     private readonly string _titleId = $"dlg-title-{Guid.NewGuid():N}";
     private readonly string _bodyId = $"dlg-body-{Guid.NewGuid():N}";
     private bool _wasVisible;
+    private bool _trapActive;
 
     private string KindCss => Kind switch
     {
@@ -96,6 +100,16 @@
         {
             try
             {
+                await Js.InvokeVoidAsync("exitsAdminA11y.dialogOpen", _dialogRef);
+                _trapActive = true;
+            }
+            catch
+            {
+                _trapActive = false;
+            }
+
+            try
+            {
                 await _confirmRef.FocusAsync();
             }
             catch
@@ -110,6 +124,10 @@
                 }
             }
         }
+        else if (!Visible && _wasVisible && _trapActive)
+        {
+            await CloseTrapAsync();
+        }
 
         _wasVisible = Visible;
     }
@@ -121,6 +139,7 @@
             return;
         }
 
+        await CloseTrapAsync();
         await OnConfirm.InvokeAsync();
     }
 
@@ -131,6 +150,7 @@
             return;
         }
 
+        await CloseTrapAsync();
         await OnCancel.InvokeAsync();
     }
 
@@ -147,6 +167,24 @@
         if (e.Key == "Escape" && !Busy)
         {
             await CancelAsync();
+        }
+    }
+
+    private async Task CloseTrapAsync()
+    {
+        if (!_trapActive)
+        {
+            return;
+        }
+
+        _trapActive = false;
+        try
+        {
+            await Js.InvokeVoidAsync("exitsAdminA11y.dialogClose");
+        }
+        catch
+        {
+            // Ignore when JS not yet available.
         }
     }
 }

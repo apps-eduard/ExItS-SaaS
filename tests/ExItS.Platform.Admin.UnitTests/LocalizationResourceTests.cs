@@ -36,7 +36,13 @@ public sealed class LocalizationResourceTests
         "Payments_Title",
         "Common_ActionFailed",
         "Status_Active",
-        "Status_Voided"
+        "Status_Voided",
+        "Dashboard_Title",
+        "Dashboard_Section_Primary",
+        "Report_FiltersAria",
+        "Form_ActionsAria",
+        "OrgProductAccess_RevokeConfirmMessage",
+        "Common_EmDash"
     ];
 
     [Fact]

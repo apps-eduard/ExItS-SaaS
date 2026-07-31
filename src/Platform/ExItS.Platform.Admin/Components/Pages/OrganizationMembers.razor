@@ -34,9 +34,9 @@ else
         <label>@L["Common_Status"]
             <select @bind="_status">
                 <option value="">@L["Common_All"]</option>
-                <option>Active</option>
-                <option>Suspended</option>
-                <option>Removed</option>
+                <option value="Active">@L["Status_Active"]</option>
+                <option value="Suspended">@L["Status_Suspended"]</option>
+                <option value="Removed">@L["Status_Removed"]</option>
             </select>
         </label>
         <button type="button" @onclick="ApplyMemberFiltersAsync">@L["Common_Apply"]</button>

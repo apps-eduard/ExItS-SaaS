@@ -1,6 +1,7 @@
 @page "/admin/organizations/{OrganizationId:guid}/product-access"
 @rendermode InteractiveServer
 @inject IPlatformApiClient Api
+@inject ToastService Toasts
 @inject IStringLocalizer<AdminResources> L
 
 <PageHeader Title="@L["OrgProductAccess_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Organizations"]} / {L["Common_ProductAccess"]}")" Description="@L["OrgProductAccess_Description"]" />
@@ -10,27 +11,36 @@
 else if (!_org.IsSuccess) { <ErrorState Title="@(_org.Error?.Title ?? L["Common_Error"])" Detail="@_org.Error?.Detail" Unavailable="@(_org.Status == ApiCallStatus.Unavailable)" /> }
 else
 {
-    <p><a href="/admin/organizations/@OrganizationId">← @_org.Data!.DisplayName @L["Common_CommercialSummary"]</a> · <a href="/admin/organizations/@OrganizationId/members">@L["Common_Members"]</a></p>
-    @if (!string.IsNullOrWhiteSpace(_toast)) { <p class="toast" role="status">@_toast</p> }
+    <p>
+        <a href="/admin/organizations/@OrganizationId">← @_org.Data!.DisplayName — @L["Common_BackToSummary"]</a>
+        ·
+        <a href="/admin/organizations/@OrganizationId/members">@L["Common_Members"]</a>
+    </p>
     @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="@L["Common_ActionFailed"]" Detail="@_formError" /> }
 
-    <section class="panel" aria-label="@L["OrgProductAccess_AriaGrant"]">
-        <h2>@L["OrgProductAccess_GrantSection"]</h2>
+    <FormSection Title="@L["OrgProductAccess_GrantSection"]">
         <div class="form-grid">
-            <label>@L["OrgMembers_UserId"] <input @bind="_grantUserId" placeholder="@L["OrgProductAccess_GrantUserIdPlaceholder"]" /></label>
-            <label>@L["OrgProductAccess_ProductCode"] <input @bind="_grantProductCode" placeholder="e.g. pinoybusinesspos" /></label>
-            <label>@L["Common_Reason"] <input @bind="_grantReason" /></label>
+            <FormField Label="@L["OrgMembers_UserId"]" FieldId="grant-user" Required="true">
+                <AdminInput @bind-Value="_grantUserId" Placeholder="@L["OrgProductAccess_GrantUserIdPlaceholder"]" Disabled="_busy" />
+            </FormField>
+            <FormField Label="@L["OrgProductAccess_ProductCode"]" FieldId="grant-product" Required="true">
+                <AdminInput @bind-Value="_grantProductCode" Placeholder="@L["OrgProductAccess_ProductCodePlaceholder"]" Disabled="_busy" />
+            </FormField>
+            <FormField Label="@L["Common_Reason"]" FieldId="grant-reason">
+                <AdminInput @bind-Value="_grantReason" Disabled="_busy" />
+            </FormField>
         </div>
-        <div class="actions">
-            <button type="button" @onclick="GrantAsync" disabled="@_busy">@L["OrgProductAccess_GrantAccess"]</button>
-        </div>
-    </section>
+        <FormActions PrimaryText="@L["OrgProductAccess_GrantAccess"]" Busy="_busy" OnPrimary="GrantAsync" />
+    </FormSection>
 
-    <section class="panel" aria-label="@L["OrgProductAccess_AriaEvaluate"]">
-        <h2>@L["OrgProductAccess_EvaluateSection"]</h2>
+    <FormSection Title="@L["OrgProductAccess_EvaluateSection"]">
         <div class="form-grid">
-            <label>@L["OrgMembers_UserId"] <input @bind="_evalUserId" /></label>
-            <label>@L["OrgProductAccess_ProductCode"] <input @bind="_evalProductCode" /></label>
+            <FormField Label="@L["OrgMembers_UserId"]" FieldId="eval-user" Required="true">
+                <AdminInput @bind-Value="_evalUserId" Disabled="_busy" />
+            </FormField>
+            <FormField Label="@L["OrgProductAccess_ProductCode"]" FieldId="eval-product" Required="true">
+                <AdminInput @bind-Value="_evalProductCode" Disabled="_busy" />
+            </FormField>
         </div>
         <div class="actions">
             <button type="button" class="secondary" @onclick="EvaluateAsync" disabled="@_busy">@L["Common_Evaluate"]</button>
@@ -43,59 +53,54 @@ else
                 var e = _evaluation.Data!;
                 <AccessStateIndicator Allowed="@e.Allowed" ReasonCode="@e.ReasonCode" />
                 <dl>
-                    <dt>@L["Common_Membership"]</dt><dd>@(e.MembershipId?.ToString() ?? "—")</dd>
-                    <dt>@L["Common_Assignment"]</dt><dd>@(e.AssignmentId?.ToString() ?? "—")</dd>
-                    <dt>@L["Common_Subscription"]</dt><dd>@(e.SubscriptionId?.ToString() ?? "—")</dd>
-                    <dt>@L["Common_Snapshot"]</dt><dd>@(e.SnapshotId?.ToString() ?? "—")</dd>
+                    <dt>@L["Common_Membership"]</dt><dd>@(e.MembershipId?.ToString() ?? L["Common_EmDash"])</dd>
+                    <dt>@L["Common_Assignment"]</dt><dd>@(e.AssignmentId?.ToString() ?? L["Common_EmDash"])</dd>
+                    <dt>@L["Common_Subscription"]</dt><dd>@(e.SubscriptionId?.ToString() ?? L["Common_EmDash"])</dd>
+                    <dt>@L["Common_Snapshot"]</dt><dd>@(e.SnapshotId?.ToString() ?? L["Common_EmDash"])</dd>
                     <dt>@L["Common_EvaluatedUtc"]</dt><dd><UtcTimestamp Value="@e.EvaluatedAtUtc" /></dd>
                 </dl>
             }
         }
-    </section>
+    </FormSection>
 
-    <div class="filters">
+    <div class="filters" role="search" aria-label="@L["Common_Filter"]">
         <label>@L["Common_Status"]
             <select @bind="_status">
                 <option value="">@L["Common_All"]</option>
-                <option>Active</option>
-                <option>Revoked</option>
+                <option value="Active">@L["Status_Active"]</option>
+                <option value="Revoked">@L["Status_Revoked"]</option>
             </select>
         </label>
         <button type="button" @onclick="ReloadAsync">@L["Common_Apply"]</button>
     </div>
 
-    @if (_assignments is null) { <LoadingState Message="@L["OrgProductAccess_LoadingAssignments"]" /> }
-    else if (!_assignments.IsSuccess) { <ErrorState Title="@L["OrgProductAccess_AssignmentsUnavailable"]" Detail="@_assignments.Error?.Detail" /> }
-    else if (_assignments.Data!.Items.Count == 0) { <EmptyState Message="@L["OrgProductAccess_Empty"]" /> }
-    else
-    {
-        <table class="data-table responsive-table">
-            <thead><tr><th>@L["Common_User"]</th><th>@L["Common_Product"]</th><th>@L["Common_Status"]</th><th>@L["Common_GrantedUtc"]</th><th>@L["Common_RevokedUtc"]</th><th>@L["Common_Actions"]</th></tr></thead>
-            <tbody>
-            @foreach (var a in _assignments.Data.Items)
-            {
-                <tr>
-                    <td data-label="@L["Common_User"]"><a href="/admin/users/@a.UserId">@a.UserId</a></td>
-                    <td data-label="@L["Common_Product"]">@a.ProductCode</td>
-                    <td data-label="@L["Common_Status"]"><StatusBadge Value="@a.Status" /></td>
-                    <td data-label="@L["Common_GrantedUtc"]"><UtcTimestamp Value="@a.GrantedAtUtc" /></td>
-                    <td data-label="@L["Common_RevokedUtc"]">@(a.RevokedAtUtc is null ? "—" : null)@if (a.RevokedAtUtc is not null){<UtcTimestamp Value="@a.RevokedAtUtc.Value" />}</td>
-                    <td data-label="@L["Common_Actions"]">
-                        @if (a.Status == "Active")
-                        {
-                            <button type="button" class="danger" @onclick='() => Ask(L["OrgProductAccess_RevokeAccess"], "Revoke commercial product access for this user? Historical assignment remains queryable.", () => RevokeAsync(a.Id))'>@L["OrgProductAccess_RevokeAccess"]</button>
-                        }
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
-    }
+    <AdminDataPanel IsLoading="@(_assignments is null)"
+                    HasError="@(_assignments is { IsSuccess: false })"
+                    IsEmpty="@(_assignments is { IsSuccess: true, Data.Items.Count: 0 })"
+                    LoadingMessage="@L["OrgProductAccess_LoadingAssignments"]"
+                    EmptyMessage="@L["OrgProductAccess_Empty"]"
+                    ErrorTitle="@L["OrgProductAccess_AssignmentsUnavailable"]"
+                    ErrorDetail="@_assignments?.Error?.Detail">
+        <AdminDataTable TItem="ProductAccessAssignmentDto"
+                        Items="_assignments!.Data!.Items"
+                        Columns="_columns"
+                        Caption="@L["OrgProductAccess_Title"]"
+                        ItemKey="a => a.Id"
+                        CellTemplate="AssignmentCell"
+                        RowActions="AssignmentActions"
+                        ActionsHeader="@L["Common_Actions"]" />
+    </AdminDataPanel>
 }
 
 @if (_confirm is not null)
 {
-    <ConfirmDialog Visible="true" Title="@_confirm.Title" Message="@_confirm.Message" OnConfirm="RunConfirmAsync" OnCancel="ClearConfirm" Busy="_busy" />
+    <ConfirmDialog Visible="true"
+                   Title="@_confirm.Title"
+                   Message="@_confirm.Message"
+                   Kind="AdminDialogKind.Destructive"
+                   OnConfirm="RunConfirmAsync"
+                   OnCancel="ClearConfirm"
+                   Busy="_busy" />
 }
 
 @code {
@@ -109,10 +114,22 @@ else
     private string _grantReason = "";
     private string _evalUserId = "";
     private string _evalProductCode = "";
-    private string? _toast;
     private string? _formError;
     private bool _busy;
     private ConfirmState? _confirm;
+    private List<AdminColumnDefinition> _columns = new();
+
+    protected override void OnInitialized()
+    {
+        _columns =
+        [
+            new("user", L["Common_User"], Primary: true),
+            new("product", L["Common_Product"]),
+            new("status", L["Common_Status"]),
+            new("granted", L["Common_GrantedUtc"]),
+            new("revoked", L["Common_RevokedUtc"])
+        ];
+    }
 
     protected override async Task OnParametersSetAsync() => await ReloadAsync();
 
@@ -124,26 +141,52 @@ else
 
     private async Task GrantAsync()
     {
-        _formError = null; _toast = null;
-        if (!Guid.TryParse(_grantUserId, out var userId)) { _formError = "User ID must be a valid GUID."; return; }
-        _busy = true;
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        if (!Guid.TryParse(_grantUserId, out var userId))
+        {
+            _formError = L["OrgMembers_UserIdInvalid"];
+            _busy = false;
+            return;
+        }
+
         var result = await Api.GrantProductAccessAsync(OrganizationId, new GrantProductAccessRequest(userId, _grantProductCode, "dev-admin", _grantReason));
         _busy = false;
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "Product access granted.";
+        if (!result.IsSuccess)
+        {
+            _formError = result.Error?.Detail ?? result.Error?.Title;
+            return;
+        }
+
+        Toasts.Show(L["OrgProductAccess_ToastGranted"], ToastKind.Success);
         await ReloadAsync();
     }
 
     private async Task EvaluateAsync()
     {
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
         _formError = null;
-        if (!Guid.TryParse(_evalUserId, out var userId)) { _formError = "User ID must be a valid GUID."; return; }
-        _busy = true;
+        if (!Guid.TryParse(_evalUserId, out var userId))
+        {
+            _formError = L["OrgMembers_UserIdInvalid"];
+            _busy = false;
+            return;
+        }
+
         _evaluation = await Api.EvaluateAccessAsync(userId, OrganizationId, _evalProductCode);
         _busy = false;
     }
 
-    private void Ask(string title, string message, Func<Task> action) => _confirm = new ConfirmState(title, message, action);
+    private void Ask(string title, string message, Func<Task> action) =>
+        _confirm = new ConfirmState(title, message, action);
 
     private async Task RunConfirmAsync()
     {
@@ -163,13 +206,71 @@ else
 
     private async Task RevokeAsync(Guid assignmentId)
     {
-        _busy = true; _formError = null;
-        var result = await Api.RevokeProductAccessAsync(assignmentId, new RevokeProductAccessRequest("dev-admin", "Revoked from Admin"));
-        _busy = false; _confirm = null;
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "Product access revoked; history retained.";
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        var result = await Api.RevokeProductAccessAsync(assignmentId, new RevokeProductAccessRequest("dev-admin", L["OrgProductAccess_RevokeAuditReason"]));
+        _busy = false;
+        await ClearConfirm();
+        if (!result.IsSuccess)
+        {
+            _formError = result.Error?.Detail ?? result.Error?.Title;
+            return;
+        }
+
+        Toasts.Show(L["OrgProductAccess_ToastRevoked"], ToastKind.Success);
         await ReloadAsync();
     }
+
+    private RenderFragment<(ProductAccessAssignmentDto Item, AdminColumnDefinition Column)> AssignmentCell => ctx => b =>
+    {
+        switch (ctx.Column.Key)
+        {
+            case "user":
+                b.OpenElement(0, "a");
+                b.AddAttribute(1, "href", $"/admin/users/{ctx.Item.UserId}");
+                b.AddContent(2, ctx.Item.UserId);
+                b.CloseElement();
+                break;
+            case "product":
+                b.AddContent(0, ctx.Item.ProductCode);
+                break;
+            case "status":
+                b.OpenComponent<StatusBadge>(0);
+                b.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
+                b.CloseComponent();
+                break;
+            case "granted":
+                b.OpenComponent<UtcTimestamp>(0);
+                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.GrantedAtUtc);
+                b.CloseComponent();
+                break;
+            case "revoked":
+                b.OpenComponent<UtcTimestamp>(0);
+                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.RevokedAtUtc);
+                b.CloseComponent();
+                break;
+        }
+    };
+
+    private RenderFragment<ProductAccessAssignmentDto> AssignmentActions => item => b =>
+    {
+        if (item.Status != "Active")
+        {
+            return;
+        }
+
+        b.OpenElement(0, "button");
+        b.AddAttribute(1, "type", "button");
+        b.AddAttribute(2, "class", "danger");
+        b.AddAttribute(3, "onclick", EventCallback.Factory.Create(this, () =>
+            Ask(L["OrgProductAccess_RevokeAccess"], L["OrgProductAccess_RevokeConfirmMessage"], () => RevokeAsync(item.Id))));
+        b.AddContent(4, L["OrgProductAccess_RevokeAccess"]);
+        b.CloseElement();
+    };
 
     private sealed record ConfirmState(string Title, string Message, Func<Task> Action);
 }

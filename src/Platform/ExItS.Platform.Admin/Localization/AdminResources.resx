@@ -402,6 +402,13 @@
   <data name="OrgProductAccess_RevokeAccess" xml:space="preserve"><value>Revoke access</value></data>
   <data name="OrgProductAccess_AriaGrant" xml:space="preserve"><value>Grant product access</value></data>
   <data name="OrgProductAccess_AriaEvaluate" xml:space="preserve"><value>Evaluate effective access</value></data>
+  <data name="OrgProductAccess_ProductCodePlaceholder" xml:space="preserve"><value>e.g. pinoy-business-pos</value></data>
+  <data name="OrgProductAccess_RevokeConfirmMessage" xml:space="preserve"><value>Revoke commercial product access for this user? Historical assignment remains queryable.</value></data>
+  <data name="OrgProductAccess_ToastGranted" xml:space="preserve"><value>Product access granted.</value></data>
+  <data name="OrgProductAccess_ToastRevoked" xml:space="preserve"><value>Product access revoked; history retained.</value></data>
+  <data name="OrgProductAccess_RevokeAuditReason" xml:space="preserve"><value>Revoked from Admin</value></data>
+  <data name="Common_EmDash" xml:space="preserve"><value>—</value></data>
+  <data name="Common_BackToSummary" xml:space="preserve"><value>Back to commercial summary</value></data>
 
   <data name="Users_Title" xml:space="preserve"><value>Platform users</value></data>
   <data name="Users_Description" xml:space="preserve"><value>Development-stage Platform user administration. APIs remain unauthenticated; server-side authorization is still required before production.</value></data>

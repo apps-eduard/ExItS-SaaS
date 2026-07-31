@@ -19,12 +19,12 @@
                             <AdminInput @bind-Value="_search" Placeholder="@L["Users_SearchPlaceholder"]" />
                         </FormField>
                         <FormField Label="@L["Common_Status"]" FieldId="users-status">
-                            <AdminSelect @bind-Value="_status">
-                                <option value="">@L["Common_All"]</option>
-                                <option>Active</option>
-                                <option>Suspended</option>
-                                <option>Deactivated</option>
-                            </AdminSelect>
+                        <AdminSelect @bind-Value="_status">
+                            <option value="">@L["Common_All"]</option>
+                            <option value="Active">@L["Status_Active"]</option>
+                            <option value="Suspended">@L["Status_Suspended"]</option>
+                            <option value="Deactivated">@L["Status_Deactivated"]</option>
+                        </AdminSelect>
                         </FormField>
                     </ChildContent>
                     <Secondary>

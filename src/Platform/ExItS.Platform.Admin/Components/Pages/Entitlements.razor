@@ -35,7 +35,8 @@
         else
         {
             <table class="data-table responsive-table">
-                <thead><tr><th>@L["Common_Feature"]</th><th>@L["Common_Enabled"]</th><th>@L["Common_Limit"]</th><th>@L["Common_Source"]</th><th>@L["Common_EffectiveUtc"]</th><th>@L["Common_ExpiresUtc"]</th></tr></thead>
+                <caption class="sr-only">@L["Entitlements_FeatureGrants"]</caption>
+                <thead><tr><th scope="col">@L["Common_Feature"]</th><th scope="col">@L["Common_Enabled"]</th><th scope="col">@L["Common_Limit"]</th><th scope="col">@L["Common_Source"]</th><th scope="col">@L["Common_EffectiveUtc"]</th><th scope="col">@L["Common_ExpiresUtc"]</th></tr></thead>
                 <tbody>
                 @foreach (var g in s.Grants)
                 {
@@ -59,7 +60,8 @@
         else
         {
             <table class="data-table responsive-table">
-                <thead><tr><th>@L["Common_Feature"]</th><th>@L["Common_Enabled"]</th><th>@L["Common_Limit"]</th><th>@L["Common_Status"]</th><th>@L["Common_Reason"]</th><th>@L["Entitlements_Column_EffectiveFromUtc"]</th></tr></thead>
+                <caption class="sr-only">@L["Entitlements_FeatureOverrideHistory"]</caption>
+                <thead><tr><th scope="col">@L["Common_Feature"]</th><th scope="col">@L["Common_Enabled"]</th><th scope="col">@L["Common_Limit"]</th><th scope="col">@L["Common_Status"]</th><th scope="col">@L["Common_Reason"]</th><th scope="col">@L["Entitlements_Column_EffectiveFromUtc"]</th></tr></thead>
                 <tbody>
                 @foreach (var o in _overrides.Data.Items)
                 {

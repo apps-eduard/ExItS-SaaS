@@ -18,11 +18,11 @@
 
     <label class="drawer-backdrop" for="nav-drawer-toggle" aria-hidden="true"></label>
 
-    <aside class="app-sidebar" aria-label="@L["Aria_AdminNav"]">
+    <aside class="app-sidebar" id="app-sidebar" aria-label="@L["Aria_AdminNav"]">
         <div class="brand-row">
             <a class="brand-mark" href="/admin" aria-hidden="true" tabindex="-1">EA</a>
             <a class="brand-text" href="/admin">@L["Brand_Name"]</a>
-            <label class="icon-btn drawer-close" for="nav-drawer-toggle" aria-label="@L["Nav_CloseDrawer"]">
+            <label class="icon-btn drawer-close" for="nav-drawer-toggle" aria-label="@L["Nav_CloseDrawer"]" aria-controls="app-sidebar">
                 <NavIcon Name="close" />
             </label>
         </div>
@@ -30,8 +30,8 @@
     </aside>
 
     <div class="app-content">
-        <header class="app-header">
-            <label class="icon-btn menu-toggle" for="nav-drawer-toggle" aria-label="@L["Nav_OpenDrawer"]">
+        <header class="app-header" role="banner">
+            <label class="icon-btn menu-toggle" for="nav-drawer-toggle" aria-label="@L["Nav_OpenDrawer"]" aria-controls="app-sidebar" aria-expanded="false">
                 <NavIcon Name="menu" />
             </label>
             <label class="icon-btn collapse-toggle" for="nav-collapse-toggle" aria-label="@L["Nav_CollapseSidebar"]" title="@L["Nav_CollapseSidebar"]">
