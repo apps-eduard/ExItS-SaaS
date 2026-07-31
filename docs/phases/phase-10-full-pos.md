@@ -4,7 +4,7 @@
 
 ## Status
 
-**In Progress** — **P10-WP03 — Advanced Inventory** complete at tip (see completion report). Part A HealthCare cleanup remains closed at `fd77f88`. Do **not** begin P10-WP04.
+**In Progress** — **P10-WP04 — Cashier Shifts** authorized (prior tip `a25fe6a` / WP03 complete). Do **not** begin P10-WP05.
 
 ## Objective
 
@@ -156,13 +156,29 @@ Warehouses, branches, transfers, costing, valuation, batches, serials, expiry, p
 
 ### P10-WP04 — Cashier Shifts
 
-Status: Not Started
+Status: **In Progress** (authorized)
 
-#### Required outcomes
+Prior tip: `a25fe6abd713da84ad99d9d0a2022b99f49765e8` (P10-WP03 complete). Baseline: **1079 / 0 / 0**.
 
-- Implement only the approved scope described by the architecture and product documents.
-- Add required tests and documentation evidence.
-- Preserve security, tenant isolation and product boundaries.
+#### Required outcomes (approved)
+
+Organization-isolated cashier shifts for operational cash control:
+
+- Shift open with opening cash float (`SHIFT-YYYYMMDD-NNNNNN`); opens in **Open**
+- One Open shift per OrganizationId + trusted cashier ActorId
+- New Cash / ManualGCash / Utang sales require an active Open shift and immutable `CashierShiftId` linkage
+- Immutable CashIn / CashOut movements on Open shifts (deny CashOut that would make expected cash negative)
+- Expected physical cash = OpeningCash + NetCashSales + CashIn − CashOut  
+  where NetCashSales = completed Cash sales − voided Cash sales (ManualGCash/Utang reported, not in physical cash)
+- Close with closing cash declaration, expected snapshot, variance; Closed/Cancelled terminal
+- Cancel Open only when no linked financial activity
+- Grants `store-shifts-view` / `store-shifts-manage`; Dev/Testing actor only (do not close R-091 / POS-ROLES)
+- PostgreSQL migration, typed API, MAUI shift screens, tests, docs
+- Legacy pre-migration sales may remain unassigned (no synthetic backfill)
+
+#### Explicit exclusions
+
+Payroll, accounting journals, bank reconciliation, cash deposits, branch registers, tax/fiscal closing, expense↔shift auto-coupling, Draft/Suspended/Reopened states, P10-WP05+.
 
 #### Definition of Done
 
@@ -172,6 +188,7 @@ Status: Not Started
 - [ ] Completion report created.
 - [ ] Focused commit created and hash recorded.
 - [ ] Working tree clean.
+- [ ] Exact next WP recorded: **P10-WP05 — Returns and Refunds** (do not begin).
 
 ### P10-WP05 — Returns and Refunds
 

@@ -12,11 +12,9 @@
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 10 — Full POS |
-| Current work package | P10-WP03 — Advanced Inventory (**complete**) |
-| Overall status | **P10-WP03 complete.** Do not begin P10-WP04. |
-| Latest verified commit | `12d443b` (feat `5c62133`, gap-fix `31d809c`) |
-| Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; POS operational roles; Manual GCash unverified; online-only Basic Store limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/refund/accounting deferred |
-| Last updated | 2026-07-31 |
+| Current work package | P10-WP04 — Cashier Shifts (**in progress**) |
+| Overall status | **P10-WP04 authorized and in progress.** Do not begin P10-WP05. |
+| Latest verified commit | `a25fe6abd713da84ad99d9d0a2022b99f49765e8` |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; POS operational roles; Manual GCash unverified; online-only Basic Store limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/refund/accounting deferred |
 | Last updated | 2026-07-31 |
 
@@ -39,9 +37,11 @@ P10-WP01 ✓ Suppliers (Option A — master data only)
         ↓
 P10-WP02 ✓ Purchasing
         ↓
-P10-WP03 ● Advanced Inventory (complete)
+P10-WP03 ✓ Advanced Inventory
         ↓
-P10-WP04 ○ Cashier Shifts (not started)
+P10-WP04 ● Cashier Shifts (in progress)
+        ↓
+P10-WP05 ○ Returns and Refunds (not started)
 ```
 
 ## Phase progress
@@ -69,7 +69,7 @@ P10-WP04 ○ Cashier Shifts (not started)
 | P10-WP01 — Suppliers | Complete (Option A) | 6f92dd43b2f66709891d82079f9d3fbd0b5c450e |
 | P10-WP02 — Purchasing | Complete | c0f8130ef99e958bceaee98024a69339b7e8e41a |
 | P10-WP03 — Advanced Inventory | Complete | 5c62133 (+ gap-fix 31d809c) |
-| P10-WP04 — Cashier Shifts | Not Started | — |
+| P10-WP04 — Cashier Shifts | In Progress | — |
 | P10-WP05 — Returns and Refunds | Not Started | — |
 | P10-WP06 — Advanced Permissions and Reports | Not Started | — |
 | P10-WP07 — Multiple Registers | Not Started | — |
@@ -88,4 +88,4 @@ P10-WP04 ○ Cashier Shifts (not started)
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P10-WP04 — Cashier Shifts** until explicitly authorized.
+Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P10-WP05 — Returns and Refunds** until explicitly authorized.
