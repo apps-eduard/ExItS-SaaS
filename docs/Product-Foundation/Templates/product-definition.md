@@ -1,6 +1,6 @@
 # {{PRODUCT_NAME}} — Product Definition
 
-> Template: P12-WP03. Contract: [exits-product-foundation-reference.md](../../exits-product-foundation-reference.md)  
+> Template: P12-WP03. Contract: [exits-product-foundation-reference.md](../../exits-product-foundation-reference.md)
 > Replace all `{{…}}`. Unresolved items → `Docs/risks-and-decisions.md`. Do not invent policy.
 
 | Field | Value |

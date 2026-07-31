@@ -1,6 +1,6 @@
 # {{PRODUCT_NAME}} — File Manifest / Documentation Index
 
-> Template: P12-WP03. List authoritative product docs and tracked source roots.  
+> Template: P12-WP03. List authoritative product docs and tracked source roots.
 > Foundation: [exits-product-foundation-reference.md](../../exits-product-foundation-reference.md)
 
 | Field | Value |

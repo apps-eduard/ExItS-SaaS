@@ -1,6 +1,6 @@
 # {{PRODUCT_NAME}} — Development Plan
 
-> Template: P12-WP03. Foundation: [exits-product-foundation-reference.md](../../exits-product-foundation-reference.md)  
+> Template: P12-WP03. Foundation: [exits-product-foundation-reference.md](../../exits-product-foundation-reference.md)
 > Do not prescribe Loan/Pawnshop/BNPL/POS-specific phases here.
 
 | Field | Value |

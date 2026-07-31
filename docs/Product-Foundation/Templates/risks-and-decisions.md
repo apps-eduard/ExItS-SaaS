@@ -1,6 +1,6 @@
 # {{PRODUCT_NAME}} — Risks and Decisions
 
-> Template: P12-WP03. Foundation: [exits-product-foundation-reference.md](../../exits-product-foundation-reference.md)  
+> Template: P12-WP03. Foundation: [exits-product-foundation-reference.md](../../exits-product-foundation-reference.md)
 > Close items only with evidence. Do not invent answers for portfolio-open items.
 
 | Field | Value |

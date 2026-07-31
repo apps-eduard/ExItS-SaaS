@@ -1,6 +1,6 @@
 # {{PRODUCT_NAME}} — Architecture
 
-> Template: P12-WP03. Do not duplicate the foundation; link it.  
+> Template: P12-WP03. Do not duplicate the foundation; link it.
 > Foundation: [exits-product-foundation-reference.md](../../exits-product-foundation-reference.md)
 
 | Field | Value |

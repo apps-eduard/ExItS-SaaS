@@ -2,9 +2,9 @@
 
 Phase marker: `P12-WP03-product-documentation-templates`
 
-Package: **P12-WP03 — Product Documentation Templates**  
-Prior tip: `c19605cc27e8711d08eede0256ef4efd20df0774`  
-Docs tip: *(recorded after docs commit)*
+Package: **P12-WP03 — Product Documentation Templates**
+Prior tip: `c19605cc27e8711d08eede0256ef4efd20df0774`
+Docs tip: `65b02a1dd9336b39b79fc41527969f6289ad7072`
 
 ## Status
 

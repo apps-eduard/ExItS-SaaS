@@ -14,7 +14,7 @@
 | Current phase | Phase 12 — Reusable SaaS Product Foundation and Bootstrap (**in progress**) |
 | Current work package | P12-WP03 — Product Documentation Templates (**complete**) |
 | Overall status | **Phase 12 in progress.** P12-WP01–WP03 complete. Product documentation templates published. Exact next: P12-WP04 — Cursor Product Context Rule (do not begin until authorized). **Not production-ready.** |
-| Latest verified commit | *(filled after tip-hash)* |
+| Latest verified commit | `65b02a1dd9336b39b79fc41527969f6289ad7072` |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-07-31 |
 
@@ -102,7 +102,7 @@ P12-WP04 ○ Cursor Product Context Rule (do not begin until authorized)
 |---|---|---|
 | P12-WP01 — Platform–Product Contract Audit | Complete | `32889be0851fa0969e8abfa6b7c66784b12e9e8b` |
 | P12-WP02 — Authoritative Product Foundation Reference | Complete | `8f151d658011a3ad0854aab9f8774361f8a788a6` |
-| P12-WP03 — Product Documentation Templates | Complete | *(tip filled after commit)* |
+| P12-WP03 — Product Documentation Templates | Complete | `65b02a1dd9336b39b79fc41527969f6289ad7072` |
 
 ## Phase 11 work packages
 

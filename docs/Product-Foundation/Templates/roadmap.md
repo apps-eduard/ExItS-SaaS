@@ -1,6 +1,6 @@
 # {{PRODUCT_NAME}} — Roadmap / Phase Plan
 
-> Template: P12-WP03. Foundation: [exits-product-foundation-reference.md](../../exits-product-foundation-reference.md)  
+> Template: P12-WP03. Foundation: [exits-product-foundation-reference.md](../../exits-product-foundation-reference.md)
 > Replace phase names for **this** product only — do not copy another product’s phases.
 
 | Field | Value |

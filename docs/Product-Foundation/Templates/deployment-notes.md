@@ -1,6 +1,6 @@
 # {{PRODUCT_NAME}} — Deployment Notes
 
-> Template: P12-WP03. **Documentation only** until a packaging WP is authorized.  
+> Template: P12-WP03. **Documentation only** until a packaging WP is authorized.
 > Foundation: [exits-product-foundation-reference.md](../../exits-product-foundation-reference.md)
 
 | Field | Value |
