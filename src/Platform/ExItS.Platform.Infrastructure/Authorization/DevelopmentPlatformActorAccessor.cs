@@ -3,6 +3,7 @@ using ExItS.Platform.Application.Authorization;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Identity;
+using ExItS.Platform.Domain.Organizations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 
@@ -11,7 +12,8 @@ namespace ExItS.Platform.Infrastructure.Authorization;
 /// <summary>
 /// Resolves the current Platform actor from an authenticated browser session when present.
 /// In Development/Testing only, falls back to optional <c>X-Dev-Platform-User-Id</c> or a labeled DevelopmentOperator.
-/// Dev headers are never Production authentication.
+/// Dev headers are never Production authentication. Organization context comes from session claims only
+/// (never from a forgeable client org header).
 /// </summary>
 internal sealed class DevelopmentPlatformActorAccessor(
     IHttpContextAccessor httpContextAccessor,
@@ -34,11 +36,19 @@ internal sealed class DevelopmentPlatformActorAccessor(
             var idValue = user.FindFirstValue(ClaimTypes.NameIdentifier);
             if (Guid.TryParse(idValue, out var userId) && userId != Guid.Empty)
             {
+                PlatformOrganizationId? organizationId = null;
+                var orgValue = user.FindFirstValue(PlatformSessionClaimTypes.OrganizationId);
+                if (Guid.TryParse(orgValue, out var orgGuid) && orgGuid != Guid.Empty)
+                {
+                    organizationId = PlatformOrganizationId.From(orgGuid);
+                }
+
                 return new PlatformActorContext(
                     $"platform-user:{userId:D}",
                     AuditActorType.PlatformUser,
                     PlatformUserId.From(userId),
-                    correlationId);
+                    correlationId,
+                    organizationId);
             }
         }
 

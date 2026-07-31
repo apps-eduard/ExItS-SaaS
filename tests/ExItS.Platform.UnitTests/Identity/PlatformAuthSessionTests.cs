@@ -1,4 +1,5 @@
 using ExItS.Platform.Domain.Identity;
+using ExItS.Platform.Domain.Organizations;
 
 namespace ExItS.Platform.UnitTests.Identity;
 
@@ -38,5 +39,24 @@ public sealed class PlatformAuthSessionTests
 
         session.Revoke(T0.AddMinutes(1));
         Assert.False(session.IsActive(T0.AddMinutes(2)));
+    }
+
+    [Fact]
+    public void Select_and_clear_organization_context()
+    {
+        var session = PlatformAuthSession.Create(
+            PlatformUserId.New(),
+            tokenHash: Convert.ToHexString(System.Security.Cryptography.SHA256.HashData("token"u8.ToArray())),
+            securityStampAtIssue: Guid.NewGuid().ToString("N"),
+            utcNow: T0,
+            idleLifetime: TimeSpan.FromMinutes(30),
+            absoluteLifetime: TimeSpan.FromHours(12));
+
+        var organizationId = PlatformOrganizationId.New();
+        session.SelectOrganization(organizationId);
+        Assert.Equal(organizationId, session.SelectedOrganizationId);
+
+        session.ClearSelectedOrganization();
+        Assert.Null(session.SelectedOrganizationId);
     }
 }

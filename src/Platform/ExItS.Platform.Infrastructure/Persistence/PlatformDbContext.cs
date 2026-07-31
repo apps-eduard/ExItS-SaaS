@@ -468,6 +468,8 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
             entity.Property(e => e.IpAddress).HasColumnName("ip_address").HasMaxLength(64);
             entity.Property(e => e.UserAgentHash).HasColumnName("user_agent_hash").HasMaxLength(128);
+            entity.Property(e => e.SelectedOrganizationId).HasColumnName("selected_organization_id");
+            entity.HasIndex(e => e.SelectedOrganizationId);
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")
@@ -478,6 +480,11 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SelectedOrganizationId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<PlatformCredentialTokenRecord>(entity =>

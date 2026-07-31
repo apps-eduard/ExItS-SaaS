@@ -1,0 +1,129 @@
+@using ExItS.Platform.Admin.Models
+@using ExItS.Platform.Admin.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IPlatformApiClient Api
+@rendermode InteractiveServer
+
+<AuthorizeView>
+    <Authorized>
+        <div class="org-context" aria-live="polite">
+            @if (_loading)
+            {
+                <span class="app-header-chip">Org…</span>
+            }
+            else if (_activeCount == 0)
+            {
+                <span class="app-header-chip" title="No active organization membership">No organization</span>
+            }
+            else if (_activeCount == 1 && _selectedId is not null)
+            {
+                <span class="app-header-chip" title="@_selectedName">@_selectedName</span>
+            }
+            else
+            {
+                <label class="org-context-label" for="org-context-select">Org</label>
+                <select id="org-context-select"
+                        class="org-context-select"
+                        value="@(_selectedId?.ToString("D") ?? string.Empty)"
+                        @onchange="OnOrganizationChangedAsync"
+                        disabled="@_busy">
+                    @if (_selectedId is null)
+                    {
+                        <option value="">Select organization…</option>
+                    }
+                    @foreach (var org in _organizations)
+                    {
+                        <option value="@org.OrganizationId.ToString("D")">@org.DisplayName</option>
+                    }
+                </select>
+            }
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <span class="org-context-error" role="alert">@_error</span>
+            }
+        </div>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    private bool _loading = true;
+    private bool _busy;
+    private string? _error;
+    private Guid? _selectedId;
+    private string? _selectedName;
+    private int _activeCount;
+    private List<EligibleOrganizationDto> _organizations = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshAsync().ConfigureAwait(false);
+    }
+
+    private async Task RefreshAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            var me = await Api.GetAuthMeAsync().ConfigureAwait(false);
+            if (!me.IsSuccess || me.Data is null)
+            {
+                _organizations = [];
+                _selectedId = null;
+                _selectedName = null;
+                _activeCount = 0;
+                return;
+            }
+
+            _selectedId = me.Data.SelectedOrganizationId;
+            _selectedName = me.Data.SelectedOrganizationDisplayName;
+            _activeCount = me.Data.ActiveOrganizationCount;
+
+            var list = await Api.GetEligibleOrganizationsAsync().ConfigureAwait(false);
+            _organizations = list.IsSuccess && list.Data is not null
+                ? list.Data.ToList()
+                : [];
+            _activeCount = Math.Max(_activeCount, _organizations.Count);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OnOrganizationChangedAsync(ChangeEventArgs args)
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        var raw = args.Value?.ToString();
+        Guid? organizationId = null;
+        if (!string.IsNullOrWhiteSpace(raw) && Guid.TryParse(raw, out var parsed) && parsed != Guid.Empty)
+        {
+            organizationId = parsed;
+        }
+
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = await Api.SetOrganizationContextAsync(new SetOrganizationContextRequest(organizationId)).ConfigureAwait(false);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = result.Error?.Detail ?? "Unable to change organization context.";
+                await RefreshAsync().ConfigureAwait(false);
+                return;
+            }
+
+            _selectedId = result.Data.SelectedOrganizationId;
+            _selectedName = result.Data.SelectedOrganizationDisplayName;
+            _activeCount = result.Data.ActiveOrganizationCount;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

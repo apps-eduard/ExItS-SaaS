@@ -225,6 +225,35 @@ public sealed record ResetPasswordRequest(string Token, string NewPassword);
 public sealed record ConfirmEmailVerificationRequest(string Token);
 public sealed record SetUserPasswordRequest(string Password);
 
+public sealed record AuthSessionInfoDto(
+    Guid SessionId,
+    Guid UserId,
+    string Username,
+    string DisplayName,
+    string Email,
+    DateTimeOffset ExpiresAtUtc,
+    DateTimeOffset AbsoluteExpiresAtUtc,
+    DateTimeOffset LastActivityAtUtc,
+    Guid? SelectedOrganizationId,
+    string? SelectedOrganizationDisplayName,
+    string OrganizationSelectionState,
+    int ActiveOrganizationCount);
+
+public sealed record EligibleOrganizationDto(
+    Guid OrganizationId,
+    string DisplayName,
+    string Slug,
+    string MembershipRole,
+    Guid MembershipId);
+
+public sealed record OrganizationContextResultDto(
+    Guid? SelectedOrganizationId,
+    string? SelectedOrganizationDisplayName,
+    string OrganizationSelectionState,
+    int ActiveOrganizationCount);
+
+public sealed record SetOrganizationContextRequest(Guid? OrganizationId);
+
 public sealed record OrganizationMembershipDto(
     Guid Id,
     Guid OrganizationId,

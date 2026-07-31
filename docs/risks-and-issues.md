@@ -94,7 +94,7 @@
 | R-088 | Subscription Admin changes mistaken for product provisioning | High | UI warnings; no entitlement delivery routes; fail-closed access evaluation only | Open — introduced P4-WP03 |
 | R-089 | Provisional repeat-trial policy misapplied as automatic approval | Medium | Conflict/warning only; no automatic repeat-trial approval rules | Open — introduced P4-WP03 |
 | R-090 | Concurrent Admin commercial lifecycle mutations | Medium | Domain concurrency + 409 ProblemDetails; UI refreshes after success | Open — introduced P4-WP03 |
-| R-091 | Missing production authentication (JWT / passwords / MFA / SSO / AD) | Critical | Server-side `PlatformAuthz` + role assignments for development; **P13-WP02** credentials; **P13-WP03** browser login/session; require remaining Phase 13 WPs before production; no fake login | Open — introduced P4-WP04; production blocker; Phase 13 in progress |
+| R-091 | Missing production authentication (JWT / passwords / MFA / SSO / AD) | Critical | Server-side `PlatformAuthz` + role assignments for development; **P13-WP02** credentials; **P13-WP03** browser login/session; **P13-WP04** password lifecycle; **P13-WP05** trusted org context; require remaining Phase 13 WPs before production; no fake login | Open — introduced P4-WP04; production blocker; Phase 13 in progress |
 | R-092 | Authorization policy gaps (permission catalog / scope edge cases) | High | Fail-closed catalog; org-scoped vs platform-wide assignments; expand policy tests as roles evolve | Open — introduced P4-WP04 |
 | R-093 | UI-only authorization assumptions (hiding nav treated as security) | High | Docs + UI copy: visibility is convenience; `PlatformAuthz.EnsureAsync` is authoritative → 403 + denied audit | Open — introduced P4-WP04; awareness |
 | R-094 | Translation mistakes or incomplete Admin localization | Medium | `AdminResources` en/fil-PH + terminology guide; resource-completeness tests; English fallback | Open — introduced P4-WP04 |
@@ -141,7 +141,9 @@ P9-WP06 closed Phase 9 with an honest Commercial MVP readiness board: Developmen
 
 ## Phase 13 — Production Authentication and Identity (in progress)
 
-**P13-WP04** added authenticated password change, forgot/reset tokens (`platform_credential_tokens`), email-verification token workflow (no email vendor), lockout/unlock UI+API, and session revocation after sensitive changes. **No bearer tokens / MFA.** **R-091 remains open.** Exact next: **P13-WP05 — Trusted API Actor and Organization Context** (do not begin). **Not production-ready.**
+**P13-WP05** added trusted server-side organization context on browser sessions from active memberships (none/one/many, select/switch, stale invalidation on membership/org changes, Admin switcher). **No bearer tokens / MFA / product launch protection / Authz redesign.** **R-091 remains open.** Exact next: **P13-WP06 — Product Client Auth Integration** (do not begin). **Not production-ready.**
+
+**P13-WP04** added authenticated password change, forgot/reset tokens (`platform_credential_tokens`), email-verification token workflow (no email vendor), lockout/unlock UI+API, and session revocation after sensitive changes. **No bearer tokens / MFA.** **R-091 remains open.**
 
 **P13-WP01** published authoritative authentication architecture and threat model. Locked access chain User → Membership → Product Access → Product-Local Role. Decisions D-P13-01…06 recorded.
 

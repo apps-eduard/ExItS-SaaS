@@ -63,6 +63,31 @@ internal static class AuthEndpoints
         })
         .AllowAnonymous();
 
+        app.MapGet("/api/v1/platform/auth/organizations", async (
+            HttpContext http,
+            ListEligibleOrganizationsForSession useCase,
+            IOptions<PlatformSessionOptions> sessionOptions,
+            CancellationToken ct) =>
+        {
+            var token = ExtractSessionToken(http, sessionOptions.Value);
+            var result = await useCase.ExecuteAsync(token, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        })
+        .AllowAnonymous();
+
+        app.MapPut("/api/v1/platform/auth/organization-context", async (
+            SetOrganizationContextRequest body,
+            HttpContext http,
+            SetSessionOrganizationContext useCase,
+            IOptions<PlatformSessionOptions> sessionOptions,
+            CancellationToken ct) =>
+        {
+            var token = ExtractSessionToken(http, sessionOptions.Value);
+            var result = await useCase.ExecuteAsync(token, body.OrganizationId, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        })
+        .AllowAnonymous();
+
         app.MapPost("/api/v1/platform/auth/change-password", async (
             ChangePasswordRequest body,
             HttpContext http,
@@ -219,4 +244,5 @@ internal static class AuthEndpoints
     internal sealed record ForgotPasswordRequest(string? UsernameOrEmail);
     internal sealed record ResetPasswordRequest(string? Token, string? NewPassword);
     internal sealed record ConfirmEmailVerificationRequest(string? Token);
+    internal sealed record SetOrganizationContextRequest(Guid? OrganizationId);
 }

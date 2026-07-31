@@ -1,10 +1,12 @@
 using ExItS.Platform.Domain.Common;
+using ExItS.Platform.Domain.Organizations;
 
 namespace ExItS.Platform.Domain.Identity;
 
 /// <summary>
 /// Server-side browser session for an authenticated <see cref="PlatformUser"/>.
 /// Stores only a hash of the opaque session token — never the raw token, password, or bearer JWT.
+/// Optional <see cref="SelectedOrganizationId"/> is server-owned organization context (never client-trusted alone).
 /// </summary>
 public sealed class PlatformAuthSession
 {
@@ -19,6 +21,7 @@ public sealed class PlatformAuthSession
     public DateTimeOffset? RevokedAtUtc { get; private set; }
     public string? IpAddress { get; }
     public string? UserAgentHash { get; }
+    public PlatformOrganizationId? SelectedOrganizationId { get; private set; }
 
     private PlatformAuthSession(
         PlatformAuthSessionId id,
@@ -31,7 +34,8 @@ public sealed class PlatformAuthSession
         DateTimeOffset lastActivityAtUtc,
         DateTimeOffset? revokedAtUtc,
         string? ipAddress,
-        string? userAgentHash)
+        string? userAgentHash,
+        PlatformOrganizationId? selectedOrganizationId)
     {
         Id = id;
         UserId = userId;
@@ -44,6 +48,7 @@ public sealed class PlatformAuthSession
         RevokedAtUtc = revokedAtUtc;
         IpAddress = ipAddress;
         UserAgentHash = userAgentHash;
+        SelectedOrganizationId = selectedOrganizationId;
     }
 
     public static PlatformAuthSession Create(
@@ -55,7 +60,8 @@ public sealed class PlatformAuthSession
         TimeSpan absoluteLifetime,
         string? ipAddress = null,
         string? userAgentHash = null,
-        PlatformAuthSessionId? id = null)
+        PlatformAuthSessionId? id = null,
+        PlatformOrganizationId? selectedOrganizationId = null)
     {
         ArgumentNullException.ThrowIfNull(userId);
         EnsureUtc(utcNow);
@@ -89,7 +95,8 @@ public sealed class PlatformAuthSession
             utcNow,
             revokedAtUtc: null,
             NormalizeOptional(ipAddress, 64),
-            NormalizeOptional(userAgentHash, 128));
+            NormalizeOptional(userAgentHash, 128),
+            selectedOrganizationId);
     }
 
     public static PlatformAuthSession Rehydrate(
@@ -103,7 +110,8 @@ public sealed class PlatformAuthSession
         DateTimeOffset lastActivityAtUtc,
         DateTimeOffset? revokedAtUtc,
         string? ipAddress,
-        string? userAgentHash) =>
+        string? userAgentHash,
+        PlatformOrganizationId? selectedOrganizationId = null) =>
         new(
             id,
             userId,
@@ -115,7 +123,25 @@ public sealed class PlatformAuthSession
             lastActivityAtUtc,
             revokedAtUtc,
             ipAddress,
-            userAgentHash);
+            userAgentHash,
+            selectedOrganizationId);
+
+    /// <summary>Sets trusted organization context after Application has verified an active membership.</summary>
+    public void SelectOrganization(PlatformOrganizationId organizationId)
+    {
+        ArgumentNullException.ThrowIfNull(organizationId);
+        if (RevokedAtUtc is not null)
+        {
+            throw new DomainException(DomainErrorCodes.InvalidAccountStatusTransition, "Session is not active.");
+        }
+
+        SelectedOrganizationId = organizationId;
+    }
+
+    public void ClearSelectedOrganization()
+    {
+        SelectedOrganizationId = null;
+    }
 
     public bool IsActive(DateTimeOffset utcNow)
     {

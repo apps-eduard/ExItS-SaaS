@@ -55,6 +55,10 @@ public sealed class PlatformSessionAuthenticationHandler : AuthenticationHandler
             new(ClaimTypes.Name, info.Username),
             new(PlatformSessionDefaults.SessionIdClaimType, info.SessionId.ToString("D"))
         };
+        if (info.SelectedOrganizationId is Guid organizationId)
+        {
+            claims.Add(new Claim(PlatformSessionClaimTypes.OrganizationId, organizationId.ToString("D")));
+        }
 
         var identity = new ClaimsIdentity(claims, PlatformSessionDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);

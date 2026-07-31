@@ -13,5 +13,6 @@ internal sealed class PlatformAuthSessionRecord
     public DateTimeOffset? RevokedAtUtc { get; set; }
     public string? IpAddress { get; set; }
     public string? UserAgentHash { get; set; }
+    public Guid? SelectedOrganizationId { get; set; }
     public uint Xmin { get; set; }
 }

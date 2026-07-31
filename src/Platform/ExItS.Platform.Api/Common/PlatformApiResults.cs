@@ -27,7 +27,8 @@ internal static class PlatformApiResults
         DomainErrorCodes.AuthorizationDenied
             or ApplicationErrorCodes.BootstrapUnauthorized
             or ApplicationErrorCodes.BootstrapForbiddenInEnvironment
-            or ApplicationErrorCodes.AccountNotEligibleForLogin => StatusCodes.Status403Forbidden,
+            or ApplicationErrorCodes.AccountNotEligibleForLogin
+            or ApplicationErrorCodes.OrganizationContextNotEligible => StatusCodes.Status403Forbidden,
 
         ApplicationErrorCodes.LoginFailed
             or ApplicationErrorCodes.SessionInvalid

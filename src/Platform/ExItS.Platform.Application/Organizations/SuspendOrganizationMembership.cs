@@ -1,5 +1,6 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Organizations;
@@ -9,15 +10,18 @@ namespace ExItS.Platform.Application.Organizations;
 public sealed class SuspendOrganizationMembership
 {
     private readonly IOrganizationMembershipRepository _memberships;
+    private readonly IPlatformAuthSessionRepository _sessions;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public SuspendOrganizationMembership(
         IOrganizationMembershipRepository memberships,
+        IPlatformAuthSessionRepository sessions,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _memberships = memberships;
+        _sessions = sessions;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -41,6 +45,9 @@ public sealed class SuspendOrganizationMembership
         {
             membership.Suspend(_clock.UtcNow, reason, actorReference);
             await _memberships.UpdateAsync(membership, cancellationToken).ConfigureAwait(false);
+            await _sessions
+                .ClearSelectedOrganizationAsync(membership.UserId, membership.OrganizationId, cancellationToken)
+                .ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<OrganizationMembership>.Success(membership);
         }

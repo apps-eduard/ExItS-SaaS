@@ -160,6 +160,15 @@ public sealed class PlatformApiClient(HttpClient httpClient) : IPlatformApiClien
     public Task<ApiCallResult<PlatformCredentialStatusDto>> ConfirmEmailVerificationAsync(ConfirmEmailVerificationRequest request, CancellationToken ct = default) =>
         SendAsync<PlatformCredentialStatusDto>(HttpMethod.Post, "/api/v1/platform/auth/email-verification/confirm", request, ct);
 
+    public Task<ApiCallResult<AuthSessionInfoDto>> GetAuthMeAsync(CancellationToken ct = default) =>
+        GetAsync<AuthSessionInfoDto>("/api/v1/platform/auth/me", ct);
+
+    public Task<ApiCallResult<IReadOnlyList<EligibleOrganizationDto>>> GetEligibleOrganizationsAsync(CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<EligibleOrganizationDto>>("/api/v1/platform/auth/organizations", ct);
+
+    public Task<ApiCallResult<OrganizationContextResultDto>> SetOrganizationContextAsync(SetOrganizationContextRequest request, CancellationToken ct = default) =>
+        SendAsync<OrganizationContextResultDto>(HttpMethod.Put, "/api/v1/platform/auth/organization-context", request, ct);
+
     private static MembershipLifecycleRequest WithActor(MembershipLifecycleRequest request) =>
         request with { ActorReference = string.IsNullOrWhiteSpace(request.ActorReference) ? DevActor : request.ActorReference };
 

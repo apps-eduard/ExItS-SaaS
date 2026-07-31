@@ -284,7 +284,7 @@ public sealed class ProductAccessUseCaseTests
             "dev-admin")).IsSuccess);
 
         harness.Clock.UtcNow = T0.AddMinutes(2);
-        Assert.True((await new SuspendOrganizationMembership(harness.Memberships, harness.UnitOfWork, harness.Clock)
+        Assert.True((await new SuspendOrganizationMembership(harness.Memberships, new InMemoryPlatformAuthSessionRepository(), harness.UnitOfWork, harness.Clock)
             .ExecuteAsync(harness.Membership.Id)).IsSuccess);
 
         var denied = await harness.Evaluate.ExecuteAsync(
@@ -322,6 +322,7 @@ public sealed class ProductAccessUseCaseTests
         var revokeMembership = new RevokeOrganizationMembership(
             harness.Memberships,
             harness.Assignments,
+            new InMemoryPlatformAuthSessionRepository(),
             harness.UnitOfWork,
             harness.Clock);
         Assert.True((await revokeMembership.ExecuteAsync(harness.Membership.Id, "left org", "dev-admin")).IsSuccess);

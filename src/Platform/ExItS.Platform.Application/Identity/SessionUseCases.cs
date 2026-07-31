@@ -3,6 +3,7 @@ using System.Text;
 using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
@@ -16,6 +17,8 @@ public sealed class LoginPlatformUser
     private readonly IPlatformUserRepository _users;
     private readonly IPlatformUserCredentialRepository _credentials;
     private readonly IPlatformAuthSessionRepository _sessions;
+    private readonly IOrganizationMembershipRepository _memberships;
+    private readonly IPlatformOrganizationRepository _organizations;
     private readonly IPlatformPasswordHasher _hasher;
     private readonly IPlatformSessionTokenService _tokens;
     private readonly IAuditWriter _auditWriter;
@@ -28,6 +31,8 @@ public sealed class LoginPlatformUser
         IPlatformUserRepository users,
         IPlatformUserCredentialRepository credentials,
         IPlatformAuthSessionRepository sessions,
+        IOrganizationMembershipRepository memberships,
+        IPlatformOrganizationRepository organizations,
         IPlatformPasswordHasher hasher,
         IPlatformSessionTokenService tokens,
         IAuditWriter auditWriter,
@@ -39,6 +44,8 @@ public sealed class LoginPlatformUser
         _users = users;
         _credentials = credentials;
         _sessions = sessions;
+        _memberships = memberships;
+        _organizations = organizations;
         _hasher = hasher;
         _tokens = tokens;
         _auditWriter = auditWriter;
@@ -184,6 +191,10 @@ public sealed class LoginPlatformUser
         await _sessions.AddAsync(session, cancellationToken).ConfigureAwait(false);
         await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
+        var (orgId, orgName, selectionState, activeCount) = await OrganizationContextResolver
+            .ResolveAsync(session, _memberships, _organizations, _sessions, _unitOfWork, cancellationToken)
+            .ConfigureAwait(false);
+
         await _auditWriter.WriteAsync(
             $"platform-user:{user.Id.Value:D}",
             AuditActorType.PlatformUser,
@@ -191,6 +202,7 @@ public sealed class LoginPlatformUser
             nameof(PlatformAuthSession),
             session.Id.Value.ToString("D"),
             AuditOutcome.Succeeded,
+            organizationId: session.SelectedOrganizationId,
             summary: "Platform User browser session established (token/password not recorded).",
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
@@ -202,7 +214,11 @@ public sealed class LoginPlatformUser
             user.DisplayName,
             user.NormalizedEmail,
             session.ExpiresAtUtc,
-            session.AbsoluteExpiresAtUtc));
+            session.AbsoluteExpiresAtUtc,
+            orgId,
+            orgName,
+            selectionState,
+            activeCount));
     }
 
     private static ApplicationResult<PlatformLoginResultDto> LoginFailedResult() =>
@@ -307,6 +323,8 @@ public sealed class ValidateAndRenewPlatformSession
     private readonly IPlatformUserRepository _users;
     private readonly IPlatformUserCredentialRepository _credentials;
     private readonly IPlatformAuthSessionRepository _sessions;
+    private readonly IOrganizationMembershipRepository _memberships;
+    private readonly IPlatformOrganizationRepository _organizations;
     private readonly IPlatformSessionTokenService _tokens;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -316,6 +334,8 @@ public sealed class ValidateAndRenewPlatformSession
         IPlatformUserRepository users,
         IPlatformUserCredentialRepository credentials,
         IPlatformAuthSessionRepository sessions,
+        IOrganizationMembershipRepository memberships,
+        IPlatformOrganizationRepository organizations,
         IPlatformSessionTokenService tokens,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
@@ -324,6 +344,8 @@ public sealed class ValidateAndRenewPlatformSession
         _users = users;
         _credentials = credentials;
         _sessions = sessions;
+        _memberships = memberships;
+        _organizations = organizations;
         _tokens = tokens;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -391,6 +413,10 @@ public sealed class ValidateAndRenewPlatformSession
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
 
+        var (orgId, orgName, selectionState, activeCount) = await OrganizationContextResolver
+            .ResolveAsync(session, _memberships, _organizations, _sessions, _unitOfWork, cancellationToken)
+            .ConfigureAwait(false);
+
         return ApplicationResult<PlatformAuthSessionInfoDto>.Success(new PlatformAuthSessionInfoDto(
             session.Id.Value,
             user.Id.Value,
@@ -399,6 +425,10 @@ public sealed class ValidateAndRenewPlatformSession
             user.NormalizedEmail,
             session.ExpiresAtUtc,
             session.AbsoluteExpiresAtUtc,
-            session.LastActivityAtUtc));
+            session.LastActivityAtUtc,
+            orgId,
+            orgName,
+            selectionState,
+            activeCount));
     }
 }

@@ -2,7 +2,7 @@
 
 [Home](../index.md) | [Threat model](authentication-threat-model.md) | [Security](security.md) | [Authorization](authorization-matrix.md) | [Product Foundation](../Product-Foundation/exits-product-foundation-reference.md) | [Phase 13](../phases/phase-13-production-authentication-and-identity.md) | [P13-WP01 report](../reports/P13-WP01-authentication-architecture-and-threat-model.md)
 
-**Status:** Authoritative architecture direction (**P13-WP01**). Credentials (**P13-WP02**), browser login/session (**P13-WP03**), and password/verification lifecycle (**P13-WP04**) delivered. Bearer tokens / MFA / product-client wiring remain later WPs. **R-091** remains open until Phase 13 closeout evidences production readiness.
+**Status:** Authoritative architecture direction (**P13-WP01**). Credentials (**P13-WP02**), browser login/session (**P13-WP03**), password/verification lifecycle (**P13-WP04**), and trusted organization context (**P13-WP05**) delivered. Bearer tokens / MFA / product-client wiring remain later WPs. **R-091** remains open until Phase 13 closeout evidences production readiness.
 
 **Scope of this document:** identity model, trust boundaries, target session/token model, Dev vs Production behavior, and decisions. Cookie/session login arrived in P13-WP03; API bearer tokens and product client wiring remain later WPs.
 
@@ -219,4 +219,4 @@ POS remains non-PHI by default (Product Foundation).
 
 ## 12. Recommended next work package
 
-**Recommended next work package:** **P13-WP05 — Trusted API Actor and Organization Context** when explicitly authorized.
+**Recommended next work package:** **P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS)** when explicitly authorized.

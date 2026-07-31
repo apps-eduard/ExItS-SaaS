@@ -4,15 +4,15 @@
 
 ## Status
 
-**In progress.** **P13-WP01**–**P13-WP04** are **complete**. Exact next: **P13-WP05 — Trusted API Actor and Organization Context** when authorized (do **not** begin).
+**In progress.** **P13-WP01**–**P13-WP05** are **complete**. Exact next: **P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS)** when authorized (do **not** begin).
 
-Phase 12 remains closed. **R-091** remains open — credentials, browser session, and password lifecycle shipped; trusted API actor, product clients, MFA readiness, and closeout remain.
+Phase 12 remains closed. **R-091** remains open — credentials, browser session, password lifecycle, and trusted organization context shipped; product clients, MFA readiness, and closeout remain.
 
 Authoritative docs:
 
 - [`authentication-architecture.md`](../engineering/authentication-architecture.md)
 - [`authentication-threat-model.md`](../engineering/authentication-threat-model.md)
-- Reports: [`P13-WP01`](../reports/P13-WP01-authentication-architecture-and-threat-model.md), [`P13-WP02`](../reports/P13-WP02-identity-credentials-and-auth-persistence.md), [`P13-WP03`](../reports/P13-WP03-platform-login-logout-and-browser-session.md), [`P13-WP04`](../reports/P13-WP04-password-verification-and-lockout-lifecycle.md)
+- Reports: [`P13-WP01`](../reports/P13-WP01-authentication-architecture-and-threat-model.md), [`P13-WP02`](../reports/P13-WP02-identity-credentials-and-auth-persistence.md), [`P13-WP03`](../reports/P13-WP03-platform-login-logout-and-browser-session.md), [`P13-WP04`](../reports/P13-WP04-password-verification-and-lockout-lifecycle.md), [`P13-WP05`](../reports/P13-WP05-trusted-organization-context-and-membership-selection.md)
 
 ## Progress
 
@@ -22,7 +22,7 @@ Authoritative docs:
 | P13-WP02 — Identity Credentials and Auth Persistence | **Complete** | [report](../reports/P13-WP02-identity-credentials-and-auth-persistence.md) · `51ace5b90fc6c0bcb33fe483826481529bdfeb77` |
 | P13-WP03 — Platform Login, Logout, and Browser Session | **Complete** | [report](../reports/P13-WP03-platform-login-logout-and-browser-session.md) · `6298b668c5d0555a84eb206b2a2313b138c9b892` |
 | P13-WP04 — Password Lifecycle, Lockout, and Verification | **Complete** | [report](../reports/P13-WP04-password-verification-and-lockout-lifecycle.md) · `65b261eca7353a7efea2f8f1899c252f0dcee6dc` |
-| P13-WP05 — Trusted API Actor and Organization Context | Not started | — |
+| P13-WP05 — Trusted API Actor and Organization Context | **Complete** | [report](../reports/P13-WP05-trusted-organization-context-and-membership-selection.md) |
 | P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS) | Not started | — |
 | P13-WP07 — MFA Readiness and Auth Hardening | Not started | — |
 | P13-WP08 — Phase 13 Closeout | Not started | — |
@@ -143,13 +143,15 @@ Password change/reset, lockout, and email verification flows as authorized.
 
 ### P13-WP05 — Trusted API Actor and Organization Context
 
+**Complete** — see [P13-WP05 report](../reports/P13-WP05-trusted-organization-context-and-membership-selection.md).
+
 #### Objective
 
-Replace Production reliance on absent auth with trusted authenticated actor + membership-checked org context for Platform APIs (and contracts for products).
+Trusted authenticated actor + membership-checked organization context after Platform login (none / one / many, select/switch, stale invalidation).
 
 #### Status
 
-Not started — begin only when authorized.
+**Complete.** Session-backed `selected_organization_id`, eligibility APIs, Admin switcher, membership/org invalidation. No bearer tokens, MFA, product launch protection, or broad Authz redesign.
 
 ### P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS)
 
@@ -190,6 +192,6 @@ Not started — begin only when authorized.
 - Tests pass; `main = origin/main`; working tree clean
 - Portfolio not falsely claimed Production-ready
 
-## Exact next after P13-WP04
+## Exact next after P13-WP05
 
-**P13-WP05 — Trusted API Actor and Organization Context** when explicitly authorized. Do not begin P13-WP05.
+**P13-WP06 — Product Client Auth Integration (Admin + MAUI/POS)** when explicitly authorized. Do not begin P13-WP06.

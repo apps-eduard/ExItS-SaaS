@@ -1,6 +1,7 @@
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Domain.Identity;
+using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Infrastructure.Persistence.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -53,6 +54,7 @@ internal sealed class PlatformAuthSessionRepository : IPlatformAuthSessionReposi
         record.ExpiresAtUtc = session.ExpiresAtUtc;
         record.LastActivityAtUtc = session.LastActivityAtUtc;
         record.RevokedAtUtc = session.RevokedAtUtc;
+        record.SelectedOrganizationId = session.SelectedOrganizationId?.Value;
     }
 
     public async Task<int> RevokeAllActiveForUserAsync(
@@ -77,6 +79,44 @@ internal sealed class PlatformAuthSessionRepository : IPlatformAuthSessionReposi
         return active.Count;
     }
 
+    public async Task<int> ClearSelectedOrganizationAsync(
+        PlatformUserId userId,
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var sessions = await _db.PlatformAuthSessions
+            .Where(s =>
+                s.UserId == userId.Value
+                && s.SelectedOrganizationId == organizationId.Value
+                && s.RevokedAtUtc == null)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        foreach (var record in sessions)
+        {
+            record.SelectedOrganizationId = null;
+        }
+
+        return sessions.Count;
+    }
+
+    public async Task<int> ClearSelectedOrganizationForOrganizationAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var sessions = await _db.PlatformAuthSessions
+            .Where(s => s.SelectedOrganizationId == organizationId.Value && s.RevokedAtUtc == null)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        foreach (var record in sessions)
+        {
+            record.SelectedOrganizationId = null;
+        }
+
+        return sessions.Count;
+    }
+
     private static PlatformAuthSession ToDomain(PlatformAuthSessionRecord record) =>
         PlatformAuthSession.Rehydrate(
             PlatformAuthSessionId.From(record.Id),
@@ -89,7 +129,10 @@ internal sealed class PlatformAuthSessionRepository : IPlatformAuthSessionReposi
             record.LastActivityAtUtc,
             record.RevokedAtUtc,
             record.IpAddress,
-            record.UserAgentHash);
+            record.UserAgentHash,
+            record.SelectedOrganizationId is null
+                ? null
+                : PlatformOrganizationId.From(record.SelectedOrganizationId.Value));
 
     private static PlatformAuthSessionRecord ToRecord(PlatformAuthSession session) =>
         new()
@@ -104,6 +147,7 @@ internal sealed class PlatformAuthSessionRepository : IPlatformAuthSessionReposi
             LastActivityAtUtc = session.LastActivityAtUtc,
             RevokedAtUtc = session.RevokedAtUtc,
             IpAddress = session.IpAddress,
-            UserAgentHash = session.UserAgentHash
+            UserAgentHash = session.UserAgentHash,
+            SelectedOrganizationId = session.SelectedOrganizationId?.Value
         };
 }
