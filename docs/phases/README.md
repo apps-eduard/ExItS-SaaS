@@ -15,4 +15,4 @@
 | 8 | Basic Store | **Complete with documented risks** | [Open](phase-08-basic-store.md) |
 | 9 | MVP Hardening and Release | **Complete with documented risks** | [Open](phase-09-mvp-hardening.md) |
 | 10 | Full POS | **Complete with documented risks** | [Open](phase-10-full-pos.md) |
-| 11 | Web UI and Reporting Design System | **In progress** (P11-WP01–WP03 complete) | [Open](phase-11-web-ui-reporting-design-system.md) |
+| 11 | Web UI and Reporting Design System | **In progress** (P11-WP01–WP04 complete) | [Open](phase-11-web-ui-reporting-design-system.md) |

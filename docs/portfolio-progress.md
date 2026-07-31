@@ -12,9 +12,9 @@
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 11 — Web UI and Reporting Design System (**in progress**) |
-| Current work package | P11-WP03 — Shared Forms, Validation, and Dialogs (**complete**) |
-| Overall status | **Phase 11 in progress.** P11-WP01–WP03 complete. Shared Admin forms/validation/dialogs established. Exact next: P11-WP04 — Shared Tables, Lists, Cards, and Status Components (do not begin until authorized). |
-| Latest verified commit | `6825b8eb423e73cd5d3dc24e393e7201b04232bc` |
+| Current work package | P11-WP04 — Shared Tables, Lists, Cards, and Status Components (**complete**) |
+| Overall status | **Phase 11 in progress.** P11-WP01–WP04 complete. Shared Admin data-display foundation established. Exact next: P11-WP05 — Shared Reporting Framework (do not begin until authorized). |
+| Latest verified commit | `0351f547457522a97a168b802ec050ef6f37ee83` |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred |
 | Last updated | 2026-07-31 |
 
@@ -55,7 +55,9 @@ P11-WP02 ✓ Global Web Layout and Navigation
         ↓
 P11-WP03 ✓ Shared Forms, Validation, and Dialogs
         ↓
-P11-WP04 ○ Shared Tables, Lists, Cards, and Status Components (do not begin until authorized)
+P11-WP04 ✓ Shared Tables, Lists, Cards, and Status Components
+        ↓
+P11-WP05 ○ Shared Reporting Framework (do not begin until authorized)
 ```
 
 ## Phase progress
@@ -73,7 +75,7 @@ P11-WP04 ○ Shared Tables, Lists, Cards, and Status Components (do not begin un
 | 8 | Basic Store | **Complete with documented risks** | 7 | 7 | 100% | [Open](phases/phase-08-basic-store.md) |
 | 9 | MVP Hardening and Release | **Complete with documented risks** | 6 | 6 | 100% | [Open](phases/phase-09-mvp-hardening.md) |
 | 10 | Full POS | **Complete with documented risks** | 8 | 8 | 100% | [Open](phases/phase-10-full-pos.md) |
-| 11 | Web UI and Reporting Design System | **In progress** | 3 | — | — | [Open](phases/phase-11-web-ui-reporting-design-system.md) |
+| 11 | Web UI and Reporting Design System | **In progress** | 4 | — | — | [Open](phases/phase-11-web-ui-reporting-design-system.md) |
 
 **MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).  
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
@@ -85,6 +87,7 @@ P11-WP04 ○ Shared Tables, Lists, Cards, and Status Components (do not begin un
 | P11-WP01 — Web UI Audit and Component Inventory | Complete | `221fe69ab179956e8a73411cf3eb58fd6f199c3c` |
 | P11-WP02 — Global Web Layout and Navigation | Complete | `7ce7df139a9494c9aab7d189900e96d5e43fdc1d` |
 | P11-WP03 — Shared Forms, Validation, and Dialogs | Complete | `6825b8eb423e73cd5d3dc24e393e7201b04232bc` |
+| P11-WP04 — Shared Tables, Lists, Cards, and Status Components | Complete | `0351f547457522a97a168b802ec050ef6f37ee83` |
 
 ## Phase 10 work packages
 
@@ -112,4 +115,4 @@ P11-WP04 ○ Shared Tables, Lists, Cards, and Status Components (do not begin un
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P11-WP04** or Phase 12 until explicitly authorized.
+Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P11-WP05** or Phase 12 until explicitly authorized.

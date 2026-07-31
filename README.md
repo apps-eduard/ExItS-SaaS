@@ -43,7 +43,7 @@ This workspace does **not** contain a nested HealthCare product tree. Platform `
 
 **Phase 8** is **complete** with documented risks ([P8-WP07 closeout](docs/reports/P8-WP07-basic-store-closeout.md)). Online-only Basic Store MVP is closed.
 
-**Phase 9** is **complete with documented risks** ([P9-WP01](docs/reports/P9-WP01-security-and-privacy-hardening.md)–[P9-WP06](docs/reports/P9-WP06-commercial-mvp-closeout.md)). **Phase 10 — Full POS** is **complete with documented risks** ([P10-WP08 closeout](docs/reports/P10-WP08-phase-10-closeout.md)). **Phase 11** is **in progress** — [P11-WP01](docs/reports/P11-WP01-web-ui-audit-and-component-inventory.md)–[P11-WP03](docs/reports/P11-WP03-shared-forms-validation-and-dialogs.md) complete. Exact next: **P11-WP04 — Shared Tables, Lists, Cards, and Status Components** (do not begin until authorized). **Not production-ready.**
+**Phase 9** is **complete with documented risks** ([P9-WP01](docs/reports/P9-WP01-security-and-privacy-hardening.md)–[P9-WP06](docs/reports/P9-WP06-commercial-mvp-closeout.md)). **Phase 10 — Full POS** is **complete with documented risks** ([P10-WP08 closeout](docs/reports/P10-WP08-phase-10-closeout.md)). **Phase 11** is **in progress** — [P11-WP01](docs/reports/P11-WP01-web-ui-audit-and-component-inventory.md)–[P11-WP04](docs/reports/P11-WP04-shared-tables-lists-cards-and-status-components.md) complete. Exact next: **P11-WP05 — Shared Reporting Framework** (do not begin until authorized). **Not production-ready.**
 
 Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`.
 
