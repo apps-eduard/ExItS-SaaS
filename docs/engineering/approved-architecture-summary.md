@@ -24,7 +24,7 @@
 | Rollback | L0–L6 | [rollback plan](extraction-rollback-plan.md) |
 | Shared code | Two consumers + product-neutral only | Phase 1 approval §14 |
 | Phase 2 | Closed with documented risks — foundations only | [Phase 2 closeout](../reports/phase-02-extraction-closeout.md) · [evidence matrix](phase-02-evidence-matrix.md) |
-| Next WP | **P14-WP02 — Production Packaging and Compose Baseline** (not started; requires authorization). P14-WP01 complete (docs/audit). | [Phase 14](../phases/phase-14-production-deployment-and-operations.md) · [Production deployment architecture](production-deployment-architecture.md) |
+| Next WP | **P14-WP03 — Reverse Proxy, TLS, and Network Hardening** (not started; requires authorization). P14-WP01–WP02 complete. | [Phase 14](../phases/phase-14-production-deployment-and-operations.md) · [compose.yaml](../../deploy/docker/compose.yaml) |
 
 ## Prohibited
 

@@ -1,5 +1,5 @@
 # ExItS Platform Admin (Blazor) — versioned .NET 10 runtime. Secrets via environment only.
-# Phase: P9-WP05-pilot-and-deployment
+# Shared image for P9-WP05 pilot (and future packaging). No apt packages in image.
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY Directory.Build.props Directory.Packages.props global.json ./
@@ -9,14 +9,10 @@ RUN dotnet publish src/Platform/ExItS.Platform.Admin/ExItS.Platform.Admin.csproj
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
-RUN groupadd --system exits && useradd --system --gid exits --create-home exits \
-    && apt-get update && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN groupadd --system exits && useradd --system --gid exits --create-home exits
 COPY --from=build /app/publish .
 USER exits
 ENV ASPNETCORE_URLS=http://0.0.0.0:8080
 ENV DOTNET_EnableDiagnostics=0
 EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=5s --start-period=25s --retries=3 \
-  CMD curl -fsS http://127.0.0.1:8080/ || exit 1
 ENTRYPOINT ["dotnet", "ExItS.Platform.Admin.dll"]

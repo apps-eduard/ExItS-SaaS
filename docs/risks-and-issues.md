@@ -141,7 +141,9 @@ P9-WP06 closed Phase 9 with an honest Commercial MVP readiness board: Developmen
 
 ## Phase 14 — Production Deployment and Operations (in progress)
 
-**P14-WP01** published authoritative Production deployment architecture (customer on-prem; Platform + per-product PostgreSQL; reverse-proxy HTTPS) and Production readiness audit. Pilot Docker/Compose remain non-production. Production and restricted external pilot remain **Blocked** (TLS-PROD, MAUI-HTTPS, R-109, R-129, auth email, evaluator drift, D-P12-03, …). **Docs only — no packaging implementation.** Exact next: **P14-WP02 — Production Packaging and Compose Baseline** (do not begin). **Not production-ready.**
+**P14-WP02** added default `deploy/docker/compose.yaml` packaging baseline (Platform API + POS API + separate PostgreSQL) for local `docker compose build/up/ps/down`. Pilot Compose remains NON-PRODUCTION. TLS/proxy deferred. Production remains **Blocked**. Exact next: **P14-WP03** (do not begin). **Not production-ready.**
+
+**P14-WP01** published authoritative Production deployment architecture (customer on-prem; Platform + per-product PostgreSQL; reverse-proxy HTTPS) and Production readiness audit. **Docs only — no packaging implementation in WP01.**
 
 ## Phase 13 — Production Authentication and Identity (complete with residuals)
 

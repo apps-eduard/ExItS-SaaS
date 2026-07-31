@@ -1,0 +1,109 @@
+# ExItS production packaging baseline — LOCAL DEPLOYMENT TESTING.
+# Phase: P14-WP02-production-packaging-and-compose-baseline
+#
+# This is NOT a Production cutover kit and does NOT claim Production readiness.
+# TLS / reverse proxy are deferred to P14-WP03. Pilot stack remains docker-compose.pilot.yml.
+#
+# Usage (from this directory):
+#   copy .env.example .env   # fill placeholders; never commit .env
+#   docker compose build
+#   docker compose up -d
+#   docker compose ps
+#   docker compose down
+#
+# Boundaries: separate Platform and POS databases; no nested clinical product tree; no Dev/Testing identity headers
+# (ASPNETCORE_ENVIRONMENT=Staging). Do not auto-apply EF migrations at application startup.
+
+name: exits-packaging
+
+services:
+  platform-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${PLATFORM_DB_USER}
+      POSTGRES_PASSWORD: ${PLATFORM_DB_PASSWORD}
+      POSTGRES_DB: exits_platform
+    volumes:
+      - platform_db_data:/var/lib/postgresql/data
+    ports:
+      - "${PLATFORM_DB_HOST_PORT:-15433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d exits_platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - exits-packaging
+
+  pos-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POS_DB_USER}
+      POSTGRES_PASSWORD: ${POS_DB_PASSWORD}
+      POSTGRES_DB: exits_pos
+    volumes:
+      - pos_db_data:/var/lib/postgresql/data
+    ports:
+      - "${POS_DB_HOST_PORT:-15434}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d exits_pos"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - exits-packaging
+
+  platform-api:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.platform-api
+      args:
+        EXITS_IMAGE_LABEL: p14-wp02-packaging-baseline
+    image: exits/platform-api:${EXITS_IMAGE_TAG:-local}
+    depends_on:
+      platform-db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging
+      ConnectionStrings__PlatformDatabase: Host=platform-db;Port=5432;Database=exits_platform;Username=${PLATFORM_DB_USER};Password=${PLATFORM_DB_PASSWORD}
+      AllowedHosts: ${PACKAGING_ALLOWED_HOSTS:-localhost;127.0.0.1}
+      Security__EnforceHttps: "false"
+    ports:
+      - "${PLATFORM_API_HOST_PORT:-8081}:8080"
+    networks:
+      - exits-packaging
+    read_only: true
+    tmpfs:
+      - /tmp
+    stop_grace_period: 30s
+
+  pos-api:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.pos-api
+      args:
+        EXITS_IMAGE_LABEL: p14-wp02-packaging-baseline
+    image: exits/pos-api:${EXITS_IMAGE_TAG:-local}
+    depends_on:
+      pos-db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging
+      ConnectionStrings__PosDatabase: Host=pos-db;Port=5432;Database=exits_pos;Username=${POS_DB_USER};Password=${POS_DB_PASSWORD}
+      AllowedHosts: ${PACKAGING_ALLOWED_HOSTS:-localhost;127.0.0.1}
+      Security__EnforceHttps: "false"
+    ports:
+      - "${POS_API_HOST_PORT:-8082}:8080"
+    networks:
+      - exits-packaging
+    read_only: true
+    tmpfs:
+      - /tmp
+    stop_grace_period: 30s
+
+volumes:
+  platform_db_data:
+  pos_db_data:
+
+networks:
+  exits-packaging:

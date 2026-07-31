@@ -1,5 +1,7 @@
 # ExItS Platform API — versioned .NET 10 runtime. Secrets via environment only.
-# Phase: P9-WP05-pilot-and-deployment
+# Shared image for P9-WP05 pilot and P14-WP02 packaging baseline.
+# Health: verify via published host port (e.g. curl http://localhost:8081/health) — no apt packages in image.
+ARG EXITS_IMAGE_LABEL=exits-platform-api
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY Directory.Build.props Directory.Packages.props global.json ./
@@ -8,15 +10,13 @@ RUN dotnet restore src/Platform/ExItS.Platform.Api/ExItS.Platform.Api.csproj
 RUN dotnet publish src/Platform/ExItS.Platform.Api/ExItS.Platform.Api.csproj -c Release -o /app/publish --no-restore /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+ARG EXITS_IMAGE_LABEL=exits-platform-api
+LABEL org.exits.image.purpose="${EXITS_IMAGE_LABEL}"
 WORKDIR /app
-RUN groupadd --system exits && useradd --system --gid exits --create-home exits \
-    && apt-get update && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN groupadd --system exits && useradd --system --gid exits --create-home exits
 COPY --from=build /app/publish .
 USER exits
 ENV ASPNETCORE_URLS=http://0.0.0.0:8080
 ENV DOTNET_EnableDiagnostics=0
 EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=5s --start-period=25s --retries=3 \
-  CMD curl -fsS http://127.0.0.1:8080/health || exit 1
 ENTRYPOINT ["dotnet", "ExItS.Platform.Api.dll"]

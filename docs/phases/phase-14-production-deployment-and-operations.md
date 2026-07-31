@@ -4,20 +4,20 @@
 
 ## Status
 
-**In progress.** **P14-WP01** is the active authorized work package (docs/discovery only). Phase 13 remains closed. Portfolio remains **not Production-ready**.
+**Status:** **In progress.** **P14-WP01**–**P14-WP02** complete. Exact next: **P14-WP03** when authorized. Portfolio remains **not Production-ready**.
 
 Authoritative docs:
 
 - [`production-deployment-architecture.md`](../engineering/production-deployment-architecture.md)
 - [`production-readiness-audit.md`](../engineering/production-readiness-audit.md)
-- Report: [`P14-WP01`](../reports/P14-WP01-deployment-architecture-and-production-readiness-audit.md)
+- Reports: [`P14-WP01`](../reports/P14-WP01-deployment-architecture-and-production-readiness-audit.md), [`P14-WP02`](../reports/P14-WP02-production-packaging-and-compose-baseline.md)
 
 ## Progress
 
 | WP | Status | Report / tip |
 |---|---|---|
 | P14-WP01 — Deployment Architecture and Production Readiness Audit | **Complete** | [report](../reports/P14-WP01-deployment-architecture-and-production-readiness-audit.md) · `e0e2da2d03babc01dd6efab9d44c6c2a2668457a` |
-| P14-WP02 — Production Packaging and Compose Baseline | Not started | — |
+| P14-WP02 — Production Packaging and Compose Baseline | **Complete** | [report](../reports/P14-WP02-production-packaging-and-compose-baseline.md) · *(feature tip recorded after commit)* |
 | P14-WP03 — Reverse Proxy, TLS, and Network Hardening | Not started | — |
 | P14-WP04 — Production Backup, Restore, and Ops Evidence | Not started | — |
 | P14-WP05 — Monitoring, Alerting, and Support Model | Not started | — |
@@ -65,7 +65,7 @@ Unless a later WP explicitly authorizes:
 
 ### P14-WP02 — Production Packaging and Compose Baseline
 
-Production-oriented images/Compose/versioning **when authorized**. Must not silently promote `docker-compose.pilot.yml` as Production.
+**Complete.** Default `deploy/docker/compose.yaml` for local packaging tests (Platform/POS APIs + separate PostgreSQL). Pilot Compose preserved as NON-PRODUCTION.
 
 ### P14-WP03 — Reverse Proxy, TLS, and Network Hardening
 
@@ -95,6 +95,6 @@ Reconcile Phase 14; honest Production readiness disposition; exact next phase.
 - Tests pass; `main = origin/main`; working tree clean
 - Portfolio not falsely claimed Production-ready
 
-## Exact next after P14-WP01
+## Exact next after P14-WP02
 
-**P14-WP02 — Production Packaging and Compose Baseline** when explicitly authorized. Do **not** begin P14-WP02 from this page alone.
+**P14-WP03 — Reverse Proxy, TLS, and Network Hardening** when explicitly authorized. Do **not** begin P14-WP03 from this page alone.

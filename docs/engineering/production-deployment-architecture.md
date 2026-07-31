@@ -2,9 +2,9 @@
 
 [Home](../index.md) | [Readiness audit](production-readiness-audit.md) | [Pilot architecture (non-production)](../operations/pilot-and-deployment/deployment-architecture.md) | [Product Foundation](../Product-Foundation/exits-product-foundation-reference.md) | [Auth architecture](authentication-architecture.md) | [Phase 14](../phases/phase-14-production-deployment-and-operations.md) | [P14-WP01 report](../reports/P14-WP01-deployment-architecture-and-production-readiness-audit.md)
 
-**Status:** Authoritative **production** deployment direction (**P14-WP01**). Documentation and decisions only — no new Docker/Compose/TLS/CI artifacts in this WP.
+**Status:** Authoritative **production** deployment direction (**P14-WP01**). Packaging baseline for local Compose testing delivered in **P14-WP02** (`deploy/docker/compose.yaml`) — **not** a Production cutover. TLS/proxy remain **P14-WP03**.
 
-**Relationship to pilot:** [`docs/operations/pilot-and-deployment/`](../operations/pilot-and-deployment/) and `deploy/docker/*` remain **non-production** (P9-WP05). They are reusable patterns, not a Production cutover kit.
+**Relationship to pilot:** [`docs/operations/pilot-and-deployment/`](../operations/pilot-and-deployment/) and `deploy/docker/docker-compose.pilot.yml` remain **non-production** (P9-WP05). Default `compose.yaml` is the P14-WP02 packaging baseline for local testing.
 
 ---
 
@@ -72,7 +72,8 @@ Authentication SoR remains Platform (**D-P13-02**). Deployment does not grant me
 
 | Area | Evidence | Production claim |
 |---|---|---|
-| Pilot packaging | `deploy/docker/*`, `docker-compose.pilot.yml`, nginx `pilot.conf` | **Non-production only** |
+| Pilot packaging | `deploy/docker/docker-compose.pilot.yml`, nginx `pilot.conf` | **Non-production only** |
+| Packaging baseline | `deploy/docker/compose.yaml` (P14-WP02) | Local Compose testing; **not** Production cutover |
 | Ops scripts | `ops/deploy/*`, `ops/backup/*` | Pilot/ops helpers; Production cutover **not** evidenced |
 | Deployment library | `ExItS.Deployment` + CLI | Validation, backup gate, migration order, readiness evaluator |
 | AuthN | Phase 13 sessions + Bearer + external login | **R-091 closed for Phase 13 scope**; residuals remain |
@@ -156,4 +157,4 @@ Later Phase 14 WPs may add monitoring agents/runbooks **when authorized** — no
 
 ## 11. Recommended next work package
 
-**P14-WP02 — Production Packaging and Compose Baseline** when explicitly authorized (do **not** begin from this document alone).
+**P14-WP03 — Reverse Proxy, TLS, and Network Hardening** when explicitly authorized.

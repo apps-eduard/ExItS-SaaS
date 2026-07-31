@@ -12,10 +12,10 @@
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 14 — Production Deployment and Operations (**in progress**) |
-| Current work package | P14-WP01 — Deployment Architecture and Production Readiness Audit (**complete**) |
-| Overall status | **Phase 14 in progress.** P14-WP01 complete (docs/discovery only). Production topology = customer on-prem + per-product DBs + reverse-proxy HTTPS. Production and restricted external pilot remain **Blocked**. Exact next: P14-WP02 — Production Packaging and Compose Baseline (do not begin until authorized). **Not production-ready.** |
-| Latest verified commit | `e0e2da2d03babc01dd6efab9d44c6c2a2668457a` |
-| Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT (Deployment evaluator still hard-blocks on R-091); Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
+| Current work package | P14-WP02 — Production Packaging and Compose Baseline (**complete**) |
+| Overall status | **Phase 14 in progress.** P14-WP01–WP02 complete. Packaging Compose baseline for local testing delivered (`deploy/docker/compose.yaml`). Production remains **Blocked** (TLS-PROD, etc.). Exact next: P14-WP03 — Reverse Proxy, TLS, and Network Hardening (do not begin until authorized). **Not production-ready.** |
+| Latest verified commit | *(feature tip recorded after commit)* |
+| Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-07-31 |
 
 ## Delivery sequence
@@ -99,7 +99,9 @@ P13-WP09 ✓ Phase 13 Closeout (complete with residuals — Phase 13 closed)
         ↓
 P14-WP01 ✓ Deployment Architecture and Production Readiness Audit
         ↓
-P14-WP02 ○ Production Packaging and Compose Baseline (do not begin until authorized)
+P14-WP02 ✓ Production Packaging and Compose Baseline
+        ↓
+P14-WP03 ○ Reverse Proxy, TLS, and Network Hardening (do not begin until authorized)
 ```
 
 ## Phase progress
@@ -120,14 +122,14 @@ P14-WP02 ○ Production Packaging and Compose Baseline (do not begin until autho
 | 11 | Web UI and Reporting Design System | **Complete with documented risks** | 8 | 8 | 100% | [Open](phases/phase-11-web-ui-reporting-design-system.md) |
 | 12 | Reusable SaaS Product Foundation and Bootstrap | **Complete with documented open decisions** | 7 | 7 | 100% | [Open](phases/phase-12-product-foundation-and-bootstrap.md) |
 | 13 | Production Authentication and Identity | **Complete with documented residuals** | 9 | 9 | 100% | [Open](phases/phase-13-production-authentication-and-identity.md) |
-| 14 | Production Deployment and Operations | **In progress** | 1 | 7 | — | [Open](phases/phase-14-production-deployment-and-operations.md) |
+| 14 | Production Deployment and Operations | **In progress** | 2 | 7 | — | [Open](phases/phase-14-production-deployment-and-operations.md) |
 
 **MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
 **Phase 11 Web UI / Reporting Design System:** 8 / 8 = **100%** (with documented risks; not Production-ready; no formal WCAG certification).
 **Phase 12 Product Foundation:** 7 / 7 = **100%** (with documented open decisions; not Production-ready; no real product scaffold).
 **Phase 13 Production Authentication:** 9 / 9 = **100%** (R-091 closed for Phase 13 scope; residuals documented; not Production-ready).
-**Phase 14 Production Deployment:** 1 / 7 WPs complete (architecture/audit only; Production blocked).
+**Phase 14 Production Deployment:** 2 / 7 WPs complete (architecture/audit + packaging Compose baseline; Production blocked).
 
 ## Phase 13 work packages
 
@@ -148,6 +150,7 @@ P14-WP02 ○ Production Packaging and Compose Baseline (do not begin until autho
 | WP | Status | Key commit |
 |---|---|---|
 | P14-WP01 — Deployment Architecture and Production Readiness Audit | Complete | `e0e2da2d03babc01dd6efab9d44c6c2a2668457a` |
+| P14-WP02 — Production Packaging and Compose Baseline | Complete | *(feature tip recorded after commit)* |
 
 ## Phase 12 work packages
 
@@ -200,4 +203,4 @@ P14-WP02 ○ Production Packaging and Compose Baseline (do not begin until autho
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P14-WP02 — Production Packaging and Compose Baseline** until explicitly authorized.
+Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P14-WP03 — Reverse Proxy, TLS, and Network Hardening** until explicitly authorized.

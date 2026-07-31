@@ -65,7 +65,7 @@ Out of scope for this document: implementing Docker, TLS, monitoring, or changin
 | Backup/restore tooling | Platform ops lib | Implemented logical dumps | PITR deferred; off-host schedule env-owned |
 | Health/readiness | APIs | Implemented | Not full monitoring |
 | Production config fail-closed | APIs (P9-WP01) | Implemented | Necessary not sufficient |
-| Production packaging Compose | — | **Not implemented** | Phase 14 later WP |
+| Production packaging Compose | Ops (P14-WP02) | Implemented local baseline | Not Production cutover; no TLS |
 | Production TLS validation | — | **Not evidenced** | TLS-PROD |
 | Central monitoring/alerting | — | **Not implemented** | Later WP |
 | CI/CD Production pipeline | — | **Not claimed** | Later WP if authorized |
@@ -104,4 +104,4 @@ Business residuals (Manual GCash, online-only limits, report export, tax/account
 
 ## 7. Recommended next work package
 
-**P14-WP02 — Production Packaging and Compose Baseline** when explicitly authorized.
+**P14-WP03 — Reverse Proxy, TLS, and Network Hardening** when explicitly authorized.

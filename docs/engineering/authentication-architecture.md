@@ -226,4 +226,4 @@ POS remains non-PHI by default (Product Foundation).
 
 ## 12. Recommended next work package
 
-**Recommended next:** **P14-WP02 — Production Packaging and Compose Baseline** when explicitly authorized. Do **not** begin from authentication docs alone. Production deployment direction: [production-deployment-architecture.md](production-deployment-architecture.md).
+**Recommended next:** **P14-WP03 — Reverse Proxy, TLS, and Network Hardening** when explicitly authorized. Do **not** begin from authentication docs alone. Production deployment direction: [production-deployment-architecture.md](production-deployment-architecture.md).
