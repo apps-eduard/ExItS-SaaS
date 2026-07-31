@@ -4,7 +4,7 @@ Phase marker: `P12-WP07-foundation-hardening-and-closeout`
 
 Package: **P12-WP07 — Foundation Hardening and Closeout**
 Prior tip: `230238833b215fabd87037fbe7781acc32b82c63`
-Docs tip: *(recorded after docs commit)*
+Docs tip: `2a3de32cb3bcc1c30db34771843c054e74f6a29e`
 
 ## Status
 
@@ -24,7 +24,7 @@ Exact next phase: **Phase 13 — Production Authentication and Identity** (do **
 | **WP04** Product context rule | Complete | `.cursor/rules/exits-product-context.mdc` | Globs; no alwaysApply force on Platform-only | `1243c78…` | Reinforces open items | — |
 | **WP05** Bootstrap prompt | Complete | `product-bootstrap-prompt.md` | Docs-only scope gate; SampleProduct not created | `d57b7be…` | D-P12-03, R-091 | — |
 | **WP06** Reference dry run | Complete | `Reference-Product/` fiction | No `src/Products/ReferenceLoan/`; template link fixes | `5debab5…` | R-091, D-P12-03, RL-D-01 | — |
-| **WP07** Closeout | Complete | This report + hardening | Links; tests 1186 | this tip | See §7 | See §7 |
+| **WP07** Closeout | Complete | This report + hardening | Links; tests 1186 | `2a3de32…` | See §8 | See §8 |
 
 ## 2. Final foundation inventory
 

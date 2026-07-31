@@ -18,7 +18,7 @@ Authoritative foundation: [`docs/Product-Foundation/exits-product-foundation-ref
 | P12-WP04 — Cursor Product Context Rule | **Complete** | [report](../reports/P12-WP04-cursor-product-context-rule.md) · `1243c78d65e347b23949b19ce2edf564fe972aad` |
 | P12-WP05 — Product Bootstrap Prompt | **Complete** | [report](../reports/P12-WP05-product-bootstrap-prompt.md) · `d57b7be48639e30ffa9fa86624da916ef63a563f` |
 | P12-WP06 — Reference Product Dry Run | **Complete** | [report](../reports/P12-WP06-reference-product-dry-run.md) · `5debab509c52ecdbed1cf9bba1ec02147ece693b` |
-| P12-WP07 — Foundation Hardening and Closeout | **Complete** | [report](../reports/P12-WP07-foundation-hardening-and-closeout.md) · *(docs tip after commit)* |
+| P12-WP07 — Foundation Hardening and Closeout | **Complete** | [report](../reports/P12-WP07-foundation-hardening-and-closeout.md) · `2a3de32cb3bcc1c30db34771843c054e74f6a29e` |
 
 ## Purpose
 

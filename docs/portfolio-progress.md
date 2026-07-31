@@ -14,7 +14,7 @@
 | Current phase | Phase 12 — Reusable SaaS Product Foundation and Bootstrap (**complete with documented open decisions**) |
 | Current work package | P12-WP07 — Foundation Hardening and Closeout (**complete**) |
 | Overall status | **Phase 12 complete.** Product Foundation package closed (reference, templates, context rule, bootstrap prompt, fictional ReferenceLoan dry run). No real product scaffold; no production auth. Exact next: **Phase 13 — Production Authentication and Identity** (do not begin until authorized). **Not production-ready.** |
-| Latest verified commit | *(docs tip after commit)* |
+| Latest verified commit | `2a3de32cb3bcc1c30db34771843c054e74f6a29e` |
 | Open blockers | Missing production auth (R-091); D-P12-03 commercial-state transport; D-P12-04 matrix hygiene; R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-07-31 |
 
@@ -113,7 +113,7 @@ P12-WP07 ✓ Foundation Hardening and Closeout (complete with risks — Phase 12
 | P12-WP04 — Cursor Product Context Rule | Complete | `1243c78d65e347b23949b19ce2edf564fe972aad` |
 | P12-WP05 — Product Bootstrap Prompt | Complete | `d57b7be48639e30ffa9fa86624da916ef63a563f` |
 | P12-WP06 — Reference Product Dry Run | Complete | `5debab509c52ecdbed1cf9bba1ec02147ece693b` |
-| P12-WP07 — Foundation Hardening and Closeout | Complete | *(docs tip after commit)* |
+| P12-WP07 — Foundation Hardening and Closeout | Complete | `2a3de32cb3bcc1c30db34771843c054e74f6a29e` |
 
 ## Phase 11 work packages
 
