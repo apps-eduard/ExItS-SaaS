@@ -178,6 +178,7 @@ docs/reports/P11-WP03-shared-forms-validation-and-dialogs.md
 docs/reports/P11-WP04-shared-tables-lists-cards-and-status-components.md
 docs/reports/P11-WP05-shared-reporting-framework.md
 docs/reports/P11-WP06-dashboard-and-report-refactoring.md
+docs/reports/P11-WP07-localization-theme-accessibility-responsive-qa.md
 docs/phases/phase-11-web-ui-reporting-design-system.md
 docs/reports/PRE-P11-admin-ui-recovery.md
 docs/reports/PRE-P11-admin-theme-visual-polish.md

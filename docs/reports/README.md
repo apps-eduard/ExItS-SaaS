@@ -80,3 +80,4 @@ The dashboard links to the latest accepted report.
 | [P11-WP04-shared-tables-lists-cards-and-status-components.md](P11-WP04-shared-tables-lists-cards-and-status-components.md) | P11-WP04 Shared Tables, Lists, Cards, and Status | Complete |
 | [P11-WP05-shared-reporting-framework.md](P11-WP05-shared-reporting-framework.md) | P11-WP05 Shared Reporting Framework | Complete |
 | [P11-WP06-dashboard-and-report-refactoring.md](P11-WP06-dashboard-and-report-refactoring.md) | P11-WP06 Dashboard and Report Refactoring | Complete |
+| [P11-WP07-localization-theme-accessibility-responsive-qa.md](P11-WP07-localization-theme-accessibility-responsive-qa.md) | P11-WP07 Localization, Theme, Accessibility, Responsive QA | Complete |
