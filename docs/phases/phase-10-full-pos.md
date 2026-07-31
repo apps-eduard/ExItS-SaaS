@@ -4,7 +4,7 @@
 
 ## Status
 
-**In Progress** — **P10-WP04 — Cashier Shifts** authorized (prior tip `a25fe6a` / WP03 complete). Do **not** begin P10-WP05.
+**In Progress** — **P10-WP04 — Cashier Shifts** complete (prior tip `a25fe6a` / WP03 complete). Do **not** begin P10-WP05.
 
 ## Objective
 
@@ -156,9 +156,9 @@ Warehouses, branches, transfers, costing, valuation, batches, serials, expiry, p
 
 ### P10-WP04 — Cashier Shifts
 
-Status: **In Progress** (authorized)
+Status: **Complete**
 
-Prior tip: `a25fe6abd713da84ad99d9d0a2022b99f49765e8` (P10-WP03 complete). Baseline: **1079 / 0 / 0**.
+Prior tip: `a25fe6abd713da84ad99d9d0a2022b99f49765e8` (P10-WP03 complete). Baseline: **1079 / 0 / 0**. Tests: **1097 / 0 / 0**.
 
 #### Required outcomes (approved)
 
@@ -182,13 +182,13 @@ Payroll, accounting journals, bank reconciliation, cash deposits, branch registe
 
 #### Definition of Done
 
-- [ ] Approved outcomes complete.
-- [ ] Applicable tests pass with exact evidence.
-- [ ] Dashboard and phase page updated.
-- [ ] Completion report created.
-- [ ] Focused commit created and hash recorded.
-- [ ] Working tree clean.
-- [ ] Exact next WP recorded: **P10-WP05 — Returns and Refunds** (do not begin).
+- [x] Approved outcomes complete.
+- [x] Applicable tests pass with exact evidence (baseline 1079 → suite now 1097 / 0 / 0).
+- [x] Dashboard and phase page updated.
+- [x] Completion report created (`docs/reports/P10-WP04-cashier-shifts.md`).
+- [x] Focused commit created and hash recorded.
+- [x] Working tree clean (after push).
+- [x] Exact next WP recorded: **P10-WP05 — Returns and Refunds** (do not begin).
 
 ### P10-WP05 — Returns and Refunds
 
