@@ -111,7 +111,7 @@ P12-WP07 ○ Foundation Hardening and Closeout (do not begin until authorized)
 | P12-WP03 — Product Documentation Templates | Complete | `65b02a1dd9336b39b79fc41527969f6289ad7072` |
 | P12-WP04 — Cursor Product Context Rule | Complete | `1243c78d65e347b23949b19ce2edf564fe972aad` |
 | P12-WP05 — Product Bootstrap Prompt | Complete | `d57b7be48639e30ffa9fa86624da916ef63a563f` |
-| P12-WP06 — Reference Product Dry Run | Complete | *(tip filled after commit)* |
+| P12-WP06 — Reference Product Dry Run | Complete | `5debab509c52ecdbed1cf9bba1ec02147ece693b` |
 
 ## Phase 11 work packages
 
