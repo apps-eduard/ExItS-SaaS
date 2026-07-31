@@ -4,17 +4,17 @@
 
 ## Status
 
-**In progress.** **P11-WP01 — Web UI Audit and Component Inventory** is **complete**. Exact next: **P11-WP02 — Global Web Layout and Navigation** when authorized.
+**In progress.** **P11-WP01** and **P11-WP02** are **complete**. Exact next: **P11-WP03 — Shared Forms, Validation, and Dialogs** when authorized.
 
-Pre-Phase-11 Admin shell/theme baseline remains locked (feature tip `46b99a7f6baa87977fb0ed37e678231fa1eb1344`). Do not weaken `exits-admin-theme` / `exitsAdminTheme` / enhanced-nav reapply stack.
+Pre-Phase-11 Admin shell/theme baseline remains locked (feature tip `46b99a7f6baa87977fb0ed37e678231fa1eb1344`). Theme reapply uses `Blazor.enhancedload` — do **not** reintroduce document-wide permanence attributes on `<html>`.
 
 ## Progress
 
 | WP | Status | Report / tip |
 |---|---|---|
 | P11-WP01 — Web UI Audit and Component Inventory | **Complete** | [report](../reports/P11-WP01-web-ui-audit-and-component-inventory.md) · `221fe69ab179956e8a73411cf3eb58fd6f199c3c` |
-| P11-WP02 — Global Web Layout and Navigation | Not started | — |
-| P11-WP03 — Shared Forms, Tables and Data Components | Not started | — |
+| P11-WP02 — Global Web Layout and Navigation | **Complete** | [report](../reports/P11-WP02-global-web-layout-and-navigation.md) · `7ce7df139a9494c9aab7d189900e96d5e43fdc1d` |
+| P11-WP03 — Shared Forms, Validation, and Dialogs | Not started | — |
 | P11-WP04 — Shared Feedback, Dialog and State Components | Not started | — |
 | P11-WP05 — Localization, Theme and Accessibility Hardening | Not started | — |
 | P11-WP06+ — Reporting framework and closeout | Not started | — |
@@ -216,6 +216,10 @@ Finalize the shared web application shell and navigation experience.
 - production login redesign
 - new role-based navigation policy
 - Windows MAUI navigation
+
+#### Implementation status
+
+**Complete** — see [P11-WP02 report](../reports/P11-WP02-global-web-layout-and-navigation.md). Routing defect (`data-permanent` on `<html>`) fixed; single `MainLayout` shell.
 
 ---
 
