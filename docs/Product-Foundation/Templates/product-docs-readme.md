@@ -23,7 +23,7 @@ Always load with:
 | [risks-and-decisions.md](risks-and-decisions.md) | Open risks and decisions |
 | [FILE-MANIFEST.md](FILE-MANIFEST.md) | Doc / path inventory |
 | [deployment-notes.md](deployment-notes.md) | Packaging notes (when used) |
-| [reports/](reports/) | Work-package reports |
+| `reports/` | Work-package reports — create folder when first WP is authorized |
 
 ## Status
 

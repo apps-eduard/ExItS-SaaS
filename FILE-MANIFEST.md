@@ -213,6 +213,7 @@ docs/reports/P12-WP03-product-documentation-templates.md
 docs/reports/P12-WP04-cursor-product-context-rule.md
 docs/reports/P12-WP05-product-bootstrap-prompt.md
 docs/reports/P12-WP06-reference-product-dry-run.md
+docs/reports/P12-WP07-foundation-hardening-and-closeout.md
 docs/reports/PRE-P11-admin-ui-recovery.md
 docs/reports/PRE-P11-admin-theme-visual-polish.md
 docs/operations/backup-restore/README.md

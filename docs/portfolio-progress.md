@@ -11,11 +11,11 @@
 | Portfolio | ExITS SaaS |
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 12 — Reusable SaaS Product Foundation and Bootstrap (**in progress**) |
-| Current work package | P12-WP06 — Reference Product Dry Run (**complete**) |
-| Overall status | **Phase 12 in progress.** P12-WP01–WP06 complete. Fictional ReferenceLoan dry run retained under Product-Foundation. Exact next: P12-WP07 — Foundation Hardening and Closeout (do not begin until authorized). **Not production-ready.** |
-| Latest verified commit | `5debab509c52ecdbed1cf9bba1ec02147ece693b` |
-| Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred; formal WCAG cert not claimed |
+| Current phase | Phase 12 — Reusable SaaS Product Foundation and Bootstrap (**complete with documented open decisions**) |
+| Current work package | P12-WP07 — Foundation Hardening and Closeout (**complete**) |
+| Overall status | **Phase 12 complete.** Product Foundation package closed (reference, templates, context rule, bootstrap prompt, fictional ReferenceLoan dry run). No real product scaffold; no production auth. Exact next: **Phase 13 — Production Authentication and Identity** (do not begin until authorized). **Not production-ready.** |
+| Latest verified commit | *(docs tip after commit)* |
+| Open blockers | Missing production auth (R-091); D-P12-03 commercial-state transport; D-P12-04 matrix hygiene; R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-07-31 |
 
 ## Delivery sequence
@@ -77,7 +77,7 @@ P12-WP05 ✓ Product Bootstrap Prompt
         ↓
 P12-WP06 ✓ Reference Product Dry Run
         ↓
-P12-WP07 ○ Foundation Hardening and Closeout (do not begin until authorized)
+P12-WP07 ✓ Foundation Hardening and Closeout (complete with risks — Phase 12 closed)
 ```
 
 ## Phase progress
@@ -96,11 +96,12 @@ P12-WP07 ○ Foundation Hardening and Closeout (do not begin until authorized)
 | 9 | MVP Hardening and Release | **Complete with documented risks** | 6 | 6 | 100% | [Open](phases/phase-09-mvp-hardening.md) |
 | 10 | Full POS | **Complete with documented risks** | 8 | 8 | 100% | [Open](phases/phase-10-full-pos.md) |
 | 11 | Web UI and Reporting Design System | **Complete with documented risks** | 8 | 8 | 100% | [Open](phases/phase-11-web-ui-reporting-design-system.md) |
-| 12 | Reusable SaaS Product Foundation and Bootstrap | **In progress** | 6 | 7 | — | [Open](phases/phase-12-product-foundation-and-bootstrap.md) |
+| 12 | Reusable SaaS Product Foundation and Bootstrap | **Complete with documented open decisions** | 7 | 7 | 100% | [Open](phases/phase-12-product-foundation-and-bootstrap.md) |
 
 **MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
 **Phase 11 Web UI / Reporting Design System:** 8 / 8 = **100%** (with documented risks; not Production-ready; no formal WCAG certification).
+**Phase 12 Product Foundation:** 7 / 7 = **100%** (with documented open decisions; not Production-ready; no real product scaffold; R-091 open).
 
 ## Phase 12 work packages
 
@@ -112,6 +113,7 @@ P12-WP07 ○ Foundation Hardening and Closeout (do not begin until authorized)
 | P12-WP04 — Cursor Product Context Rule | Complete | `1243c78d65e347b23949b19ce2edf564fe972aad` |
 | P12-WP05 — Product Bootstrap Prompt | Complete | `d57b7be48639e30ffa9fa86624da916ef63a563f` |
 | P12-WP06 — Reference Product Dry Run | Complete | `5debab509c52ecdbed1cf9bba1ec02147ece693b` |
+| P12-WP07 — Foundation Hardening and Closeout | Complete | *(docs tip after commit)* |
 
 ## Phase 11 work packages
 
@@ -152,4 +154,4 @@ P12-WP07 ○ Foundation Hardening and Closeout (do not begin until authorized)
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P12-WP07** until explicitly authorized.
+Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **Phase 13 — Production Authentication and Identity** until explicitly authorized.

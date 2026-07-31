@@ -21,7 +21,7 @@
 | `risks-and-decisions.md` | Risks / decisions | {{STATUS}} |
 | `deployment-notes.md` | Deploy notes | {{STATUS}} / N/A |
 | `README.md` | Doc index | {{STATUS}} / N/A |
-| `reports/` | WP reports | {{STATUS}} |
+| `reports/` | WP reports (create when first WP authorized) | {{STATUS}} / N/A |
 
 ## Source roots (high level)
 

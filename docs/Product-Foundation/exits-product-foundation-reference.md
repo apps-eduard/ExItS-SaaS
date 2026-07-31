@@ -281,10 +281,11 @@ Guidance only — not scaffold implementation.
 | ID | Current state | Impact | Future decision point |
 |---|---|---|---|
 | **D-P12-01** | **Closed** — this path/name is authoritative | Context loading uses this file | — |
-| **D-P12-02** | **Closed** for intent — `src/Products/<Name>/Docs/`; POS historical docs stay under `docs/` | New products use product Docs root | P12-WP03 templates |
-| **D-P12-03** | **Open** — POS uses provisional Dev commercial headers; final Platform→product transport unresolved | Do not invent production transport | Dedicated authz/commercial WP or first new-product integration WP |
-| **R-091** | **Open** — no production JWT/passwords/MFA/SSO | Honest Dev/Testing vs Production language | Production auth roadmap |
-| **D-P12-04** | **Open** — stale engineering matrix hygiene | Prefer incremental updates | Maintainers / later Phase 12 WPs |
+| **D-P12-02** | **Closed** for intent — `src/Products/<Name>/Docs/`; POS historical docs stay under `docs/` | New products use product Docs root | Templates pack delivered |
+| **D-P12-03** | **Open** — POS uses provisional Dev commercial headers; final Platform→product transport unresolved | Do not invent production transport | Phase 13+ or dedicated commercial-integration WP |
+| **R-091** | **Open** — no production JWT/passwords/MFA/SSO | Honest Dev/Testing vs Production language | **Phase 13 — Production Authentication and Identity** |
+| **D-P12-04** | **Open** — stale engineering matrix hygiene | Prefer incremental updates | Maintainers / dedicated docs hygiene WP |
+| **D-P12-05** | **Open** (tied to R-091) — keep Dev/Testing vs Production language honest | Do not claim production-secure identity | Phase 13 (with R-091) |
 
 ---
 

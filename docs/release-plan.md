@@ -117,4 +117,14 @@ Offline synchronization, Basic Store and production hardening.
 
 **Phase 10 complete with documented risks** (P10-WP01–P10-WP08). Delivered: suppliers, purchasing, advanced inventory, cashier shifts, returns/refunds, product-local operational roles and operational reports, multiple registers, and closeout. **Not production-ready** (R-091, R-109, R-129, TLS, MAUI HTTPS remain open). Product-local POS-ROLES closed; production authentication remains open.
 
-**Next:** Phase 11 when authorized. Do not begin Phase 12.
+**Next:** Phase 11 when authorized (historical note at time of Phase 10 closeout). Phase 11 and Phase 12 later closed — see R5.1 / R5.2.
+
+## R5.1 — Web UI and Reporting Design System (Phase 11)
+
+**Phase 11 complete with documented risks** (P11-WP01–P11-WP08). Admin web UI foundation; no formal WCAG certification. **Not production-ready.**
+
+## R5.2 — Product Foundation and Bootstrap (Phase 12)
+
+**Phase 12 complete with documented open decisions** (P12-WP01–P12-WP07). Documentation foundation only — no real product scaffold, no production authentication. See [P12-WP07 closeout](reports/P12-WP07-foundation-hardening-and-closeout.md).
+
+**Next:** **Phase 13 — Production Authentication and Identity** when authorized. Do not begin Phase 13.

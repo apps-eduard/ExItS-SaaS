@@ -139,9 +139,11 @@
 
 P9-WP06 closed Phase 9 with an honest Commercial MVP readiness board: Development/Testing/CI and controlled internal technical pilot are **Ready with documented non-blocking risks**; restricted external pilot and Production remain **Blocked** (R-091, R-109, R-129, TLS-PROD, MAUI-HTTPS). Product-local POS-ROLES later closed in P10-WP06; production authentication (R-091) remains open. **P10-WP08** closed Phase 10 Full POS with documented risks — see [P10-WP08-phase-10-closeout.md](reports/P10-WP08-phase-10-closeout.md). Exact next: **Phase 11** (do not begin). **Not production-ready.**
 
-## Phase 12 — Product foundation (in progress)
+## Phase 12 — Product foundation (complete with open decisions)
 
-P12-WP06 validated the foundation with fictional **ReferenceLoan** docs under `docs/Product-Foundation/Reference-Product/` (no `src/Products/ReferenceLoan/`). Template foundation-link defect fixed. Exact next: **P12-WP07 — Foundation Hardening and Closeout** (do not begin). **Not production-ready.**
+**P12-WP07** closed Phase 12. Foundation package: reference, templates, product-context rule, bootstrap prompt, fictional ReferenceLoan under `docs/Product-Foundation/Reference-Product/` (no `src/Products/ReferenceLoan/`). Hardening fixed template `reports/` index links. Open preserved: **R-091**, **D-P12-03**, **D-P12-04**, **D-P12-05**. Exact next: **Phase 13 — Production Authentication and Identity** (do not begin). **Not production-ready.**
+
+P12-WP06 validated the foundation with fictional **ReferenceLoan** docs (template foundation-link defect fixed).
 
 P12-WP05 published `docs/Product-Foundation/product-bootstrap-prompt.md` (docs-only product bootstrap; no SampleProduct folder).
 
@@ -155,7 +157,7 @@ P12-WP01 completed a Platform–Product contract audit from repository evidence 
 
 ## Phase 11 — Web UI and Reporting Design System closeout
 
-P11-WP08 reconciled P11-WP01–P11-WP07 (Admin audit through localization/theme/a11y/responsive QA). Sole `MainLayout`, shared forms/tables/reporting, dashboard/list migration, EN/fil-PH and System/Light/Dark validated. No Tailwind/shadcn/Flowbite/DaisyUI. No business/API/migration changes. R-091/R-109/R-129/TLS/MAUI-HTTPS remain open. Formal WCAG certification not claimed. Tests **1186 / 0 / 0**. Exact next after Phase 11: **Phase 12** (now in progress). **Not production-ready.**
+P11-WP08 reconciled P11-WP01–P11-WP07 (Admin audit through localization/theme/a11y/responsive QA). Sole `MainLayout`, shared forms/tables/reporting, dashboard/list migration, EN/fil-PH and System/Light/Dark validated. No Tailwind/shadcn/Flowbite/DaisyUI. No business/API/migration changes. R-091/R-109/R-129/TLS/MAUI-HTTPS remain open. Formal WCAG certification not claimed. Tests **1186 / 0 / 0**. Phase 12 later closed via P12-WP07. **Not production-ready.**
 
 ## Phase 10 — Full POS closeout
 

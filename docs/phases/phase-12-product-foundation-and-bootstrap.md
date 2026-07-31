@@ -4,9 +4,9 @@
 
 ## Status
 
-**In progress.** **P12-WP01**–**P12-WP06** are **complete**. Exact next: **P12-WP07 — Foundation Hardening and Closeout** when authorized (do not begin).
+**Complete with documented open decisions.** **P12-WP01**–**P12-WP07** are **complete**. Phase 12 documentation foundation is closed. Exact next portfolio phase: **Phase 13 — Production Authentication and Identity** when authorized (do **not** begin).
 
-Phase 11 remains closed. Authoritative foundation: [`docs/Product-Foundation/exits-product-foundation-reference.md`](../Product-Foundation/exits-product-foundation-reference.md). Templates: [`docs/Product-Foundation/Templates/`](../Product-Foundation/Templates/README.md). Product context rule: `.cursor/rules/exits-product-context.mdc`. Bootstrap prompt: [`docs/Product-Foundation/product-bootstrap-prompt.md`](../Product-Foundation/product-bootstrap-prompt.md). Fictional dry run: [`docs/Product-Foundation/Reference-Product/`](../Product-Foundation/Reference-Product/README.md) (**not** a real product).
+Authoritative foundation: [`docs/Product-Foundation/exits-product-foundation-reference.md`](../Product-Foundation/exits-product-foundation-reference.md). Templates: [`docs/Product-Foundation/Templates/`](../Product-Foundation/Templates/README.md). Product context rule: `.cursor/rules/exits-product-context.mdc`. Bootstrap prompt: [`docs/Product-Foundation/product-bootstrap-prompt.md`](../Product-Foundation/product-bootstrap-prompt.md). Fictional dry run: [`docs/Product-Foundation/Reference-Product/`](../Product-Foundation/Reference-Product/README.md) (**not** a real product). Closeout: [`P12-WP07 report`](../reports/P12-WP07-foundation-hardening-and-closeout.md).
 
 ## Progress
 
@@ -18,7 +18,7 @@ Phase 11 remains closed. Authoritative foundation: [`docs/Product-Foundation/exi
 | P12-WP04 — Cursor Product Context Rule | **Complete** | [report](../reports/P12-WP04-cursor-product-context-rule.md) · `1243c78d65e347b23949b19ce2edf564fe972aad` |
 | P12-WP05 — Product Bootstrap Prompt | **Complete** | [report](../reports/P12-WP05-product-bootstrap-prompt.md) · `d57b7be48639e30ffa9fa86624da916ef63a563f` |
 | P12-WP06 — Reference Product Dry Run | **Complete** | [report](../reports/P12-WP06-reference-product-dry-run.md) · `5debab509c52ecdbed1cf9bba1ec02147ece693b` |
-| P12-WP07 — Foundation Hardening and Closeout | Not started | — |
+| P12-WP07 — Foundation Hardening and Closeout | **Complete** | [report](../reports/P12-WP07-foundation-hardening-and-closeout.md) · *(docs tip after commit)* |
 
 ## Purpose
 
@@ -563,6 +563,8 @@ Preferred sample:
 - missing product policy is surfaced rather than invented
 
 ### P12-WP07 — Foundation Hardening and Closeout
+
+**Complete** — see [P12-WP07 report](../reports/P12-WP07-foundation-hardening-and-closeout.md). Phase 12 closed with open decisions preserved (R-091, D-P12-03, D-P12-04, D-P12-05). Exact next: **Phase 13 — Production Authentication and Identity** (do not begin).
 
 #### Objective
 
