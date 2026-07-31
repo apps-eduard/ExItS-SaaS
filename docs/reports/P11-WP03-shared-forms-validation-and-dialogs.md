@@ -4,7 +4,7 @@ Package: **P11-WP03 — Shared Forms, Validation, and Dialogs**
 Prior tip (P11-WP02 feature): `7ce7df139a9494c9aab7d189900e96d5e43fdc1d`  
 Prior tip (P11-WP02 docs): `2db60f5e65556259d7ab724c84568bfb78a69de5`  
 Feature tip (this WP): `6825b8eb423e73cd5d3dc24e393e7201b04232bc`  
-Docs tip: _(recorded after docs commit)_
+Docs tip: `eaff142d298a6f0553c2773cbeeda6ffa01d726c`
 
 ## Status
 
