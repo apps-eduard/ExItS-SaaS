@@ -45,17 +45,18 @@ Use semantic variables rather than page-specific colors:
 
 New ExITS Platform Admin and PinoyBusinessPOS share the same semantic CSS custom-property approach (`--exits-*` / Admin `--color-*` tokens). Existing HealthCare Staff Web keeps its Ant/`--hc-*` styling without a forced migration.
 
-## Platform Admin themes (P4-WP04 + Pre-P11 theme gap fix)
+## Platform Admin themes (P4-WP04 + Pre-P11 theme persistence reopen)
 
-Admin implements **System / Light / Dark**:
+Admin implements **System / Light / Dark** with **one authority**:
 
+- Persisted preference (only): lowercase `system` | `light` | `dark` in `localStorage` key `exits-admin-theme`
+- Applied to `<html>` (and mirrored on `<body>`) as `data-theme`
 - Semantic tokens (`--color-*`, `--shadow-*`, `--radius-*`, `--motion-*`) in `wwwroot/app.css`
-- Header `ThemeSelector`; preference in `localStorage` as lowercase `system` | `light` | `dark`
-- `theme-boot.js` prevents incorrect-theme flash before first paint and re-applies on Blazor `enhancedload`
-- `ThemeService.InitializeAsync` re-applies `data-theme` after interactive remount (navigation must not drop Dark/Light)
-- Theme change does not full-reload the Blazor app
-- Focus visibility and contrast remain production risks (R-095 / R-008) until a11y hardening
+- Header `ThemeSelector` + scoped `ThemeService` write storage and call `exitsAdminTheme.applyTheme`
+- `theme-boot.js` applies before first paint
+- **Enhanced navigation** strips client-set document attributes unless re-applied: register **`Blazor.addEventListener('enhancedload', …)`** (not `document.addEventListener`), keep `<html data-permanent>`, and re-apply from storage on `NavigationManager.LocationChanged`
 - Legacy PascalCase storage values (`Light`/`Dark`/`System`) remain readable for migration
+- Focus visibility and contrast remain production risks (R-095 / R-008) until a11y hardening
 
 ## PinoyBusinessPOS themes and density (P5-WP01 / P5-WP02)
 

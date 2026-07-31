@@ -6,7 +6,9 @@ Phase marker: unchanged (`P10-WP08-phase-10-closeout`) — Phase 11 not started.
 
 ## Status
 
-**Complete.** Shared Admin theme persistence, light-mode contrast, shell depth, and restrained motion are fixed at the foundation layer.
+**Superseded for theme persistence by** [PRE-P11-admin-theme-persistence-reopen.md](PRE-P11-admin-theme-persistence-reopen.md). Visual polish tokens from this package remain in the tree; the Dark→Light nav reset required a further reopen because `enhancedload` was wired on `document` instead of `Blazor`.
+
+**Historically reported complete** at tip `4b02252187cecadfee9a97db63d4de6e65724f57` — runtime validation later failed (Dark reset on sidebar nav).
 
 ## Root causes (confirmed)
 
