@@ -19,7 +19,7 @@ Pre-Phase-11 Admin shell/theme baseline remains locked (feature tip `46b99a7f6ba
 | P11-WP05 — Shared Reporting Framework | **Complete** | [report](../reports/P11-WP05-shared-reporting-framework.md) · `4d832b39d85d7f8db55234f609188666035f34c5` |
 | P11-WP06 — Dashboard and Report Refactoring | **Complete** | [report](../reports/P11-WP06-dashboard-and-report-refactoring.md) · `6688fa674e5edc139a931dae3faefeb8b25a806b` |
 | P11-WP07 — Localization, Theme, Accessibility, and Responsive QA | **Complete** | [report](../reports/P11-WP07-localization-theme-accessibility-responsive-qa.md) · `24ee744fa15152bc325568ba6c5a99de78359921` |
-| P11-WP08 — Phase 11 Closeout | **Complete** | [report](../reports/P11-WP08-phase-11-closeout.md) · *(tip filled after commit)* |
+| P11-WP08 — Phase 11 Closeout | **Complete** | [report](../reports/P11-WP08-phase-11-closeout.md) · `ff2ad9e2e756f6e011fcf60f14e6350a3c15e32e` |
 
 ## Purpose
 

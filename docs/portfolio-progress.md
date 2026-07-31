@@ -14,7 +14,7 @@
 | Current phase | Phase 11 — Web UI and Reporting Design System (**complete with documented risks**) |
 | Current work package | P11-WP08 — Phase 11 Closeout (**complete**) |
 | Overall status | **Phase 11 closed.** Admin web UI foundation complete for Dev/Testing and controlled internal validation. Exact next: Phase 12 — Reusable SaaS Product Foundation and Bootstrap (do not begin until authorized). **Not production-ready.** |
-| Latest verified commit | *(filled after tip-hash)* |
+| Latest verified commit | `ff2ad9e2e756f6e011fcf60f14e6350a3c15e32e` |
 | Open blockers | Missing production auth (R-091); R-109 interactive Android; R-129 / NU1903; Production TLS; MAUI HTTPS-only Production policy; Manual GCash unverified; online-only admin/Full POS mutation limits; report export deferred; PITR deferred; local unsynced ops outside server backups; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-07-31 |
 
@@ -98,7 +98,7 @@ P11-WP08 ✓ Phase 11 Closeout (complete with risks — Phase 11 closed)
 | P11-WP05 — Shared Reporting Framework | Complete | `4d832b39d85d7f8db55234f609188666035f34c5` |
 | P11-WP06 — Dashboard and Report Refactoring | Complete | `6688fa674e5edc139a931dae3faefeb8b25a806b` |
 | P11-WP07 — Localization, Theme, Accessibility, and Responsive QA | Complete | `24ee744fa15152bc325568ba6c5a99de78359921` |
-| P11-WP08 — Phase 11 Closeout | Complete | *(tip filled after commit)* |
+| P11-WP08 — Phase 11 Closeout | Complete | `ff2ad9e2e756f6e011fcf60f14e6350a3c15e32e` |
 
 ## Phase 10 work packages
 
