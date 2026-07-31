@@ -3,7 +3,7 @@
 Package: **P11-WP04 — Shared Tables, Lists, Cards, and Status Components**  
 Prior tip: `d8c262d752b1af5efbab16872a7c5b8f0fae0786`  
 Feature tip (this WP): `0351f547457522a97a168b802ec050ef6f37ee83`  
-Docs tip: _(recorded after docs commit)_
+Docs tip: `3f0add52e73f61a69c48ccca721c28eb29c96cf6`
 
 ## Status
 
