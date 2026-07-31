@@ -194,7 +194,7 @@ public sealed class PackageVersionAndSmokeTests
     [Fact]
     public void Phase_marker_is_p9_wp05()
     {
-        Assert.Equal("P10-WP07-multiple-registers", DeploymentConstants.PhaseMarker);
+        Assert.Equal("P10-WP08-phase-10-closeout", DeploymentConstants.PhaseMarker);
     }
 }
 
@@ -277,7 +277,7 @@ public sealed class AndroidAndCompatibilityTests
     [Fact]
     public void Platform_and_pos_share_same_phase_marker_constant()
     {
-        Assert.Equal(DeploymentConstants.PhaseMarker, "P10-WP07-multiple-registers");
+        Assert.Equal(DeploymentConstants.PhaseMarker, "P10-WP08-phase-10-closeout");
     }
 
     [Fact]

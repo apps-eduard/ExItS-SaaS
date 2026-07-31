@@ -22,7 +22,7 @@ public enum ReleaseReadinessState
 
 public static class DeploymentConstants
 {
-    public const string PhaseMarker = "P10-WP07-multiple-registers";
+    public const string PhaseMarker = "P10-WP08-phase-10-closeout";
     public const string ToolVersion = "1.0.0";
     public const string KnownDevPasswordMarker = "exits_platform_dev_only";
     public const string ProductionConfirmationToken = "DEPLOY_PRODUCTION_CONFIRMED";

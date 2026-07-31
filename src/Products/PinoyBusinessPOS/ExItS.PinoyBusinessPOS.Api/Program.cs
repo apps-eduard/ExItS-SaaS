@@ -156,7 +156,7 @@ app.MapPermissionEndpoints();
 app.MapReportingEndpoints();
 app.MapDevOfflineProbeEndpoints();
 
-// Phase marker: P10-WP07-multiple-registers
+// Phase marker: P10-WP08-phase-10-closeout
 
 app.Run();
 
