@@ -43,7 +43,7 @@
             <PropertyColumn Property="c => c.CreatedAtUtc" Title="@L["Common_CreatedUtc"]" Format="u" Sortable />
             <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Format="u" Sortable />
             <ActionColumn Title="@L["Common_Open"]" Width="88">
-                <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" Href="@($"/admin/organizations/{context.Id}")">@L["Common_Open"]</Button>
+                <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/organizations/{context.Id}")">@L["Common_Open"]</a>
             </ActionColumn>
         </Table>
     }
@@ -80,10 +80,10 @@ else
             <DescriptionsItem Title="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@d.Organization.UpdatedAtUtc" /></DescriptionsItem>
             <DescriptionsItem Title="@L["Organizations_CommercialAdmin"]" Span="2">
                 <Space Wrap>
-                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" Href="@($"/admin/organizations/{Id}/members")">@L["Common_Members"]</Button>
-                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" Href="@($"/admin/organizations/{Id}/product-access")">@L["Common_ProductAccess"]</Button>
-                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" Href="/admin/subscriptions">@L["Organizations_StartTrialSubscriptions"]</Button>
-                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" Href="@($"/admin/payments?organizationId={Id}")">@L["Organizations_CreateViewPayments"]</Button>
+                    <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/organizations/{Id}/members")">@L["Common_Members"]</a>
+                    <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/organizations/{Id}/product-access")">@L["Common_ProductAccess"]</a>
+                    <a class="ant-btn ant-btn-link ant-btn-sm" href="/admin/subscriptions">@L["Organizations_StartTrialSubscriptions"]</a>
+                    <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/payments?organizationId={Id}")">@L["Organizations_CreateViewPayments"]</a>
                 </Space>
             </DescriptionsItem>
         </Descriptions>

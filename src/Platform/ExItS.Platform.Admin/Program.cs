@@ -138,14 +138,17 @@ builder.Services.AddScoped<ToastService>();
 
 var app = builder.Build();
 
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || livePreviewEnabled)
+{
+    // Live Preview runs Staging; surface SSR exceptions locally (Ant CSS/login diagnostics).
+    app.UseDeveloperExceptionPage();
+}
+else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    if (!livePreviewEnabled)
-    {
-        app.UseHsts();
-    }
+    app.UseHsts();
 }
+
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 if (!livePreviewEnabled)
 {

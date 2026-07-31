@@ -101,7 +101,7 @@
             </PropertyColumn>
             <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Format="u" Sortable />
             <ActionColumn Title="@L["Common_Open"]" Width="88">
-                <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" Href="@($"/admin/users/{context.Id}")">@L["Common_Open"]</Button>
+                <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/users/{context.Id}")">@L["Common_Open"]</a>
             </ActionColumn>
         </Table>
     }
