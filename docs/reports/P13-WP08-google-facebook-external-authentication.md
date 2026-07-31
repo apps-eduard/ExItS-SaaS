@@ -4,7 +4,7 @@ Phase marker: `P13-WP08-google-facebook-external-authentication`
 
 Package: **P13-WP08 — Google and Facebook External Authentication**
 Prior tip: `e973efaecc656966d7fddcc6196c84680b30e1f0`
-Feature tip: `FEATURE_TIP_PLACEHOLDER`
+Feature tip: `7c9338090f55b0fc2e289fe3b95fb3b4ce5d7938`
 
 ## Status
 
