@@ -4,7 +4,7 @@
 
 ## Status
 
-**Complete as topology/template baseline.** Starting tip after preflight `b5ff8c2830286d098145ad77e03dbde8802d2189`. Feature tip `a015d0afad0ab20c4a2a9f019615970c82b3f3d6` (forwarded headers `2994ed2b5602bec30a4553252df30aa2caf81f79`). **Not Production-ready.** P14-WP04+ not started.
+**Complete as topology/template baseline.** Starting tip after preflight `b5ff8c2830286d098145ad77e03dbde8802d2189`. Final tip `e0f45ae846d4a603e3d09a05ae06e7e314709bb6` (feature `a015d0afad0ab20c4a2a9f019615970c82b3f3d6`). **Not Production-ready.** P14-WP04+ not started.
 
 ## Decision
 
