@@ -68,6 +68,17 @@ public static class PlatformAuditActions
     public const string InvitationRevoked = "platform.invitation.revoked";
     public const string InvitationAccepted = "platform.invitation.accepted";
 
+    public const string CatalogProductCreated = "platform.catalog.product.created";
+    public const string CatalogProductUpdated = "platform.catalog.product.updated";
+    public const string CatalogProductActivated = "platform.catalog.product.activated";
+    public const string CatalogProductDeactivated = "platform.catalog.product.deactivated";
+    public const string CatalogProductRetired = "platform.catalog.product.retired";
+    public const string CatalogPlanCreated = "platform.catalog.plan.created";
+    public const string CatalogPlanUpdated = "platform.catalog.plan.updated";
+    public const string CatalogPlanActivated = "platform.catalog.plan.activated";
+    public const string CatalogPlanRetired = "platform.catalog.plan.retired";
+    public const string CatalogPlanVersionPublished = "platform.catalog.plan_version.published";
+
     public const string ProductAccessGranted = "platform.product_access.granted";
     public const string ProductAccessRevoked = "platform.product_access.revoked";
 

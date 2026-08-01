@@ -98,19 +98,73 @@ public sealed class CatalogQueryService
         _trials = trials;
     }
 
+    public Task<PagedResult<ProductDto>> ListProductsAsync(
+        ProductStatus? status,
+        int? page,
+        int? pageSize,
+        CancellationToken cancellationToken = default) =>
+        ListProductsAsync(status, page, pageSize, search: null, sortBy: null, sortDesc: null, cancellationToken);
+
     public async Task<PagedResult<ProductDto>> ListProductsAsync(
         ProductStatus? status,
         int? page,
         int? pageSize,
+        string? search,
+        CatalogListSortBy? sortBy,
+        bool? sortDesc,
         CancellationToken cancellationToken = default)
     {
         var (skip, take) = CatalogPagination.Normalize(page, pageSize);
-        var (items, totalCount) = await _products.ListAsync(status, skip, take, cancellationToken).ConfigureAwait(false);
+        var (items, totalCount) = await _products
+            .ListAsync(
+                status,
+                search,
+                sortBy ?? CatalogListSortBy.Code,
+                sortDesc ?? false,
+                skip,
+                take,
+                cancellationToken)
+            .ConfigureAwait(false);
         var pageNumber = Math.Max(page ?? 1, 1);
         return new PagedResult<ProductDto>(
             items.Select(MapProduct).ToList(),
             totalCount,
             pageNumber,
+            take);
+    }
+
+    public async Task<PagedResult<PlanDto>> ListPlansAsync(
+        string? productCode,
+        PlanStatus? status,
+        int? page,
+        int? pageSize,
+        string? search,
+        CatalogListSortBy? sortBy,
+        bool? sortDesc,
+        CancellationToken cancellationToken = default)
+    {
+        ProductCode? code = null;
+        if (!string.IsNullOrWhiteSpace(productCode))
+        {
+            code = ProductCode.Create(productCode);
+        }
+
+        var (skip, take) = CatalogPagination.Normalize(page, pageSize);
+        var (items, totalCount) = await _plans
+            .ListAsync(
+                code,
+                status,
+                search,
+                sortBy ?? CatalogListSortBy.Code,
+                sortDesc ?? false,
+                skip,
+                take,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return new PagedResult<PlanDto>(
+            items.Select(MapPlan).ToList(),
+            totalCount,
+            Math.Max(page ?? 1, 1),
             take);
     }
 

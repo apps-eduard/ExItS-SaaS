@@ -41,6 +41,7 @@ Assignments may be **platform-wide** (`OrganizationId` null) or **organization-s
 |---|---:|---:|---:|
 | `platform.permission.view_portfolio` | Yes | Yes | Yes |
 | `platform.permission.manage_organizations` | Yes | Yes | No |
+| `platform.permission.manage_catalog` | Yes | No | No |
 | `platform.permission.manage_platform_users` | Yes | No | No |
 | `platform.permission.manage_memberships` | Yes | No | Yes |
 | `platform.permission.manage_product_access` | Yes | No | Yes |

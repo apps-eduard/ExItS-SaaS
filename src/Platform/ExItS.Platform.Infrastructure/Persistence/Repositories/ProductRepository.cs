@@ -32,8 +32,18 @@ internal sealed class ProductRepository : IProductRepository
         return record is null ? null : CatalogEntityMapper.ToDomain(record);
     }
 
+    public Task<(IReadOnlyList<Product> Items, int TotalCount)> ListAsync(
+        ProductStatus? status,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default) =>
+        ListAsync(status, null, CatalogListSortBy.Code, false, skip, take, cancellationToken);
+
     public async Task<(IReadOnlyList<Product> Items, int TotalCount)> ListAsync(
         ProductStatus? status,
+        string? search,
+        CatalogListSortBy sortBy,
+        bool sortDescending,
         int skip,
         int take,
         CancellationToken cancellationToken = default)
@@ -44,9 +54,30 @@ internal sealed class ProductRepository : IProductRepository
             query = query.Where(p => p.Status == status.Value.ToString());
         }
 
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToLowerInvariant();
+            query = query.Where(p =>
+                p.Code.ToLower().Contains(term)
+                || p.DisplayName.ToLower().Contains(term));
+        }
+
+        query = (sortBy, sortDescending) switch
+        {
+            (CatalogListSortBy.DisplayName, false) => query.OrderBy(p => p.DisplayName).ThenBy(p => p.Code),
+            (CatalogListSortBy.DisplayName, true) => query.OrderByDescending(p => p.DisplayName).ThenBy(p => p.Code),
+            (CatalogListSortBy.Status, false) => query.OrderBy(p => p.Status).ThenBy(p => p.Code),
+            (CatalogListSortBy.Status, true) => query.OrderByDescending(p => p.Status).ThenBy(p => p.Code),
+            (CatalogListSortBy.CreatedAtUtc, false) => query.OrderBy(p => p.CreatedAtUtc).ThenBy(p => p.Code),
+            (CatalogListSortBy.CreatedAtUtc, true) => query.OrderByDescending(p => p.CreatedAtUtc).ThenBy(p => p.Code),
+            (CatalogListSortBy.UpdatedAtUtc, false) => query.OrderBy(p => p.UpdatedAtUtc).ThenBy(p => p.Code),
+            (CatalogListSortBy.UpdatedAtUtc, true) => query.OrderByDescending(p => p.UpdatedAtUtc).ThenBy(p => p.Code),
+            (_, true) => query.OrderByDescending(p => p.Code),
+            _ => query.OrderBy(p => p.Code)
+        };
+
         var totalCount = await query.CountAsync(cancellationToken).ConfigureAwait(false);
         var records = await query
-            .OrderBy(p => p.Code)
             .Skip(skip)
             .Take(take)
             .ToListAsync(cancellationToken)

@@ -81,6 +81,13 @@ public sealed class StartTrialSubscription
                 "Trials can only be started for an active product.");
         }
 
+        if (plan.Status != PlanStatus.Active)
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.SubscriptionIneligible,
+                "Trials can only be started for an active plan.");
+        }
+
         var version = await _plans.GetVersionByIdAsync(planVersionId, cancellationToken).ConfigureAwait(false);
         if (version is null)
         {

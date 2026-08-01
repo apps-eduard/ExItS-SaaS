@@ -39,12 +39,40 @@ internal sealed class InMemoryProductRepository : IProductRepository
         ProductStatus? status,
         int skip,
         int take,
+        CancellationToken cancellationToken = default) =>
+        ListAsync(status, null, CatalogListSortBy.Code, false, skip, take, cancellationToken);
+
+    public Task<(IReadOnlyList<Product> Items, int TotalCount)> ListAsync(
+        ProductStatus? status,
+        string? search,
+        CatalogListSortBy sortBy,
+        bool sortDescending,
+        int skip,
+        int take,
         CancellationToken cancellationToken = default)
     {
         var query = _byId.Values.AsEnumerable();
         if (status is not null)
             query = query.Where(p => p.Status == status);
-        var ordered = query.OrderBy(p => p.Code.Value, StringComparer.Ordinal).ToList();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(p =>
+                p.Code.Value.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || p.DisplayName.Contains(term, StringComparison.OrdinalIgnoreCase));
+        }
+
+        query = (sortBy, sortDescending) switch
+        {
+            (CatalogListSortBy.DisplayName, false) => query.OrderBy(p => p.DisplayName).ThenBy(p => p.Code.Value),
+            (CatalogListSortBy.DisplayName, true) => query.OrderByDescending(p => p.DisplayName).ThenBy(p => p.Code.Value),
+            (CatalogListSortBy.Status, false) => query.OrderBy(p => p.Status).ThenBy(p => p.Code.Value),
+            (CatalogListSortBy.Status, true) => query.OrderByDescending(p => p.Status).ThenBy(p => p.Code.Value),
+            (_, true) => query.OrderByDescending(p => p.Code.Value),
+            _ => query.OrderBy(p => p.Code.Value)
+        };
+
+        var ordered = query.ToList();
         var page = ordered.Skip(skip).Take(take).ToList();
         return Task.FromResult<(IReadOnlyList<Product>, int)>((page, ordered.Count));
     }
@@ -134,6 +162,44 @@ internal sealed class InMemoryPlanRepository : IPlanRepository
             .OrderBy(p => p.Code.Value, StringComparer.Ordinal)
             .ToList();
         return Task.FromResult(list);
+    }
+
+    public Task<(IReadOnlyList<Plan> Items, int TotalCount)> ListAsync(
+        ProductCode? productCode,
+        PlanStatus? status,
+        string? search,
+        CatalogListSortBy sortBy,
+        bool sortDescending,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _plans.Values.AsEnumerable();
+        if (productCode is not null)
+            query = query.Where(p => p.ProductCode == productCode);
+        if (status is not null)
+            query = query.Where(p => p.Status == status);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(p =>
+                p.Code.Value.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || p.DisplayName.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || p.ProductCode.Value.Contains(term, StringComparison.OrdinalIgnoreCase));
+        }
+
+        query = (sortBy, sortDescending) switch
+        {
+            (CatalogListSortBy.DisplayName, false) => query.OrderBy(p => p.DisplayName).ThenBy(p => p.Code.Value),
+            (CatalogListSortBy.DisplayName, true) => query.OrderByDescending(p => p.DisplayName).ThenBy(p => p.Code.Value),
+            (CatalogListSortBy.ProductCode, false) => query.OrderBy(p => p.ProductCode.Value).ThenBy(p => p.Code.Value),
+            (CatalogListSortBy.ProductCode, true) => query.OrderByDescending(p => p.ProductCode.Value).ThenBy(p => p.Code.Value),
+            (_, true) => query.OrderByDescending(p => p.Code.Value),
+            _ => query.OrderBy(p => p.Code.Value)
+        };
+
+        var ordered = query.ToList();
+        return Task.FromResult<(IReadOnlyList<Plan>, int)>((ordered.Skip(skip).Take(take).ToList(), ordered.Count));
     }
 
     public Task AddAsync(Plan plan, CancellationToken cancellationToken = default)

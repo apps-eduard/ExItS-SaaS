@@ -12,6 +12,16 @@ public interface IProductRepository
         int skip,
         int take,
         CancellationToken cancellationToken = default);
+
+    Task<(IReadOnlyList<Product> Items, int TotalCount)> ListAsync(
+        ProductStatus? status,
+        string? search,
+        CatalogListSortBy sortBy,
+        bool sortDescending,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(Product product, CancellationToken cancellationToken = default);
     Task UpdateAsync(Product product, CancellationToken cancellationToken = default);
 }
@@ -36,6 +46,17 @@ public interface IPlanRepository
     Task<Plan?> GetByIdAsync(PlanId id, CancellationToken cancellationToken = default);
     Task<Plan?> GetByProductAndCodeAsync(ProductCode productCode, PlanCode planCode, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Plan>> ListByProductAsync(ProductCode productCode, CancellationToken cancellationToken = default);
+
+    Task<(IReadOnlyList<Plan> Items, int TotalCount)> ListAsync(
+        ProductCode? productCode,
+        PlanStatus? status,
+        string? search,
+        CatalogListSortBy sortBy,
+        bool sortDescending,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(Plan plan, CancellationToken cancellationToken = default);
     Task UpdateAsync(Plan plan, CancellationToken cancellationToken = default);
 

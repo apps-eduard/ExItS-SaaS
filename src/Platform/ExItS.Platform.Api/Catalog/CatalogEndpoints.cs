@@ -1,5 +1,8 @@
+using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Domain.Audit;
+using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Products;
@@ -13,6 +16,7 @@ internal static class CatalogEndpoints
         var catalog = app.MapGroup("/api/v1/platform/catalog");
 
         MapProductEndpoints(catalog);
+        MapCatalogPlansEndpoints(catalog);
         MapFeatureEndpoints(catalog);
         MapPlanEndpoints(catalog);
         MapTrialEndpoints(catalog);
@@ -26,49 +30,300 @@ internal static class CatalogEndpoints
 
         products.MapGet("/", async (
             CatalogQueryService queries,
+            PlatformAuthz authz,
             ProductStatus? status,
+            string? search,
+            string? sortBy,
+            bool? sortDesc,
             int? page,
             int? pageSize,
             CancellationToken ct) =>
         {
-            var result = await queries.ListProductsAsync(status, page, pageSize, ct).ConfigureAwait(false);
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ViewPortfolio,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(Product),
+                "list",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            CatalogListSortBy? parsedSort = null;
+            if (!string.IsNullOrWhiteSpace(sortBy))
+            {
+                if (!Enum.TryParse<CatalogListSortBy>(sortBy, ignoreCase: true, out var sortValue))
+                {
+                    return CatalogResults.Problem(
+                        DomainErrorCodes.InvalidProductCode,
+                        $"Unrecognized sort field '{sortBy}'.",
+                        StatusCodes.Status400BadRequest);
+                }
+
+                parsedSort = sortValue;
+            }
+
+            var result = await queries
+                .ListProductsAsync(status, page, pageSize, search, parsedSort, sortDesc, ct)
+                .ConfigureAwait(false);
             return Results.Ok(result);
         });
 
-        products.MapGet("/{id:guid}", async (Guid id, CatalogQueryService queries, CancellationToken ct) =>
+        products.MapGet("/{id:guid}", async (
+            Guid id,
+            CatalogQueryService queries,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ViewPortfolio,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(Product),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var product = await queries.GetProductByIdAsync(id, ct).ConfigureAwait(false);
             return product is null ? CatalogResults.NotFound("Product was not found.") : Results.Ok(product);
         });
 
-        products.MapPost("/", async (CreateProductRequest body, CreateProduct useCase, CancellationToken ct) =>
+        products.MapPost("/", async (
+            CreateProductRequest body,
+            CreateProduct useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalog,
+                PlatformAuditActions.CatalogProductCreated,
+                nameof(Product),
+                body.Code,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await useCase.ExecuteAsync(body.Code, body.DisplayName, ct).ConfigureAwait(false);
-            return CatalogResults.FromResult(result, p => Results.Created($"/api/v1/platform/catalog/products/{p.Id.Value}", MapProduct(p)));
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogProductCreated,
+                    nameof(Product),
+                    result.Value!.Id.Value.ToString("D"),
+                    productCode: result.Value.Code.Value,
+                    summary: $"Created catalog product {result.Value.Code.Value}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return CatalogResults.FromResult(result, p => Results.Created(
+                $"/api/v1/platform/catalog/products/{p.Id.Value}",
+                MapProduct(p)));
         });
 
-        products.MapPatch("/{id:guid}/rename", async (Guid id, RenameRequest body, RenameProduct useCase, CancellationToken ct) =>
+        products.MapPatch("/{id:guid}/rename", async (
+            Guid id,
+            RenameRequest body,
+            RenameProduct useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
         {
-            var result = await useCase.ExecuteAsync(ProductId.From(id), body.DisplayName, ct).ConfigureAwait(false);
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalog,
+                PlatformAuditActions.CatalogProductUpdated,
+                nameof(Product),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(ProductId.From(id), body.DisplayName, body.ExpectedUpdatedAtUtc, ct)
+                .ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogProductUpdated,
+                    nameof(Product),
+                    id.ToString("D"),
+                    productCode: result.Value!.Code.Value,
+                    summary: $"Renamed catalog product {result.Value.Code.Value}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
             return CatalogResults.FromResult(result, p => Results.Ok(MapProduct(p)));
         });
 
-        products.MapPost("/{id:guid}/activate", async (Guid id, ActivateProduct useCase, CancellationToken ct) =>
+        products.MapPost("/{id:guid}/activate", async (
+            Guid id,
+            ActivateProduct useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalog,
+                PlatformAuditActions.CatalogProductActivated,
+                nameof(Product),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await useCase.ExecuteAsync(ProductId.From(id), ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogProductActivated,
+                    nameof(Product),
+                    id.ToString("D"),
+                    productCode: result.Value!.Code.Value,
+                    summary: $"Activated catalog product {result.Value.Code.Value}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
             return CatalogResults.FromResult(result, p => Results.Ok(MapProduct(p)));
         });
 
-        products.MapPost("/{id:guid}/deactivate", async (Guid id, DeactivateProduct useCase, CancellationToken ct) =>
+        products.MapPost("/{id:guid}/deactivate", async (
+            Guid id,
+            DeactivateProduct useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalog,
+                PlatformAuditActions.CatalogProductDeactivated,
+                nameof(Product),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await useCase.ExecuteAsync(ProductId.From(id), ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogProductDeactivated,
+                    nameof(Product),
+                    id.ToString("D"),
+                    productCode: result.Value!.Code.Value,
+                    summary: $"Deactivated catalog product {result.Value.Code.Value}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
             return CatalogResults.FromResult(result, p => Results.Ok(MapProduct(p)));
         });
 
-        products.MapPost("/{id:guid}/retire", async (Guid id, RetireProduct useCase, CancellationToken ct) =>
+        products.MapPost("/{id:guid}/retire", async (
+            Guid id,
+            RetireProduct useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalog,
+                PlatformAuditActions.CatalogProductRetired,
+                nameof(Product),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await useCase.ExecuteAsync(ProductId.From(id), ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogProductRetired,
+                    nameof(Product),
+                    id.ToString("D"),
+                    productCode: result.Value!.Code.Value,
+                    summary: $"Retired catalog product {result.Value.Code.Value}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
             return CatalogResults.FromResult(result, p => Results.Ok(MapProduct(p)));
+        });
+    }
+
+    private static void MapCatalogPlansEndpoints(RouteGroupBuilder catalog)
+    {
+        var plans = catalog.MapGroup("/plans");
+
+        plans.MapGet("/", async (
+            CatalogQueryService queries,
+            PlatformAuthz authz,
+            string? productCode,
+            PlanStatus? status,
+            string? search,
+            string? sortBy,
+            bool? sortDesc,
+            int? page,
+            int? pageSize,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ViewPortfolio,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(Plan),
+                "list",
+                productCode: productCode,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            CatalogListSortBy? parsedSort = null;
+            if (!string.IsNullOrWhiteSpace(sortBy))
+            {
+                if (!Enum.TryParse<CatalogListSortBy>(sortBy, ignoreCase: true, out var sortValue))
+                {
+                    return CatalogResults.Problem(
+                        DomainErrorCodes.InvalidPlanCode,
+                        $"Unrecognized sort field '{sortBy}'.",
+                        StatusCodes.Status400BadRequest);
+                }
+
+                parsedSort = sortValue;
+            }
+
+            var result = await queries
+                .ListPlansAsync(productCode, status, page, pageSize, search, parsedSort, sortDesc, ct)
+                .ConfigureAwait(false);
+            return Results.Ok(result);
+        });
+
+        plans.MapGet("/{planId:guid}", async (
+            Guid planId,
+            CatalogQueryService queries,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ViewPortfolio,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(Plan),
+                planId.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var plan = await queries.GetPlanByIdAsync(planId, ct).ConfigureAwait(false);
+            return plan is null ? CatalogResults.NotFound("Plan was not found.") : Results.Ok(plan);
         });
     }
 
@@ -76,8 +331,24 @@ internal static class CatalogEndpoints
     {
         var features = catalog.MapGroup("/products/{productCode}/features");
 
-        features.MapGet("/", async (string productCode, CatalogQueryService queries, CancellationToken ct) =>
+        features.MapGet("/", async (
+            string productCode,
+            CatalogQueryService queries,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ViewPortfolio,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(FeatureDefinition),
+                productCode,
+                productCode: productCode,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             try
             {
                 var items = await queries.ListFeaturesByProductAsync(productCode, ct).ConfigureAwait(false);
@@ -93,8 +364,21 @@ internal static class CatalogEndpoints
             string productCode,
             CreateFeatureRequest body,
             CreateFeatureDefinition useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalog,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(FeatureDefinition),
+                body.FeatureCode,
+                productCode: productCode,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             if (!Enum.TryParse<FeatureValueType>(body.ValueType, ignoreCase: true, out var valueType))
             {
                 return CatalogResults.Problem(
@@ -110,6 +394,17 @@ internal static class CatalogEndpoints
                 valueType,
                 ct).ConfigureAwait(false);
 
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogProductUpdated,
+                    nameof(FeatureDefinition),
+                    result.Value!.Code.Value,
+                    productCode: productCode,
+                    summary: $"Created feature {result.Value.Code.Value} for product {productCode}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
             return CatalogResults.FromResult(result, f => Results.Created(
                 $"/api/v1/platform/catalog/products/{productCode}/features/{f.Code.Value}",
                 MapFeature(f)));
@@ -119,9 +414,33 @@ internal static class CatalogEndpoints
             string productCode,
             string featureCode,
             RetireFeatureDefinition useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalog,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(FeatureDefinition),
+                featureCode,
+                productCode: productCode,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await useCase.ExecuteAsync(productCode, featureCode, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogProductUpdated,
+                    nameof(FeatureDefinition),
+                    featureCode,
+                    productCode: productCode,
+                    summary: $"Retired feature {featureCode} for product {productCode}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
             return CatalogResults.FromResult(result, f => Results.Ok(MapFeature(f)));
         });
     }
@@ -130,8 +449,24 @@ internal static class CatalogEndpoints
     {
         var plans = catalog.MapGroup("/products/{productCode}/plans");
 
-        plans.MapGet("/", async (string productCode, CatalogQueryService queries, CancellationToken ct) =>
+        plans.MapGet("/", async (
+            string productCode,
+            CatalogQueryService queries,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ViewPortfolio,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(Plan),
+                productCode,
+                productCode: productCode,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             try
             {
                 var items = await queries.ListPlansByProductAsync(productCode, ct).ConfigureAwait(false);
@@ -143,8 +478,23 @@ internal static class CatalogEndpoints
             }
         });
 
-        plans.MapGet("/{planId:guid}", async (Guid planId, CatalogQueryService queries, CancellationToken ct) =>
+        plans.MapGet("/{planId:guid}", async (
+            Guid planId,
+            CatalogQueryService queries,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ViewPortfolio,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(Plan),
+                planId.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var plan = await queries.GetPlanByIdAsync(planId, ct).ConfigureAwait(false);
             return plan is null ? CatalogResults.NotFound("Plan was not found.") : Results.Ok(plan);
         });
@@ -153,9 +503,33 @@ internal static class CatalogEndpoints
             string productCode,
             CreatePlanRequest body,
             CreatePlan useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalog,
+                PlatformAuditActions.CatalogPlanCreated,
+                nameof(Plan),
+                body.Code,
+                productCode: productCode,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await useCase.ExecuteAsync(productCode, body.Code, body.DisplayName, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogPlanCreated,
+                    nameof(Plan),
+                    result.Value!.Id.Value.ToString("D"),
+                    productCode: productCode,
+                    summary: $"Created plan {result.Value.Code.Value} for product {productCode}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
             return CatalogResults.FromResult(result, p => Results.Created(
                 $"/api/v1/platform/catalog/products/{productCode}/plans/{p.Id.Value}",
                 MapPlan(p)));
@@ -165,28 +539,120 @@ internal static class CatalogEndpoints
             Guid planId,
             RenameRequest body,
             RenamePlan useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
-            var result = await useCase.ExecuteAsync(PlanId.From(planId), body.DisplayName, ct).ConfigureAwait(false);
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalog,
+                PlatformAuditActions.CatalogPlanUpdated,
+                nameof(Plan),
+                planId.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(PlanId.From(planId), body.DisplayName, body.ExpectedUpdatedAtUtc, ct)
+                .ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogPlanUpdated,
+                    nameof(Plan),
+                    planId.ToString("D"),
+                    productCode: result.Value!.ProductCode.Value,
+                    summary: $"Renamed plan {result.Value.Code.Value}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
             return CatalogResults.FromResult(result, p => Results.Ok(MapPlan(p)));
         });
 
-        plans.MapPost("/{planId:guid}/activate", async (Guid planId, ActivatePlan useCase, CancellationToken ct) =>
+        plans.MapPost("/{planId:guid}/activate", async (
+            Guid planId,
+            ActivatePlan useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalog,
+                PlatformAuditActions.CatalogPlanActivated,
+                nameof(Plan),
+                planId.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await useCase.ExecuteAsync(PlanId.From(planId), ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogPlanActivated,
+                    nameof(Plan),
+                    planId.ToString("D"),
+                    productCode: result.Value!.ProductCode.Value,
+                    summary: $"Activated plan {result.Value.Code.Value}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
             return CatalogResults.FromResult(result, p => Results.Ok(MapPlan(p)));
         });
 
-        plans.MapPost("/{planId:guid}/retire", async (Guid planId, RetirePlan useCase, CancellationToken ct) =>
+        plans.MapPost("/{planId:guid}/retire", async (
+            Guid planId,
+            RetirePlan useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalog,
+                PlatformAuditActions.CatalogPlanRetired,
+                nameof(Plan),
+                planId.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await useCase.ExecuteAsync(PlanId.From(planId), ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogPlanRetired,
+                    nameof(Plan),
+                    planId.ToString("D"),
+                    productCode: result.Value!.ProductCode.Value,
+                    summary: $"Retired plan {result.Value.Code.Value}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
             return CatalogResults.FromResult(result, p => Results.Ok(MapPlan(p)));
         });
 
         var versions = plans.MapGroup("/{planId:guid}/versions");
 
-        versions.MapGet("/", async (Guid planId, CatalogQueryService queries, CancellationToken ct) =>
+        versions.MapGet("/", async (
+            Guid planId,
+            CatalogQueryService queries,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ViewPortfolio,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(PlanVersion),
+                planId.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var items = await queries.ListPlanVersionsAsync(planId, ct).ConfigureAwait(false);
             return Results.Ok(items);
         });
@@ -195,8 +661,20 @@ internal static class CatalogEndpoints
             Guid planId,
             int versionNumber,
             CatalogQueryService queries,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ViewPortfolio,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(PlanVersion),
+                $"{planId:D}:{versionNumber}",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var version = await queries.GetPlanVersionByNumberAsync(planId, versionNumber, ct).ConfigureAwait(false);
             return version is null
                 ? CatalogResults.NotFound("Plan version was not found.")
@@ -207,8 +685,20 @@ internal static class CatalogEndpoints
             Guid planId,
             CreateDraftPlanVersionRequest body,
             CreateDraftPlanVersion useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalog,
+                PlatformAuditActions.CatalogPlanUpdated,
+                nameof(PlanVersion),
+                planId.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             if (!Enum.TryParse<BillingPeriod>(body.BillingPeriod, ignoreCase: true, out var billingPeriod))
             {
                 return CatalogResults.Problem(
@@ -228,6 +718,17 @@ internal static class CatalogEndpoints
                 body.EffectiveToUtc,
                 ct).ConfigureAwait(false);
 
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogPlanUpdated,
+                    nameof(PlanVersion),
+                    $"{planId:D}:{result.Value!.VersionNumber}",
+                    productCode: result.Value.ProductCode.Value,
+                    summary: $"Created draft plan version {result.Value.VersionNumber}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
             return CatalogResults.FromResult(result, v => Results.Created(
                 $"/api/v1/platform/catalog/products/{v.ProductCode.Value}/plans/{planId}/versions/{v.VersionNumber}",
                 MapPlanVersion(v)));
@@ -239,8 +740,20 @@ internal static class CatalogEndpoints
             string featureCode,
             FeatureGrantRequest body,
             UpsertDraftFeatureGrant useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalog,
+                PlatformAuditActions.CatalogPlanUpdated,
+                nameof(PlanVersion),
+                $"{planId:D}:{versionNumber}",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             try
             {
                 var grant = new FeatureGrantSpec(
@@ -254,6 +767,17 @@ internal static class CatalogEndpoints
                     grant,
                     ct).ConfigureAwait(false);
 
+                if (result.IsSuccess)
+                {
+                    await authz.AuditSucceededAsync(
+                        PlatformAuditActions.CatalogPlanUpdated,
+                        nameof(PlanVersion),
+                        $"{planId:D}:{versionNumber}",
+                        productCode: result.Value!.ProductCode.Value,
+                        summary: $"Updated feature grant {featureCode} on plan version {versionNumber}.",
+                        cancellationToken: ct).ConfigureAwait(false);
+                }
+
                 return CatalogResults.FromResult(result, v => Results.Ok(MapPlanVersion(v)));
             }
             catch (DomainException ex)
@@ -266,9 +790,32 @@ internal static class CatalogEndpoints
             Guid planId,
             int versionNumber,
             PublishExistingPlanVersion useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalog,
+                PlatformAuditActions.CatalogPlanVersionPublished,
+                nameof(PlanVersion),
+                $"{planId:D}:{versionNumber}",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await useCase.ExecuteAsync(PlanId.From(planId), versionNumber, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogPlanVersionPublished,
+                    nameof(PlanVersion),
+                    $"{planId:D}:{versionNumber}",
+                    productCode: result.Value!.ProductCode.Value,
+                    summary: $"Published plan version {versionNumber}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
             return CatalogResults.FromResult(result, v => Results.Ok(MapPlanVersion(v)));
         });
     }
@@ -277,8 +824,24 @@ internal static class CatalogEndpoints
     {
         var trials = catalog.MapGroup("/products/{productCode}/trials");
 
-        trials.MapGet("/", async (string productCode, CatalogQueryService queries, CancellationToken ct) =>
+        trials.MapGet("/", async (
+            string productCode,
+            CatalogQueryService queries,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ViewPortfolio,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(TrialDefinition),
+                productCode,
+                productCode: productCode,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             try
             {
                 var items = await queries.ListTrialsByProductAsync(productCode, ct).ConfigureAwait(false);
@@ -294,8 +857,21 @@ internal static class CatalogEndpoints
             string productCode,
             CreateTrialRequest body,
             CreateTrialDefinition useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalog,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(TrialDefinition),
+                productCode,
+                productCode: productCode,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             if (!TryParseDuration(body, out var duration, out var durationError))
             {
                 return CatalogResults.Problem(
@@ -316,6 +892,17 @@ internal static class CatalogEndpoints
                 body.PlanId,
                 ct).ConfigureAwait(false);
 
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogProductUpdated,
+                    nameof(TrialDefinition),
+                    result.Value!.Id.Value.ToString("D"),
+                    productCode: productCode,
+                    summary: $"Created trial definition for product {productCode}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
             return CatalogResults.FromResult(result, t => Results.Created(
                 $"/api/v1/platform/catalog/products/{productCode}/trials/{t.Id.Value}",
                 MapTrial(t)));
@@ -324,9 +911,32 @@ internal static class CatalogEndpoints
         trials.MapPost("/{trialId:guid}/retire", async (
             Guid trialId,
             RetireTrialDefinition useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalog,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(TrialDefinition),
+                trialId.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await useCase.ExecuteAsync(TrialDefinitionId.From(trialId), ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogProductUpdated,
+                    nameof(TrialDefinition),
+                    trialId.ToString("D"),
+                    productCode: result.Value!.ProductCode.Value,
+                    summary: $"Retired trial definition for product {result.Value.ProductCode.Value}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
             return CatalogResults.FromResult(result, t => Results.Ok(MapTrial(t)));
         });
     }
@@ -449,7 +1059,7 @@ internal static class CatalogEndpoints
 }
 
 internal sealed record CreateProductRequest(string Code, string DisplayName);
-internal sealed record RenameRequest(string DisplayName);
+internal sealed record RenameRequest(string DisplayName, DateTimeOffset? ExpectedUpdatedAtUtc);
 internal sealed record CreateFeatureRequest(string FeatureCode, string DisplayName, string ValueType);
 internal sealed record CreatePlanRequest(string Code, string DisplayName);
 internal sealed record FeatureGrantRequest(string FeatureCode, bool Enabled, int? NumericLimit = null);
@@ -501,9 +1111,14 @@ internal static class CatalogResults
 
         ApplicationErrorCodes.DuplicateProductCode
             or ApplicationErrorCodes.DuplicatePlanCode
-            or ApplicationErrorCodes.DuplicateFeatureCode => StatusCodes.Status409Conflict,
+            or ApplicationErrorCodes.DuplicateFeatureCode
+            or ApplicationErrorCodes.ConcurrencyConflict
+            or ApplicationErrorCodes.SubscriptionIneligible
+            or ApplicationErrorCodes.ProductNotActive => StatusCodes.Status409Conflict,
 
         _ when errorCode.Contains(".duplicate", StringComparison.Ordinal) => StatusCodes.Status409Conflict,
+        _ when errorCode.Contains("conflict", StringComparison.OrdinalIgnoreCase) => StatusCodes.Status409Conflict,
+        _ when errorCode.Contains("invalid_transition", StringComparison.OrdinalIgnoreCase) => StatusCodes.Status409Conflict,
 
         _ => StatusCodes.Status400BadRequest
     };

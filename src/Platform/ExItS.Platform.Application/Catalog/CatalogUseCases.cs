@@ -64,15 +64,29 @@ public sealed class RenameProduct
         _clock = clock;
     }
 
+    public Task<ApplicationResult<Product>> ExecuteAsync(
+        ProductId id,
+        string displayName,
+        CancellationToken cancellationToken = default) =>
+        ExecuteAsync(id, displayName, expectedUpdatedAtUtc: null, cancellationToken);
+
     public async Task<ApplicationResult<Product>> ExecuteAsync(
         ProductId id,
         string displayName,
-        CancellationToken cancellationToken = default)
+        DateTimeOffset? expectedUpdatedAtUtc,
+        CancellationToken cancellationToken)
     {
         var product = await _products.GetByIdAsync(id, cancellationToken).ConfigureAwait(false);
         if (product is null)
         {
             return ApplicationResult<Product>.Failure(ApplicationErrorCodes.ProductNotFound, "Product was not found.");
+        }
+
+        if (IsConcurrencyMismatch(product.UpdatedAtUtc, expectedUpdatedAtUtc))
+        {
+            return ApplicationResult<Product>.Failure(
+                ApplicationErrorCodes.ConcurrencyConflict,
+                "The product was modified by another request. Refresh and try again.");
         }
 
         try
@@ -86,7 +100,15 @@ public sealed class RenameProduct
         {
             return ApplicationResult<Product>.Failure(ex.ErrorCode, ex.Message);
         }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<Product>.Failure(ex.ErrorCode, ex.Message);
+        }
     }
+
+    internal static bool IsConcurrencyMismatch(DateTimeOffset current, DateTimeOffset? expected) =>
+        expected is not null
+        && current.ToUnixTimeMilliseconds() != expected.Value.ToUnixTimeMilliseconds();
 }
 
 public sealed class ActivateProduct
@@ -370,15 +392,29 @@ public sealed class RenamePlan
         _clock = clock;
     }
 
+    public Task<ApplicationResult<Plan>> ExecuteAsync(
+        PlanId id,
+        string displayName,
+        CancellationToken cancellationToken = default) =>
+        ExecuteAsync(id, displayName, expectedUpdatedAtUtc: null, cancellationToken);
+
     public async Task<ApplicationResult<Plan>> ExecuteAsync(
         PlanId id,
         string displayName,
-        CancellationToken cancellationToken = default)
+        DateTimeOffset? expectedUpdatedAtUtc,
+        CancellationToken cancellationToken)
     {
         var plan = await _plans.GetByIdAsync(id, cancellationToken).ConfigureAwait(false);
         if (plan is null)
         {
             return ApplicationResult<Plan>.Failure(ApplicationErrorCodes.PlanNotFound, "Plan was not found.");
+        }
+
+        if (RenameProduct.IsConcurrencyMismatch(plan.UpdatedAtUtc, expectedUpdatedAtUtc))
+        {
+            return ApplicationResult<Plan>.Failure(
+                ApplicationErrorCodes.ConcurrencyConflict,
+                "The plan was modified by another request. Refresh and try again.");
         }
 
         try
@@ -389,6 +425,10 @@ public sealed class RenamePlan
             return ApplicationResult<Plan>.Success(plan);
         }
         catch (DomainException ex)
+        {
+            return ApplicationResult<Plan>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
         {
             return ApplicationResult<Plan>.Failure(ex.ErrorCode, ex.Message);
         }
