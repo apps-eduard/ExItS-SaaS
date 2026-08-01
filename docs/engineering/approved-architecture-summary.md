@@ -24,7 +24,7 @@
 | Rollback | L0–L6 | [rollback plan](extraction-rollback-plan.md) |
 | Shared code | Two consumers + product-neutral only | Phase 1 approval §14 |
 | Phase 2 | Closed with documented risks — foundations only | [Phase 2 closeout](../reports/phase-02-extraction-closeout.md) · [evidence matrix](phase-02-evidence-matrix.md) |
-| Next WP | **P15-WP05 complete.** Exact next: **P15-WP06** (Authorization, Audit, and UX Hardening) or **P14-WP03** only when authorized. | [Phase 15](../phases/phase-15-ant-design-platform-admin.md) · [Phase 14](../phases/phase-14-production-deployment-and-operations.md) |
+| Next WP | **P15-WP06 complete.** Exact next: **P15-WP07** (Closeout) or **P14-WP03** only when authorized. | [Phase 15](../phases/phase-15-ant-design-platform-admin.md) · [Phase 14](../phases/phase-14-production-deployment-and-operations.md) |
 
 ## Prohibited
 

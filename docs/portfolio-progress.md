@@ -12,9 +12,9 @@
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 15 — Ant Design Platform Administration (**in progress**) |
-| Current work package | P15-WP05 — Subscriptions and Product Entitlements (**complete**) |
-| Overall status | **Phase 15 in progress.** P15-WP01–WP05 complete. Live Preview hardening must not be rolled back ([report](reports/2026-08-01-admin-live-preview-hardening.md)). Fluent UI Admin direction cancelled/superseded. Phase 14 Production remains **Blocked** pending P14-WP03+. Exact next: **P15-WP06** or **P14-WP03** only when authorized. **Not production-ready.** |
-| Latest verified commit | `ce1d9ab138bfdd6eb141f30eff69cd410c6cbe0e` |
+| Current work package | P15-WP06 — Users, Roles, Permissions, and RBAC (**complete**) |
+| Overall status | **Phase 15 in progress.** P15-WP01–WP06 complete. Live Preview hardening must not be rolled back ([report](reports/2026-08-01-admin-live-preview-hardening.md)). Fluent UI Admin direction cancelled/superseded. Phase 14 Production remains **Blocked** pending P14-WP03+. Exact next: **P15-WP07** or **P14-WP03** only when authorized. **Not production-ready.** |
+| Latest verified commit | _(set on push)_ |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-08-01 |
 
@@ -117,7 +117,9 @@ P15-WP04 ✓ Product Catalog and Plan CRUD
         ↓
 P15-WP05 ✓ Subscriptions and Product Entitlements
         ↓
-P15-WP06 ○ Authorization, Audit, and UX Hardening (do not begin until authorized)
+P15-WP06 ✓ Users, Roles, Permissions, and RBAC
+        ↓
+P15-WP07 ○ Closeout (do not begin until authorized)
 ```
 
 ## Phase progress
@@ -139,7 +141,7 @@ P15-WP06 ○ Authorization, Audit, and UX Hardening (do not begin until authoriz
 | 12 | Reusable SaaS Product Foundation and Bootstrap | **Complete with documented open decisions** | 7 | 7 | 100% | [Open](phases/phase-12-product-foundation-and-bootstrap.md) |
 | 13 | Production Authentication and Identity | **Complete with documented residuals** | 9 | 9 | 100% | [Open](phases/phase-13-production-authentication-and-identity.md) |
 | 14 | Production Deployment and Operations | **In progress** | 2 | 7 | — | [Open](phases/phase-14-production-deployment-and-operations.md) |
-| 15 | Ant Design Platform Administration | **In progress** | 5 | 7 | — | [Open](phases/phase-15-ant-design-platform-admin.md) |
+| 15 | Ant Design Platform Administration | **In progress** | 6 | 7 | — | [Open](phases/phase-15-ant-design-platform-admin.md) |
 
 **MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
@@ -147,7 +149,7 @@ P15-WP06 ○ Authorization, Audit, and UX Hardening (do not begin until authoriz
 **Phase 12 Product Foundation:** 7 / 7 = **100%** (with documented open decisions; not Production-ready; no real product scaffold).
 **Phase 13 Production Authentication:** 9 / 9 = **100%** (R-091 closed for Phase 13 scope; residuals documented; not Production-ready).
 **Phase 14 Production Deployment:** 2 / 7 WPs complete (architecture/audit + packaging Compose baseline + live-preview gap fix; Production blocked).
-**Phase 15 Ant Design Platform Admin:** 5 / 7 WPs complete (through P15-WP05 subscriptions/entitlements; Fluent UI direction cancelled/superseded).
+**Phase 15 Ant Design Platform Admin:** 6 / 7 WPs complete (through P15-WP06 users/roles/RBAC; Fluent UI direction cancelled/superseded).
 
 ## Phase 15 work packages
 
@@ -158,7 +160,7 @@ P15-WP06 ○ Authorization, Audit, and UX Hardening (do not begin until authoriz
 | P15-WP03 — Organization Lifecycle | Complete | `81d19733864c4f0756d061120b156f0390d458f0` — [report](reports/P15-WP03-organization-lifecycle.md) |
 | P15-WP04 — Product Catalog and Plan CRUD | Complete | `d0e2ad3bd211607b59e16278fbb94e4fc73589f3` — [report](reports/P15-WP04-product-catalog-and-plan-crud.md) |
 | P15-WP05 — Subscriptions and Product Entitlements | Complete | `8f664c80eea267a5b538e7424668ba4e1af0e247` — [report](reports/P15-WP05-subscriptions-and-entitlements.md) |
-| P15-WP06 — Authorization, Audit, and UX Hardening | Not started | — |
+| P15-WP06 — Users, Roles, Permissions, and RBAC | Complete | _(set on push)_ — [report](reports/P15-WP06-users-roles-permissions-rbac.md) |
 | P15-WP07 — Closeout | Not started | — |
 
 ## Phase 13 work packages
