@@ -65,4 +65,52 @@ public sealed class PlatformOrganizationTests
         var rename = Assert.Throws<DomainException>(() => org.Rename("New Name", T1.AddMinutes(2)));
         Assert.Equal(DomainErrorCodes.OrganizationNotActive, rename.ErrorCode);
     }
+
+    [Fact]
+    public void Update_profile_and_branding_on_active_organization()
+    {
+        var org = PlatformOrganization.Create("Acme Group", "acme-group", T0);
+        org.UpdateProfile(
+            OrganizationProfile.Create(
+                "Acme Legal LLC",
+                "ops@acme.example",
+                "+1 555 0100",
+                "1 Main St",
+                null,
+                "Manila",
+                "NCR",
+                "1000",
+                "PH",
+                "UTC",
+                "en-US",
+                "USD"),
+            T1);
+        Assert.Equal("ops@acme.example", org.Profile.ContactEmail);
+        Assert.Equal("USD", org.Profile.CurrencyCode);
+
+        org.UpdateBranding(
+            OrganizationBranding.Create("Acme", "https://cdn.example.com/logo.png", "#1677FF", "#08979C"),
+            T1.AddMinutes(1));
+        Assert.Equal("#1677FF", org.Branding.PrimaryColor);
+        Assert.Equal("https://cdn.example.com/logo.png", org.Branding.LogoUrl);
+    }
+
+    [Theory]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("http://insecure.example.com/x.png")]
+    [InlineData("https://x.example/<script>.png")]
+    public void Branding_rejects_unsafe_logo_urls(string logoUrl)
+    {
+        var ex = Assert.Throws<DomainException>(() =>
+            OrganizationBranding.Create(null, logoUrl, null, null));
+        Assert.Equal(DomainErrorCodes.InvalidOrganizationBranding, ex.ErrorCode);
+    }
+
+    [Fact]
+    public void Branding_rejects_invalid_hex_colors()
+    {
+        var ex = Assert.Throws<DomainException>(() =>
+            OrganizationBranding.Create(null, null, "red", null));
+        Assert.Equal(DomainErrorCodes.InvalidOrganizationBranding, ex.ErrorCode);
+    }
 }

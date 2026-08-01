@@ -30,12 +30,49 @@ internal sealed class InMemoryPlatformOrganizationRepository : IPlatformOrganiza
     public Task<(IReadOnlyList<PlatformOrganization> Items, int TotalCount)> ListAsync(
         int skip,
         int take,
+        CancellationToken cancellationToken = default) =>
+        ListAsync(null, null, OrganizationListSortBy.DisplayName, false, skip, take, cancellationToken);
+
+    public Task<(IReadOnlyList<PlatformOrganization> Items, int TotalCount)> ListAsync(
+        OrganizationStatus? status,
+        string? search,
+        OrganizationListSortBy sortBy,
+        bool sortDescending,
+        int skip,
+        int take,
         CancellationToken cancellationToken = default)
     {
-        var ordered = _byId.Values
-            .OrderBy(o => o.DisplayName, StringComparer.Ordinal)
-            .ThenBy(o => o.Slug, StringComparer.Ordinal)
-            .ToList();
+        IEnumerable<PlatformOrganization> query = _byId.Values;
+        if (status is not null)
+        {
+            query = query.Where(o => o.Status == status);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(o =>
+                o.DisplayName.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || o.Slug.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || (o.Profile.LegalName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (o.Profile.ContactEmail?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false));
+        }
+
+        query = (sortBy, sortDescending) switch
+        {
+            (OrganizationListSortBy.Slug, false) => query.OrderBy(o => o.Slug).ThenBy(o => o.DisplayName),
+            (OrganizationListSortBy.Slug, true) => query.OrderByDescending(o => o.Slug).ThenBy(o => o.DisplayName),
+            (OrganizationListSortBy.Status, false) => query.OrderBy(o => o.Status).ThenBy(o => o.DisplayName),
+            (OrganizationListSortBy.Status, true) => query.OrderByDescending(o => o.Status).ThenBy(o => o.DisplayName),
+            (OrganizationListSortBy.CreatedAtUtc, false) => query.OrderBy(o => o.CreatedAtUtc).ThenBy(o => o.DisplayName),
+            (OrganizationListSortBy.CreatedAtUtc, true) => query.OrderByDescending(o => o.CreatedAtUtc).ThenBy(o => o.DisplayName),
+            (OrganizationListSortBy.UpdatedAtUtc, false) => query.OrderBy(o => o.UpdatedAtUtc).ThenBy(o => o.DisplayName),
+            (OrganizationListSortBy.UpdatedAtUtc, true) => query.OrderByDescending(o => o.UpdatedAtUtc).ThenBy(o => o.DisplayName),
+            (_, true) => query.OrderByDescending(o => o.DisplayName).ThenBy(o => o.Slug),
+            _ => query.OrderBy(o => o.DisplayName).ThenBy(o => o.Slug)
+        };
+
+        var ordered = query.ToList();
         var page = ordered.Skip(skip).Take(take).ToList();
         return Task.FromResult<(IReadOnlyList<PlatformOrganization>, int)>((page, ordered.Count));
     }
@@ -50,6 +87,12 @@ internal sealed class InMemoryPlatformOrganizationRepository : IPlatformOrganiza
 
     public Task UpdateAsync(PlatformOrganization organization, CancellationToken cancellationToken = default)
     {
+        // Keep slug index consistent when slug changes.
+        foreach (var pair in _slugIndex.Where(p => p.Value == organization.Id.Value).ToList())
+        {
+            _slugIndex.Remove(pair.Key);
+        }
+
         _byId[organization.Id.Value] = organization;
         _slugIndex[organization.Slug] = organization.Id.Value;
         UpdateCount++;

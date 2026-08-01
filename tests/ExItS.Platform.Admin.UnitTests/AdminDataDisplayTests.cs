@@ -48,6 +48,7 @@ public sealed class AdminDataDisplayTests
         Assert.Contains("<Table", orgs, StringComparison.Ordinal);
         Assert.Contains("AmountDisplay", orgs, StringComparison.Ordinal);
         Assert.Contains("RemoteDataSource", orgs, StringComparison.Ordinal);
+        Assert.Contains("<Tabs", orgs, StringComparison.Ordinal);
         Assert.DoesNotContain("ReportTable", orgs, StringComparison.Ordinal);
 
         var payments = File.ReadAllText(Path.Combine(pages, "Payments.razor"));
