@@ -32,7 +32,7 @@ internal static class AccessEndpoints
         {
             var denied = await authz.EnsureAsync(
                 PlatformPermission.ManageProductAccess,
-                PlatformAuditActions.ProductAccessGranted,
+                PlatformAuditActions.PlatformAccessChecked,
                 "ProductAccessAssignment",
                 organizationId.ToString("D"),
                 organizationId,
@@ -42,7 +42,7 @@ internal static class AccessEndpoints
             {
                 // Org admins may view product-access (read-only) for their trusted org.
                 var orgDenied = await membershipAuthz.EnsureCanManageMembershipsAsync(
-                    PlatformAuditActions.ProductAccessGranted,
+                    PlatformAuditActions.PlatformAccessChecked,
                     "ProductAccessAssignment",
                     organizationId.ToString("D"),
                     organizationId,
@@ -124,8 +124,21 @@ internal static class AccessEndpoints
             int? page,
             int? pageSize,
             ProductAccessQueryService queries,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageProductAccess,
+                PlatformAuditActions.PlatformAccessChecked,
+                "ProductAccessAssignment",
+                userId.ToString("D"),
+                summary: "List user product access.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             if (!TryParseStatus(status, out var parsed, out var error))
             {
                 return error!;
@@ -192,6 +205,8 @@ internal static class AccessEndpoints
             Guid organizationId,
             string productCode,
             EvaluateEffectiveProductAccess useCase,
+            PlatformAuthz authz,
+            PlatformMembershipAuthz membershipAuthz,
             CancellationToken ct) =>
         {
             if (string.IsNullOrWhiteSpace(productCode))
@@ -200,6 +215,30 @@ internal static class AccessEndpoints
                     DomainErrorCodes.InvalidProductCode,
                     "productCode is required.",
                     StatusCodes.Status400BadRequest);
+            }
+
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageProductAccess,
+                PlatformAuditActions.PlatformAccessChecked,
+                "ProductAccessAssignment",
+                userId.ToString("D"),
+                organizationId,
+                productCode,
+                summary: "Evaluate effective product access.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                var orgDenied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+                    PlatformAuditActions.PlatformAccessChecked,
+                    "ProductAccessAssignment",
+                    userId.ToString("D"),
+                    organizationId,
+                    summary: "Evaluate effective product access (org admin).",
+                    cancellationToken: ct).ConfigureAwait(false);
+                if (orgDenied is not null)
+                {
+                    return orgDenied;
+                }
             }
 
             try

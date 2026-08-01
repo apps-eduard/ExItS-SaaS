@@ -27,7 +27,7 @@ internal static class MembershipEndpoints
             CancellationToken ct) =>
         {
             var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
-                PlatformAuditActions.MembershipAdded,
+                PlatformAuditActions.PlatformAccessChecked,
                 nameof(OrganizationMembership),
                 organizationId.ToString("D"),
                 organizationId,

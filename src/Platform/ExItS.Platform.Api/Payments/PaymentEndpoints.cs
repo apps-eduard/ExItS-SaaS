@@ -94,9 +94,24 @@ internal static class PaymentEndpoints
         payments.MapGet("/{paymentId:guid}", async (
             Guid paymentId,
             SaaSPaymentQueryService queries,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
             var payment = await queries.GetByIdAsync(paymentId, ct).ConfigureAwait(false);
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageManualPayments,
+                PlatformAuditActions.PlatformAccessChecked,
+                "SaaSPayment",
+                paymentId.ToString("D"),
+                payment?.OrganizationId,
+                payment?.ProductCode,
+                summary: "Get manual payment.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             return payment is null
                 ? PlatformApiResults.Problem(
                     ApplicationErrorCodes.PaymentNotFound,
@@ -114,8 +129,23 @@ internal static class PaymentEndpoints
             int? page,
             int? pageSize,
             SaaSPaymentQueryService queries,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageManualPayments,
+                PlatformAuditActions.PlatformAccessChecked,
+                "SaaSPayment",
+                "list",
+                organizationId,
+                productCode,
+                summary: "List manual payments.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             try
             {
                 if (!string.IsNullOrWhiteSpace(reference))
@@ -331,8 +361,22 @@ internal static class PaymentEndpoints
             int? page,
             int? pageSize,
             SaaSPaymentQueryService queries,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageManualPayments,
+                PlatformAuditActions.PlatformAccessChecked,
+                "SaaSPayment",
+                organizationId.ToString("D"),
+                organizationId,
+                summary: "List organization manual payments.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await queries
                 .ListByOrganizationAsync(organizationId, status, page, pageSize, ct)
                 .ConfigureAwait(false);

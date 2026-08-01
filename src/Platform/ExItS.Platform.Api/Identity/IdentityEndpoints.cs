@@ -31,7 +31,7 @@ internal static class IdentityEndpoints
         {
             var denied = await authz.EnsureAsync(
                 PlatformPermission.ManagePlatformUsers,
-                PlatformAuditActions.PlatformUserCreated,
+                PlatformAuditActions.PlatformAccessChecked,
                 nameof(PlatformUser),
                 "list",
                 summary: "List Platform Users.",
@@ -118,7 +118,7 @@ internal static class IdentityEndpoints
         {
             var denied = await authz.EnsureAsync(
                 PlatformPermission.ManagePlatformUsers,
-                PlatformAuditActions.PlatformUserProfileUpdated,
+                PlatformAuditActions.PlatformAccessChecked,
                 nameof(PlatformUser),
                 userId.ToString("D"),
                 summary: "Get Platform User.",

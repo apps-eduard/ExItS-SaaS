@@ -25,7 +25,7 @@ internal static class InvitationEndpoints
             CancellationToken ct) =>
         {
             var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
-                PlatformAuditActions.InvitationCreated,
+                PlatformAuditActions.PlatformAccessChecked,
                 nameof(OrganizationInvitation),
                 organizationId.ToString("D"),
                 organizationId,
@@ -67,7 +67,7 @@ internal static class InvitationEndpoints
             var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
                 PlatformAuditActions.InvitationCreated,
                 nameof(OrganizationInvitation),
-                body.Email ?? string.Empty,
+                organizationId.ToString("D"),
                 organizationId,
                 cancellationToken: ct).ConfigureAwait(false);
             if (denied is not null)
@@ -96,7 +96,7 @@ internal static class InvitationEndpoints
                     nameof(OrganizationInvitation),
                     result.Value!.Id.ToString("D"),
                     organizationId,
-                    summary: $"Created invitation for {result.Value.Email}.",
+                    summary: "Created organization invitation.",
                     cancellationToken: ct).ConfigureAwait(false);
             }
 
