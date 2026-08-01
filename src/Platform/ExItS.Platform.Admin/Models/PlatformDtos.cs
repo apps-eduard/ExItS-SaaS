@@ -520,3 +520,76 @@ public sealed record PlatformRoleAssignmentDto(
     string? RevokeReason);
 
 public sealed record PlatformRoleCatalogEntryDto(string Role, IReadOnlyList<string> Permissions);
+
+public sealed record PermissionCatalogEntryDto(string Code, string Description, string Area);
+
+public sealed record PlatformRoleDefinitionDto(
+    Guid Id,
+    string Code,
+    string Name,
+    string? Description,
+    string Kind,
+    string Status,
+    IReadOnlyList<string> Permissions,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    int Version);
+
+public sealed record PlatformCustomRoleAssignmentDto(
+    Guid Id,
+    Guid PlatformUserId,
+    Guid RoleDefinitionId,
+    string Status,
+    string GrantedByActor,
+    DateTimeOffset GrantedAtUtc,
+    string? Reason,
+    string? RevokedByActor,
+    DateTimeOffset? RevokedAtUtc,
+    string? RevokeReason);
+
+public sealed record OrganizationRoleDefinitionDto(
+    Guid Id,
+    Guid OrganizationId,
+    string Code,
+    string Name,
+    string? Description,
+    string Status,
+    IReadOnlyList<string> Permissions,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    int Version);
+
+public sealed record OrganizationCustomRoleAssignmentDto(
+    Guid Id,
+    Guid OrganizationId,
+    Guid PlatformUserId,
+    Guid RoleDefinitionId,
+    string Status,
+    string GrantedByActor,
+    DateTimeOffset GrantedAtUtc,
+    string? Reason,
+    string? RevokedByActor,
+    DateTimeOffset? RevokedAtUtc,
+    string? RevokeReason);
+
+public sealed record EffectivePlatformPermissionsDto(
+    Guid PlatformUserId,
+    IReadOnlyList<string> SystemRoles,
+    IReadOnlyList<string> CustomRoles,
+    IReadOnlyList<string> Permissions);
+
+public sealed record EffectiveOrganizationPermissionsDto(
+    Guid OrganizationId,
+    Guid PlatformUserId,
+    string? MembershipRole,
+    string? MembershipStatus,
+    IReadOnlyList<string> CustomRoles,
+    IReadOnlyList<string> Permissions);
+
+public sealed record CreateRoleDefinitionRequest(string Code, string Name, string? Description, IReadOnlyList<string> Permissions);
+public sealed record UpdateRoleDefinitionRequest(string Name, string? Description, IReadOnlyList<string>? Permissions, int? ExpectedVersion);
+public sealed record RoleLifecycleRequest(int? ExpectedVersion = null, string? Reason = null);
+public sealed record AssignSystemRoleRequest(Guid PlatformUserId, string Role, Guid? OrganizationId = null, string? Reason = null);
+public sealed record AssignCustomRoleRequest(Guid PlatformUserId, Guid RoleDefinitionId, string? Reason = null);
+public sealed record AssignOrgCustomRoleRequest(Guid PlatformUserId, Guid RoleDefinitionId, string? Reason = null);
+public sealed record RevokeRoleAssignmentRequest(string? Reason = null);

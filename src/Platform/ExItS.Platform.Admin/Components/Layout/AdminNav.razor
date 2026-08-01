@@ -28,13 +28,25 @@
             <SubMenu Key="users" TitleTemplate="@UsersTitle">
                 @if (CanView(PlatformPermissionCodes.ManagePlatformUsers))
                 {
-                    <MenuItem Key="platform-users" RouterLink="/admin/users" Icon="user">
-                        @L["Nav_PlatformUsers"]
+                    <MenuItem Key="all-users" RouterLink="/admin/users" Icon="user">
+                        @L["Nav_AllUsers"]
+                    </MenuItem>
+                    <MenuItem Key="unassigned-users" RouterLink="/admin/users/unassigned" Icon="user-delete">
+                        @L["Nav_UnassignedUsers"]
+                    </MenuItem>
+                    <MenuItem Key="org-directory-users" RouterLink="/admin/users/organization" Icon="team">
+                        @L["Nav_OrganizationUsers"]
+                    </MenuItem>
+                    <MenuItem Key="platform-staff" RouterLink="/admin/users/platform-staff" Icon="safety">
+                        @L["Nav_PlatformStaff"]
+                    </MenuItem>
+                    <MenuItem Key="platform-roles" RouterLink="/admin/platform-roles" Icon="key">
+                        @L["Nav_RolesPermissions"]
                     </MenuItem>
                 }
                 @if (CanView(PlatformPermissionCodes.ManageMemberships))
                 {
-                    <MenuItem Key="org-users" RouterLink="/admin/organization-users" Icon="team">
+                    <MenuItem Key="org-users" RouterLink="/admin/organization-users" Icon="cluster">
                         @L["Nav_OrganizationUsers"]
                     </MenuItem>
                 }
@@ -147,6 +159,12 @@
             {
                 <MenuItem Key="org-members" RouterLink="@($"/admin/organizations/{membersOrg}/members")" Icon="team">
                     @L["Nav_Members"]
+                </MenuItem>
+                <MenuItem Key="org-invitations" RouterLink="@($"/admin/organizations/{membersOrg}/members")" Icon="mail">
+                    @L["Nav_Invitations"]
+                </MenuItem>
+                <MenuItem Key="org-roles" RouterLink="@($"/admin/organizations/{membersOrg}/roles")" Icon="key">
+                    @L["Nav_RolesPermissions"]
                 </MenuItem>
             }
             else

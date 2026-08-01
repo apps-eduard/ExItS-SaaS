@@ -670,4 +670,20 @@
   <data name="Error_Unhandled" xml:space="preserve"><value>May nangyaring hindi nasolusyonang error.</value></data>
   <data name="Error_Reload" xml:space="preserve"><value>I-reload</value></data>
   <data name="Error_Dismiss" xml:space="preserve"><value>Isara</value></data>
+  <data name="Nav_RolesPermissions" xml:space="preserve"><value>Roles &amp; Permissions</value></data>
+  <data name="Nav_People" xml:space="preserve"><value>People</value></data>
+  <data name="Nav_AllUsers" xml:space="preserve"><value>All Users</value></data>
+  <data name="Nav_UnassignedUsers" xml:space="preserve"><value>Unassigned Users</value></data>
+  <data name="Nav_PlatformStaff" xml:space="preserve"><value>Platform Staff</value></data>
+  <data name="Nav_Invitations" xml:space="preserve"><value>Invitations</value></data>
+  <data name="Users_Directory_Unassigned" xml:space="preserve"><value>Users with no organization membership</value></data>
+  <data name="Users_Directory_Organization" xml:space="preserve"><value>Users with organization memberships</value></data>
+  <data name="Users_Directory_PlatformStaff" xml:space="preserve"><value>Users with platform role assignments</value></data>
+  <data name="PlatformRoles_Title" xml:space="preserve"><value>Roles &amp; Permissions</value></data>
+  <data name="PlatformRoles_Description" xml:space="preserve"><value>Platform built-in and custom roles</value></data>
+  <data name="PlatformRoles_Create" xml:space="preserve"><value>Create custom role</value></data>
+  <data name="PlatformRoles_HideCreate" xml:space="preserve"><value>Hide create</value></data>
+  <data name="OrgRoles_Title" xml:space="preserve"><value>Organization roles</value></data>
+  <data name="OrgRoles_Description" xml:space="preserve"><value>Custom organization roles (built-in Owner/Admin/Member remain on memberships)</value></data>
+  <data name="OrgRoles_Create" xml:space="preserve"><value>Create role</value></data> 
 </root>

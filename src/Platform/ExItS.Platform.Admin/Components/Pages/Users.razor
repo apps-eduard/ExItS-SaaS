@@ -1,4 +1,7 @@
 @page "/admin/users"
+@page "/admin/users/unassigned"
+@page "/admin/users/organization"
+@page "/admin/users/platform-staff"
 @page "/admin/users/{Id:guid}"
 @using AntDesign
 @using Microsoft.AspNetCore.Authorization
@@ -11,7 +14,7 @@
 
 @if (Id is null)
 {
-    <PageHeader Class="exits-page-header" Title="@L["Users_Title"]" SubTitle="@L["Users_Description"]">
+    <PageHeader Class="exits-page-header" Title="@L["Users_Title"]" SubTitle="@DirectorySubtitle">
         <PageHeaderBreadcrumb>
             <Breadcrumb>
                 <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
@@ -277,7 +280,28 @@ else
         _list = await Api.GetUsersAsync(
             page: _page,
             status: string.IsNullOrWhiteSpace(_status) ? null : _status,
-            search: string.IsNullOrWhiteSpace(_search) ? null : _search);
+            search: string.IsNullOrWhiteSpace(_search) ? null : _search,
+            directory: DirectoryFilter);
+
+    private string? DirectoryFilter
+    {
+        get
+        {
+            var path = Nav.ToBaseRelativePath(Nav.Uri).TrimEnd('/');
+            if (path.EndsWith("/users/unassigned", StringComparison.OrdinalIgnoreCase)) return "Unassigned";
+            if (path.EndsWith("/users/organization", StringComparison.OrdinalIgnoreCase)) return "Organization";
+            if (path.EndsWith("/users/platform-staff", StringComparison.OrdinalIgnoreCase)) return "PlatformStaff";
+            return null;
+        }
+    }
+
+    private string DirectorySubtitle => DirectoryFilter switch
+    {
+        "Unassigned" => L["Users_Directory_Unassigned"],
+        "Organization" => L["Users_Directory_Organization"],
+        "PlatformStaff" => L["Users_Directory_PlatformStaff"],
+        _ => L["Users_Description"]
+    };
 
     private async Task ApplyUserFiltersAsync()
     {

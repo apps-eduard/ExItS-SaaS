@@ -1,0 +1,182 @@
+@page "/admin/organizations/{OrganizationId:guid}/roles"
+@page "/admin/organizations/{OrganizationId:guid}/roles/{RoleId:guid}"
+@using AntDesign
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IPlatformApiClient Api
+@inject IMessageService Message
+@inject IStringLocalizer<AdminResources> L
+@inject NavigationManager Nav
+@inject AdminShellContext Shell
+@inject PlatformPermissionState Permissions
+
+<PageHeader Class="exits-page-header" Title="@L["OrgRoles_Title"]" SubTitle="@L["OrgRoles_Description"]">
+    <PageHeaderBreadcrumb>
+        <Breadcrumb>
+            <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+            <BreadcrumbItem>@L["Nav_People"]</BreadcrumbItem>
+            <BreadcrumbItem>@L["Nav_RolesPermissions"]</BreadcrumbItem>
+        </Breadcrumb>
+    </PageHeaderBreadcrumb>
+    <PageHeaderExtra>
+        @if (CanManage && RoleId is null)
+        {
+            <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="() => _showCreate = !_showCreate">@L["OrgRoles_Create"]</Button>
+        }
+    </PageHeaderExtra>
+</PageHeader>
+
+@if (!CanAccessOrg)
+{
+    <Result Status="@ResultStatus.Error" Title="Access denied" SubTitle="Organization role administration requires trusted organization context or ManageMemberships." />
+}
+else if (RoleId is null)
+{
+    @if (_showCreate && CanManage)
+    {
+        <Card Size="@CardSize.Small" Title="Create organization role" Style="margin-bottom:12px;">
+            <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                <Input @bind-Value="_newCode" Size="@InputSize.Small" Placeholder="Code" Disabled="_busy" />
+                <Input @bind-Value="_newName" Size="@InputSize.Small" Placeholder="Name" Disabled="_busy" />
+                <CheckboxGroup @bind-Value="_newPermissions" Options="@_permissionOptions" Disabled="_busy" />
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">Create</Button>
+            </Space>
+        </Card>
+    }
+
+    @if (_list is { IsSuccess: false })
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? "Error")" SubTitle="@_list.Error?.Detail" />
+    }
+    else if (_list is { IsSuccess: true, Data.Items.Count: 0 })
+    {
+        <Empty Description="@("No custom organization roles")" />
+    }
+    else
+    {
+        <Table TItem="OrganizationRoleDefinitionDto"
+               DataSource="@(_list?.Data?.Items ?? Array.Empty<OrganizationRoleDefinitionDto>())"
+               Total="@(_list?.Data?.TotalCount ?? 0)"
+               @bind-PageIndex="_page"
+               PageSize="20"
+               Loading="@(_list is null)"
+               Size="@TableSize.Small"
+               Bordered
+               RemoteDataSource
+               OnPageIndexChange="OnPageChangedAsync">
+            <PropertyColumn Property="c => c.Code" Title="Code">
+                <a href="@($"/admin/organizations/{OrganizationId}/roles/{context.Id}")">@context.Code</a>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.Name" Title="Name" />
+            <PropertyColumn Property="c => c.Status" Title="Status">
+                <Tag>@context.Status</Tag>
+            </PropertyColumn>
+        </Table>
+    }
+}
+else if (_detail is null)
+{
+    <Spin />
+}
+else if (!_detail.IsSuccess)
+{
+    <Result Status="@ResultStatus.Error" Title="@(_detail.Error?.Title ?? "Error")" SubTitle="@_detail.Error?.Detail" />
+}
+else if (_detail.Data is { } role)
+{
+    <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
+        <DescriptionsItem Title="Code">@role.Code</DescriptionsItem>
+        <DescriptionsItem Title="Status"><Tag>@role.Status</Tag></DescriptionsItem>
+        <DescriptionsItem Title="Permissions" Span="2">
+            @foreach (var p in role.Permissions) { <Tag>@p</Tag> }
+        </DescriptionsItem>
+    </Descriptions>
+    @if (CanManage && role.Status != "Retired")
+    {
+        <Space Wrap>
+            @if (role.Status == "Active")
+            {
+                <Popconfirm Title="Deactivate role?" OnConfirm="DeactivateAsync"><Button Size="@ButtonSize.Small" Danger Loading="_busy">Deactivate</Button></Popconfirm>
+            }
+            else
+            {
+                <Popconfirm Title="Activate role?" OnConfirm="ActivateAsync"><Button Size="@ButtonSize.Small" Loading="_busy">Activate</Button></Popconfirm>
+            }
+            <Popconfirm Title="Retire role?" OnConfirm="RetireAsync"><Button Size="@ButtonSize.Small" Danger Loading="_busy">Retire</Button></Popconfirm>
+        </Space>
+    }
+}
+
+@code {
+    [Parameter] public Guid OrganizationId { get; set; }
+    [Parameter] public Guid? RoleId { get; set; }
+
+    private bool CanManage => Permissions.HasPermission(PlatformPermissionCodes.ManageMemberships) || Shell.IsOrganizationShell;
+    private bool CanAccessOrg =>
+        Permissions.HasPermission(PlatformPermissionCodes.ManageMemberships)
+        || (Shell.IsOrganizationShell && Shell.SelectedOrganizationId == OrganizationId);
+
+    private ApiCallResult<PagedResult<OrganizationRoleDefinitionDto>>? _list;
+    private ApiCallResult<OrganizationRoleDefinitionDto>? _detail;
+    private CheckboxOption<string>[] _permissionOptions = Array.Empty<CheckboxOption<string>>();
+    private int _page = 1;
+    private bool _showCreate;
+    private bool _busy;
+    private string _newCode = "";
+    private string _newName = "";
+    private string[] _newPermissions = Array.Empty<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var perms = await Api.GetOrganizationPermissionsCatalogAsync();
+        if (perms.IsSuccess && perms.Data is not null)
+        {
+            _permissionOptions = perms.Data.Select(p => new CheckboxOption<string> { Label = p.Code, Value = p.Code }).ToArray();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!CanAccessOrg) return;
+        if (RoleId is null) await LoadListAsync();
+        else _detail = await Api.GetOrganizationRoleDefinitionAsync(OrganizationId, RoleId.Value);
+    }
+
+    private async Task LoadListAsync() =>
+        _list = await Api.GetOrganizationRoleDefinitionsAsync(OrganizationId, _page, 20);
+
+    private async Task OnPageChangedAsync(PaginationEventArgs _) => await LoadListAsync();
+
+    private async Task CreateAsync()
+    {
+        if (_busy) return;
+        _busy = true;
+        try
+        {
+            var result = await Api.CreateOrganizationRoleDefinitionAsync(OrganizationId,
+                new CreateRoleDefinitionRequest(_newCode, _newName, null, _newPermissions));
+            if (!result.IsSuccess) { Message.Error(result.Error?.Detail ?? "Create failed"); return; }
+            Message.Success("Created");
+            Nav.NavigateTo($"/admin/organizations/{OrganizationId}/roles/{result.Data!.Id}");
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task ActivateAsync() => await Lifecycle(id => Api.ActivateOrganizationRoleDefinitionAsync(OrganizationId, id, new RoleLifecycleRequest(_detail!.Data!.Version)));
+    private async Task DeactivateAsync() => await Lifecycle(id => Api.DeactivateOrganizationRoleDefinitionAsync(OrganizationId, id, new RoleLifecycleRequest(_detail!.Data!.Version)));
+    private async Task RetireAsync() => await Lifecycle(id => Api.RetireOrganizationRoleDefinitionAsync(OrganizationId, id, new RoleLifecycleRequest(_detail!.Data!.Version)));
+
+    private async Task Lifecycle(Func<Guid, Task<ApiCallResult<OrganizationRoleDefinitionDto>>> action)
+    {
+        if (_busy || _detail?.Data is null) return;
+        _busy = true;
+        try
+        {
+            var result = await action(_detail.Data.Id);
+            if (!result.IsSuccess) { Message.Error(result.Error?.Detail ?? "Failed"); return; }
+            Message.Success("Updated");
+            _detail = await Api.GetOrganizationRoleDefinitionAsync(OrganizationId, RoleId!.Value);
+        }
+        finally { _busy = false; }
+    }
+}

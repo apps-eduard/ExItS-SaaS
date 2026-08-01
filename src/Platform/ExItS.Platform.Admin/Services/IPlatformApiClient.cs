@@ -76,7 +76,7 @@ public interface IPlatformApiClient
     Task<ApiCallResult<FeatureOverrideDto>> CreateFeatureOverrideAsync(Guid organizationId, string productCode, CreateFeatureOverrideRequest request, CancellationToken ct = default);
     Task<ApiCallResult<FeatureOverrideDto>> RevokeFeatureOverrideAsync(Guid overrideId, RevokeFeatureOverrideRequest request, CancellationToken ct = default);
 
-    Task<ApiCallResult<PagedResult<PlatformUserDto>>> GetUsersAsync(int page = 1, int pageSize = 20, string? status = null, string? search = null, CancellationToken ct = default);
+    Task<ApiCallResult<PagedResult<PlatformUserDto>>> GetUsersAsync(int page = 1, int pageSize = 20, string? status = null, string? search = null, string? directory = null, CancellationToken ct = default);
     Task<ApiCallResult<PlatformUserDto>> GetUserAsync(Guid id, CancellationToken ct = default);
     Task<ApiCallResult<PlatformUserDto>> CreateUserAsync(CreatePlatformUserRequest request, CancellationToken ct = default);
     Task<ApiCallResult<PlatformUserDto>> UpdateUserAsync(Guid id, UpdatePlatformUserRequest request, CancellationToken ct = default);
@@ -126,6 +126,33 @@ public interface IPlatformApiClient
     Task<ApiCallResult<AuditRecordDto>> GetAuditRecordAsync(Guid id, CancellationToken ct = default);
     Task<ApiCallResult<ResolvedPermissionsDto>> GetMyAuthorizationAsync(Guid? organizationId = null, CancellationToken ct = default);
     Task<ApiCallResult<IReadOnlyList<PlatformRoleCatalogEntryDto>>> GetAuthorizationRolesAsync(CancellationToken ct = default);
+    Task<ApiCallResult<IReadOnlyList<PermissionCatalogEntryDto>>> GetPlatformPermissionsAsync(CancellationToken ct = default);
+    Task<ApiCallResult<IReadOnlyList<PermissionCatalogEntryDto>>> GetOrganizationPermissionsCatalogAsync(CancellationToken ct = default);
+    Task<ApiCallResult<PagedResult<PlatformRoleDefinitionDto>>> GetPlatformRoleDefinitionsAsync(int page = 1, int pageSize = 20, string? kind = null, string? status = null, string? search = null, CancellationToken ct = default);
+    Task<ApiCallResult<PlatformRoleDefinitionDto>> GetPlatformRoleDefinitionAsync(Guid id, CancellationToken ct = default);
+    Task<ApiCallResult<PlatformRoleDefinitionDto>> CreatePlatformRoleDefinitionAsync(CreateRoleDefinitionRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<PlatformRoleDefinitionDto>> UpdatePlatformRoleDefinitionAsync(Guid id, UpdateRoleDefinitionRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<PlatformRoleDefinitionDto>> ActivatePlatformRoleDefinitionAsync(Guid id, RoleLifecycleRequest? request = null, CancellationToken ct = default);
+    Task<ApiCallResult<PlatformRoleDefinitionDto>> DeactivatePlatformRoleDefinitionAsync(Guid id, RoleLifecycleRequest? request = null, CancellationToken ct = default);
+    Task<ApiCallResult<PlatformRoleDefinitionDto>> RetirePlatformRoleDefinitionAsync(Guid id, RoleLifecycleRequest? request = null, CancellationToken ct = default);
+    Task<ApiCallResult<PagedResult<PlatformRoleAssignmentDto>>> GetPlatformRoleAssignmentsAsync(Guid? platformUserId = null, string? role = null, string? status = null, int page = 1, int pageSize = 20, CancellationToken ct = default);
+    Task<ApiCallResult<PlatformRoleAssignmentDto>> AssignPlatformSystemRoleAsync(AssignSystemRoleRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<PlatformRoleAssignmentDto>> RevokePlatformSystemRoleAsync(Guid assignmentId, RevokeRoleAssignmentRequest? request = null, CancellationToken ct = default);
+    Task<ApiCallResult<PagedResult<PlatformCustomRoleAssignmentDto>>> GetPlatformCustomRoleAssignmentsAsync(Guid? platformUserId = null, Guid? roleDefinitionId = null, string? status = null, int page = 1, int pageSize = 20, CancellationToken ct = default);
+    Task<ApiCallResult<PlatformCustomRoleAssignmentDto>> AssignPlatformCustomRoleAsync(AssignCustomRoleRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<PlatformCustomRoleAssignmentDto>> RevokePlatformCustomRoleAsync(Guid assignmentId, RevokeRoleAssignmentRequest? request = null, CancellationToken ct = default);
+    Task<ApiCallResult<EffectivePlatformPermissionsDto>> GetEffectivePlatformPermissionsAsync(Guid userId, Guid? organizationId = null, CancellationToken ct = default);
+    Task<ApiCallResult<PagedResult<OrganizationRoleDefinitionDto>>> GetOrganizationRoleDefinitionsAsync(Guid organizationId, int page = 1, int pageSize = 20, string? status = null, string? search = null, CancellationToken ct = default);
+    Task<ApiCallResult<OrganizationRoleDefinitionDto>> GetOrganizationRoleDefinitionAsync(Guid organizationId, Guid roleId, CancellationToken ct = default);
+    Task<ApiCallResult<OrganizationRoleDefinitionDto>> CreateOrganizationRoleDefinitionAsync(Guid organizationId, CreateRoleDefinitionRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<OrganizationRoleDefinitionDto>> UpdateOrganizationRoleDefinitionAsync(Guid organizationId, Guid roleId, UpdateRoleDefinitionRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<OrganizationRoleDefinitionDto>> ActivateOrganizationRoleDefinitionAsync(Guid organizationId, Guid roleId, RoleLifecycleRequest? request = null, CancellationToken ct = default);
+    Task<ApiCallResult<OrganizationRoleDefinitionDto>> DeactivateOrganizationRoleDefinitionAsync(Guid organizationId, Guid roleId, RoleLifecycleRequest? request = null, CancellationToken ct = default);
+    Task<ApiCallResult<OrganizationRoleDefinitionDto>> RetireOrganizationRoleDefinitionAsync(Guid organizationId, Guid roleId, RoleLifecycleRequest? request = null, CancellationToken ct = default);
+    Task<ApiCallResult<PagedResult<OrganizationCustomRoleAssignmentDto>>> GetOrganizationRoleAssignmentsAsync(Guid organizationId, Guid? platformUserId = null, Guid? roleDefinitionId = null, string? status = null, int page = 1, int pageSize = 20, CancellationToken ct = default);
+    Task<ApiCallResult<OrganizationCustomRoleAssignmentDto>> AssignOrganizationCustomRoleAsync(Guid organizationId, AssignOrgCustomRoleRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<OrganizationCustomRoleAssignmentDto>> RevokeOrganizationCustomRoleAsync(Guid organizationId, Guid assignmentId, RevokeRoleAssignmentRequest? request = null, CancellationToken ct = default);
+    Task<ApiCallResult<EffectiveOrganizationPermissionsDto>> GetEffectiveOrganizationPermissionsAsync(Guid organizationId, Guid userId, CancellationToken ct = default);
 
     Task<ApiCallResult<PlatformCredentialStatusDto>> GetUserCredentialsAsync(Guid userId, CancellationToken ct = default);
     Task<ApiCallResult<PlatformCredentialStatusDto>> SetUserPasswordAsync(Guid userId, SetUserPasswordRequest request, CancellationToken ct = default);

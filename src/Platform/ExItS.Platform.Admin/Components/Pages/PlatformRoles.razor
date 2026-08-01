@@ -1,0 +1,297 @@
+@page "/admin/platform-roles"
+@page "/admin/platform-roles/{Id:guid}"
+@using AntDesign
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IPlatformApiClient Api
+@inject IMessageService Message
+@inject IStringLocalizer<AdminResources> L
+@inject NavigationManager Nav
+@inject PlatformPermissionState Permissions
+
+@if (Id is null)
+{
+    <PageHeader Class="exits-page-header" Title="@L["PlatformRoles_Title"]" SubTitle="@L["PlatformRoles_Description"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_Users"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_RolesPermissions"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+        <PageHeaderExtra>
+            @if (CanManage)
+            {
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ToggleCreate">@(_showCreate ? L["PlatformRoles_HideCreate"] : L["PlatformRoles_Create"])</Button>
+            }
+        </PageHeaderExtra>
+    </PageHeader>
+
+    <Space Style="margin-bottom:12px; width:100%;" Wrap>
+        <Input @bind-Value="_search" Size="@InputSize.Small" Placeholder="Search code or name" Style="width:220px;" OnPressEnter="ApplyFiltersAsync" />
+        <Select TItemValue="string" TItem="string" @bind-Value="_kind" Size="@InputSize.Small" Style="width:140px;" AllowClear Placeholder="Kind">
+            <SelectOptions>
+                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="All kinds" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("BuiltIn")" Label="Built-in" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Custom")" Label="Custom" />
+            </SelectOptions>
+        </Select>
+        <Select TItemValue="string" TItem="string" @bind-Value="_status" Size="@InputSize.Small" Style="width:140px;" AllowClear Placeholder="Status">
+            <SelectOptions>
+                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="All" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Active")" Label="Active" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Inactive")" Label="Inactive" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Retired")" Label="Retired" />
+            </SelectOptions>
+        </Select>
+        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ApplyFiltersAsync">@L["Common_Apply"]</Button>
+        <Button Size="@ButtonSize.Small" OnClick="ClearFiltersAsync">@L["Common_Reset"]</Button>
+    </Space>
+
+    @if (_showCreate && CanManage)
+    {
+        <Card Size="@CardSize.Small" Title="Create custom platform role" Style="margin-bottom:12px;">
+            <FormValidationSummary Title="Create failed" Message="@_formError" IsConflict="_formConflict" />
+            <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                <Input @bind-Value="_newCode" Size="@InputSize.Small" Placeholder="Code" Disabled="_busy" />
+                <Input @bind-Value="_newName" Size="@InputSize.Small" Placeholder="Name" Disabled="_busy" />
+                <Input @bind-Value="_newDescription" Size="@InputSize.Small" Placeholder="Description" Disabled="_busy" />
+                <CheckboxGroup @bind-Value="_newPermissions" Options="@_permissionOptions" Disabled="_busy" />
+                <Space>
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">@L["Common_Create"]</Button>
+                    <Button Size="@ButtonSize.Small" OnClick="HideCreate" Disabled="_busy">@L["Common_Cancel"]</Button>
+                </Space>
+            </Space>
+        </Card>
+    }
+
+    @if (_list is { IsSuccess: false })
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail" />
+    }
+    else if (_list is { IsSuccess: true, Data.Items.Count: 0 })
+    {
+        <Empty Description="@("No platform roles")" />
+    }
+    else
+    {
+        <Table TItem="PlatformRoleDefinitionDto"
+               DataSource="@(_list?.Data?.Items ?? Array.Empty<PlatformRoleDefinitionDto>())"
+               Total="@(_list?.Data?.TotalCount ?? 0)"
+               @bind-PageIndex="_page"
+               PageSize="@(_list?.Data?.PageSize ?? 20)"
+               Loading="@(_list is null)"
+               Size="@TableSize.Small"
+               Bordered
+               RemoteDataSource
+               OnPageIndexChange="OnPageChangedAsync"
+               ScrollX="960">
+            <PropertyColumn Property="c => c.Code" Title="Code">
+                <a href="/admin/platform-roles/@context.Id">@context.Code</a>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.Name" Title="Name" />
+            <PropertyColumn Property="c => c.Kind" Title="Kind">
+                <Tag Color="@(context.Kind == "BuiltIn" ? "blue" : "geekblue")">@context.Kind</Tag>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.Status" Title="Status">
+                <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Format="u" />
+        </Table>
+    }
+}
+else
+{
+    <PageHeader Class="exits-page-header" Title="@L["PlatformRoles_Title"]" SubTitle="@(_detail?.Data?.Code)">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem Href="/admin/platform-roles">@L["Nav_RolesPermissions"]</BreadcrumbItem>
+                <BreadcrumbItem>@(_detail?.Data?.Code ?? "…")</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+    </PageHeader>
+
+    @if (_detail is null)
+    {
+        <Spin />
+    }
+    else if (!_detail.IsSuccess)
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_detail.Error?.Title ?? L["Common_Error"])" SubTitle="@_detail.Error?.Detail" />
+    }
+    else if (_detail.Data is { } role)
+    {
+        <Alert Type="@AlertType.Info" ShowIcon="true" Message="Platform roles never grant product-local POS permissions." Style="margin-bottom:12px;" />
+        <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
+            <DescriptionsItem Title="Code">@role.Code</DescriptionsItem>
+            <DescriptionsItem Title="Kind"><Tag>@role.Kind</Tag></DescriptionsItem>
+            <DescriptionsItem Title="Status"><Tag Color="@StatusColor(role.Status)">@role.Status</Tag></DescriptionsItem>
+            <DescriptionsItem Title="Version">@role.Version</DescriptionsItem>
+            <DescriptionsItem Title="Description" Span="2">@(role.Description ?? "—")</DescriptionsItem>
+            <DescriptionsItem Title="Permissions" Span="2">
+                @foreach (var p in role.Permissions)
+                {
+                    <Tag Style="margin:2px;">@p</Tag>
+                }
+            </DescriptionsItem>
+        </Descriptions>
+
+        @if (CanManage && role.Kind == "Custom" && role.Status != "Retired")
+        {
+            <Space Style="margin-bottom:12px;" Wrap>
+                <Input @bind-Value="_editName" Size="@InputSize.Small" Style="width:200px;" Placeholder="Name" Disabled="_busy" />
+                <Input @bind-Value="_editDescription" Size="@InputSize.Small" Style="width:260px;" Placeholder="Description" Disabled="_busy" />
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveAsync">Save</Button>
+                @if (role.Status == "Inactive")
+                {
+                    <Popconfirm Title="Activate this role?" OnConfirm="ActivateAsync">
+                        <Button Size="@ButtonSize.Small" Loading="_busy">Activate</Button>
+                    </Popconfirm>
+                }
+                @if (role.Status == "Active")
+                {
+                    <Popconfirm Title="Deactivate this role? It will stop granting permissions." OnConfirm="DeactivateAsync">
+                        <Button Size="@ButtonSize.Small" Danger Loading="_busy">Deactivate</Button>
+                    </Popconfirm>
+                }
+                <Popconfirm Title="Retire this role permanently?" OnConfirm="RetireAsync">
+                    <Button Size="@ButtonSize.Small" Danger Loading="_busy">Retire</Button>
+                </Popconfirm>
+            </Space>
+            <CheckboxGroup @bind-Value="_editPermissions" Options="@_permissionOptions" Disabled="_busy" Style="margin-bottom:12px;" />
+        }
+    }
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private bool CanManage => Permissions.HasPermission(PlatformPermissionCodes.ManagePlatformUsers);
+    private ApiCallResult<PagedResult<PlatformRoleDefinitionDto>>? _list;
+    private ApiCallResult<PlatformRoleDefinitionDto>? _detail;
+    private CheckboxOption<string>[] _permissionOptions = Array.Empty<CheckboxOption<string>>();
+    private string _search = "";
+    private string _kind = "";
+    private string _status = "";
+    private int _page = 1;
+    private bool _showCreate;
+    private bool _busy;
+    private string? _formError;
+    private bool _formConflict;
+    private string _newCode = "";
+    private string _newName = "";
+    private string _newDescription = "";
+    private string[] _newPermissions = Array.Empty<string>();
+    private string _editName = "";
+    private string _editDescription = "";
+    private string[] _editPermissions = Array.Empty<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var perms = await Api.GetPlatformPermissionsAsync();
+        if (perms.IsSuccess && perms.Data is not null)
+        {
+            _permissionOptions = perms.Data.Select(p => new CheckboxOption<string> { Label = p.Code, Value = p.Code }).ToArray();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id is null)
+        {
+            await LoadListAsync();
+        }
+        else
+        {
+            await LoadDetailAsync();
+        }
+    }
+
+    private async Task LoadListAsync()
+    {
+        _list = null;
+        _list = await Api.GetPlatformRoleDefinitionsAsync(_page, 20,
+            string.IsNullOrWhiteSpace(_kind) ? null : _kind,
+            string.IsNullOrWhiteSpace(_status) ? null : _status,
+            string.IsNullOrWhiteSpace(_search) ? null : _search);
+    }
+
+    private async Task LoadDetailAsync()
+    {
+        _detail = null;
+        _detail = await Api.GetPlatformRoleDefinitionAsync(Id!.Value);
+        if (_detail is { IsSuccess: true, Data: { } role })
+        {
+            _editName = role.Name;
+            _editDescription = role.Description ?? "";
+            _editPermissions = role.Permissions.ToArray();
+        }
+    }
+
+    private async Task ApplyFiltersAsync() { _page = 1; await LoadListAsync(); }
+    private async Task ClearFiltersAsync() { _search = _kind = _status = ""; _page = 1; await LoadListAsync(); }
+    private async Task OnPageChangedAsync(PaginationEventArgs _) => await LoadListAsync();
+    private void ToggleCreate() => _showCreate = !_showCreate;
+    private void HideCreate() { _showCreate = false; _formError = null; }
+
+    private async Task CreateAsync()
+    {
+        if (_busy) return;
+        _busy = true; _formError = null; _formConflict = false;
+        try
+        {
+            var result = await Api.CreatePlatformRoleDefinitionAsync(new CreateRoleDefinitionRequest(_newCode, _newName, _newDescription, _newPermissions));
+            if (!result.IsSuccess)
+            {
+                _formError = result.Error?.Detail ?? result.Error?.Title;
+                _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+                return;
+            }
+            Message.Success("Role created");
+            Nav.NavigateTo($"/admin/platform-roles/{result.Data!.Id}");
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_busy || _detail?.Data is null) return;
+        _busy = true;
+        try
+        {
+            var result = await Api.UpdatePlatformRoleDefinitionAsync(_detail.Data.Id,
+                new UpdateRoleDefinitionRequest(_editName, _editDescription, _editPermissions, _detail.Data.Version));
+            if (!result.IsSuccess) { Message.Error(result.Error?.Detail ?? "Update failed"); return; }
+            Message.Success("Saved");
+            await LoadDetailAsync();
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task ActivateAsync() => await LifecycleAsync(id => Api.ActivatePlatformRoleDefinitionAsync(id, new RoleLifecycleRequest(_detail!.Data!.Version)));
+    private async Task DeactivateAsync() => await LifecycleAsync(id => Api.DeactivatePlatformRoleDefinitionAsync(id, new RoleLifecycleRequest(_detail!.Data!.Version)));
+    private async Task RetireAsync() => await LifecycleAsync(id => Api.RetirePlatformRoleDefinitionAsync(id, new RoleLifecycleRequest(_detail!.Data!.Version)));
+
+    private async Task LifecycleAsync(Func<Guid, Task<ApiCallResult<PlatformRoleDefinitionDto>>> action)
+    {
+        if (_busy || _detail?.Data is null) return;
+        _busy = true;
+        try
+        {
+            var result = await action(_detail.Data.Id);
+            if (!result.IsSuccess) { Message.Error(result.Error?.Detail ?? "Lifecycle failed"); return; }
+            Message.Success("Updated");
+            await LoadDetailAsync();
+        }
+        finally { _busy = false; }
+    }
+
+    private static string StatusColor(string status) => status switch
+    {
+        "Active" => "success",
+        "Inactive" => "warning",
+        "Retired" => "default",
+        _ => "processing"
+    };
+}

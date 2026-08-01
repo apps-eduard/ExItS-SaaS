@@ -158,8 +158,8 @@ public sealed class PlatformApiClient(
     public Task<ApiCallResult<FeatureOverrideDto>> RevokeFeatureOverrideAsync(Guid overrideId, RevokeFeatureOverrideRequest request, CancellationToken ct = default) =>
         SendAsync<FeatureOverrideDto>(HttpMethod.Post, $"/api/v1/platform/feature-overrides/{overrideId}/revoke", request, ct);
 
-    public Task<ApiCallResult<PagedResult<PlatformUserDto>>> GetUsersAsync(int page = 1, int pageSize = 20, string? status = null, string? search = null, CancellationToken ct = default) =>
-        GetAsync<PagedResult<PlatformUserDto>>($"/api/v1/platform/users?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("search", search))}", ct);
+    public Task<ApiCallResult<PagedResult<PlatformUserDto>>> GetUsersAsync(int page = 1, int pageSize = 20, string? status = null, string? search = null, string? directory = null, CancellationToken ct = default) =>
+        GetAsync<PagedResult<PlatformUserDto>>($"/api/v1/platform/users?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("search", search), ("directory", directory))}", ct);
     public Task<ApiCallResult<PlatformUserDto>> GetUserAsync(Guid id, CancellationToken ct = default) =>
         GetAsync<PlatformUserDto>($"/api/v1/platform/users/{id}", ct);
     public Task<ApiCallResult<PlatformUserDto>> CreateUserAsync(CreatePlatformUserRequest request, CancellationToken ct = default) =>
@@ -268,6 +268,60 @@ public sealed class PlatformApiClient(
         GetAsync<ResolvedPermissionsDto>($"/api/v1/platform/authorization/me?{Query(("organizationId", organizationId))}", ct);
     public Task<ApiCallResult<IReadOnlyList<PlatformRoleCatalogEntryDto>>> GetAuthorizationRolesAsync(CancellationToken ct = default) =>
         GetAsync<IReadOnlyList<PlatformRoleCatalogEntryDto>>("/api/v1/platform/authorization/roles", ct);
+    public Task<ApiCallResult<IReadOnlyList<PermissionCatalogEntryDto>>> GetPlatformPermissionsAsync(CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<PermissionCatalogEntryDto>>("/api/v1/platform/authorization/permissions", ct);
+    public Task<ApiCallResult<IReadOnlyList<PermissionCatalogEntryDto>>> GetOrganizationPermissionsCatalogAsync(CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<PermissionCatalogEntryDto>>("/api/v1/platform/authorization/organization-permissions", ct);
+    public Task<ApiCallResult<PagedResult<PlatformRoleDefinitionDto>>> GetPlatformRoleDefinitionsAsync(int page = 1, int pageSize = 20, string? kind = null, string? status = null, string? search = null, CancellationToken ct = default) =>
+        GetAsync<PagedResult<PlatformRoleDefinitionDto>>($"/api/v1/platform/authorization/role-definitions?{Query(("page", page), ("pageSize", pageSize), ("kind", kind), ("status", status), ("search", search))}", ct);
+    public Task<ApiCallResult<PlatformRoleDefinitionDto>> GetPlatformRoleDefinitionAsync(Guid id, CancellationToken ct = default) =>
+        GetAsync<PlatformRoleDefinitionDto>($"/api/v1/platform/authorization/role-definitions/{id}", ct);
+    public Task<ApiCallResult<PlatformRoleDefinitionDto>> CreatePlatformRoleDefinitionAsync(CreateRoleDefinitionRequest request, CancellationToken ct = default) =>
+        SendAsync<PlatformRoleDefinitionDto>(HttpMethod.Post, "/api/v1/platform/authorization/role-definitions", request, ct);
+    public Task<ApiCallResult<PlatformRoleDefinitionDto>> UpdatePlatformRoleDefinitionAsync(Guid id, UpdateRoleDefinitionRequest request, CancellationToken ct = default) =>
+        SendAsync<PlatformRoleDefinitionDto>(HttpMethod.Put, $"/api/v1/platform/authorization/role-definitions/{id}", request, ct);
+    public Task<ApiCallResult<PlatformRoleDefinitionDto>> ActivatePlatformRoleDefinitionAsync(Guid id, RoleLifecycleRequest? request = null, CancellationToken ct = default) =>
+        SendAsync<PlatformRoleDefinitionDto>(HttpMethod.Post, $"/api/v1/platform/authorization/role-definitions/{id}/activate", request ?? new RoleLifecycleRequest(), ct);
+    public Task<ApiCallResult<PlatformRoleDefinitionDto>> DeactivatePlatformRoleDefinitionAsync(Guid id, RoleLifecycleRequest? request = null, CancellationToken ct = default) =>
+        SendAsync<PlatformRoleDefinitionDto>(HttpMethod.Post, $"/api/v1/platform/authorization/role-definitions/{id}/deactivate", request ?? new RoleLifecycleRequest(), ct);
+    public Task<ApiCallResult<PlatformRoleDefinitionDto>> RetirePlatformRoleDefinitionAsync(Guid id, RoleLifecycleRequest? request = null, CancellationToken ct = default) =>
+        SendAsync<PlatformRoleDefinitionDto>(HttpMethod.Post, $"/api/v1/platform/authorization/role-definitions/{id}/retire", request ?? new RoleLifecycleRequest(), ct);
+    public Task<ApiCallResult<PagedResult<PlatformRoleAssignmentDto>>> GetPlatformRoleAssignmentsAsync(Guid? platformUserId = null, string? role = null, string? status = null, int page = 1, int pageSize = 20, CancellationToken ct = default) =>
+        GetAsync<PagedResult<PlatformRoleAssignmentDto>>($"/api/v1/platform/authorization/assignments?{Query(("platformUserId", platformUserId), ("role", role), ("status", status), ("page", page), ("pageSize", pageSize))}", ct);
+    public Task<ApiCallResult<PlatformRoleAssignmentDto>> AssignPlatformSystemRoleAsync(AssignSystemRoleRequest request, CancellationToken ct = default) =>
+        SendAsync<PlatformRoleAssignmentDto>(HttpMethod.Post, "/api/v1/platform/authorization/assignments", request, ct);
+    public Task<ApiCallResult<PlatformRoleAssignmentDto>> RevokePlatformSystemRoleAsync(Guid assignmentId, RevokeRoleAssignmentRequest? request = null, CancellationToken ct = default) =>
+        SendAsync<PlatformRoleAssignmentDto>(HttpMethod.Post, $"/api/v1/platform/authorization/assignments/{assignmentId}/revoke", request ?? new RevokeRoleAssignmentRequest(), ct);
+    public Task<ApiCallResult<PagedResult<PlatformCustomRoleAssignmentDto>>> GetPlatformCustomRoleAssignmentsAsync(Guid? platformUserId = null, Guid? roleDefinitionId = null, string? status = null, int page = 1, int pageSize = 20, CancellationToken ct = default) =>
+        GetAsync<PagedResult<PlatformCustomRoleAssignmentDto>>($"/api/v1/platform/authorization/custom-assignments?{Query(("platformUserId", platformUserId), ("roleDefinitionId", roleDefinitionId), ("status", status), ("page", page), ("pageSize", pageSize))}", ct);
+    public Task<ApiCallResult<PlatformCustomRoleAssignmentDto>> AssignPlatformCustomRoleAsync(AssignCustomRoleRequest request, CancellationToken ct = default) =>
+        SendAsync<PlatformCustomRoleAssignmentDto>(HttpMethod.Post, "/api/v1/platform/authorization/custom-assignments", request, ct);
+    public Task<ApiCallResult<PlatformCustomRoleAssignmentDto>> RevokePlatformCustomRoleAsync(Guid assignmentId, RevokeRoleAssignmentRequest? request = null, CancellationToken ct = default) =>
+        SendAsync<PlatformCustomRoleAssignmentDto>(HttpMethod.Post, $"/api/v1/platform/authorization/custom-assignments/{assignmentId}/revoke", request ?? new RevokeRoleAssignmentRequest(), ct);
+    public Task<ApiCallResult<EffectivePlatformPermissionsDto>> GetEffectivePlatformPermissionsAsync(Guid userId, Guid? organizationId = null, CancellationToken ct = default) =>
+        GetAsync<EffectivePlatformPermissionsDto>($"/api/v1/platform/authorization/users/{userId}/effective-permissions?{Query(("organizationId", organizationId))}", ct);
+    public Task<ApiCallResult<PagedResult<OrganizationRoleDefinitionDto>>> GetOrganizationRoleDefinitionsAsync(Guid organizationId, int page = 1, int pageSize = 20, string? status = null, string? search = null, CancellationToken ct = default) =>
+        GetAsync<PagedResult<OrganizationRoleDefinitionDto>>($"/api/v1/platform/organizations/{organizationId}/role-definitions?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("search", search))}", ct);
+    public Task<ApiCallResult<OrganizationRoleDefinitionDto>> GetOrganizationRoleDefinitionAsync(Guid organizationId, Guid roleId, CancellationToken ct = default) =>
+        GetAsync<OrganizationRoleDefinitionDto>($"/api/v1/platform/organizations/{organizationId}/role-definitions/{roleId}", ct);
+    public Task<ApiCallResult<OrganizationRoleDefinitionDto>> CreateOrganizationRoleDefinitionAsync(Guid organizationId, CreateRoleDefinitionRequest request, CancellationToken ct = default) =>
+        SendAsync<OrganizationRoleDefinitionDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/role-definitions", request, ct);
+    public Task<ApiCallResult<OrganizationRoleDefinitionDto>> UpdateOrganizationRoleDefinitionAsync(Guid organizationId, Guid roleId, UpdateRoleDefinitionRequest request, CancellationToken ct = default) =>
+        SendAsync<OrganizationRoleDefinitionDto>(HttpMethod.Put, $"/api/v1/platform/organizations/{organizationId}/role-definitions/{roleId}", request, ct);
+    public Task<ApiCallResult<OrganizationRoleDefinitionDto>> ActivateOrganizationRoleDefinitionAsync(Guid organizationId, Guid roleId, RoleLifecycleRequest? request = null, CancellationToken ct = default) =>
+        SendAsync<OrganizationRoleDefinitionDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/role-definitions/{roleId}/activate", request ?? new RoleLifecycleRequest(), ct);
+    public Task<ApiCallResult<OrganizationRoleDefinitionDto>> DeactivateOrganizationRoleDefinitionAsync(Guid organizationId, Guid roleId, RoleLifecycleRequest? request = null, CancellationToken ct = default) =>
+        SendAsync<OrganizationRoleDefinitionDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/role-definitions/{roleId}/deactivate", request ?? new RoleLifecycleRequest(), ct);
+    public Task<ApiCallResult<OrganizationRoleDefinitionDto>> RetireOrganizationRoleDefinitionAsync(Guid organizationId, Guid roleId, RoleLifecycleRequest? request = null, CancellationToken ct = default) =>
+        SendAsync<OrganizationRoleDefinitionDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/role-definitions/{roleId}/retire", request ?? new RoleLifecycleRequest(), ct);
+    public Task<ApiCallResult<PagedResult<OrganizationCustomRoleAssignmentDto>>> GetOrganizationRoleAssignmentsAsync(Guid organizationId, Guid? platformUserId = null, Guid? roleDefinitionId = null, string? status = null, int page = 1, int pageSize = 20, CancellationToken ct = default) =>
+        GetAsync<PagedResult<OrganizationCustomRoleAssignmentDto>>($"/api/v1/platform/organizations/{organizationId}/role-assignments?{Query(("platformUserId", platformUserId), ("roleDefinitionId", roleDefinitionId), ("status", status), ("page", page), ("pageSize", pageSize))}", ct);
+    public Task<ApiCallResult<OrganizationCustomRoleAssignmentDto>> AssignOrganizationCustomRoleAsync(Guid organizationId, AssignOrgCustomRoleRequest request, CancellationToken ct = default) =>
+        SendAsync<OrganizationCustomRoleAssignmentDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/role-assignments", request, ct);
+    public Task<ApiCallResult<OrganizationCustomRoleAssignmentDto>> RevokeOrganizationCustomRoleAsync(Guid organizationId, Guid assignmentId, RevokeRoleAssignmentRequest? request = null, CancellationToken ct = default) =>
+        SendAsync<OrganizationCustomRoleAssignmentDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/role-assignments/{assignmentId}/revoke", request ?? new RevokeRoleAssignmentRequest(), ct);
+    public Task<ApiCallResult<EffectiveOrganizationPermissionsDto>> GetEffectiveOrganizationPermissionsAsync(Guid organizationId, Guid userId, CancellationToken ct = default) =>
+        GetAsync<EffectiveOrganizationPermissionsDto>($"/api/v1/platform/organizations/{organizationId}/members/{userId}/effective-permissions", ct);
 
     public Task<ApiCallResult<PlatformCredentialStatusDto>> GetUserCredentialsAsync(Guid userId, CancellationToken ct = default) =>
         GetAsync<PlatformCredentialStatusDto>($"/api/v1/platform/users/{userId}/credentials", ct);
