@@ -73,8 +73,22 @@ public sealed class ProductionProxyTlsArchitectureTests
     }
 
     [Fact]
-    public void Live_preview_ports_remain_documented_and_unchanged_by_production_compose()
+    public void Apps_configure_forwarded_headers_helpers_and_disabled_defaults()
     {
+        var root = FindRepoRoot();
+        var apiHelper = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "Common", "PlatformForwardedHeaders.cs"));
+        Assert.Contains("KnownIPNetworks.Clear()", apiHelper, StringComparison.Ordinal);
+        Assert.Contains("KnownProxies.Clear()", apiHelper, StringComparison.Ordinal);
+        Assert.Contains("ForwardedHeaders.XForwardedProto", apiHelper, StringComparison.Ordinal);
+
+        var apiSettings = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "appsettings.json"));
+        Assert.Contains("\"ForwardedHeaders\"", apiSettings, StringComparison.Ordinal);
+        Assert.Contains("\"Enabled\": false", apiSettings, StringComparison.Ordinal);
+
+        var adminProgram = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Program.cs"));
+        Assert.Contains("UseAdminForwardedHeaders", adminProgram, StringComparison.Ordinal);
+    }
+
         var root = FindRepoRoot();
         var live = File.ReadAllText(Path.Combine(root, "deploy", "docker", "compose.live-preview.yaml"));
         Assert.Contains("${LIVE_PREVIEW_ADMIN_HOST_PORT:-8090}:8080", live, StringComparison.Ordinal);
