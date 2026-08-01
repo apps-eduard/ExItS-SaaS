@@ -426,9 +426,31 @@ public sealed record GrantProductAccessRequest(Guid UserId, string ProductCode, 
 public sealed record RevokeProductAccessRequest(string RevokedByActor, string? Reason);
 
 public sealed record StartTrialRequest(Guid PlanId, Guid PlanVersionId, Guid TrialDefinitionId);
-public sealed record ActivateSubscriptionRequest(DateTimeOffset PeriodStartUtc, DateTimeOffset PeriodEndUtc);
-public sealed record GracePeriodRequest(DateTimeOffset GracePeriodEndUtc);
-public sealed record ReactivateSubscriptionRequest(DateTimeOffset? PeriodStartUtc, DateTimeOffset? PeriodEndUtc);
+public sealed record CreatePaidSubscriptionRequest(
+    Guid PlanId,
+    Guid PlanVersionId,
+    DateTimeOffset PeriodStartUtc,
+    DateTimeOffset PeriodEndUtc);
+public sealed record ActivateSubscriptionRequest(
+    DateTimeOffset PeriodStartUtc,
+    DateTimeOffset PeriodEndUtc,
+    int? ExpectedVersion = null);
+public sealed record GracePeriodRequest(DateTimeOffset GracePeriodEndUtc, int? ExpectedVersion = null);
+public sealed record ReactivateSubscriptionRequest(
+    DateTimeOffset? PeriodStartUtc = null,
+    DateTimeOffset? PeriodEndUtc = null,
+    int? ExpectedVersion = null);
+public sealed record SubscriptionLifecycleRequest(int? ExpectedVersion = null);
+public sealed record CreateFeatureOverrideRequest(
+    string FeatureCode,
+    bool Enabled,
+    string Reason,
+    Guid CreatedByUserId,
+    int? NumericLimit = null,
+    DateTimeOffset? ExpiresAtUtc = null);
+public sealed record RevokeFeatureOverrideRequest(string Reason, Guid RevokedByUserId);
+public sealed record GenerateEntitlementSnapshotRequest(int? ExpectedNextVersion = null);
+public sealed record ReconcileEntitlementSnapshotRequest(string? Reason = null);
 
 public sealed record CreateManualPaymentRequest(
     Guid OrganizationId,

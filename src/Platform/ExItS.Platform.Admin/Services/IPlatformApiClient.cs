@@ -51,7 +51,18 @@ public interface IPlatformApiClient
     Task<ApiCallResult<OrganizationDto>> ReactivateOrganizationAsync(Guid id, CancellationToken ct = default);
     Task<ApiCallResult<OrganizationDto>> CloseOrganizationAsync(Guid id, CancellationToken ct = default);
     Task<ApiCallResult<OrganizationCommercialSummaryDto>> GetOrganizationCommercialSummaryAsync(Guid id, CancellationToken ct = default);
-    Task<ApiCallResult<PagedResult<SubscriptionDto>>> GetSubscriptionsAsync(string? status = null, string? productCode = null, int page = 1, int pageSize = 20, CancellationToken ct = default);
+    Task<ApiCallResult<PagedResult<SubscriptionDto>>> GetSubscriptionsAsync(
+        string? status = null,
+        string? productCode = null,
+        Guid? organizationId = null,
+        string? search = null,
+        bool? isTrial = null,
+        Guid? planId = null,
+        string? sortBy = null,
+        bool sortDesc = true,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default);
     Task<ApiCallResult<SubscriptionDto>> GetSubscriptionAsync(Guid id, CancellationToken ct = default);
     Task<ApiCallResult<PagedResult<PaymentDto>>> GetPaymentsAsync(string? status = null, string? productCode = null, Guid? organizationId = null, string? method = null, int page = 1, int pageSize = 20, CancellationToken ct = default);
     Task<ApiCallResult<PaymentDto>> GetPaymentAsync(Guid id, CancellationToken ct = default);
@@ -60,6 +71,10 @@ public interface IPlatformApiClient
     Task<ApiCallResult<EntitlementSnapshotDto>> GetLatestEntitlementAsync(Guid organizationId, string productCode, CancellationToken ct = default);
     Task<ApiCallResult<EntitlementSnapshotDto>> GetEntitlementAsync(Guid id, CancellationToken ct = default);
     Task<ApiCallResult<PagedResult<FeatureOverrideDto>>> GetFeatureOverridesAsync(Guid organizationId, string productCode, CancellationToken ct = default);
+    Task<ApiCallResult<EntitlementSnapshotDto>> GenerateEntitlementSnapshotAsync(Guid organizationId, string productCode, int? expectedNextVersion = null, CancellationToken ct = default);
+    Task<ApiCallResult<EntitlementSnapshotDto>> ReconcileEntitlementSnapshotAsync(Guid organizationId, string productCode, string? reason = null, CancellationToken ct = default);
+    Task<ApiCallResult<FeatureOverrideDto>> CreateFeatureOverrideAsync(Guid organizationId, string productCode, CreateFeatureOverrideRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<FeatureOverrideDto>> RevokeFeatureOverrideAsync(Guid overrideId, RevokeFeatureOverrideRequest request, CancellationToken ct = default);
 
     Task<ApiCallResult<PagedResult<PlatformUserDto>>> GetUsersAsync(int page = 1, int pageSize = 20, string? status = null, string? search = null, CancellationToken ct = default);
     Task<ApiCallResult<PlatformUserDto>> GetUserAsync(Guid id, CancellationToken ct = default);
@@ -92,13 +107,14 @@ public interface IPlatformApiClient
     Task<ApiCallResult<PagedResult<SubscriptionDto>>> GetOrganizationSubscriptionsAsync(Guid organizationId, string? status = null, int page = 1, int pageSize = 20, CancellationToken ct = default);
     Task<ApiCallResult<SubscriptionDto>> GetCurrentSubscriptionAsync(Guid organizationId, string productCode, CancellationToken ct = default);
     Task<ApiCallResult<SubscriptionDto>> StartTrialAsync(Guid organizationId, StartTrialRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<SubscriptionDto>> CreatePaidSubscriptionAsync(Guid organizationId, CreatePaidSubscriptionRequest request, CancellationToken ct = default);
     Task<ApiCallResult<SubscriptionDto>> ActivateSubscriptionAsync(Guid subscriptionId, ActivateSubscriptionRequest request, CancellationToken ct = default);
     Task<ApiCallResult<SubscriptionDto>> EnterGracePeriodAsync(Guid subscriptionId, GracePeriodRequest request, CancellationToken ct = default);
-    Task<ApiCallResult<SubscriptionDto>> MarkPastDueAsync(Guid subscriptionId, CancellationToken ct = default);
-    Task<ApiCallResult<SubscriptionDto>> SuspendSubscriptionAsync(Guid subscriptionId, CancellationToken ct = default);
+    Task<ApiCallResult<SubscriptionDto>> MarkPastDueAsync(Guid subscriptionId, int? expectedVersion = null, CancellationToken ct = default);
+    Task<ApiCallResult<SubscriptionDto>> SuspendSubscriptionAsync(Guid subscriptionId, int? expectedVersion = null, CancellationToken ct = default);
     Task<ApiCallResult<SubscriptionDto>> ReactivateSubscriptionAsync(Guid subscriptionId, ReactivateSubscriptionRequest request, CancellationToken ct = default);
-    Task<ApiCallResult<SubscriptionDto>> CancelSubscriptionAsync(Guid subscriptionId, CancellationToken ct = default);
-    Task<ApiCallResult<SubscriptionDto>> ExpireSubscriptionAsync(Guid subscriptionId, CancellationToken ct = default);
+    Task<ApiCallResult<SubscriptionDto>> CancelSubscriptionAsync(Guid subscriptionId, int? expectedVersion = null, CancellationToken ct = default);
+    Task<ApiCallResult<SubscriptionDto>> ExpireSubscriptionAsync(Guid subscriptionId, int? expectedVersion = null, CancellationToken ct = default);
 
     Task<ApiCallResult<PaymentDto>> CreateManualPaymentAsync(CreateManualPaymentRequest request, CancellationToken ct = default);
     Task<ApiCallResult<PaymentDto>> ConfirmPaymentAsync(Guid paymentId, ConfirmPaymentRequest request, CancellationToken ct = default);

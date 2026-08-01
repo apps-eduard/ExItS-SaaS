@@ -62,6 +62,20 @@
                         @L["Nav_Subscriptions"]
                     </MenuItem>
                 }
+                @if (CanView(PlatformPermissionCodes.ManageEntitlementOverrides)
+                     || CanView(PlatformPermissionCodes.ManageSubscriptions)
+                     || CanView(PlatformPermissionCodes.ViewPortfolio))
+                {
+                    <MenuItem Key="entitlements" RouterLink="/admin/entitlements" Icon="safety-certificate">
+                        @L["Nav_Entitlements"]
+                    </MenuItem>
+                }
+                @if (CanView(PlatformPermissionCodes.ManageManualPayments))
+                {
+                    <MenuItem Key="payments" RouterLink="/admin/payments" Icon="dollar">
+                        @L["Nav_Payments"]
+                    </MenuItem>
+                }
             </SubMenu>
         }
 
@@ -144,7 +158,8 @@
         </SubMenu>
 
         <SubMenu Key="org-products" TitleTemplate="@OrgProductsTitle">
-            @if (Shell.SelectedOrganizationId is Guid accessOrg && CanView(PlatformPermissionCodes.ManageProductAccess))
+            @if (Shell.SelectedOrganizationId is Guid accessOrg
+                 && (IsOrgAdminMembership || CanView(PlatformPermissionCodes.ManageProductAccess)))
             {
                 <MenuItem Key="my-products" RouterLink="@($"/admin/organizations/{accessOrg}/product-access")" Icon="appstore">
                     @L["Nav_MyProducts"]
@@ -162,9 +177,19 @@
         </SubMenu>
 
         <SubMenu Key="subscription" TitleTemplate="@SubscriptionTitle">
-            <MenuItem Key="current-plan" Disabled="true">
-                @L["Nav_CurrentPlan"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
-            </MenuItem>
+            @if (Shell.SelectedOrganizationId is Guid planOrg
+                 && (CanView(PlatformPermissionCodes.ViewPortfolio) || IsOrgAdminMembership))
+            {
+                <MenuItem Key="current-plan" RouterLink="@($"/admin/organizations/{planOrg}")" Icon="profile">
+                    @L["Nav_CurrentPlan"]
+                </MenuItem>
+            }
+            else
+            {
+                <MenuItem Key="current-plan" Disabled="true">
+                    @L["Nav_CurrentPlan"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                </MenuItem>
+            }
             <MenuItem Key="usage" Disabled="true">
                 @L["Nav_Usage"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
             </MenuItem>
@@ -240,7 +265,9 @@
 
     private bool ShowCommercialSection =>
         CanView(PlatformPermissionCodes.ViewPortfolio)
-        || CanView(PlatformPermissionCodes.ManageSubscriptions);
+        || CanView(PlatformPermissionCodes.ManageSubscriptions)
+        || CanView(PlatformPermissionCodes.ManageEntitlementOverrides)
+        || CanView(PlatformPermissionCodes.ManageManualPayments);
 
     protected override async Task OnInitializedAsync()
     {
@@ -289,6 +316,8 @@
             var p when p.StartsWith("/admin/products", StringComparison.Ordinal) => ["products"],
             var p when p.StartsWith("/admin/plans", StringComparison.Ordinal) => ["plans"],
             var p when p.StartsWith("/admin/subscriptions", StringComparison.Ordinal) => ["subscriptions"],
+            var p when p.StartsWith("/admin/entitlements", StringComparison.Ordinal) => ["entitlements"],
+            var p when p.StartsWith("/admin/payments", StringComparison.Ordinal) => ["payments"],
             var p when p.StartsWith("/admin/audit", StringComparison.Ordinal) =>
                 Shell.IsOrganizationShell ? ["activity-log"] : ["audit"],
             _ => _selected

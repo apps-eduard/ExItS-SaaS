@@ -96,8 +96,31 @@ public sealed class PlatformApiClient(
         SendAsync<OrganizationDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{id}/close", null, ct);
     public Task<ApiCallResult<OrganizationCommercialSummaryDto>> GetOrganizationCommercialSummaryAsync(Guid id, CancellationToken ct = default) =>
         GetAsync<OrganizationCommercialSummaryDto>($"/api/v1/platform/admin/organizations/{id}/commercial-summary", ct);
-    public Task<ApiCallResult<PagedResult<SubscriptionDto>>> GetSubscriptionsAsync(string? status = null, string? productCode = null, int page = 1, int pageSize = 20, CancellationToken ct = default) =>
-        GetAsync<PagedResult<SubscriptionDto>>($"/api/v1/platform/subscriptions?{Query(("status", status), ("productCode", productCode), ("page", page), ("pageSize", pageSize))}", ct);
+    public Task<ApiCallResult<PagedResult<SubscriptionDto>>> GetSubscriptionsAsync(
+        string? status = null,
+        string? productCode = null,
+        Guid? organizationId = null,
+        string? search = null,
+        bool? isTrial = null,
+        Guid? planId = null,
+        string? sortBy = null,
+        bool sortDesc = true,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default) =>
+        GetAsync<PagedResult<SubscriptionDto>>(
+            $"/api/v1/platform/subscriptions?{Query(
+                ("status", status),
+                ("productCode", productCode),
+                ("organizationId", organizationId),
+                ("search", search),
+                ("isTrial", isTrial),
+                ("planId", planId),
+                ("sortBy", sortBy),
+                ("sortDesc", sortDesc),
+                ("page", page),
+                ("pageSize", pageSize))}",
+            ct);
     public Task<ApiCallResult<SubscriptionDto>> GetSubscriptionAsync(Guid id, CancellationToken ct = default) =>
         GetAsync<SubscriptionDto>($"/api/v1/platform/subscriptions/{id}", ct);
     public Task<ApiCallResult<PagedResult<PaymentDto>>> GetPaymentsAsync(string? status = null, string? productCode = null, Guid? organizationId = null, string? method = null, int page = 1, int pageSize = 20, CancellationToken ct = default) =>
@@ -114,6 +137,26 @@ public sealed class PlatformApiClient(
         GetAsync<EntitlementSnapshotDto>($"/api/v1/platform/entitlements/snapshots/{id}", ct);
     public Task<ApiCallResult<PagedResult<FeatureOverrideDto>>> GetFeatureOverridesAsync(Guid organizationId, string productCode, CancellationToken ct = default) =>
         GetAsync<PagedResult<FeatureOverrideDto>>($"/api/v1/platform/organizations/{organizationId}/products/{Escape(productCode)}/feature-overrides", ct);
+    public Task<ApiCallResult<EntitlementSnapshotDto>> GenerateEntitlementSnapshotAsync(Guid organizationId, string productCode, int? expectedNextVersion = null, CancellationToken ct = default) =>
+        SendAsync<EntitlementSnapshotDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId}/products/{Escape(productCode)}/entitlements/snapshots",
+            new GenerateEntitlementSnapshotRequest(expectedNextVersion),
+            ct);
+    public Task<ApiCallResult<EntitlementSnapshotDto>> ReconcileEntitlementSnapshotAsync(Guid organizationId, string productCode, string? reason = null, CancellationToken ct = default) =>
+        SendAsync<EntitlementSnapshotDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId}/products/{Escape(productCode)}/entitlements/reconcile",
+            new ReconcileEntitlementSnapshotRequest(reason),
+            ct);
+    public Task<ApiCallResult<FeatureOverrideDto>> CreateFeatureOverrideAsync(Guid organizationId, string productCode, CreateFeatureOverrideRequest request, CancellationToken ct = default) =>
+        SendAsync<FeatureOverrideDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId}/products/{Escape(productCode)}/feature-overrides",
+            request,
+            ct);
+    public Task<ApiCallResult<FeatureOverrideDto>> RevokeFeatureOverrideAsync(Guid overrideId, RevokeFeatureOverrideRequest request, CancellationToken ct = default) =>
+        SendAsync<FeatureOverrideDto>(HttpMethod.Post, $"/api/v1/platform/feature-overrides/{overrideId}/revoke", request, ct);
 
     public Task<ApiCallResult<PagedResult<PlatformUserDto>>> GetUsersAsync(int page = 1, int pageSize = 20, string? status = null, string? search = null, CancellationToken ct = default) =>
         GetAsync<PagedResult<PlatformUserDto>>($"/api/v1/platform/users?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("search", search))}", ct);
@@ -175,20 +218,22 @@ public sealed class PlatformApiClient(
         GetAsync<SubscriptionDto>($"/api/v1/platform/organizations/{organizationId}/subscriptions/current?productCode={Escape(productCode)}", ct);
     public Task<ApiCallResult<SubscriptionDto>> StartTrialAsync(Guid organizationId, StartTrialRequest request, CancellationToken ct = default) =>
         SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/subscriptions/trials", request, ct);
+    public Task<ApiCallResult<SubscriptionDto>> CreatePaidSubscriptionAsync(Guid organizationId, CreatePaidSubscriptionRequest request, CancellationToken ct = default) =>
+        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/subscriptions", request, ct);
     public Task<ApiCallResult<SubscriptionDto>> ActivateSubscriptionAsync(Guid subscriptionId, ActivateSubscriptionRequest request, CancellationToken ct = default) =>
         SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/subscriptions/{subscriptionId}/activate", request, ct);
     public Task<ApiCallResult<SubscriptionDto>> EnterGracePeriodAsync(Guid subscriptionId, GracePeriodRequest request, CancellationToken ct = default) =>
         SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/subscriptions/{subscriptionId}/grace-period", request, ct);
-    public Task<ApiCallResult<SubscriptionDto>> MarkPastDueAsync(Guid subscriptionId, CancellationToken ct = default) =>
-        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/subscriptions/{subscriptionId}/past-due", null, ct);
-    public Task<ApiCallResult<SubscriptionDto>> SuspendSubscriptionAsync(Guid subscriptionId, CancellationToken ct = default) =>
-        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/subscriptions/{subscriptionId}/suspend", null, ct);
+    public Task<ApiCallResult<SubscriptionDto>> MarkPastDueAsync(Guid subscriptionId, int? expectedVersion = null, CancellationToken ct = default) =>
+        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/subscriptions/{subscriptionId}/past-due", new SubscriptionLifecycleRequest(expectedVersion), ct);
+    public Task<ApiCallResult<SubscriptionDto>> SuspendSubscriptionAsync(Guid subscriptionId, int? expectedVersion = null, CancellationToken ct = default) =>
+        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/subscriptions/{subscriptionId}/suspend", new SubscriptionLifecycleRequest(expectedVersion), ct);
     public Task<ApiCallResult<SubscriptionDto>> ReactivateSubscriptionAsync(Guid subscriptionId, ReactivateSubscriptionRequest request, CancellationToken ct = default) =>
         SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/subscriptions/{subscriptionId}/reactivate", request, ct);
-    public Task<ApiCallResult<SubscriptionDto>> CancelSubscriptionAsync(Guid subscriptionId, CancellationToken ct = default) =>
-        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/subscriptions/{subscriptionId}/cancel", null, ct);
-    public Task<ApiCallResult<SubscriptionDto>> ExpireSubscriptionAsync(Guid subscriptionId, CancellationToken ct = default) =>
-        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/subscriptions/{subscriptionId}/expire", null, ct);
+    public Task<ApiCallResult<SubscriptionDto>> CancelSubscriptionAsync(Guid subscriptionId, int? expectedVersion = null, CancellationToken ct = default) =>
+        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/subscriptions/{subscriptionId}/cancel", new SubscriptionLifecycleRequest(expectedVersion), ct);
+    public Task<ApiCallResult<SubscriptionDto>> ExpireSubscriptionAsync(Guid subscriptionId, int? expectedVersion = null, CancellationToken ct = default) =>
+        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/subscriptions/{subscriptionId}/expire", new SubscriptionLifecycleRequest(expectedVersion), ct);
 
     public Task<ApiCallResult<PaymentDto>> CreateManualPaymentAsync(CreateManualPaymentRequest request, CancellationToken ct = default) =>
         SendAsync<PaymentDto>(HttpMethod.Post, "/api/v1/platform/payments/manual", request, ct);

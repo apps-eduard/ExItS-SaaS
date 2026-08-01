@@ -1,138 +1,300 @@
 @page "/admin/entitlements"
 @page "/admin/entitlements/{Id:guid}"
 @page "/admin/entitlements/history/{OrganizationId:guid}/{ProductCode}"
+@using AntDesign
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 @inject IPlatformApiClient Api
+@inject IMessageService Message
 @inject IStringLocalizer<AdminResources> L
+@inject NavigationManager Nav
+@inject PlatformPermissionState Permissions
 
 @if (Id is not null)
 {
-    <AdminPageHeader Title="@L["Entitlements_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Entitlements"]} / {L["Common_Detail"]}")" Description="@L["Entitlements_DetailDescription"]" />
-    <section class="warning" role="note">@L["Entitlements_DetailWarning"]</section>
-    @if (_detail is null) { <LoadingState Message="@L["Entitlements_DetailLoading"]" /> }
-    else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? L["Common_Error"])" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }
+    <PageHeader Class="exits-page-header" Title="@L["Entitlements_DetailTitle"]" SubTitle="@L["Entitlements_DetailDescription"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem Href="/admin/entitlements">@L["Nav_Entitlements"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Common_Detail"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+        <PageHeaderExtra>
+            @if (_detail?.IsSuccess == true && CanManageSnapshots)
+            {
+                var s = _detail.Data!;
+                <Space Wrap>
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="GenerateSnapshotAsync">
+                        Generate entitlement snapshot
+                    </Button>
+                    <Popconfirm Title="Reconcile entitlement snapshot? Creates a new immutable version." OnConfirm="ReconcileSnapshotAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                        <Button Size="@ButtonSize.Small" Loading="_busy">Reconcile snapshot</Button>
+                    </Popconfirm>
+                </Space>
+            }
+        </PageHeaderExtra>
+    </PageHeader>
+
+    <Alert Type="@AlertType.Warning" Message="@L["Entitlements_DetailWarning"]" ShowIcon="true" Style="margin-bottom:12px;" />
+
+    @if (_detail is null)
+    {
+        <div style="padding:2rem;text-align:center;"><Spin Tip="@L["Entitlements_DetailLoading"]" /></div>
+    }
+    else if (!_detail.IsSuccess)
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_detail.Error?.Title ?? L["Common_Error"])" SubTitle="@_detail.Error?.Detail" />
+    }
     else
     {
         var s = _detail.Data!;
-        <dl>
-            <dt>@L["Common_Organization"]</dt><dd><a href="/admin/organizations/@s.OrganizationId">@s.OrganizationId</a></dd>
-            <dt>@L["Common_Product"]</dt><dd>@s.ProductCode</dd>
-            <dt>@L["Common_Subscription"]</dt><dd><a href="/admin/subscriptions/@s.SubscriptionId">@s.SubscriptionId</a></dd>
-            <dt>@L["Common_Plan"]</dt><dd>@s.PlanCode v@s.PlanVersionNumber</dd>
-            <dt>@L["Entitlements_SnapshotVersion"]</dt><dd>@s.SnapshotVersion</dd>
-            <dt>@L["Entitlements_SchemaVersion"]</dt><dd>@s.SchemaVersion</dd>
-            <dt>@L["Entitlements_SubscriptionStatus"]</dt><dd><StatusBadge Value="@s.SubscriptionStatus" /></dd>
-            <dt>@L["Entitlements_InGracePeriod"]</dt><dd>@s.InGracePeriod</dd>
-            <dt>@L["Common_GeneratedUtc"]</dt><dd><UtcTimestamp Value="@s.GeneratedAtUtc" /></dd>
-            <dt>@L["Common_EffectiveUtc"]</dt><dd><UtcTimestamp Value="@s.EffectiveAtUtc" /></dd>
-            <dt>@L["Entitlements_RefreshByUtc"]</dt><dd><UtcTimestamp Value="@s.RefreshByUtc" /></dd>
-            <dt>@L["Common_ExpiresUtc"]</dt><dd><UtcTimestamp Value="@s.ExpiresAtUtc" /></dd>
-            <dt>@L["Common_History"]</dt><dd><a href="/admin/entitlements/history/@s.OrganizationId/@s.ProductCode">@L["Common_ViewHistory"]</a></dd>
-        </dl>
 
-        <h2>@L["Entitlements_FeatureGrants"]</h2>
-        @if (s.Grants.Count == 0) { <EmptyState Message="@L["Entitlements_NoGrants"]" /> }
-        else
+        <Paragraph Style="margin-bottom:12px;">
+            <a href="/admin/entitlements/history/@s.OrganizationId/@s.ProductCode">@L["Common_ViewHistory"]</a>
+            ·
+            <a href="/admin/subscriptions/@s.SubscriptionId">@L["Common_Subscription"]</a>
+            ·
+            <a href="/admin/organizations/@s.OrganizationId">@L["Common_Organization"]</a>
+        </Paragraph>
+
+        <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
+            <DescriptionsItem Title="@L["Common_Organization"]">
+                <a href="/admin/organizations/@s.OrganizationId">@s.OrganizationId</a>
+            </DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_Product"]">@s.ProductCode</DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_Subscription"]">
+                <a href="/admin/subscriptions/@s.SubscriptionId">@s.SubscriptionId</a>
+            </DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_Plan"]">@($"{s.PlanCode} v{s.PlanVersionNumber}")</DescriptionsItem>
+            <DescriptionsItem Title="@L["Entitlements_SnapshotVersion"]">@s.SnapshotVersion</DescriptionsItem>
+            <DescriptionsItem Title="@L["Entitlements_SchemaVersion"]">@s.SchemaVersion</DescriptionsItem>
+            <DescriptionsItem Title="@L["Entitlements_SubscriptionStatus"]">
+                <Tag Color="@StatusColor(s.SubscriptionStatus)">@s.SubscriptionStatus</Tag>
+            </DescriptionsItem>
+            <DescriptionsItem Title="@L["Entitlements_InGracePeriod"]">@s.InGracePeriod</DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_GeneratedUtc"]"><UtcTimestamp Value="@s.GeneratedAtUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_EffectiveUtc"]"><UtcTimestamp Value="@s.EffectiveAtUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="@L["Entitlements_RefreshByUtc"]"><UtcTimestamp Value="@s.RefreshByUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_ExpiresUtc"]"><UtcTimestamp Value="@s.ExpiresAtUtc" /></DescriptionsItem>
+        </Descriptions>
+
+        @if (CanManageSnapshots)
         {
-            <table class="data-table responsive-table">
-                <caption class="sr-only">@L["Entitlements_FeatureGrants"]</caption>
-                <thead><tr><th scope="col">@L["Common_Feature"]</th><th scope="col">@L["Common_Enabled"]</th><th scope="col">@L["Common_Limit"]</th><th scope="col">@L["Common_Source"]</th><th scope="col">@L["Common_EffectiveUtc"]</th><th scope="col">@L["Common_ExpiresUtc"]</th></tr></thead>
-                <tbody>
-                @foreach (var g in s.Grants)
-                {
-                    <tr>
-                        <td data-label="@L["Common_Feature"]">@g.FeatureCode</td>
-                        <td data-label="@L["Common_Enabled"]">@g.Enabled</td>
-                        <td data-label="@L["Common_Limit"]">@(g.NumericLimit?.ToString() ?? "—")</td>
-                        <td data-label="@L["Common_Source"]">@g.Source</td>
-                        <td data-label="@L["Common_EffectiveUtc"]"><UtcTimestamp Value="@g.EffectiveAtUtc" /></td>
-                        <td data-label="@L["Common_ExpiresUtc"]"><UtcTimestamp Value="@g.ExpiresAtUtc" /></td>
-                    </tr>
-                }
-                </tbody>
-            </table>
+            <Card Size="@CardSize.Small" Title="Reconcile reason (optional)" Style="margin-bottom:12px;">
+                <Input @bind-Value="_reconcileReason" Size="@InputSize.Small" Placeholder="Optional reconciliation reason" Disabled="_busy" Style="max-width:480px;" />
+            </Card>
         }
 
-        <h2>@L["Entitlements_FeatureOverrideHistory"]</h2>
-        @if (_overrides is null) { <LoadingState Message="@L["Entitlements_OverridesLoading"]" /> }
-        else if (!_overrides.IsSuccess) { <ErrorState Title="@(_overrides.Error?.Title ?? L["Entitlements_OverridesUnavailable"])" Detail="@_overrides.Error?.Detail" /> }
-        else if (_overrides.Data!.Items.Count == 0) { <EmptyState Message="@L["Entitlements_NoOverrides"]" /> }
+        <Paragraph Strong Style="margin-bottom:8px;">@L["Entitlements_FeatureGrants"]</Paragraph>
+        @if (s.Grants.Count == 0)
+        {
+            <Empty Description="@L["Entitlements_NoGrants"].Value" Style="margin-bottom:16px;" />
+        }
         else
         {
-            <table class="data-table responsive-table">
-                <caption class="sr-only">@L["Entitlements_FeatureOverrideHistory"]</caption>
-                <thead><tr><th scope="col">@L["Common_Feature"]</th><th scope="col">@L["Common_Enabled"]</th><th scope="col">@L["Common_Limit"]</th><th scope="col">@L["Common_Status"]</th><th scope="col">@L["Common_Reason"]</th><th scope="col">@L["Entitlements_Column_EffectiveFromUtc"]</th></tr></thead>
-                <tbody>
-                @foreach (var o in _overrides.Data.Items)
+            <Table TItem="EntitlementGrantDto" DataSource="s.Grants" Size="@TableSize.Small" HidePagination Bordered Style="margin-bottom:16px;">
+                <PropertyColumn Property="c => c.FeatureCode" Title="@L["Common_Feature"]" />
+                <PropertyColumn Property="c => c.Enabled" Title="@L["Common_Enabled"]" />
+                <PropertyColumn Property="c => c.NumericLimit" Title="@L["Common_Limit"]">
+                    @(context.NumericLimit?.ToString() ?? "—")
+                </PropertyColumn>
+                <PropertyColumn Property="c => c.Source" Title="@L["Common_Source"]" />
+                <PropertyColumn Property="c => c.EffectiveAtUtc" Title="@L["Common_EffectiveUtc"]">
+                    <UtcTimestamp Value="@context.EffectiveAtUtc" />
+                </PropertyColumn>
+                <PropertyColumn Property="c => c.ExpiresAtUtc" Title="@L["Common_ExpiresUtc"]">
+                    <UtcTimestamp Value="@context.ExpiresAtUtc" />
+                </PropertyColumn>
+            </Table>
+        }
+
+        <Paragraph Strong Style="margin-bottom:8px;">@L["Entitlements_FeatureOverrideHistory"]</Paragraph>
+        @if (_overrides is null)
+        {
+            <div style="padding:1rem;text-align:center;"><Spin Tip="@L["Entitlements_OverridesLoading"]" /></div>
+        }
+        else if (!_overrides.IsSuccess)
+        {
+            <Result Status="@ResultStatus.Error" Title="@(_overrides.Error?.Title ?? L["Entitlements_OverridesUnavailable"])" SubTitle="@_overrides.Error?.Detail" />
+        }
+        else if (_overrides.Data!.Items.Count == 0)
+        {
+            <Empty Description="@L["Entitlements_NoOverrides"].Value" Style="margin-bottom:16px;" />
+        }
+        else
+        {
+            <Table TItem="FeatureOverrideDto" DataSource="_overrides.Data.Items" Size="@TableSize.Small" HidePagination Bordered Style="margin-bottom:16px;">
+                <PropertyColumn Property="c => c.FeatureCode" Title="@L["Common_Feature"]" />
+                <PropertyColumn Property="c => c.Enabled" Title="@L["Common_Enabled"]" />
+                <PropertyColumn Property="c => c.NumericLimit" Title="@L["Common_Limit"]">
+                    @(context.NumericLimit?.ToString() ?? "—")
+                </PropertyColumn>
+                <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                    <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                </PropertyColumn>
+                <PropertyColumn Property="c => c.Reason" Title="@L["Common_Reason"]" />
+                <PropertyColumn Property="c => c.EffectiveFromUtc" Title="@L["Entitlements_Column_EffectiveFromUtc"]">
+                    <UtcTimestamp Value="@context.EffectiveFromUtc" />
+                </PropertyColumn>
+                @if (CanManageOverrides)
                 {
-                    <tr>
-                        <td data-label="@L["Common_Feature"]">@o.FeatureCode</td>
-                        <td data-label="@L["Common_Enabled"]">@o.Enabled</td>
-                        <td data-label="@L["Common_Limit"]">@(o.NumericLimit?.ToString() ?? "—")</td>
-                        <td data-label="@L["Common_Status"]"><StatusBadge Value="@o.Status" /></td>
-                        <td data-label="@L["Common_Reason"]">@o.Reason</td>
-                        <td data-label="@L["Entitlements_Column_EffectiveFromUtc"]"><UtcTimestamp Value="@o.EffectiveFromUtc" /></td>
-                    </tr>
+                    <ActionColumn Title="@L["Common_Actions"]" Width="120">
+                        @if (context.Status == "Active")
+                        {
+                            <Popconfirm Title="Revoke this feature override?" OnConfirm="() => RevokeOverrideAsync(context.Id)" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                                <Button Size="@ButtonSize.Small" Danger Loading="_busy">@L["Common_Revoke"]</Button>
+                            </Popconfirm>
+                        }
+                    </ActionColumn>
                 }
-                </tbody>
-            </table>
+            </Table>
+        }
+
+        @if (CanManageOverrides)
+        {
+            <Card Size="@CardSize.Small" Title="Create feature override">
+                <FormValidationSummary Title="@L["Common_ActionFailed"]" Message="@_overrideFormError" IsConflict="_overrideFormConflict" />
+                <Space Direction="SpaceDirection.Vertical" Style="width:100%; max-width:520px;">
+                    <div>
+                        <label class="ant-form-item-label" for="ent-override-feature">@L["Common_Feature"]</label>
+                        <Input Id="ent-override-feature" @bind-Value="_overrideFeatureCode" Size="@InputSize.Small" Disabled="_busy" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label" for="ent-override-enabled">@L["Common_Enabled"]</label>
+                        <Switch Id="ent-override-enabled" @bind-Checked="_overrideEnabled" Disabled="_busy" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label" for="ent-override-reason">@L["Common_Reason"]</label>
+                        <Input Id="ent-override-reason" @bind-Value="_overrideReason" Size="@InputSize.Small" Disabled="_busy" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label" for="ent-override-created-by">Created by user ID</label>
+                        <Input Id="ent-override-created-by" @bind-Value="_overrideCreatedByUserId" Size="@InputSize.Small" Disabled="_busy" Placeholder="GUID" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label" for="ent-override-limit">@L["Common_Limit"] (optional)</label>
+                        <Input Id="ent-override-limit" @bind-Value="_overrideLimitText" Size="@InputSize.Small" Disabled="_busy" Placeholder="Optional numeric limit" />
+                    </div>
+                    <Space Style="margin-bottom:8px;">
+                        <div>
+                            <label class="ant-form-item-label" for="ent-revoke-reason">Revoke reason (for table actions)</label>
+                            <Input Id="ent-revoke-reason" @bind-Value="_revokeReason" Size="@InputSize.Small" Disabled="_busy" Style="width:240px;" />
+                        </div>
+                        <div>
+                            <label class="ant-form-item-label" for="ent-revoke-by">Revoked by user ID</label>
+                            <Input Id="ent-revoke-by" @bind-Value="_revokeByUserId" Size="@InputSize.Small" Disabled="_busy" Placeholder="GUID" Style="width:240px;" />
+                        </div>
+                    </Space>
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateOverrideAsync">@L["Common_Create"]</Button>
+                </Space>
+            </Card>
         }
     }
 }
 else if (OrganizationId is not null && ProductCode is not null)
 {
-    <ReportPageShell>
-        <ReportHeader Title="@L["Entitlements_HistoryTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Entitlements"]} / {L["Common_History"]}")" Description="@L["Entitlements_HistoryDescription"]" />
-        <ReportSection Title="@L["Entitlements_HistoryTitle"]">
-            <ReportDataPanel IsLoading="@(_history is null)"
-                            HasError="@(_history is { IsSuccess: false })"
-                            IsEmpty="@(_history is { IsSuccess: true, Data.Items.Count: 0 })"
-                            LoadingMessage="@L["Entitlements_HistoryLoading"]"
-                            EmptyMessage="@L["Entitlements_HistoryEmpty"]"
-                            ErrorTitle="@(_history?.Error?.Title ?? L["Common_Error"])"
-                            ErrorDetail="@_history?.Error?.Detail"
-                            ErrorCorrelationId="@_history?.Error?.CorrelationId"
-                            ErrorUnavailable="@(_history?.Status == ApiCallStatus.Unavailable)">
-                <ReportTable TItem="EntitlementSnapshotDto"
-                             Items="_history!.Data!.Items"
-                             Columns="_historyColumns"
-                             Caption="@L["Entitlements_HistoryTitle"]"
-                             ItemKey="x => x.Id"
-                             CellTemplate="HistoryCell" />
-                <ReportTotalsRow Label="@L["Report_PaymentsTotals"]" Value="@($"{_history.Data.Items.Count}")" />
-            </ReportDataPanel>
-        </ReportSection>
-    </ReportPageShell>
+    <PageHeader Class="exits-page-header" Title="@L["Entitlements_HistoryTitle"]" SubTitle="@L["Entitlements_HistoryDescription"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem Href="/admin/entitlements">@L["Nav_Entitlements"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Common_History"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+    </PageHeader>
+
+    <Alert Type="@AlertType.Warning" Message="@L["Entitlements_Warning"]" ShowIcon="true" Style="margin-bottom:12px;" />
+
+    @if (_history is null)
+    {
+        <div style="padding:2rem;text-align:center;"><Spin Tip="@L["Entitlements_HistoryLoading"]" /></div>
+    }
+    else if (!_history.IsSuccess)
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_history.Error?.Title ?? L["Common_Error"])" SubTitle="@_history.Error?.Detail" />
+    }
+    else if (_history.Data!.Items.Count == 0)
+    {
+        <Empty Description="@L["Entitlements_HistoryEmpty"].Value" />
+    }
+    else
+    {
+        <Table TItem="EntitlementSnapshotDto"
+               DataSource="_history.Data.Items"
+               Size="@TableSize.Small"
+               HidePagination
+               Bordered
+               ScrollX="960">
+            <PropertyColumn Property="c => c.SnapshotVersion" Title="@L["Common_Version"]">
+                <a href="/admin/entitlements/@context.Id">@context.SnapshotVersion</a>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.SchemaVersion" Title="@L["Entitlements_SchemaVersion"]" />
+            <PropertyColumn Property="c => c.SubscriptionStatus" Title="@L["Common_Status"]">
+                <Tag Color="@StatusColor(context.SubscriptionStatus)">@context.SubscriptionStatus</Tag>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.GeneratedAtUtc" Title="@L["Common_GeneratedUtc"]">
+                <UtcTimestamp Value="@context.GeneratedAtUtc" />
+            </PropertyColumn>
+            <ActionColumn Title="@L["Common_Open"]" Width="88">
+                <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/entitlements/{context.Id}")">@L["Common_Open"]</a>
+            </ActionColumn>
+        </Table>
+    }
 }
 else
 {
-    <ReportPageShell>
-        <ReportHeader Title="@L["Entitlements_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Entitlements"]}")" Description="@L["Entitlements_Description"]" />
-        <section class="warning" role="note">@L["Entitlements_Warning"]</section>
-        <ReportSection Title="@L["Entitlements_Title"]">
-            <ReportDataPanel IsLoading="@(_latest is null || _listBusy)"
-                            HasError="@(_latest is { IsSuccess: false })"
-                            IsEmpty="@(_latest is { IsSuccess: true, Data.Items.Count: 0 })"
-                            LoadingMessage="@L["Entitlements_Loading"]"
-                            EmptyMessage="@L["Entitlements_Empty"]"
-                            ErrorTitle="@(_latest?.Error?.Title ?? L["Common_Error"])"
-                            ErrorDetail="@_latest?.Error?.Detail"
-                            ErrorCorrelationId="@_latest?.Error?.CorrelationId"
-                            ErrorUnavailable="@(_latest?.Status == ApiCallStatus.Unavailable)">
-                <ReportTable TItem="EntitlementLatestSummaryDto"
-                             Items="_latest!.Data!.Items"
-                             Columns="_latestColumns"
-                             Caption="@L["Entitlements_Title"]"
-                             ItemKey="x => x.Id"
-                             CellTemplate="LatestCell" />
-                <ReportTotalsRow Label="@L["Report_PaymentsTotals"]" Value="@($"{_latest.Data.Items.Count}")" />
-                <AdminPagination Page="_latest.Data.Page"
-                                 PageSize="_latest.Data.PageSize"
-                                 TotalCount="_latest.Data.TotalCount"
-                                 PageChanged="OnLatestPageAsync"
-                                 Disabled="_listBusy" />
-            </ReportDataPanel>
-        </ReportSection>
-    </ReportPageShell>
+    <PageHeader Class="exits-page-header" Title="@L["Entitlements_Title"]" SubTitle="@L["Entitlements_Description"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_Entitlements"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+    </PageHeader>
+
+    <Alert Type="@AlertType.Warning" Message="@L["Entitlements_Warning"]" ShowIcon="true" Style="margin-bottom:12px;" />
+
+    @if (_list is { IsSuccess: false })
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail" />
+    }
+    else if (_list is { IsSuccess: true, Data.Items.Count: 0 })
+    {
+        <Empty Description="@L["Entitlements_Empty"].Value" />
+    }
+    else
+    {
+        <Table TItem="EntitlementLatestSummaryDto"
+               DataSource="@(_list?.Data?.Items ?? Array.Empty<EntitlementLatestSummaryDto>())"
+               Total="@(_list?.Data?.TotalCount ?? 0)"
+               @bind-PageIndex="_page"
+               PageSize="@(_list?.Data?.PageSize ?? 20)"
+               Loading="@(_list is null)"
+               Size="@TableSize.Small"
+               Bordered
+               RemoteDataSource
+               OnPageIndexChange="OnPageChangedAsync"
+               ScrollX="1100">
+            <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" Sortable />
+            <PropertyColumn Property="c => c.OrganizationId" Title="@L["Common_Organization"]" Sortable>
+                <a href="/admin/organizations/@context.OrganizationId">@context.OrganizationId</a>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.SnapshotVersion" Title="@L["Common_Version"]" Sortable>
+                <a href="/admin/entitlements/@context.Id">@context.SnapshotVersion</a>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.SubscriptionStatus" Title="@L["Common_Status"]" Sortable>
+                <Tag Color="@StatusColor(context.SubscriptionStatus)">@context.SubscriptionStatus</Tag>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.GeneratedAtUtc" Title="@L["Common_GeneratedUtc"]" Sortable>
+                <UtcTimestamp Value="@context.GeneratedAtUtc" />
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.OrganizationId" Title="@L["Common_History"]">
+                <a href="/admin/entitlements/history/@context.OrganizationId/@context.ProductCode">@L["Common_History"]</a>
+            </PropertyColumn>
+            <ActionColumn Title="@L["Common_Open"]" Width="88">
+                <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/entitlements/{context.Id}")">@L["Common_Open"]</a>
+            </ActionColumn>
+        </Table>
+    }
 }
 
 @code {
@@ -140,44 +302,37 @@ else
     [Parameter] public Guid? OrganizationId { get; set; }
     [Parameter] public string? ProductCode { get; set; }
 
-    private ApiCallResult<PagedResult<EntitlementLatestSummaryDto>>? _latest;
+    private ApiCallResult<PagedResult<EntitlementLatestSummaryDto>>? _list;
     private ApiCallResult<EntitlementSnapshotDto>? _detail;
     private ApiCallResult<PagedResult<EntitlementSnapshotDto>>? _history;
     private ApiCallResult<PagedResult<FeatureOverrideDto>>? _overrides;
-    private bool _listBusy;
-    private int _page = 1;
-    private List<AdminColumnDefinition> _latestColumns = new();
-    private List<AdminColumnDefinition> _historyColumns = new();
 
-    protected override void OnInitialized()
-    {
-        _latestColumns =
-        [
-            new("product", L["Common_Product"], Primary: true),
-            new("org", L["Common_Organization"]),
-            new("version", L["Common_Version"]),
-            new("status", L["Common_Status"]),
-            new("generated", L["Common_GeneratedUtc"]),
-            new("history", L["Common_History"])
-        ];
-        _historyColumns =
-        [
-            new("version", L["Common_Version"], Primary: true),
-            new("schema", L["Entitlements_SchemaVersion"]),
-            new("status", L["Common_Status"]),
-            new("generated", L["Common_GeneratedUtc"])
-        ];
-    }
+    private int _page = 1;
+    private bool _busy;
+
+    private string _overrideFeatureCode = "";
+    private bool _overrideEnabled = true;
+    private string _overrideReason = "";
+    private string _overrideCreatedByUserId = "";
+    private string _overrideLimitText = "";
+    private string? _overrideFormError;
+    private bool _overrideFormConflict;
+
+    private string _revokeReason = "";
+    private string _revokeByUserId = "";
+    private string _reconcileReason = "";
+
+    private bool CanManageOverrides => Permissions.HasPermission(PlatformPermissionCodes.ManageEntitlementOverrides);
+    private bool CanManageSnapshots => Permissions.HasPermission(PlatformPermissionCodes.ManageSubscriptions);
 
     protected override async Task OnParametersSetAsync()
     {
+        _overrideFormError = null;
+        _overrideFormConflict = false;
+
         if (Id is not null)
         {
-            _detail = await Api.GetEntitlementAsync(Id.Value);
-            if (_detail.IsSuccess && _detail.Data is not null)
-            {
-                _overrides = await Api.GetFeatureOverridesAsync(_detail.Data.OrganizationId, _detail.Data.ProductCode);
-            }
+            await LoadDetailAsync();
         }
         else if (OrganizationId is not null && ProductCode is not null)
         {
@@ -185,90 +340,166 @@ else
         }
         else
         {
-            await LoadLatestAsync();
+            await LoadListAsync();
         }
     }
 
-    private async Task LoadLatestAsync()
+    private async Task LoadListAsync() =>
+        _list = await Api.GetLatestEntitlementsAsync(page: _page);
+
+    private async Task OnPageChangedAsync(PaginationEventArgs args)
     {
-        _listBusy = true;
-        try
+        _page = args.Page;
+        await LoadListAsync();
+    }
+
+    private async Task LoadDetailAsync()
+    {
+        if (Id is null) return;
+
+        _detail = await Api.GetEntitlementAsync(Id.Value);
+        _overrides = null;
+
+        if (_detail.IsSuccess && _detail.Data is not null)
         {
-            _latest = await Api.GetLatestEntitlementsAsync(page: _page);
-        }
-        finally
-        {
-            _listBusy = false;
+            _overrides = await Api.GetFeatureOverridesAsync(_detail.Data.OrganizationId, _detail.Data.ProductCode);
         }
     }
 
-    private async Task OnLatestPageAsync(int page)
+    private async Task CreateOverrideAsync()
     {
-        _page = page;
-        await LoadLatestAsync();
+        if (_detail?.Data is null || !CanManageOverrides || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+
+        _overrideFormError = null;
+        _overrideFormConflict = false;
+
+        if (!Guid.TryParse(_overrideCreatedByUserId.Trim(), out var createdByUserId))
+        {
+            _busy = false;
+            _overrideFormError = "Created by user ID must be a valid GUID.";
+            return;
+        }
+
+        int? limit = null;
+        if (!string.IsNullOrWhiteSpace(_overrideLimitText))
+        {
+            if (!int.TryParse(_overrideLimitText.Trim(), out var parsedLimit))
+            {
+                _busy = false;
+                _overrideFormError = "Numeric limit must be a valid integer when provided.";
+                return;
+            }
+
+            limit = parsedLimit;
+        }
+
+        var s = _detail.Data;
+        var result = await Api.CreateFeatureOverrideAsync(
+            s.OrganizationId,
+            s.ProductCode,
+            new CreateFeatureOverrideRequest(
+                _overrideFeatureCode.Trim(),
+                _overrideEnabled,
+                _overrideReason.Trim(),
+                createdByUserId,
+                limit));
+
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _overrideFormConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _overrideFormError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        await Message.SuccessAsync("Feature override created.");
+        _overrideFeatureCode = "";
+        _overrideReason = "";
+        _overrideLimitText = "";
+        _overrides = await Api.GetFeatureOverridesAsync(s.OrganizationId, s.ProductCode);
     }
 
-    private RenderFragment<(EntitlementLatestSummaryDto Item, AdminColumnDefinition Column)> LatestCell => ctx => b =>
+    private async Task RevokeOverrideAsync(Guid overrideId)
     {
-        switch (ctx.Column.Key)
-        {
-            case "product":
-                b.AddContent(0, ctx.Item.ProductCode);
-                break;
-            case "org":
-                b.OpenElement(0, "a");
-                b.AddAttribute(1, "href", $"/admin/organizations/{ctx.Item.OrganizationId}");
-                b.AddContent(2, ctx.Item.OrganizationId);
-                b.CloseElement();
-                break;
-            case "version":
-                b.OpenElement(0, "a");
-                b.AddAttribute(1, "href", $"/admin/entitlements/{ctx.Item.Id}");
-                b.AddContent(2, ctx.Item.SnapshotVersion);
-                b.CloseElement();
-                break;
-            case "status":
-                b.OpenComponent<ReportStatusBadge>(0);
-                b.AddAttribute(1, nameof(ReportStatusBadge.Value), ctx.Item.SubscriptionStatus);
-                b.CloseComponent();
-                break;
-            case "generated":
-                b.OpenComponent<UtcTimestamp>(0);
-                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.GeneratedAtUtc);
-                b.CloseComponent();
-                break;
-            case "history":
-                b.OpenElement(0, "a");
-                b.AddAttribute(1, "href", $"/admin/entitlements/history/{ctx.Item.OrganizationId}/{ctx.Item.ProductCode}");
-                b.AddContent(2, L["Common_History"].Value);
-                b.CloseElement();
-                break;
-        }
-    };
+        if (_detail?.Data is null || !CanManageOverrides || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
 
-    private RenderFragment<(EntitlementSnapshotDto Item, AdminColumnDefinition Column)> HistoryCell => ctx => b =>
-    {
-        switch (ctx.Column.Key)
+        if (!Guid.TryParse(_revokeByUserId.Trim(), out var revokedByUserId))
         {
-            case "version":
-                b.OpenElement(0, "a");
-                b.AddAttribute(1, "href", $"/admin/entitlements/{ctx.Item.Id}");
-                b.AddContent(2, ctx.Item.SnapshotVersion);
-                b.CloseElement();
-                break;
-            case "schema":
-                b.AddContent(0, ctx.Item.SchemaVersion);
-                break;
-            case "status":
-                b.OpenComponent<ReportStatusBadge>(0);
-                b.AddAttribute(1, nameof(ReportStatusBadge.Value), ctx.Item.SubscriptionStatus);
-                b.CloseComponent();
-                break;
-            case "generated":
-                b.OpenComponent<UtcTimestamp>(0);
-                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.GeneratedAtUtc);
-                b.CloseComponent();
-                break;
+            _busy = false;
+            await Message.ErrorAsync("Revoked by user ID must be a valid GUID.");
+            return;
         }
+
+        if (string.IsNullOrWhiteSpace(_revokeReason))
+        {
+            _busy = false;
+            await Message.ErrorAsync("Revoke reason is required.");
+            return;
+        }
+
+        var result = await Api.RevokeFeatureOverrideAsync(
+            overrideId,
+            new RevokeFeatureOverrideRequest(_revokeReason.Trim(), revokedByUserId));
+
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            await Message.ErrorAsync(AdminFormErrorMapper.MapPageError(result) ?? L["Common_Error"].Value);
+            return;
+        }
+
+        await Message.SuccessAsync("Feature override revoked.");
+        var s = _detail.Data;
+        _overrides = await Api.GetFeatureOverridesAsync(s.OrganizationId, s.ProductCode);
+    }
+
+    private async Task GenerateSnapshotAsync()
+    {
+        if (_detail?.Data is null || !CanManageSnapshots || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+
+        var s = _detail.Data;
+        var result = await Api.GenerateEntitlementSnapshotAsync(
+            s.OrganizationId,
+            s.ProductCode,
+            s.SnapshotVersion + 1);
+
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            await Message.ErrorAsync(AdminFormErrorMapper.MapPageError(result) ?? L["Common_Error"].Value);
+            return;
+        }
+
+        await Message.SuccessAsync("Entitlement snapshot generated.");
+        Nav.NavigateTo($"/admin/entitlements/{result.Data!.Id}");
+    }
+
+    private async Task ReconcileSnapshotAsync()
+    {
+        if (_detail?.Data is null || !CanManageSnapshots || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+
+        var s = _detail.Data;
+        var reason = string.IsNullOrWhiteSpace(_reconcileReason) ? null : _reconcileReason.Trim();
+        var result = await Api.ReconcileEntitlementSnapshotAsync(s.OrganizationId, s.ProductCode, reason);
+
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            await Message.ErrorAsync(AdminFormErrorMapper.MapPageError(result) ?? L["Common_Error"].Value);
+            return;
+        }
+
+        await Message.SuccessAsync("Entitlement snapshot reconciled.");
+        Nav.NavigateTo($"/admin/entitlements/{result.Data!.Id}");
+    }
+
+    private static string StatusColor(string status) => status switch
+    {
+        "Active" => "success",
+        "Inactive" or "Draft" or "Revoked" => "default",
+        "Retired" or "Closed" or "Cancelled" or "Expired" or "Deactivated" => "default",
+        "Trialing" => "processing",
+        "Suspended" or "PastDue" or "GracePeriod" => "warning",
+        _ => "processing"
     };
 }

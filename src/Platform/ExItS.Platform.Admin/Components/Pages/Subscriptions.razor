@@ -1,271 +1,345 @@
 @page "/admin/subscriptions"
 @page "/admin/subscriptions/{Id:guid}"
+@using AntDesign
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 @inject IPlatformApiClient Api
-@inject NavigationManager Nav
+@inject IMessageService Message
 @inject IStringLocalizer<AdminResources> L
+@inject NavigationManager Nav
+@inject PlatformPermissionState Permissions
 
 @if (Id is null)
 {
-    <ReportPageShell>
-        <ReportHeader Title="@L["Subscriptions_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Subscriptions"]}")" Description="@L["Subscriptions_Description"]" />
-        <div class="warning" role="note">@L["Subscriptions_Warning"]</div>
-
-        <section class="panel" aria-label="@L["Subscriptions_AriaStartTrial"]">
-            <h2>@L["Subscriptions_StartTrial"]</h2>
-            <p class="muted">@L["Subscriptions_StartTrialHint"]</p>
-            @if (!string.IsNullOrWhiteSpace(_formError) && _showStartTrial) { <ErrorState Title="@L["Subscriptions_StartTrialFailed"]" Detail="@_formError" /> }
-            <div class="form-grid">
-                <label>@L["Common_Organization"] ID <input @bind="_trialOrgId" placeholder="GUID" /></label>
-                <label>@L["OrgProductAccess_ProductCode"] <input @bind="_trialProductCode" placeholder="e.g. pinoy-business-pos" /></label>
-                <label>@L["Common_Plan"] ID <input @bind="_trialPlanId" placeholder="GUID" /></label>
-                <label>Plan version ID <input @bind="_trialPlanVersionId" placeholder="GUID" /></label>
-                <label>Trial definition ID <input @bind="_trialDefinitionId" placeholder="GUID" /></label>
-            </div>
-            <div class="actions">
-                <button type="button" class="secondary" @onclick="LoadTrialCatalogAsync" disabled="@_busy">@L["Subscriptions_LoadCatalog"]</button>
-                <button type="button" @onclick="StartTrialAsync" disabled="@_busy">@L["Subscriptions_StartTrialButton"]</button>
-            </div>
-            @if (_overview is { IsSuccess: true })
+    <PageHeader Class="exits-page-header" Title="@L["Subscriptions_Title"]" SubTitle="@L["Subscriptions_Description"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_Subscriptions"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+        <PageHeaderExtra>
+            @if (CanManage)
             {
-                <p class="muted">Active trials: @_overview.Data!.Trials.Count(t => t.Status == "Active") · Published plan versions: @_overview.Data.PublishedPlanVersions.Count</p>
-                @if (_overview.Data.Trials.Any(t => t.Status == "Active"))
-                {
-                    <ul class="muted">
-                        @foreach (var t in _overview.Data.Trials.Where(t => t.Status == "Active"))
-                        {
-                            <li>@t.DisplayName — @_overview.Data.Product.Code — duration @FormatDuration(t.DurationTicks) (id @t.Id)</li>
-                        }
-                    </ul>
-                }
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ToggleCreate">
+                    @(_showCreate ? "Hide create" : L["Common_Create"])
+                </Button>
             }
-            @if (!string.IsNullOrWhiteSpace(_toast) && Id is null) { <p class="toast" role="status">@_toast</p> }
-        </section>
+        </PageHeaderExtra>
+    </PageHeader>
 
-        <ResponsiveReportLayout>
-            <Filters>
-                <ReportFilterBar Busy="_listBusy" OnApply="ApplyFiltersAsync" OnReset="ClearFiltersAsync">
-                    <FormField Label="@L["Common_Status"]" FieldId="sub-filter-status">
-                        <AdminSelect @bind-Value="_status" Disabled="_listBusy">
-                            <option value="Active">Active</option>
-                            <option value="Trialing">Trialing</option>
-                            <option value="GracePeriod">GracePeriod</option>
-                            <option value="PastDue">PastDue</option>
-                            <option value="Suspended">Suspended</option>
-                            <option value="Cancelled">Cancelled</option>
-                            <option value="Expired">Expired</option>
-                        </AdminSelect>
-                    </FormField>
-                    <FormField Label="@L["OrgProductAccess_ProductCode"]" FieldId="sub-filter-product">
-                        <AdminInput @bind-Value="_productCode" Placeholder="optional" Disabled="_listBusy" />
-                    </FormField>
-                </ReportFilterBar>
-            </Filters>
-            <ChildContent>
-                <ReportSection Title="@L["Subscriptions_Title"]">
-                    <ReportDataPanel IsLoading="@(_list is null || _listBusy)"
-                                    HasError="@(_list is { IsSuccess: false })"
-                                    IsEmpty="@(_list is { IsSuccess: true, Data.Items.Count: 0 })"
-                                    LoadingMessage="@L["Subscriptions_Loading"]"
-                                    EmptyMessage="@L["Subscriptions_Empty"]"
-                                    ErrorTitle="@(_list?.Error?.Title ?? L["Common_Error"])"
-                                    ErrorDetail="@_list?.Error?.Detail"
-                                    ErrorCorrelationId="@_list?.Error?.CorrelationId"
-                                    ErrorUnavailable="@(_list?.Status == ApiCallStatus.Unavailable)">
-                        <ReportTable TItem="SubscriptionDto"
-                                     Items="_list!.Data!.Items"
-                                     Columns="_subscriptionColumns"
-                                     Caption="@L["Subscriptions_Title"]"
-                                     ItemKey="s => s.Id"
-                                     CellTemplate="SubscriptionCell" />
-                        <ReportTotalsRow Label="@L["Report_PaymentsTotals"]"
-                                         Value="@($"{_list.Data.Items.Count}")" />
-                        <AdminPagination Page="_list.Data.Page"
-                                         PageSize="_list.Data.PageSize"
-                                         TotalCount="_list.Data.TotalCount"
-                                         PageChanged="OnSubscriptionPageAsync"
-                                         Disabled="_listBusy" />
-                    </ReportDataPanel>
-                </ReportSection>
-            </ChildContent>
-        </ResponsiveReportLayout>
-    </ReportPageShell>
+    <Alert Type="@AlertType.Warning" Message="@L["Subscriptions_Warning"]" ShowIcon="true" Style="margin-bottom:12px;" />
+
+    <Space Style="margin-bottom:12px; width:100%;" Wrap>
+        <Input @bind-Value="_search" Size="@InputSize.Small" Placeholder="@L["Common_Search"]" Style="width:200px;" OnPressEnter="ApplyFiltersAsync" />
+        <Select TItemValue="string" TItem="string" @bind-Value="_status" Size="@InputSize.Small" Placeholder="@L["Common_Status"]" Style="width:140px;" AllowClear>
+            <SelectOptions>
+                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Trialing")" Label="Trialing" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Active")" Label="@L["Status_Active"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("GracePeriod")" Label="GracePeriod" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("PastDue")" Label="PastDue" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Suspended")" Label="@L["Status_Suspended"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Cancelled")" Label="@L["Status_Cancelled"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Expired")" Label="@L["Status_Expired"]" />
+            </SelectOptions>
+        </Select>
+        <Input @bind-Value="_productCode" Size="@InputSize.Small" Placeholder="@L["OrgProductAccess_ProductCode"]" Style="width:160px;" OnPressEnter="ApplyFiltersAsync" />
+        <Input @bind-Value="_organizationIdText" Size="@InputSize.Small" Placeholder="Organization ID" Style="width:200px;" OnPressEnter="ApplyFiltersAsync" />
+        <Select TItemValue="string" TItem="string" @bind-Value="_isTrialFilter" Size="@InputSize.Small" Placeholder="Trial" Style="width:120px;" AllowClear>
+            <SelectOptions>
+                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("true")" Label="Trial" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("false")" Label="Paid" />
+            </SelectOptions>
+        </Select>
+        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ApplyFiltersAsync">@L["Common_Apply"]</Button>
+        <Button Size="@ButtonSize.Small" OnClick="ClearFiltersAsync">@L["Common_Reset"]</Button>
+    </Space>
+
+    @if (_showCreate && CanManage)
+    {
+        <Card Size="@CardSize.Small" Title="@L["Subscriptions_StartTrial"]" Style="margin-bottom:12px;">
+            <FormValidationSummary Title="@L["Subscriptions_StartTrialFailed"]" Message="@_formError" IsConflict="_formConflict" />
+            <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                <Input @bind-Value="_createOrgId" Size="@InputSize.Small" Placeholder="Organization GUID" Disabled="_busy" />
+                <Input @bind-Value="_createProductCode" Size="@InputSize.Small" Placeholder="@L["OrgProductAccess_ProductCode"]" Disabled="_busy" />
+                <Input @bind-Value="_createPlanId" Size="@InputSize.Small" Placeholder="Plan GUID" Disabled="_busy" />
+                <Input @bind-Value="_createPlanVersionId" Size="@InputSize.Small" Placeholder="Plan version GUID" Disabled="_busy" />
+                <Input @bind-Value="_createTrialDefinitionId" Size="@InputSize.Small" Placeholder="Trial definition GUID (trial only)" Disabled="_busy" />
+                <Input @bind-Value="_createPeriodStart" Size="@InputSize.Small" Placeholder="Paid period start UTC" Disabled="_busy" />
+                <Input @bind-Value="_createPeriodEnd" Size="@InputSize.Small" Placeholder="Paid period end UTC" Disabled="_busy" />
+                <Space>
+                    <Button Size="@ButtonSize.Small" OnClick="LoadCatalogAsync" Disabled="_busy">@L["Subscriptions_LoadCatalog"]</Button>
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="StartTrialAsync">@L["Subscriptions_StartTrialButton"]</Button>
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreatePaidAsync">Create paid</Button>
+                    <Button Size="@ButtonSize.Small" OnClick="HideCreate" Disabled="_busy">@L["Common_Cancel"]</Button>
+                </Space>
+            </Space>
+        </Card>
+    }
+
+    @if (_list is { IsSuccess: false })
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail" />
+    }
+    else if (_list is { IsSuccess: true, Data.Items.Count: 0 })
+    {
+        <Empty Description="@L["Subscriptions_Empty"].Value" />
+    }
+    else
+    {
+        <Table TItem="SubscriptionDto"
+               DataSource="@(_list?.Data?.Items ?? Array.Empty<SubscriptionDto>())"
+               Total="@(_list?.Data?.TotalCount ?? 0)"
+               @bind-PageIndex="_page"
+               PageSize="@(_list?.Data?.PageSize ?? 20)"
+               Loading="@(_list is null)"
+               Size="@TableSize.Small"
+               Bordered
+               RemoteDataSource
+               OnPageIndexChange="OnPageChangedAsync"
+               ScrollX="1100">
+            <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" Sortable>
+                <a href="/admin/subscriptions/@context.Id">@context.ProductCode</a>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable>
+                <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.OrganizationId" Title="@L["Common_Organization"]">
+                <a href="/admin/organizations/@context.OrganizationId">@context.OrganizationId</a>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.PlanId" Title="@L["Common_Plan"]" />
+            <PropertyColumn Property="c => c.TrialEndUtc" Title="@L["Subscriptions_Column_TrialEndUtc"]" Format="u" Sortable />
+            <PropertyColumn Property="c => c.PaidPeriodEndUtc" Title="Paid end UTC" Format="u" Sortable />
+            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Format="u" Sortable />
+            <ActionColumn Title="@L["Common_Open"]" Width="88">
+                <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/subscriptions/{context.Id}")">@L["Common_Open"]</a>
+            </ActionColumn>
+        </Table>
+    }
 }
 else
 {
-    <AdminPageHeader Title="@L["Subscriptions_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Subscriptions"]} / {L["Common_Detail"]}")" Description="@L["Subscriptions_DetailDescription"]" />
-    <div class="warning" role="note">@L["Subscriptions_DetailWarning"]</div>
+    <PageHeader Class="exits-page-header" Title="@(_detail?.Data?.ProductCode ?? L["Subscriptions_DetailTitle"])" SubTitle="@L["Subscriptions_DetailDescription"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem Href="/admin/subscriptions">@L["Nav_Subscriptions"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Common_Detail"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+        <PageHeaderExtra>
+            @if (_detail?.IsSuccess == true && CanManage)
+            {
+                var s = _detail.Data!;
+                <Space Wrap>
+                    @if (s.Status == "Trialing")
+                    {
+                        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="ActivateAsync">Activate</Button>
+                        <Popconfirm Title="Expire this trial?" OnConfirm="ExpireAsync">
+                            <Button Size="@ButtonSize.Small" Danger Loading="_busy">Expire</Button>
+                        </Popconfirm>
+                        <Popconfirm Title="Cancel this subscription?" OnConfirm="CancelAsync">
+                            <Button Size="@ButtonSize.Small" Danger Loading="_busy">Cancel</Button>
+                        </Popconfirm>
+                    }
+                    @if (s.Status == "Active")
+                    {
+                        <Button Size="@ButtonSize.Small" Loading="_busy" OnClick="EnterGraceAsync">Grace period</Button>
+                        <Popconfirm Title="Suspend this subscription?" OnConfirm="SuspendAsync">
+                            <Button Size="@ButtonSize.Small" Loading="_busy">Suspend</Button>
+                        </Popconfirm>
+                        <Popconfirm Title="Cancel this subscription?" OnConfirm="CancelAsync">
+                            <Button Size="@ButtonSize.Small" Danger Loading="_busy">Cancel</Button>
+                        </Popconfirm>
+                    }
+                    @if (s.Status is "GracePeriod" or "PastDue")
+                    {
+                        @if (s.Status == "GracePeriod")
+                        {
+                            <Button Size="@ButtonSize.Small" Loading="_busy" OnClick="MarkPastDueAsync">Mark past due</Button>
+                        }
+                        <Popconfirm Title="Suspend this subscription?" OnConfirm="SuspendAsync">
+                            <Button Size="@ButtonSize.Small" Loading="_busy">Suspend</Button>
+                        </Popconfirm>
+                        <Popconfirm Title="Cancel this subscription?" OnConfirm="CancelAsync">
+                            <Button Size="@ButtonSize.Small" Danger Loading="_busy">Cancel</Button>
+                        </Popconfirm>
+                    }
+                    @if (s.Status == "Suspended")
+                    {
+                        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="ReactivateAsync">Reactivate</Button>
+                        <Popconfirm Title="Cancel this subscription?" OnConfirm="CancelAsync">
+                            <Button Size="@ButtonSize.Small" Danger Loading="_busy">Cancel</Button>
+                        </Popconfirm>
+                    }
+                </Space>
+            }
+        </PageHeaderExtra>
+    </PageHeader>
 
-    @if (_detail is null) { <LoadingState Message="@L["Subscriptions_DetailLoading"]" /> }
-    else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? L["Common_Error"])" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }
+    <Alert Type="@AlertType.Warning" Message="@L["Subscriptions_DetailWarning"]" ShowIcon="true" Style="margin-bottom:12px;" />
+
+    @if (_detail is null)
+    {
+        <div style="padding:2rem;text-align:center;"><Spin Tip="@L["Subscriptions_DetailLoading"]" /></div>
+    }
+    else if (!_detail.IsSuccess)
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_detail.Error?.Title ?? L["Common_Error"])" SubTitle="@_detail.Error?.Detail" />
+    }
     else
     {
         var s = _detail.Data!;
-        @if (!string.IsNullOrWhiteSpace(_toast)) { <p class="toast" role="status">@_toast</p> }
-        @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="@L["Common_ActionFailed"]" Detail="@_formError" /> }
+        <FormValidationSummary Title="@L["Common_ActionFailed"]" Message="@_formError" IsConflict="_formConflict" />
+        <p>
+            <a href="/admin/payments?organizationId=@s.OrganizationId">@L["Common_Payments"]</a>
+            ·
+            <a href="/admin/entitlements/history/@s.OrganizationId/@s.ProductCode">@L["Common_History"]</a>
+            ·
+            <a href="/admin/organizations/@s.OrganizationId/product-access">@L["Common_ProductAccess"]</a>
+            ·
+            <a href="/admin/organizations/@s.OrganizationId">@L["Common_Organization"]</a>
+        </p>
 
-        <dl>
-            <dt>@L["Common_Status"]</dt><dd><StatusBadge Value="@s.Status" /></dd>
-            <dt>@L["Common_Organization"]</dt><dd><a href="/admin/organizations/@s.OrganizationId">@s.OrganizationId</a></dd>
-            <dt>@L["Common_Product"]</dt><dd>@s.ProductCode</dd>
-            <dt>@L["Common_Plan"] id</dt><dd>@s.PlanId</dd>
-            <dt>Plan version id</dt><dd>@s.PlanVersionId</dd>
-            <dt>Trial definition</dt><dd>@(s.TrialDefinitionId?.ToString() ?? "—")</dd>
-            <dt>Trial start (UTC)</dt><dd><UtcTimestamp Value="@s.TrialStartUtc" /></dd>
-            <dt>@L["Subscriptions_Column_TrialEndUtc"]</dt><dd><UtcTimestamp Value="@s.TrialEndUtc" /></dd>
-            <dt>Trial remaining</dt><dd>@TrialRemaining(s)</dd>
-            <dt>Paid period start (UTC)</dt><dd><UtcTimestamp Value="@s.PaidPeriodStartUtc" /></dd>
-            <dt>Paid period end (UTC)</dt><dd><UtcTimestamp Value="@s.PaidPeriodEndUtc" /></dd>
-            <dt>Grace period end (UTC)</dt><dd><UtcTimestamp Value="@s.GracePeriodEndUtc" /></dd>
-            <dt>Past due at (UTC)</dt><dd><UtcTimestamp Value="@s.PastDueAtUtc" /></dd>
-            <dt>Suspended at (UTC)</dt><dd><UtcTimestamp Value="@s.SuspendedAtUtc" /></dd>
-            <dt>Cancelled at (UTC)</dt><dd><UtcTimestamp Value="@s.CancelledAtUtc" /></dd>
-            <dt>Expired at (UTC)</dt><dd><UtcTimestamp Value="@s.ExpiredAtUtc" /></dd>
-            <dt>@L["Common_Version"]</dt><dd>@s.Version</dd>
-            <dt>@L["Common_Related"]</dt>
-            <dd>
-                <a href="/admin/payments?organizationId=@s.OrganizationId">@L["Common_Payments"]</a>
-                ·
-                <a href="/admin/entitlements/history/@s.OrganizationId/@s.ProductCode">@L["Common_History"]</a>
-                ·
-                <a href="/admin/organizations/@s.OrganizationId/product-access">@L["Common_ProductAccess"]</a>
-            </dd>
-        </dl>
+        <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
+            <DescriptionsItem Title="@L["Common_Status"]"><Tag Color="@StatusColor(s.Status)">@s.Status</Tag></DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_Version"]">@s.Version</DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_Organization"]"><a href="/admin/organizations/@s.OrganizationId">@s.OrganizationId</a></DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_Product"]">@s.ProductCode</DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_Plan"]">@s.PlanId</DescriptionsItem>
+            <DescriptionsItem Title="Plan version">@s.PlanVersionId</DescriptionsItem>
+            <DescriptionsItem Title="Trial definition">@(s.TrialDefinitionId?.ToString() ?? "—")</DescriptionsItem>
+            <DescriptionsItem Title="@L["Subscriptions_Column_TrialEndUtc"]"><UtcTimestamp Value="@s.TrialEndUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="Paid period start"><UtcTimestamp Value="@s.PaidPeriodStartUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="Paid period end"><UtcTimestamp Value="@s.PaidPeriodEndUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="Grace end"><UtcTimestamp Value="@s.GracePeriodEndUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@s.UpdatedAtUtc" /></DescriptionsItem>
+        </Descriptions>
 
-        <section class="panel" aria-label="@L["Subscriptions_LifecycleActions"]">
-            <h2>@L["Subscriptions_LifecycleActions"]</h2>
-            <p class="muted">@L["Subscriptions_LifecycleHint"]</p>
-            <div class="form-grid">
-                <label>Period start (UTC) <input @bind="_periodStartText" placeholder="yyyy-MM-ddTHH:mm:ssZ" /></label>
-                <label>Period end (UTC) <input @bind="_periodEndText" placeholder="yyyy-MM-ddTHH:mm:ssZ" /></label>
-                <label>Grace period end (UTC) <input @bind="_graceEndText" placeholder="yyyy-MM-ddTHH:mm:ssZ" /></label>
-            </div>
-            <div class="actions">
-                @if (s.Status is "Trialing")
+        @if (CanManage && s.Status is not ("Cancelled" or "Expired"))
+        {
+            <Card Size="@CardSize.Small" Title="@L["Subscriptions_LifecycleActions"]">
+                <Space>
+                    <Input @bind-Value="_periodStartText" Size="@InputSize.Small" Placeholder="Period start UTC" Style="width:220px;" Disabled="_busy" />
+                    <Input @bind-Value="_periodEndText" Size="@InputSize.Small" Placeholder="Period end UTC" Style="width:220px;" Disabled="_busy" />
+                    <Input @bind-Value="_graceEndText" Size="@InputSize.Small" Placeholder="Grace end UTC" Style="width:220px;" Disabled="_busy" />
+                </Space>
+            </Card>
+        }
+
+        <Tabs Style="margin-top:12px;">
+            <TabPane Key="related" Tab="@L["Common_Related"]">
+                @if (_payments is { IsSuccess: true })
                 {
-                    <button type="button" @onclick="ActivateAsync" disabled="@_busy">Activate with paid period</button>
-                    <button type="button" class="danger" @onclick='() => Ask("Expire trial", "Expire this trial subscription? This is terminal.", ExpireAsync)' disabled="@_busy">Expire trial</button>
-                    <button type="button" class="danger" @onclick='() => Ask("Cancel subscription", "Cancel this subscription? Cancelled is terminal.", CancelAsync)' disabled="@_busy">Cancel</button>
+                    <Table TItem="PaymentDto" DataSource="@_payments.Data!.Items" Size="@TableSize.Small" Bordered HidePagination="true">
+                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" />
+                        <PropertyColumn Property="c => c.Amount" Title="Amount" />
+                        <PropertyColumn Property="c => c.CurrencyCode" Title="Currency" />
+                        <PropertyColumn Property="c => c.Method" Title="Method" />
+                        <ActionColumn Title="@L["Common_Open"]">
+                            <a href="/admin/payments/@context.Id">@L["Common_Open"]</a>
+                        </ActionColumn>
+                    </Table>
                 }
-                @if (s.Status is "Active")
+                @if (_entitlement?.IsSuccess == true)
                 {
-                    <button type="button" class="secondary" @onclick="EnterGraceAsync" disabled="@_busy">Enter grace period</button>
-                    <button type="button" class="secondary" @onclick='() => Ask("Suspend subscription", "Suspend this subscription? Effective commercial access will fail closed while suspended.", SuspendAsync)' disabled="@_busy">Suspend subscription</button>
-                    <button type="button" class="danger" @onclick='() => Ask("Cancel subscription", "Cancel this subscription? Cancelled is terminal.", CancelAsync)' disabled="@_busy">Cancel</button>
+                    <p style="margin-top:12px;">
+                        Latest entitlement:
+                        <a href="/admin/entitlements/@_entitlement.Data!.Id">@_entitlement.Data.PlanCode v@_entitlement.Data.PlanVersionNumber</a>
+                    </p>
                 }
-                @if (s.Status is "GracePeriod")
-                {
-                    <button type="button" class="secondary" @onclick="MarkPastDueAsync" disabled="@_busy">Mark past due</button>
-                    <button type="button" class="secondary" @onclick='() => Ask("Suspend subscription", "Suspend this subscription?", SuspendAsync)' disabled="@_busy">Suspend subscription</button>
-                    <button type="button" class="danger" @onclick='() => Ask("Cancel subscription", "Cancel this subscription? Cancelled is terminal.", CancelAsync)' disabled="@_busy">Cancel</button>
-                }
-                @if (s.Status is "PastDue")
-                {
-                    <button type="button" class="secondary" @onclick='() => Ask("Suspend subscription", "Suspend this past-due subscription?", SuspendAsync)' disabled="@_busy">Suspend subscription</button>
-                    <button type="button" class="danger" @onclick='() => Ask("Cancel subscription", "Cancel this subscription? Cancelled is terminal.", CancelAsync)' disabled="@_busy">Cancel</button>
-                }
-                @if (s.Status is "Suspended")
-                {
-                    <button type="button" @onclick="ReactivateAsync" disabled="@_busy">Reactivate with new paid period</button>
-                    <button type="button" class="danger" @onclick='() => Ask("Cancel subscription", "Cancel this subscription? Cancelled is terminal.", CancelAsync)' disabled="@_busy">Cancel</button>
-                }
-                @if (s.Status is "Cancelled" or "Expired")
-                {
-                    <p class="muted">Terminal state — no further lifecycle actions are available.</p>
-                }
-            </div>
-        </section>
+            </TabPane>
+        </Tabs>
     }
-}
-
-@if (_confirm is not null)
-{
-    <ConfirmDialog Visible="true" Title="@_confirm.Title" Message="@_confirm.Message" OnConfirm="RunConfirmAsync" OnCancel="ClearConfirm" Busy="_busy" />
 }
 
 @code {
     [Parameter] public Guid? Id { get; set; }
-    private string _status = "Active";
-    private string? _productCode;
+
     private ApiCallResult<PagedResult<SubscriptionDto>>? _list;
     private ApiCallResult<SubscriptionDto>? _detail;
-    private ApiCallResult<ProductOverviewDto>? _overview;
-    private bool _showStartTrial = true;
-    private string _trialOrgId = "";
-    private string _trialProductCode = "";
-    private string _trialPlanId = "";
-    private string _trialPlanVersionId = "";
-    private string _trialDefinitionId = "";
+    private ApiCallResult<PagedResult<PaymentDto>>? _payments;
+    private ApiCallResult<EntitlementSnapshotDto>? _entitlement;
+
+    private int _page = 1;
+    private string _search = "";
+    private string _status = "";
+    private string _productCode = "";
+    private string _organizationIdText = "";
+    private string _isTrialFilter = "";
+    private bool _showCreate;
+    private bool _busy;
+    private string? _formError;
+    private bool _formConflict;
+
+    private string _createOrgId = "";
+    private string _createProductCode = "";
+    private string _createPlanId = "";
+    private string _createPlanVersionId = "";
+    private string _createTrialDefinitionId = "";
+    private string _createPeriodStart = "";
+    private string _createPeriodEnd = "";
     private string _periodStartText = "";
     private string _periodEndText = "";
     private string _graceEndText = "";
-    private string? _toast;
-    private string? _formError;
-    private bool _busy;
-    private bool _listBusy;
-    private ConfirmState? _confirm;
-    private int _page = 1;
-    private List<AdminColumnDefinition> _subscriptionColumns = new();
 
-    protected override void OnInitialized()
-    {
-        _subscriptionColumns =
-        [
-            new("product", L["Common_Product"], Primary: true),
-            new("status", L["Common_Status"]),
-            new("org", L["Common_Organization"]),
-            new("trialEnd", L["Subscriptions_Column_TrialEndUtc"]),
-            new("updated", L["Common_UpdatedUtc"])
-        ];
-    }
+    private bool CanManage => Permissions.HasPermission(PlatformPermissionCodes.ManageSubscriptions);
+    private int? ExpectedVersion => _detail?.Data?.Version;
 
     protected override async Task OnParametersSetAsync()
     {
-        _toast = null;
         _formError = null;
-        PrefillPeriods();
+        _formConflict = false;
         if (Id is null)
         {
-            var uri = Nav.ToAbsoluteUri(Nav.Uri);
-            var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
-            if (query.TryGetValue("status", out var statusValues))
-            {
-                var status = statusValues.FirstOrDefault();
-                if (!string.IsNullOrWhiteSpace(status))
-                {
-                    _status = status!;
-                }
-            }
-
+            PrefillCreatePeriods();
             await LoadListAsync();
         }
         else
         {
-            _detail = await Api.GetSubscriptionAsync(Id.Value);
+            await LoadDetailAsync();
         }
     }
 
-    private void PrefillPeriods()
+    private void ToggleCreate() => _showCreate = !_showCreate;
+    private void HideCreate() => _showCreate = false;
+
+    private void PrefillCreatePeriods()
     {
         var now = DateTimeOffset.UtcNow;
-        if (string.IsNullOrWhiteSpace(_periodStartText)) _periodStartText = now.ToString("yyyy-MM-ddTHH:mm:ssZ");
-        if (string.IsNullOrWhiteSpace(_periodEndText)) _periodEndText = now.AddDays(30).ToString("yyyy-MM-ddTHH:mm:ssZ");
-        if (string.IsNullOrWhiteSpace(_graceEndText)) _graceEndText = now.AddDays(37).ToString("yyyy-MM-ddTHH:mm:ssZ");
+        if (string.IsNullOrWhiteSpace(_createPeriodStart))
+        {
+            _createPeriodStart = now.ToString("yyyy-MM-ddTHH:mm:ssZ");
+        }
+
+        if (string.IsNullOrWhiteSpace(_createPeriodEnd))
+        {
+            _createPeriodEnd = now.AddDays(30).ToString("yyyy-MM-ddTHH:mm:ssZ");
+        }
     }
+
+    private bool? ParseIsTrial() => _isTrialFilter switch
+    {
+        "true" => true,
+        "false" => false,
+        _ => null
+    };
+
+    private Guid? ParseOrgFilter() =>
+        Guid.TryParse(_organizationIdText.Trim(), out var id) ? id : null;
 
     private async Task LoadListAsync()
     {
-        _listBusy = true;
-        try
-        {
-            _list = await Api.GetSubscriptionsAsync(
-                string.IsNullOrWhiteSpace(_status) ? "Active" : _status,
-                string.IsNullOrWhiteSpace(_productCode) ? null : _productCode,
-                page: _page);
-        }
-        finally
-        {
-            _listBusy = false;
-        }
+        _list = await Api.GetSubscriptionsAsync(
+            status: string.IsNullOrWhiteSpace(_status) ? null : _status,
+            productCode: string.IsNullOrWhiteSpace(_productCode) ? null : _productCode.Trim(),
+            organizationId: string.IsNullOrWhiteSpace(_organizationIdText) ? null : ParseOrgFilter(),
+            search: string.IsNullOrWhiteSpace(_search) ? null : _search.Trim(),
+            isTrial: ParseIsTrial(),
+            sortBy: "UpdatedAtUtc",
+            sortDesc: true,
+            page: _page);
     }
 
     private async Task ApplyFiltersAsync()
@@ -276,203 +350,231 @@ else
 
     private async Task ClearFiltersAsync()
     {
-        _status = "Active";
-        _productCode = null;
+        _search = "";
+        _status = "";
+        _productCode = "";
+        _organizationIdText = "";
+        _isTrialFilter = "";
         _page = 1;
         await LoadListAsync();
     }
 
-    private async Task OnSubscriptionPageAsync(int page)
+    private async Task OnPageChangedAsync(PaginationEventArgs args)
     {
-        _page = page;
+        _page = args.Page;
         await LoadListAsync();
     }
 
-    private RenderFragment<(SubscriptionDto Item, AdminColumnDefinition Column)> SubscriptionCell => ctx => b =>
+    private async Task LoadDetailAsync()
     {
-        switch (ctx.Column.Key)
+        if (Id is null) return;
+        _detail = await Api.GetSubscriptionAsync(Id.Value);
+        if (_detail.IsSuccess && _detail.Data is not null)
         {
-            case "product":
-                b.OpenElement(0, "a");
-                b.AddAttribute(1, "href", $"/admin/subscriptions/{ctx.Item.Id}");
-                b.AddContent(2, ctx.Item.ProductCode);
-                b.CloseElement();
-                break;
-            case "status":
-                b.OpenComponent<ReportStatusBadge>(0);
-                b.AddAttribute(1, nameof(ReportStatusBadge.Value), ctx.Item.Status);
-                b.CloseComponent();
-                break;
-            case "org":
-                b.OpenElement(0, "a");
-                b.AddAttribute(1, "href", $"/admin/organizations/{ctx.Item.OrganizationId}");
-                b.AddContent(2, ctx.Item.OrganizationId);
-                b.CloseElement();
-                break;
-            case "trialEnd":
-                b.OpenComponent<UtcTimestamp>(0);
-                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.TrialEndUtc);
-                b.CloseComponent();
-                break;
-            case "updated":
-                b.OpenComponent<UtcTimestamp>(0);
-                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.UpdatedAtUtc);
-                b.CloseComponent();
-                break;
+            var s = _detail.Data;
+            var now = DateTimeOffset.UtcNow;
+            _periodStartText = (s.PaidPeriodStartUtc ?? now).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            _periodEndText = (s.PaidPeriodEndUtc ?? now.AddDays(30)).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            _graceEndText = (s.GracePeriodEndUtc ?? now.AddDays(7)).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            _payments = await Api.GetPaymentsAsync(organizationId: s.OrganizationId, pageSize: 10);
+            _entitlement = await Api.GetLatestEntitlementAsync(s.OrganizationId, s.ProductCode);
         }
-    };
+    }
 
-    private async Task LoadTrialCatalogAsync()
+    private async Task LoadCatalogAsync()
     {
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
         _formError = null;
-        if (string.IsNullOrWhiteSpace(_trialProductCode)) { _formError = "Product code is required to load catalog."; return; }
-        _busy = true;
-        _overview = await Api.GetProductOverviewAsync(_trialProductCode.Trim());
+        if (string.IsNullOrWhiteSpace(_createProductCode))
+        {
+            _busy = false;
+            _formError = "Product code is required.";
+            return;
+        }
+
+        var overview = await Api.GetProductOverviewAsync(_createProductCode.Trim());
         _busy = false;
-        if (!_overview.IsSuccess) { _formError = _overview.Error?.Detail ?? _overview.Error?.Title; return; }
-        var plan = _overview.Data!.Plans.FirstOrDefault(p => p.Status == "Active");
-        var version = _overview.Data.PublishedPlanVersions.OrderByDescending(v => v.VersionNumber).FirstOrDefault();
-        var trial = _overview.Data.Trials.FirstOrDefault(t => t.Status == "Active");
-        if (plan is not null) _trialPlanId = plan.Id.ToString();
-        if (version is not null) _trialPlanVersionId = version.Id.ToString();
-        if (trial is not null) _trialDefinitionId = trial.Id.ToString();
-        _toast = "Catalog loaded. Review plan, version, and trial IDs before starting.";
+        if (!overview.IsSuccess || overview.Data is null)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(overview.Error);
+            _formError = AdminFormErrorMapper.MapPageError(overview);
+            await Message.ErrorAsync(_formError ?? L["Common_Error"].Value);
+            return;
+        }
+
+        var plan = overview.Data.Plans.FirstOrDefault(p => p.Status == "Active");
+        var version = overview.Data.PublishedPlanVersions.OrderByDescending(v => v.VersionNumber).FirstOrDefault();
+        var trial = overview.Data.Trials.FirstOrDefault(t => t.Status == "Active");
+        if (plan is not null) _createPlanId = plan.Id.ToString("D");
+        if (version is not null) _createPlanVersionId = version.Id.ToString("D");
+        if (trial is not null) _createTrialDefinitionId = trial.Id.ToString("D");
+        await Message.SuccessAsync("Catalog loaded.");
     }
 
     private async Task StartTrialAsync()
     {
-        _formError = null; _toast = null; _showStartTrial = true;
-        if (!Guid.TryParse(_trialOrgId, out var orgId)
-            || !Guid.TryParse(_trialPlanId, out var planId)
-            || !Guid.TryParse(_trialPlanVersionId, out var versionId)
-            || !Guid.TryParse(_trialDefinitionId, out var trialId))
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        _formError = null;
+        _formConflict = false;
+        if (!Guid.TryParse(_createOrgId, out var orgId)
+            || !Guid.TryParse(_createPlanId, out var planId)
+            || !Guid.TryParse(_createPlanVersionId, out var versionId)
+            || !Guid.TryParse(_createTrialDefinitionId, out var trialId))
         {
+            _busy = false;
             _formError = "Organization, plan, plan version, and trial definition IDs must be valid GUIDs.";
             return;
         }
 
-        _busy = true;
         var result = await Api.StartTrialAsync(orgId, new StartTrialRequest(planId, versionId, trialId));
         _busy = false;
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "Trial started.";
-        Nav.NavigateTo($"/admin/subscriptions/{result.Data!.Id}");
-    }
-
-    private void Ask(string title, string message, Func<Task> action) => _confirm = new ConfirmState(title, message, action);
-
-    private async Task RunConfirmAsync()
-    {
-        if (_confirm is null)
+        if (!result.IsSuccess)
         {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            await Message.ErrorAsync(_formError ?? L["Common_Error"].Value);
             return;
         }
 
-        await _confirm.Action();
+        await Message.SuccessAsync("Trial started.");
+        Nav.NavigateTo($"/admin/subscriptions/{result.Data!.Id}");
     }
 
-    private Task ClearConfirm() { _confirm = null; return Task.CompletedTask; }
+    private async Task CreatePaidAsync()
+    {
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        _formError = null;
+        _formConflict = false;
+        if (!Guid.TryParse(_createOrgId, out var orgId)
+            || !Guid.TryParse(_createPlanId, out var planId)
+            || !Guid.TryParse(_createPlanVersionId, out var versionId)
+            || !DateTimeOffset.TryParse(_createPeriodStart, out var start)
+            || !DateTimeOffset.TryParse(_createPeriodEnd, out var end))
+        {
+            _busy = false;
+            _formError = "Organization, plan, plan version, and paid period timestamps are required.";
+            return;
+        }
+
+        var result = await Api.CreatePaidSubscriptionAsync(
+            orgId,
+            new CreatePaidSubscriptionRequest(planId, versionId, start.ToUniversalTime(), end.ToUniversalTime()));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            await Message.ErrorAsync(_formError ?? L["Common_Error"].Value);
+            return;
+        }
+
+        await Message.SuccessAsync("Paid subscription created.");
+        Nav.NavigateTo($"/admin/subscriptions/{result.Data!.Id}");
+    }
 
     private bool TryParsePeriod(out DateTimeOffset start, out DateTimeOffset end)
     {
-        start = default; end = default;
+        start = default;
+        end = default;
         return DateTimeOffset.TryParse(_periodStartText, out start) && DateTimeOffset.TryParse(_periodEndText, out end);
     }
 
     private async Task ActivateAsync()
     {
-        if (Id is null) return;
-        _formError = null;
-        if (!TryParsePeriod(out var start, out var end)) { _formError = "Paid period start/end must be valid UTC timestamps."; return; }
-        _busy = true;
-        var result = await Api.ActivateSubscriptionAsync(Id.Value, new ActivateSubscriptionRequest(start.ToUniversalTime(), end.ToUniversalTime()));
-        _busy = false;
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "Subscription activated.";
-        _detail = ApiCallResult<SubscriptionDto>.Success(result.Data!);
+        if (Id is null || ExpectedVersion is not int version || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        if (!TryParsePeriod(out var start, out var end))
+        {
+            _busy = false;
+            _formError = "Paid period start/end must be valid UTC timestamps.";
+            return;
+        }
+
+        var result = await Api.ActivateSubscriptionAsync(
+            Id.Value,
+            new ActivateSubscriptionRequest(start.ToUniversalTime(), end.ToUniversalTime(), version));
+        await FinishLifecycleAsync(result, "Subscription activated.");
     }
 
     private async Task EnterGraceAsync()
     {
-        if (Id is null) return;
-        _formError = null;
-        if (!DateTimeOffset.TryParse(_graceEndText, out var graceEnd)) { _formError = "Grace period end must be a valid UTC timestamp."; return; }
-        _busy = true;
-        var result = await Api.EnterGracePeriodAsync(Id.Value, new GracePeriodRequest(graceEnd.ToUniversalTime()));
-        _busy = false;
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "Entered grace period.";
-        _detail = ApiCallResult<SubscriptionDto>.Success(result.Data!);
+        if (Id is null || ExpectedVersion is not int version || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        if (!DateTimeOffset.TryParse(_graceEndText, out var graceEnd))
+        {
+            _busy = false;
+            _formError = "Grace period end must be a valid UTC timestamp.";
+            return;
+        }
+
+        var result = await Api.EnterGracePeriodAsync(Id.Value, new GracePeriodRequest(graceEnd.ToUniversalTime(), version));
+        await FinishLifecycleAsync(result, "Entered grace period.");
     }
 
     private async Task MarkPastDueAsync()
     {
-        if (Id is null) return;
-        _busy = true; _formError = null;
-        var result = await Api.MarkPastDueAsync(Id.Value);
-        _busy = false;
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "Marked past due.";
-        _detail = ApiCallResult<SubscriptionDto>.Success(result.Data!);
+        if (Id is null || ExpectedVersion is not int version || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.MarkPastDueAsync(Id.Value, version);
+        await FinishLifecycleAsync(result, "Marked past due.");
     }
 
     private async Task SuspendAsync()
     {
-        if (Id is null) return;
-        _busy = true; _formError = null;
-        var result = await Api.SuspendSubscriptionAsync(Id.Value);
-        _busy = false; await ClearConfirm();
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "Subscription suspended.";
-        _detail = ApiCallResult<SubscriptionDto>.Success(result.Data!);
+        if (Id is null || ExpectedVersion is not int version || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.SuspendSubscriptionAsync(Id.Value, version);
+        await FinishLifecycleAsync(result, "Subscription suspended.");
     }
 
     private async Task ReactivateAsync()
     {
-        if (Id is null) return;
-        _formError = null;
-        if (!TryParsePeriod(out var start, out var end)) { _formError = "Reactivation requires a valid new paid period."; return; }
-        _busy = true;
-        var result = await Api.ReactivateSubscriptionAsync(Id.Value, new ReactivateSubscriptionRequest(start.ToUniversalTime(), end.ToUniversalTime()));
-        _busy = false;
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "Subscription reactivated.";
-        _detail = ApiCallResult<SubscriptionDto>.Success(result.Data!);
+        if (Id is null || ExpectedVersion is not int version || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        if (!TryParsePeriod(out var start, out var end))
+        {
+            _busy = false;
+            _formError = "Reactivation requires a valid paid period.";
+            return;
+        }
+
+        var result = await Api.ReactivateSubscriptionAsync(
+            Id.Value,
+            new ReactivateSubscriptionRequest(start.ToUniversalTime(), end.ToUniversalTime(), version));
+        await FinishLifecycleAsync(result, "Subscription reactivated.");
     }
 
     private async Task CancelAsync()
     {
-        if (Id is null) return;
-        _busy = true; _formError = null;
-        var result = await Api.CancelSubscriptionAsync(Id.Value);
-        _busy = false; await ClearConfirm();
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "Subscription cancelled.";
-        _detail = ApiCallResult<SubscriptionDto>.Success(result.Data!);
+        if (Id is null || ExpectedVersion is not int version || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.CancelSubscriptionAsync(Id.Value, version);
+        await FinishLifecycleAsync(result, "Subscription cancelled.");
     }
 
     private async Task ExpireAsync()
     {
-        if (Id is null) return;
-        _busy = true; _formError = null;
-        var result = await Api.ExpireSubscriptionAsync(Id.Value);
-        _busy = false; await ClearConfirm();
-        if (!result.IsSuccess) { _formError = result.Error?.Detail ?? result.Error?.Title; return; }
-        _toast = "Subscription expired.";
-        _detail = ApiCallResult<SubscriptionDto>.Success(result.Data!);
+        if (Id is null || ExpectedVersion is not int version || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.ExpireSubscriptionAsync(Id.Value, version);
+        await FinishLifecycleAsync(result, "Subscription expired.");
     }
 
-    private static string FormatDuration(long ticks) => TimeSpan.FromTicks(ticks).TotalDays is var days
-        ? $"{days:0.##} days"
-        : TimeSpan.FromTicks(ticks).ToString();
-
-    private static string TrialRemaining(SubscriptionDto s)
+    private async Task FinishLifecycleAsync(ApiCallResult<SubscriptionDto> result, string success)
     {
-        if (s.TrialEndUtc is null || s.Status != "Trialing") return "—";
-        var remaining = s.TrialEndUtc.Value - DateTimeOffset.UtcNow;
-        if (remaining <= TimeSpan.Zero) return "Ended (display only — not lifecycle authority)";
-        return $"{remaining.TotalDays:0.#} days remaining (display only — not lifecycle authority)";
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            await Message.ErrorAsync(_formError ?? L["Common_Error"].Value);
+            return;
+        }
+
+        await Message.SuccessAsync(success);
+        await LoadDetailAsync();
     }
 
-    private sealed record ConfirmState(string Title, string Message, Func<Task> Action);
+    private static string StatusColor(string status) => status switch
+    {
+        "Active" => "success",
+        "Inactive" or "Draft" => "default",
+        "Retired" or "Closed" or "Cancelled" or "Expired" or "Deactivated" => "default",
+        "Trialing" => "processing",
+        "Suspended" or "PastDue" or "GracePeriod" => "warning",
+        _ => "processing"
+    };
 }
