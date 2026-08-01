@@ -52,6 +52,10 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<OrganizationInvitationRecord> OrganizationInvitations => Set<OrganizationInvitationRecord>();
     internal DbSet<ProductAccessAssignmentRecord> ProductAccessAssignments => Set<ProductAccessAssignmentRecord>();
     internal DbSet<PlatformRoleAssignmentRecord> PlatformRoleAssignments => Set<PlatformRoleAssignmentRecord>();
+    internal DbSet<PlatformRoleDefinitionRecord> PlatformRoleDefinitions => Set<PlatformRoleDefinitionRecord>();
+    internal DbSet<PlatformCustomRoleAssignmentRecord> PlatformCustomRoleAssignments => Set<PlatformCustomRoleAssignmentRecord>();
+    internal DbSet<OrganizationRoleDefinitionRecord> OrganizationRoleDefinitions => Set<OrganizationRoleDefinitionRecord>();
+    internal DbSet<OrganizationCustomRoleAssignmentRecord> OrganizationCustomRoleAssignments => Set<OrganizationCustomRoleAssignmentRecord>();
     internal DbSet<AuditRecordRecord> AuditRecords => Set<AuditRecordRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -763,6 +767,107 @@ public sealed class PlatformDbContext : DbContext
             entity.HasOne<PlatformOrganizationRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PlatformRoleDefinitionRecord>(entity =>
+        {
+            entity.ToTable("platform_role_definitions");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(512);
+            entity.Property(e => e.Kind).HasColumnName("kind").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.PermissionsJson).HasColumnName("permissions_json").HasColumnType("jsonb").IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Version).HasColumnName("version").IsConcurrencyToken();
+            entity.HasIndex(e => e.Code).IsUnique().HasDatabaseName("ux_platform_role_definitions_code");
+        });
+
+        modelBuilder.Entity<PlatformCustomRoleAssignmentRecord>(entity =>
+        {
+            entity.ToTable("platform_custom_role_assignments");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.PlatformUserId).HasColumnName("platform_user_id");
+            entity.Property(e => e.RoleDefinitionId).HasColumnName("role_definition_id");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.GrantedByActor).HasColumnName("granted_by_actor").HasMaxLength(128).IsRequired();
+            entity.Property(e => e.GrantedAtUtc).HasColumnName("granted_at_utc");
+            entity.Property(e => e.Reason).HasColumnName("reason").HasMaxLength(512);
+            entity.Property(e => e.RevokedByActor).HasColumnName("revoked_by_actor").HasMaxLength(128);
+            entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
+            entity.Property(e => e.RevokeReason).HasColumnName("revoke_reason").HasMaxLength(512);
+            entity.HasIndex(e => new { e.PlatformUserId, e.RoleDefinitionId })
+                .IsUnique()
+                .HasFilter("status = 'Active'")
+                .HasDatabaseName("ux_platform_custom_role_assignments_active");
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.PlatformUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<PlatformRoleDefinitionRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.RoleDefinitionId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<OrganizationRoleDefinitionRecord>(entity =>
+        {
+            entity.ToTable("organization_role_definitions");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(512);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.PermissionsJson).HasColumnName("permissions_json").HasColumnType("jsonb").IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Version).HasColumnName("version").IsConcurrencyToken();
+            entity.HasIndex(e => new { e.OrganizationId, e.Code })
+                .IsUnique()
+                .HasDatabaseName("ux_organization_role_definitions_org_code");
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<OrganizationCustomRoleAssignmentRecord>(entity =>
+        {
+            entity.ToTable("organization_custom_role_assignments");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.PlatformUserId).HasColumnName("platform_user_id");
+            entity.Property(e => e.RoleDefinitionId).HasColumnName("role_definition_id");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.GrantedByActor).HasColumnName("granted_by_actor").HasMaxLength(128).IsRequired();
+            entity.Property(e => e.GrantedAtUtc).HasColumnName("granted_at_utc");
+            entity.Property(e => e.Reason).HasColumnName("reason").HasMaxLength(512);
+            entity.Property(e => e.RevokedByActor).HasColumnName("revoked_by_actor").HasMaxLength(128);
+            entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
+            entity.Property(e => e.RevokeReason).HasColumnName("revoke_reason").HasMaxLength(512);
+            entity.HasIndex(e => new { e.OrganizationId, e.PlatformUserId, e.RoleDefinitionId })
+                .IsUnique()
+                .HasFilter("status = 'Active'")
+                .HasDatabaseName("ux_organization_custom_role_assignments_active");
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.PlatformUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<OrganizationRoleDefinitionRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.RoleDefinitionId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

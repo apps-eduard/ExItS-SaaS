@@ -55,6 +55,19 @@ internal sealed class PlatformRoleAssignmentRepository : IPlatformRoleAssignment
         return records.Select(AuthorizationAuditEntityMapper.ToDomain).ToList();
     }
 
+    public async Task<int> CountActivePlatformAdministratorsAsync(CancellationToken cancellationToken = default)
+    {
+        var active = nameof(PlatformRoleAssignmentStatus.Active);
+        var role = nameof(PlatformSystemRole.PlatformAdministrator);
+        return await _db.PlatformRoleAssignments.AsNoTracking()
+            .CountAsync(
+                a => a.Status == active
+                     && a.Role == role
+                     && a.OrganizationId == null,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task<(IReadOnlyList<PlatformRoleAssignment> Items, int TotalCount)> ListAsync(
         PlatformUserId? userId,
         PlatformSystemRole? role,

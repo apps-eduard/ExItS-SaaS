@@ -76,6 +76,15 @@ public static class ApplicationErrorCodes
 
     public const string RoleAssignmentNotFound = "application.role_assignment.not_found";
     public const string RoleAssignmentConflict = "application.role_assignment.conflict";
+    public const string RoleDefinitionNotFound = "application.role_definition.not_found";
+    public const string RoleDefinitionConflict = "application.role_definition.conflict";
+    public const string CustomRoleAssignmentNotFound = "application.custom_role_assignment.not_found";
+    public const string CustomRoleAssignmentConflict = "application.custom_role_assignment.conflict";
+    public const string OrganizationRoleDefinitionNotFound = "application.organization_role_definition.not_found";
+    public const string OrganizationRoleDefinitionConflict = "application.organization_role_definition.conflict";
+    public const string OrganizationCustomRoleAssignmentNotFound = "application.organization_custom_role_assignment.not_found";
+    public const string OrganizationCustomRoleAssignmentConflict = "application.organization_custom_role_assignment.conflict";
+    public const string LastPlatformAdministratorProtected = "application.role_assignment.last_platform_administrator";
     public const string AuditRecordNotFound = "application.audit_record.not_found";
 
     public const string CredentialNotFound = "application.credential.not_found";

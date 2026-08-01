@@ -85,6 +85,11 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.EntitlementProductMismatch
             or ApplicationErrorCodes.EntitlementSubscriptionInvalid
             or ApplicationErrorCodes.RoleAssignmentConflict
+            or ApplicationErrorCodes.LastPlatformAdministratorProtected
+            or ApplicationErrorCodes.RoleDefinitionConflict
+            or ApplicationErrorCodes.CustomRoleAssignmentConflict
+            or ApplicationErrorCodes.OrganizationRoleDefinitionConflict
+            or ApplicationErrorCodes.OrganizationCustomRoleAssignmentConflict
             or ApplicationErrorCodes.CredentialAlreadyExists
             or ApplicationErrorCodes.BootstrapAlreadyCompleted
             or ApplicationErrorCodes.CredentialLockedOut
@@ -98,6 +103,11 @@ internal static class PlatformApiResults
             or DomainErrorCodes.InvalidSaaSPaymentTransition
             or DomainErrorCodes.UnsupportedSubscriptionStatus
             or DomainErrorCodes.LastGoverningAdminProtected
+            or DomainErrorCodes.LastPlatformAdministratorProtected
+            or DomainErrorCodes.BuiltInRoleProtected
+            or DomainErrorCodes.RoleDefinitionNotAssignable
+            or DomainErrorCodes.InvalidPlatformRoleStatusTransition
+            or DomainErrorCodes.InvalidOrganizationRoleStatusTransition
             or DomainErrorCodes.InvitationExpired => StatusCodes.Status409Conflict,
 
         ApplicationErrorCodes.PaymentAmountInvalid

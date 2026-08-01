@@ -9,6 +9,20 @@ public static class PlatformAuditActions
 {
     public const string PlatformRoleAssigned = "platform.role_assignment.granted";
     public const string PlatformRoleRevoked = "platform.role_assignment.revoked";
+    public const string PlatformRoleDefinitionCreated = "platform.role_definition.created";
+    public const string PlatformRoleDefinitionUpdated = "platform.role_definition.updated";
+    public const string PlatformRoleDefinitionActivated = "platform.role_definition.activated";
+    public const string PlatformRoleDefinitionDeactivated = "platform.role_definition.deactivated";
+    public const string PlatformRoleDefinitionRetired = "platform.role_definition.retired";
+    public const string PlatformCustomRoleAssigned = "platform.custom_role_assignment.granted";
+    public const string PlatformCustomRoleRevoked = "platform.custom_role_assignment.revoked";
+    public const string OrganizationRoleDefinitionCreated = "platform.organization_role_definition.created";
+    public const string OrganizationRoleDefinitionUpdated = "platform.organization_role_definition.updated";
+    public const string OrganizationRoleDefinitionActivated = "platform.organization_role_definition.activated";
+    public const string OrganizationRoleDefinitionDeactivated = "platform.organization_role_definition.deactivated";
+    public const string OrganizationRoleDefinitionRetired = "platform.organization_role_definition.retired";
+    public const string OrganizationCustomRoleAssigned = "platform.organization_custom_role_assignment.granted";
+    public const string OrganizationCustomRoleRevoked = "platform.organization_custom_role_assignment.revoked";
 
     public const string OrganizationCreated = "platform.organization.created";
     public const string OrganizationUpdated = "platform.organization.updated";

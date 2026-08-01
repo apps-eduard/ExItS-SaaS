@@ -80,6 +80,18 @@ public static class DomainErrorCodes
     public const string InvalidPlatformSystemRole = "platform.role_assignment.role.invalid";
     public const string InvalidPermissionCode = "platform.permission.invalid";
     public const string AuthorizationDenied = "platform.authorization.denied";
+    public const string InvalidPlatformRoleDefinitionId = "platform.role_definition.id.invalid";
+    public const string InvalidPlatformCustomRoleAssignmentId = "platform.custom_role_assignment.id.invalid";
+    public const string InvalidOrganizationRoleDefinitionId = "platform.organization_role_definition.id.invalid";
+    public const string InvalidOrganizationCustomRoleAssignmentId = "platform.organization_custom_role_assignment.id.invalid";
+    public const string InvalidPlatformRoleCode = "platform.role_definition.code.invalid";
+    public const string InvalidOrganizationRoleCode = "platform.organization_role_definition.code.invalid";
+    public const string InvalidPlatformRoleStatusTransition = "platform.role_definition.status.invalid_transition";
+    public const string InvalidOrganizationRoleStatusTransition = "platform.organization_role_definition.status.invalid_transition";
+    public const string BuiltInRoleProtected = "platform.role_definition.built_in_protected";
+    public const string RoleDefinitionNotAssignable = "platform.role_definition.not_assignable";
+    public const string LastPlatformAdministratorProtected = "platform.role_assignment.last_platform_administrator";
+    public const string InvalidOrganizationPermissionCode = "platform.organization_permission.invalid";
 
     public const string InvalidAuditRecordId = "platform.audit_record.id.invalid";
     public const string InvalidAuditActorType = "platform.audit_record.actor_type.invalid";

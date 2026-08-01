@@ -20,6 +20,8 @@ public interface IPlatformRoleAssignmentRepository
         PlatformUserId userId,
         CancellationToken cancellationToken = default);
 
+    Task<int> CountActivePlatformAdministratorsAsync(CancellationToken cancellationToken = default);
+
     Task<(IReadOnlyList<PlatformRoleAssignment> Items, int TotalCount)> ListAsync(
         PlatformUserId? userId,
         PlatformSystemRole? role,

@@ -2,6 +2,7 @@ using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Domain.Abstractions;
+using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 
@@ -35,10 +36,13 @@ public sealed class PlatformUserQueryService
         string? search,
         int? page,
         int? pageSize,
+        UserDirectoryFilter? directoryFilter = null,
         CancellationToken cancellationToken = default)
     {
         var (skip, take) = CatalogPagination.Normalize(page, pageSize);
-        var (items, total) = await _users.ListAsync(status, search, skip, take, cancellationToken).ConfigureAwait(false);
+        var (items, total) = await _users
+            .ListAsync(status, search, directoryFilter, skip, take, cancellationToken)
+            .ConfigureAwait(false);
         return new PagedResult<PlatformUserDto>(
             items.Select(Map).ToList(),
             total,

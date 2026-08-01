@@ -1,3 +1,4 @@
+using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Identity;
 
 namespace ExItS.Platform.Application.Identity;
@@ -13,6 +14,7 @@ public interface IPlatformUserRepository
     Task<(IReadOnlyList<PlatformUser> Items, int TotalCount)> ListAsync(
         AccountStatus? status,
         string? search,
+        UserDirectoryFilter? directoryFilter,
         int skip,
         int take,
         CancellationToken cancellationToken = default);

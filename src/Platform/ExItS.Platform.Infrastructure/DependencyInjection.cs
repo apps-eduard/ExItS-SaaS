@@ -54,6 +54,10 @@ public static class DependencyInjection
         services.AddScoped<IOrganizationInvitationRepository, OrganizationInvitationRepository>();
         services.AddScoped<IProductAccessAssignmentRepository, ProductAccessAssignmentRepository>();
         services.AddScoped<IPlatformRoleAssignmentRepository, PlatformRoleAssignmentRepository>();
+        services.AddScoped<IPlatformRoleDefinitionRepository, PlatformRoleDefinitionRepository>();
+        services.AddScoped<IPlatformCustomRoleAssignmentRepository, PlatformCustomRoleAssignmentRepository>();
+        services.AddScoped<IOrganizationRoleDefinitionRepository, OrganizationRoleDefinitionRepository>();
+        services.AddScoped<IOrganizationCustomRoleAssignmentRepository, OrganizationCustomRoleAssignmentRepository>();
         services.AddScoped<IAuditRecordRepository, AuditRecordRepository>();
         services.AddScoped<IPlatformUnitOfWork, PlatformUnitOfWork>();
         services.AddSingleton<IClock, SystemClock>();

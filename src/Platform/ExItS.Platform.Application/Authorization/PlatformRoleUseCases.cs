@@ -232,6 +232,19 @@ public sealed class RevokePlatformRole
                 "Platform role assignment was not found.");
         }
 
+        if (assignment.Status == PlatformRoleAssignmentStatus.Active
+            && assignment.Role == PlatformSystemRole.PlatformAdministrator
+            && assignment.OrganizationId is null)
+        {
+            var remaining = await _assignments.CountActivePlatformAdministratorsAsync(cancellationToken).ConfigureAwait(false);
+            if (remaining <= 1)
+            {
+                return ApplicationResult<PlatformRoleAssignment>.Failure(
+                    ApplicationErrorCodes.LastPlatformAdministratorProtected,
+                    "Cannot revoke the final active Platform Administrator assignment.");
+            }
+        }
+
         try
         {
             assignment.Revoke(actorIdentifier, reason, _clock.UtcNow);

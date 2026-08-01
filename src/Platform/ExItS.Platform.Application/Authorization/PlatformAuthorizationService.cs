@@ -58,13 +58,19 @@ public interface IPlatformAuthorizationService
 public sealed class PlatformAuthorizationService : IPlatformAuthorizationService
 {
     private readonly IPlatformRoleAssignmentRepository _roleAssignments;
+    private readonly IPlatformCustomRoleAssignmentRepository _customAssignments;
+    private readonly IPlatformRoleDefinitionRepository _roleDefinitions;
     private readonly DevelopmentAuthorizationOptions _developmentOptions;
 
     public PlatformAuthorizationService(
         IPlatformRoleAssignmentRepository roleAssignments,
+        IPlatformCustomRoleAssignmentRepository customAssignments,
+        IPlatformRoleDefinitionRepository roleDefinitions,
         IOptions<DevelopmentAuthorizationOptions> developmentOptions)
     {
         _roleAssignments = roleAssignments;
+        _customAssignments = customAssignments;
+        _roleDefinitions = roleDefinitions;
         _developmentOptions = developmentOptions.Value;
     }
 
@@ -85,6 +91,25 @@ public sealed class PlatformAuthorizationService : IPlatformAuthorizationService
             }
 
             foreach (var permission in PlatformRolePermissionCatalog.GetPermissions(assignment.Role))
+            {
+                permissions.Add(permission);
+            }
+        }
+
+        var customAssignments = await _customAssignments
+            .ListActiveByUserAsync(userId, cancellationToken)
+            .ConfigureAwait(false);
+        foreach (var assignment in customAssignments)
+        {
+            var definition = await _roleDefinitions
+                .GetByIdAsync(assignment.RoleDefinitionId, cancellationToken)
+                .ConfigureAwait(false);
+            if (definition is null || definition.Status != PlatformRoleLifecycleStatus.Active)
+            {
+                continue;
+            }
+
+            foreach (var permission in definition.Permissions)
             {
                 permissions.Add(permission);
             }

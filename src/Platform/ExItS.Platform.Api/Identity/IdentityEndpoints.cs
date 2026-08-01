@@ -22,6 +22,7 @@ internal static class IdentityEndpoints
         users.MapGet("/", async (
             string? status,
             string? search,
+            string? directory,
             int? page,
             int? pageSize,
             PlatformUserQueryService queries,
@@ -54,7 +55,23 @@ internal static class IdentityEndpoints
                 parsed = value;
             }
 
-            var result = await queries.ListAsync(parsed, search, page, pageSize, ct).ConfigureAwait(false);
+            UserDirectoryFilter? directoryFilter = null;
+            if (!string.IsNullOrWhiteSpace(directory))
+            {
+                if (!Enum.TryParse<UserDirectoryFilter>(directory, ignoreCase: true, out var parsedFilter))
+                {
+                    return PlatformApiResults.Problem(
+                        "platform.user.directory.invalid",
+                        $"Unrecognized directory filter '{directory}'. Use All, Unassigned, Organization, or PlatformStaff.",
+                        StatusCodes.Status400BadRequest);
+                }
+
+                directoryFilter = parsedFilter == UserDirectoryFilter.All ? null : parsedFilter;
+            }
+
+            var result = await queries
+                .ListAsync(parsed, search, page, pageSize, directoryFilter, ct)
+                .ConfigureAwait(false);
             return Results.Ok(result);
         });
 

@@ -1,6 +1,8 @@
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Identity;
+using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Infrastructure.Persistence.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -39,6 +41,7 @@ internal sealed class PlatformUserRepository : IPlatformUserRepository
     public async Task<(IReadOnlyList<PlatformUser> Items, int TotalCount)> ListAsync(
         AccountStatus? status,
         string? search,
+        UserDirectoryFilter? directoryFilter,
         int skip,
         int take,
         CancellationToken cancellationToken = default)
@@ -57,6 +60,26 @@ internal sealed class PlatformUserRepository : IPlatformUserRepository
                 u.NormalizedUsername.Contains(term)
                 || u.NormalizedEmail.Contains(term)
                 || u.DisplayName.ToLower().Contains(term));
+        }
+
+        if (directoryFilter is UserDirectoryFilter.Unassigned)
+        {
+            var removed = nameof(MembershipStatus.Removed);
+            query = query.Where(u => !_db.OrganizationMemberships.Any(m =>
+                m.UserId == u.Id && m.Status != removed));
+        }
+        else if (directoryFilter is UserDirectoryFilter.Organization)
+        {
+            var removed = nameof(MembershipStatus.Removed);
+            query = query.Where(u => _db.OrganizationMemberships.Any(m =>
+                m.UserId == u.Id && m.Status != removed));
+        }
+        else if (directoryFilter is UserDirectoryFilter.PlatformStaff)
+        {
+            var active = nameof(PlatformRoleAssignmentStatus.Active);
+            query = query.Where(u =>
+                _db.PlatformRoleAssignments.Any(a => a.PlatformUserId == u.Id && a.Status == active)
+                || _db.PlatformCustomRoleAssignments.Any(a => a.PlatformUserId == u.Id && a.Status == active));
         }
 
         var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
