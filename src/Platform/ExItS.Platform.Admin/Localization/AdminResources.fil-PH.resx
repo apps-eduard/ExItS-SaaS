@@ -66,6 +66,9 @@
   <data name="Nav_SectionAccess" xml:space="preserve"><value>Access</value></data>
   <data name="Nav_SectionCompliance" xml:space="preserve"><value>Pagsunod (Audit)</value></data>
   <data name="Nav_SectionOperations" xml:space="preserve"><value>Operasyon</value></data>
+  <data name="Nav_SectionSettings" xml:space="preserve"><value>Mga Setting</value></data>
+  <data name="Nav_OrganizationSettings" xml:space="preserve"><value>Mga Setting ng Organisasyon</value></data>
+  <data name="Nav_Branding" xml:space="preserve"><value>Branding</value></data>
   <data name="Nav_SectionOrganization" xml:space="preserve"><value>Organisasyon</value></data>
   <data name="Nav_SectionProducts" xml:space="preserve"><value>Mga Produkto</value></data>
   <data name="Nav_SectionSubscription" xml:space="preserve"><value>Subscription</value></data>
@@ -117,6 +120,7 @@
   <data name="Common_Filter" xml:space="preserve"><value>I-filter</value></data>
   <data name="Common_Apply" xml:space="preserve"><value>I-apply</value></data>
   <data name="Common_Close" xml:space="preserve"><value>Isara</value></data>
+  <data name="Common_Retry" xml:space="preserve"><value>Subukan muli</value></data>
   <data name="Common_Saving" xml:space="preserve"><value>Sinese-save…</value></data>
   <data name="Form_Required" xml:space="preserve"><value>kailangan</value></data>
   <data name="Form_ValidationSummary" xml:space="preserve"><value>Pakiusap ayusin ang mga sumusunod</value></data>

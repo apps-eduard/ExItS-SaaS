@@ -150,17 +150,20 @@ internal static class PlatformSecurityPipeline
                     });
             });
 
+            var livePreviewEnabled = builder.Configuration.GetValue<bool>("LivePreview:Enabled")
+                && !builder.Environment.IsProduction();
+
             options.AddPolicy(AuthLoginRateLimitPolicy, httpContext =>
             {
                 var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
                 return RateLimitPartition.GetFixedWindowLimiter(
-                    "login:" + ip,
+                    (livePreviewEnabled ? "login-live-preview:" : "login:") + ip,
                     _ => new FixedWindowRateLimiterOptions
                     {
                         AutoReplenishment = true,
-                        PermitLimit = 20,
+                        PermitLimit = livePreviewEnabled ? 200 : 20,
                         Window = TimeSpan.FromMinutes(15),
-                        QueueLimit = 0
+                        QueueLimit = livePreviewEnabled ? 20 : 0
                     });
             });
 
@@ -192,11 +195,6 @@ internal static class PlatformSecurityPipeline
                     });
             });
 
-            // Live Preview (non-Production) drives many Admin/Blazor circuit requests from one IP.
-            // Keep auth endpoint policies; only relax the global IP ceiling for local power-user use.
-            var livePreviewEnabled = builder.Configuration.GetValue<bool>("LivePreview:Enabled")
-                && !builder.Environment.IsProduction();
-
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
             {
                 var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
@@ -207,9 +205,10 @@ internal static class PlatformSecurityPipeline
                         _ => new FixedWindowRateLimiterOptions
                         {
                             AutoReplenishment = true,
-                            PermitLimit = 5000,
+                            // Blazor Interactive Server shells fire many API reads on login/circuit open.
+                            PermitLimit = 20_000,
                             Window = TimeSpan.FromMinutes(1),
-                            QueueLimit = 0
+                            QueueLimit = 100
                         });
                 }
 

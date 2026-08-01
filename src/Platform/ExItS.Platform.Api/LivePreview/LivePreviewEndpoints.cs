@@ -19,7 +19,8 @@ internal static class LivePreviewEndpoints
             var result = await useCase.ExecuteAsync(env.IsProduction(), ct).ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         })
-        .AllowAnonymous();
+        .AllowAnonymous()
+        .DisableRateLimiting();
 
         app.MapPost("/api/v1/platform/live-preview/sessions", async (
             LivePreviewLoginRequest body,

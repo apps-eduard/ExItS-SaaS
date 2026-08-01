@@ -24,6 +24,9 @@ else if (!_result.IsSuccess)
     <Result Status="@ResultStatus.Error"
             Title="@(_result.Error?.Title ?? L["Common_Unavailable"])"
             SubTitle="@(_result.Error?.Detail ?? "")" />
+    <div style="text-align:center;margin-top:1rem;">
+        <Button Type="@ButtonType.Primary" OnClick="ReloadAsync" Loading="_loading">@L["Common_Retry"]</Button>
+    </div>
 }
 else
 {
@@ -86,15 +89,68 @@ else
 @code {
     private ApiCallResult<PortfolioSummaryDto>? _result;
     private HashSet<string> _failed = new(StringComparer.OrdinalIgnoreCase);
+    private bool _loading;
+    private bool _started;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        _result = await Api.GetPortfolioSummaryAsync();
-        if (_result.IsSuccess && _result.Data is not null)
+        if (!firstRender || _started)
         {
-            _failed = _result.Data.PartialFailures
-                .Select(f => f.Split(':', 2)[0].Trim())
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            return;
+        }
+
+        _started = true;
+        // Defer until Interactive Server circuit + session cookie are available.
+        await LoadWithRetryAsync();
+        StateHasChanged();
+    }
+
+    private async Task ReloadAsync()
+    {
+        await LoadWithRetryAsync();
+    }
+
+    private async Task LoadWithRetryAsync()
+    {
+        _loading = true;
+        try
+        {
+            ApiCallResult<PortfolioSummaryDto>? last = null;
+            for (var attempt = 0; attempt < 4; attempt++)
+            {
+                if (attempt > 0)
+                {
+                    await Task.Delay(350 * attempt);
+                }
+
+                last = await Api.GetPortfolioSummaryAsync();
+                if (last.IsSuccess)
+                {
+                    break;
+                }
+
+                // Rate limit / brief auth race right after Live Preview login.
+                var status = last.Error?.StatusCode;
+                if (status is not (System.Net.HttpStatusCode.TooManyRequests
+                    or System.Net.HttpStatusCode.Unauthorized
+                    or System.Net.HttpStatusCode.Forbidden
+                    or System.Net.HttpStatusCode.InternalServerError))
+                {
+                    break;
+                }
+            }
+
+            _result = last;
+            if (_result?.IsSuccess == true && _result.Data is not null)
+            {
+                _failed = _result.Data.PartialFailures
+                    .Select(f => f.Split(':', 2)[0].Trim())
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+        finally
+        {
+            _loading = false;
         }
     }
 

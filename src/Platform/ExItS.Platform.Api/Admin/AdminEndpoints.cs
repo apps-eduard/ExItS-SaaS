@@ -4,6 +4,7 @@ using ExItS.Platform.Application.Common;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Common;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ExItS.Platform.Api.Admin;
 
@@ -36,7 +37,8 @@ internal static class AdminEndpoints
 
             var summary = await queries.GetPortfolioSummaryAsync(ct).ConfigureAwait(false);
             return Results.Ok(summary);
-        });
+        })
+        .DisableRateLimiting();
 
         admin.MapGet("/products/{productCode}/overview", async (
             string productCode,

@@ -155,12 +155,30 @@
     private bool _shellReady;
     private string _pageTitle = "Platform Admin";
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         Nav.LocationChanged += OnLocationChanged;
         UpdatePageTitle();
-        await Shell.EnsureLoadedAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _shellReady)
+        {
+            return;
+        }
+
+        try
+        {
+            await Shell.EnsureLoadedAsync();
+        }
+        catch
+        {
+            // Shell chrome must not crash the page if API is briefly unavailable.
+        }
+
         _shellReady = true;
+        await InvokeAsync(StateHasChanged);
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)

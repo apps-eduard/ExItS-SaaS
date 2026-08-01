@@ -61,7 +61,8 @@ internal static class AuthEndpoints
             var result = await useCase.ExecuteAsync(token, ct).ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         })
-        .AllowAnonymous();
+        .AllowAnonymous()
+        .DisableRateLimiting();
 
         app.MapGet("/api/v1/platform/auth/credentials", async (
             HttpContext http,
@@ -90,7 +91,8 @@ internal static class AuthEndpoints
             var result = await useCase.ExecuteAsync(token, ct).ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         })
-        .AllowAnonymous();
+        .AllowAnonymous()
+        .DisableRateLimiting();
 
         app.MapPut("/api/v1/platform/auth/organization-context", async (
             SetOrganizationContextRequest body,

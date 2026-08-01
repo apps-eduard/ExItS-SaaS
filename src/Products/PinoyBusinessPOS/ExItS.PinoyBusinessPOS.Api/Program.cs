@@ -167,6 +167,7 @@ app.UseMiddleware<PosPlatformBearerMiddleware>();
 app.UseMiddleware<PosCommercialAccessMiddleware>();
 app.UseMiddleware<PosRoleResolutionMiddleware>();
 
+app.MapPosRootEndpoint();
 app.MapPosHealthEndpoints();
 app.MapCustomerEndpoints();
 app.MapCreditEndpoints();

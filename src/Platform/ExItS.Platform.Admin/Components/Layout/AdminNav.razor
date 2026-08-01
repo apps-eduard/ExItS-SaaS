@@ -32,10 +32,9 @@
                         @L["Nav_PlatformUsers"]
                     </MenuItem>
                 }
-                @* Dedicated Organization Users list is Phase 15 — no route yet. *@
                 @if (CanView(PlatformPermissionCodes.ManageMemberships))
                 {
-                    <MenuItem Key="org-users" Disabled Class="exits-nav-phase15">
+                    <MenuItem Key="org-users" Disabled="true">
                         @L["Nav_OrganizationUsers"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
                     </MenuItem>
                 }
@@ -53,7 +52,7 @@
                     <MenuItem Key="products" RouterLink="/admin/products" Icon="appstore">
                         @L["Nav_Products"]
                     </MenuItem>
-                    <MenuItem Key="plans" Disabled Class="exits-nav-phase15">
+                    <MenuItem Key="plans" Disabled="true">
                         @L["Nav_Plans"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
                     </MenuItem>
                 }
@@ -69,11 +68,11 @@
         <SubMenu Key="operations" TitleTemplate="@OperationsTitle">
             @if (CanView(PlatformPermissionCodes.ManageProductAccess))
             {
-                <MenuItem Key="product-access" Disabled Class="exits-nav-phase15">
+                <MenuItem Key="product-access" Disabled="true">
                     @L["Nav_ProductAccess"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
                 </MenuItem>
             }
-            <MenuItem Key="system-status" Disabled Class="exits-nav-phase15">
+            <MenuItem Key="system-status" Disabled="true">
                 @L["Nav_SystemStatus"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
             </MenuItem>
             @if (CanView(PlatformPermissionCodes.ViewAuditRecords))
@@ -82,6 +81,24 @@
                     @L["Nav_AuditLogs"]
                 </MenuItem>
             }
+        </SubMenu>
+
+        <SubMenu Key="settings" TitleTemplate="@SettingsTitle">
+            @if (Shell.SelectedOrganizationId is Guid settingsOrg && CanView(PlatformPermissionCodes.ViewPortfolio))
+            {
+                <MenuItem Key="org-settings" RouterLink="@($"/admin/organizations/{settingsOrg}")" Icon="setting">
+                    @L["Nav_OrganizationSettings"]
+                </MenuItem>
+            }
+            else
+            {
+                <MenuItem Key="org-settings" Disabled="true">
+                    @L["Nav_OrganizationSettings"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                </MenuItem>
+            }
+            <MenuItem Key="branding" Disabled="true">
+                @L["Nav_Branding"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+            </MenuItem>
         </SubMenu>
     }
     else if (_ready && Shell.IsOrganizationShell)
@@ -95,7 +112,7 @@
             }
             else
             {
-                <MenuItem Key="org-profile" Disabled Class="exits-nav-phase15">
+                <MenuItem Key="org-profile" Disabled="true">
                     @L["Nav_OrganizationProfile"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
                 </MenuItem>
             }
@@ -107,7 +124,7 @@
             }
             else
             {
-                <MenuItem Key="org-members" Disabled Class="exits-nav-phase15">
+                <MenuItem Key="org-members" Disabled="true">
                     @L["Nav_Members"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
                 </MenuItem>
             }
@@ -122,23 +139,23 @@
             }
             else
             {
-                <MenuItem Key="my-products" Disabled Class="exits-nav-phase15">
+                <MenuItem Key="my-products" Disabled="true">
                     @L["Nav_MyProducts"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
                 </MenuItem>
             }
-            <MenuItem Key="launch-product" Disabled Class="exits-nav-phase15">
+            <MenuItem Key="launch-product" Disabled="true">
                 @L["Nav_LaunchProduct"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
             </MenuItem>
         </SubMenu>
 
         <SubMenu Key="subscription" TitleTemplate="@SubscriptionTitle">
-            <MenuItem Key="current-plan" Disabled Class="exits-nav-phase15">
+            <MenuItem Key="current-plan" Disabled="true">
                 @L["Nav_CurrentPlan"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
             </MenuItem>
-            <MenuItem Key="usage" Disabled Class="exits-nav-phase15">
+            <MenuItem Key="usage" Disabled="true">
                 @L["Nav_Usage"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
             </MenuItem>
-            <MenuItem Key="billing" Disabled Class="exits-nav-phase15">
+            <MenuItem Key="billing" Disabled="true">
                 @L["Nav_BillingRenewal"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
             </MenuItem>
         </SubMenu>
@@ -152,10 +169,28 @@
             }
             else
             {
-                <MenuItem Key="activity-log" Disabled Class="exits-nav-phase15">
+                <MenuItem Key="activity-log" Disabled="true">
                     @L["Nav_ActivityLog"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
                 </MenuItem>
             }
+        </SubMenu>
+
+        <SubMenu Key="settings" TitleTemplate="@SettingsTitle">
+            @if (Shell.SelectedOrganizationId is Guid orgSettingsId)
+            {
+                <MenuItem Key="org-settings" RouterLink="@($"/admin/organizations/{orgSettingsId}")" Icon="setting">
+                    @L["Nav_OrganizationSettings"]
+                </MenuItem>
+            }
+            else
+            {
+                <MenuItem Key="org-settings" Disabled="true">
+                    @L["Nav_OrganizationSettings"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                </MenuItem>
+            }
+            <MenuItem Key="branding" Disabled="true">
+                @L["Nav_Branding"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+            </MenuItem>
         </SubMenu>
     }
 </Menu>
@@ -166,11 +201,12 @@
 
     private bool _ready;
     private string[] _selected = ["dashboard"];
-    private string[] _openKeys = ["users", "commercial", "operations", "organization", "org-products", "subscription", "security"];
+    private string[] _openKeys = ["users", "commercial", "operations", "settings", "organization", "org-products", "subscription", "security"];
 
     private RenderFragment UsersTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_Users"]); b.CloseElement(); };
     private RenderFragment CommercialTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionCommercial"]); b.CloseElement(); };
     private RenderFragment OperationsTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionOperations"]); b.CloseElement(); };
+    private RenderFragment SettingsTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionSettings"]); b.CloseElement(); };
     private RenderFragment OrganizationTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionOrganization"]); b.CloseElement(); };
     private RenderFragment OrgProductsTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionProducts"]); b.CloseElement(); };
     private RenderFragment SubscriptionTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionSubscription"]); b.CloseElement(); };
@@ -186,8 +222,16 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await Permissions.EnsureLoadedAsync();
-        await Shell.EnsureLoadedAsync();
+        try
+        {
+            await Permissions.EnsureLoadedAsync();
+            await Shell.EnsureLoadedAsync();
+        }
+        catch
+        {
+            // Keep Dashboard usable if shell APIs are briefly rate-limited after login.
+        }
+
         _ready = true;
         SyncSelection();
         Nav.LocationChanged += OnLocationChanged;

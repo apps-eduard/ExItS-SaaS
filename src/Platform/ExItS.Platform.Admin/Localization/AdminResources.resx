@@ -66,6 +66,9 @@
   <data name="Nav_SectionAccess" xml:space="preserve"><value>Access</value></data>
   <data name="Nav_SectionCompliance" xml:space="preserve"><value>Compliance</value></data>
   <data name="Nav_SectionOperations" xml:space="preserve"><value>Operations</value></data>
+  <data name="Nav_SectionSettings" xml:space="preserve"><value>Settings</value></data>
+  <data name="Nav_OrganizationSettings" xml:space="preserve"><value>Organization Settings</value></data>
+  <data name="Nav_Branding" xml:space="preserve"><value>Branding</value></data>
   <data name="Nav_SectionOrganization" xml:space="preserve"><value>Organization</value></data>
   <data name="Nav_SectionProducts" xml:space="preserve"><value>Products</value></data>
   <data name="Nav_SectionSubscription" xml:space="preserve"><value>Subscription</value></data>
@@ -117,6 +120,7 @@
   <data name="Common_Filter" xml:space="preserve"><value>Filter</value></data>
   <data name="Common_Apply" xml:space="preserve"><value>Apply</value></data>
   <data name="Common_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Common_Retry" xml:space="preserve"><value>Retry</value></data>
   <data name="Common_Saving" xml:space="preserve"><value>Saving…</value></data>
   <data name="Form_Required" xml:space="preserve"><value>required</value></data>
   <data name="Form_ValidationSummary" xml:space="preserve"><value>Please correct the following</value></data>

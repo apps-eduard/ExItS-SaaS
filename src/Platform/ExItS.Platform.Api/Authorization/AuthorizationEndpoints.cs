@@ -4,6 +4,7 @@ using ExItS.Platform.Application.Common;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Common;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ExItS.Platform.Api.Authorization;
 
@@ -26,7 +27,8 @@ internal static class AuthorizationEndpoints
         {
             var result = await useCase.ExecuteAsync(organizationId, ct).ConfigureAwait(false);
             return Results.Ok(result);
-        });
+        })
+        .DisableRateLimiting();
 
         group.MapGet("/roles", () =>
         {

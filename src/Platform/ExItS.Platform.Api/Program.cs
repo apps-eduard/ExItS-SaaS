@@ -221,13 +221,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseStatusCodePages();
 
-app.MapGet("/", () => Results.Json(new
-{
-    service = "ExItS.Platform.Api",
-    status = "ok",
-    phase = "P10-WP08-phase-10-closeout"
-}));
-
+app.MapPlatformRootEndpoint();
 app.MapPlatformHealthEndpoints();
 app.MapCatalogEndpoints();
 app.MapOrganizationEndpoints();
@@ -244,6 +238,8 @@ app.MapAdminEndpoints();
 app.MapAuthorizationEndpoints();
 app.MapAuditEndpoints();
 app.MapLivePreviewEndpoints();
+
+// Phase marker: P10-WP08-phase-10-closeout
 
 app.Run();
 
