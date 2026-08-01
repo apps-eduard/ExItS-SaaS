@@ -14,7 +14,7 @@
 | Current phase | Phase 15 — Ant Design Platform Administration (**in progress**) |
 | Current work package | P15-WP04 — Product Catalog and Plan CRUD (**complete**) |
 | Overall status | **Phase 15 in progress.** P15-WP01–WP04 complete. Live Preview hardening must not be rolled back ([report](reports/2026-08-01-admin-live-preview-hardening.md)). Fluent UI Admin direction cancelled/superseded. Phase 14 Production remains **Blocked** pending P14-WP03+. Exact next: **P15-WP05** or **P14-WP03** only when authorized. **Not production-ready.** |
-| Latest verified commit | _(set on push)_ |
+| Latest verified commit | `d0e2ad3bd211607b59e16278fbb94e4fc73589f3` |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-08-01 |
 
@@ -154,7 +154,7 @@ P15-WP05 ○ Subscriptions (do not begin until authorized)
 | P15-WP01 — Ant Design Admin Foundation | Complete | `0ee125487cba83747f36fd260c404249700ae858` |
 | P15-WP02 — Users and Organization Memberships | Complete | `e607a10a8712a5e326e42b3a6bf56a38ac1abe4c` |
 | P15-WP03 — Organization Lifecycle | Complete | `81d19733864c4f0756d061120b156f0390d458f0` — [report](reports/P15-WP03-organization-lifecycle.md) |
-| P15-WP04 — Product Catalog and Plan CRUD | Complete | _(set on push)_ — [report](reports/P15-WP04-product-catalog-and-plan-crud.md) |
+| P15-WP04 — Product Catalog and Plan CRUD | Complete | `d0e2ad3bd211607b59e16278fbb94e4fc73589f3` — [report](reports/P15-WP04-product-catalog-and-plan-crud.md) |
 | P15-WP05 — Subscriptions | Not started | — |
 | P15-WP06 — Authorization, Audit, and UX Hardening | Not started | — |
 | P15-WP07 — Closeout | Not started | — |

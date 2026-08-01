@@ -4,7 +4,7 @@
 
 ## Status
 
-**Complete.** Starting tip `444f19610a3790731c29287d918292485daecb09`. Final tip recorded after push. P15-WP05 not started.
+**Complete.** Starting tip `444f19610a3790731c29287d918292485daecb09`. Feature tip `d0e2ad3bd211607b59e16278fbb94e4fc73589f3`. P15-WP05 not started.
 
 ## Field / lifecycle decisions (audit-first)
 
