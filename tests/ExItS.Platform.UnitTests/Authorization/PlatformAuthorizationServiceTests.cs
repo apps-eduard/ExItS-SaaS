@@ -16,10 +16,14 @@ public sealed class PlatformAuthorizationServiceTests
     private static PlatformAuthorizationService CreateService(
         InMemoryPlatformRoleAssignmentRepository repository,
         bool grantDevelopmentOperatorFullAccess) =>
-        new(repository, Options.Create(new DevelopmentAuthorizationOptions
-        {
-            GrantDevelopmentOperatorFullAccess = grantDevelopmentOperatorFullAccess
-        }));
+        new(
+            repository,
+            new InMemoryPlatformCustomRoleAssignmentRepository(),
+            new InMemoryPlatformRoleDefinitionRepository(),
+            Options.Create(new DevelopmentAuthorizationOptions
+            {
+                GrantDevelopmentOperatorFullAccess = grantDevelopmentOperatorFullAccess
+            }));
 
     [Fact]
     public async Task DevelopmentOperator_receives_all_permissions_when_option_enabled()

@@ -41,6 +41,15 @@ internal sealed class InMemoryPlatformRoleAssignmentRepository : IPlatformRoleAs
         return Task.FromResult(list);
     }
 
+    public Task<int> CountActivePlatformAdministratorsAsync(CancellationToken cancellationToken = default)
+    {
+        var count = _byId.Values.Count(a =>
+            a.Status == PlatformRoleAssignmentStatus.Active
+            && a.Role == PlatformSystemRole.PlatformAdministrator
+            && a.OrganizationId is null);
+        return Task.FromResult(count);
+    }
+
     public Task<(IReadOnlyList<PlatformRoleAssignment> Items, int TotalCount)> ListAsync(
         PlatformUserId? userId,
         PlatformSystemRole? role,

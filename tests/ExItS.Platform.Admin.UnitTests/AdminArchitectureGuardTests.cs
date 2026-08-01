@@ -334,12 +334,13 @@ public sealed class AdminArchitectureGuardTests
     {
         var root = FindRepositoryRoot();
         var nav = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "AdminNav.razor"));
-        foreach (var href in new[] { "/admin", "/admin/products", "/admin/organizations", "/admin/subscriptions", "/admin/users", "/admin/audit", "/admin/payments", "/admin/entitlements" })
+        foreach (var href in new[] { "/admin", "/admin/products", "/admin/organizations", "/admin/subscriptions", "/admin/users", "/admin/users/unassigned", "/admin/platform-roles", "/admin/audit", "/admin/payments", "/admin/entitlements" })
         {
             Assert.Contains($"RouterLink=\"{href}\"", nav, StringComparison.Ordinal);
         }
 
-        Assert.Contains("Nav_PlatformUsers", nav, StringComparison.Ordinal);
+        Assert.Contains("Nav_AllUsers", nav, StringComparison.Ordinal);
+        Assert.Contains("Nav_RolesPermissions", nav, StringComparison.Ordinal);
         Assert.Contains("Nav_OrganizationUsers", nav, StringComparison.Ordinal);
         Assert.Contains("Nav_Phase15", nav, StringComparison.Ordinal);
         Assert.Contains("IsPlatformShell", nav, StringComparison.Ordinal);

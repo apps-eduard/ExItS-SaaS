@@ -1,4 +1,5 @@
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Identity;
 
 namespace ExItS.Platform.UnitTests.Support;
@@ -41,6 +42,7 @@ internal sealed class InMemoryPlatformUserRepository : IPlatformUserRepository
     public Task<(IReadOnlyList<PlatformUser> Items, int TotalCount)> ListAsync(
         AccountStatus? status,
         string? search,
+        UserDirectoryFilter? directoryFilter,
         int skip,
         int take,
         CancellationToken cancellationToken = default)
@@ -59,6 +61,8 @@ internal sealed class InMemoryPlatformUserRepository : IPlatformUserRepository
                 || u.NormalizedEmail.Contains(term, StringComparison.Ordinal)
                 || u.DisplayName.Contains(term, StringComparison.OrdinalIgnoreCase));
         }
+
+        _ = directoryFilter;
 
         var ordered = query.OrderBy(u => u.NormalizedUsername, StringComparer.Ordinal).ToList();
         return Task.FromResult<(IReadOnlyList<PlatformUser>, int)>((ordered.Skip(skip).Take(take).ToList(), ordered.Count));
