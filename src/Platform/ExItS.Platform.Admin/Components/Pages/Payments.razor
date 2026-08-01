@@ -1,11 +1,22 @@
 @page "/admin/payments"
 @page "/admin/payments/{Id:guid}"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 @inject IPlatformApiClient Api
 @inject NavigationManager Nav
 @inject ToastService Toasts
 @inject IStringLocalizer<AdminResources> L
+@inject PlatformPermissionState Permissions
 
-@if (Id is null)
+@if (!Permissions.Loaded)
+{
+    <LoadingState />
+}
+else if (!Permissions.HasPermission(PlatformPermissionCodes.ManageManualPayments))
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ManageManualPayments" />
+}
+else if (Id is null)
 {
     <ReportPageShell>
         <ReportHeader Title="@L["Payments_Title"]"
@@ -280,6 +291,12 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
+        await Permissions.EnsureLoadedAsync();
+        if (!Permissions.HasPermission(PlatformPermissionCodes.ManageManualPayments))
+        {
+            return;
+        }
+
         _toast = null;
         _formError = null;
         _formConflict = false;

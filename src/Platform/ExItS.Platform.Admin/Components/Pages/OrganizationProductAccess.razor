@@ -1,8 +1,22 @@
 @page "/admin/organizations/{OrganizationId:guid}/product-access"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 @inject IPlatformApiClient Api
 @inject ToastService Toasts
 @inject IStringLocalizer<AdminResources> L
+@inject PlatformPermissionState Permissions
+@inject AdminShellContext Shell
 
+@if (!Permissions.Loaded)
+{
+    <LoadingState />
+}
+else if (!CanAccessPage)
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ManageProductAccess" />
+}
+else
+{
 <AdminPageHeader Title="@L["OrgProductAccess_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Organizations"]} / {L["Common_ProductAccess"]}")" Description="@L["OrgProductAccess_Description"]" />
 <div class="warning" role="note">@L["OrgProductAccess_Warning"]</div>
 
@@ -18,6 +32,12 @@ else
     @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="@L["Common_ActionFailed"]" Detail="@_formError" /> }
 
     <FormSection Title="@L["OrgProductAccess_GrantSection"]">
+        @if (!CanGrant)
+        {
+            <div class="warning" role="note">@L["OrgProductAccess_ReadOnlyHint"]</div>
+        }
+        else
+        {
         <div class="form-grid">
             <FormField Label="@L["OrgMembers_UserId"]" FieldId="grant-user" Required="true">
                 <AdminInput @bind-Value="_grantUserId" Placeholder="@L["OrgProductAccess_GrantUserIdPlaceholder"]" Disabled="_busy" />
@@ -30,6 +50,7 @@ else
             </FormField>
         </div>
         <FormActions PrimaryText="@L["OrgProductAccess_GrantAccess"]" Busy="_busy" OnPrimary="GrantAsync" />
+        }
     </FormSection>
 
     <FormSection Title="@L["OrgProductAccess_EvaluateSection"]">
@@ -101,6 +122,7 @@ else
                    OnCancel="ClearConfirm"
                    Busy="_busy" />
 }
+}
 
 @code {
     [Parameter] public Guid OrganizationId { get; set; }
@@ -118,6 +140,15 @@ else
     private ConfirmState? _confirm;
     private List<AdminColumnDefinition> _columns = new();
 
+    private bool CanAccessPage =>
+        Permissions.HasPermission(PlatformPermissionCodes.ManageProductAccess)
+        || (Shell.IsOrganizationShell
+            && Shell.SelectedOrganizationId == OrganizationId
+            && (string.Equals(Shell.MembershipRole, "OrganizationOwner", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(Shell.MembershipRole, "OrganizationAdministrator", StringComparison.OrdinalIgnoreCase)));
+
+    private bool CanGrant => Permissions.HasPermission(PlatformPermissionCodes.ManageProductAccess);
+
     protected override void OnInitialized()
     {
         _columns =
@@ -130,8 +161,17 @@ else
         ];
     }
 
-    protected override async Task OnParametersSetAsync() => await ReloadAsync();
+    protected override async Task OnParametersSetAsync()
+    {
+        await Permissions.EnsureLoadedAsync();
+        await Shell.EnsureLoadedAsync();
+        if (!CanAccessPage)
+        {
+            return;
+        }
 
+        await ReloadAsync();
+    }
     private async Task ReloadAsync()
     {
         _org = await Api.GetOrganizationAsync(OrganizationId);
@@ -140,7 +180,7 @@ else
 
     private async Task GrantAsync()
     {
-        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        if (!CanGrant || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
         {
             return;
         }

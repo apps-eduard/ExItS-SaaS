@@ -9,7 +9,15 @@
 @inject NavigationManager Nav
 @inject PlatformPermissionState Permissions
 
-@if (Id is null)
+@if (!Permissions.Loaded)
+{
+    <Spin />
+}
+else if (!CanManage)
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ManagePlatformUsers" />
+}
+else if (Id is null)
 {
     <PageHeader Class="exits-page-header" Title="@L["PlatformRoles_Title"]" SubTitle="@L["PlatformRoles_Description"]">
         <PageHeaderBreadcrumb>
@@ -189,6 +197,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await Permissions.EnsureLoadedAsync();
+        if (!CanManage)
+        {
+            return;
+        }
+
         var perms = await Api.GetPlatformPermissionsAsync();
         if (perms.IsSuccess && perms.Data is not null)
         {
@@ -198,6 +212,12 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
+        await Permissions.EnsureLoadedAsync();
+        if (!CanManage)
+        {
+            return;
+        }
+
         if (Id is null)
         {
             await LoadListAsync();

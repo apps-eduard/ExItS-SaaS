@@ -342,7 +342,11 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("Nav_AllUsers", nav, StringComparison.Ordinal);
         Assert.Contains("Nav_RolesPermissions", nav, StringComparison.Ordinal);
         Assert.Contains("Nav_OrganizationUsers", nav, StringComparison.Ordinal);
-        Assert.Contains("Nav_Phase15", nav, StringComparison.Ordinal);
+        Assert.Contains("Nav_OrganizationMemberships", nav, StringComparison.Ordinal);
+        Assert.Contains("Nav_PlatformUsers", nav, StringComparison.Ordinal);
+        Assert.Contains("Nav_People", nav, StringComparison.Ordinal);
+        Assert.Contains("Nav_SelectOrganization", nav, StringComparison.Ordinal);
+        Assert.Contains("tab=invitations", nav, StringComparison.Ordinal);
         Assert.Contains("IsPlatformShell", nav, StringComparison.Ordinal);
         Assert.Contains("IsOrganizationShell", nav, StringComparison.Ordinal);
         Assert.DoesNotContain("Sign out", nav, StringComparison.OrdinalIgnoreCase);
@@ -354,6 +358,29 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("AddScoped<AdminShellContext>",
             File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Program.cs")),
             StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Admin_sensitive_pages_are_permission_gated_independently_of_nav()
+    {
+        var root = FindRepositoryRoot();
+        var pages = Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages");
+
+        foreach (var (file, permission) in new[]
+                 {
+                     ("Users.razor", "ManagePlatformUsers"),
+                     ("PlatformRoles.razor", "ManagePlatformUsers"),
+                     ("Payments.razor", "ManageManualPayments"),
+                     ("Audit.razor", "ViewAuditRecords"),
+                     ("OrganizationMembers.razor", "ManageMemberships"),
+                     ("OrganizationProductAccess.razor", "ManageProductAccess"),
+                 })
+        {
+            var text = File.ReadAllText(Path.Combine(pages, file));
+            Assert.Contains("UnauthorizedPanel", text, StringComparison.Ordinal);
+            Assert.Contains(permission, text, StringComparison.Ordinal);
+            Assert.Contains("[Authorize]", text, StringComparison.Ordinal);
+        }
     }
 
     private static string FindRepositoryRoot()

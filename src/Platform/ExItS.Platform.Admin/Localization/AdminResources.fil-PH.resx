@@ -685,5 +685,9 @@
   <data name="PlatformRoles_HideCreate" xml:space="preserve"><value>Hide create</value></data>
   <data name="OrgRoles_Title" xml:space="preserve"><value>Organization roles</value></data>
   <data name="OrgRoles_Description" xml:space="preserve"><value>Custom organization roles (built-in Owner/Admin/Member remain on memberships)</value></data>
-  <data name="OrgRoles_Create" xml:space="preserve"><value>Create role</value></data> 
+  <data name="OrgRoles_Create" xml:space="preserve"><value>Create role</value></data>
+  <data name="Nav_OrganizationMemberships" xml:space="preserve"><value>Organization Memberships</value></data>
+  <data name="Nav_SelectOrganization" xml:space="preserve"><value>Select organization</value></data>
+  <data name="Nav_ComingSoon" xml:space="preserve"><value>Coming soon</value></data>
+  <data name="OrgProductAccess_ReadOnlyHint" xml:space="preserve"><value>Product-access grants require ManageProductAccess. Organization admins can view and evaluate only.</value></data>
 </root>

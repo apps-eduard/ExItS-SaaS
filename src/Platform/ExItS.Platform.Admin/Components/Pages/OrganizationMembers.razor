@@ -6,14 +6,30 @@
 @inject IMessageService Message
 @inject IStringLocalizer<AdminResources> L
 @inject AdminShellContext Shell
+@inject NavigationManager Nav
+@inject PlatformPermissionState Permissions
 
+@if (!Permissions.Loaded)
+{
+    <div style="padding:2rem;text-align:center;"><Spin /></div>
+}
+else if (!CanAccessMembers)
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ManageMemberships" />
+}
+else
+{
 <PageHeader Class="exits-page-header" Title="@L["OrgMembers_Title"]" SubTitle="@L["OrgMembers_Description"]">
     <PageHeaderBreadcrumb>
         <Breadcrumb>
             <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
             @if (Shell.IsPlatformShell)
             {
-                <BreadcrumbItem Href="/admin/organization-users">@L["Nav_OrganizationUsers"]</BreadcrumbItem>
+                <BreadcrumbItem Href="/admin/organization-users">@L["Nav_OrganizationMemberships"]</BreadcrumbItem>
+            }
+            else
+            {
+                <BreadcrumbItem>@L["Nav_People"]</BreadcrumbItem>
             }
             <BreadcrumbItem Href="@($"/admin/organizations/{OrganizationId}")">@(_org?.Data?.DisplayName ?? L["Nav_Organizations"])</BreadcrumbItem>
             <BreadcrumbItem>@L["Common_Members"]</BreadcrumbItem>
@@ -34,7 +50,7 @@ else if (!_org.IsSuccess)
 }
 else
 {
-    <Tabs>
+    <Tabs @bind-ActiveKey="_activeTab">
         <TabPane Key="members" Tab="@L["OrgMembers_TabMembers"]">
             <Space Style="margin-bottom:12px; width:100%;" Wrap>
                 <Select TItemValue="string" TItem="string" @bind-Value="_status" Size="@InputSize.Small" Style="width:140px;" AllowClear Placeholder="@L["Common_Status"]">
@@ -226,6 +242,7 @@ else
         </TabPane>
     </Tabs>
 }
+}
 
 @code {
     [Parameter] public Guid OrganizationId { get; set; }
@@ -248,8 +265,42 @@ else
     private bool _busy;
     private int _page = 1;
     private int _invitePage = 1;
+    private string _activeTab = "members";
 
-    protected override async Task OnParametersSetAsync() => await ReloadAsync();
+    private bool CanAccessMembers =>
+        Permissions.HasPermission(PlatformPermissionCodes.ManageMemberships)
+        || (Shell.IsOrganizationShell
+            && Shell.SelectedOrganizationId == OrganizationId
+            && (string.Equals(Shell.MembershipRole, "OrganizationOwner", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(Shell.MembershipRole, "OrganizationAdministrator", StringComparison.OrdinalIgnoreCase)));
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await Permissions.EnsureLoadedAsync();
+        await Shell.EnsureLoadedAsync();
+        SyncActiveTabFromQuery();
+        if (!CanAccessMembers)
+        {
+            return;
+        }
+
+        await ReloadAsync();
+    }
+
+    private void SyncActiveTabFromQuery()
+    {
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        if (Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query)
+                .TryGetValue("tab", out var tab)
+            && !string.IsNullOrWhiteSpace(tab))
+        {
+            var value = tab.ToString();
+            if (value is "members" or "invitations" or "access")
+            {
+                _activeTab = value;
+            }
+        }
+    }
 
     private async Task ReloadAsync()
     {

@@ -11,8 +11,17 @@
 @inject ConfirmService Confirm
 @inject IStringLocalizer<AdminResources> L
 @inject NavigationManager Nav
+@inject PlatformPermissionState Permissions
 
-@if (Id is null)
+@if (!Permissions.Loaded)
+{
+    <div style="padding:2rem;text-align:center;"><Spin /></div>
+}
+else if (!Permissions.HasPermission(PlatformPermissionCodes.ManagePlatformUsers))
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ManagePlatformUsers" />
+}
+else if (Id is null)
 {
     <PageHeader Class="exits-page-header" Title="@L["Users_Title"]" SubTitle="@DirectorySubtitle">
         <PageHeaderBreadcrumb>
@@ -261,9 +270,15 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
+        await Permissions.EnsureLoadedAsync();
         _formError = null;
         _formConflict = false;
         ClearFieldErrors();
+        if (!Permissions.HasPermission(PlatformPermissionCodes.ManagePlatformUsers))
+        {
+            return;
+        }
+
         if (Id is null) await ReloadListAsync();
         else await ReloadDetailAsync();
     }

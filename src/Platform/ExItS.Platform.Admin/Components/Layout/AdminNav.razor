@@ -47,7 +47,7 @@
                 @if (CanView(PlatformPermissionCodes.ManageMemberships))
                 {
                     <MenuItem Key="org-users" RouterLink="/admin/organization-users" Icon="cluster">
-                        @L["Nav_OrganizationUsers"]
+                        @L["Nav_OrganizationMemberships"]
                     </MenuItem>
                 }
             </SubMenu>
@@ -92,15 +92,6 @@
         }
 
         <SubMenu Key="operations" TitleTemplate="@OperationsTitle">
-            @if (CanView(PlatformPermissionCodes.ManageProductAccess))
-            {
-                <MenuItem Key="product-access" Disabled="true">
-                    @L["Nav_ProductAccess"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
-                </MenuItem>
-            }
-            <MenuItem Key="system-status" Disabled="true">
-                @L["Nav_SystemStatus"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
-            </MenuItem>
             @if (CanView(PlatformPermissionCodes.ViewAuditRecords))
             {
                 <MenuItem Key="audit" RouterLink="/admin/audit" Icon="audit">
@@ -120,7 +111,7 @@
             else
             {
                 <MenuItem Key="org-settings" Disabled="true">
-                    @L["Nav_OrganizationSettings"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                    @L["Nav_OrganizationSettings"] <span class="exits-phase15-tag">@L["Nav_SelectOrganization"]</span>
                 </MenuItem>
             }
             @if (Shell.SelectedOrganizationId is Guid brandingOrg
@@ -133,14 +124,14 @@
             else
             {
                 <MenuItem Key="branding" Disabled="true">
-                    @L["Nav_Branding"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                    @L["Nav_Branding"] <span class="exits-phase15-tag">@L["Nav_SelectOrganization"]</span>
                 </MenuItem>
             }
         </SubMenu>
     }
     else if (_ready && Shell.IsOrganizationShell)
     {
-        <SubMenu Key="organization" TitleTemplate="@OrganizationTitle">
+        <SubMenu Key="organization" TitleTemplate="@PeopleTitle">
             @if (Shell.SelectedOrganizationId is Guid orgId
                  && (CanView(PlatformPermissionCodes.ViewPortfolio) || IsOrgAdminMembership))
             {
@@ -151,7 +142,7 @@
             else
             {
                 <MenuItem Key="org-profile" Disabled="true">
-                    @L["Nav_OrganizationProfile"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                    @L["Nav_OrganizationProfile"] <span class="exits-phase15-tag">@L["Nav_SelectOrganization"]</span>
                 </MenuItem>
             }
             @if (Shell.SelectedOrganizationId is Guid membersOrg
@@ -160,7 +151,7 @@
                 <MenuItem Key="org-members" RouterLink="@($"/admin/organizations/{membersOrg}/members")" Icon="team">
                     @L["Nav_Members"]
                 </MenuItem>
-                <MenuItem Key="org-invitations" RouterLink="@($"/admin/organizations/{membersOrg}/members")" Icon="mail">
+                <MenuItem Key="org-invitations" RouterLink="@($"/admin/organizations/{membersOrg}/members?tab=invitations")" Icon="mail">
                     @L["Nav_Invitations"]
                 </MenuItem>
                 <MenuItem Key="org-roles" RouterLink="@($"/admin/organizations/{membersOrg}/roles")" Icon="key">
@@ -170,7 +161,13 @@
             else
             {
                 <MenuItem Key="org-members" Disabled="true">
-                    @L["Nav_Members"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                    @L["Nav_Members"] <span class="exits-phase15-tag">@L["Nav_SelectOrganization"]</span>
+                </MenuItem>
+                <MenuItem Key="org-invitations" Disabled="true">
+                    @L["Nav_Invitations"] <span class="exits-phase15-tag">@L["Nav_SelectOrganization"]</span>
+                </MenuItem>
+                <MenuItem Key="org-roles" Disabled="true">
+                    @L["Nav_RolesPermissions"] <span class="exits-phase15-tag">@L["Nav_SelectOrganization"]</span>
                 </MenuItem>
             }
         </SubMenu>
@@ -186,11 +183,11 @@
             else
             {
                 <MenuItem Key="my-products" Disabled="true">
-                    @L["Nav_MyProducts"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                    @L["Nav_MyProducts"] <span class="exits-phase15-tag">@L["Nav_SelectOrganization"]</span>
                 </MenuItem>
             }
             <MenuItem Key="launch-product" Disabled="true">
-                @L["Nav_LaunchProduct"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                @L["Nav_LaunchProduct"] <span class="exits-phase15-tag">@L["Nav_ComingSoon"]</span>
             </MenuItem>
         </SubMenu>
 
@@ -205,14 +202,14 @@
             else
             {
                 <MenuItem Key="current-plan" Disabled="true">
-                    @L["Nav_CurrentPlan"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                    @L["Nav_CurrentPlan"] <span class="exits-phase15-tag">@L["Nav_SelectOrganization"]</span>
                 </MenuItem>
             }
             <MenuItem Key="usage" Disabled="true">
-                @L["Nav_Usage"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                @L["Nav_Usage"] <span class="exits-phase15-tag">@L["Nav_ComingSoon"]</span>
             </MenuItem>
             <MenuItem Key="billing" Disabled="true">
-                @L["Nav_BillingRenewal"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                @L["Nav_BillingRenewal"] <span class="exits-phase15-tag">@L["Nav_ComingSoon"]</span>
             </MenuItem>
         </SubMenu>
 
@@ -226,7 +223,7 @@
             else
             {
                 <MenuItem Key="activity-log" Disabled="true">
-                    @L["Nav_ActivityLog"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                    @L["Nav_ActivityLog"] <span class="exits-phase15-tag">@L["Unauthorized_Title"]</span>
                 </MenuItem>
             }
         </SubMenu>
@@ -241,7 +238,7 @@
             else
             {
                 <MenuItem Key="org-settings" Disabled="true">
-                    @L["Nav_OrganizationSettings"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                    @L["Nav_OrganizationSettings"] <span class="exits-phase15-tag">@L["Nav_SelectOrganization"]</span>
                 </MenuItem>
             }
             @if (Shell.SelectedOrganizationId is Guid orgBrandingId && IsOrgAdminMembership)
@@ -253,7 +250,7 @@
             else
             {
                 <MenuItem Key="branding" Disabled="true">
-                    @L["Nav_Branding"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                    @L["Nav_Branding"] <span class="exits-phase15-tag">@L["Nav_SelectOrganization"]</span>
                 </MenuItem>
             }
         </SubMenu>
@@ -268,11 +265,11 @@
     private string[] _selected = ["dashboard"];
     private string[] _openKeys = ["users", "commercial", "operations", "settings", "organization", "org-products", "subscription", "security"];
 
-    private RenderFragment UsersTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_Users"]); b.CloseElement(); };
+    private RenderFragment UsersTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_PlatformUsers"]); b.CloseElement(); };
     private RenderFragment CommercialTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionCommercial"]); b.CloseElement(); };
     private RenderFragment OperationsTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionOperations"]); b.CloseElement(); };
     private RenderFragment SettingsTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionSettings"]); b.CloseElement(); };
-    private RenderFragment OrganizationTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionOrganization"]); b.CloseElement(); };
+    private RenderFragment PeopleTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_People"]); b.CloseElement(); };
     private RenderFragment OrgProductsTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionProducts"]); b.CloseElement(); };
     private RenderFragment SubscriptionTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionSubscription"]); b.CloseElement(); };
     private RenderFragment SecurityTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionSecurity"]); b.CloseElement(); };
@@ -320,13 +317,25 @@
 
     private void SyncSelection()
     {
-        var path = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/');
+        var uri = new Uri(Nav.Uri);
+        var path = uri.AbsolutePath.TrimEnd('/');
+        var tab = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query)
+            .TryGetValue("tab", out var tabValues) ? tabValues.ToString() : null;
         string[] next = path switch
         {
             "/admin" => ["dashboard"],
-            var p when p.StartsWith("/admin/users", StringComparison.Ordinal) => ["platform-users"],
+            "/admin/users" => ["all-users"],
+            "/admin/users/unassigned" => ["unassigned-users"],
+            "/admin/users/organization" => ["org-directory-users"],
+            "/admin/users/platform-staff" => ["platform-staff"],
+            var p when p.StartsWith("/admin/users/", StringComparison.Ordinal) => ["all-users"],
+            var p when p.StartsWith("/admin/platform-roles", StringComparison.Ordinal) => ["platform-roles"],
             var p when p.StartsWith("/admin/organization-users", StringComparison.Ordinal) => ["org-users"],
-            var p when p.Contains("/members", StringComparison.Ordinal) => Shell.IsOrganizationShell ? ["org-members"] : ["org-users"],
+            var p when p.Contains("/roles", StringComparison.Ordinal) => ["org-roles"],
+            var p when p.Contains("/members", StringComparison.Ordinal) =>
+                Shell.IsOrganizationShell
+                    ? (string.Equals(tab, "invitations", StringComparison.OrdinalIgnoreCase) ? ["org-invitations"] : ["org-members"])
+                    : ["org-users"],
             var p when p.Contains("/product-access", StringComparison.Ordinal) => Shell.IsOrganizationShell ? ["my-products"] : ["organizations"],
             var p when p.EndsWith("/branding", StringComparison.Ordinal) => ["branding"],
             var p when p.StartsWith("/admin/organizations", StringComparison.Ordinal) =>
