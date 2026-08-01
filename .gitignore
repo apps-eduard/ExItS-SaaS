@@ -7,6 +7,8 @@
 !.env.example
 !**/.env.live-preview.example
 !.env.live-preview.example
+!**/.env.production.example
+!.env.production.example
 
 # .NET / build outputs
 **/bin/

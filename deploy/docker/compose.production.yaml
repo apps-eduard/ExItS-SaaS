@@ -1,0 +1,179 @@
+# ExItS production-oriented Compose — reverse proxy / TLS / network baseline (P14-WP03).
+#
+# This is a PRODUCTION TOPOLOGY TEMPLATE for customer on-prem. It does NOT claim the
+# portfolio is Production-ready (TLS-PROD end-to-end validation, MAUI-HTTPS device evidence,
+# R-109, R-129, auth email vendor, MFA, backup/ops WPs remain open).
+#
+# Requirements:
+#   - Operator-supplied TLS material at PRODUCTION_TLS_CERT_DIR (fullchain.pem + privkey.pem)
+#   - Copy .env.production.example → .env.production (never commit secrets)
+#   - Apply DB migrations with approved ops tooling before expecting readiness
+#
+# Usage (from this directory):
+#   docker compose -f compose.production.yaml --env-file .env.production config
+#   docker compose -f compose.production.yaml --env-file .env.production up -d
+#
+# Live Preview remains compose.live-preview.yaml (ports 8090–8092 / 15533–15534) — do not reuse those here.
+# Packaging baseline remains compose.yaml (local testing without TLS).
+# Pilot remains docker-compose.pilot.yml (NON-PRODUCTION).
+
+name: exits-production
+
+services:
+  platform-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${PLATFORM_DB_USER}
+      POSTGRES_PASSWORD: ${PLATFORM_DB_PASSWORD}
+      POSTGRES_DB: exits_platform
+    volumes:
+      - platform_db_data:/var/lib/postgresql/data
+    # No host ports by default — databases stay on the internal network only.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d exits_platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    networks:
+      - exits-production-internal
+
+  pos-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POS_DB_USER}
+      POSTGRES_PASSWORD: ${POS_DB_PASSWORD}
+      POSTGRES_DB: exits_pos
+    volumes:
+      - pos_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d exits_pos"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    networks:
+      - exits-production-internal
+
+  platform-api:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.platform-api
+      args:
+        EXITS_IMAGE_LABEL: p14-wp03-production-proxy
+    image: exits/platform-api:${EXITS_IMAGE_TAG:-local}
+    depends_on:
+      platform-db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__PlatformDatabase: Host=platform-db;Port=5432;Database=exits_platform;Username=${PLATFORM_DB_USER};Password=${PLATFORM_DB_PASSWORD}
+      AllowedHosts: ${PRODUCTION_ALLOWED_HOSTS}
+      Cors__AllowedOrigins__0: ${PRODUCTION_ADMIN_ORIGIN}
+      Security__EnforceHttps: "true"
+      ForwardedHeaders__Enabled: "true"
+      ForwardedHeaders__KnownNetworks__0: ${PRODUCTION_TRUSTED_PROXY_NETWORK:-172.16.0.0/12}
+      ForwardedHeaders__KnownNetworks__1: "10.0.0.0/8"
+    expose:
+      - "8080"
+    # Images intentionally omit curl/wget; verify via reverse-proxy /platform/health after start.
+    restart: unless-stopped
+    networks:
+      - exits-production-internal
+    read_only: true
+    tmpfs:
+      - /tmp
+    stop_grace_period: 30s
+
+  pos-api:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.pos-api
+      args:
+        EXITS_IMAGE_LABEL: p14-wp03-production-proxy
+    image: exits/pos-api:${EXITS_IMAGE_TAG:-local}
+    depends_on:
+      pos-db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__PosDatabase: Host=pos-db;Port=5432;Database=exits_pos;Username=${POS_DB_USER};Password=${POS_DB_PASSWORD}
+      AllowedHosts: ${PRODUCTION_ALLOWED_HOSTS}
+      Cors__AllowedOrigins__0: ${PRODUCTION_ADMIN_ORIGIN}
+      Security__EnforceHttps: "true"
+      PlatformAuth__BaseUrl: ${PRODUCTION_PLATFORM_API_PUBLIC_URL}
+      ForwardedHeaders__Enabled: "true"
+      ForwardedHeaders__KnownNetworks__0: ${PRODUCTION_TRUSTED_PROXY_NETWORK:-172.16.0.0/12}
+      ForwardedHeaders__KnownNetworks__1: "10.0.0.0/8"
+    expose:
+      - "8080"
+    restart: unless-stopped
+    networks:
+      - exits-production-internal
+    read_only: true
+    tmpfs:
+      - /tmp
+    stop_grace_period: 30s
+
+  platform-admin:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.platform-admin
+      args:
+        EXITS_IMAGE_LABEL: p14-wp03-production-proxy
+    image: exits/platform-admin:${EXITS_IMAGE_TAG:-local}
+    depends_on:
+      - platform-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_URLS: http://+:8080
+      AllowedHosts: ${PRODUCTION_ALLOWED_HOSTS}
+      PlatformApi__BaseUrl: ${PRODUCTION_PLATFORM_API_PUBLIC_URL}
+      Security__EnforceHttps: "true"
+      ForwardedHeaders__Enabled: "true"
+      ForwardedHeaders__KnownNetworks__0: ${PRODUCTION_TRUSTED_PROXY_NETWORK:-172.16.0.0/12}
+      ForwardedHeaders__KnownNetworks__1: "10.0.0.0/8"
+    expose:
+      - "8080"
+    restart: unless-stopped
+    networks:
+      - exits-production-internal
+    read_only: true
+    tmpfs:
+      - /tmp
+    stop_grace_period: 30s
+
+  reverse-proxy:
+    image: nginx:1.27-alpine
+    depends_on:
+      - platform-api
+      - pos-api
+      - platform-admin
+    ports:
+      # Sole intended public application entry points.
+      - "${PRODUCTION_HTTP_PORT:-80}:80"
+      - "${PRODUCTION_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx/production.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${PRODUCTION_TLS_CERT_DIR}:/etc/nginx/certs:ro
+    networks:
+      - exits-production-internal
+      - exits-production-edge
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+    stop_grace_period: 20s
+
+volumes:
+  platform_db_data:
+  pos_db_data:
+
+networks:
+  exits-production-internal:
+    internal: true
+  exits-production-edge:
