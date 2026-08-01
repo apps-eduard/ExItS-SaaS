@@ -14,7 +14,7 @@
 | Current phase | Phase 16 — Isolated Account Profiles, Personal Utang, and Business Upgrade (**in progress**) |
 | Current work package | P16-WP01 — Architecture and Domain Reconciliation (**complete**) |
 | Overall status | **Phase 16 authorized and in progress.** P16-WP01 complete ([report](reports/P16-WP01-architecture-and-domain-reconciliation.md)). Exact next: **P16-WP02**. Phase 15 complete. Phase 14 remains in progress through **P14-WP03** and was **not** closed or weakened by Phase 16. Live Preview hardening must not be rolled back. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | `FEATURE_COMMIT_PLACEHOLDER` |
+| Latest verified commit | `d1e0096caac1b5aa0e47721938635a1e9766c66b` |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-08-02 |
 
@@ -165,7 +165,7 @@ P16-WP03…P16-WP10 ○ (authorized; do not skip ahead)
 
 | WP | Status | Key commit |
 |---|---|---|
-| P16-WP01 — Architecture and Domain Reconciliation | Complete | `FEATURE_COMMIT_PLACEHOLDER` — [report](reports/P16-WP01-architecture-and-domain-reconciliation.md) |
+| P16-WP01 — Architecture and Domain Reconciliation | Complete | `d1e0096caac1b5aa0e47721938635a1e9766c66b` — [report](reports/P16-WP01-architecture-and-domain-reconciliation.md) |
 | P16-WP02 — Account Profiles and Session Isolation | Not started | — |
 | P16-WP03 — Organization Context and Navigation | Not started | — |
 | P16-WP04 — Personal Account Foundation | Not started | — |

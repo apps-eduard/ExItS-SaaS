@@ -89,4 +89,4 @@ Revert the WP01 documentation commit; no schema or runtime rollback required.
 
 ## Feature commit
 
-`FEATURE_COMMIT_PLACEHOLDER`
+`d1e0096caac1b5aa0e47721938635a1e9766c66b`

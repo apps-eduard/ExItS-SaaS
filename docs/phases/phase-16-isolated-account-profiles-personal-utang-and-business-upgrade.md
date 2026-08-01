@@ -14,7 +14,7 @@ The application remains **not production-ready**.
 
 | Work Package | Status | Feature commit | Report |
 |---|---|---|---|
-| P16-WP01 | **Complete** | `FEATURE_COMMIT_PLACEHOLDER` | [report](../reports/P16-WP01-architecture-and-domain-reconciliation.md) |
+| P16-WP01 | **Complete** | `d1e0096caac1b5aa0e47721938635a1e9766c66b` | [report](../reports/P16-WP01-architecture-and-domain-reconciliation.md) |
 | P16-WP02 | Not started | — | — |
 | P16-WP03 | Not started | — | — |
 | P16-WP04 | Not started | — | — |
