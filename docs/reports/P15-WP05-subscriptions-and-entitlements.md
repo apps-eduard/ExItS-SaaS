@@ -4,7 +4,7 @@
 
 ## Status
 
-**Complete.** Starting tip `06f73d07f4696fe10e4567c3b00f4056e12e06e4`. Final tip `7672e11fe47ddc67407f389574691658415d3042` (feature `8f664c80eea267a5b538e7424668ba4e1af0e247`). P15-WP06 not started.
+**Complete.** Starting tip `06f73d07f4696fe10e4567c3b00f4056e12e06e4`. Final tip `ce1d9ab138bfdd6eb141f30eff69cd410c6cbe0e` (feature `8f664c80eea267a5b538e7424668ba4e1af0e247`). P15-WP06 not started.
 
 ## Domain decisions (audit-first)
 
