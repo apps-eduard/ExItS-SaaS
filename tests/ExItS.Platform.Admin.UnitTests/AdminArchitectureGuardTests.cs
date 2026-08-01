@@ -349,11 +349,21 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("tab=invitations", nav, StringComparison.Ordinal);
         Assert.Contains("IsPlatformShell", nav, StringComparison.Ordinal);
         Assert.Contains("IsOrganizationShell", nav, StringComparison.Ordinal);
+        Assert.Contains("RouterMatch=\"NavLinkMatch.All\"", nav, StringComparison.Ordinal);
         Assert.DoesNotContain("Sign out", nav, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("/admin/logout", nav, StringComparison.Ordinal);
         Assert.Contains("PlatformPermissionCodes", nav, StringComparison.Ordinal);
         Assert.Contains("<Menu", nav, StringComparison.Ordinal);
         Assert.Contains("<SubMenu", nav, StringComparison.Ordinal);
+
+        var usersPage = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Users.razor"));
+        Assert.Contains("_loadedDirectory", usersPage, StringComparison.Ordinal);
+
+        var apiClient = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Services", "PlatformApiClient.cs"));
+        Assert.DoesNotContain(".ConfigureAwait(false)", apiClient, StringComparison.Ordinal);
+
+        var program = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Program.cs"));
+        Assert.Contains("DetailedErrors", program, StringComparison.Ordinal);
 
         Assert.Contains("AddScoped<AdminShellContext>",
             File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Program.cs")),

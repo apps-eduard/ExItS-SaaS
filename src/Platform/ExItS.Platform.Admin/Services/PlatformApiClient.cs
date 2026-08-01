@@ -370,8 +370,8 @@ public sealed class PlatformApiClient(
     private static MembershipLifecycleRequest WithActor(MembershipLifecycleRequest request) =>
         request with { ActorReference = string.IsNullOrWhiteSpace(request.ActorReference) ? DevActor : request.ActorReference };
 
-    private async Task<ApiCallResult<T>> GetAsync<T>(string path, CancellationToken ct) =>
-        await SendAsync<T>(HttpMethod.Get, path, null, ct).ConfigureAwait(false);
+    private Task<ApiCallResult<T>> GetAsync<T>(string path, CancellationToken ct) =>
+        SendAsync<T>(HttpMethod.Get, path, null, ct);
 
     private async Task<ApiCallResult<T>> SendAsync<T>(HttpMethod method, string path, object? body, CancellationToken ct)
     {
@@ -383,23 +383,37 @@ public sealed class PlatformApiClient(
                 request.Content = JsonContent.Create(body);
             }
 
-            var sessionToken = await ResolveSessionTokenAsync().ConfigureAwait(false);
+            // Blazor Server circuit: preserve sync context across awaits.
+            var sessionToken = await ResolveSessionTokenAsync();
             if (!string.IsNullOrWhiteSpace(sessionToken)
                 && !request.Headers.Contains(SessionTokenHeader))
             {
                 request.Headers.TryAddWithoutValidation(SessionTokenHeader, sessionToken);
             }
 
-            using var response = await httpClient.SendAsync(request, ct).ConfigureAwait(false);
+            using var response = await httpClient.SendAsync(request, ct);
             if (response.IsSuccessStatusCode)
             {
-                var data = await response.Content.ReadFromJsonAsync<T>(JsonOptions, ct).ConfigureAwait(false);
+                T? data;
+                try
+                {
+                    data = await response.Content.ReadFromJsonAsync<T>(JsonOptions, ct);
+                }
+                catch (JsonException ex)
+                {
+                    return ApiCallResult<T>.Failed(new PlatformApiException(
+                        response.StatusCode,
+                        "Invalid API response",
+                        ex.Message,
+                        innerException: ex));
+                }
+
                 return data is null
                     ? ApiCallResult<T>.Failed(new PlatformApiException(response.StatusCode, "Invalid API response", "The API returned no content."))
                     : ApiCallResult<T>.Success(data);
             }
 
-            var error = await ToExceptionAsync(response, ct).ConfigureAwait(false);
+            var error = await ToExceptionAsync(response, ct);
             return response.StatusCode switch
             {
                 HttpStatusCode.NotFound => ApiCallResult<T>.NotFound(error),
@@ -418,7 +432,7 @@ public sealed class PlatformApiClient(
         string? title = null, detail = null;
         try
         {
-            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false));
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
             title = document.RootElement.TryGetProperty("title", out var titleElement) ? titleElement.GetString() : null;
             detail = document.RootElement.TryGetProperty("detail", out var detailElement) ? detailElement.GetString() : null;
         }
@@ -452,7 +466,7 @@ public sealed class PlatformApiClient(
 
         try
         {
-            var state = await authenticationStateProvider.GetAuthenticationStateAsync().ConfigureAwait(false);
+            var state = await authenticationStateProvider.GetAuthenticationStateAsync();
             var fromAuth = state.User.FindFirstValue(PlatformBrowserSessionService.SessionTokenClaimType);
             if (!string.IsNullOrWhiteSpace(fromAuth))
             {

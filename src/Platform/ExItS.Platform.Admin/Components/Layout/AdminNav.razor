@@ -28,7 +28,7 @@
             <SubMenu Key="users" TitleTemplate="@UsersTitle">
                 @if (CanView(PlatformPermissionCodes.ManagePlatformUsers))
                 {
-                    <MenuItem Key="all-users" RouterLink="/admin/users" Icon="user">
+                    <MenuItem Key="all-users" RouterLink="/admin/users" RouterMatch="NavLinkMatch.All" Icon="user">
                         @L["Nav_AllUsers"]
                     </MenuItem>
                     <MenuItem Key="unassigned-users" RouterLink="/admin/users/unassigned" Icon="user-delete">

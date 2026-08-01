@@ -32,7 +32,8 @@ public sealed class PlatformPermissionState(
     {
         try
         {
-            var result = await api.GetMyAuthorizationAsync().ConfigureAwait(false);
+            // Stay on the Blazor sync context; off-context resumes can fault circuit JS interop.
+            var result = await api.GetMyAuthorizationAsync();
             if (result.IsSuccess && result.Data is not null)
             {
                 _permissions = new HashSet<string>(

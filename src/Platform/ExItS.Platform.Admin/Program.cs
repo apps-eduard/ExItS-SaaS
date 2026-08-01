@@ -28,6 +28,16 @@ if (builder.Environment.IsStaging()
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Live Preview / Development: surface real circuit exceptions in the browser console
+// (binds to CircuitOptions.DetailedErrors via the DetailedErrors configuration key).
+if (builder.Environment.IsDevelopment()
+    || builder.Environment.IsEnvironment("Testing")
+    || (builder.Configuration.GetValue<bool>("LivePreview:Enabled")
+        && !builder.Environment.IsProduction()))
+{
+    builder.Configuration["DetailedErrors"] = "true";
+}
+
 builder.Services.AddAntDesign();
 
 builder.Services.AddCascadingAuthenticationState();

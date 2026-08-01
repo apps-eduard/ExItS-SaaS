@@ -55,7 +55,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await RefreshAsync().ConfigureAwait(false);
+        await RefreshAsync();
     }
 
     private async Task RefreshAsync()
@@ -64,7 +64,7 @@
         _error = null;
         try
         {
-            var me = await Api.GetAuthMeAsync().ConfigureAwait(false);
+            var me = await Api.GetAuthMeAsync();
             if (!me.IsSuccess || me.Data is null)
             {
                 _organizations = [];
@@ -78,7 +78,7 @@
             _selectedName = me.Data.SelectedOrganizationDisplayName;
             _activeCount = me.Data.ActiveOrganizationCount;
 
-            var list = await Api.GetEligibleOrganizationsAsync().ConfigureAwait(false);
+            var list = await Api.GetEligibleOrganizationsAsync();
             _organizations = list.IsSuccess && list.Data is not null
                 ? list.Data.ToList()
                 : [];
@@ -108,11 +108,11 @@
         _error = null;
         try
         {
-            var result = await Api.SetOrganizationContextAsync(new SetOrganizationContextRequest(organizationId)).ConfigureAwait(false);
+            var result = await Api.SetOrganizationContextAsync(new SetOrganizationContextRequest(organizationId));
             if (!result.IsSuccess || result.Data is null)
             {
                 _error = result.Error?.Detail ?? "Unable to change organization context.";
-                await RefreshAsync().ConfigureAwait(false);
+                await RefreshAsync();
                 return;
             }
 

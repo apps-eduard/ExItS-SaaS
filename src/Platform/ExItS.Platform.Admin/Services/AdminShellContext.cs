@@ -50,12 +50,13 @@ public sealed class AdminShellContext(
     public async Task RefreshAsync()
     {
         _loadTask = LoadAsync();
-        await _loadTask.ConfigureAwait(false);
+        await _loadTask;
     }
 
     private async Task LoadAsync()
     {
-        await permissions.EnsureLoadedAsync().ConfigureAwait(false);
+        // Blazor circuit-scoped: keep awaits on the sync context when mutating shell state.
+        await permissions.EnsureLoadedAsync();
 
         string? displayName = null;
         string? username = null;
@@ -64,7 +65,7 @@ public sealed class AdminShellContext(
         var orgCount = 0;
         string? membershipRole = null;
 
-        var me = await api.GetAuthMeAsync().ConfigureAwait(false);
+        var me = await api.GetAuthMeAsync();
         if (me.IsSuccess && me.Data is not null)
         {
             displayName = me.Data.DisplayName;
@@ -74,7 +75,7 @@ public sealed class AdminShellContext(
             orgCount = me.Data.ActiveOrganizationCount;
         }
 
-        var orgs = await api.GetEligibleOrganizationsAsync().ConfigureAwait(false);
+        var orgs = await api.GetEligibleOrganizationsAsync();
         if (orgs.IsSuccess && orgs.Data is not null)
         {
             var list = orgs.Data;

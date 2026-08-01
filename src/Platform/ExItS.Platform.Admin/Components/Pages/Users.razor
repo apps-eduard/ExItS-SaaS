@@ -267,20 +267,46 @@ else
     private string? _fieldEmail;
     private bool _busy;
     private int _page = 1;
+    private Guid? _loadedId;
+    private string? _loadedDirectory;
 
     protected override async Task OnParametersSetAsync()
     {
         await Permissions.EnsureLoadedAsync();
-        _formError = null;
-        _formConflict = false;
-        ClearFieldErrors();
         if (!Permissions.HasPermission(PlatformPermissionCodes.ManagePlatformUsers))
         {
             return;
         }
 
-        if (Id is null) await ReloadListAsync();
-        else await ReloadDetailAsync();
+        if (Id is null)
+        {
+            var directory = DirectoryFilter;
+            // Parent layout re-renders on every navigation; only reload when the directory route changes.
+            if (_list is not null
+                && _loadedId is null
+                && string.Equals(_loadedDirectory, directory, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _formError = null;
+            _formConflict = false;
+            ClearFieldErrors();
+            _page = 1;
+            _list = null;
+            _loadedId = null;
+            _loadedDirectory = directory;
+            await ReloadListAsync();
+        }
+        else if (_loadedId != Id || _detail is null)
+        {
+            _formError = null;
+            _formConflict = false;
+            ClearFieldErrors();
+            _loadedId = Id;
+            _loadedDirectory = null;
+            await ReloadDetailAsync();
+        }
     }
 
     private static string StatusColor(string status) => status switch
