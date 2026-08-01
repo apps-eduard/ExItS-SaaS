@@ -38,7 +38,7 @@ public sealed class AdminDashboardRefactoringTests
                      ("Subscriptions.razor", ["ReportPageShell", "ReportFilterBar", "ReportTable", "GetSubscriptionsAsync"]),
                      ("Entitlements.razor", ["ReportPageShell", "ReportTable", "GetLatestEntitlementsAsync"]),
                      ("Audit.razor", ["ReportPageShell", "ReportFilterBar", "ReportTable", "GetAuditRecordsAsync"]),
-                     ("Products.razor", ["ReportPageShell", "ReportTable"]),
+                     ("Products.razor", ["<Table", "RemoteDataSource", "GetProductsAsync", "OnPageIndexChange"]),
                      ("Payments.razor", ["ReportPageShell", "ReportTable"]),
                  })
         {

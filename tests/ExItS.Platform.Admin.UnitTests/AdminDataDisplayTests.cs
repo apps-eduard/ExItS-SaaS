@@ -39,10 +39,11 @@ public sealed class AdminDataDisplayTests
         var pages = Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages");
 
         var products = File.ReadAllText(Path.Combine(pages, "Products.razor"));
-        Assert.Contains("ReportTable", products, StringComparison.Ordinal);
-        Assert.Contains("AdminPagination", products, StringComparison.Ordinal);
-        Assert.Contains("ReportDataPanel", products, StringComparison.Ordinal);
-        Assert.Contains("KeyValueList", products, StringComparison.Ordinal);
+        Assert.Contains("<Table", products, StringComparison.Ordinal);
+        Assert.Contains("RemoteDataSource", products, StringComparison.Ordinal);
+        Assert.Contains("GetProductsAsync", products, StringComparison.Ordinal);
+        Assert.Contains("<Tabs", products, StringComparison.Ordinal);
+        Assert.DoesNotContain("ReportTable", products, StringComparison.Ordinal);
 
         var orgs = File.ReadAllText(Path.Combine(pages, "Organizations.razor"));
         Assert.Contains("<Table", orgs, StringComparison.Ordinal);

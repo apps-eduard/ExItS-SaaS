@@ -33,6 +33,7 @@ public sealed class PlatformRolePermissionCatalogTests
     [InlineData(PlatformPermission.ManageMemberships)]
     [InlineData(PlatformPermission.ManageProductAccess)]
     [InlineData(PlatformPermission.ManageEntitlementOverrides)]
+    [InlineData(PlatformPermission.ManageCatalog)]
     public void BillingAdministrator_does_not_hold_operational_or_identity_permissions(string permission)
     {
         Assert.False(PlatformRolePermissionCatalog.RoleHasPermission(PlatformSystemRole.BillingAdministrator, permission));
@@ -51,6 +52,7 @@ public sealed class PlatformRolePermissionCatalogTests
     [Theory]
     [InlineData(PlatformPermission.ManagePlatformUsers)]
     [InlineData(PlatformPermission.ManageOrganizations)]
+    [InlineData(PlatformPermission.ManageCatalog)]
     [InlineData(PlatformPermission.ManageSubscriptions)]
     [InlineData(PlatformPermission.ManageManualPayments)]
     [InlineData(PlatformPermission.ManageEntitlementOverrides)]

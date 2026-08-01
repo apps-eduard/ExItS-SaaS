@@ -3,9 +3,12 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.PinoyBusinessPOS.Api.Common;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Infrastructure.LivePreview;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExItS.PinoyBusinessPOS.IntegrationTests;
 
@@ -200,6 +203,19 @@ public sealed class PosProductionHardeningApiTests(PosPostgreSqlFixture fixture)
                 builder.UseSetting("LivePreview:Enabled", "true");
                 builder.UseSetting("LivePreview:PlatformApiBaseUrl", platformAuthBaseUrl ?? "http://localhost:8091");
                 values["LivePreview:PlatformApiBaseUrl"] = platformAuthBaseUrl ?? "http://localhost:8091";
+
+                // Startup must accept HTTP PlatformAuth/LivePreview URLs in Staging without requiring a
+                // live Platform API on :8091 (hosted identity bootstrap is covered by compose/local runs).
+                builder.ConfigureTestServices(services =>
+                {
+                    var hosted = services
+                        .Where(d => d.ImplementationType == typeof(PosLivePreviewHostedService))
+                        .ToList();
+                    foreach (var descriptor in hosted)
+                    {
+                        services.Remove(descriptor);
+                    }
+                });
             }
 
             builder.UseSetting("ConnectionStrings:PosDatabase", connectionString);

@@ -18,6 +18,40 @@ public sealed class CommercialUseCaseTests
     private static readonly DateTimeOffset T0 = new(2026, 7, 29, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
+    public async Task StartTrial_rejects_retired_plan()
+    {
+        var clock = new FixedClock(T0);
+        var uow = new NoOpUnitOfWork();
+        var orgs = new InMemoryPlatformOrganizationRepository();
+        var products = new InMemoryProductRepository();
+        var plans = new InMemoryPlanRepository();
+        var trials = new InMemoryTrialDefinitionRepository();
+        var subscriptions = new InMemorySubscriptionRepository();
+
+        var org = (await new CreatePlatformOrganization(orgs, uow, clock)
+            .ExecuteAsync("Acme Group", "acme-retired-plan")).Value!;
+        var product = (await new CreateProduct(products, uow, clock)
+            .ExecuteAsync("retired-plan-prod", "Retired Plan Product")).Value!;
+        var plan = (await new CreatePlan(products, plans, uow, clock)
+            .ExecuteAsync(product.Code.Value, "retired-plan", "Retired Plan")).Value!;
+        plan.Activate(T0);
+        plan.Retire(T0.AddMinutes(1));
+        await plans.UpdateAsync(plan);
+
+        var version = PlanVersion.CreateDraft(plan, 1, T0, BillingPeriod.Monthly, true, [], T0);
+        version.Publish(T0);
+        await plans.AddVersionAsync(version);
+
+        var trial = UtangTrialTestFactory.CreateConfigured(T0, TimeSpan.FromDays(7), plan.Id);
+        await trials.AddAsync(trial);
+
+        var start = await new StartTrialSubscription(orgs, products, plans, trials, subscriptions, uow, clock)
+            .ExecuteAsync(org.Id, plan.Id, version.Id, trial.Id);
+        Assert.False(start.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.SubscriptionIneligible, start.ErrorCode);
+    }
+
+    [Fact]
     public async Task CreateProduct_and_plan_publish_version_and_start_trial_snapshot()
     {
         var clock = new FixedClock(T0);
