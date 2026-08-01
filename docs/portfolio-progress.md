@@ -12,9 +12,9 @@
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 15 — Ant Design Platform Administration (**in progress**) |
-| Current work package | P15-WP01 — Ant Design Admin Foundation (**complete**) |
-| Overall status | **Phase 15 in progress.** P15-WP01 complete (Ant Design Admin foundation). Follow-up Live Preview hardening (auth/circuit session, nav permissions, sun/moon dark CSS swap, banner removal) recorded in [2026-08-01-admin-live-preview-hardening.md](reports/2026-08-01-admin-live-preview-hardening.md) — **do not roll back.** Fluent UI Admin direction cancelled/superseded (never pushed). Phase 14 Production remains **Blocked** pending P14-WP03+. Exact next: P15-WP02 or P14-WP03 only when authorized. **Not production-ready.** |
-| Latest verified commit | `450530d8fae346c1e129bdf84752cbf5d3a538a6` |
+| Current work package | P15-WP02 — Users and Organization Memberships (**complete**) |
+| Overall status | **Phase 15 in progress.** P15-WP01 + P15-WP02 complete. Live Preview hardening must not be rolled back ([report](reports/2026-08-01-admin-live-preview-hardening.md)). Fluent UI Admin direction cancelled/superseded. Phase 14 Production remains **Blocked** pending P14-WP03+. Exact next: **P15-WP03** or **P14-WP03** only when authorized. **Not production-ready.** |
+| Latest verified commit | `e607a10a8712a5e326e42b3a6bf56a38ac1abe4c` |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-08-01 |
 
@@ -109,7 +109,9 @@ P14-WP03 ○ Reverse Proxy, TLS, and Network Hardening (do not begin until autho
         ↓
 P15-WP01 ✓ Ant Design Admin Foundation
         ↓
-P15-WP02 ○ Users and Organization Memberships (do not begin until authorized)
+P15-WP02 ✓ Users and Organization Memberships
+        ↓
+P15-WP03 ○ Organization Lifecycle (do not begin until authorized)
 ```
 
 ## Phase progress
@@ -131,7 +133,7 @@ P15-WP02 ○ Users and Organization Memberships (do not begin until authorized)
 | 12 | Reusable SaaS Product Foundation and Bootstrap | **Complete with documented open decisions** | 7 | 7 | 100% | [Open](phases/phase-12-product-foundation-and-bootstrap.md) |
 | 13 | Production Authentication and Identity | **Complete with documented residuals** | 9 | 9 | 100% | [Open](phases/phase-13-production-authentication-and-identity.md) |
 | 14 | Production Deployment and Operations | **In progress** | 2 | 7 | — | [Open](phases/phase-14-production-deployment-and-operations.md) |
-| 15 | Ant Design Platform Administration | **In progress** | 1 | 7 | — | [Open](phases/phase-15-ant-design-platform-admin.md) |
+| 15 | Ant Design Platform Administration | **In progress** | 2 | 7 | — | [Open](phases/phase-15-ant-design-platform-admin.md) |
 
 **MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
@@ -139,14 +141,14 @@ P15-WP02 ○ Users and Organization Memberships (do not begin until authorized)
 **Phase 12 Product Foundation:** 7 / 7 = **100%** (with documented open decisions; not Production-ready; no real product scaffold).
 **Phase 13 Production Authentication:** 9 / 9 = **100%** (R-091 closed for Phase 13 scope; residuals documented; not Production-ready).
 **Phase 14 Production Deployment:** 2 / 7 WPs complete (architecture/audit + packaging Compose baseline + live-preview gap fix; Production blocked).
-**Phase 15 Ant Design Platform Admin:** 1 / 7 WPs complete (P15-WP01 foundation; Fluent UI direction cancelled/superseded).
+**Phase 15 Ant Design Platform Admin:** 2 / 7 WPs complete (P15-WP01 foundation + P15-WP02 users/memberships; Fluent UI direction cancelled/superseded).
 
 ## Phase 15 work packages
 
 | WP | Status | Key commit |
 |---|---|---|
 | P15-WP01 — Ant Design Admin Foundation | Complete | `0ee125487cba83747f36fd260c404249700ae858` |
-| P15-WP02 — Users and Organization Memberships | Not started | — |
+| P15-WP02 — Users and Organization Memberships | Complete | `e607a10a8712a5e326e42b3a6bf56a38ac1abe4c` |
 | P15-WP03 — Organization Lifecycle | Not started | — |
 | P15-WP04 — Products and Plans | Not started | — |
 | P15-WP05 — Subscriptions | Not started | — |
@@ -227,4 +229,4 @@ P15-WP02 ○ Users and Organization Memberships (do not begin until authorized)
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P15-WP02** or **P14-WP03** until explicitly authorized. Platform Admin UI direction is **Ant Design Blazor (ADR-015)**; Fluent UI Admin work is cancelled.
+Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P15-WP03** or **P14-WP03** until explicitly authorized. Platform Admin UI direction is **Ant Design Blazor (ADR-015)**; Fluent UI Admin work is cancelled.

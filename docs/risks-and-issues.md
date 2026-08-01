@@ -83,7 +83,7 @@
 | R-077 | Subscription/entitlement changes not reflected immediately on assignments | Medium | Effective evaluation re-reads subscription + snapshot; historical rows may remain Active | Open — introduced P4-WP02 |
 | R-078 | Cross-organization access leakage | High | Org-scoped membership/assignment checks; unique constraints; API tests | **Mitigated** (P4-WP02) — awareness |
 | R-079 | Duplicate username/email policy edge cases | Medium | Global unique normalized username/email; 409 conflicts | **Mitigated** (P4-WP02) — awareness |
-| R-080 | Missing invitation workflow | Medium | Deferred; add existing users only | Open — introduced P4-WP02 |
+| R-080 | Missing invitation workflow | Medium | Implemented in P15-WP02 (create/resend/revoke/accept; email delivery out of band) | Closed — P15-WP02 |
 | R-081 | Missing identity-provider linkage | High | Deferred with authentication WP | Open — introduced P4-WP02 |
 | R-082 | Missing dedicated audit subsystem for access changes | Medium | Append-only `platform.audit_records` + mutation/denial coverage in P4-WP04; actor/reason/UTC retained on domain rows | **Mitigated** (P4-WP04) — awareness; retention/growth tracked as R-096 |
 | R-083 | Admin UI contract drift for access endpoints | Medium | Typed client + integration tests | Open — introduced P4-WP02 |

@@ -15,8 +15,8 @@ Rebuild Platform Admin on **Ant Design Blazor** (`AntDesign`), using [Ant Design
 | WP | Name | Status |
 |---|---|---|
 | P15-WP01 | Ant Design Admin Foundation | **Complete** |
-| P15-WP02 | Users and Organization Memberships | Blocked until authorized |
-| P15-WP03 | Organization Lifecycle | Blocked |
+| P15-WP02 | Users and Organization Memberships | **Complete** — [report](../reports/P15-WP02-users-and-organization-memberships.md) |
+| P15-WP03 | Organization Lifecycle | Blocked until authorized |
 | P15-WP04 | Products and Plans | Blocked |
 | P15-WP05 | Subscriptions | Blocked |
 | P15-WP06 | Authorization, Audit, and UX Hardening | Blocked |
