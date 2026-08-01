@@ -42,6 +42,8 @@ public static class PlatformAuditActions
     public const string PlatformUserEmailVerified = "platform.user.email_verified";
     public const string PlatformAuthBootstrapCompleted = "platform.auth.bootstrap_completed";
     public const string PlatformAuthLoginSucceeded = "platform.auth.login_succeeded";
+    public const string PlatformAccountProfileSelected = "platform.auth.account_profile_selected";
+    public const string PlatformAccountScopeDenied = "platform.auth.account_scope_denied";
     public const string PlatformAuthLoginFailed = "platform.auth.login_failed";
     public const string PlatformAuthLogout = "platform.auth.logout";
     public const string PlatformAuthSessionRevoked = "platform.auth.session_revoked";

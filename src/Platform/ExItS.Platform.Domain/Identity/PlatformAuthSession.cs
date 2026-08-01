@@ -7,11 +7,15 @@ namespace ExItS.Platform.Domain.Identity;
 /// Server-side browser session for an authenticated <see cref="PlatformUser"/>.
 /// Stores only a hash of the opaque session token — never the raw token, password, or bearer JWT.
 /// Optional <see cref="SelectedOrganizationId"/> is server-owned organization context (never client-trusted alone).
+/// Session is bound to one <see cref="AccountProfileId"/> / <see cref="AccountClass"/> (ADR-017).
 /// </summary>
 public sealed class PlatformAuthSession
 {
     public PlatformAuthSessionId Id { get; }
     public PlatformUserId UserId { get; }
+    public AccountProfileId AccountProfileId { get; }
+    public AccountClass AccountClass { get; }
+    public AllowedScope AllowedScope => AccountClassScope.ToScope(AccountClass);
     public string TokenHash { get; }
     public string SecurityStampAtIssue { get; }
     public DateTimeOffset CreatedAtUtc { get; }
@@ -26,6 +30,8 @@ public sealed class PlatformAuthSession
     private PlatformAuthSession(
         PlatformAuthSessionId id,
         PlatformUserId userId,
+        AccountProfileId accountProfileId,
+        AccountClass accountClass,
         string tokenHash,
         string securityStampAtIssue,
         DateTimeOffset createdAtUtc,
@@ -39,6 +45,8 @@ public sealed class PlatformAuthSession
     {
         Id = id;
         UserId = userId;
+        AccountProfileId = accountProfileId;
+        AccountClass = accountClass;
         TokenHash = tokenHash;
         SecurityStampAtIssue = securityStampAtIssue;
         CreatedAtUtc = createdAtUtc;
@@ -53,6 +61,8 @@ public sealed class PlatformAuthSession
 
     public static PlatformAuthSession Create(
         PlatformUserId userId,
+        AccountProfileId accountProfileId,
+        AccountClass accountClass,
         string tokenHash,
         string securityStampAtIssue,
         DateTimeOffset utcNow,
@@ -64,7 +74,20 @@ public sealed class PlatformAuthSession
         PlatformOrganizationId? selectedOrganizationId = null)
     {
         ArgumentNullException.ThrowIfNull(userId);
+        ArgumentNullException.ThrowIfNull(accountProfileId);
         EnsureUtc(utcNow);
+        if (!Enum.IsDefined(accountClass))
+        {
+            throw new DomainException(DomainErrorCodes.InvalidAccountStatusTransition, "Account class is invalid.");
+        }
+
+        if (accountClass is not AccountClass.Organization && selectedOrganizationId is not null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidAccountStatusTransition,
+                "Selected organization is only valid for Organization account sessions.");
+        }
+
         if (idleLifetime <= TimeSpan.Zero || absoluteLifetime <= TimeSpan.Zero)
         {
             throw new DomainException(DomainErrorCodes.InvalidUtcTimestamp, "Session lifetimes must be positive.");
@@ -87,6 +110,8 @@ public sealed class PlatformAuthSession
         return new PlatformAuthSession(
             id ?? PlatformAuthSessionId.New(),
             userId,
+            accountProfileId,
+            accountClass,
             tokenHash.Trim(),
             securityStampAtIssue.Trim(),
             utcNow,
@@ -102,6 +127,8 @@ public sealed class PlatformAuthSession
     public static PlatformAuthSession Rehydrate(
         PlatformAuthSessionId id,
         PlatformUserId userId,
+        AccountProfileId accountProfileId,
+        AccountClass accountClass,
         string tokenHash,
         string securityStampAtIssue,
         DateTimeOffset createdAtUtc,
@@ -115,6 +142,8 @@ public sealed class PlatformAuthSession
         new(
             id,
             userId,
+            accountProfileId,
+            accountClass,
             tokenHash,
             securityStampAtIssue,
             createdAtUtc,
@@ -133,6 +162,13 @@ public sealed class PlatformAuthSession
         if (RevokedAtUtc is not null)
         {
             throw new DomainException(DomainErrorCodes.InvalidAccountStatusTransition, "Session is not active.");
+        }
+
+        if (AccountClass is not AccountClass.Organization)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidAccountStatusTransition,
+                "Organization context requires an Organization account session.");
         }
 
         SelectedOrganizationId = organizationId;

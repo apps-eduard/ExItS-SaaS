@@ -29,6 +29,7 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.BootstrapForbiddenInEnvironment
             or ApplicationErrorCodes.AccountNotEligibleForLogin
             or ApplicationErrorCodes.OrganizationContextNotEligible
+            or ApplicationErrorCodes.AccountScopeDenied
             or ApplicationErrorCodes.ProductEntryDenied => StatusCodes.Status403Forbidden,
 
         ApplicationErrorCodes.LoginFailed

@@ -3,6 +3,7 @@ using ExItS.Platform.Api.Authentication;
 using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Domain.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 
@@ -318,8 +319,70 @@ internal static class AuthEndpoints
         .RequireRateLimiting(PlatformSecurityPipeline.AuthTokenOpsRateLimitPolicy)
         .AllowAnonymous();
 
+        app.MapGet("/api/v1/platform/auth/account-profiles", async (
+            HttpContext http,
+            ListAccountProfilesForUser useCase,
+            CancellationToken ct) =>
+        {
+            if (!TryGetAuthenticatedUserId(http, out var userId))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authentication is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var profiles = await useCase.ExecuteAsync(PlatformUserId.From(userId), ct)
+                .ConfigureAwait(false);
+            return Results.Ok(profiles);
+        });
+
+        app.MapPost("/api/v1/platform/auth/account-profiles/select", async (
+            SelectAccountProfileRequest body,
+            HttpContext http,
+            SelectAccountProfileSession useCase,
+            IOptions<PlatformSessionOptions> sessionOptions,
+            IHostEnvironment env,
+            CancellationToken ct) =>
+        {
+            if (!TryGetAuthenticatedUserId(http, out var userId))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authentication is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var sessionIdRaw = http.User.FindFirstValue(PlatformSessionDefaults.SessionIdClaimType);
+            if (!Guid.TryParse(sessionIdRaw, out var sessionId) || sessionId == Guid.Empty)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Session is invalid.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var result = await useCase.ExecuteAsync(
+                PlatformUserId.From(userId),
+                PlatformAuthSessionId.From(sessionId),
+                body.AccountProfileId,
+                http.Connection.RemoteIpAddress?.ToString(),
+                http.Request.Headers.UserAgent.ToString(),
+                ct).ConfigureAwait(false);
+
+            if (!result.IsSuccess || result.Value is null)
+            {
+                return PlatformApiResults.FromResult(result, _ => Results.Ok());
+            }
+
+            AppendSessionCookie(http, result.Value.SessionToken, result.Value.ExpiresAtUtc, sessionOptions.Value, env);
+            return Results.Ok(result.Value);
+        });
+
         return app;
     }
+
+    private sealed record SelectAccountProfileRequest(Guid AccountProfileId);
 
     private static string? ExtractBearerToken(HttpContext http)
     {

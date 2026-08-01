@@ -52,6 +52,9 @@ public static class PlatformSessionClaimTypes
     public const string AuthenticationScheme = "PlatformSession";
     public const string SessionId = "exits_session_id";
     public const string OrganizationId = "exits_organization_id";
+    public const string AccountProfileId = "exits_account_profile_id";
+    public const string AccountClass = "exits_account_class";
+    public const string AllowedScope = "exits_allowed_scope";
     public const string RequestTokenItemKey = "PlatformSession:token";
 }
 
@@ -76,7 +79,10 @@ public sealed record PlatformAuthSessionInfoDto(
     string? SelectedOrganizationDisplayName,
     string OrganizationSelectionState,
     int ActiveOrganizationCount,
-    PlatformMfaReadinessDto? Mfa = null);
+    PlatformMfaReadinessDto? Mfa = null,
+    Guid? AccountProfileId = null,
+    string? AccountClass = null,
+    string? AllowedScope = null);
 
 /// <summary>Returned only from login — includes the opaque session token once.</summary>
 public sealed record PlatformLoginResultDto(
@@ -92,7 +98,10 @@ public sealed record PlatformLoginResultDto(
     string? SelectedOrganizationDisplayName,
     string OrganizationSelectionState,
     int ActiveOrganizationCount,
-    PlatformMfaReadinessDto? Mfa = null);
+    PlatformMfaReadinessDto? Mfa = null,
+    Guid? AccountProfileId = null,
+    string? AccountClass = null,
+    string? AllowedScope = null);
 
 public sealed record EligibleOrganizationDto(
     Guid OrganizationId,

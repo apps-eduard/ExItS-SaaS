@@ -1,3 +1,4 @@
+using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.LivePreview;
 using ExItS.Platform.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -43,6 +44,9 @@ public sealed class LivePreviewHostedService(
 
         var initializer = scope.ServiceProvider.GetRequiredService<InitializeLivePreviewDataset>();
         await initializer.ExecuteAsync(cancellationToken).ConfigureAwait(false);
+
+        var phase16Seed = scope.ServiceProvider.GetRequiredService<InitializePhase16AccountSeed>();
+        await phase16Seed.ExecuteAsync(cancellationToken).ConfigureAwait(false);
 
         logger.LogInformation("LivePreview hosted initialization finished.");
     }

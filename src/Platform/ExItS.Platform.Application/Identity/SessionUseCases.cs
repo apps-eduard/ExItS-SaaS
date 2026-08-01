@@ -19,6 +19,7 @@ public sealed class LoginPlatformUser
     private readonly IPlatformAuthSessionRepository _sessions;
     private readonly IOrganizationMembershipRepository _memberships;
     private readonly IPlatformOrganizationRepository _organizations;
+    private readonly EnsureAccountProfilesForUser _ensureProfiles;
     private readonly IPlatformPasswordHasher _hasher;
     private readonly IPlatformSessionTokenService _tokens;
     private readonly IAuditWriter _auditWriter;
@@ -34,6 +35,7 @@ public sealed class LoginPlatformUser
         IPlatformAuthSessionRepository sessions,
         IOrganizationMembershipRepository memberships,
         IPlatformOrganizationRepository organizations,
+        EnsureAccountProfilesForUser ensureProfiles,
         IPlatformPasswordHasher hasher,
         IPlatformSessionTokenService tokens,
         IAuditWriter auditWriter,
@@ -48,6 +50,7 @@ public sealed class LoginPlatformUser
         _sessions = sessions;
         _memberships = memberships;
         _organizations = organizations;
+        _ensureProfiles = ensureProfiles;
         _hasher = hasher;
         _tokens = tokens;
         _auditWriter = auditWriter;
@@ -177,12 +180,17 @@ public sealed class LoginPlatformUser
         credential.RegisterSuccessfulAccess(utcNow);
         await _credentials.UpdateAsync(credential, cancellationToken).ConfigureAwait(false);
 
+        var profile = await _ensureProfiles.ExecuteAsync(user.Id, preferredClass: null, cancellationToken)
+            .ConfigureAwait(false);
+
         var opaqueToken = _tokens.CreateOpaqueToken();
         var tokenHash = _tokens.HashToken(opaqueToken);
         var idle = TimeSpan.FromMinutes(Math.Max(1, _sessionOptions.IdleTimeoutMinutes));
         var absolute = TimeSpan.FromHours(Math.Max(1, _sessionOptions.AbsoluteLifetimeHours));
         var session = PlatformAuthSession.Create(
             user.Id,
+            profile.Id,
+            profile.AccountClass,
             tokenHash,
             credential.SecurityStamp,
             utcNow,
@@ -194,9 +202,16 @@ public sealed class LoginPlatformUser
         await _sessions.AddAsync(session, cancellationToken).ConfigureAwait(false);
         await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-        var (orgId, orgName, selectionState, activeCount) = await OrganizationContextResolver
-            .ResolveAsync(session, _memberships, _organizations, _sessions, _unitOfWork, cancellationToken)
-            .ConfigureAwait(false);
+        Guid? orgId = null;
+        string? orgName = null;
+        var selectionState = "None";
+        var activeCount = 0;
+        if (profile.AccountClass is AccountClass.Organization)
+        {
+            (orgId, orgName, selectionState, activeCount) = await OrganizationContextResolver
+                .ResolveAsync(session, _memberships, _organizations, _sessions, _unitOfWork, cancellationToken)
+                .ConfigureAwait(false);
+        }
 
         await _auditWriter.WriteAsync(
             $"platform-user:{user.Id.Value:D}",
@@ -206,7 +221,7 @@ public sealed class LoginPlatformUser
             session.Id.Value.ToString("D"),
             AuditOutcome.Succeeded,
             organizationId: session.SelectedOrganizationId,
-            summary: "Platform User browser session established (token/password not recorded).",
+            summary: $"Browser session established for {profile.AccountClass} account profile (token/password not recorded).",
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
         var mfa = await _mfa.GetForUserAsync(user.Id, cancellationToken).ConfigureAwait(false);
@@ -223,7 +238,10 @@ public sealed class LoginPlatformUser
             orgName,
             selectionState,
             activeCount,
-            mfa));
+            mfa,
+            profile.Id.Value,
+            profile.AccountClass.ToString(),
+            session.AllowedScope.ToString()));
     }
 
     private static ApplicationResult<PlatformLoginResultDto> LoginFailedResult() =>
@@ -421,9 +439,16 @@ public sealed class ValidateAndRenewPlatformSession
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        var (orgId, orgName, selectionState, activeCount) = await OrganizationContextResolver
-            .ResolveAsync(session, _memberships, _organizations, _sessions, _unitOfWork, cancellationToken)
-            .ConfigureAwait(false);
+        Guid? orgId = null;
+        string? orgName = null;
+        var selectionState = OrganizationSelectionStates.None;
+        var activeCount = 0;
+        if (session.AccountClass is AccountClass.Organization)
+        {
+            (orgId, orgName, selectionState, activeCount) = await OrganizationContextResolver
+                .ResolveAsync(session, _memberships, _organizations, _sessions, _unitOfWork, cancellationToken)
+                .ConfigureAwait(false);
+        }
 
         var mfa = await _mfa.GetForUserAsync(user.Id, cancellationToken).ConfigureAwait(false);
         return ApplicationResult<PlatformAuthSessionInfoDto>.Success(new PlatformAuthSessionInfoDto(
@@ -439,6 +464,9 @@ public sealed class ValidateAndRenewPlatformSession
             orgName,
             selectionState,
             activeCount,
-            mfa));
+            mfa,
+            session.AccountProfileId.Value,
+            session.AccountClass.ToString(),
+            session.AllowedScope.ToString()));
     }
 }

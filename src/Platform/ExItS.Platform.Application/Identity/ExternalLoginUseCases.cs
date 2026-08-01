@@ -27,6 +27,7 @@ public sealed class CompleteExternalLogin
     private readonly IPlatformAuthSessionRepository _sessions;
     private readonly IOrganizationMembershipRepository _memberships;
     private readonly IPlatformOrganizationRepository _organizations;
+    private readonly EnsureAccountProfilesForUser _ensureProfiles;
     private readonly IPlatformSessionTokenService _tokens;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
@@ -41,6 +42,7 @@ public sealed class CompleteExternalLogin
         IPlatformAuthSessionRepository sessions,
         IOrganizationMembershipRepository memberships,
         IPlatformOrganizationRepository organizations,
+        EnsureAccountProfilesForUser ensureProfiles,
         IPlatformSessionTokenService tokens,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
@@ -54,6 +56,7 @@ public sealed class CompleteExternalLogin
         _sessions = sessions;
         _memberships = memberships;
         _organizations = organizations;
+        _ensureProfiles = ensureProfiles;
         _tokens = tokens;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
@@ -199,12 +202,17 @@ public sealed class CompleteExternalLogin
             await _credentials.UpdateAsync(credential, cancellationToken).ConfigureAwait(false);
         }
 
+        var profile = await _ensureProfiles.ExecuteAsync(user.Id, preferredClass: null, cancellationToken)
+            .ConfigureAwait(false);
+
         var opaqueToken = _tokens.CreateOpaqueToken();
         var tokenHash = _tokens.HashToken(opaqueToken);
         var idle = TimeSpan.FromMinutes(Math.Max(1, _sessionOptions.IdleTimeoutMinutes));
         var absolute = TimeSpan.FromHours(Math.Max(1, _sessionOptions.AbsoluteLifetimeHours));
         var session = PlatformAuthSession.Create(
             user.Id,
+            profile.Id,
+            profile.AccountClass,
             tokenHash,
             credential.SecurityStamp,
             utcNow,
@@ -216,9 +224,16 @@ public sealed class CompleteExternalLogin
         await _sessions.AddAsync(session, cancellationToken).ConfigureAwait(false);
         await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-        var (orgId, orgName, selectionState, activeCount) = await OrganizationContextResolver
-            .ResolveAsync(session, _memberships, _organizations, _sessions, _unitOfWork, cancellationToken)
-            .ConfigureAwait(false);
+        Guid? orgId = null;
+        string? orgName = null;
+        var selectionState = "None";
+        var activeCount = 0;
+        if (profile.AccountClass is AccountClass.Organization)
+        {
+            (orgId, orgName, selectionState, activeCount) = await OrganizationContextResolver
+                .ResolveAsync(session, _memberships, _organizations, _sessions, _unitOfWork, cancellationToken)
+                .ConfigureAwait(false);
+        }
 
         await _auditWriter.WriteAsync(
             $"platform-user:{user.Id.Value:D}",
@@ -231,8 +246,8 @@ public sealed class CompleteExternalLogin
             AuditOutcome.Succeeded,
             organizationId: session.SelectedOrganizationId,
             summary: linkedExisting
-                ? $"External login linked ({provider}); session established (no roles/membership granted)."
-                : $"External login succeeded ({provider}); session established (no roles/membership granted).",
+                ? $"External login linked ({provider}); {profile.AccountClass} session established (no roles/membership granted)."
+                : $"External login succeeded ({provider}); {profile.AccountClass} session established (no roles/membership granted).",
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
         var mfa = await _mfa.GetForUserAsync(user.Id, cancellationToken).ConfigureAwait(false);
@@ -249,7 +264,10 @@ public sealed class CompleteExternalLogin
             orgName,
             selectionState,
             activeCount,
-            mfa));
+            mfa,
+            profile.Id.Value,
+            profile.AccountClass.ToString(),
+            session.AllowedScope.ToString()));
     }
 
     private async Task<string> AllocateUsernameAsync(string normalizedEmail, CancellationToken cancellationToken)

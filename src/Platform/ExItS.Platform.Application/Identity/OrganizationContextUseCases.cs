@@ -150,6 +150,13 @@ public sealed class SetSessionOrganizationContext
                 "Session is invalid.");
         }
 
+        if (session.AccountClass is not AccountClass.Organization)
+        {
+            return ApplicationResult<OrganizationContextResultDto>.Failure(
+                ApplicationErrorCodes.AccountScopeDenied,
+                "Organization context requires an Organization account session.");
+        }
+
         if (organizationId is null)
         {
             session.ClearSelectedOrganization();

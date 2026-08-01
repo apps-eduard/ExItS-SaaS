@@ -22,34 +22,7 @@ public sealed class PlatformExternalLoginTests
     [Fact]
     public async Task CompleteExternalLogin_creates_user_without_roles_and_issues_session()
     {
-        var users = new InMemoryPlatformUserRepository();
-        var credentials = new InMemoryPlatformUserCredentialRepository();
-        var externals = new InMemoryPlatformExternalLoginRepository();
-        var sessions = new InMemoryPlatformAuthSessionRepository();
-        var memberships = new InMemoryOrganizationMembershipRepository();
-        var orgs = new InMemoryPlatformOrganizationRepository();
-        var tokens = new StubSessionTokenService();
-        var audit = new NoOpAuditWriter();
-        var uow = new NoOpUnitOfWork();
-        var clock = new FixedClock(T0);
-        var mfa = new PlatformMfaReadinessService(
-            new NullPlatformMfaFactorStore(),
-            Options.Create(new PlatformMfaOptions()));
-
-        var sut = new CompleteExternalLogin(
-            users,
-            credentials,
-            externals,
-            sessions,
-            memberships,
-            orgs,
-            tokens,
-            audit,
-            uow,
-            clock,
-            Options.Create(new PlatformSessionOptions()),
-            mfa);
-
+        var sut = CreateSut(out var users, out var credentials, out _);
         var result = await sut.ExecuteAsync(
             new ExternalLoginIdentity("google", "sub-1", "owner@example.com", true, "Store Owner"),
             "127.0.0.1",
@@ -59,6 +32,7 @@ public sealed class PlatformExternalLoginTests
         Assert.False(string.IsNullOrWhiteSpace(result.Value!.SessionToken));
         Assert.Equal(0, result.Value.ActiveOrganizationCount);
         Assert.Equal("None", result.Value.OrganizationSelectionState);
+        Assert.Equal("Personal", result.Value.AccountClass);
         Assert.Equal(1, users.AddCount);
         Assert.False((await credentials.GetByUserIdAsync(PlatformUserId.From(result.Value.UserId)))!.SupportsPasswordLogin);
     }
@@ -66,36 +40,9 @@ public sealed class PlatformExternalLoginTests
     [Fact]
     public async Task CompleteExternalLogin_links_existing_email_without_creating_duplicate_user()
     {
-        var users = new InMemoryPlatformUserRepository();
-        var credentials = new InMemoryPlatformUserCredentialRepository();
-        var externals = new InMemoryPlatformExternalLoginRepository();
-        var sessions = new InMemoryPlatformAuthSessionRepository();
-        var memberships = new InMemoryOrganizationMembershipRepository();
-        var orgs = new InMemoryPlatformOrganizationRepository();
-        var tokens = new StubSessionTokenService();
-        var audit = new NoOpAuditWriter();
-        var uow = new NoOpUnitOfWork();
-        var clock = new FixedClock(T0);
-        var mfa = new PlatformMfaReadinessService(
-            new NullPlatformMfaFactorStore(),
-            Options.Create(new PlatformMfaOptions()));
-
+        var sut = CreateSut(out var users, out _, out var externals);
         var existing = PlatformUser.Create("owner1", "Owner One", "owner@example.com", T0);
         await users.AddAsync(existing);
-
-        var sut = new CompleteExternalLogin(
-            users,
-            credentials,
-            externals,
-            sessions,
-            memberships,
-            orgs,
-            tokens,
-            audit,
-            uow,
-            clock,
-            Options.Create(new PlatformSessionOptions()),
-            mfa);
 
         var result = await sut.ExecuteAsync(
             new ExternalLoginIdentity("facebook", "fb-99", "owner@example.com", true, "Owner One"),
@@ -111,7 +58,7 @@ public sealed class PlatformExternalLoginTests
     [Fact]
     public async Task CompleteExternalLogin_requires_verified_email()
     {
-        var sut = CreateSut(out _);
+        var sut = CreateSut(out _, out _, out _);
         var result = await sut.ExecuteAsync(
             new ExternalLoginIdentity("google", "sub-2", "x@example.com", false, "X"),
             null,
@@ -119,16 +66,32 @@ public sealed class PlatformExternalLoginTests
         Assert.Equal(ApplicationErrorCodes.ExternalAuthEmailUnverified, result.ErrorCode);
     }
 
-    private static CompleteExternalLogin CreateSut(out InMemoryPlatformUserRepository users)
+    private static CompleteExternalLogin CreateSut(
+        out InMemoryPlatformUserRepository users,
+        out InMemoryPlatformUserCredentialRepository credentials,
+        out InMemoryPlatformExternalLoginRepository externals)
     {
         users = new InMemoryPlatformUserRepository();
+        credentials = new InMemoryPlatformUserCredentialRepository();
+        externals = new InMemoryPlatformExternalLoginRepository();
+        var memberships = new InMemoryOrganizationMembershipRepository();
+        var roles = new InMemoryPlatformRoleAssignmentRepository();
+        var profiles = new InMemoryAccountProfileRepository();
+        var ensure = new EnsureAccountProfilesForUser(
+            profiles,
+            roles,
+            memberships,
+            new NoOpUnitOfWork(),
+            new FixedClock(T0));
+
         return new CompleteExternalLogin(
             users,
-            new InMemoryPlatformUserCredentialRepository(),
-            new InMemoryPlatformExternalLoginRepository(),
+            credentials,
+            externals,
             new InMemoryPlatformAuthSessionRepository(),
-            new InMemoryOrganizationMembershipRepository(),
+            memberships,
             new InMemoryPlatformOrganizationRepository(),
+            ensure,
             new StubSessionTokenService(),
             new NoOpAuditWriter(),
             new NoOpUnitOfWork(),

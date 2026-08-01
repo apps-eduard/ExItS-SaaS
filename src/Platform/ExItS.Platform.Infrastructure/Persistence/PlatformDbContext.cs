@@ -45,6 +45,7 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PlatformUserRecord> PlatformUsers => Set<PlatformUserRecord>();
     internal DbSet<PlatformUserCredentialRecord> PlatformUserCredentials => Set<PlatformUserCredentialRecord>();
     internal DbSet<PlatformAuthSessionRecord> PlatformAuthSessions => Set<PlatformAuthSessionRecord>();
+    internal DbSet<AccountProfileRecord> AccountProfiles => Set<AccountProfileRecord>();
     internal DbSet<PlatformAccessTokenRecord> PlatformAccessTokens => Set<PlatformAccessTokenRecord>();
     internal DbSet<PlatformCredentialTokenRecord> PlatformCredentialTokens => Set<PlatformCredentialTokenRecord>();
     internal DbSet<PlatformExternalLoginRecord> PlatformExternalLogins => Set<PlatformExternalLoginRecord>();
@@ -481,15 +482,42 @@ public sealed class PlatformDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        modelBuilder.Entity<AccountProfileRecord>(entity =>
+        {
+            entity.ToTable("account_profiles");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserIdentityId).HasColumnName("user_identity_id");
+            entity.Property(e => e.AccountClass).HasColumnName("account_class").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.HasIndex(e => new { e.UserIdentityId, e.AccountClass }).IsUnique();
+            entity.HasIndex(e => e.UserIdentityId);
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.UserIdentityId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<PlatformAuthSessionRecord>(entity =>
         {
             entity.ToTable("platform_auth_sessions");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.AccountProfileId).HasColumnName("account_profile_id");
+            entity.Property(e => e.AccountClass).HasColumnName("account_class").HasMaxLength(32).IsRequired();
             entity.Property(e => e.TokenHash).HasColumnName("token_hash").HasMaxLength(128).IsRequired();
             entity.HasIndex(e => e.TokenHash).IsUnique();
             entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.AccountProfileId);
             entity.Property(e => e.SecurityStampAtIssue).HasColumnName("security_stamp_at_issue").HasMaxLength(64).IsRequired();
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
@@ -510,6 +538,11 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne<AccountProfileRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.AccountProfileId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne<PlatformOrganizationRecord>()
                 .WithMany()

@@ -4,6 +4,8 @@ internal sealed class PlatformAuthSessionRecord
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
+    public Guid AccountProfileId { get; set; }
+    public string AccountClass { get; set; } = string.Empty;
     public string TokenHash { get; set; } = string.Empty;
     public string SecurityStampAtIssue { get; set; } = string.Empty;
     public DateTimeOffset CreatedAtUtc { get; set; }

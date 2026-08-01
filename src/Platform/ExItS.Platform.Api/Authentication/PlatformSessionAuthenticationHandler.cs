@@ -55,6 +55,21 @@ public sealed class PlatformSessionAuthenticationHandler : AuthenticationHandler
             new(ClaimTypes.Name, info.Username),
             new(PlatformSessionDefaults.SessionIdClaimType, info.SessionId.ToString("D"))
         };
+        if (info.AccountProfileId is Guid accountProfileId)
+        {
+            claims.Add(new Claim(PlatformSessionClaimTypes.AccountProfileId, accountProfileId.ToString("D")));
+        }
+
+        if (!string.IsNullOrWhiteSpace(info.AccountClass))
+        {
+            claims.Add(new Claim(PlatformSessionClaimTypes.AccountClass, info.AccountClass));
+        }
+
+        if (!string.IsNullOrWhiteSpace(info.AllowedScope))
+        {
+            claims.Add(new Claim(PlatformSessionClaimTypes.AllowedScope, info.AllowedScope));
+        }
+
         if (info.SelectedOrganizationId is Guid organizationId)
         {
             claims.Add(new Claim(PlatformSessionClaimTypes.OrganizationId, organizationId.ToString("D")));

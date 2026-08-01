@@ -80,6 +80,8 @@ public sealed class UseCaseTests
 
         var session = PlatformAuthSession.Create(
             user.Id,
+            AccountProfileId.New(),
+            AccountClass.Platform,
             "hash-session",
             "stamp",
             T0,

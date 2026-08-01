@@ -121,6 +121,8 @@ internal sealed class PlatformAuthSessionRepository : IPlatformAuthSessionReposi
         PlatformAuthSession.Rehydrate(
             PlatformAuthSessionId.From(record.Id),
             PlatformUserId.From(record.UserId),
+            AccountProfileId.From(record.AccountProfileId),
+            Enum.Parse<AccountClass>(record.AccountClass, ignoreCase: true),
             record.TokenHash,
             record.SecurityStampAtIssue,
             record.CreatedAtUtc,
@@ -139,6 +141,8 @@ internal sealed class PlatformAuthSessionRepository : IPlatformAuthSessionReposi
         {
             Id = session.Id.Value,
             UserId = session.UserId.Value,
+            AccountProfileId = session.AccountProfileId.Value,
+            AccountClass = session.AccountClass.ToString(),
             TokenHash = session.TokenHash,
             SecurityStampAtIssue = session.SecurityStampAtIssue,
             CreatedAtUtc = session.CreatedAtUtc,
