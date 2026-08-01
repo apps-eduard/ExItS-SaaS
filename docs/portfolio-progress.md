@@ -11,12 +11,12 @@
 | Portfolio | ExITS SaaS |
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 14 — Production Deployment and Operations (**in progress**) |
-| Current work package | P14-WP03 — Reverse Proxy, TLS, and Network Hardening (**complete**) |
-| Overall status | **Phase 15 complete.** Phase 14 in progress through **P14-WP03** ([report](reports/P14-WP03-reverse-proxy-tls-network-hardening.md)). Live Preview hardening must not be rolled back ([report](reports/2026-08-01-admin-live-preview-hardening.md)). Production remains **Blocked** (TLS-PROD cutover evidence, MAUI-HTTPS device validation, R-109, R-129, …). Exact next: **P14-WP04** only when authorized. **Not production-ready.** |
-| Latest verified commit | `e0f45ae846d4a603e3d09a05ae06e7e314709bb6` |
+| Current phase | Phase 16 — Isolated Account Profiles, Personal Utang, and Business Upgrade (**in progress**) |
+| Current work package | P16-WP01 — Architecture and Domain Reconciliation (**complete**) |
+| Overall status | **Phase 16 authorized and in progress.** P16-WP01 complete ([report](reports/P16-WP01-architecture-and-domain-reconciliation.md)). Exact next: **P16-WP02**. Phase 15 complete. Phase 14 remains in progress through **P14-WP03** and was **not** closed or weakened by Phase 16. Live Preview hardening must not be rolled back. Production remains **Blocked**. **Not production-ready.** |
+| Latest verified commit | `FEATURE_COMMIT_PLACEHOLDER` |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
-| Last updated | 2026-08-01 |
+| Last updated | 2026-08-02 |
 
 ## Delivery sequence
 
@@ -122,6 +122,12 @@ P15-WP05 ✓ Subscriptions and Product Entitlements
 P15-WP06 ✓ Users, Roles, Permissions, and RBAC
         ↓
 P15-WP07 ✓ Closeout (Phase 15 complete)
+        ↓
+P16-WP01 ✓ Architecture and Domain Reconciliation
+        ↓
+P16-WP02 ○ Account Profiles and Session Isolation (next)
+        ↓
+P16-WP03…P16-WP10 ○ (authorized; do not skip ahead)
 ```
 
 ## Phase progress
@@ -144,6 +150,7 @@ P15-WP07 ✓ Closeout (Phase 15 complete)
 | 13 | Production Authentication and Identity | **Complete with documented residuals** | 9 | 9 | 100% | [Open](phases/phase-13-production-authentication-and-identity.md) |
 | 14 | Production Deployment and Operations | **In progress** | 3 | 7 | — | [Open](phases/phase-14-production-deployment-and-operations.md) |
 | 15 | Ant Design Platform Administration | **Complete** | 7 | 7 | 100% | [Open](phases/phase-15-ant-design-platform-admin.md) |
+| 16 | Isolated Account Profiles, Personal Utang, Business Upgrade | **In progress** | 1 | 10 | 10% | [Open](phases/phase-16-isolated-account-profiles-personal-utang-and-business-upgrade.md) |
 
 **MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
@@ -152,6 +159,22 @@ P15-WP07 ✓ Closeout (Phase 15 complete)
 **Phase 13 Production Authentication:** 9 / 9 = **100%** (R-091 closed for Phase 13 scope; residuals documented; not Production-ready).
 **Phase 14 Production Deployment:** 3 / 7 WPs complete (through P14-WP03 reverse-proxy/TLS template; Production blocked).
 **Phase 15 Ant Design Platform Admin:** 7 / 7 WPs complete (closeout [P15-WP07](reports/P15-WP07-phase-15-closeout.md); Fluent UI direction cancelled/superseded).
+**Phase 16 Account Profiles / Personal Utang:** 1 / 10 WPs complete (P16-WP01; Phase 14 unchanged).
+
+## Phase 16 work packages
+
+| WP | Status | Key commit |
+|---|---|---|
+| P16-WP01 — Architecture and Domain Reconciliation | Complete | `FEATURE_COMMIT_PLACEHOLDER` — [report](reports/P16-WP01-architecture-and-domain-reconciliation.md) |
+| P16-WP02 — Account Profiles and Session Isolation | Not started | — |
+| P16-WP03 — Organization Context and Navigation | Not started | — |
+| P16-WP04 — Personal Account Foundation | Not started | — |
+| P16-WP05 — Personal Utang Core | Not started | — |
+| P16-WP06 — Invitations, Linking, Reminders, Notifications | Not started | — |
+| P16-WP07 — Organization Staff and Customer Separation | Not started | — |
+| P16-WP08 — Start a Business and Utang Migration | Not started | — |
+| P16-WP09 — Product Access and Navigation Integration | Not started | — |
+| P16-WP10 — Security, Privacy, UX Hardening, and Closeout | Not started | — |
 
 ## Phase 15 work packages
 

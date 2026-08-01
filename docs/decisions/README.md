@@ -19,5 +19,10 @@
 | ADR-013 | Build new Platform foundation before HealthCare reconnection | **Accepted** — [Open](ADR-013-build-new-platform-before-healthcare-reconnection.md) |
 | ADR-014 | Approve ExItS portfolio architecture for controlled implementation | **Accepted** — [Open](ADR-014-approve-exits-portfolio-architecture-for-controlled-implementation.md) |
 | ADR-015 | Ant Design Blazor for Platform Admin (Pro as design reference) | **Accepted** — [Open](ADR-015-antdesign-blazor-platform-admin.md) |
+| ADR-016 | Account profile isolation (Platform / Personal / Organization) | **Accepted** — [Open](ADR-016-account-profile-isolation.md) |
+| ADR-017 | Scope-bound sessions and API family guards | **Accepted** — [Open](ADR-017-scope-bound-sessions.md) |
+| ADR-018 | Platform Support Session isolation | **Accepted** — [Open](ADR-018-platform-support-session-isolation.md) |
+| ADR-019 | Personal Utang versus Business Credit ownership | **Accepted** — [Open](ADR-019-personal-utang-versus-business-credit-ownership.md) |
+| ADR-020 | Personal Utang migration and provenance | **Accepted** — [Open](ADR-020-personal-utang-migration-and-provenance.md) |
 
 Cursor creates detailed ADR files only when the related phase validates the decision against the repository.
