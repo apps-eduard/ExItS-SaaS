@@ -4,7 +4,7 @@
 
 ## Status
 
-**Status:** **In progress.** **P14-WP01**–**P14-WP02** complete (including live-preview quick-login + DB-only local workflow). Exact next: **P14-WP03** when authorized. Portfolio remains **not Production-ready**.
+**Status:** **In progress.** **P14-WP01**–**P14-WP03** complete (packaging, live-preview, reverse-proxy/TLS templates). Exact next: **P14-WP04** when authorized. Portfolio remains **not Production-ready**.
 
 Authoritative docs:
 
@@ -20,7 +20,7 @@ Authoritative docs:
 | P14-WP02 — Production Packaging and Compose Baseline | **Complete** | [report](../reports/P14-WP02-production-packaging-and-compose-baseline.md) · `fa04ee2e9decd200b4dc1407f4f1b88f91f93afe` |
 | P14-WP02 Gap Fix — Separate Live Preview Stack | **Complete** | [report](../reports/P14-WP02-gap-fix-separate-live-preview-stack.md) · `16342195ff4999f7c0fc99fa15306fc3fa530074` |
 | P14-WP02A — Live Preview Test Users and Quick Login | **Complete** | [report](../reports/P14-WP02A-live-preview-test-users-and-quick-login.md) · `ffe12b1ffe73f8e202079c3ed76b7c1f39bd6e9d` |
-| P14-WP03 — Reverse Proxy, TLS, and Network Hardening | Not started | — |
+| P14-WP03 — Reverse Proxy, TLS, and Network Hardening | **Complete** | [report](../reports/P14-WP03-reverse-proxy-tls-network-hardening.md) |
 | P14-WP04 — Production Backup, Restore, and Ops Evidence | Not started | — |
 | P14-WP05 — Monitoring, Alerting, and Support Model | Not started | — |
 | P14-WP06 — Deployment Readiness Evaluator Alignment | Not started | — |
@@ -71,7 +71,7 @@ Unless a later WP explicitly authorizes:
 
 ### P14-WP03 — Reverse Proxy, TLS, and Network Hardening
 
-Production TLS evidence, proxy config, MAUI HTTPS-only Production policy alignment **when authorized**.
+**Complete.** Production nginx Compose template, constrained forwarded headers, CORS/secure-cookie alignment, Live Preview ports preserved. **Not Production-ready.**
 
 ### P14-WP04 — Production Backup, Restore, and Ops Evidence
 
@@ -97,6 +97,6 @@ Reconcile Phase 14; honest Production readiness disposition; exact next phase.
 - Tests pass; `main = origin/main`; working tree clean
 - Portfolio not falsely claimed Production-ready
 
-## Exact next after P14-WP02
+## Exact next after P14-WP03
 
-**P14-WP03 — Reverse Proxy, TLS, and Network Hardening** when explicitly authorized. Do **not** begin P14-WP03 from this page alone.
+**P14-WP04 — Production Backup, Restore, and Ops Evidence** when explicitly authorized. Do **not** begin P14-WP04 from this page alone.

@@ -66,7 +66,7 @@ Out of scope for this document: implementing Docker, TLS, monitoring, or changin
 | Health/readiness | APIs | Implemented | Not full monitoring |
 | Production config fail-closed | APIs (P9-WP01) | Implemented | Necessary not sufficient |
 | Production packaging Compose | Ops (P14-WP02) | Implemented local baseline | Not Production cutover; no TLS |
-| Production TLS validation | — | **Not evidenced** | TLS-PROD |
+| Production TLS validation | P14-WP03 template | **Partial** — nginx/Compose baseline; customer cutover **TLS-PROD** still open |
 | Central monitoring/alerting | — | **Not implemented** | Later WP |
 | CI/CD Production pipeline | — | **Not claimed** | Later WP if authorized |
 

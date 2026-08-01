@@ -2,7 +2,7 @@
 
 [Home](../index.md) | [Readiness audit](production-readiness-audit.md) | [Pilot architecture (non-production)](../operations/pilot-and-deployment/deployment-architecture.md) | [Product Foundation](../Product-Foundation/exits-product-foundation-reference.md) | [Auth architecture](authentication-architecture.md) | [Phase 14](../phases/phase-14-production-deployment-and-operations.md) | [P14-WP01 report](../reports/P14-WP01-deployment-architecture-and-production-readiness-audit.md)
 
-**Status:** Authoritative **production** deployment direction (**P14-WP01**). Packaging baseline for local Compose testing delivered in **P14-WP02** (`deploy/docker/compose.yaml`) — **not** a Production cutover. TLS/proxy remain **P14-WP03**.
+**Status:** Authoritative **production** deployment direction (**P14-WP01**). Packaging baseline for local Compose testing delivered in **P14-WP02** (`deploy/docker/compose.yaml`). Reverse-proxy/TLS/network template delivered in **P14-WP03** (`compose.production.yaml` + `nginx/production.conf`) — **not** a Production cutover or readiness claim.
 
 **Relationship to pilot:** [`docs/operations/pilot-and-deployment/`](../operations/pilot-and-deployment/) and `deploy/docker/docker-compose.pilot.yml` remain **non-production** (P9-WP05). Default `compose.yaml` is the P14-WP02 packaging baseline for local testing.
 
@@ -74,6 +74,7 @@ Authentication SoR remains Platform (**D-P13-02**). Deployment does not grant me
 |---|---|---|
 | Pilot packaging | `deploy/docker/docker-compose.pilot.yml`, nginx `pilot.conf` | **Non-production only** |
 | Packaging baseline | `deploy/docker/compose.yaml` (P14-WP02) | Local Compose testing; **not** Production cutover |
+| Production proxy/TLS template | `deploy/docker/compose.production.yaml`, `nginx/production.conf` (P14-WP03) | Topology baseline; operator certs required; **not** Production-ready claim |
 | Live preview (personal) | `deploy/docker/compose.live-preview.yaml` (`exits-live-preview`) | **Default:** Docker DBs only (ports 15533/15534); local Platform/POS/Admin via `Start-LivePreviewLocal.ps1`. Optional `--profile apps` for containerized APIs/Admin. **Not** Production; **not** packaging |
 | Ops scripts | `ops/deploy/*`, `ops/backup/*` | Pilot/ops helpers; Production cutover **not** evidenced |
 | Deployment library | `ExItS.Deployment` + CLI | Validation, backup gate, migration order, readiness evaluator |
@@ -111,13 +112,17 @@ Authentication SoR remains Platform (**D-P13-02**). Deployment does not grant me
 
 ---
 
-## 7. TLS and network (direction)
+## 7. TLS and network (P14-WP03 baseline)
 
 | Layer | Production direction |
 |---|---|
-| Reverse proxy | HTTPS with real certificates; HSTS as ops policy |
-| Platform Admin BaseUrl / PlatformAuth BaseUrl | HTTPS in Production (guards already exist in apps) |
-| MAUI | HTTPS-only Production network policy (**MAUI-HTTPS** still open) |
+| Reverse proxy | nginx HTTPS with operator-supplied certificates; HSTS on HTTPS listener |
+| Forwarded headers | Enabled only with explicit KnownNetworks/KnownProxies — no trust-all |
+| Platform Admin BaseUrl / PlatformAuth BaseUrl | HTTPS in Production |
+| MAUI | HTTPS-only Production BaseUrl validation in ApiClient; **MAUI-HTTPS** device evidence still open |
+| Public ports | Reverse proxy 80/443 only in production Compose template |
+
+Open release items: **TLS-PROD** (customer cutover evidence), **MAUI-HTTPS** (device/emulator cert validation). See readiness audit.
 | Pilot TLS | Operator-supplied cert dir for StagingPilot — **not** Production TLS evidence |
 
 Open release items: **TLS-PROD**, **MAUI-HTTPS** (see readiness audit).
@@ -158,4 +163,4 @@ Later Phase 14 WPs may add monitoring agents/runbooks **when authorized** — no
 
 ## 11. Recommended next work package
 
-**P14-WP03 — Reverse Proxy, TLS, and Network Hardening** when explicitly authorized.
+**P14-WP04 — Production Backup, Restore, and Ops Evidence** when explicitly authorized.

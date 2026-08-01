@@ -11,10 +11,10 @@
 | Portfolio | ExITS SaaS |
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 15 — Ant Design Platform Administration (**complete**) |
-| Current work package | P15-WP07 — Audit, Authorization, UX Hardening, and Phase Closeout (**complete**) |
-| Overall status | **Phase 15 complete.** P15-WP01–WP07 complete ([closeout](reports/P15-WP07-phase-15-closeout.md)). Live Preview hardening must not be rolled back ([report](reports/2026-08-01-admin-live-preview-hardening.md)). Fluent UI Admin direction cancelled/superseded. Phase 14 Production remains **Blocked** pending P14-WP03+. Exact next: **P14-WP03** only when authorized. **Not production-ready.** |
-| Latest verified commit | `3e533f143b3dda73045d6a8b988417003e0f6424` |
+| Current phase | Phase 14 — Production Deployment and Operations (**in progress**) |
+| Current work package | P14-WP03 — Reverse Proxy, TLS, and Network Hardening (**complete**) |
+| Overall status | **Phase 15 complete.** Phase 14 in progress through **P14-WP03** ([report](reports/P14-WP03-reverse-proxy-tls-network-hardening.md)). Live Preview hardening must not be rolled back ([report](reports/2026-08-01-admin-live-preview-hardening.md)). Production remains **Blocked** (TLS-PROD cutover evidence, MAUI-HTTPS device validation, R-109, R-129, …). Exact next: **P14-WP04** only when authorized. **Not production-ready.** |
+| Latest verified commit | _(set on tip commit)_ |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-08-01 |
 
@@ -105,7 +105,9 @@ P14-WP02 ✓ Gap Fix — Separate Live Preview Stack
         ↓
 P14-WP02A ✓ Live Preview Test Users and Quick Login
         ↓
-P14-WP03 ○ Reverse Proxy, TLS, and Network Hardening (do not begin until authorized)
+P14-WP03 ✓ Reverse Proxy, TLS, and Network Hardening
+        ↓
+P14-WP04 ○ Backup, Restore, and Ops Evidence (do not begin until authorized)
         ↓
 P15-WP01 ✓ Ant Design Admin Foundation
         ↓
@@ -140,7 +142,7 @@ P15-WP07 ✓ Closeout (Phase 15 complete)
 | 11 | Web UI and Reporting Design System | **Complete with documented risks** | 8 | 8 | 100% | [Open](phases/phase-11-web-ui-reporting-design-system.md) |
 | 12 | Reusable SaaS Product Foundation and Bootstrap | **Complete with documented open decisions** | 7 | 7 | 100% | [Open](phases/phase-12-product-foundation-and-bootstrap.md) |
 | 13 | Production Authentication and Identity | **Complete with documented residuals** | 9 | 9 | 100% | [Open](phases/phase-13-production-authentication-and-identity.md) |
-| 14 | Production Deployment and Operations | **In progress** | 2 | 7 | — | [Open](phases/phase-14-production-deployment-and-operations.md) |
+| 14 | Production Deployment and Operations | **In progress** | 3 | 7 | — | [Open](phases/phase-14-production-deployment-and-operations.md) |
 | 15 | Ant Design Platform Administration | **Complete** | 7 | 7 | 100% | [Open](phases/phase-15-ant-design-platform-admin.md) |
 
 **MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
@@ -148,7 +150,7 @@ P15-WP07 ✓ Closeout (Phase 15 complete)
 **Phase 11 Web UI / Reporting Design System:** 8 / 8 = **100%** (with documented risks; not Production-ready; no formal WCAG certification).
 **Phase 12 Product Foundation:** 7 / 7 = **100%** (with documented open decisions; not Production-ready; no real product scaffold).
 **Phase 13 Production Authentication:** 9 / 9 = **100%** (R-091 closed for Phase 13 scope; residuals documented; not Production-ready).
-**Phase 14 Production Deployment:** 2 / 7 WPs complete (architecture/audit + packaging Compose baseline + live-preview gap fix; Production blocked).
+**Phase 14 Production Deployment:** 3 / 7 WPs complete (through P14-WP03 reverse-proxy/TLS template; Production blocked).
 **Phase 15 Ant Design Platform Admin:** 7 / 7 WPs complete (closeout [P15-WP07](reports/P15-WP07-phase-15-closeout.md); Fluent UI direction cancelled/superseded).
 
 ## Phase 15 work packages
@@ -185,6 +187,11 @@ P15-WP07 ✓ Closeout (Phase 15 complete)
 | P14-WP02 — Production Packaging and Compose Baseline | Complete | `fa04ee2e9decd200b4dc1407f4f1b88f91f93afe` |
 | P14-WP02 Gap Fix — Separate Live Preview Stack | Complete | `16342195ff4999f7c0fc99fa15306fc3fa530074` |
 | P14-WP02A — Live Preview Test Users and Quick Login | Complete | `ffe12b1ffe73f8e202079c3ed76b7c1f39bd6e9d` |
+| P14-WP03 — Reverse Proxy, TLS, and Network Hardening | Complete | `a015d0afad0ab20c4a2a9f019615970c82b3f3d6` — [report](reports/P14-WP03-reverse-proxy-tls-network-hardening.md) |
+| P14-WP04 — Production Backup, Restore, and Ops Evidence | Not started | — |
+| P14-WP05 — Monitoring, Alerting, and Support Model | Not started | — |
+| P14-WP06 — Deployment Readiness Evaluator Alignment | Not started | — |
+| P14-WP07 — Phase 14 Closeout | Not started | — |
 
 ## Phase 12 work packages
 
@@ -237,4 +244,4 @@ P15-WP07 ✓ Closeout (Phase 15 complete)
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P14-WP03** until explicitly authorized. Platform Admin UI direction is **Ant Design Blazor (ADR-015)**; Fluent UI Admin work is cancelled. Phase 15 is complete.
+Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P14-WP04** until explicitly authorized. Platform Admin UI direction is **Ant Design Blazor (ADR-015)**; Fluent UI Admin work is cancelled. Phase 15 is complete.
