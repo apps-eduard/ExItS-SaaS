@@ -4,7 +4,7 @@
 
 ## Status
 
-**Complete.** Starting tip `142fc645df971ea48d9f5b8deac4ea4bfd08e618`. Feature tip `77f4030fa6110a20f854d0e146132aad0ec5e31c` (admin `8b7c1c50d156c01dc9338beab0d2b667d188fc12`, tests `9f89b6a480604422757121b6f814c6c6f90bfd08`). Phase 15 closed. P14-WP03 not started. Application remains **not production-ready**.
+**Complete.** Starting tip `142fc645df971ea48d9f5b8deac4ea4bfd08e618`. Final tip `3e533f143b3dda73045d6a8b988417003e0f6424` (feature `77f4030fa6110a20f854d0e146132aad0ec5e31c`). Phase 15 closed. P14-WP03 not started. Application remains **not production-ready**.
 
 ## Authorization review
 

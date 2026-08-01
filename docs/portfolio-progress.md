@@ -14,7 +14,7 @@
 | Current phase | Phase 15 — Ant Design Platform Administration (**complete**) |
 | Current work package | P15-WP07 — Audit, Authorization, UX Hardening, and Phase Closeout (**complete**) |
 | Overall status | **Phase 15 complete.** P15-WP01–WP07 complete ([closeout](reports/P15-WP07-phase-15-closeout.md)). Live Preview hardening must not be rolled back ([report](reports/2026-08-01-admin-live-preview-hardening.md)). Fluent UI Admin direction cancelled/superseded. Phase 14 Production remains **Blocked** pending P14-WP03+. Exact next: **P14-WP03** only when authorized. **Not production-ready.** |
-| Latest verified commit | `9f89b6a480604422757121b6f814c6c6f90bfd08` |
+| Latest verified commit | `3e533f143b3dda73045d6a8b988417003e0f6424` |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-08-01 |
 
@@ -161,7 +161,7 @@ P15-WP07 ✓ Closeout (Phase 15 complete)
 | P15-WP04 — Product Catalog and Plan CRUD | Complete | `d0e2ad3bd211607b59e16278fbb94e4fc73589f3` — [report](reports/P15-WP04-product-catalog-and-plan-crud.md) |
 | P15-WP05 — Subscriptions and Product Entitlements | Complete | `8f664c80eea267a5b538e7424668ba4e1af0e247` — [report](reports/P15-WP05-subscriptions-and-entitlements.md) |
 | P15-WP06 — Users, Roles, Permissions, and RBAC | Complete | `2b9657bbb4c0e597c2098ef1a2fa5bb1e630ba52` — [report](reports/P15-WP06-users-roles-permissions-rbac.md) |
-| P15-WP07 — Closeout | Complete | `77f4030` — [report](reports/P15-WP07-phase-15-closeout.md) |
+| P15-WP07 — Closeout | Complete | `77f4030fa6110a20f854d0e146132aad0ec5e31c` — [report](reports/P15-WP07-phase-15-closeout.md) |
 
 ## Phase 13 work packages
 
