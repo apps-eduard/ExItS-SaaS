@@ -4,7 +4,7 @@
 
 ## Status
 
-**P15-WP01–WP04 complete.** Prior Fluent UI Phase 15 direction is **cancelled and superseded** (never pushed; working tree discarded at `e6d0185`). See [WP01](../reports/P15-WP01-antdesign-admin-foundation.md), [WP02](../reports/P15-WP02-users-and-organization-memberships.md), [WP03](../reports/P15-WP03-organization-lifecycle.md), [WP04](../reports/P15-WP04-product-catalog-and-plan-crud.md).
+**P15-WP01–WP05 complete.** Prior Fluent UI Phase 15 direction is **cancelled and superseded** (never pushed; working tree discarded at `e6d0185`). See [WP01](../reports/P15-WP01-antdesign-admin-foundation.md), [WP02](../reports/P15-WP02-users-and-organization-memberships.md), [WP03](../reports/P15-WP03-organization-lifecycle.md), [WP04](../reports/P15-WP04-product-catalog-and-plan-crud.md), [WP05](../reports/P15-WP05-subscriptions-and-entitlements.md).
 
 ## Goal
 
@@ -18,8 +18,8 @@ Rebuild Platform Admin on **Ant Design Blazor** (`AntDesign`), using [Ant Design
 | P15-WP02 | Users and Organization Memberships | **Complete** — [report](../reports/P15-WP02-users-and-organization-memberships.md) |
 | P15-WP03 | Organization Lifecycle | **Complete** — [report](../reports/P15-WP03-organization-lifecycle.md) |
 | P15-WP04 | Product Catalog and Plan CRUD | **Complete** — [report](../reports/P15-WP04-product-catalog-and-plan-crud.md) |
-| P15-WP05 | Subscriptions | Blocked until authorized |
-| P15-WP06 | Authorization, Audit, and UX Hardening | Blocked |
+| P15-WP05 | Subscriptions and Product Entitlements | **Complete** — [report](../reports/P15-WP05-subscriptions-and-entitlements.md) |
+| P15-WP06 | Authorization, Audit, and UX Hardening | Blocked until authorized |
 | P15-WP07 | Closeout | Blocked |
 
 ## Cancelled direction
