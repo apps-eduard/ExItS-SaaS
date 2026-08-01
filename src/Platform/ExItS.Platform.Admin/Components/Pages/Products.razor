@@ -1,303 +1,466 @@
 @page "/admin/products"
 @page "/admin/products/{Id:guid}"
+@using AntDesign
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 @inject IPlatformApiClient Api
+@inject IMessageService Message
 @inject IStringLocalizer<AdminResources> L
+@inject NavigationManager Nav
+@inject PlatformPermissionState Permissions
 
 @if (Id is null)
 {
-    <ReportPageShell>
-        <ReportHeader Title="@L["Products_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Products"]}")" Description="@L["Products_Description"]" />
-        <ReportSection Title="@L["Products_Title"]">
-            <ReportDataPanel IsLoading="@(_list is null)"
-                            HasError="@(_list is { IsSuccess: false })"
-                            IsEmpty="@(_list is { IsSuccess: true, Data.Items.Count: 0 })"
-                            LoadingMessage="@L["Products_Loading"]"
-                            EmptyMessage="@L["Products_Empty"]"
-                            ErrorTitle="@(_list?.Error?.Title ?? L["Common_Error"])"
-                            ErrorDetail="@_list?.Error?.Detail"
-                            ErrorCorrelationId="@_list?.Error?.CorrelationId"
-                            ErrorUnavailable="@(_list?.Status == ApiCallStatus.Unavailable)">
-                <ReportTable TItem="ProductDto"
-                             Items="_list!.Data!.Items"
-                             Columns="_productColumns"
-                             Caption="@L["Products_Title"]"
-                             ItemKey="p => p.Id"
-                             CellTemplate="ProductCell" />
-                <AdminPagination Page="_list!.Data!.Page"
-                                 PageSize="_list.Data.PageSize"
-                                 TotalCount="_list.Data.TotalCount"
-                                 PageChanged="OnProductPageAsync" />
-            </ReportDataPanel>
-        </ReportSection>
-    </ReportPageShell>
+    <PageHeader Class="exits-page-header" Title="@L["Products_Title"]" SubTitle="@L["Products_Description"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_Products"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+        <PageHeaderExtra>
+            @if (CanManage)
+            {
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ToggleCreate">
+                    @(_showCreate ? L["Products_HideCreate"] : L["Products_Create"])
+                </Button>
+            }
+        </PageHeaderExtra>
+    </PageHeader>
+
+    <Space Style="margin-bottom:12px; width:100%;" Wrap>
+        <Input @bind-Value="_search" Size="@InputSize.Small" Placeholder="@L["Products_SearchPlaceholder"]" Style="width:220px;" OnPressEnter="ApplyFiltersAsync" />
+        <Select TItemValue="string"
+                TItem="string"
+                @bind-Value="_status"
+                Size="@InputSize.Small"
+                Placeholder="@L["Common_Status"]"
+                Style="width:140px;"
+                AllowClear>
+            <SelectOptions>
+                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Active")" Label="@L["Status_Active"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Inactive")" Label="@L["Status_Inactive"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Retired")" Label="@L["Status_Retired"]" />
+            </SelectOptions>
+        </Select>
+        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ApplyFiltersAsync">@L["Common_Apply"]</Button>
+        <Button Size="@ButtonSize.Small" OnClick="ClearFiltersAsync">@L["Common_Reset"]</Button>
+    </Space>
+
+    @if (_showCreate && CanManage)
+    {
+        <Card Size="@CardSize.Small" Title="@L["Products_CreateSection"]" Style="margin-bottom:12px;">
+            <FormValidationSummary Title="@L["Products_CreateFailed"]" Message="@_formError" IsConflict="_formConflict" />
+            <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                <div>
+                    <label class="ant-form-item-label" for="product-create-code">@L["Common_Code"]</label>
+                    <Input Id="product-create-code" @bind-Value="_newCode" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="product-create-displayname">@L["Common_DisplayName"]</label>
+                    <Input Id="product-create-displayname" @bind-Value="_newDisplayName" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <Space>
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">@L["Common_Create"]</Button>
+                    <Button Size="@ButtonSize.Small" OnClick="HideCreate" Disabled="_busy">@L["Common_Cancel"]</Button>
+                </Space>
+            </Space>
+        </Card>
+    }
+
+    @if (_list is { IsSuccess: false })
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail" />
+    }
+    else if (_list is { IsSuccess: true, Data.Items.Count: 0 })
+    {
+        <Empty Description="@L["Products_Empty"].Value" />
+    }
+    else
+    {
+        <Table TItem="ProductDto"
+               DataSource="@(_list?.Data?.Items ?? Array.Empty<ProductDto>())"
+               Total="@(_list?.Data?.TotalCount ?? 0)"
+               @bind-PageIndex="_page"
+               PageSize="@(_list?.Data?.PageSize ?? 20)"
+               Loading="@(_list is null)"
+               Size="@TableSize.Small"
+               Bordered
+               RemoteDataSource
+               OnPageIndexChange="OnPageChangedAsync"
+               ScrollX="960">
+            <PropertyColumn Property="c => c.Code" Title="@L["Common_Code"]" Sortable>
+                <a href="/admin/products/@context.Id">@context.Code</a>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_DisplayName"]" Sortable />
+            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable>
+                <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Format="u" Sortable />
+            <ActionColumn Title="@L["Common_Open"]" Width="88">
+                <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/products/{context.Id}")">@L["Common_Open"]</a>
+            </ActionColumn>
+        </Table>
+    }
 }
 else
 {
-    <AdminPageHeader Title="@L["Products_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Products"]} / {L["Common_Detail"]}")" Description="@L["Products_DetailDescription"]" />
-    <AdminDataPanel IsLoading="@(_overview is null)"
-                    HasError="@(_overview is { IsSuccess: false })"
-                    LoadingMessage="@L["Products_DetailLoading"]"
-                    ErrorTitle="@(_overview?.Error?.Title ?? L["Common_Error"])"
-                    ErrorDetail="@_overview?.Error?.Detail"
-                    ErrorCorrelationId="@_overview?.Error?.CorrelationId"
-                    ErrorUnavailable="@(_overview?.Status == ApiCallStatus.Unavailable)">
-        @{
-            var o = _overview!.Data!;
-        }
-        <KeyValueList>
-            <dt>@L["Common_Code"]</dt><dd>@o.Product.Code</dd>
-            <dt>@L["Common_DisplayName"]</dt><dd>@o.Product.DisplayName</dd>
-            <dt>@L["Common_Status"]</dt><dd><StatusBadge Value="@o.Product.Status" /></dd>
-            <dt>@L["Common_CreatedUtc"]</dt><dd><UtcTimestamp Value="@o.Product.CreatedAtUtc" /></dd>
-            <dt>@L["Common_UpdatedUtc"]</dt><dd><UtcTimestamp Value="@o.Product.UpdatedAtUtc" /></dd>
-            <dt>@L["Products_FeatureCount"]</dt><dd><QuantityDisplay Value="@o.Features.Count" Decimals="0" /></dd>
-            <dt>@L["Products_PlanCount"]</dt><dd><QuantityDisplay Value="@o.Plans.Count" Decimals="0" /></dd>
-        </KeyValueList>
-
-        <DetailSection Title="@L["Products_FeatureDefinitions"]">
-            @if (o.Features.Count == 0) { <EmptyState Message="@L["Products_FeatureDefinitionsEmpty"]" /> }
-            else
+    <PageHeader Class="exits-page-header" Title="@(_product?.Data?.DisplayName ?? L["Products_DetailTitle"])" SubTitle="@L["Products_DetailDescription"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem Href="/admin/products">@L["Nav_Products"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Common_Detail"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+        <PageHeaderExtra>
+            @if (_product?.IsSuccess == true && CanManage)
             {
-                <AdminDataTable TItem="FeatureDefinitionDto"
-                                Items="o.Features"
-                                Columns="_featureColumns"
-                                Caption="@L["Products_FeatureDefinitions"]"
-                                ItemKey="f => f.FeatureCode"
-                                CellTemplate="FeatureCell" />
+                var p = _product.Data!;
+                <Space>
+                    @if (p.Status == "Active")
+                    {
+                        <Popconfirm Title="@L["Products_ConfirmDeactivate"]" OnConfirm="DeactivateAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                            <Button Size="@ButtonSize.Small" Loading="_busy">@L["Products_Deactivate"]</Button>
+                        </Popconfirm>
+                        <Popconfirm Title="@L["Products_ConfirmRetire"]" OnConfirm="RetireAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                            <Button Size="@ButtonSize.Small" Danger Loading="_busy">@L["Products_Retire"]</Button>
+                        </Popconfirm>
+                    }
+                    else if (p.Status == "Inactive")
+                    {
+                        <Popconfirm Title="@L["Products_ConfirmActivate"]" OnConfirm="ActivateAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                            <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy">@L["Products_Activate"]</Button>
+                        </Popconfirm>
+                        <Popconfirm Title="@L["Products_ConfirmRetire"]" OnConfirm="RetireAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                            <Button Size="@ButtonSize.Small" Danger Loading="_busy">@L["Products_Retire"]</Button>
+                        </Popconfirm>
+                    }
+                </Space>
             }
-        </DetailSection>
+        </PageHeaderExtra>
+    </PageHeader>
 
-        <DetailSection Title="@L["Products_Plans"]">
-            @if (o.Plans.Count == 0) { <EmptyState Message="@L["Products_PlansEmpty"]" /> }
-            else
-            {
-                <AdminDataTable TItem="PlanDto"
-                                Items="o.Plans"
-                                Columns="_planColumns"
-                                Caption="@L["Products_Plans"]"
-                                ItemKey="p => p.Id"
-                                CellTemplate="PlanCell" />
-            }
-        </DetailSection>
+    @if (_overview is null)
+    {
+        <div style="padding:2rem;text-align:center;"><Spin Tip="@L["Products_DetailLoading"]" /></div>
+    }
+    else if (!_overview.IsSuccess)
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_overview.Error?.Title ?? L["Common_Error"])" SubTitle="@_overview.Error?.Detail" />
+    }
+    else
+    {
+        var o = _overview.Data!;
+        var p = o.Product;
 
-        <DetailSection Title="@L["Products_PublishedPlanVersions"]">
-            @if (o.PublishedPlanVersions.Count == 0) { <EmptyState Message="@L["Products_PublishedPlanVersionsEmpty"]" /> }
-            else
-            {
-                <AdminDataTable TItem="PlanVersionDto"
-                                Items="o.PublishedPlanVersions"
-                                Columns="_versionColumns"
-                                Caption="@L["Products_PublishedPlanVersions"]"
-                                ItemKey="v => v.Id"
-                                CellTemplate="VersionCell" />
-            }
-        </DetailSection>
+        <Tabs>
+            <TabPane Key="overview" Tab="@L["Products_TabOverview"]">
+                <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
+                    <DescriptionsItem Title="@L["Common_Code"]">@p.Code</DescriptionsItem>
+                    <DescriptionsItem Title="@L["Common_Status"]">
+                        <Tag Color="@StatusColor(p.Status)">@p.Status</Tag>
+                    </DescriptionsItem>
+                    <DescriptionsItem Title="@L["Products_FeatureCount"]">@o.Features.Count</DescriptionsItem>
+                    <DescriptionsItem Title="@L["Products_PlanCount"]">@o.Plans.Count</DescriptionsItem>
+                    <DescriptionsItem Title="@L["Common_CreatedUtc"]"><UtcTimestamp Value="@p.CreatedAtUtc" /></DescriptionsItem>
+                    <DescriptionsItem Title="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@p.UpdatedAtUtc" /></DescriptionsItem>
+                </Descriptions>
 
-        <DetailSection Title="@L["Products_TrialDefinitions"]">
-            @if (o.Trials.Count == 0) { <EmptyState Message="@L["Products_TrialDefinitionsEmpty"]" /> }
-            else
-            {
-                <AdminDataTable TItem="TrialDefinitionDto"
-                                Items="o.Trials"
-                                Columns="_trialColumns"
-                                Caption="@L["Products_TrialDefinitions"]"
-                                ItemKey="t => t.Id"
-                                CellTemplate="TrialCell" />
-            }
-        </DetailSection>
-    </AdminDataPanel>
+                @if (CanManage && p.Status != "Retired")
+                {
+                    <Card Size="@CardSize.Small" Title="@L["Products_Rename"]">
+                        <FormValidationSummary Title="@L["Products_SaveFailed"]" Message="@_formError" IsConflict="_formConflict" />
+                        <Space Direction="SpaceDirection.Vertical" Style="width:100%; max-width:480px;">
+                            <div>
+                                <label class="ant-form-item-label" for="product-edit-displayname">@L["Common_DisplayName"]</label>
+                                <Input Id="product-edit-displayname" @bind-Value="_editDisplayName" Size="@InputSize.Small" Disabled="_busy" />
+                            </div>
+                            <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveRenameAsync">@L["Common_Save"]</Button>
+                        </Space>
+                    </Card>
+                }
+                else
+                {
+                    <Descriptions Size="@DescriptionsSize.Small" Column="1">
+                        <DescriptionsItem Title="@L["Common_DisplayName"]">@p.DisplayName</DescriptionsItem>
+                    </Descriptions>
+                }
+            </TabPane>
+
+            <TabPane Key="plans" Tab="@L["Products_TabPlans"]">
+                @if (o.Plans.Count == 0)
+                {
+                    <Empty Description="@L["Products_PlansEmpty"].Value" />
+                }
+                else
+                {
+                    <Table TItem="PlanDto" DataSource="o.Plans" Size="@TableSize.Small" HidePagination Bordered>
+                        <PropertyColumn Property="c => c.Code" Title="@L["Common_Code"]">
+                            <a href="/admin/plans/@context.Id">@context.Code</a>
+                        </PropertyColumn>
+                        <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_DisplayName"]" />
+                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                            <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                        </PropertyColumn>
+                        <ActionColumn Title="@L["Common_Open"]">
+                            <a href="/admin/plans/@context.Id">@L["Common_Open"]</a>
+                        </ActionColumn>
+                    </Table>
+                }
+            </TabPane>
+
+            <TabPane Key="features" Tab="@L["Products_TabFeatures"]">
+                @if (o.Features.Count == 0)
+                {
+                    <Empty Description="@L["Products_FeatureDefinitionsEmpty"].Value" />
+                }
+                else
+                {
+                    <Table TItem="FeatureDefinitionDto" DataSource="o.Features" Size="@TableSize.Small" HidePagination Bordered>
+                        <PropertyColumn Property="c => c.FeatureCode" Title="@L["Common_Code"]" />
+                        <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Name"]" />
+                        <PropertyColumn Property="c => c.ValueType" Title="@L["Common_Type"]" />
+                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                            <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                        </PropertyColumn>
+                    </Table>
+                }
+            </TabPane>
+
+            <TabPane Key="versions" Tab="@L["Products_TabVersions"]">
+                @if (o.PublishedPlanVersions.Count == 0)
+                {
+                    <Empty Description="@L["Products_PublishedPlanVersionsEmpty"].Value" />
+                }
+                else
+                {
+                    <Table TItem="PlanVersionDto" DataSource="o.PublishedPlanVersions" Size="@TableSize.Small" HidePagination Bordered>
+                        <PropertyColumn Property="c => c.PlanId" Title="@L["Common_Plan"]" />
+                        <PropertyColumn Property="c => c.VersionNumber" Title="@L["Common_Version"]" />
+                        <PropertyColumn Property="c => c.BillingPeriod" Title="@L["Products_Column_Billing"]" />
+                        <PropertyColumn Property="c => c.TrialEligible" Title="@L["Products_Column_TrialEligible"]" />
+                        <PropertyColumn Property="c => c.Grants" Title="@L["Common_Grants"]">
+                            @context.Grants.Count
+                        </PropertyColumn>
+                    </Table>
+                }
+            </TabPane>
+
+            <TabPane Key="trials" Tab="@L["Products_TabTrials"]">
+                @if (o.Trials.Count == 0)
+                {
+                    <Empty Description="@L["Products_TrialDefinitionsEmpty"].Value" />
+                }
+                else
+                {
+                    <Table TItem="TrialDefinitionDto" DataSource="o.Trials" Size="@TableSize.Small" HidePagination Bordered>
+                        <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Name"]" />
+                        <PropertyColumn Property="c => c.DurationIso" Title="@L["Common_Duration"]" />
+                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                            <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                        </PropertyColumn>
+                        <PropertyColumn Property="c => c.FeatureGrants" Title="@L["Common_Grants"]">
+                            @context.FeatureGrants.Count
+                        </PropertyColumn>
+                    </Table>
+                }
+            </TabPane>
+
+            <TabPane Key="audit" Tab="@L["Products_TabAudit"]">
+                <Paragraph Type="@TextElementType.Secondary">@L["Products_AuditHint"]</Paragraph>
+                <a class="ant-btn ant-btn-link ant-btn-sm" href="/admin/audit">@L["Products_OpenAudit"]</a>
+            </TabPane>
+        </Tabs>
+    }
 }
 
 @code {
     [Parameter] public Guid? Id { get; set; }
 
     private ApiCallResult<PagedResult<ProductDto>>? _list;
+    private ApiCallResult<ProductDto>? _product;
     private ApiCallResult<ProductOverviewDto>? _overview;
     private int _page = 1;
+    private string _search = "";
+    private string _status = "";
+    private bool _showCreate;
+    private string _newCode = "";
+    private string _newDisplayName = "";
+    private string _editDisplayName = "";
+    private DateTimeOffset? _expectedUpdatedAt;
+    private string? _formError;
+    private bool _formConflict;
+    private bool _busy;
 
-    private List<AdminColumnDefinition> _productColumns = new();
-    private List<AdminColumnDefinition> _featureColumns = new();
-    private List<AdminColumnDefinition> _planColumns = new();
-    private List<AdminColumnDefinition> _versionColumns = new();
-    private List<AdminColumnDefinition> _trialColumns = new();
-
-    protected override void OnInitialized()
-    {
-        _productColumns =
-        [
-            new("code", L["Common_Code"], Primary: true),
-            new("name", L["Common_DisplayName"]),
-            new("status", L["Common_Status"]),
-            new("updated", L["Common_UpdatedUtc"])
-        ];
-        _featureColumns =
-        [
-            new("code", L["Common_Code"], Primary: true),
-            new("name", L["Common_Name"]),
-            new("type", L["Common_Type"]),
-            new("status", L["Common_Status"])
-        ];
-        _planColumns =
-        [
-            new("code", L["Common_Code"], Primary: true),
-            new("name", L["Common_Name"]),
-            new("status", L["Common_Status"])
-        ];
-        _versionColumns =
-        [
-            new("plan", L["Common_Plan"], Primary: true),
-            new("version", L["Common_Version"]),
-            new("billing", L["Products_Column_Billing"]),
-            new("trial", L["Products_Column_TrialEligible"]),
-            new("grants", L["Common_Grants"], Numeric: true)
-        ];
-        _trialColumns =
-        [
-            new("name", L["Common_Name"], Primary: true),
-            new("duration", L["Common_Duration"]),
-            new("status", L["Common_Status"]),
-            new("grants", L["Common_Grants"], Numeric: true)
-        ];
-    }
+    private bool CanManage => Permissions.HasPermission(PlatformPermissionCodes.ManageCatalog);
 
     protected override async Task OnParametersSetAsync()
     {
+        _formError = null;
+        _formConflict = false;
         if (Id is null)
         {
             await LoadProductsAsync();
-            return;
         }
-
-        var product = await Api.GetProductAsync(Id.Value);
-        if (!product.IsSuccess || product.Data is null)
+        else
         {
-            _overview = ApiCallResult<ProductOverviewDto>.NotFound(product.Error ?? new PlatformApiException(System.Net.HttpStatusCode.NotFound, "Not found", "Product was not found."));
-            return;
+            await LoadDetailAsync();
         }
-
-        _overview = await Api.GetProductOverviewAsync(product.Data.Code);
     }
 
     private async Task LoadProductsAsync() =>
-        _list = await Api.GetProductsAsync(page: _page);
+        _list = await Api.GetProductsAsync(
+            page: _page,
+            status: string.IsNullOrWhiteSpace(_status) ? null : _status,
+            search: string.IsNullOrWhiteSpace(_search) ? null : _search);
 
-    private async Task OnProductPageAsync(int page)
+    private async Task ApplyFiltersAsync()
     {
-        _page = page;
+        _page = 1;
         await LoadProductsAsync();
     }
 
-    private RenderFragment<(ProductDto Item, AdminColumnDefinition Column)> ProductCell => ctx => __builder =>
+    private async Task ClearFiltersAsync()
     {
-        switch (ctx.Column.Key)
-        {
-            case "code":
-                __builder.OpenElement(0, "a");
-                __builder.AddAttribute(1, "href", $"/admin/products/{ctx.Item.Id}");
-                __builder.AddContent(2, ctx.Item.Code);
-                __builder.CloseElement();
-                break;
-            case "name":
-                __builder.AddContent(0, ctx.Item.DisplayName);
-                break;
-            case "status":
-                __builder.OpenComponent<StatusBadge>(0);
-                __builder.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
-                __builder.CloseComponent();
-                break;
-            case "updated":
-                __builder.OpenComponent<UtcTimestamp>(0);
-                __builder.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.UpdatedAtUtc);
-                __builder.CloseComponent();
-                break;
-        }
-    };
+        _search = "";
+        _status = "";
+        _page = 1;
+        await LoadProductsAsync();
+    }
 
-    private RenderFragment<(FeatureDefinitionDto Item, AdminColumnDefinition Column)> FeatureCell => ctx => __builder =>
+    private async Task OnPageChangedAsync(PaginationEventArgs args)
     {
-        switch (ctx.Column.Key)
-        {
-            case "code":
-                __builder.AddContent(0, ctx.Item.FeatureCode);
-                break;
-            case "name":
-                __builder.AddContent(0, ctx.Item.DisplayName);
-                break;
-            case "type":
-                __builder.AddContent(0, ctx.Item.ValueType);
-                break;
-            case "status":
-                __builder.OpenComponent<StatusBadge>(0);
-                __builder.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
-                __builder.CloseComponent();
-                break;
-        }
-    };
+        _page = args.Page;
+        await LoadProductsAsync();
+    }
 
-    private RenderFragment<(PlanDto Item, AdminColumnDefinition Column)> PlanCell => ctx => __builder =>
+    private async Task LoadDetailAsync()
     {
-        switch (ctx.Column.Key)
-        {
-            case "code":
-                __builder.AddContent(0, ctx.Item.Code);
-                break;
-            case "name":
-                __builder.AddContent(0, ctx.Item.DisplayName);
-                break;
-            case "status":
-                __builder.OpenComponent<StatusBadge>(0);
-                __builder.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
-                __builder.CloseComponent();
-                break;
-        }
-    };
+        if (Id is null) return;
 
-    private RenderFragment<(PlanVersionDto Item, AdminColumnDefinition Column)> VersionCell => ctx => __builder =>
-    {
-        switch (ctx.Column.Key)
+        _product = await Api.GetProductAsync(Id.Value);
+        if (!_product.IsSuccess || _product.Data is null)
         {
-            case "plan":
-                __builder.AddContent(0, ctx.Item.PlanId);
-                break;
-            case "version":
-                __builder.AddContent(0, ctx.Item.VersionNumber);
-                break;
-            case "billing":
-                __builder.AddContent(0, ctx.Item.BillingPeriod);
-                break;
-            case "trial":
-                __builder.AddContent(0, ctx.Item.TrialEligible);
-                break;
-            case "grants":
-                __builder.OpenComponent<QuantityDisplay>(0);
-                __builder.AddAttribute(1, nameof(QuantityDisplay.Value), (decimal?)ctx.Item.Grants.Count);
-                __builder.AddAttribute(2, nameof(QuantityDisplay.Decimals), 0);
-                __builder.CloseComponent();
-                break;
+            _overview = ApiCallResult<ProductOverviewDto>.NotFound(
+                _product.Error ?? new PlatformApiException(System.Net.HttpStatusCode.NotFound, "Not found", "Product was not found."));
+            return;
         }
-    };
 
-    private RenderFragment<(TrialDefinitionDto Item, AdminColumnDefinition Column)> TrialCell => ctx => __builder =>
+        BindEditFields(_product.Data);
+        _overview = await Api.GetProductOverviewAsync(_product.Data.Code);
+    }
+
+    private void BindEditFields(ProductDto product)
     {
-        switch (ctx.Column.Key)
+        _editDisplayName = product.DisplayName;
+        _expectedUpdatedAt = product.UpdatedAtUtc;
+    }
+
+    private void ToggleCreate() => _showCreate = !_showCreate;
+
+    private void HideCreate()
+    {
+        _showCreate = false;
+        _formError = null;
+        _formConflict = false;
+    }
+
+    private async Task CreateAsync()
+    {
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        _formError = null;
+        _formConflict = false;
+        var result = await Api.CreateProductAsync(new CreateProductRequest(_newCode, _newDisplayName));
+        _busy = false;
+        if (!result.IsSuccess)
         {
-            case "name":
-                __builder.AddContent(0, ctx.Item.DisplayName);
-                break;
-            case "duration":
-                __builder.AddContent(0, ctx.Item.DurationIso);
-                break;
-            case "status":
-                __builder.OpenComponent<StatusBadge>(0);
-                __builder.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
-                __builder.CloseComponent();
-                break;
-            case "grants":
-                __builder.OpenComponent<QuantityDisplay>(0);
-                __builder.AddAttribute(1, nameof(QuantityDisplay.Value), (decimal?)ctx.Item.FeatureGrants.Count);
-                __builder.AddAttribute(2, nameof(QuantityDisplay.Decimals), 0);
-                __builder.CloseComponent();
-                break;
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
         }
+
+        await Message.SuccessAsync(L["Products_Created"].Value);
+        Nav.NavigateTo($"/admin/products/{result.Data!.Id}");
+    }
+
+    private async Task SaveRenameAsync()
+    {
+        if (Id is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        _formError = null;
+        _formConflict = false;
+        var result = await Api.RenameProductAsync(
+            Id.Value,
+            new RenameCatalogRequest(_editDisplayName, _expectedUpdatedAt));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        await Message.SuccessAsync(L["Products_Saved"].Value);
+        _product = result;
+        BindEditFields(result.Data!);
+        if (_overview?.IsSuccess == true)
+        {
+            _overview = await Api.GetProductOverviewAsync(result.Data!.Code);
+        }
+    }
+
+    private async Task ActivateAsync()
+    {
+        if (Id is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.ActivateProductAsync(Id.Value);
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            await Message.ErrorAsync(AdminFormErrorMapper.MapPageError(result) ?? L["Common_Error"].Value);
+            return;
+        }
+
+        await Message.SuccessAsync(L["Products_Activated"].Value);
+        await LoadDetailAsync();
+    }
+
+    private async Task DeactivateAsync()
+    {
+        if (Id is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.DeactivateProductAsync(Id.Value);
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            await Message.ErrorAsync(AdminFormErrorMapper.MapPageError(result) ?? L["Common_Error"].Value);
+            return;
+        }
+
+        await Message.SuccessAsync(L["Products_Deactivated"].Value);
+        await LoadDetailAsync();
+    }
+
+    private async Task RetireAsync()
+    {
+        if (Id is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.RetireProductAsync(Id.Value);
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            await Message.ErrorAsync(AdminFormErrorMapper.MapPageError(result) ?? L["Common_Error"].Value);
+            return;
+        }
+
+        await Message.SuccessAsync(L["Products_Retired"].Value);
+        await LoadDetailAsync();
+    }
+
+    private static string StatusColor(string status) => status switch
+    {
+        "Active" => "success",
+        "Inactive" or "Draft" => "default",
+        "Retired" or "Closed" or "Cancelled" or "Expired" or "Deactivated" => "default",
+        "Trialing" => "processing",
+        "Suspended" or "PastDue" or "GracePeriod" => "warning",
+        _ => "processing"
     };
 }

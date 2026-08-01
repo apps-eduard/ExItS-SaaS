@@ -5,9 +5,36 @@ namespace ExItS.Platform.Admin.Services;
 public interface IPlatformApiClient
 {
     Task<ApiCallResult<PortfolioSummaryDto>> GetPortfolioSummaryAsync(CancellationToken ct = default);
-    Task<ApiCallResult<PagedResult<ProductDto>>> GetProductsAsync(int page = 1, int pageSize = 20, string? status = null, CancellationToken ct = default);
+    Task<ApiCallResult<PagedResult<ProductDto>>> GetProductsAsync(
+        int page = 1,
+        int pageSize = 20,
+        string? status = null,
+        string? search = null,
+        string? sortBy = null,
+        bool? sortDesc = null,
+        CancellationToken ct = default);
     Task<ApiCallResult<ProductDto>> GetProductAsync(Guid id, CancellationToken ct = default);
+    Task<ApiCallResult<ProductDto>> CreateProductAsync(CreateProductRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<ProductDto>> RenameProductAsync(Guid id, RenameCatalogRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<ProductDto>> ActivateProductAsync(Guid id, CancellationToken ct = default);
+    Task<ApiCallResult<ProductDto>> DeactivateProductAsync(Guid id, CancellationToken ct = default);
+    Task<ApiCallResult<ProductDto>> RetireProductAsync(Guid id, CancellationToken ct = default);
     Task<ApiCallResult<ProductOverviewDto>> GetProductOverviewAsync(string productCode, CancellationToken ct = default);
+    Task<ApiCallResult<PagedResult<PlanDto>>> GetPlansAsync(
+        int page = 1,
+        int pageSize = 20,
+        string? productCode = null,
+        string? status = null,
+        string? search = null,
+        string? sortBy = null,
+        bool? sortDesc = null,
+        CancellationToken ct = default);
+    Task<ApiCallResult<PlanDto>> GetPlanAsync(Guid id, CancellationToken ct = default);
+    Task<ApiCallResult<PlanDto>> CreatePlanAsync(string productCode, CreatePlanRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<PlanDto>> RenamePlanAsync(string productCode, Guid planId, RenameCatalogRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<PlanDto>> ActivatePlanAsync(string productCode, Guid planId, CancellationToken ct = default);
+    Task<ApiCallResult<PlanDto>> RetirePlanAsync(string productCode, Guid planId, CancellationToken ct = default);
+    Task<ApiCallResult<IReadOnlyList<PlanVersionDto>>> GetPlanVersionsAsync(string productCode, Guid planId, CancellationToken ct = default);
     Task<ApiCallResult<PagedResult<OrganizationDto>>> GetOrganizationsAsync(
         int page = 1,
         int pageSize = 20,

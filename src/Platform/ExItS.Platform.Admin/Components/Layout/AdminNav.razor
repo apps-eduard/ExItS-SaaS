@@ -52,8 +52,8 @@
                     <MenuItem Key="products" RouterLink="/admin/products" Icon="appstore">
                         @L["Nav_Products"]
                     </MenuItem>
-                    <MenuItem Key="plans" Disabled="true">
-                        @L["Nav_Plans"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                    <MenuItem Key="plans" RouterLink="/admin/plans" Icon="profile">
+                        @L["Nav_Plans"]
                     </MenuItem>
                 }
                 @if (CanView(PlatformPermissionCodes.ManageSubscriptions))
@@ -287,6 +287,7 @@
             var p when p.StartsWith("/admin/organizations", StringComparison.Ordinal) =>
                 Shell.IsOrganizationShell ? ["org-profile"] : ["organizations"],
             var p when p.StartsWith("/admin/products", StringComparison.Ordinal) => ["products"],
+            var p when p.StartsWith("/admin/plans", StringComparison.Ordinal) => ["plans"],
             var p when p.StartsWith("/admin/subscriptions", StringComparison.Ordinal) => ["subscriptions"],
             var p when p.StartsWith("/admin/audit", StringComparison.Ordinal) =>
                 Shell.IsOrganizationShell ? ["activity-log"] : ["audit"],

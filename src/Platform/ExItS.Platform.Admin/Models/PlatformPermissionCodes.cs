@@ -10,6 +10,7 @@ public static class PlatformPermissionCodes
 {
     public const string ViewPortfolio = "platform.permission.view_portfolio";
     public const string ManageOrganizations = "platform.permission.manage_organizations";
+    public const string ManageCatalog = "platform.permission.manage_catalog";
     public const string ManagePlatformUsers = "platform.permission.manage_platform_users";
     public const string ManageMemberships = "platform.permission.manage_memberships";
     public const string ManageProductAccess = "platform.permission.manage_product_access";
@@ -22,6 +23,7 @@ public static class PlatformPermissionCodes
     [
         ViewPortfolio,
         ManageOrganizations,
+        ManageCatalog,
         ManagePlatformUsers,
         ManageMemberships,
         ManageProductAccess,

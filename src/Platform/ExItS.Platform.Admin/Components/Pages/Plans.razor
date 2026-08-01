@@ -1,0 +1,423 @@
+@page "/admin/plans"
+@page "/admin/plans/{Id:guid}"
+@using AntDesign
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IPlatformApiClient Api
+@inject IMessageService Message
+@inject IStringLocalizer<AdminResources> L
+@inject NavigationManager Nav
+@inject PlatformPermissionState Permissions
+
+@if (Id is null)
+{
+    <PageHeader Class="exits-page-header" Title="@L["Plans_Title"]" SubTitle="@L["Plans_Description"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_Plans"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+        <PageHeaderExtra>
+            @if (CanManage)
+            {
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ToggleCreate">
+                    @(_showCreate ? L["Plans_HideCreate"] : L["Plans_Create"])
+                </Button>
+            }
+        </PageHeaderExtra>
+    </PageHeader>
+
+    <Space Style="margin-bottom:12px; width:100%;" Wrap>
+        <Input @bind-Value="_search" Size="@InputSize.Small" Placeholder="@L["Plans_SearchPlaceholder"]" Style="width:220px;" OnPressEnter="ApplyFiltersAsync" />
+        <Select TItemValue="string"
+                TItem="string"
+                @bind-Value="_status"
+                Size="@InputSize.Small"
+                Placeholder="@L["Common_Status"]"
+                Style="width:140px;"
+                AllowClear>
+            <SelectOptions>
+                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Draft")" Label="@L["Status_Draft"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Active")" Label="@L["Status_Active"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Retired")" Label="@L["Status_Retired"]" />
+            </SelectOptions>
+        </Select>
+        <Input @bind-Value="_productCode" Size="@InputSize.Small" Placeholder="@L["Plans_ProductCode"]" Style="width:160px;" OnPressEnter="ApplyFiltersAsync" />
+        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ApplyFiltersAsync">@L["Common_Apply"]</Button>
+        <Button Size="@ButtonSize.Small" OnClick="ClearFiltersAsync">@L["Common_Reset"]</Button>
+    </Space>
+
+    @if (_showCreate && CanManage)
+    {
+        <Card Size="@CardSize.Small" Title="@L["Plans_CreateSection"]" Style="margin-bottom:12px;">
+            <FormValidationSummary Title="@L["Plans_CreateFailed"]" Message="@_formError" IsConflict="_formConflict" />
+            <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                <div>
+                    <label class="ant-form-item-label" for="plan-create-productcode">@L["Plans_ProductCode"]</label>
+                    <Input Id="plan-create-productcode" @bind-Value="_newProductCode" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="plan-create-code">@L["Common_Code"]</label>
+                    <Input Id="plan-create-code" @bind-Value="_newCode" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="plan-create-displayname">@L["Common_DisplayName"]</label>
+                    <Input Id="plan-create-displayname" @bind-Value="_newDisplayName" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <Space>
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">@L["Common_Create"]</Button>
+                    <Button Size="@ButtonSize.Small" OnClick="HideCreate" Disabled="_busy">@L["Common_Cancel"]</Button>
+                </Space>
+            </Space>
+        </Card>
+    }
+
+    @if (_list is { IsSuccess: false })
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail" />
+    }
+    else if (_list is { IsSuccess: true, Data.Items.Count: 0 })
+    {
+        <Empty Description="@L["Plans_Empty"].Value" />
+    }
+    else
+    {
+        <Table TItem="PlanDto"
+               DataSource="@(_list?.Data?.Items ?? Array.Empty<PlanDto>())"
+               Total="@(_list?.Data?.TotalCount ?? 0)"
+               @bind-PageIndex="_page"
+               PageSize="@(_list?.Data?.PageSize ?? 20)"
+               Loading="@(_list is null)"
+               Size="@TableSize.Small"
+               Bordered
+               RemoteDataSource
+               OnPageIndexChange="OnPageChangedAsync"
+               ScrollX="960">
+            <PropertyColumn Property="c => c.ProductCode" Title="@L["Plans_ProductCode"]" Sortable />
+            <PropertyColumn Property="c => c.Code" Title="@L["Common_Code"]" Sortable>
+                <a href="/admin/plans/@context.Id">@context.Code</a>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_DisplayName"]" Sortable />
+            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable>
+                <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+            </PropertyColumn>
+            <ActionColumn Title="@L["Common_Open"]" Width="88">
+                <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/plans/{context.Id}")">@L["Common_Open"]</a>
+            </ActionColumn>
+        </Table>
+    }
+}
+else
+{
+    <PageHeader Class="exits-page-header" Title="@(_plan?.Data?.DisplayName ?? L["Plans_DetailTitle"])" SubTitle="@L["Plans_DetailDescription"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem Href="/admin/plans">@L["Nav_Plans"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Common_Detail"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+        <PageHeaderExtra>
+            @if (_plan?.IsSuccess == true && CanManage)
+            {
+                var pl = _plan.Data!;
+                <Space>
+                    @if (pl.Status == "Draft")
+                    {
+                        <Popconfirm Title="@L["Plans_ConfirmActivate"]" OnConfirm="ActivateAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                            <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy">@L["Plans_Activate"]</Button>
+                        </Popconfirm>
+                    }
+                    @if (pl.Status is "Draft" or "Active")
+                    {
+                        <Popconfirm Title="@L["Plans_ConfirmRetire"]" OnConfirm="RetireAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                            <Button Size="@ButtonSize.Small" Danger Loading="_busy">@L["Plans_Retire"]</Button>
+                        </Popconfirm>
+                    }
+                </Space>
+            }
+        </PageHeaderExtra>
+    </PageHeader>
+
+    @if (_plan is null)
+    {
+        <div style="padding:2rem;text-align:center;"><Spin Tip="@L["Plans_DetailLoading"]" /></div>
+    }
+    else if (!_plan.IsSuccess)
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_plan.Error?.Title ?? L["Common_Error"])" SubTitle="@_plan.Error?.Detail" />
+    }
+    else
+    {
+        var pl = _plan.Data!;
+
+        @if (_productId is Guid productId)
+        {
+            <Paragraph Style="margin-bottom:12px;">
+                <a href="@($"/admin/products/{productId}")">@L["Plans_OpenProduct"]</a>
+                ·
+                <a href="@($"/admin/subscriptions?productCode={Uri.EscapeDataString(pl.ProductCode)}")">@L["Nav_Subscriptions"]</a>
+            </Paragraph>
+        }
+        else
+        {
+            <Paragraph Style="margin-bottom:12px;">
+                <a href="@($"/admin/subscriptions?productCode={Uri.EscapeDataString(pl.ProductCode)}")">@L["Nav_Subscriptions"]</a>
+            </Paragraph>
+        }
+
+        <Tabs>
+            <TabPane Key="overview" Tab="@L["Plans_TabOverview"]">
+                <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
+                    <DescriptionsItem Title="@L["Plans_ProductCode"]">@pl.ProductCode</DescriptionsItem>
+                    <DescriptionsItem Title="@L["Common_Code"]">@pl.Code</DescriptionsItem>
+                    <DescriptionsItem Title="@L["Common_Status"]">
+                        <Tag Color="@StatusColor(pl.Status)">@pl.Status</Tag>
+                    </DescriptionsItem>
+                    <DescriptionsItem Title="@L["Common_CreatedUtc"]"><UtcTimestamp Value="@pl.CreatedAtUtc" /></DescriptionsItem>
+                    <DescriptionsItem Title="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@pl.UpdatedAtUtc" /></DescriptionsItem>
+                </Descriptions>
+
+                @if (CanManage && pl.Status != "Retired")
+                {
+                    <Card Size="@CardSize.Small" Title="@L["Common_DisplayName"]">
+                        <FormValidationSummary Title="@L["Plans_SaveFailed"]" Message="@_formError" IsConflict="_formConflict" />
+                        <Space Direction="SpaceDirection.Vertical" Style="width:100%; max-width:480px;">
+                            <div>
+                                <label class="ant-form-item-label" for="plan-edit-displayname">@L["Common_DisplayName"]</label>
+                                <Input Id="plan-edit-displayname" @bind-Value="_editDisplayName" Size="@InputSize.Small" Disabled="_busy" />
+                            </div>
+                            <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveRenameAsync">@L["Common_Save"]</Button>
+                        </Space>
+                    </Card>
+                }
+                else
+                {
+                    <Descriptions Size="@DescriptionsSize.Small" Column="1">
+                        <DescriptionsItem Title="@L["Common_DisplayName"]">@pl.DisplayName</DescriptionsItem>
+                    </Descriptions>
+                }
+            </TabPane>
+
+            <TabPane Key="versions" Tab="@L["Plans_TabVersions"]">
+                @if (_versions is null)
+                {
+                    <Spin Tip="@L["Plans_DetailLoading"]" />
+                }
+                else if (!_versions.IsSuccess)
+                {
+                    <Alert Type="@AlertType.Error" Message="@(_versions.Error?.Detail ?? L["Common_Error"])" ShowIcon="true" />
+                }
+                else if (_versions.Data!.Count == 0)
+                {
+                    <Empty Description="@L["Plans_VersionsEmpty"].Value" />
+                }
+                else
+                {
+                    <Table TItem="PlanVersionDto" DataSource="_versions.Data" Size="@TableSize.Small" HidePagination Bordered>
+                        <PropertyColumn Property="c => c.VersionNumber" Title="@L["Common_Version"]" />
+                        <PropertyColumn Property="c => c.BillingPeriod" Title="@L["Products_Column_Billing"]" />
+                        <PropertyColumn Property="c => c.TrialEligible" Title="@L["Products_Column_TrialEligible"]" />
+                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                            <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                        </PropertyColumn>
+                        <PropertyColumn Property="c => c.EffectiveFromUtc" Title="@L["Common_CreatedUtc"]">
+                            <UtcTimestamp Value="@context.EffectiveFromUtc" />
+                        </PropertyColumn>
+                        <PropertyColumn Property="c => c.Grants" Title="@L["Common_Grants"]">
+                            @context.Grants.Count
+                        </PropertyColumn>
+                    </Table>
+                }
+            </TabPane>
+        </Tabs>
+    }
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private ApiCallResult<PagedResult<PlanDto>>? _list;
+    private ApiCallResult<PlanDto>? _plan;
+    private ApiCallResult<IReadOnlyList<PlanVersionDto>>? _versions;
+    private Guid? _productId;
+    private int _page = 1;
+    private string _search = "";
+    private string _status = "";
+    private string _productCode = "";
+    private bool _showCreate;
+    private string _newProductCode = "";
+    private string _newCode = "";
+    private string _newDisplayName = "";
+    private string _editDisplayName = "";
+    private DateTimeOffset? _expectedUpdatedAt;
+    private string? _formError;
+    private bool _formConflict;
+    private bool _busy;
+
+    private bool CanManage => Permissions.HasPermission(PlatformPermissionCodes.ManageCatalog);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _formError = null;
+        _formConflict = false;
+        if (Id is null)
+        {
+            await LoadPlansAsync();
+        }
+        else
+        {
+            await LoadDetailAsync();
+        }
+    }
+
+    private async Task LoadPlansAsync() =>
+        _list = await Api.GetPlansAsync(
+            page: _page,
+            productCode: string.IsNullOrWhiteSpace(_productCode) ? null : _productCode.Trim(),
+            status: string.IsNullOrWhiteSpace(_status) ? null : _status,
+            search: string.IsNullOrWhiteSpace(_search) ? null : _search);
+
+    private async Task ApplyFiltersAsync()
+    {
+        _page = 1;
+        await LoadPlansAsync();
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        _search = "";
+        _status = "";
+        _productCode = "";
+        _page = 1;
+        await LoadPlansAsync();
+    }
+
+    private async Task OnPageChangedAsync(PaginationEventArgs args)
+    {
+        _page = args.Page;
+        await LoadPlansAsync();
+    }
+
+    private async Task LoadDetailAsync()
+    {
+        if (Id is null) return;
+
+        _plan = await Api.GetPlanAsync(Id.Value);
+        _versions = null;
+        _productId = null;
+
+        if (!_plan.IsSuccess || _plan.Data is null)
+        {
+            return;
+        }
+
+        var pl = _plan.Data;
+        BindEditFields(pl);
+        _versions = await Api.GetPlanVersionsAsync(pl.ProductCode, pl.Id);
+
+        var products = await Api.GetProductsAsync(search: pl.ProductCode, pageSize: 50);
+        if (products.IsSuccess)
+        {
+            _productId = products.Data?.Items.FirstOrDefault(p => string.Equals(p.Code, pl.ProductCode, StringComparison.OrdinalIgnoreCase))?.Id;
+        }
+    }
+
+    private void BindEditFields(PlanDto plan)
+    {
+        _editDisplayName = plan.DisplayName;
+        _expectedUpdatedAt = plan.UpdatedAtUtc;
+    }
+
+    private void ToggleCreate() => _showCreate = !_showCreate;
+
+    private void HideCreate()
+    {
+        _showCreate = false;
+        _formError = null;
+        _formConflict = false;
+    }
+
+    private async Task CreateAsync()
+    {
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        _formError = null;
+        _formConflict = false;
+        var result = await Api.CreatePlanAsync(
+            _newProductCode.Trim(),
+            new CreatePlanRequest(_newCode, _newDisplayName));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        await Message.SuccessAsync(L["Plans_Created"].Value);
+        Nav.NavigateTo($"/admin/plans/{result.Data!.Id}");
+    }
+
+    private async Task SaveRenameAsync()
+    {
+        if (Id is null || _plan?.Data is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        _formError = null;
+        _formConflict = false;
+        var productCode = _plan.Data.ProductCode;
+        var result = await Api.RenamePlanAsync(
+            productCode,
+            Id.Value,
+            new RenameCatalogRequest(_editDisplayName, _expectedUpdatedAt));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        await Message.SuccessAsync(L["Plans_Saved"].Value);
+        _plan = result;
+        BindEditFields(result.Data!);
+    }
+
+    private async Task ActivateAsync()
+    {
+        if (Id is null || _plan?.Data is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.ActivatePlanAsync(_plan.Data.ProductCode, Id.Value);
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            await Message.ErrorAsync(AdminFormErrorMapper.MapPageError(result) ?? L["Common_Error"].Value);
+            return;
+        }
+
+        await Message.SuccessAsync(L["Plans_Activated"].Value);
+        await LoadDetailAsync();
+    }
+
+    private async Task RetireAsync()
+    {
+        if (Id is null || _plan?.Data is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.RetirePlanAsync(_plan.Data.ProductCode, Id.Value);
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            await Message.ErrorAsync(AdminFormErrorMapper.MapPageError(result) ?? L["Common_Error"].Value);
+            return;
+        }
+
+        await Message.SuccessAsync(L["Plans_Retired"].Value);
+        await LoadDetailAsync();
+    }
+
+    private static string StatusColor(string status) => status switch
+    {
+        "Active" => "success",
+        "Draft" or "Inactive" => "default",
+        "Retired" => "default",
+        "Published" => "success",
+        _ => "processing"
+    };
+}

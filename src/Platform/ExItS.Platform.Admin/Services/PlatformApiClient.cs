@@ -20,12 +20,55 @@ public sealed class PlatformApiClient(
 
     public Task<ApiCallResult<PortfolioSummaryDto>> GetPortfolioSummaryAsync(CancellationToken ct = default) =>
         GetAsync<PortfolioSummaryDto>("/api/v1/platform/admin/portfolio-summary", ct);
-    public Task<ApiCallResult<PagedResult<ProductDto>>> GetProductsAsync(int page = 1, int pageSize = 20, string? status = null, CancellationToken ct = default) =>
-        GetAsync<PagedResult<ProductDto>>($"/api/v1/platform/catalog/products?{Query(("page", page), ("pageSize", pageSize), ("status", status))}", ct);
+    public Task<ApiCallResult<PagedResult<ProductDto>>> GetProductsAsync(
+        int page = 1,
+        int pageSize = 20,
+        string? status = null,
+        string? search = null,
+        string? sortBy = null,
+        bool? sortDesc = null,
+        CancellationToken ct = default) =>
+        GetAsync<PagedResult<ProductDto>>(
+            $"/api/v1/platform/catalog/products?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("search", search), ("sortBy", sortBy), ("sortDesc", sortDesc))}",
+            ct);
     public Task<ApiCallResult<ProductDto>> GetProductAsync(Guid id, CancellationToken ct = default) =>
         GetAsync<ProductDto>($"/api/v1/platform/catalog/products/{id}", ct);
+    public Task<ApiCallResult<ProductDto>> CreateProductAsync(CreateProductRequest request, CancellationToken ct = default) =>
+        SendAsync<ProductDto>(HttpMethod.Post, "/api/v1/platform/catalog/products", request, ct);
+    public Task<ApiCallResult<ProductDto>> RenameProductAsync(Guid id, RenameCatalogRequest request, CancellationToken ct = default) =>
+        SendAsync<ProductDto>(HttpMethod.Patch, $"/api/v1/platform/catalog/products/{id}/rename", request, ct);
+    public Task<ApiCallResult<ProductDto>> ActivateProductAsync(Guid id, CancellationToken ct = default) =>
+        SendAsync<ProductDto>(HttpMethod.Post, $"/api/v1/platform/catalog/products/{id}/activate", null, ct);
+    public Task<ApiCallResult<ProductDto>> DeactivateProductAsync(Guid id, CancellationToken ct = default) =>
+        SendAsync<ProductDto>(HttpMethod.Post, $"/api/v1/platform/catalog/products/{id}/deactivate", null, ct);
+    public Task<ApiCallResult<ProductDto>> RetireProductAsync(Guid id, CancellationToken ct = default) =>
+        SendAsync<ProductDto>(HttpMethod.Post, $"/api/v1/platform/catalog/products/{id}/retire", null, ct);
     public Task<ApiCallResult<ProductOverviewDto>> GetProductOverviewAsync(string productCode, CancellationToken ct = default) =>
         GetAsync<ProductOverviewDto>($"/api/v1/platform/admin/products/{Escape(productCode)}/overview", ct);
+    public Task<ApiCallResult<PagedResult<PlanDto>>> GetPlansAsync(
+        int page = 1,
+        int pageSize = 20,
+        string? productCode = null,
+        string? status = null,
+        string? search = null,
+        string? sortBy = null,
+        bool? sortDesc = null,
+        CancellationToken ct = default) =>
+        GetAsync<PagedResult<PlanDto>>(
+            $"/api/v1/platform/catalog/plans?{Query(("page", page), ("pageSize", pageSize), ("productCode", productCode), ("status", status), ("search", search), ("sortBy", sortBy), ("sortDesc", sortDesc))}",
+            ct);
+    public Task<ApiCallResult<PlanDto>> GetPlanAsync(Guid id, CancellationToken ct = default) =>
+        GetAsync<PlanDto>($"/api/v1/platform/catalog/plans/{id}", ct);
+    public Task<ApiCallResult<PlanDto>> CreatePlanAsync(string productCode, CreatePlanRequest request, CancellationToken ct = default) =>
+        SendAsync<PlanDto>(HttpMethod.Post, $"/api/v1/platform/catalog/products/{Escape(productCode)}/plans", request, ct);
+    public Task<ApiCallResult<PlanDto>> RenamePlanAsync(string productCode, Guid planId, RenameCatalogRequest request, CancellationToken ct = default) =>
+        SendAsync<PlanDto>(HttpMethod.Patch, $"/api/v1/platform/catalog/products/{Escape(productCode)}/plans/{planId}/rename", request, ct);
+    public Task<ApiCallResult<PlanDto>> ActivatePlanAsync(string productCode, Guid planId, CancellationToken ct = default) =>
+        SendAsync<PlanDto>(HttpMethod.Post, $"/api/v1/platform/catalog/products/{Escape(productCode)}/plans/{planId}/activate", null, ct);
+    public Task<ApiCallResult<PlanDto>> RetirePlanAsync(string productCode, Guid planId, CancellationToken ct = default) =>
+        SendAsync<PlanDto>(HttpMethod.Post, $"/api/v1/platform/catalog/products/{Escape(productCode)}/plans/{planId}/retire", null, ct);
+    public Task<ApiCallResult<IReadOnlyList<PlanVersionDto>>> GetPlanVersionsAsync(string productCode, Guid planId, CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<PlanVersionDto>>($"/api/v1/platform/catalog/products/{Escape(productCode)}/plans/{planId}/versions", ct);
     public Task<ApiCallResult<PagedResult<OrganizationDto>>> GetOrganizationsAsync(
         int page = 1,
         int pageSize = 20,

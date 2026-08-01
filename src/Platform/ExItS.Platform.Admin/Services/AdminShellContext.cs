@@ -106,6 +106,7 @@ public sealed class AdminShellContext(
         var isPlatform = permissions.HasAnyPermission(
             PlatformPermissionCodes.ViewPortfolio,
             PlatformPermissionCodes.ManageOrganizations,
+            PlatformPermissionCodes.ManageCatalog,
             PlatformPermissionCodes.ManagePlatformUsers,
             PlatformPermissionCodes.ManageMemberships,
             PlatformPermissionCodes.ManageProductAccess,

@@ -10,6 +10,10 @@ public sealed record ProductDto(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
 
+public sealed record CreateProductRequest(string Code, string DisplayName);
+public sealed record CreatePlanRequest(string Code, string DisplayName);
+public sealed record RenameCatalogRequest(string DisplayName, DateTimeOffset? ExpectedUpdatedAtUtc);
+
 public sealed record FeatureDefinitionDto(
     string ProductCode,
     string FeatureCode,

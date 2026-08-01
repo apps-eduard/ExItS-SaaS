@@ -293,6 +293,9 @@
   <data name="Common_Duration" xml:space="preserve"><value>Tagal</value></data>
 
   <data name="Status_Active" xml:space="preserve"><value>Active</value></data>
+  <data name="Status_Inactive" xml:space="preserve"><value>Inactive</value></data>
+  <data name="Status_Draft" xml:space="preserve"><value>Draft</value></data>
+  <data name="Status_Retired" xml:space="preserve"><value>Retired</value></data>
   <data name="Status_Suspended" xml:space="preserve"><value>Suspended</value></data>
   <data name="Status_Deactivated" xml:space="preserve"><value>Deactivated</value></data>
   <data name="Status_Removed" xml:space="preserve"><value>Removed</value></data>
@@ -366,12 +369,38 @@
   <data name="Dashboard_PartialUnavailableDetail" xml:space="preserve"><value>Ang mga nabigong seksyon ay hindi ipinapakita bilang zero.</value></data>
 
   <data name="Products_Title" xml:space="preserve"><value>Mga Produkto</value></data>
-  <data name="Products_Description" xml:space="preserve"><value>Read-only product catalog. Walang create, rename, activate, o retire actions sa work package na ito.</value></data>
+  <data name="Products_Description" xml:space="preserve"><value>Platform product catalog na may create, rename, at lifecycle administration.</value></data>
   <data name="Products_Loading" xml:space="preserve"><value>Naglo-load ng mga produkto…</value></data>
   <data name="Products_Empty" xml:space="preserve"><value>Walang produktong nakarehistro sa Platform catalog.</value></data>
   <data name="Products_DetailTitle" xml:space="preserve"><value>Detalye ng produkto</value></data>
-  <data name="Products_DetailDescription" xml:space="preserve"><value>Mga feature, plan, published plan version, at trial definition. Read-only.</value></data>
+  <data name="Products_DetailDescription" xml:space="preserve"><value>Overview, mga plan, feature, published version, trial, at audit navigation.</value></data>
   <data name="Products_DetailLoading" xml:space="preserve"><value>Naglo-load ng product overview…</value></data>
+  <data name="Products_Create" xml:space="preserve"><value>Gumawa ng produkto</value></data>
+  <data name="Products_HideCreate" xml:space="preserve"><value>Itago ang create</value></data>
+  <data name="Products_CreateSection" xml:space="preserve"><value>Gumawa ng Platform product</value></data>
+  <data name="Products_CreateFailed" xml:space="preserve"><value>Nabigo ang pag-create ng produkto</value></data>
+  <data name="Products_Created" xml:space="preserve"><value>Nagawa ang produkto.</value></data>
+  <data name="Products_SearchPlaceholder" xml:space="preserve"><value>Maghanap ng code o pangalan</value></data>
+  <data name="Products_Saved" xml:space="preserve"><value>Na-save ang produkto.</value></data>
+  <data name="Products_Activate" xml:space="preserve"><value>I-activate</value></data>
+  <data name="Products_Deactivate" xml:space="preserve"><value>I-deactivate</value></data>
+  <data name="Products_Retire" xml:space="preserve"><value>I-retire</value></data>
+  <data name="Products_ConfirmActivate" xml:space="preserve"><value>I-activate ang produktong ito?</value></data>
+  <data name="Products_ConfirmDeactivate" xml:space="preserve"><value>I-deactivate ang produktong ito?</value></data>
+  <data name="Products_ConfirmRetire" xml:space="preserve"><value>I-retire ang produktong ito? Hindi na ito mababawi.</value></data>
+  <data name="Products_Activated" xml:space="preserve"><value>Na-activate ang produkto.</value></data>
+  <data name="Products_Deactivated" xml:space="preserve"><value>Na-deactivate ang produkto.</value></data>
+  <data name="Products_Retired" xml:space="preserve"><value>Na-retire ang produkto.</value></data>
+  <data name="Products_TabOverview" xml:space="preserve"><value>Overview</value></data>
+  <data name="Products_TabPlans" xml:space="preserve"><value>Mga plan</value></data>
+  <data name="Products_TabFeatures" xml:space="preserve"><value>Mga feature</value></data>
+  <data name="Products_TabVersions" xml:space="preserve"><value>Mga version</value></data>
+  <data name="Products_TabTrials" xml:space="preserve"><value>Mga trial</value></data>
+  <data name="Products_TabAudit" xml:space="preserve"><value>Audit</value></data>
+  <data name="Products_OpenAudit" xml:space="preserve"><value>Buksan ang audit log</value></data>
+  <data name="Products_AuditHint" xml:space="preserve"><value>Review ang Platform audit records para sa catalog at lifecycle changes.</value></data>
+  <data name="Products_Rename" xml:space="preserve"><value>I-rename ang produkto</value></data>
+  <data name="Products_SaveFailed" xml:space="preserve"><value>Nabigo ang pag-save ng produkto</value></data>
   <data name="Products_FeatureCount" xml:space="preserve"><value>Bilang ng feature</value></data>
   <data name="Products_PlanCount" xml:space="preserve"><value>Bilang ng plan</value></data>
   <data name="Products_FeatureDefinitions" xml:space="preserve"><value>Mga feature definition</value></data>
@@ -384,6 +413,33 @@
   <data name="Products_TrialDefinitionsEmpty" xml:space="preserve"><value>Walang trial definition.</value></data>
   <data name="Products_Column_Billing" xml:space="preserve"><value>Billing</value></data>
   <data name="Products_Column_TrialEligible" xml:space="preserve"><value>Trial eligible</value></data>
+
+  <data name="Plans_Title" xml:space="preserve"><value>Mga Plano</value></data>
+  <data name="Plans_Description" xml:space="preserve"><value>Platform plan catalog na may create, rename, at lifecycle administration.</value></data>
+  <data name="Plans_Empty" xml:space="preserve"><value>Walang plan na tumutugma sa kasalukuyang filter.</value></data>
+  <data name="Plans_Loading" xml:space="preserve"><value>Naglo-load ng mga plan…</value></data>
+  <data name="Plans_DetailTitle" xml:space="preserve"><value>Detalye ng plan</value></data>
+  <data name="Plans_DetailDescription" xml:space="preserve"><value>Plan metadata, rename, lifecycle actions, at version history.</value></data>
+  <data name="Plans_DetailLoading" xml:space="preserve"><value>Naglo-load ng plan…</value></data>
+  <data name="Plans_Create" xml:space="preserve"><value>Gumawa ng plan</value></data>
+  <data name="Plans_HideCreate" xml:space="preserve"><value>Itago ang create</value></data>
+  <data name="Plans_CreateSection" xml:space="preserve"><value>Gumawa ng Platform plan</value></data>
+  <data name="Plans_CreateFailed" xml:space="preserve"><value>Nabigo ang pag-create ng plan</value></data>
+  <data name="Plans_Created" xml:space="preserve"><value>Nagawa ang plan.</value></data>
+  <data name="Plans_SearchPlaceholder" xml:space="preserve"><value>Maghanap ng code o pangalan</value></data>
+  <data name="Plans_ProductCode" xml:space="preserve"><value>Product code</value></data>
+  <data name="Plans_Saved" xml:space="preserve"><value>Na-save ang plan.</value></data>
+  <data name="Plans_Activate" xml:space="preserve"><value>I-activate</value></data>
+  <data name="Plans_Retire" xml:space="preserve"><value>I-retire</value></data>
+  <data name="Plans_ConfirmActivate" xml:space="preserve"><value>I-activate ang plan na ito?</value></data>
+  <data name="Plans_ConfirmRetire" xml:space="preserve"><value>I-retire ang plan na ito? Hindi na ito mababawi.</value></data>
+  <data name="Plans_Activated" xml:space="preserve"><value>Na-activate ang plan.</value></data>
+  <data name="Plans_Retired" xml:space="preserve"><value>Na-retire ang plan.</value></data>
+  <data name="Plans_TabOverview" xml:space="preserve"><value>Overview</value></data>
+  <data name="Plans_TabVersions" xml:space="preserve"><value>Mga version</value></data>
+  <data name="Plans_VersionsEmpty" xml:space="preserve"><value>Walang plan version.</value></data>
+  <data name="Plans_OpenProduct" xml:space="preserve"><value>Buksan ang produkto</value></data>
+  <data name="Plans_SaveFailed" xml:space="preserve"><value>Nabigo ang pag-save ng plan</value></data>
 
   <data name="Organizations_Title" xml:space="preserve"><value>Mga Organisasyon</value></data>
   <data name="Organizations_Description" xml:space="preserve"><value>Mga Platform Organization na may lifecycle, profile, membership, at commercial administration.</value></data>
