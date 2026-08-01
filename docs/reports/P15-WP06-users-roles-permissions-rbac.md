@@ -4,7 +4,7 @@
 
 ## Status
 
-**Complete.** Starting tip `78d0e90cc5ec75261e340288e8ccef3f5c6e8951`. Final tip `fb2c95f30b44b31d8023d272674084b2fdac42cf` (feature `2b9657bbb4c0e597c2098ef1a2fa5bb1e630ba52`). P15-WP07 not started.
+**Complete.** Starting tip `78d0e90cc5ec75261e340288e8ccef3f5c6e8951`. Final tip `2d0b57a02748f733c850c002969fa1a15724d4c1` (feature `2b9657bbb4c0e597c2098ef1a2fa5bb1e630ba52`). P15-WP07 not started.
 
 ## User terminology
 
