@@ -20,6 +20,8 @@ public static class DomainErrorCodes
     public const string InvalidEmail = "platform.email.invalid";
     public const string InvalidUsername = "platform.username.invalid";
     public const string InvalidOrganizationSlug = "platform.organization.slug.invalid";
+    public const string InvalidOrganizationProfile = "platform.organization.profile.invalid";
+    public const string InvalidOrganizationBranding = "platform.organization.branding.invalid";
     public const string InvalidProductCode = "platform.product_code.invalid";
     public const string InvalidUtcTimestamp = "platform.timestamp.invalid";
 

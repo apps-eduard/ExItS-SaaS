@@ -128,6 +128,11 @@ builder.Services.AddScoped<RetireTrialDefinition>();
 builder.Services.AddScoped<OrganizationQueryService>();
 builder.Services.AddScoped<CreatePlatformOrganization>();
 builder.Services.AddScoped<SuspendPlatformOrganization>();
+builder.Services.AddScoped<ReactivatePlatformOrganization>();
+builder.Services.AddScoped<ClosePlatformOrganization>();
+builder.Services.AddScoped<UpdateOrganizationProfile>();
+builder.Services.AddScoped<UpdateOrganizationPlatformFields>();
+builder.Services.AddScoped<UpdateOrganizationBranding>();
 
 builder.Services.AddScoped<PlatformUserQueryService>();
 builder.Services.AddScoped<CreatePlatformUser>();
@@ -213,6 +218,7 @@ builder.Services.AddScoped<QueryAuditRecords>();
 builder.Services.AddScoped<GetAuditRecord>();
 builder.Services.AddScoped<PlatformAuthz>();
 builder.Services.AddScoped<PlatformMembershipAuthz>();
+builder.Services.AddScoped<PlatformOrganizationAuthz>();
 
 builder.Services.Configure<LivePreviewOptions>(builder.Configuration.GetSection(LivePreviewOptions.SectionName));
 builder.Services.AddScoped<InitializeLivePreviewDataset>();

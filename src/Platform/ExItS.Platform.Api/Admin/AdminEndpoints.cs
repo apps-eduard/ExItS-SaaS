@@ -77,16 +77,10 @@ internal static class AdminEndpoints
         admin.MapGet("/organizations/{organizationId:guid}/commercial-summary", async (
             Guid organizationId,
             AdminPortfolioQueryService queries,
-            PlatformAuthz authz,
+            PlatformOrganizationAuthz orgAuthz,
             CancellationToken ct) =>
         {
-            var denied = await authz.EnsureAsync(
-                PlatformPermission.ViewPortfolio,
-                PlatformAuditActions.PlatformAccessChecked,
-                "AdminPortfolio",
-                organizationId.ToString("D"),
-                organizationId,
-                cancellationToken: ct).ConfigureAwait(false);
+            var denied = await orgAuthz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
             if (denied is not null)
             {
                 return denied;

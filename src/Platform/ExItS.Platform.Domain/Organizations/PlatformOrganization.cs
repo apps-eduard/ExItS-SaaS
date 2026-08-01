@@ -7,6 +7,7 @@ namespace ExItS.Platform.Domain.Organizations;
 /// <summary>
 /// Platform Organization aggregate — SaaS customer/account boundary.
 /// Not a Clinic, Store, Branch, Register, subscription, or billing record.
+/// Profile/branding metadata never grants product-local roles.
 /// </summary>
 public sealed class PlatformOrganization
 {
@@ -14,10 +15,16 @@ public sealed class PlatformOrganization
         @"^[a-z0-9]+(?:-[a-z0-9]+)*$",
         RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
+    private static readonly Regex OptionalDisplayNamePattern = new(
+        @"^[\p{L}\p{N}][\p{L}\p{N} .'\-]{0,98}[\p{L}\p{N}.]?$",
+        RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
     public PlatformOrganizationId Id { get; }
     public string DisplayName { get; private set; }
     public string Slug { get; private set; }
     public OrganizationStatus Status { get; private set; }
+    public OrganizationProfile Profile { get; private set; }
+    public OrganizationBranding Branding { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -26,6 +33,8 @@ public sealed class PlatformOrganization
         string displayName,
         string slug,
         OrganizationStatus status,
+        OrganizationProfile profile,
+        OrganizationBranding branding,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc)
     {
@@ -33,6 +42,8 @@ public sealed class PlatformOrganization
         DisplayName = displayName;
         Slug = slug;
         Status = status;
+        Profile = profile;
+        Branding = branding;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
     }
@@ -52,6 +63,8 @@ public sealed class PlatformOrganization
             name,
             normalizedSlug,
             OrganizationStatus.Active,
+            OrganizationProfile.Empty,
+            OrganizationBranding.Empty,
             utcNow,
             utcNow);
     }
@@ -61,9 +74,11 @@ public sealed class PlatformOrganization
         string displayName,
         string slug,
         OrganizationStatus status,
+        OrganizationProfile profile,
+        OrganizationBranding branding,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc) =>
-        new(id, displayName, slug, status, createdAtUtc, updatedAtUtc);
+        new(id, displayName, slug, status, profile, branding, createdAtUtc, updatedAtUtc);
 
     public void Rename(string displayName, DateTimeOffset utcNow)
     {
@@ -78,6 +93,24 @@ public sealed class PlatformOrganization
         EnsureUtc(utcNow);
         EnsureNotClosed();
         Slug = NormalizeSlug(slug);
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void UpdateProfile(OrganizationProfile profile, DateTimeOffset utcNow)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        EnsureUtc(utcNow);
+        EnsureNotClosed();
+        Profile = profile;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void UpdateBranding(OrganizationBranding branding, DateTimeOffset utcNow)
+    {
+        ArgumentNullException.ThrowIfNull(branding);
+        EnsureUtc(utcNow);
+        EnsureNotClosed();
+        Branding = branding;
         UpdatedAtUtc = utcNow;
     }
 
@@ -104,6 +137,29 @@ public sealed class PlatformOrganization
     {
         EnsureUtc(utcNow);
         TransitionTo(OrganizationStatus.Closed, utcNow);
+    }
+
+    /// <summary>
+    /// Optional legal/brand display names share Platform display-name character rules when set.
+    /// </summary>
+    public static string NormalizeOptionalDisplayName(string displayName)
+    {
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidDisplayName,
+                "Display name cannot be blank.");
+        }
+
+        var trimmed = Regex.Replace(displayName.Trim(), @"\s+", " ");
+        if (trimmed.Length is < 2 or > 100 || !OptionalDisplayNamePattern.IsMatch(trimmed))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidDisplayName,
+                "Display name must be 2–100 characters and use letters, numbers, spaces, apostrophes, periods, or hyphens.");
+        }
+
+        return trimmed;
     }
 
     private void TransitionTo(OrganizationStatus target, DateTimeOffset utcNow)
@@ -142,7 +198,7 @@ public sealed class PlatformOrganization
         }
     }
 
-    internal static string NormalizeSlug(string slug)
+    public static string NormalizeSlug(string slug)
     {
         if (string.IsNullOrWhiteSpace(slug))
         {

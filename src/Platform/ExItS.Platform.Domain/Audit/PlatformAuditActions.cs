@@ -11,8 +11,11 @@ public static class PlatformAuditActions
     public const string PlatformRoleRevoked = "platform.role_assignment.revoked";
 
     public const string OrganizationCreated = "platform.organization.created";
+    public const string OrganizationUpdated = "platform.organization.updated";
+    public const string OrganizationBrandingUpdated = "platform.organization.branding_updated";
     public const string OrganizationSuspended = "platform.organization.suspended";
     public const string OrganizationReactivated = "platform.organization.reactivated";
+    public const string OrganizationClosed = "platform.organization.closed";
 
     public const string PlatformUserCreated = "platform.user.created";
     public const string PlatformUserProfileUpdated = "platform.user.profile_updated";
