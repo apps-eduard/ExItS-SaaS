@@ -130,6 +130,45 @@ public sealed class SubscriptionQueryService
         return ToPagedResult(items, totalCount, page, take);
     }
 
+    public async Task<PagedResult<SubscriptionDto>> ListAsync(
+        Guid? organizationId,
+        string? productCode,
+        SubscriptionStatus? status,
+        string? search,
+        bool? isTrial,
+        Guid? planId,
+        SubscriptionListSortBy sortBy,
+        bool sortDescending,
+        int? page,
+        int? pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (skip, take) = CatalogPagination.Normalize(page, pageSize);
+        PlatformOrganizationId? orgId = organizationId is null
+            ? null
+            : PlatformOrganizationId.From(organizationId.Value);
+        ProductCode? code = string.IsNullOrWhiteSpace(productCode)
+            ? null
+            : ProductCode.Create(productCode);
+
+        var (items, totalCount) = await _subscriptions
+            .ListAsync(
+                orgId,
+                code,
+                status,
+                search,
+                isTrial,
+                planId,
+                sortBy,
+                sortDescending,
+                skip,
+                take,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return ToPagedResult(items, totalCount, page, take);
+    }
+
     private static PagedResult<SubscriptionDto> ToPagedResult(
         IReadOnlyList<Subscription> items,
         int totalCount,

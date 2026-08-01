@@ -389,6 +389,81 @@ internal sealed class InMemorySubscriptionRepository : ISubscriptionRepository
         return Task.FromResult((page, ordered.Count));
     }
 
+    public Task<(IReadOnlyList<Subscription> Items, int TotalCount)> ListAsync(
+        PlatformOrganizationId? organizationId,
+        ProductCode? productCode,
+        SubscriptionStatus? status,
+        string? search,
+        bool? isTrial,
+        Guid? planId,
+        SubscriptionListSortBy sortBy,
+        bool sortDescending,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        IEnumerable<Subscription> query = _items.Values;
+        if (organizationId is not null)
+        {
+            query = query.Where(s => s.OrganizationId == organizationId);
+        }
+
+        if (productCode is not null)
+        {
+            query = query.Where(s => s.ProductCode == productCode);
+        }
+
+        if (status is not null)
+        {
+            query = query.Where(s => s.Status == status.Value);
+        }
+
+        if (planId is not null)
+        {
+            query = query.Where(s => s.PlanId.Value == planId.Value);
+        }
+
+        if (isTrial is true)
+        {
+            query = query.Where(s => s.TrialDefinitionId is not null || s.Status == SubscriptionStatus.Trialing);
+        }
+        else if (isTrial is false)
+        {
+            query = query.Where(s => s.TrialDefinitionId is null && s.Status != SubscriptionStatus.Trialing);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(s =>
+                s.ProductCode.Value.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || s.Status.ToString().Contains(term, StringComparison.OrdinalIgnoreCase)
+                || s.OrganizationId.Value.ToString().Contains(term, StringComparison.OrdinalIgnoreCase)
+                || s.PlanId.Value.ToString().Contains(term, StringComparison.OrdinalIgnoreCase)
+                || s.Id.Value.ToString().Contains(term, StringComparison.OrdinalIgnoreCase));
+        }
+
+        query = (sortBy, sortDescending) switch
+        {
+            (SubscriptionListSortBy.Status, false) => query.OrderBy(s => s.Status).ThenByDescending(s => s.UpdatedAtUtc),
+            (SubscriptionListSortBy.Status, true) => query.OrderByDescending(s => s.Status).ThenByDescending(s => s.UpdatedAtUtc),
+            (SubscriptionListSortBy.ProductCode, false) => query.OrderBy(s => s.ProductCode.Value).ThenByDescending(s => s.UpdatedAtUtc),
+            (SubscriptionListSortBy.ProductCode, true) => query.OrderByDescending(s => s.ProductCode.Value).ThenByDescending(s => s.UpdatedAtUtc),
+            (SubscriptionListSortBy.TrialEndUtc, false) => query.OrderBy(s => s.TrialEndUtc).ThenByDescending(s => s.UpdatedAtUtc),
+            (SubscriptionListSortBy.TrialEndUtc, true) => query.OrderByDescending(s => s.TrialEndUtc).ThenByDescending(s => s.UpdatedAtUtc),
+            (SubscriptionListSortBy.PaidPeriodEndUtc, false) => query.OrderBy(s => s.PaidPeriodEndUtc).ThenByDescending(s => s.UpdatedAtUtc),
+            (SubscriptionListSortBy.PaidPeriodEndUtc, true) => query.OrderByDescending(s => s.PaidPeriodEndUtc).ThenByDescending(s => s.UpdatedAtUtc),
+            (SubscriptionListSortBy.CreatedAtUtc, false) => query.OrderBy(s => s.CreatedAtUtc),
+            (SubscriptionListSortBy.CreatedAtUtc, true) => query.OrderByDescending(s => s.CreatedAtUtc),
+            (SubscriptionListSortBy.UpdatedAtUtc, false) => query.OrderBy(s => s.UpdatedAtUtc),
+            _ => query.OrderByDescending(s => s.UpdatedAtUtc)
+        };
+
+        var ordered = query.ToList();
+        IReadOnlyList<Subscription> page = ordered.Skip(skip).Take(take).ToList();
+        return Task.FromResult((page, ordered.Count));
+    }
+
     public Task<bool> ExistsActiveLikeAsync(
         PlatformOrganizationId organizationId,
         ProductCode productCode,

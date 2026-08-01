@@ -132,6 +132,124 @@ public sealed class StartTrialSubscription
     }
 }
 
+public sealed class ActivatePaidSubscription
+{
+    private readonly IPlatformOrganizationRepository _organizations;
+    private readonly IProductRepository _products;
+    private readonly IPlanRepository _plans;
+    private readonly ISubscriptionRepository _subscriptions;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public ActivatePaidSubscription(
+        IPlatformOrganizationRepository organizations,
+        IProductRepository products,
+        IPlanRepository plans,
+        ISubscriptionRepository subscriptions,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _organizations = organizations;
+        _products = products;
+        _plans = plans;
+        _subscriptions = subscriptions;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<Subscription>> ExecuteAsync(
+        PlatformOrganizationId organizationId,
+        PlanId planId,
+        PlanVersionId planVersionId,
+        DateTimeOffset periodStartUtc,
+        DateTimeOffset periodEndUtc,
+        CancellationToken cancellationToken = default)
+    {
+        var organization = await _organizations.GetByIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        if (organization is null)
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.OrganizationNotFound,
+                "Platform Organization was not found.");
+        }
+
+        if (organization.Status != OrganizationStatus.Active)
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.OrganizationNotEligible,
+                "Paid subscriptions can only be started for an active Platform Organization.");
+        }
+
+        var plan = await _plans.GetByIdAsync(planId, cancellationToken).ConfigureAwait(false);
+        if (plan is null)
+        {
+            return ApplicationResult<Subscription>.Failure(ApplicationErrorCodes.PlanNotFound, "Plan was not found.");
+        }
+
+        var product = await _products.GetByCodeAsync(plan.ProductCode, cancellationToken).ConfigureAwait(false);
+        if (product is null)
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.ProductNotFound,
+                "Product was not found.");
+        }
+
+        if (product.Status != ProductStatus.Active)
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.ProductNotActive,
+                "Paid subscriptions can only be started for an active product.");
+        }
+
+        if (plan.Status != PlanStatus.Active)
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.SubscriptionIneligible,
+                "Paid subscriptions can only be started for an active plan.");
+        }
+
+        var version = await _plans.GetVersionByIdAsync(planVersionId, cancellationToken).ConfigureAwait(false);
+        if (version is null)
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.PlanVersionNotFound,
+                "Plan version was not found.");
+        }
+
+        var hasActiveLike = await _subscriptions
+            .ExistsActiveLikeAsync(organizationId, plan.ProductCode, cancellationToken)
+            .ConfigureAwait(false);
+        if (hasActiveLike)
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.ActiveSubscriptionConflict,
+                "An active-like subscription already exists for this organization and product.");
+        }
+
+        try
+        {
+            var subscription = Subscription.ActivatePaid(
+                organizationId,
+                plan,
+                version,
+                periodStartUtc,
+                periodEndUtc,
+                _clock.UtcNow);
+            await _subscriptions.AddAsync(subscription, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<Subscription>.Success(subscription);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<Subscription>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<Subscription>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
 public sealed class ActivateSubscription
 {
     private readonly ISubscriptionRepository _subscriptions;
@@ -145,11 +263,19 @@ public sealed class ActivateSubscription
         _clock = clock;
     }
 
+    public Task<ApplicationResult<Subscription>> ExecuteAsync(
+        SubscriptionId subscriptionId,
+        DateTimeOffset periodStartUtc,
+        DateTimeOffset periodEndUtc,
+        CancellationToken cancellationToken = default) =>
+        ExecuteAsync(subscriptionId, periodStartUtc, periodEndUtc, expectedVersion: null, cancellationToken);
+
     public async Task<ApplicationResult<Subscription>> ExecuteAsync(
         SubscriptionId subscriptionId,
         DateTimeOffset periodStartUtc,
         DateTimeOffset periodEndUtc,
-        CancellationToken cancellationToken = default)
+        int? expectedVersion,
+        CancellationToken cancellationToken)
     {
         var subscription = await _subscriptions.GetByIdAsync(subscriptionId, cancellationToken).ConfigureAwait(false);
         if (subscription is null)
@@ -157,6 +283,13 @@ public sealed class ActivateSubscription
             return ApplicationResult<Subscription>.Failure(
                 ApplicationErrorCodes.SubscriptionNotFound,
                 "Subscription was not found.");
+        }
+
+        if (SubscriptionConcurrency.IsMismatch(subscription.Version, expectedVersion))
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.ConcurrencyConflict,
+                "The subscription was modified by another request. Refresh and try again.");
         }
 
         try
@@ -196,7 +329,15 @@ public sealed class EnterSubscriptionGracePeriod
     public async Task<ApplicationResult<Subscription>> ExecuteAsync(
         SubscriptionId subscriptionId,
         DateTimeOffset gracePeriodEndUtc,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        await ExecuteAsync(subscriptionId, gracePeriodEndUtc, expectedVersion: null, cancellationToken)
+            .ConfigureAwait(false);
+
+    public async Task<ApplicationResult<Subscription>> ExecuteAsync(
+        SubscriptionId subscriptionId,
+        DateTimeOffset gracePeriodEndUtc,
+        int? expectedVersion,
+        CancellationToken cancellationToken)
     {
         var subscription = await _subscriptions.GetByIdAsync(subscriptionId, cancellationToken).ConfigureAwait(false);
         if (subscription is null)
@@ -204,6 +345,13 @@ public sealed class EnterSubscriptionGracePeriod
             return ApplicationResult<Subscription>.Failure(
                 ApplicationErrorCodes.SubscriptionNotFound,
                 "Subscription was not found.");
+        }
+
+        if (SubscriptionConcurrency.IsMismatch(subscription.Version, expectedVersion))
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.ConcurrencyConflict,
+                "The subscription was modified by another request. Refresh and try again.");
         }
 
         try
@@ -237,9 +385,15 @@ public sealed class MarkSubscriptionPastDue
         _clock = clock;
     }
 
+    public Task<ApplicationResult<Subscription>> ExecuteAsync(
+        SubscriptionId subscriptionId,
+        CancellationToken cancellationToken = default) =>
+        ExecuteAsync(subscriptionId, expectedVersion: null, cancellationToken);
+
     public async Task<ApplicationResult<Subscription>> ExecuteAsync(
         SubscriptionId subscriptionId,
-        CancellationToken cancellationToken = default)
+        int? expectedVersion,
+        CancellationToken cancellationToken)
     {
         var subscription = await _subscriptions.GetByIdAsync(subscriptionId, cancellationToken).ConfigureAwait(false);
         if (subscription is null)
@@ -247,6 +401,13 @@ public sealed class MarkSubscriptionPastDue
             return ApplicationResult<Subscription>.Failure(
                 ApplicationErrorCodes.SubscriptionNotFound,
                 "Subscription was not found.");
+        }
+
+        if (SubscriptionConcurrency.IsMismatch(subscription.Version, expectedVersion))
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.ConcurrencyConflict,
+                "The subscription was modified by another request. Refresh and try again.");
         }
 
         try
@@ -280,9 +441,15 @@ public sealed class SuspendSubscription
         _clock = clock;
     }
 
+    public Task<ApplicationResult<Subscription>> ExecuteAsync(
+        SubscriptionId subscriptionId,
+        CancellationToken cancellationToken = default) =>
+        ExecuteAsync(subscriptionId, expectedVersion: null, cancellationToken);
+
     public async Task<ApplicationResult<Subscription>> ExecuteAsync(
         SubscriptionId subscriptionId,
-        CancellationToken cancellationToken = default)
+        int? expectedVersion,
+        CancellationToken cancellationToken)
     {
         var subscription = await _subscriptions.GetByIdAsync(subscriptionId, cancellationToken).ConfigureAwait(false);
         if (subscription is null)
@@ -290,6 +457,13 @@ public sealed class SuspendSubscription
             return ApplicationResult<Subscription>.Failure(
                 ApplicationErrorCodes.SubscriptionNotFound,
                 "Subscription was not found.");
+        }
+
+        if (SubscriptionConcurrency.IsMismatch(subscription.Version, expectedVersion))
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.ConcurrencyConflict,
+                "The subscription was modified by another request. Refresh and try again.");
         }
 
         try
@@ -323,11 +497,19 @@ public sealed class ReactivateSubscription
         _clock = clock;
     }
 
-    public async Task<ApplicationResult<Subscription>> ExecuteAsync(
+    public Task<ApplicationResult<Subscription>> ExecuteAsync(
         SubscriptionId subscriptionId,
         DateTimeOffset? periodStartUtc = null,
         DateTimeOffset? periodEndUtc = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        ExecuteAsync(subscriptionId, periodStartUtc, periodEndUtc, expectedVersion: null, cancellationToken);
+
+    public async Task<ApplicationResult<Subscription>> ExecuteAsync(
+        SubscriptionId subscriptionId,
+        DateTimeOffset? periodStartUtc,
+        DateTimeOffset? periodEndUtc,
+        int? expectedVersion,
+        CancellationToken cancellationToken)
     {
         var subscription = await _subscriptions.GetByIdAsync(subscriptionId, cancellationToken).ConfigureAwait(false);
         if (subscription is null)
@@ -335,6 +517,13 @@ public sealed class ReactivateSubscription
             return ApplicationResult<Subscription>.Failure(
                 ApplicationErrorCodes.SubscriptionNotFound,
                 "Subscription was not found.");
+        }
+
+        if (SubscriptionConcurrency.IsMismatch(subscription.Version, expectedVersion))
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.ConcurrencyConflict,
+                "The subscription was modified by another request. Refresh and try again.");
         }
 
         try
@@ -368,9 +557,15 @@ public sealed class CancelSubscription
         _clock = clock;
     }
 
+    public Task<ApplicationResult<Subscription>> ExecuteAsync(
+        SubscriptionId subscriptionId,
+        CancellationToken cancellationToken = default) =>
+        ExecuteAsync(subscriptionId, expectedVersion: null, cancellationToken);
+
     public async Task<ApplicationResult<Subscription>> ExecuteAsync(
         SubscriptionId subscriptionId,
-        CancellationToken cancellationToken = default)
+        int? expectedVersion,
+        CancellationToken cancellationToken)
     {
         var subscription = await _subscriptions.GetByIdAsync(subscriptionId, cancellationToken).ConfigureAwait(false);
         if (subscription is null)
@@ -378,6 +573,13 @@ public sealed class CancelSubscription
             return ApplicationResult<Subscription>.Failure(
                 ApplicationErrorCodes.SubscriptionNotFound,
                 "Subscription was not found.");
+        }
+
+        if (SubscriptionConcurrency.IsMismatch(subscription.Version, expectedVersion))
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.ConcurrencyConflict,
+                "The subscription was modified by another request. Refresh and try again.");
         }
 
         try
@@ -411,9 +613,15 @@ public sealed class ExpireSubscription
         _clock = clock;
     }
 
+    public Task<ApplicationResult<Subscription>> ExecuteAsync(
+        SubscriptionId subscriptionId,
+        CancellationToken cancellationToken = default) =>
+        ExecuteAsync(subscriptionId, expectedVersion: null, cancellationToken);
+
     public async Task<ApplicationResult<Subscription>> ExecuteAsync(
         SubscriptionId subscriptionId,
-        CancellationToken cancellationToken = default)
+        int? expectedVersion,
+        CancellationToken cancellationToken)
     {
         var subscription = await _subscriptions.GetByIdAsync(subscriptionId, cancellationToken).ConfigureAwait(false);
         if (subscription is null)
@@ -421,6 +629,13 @@ public sealed class ExpireSubscription
             return ApplicationResult<Subscription>.Failure(
                 ApplicationErrorCodes.SubscriptionNotFound,
                 "Subscription was not found.");
+        }
+
+        if (SubscriptionConcurrency.IsMismatch(subscription.Version, expectedVersion))
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.ConcurrencyConflict,
+                "The subscription was modified by another request. Refresh and try again.");
         }
 
         try
@@ -439,5 +654,11 @@ public sealed class ExpireSubscription
             return ApplicationResult<Subscription>.Failure(ex.ErrorCode, ex.Message);
         }
     }
+}
+
+internal static class SubscriptionConcurrency
+{
+    public static bool IsMismatch(int currentVersion, int? expectedVersion) =>
+        expectedVersion is not null && expectedVersion.Value != currentVersion;
 }
 

@@ -40,8 +40,22 @@ internal static class EntitlementEndpoints
             string productCode,
             GenerateSnapshotRequest? body,
             GenerateEntitlementSnapshot useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageSubscriptions,
+                PlatformAuditActions.EntitlementSnapshotGenerated,
+                "EntitlementSnapshot",
+                $"{organizationId:D}:{productCode}",
+                organizationId,
+                productCode,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             try
             {
                 var result = await useCase.ExecuteAsync(
@@ -49,6 +63,16 @@ internal static class EntitlementEndpoints
                     ProductCode.Create(productCode),
                     body?.ExpectedNextVersion,
                     ct).ConfigureAwait(false);
+                if (result.IsSuccess)
+                {
+                    await authz.AuditSucceededAsync(
+                        PlatformAuditActions.EntitlementSnapshotGenerated,
+                        "EntitlementSnapshot",
+                        result.Value!.Id.Value.ToString("D"),
+                        organizationId,
+                        productCode,
+                        cancellationToken: ct).ConfigureAwait(false);
+                }
 
                 return PlatformApiResults.FromResult(result, s => Results.Created(
                     $"/api/v1/platform/entitlements/snapshots/{s.Id.Value}",
@@ -64,8 +88,15 @@ internal static class EntitlementEndpoints
             Guid organizationId,
             string productCode,
             EntitlementQueryService queries,
+            PlatformOrganizationAuthz orgAuthz,
             CancellationToken ct) =>
         {
+            var denied = await orgAuthz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var snapshot = await queries.GetLatestAsync(organizationId, productCode, ct).ConfigureAwait(false);
             return snapshot is null
                 ? PlatformApiResults.Problem(
@@ -81,8 +112,15 @@ internal static class EntitlementEndpoints
             int? page,
             int? pageSize,
             EntitlementQueryService queries,
+            PlatformOrganizationAuthz orgAuthz,
             CancellationToken ct) =>
         {
+            var denied = await orgAuthz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await queries
                 .ListHistoryAsync(organizationId, productCode, page, pageSize, ct)
                 .ConfigureAwait(false);
@@ -94,8 +132,15 @@ internal static class EntitlementEndpoints
             string productCode,
             int snapshotVersion,
             EntitlementQueryService queries,
+            PlatformOrganizationAuthz orgAuthz,
             CancellationToken ct) =>
         {
+            var denied = await orgAuthz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var snapshot = await queries
                 .GetByVersionAsync(organizationId, productCode, snapshotVersion, ct)
                 .ConfigureAwait(false);
@@ -112,8 +157,23 @@ internal static class EntitlementEndpoints
             string productCode,
             ReconcileSnapshotRequest? body,
             ReconcileEntitlementSnapshot useCase,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageSubscriptions,
+                PlatformAuditActions.EntitlementSnapshotReconciled,
+                "EntitlementSnapshot",
+                $"{organizationId:D}:{productCode}",
+                organizationId,
+                productCode,
+                reason: body?.Reason,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             try
             {
                 var result = await useCase.ExecuteAsync(
@@ -121,6 +181,17 @@ internal static class EntitlementEndpoints
                     ProductCode.Create(productCode),
                     body?.Reason,
                     ct).ConfigureAwait(false);
+                if (result.IsSuccess)
+                {
+                    await authz.AuditSucceededAsync(
+                        PlatformAuditActions.EntitlementSnapshotReconciled,
+                        "EntitlementSnapshot",
+                        result.Value!.Id.Value.ToString("D"),
+                        organizationId,
+                        productCode,
+                        reason: body?.Reason,
+                        cancellationToken: ct).ConfigureAwait(false);
+                }
 
                 return PlatformApiResults.FromResult(result, s => Results.Created(
                     $"/api/v1/platform/entitlements/snapshots/{s.Id.Value}",
@@ -140,15 +211,26 @@ internal static class EntitlementEndpoints
         group.MapGet("/{snapshotId:guid}", async (
             Guid snapshotId,
             EntitlementQueryService queries,
+            PlatformOrganizationAuthz orgAuthz,
             CancellationToken ct) =>
         {
             var snapshot = await queries.GetSnapshotByIdAsync(snapshotId, ct).ConfigureAwait(false);
-            return snapshot is null
-                ? PlatformApiResults.Problem(
+            if (snapshot is null)
+            {
+                return PlatformApiResults.Problem(
                     ApplicationErrorCodes.EntitlementSnapshotNotFound,
                     "Entitlement snapshot was not found.",
-                    StatusCodes.Status404NotFound)
-                : Results.Ok(snapshot);
+                    StatusCodes.Status404NotFound);
+            }
+
+            var denied = await orgAuthz.EnsureCanViewOrganizationAsync(snapshot.OrganizationId, ct)
+                .ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            return Results.Ok(snapshot);
         });
     }
 
@@ -220,8 +302,15 @@ internal static class EntitlementEndpoints
             int? page,
             int? pageSize,
             FeatureOverrideQueryService queries,
+            PlatformOrganizationAuthz orgAuthz,
             CancellationToken ct) =>
         {
+            var denied = await orgAuthz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var result = await queries
                 .ListByOrganizationProductAsync(organizationId, productCode, status, page, pageSize, ct)
                 .ConfigureAwait(false);
@@ -236,15 +325,26 @@ internal static class EntitlementEndpoints
         group.MapGet("/{overrideId:guid}", async (
             Guid overrideId,
             FeatureOverrideQueryService queries,
+            PlatformOrganizationAuthz orgAuthz,
             CancellationToken ct) =>
         {
             var featureOverride = await queries.GetByIdAsync(overrideId, ct).ConfigureAwait(false);
-            return featureOverride is null
-                ? PlatformApiResults.Problem(
+            if (featureOverride is null)
+            {
+                return PlatformApiResults.Problem(
                     ApplicationErrorCodes.FeatureOverrideNotFound,
                     "Feature override was not found.",
-                    StatusCodes.Status404NotFound)
-                : Results.Ok(featureOverride);
+                    StatusCodes.Status404NotFound);
+            }
+
+            var denied = await orgAuthz.EnsureCanViewOrganizationAsync(featureOverride.OrganizationId, ct)
+                .ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            return Results.Ok(featureOverride);
         });
 
         group.MapPost("/{overrideId:guid}/revoke", async (

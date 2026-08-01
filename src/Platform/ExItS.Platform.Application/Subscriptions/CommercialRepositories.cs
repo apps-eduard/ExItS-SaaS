@@ -40,6 +40,19 @@ public interface ISubscriptionRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    Task<(IReadOnlyList<Subscription> Items, int TotalCount)> ListAsync(
+        PlatformOrganizationId? organizationId,
+        ProductCode? productCode,
+        SubscriptionStatus? status,
+        string? search,
+        bool? isTrial,
+        Guid? planId,
+        SubscriptionListSortBy sortBy,
+        bool sortDescending,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
     Task<bool> ExistsActiveLikeAsync(
         PlatformOrganizationId organizationId,
         ProductCode productCode,

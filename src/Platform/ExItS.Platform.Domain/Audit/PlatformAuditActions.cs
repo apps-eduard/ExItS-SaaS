@@ -83,6 +83,7 @@ public static class PlatformAuditActions
     public const string ProductAccessRevoked = "platform.product_access.revoked";
 
     public const string SubscriptionTrialStarted = "platform.subscription.trial_started";
+    public const string SubscriptionPaidStarted = "platform.subscription.paid_started";
     public const string SubscriptionActivated = "platform.subscription.activated";
     public const string SubscriptionEnteredGracePeriod = "platform.subscription.grace_period_entered";
     public const string SubscriptionMarkedPastDue = "platform.subscription.past_due_marked";
@@ -98,6 +99,8 @@ public static class PlatformAuditActions
 
     public const string FeatureOverrideCreated = "platform.feature_override.created";
     public const string FeatureOverrideRevoked = "platform.feature_override.revoked";
+    public const string EntitlementSnapshotGenerated = "platform.entitlement.snapshot_generated";
+    public const string EntitlementSnapshotReconciled = "platform.entitlement.snapshot_reconciled";
 
     /// <summary>Generic action code recorded when a permission-gated read is denied (e.g. audit or role-assignment views).</summary>
     public const string PlatformAccessChecked = "platform.access.checked";

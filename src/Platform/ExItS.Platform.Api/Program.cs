@@ -186,6 +186,7 @@ builder.Services.AddScoped<EvaluateEffectiveProductAccess>();
 
 builder.Services.AddScoped<SubscriptionQueryService>();
 builder.Services.AddScoped<StartTrialSubscription>();
+builder.Services.AddScoped<ActivatePaidSubscription>();
 builder.Services.AddScoped<ActivateSubscription>();
 builder.Services.AddScoped<EnterSubscriptionGracePeriod>();
 builder.Services.AddScoped<MarkSubscriptionPastDue>();
