@@ -14,7 +14,7 @@
 | Current phase | Phase 15 — Ant Design Platform Administration (**in progress**) |
 | Current work package | P15-WP04 — Product Catalog and Plan CRUD (**complete**) |
 | Overall status | **Phase 15 in progress.** P15-WP01–WP04 complete. Live Preview hardening must not be rolled back ([report](reports/2026-08-01-admin-live-preview-hardening.md)). Fluent UI Admin direction cancelled/superseded. Phase 14 Production remains **Blocked** pending P14-WP03+. Exact next: **P15-WP05** or **P14-WP03** only when authorized. **Not production-ready.** |
-| Latest verified commit | `d0e2ad3bd211607b59e16278fbb94e4fc73589f3` |
+| Latest verified commit | `17e7d3dee411c8c7929b9918e3051473cc4f0c8b` |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-08-01 |
 
