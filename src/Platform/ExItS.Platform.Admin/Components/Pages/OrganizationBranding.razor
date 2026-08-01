@@ -1,0 +1,158 @@
+﻿@page "/admin/organizations/{OrganizationId:guid}/branding"
+@using AntDesign
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IPlatformApiClient Api
+@inject IMessageService Message
+@inject IStringLocalizer<AdminResources> L
+@inject PlatformPermissionState Permissions
+@inject AdminShellContext Shell
+
+<PageHeader Class="exits-page-header" Title="@L["Branding_Title"]" SubTitle="@L["Branding_Description"]">
+    <PageHeaderBreadcrumb>
+        <Breadcrumb>
+            <BreadcrumbItem Href="@($"/admin/organizations/{OrganizationId}")">@(_org?.Data?.DisplayName ?? L["Nav_Organizations"])</BreadcrumbItem>
+            <BreadcrumbItem>@L["Nav_Branding"]</BreadcrumbItem>
+        </Breadcrumb>
+    </PageHeaderBreadcrumb>
+</PageHeader>
+
+@if (_org is null)
+{
+    <div style="padding:2rem;text-align:center;"><Spin Tip="@L["Organizations_DetailLoading"]" /></div>
+}
+else if (!_org.IsSuccess)
+{
+    <Result Status="@ResultStatus.Error" Title="@(_org.Error?.Title ?? L["Common_Error"])" SubTitle="@_org.Error?.Detail" />
+}
+else
+{
+    var o = _org.Data!;
+    var previewName = string.IsNullOrWhiteSpace(_brandDisplayName) ? o.DisplayName : _brandDisplayName;
+    var primary = string.IsNullOrWhiteSpace(_primaryColor) ? "#1677FF" : _primaryColor;
+    var accent = string.IsNullOrWhiteSpace(_accentColor) ? "#08979C" : _accentColor;
+
+    @if (o.Status != "Active" && !CanManageLifecycle)
+    {
+        <Alert Type="@AlertType.Warning" ShowIcon="true" Message="@L["Branding_InactiveAlert"]" Style="margin-bottom:12px;" />
+    }
+
+    <Row Gutter="16">
+        <AntDesign.Col Xs="24" Md="14">
+            <FormValidationSummary Title="@L["Branding_SaveFailed"]" Message="@_formError" IsConflict="_formConflict" />
+            <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                <div>
+                    <label class="ant-form-item-label">@L["Branding_DisplayName"]</label>
+                    <Input @bind-Value="_brandDisplayName" Size="@InputSize.Small" Disabled="@(!CanEdit || _busy)" Placeholder="@o.DisplayName" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label">@L["Branding_LogoUrl"]</label>
+                    <Input @bind-Value="_logoUrl" Size="@InputSize.Small" Disabled="@(!CanEdit || _busy)" Placeholder="https://â€¦" />
+                    <Paragraph Type="@TextElementType.Secondary" Style="margin:4px 0 0;">@L["Branding_LogoHint"]</Paragraph>
+                </div>
+                <Space Wrap>
+                    <div>
+                        <label class="ant-form-item-label">@L["Branding_PrimaryColor"]</label>
+                        <Input @bind-Value="_primaryColor" Size="@InputSize.Small" Style="width:120px;" Disabled="@(!CanEdit || _busy)" Placeholder="#1677FF" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label">@L["Branding_AccentColor"]</label>
+                        <Input @bind-Value="_accentColor" Size="@InputSize.Small" Style="width:120px;" Disabled="@(!CanEdit || _busy)" Placeholder="#08979C" />
+                    </div>
+                </Space>
+                @if (CanEdit)
+                {
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveAsync">@L["Common_Save"]</Button>
+                }
+            </Space>
+        </AntDesign.Col>
+        <AntDesign.Col Xs="24" Md="10">
+            <Card Size="@CardSize.Small" Title="@L["Branding_Preview"]">
+                <div style="@($"border:1px solid #f0f0f0;border-radius:4px;overflow:hidden;")">
+                    <div style="@($"background:{primary};color:#fff;padding:12px 16px;display:flex;align-items:center;gap:12px;")">
+                        @if (!string.IsNullOrWhiteSpace(_logoUrl) && Uri.TryCreate(_logoUrl, UriKind.Absolute, out var logoUri) && logoUri.Scheme == Uri.UriSchemeHttps)
+                        {
+                            <img src="@_logoUrl" alt="" style="height:28px;max-width:120px;object-fit:contain;background:#fff;border-radius:2px;" />
+                        }
+                        <strong>@previewName</strong>
+                    </div>
+                    <div style="padding:16px;">
+                        <Button Type="@ButtonType.Primary" Style="@($"background:{primary};border-color:{primary};")">@L["Common_Save"]</Button>
+                        <Button Style="@($"margin-left:8px;color:{accent};border-color:{accent};")">@L["Nav_Branding"]</Button>
+                    </div>
+                </div>
+                <Paragraph Type="@TextElementType.Secondary" Style="margin-top:8px;">@L["Branding_FallbackHint"]</Paragraph>
+            </Card>
+        </AntDesign.Col>
+    </Row>
+}
+
+@code {
+    [Parameter] public Guid OrganizationId { get; set; }
+
+    private ApiCallResult<OrganizationDto>? _org;
+    private string _brandDisplayName = "";
+    private string _logoUrl = "";
+    private string _primaryColor = "";
+    private string _accentColor = "";
+    private DateTimeOffset? _expectedUpdatedAt;
+    private string? _formError;
+    private bool _formConflict;
+    private bool _busy;
+
+    private bool CanManageLifecycle => Permissions.HasPermission(PlatformPermissionCodes.ManageOrganizations);
+
+    private bool CanEdit =>
+        _org?.IsSuccess == true
+        && _org.Data!.Status != "Closed"
+        && (CanManageLifecycle
+            || (Shell.SelectedOrganizationId == OrganizationId
+                && _org.Data.Status == "Active"
+                && (string.Equals(Shell.MembershipRole, "OrganizationOwner", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(Shell.MembershipRole, "OrganizationAdministrator", StringComparison.OrdinalIgnoreCase))));
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _formError = null;
+        _formConflict = false;
+        _org = await Api.GetOrganizationAsync(OrganizationId);
+        if (_org.IsSuccess)
+        {
+            var b = _org.Data!.Branding;
+            _brandDisplayName = b?.BrandDisplayName ?? "";
+            _logoUrl = b?.LogoUrl ?? "";
+            _primaryColor = b?.PrimaryColor ?? "";
+            _accentColor = b?.AccentColor ?? "";
+            _expectedUpdatedAt = _org.Data.UpdatedAtUtc;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        _formError = null;
+        _formConflict = false;
+        var result = await Api.UpdateOrganizationBrandingAsync(
+            OrganizationId,
+            new UpdateOrganizationBrandingRequest(
+                NullIfBlank(_brandDisplayName),
+                NullIfBlank(_logoUrl),
+                NullIfBlank(_primaryColor),
+                NullIfBlank(_accentColor),
+                _expectedUpdatedAt));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        await Message.SuccessAsync(L["Branding_Saved"].Value);
+        _org = result;
+        _expectedUpdatedAt = result.Data!.UpdatedAtUtc;
+    }
+
+    private static string? NullIfBlank(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+}

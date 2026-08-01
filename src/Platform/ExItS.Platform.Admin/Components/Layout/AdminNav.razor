@@ -84,7 +84,8 @@
         </SubMenu>
 
         <SubMenu Key="settings" TitleTemplate="@SettingsTitle">
-            @if (Shell.SelectedOrganizationId is Guid settingsOrg && CanView(PlatformPermissionCodes.ViewPortfolio))
+            @if (Shell.SelectedOrganizationId is Guid settingsOrg
+                 && (CanView(PlatformPermissionCodes.ViewPortfolio) || CanView(PlatformPermissionCodes.ManageOrganizations)))
             {
                 <MenuItem Key="org-settings" RouterLink="@($"/admin/organizations/{settingsOrg}")" Icon="setting">
                     @L["Nav_OrganizationSettings"]
@@ -96,15 +97,26 @@
                     @L["Nav_OrganizationSettings"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
                 </MenuItem>
             }
-            <MenuItem Key="branding" Disabled="true">
-                @L["Nav_Branding"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
-            </MenuItem>
+            @if (Shell.SelectedOrganizationId is Guid brandingOrg
+                 && (CanView(PlatformPermissionCodes.ViewPortfolio) || CanView(PlatformPermissionCodes.ManageOrganizations)))
+            {
+                <MenuItem Key="branding" RouterLink="@($"/admin/organizations/{brandingOrg}/branding")" Icon="bg-colors">
+                    @L["Nav_Branding"]
+                </MenuItem>
+            }
+            else
+            {
+                <MenuItem Key="branding" Disabled="true">
+                    @L["Nav_Branding"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                </MenuItem>
+            }
         </SubMenu>
     }
     else if (_ready && Shell.IsOrganizationShell)
     {
         <SubMenu Key="organization" TitleTemplate="@OrganizationTitle">
-            @if (Shell.SelectedOrganizationId is Guid orgId && CanView(PlatformPermissionCodes.ViewPortfolio))
+            @if (Shell.SelectedOrganizationId is Guid orgId
+                 && (CanView(PlatformPermissionCodes.ViewPortfolio) || IsOrgAdminMembership))
             {
                 <MenuItem Key="org-profile" RouterLink="@($"/admin/organizations/{orgId}")" Icon="bank">
                     @L["Nav_OrganizationProfile"]
@@ -189,9 +201,18 @@
                     @L["Nav_OrganizationSettings"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
                 </MenuItem>
             }
-            <MenuItem Key="branding" Disabled="true">
-                @L["Nav_Branding"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
-            </MenuItem>
+            @if (Shell.SelectedOrganizationId is Guid orgBrandingId && IsOrgAdminMembership)
+            {
+                <MenuItem Key="branding" RouterLink="@($"/admin/organizations/{orgBrandingId}/branding")" Icon="bg-colors">
+                    @L["Nav_Branding"]
+                </MenuItem>
+            }
+            else
+            {
+                <MenuItem Key="branding" Disabled="true">
+                    @L["Nav_Branding"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                </MenuItem>
+            }
         </SubMenu>
     }
 </Menu>
@@ -262,6 +283,7 @@
             var p when p.StartsWith("/admin/organization-users", StringComparison.Ordinal) => ["org-users"],
             var p when p.Contains("/members", StringComparison.Ordinal) => Shell.IsOrganizationShell ? ["org-members"] : ["org-users"],
             var p when p.Contains("/product-access", StringComparison.Ordinal) => Shell.IsOrganizationShell ? ["my-products"] : ["organizations"],
+            var p when p.EndsWith("/branding", StringComparison.Ordinal) => ["branding"],
             var p when p.StartsWith("/admin/organizations", StringComparison.Ordinal) =>
                 Shell.IsOrganizationShell ? ["org-profile"] : ["organizations"],
             var p when p.StartsWith("/admin/products", StringComparison.Ordinal) => ["products"],

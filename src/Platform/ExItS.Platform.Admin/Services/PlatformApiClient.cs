@@ -26,10 +26,31 @@ public sealed class PlatformApiClient(
         GetAsync<ProductDto>($"/api/v1/platform/catalog/products/{id}", ct);
     public Task<ApiCallResult<ProductOverviewDto>> GetProductOverviewAsync(string productCode, CancellationToken ct = default) =>
         GetAsync<ProductOverviewDto>($"/api/v1/platform/admin/products/{Escape(productCode)}/overview", ct);
-    public Task<ApiCallResult<PagedResult<OrganizationDto>>> GetOrganizationsAsync(int page = 1, int pageSize = 20, CancellationToken ct = default) =>
-        GetAsync<PagedResult<OrganizationDto>>($"/api/v1/platform/organizations?{Query(("page", page), ("pageSize", pageSize))}", ct);
+    public Task<ApiCallResult<PagedResult<OrganizationDto>>> GetOrganizationsAsync(
+        int page = 1,
+        int pageSize = 20,
+        string? status = null,
+        string? search = null,
+        string? sortBy = null,
+        bool? sortDesc = null,
+        CancellationToken ct = default) =>
+        GetAsync<PagedResult<OrganizationDto>>(
+            $"/api/v1/platform/organizations?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("search", search), ("sortBy", sortBy), ("sortDesc", sortDesc))}",
+            ct);
     public Task<ApiCallResult<OrganizationDto>> GetOrganizationAsync(Guid id, CancellationToken ct = default) =>
         GetAsync<OrganizationDto>($"/api/v1/platform/organizations/{id}", ct);
+    public Task<ApiCallResult<OrganizationDto>> CreateOrganizationAsync(CreateOrganizationRequest request, CancellationToken ct = default) =>
+        SendAsync<OrganizationDto>(HttpMethod.Post, "/api/v1/platform/organizations", request, ct);
+    public Task<ApiCallResult<OrganizationDto>> UpdateOrganizationAsync(Guid id, UpdateOrganizationRequest request, CancellationToken ct = default) =>
+        SendAsync<OrganizationDto>(HttpMethod.Put, $"/api/v1/platform/organizations/{id}", request, ct);
+    public Task<ApiCallResult<OrganizationDto>> UpdateOrganizationBrandingAsync(Guid id, UpdateOrganizationBrandingRequest request, CancellationToken ct = default) =>
+        SendAsync<OrganizationDto>(HttpMethod.Put, $"/api/v1/platform/organizations/{id}/branding", request, ct);
+    public Task<ApiCallResult<OrganizationDto>> SuspendOrganizationAsync(Guid id, CancellationToken ct = default) =>
+        SendAsync<OrganizationDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{id}/suspend", null, ct);
+    public Task<ApiCallResult<OrganizationDto>> ReactivateOrganizationAsync(Guid id, CancellationToken ct = default) =>
+        SendAsync<OrganizationDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{id}/reactivate", null, ct);
+    public Task<ApiCallResult<OrganizationDto>> CloseOrganizationAsync(Guid id, CancellationToken ct = default) =>
+        SendAsync<OrganizationDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{id}/close", null, ct);
     public Task<ApiCallResult<OrganizationCommercialSummaryDto>> GetOrganizationCommercialSummaryAsync(Guid id, CancellationToken ct = default) =>
         GetAsync<OrganizationCommercialSummaryDto>($"/api/v1/platform/admin/organizations/{id}/commercial-summary", ct);
     public Task<ApiCallResult<PagedResult<SubscriptionDto>>> GetSubscriptionsAsync(string? status = null, string? productCode = null, int page = 1, int pageSize = 20, CancellationToken ct = default) =>

@@ -64,13 +64,61 @@ public sealed record ProductOverviewDto(
     IReadOnlyList<PlanVersionDto> PublishedPlanVersions,
     IReadOnlyList<TrialDefinitionDto> Trials);
 
+public sealed record OrganizationProfileDto(
+    string? LegalName,
+    string? ContactEmail,
+    string? ContactPhone,
+    string? AddressLine1,
+    string? AddressLine2,
+    string? City,
+    string? Region,
+    string? PostalCode,
+    string? CountryCode,
+    string? TimeZoneId,
+    string? Locale,
+    string? CurrencyCode);
+
+public sealed record OrganizationBrandingDto(
+    string? BrandDisplayName,
+    string? LogoUrl,
+    string? PrimaryColor,
+    string? AccentColor);
+
 public sealed record OrganizationDto(
     Guid Id,
     string DisplayName,
     string Slug,
     string Status,
+    OrganizationProfileDto? Profile,
+    OrganizationBrandingDto? Branding,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
+
+public sealed record CreateOrganizationRequest(string DisplayName, string Slug);
+
+public sealed record UpdateOrganizationRequest(
+    string? DisplayName,
+    string? Slug,
+    string? LegalName,
+    string? ContactEmail,
+    string? ContactPhone,
+    string? AddressLine1,
+    string? AddressLine2,
+    string? City,
+    string? Region,
+    string? PostalCode,
+    string? CountryCode,
+    string? TimeZoneId,
+    string? Locale,
+    string? CurrencyCode,
+    DateTimeOffset? ExpectedUpdatedAtUtc);
+
+public sealed record UpdateOrganizationBrandingRequest(
+    string? BrandDisplayName,
+    string? LogoUrl,
+    string? PrimaryColor,
+    string? AccentColor,
+    DateTimeOffset? ExpectedUpdatedAtUtc);
 
 public sealed record SubscriptionDto(
     Guid Id,

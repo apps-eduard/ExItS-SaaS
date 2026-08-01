@@ -1,10 +1,15 @@
-@page "/admin/organizations"
+﻿@page "/admin/organizations"
 @page "/admin/organizations/{Id:guid}"
 @using AntDesign
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject IPlatformApiClient Api
+@inject IMessageService Message
+@inject ConfirmService Confirm
 @inject IStringLocalizer<AdminResources> L
+@inject NavigationManager Nav
+@inject PlatformPermissionState Permissions
+@inject AdminShellContext Shell
 
 @if (Id is null)
 {
@@ -15,11 +20,64 @@
                 <BreadcrumbItem>@L["Nav_Organizations"]</BreadcrumbItem>
             </Breadcrumb>
         </PageHeaderBreadcrumb>
+        <PageHeaderExtra>
+            @if (CanManageLifecycle)
+            {
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ToggleCreate">
+                    @(_showCreate ? L["Organizations_HideCreate"] : L["Organizations_Create"])
+                </Button>
+            }
+        </PageHeaderExtra>
     </PageHeader>
+
+    <Space Style="margin-bottom:12px; width:100%;" Wrap>
+        <Input @bind-Value="_search" Size="@InputSize.Small" Placeholder="@L["Organizations_SearchPlaceholder"]" Style="width:220px;" OnPressEnter="ApplyFiltersAsync" />
+        <Select TItemValue="string"
+                TItem="string"
+                @bind-Value="_status"
+                Size="@InputSize.Small"
+                Placeholder="@L["Common_Status"]"
+                Style="width:140px;"
+                AllowClear>
+            <SelectOptions>
+                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Active")" Label="@L["Status_Active"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Suspended")" Label="@L["Status_Suspended"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Closed")" Label="@L["Status_Closed"]" />
+            </SelectOptions>
+        </Select>
+        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ApplyFiltersAsync">@L["Common_Apply"]</Button>
+        <Button Size="@ButtonSize.Small" OnClick="ClearFiltersAsync">@L["Common_Reset"]</Button>
+    </Space>
+
+    @if (_showCreate && CanManageLifecycle)
+    {
+        <Card Size="@CardSize.Small" Title="@L["Organizations_CreateSection"]" Style="margin-bottom:12px;">
+            <FormValidationSummary Title="@L["Organizations_CreateFailed"]" Message="@_formError" IsConflict="_formConflict" />
+            <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                <div>
+                    <label class="ant-form-item-label" for="org-create-name">@L["Common_DisplayName"]</label>
+                    <Input Id="org-create-name" @bind-Value="_newDisplayName" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="org-create-slug">@L["Common_Slug"]</label>
+                    <Input Id="org-create-slug" @bind-Value="_newSlug" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <Space>
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">@L["Common_Create"]</Button>
+                    <Button Size="@ButtonSize.Small" OnClick="HideCreate" Disabled="_busy">@L["Common_Cancel"]</Button>
+                </Space>
+            </Space>
+        </Card>
+    }
 
     @if (_list is { IsSuccess: false })
     {
         <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail" />
+    }
+    else if (_list is { IsSuccess: true, Data.Items.Count: 0 })
+    {
+        <Empty Description="@L["Organizations_Empty"].Value" />
     }
     else
     {
@@ -33,7 +91,7 @@
                Bordered
                RemoteDataSource
                OnPageIndexChange="OnOrgPageChangedAsync"
-               ScrollX="900">
+               ScrollX="960">
             <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_DisplayName"]" Sortable>
                 <a href="/admin/organizations/@context.Id">@context.DisplayName</a>
             </PropertyColumn>
@@ -43,130 +101,324 @@
             </PropertyColumn>
             <PropertyColumn Property="c => c.CreatedAtUtc" Title="@L["Common_CreatedUtc"]" Format="u" Sortable />
             <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Format="u" Sortable />
-            <ActionColumn Title="@L["Common_Open"]" Width="88">
-                <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/organizations/{context.Id}")">@L["Common_Open"]</a>
+            <ActionColumn Title="@L["Common_Open"]" Width="160">
+                <Space>
+                    <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/organizations/{context.Id}")">@L["Common_Open"]</a>
+                    @if (CanManageLifecycle && context.Status == "Active")
+                    {
+                        <Popconfirm Title="@L["Organizations_ConfirmSuspend"]"
+                                    OnConfirm="() => SuspendFromListAsync(context.Id)"
+                                    OkText="@L["Common_Confirm"]"
+                                    CancelText="@L["Common_Cancel"]">
+                            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" Danger>@L["Organizations_Suspend"]</Button>
+                        </Popconfirm>
+                    }
+                </Space>
             </ActionColumn>
         </Table>
     }
 }
 else
 {
-    <PageHeader Class="exits-page-header" Title="@L["Organizations_DetailTitle"]" SubTitle="@L["Organizations_DetailDescription"]">
+    <PageHeader Class="exits-page-header" Title="@(_org?.Data?.DisplayName ?? L["Organizations_DetailTitle"])" SubTitle="@L["Organizations_DetailDescription"]">
         <PageHeaderBreadcrumb>
             <Breadcrumb>
-                <BreadcrumbItem Href="/admin/organizations">@L["Nav_Organizations"]</BreadcrumbItem>
+                @if (!Shell.IsOrganizationShell)
+                {
+                    <BreadcrumbItem Href="/admin/organizations">@L["Nav_Organizations"]</BreadcrumbItem>
+                }
                 <BreadcrumbItem>@L["Common_Detail"]</BreadcrumbItem>
             </Breadcrumb>
         </PageHeaderBreadcrumb>
+        <PageHeaderExtra>
+            @if (_org?.IsSuccess == true)
+            {
+                <Space>
+                    <a class="ant-btn ant-btn-sm" href="@($"/admin/organizations/{Id}/branding")">@L["Nav_Branding"]</a>
+                    @if (CanManageLifecycle && _org.Data!.Status == "Active")
+                    {
+                        <Popconfirm Title="@L["Organizations_ConfirmSuspend"]" OnConfirm="SuspendAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                            <Button Size="@ButtonSize.Small" Danger Loading="_busy">@L["Organizations_Suspend"]</Button>
+                        </Popconfirm>
+                    }
+                    @if (CanManageLifecycle && _org.Data!.Status == "Suspended")
+                    {
+                        <Popconfirm Title="@L["Organizations_ConfirmReactivate"]" OnConfirm="ReactivateAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                            <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy">@L["Organizations_Reactivate"]</Button>
+                        </Popconfirm>
+                    }
+                    @if (CanManageLifecycle && _org.Data!.Status is "Active" or "Suspended")
+                    {
+                        <Popconfirm Title="@L["Organizations_ConfirmClose"]" OnConfirm="CloseAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                            <Button Size="@ButtonSize.Small" Danger Loading="_busy">@L["Organizations_Close"]</Button>
+                        </Popconfirm>
+                    }
+                </Space>
+            }
+        </PageHeaderExtra>
     </PageHeader>
 
-    @if (_detail is null)
+    @if (_org is null)
     {
         <div style="padding:2rem;text-align:center;"><Spin Tip="@L["Organizations_DetailLoading"]" /></div>
     }
-    else if (!_detail.IsSuccess)
+    else if (!_org.IsSuccess)
     {
-        <Result Status="@ResultStatus.Error" Title="@(_detail.Error?.Title ?? L["Common_Error"])" SubTitle="@_detail.Error?.Detail" />
+        <Result Status="@ResultStatus.Error" Title="@(_org.Error?.Title ?? L["Common_Error"])" SubTitle="@_org.Error?.Detail" />
     }
     else
     {
-        var d = _detail.Data!;
-        <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
-            <DescriptionsItem Title="@L["Common_DisplayName"]">@d.Organization.DisplayName</DescriptionsItem>
-            <DescriptionsItem Title="@L["Common_Slug"]">@d.Organization.Slug</DescriptionsItem>
-            <DescriptionsItem Title="@L["Common_Status"]">
-                <Tag Color="@StatusColor(d.Organization.Status)">@d.Organization.Status</Tag>
-            </DescriptionsItem>
-            <DescriptionsItem Title="@L["Common_CreatedUtc"]"><UtcTimestamp Value="@d.Organization.CreatedAtUtc" /></DescriptionsItem>
-            <DescriptionsItem Title="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@d.Organization.UpdatedAtUtc" /></DescriptionsItem>
-            <DescriptionsItem Title="@L["Organizations_CommercialAdmin"]" Span="2">
-                <Space Wrap>
-                    <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/organizations/{Id}/members")">@L["Common_Members"]</a>
-                    <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/organizations/{Id}/product-access")">@L["Common_ProductAccess"]</a>
-                    <a class="ant-btn ant-btn-link ant-btn-sm" href="/admin/subscriptions">@L["Organizations_StartTrialSubscriptions"]</a>
-                    <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/payments?organizationId={Id}")">@L["Organizations_CreateViewPayments"]</a>
+        var o = _org.Data!;
+        @if (o.Status == "Suspended")
+        {
+            <Alert Type="@AlertType.Warning" ShowIcon="true" Message="@L["Organizations_SuspendedAlert"]" Style="margin-bottom:12px;" />
+        }
+        else if (o.Status == "Closed")
+        {
+            <Alert Type="@AlertType.Error" ShowIcon="true" Message="@L["Organizations_ClosedAlert"]" Style="margin-bottom:12px;" />
+        }
+
+        <Tabs>
+            <TabPane Key="overview" Tab="@L["Organizations_TabOverview"]">
+                <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2">
+                    <DescriptionsItem Title="@L["Common_DisplayName"]">@o.DisplayName</DescriptionsItem>
+                    <DescriptionsItem Title="@L["Common_Slug"]">@o.Slug</DescriptionsItem>
+                    <DescriptionsItem Title="@L["Common_Status"]">
+                        <Tag Color="@StatusColor(o.Status)">@o.Status</Tag>
+                    </DescriptionsItem>
+                    <DescriptionsItem Title="@L["Organizations_LegalName"]">@(o.Profile?.LegalName ?? "â€”")</DescriptionsItem>
+                    <DescriptionsItem Title="@L["Common_Email"]">@(o.Profile?.ContactEmail ?? "â€”")</DescriptionsItem>
+                    <DescriptionsItem Title="@L["Organizations_Phone"]">@(o.Profile?.ContactPhone ?? "â€”")</DescriptionsItem>
+                    <DescriptionsItem Title="@L["Common_CreatedUtc"]"><UtcTimestamp Value="@o.CreatedAtUtc" /></DescriptionsItem>
+                    <DescriptionsItem Title="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@o.UpdatedAtUtc" /></DescriptionsItem>
+                </Descriptions>
+            </TabPane>
+
+            <TabPane Key="profile" Tab="@L["Organizations_TabProfile"]">
+                <FormValidationSummary Title="@L["Organizations_SaveFailed"]" Message="@_formError" IsConflict="_formConflict" />
+                <Space Direction="SpaceDirection.Vertical" Style="width:100%; max-width:720px;">
+                    <div>
+                        <label class="ant-form-item-label">@L["Common_DisplayName"]</label>
+                        <Input @bind-Value="_editDisplayName" Size="@InputSize.Small" Disabled="@(!CanEditProfile || _busy)" />
+                    </div>
+                    @if (CanManageLifecycle)
+                    {
+                        <div>
+                            <label class="ant-form-item-label">@L["Common_Slug"]</label>
+                            <Input @bind-Value="_editSlug" Size="@InputSize.Small" Disabled="@(!CanEditProfile || _busy || o.Status == "Closed")" />
+                        </div>
+                    }
+                    else
+                    {
+                        <Descriptions Size="@DescriptionsSize.Small" Column="1">
+                            <DescriptionsItem Title="@L["Common_Slug"]">@o.Slug</DescriptionsItem>
+                        </Descriptions>
+                    }
+                    <div>
+                        <label class="ant-form-item-label">@L["Organizations_LegalName"]</label>
+                        <Input @bind-Value="_editLegalName" Size="@InputSize.Small" Disabled="@(!CanEditProfile || _busy)" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label">@L["Common_Email"]</label>
+                        <Input @bind-Value="_editEmail" Size="@InputSize.Small" Disabled="@(!CanEditProfile || _busy)" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label">@L["Organizations_Phone"]</label>
+                        <Input @bind-Value="_editPhone" Size="@InputSize.Small" Disabled="@(!CanEditProfile || _busy)" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label">@L["Organizations_Address1"]</label>
+                        <Input @bind-Value="_editAddress1" Size="@InputSize.Small" Disabled="@(!CanEditProfile || _busy)" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label">@L["Organizations_Address2"]</label>
+                        <Input @bind-Value="_editAddress2" Size="@InputSize.Small" Disabled="@(!CanEditProfile || _busy)" />
+                    </div>
+                    <Space Wrap>
+                        <div>
+                            <label class="ant-form-item-label">@L["Organizations_City"]</label>
+                            <Input @bind-Value="_editCity" Size="@InputSize.Small" Style="width:160px;" Disabled="@(!CanEditProfile || _busy)" />
+                        </div>
+                        <div>
+                            <label class="ant-form-item-label">@L["Organizations_Region"]</label>
+                            <Input @bind-Value="_editRegion" Size="@InputSize.Small" Style="width:160px;" Disabled="@(!CanEditProfile || _busy)" />
+                        </div>
+                        <div>
+                            <label class="ant-form-item-label">@L["Organizations_PostalCode"]</label>
+                            <Input @bind-Value="_editPostal" Size="@InputSize.Small" Style="width:120px;" Disabled="@(!CanEditProfile || _busy)" />
+                        </div>
+                        <div>
+                            <label class="ant-form-item-label">@L["Organizations_Country"]</label>
+                            <Input @bind-Value="_editCountry" Size="@InputSize.Small" Style="width:80px;" Disabled="@(!CanEditProfile || _busy)" />
+                        </div>
+                    </Space>
+                    <Space Wrap>
+                        <div>
+                            <label class="ant-form-item-label">@L["Organizations_TimeZone"]</label>
+                            <Input @bind-Value="_editTimeZone" Size="@InputSize.Small" Style="width:220px;" Disabled="@(!CanEditProfile || _busy)" />
+                        </div>
+                        <div>
+                            <label class="ant-form-item-label">@L["Organizations_Locale"]</label>
+                            <Input @bind-Value="_editLocale" Size="@InputSize.Small" Style="width:120px;" Disabled="@(!CanEditProfile || _busy)" />
+                        </div>
+                        <div>
+                            <label class="ant-form-item-label">@L["Organizations_Currency"]</label>
+                            <Input @bind-Value="_editCurrency" Size="@InputSize.Small" Style="width:100px;" Disabled="@(!CanEditProfile || _busy)" />
+                        </div>
+                    </Space>
+                    @if (CanEditProfile)
+                    {
+                        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveProfileAsync">@L["Common_Save"]</Button>
+                    }
                 </Space>
-            </DescriptionsItem>
-        </Descriptions>
+            </TabPane>
 
-        <Title Level="5">@L["Organizations_SubscriptionsByProduct"]</Title>
-        <Paragraph Type="@TextElementType.Secondary">@L["Organizations_SubscriptionsHint"]</Paragraph>
-        @if (d.Subscriptions.Count == 0)
-        {
-            <Empty Description="@L["Organizations_SubscriptionsEmpty"].Value" />
-        }
-        else
-        {
-            <Table TItem="SubscriptionDto" DataSource="d.Subscriptions" Size="@TableSize.Small" HidePagination Bordered Style="margin-bottom:12px;">
-                <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" />
-                <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
-                    <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
-                </PropertyColumn>
-                <ActionColumn Title="@L["Common_Detail"]">
-                    <a href="/admin/subscriptions/@context.Id">@L["Organizations_OpenSubscription"]</a>
-                </ActionColumn>
-            </Table>
-        }
+            <TabPane Key="members" Tab="@L["Organizations_TabMembers"]">
+                <Paragraph>
+                    <a href="@($"/admin/organizations/{Id}/members")">@L["Organizations_OpenMembers"]</a>
+                </Paragraph>
+            </TabPane>
 
-        <Title Level="5">@L["Organizations_PaymentHistory"]</Title>
-        @if (d.Payments.Count == 0)
-        {
-            <Empty Description="@L["Organizations_PaymentsEmpty"].Value" />
-        }
-        else
-        {
-            <Table TItem="PaymentDto" DataSource="d.Payments" Size="@TableSize.Small" HidePagination Bordered Style="margin-bottom:12px;">
-                <PropertyColumn Property="c => c.ExternalReference" Title="@L["Common_Reference"]" />
-                <PropertyColumn Property="c => c.Amount" Title="@L["Common_Amount"]">
-                    <AmountDisplay Amount="@((decimal?)context.Amount)" CurrencyCode="@context.CurrencyCode" />
-                </PropertyColumn>
-                <PropertyColumn Property="c => c.Method" Title="@L["Common_Method"]" />
-                <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
-                    <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
-                </PropertyColumn>
-                <ActionColumn Title="@L["Common_Detail"]">
-                    <a href="/admin/payments/@context.Id">@L["Organizations_OpenPayment"]</a>
-                </ActionColumn>
-            </Table>
-        }
+            <TabPane Key="subscriptions" Tab="@L["Organizations_TabSubscriptions"]">
+                @if (_detail is null) { <Spin /> }
+                else if (!_detail.IsSuccess) { <Alert Type="@AlertType.Error" Message="@(_detail.Error?.Detail ?? L["Common_Error"])" ShowIcon="true" /> }
+                else
+                {
+                    @if (_detail.Data!.Subscriptions.Count == 0)
+                    {
+                        <Empty Description="@L["Organizations_SubscriptionsEmpty"].Value" />
+                    }
+                    else
+                    {
+                        <Table TItem="SubscriptionDto" DataSource="_detail.Data.Subscriptions" Size="@TableSize.Small" HidePagination Bordered Style="margin-bottom:12px;">
+                            <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" />
+                            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                                <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                            </PropertyColumn>
+                            <ActionColumn Title="@L["Common_Detail"]">
+                                <a href="/admin/subscriptions/@context.Id">@L["Organizations_OpenSubscription"]</a>
+                            </ActionColumn>
+                        </Table>
+                    }
 
-        <Title Level="5">@L["Organizations_LatestEntitlements"]</Title>
-        @if (d.LatestEntitlements.Count == 0)
-        {
-            <Empty Description="@L["Organizations_EntitlementsEmpty"].Value" />
-        }
-        else
-        {
-            <Table TItem="EntitlementLatestSummaryDto" DataSource="d.LatestEntitlements" Size="@TableSize.Small" HidePagination Bordered>
-                <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" />
-                <PropertyColumn Property="c => c.SnapshotVersion" Title="@L["Common_Version"]">
-                    <a href="/admin/entitlements/@context.Id">@context.SnapshotVersion</a>
-                </PropertyColumn>
-                <PropertyColumn Property="c => c.SubscriptionStatus" Title="@L["Common_Status"]">
-                    <Tag Color="@StatusColor(context.SubscriptionStatus)">@context.SubscriptionStatus</Tag>
-                </PropertyColumn>
-                <PropertyColumn Property="c => c.GeneratedAtUtc" Title="@L["Common_GeneratedUtc"]" Format="u" />
-                <ActionColumn Title="@L["Common_History"]">
-                    <a href="/admin/entitlements/history/@context.OrganizationId/@context.ProductCode">@L["Common_History"]</a>
-                </ActionColumn>
-            </Table>
-        }
+                    <Title Level="5">@L["Organizations_PaymentHistory"]</Title>
+                    @if (_detail.Data.Payments.Count == 0)
+                    {
+                        <Empty Description="@L["Organizations_PaymentsEmpty"].Value" />
+                    }
+                    else
+                    {
+                        <Table TItem="PaymentDto" DataSource="_detail.Data.Payments" Size="@TableSize.Small" HidePagination Bordered>
+                            <PropertyColumn Property="c => c.ExternalReference" Title="@L["Common_Reference"]" />
+                            <PropertyColumn Property="c => c.Amount" Title="@L["Common_Amount"]">
+                                <AmountDisplay Amount="@((decimal?)context.Amount)" CurrencyCode="@context.CurrencyCode" />
+                            </PropertyColumn>
+                            <PropertyColumn Property="c => c.Method" Title="@L["Common_Method"]" />
+                            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                                <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                            </PropertyColumn>
+                            <ActionColumn Title="@L["Common_Detail"]">
+                                <a href="/admin/payments/@context.Id">@L["Organizations_OpenPayment"]</a>
+                            </ActionColumn>
+                        </Table>
+                    }
+                }
+            </TabPane>
+
+            <TabPane Key="access" Tab="@L["Organizations_TabProductAccess"]">
+                <Paragraph>
+                    <a href="@($"/admin/organizations/{Id}/product-access")">@L["Organizations_OpenProductAccess"]</a>
+                </Paragraph>
+                @if (_detail?.IsSuccess == true && _detail.Data!.LatestEntitlements.Count > 0)
+                {
+                    <Title Level="5">@L["Organizations_LatestEntitlements"]</Title>
+                    <Table TItem="EntitlementLatestSummaryDto" DataSource="_detail.Data.LatestEntitlements" Size="@TableSize.Small" HidePagination Bordered>
+                        <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" />
+                        <PropertyColumn Property="c => c.SnapshotVersion" Title="@L["Common_Version"]" />
+                        <PropertyColumn Property="c => c.SubscriptionStatus" Title="@L["Common_Status"]">
+                            <Tag Color="@StatusColor(context.SubscriptionStatus)">@context.SubscriptionStatus</Tag>
+                        </PropertyColumn>
+                    </Table>
+                }
+            </TabPane>
+
+            <TabPane Key="audit" Tab="@L["Organizations_TabAudit"]">
+                <Paragraph Type="@TextElementType.Secondary">@L["Organizations_AuditHint"]</Paragraph>
+                <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/audit?organizationId={Id}")">@L["Organizations_OpenAudit"]</a>
+            </TabPane>
+        </Tabs>
     }
 }
 
 @code {
     [Parameter] public Guid? Id { get; set; }
+
     private ApiCallResult<PagedResult<OrganizationDto>>? _list;
+    private ApiCallResult<OrganizationDto>? _org;
     private ApiCallResult<OrganizationCommercialSummaryDto>? _detail;
     private int _page = 1;
+    private string _search = "";
+    private string _status = "";
+    private bool _showCreate;
+    private string _newDisplayName = "";
+    private string _newSlug = "";
+    private string _editDisplayName = "";
+    private string _editSlug = "";
+    private string _editLegalName = "";
+    private string _editEmail = "";
+    private string _editPhone = "";
+    private string _editAddress1 = "";
+    private string _editAddress2 = "";
+    private string _editCity = "";
+    private string _editRegion = "";
+    private string _editPostal = "";
+    private string _editCountry = "";
+    private string _editTimeZone = "";
+    private string _editLocale = "";
+    private string _editCurrency = "";
+    private DateTimeOffset? _expectedUpdatedAt;
+    private string? _formError;
+    private bool _formConflict;
+    private bool _busy;
+
+    private bool CanManageLifecycle => Permissions.HasPermission(PlatformPermissionCodes.ManageOrganizations);
+
+    private bool CanEditProfile =>
+        _org?.IsSuccess == true
+        && _org.Data!.Status != "Closed"
+        && (CanManageLifecycle
+            || (Shell.SelectedOrganizationId == Id
+                && _org.Data.Status == "Active"
+                && (string.Equals(Shell.MembershipRole, "OrganizationOwner", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(Shell.MembershipRole, "OrganizationAdministrator", StringComparison.OrdinalIgnoreCase))));
 
     protected override async Task OnParametersSetAsync()
     {
+        _formError = null;
+        _formConflict = false;
         if (Id is null) await LoadOrgsAsync();
-        else _detail = await Api.GetOrganizationCommercialSummaryAsync(Id.Value);
+        else await LoadDetailAsync();
     }
 
-    private async Task LoadOrgsAsync() => _list = await Api.GetOrganizationsAsync(page: _page);
+    private async Task LoadOrgsAsync() =>
+        _list = await Api.GetOrganizationsAsync(
+            page: _page,
+            status: string.IsNullOrWhiteSpace(_status) ? null : _status,
+            search: string.IsNullOrWhiteSpace(_search) ? null : _search);
+
+    private async Task ApplyFiltersAsync()
+    {
+        _page = 1;
+        await LoadOrgsAsync();
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        _search = "";
+        _status = "";
+        _page = 1;
+        await LoadOrgsAsync();
+    }
 
     private async Task OnOrgPageChangedAsync(PaginationEventArgs args)
     {
@@ -174,12 +426,168 @@ else
         await LoadOrgsAsync();
     }
 
+    private async Task LoadDetailAsync()
+    {
+        if (Id is null) return;
+        _org = await Api.GetOrganizationAsync(Id.Value);
+        if (_org.IsSuccess)
+        {
+            BindEditFields(_org.Data!);
+        }
+
+        _detail = await Api.GetOrganizationCommercialSummaryAsync(Id.Value);
+    }
+
+    private void BindEditFields(OrganizationDto o)
+    {
+        _editDisplayName = o.DisplayName;
+        _editSlug = o.Slug;
+        _editLegalName = o.Profile?.LegalName ?? "";
+        _editEmail = o.Profile?.ContactEmail ?? "";
+        _editPhone = o.Profile?.ContactPhone ?? "";
+        _editAddress1 = o.Profile?.AddressLine1 ?? "";
+        _editAddress2 = o.Profile?.AddressLine2 ?? "";
+        _editCity = o.Profile?.City ?? "";
+        _editRegion = o.Profile?.Region ?? "";
+        _editPostal = o.Profile?.PostalCode ?? "";
+        _editCountry = o.Profile?.CountryCode ?? "";
+        _editTimeZone = o.Profile?.TimeZoneId ?? "";
+        _editLocale = o.Profile?.Locale ?? "";
+        _editCurrency = o.Profile?.CurrencyCode ?? "";
+        _expectedUpdatedAt = o.UpdatedAtUtc;
+    }
+
+    private void ToggleCreate() => _showCreate = !_showCreate;
+    private void HideCreate()
+    {
+        _showCreate = false;
+        _formError = null;
+        _formConflict = false;
+    }
+
+    private async Task CreateAsync()
+    {
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        _formError = null;
+        _formConflict = false;
+        var result = await Api.CreateOrganizationAsync(new CreateOrganizationRequest(_newDisplayName, _newSlug));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        await Message.SuccessAsync(L["Organizations_Created"].Value);
+        Nav.NavigateTo($"/admin/organizations/{result.Data!.Id}");
+    }
+
+    private async Task SaveProfileAsync()
+    {
+        if (Id is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        _formError = null;
+        _formConflict = false;
+        var result = await Api.UpdateOrganizationAsync(
+            Id.Value,
+            new UpdateOrganizationRequest(
+                _editDisplayName,
+                CanManageLifecycle ? _editSlug : null,
+                NullIfBlank(_editLegalName),
+                NullIfBlank(_editEmail),
+                NullIfBlank(_editPhone),
+                NullIfBlank(_editAddress1),
+                NullIfBlank(_editAddress2),
+                NullIfBlank(_editCity),
+                NullIfBlank(_editRegion),
+                NullIfBlank(_editPostal),
+                NullIfBlank(_editCountry),
+                NullIfBlank(_editTimeZone),
+                NullIfBlank(_editLocale),
+                NullIfBlank(_editCurrency),
+                _expectedUpdatedAt));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        await Message.SuccessAsync(L["Organizations_Saved"].Value);
+        _org = result;
+        BindEditFields(result.Data!);
+    }
+
+    private async Task SuspendFromListAsync(Guid organizationId)
+    {
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.SuspendOrganizationAsync(organizationId);
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            await Message.ErrorAsync(AdminFormErrorMapper.MapPageError(result) ?? L["Common_Error"].Value);
+            return;
+        }
+
+        await Message.SuccessAsync(L["Organizations_Suspended"].Value);
+        await LoadOrgsAsync();
+    }
+
+    private async Task SuspendAsync()
+    {
+        if (Id is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.SuspendOrganizationAsync(Id.Value);
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            await Message.ErrorAsync(AdminFormErrorMapper.MapPageError(result) ?? L["Common_Error"].Value);
+            return;
+        }
+
+        await Message.SuccessAsync(L["Organizations_Suspended"].Value);
+        await LoadDetailAsync();
+    }
+
+    private async Task ReactivateAsync()
+    {
+        if (Id is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.ReactivateOrganizationAsync(Id.Value);
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            await Message.ErrorAsync(AdminFormErrorMapper.MapPageError(result) ?? L["Common_Error"].Value);
+            return;
+        }
+
+        await Message.SuccessAsync(L["Organizations_Reactivated"].Value);
+        await LoadDetailAsync();
+    }
+
+    private async Task CloseAsync()
+    {
+        if (Id is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.CloseOrganizationAsync(Id.Value);
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            await Message.ErrorAsync(AdminFormErrorMapper.MapPageError(result) ?? L["Common_Error"].Value);
+            return;
+        }
+
+        await Message.SuccessAsync(L["Organizations_Closed"].Value);
+        await LoadDetailAsync();
+    }
+
+    private static string? NullIfBlank(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
     private static string StatusColor(string status) => status switch
     {
         "Active" => "success",
         "Trialing" => "processing",
         "Suspended" or "PastDue" or "GracePeriod" => "warning",
-        "Cancelled" or "Expired" or "Deactivated" => "default",
+        "Closed" or "Cancelled" or "Expired" or "Deactivated" => "default",
         _ => "processing"
     };
 }

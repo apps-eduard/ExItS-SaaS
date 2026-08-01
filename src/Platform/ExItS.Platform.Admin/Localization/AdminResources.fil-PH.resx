@@ -386,11 +386,11 @@
   <data name="Products_Column_TrialEligible" xml:space="preserve"><value>Trial eligible</value></data>
 
   <data name="Organizations_Title" xml:space="preserve"><value>Mga Organisasyon</value></data>
-  <data name="Organizations_Description" xml:space="preserve"><value>Mga Platform Organization na may commercial summary, membership, at product-access administration.</value></data>
+  <data name="Organizations_Description" xml:space="preserve"><value>Mga Platform Organization na may lifecycle, profile, membership, at commercial administration.</value></data>
   <data name="Organizations_Loading" xml:space="preserve"><value>Naglo-load ng mga organisasyon…</value></data>
   <data name="Organizations_Empty" xml:space="preserve"><value>Walang organisasyong nagawa.</value></data>
-  <data name="Organizations_DetailTitle" xml:space="preserve"><value>Commercial summary ng organisasyon</value></data>
-  <data name="Organizations_DetailDescription" xml:space="preserve"><value>Mga subscription, manual SaaS payment, at pinakabagong entitlement snapshot. Gamitin ang subscription at payment pages para sa lifecycle actions.</value></data>
+  <data name="Organizations_DetailTitle" xml:space="preserve"><value>Detalye ng organisasyon</value></data>
+  <data name="Organizations_DetailDescription" xml:space="preserve"><value>Profile, lifecycle, members, subscriptions, product access, at audit summaries.</value></data>
   <data name="Organizations_DetailLoading" xml:space="preserve"><value>Naglo-load ng organisasyon…</value></data>
   <data name="Organizations_CommercialAdmin" xml:space="preserve"><value>Commercial admin</value></data>
   <data name="Organizations_StartTrialSubscriptions" xml:space="preserve"><value>Simulan ang trial / subscriptions</value></data>
@@ -404,6 +404,59 @@
   <data name="Organizations_OpenPayment" xml:space="preserve"><value>Buksan ang bayad</value></data>
   <data name="Organizations_LatestEntitlements" xml:space="preserve"><value>Pinakabagong entitlement snapshot</value></data>
   <data name="Organizations_EntitlementsEmpty" xml:space="preserve"><value>Walang entitlement snapshot para sa organisasyong ito.</value></data>
+  <data name="Organizations_Create" xml:space="preserve"><value>Gumawa ng organisasyon</value></data>
+  <data name="Organizations_HideCreate" xml:space="preserve"><value>Itago ang paggawa</value></data>
+  <data name="Organizations_CreateSection" xml:space="preserve"><value>Gumawa ng Platform Organization</value></data>
+  <data name="Organizations_CreateFailed" xml:space="preserve"><value>Nabigo ang paggawa</value></data>
+  <data name="Organizations_Created" xml:space="preserve"><value>Nagawa ang organisasyon.</value></data>
+  <data name="Organizations_SearchPlaceholder" xml:space="preserve"><value>Maghanap ng pangalan, slug, email…</value></data>
+  <data name="Organizations_SaveFailed" xml:space="preserve"><value>Nabigo ang pag-save</value></data>
+  <data name="Organizations_Saved" xml:space="preserve"><value>Na-save ang organisasyon.</value></data>
+  <data name="Organizations_Suspend" xml:space="preserve"><value>I-suspend</value></data>
+  <data name="Organizations_Reactivate" xml:space="preserve"><value>I-reactivate</value></data>
+  <data name="Organizations_Close" xml:space="preserve"><value>Isara</value></data>
+  <data name="Organizations_ConfirmSuspend" xml:space="preserve"><value>I-suspend ang organisasyong ito? Made-clear ang mga session na naka-bind dito. Nananatili ang historical data.</value></data>
+  <data name="Organizations_ConfirmReactivate" xml:space="preserve"><value>I-reactivate ang organisasyong ito?</value></data>
+  <data name="Organizations_ConfirmClose" xml:space="preserve"><value>Isara nang permanente ang organisasyong ito? Hindi ito maa-undo mula sa Admin.</value></data>
+  <data name="Organizations_Suspended" xml:space="preserve"><value>Na-suspend ang organisasyon.</value></data>
+  <data name="Organizations_Reactivated" xml:space="preserve"><value>Na-reactivate ang organisasyon.</value></data>
+  <data name="Organizations_Closed" xml:space="preserve"><value>Isinara ang organisasyon.</value></data>
+  <data name="Organizations_SuspendedAlert" xml:space="preserve"><value>Naka-suspend ang organisasyong ito. Nananatili ang historical data; naka-block ang protected operational actions.</value></data>
+  <data name="Organizations_ClosedAlert" xml:space="preserve"><value>Sarado na ang organisasyong ito at hindi na maa-update o ma-reactivate.</value></data>
+  <data name="Organizations_TabOverview" xml:space="preserve"><value>Overview</value></data>
+  <data name="Organizations_TabProfile" xml:space="preserve"><value>Profile / settings</value></data>
+  <data name="Organizations_TabMembers" xml:space="preserve"><value>Mga miyembro</value></data>
+  <data name="Organizations_TabSubscriptions" xml:space="preserve"><value>Mga subscription</value></data>
+  <data name="Organizations_TabProductAccess" xml:space="preserve"><value>Product access</value></data>
+  <data name="Organizations_TabAudit" xml:space="preserve"><value>Audit</value></data>
+  <data name="Organizations_OpenMembers" xml:space="preserve"><value>Buksan ang members at invitations</value></data>
+  <data name="Organizations_OpenProductAccess" xml:space="preserve"><value>Buksan ang product access</value></data>
+  <data name="Organizations_OpenAudit" xml:space="preserve"><value>Buksan ang audit ng organisasyon</value></data>
+  <data name="Organizations_AuditHint" xml:space="preserve"><value>Mga Platform audit record para sa organisasyong ito (create, profile, branding, lifecycle).</value></data>
+  <data name="Organizations_LegalName" xml:space="preserve"><value>Legal name</value></data>
+  <data name="Organizations_Phone" xml:space="preserve"><value>Telepono</value></data>
+  <data name="Organizations_Address1" xml:space="preserve"><value>Address line 1</value></data>
+  <data name="Organizations_Address2" xml:space="preserve"><value>Address line 2</value></data>
+  <data name="Organizations_City" xml:space="preserve"><value>Lungsod</value></data>
+  <data name="Organizations_Region" xml:space="preserve"><value>Rehiyon</value></data>
+  <data name="Organizations_PostalCode" xml:space="preserve"><value>Postal code</value></data>
+  <data name="Organizations_Country" xml:space="preserve"><value>Bansa</value></data>
+  <data name="Organizations_TimeZone" xml:space="preserve"><value>Time zone</value></data>
+  <data name="Organizations_Locale" xml:space="preserve"><value>Locale</value></data>
+  <data name="Organizations_Currency" xml:space="preserve"><value>Currency</value></data>
+  <data name="Status_Closed" xml:space="preserve"><value>Closed</value></data>
+  <data name="Branding_Title" xml:space="preserve"><value>Branding ng organisasyon</value></data>
+  <data name="Branding_Description" xml:space="preserve"><value>Logo URL, brand display name, at mga kulay. Walang custom CSS o script.</value></data>
+  <data name="Branding_DisplayName" xml:space="preserve"><value>Brand display name</value></data>
+  <data name="Branding_LogoUrl" xml:space="preserve"><value>Logo URL (https)</value></data>
+  <data name="Branding_LogoHint" xml:space="preserve"><value>HTTPS URL lamang. Hindi pa enabled ang binary upload sa work package na ito.</value></data>
+  <data name="Branding_PrimaryColor" xml:space="preserve"><value>Primary color</value></data>
+  <data name="Branding_AccentColor" xml:space="preserve"><value>Accent color</value></data>
+  <data name="Branding_Preview" xml:space="preserve"><value>Preview</value></data>
+  <data name="Branding_FallbackHint" xml:space="preserve"><value>Kapag walang branding, babalik ang Admin sa display name ng organisasyon at default theme colors.</value></data>
+  <data name="Branding_SaveFailed" xml:space="preserve"><value>Nabigo ang pag-save ng branding</value></data>
+  <data name="Branding_Saved" xml:space="preserve"><value>Na-save ang branding.</value></data>
+  <data name="Branding_InactiveAlert" xml:space="preserve"><value>Maaari lang i-edit ang branding para sa active trusted organization.</value></data>
 
   <data name="OrgMembers_Title" xml:space="preserve"><value>Mga miyembro ng organisasyon</value></data>
   <data name="OrgMembers_Description" xml:space="preserve"><value>Platform organization membership at mga role.</value></data>
