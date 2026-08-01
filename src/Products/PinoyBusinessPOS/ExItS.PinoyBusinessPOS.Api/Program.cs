@@ -47,6 +47,7 @@ if (builder.Configuration.GetValue<bool>("LivePreview:Enabled") && builder.Envir
 builder.Services.AddProblemDetails();
 builder.Services.AddPosHealthChecks();
 builder.AddPosSecurity();
+builder.AddPosForwardedHeaders();
 builder.Services.AddPosPersistence(builder.Configuration);
 
 builder.Services.AddScoped<IPosCommercialAccessAccessor, PosCommercialAccessAccessor>();
@@ -162,6 +163,7 @@ builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.Operatio
 
 var app = builder.Build();
 
+app.UsePosForwardedHeaders();
 app.UsePosSecurity();
 app.UseMiddleware<PosPlatformBearerMiddleware>();
 app.UseMiddleware<PosCommercialAccessMiddleware>();

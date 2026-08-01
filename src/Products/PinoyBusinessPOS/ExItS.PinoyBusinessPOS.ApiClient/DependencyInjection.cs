@@ -16,15 +16,21 @@ public static class DependencyInjection
     /// </summary>
     public static IServiceCollection AddPosApiClient(this IServiceCollection services, IConfiguration configuration)
     {
+        var requireHttps = configuration.GetValue("Security:RequireHttpsApiUrls", false)
+            || string.Equals(configuration["DOTNET_ENVIRONMENT"], "Production", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Production", StringComparison.OrdinalIgnoreCase);
+
         services.AddOptions<PosApiOptions>()
             .Bind(configuration.GetSection(PosApiOptions.SectionName))
             .Validate(o => !string.IsNullOrWhiteSpace(o.BaseUrl), "PosApi:BaseUrl must be configured.")
-            .Validate(o => o.TimeoutSeconds > 0, "PosApi:TimeoutSeconds must be greater than zero.");
+            .Validate(o => o.TimeoutSeconds > 0, "PosApi:TimeoutSeconds must be greater than zero.")
+            .Validate(o => !requireHttps || IsHttpsAbsoluteUri(o.BaseUrl), "PosApi:BaseUrl must use HTTPS in Production (MAUI-HTTPS).");
 
         services.AddOptions<PosBusinessApiOptions>()
             .Bind(configuration.GetSection(PosBusinessApiOptions.SectionName))
             .Validate(o => !string.IsNullOrWhiteSpace(o.BaseUrl), "PosBusinessApi:BaseUrl must be configured.")
-            .Validate(o => o.TimeoutSeconds > 0, "PosBusinessApi:TimeoutSeconds must be greater than zero.");
+            .Validate(o => o.TimeoutSeconds > 0, "PosBusinessApi:TimeoutSeconds must be greater than zero.")
+            .Validate(o => !requireHttps || IsHttpsAbsoluteUri(o.BaseUrl), "PosBusinessApi:BaseUrl must use HTTPS in Production (MAUI-HTTPS).");
 
         services.AddTransient<PlatformBearerHandler>();
         services.AddTransient<DevPlatformUserHeaderHandler>();
@@ -58,6 +64,10 @@ public static class DependencyInjection
 
         return services;
     }
+
+    private static bool IsHttpsAbsoluteUri(string? value) =>
+        Uri.TryCreate(value, UriKind.Absolute, out var uri)
+        && string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase);
 
     private static void AddBusinessClient<TClient, TImplementation>(IServiceCollection services)
         where TClient : class

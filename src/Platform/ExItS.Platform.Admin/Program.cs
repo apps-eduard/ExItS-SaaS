@@ -1,3 +1,4 @@
+using ExItS.Platform.Admin;
 using ExItS.Platform.Admin.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -141,7 +142,11 @@ builder.Services.AddScoped<PlatformPermissionState>();
 builder.Services.AddScoped<AdminShellContext>();
 builder.Services.AddScoped<ToastService>();
 
+builder.AddAdminForwardedHeaders();
+
 var app = builder.Build();
+
+app.UseAdminForwardedHeaders();
 
 if (app.Environment.IsDevelopment() || livePreviewEnabled)
 {
@@ -172,6 +177,9 @@ app.MapGet("/", (HttpContext http) =>
     http.User.Identity?.IsAuthenticated == true
         ? Results.Redirect("/admin")
         : Results.Redirect("/admin/login"));
+
+app.MapGet("/health", () => Results.Ok(new { status = "Healthy", service = "platform-admin" }))
+    .AllowAnonymous();
 
 app.MapPost("/admin/login/credentials", async (
     HttpContext http,

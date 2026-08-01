@@ -39,6 +39,7 @@ if (builder.Configuration.GetValue<bool>("LivePreview:Enabled") && builder.Envir
 builder.Services.AddProblemDetails();
 builder.Services.AddPlatformHealthChecks();
 builder.AddPlatformSecurity();
+builder.AddPlatformForwardedHeaders();
 builder.Services.AddPlatformPersistence(builder.Configuration);
 
 var externalAuthOptions = builder.Configuration
@@ -246,6 +247,7 @@ builder.Services.AddHostedService<LivePreviewHostedService>();
 
 var app = builder.Build();
 
+app.UsePlatformForwardedHeaders();
 app.UsePlatformSecurity();
 app.UseAuthentication();
 app.UseAuthorization();
