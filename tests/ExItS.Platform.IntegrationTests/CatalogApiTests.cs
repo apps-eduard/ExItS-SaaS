@@ -137,10 +137,10 @@ public sealed class CatalogApiTests(PostgreSqlFixture fixture) : IAsyncLifetime
         Assert.DoesNotContain("webhook", program, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("gateway", program, StringComparison.OrdinalIgnoreCase);
 
-        // Subscription and payment endpoints now legitimately exist (P3-WP02/P3-WP03); a bare list
-        // request without any filter is a client error, not a 404 — the routes are mapped and reachable.
+        // P15-WP05: subscription list supports unfiltered server-side paging (ViewPortfolio).
+        // Manual SaaS payment list still requires a filter (P3-WP03).
         var response = await _client.GetAsync("/api/v1/platform/subscriptions");
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var paymentsRoute = await _client.GetAsync("/api/v1/platform/payments");
         Assert.Equal(HttpStatusCode.BadRequest, paymentsRoute.StatusCode);

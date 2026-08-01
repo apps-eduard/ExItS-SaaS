@@ -35,8 +35,8 @@ public sealed class AdminDashboardRefactoringTests
                  {
                      ("Users.razor", ["<Table", "RemoteDataSource", "GetUsersAsync", "OnPageIndexChange"]),
                      ("Organizations.razor", ["<Table", "RemoteDataSource", "GetOrganizationsAsync", "OnPageIndexChange"]),
-                     ("Subscriptions.razor", ["ReportPageShell", "ReportFilterBar", "ReportTable", "GetSubscriptionsAsync"]),
-                     ("Entitlements.razor", ["ReportPageShell", "ReportTable", "GetLatestEntitlementsAsync"]),
+                     ("Subscriptions.razor", ["<Table", "RemoteDataSource", "GetSubscriptionsAsync", "OnPageIndexChange"]),
+                     ("Entitlements.razor", ["<Table", "RemoteDataSource", "GetLatestEntitlementsAsync", "OnPageIndexChange"]),
                      ("Audit.razor", ["ReportPageShell", "ReportFilterBar", "ReportTable", "GetAuditRecordsAsync"]),
                      ("Products.razor", ["<Table", "RemoteDataSource", "GetProductsAsync", "OnPageIndexChange"]),
                      ("Payments.razor", ["ReportPageShell", "ReportTable"]),
@@ -59,6 +59,10 @@ public sealed class AdminDashboardRefactoringTests
         var orgs = File.ReadAllText(Path.Combine(pages, "Organizations.razor"));
         Assert.DoesNotContain("ReportPageShell", orgs, StringComparison.Ordinal);
         Assert.DoesNotContain("ReportTable", orgs, StringComparison.Ordinal);
+
+        var entitlements = File.ReadAllText(Path.Combine(pages, "Entitlements.razor"));
+        Assert.DoesNotContain("ReportPageShell", entitlements, StringComparison.Ordinal);
+        Assert.DoesNotContain("ReportTable", entitlements, StringComparison.Ordinal);
     }
 
     [Fact]

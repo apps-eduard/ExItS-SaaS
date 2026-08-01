@@ -26,7 +26,7 @@ public sealed class AdminArchitectureGuardTests
     {
         var root = FindRepositoryRoot();
         var pagesDir = Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages");
-        var deferredPages = new[] { "Products.razor", "Entitlements.razor" };
+        var deferredPages = new[] { "Products.razor" };
         var forbidden = new[]
         {
             "Create product", "Publish plan", "Generate snapshot"
@@ -40,6 +40,11 @@ public sealed class AdminArchitectureGuardTests
                 Assert.DoesNotContain(phrase, text, StringComparison.OrdinalIgnoreCase);
             }
         }
+
+        var entitlements = File.ReadAllText(Path.Combine(pagesDir, "Entitlements.razor"));
+        Assert.Contains("@using AntDesign", entitlements, StringComparison.Ordinal);
+        Assert.Contains("Entitlements_Warning", entitlements, StringComparison.Ordinal);
+        Assert.Contains("GenerateEntitlementSnapshotAsync", entitlements, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -61,7 +66,7 @@ public sealed class AdminArchitectureGuardTests
         Assert.DoesNotContain("type=\"password\"", subscriptions, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Doctor", subscriptions, StringComparison.OrdinalIgnoreCase);
 
-        Assert.Contains("ConfirmDialog", subscriptions, StringComparison.Ordinal);
+        Assert.Contains("Popconfirm", subscriptions, StringComparison.Ordinal);
         Assert.Contains("ConfirmDialog", payments, StringComparison.Ordinal);
         Assert.Contains("terminal", resx, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("@bind=\"_cardNumber\"", payments, StringComparison.OrdinalIgnoreCase);
@@ -329,7 +334,7 @@ public sealed class AdminArchitectureGuardTests
     {
         var root = FindRepositoryRoot();
         var nav = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "AdminNav.razor"));
-        foreach (var href in new[] { "/admin", "/admin/products", "/admin/organizations", "/admin/subscriptions", "/admin/users", "/admin/audit" })
+        foreach (var href in new[] { "/admin", "/admin/products", "/admin/organizations", "/admin/subscriptions", "/admin/users", "/admin/audit", "/admin/payments", "/admin/entitlements" })
         {
             Assert.Contains($"RouterLink=\"{href}\"", nav, StringComparison.Ordinal);
         }
@@ -341,8 +346,6 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("IsOrganizationShell", nav, StringComparison.Ordinal);
         Assert.DoesNotContain("Sign out", nav, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("/admin/logout", nav, StringComparison.Ordinal);
-        Assert.DoesNotContain("RouterLink=\"/admin/payments\"", nav, StringComparison.Ordinal);
-        Assert.DoesNotContain("RouterLink=\"/admin/entitlements\"", nav, StringComparison.Ordinal);
         Assert.Contains("PlatformPermissionCodes", nav, StringComparison.Ordinal);
         Assert.Contains("<Menu", nav, StringComparison.Ordinal);
         Assert.Contains("<SubMenu", nav, StringComparison.Ordinal);
