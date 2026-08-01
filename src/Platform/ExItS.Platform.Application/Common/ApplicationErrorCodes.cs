@@ -5,6 +5,8 @@ public static class ApplicationErrorCodes
     public const string UserNotFound = "application.user.not_found";
     public const string OrganizationNotFound = "application.organization.not_found";
     public const string MembershipNotFound = "application.membership.not_found";
+    public const string InvitationNotFound = "application.invitation.not_found";
+    public const string InvitationConflict = "application.invitation.conflict";
     public const string EmailConflict = "application.user.email_conflict";
     public const string UsernameConflict = "application.user.username_conflict";
     public const string SlugConflict = "application.organization.slug_conflict";

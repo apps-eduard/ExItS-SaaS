@@ -419,6 +419,22 @@
   <data name="OrgMembers_SuspendMembership" xml:space="preserve"><value>I-suspend ang membership</value></data>
   <data name="OrgMembers_RevokeMembership" xml:space="preserve"><value>I-revoke ang membership</value></data>
   <data name="OrgMembers_ReactivateMembership" xml:space="preserve"><value>I-reactivate ang membership</value></data>
+  <data name="OrgMembers_TabMembers" xml:space="preserve"><value>Mga miyembro</value></data>
+  <data name="OrgMembers_TabInvitations" xml:space="preserve"><value>Mga imbitasyon</value></data>
+  <data name="OrgMembers_TabProductAccess" xml:space="preserve"><value>Product access</value></data>
+  <data name="OrgMembers_Invite" xml:space="preserve"><value>Mag-imbita sa email</value></data>
+  <data name="OrgMembers_InviteSection" xml:space="preserve"><value>Mag-imbita ng miyembro</value></data>
+  <data name="OrgMembers_InvitationsUnavailable" xml:space="preserve"><value>Hindi available ang mga imbitasyon</value></data>
+  <data name="OrgMembers_ExpiresUtc" xml:space="preserve"><value>Mag-e-expire (UTC)</value></data>
+  <data name="OrgMembers_Resend" xml:space="preserve"><value>Ipadala muli</value></data>
+  <data name="OrgMembers_RevokeInviteConfirm" xml:space="preserve"><value>I-revoke ang pending invitation na ito?</value></data>
+  <data name="OrgMembers_ToastInvited" xml:space="preserve"><value>Nagawa ang invitation. Hindi ipinapakita ang accept token sa Admin — i-deliver nang out of band.</value></data>
+  <data name="OrgMembers_ToastInviteResent" xml:space="preserve"><value>Na-resend ang invitation (na-rotate ang token).</value></data>
+  <data name="OrgMembers_ToastInviteRevoked" xml:space="preserve"><value>Na-revoke ang invitation.</value></data>
+  <data name="OrgMembers_ProductAccessReadOnly" xml:space="preserve"><value>Read-only ang product-access assignments dito. Ang grant/revoke ay nasa product-access surface. Hindi nag-a-assign ng product-local roles ang access.</value></data>
+  <data name="OrgUsers_Title" xml:space="preserve"><value>Mga gumagamit ng organisasyon</value></data>
+  <data name="OrgUsers_Description" xml:space="preserve"><value>Pumili ng organisasyon upang pamahalaan ang mga miyembro at imbitasyon.</value></data>
+  <data name="OrgUsers_Hint" xml:space="preserve"><value>Platform organization memberships lamang. Hindi kailanman ina-assign dito ang product-local roles (Cashier, Doctor, atbp.).</value></data>
 
   <data name="OrgProductAccess_Title" xml:space="preserve"><value>Product access</value></data>
   <data name="OrgProductAccess_Description" xml:space="preserve"><value>Mga commercial product-access assignment.</value></data>
@@ -446,7 +462,7 @@
 
   <data name="Users_Title" xml:space="preserve"><value>Mga Platform user</value></data>
   <data name="Users_Description" xml:space="preserve"><value>Pamamahala ng Platform user.</value></data>
-  <data name="Users_Warning" xml:space="preserve"><value>Ang Platform membership ay hindi product operational authorization. Walang password, invitation, o identity-provider linkage sa work package na ito.</value></data>
+  <data name="Users_Warning" xml:space="preserve"><value>Ang Platform membership ay hindi product operational authorization. Ang organization invitations at memberships ay hindi nagbibigay ng product-local roles.</value></data>
   <data name="Users_SearchPlaceholder" xml:space="preserve"><value>Username, email, o pangalan</value></data>
   <data name="Users_HideCreate" xml:space="preserve"><value>Itago ang create</value></data>
   <data name="Users_CreateUser" xml:space="preserve"><value>Gumawa ng user</value></data>

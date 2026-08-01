@@ -11,8 +11,7 @@ namespace ExItS.Platform.Api.Organizations;
 
 /// <summary>
 /// Organization membership endpoints. Platform organization roles only — never product-local roles.
-/// Development-stage: actor identity is unauthenticated, but mutations enforce
-/// <see cref="PlatformPermission.ManageMemberships"/> scoped to the organization and record audit trail entries.
+/// Mutations and reads require ManageMemberships or an org Owner/Administrator in trusted org context.
 /// </summary>
 internal static class MembershipEndpoints
 {
@@ -24,8 +23,21 @@ internal static class MembershipEndpoints
             int? page,
             int? pageSize,
             MembershipQueryService queries,
+            PlatformMembershipAuthz membershipAuthz,
             CancellationToken ct) =>
         {
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+                PlatformAuditActions.MembershipAdded,
+                nameof(OrganizationMembership),
+                organizationId.ToString("D"),
+                organizationId,
+                summary: "List organization members.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             if (!TryParseMembershipStatus(status, out var parsed, out var error))
             {
                 return error!;
@@ -41,7 +53,7 @@ internal static class MembershipEndpoints
             Guid organizationId,
             AddMemberRequest body,
             AddOrganizationMembership useCase,
-            PlatformAuthz authz,
+            PlatformMembershipAuthz membershipAuthz,
             CancellationToken ct) =>
         {
             if (!TryParseRole(body.Role, out var role, out var error))
@@ -49,8 +61,7 @@ internal static class MembershipEndpoints
                 return error!;
             }
 
-            var denied = await authz.EnsureAsync(
-                PlatformPermission.ManageMemberships,
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
                 PlatformAuditActions.MembershipAdded,
                 nameof(OrganizationMembership),
                 body.UserId.ToString("D"),
@@ -59,6 +70,19 @@ internal static class MembershipEndpoints
             if (denied is not null)
             {
                 return denied;
+            }
+
+            var authority = await membershipAuthz
+                .ResolveActorMembershipAuthorityAsync(organizationId, ct)
+                .ConfigureAwait(false);
+            if (!authority.HasPlatformManageMemberships
+                && authority.ActorMembershipRole == OrganizationRole.OrganizationAdministrator
+                && role == OrganizationRole.OrganizationOwner)
+            {
+                return PlatformApiResults.Problem(
+                    DomainErrorCodes.OrganizationOwnerAssignmentDenied,
+                    "Organization Administrators cannot assign the OrganizationOwner role.",
+                    StatusCodes.Status403Forbidden);
             }
 
             try
@@ -72,7 +96,7 @@ internal static class MembershipEndpoints
                     .ConfigureAwait(false);
                 if (result.IsSuccess)
                 {
-                    await authz.AuditSucceededAsync(
+                    await membershipAuthz.Inner.AuditSucceededAsync(
                         PlatformAuditActions.MembershipAdded,
                         nameof(OrganizationMembership),
                         result.Value!.Id.Value.ToString("D"),
@@ -96,14 +120,63 @@ internal static class MembershipEndpoints
             int? page,
             int? pageSize,
             MembershipQueryService queries,
+            PlatformAuthz authz,
+            PlatformMembershipAuthz membershipAuthz,
+            ExItS.Platform.Application.Authorization.IPlatformAuthorizationService authorization,
             CancellationToken ct) =>
         {
+            var actor = authz.CurrentActor;
+            var canManageUsers = actor.PlatformUserId is not null
+                && await authorization
+                    .HasPermissionAsync(actor.PlatformUserId, PlatformPermission.ManagePlatformUsers, null, ct)
+                    .ConfigureAwait(false);
+            if (!canManageUsers
+                && actor.ActorType == AuditActorType.DevelopmentOperator)
+            {
+                var perms = await authorization
+                    .ResolvePermissionsForActorAsync(actor, null, ct)
+                    .ConfigureAwait(false);
+                canManageUsers = perms.Contains(PlatformPermission.ManagePlatformUsers);
+            }
+
+            if (!canManageUsers)
+            {
+                if (actor.OrganizationId is null)
+                {
+                    return await authz.EnsureAsync(
+                        PlatformPermission.ManagePlatformUsers,
+                        PlatformAuditActions.MembershipAdded,
+                        nameof(OrganizationMembership),
+                        userId.ToString("D"),
+                        summary: "List user memberships.",
+                        cancellationToken: ct).ConfigureAwait(false)!;
+                }
+
+                var orgDenied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+                    PlatformAuditActions.MembershipAdded,
+                    nameof(OrganizationMembership),
+                    userId.ToString("D"),
+                    actor.OrganizationId.Value,
+                    summary: "List user memberships (org scope).",
+                    cancellationToken: ct).ConfigureAwait(false);
+                if (orgDenied is not null)
+                {
+                    return orgDenied;
+                }
+            }
+
             if (!TryParseMembershipStatus(status, out var parsed, out var error))
             {
                 return error!;
             }
 
             var result = await queries.ListByUserAsync(userId, parsed, page, pageSize, ct).ConfigureAwait(false);
+            if (!canManageUsers && actor.OrganizationId is not null)
+            {
+                var filtered = result.Items.Where(m => m.OrganizationId == actor.OrganizationId.Value).ToList();
+                result = result with { Items = filtered, TotalCount = filtered.Count };
+            }
+
             return Results.Ok(result);
         });
 
@@ -112,7 +185,7 @@ internal static class MembershipEndpoints
             ChangeRoleRequest body,
             ChangeOrganizationRole useCase,
             MembershipQueryService queries,
-            PlatformAuthz authz,
+            PlatformMembershipAuthz membershipAuthz,
             CancellationToken ct) =>
         {
             if (!TryParseRole(body.Role, out var role, out var error))
@@ -121,26 +194,43 @@ internal static class MembershipEndpoints
             }
 
             var existing = await queries.GetByIdAsync(membershipId, ct).ConfigureAwait(false);
-            var denied = await authz.EnsureAsync(
-                PlatformPermission.ManageMemberships,
+            if (existing is null)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.MembershipNotFound,
+                    "Membership was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
                 PlatformAuditActions.MembershipRoleChanged,
                 nameof(OrganizationMembership),
                 membershipId.ToString("D"),
-                existing?.OrganizationId,
+                existing.OrganizationId,
                 cancellationToken: ct).ConfigureAwait(false);
             if (denied is not null)
             {
                 return denied;
             }
 
+            var authority = await membershipAuthz
+                .ResolveActorMembershipAuthorityAsync(existing.OrganizationId, ct)
+                .ConfigureAwait(false);
+
             try
             {
                 var result = await useCase
-                    .ExecuteAsync(OrganizationMembershipId.From(membershipId), role, body.ActorReference, ct)
+                    .ExecuteAsync(
+                        OrganizationMembershipId.From(membershipId),
+                        role,
+                        body.ActorReference,
+                        authority.ActorMembershipRole,
+                        authority.HasPlatformManageMemberships,
+                        ct)
                     .ConfigureAwait(false);
                 if (result.IsSuccess)
                 {
-                    await authz.AuditSucceededAsync(
+                    await membershipAuthz.Inner.AuditSucceededAsync(
                         PlatformAuditActions.MembershipRoleChanged,
                         nameof(OrganizationMembership),
                         membershipId.ToString("D"),
@@ -162,16 +252,23 @@ internal static class MembershipEndpoints
             MembershipLifecycleRequest? body,
             SuspendOrganizationMembership useCase,
             MembershipQueryService queries,
-            PlatformAuthz authz,
+            PlatformMembershipAuthz membershipAuthz,
             CancellationToken ct) =>
         {
             var existing = await queries.GetByIdAsync(membershipId, ct).ConfigureAwait(false);
-            var denied = await authz.EnsureAsync(
-                PlatformPermission.ManageMemberships,
+            if (existing is null)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.MembershipNotFound,
+                    "Membership was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
                 PlatformAuditActions.MembershipSuspended,
                 nameof(OrganizationMembership),
                 membershipId.ToString("D"),
-                existing?.OrganizationId,
+                existing.OrganizationId,
                 reason: body?.Reason,
                 cancellationToken: ct).ConfigureAwait(false);
             if (denied is not null)
@@ -186,7 +283,7 @@ internal static class MembershipEndpoints
                     .ConfigureAwait(false);
                 if (result.IsSuccess)
                 {
-                    await authz.AuditSucceededAsync(
+                    await membershipAuthz.Inner.AuditSucceededAsync(
                         PlatformAuditActions.MembershipSuspended,
                         nameof(OrganizationMembership),
                         membershipId.ToString("D"),
@@ -208,16 +305,23 @@ internal static class MembershipEndpoints
             MembershipLifecycleRequest? body,
             ReactivateOrganizationMembership useCase,
             MembershipQueryService queries,
-            PlatformAuthz authz,
+            PlatformMembershipAuthz membershipAuthz,
             CancellationToken ct) =>
         {
             var existing = await queries.GetByIdAsync(membershipId, ct).ConfigureAwait(false);
-            var denied = await authz.EnsureAsync(
-                PlatformPermission.ManageMemberships,
+            if (existing is null)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.MembershipNotFound,
+                    "Membership was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
                 PlatformAuditActions.MembershipReactivated,
                 nameof(OrganizationMembership),
                 membershipId.ToString("D"),
-                existing?.OrganizationId,
+                existing.OrganizationId,
                 cancellationToken: ct).ConfigureAwait(false);
             if (denied is not null)
             {
@@ -231,7 +335,7 @@ internal static class MembershipEndpoints
                     .ConfigureAwait(false);
                 if (result.IsSuccess)
                 {
-                    await authz.AuditSucceededAsync(
+                    await membershipAuthz.Inner.AuditSucceededAsync(
                         PlatformAuditActions.MembershipReactivated,
                         nameof(OrganizationMembership),
                         membershipId.ToString("D"),
@@ -252,16 +356,23 @@ internal static class MembershipEndpoints
             MembershipLifecycleRequest? body,
             RevokeOrganizationMembership useCase,
             MembershipQueryService queries,
-            PlatformAuthz authz,
+            PlatformMembershipAuthz membershipAuthz,
             CancellationToken ct) =>
         {
             var existing = await queries.GetByIdAsync(membershipId, ct).ConfigureAwait(false);
-            var denied = await authz.EnsureAsync(
-                PlatformPermission.ManageMemberships,
+            if (existing is null)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.MembershipNotFound,
+                    "Membership was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
                 PlatformAuditActions.MembershipRevoked,
                 nameof(OrganizationMembership),
                 membershipId.ToString("D"),
-                existing?.OrganizationId,
+                existing.OrganizationId,
                 reason: body?.Reason,
                 cancellationToken: ct).ConfigureAwait(false);
             if (denied is not null)
@@ -276,7 +387,7 @@ internal static class MembershipEndpoints
                     .ConfigureAwait(false);
                 if (result.IsSuccess)
                 {
-                    await authz.AuditSucceededAsync(
+                    await membershipAuthz.Inner.AuditSucceededAsync(
                         PlatformAuditActions.MembershipRevoked,
                         nameof(OrganizationMembership),
                         membershipId.ToString("D"),

@@ -62,8 +62,10 @@ public sealed class AdminFormErrorMapperTests
         Assert.DoesNotContain("FormSection", users, StringComparison.Ordinal);
 
         var members = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "OrganizationMembers.razor"));
-        Assert.Contains("FormSection", members, StringComparison.Ordinal);
-        Assert.Contains("AdminDialogKind.Destructive", members, StringComparison.Ordinal);
+        Assert.Contains("<Table", members, StringComparison.Ordinal);
+        Assert.Contains("FormValidationSummary", members, StringComparison.Ordinal);
+        Assert.Contains("Popconfirm", members, StringComparison.Ordinal);
+        Assert.Contains("AdminFormErrorMapper.TryBeginSubmit", members, StringComparison.Ordinal);
 
         var payments = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Payments.razor"));
         Assert.Contains("FormSection", payments, StringComparison.Ordinal);

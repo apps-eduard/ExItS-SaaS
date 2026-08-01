@@ -107,6 +107,10 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("product-local", resx, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("OrgProductAccess_Warning", File.ReadAllText(Path.Combine(pagesDir, "OrganizationProductAccess.razor")), StringComparison.Ordinal);
         Assert.Contains("OrganizationOwner", File.ReadAllText(Path.Combine(pagesDir, "OrganizationMembers.razor")), StringComparison.Ordinal);
+        Assert.Contains("AntDesign", File.ReadAllText(Path.Combine(pagesDir, "OrganizationMembers.razor")), StringComparison.Ordinal);
+        Assert.Contains("/admin/organization-users", File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "OrganizationUsers.razor")), StringComparison.Ordinal);
+        Assert.Contains("organization-users", File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "AdminNav.razor")), StringComparison.Ordinal);
+        Assert.Contains("Nav_SectionSettings", File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "AdminNav.razor")), StringComparison.Ordinal);
     }
 
     [Fact]

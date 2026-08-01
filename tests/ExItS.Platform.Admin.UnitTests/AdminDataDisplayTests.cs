@@ -64,9 +64,11 @@ public sealed class AdminDataDisplayTests
         Assert.DoesNotContain("AdminPagination", users, StringComparison.Ordinal);
 
         var members = File.ReadAllText(Path.Combine(pages, "OrganizationMembers.razor"));
-        Assert.Contains("AdminDataTable", members, StringComparison.Ordinal);
-        Assert.Contains("RowActions", members, StringComparison.Ordinal);
-        Assert.Contains("MemberActions", members, StringComparison.Ordinal);
+        Assert.Contains("<Table", members, StringComparison.Ordinal);
+        Assert.Contains("RemoteDataSource", members, StringComparison.Ordinal);
+        Assert.Contains("OnPageIndexChange", members, StringComparison.Ordinal);
+        Assert.Contains("GetOrganizationMembersAsync", members, StringComparison.Ordinal);
+        Assert.Contains("GetOrganizationInvitationsAsync", members, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -81,6 +81,17 @@ public sealed class PlatformApiClient(
     public Task<ApiCallResult<OrganizationMembershipDto>> RevokeMembershipAsync(Guid membershipId, MembershipLifecycleRequest request, CancellationToken ct = default) =>
         SendAsync<OrganizationMembershipDto>(HttpMethod.Post, $"/api/v1/platform/memberships/{membershipId}/revoke", WithActor(request), ct);
 
+    public Task<ApiCallResult<PagedResult<OrganizationInvitationDto>>> GetOrganizationInvitationsAsync(Guid organizationId, int page = 1, int pageSize = 20, string? status = null, CancellationToken ct = default) =>
+        GetAsync<PagedResult<OrganizationInvitationDto>>($"/api/v1/platform/organizations/{organizationId}/invitations?{Query(("page", page), ("pageSize", pageSize), ("status", status))}", ct);
+    public Task<ApiCallResult<OrganizationInvitationDto>> CreateOrganizationInvitationAsync(Guid organizationId, CreateInvitationRequest request, CancellationToken ct = default) =>
+        SendAsync<OrganizationInvitationDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/invitations", request, ct);
+    public Task<ApiCallResult<OrganizationInvitationDto>> ResendOrganizationInvitationAsync(Guid invitationId, CancellationToken ct = default) =>
+        SendAsync<OrganizationInvitationDto>(HttpMethod.Post, $"/api/v1/platform/invitations/{invitationId}/resend", null, ct);
+    public Task<ApiCallResult<OrganizationInvitationDto>> RevokeOrganizationInvitationAsync(Guid invitationId, CancellationToken ct = default) =>
+        SendAsync<OrganizationInvitationDto>(HttpMethod.Post, $"/api/v1/platform/invitations/{invitationId}/revoke", null, ct);
+    public Task<ApiCallResult<OrganizationMembershipDto>> AcceptOrganizationInvitationAsync(string token, CancellationToken ct = default) =>
+        SendAsync<OrganizationMembershipDto>(HttpMethod.Post, "/api/v1/platform/invitations/accept", new { token }, ct);
+
     public Task<ApiCallResult<PagedResult<ProductAccessAssignmentDto>>> GetOrganizationProductAccessAsync(Guid organizationId, int page = 1, int pageSize = 20, string? status = null, CancellationToken ct = default) =>
         GetAsync<PagedResult<ProductAccessAssignmentDto>>($"/api/v1/platform/organizations/{organizationId}/product-access?{Query(("page", page), ("pageSize", pageSize), ("status", status))}", ct);
     public Task<ApiCallResult<PagedResult<ProductAccessAssignmentDto>>> GetUserProductAccessAsync(Guid userId, int page = 1, int pageSize = 20, string? status = null, CancellationToken ct = default) =>

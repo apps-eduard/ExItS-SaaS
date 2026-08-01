@@ -17,7 +17,8 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
     public Task InitializeAsync()
     {
         _factory = new IdentityAccessApiFactory(fixture.ConnectionString);
-        _client = _factory.CreateClient();
+        // No cookie jar: DevelopmentOperator stays the actor unless a session header is sent.
+        _client = _factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
         return Task.CompletedTask;
     }
 
@@ -148,6 +149,120 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
         Assert.True((await history.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("totalCount").GetInt32() >= 1);
     }
 
+    [Fact]
+    public async Task Invitation_lifecycle_create_list_accept_and_revoke()
+    {
+        var orgResponse = await _client.PostAsJsonAsync(
+            "/api/v1/platform/organizations",
+            new { displayName = "Invite Org", slug = UniqueToken("invorg") });
+        orgResponse.EnsureSuccessStatusCode();
+        var organizationId = (await orgResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        var inviteeUsername = UniqueToken("invitee");
+        var inviteeEmail = $"{inviteeUsername}@example.com";
+        var createInvitee = await _client.PostAsJsonAsync(
+            "/api/v1/platform/users",
+            new { username = inviteeUsername, displayName = "Invitee", email = inviteeEmail });
+        createInvitee.EnsureSuccessStatusCode();
+        var inviteeId = (await createInvitee.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        var createInvite = await _client.PostAsJsonAsync(
+            $"/api/v1/platform/organizations/{organizationId}/invitations",
+            new { email = inviteeEmail, role = "OrganizationMember" });
+        Assert.Equal(HttpStatusCode.Created, createInvite.StatusCode);
+        var inviteBody = await createInvite.Content.ReadFromJsonAsync<JsonElement>();
+        var invitationId = inviteBody.GetProperty("id").GetGuid();
+        var acceptToken = inviteBody.GetProperty("acceptToken").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(acceptToken));
+        Assert.False(inviteBody.TryGetProperty("tokenHash", out _));
+
+        var list = await _client.GetAsync($"/api/v1/platform/organizations/{organizationId}/invitations");
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+        var listBody = await list.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(listBody.GetProperty("totalCount").GetInt32() >= 1);
+        foreach (var item in listBody.GetProperty("items").EnumerateArray())
+        {
+            Assert.True(!item.TryGetProperty("acceptToken", out var t) || t.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined);
+            Assert.False(item.TryGetProperty("tokenHash", out _));
+        }
+
+        var accept = await _client.PostAsJsonAsync(
+            "/api/v1/platform/invitations/accept",
+            new { token = acceptToken });
+        // DevelopmentOperator cannot accept — requires Platform User principal.
+        Assert.Equal(HttpStatusCode.Unauthorized, accept.StatusCode);
+
+        var password = "Invitee-Accept-1!";
+        (await _client.PutAsJsonAsync(
+            $"/api/v1/platform/users/{inviteeId}/credentials/password",
+            new { password })).EnsureSuccessStatusCode();
+
+        var login = await _client.PostAsJsonAsync(
+            "/api/v1/platform/auth/login",
+            new { usernameOrEmail = inviteeUsername, password });
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        var sessionToken = (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("sessionToken").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(sessionToken));
+
+        using var acceptRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/platform/invitations/accept")
+        {
+            Content = JsonContent.Create(new { token = acceptToken })
+        };
+        acceptRequest.Headers.Add("X-ExItS-Session-Token", sessionToken);
+        var acceptAsUser = await _client.SendAsync(acceptRequest);
+        Assert.Equal(HttpStatusCode.OK, acceptAsUser.StatusCode);
+        Assert.Equal("OrganizationMember", (await acceptAsUser.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("role").GetString());
+
+        using var reuseRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/platform/invitations/accept")
+        {
+            Content = JsonContent.Create(new { token = acceptToken })
+        };
+        reuseRequest.Headers.Add("X-ExItS-Session-Token", sessionToken);
+        var reuse = await _client.SendAsync(reuseRequest);
+        Assert.True(reuse.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Conflict or HttpStatusCode.BadRequest);
+
+        var secondEmail = $"{UniqueToken("pending")}@example.com";
+        var second = await _client.PostAsJsonAsync(
+            $"/api/v1/platform/organizations/{organizationId}/invitations",
+            new { email = secondEmail, role = "OrganizationAdministrator" });
+        Assert.Equal(HttpStatusCode.Created, second.StatusCode);
+        var secondId = (await second.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        var revoke = await _client.PostAsync($"/api/v1/platform/invitations/{secondId}/revoke", null);
+        Assert.Equal(HttpStatusCode.OK, revoke.StatusCode);
+        Assert.Equal("Revoked", (await revoke.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("status").GetString());
+        Assert.NotEqual(Guid.Empty, invitationId);
+    }
+
+    [Fact]
+    public async Task Final_governing_admin_cannot_be_revoked()
+    {
+        var orgResponse = await _client.PostAsJsonAsync(
+            "/api/v1/platform/organizations",
+            new { displayName = "Solo Org", slug = UniqueToken("solo") });
+        orgResponse.EnsureSuccessStatusCode();
+        var organizationId = (await orgResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        var username = UniqueToken("owner");
+        var createUser = await _client.PostAsJsonAsync(
+            "/api/v1/platform/users",
+            new { username, displayName = "Solo Owner", email = $"{username}@example.com" });
+        createUser.EnsureSuccessStatusCode();
+        var userId = (await createUser.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        var add = await _client.PostAsJsonAsync(
+            $"/api/v1/platform/organizations/{organizationId}/members",
+            new { userId, role = "OrganizationOwner" });
+        Assert.Equal(HttpStatusCode.Created, add.StatusCode);
+        var membershipId = (await add.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        var revoke = await _client.PostAsJsonAsync(
+            $"/api/v1/platform/memberships/{membershipId}/revoke",
+            new { reason = "should fail", actorReference = "dev-admin" });
+        Assert.Equal(HttpStatusCode.Conflict, revoke.StatusCode);
+        var problem = await revoke.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("platform.membership.last_governing_admin", problem.GetProperty("errorCode").GetString());
+    }
+
     private async Task<(Guid OrganizationId, string ProductCode)> SeedCommercialContextAsync(string prefix)
     {
         var orgResponse = await _client.PostAsJsonAsync(
@@ -222,6 +337,7 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            builder.UseEnvironment("Testing");
             builder.UseSetting("ConnectionStrings:PlatformDatabase", connectionString);
             builder.ConfigureAppConfiguration((_, config) =>
             {

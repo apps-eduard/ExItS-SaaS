@@ -79,6 +79,17 @@ internal sealed class InMemoryOrganizationMembershipRepository : IOrganizationMe
             (ordered.Skip(skip).Take(take).ToList(), ordered.Count));
     }
 
+    public Task<int> CountActiveGoverningAdminsAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var count = _byId.Values.Count(m =>
+            m.OrganizationId == organizationId
+            && m.Status == MembershipStatus.Active
+            && OrganizationMembershipGuard.IsGoverningAdmin(m.Role));
+        return Task.FromResult(count);
+    }
+
     public Task AddAsync(OrganizationMembership membership, CancellationToken cancellationToken = default)
     {
         _byId[membership.Id.Value] = membership;

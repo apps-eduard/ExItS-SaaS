@@ -419,6 +419,22 @@
   <data name="OrgMembers_SuspendMembership" xml:space="preserve"><value>Suspend membership</value></data>
   <data name="OrgMembers_RevokeMembership" xml:space="preserve"><value>Revoke membership</value></data>
   <data name="OrgMembers_ReactivateMembership" xml:space="preserve"><value>Reactivate membership</value></data>
+  <data name="OrgMembers_TabMembers" xml:space="preserve"><value>Members</value></data>
+  <data name="OrgMembers_TabInvitations" xml:space="preserve"><value>Invitations</value></data>
+  <data name="OrgMembers_TabProductAccess" xml:space="preserve"><value>Product access</value></data>
+  <data name="OrgMembers_Invite" xml:space="preserve"><value>Invite by email</value></data>
+  <data name="OrgMembers_InviteSection" xml:space="preserve"><value>Invite member</value></data>
+  <data name="OrgMembers_InvitationsUnavailable" xml:space="preserve"><value>Invitations unavailable</value></data>
+  <data name="OrgMembers_ExpiresUtc" xml:space="preserve"><value>Expires (UTC)</value></data>
+  <data name="OrgMembers_Resend" xml:space="preserve"><value>Resend</value></data>
+  <data name="OrgMembers_RevokeInviteConfirm" xml:space="preserve"><value>Revoke this pending invitation?</value></data>
+  <data name="OrgMembers_ToastInvited" xml:space="preserve"><value>Invitation created. Accept token is not shown in Admin — deliver out of band.</value></data>
+  <data name="OrgMembers_ToastInviteResent" xml:space="preserve"><value>Invitation resent (token rotated).</value></data>
+  <data name="OrgMembers_ToastInviteRevoked" xml:space="preserve"><value>Invitation revoked.</value></data>
+  <data name="OrgMembers_ProductAccessReadOnly" xml:space="preserve"><value>Product-access assignments are shown read-only here. Grant/revoke remains on the product-access surface. Access never assigns product-local roles.</value></data>
+  <data name="OrgUsers_Title" xml:space="preserve"><value>Organization users</value></data>
+  <data name="OrgUsers_Description" xml:space="preserve"><value>Select an organization to manage members and invitations.</value></data>
+  <data name="OrgUsers_Hint" xml:space="preserve"><value>Platform organization memberships only. Product-local roles (Cashier, Doctor, etc.) are never assigned here.</value></data>
 
   <data name="OrgProductAccess_Title" xml:space="preserve"><value>Product access</value></data>
   <data name="OrgProductAccess_Description" xml:space="preserve"><value>Commercial product-access assignments.</value></data>
@@ -446,7 +462,7 @@
 
   <data name="Users_Title" xml:space="preserve"><value>Platform users</value></data>
   <data name="Users_Description" xml:space="preserve"><value>Platform user administration.</value></data>
-  <data name="Users_Warning" xml:space="preserve"><value>Platform membership is not product operational authorization. No passwords, invitations, or identity-provider linkage in this work package.</value></data>
+  <data name="Users_Warning" xml:space="preserve"><value>Platform membership is not product operational authorization. Organization invitations and memberships never grant product-local roles.</value></data>
   <data name="Users_SearchPlaceholder" xml:space="preserve"><value>Username, email, or name</value></data>
   <data name="Users_HideCreate" xml:space="preserve"><value>Hide create</value></data>
   <data name="Users_CreateUser" xml:space="preserve"><value>Create user</value></data>

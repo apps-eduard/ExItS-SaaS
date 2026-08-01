@@ -37,6 +37,12 @@ public interface IPlatformApiClient
     Task<ApiCallResult<OrganizationMembershipDto>> ReactivateMembershipAsync(Guid membershipId, MembershipLifecycleRequest request, CancellationToken ct = default);
     Task<ApiCallResult<OrganizationMembershipDto>> RevokeMembershipAsync(Guid membershipId, MembershipLifecycleRequest request, CancellationToken ct = default);
 
+    Task<ApiCallResult<PagedResult<OrganizationInvitationDto>>> GetOrganizationInvitationsAsync(Guid organizationId, int page = 1, int pageSize = 20, string? status = null, CancellationToken ct = default);
+    Task<ApiCallResult<OrganizationInvitationDto>> CreateOrganizationInvitationAsync(Guid organizationId, CreateInvitationRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<OrganizationInvitationDto>> ResendOrganizationInvitationAsync(Guid invitationId, CancellationToken ct = default);
+    Task<ApiCallResult<OrganizationInvitationDto>> RevokeOrganizationInvitationAsync(Guid invitationId, CancellationToken ct = default);
+    Task<ApiCallResult<OrganizationMembershipDto>> AcceptOrganizationInvitationAsync(string token, CancellationToken ct = default);
+
     Task<ApiCallResult<PagedResult<ProductAccessAssignmentDto>>> GetOrganizationProductAccessAsync(Guid organizationId, int page = 1, int pageSize = 20, string? status = null, CancellationToken ct = default);
     Task<ApiCallResult<PagedResult<ProductAccessAssignmentDto>>> GetUserProductAccessAsync(Guid userId, int page = 1, int pageSize = 20, string? status = null, CancellationToken ct = default);
     Task<ApiCallResult<ProductAccessAssignmentDto>> GrantProductAccessAsync(Guid organizationId, GrantProductAccessRequest request, CancellationToken ct = default);

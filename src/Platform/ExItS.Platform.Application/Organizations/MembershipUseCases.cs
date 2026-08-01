@@ -21,19 +21,29 @@ public sealed record OrganizationMembershipDto(
     DateTimeOffset? SuspendedAtUtc,
     DateTimeOffset? RemovedAtUtc,
     string? Reason,
-    string? ActorReference);
+    string? ActorReference,
+    string? Username = null,
+    string? DisplayName = null,
+    string? Email = null);
 
 public sealed class MembershipQueryService
 {
     private readonly IOrganizationMembershipRepository _memberships;
+    private readonly IPlatformUserRepository _users;
 
-    public MembershipQueryService(IOrganizationMembershipRepository memberships) => _memberships = memberships;
+    public MembershipQueryService(
+        IOrganizationMembershipRepository memberships,
+        IPlatformUserRepository users)
+    {
+        _memberships = memberships;
+        _users = users;
+    }
 
     public async Task<OrganizationMembershipDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var membership = await _memberships.GetByIdAsync(OrganizationMembershipId.From(id), cancellationToken)
             .ConfigureAwait(false);
-        return membership is null ? null : Map(membership);
+        return membership is null ? null : await MapAsync(membership, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<PagedResult<OrganizationMembershipDto>> ListByOrganizationAsync(
@@ -47,8 +57,14 @@ public sealed class MembershipQueryService
         var (items, total) = await _memberships
             .ListByOrganizationAsync(PlatformOrganizationId.From(organizationId), status, skip, take, cancellationToken)
             .ConfigureAwait(false);
+        var mapped = new List<OrganizationMembershipDto>(items.Count);
+        foreach (var item in items)
+        {
+            mapped.Add(await MapAsync(item, cancellationToken).ConfigureAwait(false));
+        }
+
         return new PagedResult<OrganizationMembershipDto>(
-            items.Select(Map).ToList(),
+            mapped,
             total,
             Math.Max(page ?? 1, 1),
             take);
@@ -65,8 +81,14 @@ public sealed class MembershipQueryService
         var (items, total) = await _memberships
             .ListByUserAsync(PlatformUserId.From(userId), status, skip, take, cancellationToken)
             .ConfigureAwait(false);
+        var mapped = new List<OrganizationMembershipDto>(items.Count);
+        foreach (var item in items)
+        {
+            mapped.Add(await MapAsync(item, cancellationToken).ConfigureAwait(false));
+        }
+
         return new PagedResult<OrganizationMembershipDto>(
-            items.Select(Map).ToList(),
+            mapped,
             total,
             Math.Max(page ?? 1, 1),
             take);
@@ -85,6 +107,28 @@ public sealed class MembershipQueryService
             membership.RemovedAtUtc,
             membership.Reason,
             membership.ActorReference);
+
+    private async Task<OrganizationMembershipDto> MapAsync(
+        OrganizationMembership membership,
+        CancellationToken cancellationToken)
+    {
+        var user = await _users.GetByIdAsync(membership.UserId, cancellationToken).ConfigureAwait(false);
+        return new OrganizationMembershipDto(
+            membership.Id.Value,
+            membership.OrganizationId.Value,
+            membership.UserId.Value,
+            membership.Role.ToString(),
+            membership.Status.ToString(),
+            membership.CreatedAtUtc,
+            membership.UpdatedAtUtc,
+            membership.SuspendedAtUtc,
+            membership.RemovedAtUtc,
+            membership.Reason,
+            membership.ActorReference,
+            user?.Username,
+            user?.DisplayName,
+            user?.NormalizedEmail);
+    }
 }
 
 public sealed class ReactivateOrganizationMembership
@@ -190,6 +234,14 @@ public sealed class RevokeOrganizationMembership
             return ApplicationResult<OrganizationMembership>.Failure(
                 ApplicationErrorCodes.MembershipNotFound,
                 "Membership was not found.");
+        }
+
+        var guard = await OrganizationMembershipGuard
+            .EnsureCanRemoveGoverningSeatAsync(_memberships, membership, cancellationToken)
+            .ConfigureAwait(false);
+        if (guard is not null)
+        {
+            return ApplicationResult<OrganizationMembership>.Failure(guard.ErrorCode!, guard.ErrorMessage!);
         }
 
         try

@@ -282,7 +282,9 @@ public sealed class ResolveCurrentPermissions
         CancellationToken cancellationToken = default)
     {
         var actor = _actorAccessor.GetCurrent();
-        var orgId = organizationId.HasValue ? PlatformOrganizationId.From(organizationId.Value) : null;
+        var orgId = organizationId.HasValue
+            ? PlatformOrganizationId.From(organizationId.Value)
+            : actor.OrganizationId;
         var permissions = await _authorizationService
             .ResolvePermissionsForActorAsync(actor, orgId, cancellationToken)
             .ConfigureAwait(false);

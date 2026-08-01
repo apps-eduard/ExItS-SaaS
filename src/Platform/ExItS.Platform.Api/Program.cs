@@ -168,6 +168,11 @@ builder.Services.AddScoped<ChangeOrganizationRole>();
 builder.Services.AddScoped<SuspendOrganizationMembership>();
 builder.Services.AddScoped<ReactivateOrganizationMembership>();
 builder.Services.AddScoped<RevokeOrganizationMembership>();
+builder.Services.AddScoped<OrganizationInvitationQueryService>();
+builder.Services.AddScoped<CreateOrganizationInvitation>();
+builder.Services.AddScoped<ResendOrganizationInvitation>();
+builder.Services.AddScoped<RevokeOrganizationInvitation>();
+builder.Services.AddScoped<AcceptOrganizationInvitation>();
 
 builder.Services.AddScoped<ProductAccessQueryService>();
 builder.Services.AddScoped<GrantProductAccess>();
@@ -207,6 +212,7 @@ builder.Services.AddScoped<ResolveCurrentPermissions>();
 builder.Services.AddScoped<QueryAuditRecords>();
 builder.Services.AddScoped<GetAuditRecord>();
 builder.Services.AddScoped<PlatformAuthz>();
+builder.Services.AddScoped<PlatformMembershipAuthz>();
 
 builder.Services.Configure<LivePreviewOptions>(builder.Configuration.GetSection(LivePreviewOptions.SectionName));
 builder.Services.AddScoped<InitializeLivePreviewDataset>();
@@ -230,6 +236,7 @@ app.MapCredentialEndpoints();
 app.MapAuthEndpoints();
 app.MapExternalAuthEndpoints();
 app.MapMembershipEndpoints();
+app.MapInvitationEndpoints();
 app.MapAccessEndpoints();
 app.MapSubscriptionEndpoints();
 app.MapPaymentEndpoints();

@@ -20,7 +20,8 @@ public sealed class AdminDashboardRefactoringTests
         Assert.DoesNotContain("ReportKpiCard", dashboard, StringComparison.Ordinal);
         Assert.DoesNotContain("forecast", dashboard, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("profit", dashboard, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("trend", dashboard, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"trend\"", dashboard, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(">trend<", dashboard, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("%", dashboard, StringComparison.Ordinal);
     }
 

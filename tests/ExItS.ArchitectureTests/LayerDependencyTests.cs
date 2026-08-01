@@ -654,12 +654,13 @@ public sealed class LayerDependencyTests
         var program = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "Program.cs"));
         var catalog = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "Catalog", "CatalogEndpoints.cs"));
 
-        Assert.Contains("MapGet(\"/\"".Replace("\\", ""), program);
+        Assert.Contains("MapPlatformRootEndpoint", program);
         Assert.Contains("MapPlatformHealthEndpoints", program);
         Assert.Contains("MapCatalogEndpoints", program);
         Assert.Contains("MapOrganizationEndpoints", program);
         Assert.Contains("MapIdentityEndpoints", program);
         Assert.Contains("MapMembershipEndpoints", program);
+        Assert.Contains("MapInvitationEndpoints", program);
         Assert.Contains("MapAccessEndpoints", program);
         Assert.Contains("MapSubscriptionEndpoints", program);
         Assert.Contains("MapPaymentEndpoints", program);

@@ -54,7 +54,8 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.PaymentNotFound
             or ApplicationErrorCodes.RoleAssignmentNotFound
             or ApplicationErrorCodes.AuditRecordNotFound
-            or ApplicationErrorCodes.CredentialNotFound => StatusCodes.Status404NotFound,
+            or ApplicationErrorCodes.CredentialNotFound
+            or ApplicationErrorCodes.InvitationNotFound => StatusCodes.Status404NotFound,
 
         ApplicationErrorCodes.SlugConflict
             or ApplicationErrorCodes.EmailConflict
@@ -95,7 +96,9 @@ internal static class PlatformApiResults
             or DomainErrorCodes.PaymentAlreadyConfirmed
             or DomainErrorCodes.PaymentAlreadyUsed
             or DomainErrorCodes.InvalidSaaSPaymentTransition
-            or DomainErrorCodes.UnsupportedSubscriptionStatus => StatusCodes.Status409Conflict,
+            or DomainErrorCodes.UnsupportedSubscriptionStatus
+            or DomainErrorCodes.LastGoverningAdminProtected
+            or DomainErrorCodes.InvitationExpired => StatusCodes.Status409Conflict,
 
         ApplicationErrorCodes.PaymentAmountInvalid
             or ApplicationErrorCodes.PaymentCurrencyInvalid

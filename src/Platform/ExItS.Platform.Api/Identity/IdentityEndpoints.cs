@@ -25,8 +25,21 @@ internal static class IdentityEndpoints
             int? page,
             int? pageSize,
             PlatformUserQueryService queries,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManagePlatformUsers,
+                PlatformAuditActions.PlatformUserCreated,
+                nameof(PlatformUser),
+                "list",
+                summary: "List Platform Users.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             AccountStatus? parsed = null;
             if (!string.IsNullOrWhiteSpace(status))
             {
@@ -83,8 +96,21 @@ internal static class IdentityEndpoints
         users.MapGet("/{userId:guid}", async (
             Guid userId,
             PlatformUserQueryService queries,
+            PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManagePlatformUsers,
+                PlatformAuditActions.PlatformUserProfileUpdated,
+                nameof(PlatformUser),
+                userId.ToString("D"),
+                summary: "Get Platform User.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
             var user = await queries.GetByIdAsync(userId, ct).ConfigureAwait(false);
             return user is null
                 ? PlatformApiResults.Problem(

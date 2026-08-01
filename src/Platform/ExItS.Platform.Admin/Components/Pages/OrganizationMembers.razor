@@ -1,209 +1,294 @@
 @page "/admin/organizations/{OrganizationId:guid}/members"
+@using AntDesign
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 @inject IPlatformApiClient Api
-@inject ToastService Toasts
+@inject IMessageService Message
 @inject IStringLocalizer<AdminResources> L
+@inject AdminShellContext Shell
 
-<AdminPageHeader Title="@L["OrgMembers_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Organizations"]} / {L["Common_Members"]}")" Description="@L["OrgMembers_Description"]" />
-<div class="warning" role="note">@L["OrgMembers_Warning"]</div>
+<PageHeader Class="exits-page-header" Title="@L["OrgMembers_Title"]" SubTitle="@L["OrgMembers_Description"]">
+    <PageHeaderBreadcrumb>
+        <Breadcrumb>
+            <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+            @if (Shell.IsPlatformShell)
+            {
+                <BreadcrumbItem Href="/admin/organization-users">@L["Nav_OrganizationUsers"]</BreadcrumbItem>
+            }
+            <BreadcrumbItem Href="@($"/admin/organizations/{OrganizationId}")">@(_org?.Data?.DisplayName ?? L["Nav_Organizations"])</BreadcrumbItem>
+            <BreadcrumbItem>@L["Common_Members"]</BreadcrumbItem>
+        </Breadcrumb>
+    </PageHeaderBreadcrumb>
+</PageHeader>
 
-@if (_org is null) { <LoadingState Message="@L["OrgMembers_Loading"]" /> }
-else if (!_org.IsSuccess) { <ErrorState Title="@(_org.Error?.Title ?? L["Common_Error"])" Detail="@_org.Error?.Detail" Unavailable="@(_org.Status == ApiCallStatus.Unavailable)" /> }
+<Alert Type="@AlertType.Warning" ShowIcon="true" Message="@L["OrgMembers_Warning"]" Style="margin-bottom:12px;" />
+<FormValidationSummary Title="@L["Common_ActionFailed"]" Message="@_formError" IsConflict="_formConflict" />
+
+@if (_org is null)
+{
+    <div style="padding:2rem;text-align:center;"><Spin Tip="@L["OrgMembers_Loading"]" /></div>
+}
+else if (!_org.IsSuccess)
+{
+    <Result Status="@ResultStatus.Error" Title="@(_org.Error?.Title ?? L["Common_Error"])" SubTitle="@_org.Error?.Detail" />
+}
 else
 {
-    <p><a href="/admin/organizations/@OrganizationId">← @_org.Data!.DisplayName @L["Common_CommercialSummary"]</a> · <a href="/admin/organizations/@OrganizationId/product-access">@L["Common_ProductAccess"]</a></p>
-    <FormValidationSummary Title="@L["Common_ActionFailed"]" Message="@_formError" IsConflict="_formConflict" />
+    <Tabs>
+        <TabPane Key="members" Tab="@L["OrgMembers_TabMembers"]">
+            <Space Style="margin-bottom:12px; width:100%;" Wrap>
+                <Select TItemValue="string" TItem="string" @bind-Value="_status" Size="@InputSize.Small" Style="width:140px;" AllowClear Placeholder="@L["Common_Status"]">
+                    <SelectOptions>
+                        <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
+                        <SelectOption TItemValue="string" TItem="string" Value="@("Active")" Label="@L["Status_Active"]" />
+                        <SelectOption TItemValue="string" TItem="string" Value="@("Suspended")" Label="@L["Status_Suspended"]" />
+                        <SelectOption TItemValue="string" TItem="string" Value="@("Removed")" Label="@L["Status_Removed"]" />
+                    </SelectOptions>
+                </Select>
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ApplyMemberFiltersAsync">@L["Common_Apply"]</Button>
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="() => _showAdd = !_showAdd">
+                    @(_showAdd ? L["Common_Cancel"] : L["OrgMembers_AddMember"])
+                </Button>
+            </Space>
 
-    <FormSection Title="@L["OrgMembers_AddSection"]">
-        <div class="form-grid">
-            <FormField Label="@L["OrgMembers_UserId"]" FieldId="org-add-user" Required="true" Error="@_fieldUserId" Help="GUID">
-                <AdminInput @bind-Value="_addUserId" Placeholder="GUID" Disabled="_busy" />
-            </FormField>
-            <FormField Label="@L["OrgMembers_OrgRole"]" FieldId="org-add-role" Required="true">
-                <AdminSelect @bind-Value="_addRole" Disabled="_busy">
-                    <option>OrganizationMember</option>
-                    <option>OrganizationAdministrator</option>
-                    <option>OrganizationOwner</option>
-                </AdminSelect>
-            </FormField>
-        </div>
-        <FormActions PrimaryText="@L["OrgMembers_AddMember"]" Busy="_busy" OnPrimary="AddMemberAsync" />
-    </FormSection>
+            @if (_showAdd)
+            {
+                <Card Size="@CardSize.Small" Title="@L["OrgMembers_AddSection"]" Style="margin-bottom:12px;">
+                    <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                        <div>
+                            <label class="ant-form-item-label">@L["OrgMembers_UserId"]</label>
+                            <Input @bind-Value="_addUserId" Size="@InputSize.Small" Disabled="_busy" Placeholder="GUID" />
+                            @if (_fieldUserId is not null) { <span class="exits-field-error">@_fieldUserId</span> }
+                        </div>
+                        <div>
+                            <label class="ant-form-item-label">@L["OrgMembers_OrgRole"]</label>
+                            <Select TItemValue="string" TItem="string" @bind-Value="_addRole" Size="@InputSize.Small" Style="width:100%;" Disabled="_busy">
+                                <SelectOptions>
+                                    <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationMember")" Label="OrganizationMember" />
+                                    <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationAdministrator")" Label="OrganizationAdministrator" />
+                                    <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationOwner")" Label="OrganizationOwner" />
+                                </SelectOptions>
+                            </Select>
+                        </div>
+                        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="AddMemberAsync">@L["OrgMembers_AddMember"]</Button>
+                    </Space>
+                </Card>
+            }
 
-    <div class="filters">
-        <label>@L["Common_Status"]
-            <select @bind="_status">
-                <option value="">@L["Common_All"]</option>
-                <option value="Active">@L["Status_Active"]</option>
-                <option value="Suspended">@L["Status_Suspended"]</option>
-                <option value="Removed">@L["Status_Removed"]</option>
-            </select>
-        </label>
-        <button type="button" @onclick="ApplyMemberFiltersAsync">@L["Common_Apply"]</button>
-    </div>
+            @if (_members is { IsSuccess: false })
+            {
+                <Result Status="@ResultStatus.Error" Title="@L["OrgMembers_Unavailable"]" SubTitle="@_members.Error?.Detail" />
+            }
+            else
+            {
+                <Table TItem="OrganizationMembershipDto"
+                       DataSource="@(_members?.Data?.Items ?? Array.Empty<OrganizationMembershipDto>())"
+                       Total="@(_members?.Data?.TotalCount ?? 0)"
+                       @bind-PageIndex="_page"
+                       PageSize="@(_members?.Data?.PageSize ?? 20)"
+                       Loading="@(_members is null)"
+                       Size="@TableSize.Small"
+                       Bordered
+                       RemoteDataSource
+                       OnPageIndexChange="OnMembersPageAsync"
+                       ScrollX="1100">
+                    <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_User"]">
+                        <a href="/admin/users/@context.UserId">@(context.DisplayName ?? context.Username ?? context.UserId.ToString("D"))</a>
+                    </PropertyColumn>
+                    <PropertyColumn Property="c => c.Email" Title="@L["Common_Email"]" Ellipsis />
+                    <PropertyColumn Property="c => c.Role" Title="@L["Common_Role"]">
+                        <Select TItemValue="string"
+                                TItem="string"
+                                Value="@context.Role"
+                                Size="@InputSize.Small"
+                                Style="width:210px;"
+                                Disabled="@(_busy || context.Status == "Removed")"
+                                ValueChanged="role => ChangeRoleAsync(context.Id, role)">
+                            <SelectOptions>
+                                <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationOwner")" Label="OrganizationOwner" />
+                                <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationAdministrator")" Label="OrganizationAdministrator" />
+                                <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationMember")" Label="OrganizationMember" />
+                            </SelectOptions>
+                        </Select>
+                    </PropertyColumn>
+                    <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                        <Tag Color="@(context.Status == "Active" ? "success" : context.Status == "Suspended" ? "error" : "default")">@context.Status</Tag>
+                    </PropertyColumn>
+                    <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Format="u" />
+                    <ActionColumn Title="@L["Common_Actions"]" Width="220">
+                        @if (context.Status == "Active")
+                        {
+                            <Popconfirm Title="@L["OrgMembers_SuspendConfirmMessage"]" OnConfirm="() => SuspendAsync(context.Id)" Disabled="_busy">
+                                <Button Size="@ButtonSize.Small" Danger Disabled="_busy">@L["Common_Suspend"]</Button>
+                            </Popconfirm>
+                            <Popconfirm Title="@L["OrgMembers_RevokeConfirmMessage"]" OnConfirm="() => RevokeAsync(context.Id)" Disabled="_busy">
+                                <Button Size="@ButtonSize.Small" Danger Disabled="_busy">@L["Common_Revoke"]</Button>
+                            </Popconfirm>
+                        }
+                        else if (context.Status == "Suspended")
+                        {
+                            <Button Size="@ButtonSize.Small" OnClick="() => ReactivateAsync(context.Id)" Disabled="_busy">@L["OrgMembers_ReactivateMembership"]</Button>
+                            <Popconfirm Title="@L["OrgMembers_RevokeSuspendedConfirmMessage"]" OnConfirm="() => RevokeAsync(context.Id)" Disabled="_busy">
+                                <Button Size="@ButtonSize.Small" Danger Disabled="_busy">@L["Common_Revoke"]</Button>
+                            </Popconfirm>
+                        }
+                    </ActionColumn>
+                </Table>
+            }
+        </TabPane>
 
-    @if (_members is null) { <LoadingState Message="@L["OrgMembers_LoadingMembers"]" /> }
-    else if (!_members.IsSuccess) { <ErrorState Title="@L["OrgMembers_Unavailable"]" Detail="@_members.Error?.Detail" /> }
-    else if (_members.Data!.Items.Count == 0) { <EmptyState Message="@L["OrgMembers_Empty"]" /> }
-    else
-    {
-        <AdminDataTable TItem="OrganizationMembershipDto"
-                        Items="_members.Data.Items"
-                        Columns="_memberColumns"
-                        Caption="@L["OrgMembers_Title"]"
-                        ItemKey="m => m.Id"
-                        CellTemplate="MemberCell"
-                        RowActions="MemberActions" />
-        <AdminPagination Page="_members.Data.Page"
-                         PageSize="_members.Data.PageSize"
-                         TotalCount="_members.Data.TotalCount"
-                         PageChanged="OnMembersPageAsync" />
-    }
-}
+        <TabPane Key="invitations" Tab="@L["OrgMembers_TabInvitations"]">
+            <Space Style="margin-bottom:12px; width:100%;" Wrap>
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="() => _showInvite = !_showInvite">
+                    @(_showInvite ? L["Common_Cancel"] : L["OrgMembers_Invite"])
+                </Button>
+            </Space>
 
-@if (_confirm is not null)
-{
-    <ConfirmDialog Visible="true"
-                   Title="@_confirm.Title"
-                   Message="@_confirm.Message"
-                   Kind="@_confirm.Kind"
-                   OnConfirm="RunConfirmAsync"
-                   OnCancel="ClearConfirm"
-                   Busy="_busy" />
+            @if (_showInvite)
+            {
+                <Card Size="@CardSize.Small" Title="@L["OrgMembers_InviteSection"]" Style="margin-bottom:12px;">
+                    <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                        <div>
+                            <label class="ant-form-item-label">@L["Common_Email"]</label>
+                            <Input @bind-Value="_inviteEmail" Size="@InputSize.Small" Disabled="_busy" />
+                            @if (_fieldInviteEmail is not null) { <span class="exits-field-error">@_fieldInviteEmail</span> }
+                        </div>
+                        <div>
+                            <label class="ant-form-item-label">@L["OrgMembers_OrgRole"]</label>
+                            <Select TItemValue="string" TItem="string" @bind-Value="_inviteRole" Size="@InputSize.Small" Style="width:100%;" Disabled="_busy">
+                                <SelectOptions>
+                                    <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationMember")" Label="OrganizationMember" />
+                                    <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationAdministrator")" Label="OrganizationAdministrator" />
+                                    <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationOwner")" Label="OrganizationOwner" />
+                                </SelectOptions>
+                            </Select>
+                        </div>
+                        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="InviteAsync">@L["OrgMembers_Invite"]</Button>
+                    </Space>
+                </Card>
+            }
+
+            @if (_invitations is { IsSuccess: false })
+            {
+                <Result Status="@ResultStatus.Error" Title="@L["OrgMembers_InvitationsUnavailable"]" SubTitle="@_invitations.Error?.Detail" />
+            }
+            else
+            {
+                <Table TItem="OrganizationInvitationDto"
+                       DataSource="@(_invitations?.Data?.Items ?? Array.Empty<OrganizationInvitationDto>())"
+                       Total="@(_invitations?.Data?.TotalCount ?? 0)"
+                       @bind-PageIndex="_invitePage"
+                       PageSize="@(_invitations?.Data?.PageSize ?? 20)"
+                       Loading="@(_invitations is null)"
+                       Size="@TableSize.Small"
+                       Bordered
+                       RemoteDataSource
+                       OnPageIndexChange="OnInvitePageAsync">
+                    <PropertyColumn Property="c => c.Email" Title="@L["Common_Email"]" />
+                    <PropertyColumn Property="c => c.Role" Title="@L["Common_Role"]" />
+                    <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                        <Tag>@context.Status</Tag>
+                    </PropertyColumn>
+                    <PropertyColumn Property="c => c.ExpiresAtUtc" Title="@L["OrgMembers_ExpiresUtc"]" Format="u" />
+                    <ActionColumn Title="@L["Common_Actions"]" Width="200">
+                        @if (context.Status == "Pending")
+                        {
+                            <Button Size="@ButtonSize.Small" OnClick="() => ResendInviteAsync(context.Id)" Disabled="_busy">@L["OrgMembers_Resend"]</Button>
+                            <Popconfirm Title="@L["OrgMembers_RevokeInviteConfirm"]" OnConfirm="() => RevokeInviteAsync(context.Id)" Disabled="_busy">
+                                <Button Size="@ButtonSize.Small" Danger Disabled="_busy">@L["Common_Revoke"]</Button>
+                            </Popconfirm>
+                        }
+                    </ActionColumn>
+                </Table>
+            }
+        </TabPane>
+
+        <TabPane Key="access" Tab="@L["OrgMembers_TabProductAccess"]">
+            <Alert Type="@AlertType.Info" ShowIcon="true" Message="@L["OrgMembers_ProductAccessReadOnly"]" Style="margin-bottom:12px;" />
+            @if (_access is { IsSuccess: false })
+            {
+                <Result Status="@ResultStatus.Error" Title="@L["Users_ProductAccessUnavailable"]" SubTitle="@_access.Error?.Detail" />
+            }
+            else
+            {
+                <Table TItem="ProductAccessAssignmentDto"
+                       DataSource="@(_access?.Data?.Items ?? Array.Empty<ProductAccessAssignmentDto>())"
+                       Total="@(_access?.Data?.TotalCount ?? 0)"
+                       Loading="@(_access is null)"
+                       Size="@TableSize.Small"
+                       HidePagination
+                       Bordered>
+                    <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" />
+                    <PropertyColumn Property="c => c.UserId" Title="@L["Common_User"]" />
+                    <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]"><Tag>@context.Status</Tag></PropertyColumn>
+                </Table>
+            }
+        </TabPane>
+    </Tabs>
 }
 
 @code {
     [Parameter] public Guid OrganizationId { get; set; }
+
     private ApiCallResult<OrganizationDto>? _org;
     private ApiCallResult<PagedResult<OrganizationMembershipDto>>? _members;
+    private ApiCallResult<PagedResult<OrganizationInvitationDto>>? _invitations;
+    private ApiCallResult<PagedResult<ProductAccessAssignmentDto>>? _access;
     private string _status = "";
     private string _addUserId = "";
     private string _addRole = "OrganizationMember";
+    private string _inviteEmail = "";
+    private string _inviteRole = "OrganizationMember";
+    private bool _showAdd;
+    private bool _showInvite;
     private string? _formError;
     private bool _formConflict;
     private string? _fieldUserId;
+    private string? _fieldInviteEmail;
     private bool _busy;
-    private ConfirmState? _confirm;
     private int _page = 1;
-    private List<AdminColumnDefinition> _memberColumns = new();
-
-    protected override void OnInitialized()
-    {
-        _memberColumns =
-        [
-            new("user", L["Common_User"], Primary: true),
-            new("role", L["Common_Role"]),
-            new("status", L["Common_Status"]),
-            new("updated", L["Common_UpdatedUtc"])
-        ];
-    }
+    private int _invitePage = 1;
 
     protected override async Task OnParametersSetAsync() => await ReloadAsync();
 
     private async Task ReloadAsync()
     {
         _org = await Api.GetOrganizationAsync(OrganizationId);
+        await ReloadMembersAsync();
+        await ReloadInvitationsAsync();
+        _access = await Api.GetOrganizationProductAccessAsync(OrganizationId, page: 1, pageSize: 50);
+    }
+
+    private async Task ReloadMembersAsync() =>
         _members = await Api.GetOrganizationMembersAsync(
             OrganizationId,
             page: _page,
             status: string.IsNullOrWhiteSpace(_status) ? null : _status);
-    }
 
-    private async Task OnMembersPageAsync(int page)
-    {
-        _page = page;
-        await ReloadAsync();
-    }
+    private async Task ReloadInvitationsAsync() =>
+        _invitations = await Api.GetOrganizationInvitationsAsync(OrganizationId, page: _invitePage);
 
     private async Task ApplyMemberFiltersAsync()
     {
         _page = 1;
-        await ReloadAsync();
+        await ReloadMembersAsync();
     }
 
-    private RenderFragment<(OrganizationMembershipDto Item, AdminColumnDefinition Column)> MemberCell => ctx => b =>
+    private async Task OnMembersPageAsync(PaginationEventArgs args)
     {
-        switch (ctx.Column.Key)
-        {
-            case "user":
-                b.OpenElement(0, "a");
-                b.AddAttribute(1, "href", $"/admin/users/{ctx.Item.UserId}");
-                b.AddContent(2, ctx.Item.UserId);
-                b.CloseElement();
-                break;
-            case "role":
-                b.OpenElement(0, "select");
-                b.AddAttribute(1, "value", ctx.Item.Role);
-                b.AddAttribute(2, "disabled", _busy || ctx.Item.Status == "Removed");
-                b.AddAttribute(3, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, e => ChangeRoleAsync(ctx.Item.Id, e.Value?.ToString())));
-                foreach (var role in new[] { "OrganizationOwner", "OrganizationAdministrator", "OrganizationMember" })
-                {
-                    b.OpenElement(4, "option");
-                    b.AddAttribute(5, "value", role);
-                    if (role == ctx.Item.Role)
-                    {
-                        b.AddAttribute(6, "selected", true);
-                    }
+        _page = args.Page;
+        await ReloadMembersAsync();
+    }
 
-                    b.AddContent(7, role);
-                    b.CloseElement();
-                }
-
-                b.CloseElement();
-                break;
-            case "status":
-                b.OpenComponent<StatusBadge>(0);
-                b.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
-                b.CloseComponent();
-                break;
-            case "updated":
-                b.OpenComponent<UtcTimestamp>(0);
-                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.UpdatedAtUtc);
-                b.CloseComponent();
-                break;
-        }
-    };
-
-    private RenderFragment<OrganizationMembershipDto> MemberActions => m => __builder =>
+    private async Task OnInvitePageAsync(PaginationEventArgs args)
     {
-        if (m.Status == "Active")
-        {
-            __builder.OpenElement(0, "button");
-            __builder.AddAttribute(1, "type", "button");
-            __builder.AddAttribute(2, "class", "secondary");
-            __builder.AddAttribute(3, "onclick", EventCallback.Factory.Create(this, () => Ask(L["OrgMembers_SuspendMembership"], L["OrgMembers_SuspendConfirmMessage"], () => SuspendAsync(m.Id), AdminDialogKind.Destructive)));
-            __builder.AddContent(4, L["Common_Suspend"]);
-            __builder.CloseElement();
-            __builder.OpenElement(5, "button");
-            __builder.AddAttribute(6, "type", "button");
-            __builder.AddAttribute(7, "class", "danger");
-            __builder.AddAttribute(8, "onclick", EventCallback.Factory.Create(this, () => Ask(L["OrgMembers_RevokeMembership"], L["OrgMembers_RevokeConfirmMessage"], () => RevokeAsync(m.Id), AdminDialogKind.Destructive)));
-            __builder.AddContent(9, L["Common_Revoke"]);
-            __builder.CloseElement();
-        }
-        else if (m.Status == "Suspended")
-        {
-            __builder.OpenElement(0, "button");
-            __builder.AddAttribute(1, "type", "button");
-            __builder.AddAttribute(2, "class", "secondary");
-            __builder.AddAttribute(3, "onclick", EventCallback.Factory.Create(this, () => ReactivateAsync(m.Id)));
-            __builder.AddContent(4, L["OrgMembers_ReactivateMembership"]);
-            __builder.CloseElement();
-            __builder.OpenElement(5, "button");
-            __builder.AddAttribute(6, "type", "button");
-            __builder.AddAttribute(7, "class", "danger");
-            __builder.AddAttribute(8, "onclick", EventCallback.Factory.Create(this, () => Ask(L["OrgMembers_RevokeMembership"], L["OrgMembers_RevokeSuspendedConfirmMessage"], () => RevokeAsync(m.Id), AdminDialogKind.Destructive)));
-            __builder.AddContent(9, L["Common_Revoke"]);
-            __builder.CloseElement();
-        }
-    };
+        _invitePage = args.Page;
+        await ReloadInvitationsAsync();
+    }
 
     private async Task AddMemberAsync()
     {
-        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
-        {
-            return;
-        }
-
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
         _formError = null;
         _formConflict = false;
         _fieldUserId = null;
@@ -223,103 +308,91 @@ else
             return;
         }
 
-        Toasts.Show(L["OrgMembers_ToastAdded"], ToastKind.Success);
+        await Message.SuccessAsync(L["OrgMembers_ToastAdded"].Value);
         _addUserId = "";
-        await ReloadAsync();
+        _showAdd = false;
+        await ReloadMembersAsync();
     }
 
-    private async Task ChangeRoleAsync(Guid membershipId, string? role)
+    private async Task ChangeRoleAsync(Guid membershipId, string role)
     {
-        if (string.IsNullOrWhiteSpace(role) || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
-        {
-            return;
-        }
-
+        if (string.IsNullOrWhiteSpace(role) || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
         _formError = null;
-        _formConflict = false;
-        var result = await Api.ChangeMembershipRoleAsync(membershipId, new ChangeRoleRequest(role, "dev-admin"));
+        var result = await Api.ChangeMembershipRoleAsync(membershipId, new ChangeRoleRequest(role, null));
         _busy = false;
         if (!result.IsSuccess)
         {
             _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
             _formError = AdminFormErrorMapper.MapPageError(result);
+            await ReloadMembersAsync();
             return;
         }
 
-        Toasts.Show(L["OrgMembers_ToastRoleUpdated"], ToastKind.Success);
-        await ReloadAsync();
-    }
-
-    private void Ask(string title, string message, Func<Task> action, AdminDialogKind kind) =>
-        _confirm = new ConfirmState(title, message, action, kind);
-
-    private async Task RunConfirmAsync()
-    {
-        if (_confirm is null)
-        {
-            return;
-        }
-
-        await _confirm.Action();
+        await Message.SuccessAsync(L["OrgMembers_ToastRoleUpdated"].Value);
+        await ReloadMembersAsync();
     }
 
     private async Task SuspendAsync(Guid id)
     {
-        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
-        {
-            return;
-        }
-
-        _formError = null;
-        _formConflict = false;
-        var result = await Api.SuspendMembershipAsync(id, new MembershipLifecycleRequest("Suspended from Admin", "dev-admin"));
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.SuspendMembershipAsync(id, new MembershipLifecycleRequest("Suspended from Admin", null));
         _busy = false;
-        _confirm = null;
         if (!result.IsSuccess)
         {
-            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
             _formError = AdminFormErrorMapper.MapPageError(result);
             return;
         }
 
-        Toasts.Show(L["OrgMembers_ToastSuspended"], ToastKind.Success);
-        await ReloadAsync();
+        await Message.SuccessAsync(L["OrgMembers_ToastSuspended"].Value);
+        await ReloadMembersAsync();
     }
 
     private async Task ReactivateAsync(Guid id)
     {
-        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
-        {
-            return;
-        }
-
-        _formError = null;
-        _formConflict = false;
-        var result = await Api.ReactivateMembershipAsync(id, new MembershipLifecycleRequest(null, "dev-admin"));
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.ReactivateMembershipAsync(id, new MembershipLifecycleRequest(null, null));
         _busy = false;
         if (!result.IsSuccess)
         {
-            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
             _formError = AdminFormErrorMapper.MapPageError(result);
             return;
         }
 
-        Toasts.Show(L["OrgMembers_ToastReactivated"], ToastKind.Success);
-        await ReloadAsync();
+        await Message.SuccessAsync(L["OrgMembers_ToastReactivated"].Value);
+        await ReloadMembersAsync();
     }
 
     private async Task RevokeAsync(Guid id)
     {
-        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.RevokeMembershipAsync(id, new MembershipLifecycleRequest("Revoked from Admin", null));
+        _busy = false;
+        if (!result.IsSuccess)
         {
+            _formError = AdminFormErrorMapper.MapPageError(result);
             return;
         }
 
+        await Message.SuccessAsync(L["OrgMembers_ToastRevoked"].Value);
+        await ReloadMembersAsync();
+    }
+
+    private async Task InviteAsync()
+    {
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        _fieldInviteEmail = null;
         _formError = null;
-        _formConflict = false;
-        var result = await Api.RevokeMembershipAsync(id, new MembershipLifecycleRequest("Revoked from Admin", "dev-admin"));
+        if (string.IsNullOrWhiteSpace(_inviteEmail))
+        {
+            _fieldInviteEmail = L["Users_EmailRequired"];
+            _busy = false;
+            return;
+        }
+
+        var result = await Api.CreateOrganizationInvitationAsync(
+            OrganizationId,
+            new CreateInvitationRequest(_inviteEmail.Trim(), _inviteRole));
         _busy = false;
-        _confirm = null;
         if (!result.IsSuccess)
         {
             _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
@@ -327,15 +400,40 @@ else
             return;
         }
 
-        Toasts.Show(L["OrgMembers_ToastRevoked"], ToastKind.Success);
-        await ReloadAsync();
+        // Accept token is intentionally not displayed — delivery channel is out of band.
+        await Message.SuccessAsync(L["OrgMembers_ToastInvited"].Value);
+        _inviteEmail = "";
+        _showInvite = false;
+        await ReloadInvitationsAsync();
     }
 
-    private Task ClearConfirm()
+    private async Task ResendInviteAsync(Guid id)
     {
-        _confirm = null;
-        return Task.CompletedTask;
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.ResendOrganizationInvitationAsync(id);
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        await Message.SuccessAsync(L["OrgMembers_ToastInviteResent"].Value);
+        await ReloadInvitationsAsync();
     }
 
-    private sealed record ConfirmState(string Title, string Message, Func<Task> Action, AdminDialogKind Kind);
+    private async Task RevokeInviteAsync(Guid id)
+    {
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.RevokeOrganizationInvitationAsync(id);
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        await Message.SuccessAsync(L["OrgMembers_ToastInviteRevoked"].Value);
+        await ReloadInvitationsAsync();
+    }
 }

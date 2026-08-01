@@ -162,7 +162,11 @@ public sealed class UseCaseTests
         var clock = new FixedClock(T0);
 
         var user = (await new CreatePlatformUser(users, uow, clock).ExecuteAsync("ada", "Ada Lovelace", "ada@example.com")).Value!;
+        var owner = (await new CreatePlatformUser(users, uow, clock).ExecuteAsync("owner", "Org Owner", "owner@example.com")).Value!;
         var org = (await new CreatePlatformOrganization(orgs, uow, clock).ExecuteAsync("Acme Group", "acme-group")).Value!;
+        var ownerMembership = await new AddOrganizationMembership(users, orgs, memberships, uow, clock)
+            .ExecuteAsync(org.Id, owner.Id, OrganizationRole.OrganizationOwner);
+        Assert.True(ownerMembership.IsSuccess);
         var membership = (await new AddOrganizationMembership(users, orgs, memberships, uow, clock)
             .ExecuteAsync(org.Id, user.Id, OrganizationRole.OrganizationMember)).Value!;
 

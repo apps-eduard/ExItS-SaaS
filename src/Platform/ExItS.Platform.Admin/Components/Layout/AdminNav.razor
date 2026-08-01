@@ -34,8 +34,8 @@
                 }
                 @if (CanView(PlatformPermissionCodes.ManageMemberships))
                 {
-                    <MenuItem Key="org-users" Disabled="true">
-                        @L["Nav_OrganizationUsers"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                    <MenuItem Key="org-users" RouterLink="/admin/organization-users" Icon="team">
+                        @L["Nav_OrganizationUsers"]
                     </MenuItem>
                 }
             </SubMenu>
@@ -116,7 +116,8 @@
                     @L["Nav_OrganizationProfile"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
                 </MenuItem>
             }
-            @if (Shell.SelectedOrganizationId is Guid membersOrg && CanView(PlatformPermissionCodes.ManageMemberships))
+            @if (Shell.SelectedOrganizationId is Guid membersOrg
+                 && (CanView(PlatformPermissionCodes.ManageMemberships) || IsOrgAdminMembership))
             {
                 <MenuItem Key="org-members" RouterLink="@($"/admin/organizations/{membersOrg}/members")" Icon="team">
                     @L["Nav_Members"]
@@ -258,7 +259,8 @@
         {
             "/admin" => ["dashboard"],
             var p when p.StartsWith("/admin/users", StringComparison.Ordinal) => ["platform-users"],
-            var p when p.Contains("/members", StringComparison.Ordinal) => Shell.IsOrganizationShell ? ["org-members"] : ["organizations"],
+            var p when p.StartsWith("/admin/organization-users", StringComparison.Ordinal) => ["org-users"],
+            var p when p.Contains("/members", StringComparison.Ordinal) => Shell.IsOrganizationShell ? ["org-members"] : ["org-users"],
             var p when p.Contains("/product-access", StringComparison.Ordinal) => Shell.IsOrganizationShell ? ["my-products"] : ["organizations"],
             var p when p.StartsWith("/admin/organizations", StringComparison.Ordinal) =>
                 Shell.IsOrganizationShell ? ["org-profile"] : ["organizations"],
@@ -278,6 +280,10 @@
     }
 
     private bool CanView(string permission) => Permissions.HasPermission(permission);
+
+    private bool IsOrgAdminMembership =>
+        string.Equals(Shell.MembershipRole, "OrganizationOwner", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(Shell.MembershipRole, "OrganizationAdministrator", StringComparison.OrdinalIgnoreCase);
 
     public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
 }

@@ -44,6 +44,14 @@ public sealed class SuspendOrganizationMembership
                 "Organization membership was not found.");
         }
 
+        var guard = await OrganizationMembershipGuard
+            .EnsureCanRemoveGoverningSeatAsync(_memberships, membership, cancellationToken)
+            .ConfigureAwait(false);
+        if (guard is not null)
+        {
+            return ApplicationResult<OrganizationMembership>.Failure(guard.ErrorCode!, guard.ErrorMessage!);
+        }
+
         try
         {
             membership.Suspend(_clock.UtcNow, reason, actorReference);
@@ -84,6 +92,8 @@ public sealed class ChangeOrganizationRole
         OrganizationMembershipId membershipId,
         OrganizationRole role,
         string? actorReference = null,
+        OrganizationRole? actorMembershipRole = null,
+        bool actorHasPlatformManageMemberships = true,
         CancellationToken cancellationToken = default)
     {
         var membership = await _memberships.GetByIdAsync(membershipId, cancellationToken)
@@ -93,6 +103,20 @@ public sealed class ChangeOrganizationRole
             return ApplicationResult<OrganizationMembership>.Failure(
                 ApplicationErrorCodes.MembershipNotFound,
                 "Organization membership was not found.");
+        }
+
+        var guard = await OrganizationMembershipGuard
+            .EnsureCanChangeRoleAsync(
+                _memberships,
+                membership,
+                role,
+                actorMembershipRole,
+                actorHasPlatformManageMemberships,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (guard is not null)
+        {
+            return ApplicationResult<OrganizationMembership>.Failure(guard.ErrorCode!, guard.ErrorMessage!);
         }
 
         try

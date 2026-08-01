@@ -49,6 +49,7 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PlatformCredentialTokenRecord> PlatformCredentialTokens => Set<PlatformCredentialTokenRecord>();
     internal DbSet<PlatformExternalLoginRecord> PlatformExternalLogins => Set<PlatformExternalLoginRecord>();
     internal DbSet<OrganizationMembershipRecord> OrganizationMemberships => Set<OrganizationMembershipRecord>();
+    internal DbSet<OrganizationInvitationRecord> OrganizationInvitations => Set<OrganizationInvitationRecord>();
     internal DbSet<ProductAccessAssignmentRecord> ProductAccessAssignments => Set<ProductAccessAssignmentRecord>();
     internal DbSet<PlatformRoleAssignmentRecord> PlatformRoleAssignments => Set<PlatformRoleAssignmentRecord>();
     internal DbSet<AuditRecordRecord> AuditRecords => Set<AuditRecordRecord>();
@@ -613,6 +614,41 @@ public sealed class PlatformDbContext : DbContext
             entity.HasOne<PlatformUserRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<OrganizationInvitationRecord>(entity =>
+        {
+            entity.ToTable("organization_invitations");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.NormalizedEmail).HasColumnName("normalized_email").HasMaxLength(320).IsRequired();
+            entity.Property(e => e.Role).HasColumnName("role").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.TokenHash).HasColumnName("token_hash").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.InvitedByUserId).HasColumnName("invited_by_user_id");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
+            entity.Property(e => e.AcceptedAtUtc).HasColumnName("accepted_at_utc");
+            entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
+            entity.Property(e => e.AcceptedByUserId).HasColumnName("accepted_by_user_id");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => e.TokenHash).IsUnique().HasDatabaseName("ux_organization_invitations_token_hash");
+            entity.HasIndex(e => new { e.OrganizationId, e.NormalizedEmail })
+                .IsUnique()
+                .HasFilter("status = 'Pending'")
+                .HasDatabaseName("ux_organization_invitations_pending_email");
+
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

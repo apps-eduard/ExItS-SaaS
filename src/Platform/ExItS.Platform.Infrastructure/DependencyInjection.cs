@@ -51,6 +51,7 @@ public static class DependencyInjection
         services.AddSingleton<IPlatformSessionTokenService, PlatformSessionTokenService>();
         services.AddSingleton<IPlatformAuthOutboundMessageSink, NullPlatformAuthOutboundMessageSink>();
         services.AddScoped<IOrganizationMembershipRepository, OrganizationMembershipRepository>();
+        services.AddScoped<IOrganizationInvitationRepository, OrganizationInvitationRepository>();
         services.AddScoped<IProductAccessAssignmentRepository, ProductAccessAssignmentRepository>();
         services.AddScoped<IPlatformRoleAssignmentRepository, PlatformRoleAssignmentRepository>();
         services.AddScoped<IAuditRecordRepository, AuditRecordRepository>();

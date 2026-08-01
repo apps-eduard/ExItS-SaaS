@@ -60,6 +60,11 @@ public static class PlatformAuditActions
     public const string MembershipReactivated = "platform.membership.reactivated";
     public const string MembershipRevoked = "platform.membership.revoked";
 
+    public const string InvitationCreated = "platform.invitation.created";
+    public const string InvitationResent = "platform.invitation.resent";
+    public const string InvitationRevoked = "platform.invitation.revoked";
+    public const string InvitationAccepted = "platform.invitation.accepted";
+
     public const string ProductAccessGranted = "platform.product_access.granted";
     public const string ProductAccessRevoked = "platform.product_access.revoked";
 

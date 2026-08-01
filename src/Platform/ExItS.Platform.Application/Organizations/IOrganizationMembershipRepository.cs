@@ -32,6 +32,11 @@ public interface IOrganizationMembershipRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Active memberships with OrganizationOwner or OrganizationAdministrator role.</summary>
+    Task<int> CountActiveGoverningAdminsAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(OrganizationMembership membership, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(OrganizationMembership membership, CancellationToken cancellationToken = default);

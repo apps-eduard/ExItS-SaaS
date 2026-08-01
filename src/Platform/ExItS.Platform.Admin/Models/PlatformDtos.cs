@@ -313,7 +313,27 @@ public sealed record OrganizationMembershipDto(
     DateTimeOffset? SuspendedAtUtc,
     DateTimeOffset? RemovedAtUtc,
     string? Reason,
-    string? ActorReference);
+    string? ActorReference,
+    string? Username = null,
+    string? DisplayName = null,
+    string? Email = null);
+
+public sealed record OrganizationInvitationDto(
+    Guid Id,
+    Guid OrganizationId,
+    string Email,
+    string Role,
+    string Status,
+    Guid? InvitedByUserId,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    DateTimeOffset ExpiresAtUtc,
+    DateTimeOffset? AcceptedAtUtc,
+    DateTimeOffset? RevokedAtUtc,
+    Guid? AcceptedByUserId,
+    string? AcceptToken = null);
+
+public sealed record CreateInvitationRequest(string Email, string Role);
 
 public sealed record ProductAccessAssignmentDto(
     Guid Id,

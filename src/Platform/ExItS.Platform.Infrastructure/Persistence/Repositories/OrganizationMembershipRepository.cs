@@ -105,6 +105,22 @@ internal sealed class OrganizationMembershipRepository : IOrganizationMembership
         return (records.Select(IdentityAccessEntityMapper.ToMembershipDomain).ToList(), total);
     }
 
+    public async Task<int> CountActiveGoverningAdminsAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var active = nameof(MembershipStatus.Active);
+        var owner = nameof(OrganizationRole.OrganizationOwner);
+        var admin = nameof(OrganizationRole.OrganizationAdministrator);
+        return await _db.OrganizationMemberships.AsNoTracking()
+            .CountAsync(
+                m => m.OrganizationId == organizationId.Value
+                     && m.Status == active
+                     && (m.Role == owner || m.Role == admin),
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public Task AddAsync(OrganizationMembership membership, CancellationToken cancellationToken = default)
     {
         _db.OrganizationMemberships.Add(IdentityAccessEntityMapper.ToMembershipRecord(membership));

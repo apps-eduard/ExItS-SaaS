@@ -26,8 +26,34 @@ internal static class AccessEndpoints
             int? page,
             int? pageSize,
             ProductAccessQueryService queries,
+            PlatformAuthz authz,
+            PlatformMembershipAuthz membershipAuthz,
             CancellationToken ct) =>
         {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageProductAccess,
+                PlatformAuditActions.ProductAccessGranted,
+                "ProductAccessAssignment",
+                organizationId.ToString("D"),
+                organizationId,
+                summary: "List organization product access.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                // Org admins may view product-access (read-only) for their trusted org.
+                var orgDenied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+                    PlatformAuditActions.ProductAccessGranted,
+                    "ProductAccessAssignment",
+                    organizationId.ToString("D"),
+                    organizationId,
+                    summary: "List organization product access (org admin read).",
+                    cancellationToken: ct).ConfigureAwait(false);
+                if (orgDenied is not null)
+                {
+                    return orgDenied;
+                }
+            }
+
             if (!TryParseStatus(status, out var parsed, out var error))
             {
                 return error!;

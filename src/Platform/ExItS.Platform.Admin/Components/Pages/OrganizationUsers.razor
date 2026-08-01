@@ -1,0 +1,74 @@
+@page "/admin/organization-users"
+@using AntDesign
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IPlatformApiClient Api
+@inject IStringLocalizer<AdminResources> L
+@inject NavigationManager Nav
+@inject AdminShellContext Shell
+
+<PageHeader Class="exits-page-header" Title="@L["OrgUsers_Title"]" SubTitle="@L["OrgUsers_Description"]">
+    <PageHeaderBreadcrumb>
+        <Breadcrumb>
+            <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+            <BreadcrumbItem>@L["Nav_OrganizationUsers"]</BreadcrumbItem>
+        </Breadcrumb>
+    </PageHeaderBreadcrumb>
+</PageHeader>
+
+<Alert Type="@AlertType.Info" ShowIcon="true" Message="@L["OrgUsers_Hint"]" Style="margin-bottom:12px;" />
+
+@if (_orgs is { IsSuccess: false })
+{
+    <Result Status="@ResultStatus.Error" Title="@(_orgs.Error?.Title ?? L["Common_Error"])" SubTitle="@_orgs.Error?.Detail" />
+}
+else
+{
+    <Table TItem="OrganizationDto"
+           DataSource="@(_orgs?.Data?.Items ?? Array.Empty<OrganizationDto>())"
+           Total="@(_orgs?.Data?.TotalCount ?? 0)"
+           @bind-PageIndex="_page"
+           PageSize="@(_orgs?.Data?.PageSize ?? 20)"
+           Loading="@(_orgs is null)"
+           Size="@TableSize.Small"
+           Bordered
+           RemoteDataSource
+           OnPageIndexChange="OnPageChangedAsync">
+        <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_DisplayName"]">
+            <a href="/admin/organizations/@context.Id/members">@context.DisplayName</a>
+        </PropertyColumn>
+        <PropertyColumn Property="c => c.Slug" Title="@L["Common_Slug"]" />
+        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+            <Tag>@context.Status</Tag>
+        </PropertyColumn>
+        <ActionColumn Title="@L["Common_Open"]" Width="140">
+            <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/organizations/{context.Id}/members")">@L["Common_Members"]</a>
+        </ActionColumn>
+    </Table>
+}
+
+@code {
+    private ApiCallResult<PagedResult<OrganizationDto>>? _orgs;
+    private int _page = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Shell.EnsureLoadedAsync();
+        if (Shell.IsOrganizationShell && Shell.SelectedOrganizationId is Guid orgId)
+        {
+            Nav.NavigateTo($"/admin/organizations/{orgId}/members", replace: true);
+            return;
+        }
+
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync() =>
+        _orgs = await Api.GetOrganizationsAsync(page: _page, pageSize: 20);
+
+    private async Task OnPageChangedAsync(PaginationEventArgs args)
+    {
+        _page = args.Page;
+        await ReloadAsync();
+    }
+}
