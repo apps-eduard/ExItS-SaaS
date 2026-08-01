@@ -89,6 +89,9 @@ public sealed class ProductionProxyTlsArchitectureTests
         Assert.Contains("UseAdminForwardedHeaders", adminProgram, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Live_preview_ports_remain_documented_and_unchanged_by_production_compose()
+    {
         var root = FindRepoRoot();
         var live = File.ReadAllText(Path.Combine(root, "deploy", "docker", "compose.live-preview.yaml"));
         Assert.Contains("${LIVE_PREVIEW_ADMIN_HOST_PORT:-8090}:8080", live, StringComparison.Ordinal);
