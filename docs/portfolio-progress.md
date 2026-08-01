@@ -14,7 +14,7 @@
 | Current phase | Phase 15 — Ant Design Platform Administration (**in progress**) |
 | Current work package | P15-WP06 — Users, Roles, Permissions, and RBAC (**complete**) |
 | Overall status | **Phase 15 in progress.** P15-WP01–WP06 complete. Live Preview hardening must not be rolled back ([report](reports/2026-08-01-admin-live-preview-hardening.md)). Fluent UI Admin direction cancelled/superseded. Phase 14 Production remains **Blocked** pending P14-WP03+. Exact next: **P15-WP07** or **P14-WP03** only when authorized. **Not production-ready.** |
-| Latest verified commit | `81a2340d282b70d232213bdee3f6cc3f0b083f15` |
+| Latest verified commit | `ecc83850bd2f23f31ec561dca28df4283b9dc70b` |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-08-01 |
 
@@ -160,7 +160,7 @@ P15-WP07 ○ Closeout (do not begin until authorized)
 | P15-WP03 — Organization Lifecycle | Complete | `81d19733864c4f0756d061120b156f0390d458f0` — [report](reports/P15-WP03-organization-lifecycle.md) |
 | P15-WP04 — Product Catalog and Plan CRUD | Complete | `d0e2ad3bd211607b59e16278fbb94e4fc73589f3` — [report](reports/P15-WP04-product-catalog-and-plan-crud.md) |
 | P15-WP05 — Subscriptions and Product Entitlements | Complete | `8f664c80eea267a5b538e7424668ba4e1af0e247` — [report](reports/P15-WP05-subscriptions-and-entitlements.md) |
-| P15-WP06 — Users, Roles, Permissions, and RBAC | Complete | _(set on push)_ — [report](reports/P15-WP06-users-roles-permissions-rbac.md) |
+| P15-WP06 — Users, Roles, Permissions, and RBAC | Complete | `2b9657bbb4c0e597c2098ef1a2fa5bb1e630ba52` — [report](reports/P15-WP06-users-roles-permissions-rbac.md) |
 | P15-WP07 — Closeout | Not started | — |
 
 ## Phase 13 work packages
@@ -237,4 +237,4 @@ P15-WP07 ○ Closeout (do not begin until authorized)
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P15-WP06** or **P14-WP03** until explicitly authorized. Platform Admin UI direction is **Ant Design Blazor (ADR-015)**; Fluent UI Admin work is cancelled.
+Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P15-WP07** or **P14-WP03** until explicitly authorized. Platform Admin UI direction is **Ant Design Blazor (ADR-015)**; Fluent UI Admin work is cancelled.
