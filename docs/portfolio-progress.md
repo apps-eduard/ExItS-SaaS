@@ -14,7 +14,7 @@
 | Current phase | Phase 15 — Ant Design Platform Administration (**in progress**) |
 | Current work package | P15-WP06 — Users, Roles, Permissions, and RBAC (**complete**) |
 | Overall status | **Phase 15 in progress.** P15-WP01–WP06 complete. Live Preview hardening must not be rolled back ([report](reports/2026-08-01-admin-live-preview-hardening.md)). Fluent UI Admin direction cancelled/superseded. Phase 14 Production remains **Blocked** pending P14-WP03+. Exact next: **P15-WP07** or **P14-WP03** only when authorized. **Not production-ready.** |
-| Latest verified commit | _(set on push)_ |
+| Latest verified commit | `fb2c95f30b44b31d8023d272674084b2fdac42cf` |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-08-01 |
 
