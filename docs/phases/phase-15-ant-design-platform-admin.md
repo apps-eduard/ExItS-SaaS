@@ -4,7 +4,7 @@
 
 ## Status
 
-**P15-WP01 complete.** Prior Fluent UI Phase 15 direction is **cancelled and superseded** (never pushed; working tree discarded at `e6d0185`). See [completion report](../reports/P15-WP01-antdesign-admin-foundation.md).
+**P15-WP01–WP03 complete.** Prior Fluent UI Phase 15 direction is **cancelled and superseded** (never pushed; working tree discarded at `e6d0185`). See [WP01](../reports/P15-WP01-antdesign-admin-foundation.md), [WP02](../reports/P15-WP02-users-and-organization-memberships.md), [WP03](../reports/P15-WP03-organization-lifecycle.md).
 
 ## Goal
 
@@ -16,8 +16,8 @@ Rebuild Platform Admin on **Ant Design Blazor** (`AntDesign`), using [Ant Design
 |---|---|---|
 | P15-WP01 | Ant Design Admin Foundation | **Complete** |
 | P15-WP02 | Users and Organization Memberships | **Complete** — [report](../reports/P15-WP02-users-and-organization-memberships.md) |
-| P15-WP03 | Organization Lifecycle | Blocked until authorized |
-| P15-WP04 | Products and Plans | Blocked |
+| P15-WP03 | Organization Lifecycle | **Complete** — [report](../reports/P15-WP03-organization-lifecycle.md) |
+| P15-WP04 | Products and Plans | Blocked until authorized |
 | P15-WP05 | Subscriptions | Blocked |
 | P15-WP06 | Authorization, Audit, and UX Hardening | Blocked |
 | P15-WP07 | Closeout | Blocked |
