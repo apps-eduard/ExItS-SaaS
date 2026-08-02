@@ -717,4 +717,18 @@
   <data name="OrgEnabledProducts_ToastRoleAssigned" xml:space="preserve"><value>Naitalaga ang product-local role.</value></data>
   <data name="OrgEnabledProducts_ToastRoleRevoked" xml:space="preserve"><value>Nabawi ang product-local role.</value></data>
   <data name="OrgEnabledProducts_InvalidUserId" xml:space="preserve"><value>Maglagay ng wastong user id (GUID).</value></data>
+  <data name="Login_CredentialsHint" xml:space="preserve"><value>Mag-sign in gamit ang iyong Platform User credentials.</value></data>
+  <data name="Login_UsernameOrEmail" xml:space="preserve"><value>Username o email</value></data>
+  <data name="Login_Password" xml:space="preserve"><value>Password</value></data>
+  <data name="Login_SignIn" xml:space="preserve"><value>Mag-sign in</value></data>
+  <data name="Login_ForgotPassword" xml:space="preserve"><value>Nakalimutan ang password</value></data>
+  <data name="Login_InvalidCredentials" xml:space="preserve"><value>Mali ang username/email o password.</value></data>  <data name="Login_OrContinueWith" xml:space="preserve"><value>O magpatuloy gamit ang</value></data>
+  <data name="Login_ContinueGoogle" xml:space="preserve"><value>Magpatuloy sa Google</value></data>
+  <data name="Login_ContinueFacebook" xml:space="preserve"><value>Magpatuloy sa Facebook</value></data>
+  <data name="Login_SocialDisclaimer" xml:space="preserve"><value>Ang social sign-in ay lumilikha o nagli-link lamang ng Platform User. Hindi ito nagbibigay ng administrator, membership, o product access.</value></data>
+  <data name="OrgSwitcher_Loading" xml:space="preserve"><value>Org…</value></data>
+  <data name="OrgSwitcher_NoOrganization" xml:space="preserve"><value>Walang organization</value></data>
+  <data name="OrgSwitcher_NoMembershipTitle" xml:space="preserve"><value>Walang aktibong organization membership</value></data>
+  <data name="OrgSwitcher_SelectPlaceholder" xml:space="preserve"><value>Pumili ng organization…</value></data>
+  <data name="OrgSwitcher_ChangeFailed" xml:space="preserve"><value>Hindi mabago ang organization context.</value></data>
 </root>

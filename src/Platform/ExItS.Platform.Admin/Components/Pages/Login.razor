@@ -8,7 +8,6 @@
 @inject PlatformBrowserSessionService SessionService
 @inject NavigationManager Nav
 @inject IStringLocalizer<AdminResources> L
-@inject IOptions<LivePreviewAdminOptions> LivePreviewOptions
 
 <PageTitle>@L["Brand_Name"] — Login</PageTitle>
 
@@ -21,63 +20,54 @@
             </div>
         </TitleTemplate>
         <Body>
-            <Paragraph Type="@TextElementType.Secondary">Sign in with your Platform User credentials.</Paragraph>
+            <Paragraph Type="@TextElementType.Secondary">@L["Login_CredentialsHint"]</Paragraph>
 
             @if (!string.IsNullOrWhiteSpace(_error))
             {
-                <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" Style="margin-bottom: 1rem;" />
+                <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" Closable="true" OnClose="() => _error = null" Style="margin-bottom: 1rem;" />
             }
 
-            @* Native named inputs: SSR form POST must set cookies outside Interactive Server. *@
-            <form method="post" action="/admin/login/credentials" class="exits-login-form">
-                <AntiforgeryToken />
+            <div class="exits-login-form">
                 <div class="ant-form-item">
-                    <label class="ant-form-item-label" for="login-user">Username or email</label>
-                    <input id="login-user" name="UsernameOrEmail" class="exits-native-input" autocomplete="username" />
+                    <label class="ant-form-item-label" for="login-user">@L["Login_UsernameOrEmail"]</label>
+                    <Input Id="login-user"
+                           @bind-Value="_usernameOrEmail"
+                           Placeholder="@L["Login_UsernameOrEmail"]"
+                           Disabled="_busy"
+                           OnPressEnter="SignInCredentialsAsync" />
                 </div>
                 <div class="ant-form-item">
-                    <label class="ant-form-item-label" for="login-password">Password</label>
-                    <input id="login-password" name="Password" type="password" class="exits-native-input" autocomplete="current-password" />
+                    <label class="ant-form-item-label" for="login-password">@L["Login_Password"]</label>
+                    <InputPassword Id="login-password"
+                                   @bind-Value="_password"
+                                   Placeholder="@L["Login_Password"]"
+                                   Disabled="_busy"
+                                   OnPressEnter="SignInCredentialsAsync" />
                 </div>
-                <button type="submit" class="ant-btn ant-btn-primary ant-btn-sm ant-btn-block">Sign in</button>
-                <div style="margin-top:.75rem;">
-                    <a href="/admin/forgot-password">Forgot password</a>
+                <Button Type="@ButtonType.Primary"
+                        Block
+                        Size="@ButtonSize.Small"
+                        Loading="_busy"
+                        Disabled="_busy"
+                        OnClick="SignInCredentialsAsync">
+                    @L["Login_SignIn"]
+                </Button>
+                <div class="exits-login-links">
+                    <a href="/admin/forgot-password">@L["Login_ForgotPassword"]</a>
                 </div>
-            </form>
+            </div>
 
-            @if (_livePreviewEnabled)
-            {
-                <Divider>Test identity</Divider>
-                <form method="post" action="/admin/login/live-preview" class="exits-login-form" id="live-preview-login-form">
-                    <AntiforgeryToken />
-                    <div class="ant-form-item">
-                        <label class="ant-form-item-label" for="live-preview-user">Select a test identity to sign in</label>
-                        <select id="live-preview-user"
-                                name="IdentityKey"
-                                class="exits-native-select"
-                                required
-                                disabled="@(_identities.Count == 0)"
-                                onchange="if (this.value) this.form.requestSubmit()">
-                            <option value="">Select a test identity</option>
-                            @foreach (var identity in _identities)
-                            {
-                                <option value="@identity.Key">@identity.DisplayName</option>
-                            }
-                        </select>
-                    </div>
-                    <Paragraph Type="@TextElementType.Secondary" Style="margin-top:.5rem; font-size:12px;">
-                        Choosing an identity signs you in with a Platform session.
-                    </Paragraph>
-                </form>
-            }
-
-            <Divider>Or continue with</Divider>
+            <Divider>@L["Login_OrContinueWith"]</Divider>
             <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
-                <a class="ant-btn ant-btn-default ant-btn-sm ant-btn-block" href="@GoogleChallengeUrl">Continue with Google</a>
-                <a class="ant-btn ant-btn-default ant-btn-sm ant-btn-block" href="@FacebookChallengeUrl">Continue with Facebook</a>
+                <Button Block Size="@ButtonSize.Small" Disabled="_busy" OnClick="() => Nav.NavigateTo(GoogleChallengeUrl, forceLoad: true)">
+                    @L["Login_ContinueGoogle"]
+                </Button>
+                <Button Block Size="@ButtonSize.Small" Disabled="_busy" OnClick="() => Nav.NavigateTo(FacebookChallengeUrl, forceLoad: true)">
+                    @L["Login_ContinueFacebook"]
+                </Button>
             </Space>
             <Paragraph Type="@TextElementType.Secondary" Style="margin-top:.5rem; font-size:12px;">
-                Social sign-in creates or links a Platform User only. It does not grant administrator, membership, or product access.
+                @L["Login_SocialDisclaimer"]
             </Paragraph>
         </Body>
     </Card>
@@ -85,8 +75,9 @@
 
 @code {
     private string? _error;
-    private bool _livePreviewEnabled;
-    private IReadOnlyList<LivePreviewIdentityOptionDto> _identities = [];
+    private bool _busy;
+    private string? _usernameOrEmail;
+    private string? _password;
 
     [Inject] private IOptions<PlatformApiOptions> PlatformApi { get; set; } = default!;
 
@@ -96,13 +87,34 @@
     private string GoogleChallengeUrl => BuildChallengeUrl("google");
     private string FacebookChallengeUrl => BuildChallengeUrl("facebook");
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         _error = string.IsNullOrWhiteSpace(ErrorQuery) ? null : ErrorQuery;
-        _livePreviewEnabled = LivePreviewOptions.Value.Enabled;
-        if (_livePreviewEnabled)
+    }
+
+    private async Task SignInCredentialsAsync()
+    {
+        if (_busy)
         {
-            _identities = await SessionService.ListLivePreviewIdentitiesAsync();
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        try
+        {
+            var (ok, error) = await SessionService.LoginAsync(_usernameOrEmail ?? string.Empty, _password ?? string.Empty);
+            if (!ok)
+            {
+                _error = error ?? L["Login_InvalidCredentials"];
+                return;
+            }
+
+            Nav.NavigateTo("/admin", forceLoad: true);
+        }
+        finally
+        {
+            _busy = false;
         }
     }
 

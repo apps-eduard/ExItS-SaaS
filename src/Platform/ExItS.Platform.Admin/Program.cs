@@ -12,28 +12,18 @@ using ExItS.Platform.Admin.Components;
 var builder = WebApplication.CreateBuilder(args);
 
 AdminProductionSecurityGuard.ValidateOrThrow(builder);
-if (builder.Configuration.GetValue<bool>("LivePreview:Enabled") && builder.Environment.IsProduction())
+if (builder.Configuration.GetValue<bool>("LocalValidation:Enabled") && builder.Environment.IsProduction())
 {
-    throw new InvalidOperationException("LivePreview:Enabled=true is forbidden in Production.");
-}
-
-// Live Preview uses Staging locally/in Docker. Package static web assets (AntDesign CSS/JS,
-// scoped CSS, _framework) require UseStaticWebAssets outside Development.
-if (builder.Environment.IsStaging()
-    && builder.Configuration.GetValue<bool>("LivePreview:Enabled"))
-{
-    builder.WebHost.UseStaticWebAssets();
+    throw new InvalidOperationException("LocalValidation:Enabled=true is forbidden in Production.");
 }
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Live Preview / Development: surface real circuit exceptions in the browser console
+// Development/Testing: surface real circuit exceptions in the browser console
 // (binds to CircuitOptions.DetailedErrors via the DetailedErrors configuration key).
 if (builder.Environment.IsDevelopment()
-    || builder.Environment.IsEnvironment("Testing")
-    || (builder.Configuration.GetValue<bool>("LivePreview:Enabled")
-        && !builder.Environment.IsProduction()))
+    || builder.Environment.IsEnvironment("Testing"))
 {
     builder.Configuration["DetailedErrors"] = "true";
 }
@@ -62,7 +52,6 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 });
 
 builder.Services.Configure<PlatformApiOptions>(builder.Configuration.GetSection(PlatformApiOptions.SectionName));
-builder.Services.Configure<LivePreviewAdminOptions>(builder.Configuration.GetSection(LivePreviewAdminOptions.SectionName));
 builder.Services.Configure<DevelopmentOperatorOptions>(options =>
 {
     if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing"))
@@ -75,19 +64,20 @@ builder.Services.Configure<DevelopmentOperatorOptions>(options =>
     }
 });
 
-var livePreviewEnabled = builder.Configuration.GetValue<bool>("LivePreview:Enabled")
-    && !builder.Environment.IsProduction();
+var isLocalTestHost = builder.Environment.IsDevelopment()
+    || builder.Environment.IsEnvironment("Testing");
 
-if (livePreviewEnabled)
+if (!isLocalTestHost)
 {
-    // Live-preview / non-Production only. Local launcher sets DataProtection:KeysPath to
-    // %LOCALAPPDATA%\ExItS\LivePreview\DataProtectionKeys; containers may use tmpfs.
-    var keysPath = builder.Configuration["DataProtection:KeysPath"]
-        ?? Path.Combine(Path.GetTempPath(), "exits-admin-dp-keys");
-    Directory.CreateDirectory(keysPath);
-    builder.Services.AddDataProtection()
-        .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
-        .SetApplicationName("ExItS.Platform.Admin");
+    // Production-like hosts: persist DataProtection keys when configured.
+    var keysPath = builder.Configuration["DataProtection:KeysPath"];
+    if (!string.IsNullOrWhiteSpace(keysPath))
+    {
+        Directory.CreateDirectory(keysPath);
+        builder.Services.AddDataProtection()
+            .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
+            .SetApplicationName("ExItS.Platform.Admin");
+    }
 }
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -95,9 +85,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     {
         options.Cookie.Name = ".ExItS.Admin.Auth";
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
-            || builder.Environment.IsEnvironment("Testing")
-            || livePreviewEnabled
+        options.Cookie.SecurePolicy = isLocalTestHost
             ? CookieSecurePolicy.SameAsRequest
             : CookieSecurePolicy.Always;
         options.Cookie.SameSite = SameSiteMode.Lax;
@@ -109,9 +97,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 builder.Services.AddAuthorization(options =>
 {
-    // Live preview and Staging/Production require authentication; Development/Testing remain open unless LivePreview is on.
-    if (livePreviewEnabled
-        || !(builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing")))
+    // Production-like hosts require authentication. Development/Testing remain open for local work.
+    if (!isLocalTestHost)
     {
         options.FallbackPolicy = new AuthorizationPolicyBuilder()
             .RequireAuthenticatedUser()
@@ -159,9 +146,8 @@ var app = builder.Build();
 
 app.UseAdminForwardedHeaders();
 
-if (app.Environment.IsDevelopment() || livePreviewEnabled)
+if (isLocalTestHost)
 {
-    // Live Preview runs Staging; surface SSR exceptions locally (Ant CSS/login diagnostics).
     app.UseDeveloperExceptionPage();
 }
 else
@@ -171,7 +157,7 @@ else
 }
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-if (!livePreviewEnabled)
+if (!isLocalTestHost)
 {
     app.UseHttpsRedirection();
 }
@@ -209,34 +195,6 @@ app.MapPost("/admin/login/credentials", async (
     return Results.Redirect("/admin");
 }).AllowAnonymous();
 
-app.MapPost("/admin/login/live-preview", async (
-    HttpContext http,
-    PlatformBrowserSessionService sessions,
-    IOptions<LivePreviewAdminOptions> livePreview) =>
-{
-    if (!livePreview.Value.Enabled)
-    {
-        return Results.NotFound();
-    }
-
-    var form = await http.Request.ReadFormAsync().ConfigureAwait(false);
-    var identityKey = form["IdentityKey"].ToString();
-    if (string.IsNullOrWhiteSpace(identityKey))
-    {
-        return Results.Redirect(
-            "/admin/login?error=" + Uri.EscapeDataString("Select a live preview test identity."));
-    }
-
-    var (ok, error) = await sessions.LivePreviewLoginAsync(identityKey).ConfigureAwait(false);
-    if (!ok)
-    {
-        return Results.Redirect(
-            "/admin/login?error=" + Uri.EscapeDataString(error ?? "Live preview sign-in failed."));
-    }
-
-    return Results.Redirect("/admin");
-}).AllowAnonymous();
-
 app.MapPost("/admin/logout", async (PlatformBrowserSessionService sessions) =>
 {
     await sessions.LogoutAsync().ConfigureAwait(false);
@@ -251,20 +209,6 @@ app.MapGet("/admin/logout", async (PlatformBrowserSessionService sessions) =>
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
-
-app.MapGet("/culture/set", (string culture, string? redirectUri, HttpContext context) =>
-{
-    var normalized = culture == "fil-PH" ? "fil-PH" : "en";
-    context.Response.Cookies.Append(
-        CookieRequestCultureProvider.DefaultCookieName,
-        CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(normalized)),
-        new CookieOptions { Expires = DateTimeOffset.UtcNow.AddYears(1), IsEssential = true });
-
-    var target = string.IsNullOrWhiteSpace(redirectUri) || !Uri.IsWellFormedUriString(redirectUri, UriKind.Relative)
-        ? "/"
-        : redirectUri;
-    return Results.LocalRedirect(target);
-});
 
 app.Run();
 

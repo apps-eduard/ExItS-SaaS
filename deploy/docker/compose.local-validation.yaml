@@ -1,0 +1,157 @@
+# ExItS production-equivalent LOCAL VALIDATION stack (P16-WP11).
+#
+# Same application images/code paths as Production. Only local config differs:
+# host ports, connection strings, secrets, TLS off for host-run APIs, LocalValidation seed.
+# Independent from exits-packaging (compose.yaml) and exits-pilot.
+# Production topology template remains compose.production.yaml (TLS/proxy).
+#
+# Recommended daily workflow (Docker DBs only; apps run on host):
+#   See README.local-validation.md and tools/Start-LocalValidation.ps1
+#   docker compose -f compose.local-validation.yaml --env-file .env.local-validation up -d
+#
+# Optional full containerized stack:
+#   docker compose -f compose.local-validation.yaml --env-file .env.local-validation --profile apps up -d --build
+#
+# Default host ports (do not collide with packaging baseline):
+#   admin-web 8090 · platform-api 8091 · pos-api 8092 · platform-db 15533 · pos-db 15534
+#
+# Boundaries: separate Platform and POS databases; no nested clinical product tree.
+# ASPNETCORE_ENVIRONMENT=Staging + LocalValidation:Enabled=true seeds approved Local Validation identities;
+# operators sign in through normal /auth/login (no quick-login route).
+# Do NOT use docker compose down -v — preserves local-validation DB volumes.
+
+name: exits-local-validation
+
+services:
+  platform-db:
+    container_name: exits-local-validation-platform-db
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${LOCAL_VALIDATION_PLATFORM_DB_USER}
+      POSTGRES_PASSWORD: ${LOCAL_VALIDATION_PLATFORM_DB_PASSWORD}
+      POSTGRES_DB: exits_platform
+    volumes:
+      - exits_local_validation_platform_db_data:/var/lib/postgresql/data
+    ports:
+      - "${LOCAL_VALIDATION_PLATFORM_DB_HOST_PORT:-15533}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d exits_platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - exits-local-validation
+
+  pos-db:
+    container_name: exits-local-validation-pos-db
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${LOCAL_VALIDATION_POS_DB_USER}
+      POSTGRES_PASSWORD: ${LOCAL_VALIDATION_POS_DB_PASSWORD}
+      POSTGRES_DB: exits_pos
+    volumes:
+      - exits_local_validation_pos_db_data:/var/lib/postgresql/data
+    ports:
+      - "${LOCAL_VALIDATION_POS_DB_HOST_PORT:-15534}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d exits_pos"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - exits-local-validation
+
+  platform-api:
+    profiles: ["apps"]
+    container_name: exits-local-validation-platform-api
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.platform-api
+      args:
+        EXITS_IMAGE_LABEL: p14-wp02a-local-validation
+    image: exits/platform-api:${LOCAL_VALIDATION_IMAGE_TAG:-local-validation}
+    depends_on:
+      platform-db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging
+      ConnectionStrings__PlatformDatabase: Host=platform-db;Port=5432;Database=exits_platform;Username=${LOCAL_VALIDATION_PLATFORM_DB_USER};Password=${LOCAL_VALIDATION_PLATFORM_DB_PASSWORD}
+      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;platform-api;admin-web;pos-api}
+      Cors__AllowedOrigins__0: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
+      Security__EnforceHttps: "false"
+      LocalValidation__Enabled: "true"
+      LocalValidation__SharedPassword: ${LOCAL_VALIDATION_SHARED_PASSWORD}
+    ports:
+      - "${LOCAL_VALIDATION_PLATFORM_API_HOST_PORT:-8091}:8080"
+    networks:
+      - exits-local-validation
+    read_only: true
+    tmpfs:
+      - /tmp
+    stop_grace_period: 30s
+
+  pos-api:
+    profiles: ["apps"]
+    container_name: exits-local-validation-pos-api
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.pos-api
+      args:
+        EXITS_IMAGE_LABEL: p14-wp02a-local-validation
+    image: exits/pos-api:${LOCAL_VALIDATION_IMAGE_TAG:-local-validation}
+    depends_on:
+      pos-db:
+        condition: service_healthy
+      platform-api:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging
+      ConnectionStrings__PosDatabase: Host=pos-db;Port=5432;Database=exits_pos;Username=${LOCAL_VALIDATION_POS_DB_USER};Password=${LOCAL_VALIDATION_POS_DB_PASSWORD}
+      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;platform-api;admin-web;pos-api}
+      Cors__AllowedOrigins__0: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
+      Security__EnforceHttps: "false"
+      LocalValidation__Enabled: "true"
+      LocalValidation__PlatformApiBaseUrl: ${LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
+    ports:
+      - "${LOCAL_VALIDATION_POS_API_HOST_PORT:-8092}:8080"
+    networks:
+      - exits-local-validation
+    read_only: true
+    tmpfs:
+      - /tmp
+    stop_grace_period: 30s
+
+  admin-web:
+    profiles: ["apps"]
+    container_name: exits-local-validation-admin-web
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.platform-admin
+    image: exits/platform-admin:${LOCAL_VALIDATION_IMAGE_TAG:-local-validation}
+    depends_on:
+      - platform-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging
+      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;platform-api;admin-web;pos-api}
+      PlatformApi__BaseUrl: ${LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
+      PlatformApi__TimeoutSeconds: "30"
+      LocalValidation__Enabled: "true"
+      DataProtection__KeysPath: /tmp/exits-admin-dp-keys
+    ports:
+      - "${LOCAL_VALIDATION_ADMIN_HOST_PORT:-8090}:8080"
+    networks:
+      - exits-local-validation
+    read_only: true
+    tmpfs:
+      - /tmp
+    stop_grace_period: 30s
+
+volumes:
+  exits_local_validation_platform_db_data:
+    name: exits_local_validation_platform_db_data
+  exits_local_validation_pos_db_data:
+    name: exits_local_validation_pos_db_data
+
+networks:
+  exits-local-validation:
+    name: exits-local-validation

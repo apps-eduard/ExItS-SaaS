@@ -1,4 +1,5 @@
-/* Platform Admin accessibility helpers (dialogs + drawer). No framework dependency. */
+/* Platform Admin accessibility helpers for ConfirmDialog focus trap.
+   Legacy drawer focus helpers were removed — Ant Design Drawer owns that UX. */
 (function () {
   "use strict";
 
@@ -59,57 +60,8 @@
     }
   }
 
-  function syncDrawerToggle() {
-    var cb = document.getElementById("nav-drawer-toggle");
-    var openBtn = document.querySelector(".menu-toggle");
-    var closeBtn = document.querySelector(".drawer-close");
-    var sidebar = document.getElementById("app-sidebar");
-    if (!cb) return;
-    var expanded = !!cb.checked;
-    if (openBtn) {
-      openBtn.setAttribute("aria-expanded", expanded ? "true" : "false");
-      openBtn.setAttribute("aria-controls", "app-sidebar");
-    }
-    if (closeBtn) {
-      closeBtn.setAttribute("aria-expanded", expanded ? "true" : "false");
-      closeBtn.setAttribute("aria-controls", "app-sidebar");
-    }
-    if (sidebar) {
-      if (window.matchMedia("(max-width: 1024px)").matches) {
-        sidebar.setAttribute("aria-hidden", expanded ? "false" : "true");
-      } else {
-        sidebar.removeAttribute("aria-hidden");
-      }
-    }
-  }
-
-  function bindDrawer() {
-    var cb = document.getElementById("nav-drawer-toggle");
-    if (!cb || cb.dataset.a11yBound === "1") return;
-    cb.dataset.a11yBound = "1";
-    cb.addEventListener("change", syncDrawerToggle);
-    syncDrawerToggle();
-  }
-
   window.exitsAdminA11y = {
     dialogOpen: dialogOpen,
-    dialogClose: dialogClose,
-    syncDrawerToggle: syncDrawerToggle,
-    bindDrawer: bindDrawer
+    dialogClose: dialogClose
   };
-
-  function boot() {
-    bindDrawer();
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
-  } else {
-    boot();
-  }
-
-  document.addEventListener("enhancedload", boot);
-  if (window.Blazor && typeof window.Blazor.addEventListener === "function") {
-    window.Blazor.addEventListener("enhancedload", boot);
-  }
 })();

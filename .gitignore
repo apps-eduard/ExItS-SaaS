@@ -5,8 +5,8 @@
 **/.env.*
 !**/.env.example
 !.env.example
-!**/.env.live-preview.example
-!.env.live-preview.example
+!**/.env.local-validation.example
+!.env.local-validation.example
 !**/.env.production.example
 !.env.production.example
 

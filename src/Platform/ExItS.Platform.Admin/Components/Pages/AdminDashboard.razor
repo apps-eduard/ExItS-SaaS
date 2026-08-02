@@ -129,7 +129,7 @@ else
                     break;
                 }
 
-                // Rate limit / brief auth race right after Live Preview login.
+                // Rate limit / brief auth race right after local validation login.
                 var status = last.Error?.StatusCode;
                 if (status is not (System.Net.HttpStatusCode.TooManyRequests
                     or System.Net.HttpStatusCode.Unauthorized

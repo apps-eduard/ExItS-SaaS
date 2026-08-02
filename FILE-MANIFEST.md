@@ -28,7 +28,7 @@ tools/ExItS.BackupRestore.Cli/ (non-interactive backup/verify/restore/encrypt/re
 tools/ExItS.Deployment.Cli/ (validate-config / backup-gate / readiness / smoke-catalog CLI)
 ops/backup/ (PowerShell operators scripts + disabled schedule notes + config.example.env)
 ops/deploy/ (pilot deploy orchestration, smoke, pre-deploy backup, env templates)
-deploy/docker/ (NON-PRODUCTION packaging + live-preview compose, Dockerfiles, nginx; live-preview default = DBs only)
+deploy/docker/ (packaging + local-validation + production compose, Dockerfiles, nginx; local-validation default = DBs only)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ (POSCustomer + CreditEntry + CreditDueDateChange + Repayment + CatalogProduct + ProductCategory + Supplier + **PurchaseOrder/GoodsReceipt** aggregates; FIFO aging helpers)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth; Customers; Credit; due dates/overdue; Payments/ledger; Statements/receipts; Catalog; Suppliers; **Purchasing**; Commercial/UtangCapabilityPolicy; Reporting batch lookups)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migrations through `AddPosPerformanceIndexes`, `AddPosSuppliers`, **`AddPosPurchasing`**; `Health/PosDatabaseReadyHealthCheck`)

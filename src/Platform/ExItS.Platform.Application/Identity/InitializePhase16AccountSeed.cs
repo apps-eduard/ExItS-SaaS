@@ -1,6 +1,6 @@
 using ExItS.Platform.Application.Authorization;
 using ExItS.Platform.Application.Common;
-using ExItS.Platform.Application.LivePreview;
+using ExItS.Platform.Application.LocalValidation;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Authorization;
@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 namespace ExItS.Platform.Application.Identity;
 
 /// <summary>
-/// Development/Testing/LivePreview-only deterministic Phase 16 identity seed (idempotent).
+/// Development/Testing/LocalValidation-only deterministic Phase 16 identity seed (idempotent).
 /// Never runs in Production.
 /// </summary>
 public sealed class InitializePhase16AccountSeed
@@ -22,7 +22,7 @@ public sealed class InitializePhase16AccountSeed
     public const string SeedOrgDisplayName = "Phase16 Seed Organization";
 
     private readonly IHostEnvironment _environment;
-    private readonly LivePreviewOptions _livePreview;
+    private readonly LocalValidationOptions _localValidation;
     private readonly CreatePlatformUser _createUser;
     private readonly IPlatformUserRepository _users;
     private readonly SetPlatformUserPassword _setPassword;
@@ -37,7 +37,7 @@ public sealed class InitializePhase16AccountSeed
 
     public InitializePhase16AccountSeed(
         IHostEnvironment environment,
-        IOptions<LivePreviewOptions> livePreview,
+        IOptions<LocalValidationOptions> localValidation,
         CreatePlatformUser createUser,
         IPlatformUserRepository users,
         SetPlatformUserPassword setPassword,
@@ -51,7 +51,7 @@ public sealed class InitializePhase16AccountSeed
         ILogger<InitializePhase16AccountSeed> logger)
     {
         _environment = environment;
-        _livePreview = livePreview.Value;
+        _localValidation = localValidation.Value;
         _createUser = createUser;
         _users = users;
         _setPassword = setPassword;
@@ -73,18 +73,18 @@ public sealed class InitializePhase16AccountSeed
         }
 
         var testing = _environment.IsEnvironment("Testing");
-        if (!_livePreview.Enabled && !testing && !_environment.IsDevelopment())
+        if (!_localValidation.Enabled && !testing && !_environment.IsDevelopment())
         {
             return;
         }
 
-        if (_livePreview.Enabled && string.IsNullOrWhiteSpace(_livePreview.SharedPassword))
+        if (_localValidation.Enabled && string.IsNullOrWhiteSpace(_localValidation.SharedPassword))
         {
-            throw new InvalidOperationException("LivePreview:SharedPassword is required to seed Phase 16 accounts.");
+            throw new InvalidOperationException("LocalValidation:SharedPassword is required to seed Phase 16 accounts.");
         }
 
-        var password = !string.IsNullOrWhiteSpace(_livePreview.SharedPassword)
-            ? _livePreview.SharedPassword
+        var password = !string.IsNullOrWhiteSpace(_localValidation.SharedPassword)
+            ? _localValidation.SharedPassword
             : "Phase16-Test-Only-Password!";
 
         _logger.LogInformation("Phase 16 account seed beginning (non-Production).");

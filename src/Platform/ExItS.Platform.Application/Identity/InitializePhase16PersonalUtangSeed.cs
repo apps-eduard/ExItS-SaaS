@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace ExItS.Platform.Application.Identity;
 
 /// <summary>
-/// Development/Testing/LivePreview-only Personal Utang sample seed (idempotent). Never runs in Production.
+/// Development/Testing/LocalValidation-only Personal Utang sample seed (idempotent). Never runs in Production.
 /// </summary>
 public sealed class InitializePhase16PersonalUtangSeed
 {

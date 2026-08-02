@@ -354,6 +354,7 @@ public sealed class ApiSaaSPaymentTests(PostgreSqlFixture fixture) : IAsyncLifet
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            builder.UseEnvironment("Testing");
             builder.UseSetting("ConnectionStrings:PlatformDatabase", connectionString);
             builder.ConfigureAppConfiguration((_, config) =>
             {

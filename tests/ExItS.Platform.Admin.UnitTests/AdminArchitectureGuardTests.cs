@@ -320,9 +320,11 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("AddAntDesign()", program, StringComparison.Ordinal);
         Assert.Contains("MapStaticAssets().AllowAnonymous()", program, StringComparison.Ordinal);
         Assert.Contains("/admin/login/credentials", program, StringComparison.Ordinal);
-        Assert.Contains("/admin/login/live-preview", program, StringComparison.Ordinal);
+        Assert.DoesNotContain("/admin/login/local-validation", program, StringComparison.Ordinal);
+        Assert.DoesNotContain("StaticWebAssetMaterializer", program, StringComparison.Ordinal);
+        Assert.DoesNotContain("LivePreview", program, StringComparison.Ordinal);
+        Assert.DoesNotContain("UseStaticWebAssets()", program, StringComparison.Ordinal);
         Assert.Contains("Results.Redirect(\"/admin\")", program, StringComparison.Ordinal);
-        Assert.Contains("UseStaticWebAssets()", program, StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(adminRoot, "Components", "Pages", "Home.razor")),
             "Template Home.razor must remain removed; '/' redirects to /admin.");
 
@@ -408,11 +410,74 @@ public sealed class AdminArchitectureGuardTests
         Assert.DoesNotContain("Support Session", switcher, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("PlatformAdministration", switcher, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Organization", switcher, StringComparison.Ordinal);
+        Assert.Contains("@using AntDesign", switcher, StringComparison.Ordinal);
+        Assert.Contains("<Select", switcher, StringComparison.Ordinal);
+        Assert.DoesNotContain("<select", switcher, StringComparison.Ordinal);
+        Assert.DoesNotContain("org-context-select", switcher, StringComparison.Ordinal);
 
         var layout = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "MainLayout.razor"));
         Assert.Contains("Nav_ComingSoon", layout, StringComparison.Ordinal);
         Assert.DoesNotContain("Account_MyProfile\"] <span class=\"exits-phase15-tag\">@L[\"Nav_Phase15\"]", layout, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Login_uses_antdesign_without_live_preview_selector_or_fluent()
+    {
+        var root = FindRepositoryRoot();
+        var adminRoot = Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin");
+        var login = File.ReadAllText(Path.Combine(adminRoot, "Components", "Pages", "Login.razor"));
+
+        Assert.Contains("@using AntDesign", login, StringComparison.Ordinal);
+        Assert.Contains("<Input", login, StringComparison.Ordinal);
+        Assert.Contains("<InputPassword", login, StringComparison.Ordinal);
+        Assert.Contains("<Alert", login, StringComparison.Ordinal);
+        Assert.Contains("LoginAsync", login, StringComparison.Ordinal);
+        Assert.Contains("_busy", login, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Select", login, StringComparison.Ordinal);
+        Assert.DoesNotContain("<select", login, StringComparison.Ordinal);
+        Assert.DoesNotContain("LocalValidation", login, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("local-validation", login, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("SharedPassword", login, StringComparison.Ordinal);
+        Assert.DoesNotContain("FluentUI", login, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("exits-native-select", login, StringComparison.Ordinal);
+        Assert.DoesNotContain("exits-native-input", login, StringComparison.Ordinal);
+
+        Assert.False(File.Exists(Path.Combine(adminRoot, "Services", "LivePreviewStaticWebAssetMaterializer.cs")));
+        var servicesDir = Path.Combine(adminRoot, "Services");
+        Assert.True(Directory.Exists(servicesDir));
+        Assert.Empty(Directory.EnumerateFiles(servicesDir, "*Materializer*.cs"));
+
+        var css = File.ReadAllText(Path.Combine(adminRoot, "wwwroot", "app.css"));
+        Assert.DoesNotContain("exits-native-input", css, StringComparison.Ordinal);
+        Assert.DoesNotContain("exits-native-select", css, StringComparison.Ordinal);
+        Assert.DoesNotContain("org-context-select", css, StringComparison.Ordinal);
+
+        var a11y = File.ReadAllText(Path.Combine(adminRoot, "wwwroot", "admin-a11y.js"));
+        Assert.DoesNotContain("closeDrawer", a11y, StringComparison.Ordinal);
+        Assert.DoesNotContain("exitsAdminShell", a11y, StringComparison.Ordinal);
+        Assert.Contains("dialogOpen", a11y, StringComparison.Ordinal);
+
+        var themeBoot = File.ReadAllText(Path.Combine(adminRoot, "wwwroot", "theme-boot.js"));
+        Assert.DoesNotContain("closeDrawer", themeBoot, StringComparison.Ordinal);
+        Assert.DoesNotContain("exitsAdminShell", themeBoot, StringComparison.Ordinal);
+
+        var launch = File.ReadAllText(Path.Combine(adminRoot, "Properties", "launchSettings.json"));
+        Assert.DoesNotContain("LocalValidation", launch, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Enabled_products_page_uses_antdesign_select_and_alert()
+    {
+        var root = FindRepositoryRoot();
+        var page = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "OrganizationEnabledProducts.razor"));
+        Assert.Contains("@using AntDesign", page, StringComparison.Ordinal);
+        Assert.Contains("<Select", page, StringComparison.Ordinal);
+        Assert.Contains("<Alert", page, StringComparison.Ordinal);
+        Assert.Contains("ant-btn ant-btn-primary", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("<select", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("FluentUI", page, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string FindRepositoryRoot()

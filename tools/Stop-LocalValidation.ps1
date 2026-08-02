@@ -1,7 +1,7 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 <#
 .SYNOPSIS
-  Stops local Live Preview ExItS apps started by tools/Start-LivePreviewLocal.ps1.
+  Stops local Local Validation ExItS apps started by tools/Start-LocalValidation.ps1.
 
 .DESCRIPTION
   - Stops only repo-scoped ExItS.Platform.Api / ExItS.PinoyBusinessPOS.Api / ExItS.Platform.Admin
@@ -11,10 +11,10 @@
   - Not Production.
 
 .EXAMPLE
-  .\tools\Stop-LivePreviewLocal.ps1
+  .\tools\Stop-LocalValidation.ps1
 
 .EXAMPLE
-  .\tools\Stop-LivePreviewLocal.ps1 -StopDatabases
+  .\tools\Stop-LocalValidation.ps1 -StopDatabases
 #>
 [CmdletBinding()]
 param(
@@ -24,8 +24,8 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-function Write-Step([string]$Message) { Write-Host "[live-preview] $Message" -ForegroundColor Cyan }
-function Write-Ok([string]$Message) { Write-Host "[live-preview] OK  $Message" -ForegroundColor Green }
+function Write-Step([string]$Message) { Write-Host "[local-validation] $Message" -ForegroundColor Cyan }
+function Write-Ok([string]$Message) { Write-Host "[local-validation] OK  $Message" -ForegroundColor Green }
 
 function Get-RepoRoot {
     $dir = (Resolve-Path -LiteralPath $PSScriptRoot).Path
@@ -62,11 +62,11 @@ function Get-RepoScopedAppProcesses([string]$RepoRoot) {
 }
 
 $repoRoot = Get-RepoRoot
-$stateDir = Join-Path $env:LOCALAPPDATA 'ExItS\LivePreview'
+$stateDir = Join-Path $env:LOCALAPPDATA 'ExItS\LocalValidation'
 $stateFile = Join-Path $stateDir 'launcher-state.json'
 $dockerDir = Join-Path $repoRoot 'deploy\docker'
-$envFile = Join-Path $dockerDir '.env.live-preview'
-$composeFile = Join-Path $dockerDir 'compose.live-preview.yaml'
+$envFile = Join-Path $dockerDir '.env.local-validation'
+$composeFile = Join-Path $dockerDir 'compose.local-validation.yaml'
 
 Write-Step "Repository: $repoRoot"
 
@@ -94,16 +94,16 @@ if (Test-Path -LiteralPath $stateFile) {
     Remove-Item -LiteralPath $stateFile -Force -ErrorAction SilentlyContinue
 }
 
-Write-Ok 'Local Live Preview app processes stopped (DBs left running by default).'
+Write-Ok 'Local Local Validation app processes stopped (DBs left running by default).'
 
 if ($StopDatabases) {
     if (-not (Test-Path -LiteralPath $envFile)) {
         throw "Missing $envFile"
     }
-    Write-Step 'Stopping live-preview database containers (volumes preserved; never compose down with -v)...'
+    Write-Step 'Stopping local-validation database containers (volumes preserved; never compose down with -v)...'
     & docker compose -f $composeFile --env-file $envFile stop platform-db pos-db
     if ($LASTEXITCODE -ne 0) { throw "docker compose stop failed ($LASTEXITCODE)." }
-    Write-Ok 'Database containers stopped. Volumes exits_live_preview_*_db_data remain.'
+    Write-Ok 'Database containers stopped. Volumes exits_local_validation_*_db_data remain.'
 }
 
-Write-Host 'Restart: .\tools\Start-LivePreviewLocal.ps1'
+Write-Host 'Restart: .\tools\Start-LocalValidation.ps1'

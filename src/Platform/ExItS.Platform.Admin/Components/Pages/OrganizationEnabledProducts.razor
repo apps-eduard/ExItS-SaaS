@@ -1,4 +1,5 @@
 @page "/admin/organizations/{OrganizationId:guid}/enabled-products"
+@using AntDesign
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject IPlatformApiClient Api
@@ -21,7 +22,7 @@ else
     <AdminPageHeader Title="@L["OrgEnabledProducts_Title"]"
                      Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_SectionProducts"]} / {L["Nav_LaunchProduct"]}")"
                      Description="@L["OrgEnabledProducts_Description"]" />
-    <div class="warning" role="note">@L["OrgEnabledProducts_Warning"]</div>
+    <Alert Type="@AlertType.Warning" ShowIcon="true" Message="@L["OrgEnabledProducts_Warning"]" Style="margin-bottom:1rem;" />
 
     <p>
         <a href="/admin/organizations/@OrganizationId">← @L["Common_BackToSummary"]</a>
@@ -62,12 +63,18 @@ else
                     <AdminInput @bind-Value="_roleProductCode" Placeholder="pinoy-business-pos" Disabled="_busy" />
                 </FormField>
                 <FormField Label="@L["OrgEnabledProducts_RoleCode"]" FieldId="role-code" Required="true">
-                    <select class="form-control" @bind="_roleCode" disabled="@_busy">
-                        <option value="Owner">Owner</option>
-                        <option value="Manager">Manager</option>
-                        <option value="Cashier">Cashier</option>
-                        <option value="Viewer">Viewer</option>
-                    </select>
+                    <Select TItemValue="string"
+                            TItem="string"
+                            Style="width:100%"
+                            Disabled="_busy"
+                            @bind-Value="_roleCode">
+                        <SelectOptions>
+                            <SelectOption TItemValue="string" TItem="string" Value="@("Owner")" Label="Owner" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("Manager")" Label="Manager" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("Cashier")" Label="Cashier" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("Viewer")" Label="Viewer" />
+                        </SelectOptions>
+                    </Select>
                 </FormField>
                 <FormField Label="@L["Common_Reason"]" FieldId="role-reason">
                     <AdminInput @bind-Value="_roleReason" Disabled="_busy" />
@@ -209,7 +216,7 @@ else
         {
             b.OpenElement(0, "button");
             b.AddAttribute(1, "type", "button");
-            b.AddAttribute(2, "class", "btn-primary");
+            b.AddAttribute(2, "class", "ant-btn ant-btn-primary ant-btn-sm");
             b.AddAttribute(3, "disabled", _busy);
             b.AddAttribute(4, "onclick", EventCallback.Factory.Create(this, () => LaunchAsync(item.ProductCode)));
             b.AddContent(5, L["Nav_LaunchProduct"]);

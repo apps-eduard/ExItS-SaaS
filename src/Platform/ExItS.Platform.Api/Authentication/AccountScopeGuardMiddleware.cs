@@ -67,7 +67,7 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
             return true;
         }
 
-        if (path.StartsWith("/api/v1/platform/live-preview", StringComparison.OrdinalIgnoreCase))
+        if (path.StartsWith("/api/v1/platform/local-validation", StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }

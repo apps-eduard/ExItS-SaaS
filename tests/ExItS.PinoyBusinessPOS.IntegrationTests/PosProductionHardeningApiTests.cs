@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.PinoyBusinessPOS.Api.Common;
 using ExItS.PinoyBusinessPOS.Application.Common;
-using ExItS.PinoyBusinessPOS.Infrastructure.LivePreview;
+using ExItS.PinoyBusinessPOS.Infrastructure.LocalValidation;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -142,14 +142,14 @@ public sealed class PosProductionHardeningApiTests(PosPostgreSqlFixture fixture)
     }
 
     [Fact]
-    public void Staging_live_preview_allows_http_platform_auth_base_url()
+    public void Staging_local_validation_allows_http_platform_auth_base_url()
     {
         using var factory = new HardeningFactory(
             fixture.ConnectionString,
             "Staging",
             allowedHosts: "localhost",
             platformAuthBaseUrl: "http://localhost:8091",
-            livePreviewEnabled: true);
+            localValidationEnabled: true);
 
         using var client = factory.CreateClient();
         Assert.NotNull(client);
@@ -161,7 +161,7 @@ public sealed class PosProductionHardeningApiTests(PosPostgreSqlFixture fixture)
         string? allowedHosts = null,
         bool skipDefaultAllowedHostsOverride = false,
         string? platformAuthBaseUrl = null,
-        bool livePreviewEnabled = false) : WebApplicationFactory<Program>
+        bool localValidationEnabled = false) : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -178,7 +178,7 @@ public sealed class PosProductionHardeningApiTests(PosPostgreSqlFixture fixture)
             {
                 ["ConnectionStrings:PosDatabase"] = connectionString,
                 ["Security:EnforceHttps"] = "false",
-                ["LivePreview:Enabled"] = livePreviewEnabled ? "true" : "false"
+                ["LocalValidation:Enabled"] = localValidationEnabled ? "true" : "false"
             };
 
             if (hosts is not null)
@@ -198,18 +198,18 @@ public sealed class PosProductionHardeningApiTests(PosPostgreSqlFixture fixture)
                 values["PlatformAuth:BaseUrl"] = platformAuthBaseUrl;
             }
 
-            if (livePreviewEnabled)
+            if (localValidationEnabled)
             {
-                builder.UseSetting("LivePreview:Enabled", "true");
-                builder.UseSetting("LivePreview:PlatformApiBaseUrl", platformAuthBaseUrl ?? "http://localhost:8091");
-                values["LivePreview:PlatformApiBaseUrl"] = platformAuthBaseUrl ?? "http://localhost:8091";
+                builder.UseSetting("LocalValidation:Enabled", "true");
+                builder.UseSetting("LocalValidation:PlatformApiBaseUrl", platformAuthBaseUrl ?? "http://localhost:8091");
+                values["LocalValidation:PlatformApiBaseUrl"] = platformAuthBaseUrl ?? "http://localhost:8091";
 
-                // Startup must accept HTTP PlatformAuth/LivePreview URLs in Staging without requiring a
+                // Startup must accept HTTP PlatformAuth/LocalValidation URLs in Staging without requiring a
                 // live Platform API on :8091 (hosted identity bootstrap is covered by compose/local runs).
                 builder.ConfigureTestServices(services =>
                 {
                     var hosted = services
-                        .Where(d => d.ImplementationType == typeof(PosLivePreviewHostedService))
+                        .Where(d => d.ImplementationType == typeof(PosLocalValidationHostedService))
                         .ToList();
                     foreach (var descriptor in hosted)
                     {

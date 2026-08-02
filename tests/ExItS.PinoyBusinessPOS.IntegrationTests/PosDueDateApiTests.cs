@@ -52,7 +52,8 @@ public sealed class PosDueDateApiTests(PosPostgreSqlFixture fixture)
         setFutureResponse.EnsureSuccessStatusCode();
 
         using var noReason = CreateScopedRequest(HttpMethod.Put, $"/api/v1/pos/credit/{second.CreditEntryId:D}/due-date", OrgA, Actor);
-        noReason.Content = JsonContent.Create(new SetCreditDueDateRequest(new DateOnly(2026, 9, 1), " "));
+        // Must differ from the prior future due date (UtcNow+30) so validation hits the empty reason, not "unchanged".
+        noReason.Content = JsonContent.Create(new SetCreditDueDateRequest(DateOnly.FromDateTime(DateTime.UtcNow.Date.AddDays(45)), " "));
         using var noReasonResponse = await client.SendAsync(noReason);
         Assert.Equal(HttpStatusCode.BadRequest, noReasonResponse.StatusCode);
         var noReasonProblem = await noReasonResponse.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);

@@ -1,6 +1,5 @@
 using ExItS.Platform.Admin.Models;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
 
 namespace ExItS.Platform.Admin.Services;
 
@@ -12,8 +11,7 @@ namespace ExItS.Platform.Admin.Services;
 /// </summary>
 public sealed class PlatformPermissionState(
     IPlatformApiClient api,
-    IHostEnvironment env,
-    IOptions<LivePreviewAdminOptions> livePreviewOptions)
+    IHostEnvironment env)
 {
     private HashSet<string> _permissions = new(StringComparer.OrdinalIgnoreCase);
     private Task? _loadTask;
@@ -69,10 +67,9 @@ public sealed class PlatformPermissionState(
 
     private void ApplyFallbackPermissions()
     {
-        // Development/Testing and Live Preview: keep the shell usable when /authorization/me
-        // fails (e.g. brief session timing). Staging/Production without Live Preview stay closed.
-        var livePreview = livePreviewOptions.Value.Enabled && !env.IsProduction();
-        if (env.IsDevelopment() || env.IsEnvironment("Testing") || livePreview)
+        // Development/Testing only: keep the shell usable when /authorization/me fails.
+        // Production-like hosts stay closed.
+        if (env.IsDevelopment() || env.IsEnvironment("Testing"))
         {
             _permissions = new HashSet<string>(PlatformPermissionCodes.All, StringComparer.OrdinalIgnoreCase);
         }

@@ -13,7 +13,7 @@
 #   docker compose -f compose.production.yaml --env-file .env.production config
 #   docker compose -f compose.production.yaml --env-file .env.production up -d
 #
-# Live Preview remains compose.live-preview.yaml (ports 8090–8092 / 15533–15534) — do not reuse those here.
+# Local Validation remains compose.local-validation.yaml (ports 8090–8092 / 15533–15534) — do not reuse those here.
 # Packaging baseline remains compose.yaml (local testing without TLS).
 # Pilot remains docker-compose.pilot.yml (NON-PRODUCTION).
 

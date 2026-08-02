@@ -150,20 +150,20 @@ internal static class PlatformSecurityPipeline
                     });
             });
 
-            var livePreviewEnabled = builder.Configuration.GetValue<bool>("LivePreview:Enabled")
+            var localValidationEnabled = builder.Configuration.GetValue<bool>("LocalValidation:Enabled")
                 && !builder.Environment.IsProduction();
 
             options.AddPolicy(AuthLoginRateLimitPolicy, httpContext =>
             {
                 var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
                 return RateLimitPartition.GetFixedWindowLimiter(
-                    (livePreviewEnabled ? "login-live-preview:" : "login:") + ip,
+                    (localValidationEnabled ? "login-local-validation:" : "login:") + ip,
                     _ => new FixedWindowRateLimiterOptions
                     {
                         AutoReplenishment = true,
-                        PermitLimit = livePreviewEnabled ? 200 : 20,
+                        PermitLimit = localValidationEnabled ? 200 : 20,
                         Window = TimeSpan.FromMinutes(15),
-                        QueueLimit = livePreviewEnabled ? 20 : 0
+                        QueueLimit = localValidationEnabled ? 20 : 0
                     });
             });
 
@@ -198,10 +198,10 @@ internal static class PlatformSecurityPipeline
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
             {
                 var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-                if (livePreviewEnabled)
+                if (localValidationEnabled)
                 {
                     return RateLimitPartition.GetFixedWindowLimiter(
-                        "live-preview-ip:" + ip,
+                        "local-validation-ip:" + ip,
                         _ => new FixedWindowRateLimiterOptions
                         {
                             AutoReplenishment = true,

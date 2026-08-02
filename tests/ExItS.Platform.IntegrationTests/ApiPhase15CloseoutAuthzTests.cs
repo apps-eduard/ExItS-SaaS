@@ -212,6 +212,7 @@ public sealed class ApiPhase15CloseoutAuthzTests(PostgreSqlFixture fixture) : IA
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            builder.UseEnvironment("Testing");
             builder.UseSetting("ConnectionStrings:PlatformDatabase", connectionString);
             builder.ConfigureAppConfiguration((_, config) =>
             {

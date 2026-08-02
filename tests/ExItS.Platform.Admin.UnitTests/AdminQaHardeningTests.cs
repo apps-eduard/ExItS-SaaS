@@ -42,7 +42,8 @@ public sealed class AdminQaHardeningTests
         var root = FindRepositoryRoot();
         var css = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "wwwroot", "app.css"));
         Assert.Contains("exits-admin-layout", css, StringComparison.Ordinal);
-        Assert.Contains("exits-native-input", css, StringComparison.Ordinal);
+        Assert.Contains("exits-login-form", css, StringComparison.Ordinal);
+        Assert.Contains("form-control", css, StringComparison.Ordinal);
         Assert.Contains("prefers-reduced-motion", css, StringComparison.Ordinal);
         Assert.Contains("[data-theme=\"dark\"]", css, StringComparison.Ordinal);
         Assert.DoesNotContain("@tailwind", css, StringComparison.OrdinalIgnoreCase);

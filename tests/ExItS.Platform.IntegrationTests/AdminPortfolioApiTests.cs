@@ -83,6 +83,7 @@ public sealed class AdminPortfolioApiTests(PostgreSqlFixture fixture) : IAsyncLi
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            builder.UseEnvironment("Testing");
             builder.UseSetting("ConnectionStrings:PlatformDatabase", connectionString);
             builder.ConfigureAppConfiguration((_, config) =>
             {

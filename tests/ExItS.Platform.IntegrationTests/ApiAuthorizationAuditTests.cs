@@ -369,6 +369,7 @@ public sealed class ApiAuthorizationAuditTests(PostgreSqlFixture fixture) : IAsy
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            builder.UseEnvironment("Testing");
             builder.UseSetting("ConnectionStrings:PlatformDatabase", connectionString);
             builder.ConfigureAppConfiguration((_, config) =>
             {

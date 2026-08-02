@@ -115,9 +115,9 @@ public static class ApplicationErrorCodes
     public const string RecoveryEmailConflict = "application.auth.recovery_email_conflict";
     public const string RecoveryEmailInvalid = "application.auth.recovery_email_invalid";
 
-    public const string LivePreviewUnavailable = "application.live_preview.unavailable";
-    public const string LivePreviewNotInitialized = "application.live_preview.not_initialized";
-    public const string LivePreviewIdentityUnknown = "application.live_preview.identity_unknown";
+    public const string LocalValidationUnavailable = "application.local_validation.unavailable";
+    public const string LocalValidationNotInitialized = "application.local_validation.not_initialized";
+    public const string LocalValidationIdentityUnknown = "application.local_validation.identity_unknown";
 
     public const string PersonalContactNotFound = "application.personal.contact.not_found";
     public const string PersonalUtangRelationshipNotFound = "application.personal.utang_relationship.not_found";

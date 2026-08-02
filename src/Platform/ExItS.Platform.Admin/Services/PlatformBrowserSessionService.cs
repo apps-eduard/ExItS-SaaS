@@ -9,8 +9,7 @@ namespace ExItS.Platform.Admin.Services;
 public sealed class PlatformBrowserSessionService(
     IHttpClientFactory httpClientFactory,
     IHttpContextAccessor httpContextAccessor,
-    IHostEnvironment environment,
-    IConfiguration configuration)
+    IHostEnvironment environment)
 {
     public const string SessionTokenClaimType = "exits_session_token";
     public const string SessionTokenCookieName = ".ExItS.Admin.Session";
@@ -49,54 +48,6 @@ public sealed class PlatformBrowserSessionService(
             login.SessionToken,
             login.ExpiresAtUtc).ConfigureAwait(false);
         return (true, null);
-    }
-
-    public async Task<(bool Ok, string? Error)> LivePreviewLoginAsync(string identityKey, CancellationToken ct = default)
-    {
-        var http = httpContextAccessor.HttpContext
-            ?? throw new InvalidOperationException("HTTP context is required for live preview login.");
-
-        var client = httpClientFactory.CreateClient("PlatformApiUnauthenticated");
-        using var response = await client.PostAsJsonAsync(
-            "/api/v1/platform/live-preview/sessions",
-            new { identityKey },
-            ct).ConfigureAwait(false);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            return (false, "Live preview sign-in failed.");
-        }
-
-        await using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
-        var login = await JsonSerializer.DeserializeAsync<LoginResponse>(stream, JsonOptions, ct).ConfigureAwait(false);
-        if (login is null || string.IsNullOrWhiteSpace(login.SessionToken))
-        {
-            return (false, "Live preview login response was invalid.");
-        }
-
-        await EstablishBrowserSessionAsync(
-            http,
-            login.UserId,
-            login.Username,
-            login.Email,
-            login.SessionToken,
-            login.ExpiresAtUtc).ConfigureAwait(false);
-        return (true, null);
-    }
-
-    public async Task<IReadOnlyList<LivePreviewIdentityOptionDto>> ListLivePreviewIdentitiesAsync(CancellationToken ct = default)
-    {
-        var client = httpClientFactory.CreateClient("PlatformApiUnauthenticated");
-        using var response = await client.GetAsync("/api/v1/platform/live-preview/identities", ct).ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
-        {
-            return [];
-        }
-
-        await using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
-        var list = await JsonSerializer.DeserializeAsync<List<LivePreviewIdentityOptionDto>>(stream, JsonOptions, ct)
-            .ConfigureAwait(false);
-        return list ?? [];
     }
 
     public async Task<(bool Ok, string? Error)> EstablishFromSessionTokenAsync(
@@ -203,9 +154,6 @@ public sealed class PlatformBrowserSessionService(
 
     private void AppendSessionTokenCookie(HttpContext http, string sessionToken, DateTimeOffset expiresAtUtc)
     {
-        var livePreviewEnabled = configuration.GetValue<bool>("LivePreview:Enabled")
-            && !environment.IsProduction();
-
         http.Response.Cookies.Append(
             SessionTokenCookieName,
             sessionToken,
@@ -214,9 +162,7 @@ public sealed class PlatformBrowserSessionService(
                 HttpOnly = true,
                 IsEssential = true,
                 SameSite = SameSiteMode.Lax,
-                Secure = !(environment.IsDevelopment()
-                    || environment.IsEnvironment("Testing")
-                    || livePreviewEnabled),
+                Secure = !(environment.IsDevelopment() || environment.IsEnvironment("Testing")),
                 Expires = expiresAtUtc
             });
     }

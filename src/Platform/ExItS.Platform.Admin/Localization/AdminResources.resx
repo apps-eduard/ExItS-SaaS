@@ -717,4 +717,18 @@
   <data name="OrgEnabledProducts_ToastRoleAssigned" xml:space="preserve"><value>Product-local role assigned.</value></data>
   <data name="OrgEnabledProducts_ToastRoleRevoked" xml:space="preserve"><value>Product-local role revoked.</value></data>
   <data name="OrgEnabledProducts_InvalidUserId" xml:space="preserve"><value>Enter a valid user id (GUID).</value></data>
+  <data name="Login_CredentialsHint" xml:space="preserve"><value>Sign in with your Platform User credentials.</value></data>
+  <data name="Login_UsernameOrEmail" xml:space="preserve"><value>Username or email</value></data>
+  <data name="Login_Password" xml:space="preserve"><value>Password</value></data>
+  <data name="Login_SignIn" xml:space="preserve"><value>Sign in</value></data>
+  <data name="Login_ForgotPassword" xml:space="preserve"><value>Forgot password</value></data>
+  <data name="Login_InvalidCredentials" xml:space="preserve"><value>Invalid username/email or password.</value></data>  <data name="Login_OrContinueWith" xml:space="preserve"><value>Or continue with</value></data>
+  <data name="Login_ContinueGoogle" xml:space="preserve"><value>Continue with Google</value></data>
+  <data name="Login_ContinueFacebook" xml:space="preserve"><value>Continue with Facebook</value></data>
+  <data name="Login_SocialDisclaimer" xml:space="preserve"><value>Social sign-in creates or links a Platform User only. It does not grant administrator, membership, or product access.</value></data>
+  <data name="OrgSwitcher_Loading" xml:space="preserve"><value>Org…</value></data>
+  <data name="OrgSwitcher_NoOrganization" xml:space="preserve"><value>No organization</value></data>
+  <data name="OrgSwitcher_NoMembershipTitle" xml:space="preserve"><value>No active organization membership</value></data>
+  <data name="OrgSwitcher_SelectPlaceholder" xml:space="preserve"><value>Select organization…</value></data>
+  <data name="OrgSwitcher_ChangeFailed" xml:space="preserve"><value>Unable to change organization context.</value></data>
 </root>

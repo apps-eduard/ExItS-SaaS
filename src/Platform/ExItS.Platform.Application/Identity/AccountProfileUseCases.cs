@@ -84,6 +84,11 @@ public sealed class EnsureAccountProfilesForUser
             await Ensure(AccountClass.Organization).ConfigureAwait(false);
         }
 
+        if (preferredClass is AccountClass requestedPreferred)
+        {
+            await Ensure(requestedPreferred).ConfigureAwait(false);
+        }
+
         await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         if (preferredClass is AccountClass requested)

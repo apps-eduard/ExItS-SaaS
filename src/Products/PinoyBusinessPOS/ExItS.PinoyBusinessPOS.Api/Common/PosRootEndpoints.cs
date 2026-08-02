@@ -15,14 +15,14 @@ internal static class PosRootEndpoints
     {
         app.MapGet("/", (HttpRequest request, IHostEnvironment env, IConfiguration config) =>
             {
-                var livePreview = config.GetValue("LivePreview:Enabled", false);
+                var localValidation = config.GetValue("LocalValidation:Enabled", false);
                 var payload = new
                 {
                     service = "ExItS.PinoyBusinessPOS.Api",
                     displayName = "ExItS PinoyBusinessPOS API",
                     status = "running",
                     environment = env.EnvironmentName,
-                    livePreview,
+                    localValidation,
                     phase = PhaseMarker,
                     health = "/health",
                     readiness = "/health/ready",
@@ -34,9 +34,9 @@ internal static class PosRootEndpoints
                     return Results.Content(
                         BuildHtml(
                             title: "ExItS PinoyBusinessPOS API",
-                            portHint: "8092 (Live Preview local)",
+                            portHint: "8092 (Local Validation local)",
                             environment: env.EnvironmentName,
-                            livePreview: livePreview,
+                            localValidation: localValidation,
                             links:
                             [
                                 ("Liveness", "/health"),
@@ -67,7 +67,7 @@ internal static class PosRootEndpoints
         string title,
         string portHint,
         string environment,
-        bool livePreview,
+        bool localValidation,
         IReadOnlyList<(string Label, string Href)> links,
         string note)
     {
@@ -96,7 +96,7 @@ internal static class PosRootEndpoints
         sb.Append("<dt>Service</dt><dd>ExItS.PinoyBusinessPOS.Api</dd>");
         sb.Append("<dt>Typical port</dt><dd>").Append(enc.Encode(portHint)).Append("</dd>");
         sb.Append("<dt>Environment</dt><dd>").Append(enc.Encode(environment)).Append("</dd>");
-        sb.Append("<dt>Live Preview</dt><dd>").Append(livePreview ? "enabled" : "disabled").Append("</dd>");
+        sb.Append("<dt>Local Validation</dt><dd>").Append(localValidation ? "enabled" : "disabled").Append("</dd>");
         sb.Append("<dt>Phase</dt><dd>").Append(enc.Encode(PhaseMarker)).Append("</dd>");
         sb.Append("</dl><p><strong>Useful links</strong></p><ul>");
         foreach (var (label, href) in links)

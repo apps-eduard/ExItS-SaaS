@@ -1,3 +1,4 @@
+@using AntDesign
 @using ExItS.Platform.Admin.Models
 @using ExItS.Platform.Admin.Services
 @using Microsoft.AspNetCore.Components.Authorization
@@ -5,6 +6,7 @@
 @inject AdminShellContext Shell
 @inject PlatformPermissionState Permissions
 @inject NavigationManager Nav
+@inject IStringLocalizer<AdminResources> L
 
 @*
   Organization switcher is for Organization-shell actors only.
@@ -17,11 +19,11 @@
             <div class="org-context" aria-live="polite">
                 @if (_loading)
                 {
-                    <span class="app-header-chip">Org…</span>
+                    <span class="app-header-chip">@L["OrgSwitcher_Loading"]</span>
                 }
                 else if (_activeCount == 0)
                 {
-                    <span class="app-header-chip" title="No active organization membership">No organization</span>
+                    <span class="app-header-chip" title="@L["OrgSwitcher_NoMembershipTitle"]">@L["OrgSwitcher_NoOrganization"]</span>
                 }
                 else if (_activeCount == 1 && _selectedId is not null)
                 {
@@ -29,21 +31,24 @@
                 }
                 else
                 {
-                    <label class="org-context-label" for="org-context-select">Organization</label>
-                    <select id="org-context-select"
-                            class="org-context-select"
-                            value="@(_selectedId?.ToString("D") ?? string.Empty)"
-                            @onchange="OnOrganizationChangedAsync"
-                            disabled="@_busy">
-                        @if (_selectedId is null)
-                        {
-                            <option value="">Select organization…</option>
-                        }
-                        @foreach (var org in _organizations)
-                        {
-                            <option value="@org.OrganizationId.ToString("D")">@org.DisplayName</option>
-                        }
-                    </select>
+                    <Select TItemValue="string"
+                            TItem="string"
+                            Style="min-width:160px; max-width:220px;"
+                            Size="@InputSize.Small"
+                            Placeholder="@L["OrgSwitcher_SelectPlaceholder"]"
+                            Disabled="_busy"
+                            Value="@(_selectedId?.ToString("D") ?? string.Empty)"
+                            ValueChanged="OnOrganizationChangedAsync">
+                        <SelectOptions>
+                            @foreach (var org in _organizations)
+                            {
+                                <SelectOption TItemValue="string"
+                                              TItem="string"
+                                              Value="@org.OrganizationId.ToString("D")"
+                                              Label="@org.DisplayName" />
+                            }
+                        </SelectOptions>
+                    </Select>
                 }
                 @if (!string.IsNullOrWhiteSpace(_error))
                 {
@@ -108,16 +113,15 @@
         }
     }
 
-    private async Task OnOrganizationChangedAsync(ChangeEventArgs args)
+    private async Task OnOrganizationChangedAsync(string value)
     {
         if (_busy)
         {
             return;
         }
 
-        var raw = args.Value?.ToString();
         Guid? organizationId = null;
-        if (!string.IsNullOrWhiteSpace(raw) && Guid.TryParse(raw, out var parsed) && parsed != Guid.Empty)
+        if (!string.IsNullOrWhiteSpace(value) && Guid.TryParse(value, out var parsed) && parsed != Guid.Empty)
         {
             organizationId = parsed;
         }
@@ -129,7 +133,7 @@
             var result = await Api.SetOrganizationContextAsync(new SetOrganizationContextRequest(organizationId));
             if (!result.IsSuccess || result.Data is null)
             {
-                _error = result.Error?.Detail ?? "Unable to change organization context.";
+                _error = result.Error?.Detail ?? L["OrgSwitcher_ChangeFailed"];
                 await RefreshAsync();
                 return;
             }
@@ -138,7 +142,6 @@
             _selectedName = result.Data.SelectedOrganizationDisplayName;
             _activeCount = result.Data.ActiveOrganizationCount;
 
-            // Clear organization/product caches after trusted switch (architecture §11.2).
             await Permissions.RefreshAsync();
             await Shell.RefreshAsync();
 

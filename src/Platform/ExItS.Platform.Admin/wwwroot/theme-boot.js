@@ -130,15 +130,6 @@
         scheduleBlazorHook();
     });
 
-    window.exitsAdminShell = {
-        closeDrawer: function () {
-            var toggle = document.getElementById("nav-drawer-toggle");
-            if (toggle) {
-                toggle.checked = false;
-            }
-        }
-    };
-
     window.exitsAdminTheme = {
         storageKey: THEME_KEY,
         get: function (key) {

@@ -15,11 +15,11 @@ using ExItS.Platform.Domain.Products;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace ExItS.Platform.Application.LivePreview;
+namespace ExItS.Platform.Application.LocalValidation;
 
-public sealed class InitializeLivePreviewDataset
+public sealed class InitializeLocalValidationDataset
 {
-    private static readonly string[] PreviewFeatureCodes =
+    private static readonly string[] LocalValidationFeatureCodes =
     [
         FeatureCode.CustomerCreditView,
         FeatureCode.CustomerCreditRepay,
@@ -34,7 +34,7 @@ public sealed class InitializeLivePreviewDataset
         FeatureCode.StorePermissionsManage
     ];
 
-    private readonly LivePreviewOptions _options;
+    private readonly LocalValidationOptions _options;
     private readonly CreatePlatformOrganization _createOrg;
     private readonly IPlatformOrganizationRepository _organizations;
     private readonly CreateProduct _createProduct;
@@ -50,6 +50,7 @@ public sealed class InitializeLivePreviewDataset
     private readonly CreatePlatformUser _createUser;
     private readonly IPlatformUserRepository _users;
     private readonly SetPlatformUserPassword _setPassword;
+    private readonly EnsureAccountProfilesForUser _ensureProfiles;
     private readonly AssignPlatformRole _assignPlatformRole;
     private readonly AddOrganizationMembership _addMembership;
     private readonly IOrganizationMembershipRepository _memberships;
@@ -58,10 +59,10 @@ public sealed class InitializeLivePreviewDataset
     private readonly IPlanRepository _plans;
     private readonly ITrialDefinitionRepository _trials;
     private readonly ISubscriptionRepository _subscriptions;
-    private readonly ILogger<InitializeLivePreviewDataset> _logger;
+    private readonly ILogger<InitializeLocalValidationDataset> _logger;
 
-    public InitializeLivePreviewDataset(
-        IOptions<LivePreviewOptions> options,
+    public InitializeLocalValidationDataset(
+        IOptions<LocalValidationOptions> options,
         CreatePlatformOrganization createOrg,
         IPlatformOrganizationRepository organizations,
         CreateProduct createProduct,
@@ -77,6 +78,7 @@ public sealed class InitializeLivePreviewDataset
         CreatePlatformUser createUser,
         IPlatformUserRepository users,
         SetPlatformUserPassword setPassword,
+        EnsureAccountProfilesForUser ensureProfiles,
         AssignPlatformRole assignPlatformRole,
         AddOrganizationMembership addMembership,
         IOrganizationMembershipRepository memberships,
@@ -85,7 +87,7 @@ public sealed class InitializeLivePreviewDataset
         IPlanRepository plans,
         ITrialDefinitionRepository trials,
         ISubscriptionRepository subscriptions,
-        ILogger<InitializeLivePreviewDataset> logger)
+        ILogger<InitializeLocalValidationDataset> logger)
     {
         _options = options.Value;
         _createOrg = createOrg;
@@ -103,6 +105,7 @@ public sealed class InitializeLivePreviewDataset
         _createUser = createUser;
         _users = users;
         _setPassword = setPassword;
+        _ensureProfiles = ensureProfiles;
         _assignPlatformRole = assignPlatformRole;
         _addMembership = addMembership;
         _memberships = memberships;
@@ -124,16 +127,16 @@ public sealed class InitializeLivePreviewDataset
         if (string.IsNullOrWhiteSpace(_options.SharedPassword) || _options.SharedPassword.Length < 12)
         {
             throw new InvalidOperationException(
-                "LivePreview:SharedPassword must be configured (minimum 12 characters) when LivePreview:Enabled=true.");
+                "LocalValidation:SharedPassword must be configured (minimum 12 characters) when LocalValidation:Enabled=true.");
         }
 
-        _logger.LogInformation("Live preview dataset initialization starting.");
+        _logger.LogInformation("Local validation dataset initialization starting.");
 
         var organization = await EnsureOrganizationAsync(cancellationToken).ConfigureAwait(false);
         var productCode = ProductCode.PinoyBusinessPos;
         await EnsureCatalogAndCommercialAsync(organization.Id, productCode, cancellationToken).ConfigureAwait(false);
 
-        foreach (var identity in LivePreviewIdentityCatalog.All)
+        foreach (var identity in LocalValidationIdentityCatalog.All)
         {
             var user = await EnsureUserAsync(identity, cancellationToken).ConfigureAwait(false);
             await EnsurePasswordAsync(user.Id.Value, cancellationToken).ConfigureAwait(false);
@@ -147,7 +150,8 @@ public sealed class InitializeLivePreviewDataset
             {
                 var role = identity.OrganizationRole.Value switch
                 {
-                    OrganizationMembershipPreviewRole.OrganizationAdministrator => OrganizationRole.OrganizationAdministrator,
+                    OrganizationMembershipValidationRole.OrganizationOwner => OrganizationRole.OrganizationOwner,
+                    OrganizationMembershipValidationRole.OrganizationAdministrator => OrganizationRole.OrganizationAdministrator,
                     _ => OrganizationRole.OrganizationMember
                 };
                 await EnsureMembershipAsync(organization.Id, user.Id, role, cancellationToken).ConfigureAwait(false);
@@ -158,33 +162,37 @@ public sealed class InitializeLivePreviewDataset
                 await EnsureProductAccessAsync(organization.Id, user.Id, productCode, cancellationToken)
                     .ConfigureAwait(false);
             }
+
+            await _ensureProfiles
+                .ExecuteAsync(user.Id, identity.PreferredAccountClass, cancellationToken)
+                .ConfigureAwait(false);
         }
 
-        _logger.LogInformation("Live preview dataset initialization completed.");
+        _logger.LogInformation("Local validation dataset initialization completed.");
     }
 
     private async Task<PlatformOrganization> EnsureOrganizationAsync(CancellationToken ct)
     {
-        var existing = await _organizations.GetBySlugAsync(LivePreviewOptions.OrgSlug, ct).ConfigureAwait(false);
+        var existing = await _organizations.GetBySlugAsync(LocalValidationOptions.OrgSlug, ct).ConfigureAwait(false);
         if (existing is not null)
         {
             return existing;
         }
 
         var created = await _createOrg
-            .ExecuteAsync(LivePreviewOptions.OrgDisplayName, LivePreviewOptions.OrgSlug, ct)
+            .ExecuteAsync(LocalValidationOptions.OrgDisplayName, LocalValidationOptions.OrgSlug, ct)
             .ConfigureAwait(false);
         if (!created.IsSuccess || created.Value is null)
         {
             // Race: reload by slug
-            existing = await _organizations.GetBySlugAsync(LivePreviewOptions.OrgSlug, ct).ConfigureAwait(false);
+            existing = await _organizations.GetBySlugAsync(LocalValidationOptions.OrgSlug, ct).ConfigureAwait(false);
             if (existing is not null)
             {
                 return existing;
             }
 
             throw new InvalidOperationException(
-                $"Live preview organization create failed: {created.ErrorCode} {created.ErrorMessage}");
+                $"Local validation organization create failed: {created.ErrorCode} {created.ErrorMessage}");
         }
 
         return created.Value;
@@ -205,12 +213,12 @@ public sealed class InitializeLivePreviewDataset
                 if (product is null)
                 {
                     throw new InvalidOperationException(
-                        $"Live preview product create failed: {created.ErrorCode} {created.ErrorMessage}");
+                        $"Local validation product create failed: {created.ErrorCode} {created.ErrorMessage}");
                 }
             }
         }
 
-        foreach (var featureCode in PreviewFeatureCodes)
+        foreach (var featureCode in LocalValidationFeatureCodes)
         {
             var featureResult = await _createFeature
                 .ExecuteAsync(productCode, featureCode, featureCode, FeatureValueType.Boolean, ct)
@@ -219,18 +227,18 @@ public sealed class InitializeLivePreviewDataset
                 && featureResult.ErrorCode != ApplicationErrorCodes.DuplicateFeatureCode)
             {
                 throw new InvalidOperationException(
-                    $"Live preview feature '{featureCode}' failed: {featureResult.ErrorCode} {featureResult.ErrorMessage}");
+                    $"Local validation feature '{featureCode}' failed: {featureResult.ErrorCode} {featureResult.ErrorMessage}");
             }
         }
 
-        var planCode = PlanCode.Create(LivePreviewOptions.ProductPlanCode);
+        var planCode = PlanCode.Create(LocalValidationOptions.ProductPlanCode);
         var plan = await _plans
             .GetByProductAndCodeAsync(ProductCode.Create(productCode), planCode, ct)
             .ConfigureAwait(false);
         if (plan is null)
         {
             var createdPlan = await _createPlan
-                .ExecuteAsync(productCode, LivePreviewOptions.ProductPlanCode, LivePreviewOptions.ProductPlanDisplayName, ct)
+                .ExecuteAsync(productCode, LocalValidationOptions.ProductPlanCode, LocalValidationOptions.ProductPlanDisplayName, ct)
                 .ConfigureAwait(false);
             if (!createdPlan.IsSuccess || createdPlan.Value is null)
             {
@@ -240,7 +248,7 @@ public sealed class InitializeLivePreviewDataset
                 if (plan is null)
                 {
                     throw new InvalidOperationException(
-                        $"Live preview plan create failed: {createdPlan.ErrorCode} {createdPlan.ErrorMessage}");
+                        $"Local validation plan create failed: {createdPlan.ErrorCode} {createdPlan.ErrorMessage}");
                 }
             }
             else
@@ -258,7 +266,7 @@ public sealed class InitializeLivePreviewDataset
                 if (reloaded?.Status != PlanStatus.Active)
                 {
                     throw new InvalidOperationException(
-                        $"Live preview plan activate failed: {activate.ErrorCode} {activate.ErrorMessage}");
+                        $"Local validation plan activate failed: {activate.ErrorCode} {activate.ErrorMessage}");
                 }
 
                 plan = reloaded;
@@ -273,7 +281,7 @@ public sealed class InitializeLivePreviewDataset
         var version = versions.FirstOrDefault(v => v.VersionNumber == 1);
         if (version is null)
         {
-            var grants = PreviewFeatureCodes
+            var grants = LocalValidationFeatureCodes
                 .Select(c => FeatureGrantSpec.Boolean(FeatureCode.Create(c), true))
                 .ToArray();
             var draft = await _createDraftVersion
@@ -282,14 +290,14 @@ public sealed class InitializeLivePreviewDataset
             if (!draft.IsSuccess || draft.Value is null)
             {
                 throw new InvalidOperationException(
-                    $"Live preview plan version draft failed: {draft.ErrorCode} {draft.ErrorMessage}");
+                    $"Local validation plan version draft failed: {draft.ErrorCode} {draft.ErrorMessage}");
             }
 
             var published = await _publishVersion.ExecuteAsync(plan.Id, 1, ct).ConfigureAwait(false);
             if (!published.IsSuccess || published.Value is null)
             {
                 throw new InvalidOperationException(
-                    $"Live preview plan version publish failed: {published.ErrorCode} {published.ErrorMessage}");
+                    $"Local validation plan version publish failed: {published.ErrorCode} {published.ErrorMessage}");
             }
 
             version = published.Value;
@@ -300,23 +308,23 @@ public sealed class InitializeLivePreviewDataset
             if (!published.IsSuccess || published.Value is null)
             {
                 throw new InvalidOperationException(
-                    $"Live preview plan version publish failed: {published.ErrorCode} {published.ErrorMessage}");
+                    $"Local validation plan version publish failed: {published.ErrorCode} {published.ErrorMessage}");
             }
 
             version = published.Value;
         }
 
         var trials = await _trials.ListByProductAsync(ProductCode.Create(productCode), ct).ConfigureAwait(false);
-        var trial = trials.FirstOrDefault(t => string.Equals(t.DisplayName, LivePreviewOptions.TrialDisplayName, StringComparison.Ordinal));
+        var trial = trials.FirstOrDefault(t => string.Equals(t.DisplayName, LocalValidationOptions.TrialDisplayName, StringComparison.Ordinal));
         if (trial is null)
         {
-            var grants = PreviewFeatureCodes
+            var grants = LocalValidationFeatureCodes
                 .Select(c => FeatureGrantSpec.Boolean(FeatureCode.Create(c), true))
                 .ToArray();
             var createdTrial = await _createTrial
                 .ExecuteAsync(
                     productCode,
-                    LivePreviewOptions.TrialDisplayName,
+                    LocalValidationOptions.TrialDisplayName,
                     TimeSpan.FromDays(30),
                     grants,
                     Array.Empty<FeatureGrantSpec>(),
@@ -326,7 +334,7 @@ public sealed class InitializeLivePreviewDataset
             if (!createdTrial.IsSuccess || createdTrial.Value is null)
             {
                 throw new InvalidOperationException(
-                    $"Live preview trial create failed: {createdTrial.ErrorCode} {createdTrial.ErrorMessage}");
+                    $"Local validation trial create failed: {createdTrial.ErrorCode} {createdTrial.ErrorMessage}");
             }
 
             trial = createdTrial.Value;
@@ -343,7 +351,7 @@ public sealed class InitializeLivePreviewDataset
             if (!started.IsSuccess || started.Value is null)
             {
                 throw new InvalidOperationException(
-                    $"Live preview trial subscription failed: {started.ErrorCode} {started.ErrorMessage}");
+                    $"Local validation trial subscription failed: {started.ErrorCode} {started.ErrorMessage}");
             }
 
             subscription = started.Value;
@@ -355,11 +363,11 @@ public sealed class InitializeLivePreviewDataset
         if (!snapshot.IsSuccess)
         {
             throw new InvalidOperationException(
-                $"Live preview entitlement snapshot failed: {snapshot.ErrorCode} {snapshot.ErrorMessage}");
+                $"Local validation entitlement snapshot failed: {snapshot.ErrorCode} {snapshot.ErrorMessage}");
         }
     }
 
-    private async Task<PlatformUser> EnsureUserAsync(LivePreviewIdentityDefinition identity, CancellationToken ct)
+    private async Task<PlatformUser> EnsureUserAsync(LocalValidationIdentityDefinition identity, CancellationToken ct)
     {
         var (_, normalized) = PlatformUser.NormalizeUsername(identity.Username);
         var existing = await _users.GetByNormalizedUsernameAsync(normalized, ct).ConfigureAwait(false);
@@ -380,7 +388,7 @@ public sealed class InitializeLivePreviewDataset
             }
 
             throw new InvalidOperationException(
-                $"Live preview user '{identity.Username}' create failed: {created.ErrorCode} {created.ErrorMessage}");
+                $"Local validation user '{identity.Username}' create failed: {created.ErrorCode} {created.ErrorMessage}");
         }
 
         return created.Value;
@@ -392,7 +400,7 @@ public sealed class InitializeLivePreviewDataset
         if (!result.IsSuccess)
         {
             throw new InvalidOperationException(
-                $"Live preview password set failed for {userId:D}: {result.ErrorCode} {result.ErrorMessage}");
+                $"Local validation password set failed for {userId:D}: {result.ErrorCode} {result.ErrorMessage}");
         }
     }
 
@@ -402,15 +410,15 @@ public sealed class InitializeLivePreviewDataset
             userId,
             PlatformSystemRole.PlatformAdministrator,
             organizationId: null,
-            actorIdentifier: LivePreviewOptions.Actor,
+            actorIdentifier: LocalValidationOptions.Actor,
             actorType: AuditActorType.System,
-            reason: "live-preview dataset",
+            reason: "local-validation dataset",
             cancellationToken: ct).ConfigureAwait(false);
 
         if (!result.IsSuccess && result.ErrorCode != ApplicationErrorCodes.RoleAssignmentConflict)
         {
             throw new InvalidOperationException(
-                $"Live preview PlatformAdministrator assign failed: {result.ErrorCode} {result.ErrorMessage}");
+                $"Local validation PlatformAdministrator assign failed: {result.ErrorCode} {result.ErrorMessage}");
         }
     }
 
@@ -440,7 +448,7 @@ public sealed class InitializeLivePreviewDataset
             }
 
             throw new InvalidOperationException(
-                $"Live preview membership failed: {result.ErrorCode} {result.ErrorMessage}");
+                $"Local validation membership failed: {result.ErrorCode} {result.ErrorMessage}");
         }
     }
 
@@ -459,7 +467,7 @@ public sealed class InitializeLivePreviewDataset
         }
 
         var result = await _grantProductAccess
-            .ExecuteAsync(organizationId, userId, productCode, LivePreviewOptions.Actor, "live-preview dataset", ct)
+            .ExecuteAsync(organizationId, userId, productCode, LocalValidationOptions.Actor, "local-validation dataset", ct)
             .ConfigureAwait(false);
         if (!result.IsSuccess)
         {
@@ -472,7 +480,7 @@ public sealed class InitializeLivePreviewDataset
             }
 
             throw new InvalidOperationException(
-                $"Live preview product access grant failed: {result.ErrorCode} {result.ErrorMessage}");
+                $"Local validation product access grant failed: {result.ErrorCode} {result.ErrorMessage}");
         }
     }
 }

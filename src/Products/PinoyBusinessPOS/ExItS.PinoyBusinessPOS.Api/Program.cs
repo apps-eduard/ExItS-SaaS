@@ -1,4 +1,4 @@
-using ExItS.PinoyBusinessPOS.Application.LivePreview;
+using ExItS.PinoyBusinessPOS.Application.LocalValidation;
 using ExItS.PinoyBusinessPOS.Api.CashierShifts;
 using ExItS.PinoyBusinessPOS.Api.Catalog;
 using ExItS.PinoyBusinessPOS.Api.Common;
@@ -32,16 +32,16 @@ using ExItS.PinoyBusinessPOS.Api.Returns;
 using ExItS.PinoyBusinessPOS.Api.Permissions;
 using ExItS.PinoyBusinessPOS.Application.Registers;
 using ExItS.PinoyBusinessPOS.Infrastructure;
-using ExItS.PinoyBusinessPOS.Infrastructure.LivePreview;
+using ExItS.PinoyBusinessPOS.Infrastructure.LocalValidation;
 using ExItS.PinoyBusinessPOS.Infrastructure.Health;
 using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
 PosProductionSecurityGuard.ValidateOrThrow(builder);
-if (builder.Configuration.GetValue<bool>("LivePreview:Enabled") && builder.Environment.IsProduction())
+if (builder.Configuration.GetValue<bool>("LocalValidation:Enabled") && builder.Environment.IsProduction())
 {
-    throw new InvalidOperationException("LivePreview:Enabled=true is forbidden in Production.");
+    throw new InvalidOperationException("LocalValidation:Enabled=true is forbidden in Production.");
 }
 
 builder.Services.AddProblemDetails();
@@ -145,11 +145,11 @@ builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.Inventor
 builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.ExpensesReportService>();
 builder.Services.AddScoped<PosRoleAssignmentQueryService>();
 builder.Services.AddScoped<AssignPosRole>();
-builder.Services.Configure<PosLivePreviewOptions>(builder.Configuration.GetSection(PosLivePreviewOptions.SectionName));
-builder.Services.AddScoped<InitializePosLivePreviewRoles>();
-builder.Services.AddHttpClient("LivePreviewPlatformApi", (sp, client) =>
+builder.Services.Configure<PosLocalValidationOptions>(builder.Configuration.GetSection(PosLocalValidationOptions.SectionName));
+builder.Services.AddScoped<InitializePosLocalValidationRoles>();
+builder.Services.AddHttpClient("LocalValidationPlatformApi", (sp, client) =>
 {
-    var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<PosLivePreviewOptions>>().Value;
+    var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<PosLocalValidationOptions>>().Value;
     if (!string.IsNullOrWhiteSpace(opts.PlatformApiBaseUrl))
     {
         client.BaseAddress = new Uri(opts.PlatformApiBaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
@@ -157,7 +157,7 @@ builder.Services.AddHttpClient("LivePreviewPlatformApi", (sp, client) =>
 
     client.Timeout = TimeSpan.FromSeconds(15);
 });
-builder.Services.AddHostedService<PosLivePreviewHostedService>();
+builder.Services.AddHostedService<PosLocalValidationHostedService>();
 builder.Services.AddScoped<RevokePosRole>();
 builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.OperationalReportService>();
 

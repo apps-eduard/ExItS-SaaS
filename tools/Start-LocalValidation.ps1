@@ -1,20 +1,24 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 <#
 .SYNOPSIS
-  One-command local Live Preview: Docker DBs only + host Platform/POS/Admin.
+  One-command local Local Validation: Docker DBs only + host Platform/POS/Admin.
 
 .DESCRIPTION
   - Resolves repo root from this script location (run from any directory).
-  - Starts only exits-live-preview platform-db + pos-db (never compose down with -v).
+  - Starts only exits-local-validation platform-db + pos-db (never compose down with -v).
   - Stops stale ExItS.Platform.Api / ExItS.PinoyBusinessPOS.Api / ExItS.Platform.Admin
     processes that belong to this repository only.
   - Starts apps with dotnet watch in separate PowerShell windows, in order.
-  - Uses deploy/docker/.env.live-preview (gitignored) - no secrets committed.
-  - Admin DataProtection keys: %LOCALAPPDATA%\ExItS\LivePreview\DataProtectionKeys
+  - Uses deploy/docker/.env.local-validation (gitignored) - no secrets committed.
+  - Admin DataProtection keys: %LOCALAPPDATA%\ExItS\LocalValidation\DataProtectionKeys
+  - Sign in with approved Local Validation identities (Olivia Mendoza, Rafael Torres, Maria Santos,
+    Carlo Reyes, Ana Cruz, Daniel Garcia, Luis Navarro, Sofia Ramos) via normal Platform credential
+    login; password from LocalValidation:SharedPassword / LOCAL_VALIDATION_SHARED_PASSWORD env
+    (never commit the secret).
   - Not Production. Does not start P14-WP03.
 
 .EXAMPLE
-  .\tools\Start-LivePreviewLocal.ps1
+  .\tools\Start-LocalValidation.ps1
 #>
 [CmdletBinding()]
 param(
@@ -25,10 +29,10 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-function Write-Step([string]$Message) { Write-Host "[live-preview] $Message" -ForegroundColor Cyan }
-function Write-Ok([string]$Message) { Write-Host "[live-preview] OK  $Message" -ForegroundColor Green }
-function Write-Fail([string]$Message) { Write-Host "[live-preview] FAIL $Message" -ForegroundColor Red }
-function Write-Note([string]$Message) { Write-Host "[live-preview] NOTE $Message" -ForegroundColor Yellow }
+function Write-Step([string]$Message) { Write-Host "[local-validation] $Message" -ForegroundColor Cyan }
+function Write-Ok([string]$Message) { Write-Host "[local-validation] OK  $Message" -ForegroundColor Green }
+function Write-Fail([string]$Message) { Write-Host "[local-validation] FAIL $Message" -ForegroundColor Red }
+function Write-Note([string]$Message) { Write-Host "[local-validation] NOTE $Message" -ForegroundColor Yellow }
 
 function Get-RepoRoot {
     $dir = (Resolve-Path -LiteralPath $PSScriptRoot).Path
@@ -61,7 +65,7 @@ function Import-DotEnv([string]$Path) {
 
 function Require-EnvKey($Map, [string]$Key) {
     if (-not $Map.ContainsKey($Key) -or [string]::IsNullOrWhiteSpace([string]$Map[$Key]) -or ([string]$Map[$Key]).StartsWith('REPLACE_')) {
-        throw "Set a real value for $Key in deploy/docker/.env.live-preview (not REPLACE_*)."
+        throw "Set a real value for $Key in deploy/docker/.env.local-validation (not REPLACE_*)."
     }
 }
 
@@ -216,10 +220,18 @@ function Start-AppWindow {
     $prefix = ConvertTo-EnvAssignments -EnvMap $EnvMap
     $run = @"
 `$Host.UI.RawUI.WindowTitle = '$Title';
+# Parent shells often leave DOTNET_ENVIRONMENT=Testing (integration tests) or Staging.
+# Clear both so ASPNETCORE_ENVIRONMENT from EnvMap is authoritative for the child host.
+Remove-Item Env:DOTNET_ENVIRONMENT -ErrorAction SilentlyContinue;
+Remove-Item Env:ASPNETCORE_ENVIRONMENT -ErrorAction SilentlyContinue;
+# Prevent a polluted parent shell from breaking MapStaticAssets package/_framework resolution.
+Remove-Item Env:ReloadStaticAssetsAtRuntime -ErrorAction SilentlyContinue;
 $prefix
+# Keep DOTNET_ENVIRONMENT aligned with ASPNETCORE_ENVIRONMENT when the latter is set.
+if (-not [string]::IsNullOrWhiteSpace(`$env:ASPNETCORE_ENVIRONMENT)) { `$env:DOTNET_ENVIRONMENT = `$env:ASPNETCORE_ENVIRONMENT }
 Set-Location '$RepoRoot';
-Write-Host '=== $Title ===' -ForegroundColor Cyan;
-dotnet watch --project '$Project' run --launch-profile LivePreview --non-interactive
+Write-Host ('=== {0} (ASPNETCORE_ENVIRONMENT={1}) ===' -f '$Title', `$env:ASPNETCORE_ENVIRONMENT) -ForegroundColor Cyan;
+dotnet watch --project '$Project' run --no-launch-profile --non-interactive
 "@
     $proc = Start-Process -FilePath 'powershell.exe' -PassThru -ArgumentList @(
         '-NoExit',
@@ -233,9 +245,9 @@ dotnet watch --project '$Project' run --launch-profile LivePreview --non-interac
 # --- main ---
 $repoRoot = Get-RepoRoot
 $dockerDir = Join-Path $repoRoot 'deploy\docker'
-$envFile = Join-Path $dockerDir '.env.live-preview'
-$composeFile = Join-Path $dockerDir 'compose.live-preview.yaml'
-$stateDir = Join-Path $env:LOCALAPPDATA 'ExItS\LivePreview'
+$envFile = Join-Path $dockerDir '.env.local-validation'
+$composeFile = Join-Path $dockerDir 'compose.local-validation.yaml'
+$stateDir = Join-Path $env:LOCALAPPDATA 'ExItS\LocalValidation'
 $dpKeys = Join-Path $stateDir 'DataProtectionKeys'
 $stateFile = Join-Path $stateDir 'launcher-state.json'
 
@@ -244,25 +256,25 @@ Test-DockerAvailable
 Write-Ok 'Docker Desktop is available'
 
 if (-not (Test-Path -LiteralPath $envFile)) {
-    throw "Missing $envFile. Copy deploy/docker/.env.live-preview.example and fill REPLACE_* values."
+    throw "Missing $envFile. Copy deploy/docker/.env.local-validation.example and fill REPLACE_* values."
 }
 if (-not (Test-Path -LiteralPath $composeFile)) {
     throw "Missing $composeFile"
 }
 
 $envMap = Import-DotEnv -Path $envFile
-Require-EnvKey $envMap 'LIVE_PREVIEW_PLATFORM_DB_USER'
-Require-EnvKey $envMap 'LIVE_PREVIEW_PLATFORM_DB_PASSWORD'
-Require-EnvKey $envMap 'LIVE_PREVIEW_POS_DB_USER'
-Require-EnvKey $envMap 'LIVE_PREVIEW_POS_DB_PASSWORD'
-Require-EnvKey $envMap 'LIVE_PREVIEW_SHARED_PASSWORD'
+Require-EnvKey $envMap 'LOCAL_VALIDATION_PLATFORM_DB_USER'
+Require-EnvKey $envMap 'LOCAL_VALIDATION_PLATFORM_DB_PASSWORD'
+Require-EnvKey $envMap 'LOCAL_VALIDATION_POS_DB_USER'
+Require-EnvKey $envMap 'LOCAL_VALIDATION_POS_DB_PASSWORD'
+Require-EnvKey $envMap 'LOCAL_VALIDATION_SHARED_PASSWORD'
 
-$platformDbPort = if ($envMap['LIVE_PREVIEW_PLATFORM_DB_HOST_PORT']) { [int]$envMap['LIVE_PREVIEW_PLATFORM_DB_HOST_PORT'] } else { 15533 }
-$posDbPort = if ($envMap['LIVE_PREVIEW_POS_DB_HOST_PORT']) { [int]$envMap['LIVE_PREVIEW_POS_DB_HOST_PORT'] } else { 15534 }
-$adminPort = if ($envMap['LIVE_PREVIEW_ADMIN_HOST_PORT']) { [int]$envMap['LIVE_PREVIEW_ADMIN_HOST_PORT'] } else { 8090 }
-$platformApiPort = if ($envMap['LIVE_PREVIEW_PLATFORM_API_HOST_PORT']) { [int]$envMap['LIVE_PREVIEW_PLATFORM_API_HOST_PORT'] } else { 8091 }
-$posApiPort = if ($envMap['LIVE_PREVIEW_POS_API_HOST_PORT']) { [int]$envMap['LIVE_PREVIEW_POS_API_HOST_PORT'] } else { 8092 }
-$adminOrigin = if ($envMap['LIVE_PREVIEW_ADMIN_ORIGIN']) { [string]$envMap['LIVE_PREVIEW_ADMIN_ORIGIN'] } else { "http://localhost:$adminPort" }
+$platformDbPort = if ($envMap['LOCAL_VALIDATION_PLATFORM_DB_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_PLATFORM_DB_HOST_PORT'] } else { 15533 }
+$posDbPort = if ($envMap['LOCAL_VALIDATION_POS_DB_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_POS_DB_HOST_PORT'] } else { 15534 }
+$adminPort = if ($envMap['LOCAL_VALIDATION_ADMIN_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_ADMIN_HOST_PORT'] } else { 8090 }
+$platformApiPort = if ($envMap['LOCAL_VALIDATION_PLATFORM_API_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_PLATFORM_API_HOST_PORT'] } else { 8091 }
+$posApiPort = if ($envMap['LOCAL_VALIDATION_POS_API_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_POS_API_HOST_PORT'] } else { 8092 }
+$adminOrigin = if ($envMap['LOCAL_VALIDATION_ADMIN_ORIGIN']) { [string]$envMap['LOCAL_VALIDATION_ADMIN_ORIGIN'] } else { "http://localhost:$adminPort" }
 
 New-Item -ItemType Directory -Force -Path $dpKeys | Out-Null
 Write-Ok "DataProtection keys directory: $dpKeys"
@@ -276,17 +288,17 @@ if ($conflicts.Count -gt 0) {
 }
 Write-Ok 'App ports 8090/8091/8092 are free'
 
-Write-Step 'Starting live-preview PostgreSQL only (volumes preserved; never compose down with -v)...'
+Write-Step 'Starting local-validation PostgreSQL only (volumes preserved; never compose down with -v)...'
 & docker compose -f $composeFile --env-file $envFile up -d platform-db pos-db
 if ($LASTEXITCODE -ne 0) { throw "docker compose up platform-db pos-db failed ($LASTEXITCODE)." }
 
-Wait-ContainerHealthy -Name 'exits-live-preview-platform-db' -TimeoutSeconds $DbHealthySeconds
-Wait-ContainerHealthy -Name 'exits-live-preview-pos-db' -TimeoutSeconds $DbHealthySeconds
+Wait-ContainerHealthy -Name 'exits-local-validation-platform-db' -TimeoutSeconds $DbHealthySeconds
+Wait-ContainerHealthy -Name 'exits-local-validation-pos-db' -TimeoutSeconds $DbHealthySeconds
 Wait-TcpPort -Label 'Platform DB' -HostName '127.0.0.1' -Port $platformDbPort -TimeoutSeconds 30
 Wait-TcpPort -Label 'POS DB' -HostName '127.0.0.1' -Port $posDbPort -TimeoutSeconds 30
 
-$platformCs = "Host=127.0.0.1;Port=$platformDbPort;Database=exits_platform;Username=$($envMap['LIVE_PREVIEW_PLATFORM_DB_USER']);Password=$($envMap['LIVE_PREVIEW_PLATFORM_DB_PASSWORD'])"
-$posCs = "Host=127.0.0.1;Port=$posDbPort;Database=exits_pos;Username=$($envMap['LIVE_PREVIEW_POS_DB_USER']);Password=$($envMap['LIVE_PREVIEW_POS_DB_PASSWORD'])"
+$platformCs = "Host=127.0.0.1;Port=$platformDbPort;Database=exits_platform;Username=$($envMap['LOCAL_VALIDATION_PLATFORM_DB_USER']);Password=$($envMap['LOCAL_VALIDATION_PLATFORM_DB_PASSWORD'])"
+$posCs = "Host=127.0.0.1;Port=$posDbPort;Database=exits_pos;Username=$($envMap['LOCAL_VALIDATION_POS_DB_USER']);Password=$($envMap['LOCAL_VALIDATION_POS_DB_PASSWORD'])"
 $platformApiUrl = "http://localhost:$platformApiPort"
 $posApiUrl = "http://localhost:$posApiPort"
 $adminUrl = "http://localhost:$adminPort"
@@ -298,41 +310,42 @@ $adminProject = Join-Path $repoRoot 'src\Platform\ExItS.Platform.Admin\ExItS.Pla
 $windowPids = @()
 
 Write-Step 'Starting Platform API (dotnet watch)...'
-$windowPids += Start-AppWindow -Title 'ExItS LivePreview - Platform API' -RepoRoot $repoRoot -Project $platformProject -EnvMap @{
+$windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Platform API' -RepoRoot $repoRoot -Project $platformProject -EnvMap @{
     ASPNETCORE_ENVIRONMENT = 'Staging'
     ASPNETCORE_URLS = $platformApiUrl
     ConnectionStrings__PlatformDatabase = $platformCs
     AllowedHosts = 'localhost;127.0.0.1'
     Cors__AllowedOrigins__0 = $adminOrigin
     Security__EnforceHttps = 'false'
-    LivePreview__Enabled = 'true'
-    LivePreview__SharedPassword = [string]$envMap['LIVE_PREVIEW_SHARED_PASSWORD']
+    LocalValidation__Enabled = 'true'
+    LocalValidation__SharedPassword = [string]$envMap['LOCAL_VALIDATION_SHARED_PASSWORD']
 }
 Wait-TcpPort -Label 'Platform API' -HostName '127.0.0.1' -Port $platformApiPort -TimeoutSeconds $PortWaitSeconds
 
 Write-Step 'Starting POS API (dotnet watch)...'
-$windowPids += Start-AppWindow -Title 'ExItS LivePreview - POS API' -RepoRoot $repoRoot -Project $posProject -EnvMap @{
+$windowPids += Start-AppWindow -Title 'ExItS LocalValidation - POS API' -RepoRoot $repoRoot -Project $posProject -EnvMap @{
     ASPNETCORE_ENVIRONMENT = 'Staging'
     ASPNETCORE_URLS = $posApiUrl
     ConnectionStrings__PosDatabase = $posCs
     AllowedHosts = 'localhost;127.0.0.1'
     Cors__AllowedOrigins__0 = $adminOrigin
     Security__EnforceHttps = 'false'
-    LivePreview__Enabled = 'true'
-    LivePreview__PlatformApiBaseUrl = $platformApiUrl
+    LocalValidation__Enabled = 'true'
+    LocalValidation__PlatformApiBaseUrl = $platformApiUrl
     PlatformAuth__BaseUrl = $platformApiUrl
 }
 Wait-TcpPort -Label 'POS API' -HostName '127.0.0.1' -Port $posApiPort -TimeoutSeconds $PortWaitSeconds
 
 Write-Step 'Starting Platform Admin (dotnet watch)...'
-$windowPids += Start-AppWindow -Title 'ExItS LivePreview - Admin' -RepoRoot $repoRoot -Project $adminProject -EnvMap @{
-    ASPNETCORE_ENVIRONMENT = 'Staging'
+# Admin runs Development so Ant Design / Blazor static assets load without Staging SWA hacks.
+# Credential login only (no Local Validation identity selector). Sign in with approved Local Validation
+# identities via normal Platform credential login; password from LOCAL_VALIDATION_SHARED_PASSWORD env.
+$windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Admin' -RepoRoot $repoRoot -Project $adminProject -EnvMap @{
+    ASPNETCORE_ENVIRONMENT = 'Development'
     ASPNETCORE_URLS = $adminUrl
     AllowedHosts = 'localhost;127.0.0.1'
     PlatformApi__BaseUrl = $platformApiUrl
     PlatformApi__TimeoutSeconds = '30'
-    LivePreview__Enabled = 'true'
-    DataProtection__KeysPath = $dpKeys
 }
 Wait-TcpPort -Label 'Platform Admin' -HostName '127.0.0.1' -Port $adminPort -TimeoutSeconds $PortWaitSeconds
 
@@ -350,7 +363,7 @@ $healthOk = (Invoke-HttpCheck -Label 'POS API /health' -Url "$posApiUrl/health")
 $healthOk = (Invoke-HttpCheck -Label 'Admin /admin/login' -Url "$adminUrl/admin/login") -and $healthOk
 
 Write-Host ''
-Write-Host '======== Live Preview local ready ========' -ForegroundColor Green
+Write-Host '======== Local Validation local ready ========' -ForegroundColor Green
 Write-Host "  Admin:        $adminUrl"
 Write-Host "  Platform API: $platformApiUrl"
 Write-Host "  POS API:      $posApiUrl"
@@ -359,8 +372,8 @@ Write-Host "  POS DB:       127.0.0.1:$posDbPort"
 Write-Host "  DP keys:      $dpKeys"
 Write-Host '=========================================' -ForegroundColor Green
 Write-Note 'If the browser still has an old localhost antiforgery cookie, open an Incognito window or clear localhost site data once.'
-Write-Host 'Stop apps:  .\tools\Stop-LivePreviewLocal.ps1'
-Write-Host 'Stop DBs:   .\tools\Stop-LivePreviewLocal.ps1 -StopDatabases   (volumes preserved)'
+Write-Host 'Stop apps:  .\tools\Stop-LocalValidation.ps1'
+Write-Host 'Stop DBs:   .\tools\Stop-LocalValidation.ps1 -StopDatabases   (volumes preserved)'
 
 if (-not $healthOk) {
     Write-Fail 'One or more health checks failed - see messages above.'

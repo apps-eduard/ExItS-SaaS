@@ -11,10 +11,10 @@ internal static class AdminProductionSecurityGuard
             return;
         }
 
-        var livePreviewEnabled = builder.Configuration.GetValue<bool>("LivePreview:Enabled");
-        if (livePreviewEnabled && env.IsProduction())
+        var localValidationEnabled = builder.Configuration.GetValue<bool>("LocalValidation:Enabled");
+        if (localValidationEnabled && env.IsProduction())
         {
-            throw new InvalidOperationException("LivePreview:Enabled=true is forbidden in Production.");
+            throw new InvalidOperationException("LocalValidation:Enabled=true is forbidden in Production.");
         }
 
         var baseUrl = builder.Configuration[$"{PlatformApiOptions.SectionName}:BaseUrl"];
@@ -30,8 +30,8 @@ internal static class AdminProductionSecurityGuard
                 "Production requires PlatformApi:BaseUrl to be an absolute URI.");
         }
 
-        // Live preview (non-Production) may use HTTP against the packaging Compose network.
-        if (livePreviewEnabled && !env.IsProduction())
+        // Local validation (non-Production) may use HTTP against the packaging Compose network.
+        if (localValidationEnabled && !env.IsProduction())
         {
             return;
         }

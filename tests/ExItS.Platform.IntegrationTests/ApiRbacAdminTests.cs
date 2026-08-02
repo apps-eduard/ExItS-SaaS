@@ -226,6 +226,7 @@ public sealed class ApiRbacAdminTests(PostgreSqlFixture fixture) : IAsyncLifetim
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            builder.UseEnvironment("Testing");
             builder.UseSetting("ConnectionStrings:PlatformDatabase", connectionString);
             builder.ConfigureAppConfiguration((_, config) =>
             {

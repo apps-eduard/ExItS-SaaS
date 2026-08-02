@@ -31,10 +31,10 @@ public sealed class ProductionProxyTlsArchitectureTests
         Assert.DoesNotContain("PLATFORM_DB_HOST_PORT", compose, StringComparison.Ordinal);
         Assert.DoesNotContain("POS_DB_HOST_PORT", compose, StringComparison.Ordinal);
         Assert.DoesNotContain("15433", compose, StringComparison.Ordinal);
-        Assert.DoesNotContain("LivePreview__Enabled", compose, StringComparison.Ordinal);
+        Assert.DoesNotContain("LocalValidation__Enabled", compose, StringComparison.Ordinal);
         Assert.DoesNotContain(".Migrate(", compose, StringComparison.Ordinal);
         Assert.DoesNotContain("HealthCare/", compose, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("8090–8092", compose, StringComparison.Ordinal); // Live Preview ports cited as preserved, not published
+        Assert.Contains("8090–8092", compose, StringComparison.Ordinal); // Local Validation ports cited as preserved, not published
     }
 
     [Fact]
@@ -93,12 +93,12 @@ public sealed class ProductionProxyTlsArchitectureTests
     public void Live_preview_ports_remain_documented_and_unchanged_by_production_compose()
     {
         var root = FindRepoRoot();
-        var live = File.ReadAllText(Path.Combine(root, "deploy", "docker", "compose.live-preview.yaml"));
-        Assert.Contains("${LIVE_PREVIEW_ADMIN_HOST_PORT:-8090}:8080", live, StringComparison.Ordinal);
-        Assert.Contains("${LIVE_PREVIEW_PLATFORM_API_HOST_PORT:-8091}:8080", live, StringComparison.Ordinal);
-        Assert.Contains("${LIVE_PREVIEW_POS_API_HOST_PORT:-8092}:8080", live, StringComparison.Ordinal);
-        Assert.Contains("${LIVE_PREVIEW_PLATFORM_DB_HOST_PORT:-15533}:5432", live, StringComparison.Ordinal);
-        Assert.Contains("${LIVE_PREVIEW_POS_DB_HOST_PORT:-15534}:5432", live, StringComparison.Ordinal);
+        var live = File.ReadAllText(Path.Combine(root, "deploy", "docker", "compose.local-validation.yaml"));
+        Assert.Contains("${LOCAL_VALIDATION_ADMIN_HOST_PORT:-8090}:8080", live, StringComparison.Ordinal);
+        Assert.Contains("${LOCAL_VALIDATION_PLATFORM_API_HOST_PORT:-8091}:8080", live, StringComparison.Ordinal);
+        Assert.Contains("${LOCAL_VALIDATION_POS_API_HOST_PORT:-8092}:8080", live, StringComparison.Ordinal);
+        Assert.Contains("${LOCAL_VALIDATION_PLATFORM_DB_HOST_PORT:-15533}:5432", live, StringComparison.Ordinal);
+        Assert.Contains("${LOCAL_VALIDATION_POS_DB_HOST_PORT:-15534}:5432", live, StringComparison.Ordinal);
     }
 
     private static string FindRepoRoot()
