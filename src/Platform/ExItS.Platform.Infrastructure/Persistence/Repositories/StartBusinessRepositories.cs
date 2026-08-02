@@ -75,6 +75,16 @@ internal sealed class BusinessCreditOpeningBalanceRepository(PlatformDbContext d
 
 internal sealed class ProductLocalRoleGrantRepository(PlatformDbContext db) : IProductLocalRoleGrantRepository
 {
+    public async Task<ProductLocalRoleGrant?> GetByIdAsync(
+        ProductLocalRoleGrantId id,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.ProductLocalRoleGrants.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
     public async Task<ProductLocalRoleGrant?> FindAsync(
         PlatformOrganizationId organizationId,
         PlatformUserId userIdentityId,
@@ -89,16 +99,90 @@ internal sealed class ProductLocalRoleGrantRepository(PlatformDbContext db) : IP
                 x => x.OrganizationId == organizationId.Value
                      && x.UserIdentityId == userIdentityId.Value
                      && x.ProductCode == product
-                     && x.RoleCode == role,
+                     && x.RoleCode == role
+                     && x.Status == nameof(ProductLocalRoleGrantStatus.Active),
                 cancellationToken)
             .ConfigureAwait(false);
         return record is null ? null : ToDomain(record);
+    }
+
+    public async Task<ProductLocalRoleGrant?> FindActiveByUserOrganizationProductAsync(
+        PlatformOrganizationId organizationId,
+        PlatformUserId userIdentityId,
+        string productCode,
+        CancellationToken cancellationToken = default)
+    {
+        var product = productCode.Trim().ToLowerInvariant();
+        var record = await db.ProductLocalRoleGrants.AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.OrganizationId == organizationId.Value
+                     && x.UserIdentityId == userIdentityId.Value
+                     && x.ProductCode == product
+                     && x.Status == nameof(ProductLocalRoleGrantStatus.Active),
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public async Task<IReadOnlyList<ProductLocalRoleGrant>> ListByOrganizationAsync(
+        PlatformOrganizationId organizationId,
+        ProductLocalRoleGrantStatus? status = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = db.ProductLocalRoleGrants.AsNoTracking()
+            .Where(x => x.OrganizationId == organizationId.Value);
+        if (status is not null)
+        {
+            var statusName = status.Value.ToString();
+            query = query.Where(x => x.Status == statusName);
+        }
+
+        var records = await query
+            .OrderBy(x => x.ProductCode)
+            .ThenBy(x => x.UserIdentityId)
+            .ThenByDescending(x => x.GrantedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
+    }
+
+    public async Task<IReadOnlyList<ProductLocalRoleGrant>> ListActiveByUserOrganizationAsync(
+        PlatformOrganizationId organizationId,
+        PlatformUserId userIdentityId,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await db.ProductLocalRoleGrants.AsNoTracking()
+            .Where(x => x.OrganizationId == organizationId.Value
+                        && x.UserIdentityId == userIdentityId.Value
+                        && x.Status == nameof(ProductLocalRoleGrantStatus.Active))
+            .OrderBy(x => x.ProductCode)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
     }
 
     public Task AddAsync(ProductLocalRoleGrant grant, CancellationToken cancellationToken = default)
     {
         db.ProductLocalRoleGrants.Add(ToRecord(grant));
         return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(ProductLocalRoleGrant grant, CancellationToken cancellationToken = default)
+    {
+        var record = await db.ProductLocalRoleGrants
+            .FirstOrDefaultAsync(x => x.Id == grant.Id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (record is null)
+        {
+            return;
+        }
+
+        record.RoleCode = grant.RoleCode;
+        record.Status = grant.Status.ToString();
+        record.RevokedAtUtc = grant.RevokedAtUtc;
+        record.RevokedByUserIdentityId = grant.RevokedByUserIdentityId?.Value;
+        record.Reason = grant.Reason;
+        record.Source = grant.Source;
     }
 
     private static ProductLocalRoleGrant ToDomain(ProductLocalRoleGrantRecord record) =>
@@ -108,9 +192,17 @@ internal sealed class ProductLocalRoleGrantRepository(PlatformDbContext db) : IP
             PlatformUserId.From(record.UserIdentityId),
             record.ProductCode,
             record.RoleCode,
+            Enum.TryParse<ProductLocalRoleGrantStatus>(record.Status, ignoreCase: true, out var status)
+                ? status
+                : ProductLocalRoleGrantStatus.Active,
             record.GrantedAtUtc,
             PlatformUserId.From(record.GrantedByUserIdentityId),
-            record.Source);
+            record.Source,
+            record.RevokedAtUtc,
+            record.RevokedByUserIdentityId is Guid revokedBy
+                ? PlatformUserId.From(revokedBy)
+                : null,
+            record.Reason);
 
     private static ProductLocalRoleGrantRecord ToRecord(ProductLocalRoleGrant grant) =>
         new()
@@ -120,8 +212,12 @@ internal sealed class ProductLocalRoleGrantRepository(PlatformDbContext db) : IP
             UserIdentityId = grant.UserIdentityId.Value,
             ProductCode = grant.ProductCode.ToLowerInvariant(),
             RoleCode = grant.RoleCode,
+            Status = grant.Status.ToString(),
             GrantedAtUtc = grant.GrantedAtUtc,
             GrantedByUserIdentityId = grant.GrantedByUserIdentityId.Value,
-            Source = grant.Source
+            Source = grant.Source,
+            RevokedAtUtc = grant.RevokedAtUtc,
+            RevokedByUserIdentityId = grant.RevokedByUserIdentityId?.Value,
+            Reason = grant.Reason
         };
 }

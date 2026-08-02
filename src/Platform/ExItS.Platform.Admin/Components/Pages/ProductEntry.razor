@@ -3,6 +3,7 @@
 @inject IPlatformApiClient Api
 @inject IStringLocalizer<AdminResources> L
 @inject IJSRuntime Js
+@inject NavigationManager Nav
 
 <PageTitle>@L["Brand_Name"] — @L["Nav_ProductEntry"]</PageTitle>
 
@@ -111,6 +112,14 @@
         _loadError = null;
         try
         {
+            var uri = new Uri(Nav.Uri);
+            if (Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query)
+                .TryGetValue("productCode", out var productFromQuery)
+                && !string.IsNullOrWhiteSpace(productFromQuery))
+            {
+                _productCode = productFromQuery.ToString();
+            }
+
             var me = await Api.GetAuthMeAsync();
             if (!me.IsSuccess || me.Data is null)
             {

@@ -103,6 +103,12 @@ public interface IPlatformApiClient
     Task<ApiCallResult<ProductAccessAssignmentDto>> GrantProductAccessAsync(Guid organizationId, GrantProductAccessRequest request, CancellationToken ct = default);
     Task<ApiCallResult<ProductAccessAssignmentDto>> RevokeProductAccessAsync(Guid assignmentId, RevokeProductAccessRequest request, CancellationToken ct = default);
     Task<ApiCallResult<EffectiveProductAccessResultDto>> EvaluateAccessAsync(Guid userId, Guid organizationId, string productCode, CancellationToken ct = default);
+    Task<ApiCallResult<IReadOnlyList<EnabledProductDto>>> GetEnabledProductsAsync(Guid organizationId, CancellationToken ct = default);
+    Task<ApiCallResult<ProductAuthorizationResultDto>> EvaluateProductAuthorizationAsync(Guid organizationId, string productCode, Guid? userId = null, CancellationToken ct = default);
+    Task<ApiCallResult<IReadOnlyList<ProductLocalRoleGrantDto>>> GetProductLocalRolesAsync(Guid organizationId, string? status = null, CancellationToken ct = default);
+    Task<ApiCallResult<ProductLocalRoleGrantDto>> AssignProductLocalRoleAsync(Guid organizationId, AssignProductLocalRoleRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<ProductLocalRoleGrantDto>> RevokeProductLocalRoleAsync(Guid organizationId, Guid grantId, RevokeProductLocalRoleRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<ProductLaunchResultDto>> LaunchProductAsync(Guid organizationId, string productCode, CancellationToken ct = default);
 
     Task<ApiCallResult<PagedResult<SubscriptionDto>>> GetOrganizationSubscriptionsAsync(Guid organizationId, string? status = null, int page = 1, int pageSize = 20, CancellationToken ct = default);
     Task<ApiCallResult<SubscriptionDto>> GetCurrentSubscriptionAsync(Guid organizationId, string productCode, CancellationToken ct = default);

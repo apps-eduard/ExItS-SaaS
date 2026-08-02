@@ -65,6 +65,60 @@ internal sealed class PlatformMembershipAuthz(
         return denied;
     }
 
+    /// <summary>
+    /// Active Organization membership in trusted selected organization context (any role),
+    /// or Platform ManageProductAccess / ManageMemberships.
+    /// </summary>
+    public async Task<IResult?> EnsureActiveOrganizationMemberAsync(
+        string actionCode,
+        string targetType,
+        string targetId,
+        Guid organizationId,
+        string? summary = null,
+        CancellationToken cancellationToken = default)
+    {
+        var denied = await authz.EnsureAsync(
+            PlatformPermission.ManageProductAccess,
+            actionCode,
+            targetType,
+            targetId,
+            organizationId,
+            summary: summary,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+        if (denied is null)
+        {
+            return null;
+        }
+
+        var manageDenied = await EnsureCanManageMembershipsAsync(
+            actionCode,
+            targetType,
+            targetId,
+            organizationId,
+            summary: summary,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+        if (manageDenied is null)
+        {
+            return null;
+        }
+
+        var actor = authz.CurrentActor;
+        if (actor.PlatformUserId is null
+            || actor.OrganizationId is null
+            || actor.OrganizationId.Value != organizationId)
+        {
+            return denied;
+        }
+
+        var membership = await memberships
+            .FindActiveByUserAndOrganizationAsync(
+                actor.PlatformUserId,
+                PlatformOrganizationId.From(organizationId),
+                cancellationToken)
+            .ConfigureAwait(false);
+        return membership is null ? denied : null;
+    }
+
     public async Task<(OrganizationRole? ActorMembershipRole, bool HasPlatformManageMemberships)> ResolveActorMembershipAuthorityAsync(
         Guid organizationId,
         CancellationToken cancellationToken = default)

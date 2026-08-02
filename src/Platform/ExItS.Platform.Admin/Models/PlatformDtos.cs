@@ -419,6 +419,69 @@ public sealed record EffectiveProductAccessResultDto(
     string? SubscriptionStatus = null,
     IReadOnlyList<string>? EnabledFeatureCodes = null);
 
+public sealed record EnabledProductDto(
+    string ProductCode,
+    string DisplayName,
+    bool EntitlementActive,
+    bool ProductAccessAssigned,
+    bool ProductLocalRoleGranted,
+    bool CanLaunch,
+    string? ProductLocalRoleCode,
+    string? MappedPosRoleCode,
+    string? SubscriptionStatus,
+    string ReasonCode);
+
+public sealed record ProductAuthorizationResultDto(
+    bool EntitlementAllowed,
+    bool ProductAccessAssigned,
+    bool ProductLocalRoleGranted,
+    bool CanOperate,
+    string ReasonCode,
+    Guid UserId,
+    Guid OrganizationId,
+    string ProductCode,
+    string? ProductLocalRoleCode,
+    string? MappedPosRoleCode,
+    Guid? MembershipId,
+    Guid? AssignmentId,
+    Guid? SubscriptionId,
+    Guid? SnapshotId,
+    Guid? ProductLocalRoleGrantId,
+    DateTimeOffset EvaluatedAtUtc,
+    string? SubscriptionStatus = null,
+    IReadOnlyList<string>? EnabledFeatureCodes = null);
+
+public sealed record ProductLocalRoleGrantDto(
+    Guid Id,
+    Guid OrganizationId,
+    Guid UserIdentityId,
+    string ProductCode,
+    string RoleCode,
+    string MappedPosRoleCode,
+    string Status,
+    DateTimeOffset GrantedAtUtc,
+    Guid GrantedByUserIdentityId,
+    string Source,
+    DateTimeOffset? RevokedAtUtc,
+    Guid? RevokedByUserIdentityId,
+    string? Reason);
+
+public sealed record AssignProductLocalRoleRequest(
+    Guid UserIdentityId,
+    string ProductCode,
+    string RoleCode,
+    string? Reason);
+
+public sealed record RevokeProductLocalRoleRequest(string? Reason);
+
+public sealed record ProductLaunchResultDto(
+    string ProductCode,
+    bool CanOperate,
+    string? ProductLocalRoleCode,
+    string? MappedPosRoleCode,
+    string LaunchPath,
+    string ReasonCode);
+
 public sealed record CreatePlatformUserRequest(string Username, string DisplayName, string Email);
 public sealed record UpdatePlatformUserRequest(string DisplayName, string Email);
 public sealed record LifecycleReasonRequest(string? Reason);

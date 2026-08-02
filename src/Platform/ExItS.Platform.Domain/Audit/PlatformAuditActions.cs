@@ -156,4 +156,8 @@ public static class PlatformAuditActions
     public const string UtangMigrationPreviewed = "platform.utang_migration.previewed";
     public const string UtangMigrationExecuted = "platform.utang_migration.executed";
     public const string ProductLocalRoleGranted = "platform.product_local_role.granted";
+    public const string ProductLocalRoleRevoked = "platform.product_local_role.revoked";
+    public const string EnabledProductsDiscovered = "platform.enabled_products.discovered";
+    public const string ProductAuthorizationChecked = "platform.product_authorization.checked";
+    public const string ProductLaunched = "platform.product.launched";
 }

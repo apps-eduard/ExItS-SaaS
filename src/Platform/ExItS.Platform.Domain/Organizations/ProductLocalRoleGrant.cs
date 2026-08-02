@@ -34,23 +34,85 @@ public sealed class ProductLocalRoleGrantId : IEquatable<ProductLocalRoleGrantId
     public override string ToString() => Value.ToString("D");
 }
 
+public enum ProductLocalRoleGrantStatus
+{
+    Active = 0,
+    Revoked = 1
+}
+
+/// <summary>
+/// Platform-recorded product-local role catalog and POS boundary mapping (WP09).
+/// Entitlement enables the product for the Organization; this grant authorizes operations.
+/// </summary>
+public static class ProductLocalRoleCodes
+{
+    public const string Owner = "Owner";
+    public const string Manager = "Manager";
+    public const string Cashier = "Cashier";
+    public const string Viewer = "Viewer";
+
+    /// <summary>Legacy alias used by Start a Business (WP08).</summary>
+    public const string PosOwnerRoleCode = Owner;
+
+    public static readonly IReadOnlyList<string> All = [Owner, Manager, Cashier, Viewer];
+
+    public static bool IsKnown(string? roleCode) =>
+        !string.IsNullOrWhiteSpace(roleCode)
+        && All.Contains(Normalize(roleCode), StringComparer.Ordinal);
+
+    public static string Normalize(string roleCode) => roleCode.Trim();
+
+    /// <summary>
+    /// Maps Platform product-local role codes onto PinoyBusinessPOS role codes for product DB sync.
+    /// </summary>
+    public static string MapToPosRoleCode(string roleCode) =>
+        Normalize(roleCode) switch
+        {
+            Owner => "Owner",
+            Manager => "StoreManager",
+            Cashier => "Cashier",
+            Viewer => "ReportingUser",
+            _ => throw new DomainException(
+                DomainErrorCodes.InvalidProductLocalRoleCode,
+                $"Unrecognized product-local role '{roleCode}'.")
+        };
+
+    public static string EnsureKnown(string roleCode)
+    {
+        var normalized = Normalize(roleCode);
+        if (!IsKnown(normalized))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidProductLocalRoleCode,
+                $"Unrecognized product-local role '{roleCode}'. Expected Owner, Manager, Cashier, or Viewer.");
+        }
+
+        return normalized;
+    }
+}
+
 /// <summary>
 /// Platform-recorded product-local role grant (e.g. POS Owner). Separate from Organization Owner and entitlement.
-/// Provisional until product DB consumes the grant (WP09).
+/// Consumed by product navigation and POS boundary sync (WP09).
 /// </summary>
 public sealed class ProductLocalRoleGrant
 {
-    public const string PosOwnerRoleCode = "Owner";
+    public const string PosOwnerRoleCode = ProductLocalRoleCodes.Owner;
     public const string StartBusinessSource = "StartBusiness";
+    public const string AssignmentSource = "Assignment";
 
     public ProductLocalRoleGrantId Id { get; }
     public PlatformOrganizationId OrganizationId { get; }
     public PlatformUserId UserIdentityId { get; }
     public string ProductCode { get; }
-    public string RoleCode { get; }
+    public string RoleCode { get; private set; }
+    public ProductLocalRoleGrantStatus Status { get; private set; }
     public DateTimeOffset GrantedAtUtc { get; }
     public PlatformUserId GrantedByUserIdentityId { get; }
     public string Source { get; }
+    public DateTimeOffset? RevokedAtUtc { get; private set; }
+    public PlatformUserId? RevokedByUserIdentityId { get; private set; }
+    public string? Reason { get; private set; }
 
     private ProductLocalRoleGrant(
         ProductLocalRoleGrantId id,
@@ -58,19 +120,29 @@ public sealed class ProductLocalRoleGrant
         PlatformUserId userIdentityId,
         string productCode,
         string roleCode,
+        ProductLocalRoleGrantStatus status,
         DateTimeOffset grantedAtUtc,
         PlatformUserId grantedByUserIdentityId,
-        string source)
+        string source,
+        DateTimeOffset? revokedAtUtc,
+        PlatformUserId? revokedByUserIdentityId,
+        string? reason)
     {
         Id = id;
         OrganizationId = organizationId;
         UserIdentityId = userIdentityId;
         ProductCode = productCode;
         RoleCode = roleCode;
+        Status = status;
         GrantedAtUtc = grantedAtUtc;
         GrantedByUserIdentityId = grantedByUserIdentityId;
         Source = source;
+        RevokedAtUtc = revokedAtUtc;
+        RevokedByUserIdentityId = revokedByUserIdentityId;
+        Reason = reason;
     }
+
+    public string MappedPosRoleCode => ProductLocalRoleCodes.MapToPosRoleCode(RoleCode);
 
     public static ProductLocalRoleGrant Create(
         PlatformOrganizationId organizationId,
@@ -91,11 +163,33 @@ public sealed class ProductLocalRoleGrant
             id ?? ProductLocalRoleGrantId.New(),
             organizationId,
             userIdentityId,
-            NormalizeCode(productCode, "Product code"),
-            NormalizeCode(roleCode, "Role code"),
+            NormalizeProductCode(productCode),
+            ProductLocalRoleCodes.EnsureKnown(roleCode),
+            ProductLocalRoleGrantStatus.Active,
             utcNow,
             grantedByUserIdentityId,
-            string.IsNullOrWhiteSpace(source) ? StartBusinessSource : source.Trim());
+            string.IsNullOrWhiteSpace(source) ? StartBusinessSource : source.Trim(),
+            revokedAtUtc: null,
+            revokedByUserIdentityId: null,
+            reason: null);
+    }
+
+    public void Revoke(PlatformUserId revokedByUserIdentityId, string? reason, DateTimeOffset utcNow)
+    {
+        ArgumentNullException.ThrowIfNull(revokedByUserIdentityId);
+        EnsureUtc(utcNow);
+
+        if (Status == ProductLocalRoleGrantStatus.Revoked)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidProductLocalRoleStatusTransition,
+                "Product-local role grant is already revoked.");
+        }
+
+        Status = ProductLocalRoleGrantStatus.Revoked;
+        RevokedAtUtc = utcNow;
+        RevokedByUserIdentityId = revokedByUserIdentityId;
+        Reason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
     }
 
     public static ProductLocalRoleGrant Rehydrate(
@@ -104,22 +198,38 @@ public sealed class ProductLocalRoleGrant
         PlatformUserId userIdentityId,
         string productCode,
         string roleCode,
+        ProductLocalRoleGrantStatus status,
         DateTimeOffset grantedAtUtc,
         PlatformUserId grantedByUserIdentityId,
-        string source) =>
-        new(id, organizationId, userIdentityId, productCode, roleCode, grantedAtUtc, grantedByUserIdentityId, source);
+        string source,
+        DateTimeOffset? revokedAtUtc = null,
+        PlatformUserId? revokedByUserIdentityId = null,
+        string? reason = null) =>
+        new(
+            id,
+            organizationId,
+            userIdentityId,
+            productCode,
+            roleCode,
+            status,
+            grantedAtUtc,
+            grantedByUserIdentityId,
+            source,
+            revokedAtUtc,
+            revokedByUserIdentityId,
+            reason);
 
-    private static string NormalizeCode(string value, string label)
+    private static string NormalizeProductCode(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            throw new DomainException(DomainErrorCodes.InvalidProductCode, $"{label} is required.");
+            throw new DomainException(DomainErrorCodes.InvalidProductCode, "Product code is required.");
         }
 
         var trimmed = value.Trim();
         if (trimmed.Length > 64)
         {
-            throw new DomainException(DomainErrorCodes.InvalidProductCode, $"{label} is invalid.");
+            throw new DomainException(DomainErrorCodes.InvalidProductCode, "Product code is invalid.");
         }
 
         return trimmed;

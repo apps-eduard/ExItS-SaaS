@@ -183,6 +183,8 @@
   <data name="Common_ClearFilters" xml:space="preserve"><value>Clear filters</value></data>
   <data name="Common_ViewDetails" xml:space="preserve"><value>View details</value></data>
   <data name="Common_All" xml:space="preserve"><value>All</value></data>
+  <data name="Common_Yes" xml:space="preserve"><value>Yes</value></data>
+  <data name="Common_No" xml:space="preserve"><value>No</value></data>
 
   <data name="State_Loading" xml:space="preserve"><value>Loading…</value></data>
   <data name="State_Empty" xml:space="preserve"><value>No records found.</value></data>
@@ -690,4 +692,29 @@
   <data name="Nav_SelectOrganization" xml:space="preserve"><value>Select organization</value></data>
   <data name="Nav_ComingSoon" xml:space="preserve"><value>Coming soon</value></data>
   <data name="OrgProductAccess_ReadOnlyHint" xml:space="preserve"><value>Product-access grants require ManageProductAccess. Organization admins can view and evaluate only.</value></data>
+  <data name="OrgEnabledProducts_Title" xml:space="preserve"><value>Enabled products</value></data>
+  <data name="OrgEnabledProducts_Description" xml:space="preserve"><value>Discover Organization-enabled products and launch only when entitlement and a product-local role are both present.</value></data>
+  <data name="OrgEnabledProducts_Warning" xml:space="preserve"><value>Entitlement enables the product for the Organization. A product-local role authorizes individual operations. Commercial product access alone does not grant POS Owner, Manager, Cashier, or Viewer. Operational POS navigation stays inside the product — not Organization Administration.</value></data>
+  <data name="OrgEnabledProducts_Loading" xml:space="preserve"><value>Loading enabled products…</value></data>
+  <data name="OrgEnabledProducts_Empty" xml:space="preserve"><value>No enabled products for this organization.</value></data>
+  <data name="OrgEnabledProducts_Unavailable" xml:space="preserve"><value>Enabled products unavailable</value></data>
+  <data name="OrgEnabledProducts_Entitlement" xml:space="preserve"><value>Entitlement</value></data>
+  <data name="OrgEnabledProducts_Assignment" xml:space="preserve"><value>Product access</value></data>
+  <data name="OrgEnabledProducts_Role" xml:space="preserve"><value>Product role</value></data>
+  <data name="OrgEnabledProducts_CanLaunch" xml:space="preserve"><value>Can launch</value></data>
+  <data name="OrgEnabledProducts_LaunchDenied" xml:space="preserve"><value>Launch denied</value></data>
+  <data name="OrgEnabledProducts_AssignRoleSection" xml:space="preserve"><value>Assign product-local role</value></data>
+  <data name="OrgEnabledProducts_RoleCode" xml:space="preserve"><value>Role</value></data>
+  <data name="OrgEnabledProducts_AssignRole" xml:space="preserve"><value>Assign role</value></data>
+  <data name="OrgEnabledProducts_LoadingRoles" xml:space="preserve"><value>Loading product-local roles…</value></data>
+  <data name="OrgEnabledProducts_RolesEmpty" xml:space="preserve"><value>No active product-local role grants.</value></data>
+  <data name="OrgEnabledProducts_RolesUnavailable" xml:space="preserve"><value>Product-local roles unavailable</value></data>
+  <data name="OrgEnabledProducts_RolesTitle" xml:space="preserve"><value>Product-local roles</value></data>
+  <data name="OrgEnabledProducts_MappedPosRole" xml:space="preserve"><value>Mapped POS role</value></data>
+  <data name="OrgEnabledProducts_RevokeRole" xml:space="preserve"><value>Revoke role</value></data>
+  <data name="OrgEnabledProducts_RevokeConfirm" xml:space="preserve"><value>Revoke this product-local role? The person will lose product operation access even if entitlement remains.</value></data>
+  <data name="OrgEnabledProducts_RevokeAuditReason" xml:space="preserve"><value>Revoked from Admin</value></data>
+  <data name="OrgEnabledProducts_ToastRoleAssigned" xml:space="preserve"><value>Product-local role assigned.</value></data>
+  <data name="OrgEnabledProducts_ToastRoleRevoked" xml:space="preserve"><value>Product-local role revoked.</value></data>
+  <data name="OrgEnabledProducts_InvalidUserId" xml:space="preserve"><value>Enter a valid user id (GUID).</value></data>
 </root>

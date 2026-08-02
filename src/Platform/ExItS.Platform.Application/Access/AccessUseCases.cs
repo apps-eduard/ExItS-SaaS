@@ -590,4 +590,404 @@ public static class EffectiveAccessReasonCodes
     public const string EntitlementMissing = "entitlement_missing";
     public const string EntitlementStale = "entitlement_stale";
     public const string EntitlementDenied = "entitlement_denied";
+    public const string ProductLocalRoleMissing = "product_local_role_missing";
+}
+
+/// <summary>
+/// Entitlement enables the Organization product; product-local role authorizes the individual to operate it.
+/// </summary>
+public sealed record ProductAuthorizationResult(
+    bool EntitlementAllowed,
+    bool ProductAccessAssigned,
+    bool ProductLocalRoleGranted,
+    bool CanOperate,
+    string ReasonCode,
+    Guid UserId,
+    Guid OrganizationId,
+    string ProductCode,
+    string? ProductLocalRoleCode,
+    string? MappedPosRoleCode,
+    Guid? MembershipId,
+    Guid? AssignmentId,
+    Guid? SubscriptionId,
+    Guid? SnapshotId,
+    Guid? ProductLocalRoleGrantId,
+    DateTimeOffset EvaluatedAtUtc,
+    string? SubscriptionStatus = null,
+    IReadOnlyList<string>? EnabledFeatureCodes = null);
+
+public sealed record EnabledProductDto(
+    string ProductCode,
+    string DisplayName,
+    bool EntitlementActive,
+    bool ProductAccessAssigned,
+    bool ProductLocalRoleGranted,
+    bool CanLaunch,
+    string? ProductLocalRoleCode,
+    string? MappedPosRoleCode,
+    string? SubscriptionStatus,
+    string ReasonCode);
+
+public sealed record ProductLocalRoleGrantDto(
+    Guid Id,
+    Guid OrganizationId,
+    Guid UserIdentityId,
+    string ProductCode,
+    string RoleCode,
+    string MappedPosRoleCode,
+    string Status,
+    DateTimeOffset GrantedAtUtc,
+    Guid GrantedByUserIdentityId,
+    string Source,
+    DateTimeOffset? RevokedAtUtc,
+    Guid? RevokedByUserIdentityId,
+    string? Reason);
+
+public sealed class EvaluateProductAuthorization
+{
+    private readonly EvaluateEffectiveProductAccess _commercial;
+    private readonly IProductLocalRoleGrantRepository _roleGrants;
+    private readonly IClock _clock;
+
+    public EvaluateProductAuthorization(
+        EvaluateEffectiveProductAccess commercial,
+        IProductLocalRoleGrantRepository roleGrants,
+        IClock clock)
+    {
+        _commercial = commercial;
+        _roleGrants = roleGrants;
+        _clock = clock;
+    }
+
+    public async Task<ProductAuthorizationResult> ExecuteAsync(
+        PlatformUserId userId,
+        PlatformOrganizationId organizationId,
+        string productCode,
+        CancellationToken cancellationToken = default)
+    {
+        var commercial = await _commercial
+            .ExecuteAsync(userId, organizationId, productCode, cancellationToken)
+            .ConfigureAwait(false);
+
+        var grant = await _roleGrants
+            .FindActiveByUserOrganizationProductAsync(
+                organizationId,
+                userId,
+                commercial.ProductCode,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        var roleGranted = grant is not null;
+        var entitlementAllowed = commercial.Allowed;
+        var canOperate = entitlementAllowed && roleGranted;
+        var reason = canOperate
+            ? EffectiveAccessReasonCodes.Allowed
+            : entitlementAllowed
+                ? EffectiveAccessReasonCodes.ProductLocalRoleMissing
+                : commercial.ReasonCode;
+
+        return new ProductAuthorizationResult(
+            EntitlementAllowed: entitlementAllowed,
+            ProductAccessAssigned: commercial.AssignmentId is not null,
+            ProductLocalRoleGranted: roleGranted,
+            CanOperate: canOperate,
+            ReasonCode: reason,
+            UserId: userId.Value,
+            OrganizationId: organizationId.Value,
+            ProductCode: commercial.ProductCode,
+            ProductLocalRoleCode: grant?.RoleCode,
+            MappedPosRoleCode: grant?.MappedPosRoleCode,
+            MembershipId: commercial.MembershipId,
+            AssignmentId: commercial.AssignmentId,
+            SubscriptionId: commercial.SubscriptionId,
+            SnapshotId: commercial.SnapshotId,
+            ProductLocalRoleGrantId: grant?.Id.Value,
+            EvaluatedAtUtc: _clock.UtcNow,
+            SubscriptionStatus: commercial.SubscriptionStatus,
+            EnabledFeatureCodes: commercial.EnabledFeatureCodes);
+    }
+}
+
+public sealed class DiscoverEnabledProducts
+{
+    private readonly IOrganizationMembershipRepository _memberships;
+    private readonly ISubscriptionRepository _subscriptions;
+    private readonly IProductRepository _products;
+    private readonly EvaluateProductAuthorization _authorize;
+
+    public DiscoverEnabledProducts(
+        IOrganizationMembershipRepository memberships,
+        ISubscriptionRepository subscriptions,
+        IProductRepository products,
+        EvaluateProductAuthorization authorize)
+    {
+        _memberships = memberships;
+        _subscriptions = subscriptions;
+        _products = products;
+        _authorize = authorize;
+    }
+
+    public async Task<ApplicationResult<IReadOnlyList<EnabledProductDto>>> ExecuteAsync(
+        PlatformUserId userId,
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var membership = await _memberships
+            .FindActiveByUserAndOrganizationAsync(userId, organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        if (membership is null)
+        {
+            return ApplicationResult<IReadOnlyList<EnabledProductDto>>.Failure(
+                ApplicationErrorCodes.MembershipNotFound,
+                "Active organization membership is required for product discovery.");
+        }
+
+        var (subscriptions, _) = await _subscriptions
+            .ListByOrganizationAsync(organizationId, status: null, skip: 0, take: 100, cancellationToken)
+            .ConfigureAwait(false);
+
+        var productCodes = subscriptions
+            .Select(s => s.ProductCode.Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(c => c, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var results = new List<EnabledProductDto>(productCodes.Count);
+        foreach (var code in productCodes)
+        {
+            var product = await _products.GetByCodeAsync(ProductCode.Create(code), cancellationToken)
+                .ConfigureAwait(false);
+            if (product is null || product.Status != ProductStatus.Active)
+            {
+                continue;
+            }
+
+            var auth = await _authorize
+                .ExecuteAsync(userId, organizationId, code, cancellationToken)
+                .ConfigureAwait(false);
+
+            // Org entitlement is "active" when commercial entry is allowed, or only individual grants are missing.
+            var entitlementActive = auth.EntitlementAllowed
+                || auth.ReasonCode is EffectiveAccessReasonCodes.ProductAssignmentMissing
+                    or EffectiveAccessReasonCodes.ProductLocalRoleMissing;
+
+            results.Add(new EnabledProductDto(
+                auth.ProductCode,
+                product.DisplayName,
+                EntitlementActive: entitlementActive,
+                ProductAccessAssigned: auth.ProductAccessAssigned,
+                ProductLocalRoleGranted: auth.ProductLocalRoleGranted,
+                CanLaunch: auth.CanOperate,
+                ProductLocalRoleCode: auth.ProductLocalRoleCode,
+                MappedPosRoleCode: auth.MappedPosRoleCode,
+                SubscriptionStatus: auth.SubscriptionStatus,
+                ReasonCode: auth.ReasonCode));
+        }
+
+        return ApplicationResult<IReadOnlyList<EnabledProductDto>>.Success(results);
+    }
+}
+
+public sealed class AssignProductLocalRole
+{
+    private readonly IPlatformUserRepository _users;
+    private readonly IPlatformOrganizationRepository _organizations;
+    private readonly IOrganizationMembershipRepository _memberships;
+    private readonly IProductRepository _products;
+    private readonly IProductLocalRoleGrantRepository _grants;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public AssignProductLocalRole(
+        IPlatformUserRepository users,
+        IPlatformOrganizationRepository organizations,
+        IOrganizationMembershipRepository memberships,
+        IProductRepository products,
+        IProductLocalRoleGrantRepository grants,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _users = users;
+        _organizations = organizations;
+        _memberships = memberships;
+        _products = products;
+        _grants = grants;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<ProductLocalRoleGrant>> ExecuteAsync(
+        PlatformOrganizationId organizationId,
+        PlatformUserId userIdentityId,
+        string productCode,
+        string roleCode,
+        PlatformUserId grantedByUserIdentityId,
+        string? reason = null,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await _users.GetByIdAsync(userIdentityId, cancellationToken).ConfigureAwait(false);
+        if (user is null || user.Status != AccountStatus.Active)
+        {
+            return ApplicationResult<ProductLocalRoleGrant>.Failure(
+                ApplicationErrorCodes.UserNotFound,
+                "Target user was not found or is inactive.");
+        }
+
+        var organization = await _organizations.GetByIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        if (organization is null || organization.Status != OrganizationStatus.Active)
+        {
+            return ApplicationResult<ProductLocalRoleGrant>.Failure(
+                ApplicationErrorCodes.OrganizationNotFound,
+                "Organization was not found or is inactive.");
+        }
+
+        var membership = await _memberships
+            .FindActiveByUserAndOrganizationAsync(userIdentityId, organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        if (membership is null)
+        {
+            return ApplicationResult<ProductLocalRoleGrant>.Failure(
+                ApplicationErrorCodes.MembershipNotFound,
+                "Active organization membership is required before assigning a product-local role.");
+        }
+
+        ProductCode code;
+        try
+        {
+            code = ProductCode.Create(productCode);
+            _ = ProductLocalRoleCodes.EnsureKnown(roleCode);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<ProductLocalRoleGrant>.Failure(ex.ErrorCode, ex.Message);
+        }
+
+        var product = await _products.GetByCodeAsync(code, cancellationToken).ConfigureAwait(false);
+        if (product is null || product.Status != ProductStatus.Active)
+        {
+            return ApplicationResult<ProductLocalRoleGrant>.Failure(
+                ApplicationErrorCodes.ProductNotFound,
+                "Product was not found or is inactive.");
+        }
+
+        var existing = await _grants
+            .FindActiveByUserOrganizationProductAsync(organizationId, userIdentityId, code.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (existing is not null)
+        {
+            if (string.Equals(existing.RoleCode, ProductLocalRoleCodes.EnsureKnown(roleCode), StringComparison.Ordinal))
+            {
+                return ApplicationResult<ProductLocalRoleGrant>.Failure(
+                    ApplicationErrorCodes.ProductLocalRoleGrantConflict,
+                    "An active product-local role grant already exists for this user and product.");
+            }
+
+            try
+            {
+                existing.Revoke(grantedByUserIdentityId, reason ?? "Replaced by new product-local role assignment.", _clock.UtcNow);
+                await _grants.UpdateAsync(existing, cancellationToken).ConfigureAwait(false);
+            }
+            catch (DomainException ex)
+            {
+                return ApplicationResult<ProductLocalRoleGrant>.Failure(ex.ErrorCode, ex.Message);
+            }
+        }
+
+        try
+        {
+            var grant = ProductLocalRoleGrant.Create(
+                organizationId,
+                userIdentityId,
+                code.Value,
+                roleCode,
+                grantedByUserIdentityId,
+                _clock.UtcNow,
+                ProductLocalRoleGrant.AssignmentSource);
+            await _grants.AddAsync(grant, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<ProductLocalRoleGrant>.Success(grant);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<ProductLocalRoleGrant>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class RevokeProductLocalRole
+{
+    private readonly IProductLocalRoleGrantRepository _grants;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public RevokeProductLocalRole(
+        IProductLocalRoleGrantRepository grants,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _grants = grants;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<ProductLocalRoleGrant>> ExecuteAsync(
+        ProductLocalRoleGrantId grantId,
+        PlatformUserId revokedByUserIdentityId,
+        string? reason = null,
+        CancellationToken cancellationToken = default)
+    {
+        var grant = await _grants.GetByIdAsync(grantId, cancellationToken).ConfigureAwait(false);
+        if (grant is null)
+        {
+            return ApplicationResult<ProductLocalRoleGrant>.Failure(
+                ApplicationErrorCodes.ProductLocalRoleGrantNotFound,
+                "Product-local role grant was not found.");
+        }
+
+        try
+        {
+            grant.Revoke(revokedByUserIdentityId, reason, _clock.UtcNow);
+            await _grants.UpdateAsync(grant, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<ProductLocalRoleGrant>.Success(grant);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<ProductLocalRoleGrant>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class ProductLocalRoleGrantQueryService
+{
+    private readonly IProductLocalRoleGrantRepository _grants;
+
+    public ProductLocalRoleGrantQueryService(IProductLocalRoleGrantRepository grants) => _grants = grants;
+
+    public async Task<IReadOnlyList<ProductLocalRoleGrantDto>> ListByOrganizationAsync(
+        Guid organizationId,
+        ProductLocalRoleGrantStatus? status = null,
+        CancellationToken cancellationToken = default)
+    {
+        var items = await _grants
+            .ListByOrganizationAsync(PlatformOrganizationId.From(organizationId), status, cancellationToken)
+            .ConfigureAwait(false);
+        return items.Select(Map).ToList();
+    }
+
+    public static ProductLocalRoleGrantDto Map(ProductLocalRoleGrant grant) =>
+        new(
+            grant.Id.Value,
+            grant.OrganizationId.Value,
+            grant.UserIdentityId.Value,
+            grant.ProductCode,
+            grant.RoleCode,
+            grant.MappedPosRoleCode,
+            grant.Status.ToString(),
+            grant.GrantedAtUtc,
+            grant.GrantedByUserIdentityId.Value,
+            grant.Source,
+            grant.RevokedAtUtc,
+            grant.RevokedByUserIdentityId?.Value,
+            grant.Reason);
 }

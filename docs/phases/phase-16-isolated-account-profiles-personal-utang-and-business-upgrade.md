@@ -22,7 +22,7 @@ The application remains **not production-ready**.
 | P16-WP06 | **Complete** | `6f85bd3fb324a93fc8eadf2f82426be0178b064e` | [report](../reports/P16-WP06-invitations-linking-reminders-notifications.md) |
 | P16-WP07 | **Complete** | `ae39e9f7084f44c6c5a9a5e598767fc91987feae` | [report](../reports/P16-WP07-organization-staff-customer-separation.md) |
 | P16-WP08 | **Complete** | `cb3f3585e07e6b0865df1a40175b9f5b99a22a78` | [report](../reports/P16-WP08-start-a-business-and-utang-migration.md) |
-| P16-WP09 | Not started | — | — |
+| P16-WP09 | **Complete** | `FEATURE_SHA` | [report](../reports/P16-WP09-product-access-and-navigation-integration.md) |
 | P16-WP10 | Not started | — | — |
 
 ---
@@ -181,7 +181,7 @@ Phase 16 does not:
 | P16-WP06 | Invitations, Linking, Reminders, and Notifications | **Complete** |
 | P16-WP07 | Organization Staff and Customer Separation | **Complete** |
 | P16-WP08 | Start a Business and Utang Migration | **Complete** |
-| P16-WP09 | Product Access and Navigation Integration | Not started |
+| P16-WP09 | Product Access and Navigation Integration | **Complete** |
 | P16-WP10 | Security, Privacy, UX Hardening, and Closeout | Not started |
 
 ---

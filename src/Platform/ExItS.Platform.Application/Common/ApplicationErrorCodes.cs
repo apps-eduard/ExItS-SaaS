@@ -142,5 +142,7 @@ public static class ApplicationErrorCodes
     public const string UtangMigrationConfirmationMismatch = "application.utang_migration.confirmation_mismatch";
     public const string UtangMigrationBatchNotFound = "application.utang_migration.batch_not_found";
     public const string ProductLocalRoleGrantConflict = "application.product_local_role.conflict";
+    public const string ProductLocalRoleGrantNotFound = "application.product_local_role.not_found";
+    public const string ProductLocalRoleMissing = "application.product_local_role.missing";
     public const string StartBusinessOwnerRequired = "application.start_business.owner_required";
 }

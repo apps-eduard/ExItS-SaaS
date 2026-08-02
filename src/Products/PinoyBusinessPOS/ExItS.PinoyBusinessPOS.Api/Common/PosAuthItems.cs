@@ -10,4 +10,6 @@ internal static class PosAuthItems
     public const string EnabledFeatureCodes = "PosAuth:EnabledFeatureCodes";
     public const string Denied = "PosAuth:Denied";
     public const string CommercialBound = "PosAuth:CommercialBound";
+    public const string ProductLocalRoleCode = "PosAuth:ProductLocalRoleCode";
+    public const string MappedPosRoleCode = "PosAuth:MappedPosRoleCode";
 }

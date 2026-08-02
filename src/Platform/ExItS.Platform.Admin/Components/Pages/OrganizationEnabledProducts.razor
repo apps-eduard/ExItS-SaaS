@@ -1,0 +1,367 @@
+@page "/admin/organizations/{OrganizationId:guid}/enabled-products"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IPlatformApiClient Api
+@inject ToastService Toasts
+@inject IStringLocalizer<AdminResources> L
+@inject PlatformPermissionState Permissions
+@inject AdminShellContext Shell
+@inject NavigationManager Nav
+
+@if (!Permissions.Loaded)
+{
+    <LoadingState />
+}
+else if (!CanAccessPage)
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ManageProductAccess" />
+}
+else
+{
+    <AdminPageHeader Title="@L["OrgEnabledProducts_Title"]"
+                     Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_SectionProducts"]} / {L["Nav_LaunchProduct"]}")"
+                     Description="@L["OrgEnabledProducts_Description"]" />
+    <div class="warning" role="note">@L["OrgEnabledProducts_Warning"]</div>
+
+    <p>
+        <a href="/admin/organizations/@OrganizationId">← @L["Common_BackToSummary"]</a>
+        ·
+        <a href="/admin/organizations/@OrganizationId/product-access">@L["Nav_MyProducts"]</a>
+    </p>
+
+    @if (!string.IsNullOrWhiteSpace(_formError))
+    {
+        <ErrorState Title="@L["Common_ActionFailed"]" Detail="@_formError" />
+    }
+
+    <AdminDataPanel IsLoading="@(_products is null)"
+                    HasError="@(_products is { IsSuccess: false })"
+                    IsEmpty="@(_products is { IsSuccess: true, Data.Count: 0 })"
+                    LoadingMessage="@L["OrgEnabledProducts_Loading"]"
+                    EmptyMessage="@L["OrgEnabledProducts_Empty"]"
+                    ErrorTitle="@L["OrgEnabledProducts_Unavailable"]"
+                    ErrorDetail="@_products?.Error?.Detail">
+        <AdminDataTable TItem="EnabledProductDto"
+                        Items="_products!.Data!"
+                        Columns="_productColumns"
+                        Caption="@L["OrgEnabledProducts_Title"]"
+                        ItemKey="p => p.ProductCode"
+                        CellTemplate="ProductCell"
+                        RowActions="ProductActions"
+                        ActionsHeader="@L["Common_Actions"]" />
+    </AdminDataPanel>
+
+    @if (CanManageRoles)
+    {
+        <FormSection Title="@L["OrgEnabledProducts_AssignRoleSection"]">
+            <div class="form-grid">
+                <FormField Label="@L["OrgMembers_UserId"]" FieldId="role-user" Required="true">
+                    <AdminInput @bind-Value="_roleUserId" Disabled="_busy" />
+                </FormField>
+                <FormField Label="@L["OrgProductAccess_ProductCode"]" FieldId="role-product" Required="true">
+                    <AdminInput @bind-Value="_roleProductCode" Placeholder="pinoy-business-pos" Disabled="_busy" />
+                </FormField>
+                <FormField Label="@L["OrgEnabledProducts_RoleCode"]" FieldId="role-code" Required="true">
+                    <select class="form-control" @bind="_roleCode" disabled="@_busy">
+                        <option value="Owner">Owner</option>
+                        <option value="Manager">Manager</option>
+                        <option value="Cashier">Cashier</option>
+                        <option value="Viewer">Viewer</option>
+                    </select>
+                </FormField>
+                <FormField Label="@L["Common_Reason"]" FieldId="role-reason">
+                    <AdminInput @bind-Value="_roleReason" Disabled="_busy" />
+                </FormField>
+            </div>
+            <FormActions PrimaryText="@L["OrgEnabledProducts_AssignRole"]" Busy="_busy" OnPrimary="AssignRoleAsync" />
+        </FormSection>
+
+        <AdminDataPanel IsLoading="@(_roles is null)"
+                        HasError="@(_roles is { IsSuccess: false })"
+                        IsEmpty="@(_roles is { IsSuccess: true, Data.Count: 0 })"
+                        LoadingMessage="@L["OrgEnabledProducts_LoadingRoles"]"
+                        EmptyMessage="@L["OrgEnabledProducts_RolesEmpty"]"
+                        ErrorTitle="@L["OrgEnabledProducts_RolesUnavailable"]"
+                        ErrorDetail="@_roles?.Error?.Detail">
+            <AdminDataTable TItem="ProductLocalRoleGrantDto"
+                            Items="_roles!.Data!"
+                            Columns="_roleColumns"
+                            Caption="@L["OrgEnabledProducts_RolesTitle"]"
+                            ItemKey="r => r.Id"
+                            CellTemplate="RoleCell"
+                            RowActions="RoleActions"
+                            ActionsHeader="@L["Common_Actions"]" />
+        </AdminDataPanel>
+    }
+}
+
+@if (_confirm is not null)
+{
+    <ConfirmDialog Visible="true"
+                   Title="@_confirm.Title"
+                   Message="@_confirm.Message"
+                   Kind="AdminDialogKind.Destructive"
+                   OnConfirm="RunConfirmAsync"
+                   OnCancel="ClearConfirm"
+                   Busy="_busy" />
+}
+
+@code {
+    [Parameter] public Guid OrganizationId { get; set; }
+
+    private ApiCallResult<IReadOnlyList<EnabledProductDto>>? _products;
+    private ApiCallResult<IReadOnlyList<ProductLocalRoleGrantDto>>? _roles;
+    private List<AdminColumnDefinition> _productColumns = new();
+    private List<AdminColumnDefinition> _roleColumns = new();
+    private string _roleUserId = "";
+    private string _roleProductCode = "pinoy-business-pos";
+    private string _roleCode = "Cashier";
+    private string _roleReason = "";
+    private string? _formError;
+    private bool _busy;
+    private ConfirmState? _confirm;
+
+    private bool CanAccessPage =>
+        Permissions.HasPermission(PlatformPermissionCodes.ManageProductAccess)
+        || (Shell.IsOrganizationShell
+            && Shell.SelectedOrganizationId == OrganizationId
+            && (IsOrgAdminMembership || Shell.SelectedOrganizationId is not null));
+
+    private bool CanManageRoles =>
+        Permissions.HasPermission(PlatformPermissionCodes.ManageMemberships)
+        || IsOrgAdminMembership;
+
+    private bool IsOrgAdminMembership =>
+        string.Equals(Shell.MembershipRole, "OrganizationOwner", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(Shell.MembershipRole, "OrganizationAdministrator", StringComparison.OrdinalIgnoreCase);
+
+    protected override void OnInitialized()
+    {
+        _productColumns =
+        [
+            new("product", L["Common_Product"], Primary: true),
+            new("entitlement", L["OrgEnabledProducts_Entitlement"]),
+            new("assignment", L["OrgEnabledProducts_Assignment"]),
+            new("role", L["OrgEnabledProducts_Role"]),
+            new("launch", L["OrgEnabledProducts_CanLaunch"]),
+            new("reason", L["Common_Reason"])
+        ];
+        _roleColumns =
+        [
+            new("user", L["Common_User"], Primary: true),
+            new("product", L["Common_Product"]),
+            new("role", L["OrgEnabledProducts_Role"]),
+            new("mapped", L["OrgEnabledProducts_MappedPosRole"]),
+            new("status", L["Common_Status"]),
+            new("granted", L["Common_GrantedUtc"])
+        ];
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await Permissions.EnsureLoadedAsync();
+        await Shell.EnsureLoadedAsync();
+        if (!CanAccessPage)
+        {
+            return;
+        }
+
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _products = await Api.GetEnabledProductsAsync(OrganizationId);
+        if (CanManageRoles)
+        {
+            _roles = await Api.GetProductLocalRolesAsync(OrganizationId, status: "Active");
+        }
+    }
+
+    private RenderFragment<(EnabledProductDto Item, AdminColumnDefinition Column)> ProductCell => ctx => b =>
+    {
+        switch (ctx.Column.Key)
+        {
+            case "product":
+                b.AddContent(0, $"{ctx.Item.DisplayName} ({ctx.Item.ProductCode})");
+                break;
+            case "entitlement":
+                b.AddContent(0, ctx.Item.EntitlementActive ? L["Common_Yes"] : L["Common_No"]);
+                break;
+            case "assignment":
+                b.AddContent(0, ctx.Item.ProductAccessAssigned ? L["Common_Yes"] : L["Common_No"]);
+                break;
+            case "role":
+                b.AddContent(0, ctx.Item.ProductLocalRoleCode ?? L["Common_EmDash"]);
+                break;
+            case "launch":
+                b.AddContent(0, ctx.Item.CanLaunch ? L["Common_Yes"] : L["Common_No"]);
+                break;
+            case "reason":
+                b.AddContent(0, ctx.Item.ReasonCode);
+                break;
+        }
+    };
+
+    private RenderFragment<EnabledProductDto> ProductActions => item => b =>
+    {
+        if (item.CanLaunch)
+        {
+            b.OpenElement(0, "button");
+            b.AddAttribute(1, "type", "button");
+            b.AddAttribute(2, "class", "btn-primary");
+            b.AddAttribute(3, "disabled", _busy);
+            b.AddAttribute(4, "onclick", EventCallback.Factory.Create(this, () => LaunchAsync(item.ProductCode)));
+            b.AddContent(5, L["Nav_LaunchProduct"]);
+            b.CloseElement();
+        }
+        else
+        {
+            b.OpenElement(0, "span");
+            b.AddAttribute(1, "class", "muted");
+            b.AddContent(2, L["OrgEnabledProducts_LaunchDenied"]);
+            b.CloseElement();
+        }
+    };
+
+    private RenderFragment<(ProductLocalRoleGrantDto Item, AdminColumnDefinition Column)> RoleCell => ctx => b =>
+    {
+        switch (ctx.Column.Key)
+        {
+            case "user":
+                b.AddContent(0, ctx.Item.UserIdentityId.ToString("D"));
+                break;
+            case "product":
+                b.AddContent(0, ctx.Item.ProductCode);
+                break;
+            case "role":
+                b.AddContent(0, ctx.Item.RoleCode);
+                break;
+            case "mapped":
+                b.AddContent(0, ctx.Item.MappedPosRoleCode);
+                break;
+            case "status":
+                b.OpenComponent<StatusBadge>(0);
+                b.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
+                b.CloseComponent();
+                break;
+            case "granted":
+                b.OpenComponent<UtcTimestamp>(0);
+                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.GrantedAtUtc);
+                b.CloseComponent();
+                break;
+        }
+    };
+
+    private RenderFragment<ProductLocalRoleGrantDto> RoleActions => item => b =>
+    {
+        if (!string.Equals(item.Status, "Active", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        b.OpenElement(0, "button");
+        b.AddAttribute(1, "type", "button");
+        b.AddAttribute(2, "class", "danger");
+        b.AddAttribute(3, "disabled", _busy);
+        b.AddAttribute(4, "onclick", EventCallback.Factory.Create(this, () =>
+            Ask(L["OrgEnabledProducts_RevokeRole"], L["OrgEnabledProducts_RevokeConfirm"], () => RevokeRoleAsync(item.Id))));
+        b.AddContent(5, L["OrgEnabledProducts_RevokeRole"]);
+        b.CloseElement();
+    };
+
+    private async Task LaunchAsync(string productCode)
+    {
+        _formError = null;
+        _busy = true;
+        try
+        {
+            var result = await Api.LaunchProductAsync(OrganizationId, productCode);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _formError = result.Error?.Detail ?? L["OrgEnabledProducts_LaunchDenied"];
+                return;
+            }
+
+            Nav.NavigateTo(result.Data.LaunchPath);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task AssignRoleAsync()
+    {
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        if (!Guid.TryParse(_roleUserId, out var userId))
+        {
+            _formError = L["OrgEnabledProducts_InvalidUserId"];
+            _busy = false;
+            return;
+        }
+
+        var result = await Api.AssignProductLocalRoleAsync(
+            OrganizationId,
+            new AssignProductLocalRoleRequest(userId, _roleProductCode.Trim(), _roleCode, _roleReason));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formError = result.Error?.Detail ?? result.Error?.Title;
+            return;
+        }
+
+        Toasts.Show(L["OrgEnabledProducts_ToastRoleAssigned"], ToastKind.Success);
+        await ReloadAsync();
+    }
+
+    private void Ask(string title, string message, Func<Task> action) =>
+        _confirm = new ConfirmState(title, message, action);
+
+    private async Task RunConfirmAsync()
+    {
+        if (_confirm is null)
+        {
+            return;
+        }
+
+        await _confirm.Action();
+    }
+
+    private Task ClearConfirm()
+    {
+        _confirm = null;
+        return Task.CompletedTask;
+    }
+
+    private async Task RevokeRoleAsync(Guid grantId)
+    {
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        var result = await Api.RevokeProductLocalRoleAsync(
+            OrganizationId,
+            grantId,
+            new RevokeProductLocalRoleRequest(L["OrgEnabledProducts_RevokeAuditReason"]));
+        _busy = false;
+        await ClearConfirm();
+        if (!result.IsSuccess)
+        {
+            _formError = result.Error?.Detail ?? result.Error?.Title;
+            return;
+        }
+
+        Toasts.Show(L["OrgEnabledProducts_ToastRoleRevoked"], ToastKind.Success);
+        await ReloadAsync();
+    }
+
+    private sealed record ConfirmState(string Title, string Message, Func<Task> Action);
+}

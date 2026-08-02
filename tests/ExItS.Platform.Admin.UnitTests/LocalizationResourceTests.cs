@@ -23,6 +23,8 @@ public sealed class LocalizationResourceTests
         "Nav_People",
         "Nav_AllUsers",
         "OrgProductAccess_ReadOnlyHint",
+        "OrgEnabledProducts_Title",
+        "OrgEnabledProducts_Warning",
         "Account_SignOut",
         "Nav_Entitlements",
         "Nav_Audit",

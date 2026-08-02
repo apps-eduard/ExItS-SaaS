@@ -211,6 +211,18 @@ public sealed class PlatformApiClient(
             request with { RevokedByActor = string.IsNullOrWhiteSpace(request.RevokedByActor) ? DevActor : request.RevokedByActor }, ct);
     public Task<ApiCallResult<EffectiveProductAccessResultDto>> EvaluateAccessAsync(Guid userId, Guid organizationId, string productCode, CancellationToken ct = default) =>
         GetAsync<EffectiveProductAccessResultDto>($"/api/v1/platform/access/evaluate?{Query(("userId", userId), ("organizationId", organizationId), ("productCode", productCode))}", ct);
+    public Task<ApiCallResult<IReadOnlyList<EnabledProductDto>>> GetEnabledProductsAsync(Guid organizationId, CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<EnabledProductDto>>($"/api/v1/organizations/{organizationId}/enabled-products", ct);
+    public Task<ApiCallResult<ProductAuthorizationResultDto>> EvaluateProductAuthorizationAsync(Guid organizationId, string productCode, Guid? userId = null, CancellationToken ct = default) =>
+        GetAsync<ProductAuthorizationResultDto>($"/api/v1/organizations/{organizationId}/product-authorization?{Query(("productCode", productCode), ("userId", userId))}", ct);
+    public Task<ApiCallResult<IReadOnlyList<ProductLocalRoleGrantDto>>> GetProductLocalRolesAsync(Guid organizationId, string? status = null, CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<ProductLocalRoleGrantDto>>($"/api/v1/organizations/{organizationId}/product-local-roles?{Query(("status", status))}", ct);
+    public Task<ApiCallResult<ProductLocalRoleGrantDto>> AssignProductLocalRoleAsync(Guid organizationId, AssignProductLocalRoleRequest request, CancellationToken ct = default) =>
+        SendAsync<ProductLocalRoleGrantDto>(HttpMethod.Post, $"/api/v1/organizations/{organizationId}/product-local-roles", request, ct);
+    public Task<ApiCallResult<ProductLocalRoleGrantDto>> RevokeProductLocalRoleAsync(Guid organizationId, Guid grantId, RevokeProductLocalRoleRequest request, CancellationToken ct = default) =>
+        SendAsync<ProductLocalRoleGrantDto>(HttpMethod.Post, $"/api/v1/organizations/{organizationId}/product-local-roles/{grantId}/revoke", request, ct);
+    public Task<ApiCallResult<ProductLaunchResultDto>> LaunchProductAsync(Guid organizationId, string productCode, CancellationToken ct = default) =>
+        SendAsync<ProductLaunchResultDto>(HttpMethod.Post, $"/api/v1/organizations/{organizationId}/products/{Escape(productCode)}/launch", null, ct);
 
     public Task<ApiCallResult<PagedResult<SubscriptionDto>>> GetOrganizationSubscriptionsAsync(Guid organizationId, string? status = null, int page = 1, int pageSize = 20, CancellationToken ct = default) =>
         GetAsync<PagedResult<SubscriptionDto>>($"/api/v1/platform/organizations/{organizationId}/subscriptions?{Query(("status", status), ("page", page), ("pageSize", pageSize))}", ct);

@@ -168,4 +168,8 @@ public static class DomainErrorCodes
         "platform.business_credit_opening_balance.id.invalid";
     public const string InvalidProductLocalRoleGrantId =
         "platform.product_local_role_grant.id.invalid";
+    public const string InvalidProductLocalRoleCode =
+        "platform.product_local_role.code.invalid";
+    public const string InvalidProductLocalRoleStatusTransition =
+        "platform.product_local_role.status.invalid_transition";
 }

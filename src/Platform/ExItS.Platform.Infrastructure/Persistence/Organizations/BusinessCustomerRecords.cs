@@ -85,7 +85,11 @@ internal sealed class ProductLocalRoleGrantRecord
     public Guid UserIdentityId { get; set; }
     public string ProductCode { get; set; } = string.Empty;
     public string RoleCode { get; set; } = string.Empty;
+    public string Status { get; set; } = "Active";
     public DateTimeOffset GrantedAtUtc { get; set; }
     public Guid GrantedByUserIdentityId { get; set; }
     public string Source { get; set; } = string.Empty;
+    public DateTimeOffset? RevokedAtUtc { get; set; }
+    public Guid? RevokedByUserIdentityId { get; set; }
+    public string? Reason { get; set; }
 }

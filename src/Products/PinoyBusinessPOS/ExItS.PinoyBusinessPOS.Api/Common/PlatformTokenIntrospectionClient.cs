@@ -21,14 +21,7 @@ internal sealed class PlatformTokenIntrospectionClient(
     {
         if (string.IsNullOrWhiteSpace(options.Value.BaseUrl))
         {
-            return new PlatformTokenIntrospectionResult(
-                Active: false,
-                UserId: null,
-                OrganizationId: null,
-                ProductCode: null,
-                ProductAccessAllowed: null,
-                SubscriptionStatus: null,
-                EnabledFeatureCodes: null);
+            return Inactive();
         }
 
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/platform/auth/introspect");
@@ -38,14 +31,7 @@ internal sealed class PlatformTokenIntrospectionClient(
         using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            return new PlatformTokenIntrospectionResult(
-                Active: false,
-                UserId: null,
-                OrganizationId: null,
-                ProductCode: null,
-                ProductAccessAllowed: null,
-                SubscriptionStatus: null,
-                EnabledFeatureCodes: null);
+            return Inactive();
         }
 
         var dto = await response.Content
@@ -54,14 +40,7 @@ internal sealed class PlatformTokenIntrospectionClient(
 
         if (dto is null)
         {
-            return new PlatformTokenIntrospectionResult(
-                Active: false,
-                UserId: null,
-                OrganizationId: null,
-                ProductCode: null,
-                ProductAccessAllowed: null,
-                SubscriptionStatus: null,
-                EnabledFeatureCodes: null);
+            return Inactive();
         }
 
         return new PlatformTokenIntrospectionResult(
@@ -71,8 +50,13 @@ internal sealed class PlatformTokenIntrospectionClient(
             dto.ProductCode,
             dto.ProductAccessAllowed,
             dto.SubscriptionStatus,
-            dto.EnabledFeatureCodes);
+            dto.EnabledFeatureCodes,
+            dto.ProductLocalRoleCode,
+            dto.MappedPosRoleCode);
     }
+
+    private static PlatformTokenIntrospectionResult Inactive() =>
+        new(false, null, null, null, null, null, null);
 
     private sealed record IntrospectionDto(
         bool Active,
@@ -81,5 +65,7 @@ internal sealed class PlatformTokenIntrospectionClient(
         string? ProductCode,
         bool? ProductAccessAllowed,
         string? SubscriptionStatus,
-        IReadOnlyList<string>? EnabledFeatureCodes);
+        IReadOnlyList<string>? EnabledFeatureCodes,
+        string? ProductLocalRoleCode,
+        string? MappedPosRoleCode);
 }

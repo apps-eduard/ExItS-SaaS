@@ -7,7 +7,9 @@ public sealed record PlatformTokenIntrospectionResult(
     string? ProductCode,
     bool? ProductAccessAllowed,
     string? SubscriptionStatus,
-    IReadOnlyList<string>? EnabledFeatureCodes);
+    IReadOnlyList<string>? EnabledFeatureCodes,
+    string? ProductLocalRoleCode = null,
+    string? MappedPosRoleCode = null);
 
 public interface IPlatformTokenIntrospectionClient
 {

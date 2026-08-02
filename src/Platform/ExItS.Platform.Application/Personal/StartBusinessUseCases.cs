@@ -284,7 +284,7 @@ public sealed class StartBusinessForPersonalUser
         if (request.AssignPosOwnerRole)
         {
             var existing = await _roleGrants
-                .FindAsync(organization.Id, userId, productCode, ProductLocalRoleGrant.PosOwnerRoleCode, cancellationToken)
+                .FindActiveByUserOrganizationProductAsync(organization.Id, userId, productCode, cancellationToken)
                 .ConfigureAwait(false);
             if (existing is null)
             {
@@ -310,7 +310,7 @@ public sealed class StartBusinessForPersonalUser
                     AuditOutcome.Succeeded,
                     organizationId: organization.Id,
                     productCode: ProductCode.Create(productCode),
-                    summary: "POS Owner product-local role recorded (provisional Platform grant).",
+                    summary: "POS Owner product-local role granted (Platform record; POS-mapped Owner).",
                     cancellationToken: cancellationToken).ConfigureAwait(false);
             }
             else

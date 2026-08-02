@@ -1438,12 +1438,17 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.UserIdentityId).HasColumnName("user_identity_id");
             entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(64).IsRequired();
             entity.Property(e => e.RoleCode).HasColumnName("role_code").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.GrantedAtUtc).HasColumnName("granted_at_utc");
             entity.Property(e => e.GrantedByUserIdentityId).HasColumnName("granted_by_user_identity_id");
             entity.Property(e => e.Source).HasColumnName("source").HasMaxLength(64).IsRequired();
-            entity.HasIndex(e => new { e.OrganizationId, e.UserIdentityId, e.ProductCode, e.RoleCode })
+            entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
+            entity.Property(e => e.RevokedByUserIdentityId).HasColumnName("revoked_by_user_identity_id");
+            entity.Property(e => e.Reason).HasColumnName("reason").HasMaxLength(512);
+            entity.HasIndex(e => new { e.OrganizationId, e.UserIdentityId, e.ProductCode })
                 .IsUnique()
-                .HasDatabaseName("ux_product_local_role_grants_org_user_product_role");
+                .HasDatabaseName("ux_product_local_role_grants_active_org_user_product")
+                .HasFilter("status = 'Active'");
 
             entity.HasOne<PlatformOrganizationRecord>()
                 .WithMany()

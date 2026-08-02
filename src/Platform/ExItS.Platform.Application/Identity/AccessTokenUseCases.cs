@@ -20,7 +20,7 @@ public sealed class IssuePlatformAccessToken
     private readonly IPlatformAuthSessionRepository _sessions;
     private readonly IOrganizationMembershipRepository _memberships;
     private readonly IPlatformOrganizationRepository _organizations;
-    private readonly EvaluateEffectiveProductAccess _evaluate;
+    private readonly EvaluateProductAuthorization _authorize;
     private readonly IPlatformPasswordHasher _hasher;
     private readonly IPlatformSessionTokenService _tokenService;
     private readonly IAuditWriter _auditWriter;
@@ -38,7 +38,7 @@ public sealed class IssuePlatformAccessToken
         IPlatformAuthSessionRepository sessions,
         IOrganizationMembershipRepository memberships,
         IPlatformOrganizationRepository organizations,
-        EvaluateEffectiveProductAccess evaluate,
+        EvaluateProductAuthorization authorize,
         IPlatformPasswordHasher hasher,
         IPlatformSessionTokenService tokenService,
         IAuditWriter auditWriter,
@@ -55,7 +55,7 @@ public sealed class IssuePlatformAccessToken
         _sessions = sessions;
         _memberships = memberships;
         _organizations = organizations;
-        _evaluate = evaluate;
+        _authorize = authorize;
         _hasher = hasher;
         _tokenService = tokenService;
         _auditWriter = auditWriter;
@@ -235,6 +235,8 @@ public sealed class IssuePlatformAccessToken
         string? orgName = null;
         bool? productAllowed = null;
         string? productReason = null;
+        string? productLocalRole = null;
+        string? mappedPosRole = null;
         string? normalizedProduct = string.IsNullOrWhiteSpace(productCode) ? null : productCode.Trim();
 
         if (organizationId is Guid requestedOrg)
@@ -270,16 +272,20 @@ public sealed class IssuePlatformAccessToken
 
             if (normalizedProduct is not null)
             {
-                var access = await _evaluate
+                var access = await _authorize
                     .ExecuteAsync(user.Id, orgId, normalizedProduct, cancellationToken)
                     .ConfigureAwait(false);
-                productAllowed = access.Allowed;
+                productAllowed = access.CanOperate;
                 productReason = access.ReasonCode;
-                if (!access.Allowed)
+                productLocalRole = access.ProductLocalRoleCode;
+                mappedPosRole = access.MappedPosRoleCode;
+                if (!access.CanOperate)
                 {
                     return ApplicationResult<PlatformAccessTokenIssueDto>.Failure(
                         ApplicationErrorCodes.ProductEntryDenied,
-                        "Product access is not allowed for this organization.");
+                        access.ReasonCode == EffectiveAccessReasonCodes.ProductLocalRoleMissing
+                            ? "Product-local role is required to operate this product."
+                            : "Product access is not allowed for this organization.");
                 }
             }
         }
@@ -292,16 +298,20 @@ public sealed class IssuePlatformAccessToken
         {
             orgId = PlatformOrganizationId.From(eligible[0].OrganizationId);
             orgName = eligible[0].DisplayName;
-            var access = await _evaluate
+            var access = await _authorize
                 .ExecuteAsync(user.Id, orgId, normalizedProduct, cancellationToken)
                 .ConfigureAwait(false);
-            productAllowed = access.Allowed;
+            productAllowed = access.CanOperate;
             productReason = access.ReasonCode;
-            if (!access.Allowed)
+            productLocalRole = access.ProductLocalRoleCode;
+            mappedPosRole = access.MappedPosRoleCode;
+            if (!access.CanOperate)
             {
                 return ApplicationResult<PlatformAccessTokenIssueDto>.Failure(
                     ApplicationErrorCodes.ProductEntryDenied,
-                    "Product access is not allowed for this organization.");
+                    access.ReasonCode == EffectiveAccessReasonCodes.ProductLocalRoleMissing
+                        ? "Product-local role is required to operate this product."
+                        : "Product access is not allowed for this organization.");
             }
         }
         else if (normalizedProduct is not null)
@@ -355,7 +365,9 @@ public sealed class IssuePlatformAccessToken
             eligible.Count,
             productAllowed,
             productReason,
-            mfa));
+            mfa,
+            productLocalRole,
+            mappedPosRole));
     }
 }
 
@@ -366,7 +378,7 @@ public sealed class BindPlatformAccessTokenProductContext
     private readonly IPlatformUserCredentialRepository _credentials;
     private readonly IOrganizationMembershipRepository _memberships;
     private readonly IPlatformOrganizationRepository _organizations;
-    private readonly EvaluateEffectiveProductAccess _evaluate;
+    private readonly EvaluateProductAuthorization _authorize;
     private readonly IPlatformSessionTokenService _tokenService;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
@@ -380,7 +392,7 @@ public sealed class BindPlatformAccessTokenProductContext
         IPlatformUserCredentialRepository credentials,
         IOrganizationMembershipRepository memberships,
         IPlatformOrganizationRepository organizations,
-        EvaluateEffectiveProductAccess evaluate,
+        EvaluateProductAuthorization authorize,
         IPlatformSessionTokenService tokenService,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
@@ -393,7 +405,7 @@ public sealed class BindPlatformAccessTokenProductContext
         _credentials = credentials;
         _memberships = memberships;
         _organizations = organizations;
-        _evaluate = evaluate;
+        _authorize = authorize;
         _tokenService = tokenService;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
@@ -443,14 +455,16 @@ public sealed class BindPlatformAccessTokenProductContext
                 "Active organization membership is required for organization context.");
         }
 
-        var access = await _evaluate
+        var access = await _authorize
             .ExecuteAsync(user.Id, orgId, productCode, cancellationToken)
             .ConfigureAwait(false);
-        if (!access.Allowed)
+        if (!access.CanOperate)
         {
             return ApplicationResult<PlatformAccessTokenIssueDto>.Failure(
                 ApplicationErrorCodes.ProductEntryDenied,
-                "Product access is not allowed for this organization.");
+                access.ReasonCode == EffectiveAccessReasonCodes.ProductLocalRoleMissing
+                    ? "Product-local role is required to operate this product."
+                    : "Product access is not allowed for this organization.");
         }
 
         try
@@ -494,7 +508,9 @@ public sealed class BindPlatformAccessTokenProductContext
             eligible.Count,
             true,
             access.ReasonCode,
-            mfa));
+            mfa,
+            access.ProductLocalRoleCode,
+            access.MappedPosRoleCode));
     }
 
     private async Task<ApplicationResult<(PlatformAccessToken Token, PlatformUser User)>> ResolveActiveTokenAsync(
@@ -546,7 +562,7 @@ public sealed class IntrospectPlatformAccessToken
     private readonly IPlatformUserCredentialRepository _credentials;
     private readonly IOrganizationMembershipRepository _memberships;
     private readonly IPlatformOrganizationRepository _organizations;
-    private readonly EvaluateEffectiveProductAccess _evaluate;
+    private readonly EvaluateProductAuthorization _authorize;
     private readonly IPlatformSessionTokenService _tokenService;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -558,7 +574,7 @@ public sealed class IntrospectPlatformAccessToken
         IPlatformUserCredentialRepository credentials,
         IOrganizationMembershipRepository memberships,
         IPlatformOrganizationRepository organizations,
-        EvaluateEffectiveProductAccess evaluate,
+        EvaluateProductAuthorization authorize,
         IPlatformSessionTokenService tokenService,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
@@ -569,7 +585,7 @@ public sealed class IntrospectPlatformAccessToken
         _credentials = credentials;
         _memberships = memberships;
         _organizations = organizations;
-        _evaluate = evaluate;
+        _authorize = authorize;
         _tokenService = tokenService;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -611,6 +627,8 @@ public sealed class IntrospectPlatformAccessToken
         string? reason = null;
         string? subscriptionStatus = null;
         IReadOnlyList<string>? features = null;
+        string? productLocalRole = null;
+        string? mappedPosRole = null;
 
         if (token.OrganizationId is not null)
         {
@@ -634,14 +652,16 @@ public sealed class IntrospectPlatformAccessToken
                 orgName = organization.DisplayName;
                 if (!string.IsNullOrWhiteSpace(token.ProductCode))
                 {
-                    var access = await _evaluate
+                    var access = await _authorize
                         .ExecuteAsync(user.Id, token.OrganizationId, token.ProductCode, cancellationToken)
                         .ConfigureAwait(false);
-                    allowed = access.Allowed;
+                    allowed = access.CanOperate;
                     reason = access.ReasonCode;
                     subscriptionStatus = access.SubscriptionStatus;
                     features = access.EnabledFeatureCodes;
-                    if (!access.Allowed)
+                    productLocalRole = access.ProductLocalRoleCode;
+                    mappedPosRole = access.MappedPosRoleCode;
+                    if (!access.CanOperate)
                     {
                         token.ClearProductContext();
                         await _tokens.UpdateAsync(token, cancellationToken).ConfigureAwait(false);
@@ -668,7 +688,9 @@ public sealed class IntrospectPlatformAccessToken
             reason,
             subscriptionStatus,
             features,
-            mfa);
+            mfa,
+            productLocalRole,
+            mappedPosRole);
     }
 
     private static PlatformAccessTokenIntrospectionDto Inactive() =>

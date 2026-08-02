@@ -61,7 +61,9 @@ public sealed record PlatformAccessTokenIssueDto(
     int ActiveOrganizationCount,
     bool? ProductAccessAllowed,
     string? ProductAccessReasonCode,
-    PlatformMfaReadinessDto? Mfa = null);
+    PlatformMfaReadinessDto? Mfa = null,
+    string? ProductLocalRoleCode = null,
+    string? MappedPosRoleCode = null);
 
 public sealed record PlatformAccessTokenIntrospectionDto(
     bool Active,
@@ -77,4 +79,6 @@ public sealed record PlatformAccessTokenIntrospectionDto(
     string? ProductAccessReasonCode,
     string? SubscriptionStatus,
     IReadOnlyList<string>? EnabledFeatureCodes,
-    PlatformMfaReadinessDto? Mfa = null);
+    PlatformMfaReadinessDto? Mfa = null,
+    string? ProductLocalRoleCode = null,
+    string? MappedPosRoleCode = null);

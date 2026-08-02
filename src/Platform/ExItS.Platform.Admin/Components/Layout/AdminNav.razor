@@ -186,9 +186,18 @@
                     @L["Nav_MyProducts"] <span class="exits-phase15-tag">@L["Nav_SelectOrganization"]</span>
                 </MenuItem>
             }
-            <MenuItem Key="launch-product" Disabled="true">
-                @L["Nav_LaunchProduct"] <span class="exits-phase15-tag">@L["Nav_ComingSoon"]</span>
-            </MenuItem>
+            @if (Shell.SelectedOrganizationId is Guid launchOrg)
+            {
+                <MenuItem Key="launch-product" RouterLink="@($"/admin/organizations/{launchOrg}/enabled-products")" Icon="rocket">
+                    @L["Nav_LaunchProduct"]
+                </MenuItem>
+            }
+            else
+            {
+                <MenuItem Key="launch-product" Disabled="true">
+                    @L["Nav_LaunchProduct"] <span class="exits-phase15-tag">@L["Nav_SelectOrganization"]</span>
+                </MenuItem>
+            }
         </SubMenu>
 
         <SubMenu Key="subscription" TitleTemplate="@SubscriptionTitle">
@@ -336,6 +345,7 @@
                 Shell.IsOrganizationShell
                     ? (string.Equals(tab, "invitations", StringComparison.OrdinalIgnoreCase) ? ["org-invitations"] : ["org-members"])
                     : ["org-users"],
+            var p when p.Contains("/enabled-products", StringComparison.Ordinal) => ["launch-product"],
             var p when p.Contains("/product-access", StringComparison.Ordinal) => Shell.IsOrganizationShell ? ["my-products"] : ["organizations"],
             var p when p.EndsWith("/branding", StringComparison.Ordinal) => ["branding"],
             var p when p.StartsWith("/admin/organizations", StringComparison.Ordinal) =>

@@ -116,6 +116,10 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("/admin/organization-users", File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "OrganizationUsers.razor")), StringComparison.Ordinal);
         Assert.Contains("organization-users", File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "AdminNav.razor")), StringComparison.Ordinal);
         Assert.Contains("Nav_SectionSettings", File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "AdminNav.razor")), StringComparison.Ordinal);
+        var nav = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "AdminNav.razor"));
+        Assert.Contains("enabled-products", nav, StringComparison.Ordinal);
+        Assert.Contains("launch-product", nav, StringComparison.Ordinal);
+        Assert.True(File.Exists(Path.Combine(pagesDir, "OrganizationEnabledProducts.razor")));
     }
 
     [Fact]
