@@ -25,6 +25,44 @@ public sealed class Phase16AccountSeedArchitectureTests
     }
 
     [Fact]
+    public void Local_validation_seed_removes_obsolete_phase16_identities_and_uses_exclusive_profiles()
+    {
+        var root = FindRepoRoot();
+        var init = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Application", "LocalValidation", "InitializeLocalValidationDataset.cs"));
+        Assert.Contains("CleanupObsoletePhase16SeedAsync", init, StringComparison.Ordinal);
+        Assert.Contains("ObsoletePhase16SeedIdentities", init, StringComparison.Ordinal);
+        Assert.Contains("exclusivePreferredClass: true", init, StringComparison.Ordinal);
+
+        var options = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Application", "LocalValidation", "LocalValidationOptions.cs"));
+        Assert.Contains("platform.admin1@exits.test", options, StringComparison.Ordinal);
+        Assert.Contains("personal.user2@exits.test", options, StringComparison.Ordinal);
+        Assert.Contains("phase16-seed-org", options, StringComparison.Ordinal);
+        Assert.Contains("AssignPlatformRole", options, StringComparison.Ordinal);
+        Assert.Contains("rafael.torres@exits.local", options, StringComparison.Ordinal);
+        Assert.Contains("PlatformSupport", options, StringComparison.Ordinal);
+
+        var ensure = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Application", "Identity", "AccountProfileUseCases.cs"));
+        Assert.Contains("exclusivePreferredClass", ensure, StringComparison.Ordinal);
+        Assert.Contains("automatic Personal companion", ensure, StringComparison.OrdinalIgnoreCase);
+
+        var repo = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Infrastructure", "Persistence", "Repositories", "PlatformUserRepository.cs"));
+        Assert.Contains("UserDirectoryFilter.Personal", repo, StringComparison.Ordinal);
+        Assert.Contains("accounttype", repo, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("updatedutc", repo, StringComparison.OrdinalIgnoreCase);
+
+        var usersPage = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Users.razor"));
+        Assert.Contains("@page \"/admin/users/personal\"", usersPage, StringComparison.Ordinal);
+        Assert.Contains("OnUsersTableChangeAsync", usersPage, StringComparison.Ordinal);
+        Assert.Contains("sortBy", usersPage, StringComparison.Ordinal);
+        Assert.Contains("ActionColumn", usersPage, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Support_session_is_not_implemented_in_platform_source()
     {
         var root = FindRepoRoot();

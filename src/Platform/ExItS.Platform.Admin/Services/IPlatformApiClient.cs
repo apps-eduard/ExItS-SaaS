@@ -76,7 +76,7 @@ public interface IPlatformApiClient
     Task<ApiCallResult<FeatureOverrideDto>> CreateFeatureOverrideAsync(Guid organizationId, string productCode, CreateFeatureOverrideRequest request, CancellationToken ct = default);
     Task<ApiCallResult<FeatureOverrideDto>> RevokeFeatureOverrideAsync(Guid overrideId, RevokeFeatureOverrideRequest request, CancellationToken ct = default);
 
-    Task<ApiCallResult<PagedResult<PlatformUserDto>>> GetUsersAsync(int page = 1, int pageSize = 20, string? status = null, string? search = null, string? directory = null, CancellationToken ct = default);
+    Task<ApiCallResult<PagedResult<PlatformUserDto>>> GetUsersAsync(int page = 1, int pageSize = 20, string? status = null, string? search = null, string? directory = null, string? sortBy = null, bool? sortDesc = null, CancellationToken ct = default);
     Task<ApiCallResult<PlatformUserDto>> GetUserAsync(Guid id, CancellationToken ct = default);
     Task<ApiCallResult<PlatformUserDto>> CreateUserAsync(CreatePlatformUserRequest request, CancellationToken ct = default);
     Task<ApiCallResult<PlatformUserDto>> UpdateUserAsync(Guid id, UpdatePlatformUserRequest request, CancellationToken ct = default);

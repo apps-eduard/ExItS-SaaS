@@ -126,7 +126,7 @@ public sealed class UseCaseTests
 
         var user = (await new CreatePlatformUser(users, uow, clock).ExecuteAsync("ada", "Ada Lovelace", "ada@example.com")).Value!;
         var org = (await new CreatePlatformOrganization(orgs, uow, clock).ExecuteAsync("Acme Group", "acme-group")).Value!;
-        var add = new AddOrganizationMembership(users, orgs, memberships, uow, clock);
+        var add = new AddOrganizationMembership(users, orgs, memberships, new EnsureAccountProfilesForUser(new InMemoryAccountProfileRepository(), new InMemoryPlatformRoleAssignmentRepository(), memberships, uow, clock), uow, clock);
 
         var first = await add.ExecuteAsync(org.Id, user.Id, OrganizationRole.OrganizationOwner);
         Assert.True(first.IsSuccess);
@@ -147,7 +147,7 @@ public sealed class UseCaseTests
         var clock = new FixedClock(T0);
         var org = (await new CreatePlatformOrganization(orgs, uow, clock).ExecuteAsync("Acme Group", "acme-group")).Value!;
 
-        var result = await new AddOrganizationMembership(users, orgs, memberships, uow, clock)
+        var result = await new AddOrganizationMembership(users, orgs, memberships, new EnsureAccountProfilesForUser(new InMemoryAccountProfileRepository(), new InMemoryPlatformRoleAssignmentRepository(), memberships, uow, clock), uow, clock)
             .ExecuteAsync(org.Id, PlatformUserId.New(), OrganizationRole.OrganizationMember);
 
         Assert.Equal(ApplicationErrorCodes.UserNotFound, result.ErrorCode);
@@ -166,10 +166,10 @@ public sealed class UseCaseTests
         var user = (await new CreatePlatformUser(users, uow, clock).ExecuteAsync("ada", "Ada Lovelace", "ada@example.com")).Value!;
         var owner = (await new CreatePlatformUser(users, uow, clock).ExecuteAsync("owner", "Org Owner", "owner@example.com")).Value!;
         var org = (await new CreatePlatformOrganization(orgs, uow, clock).ExecuteAsync("Acme Group", "acme-group")).Value!;
-        var ownerMembership = await new AddOrganizationMembership(users, orgs, memberships, uow, clock)
+        var ownerMembership = await new AddOrganizationMembership(users, orgs, memberships, new EnsureAccountProfilesForUser(new InMemoryAccountProfileRepository(), new InMemoryPlatformRoleAssignmentRepository(), memberships, uow, clock), uow, clock)
             .ExecuteAsync(org.Id, owner.Id, OrganizationRole.OrganizationOwner);
         Assert.True(ownerMembership.IsSuccess);
-        var membership = (await new AddOrganizationMembership(users, orgs, memberships, uow, clock)
+        var membership = (await new AddOrganizationMembership(users, orgs, memberships, new EnsureAccountProfilesForUser(new InMemoryAccountProfileRepository(), new InMemoryPlatformRoleAssignmentRepository(), memberships, uow, clock), uow, clock)
             .ExecuteAsync(org.Id, user.Id, OrganizationRole.OrganizationMember)).Value!;
 
         clock.UtcNow = T0.AddMinutes(1);

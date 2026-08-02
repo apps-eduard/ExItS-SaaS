@@ -42,6 +42,8 @@ internal sealed class PlatformUserRepository : IPlatformUserRepository
         AccountStatus? status,
         string? search,
         UserDirectoryFilter? directoryFilter,
+        string? sortBy,
+        bool sortDesc,
         int skip,
         int take,
         CancellationToken cancellationToken = default)
@@ -62,35 +64,163 @@ internal sealed class PlatformUserRepository : IPlatformUserRepository
                 || u.DisplayName.ToLower().Contains(term));
         }
 
+        var activeProfile = nameof(AccountStatus.Active);
+        var platformClass = nameof(AccountClass.Platform);
+        var organizationClass = nameof(AccountClass.Organization);
+        var personalClass = nameof(AccountClass.Personal);
+
         if (directoryFilter is UserDirectoryFilter.Unassigned)
         {
-            var removed = nameof(MembershipStatus.Removed);
-            query = query.Where(u => !_db.OrganizationMemberships.Any(m =>
-                m.UserId == u.Id && m.Status != removed));
+            query = query.Where(u => !_db.AccountProfiles.Any(p =>
+                p.UserIdentityId == u.Id && p.Status == activeProfile));
         }
         else if (directoryFilter is UserDirectoryFilter.Organization)
         {
-            var removed = nameof(MembershipStatus.Removed);
-            query = query.Where(u => _db.OrganizationMemberships.Any(m =>
-                m.UserId == u.Id && m.Status != removed));
+            query = query.Where(u => _db.AccountProfiles.Any(p =>
+                p.UserIdentityId == u.Id
+                && p.Status == activeProfile
+                && p.AccountClass == organizationClass));
         }
         else if (directoryFilter is UserDirectoryFilter.PlatformStaff)
         {
-            var active = nameof(PlatformRoleAssignmentStatus.Active);
-            query = query.Where(u =>
-                _db.PlatformRoleAssignments.Any(a => a.PlatformUserId == u.Id && a.Status == active)
-                || _db.PlatformCustomRoleAssignments.Any(a => a.PlatformUserId == u.Id && a.Status == active));
+            query = query.Where(u => _db.AccountProfiles.Any(p =>
+                p.UserIdentityId == u.Id
+                && p.Status == activeProfile
+                && p.AccountClass == platformClass));
         }
+        else if (directoryFilter is UserDirectoryFilter.Personal)
+        {
+            query = query.Where(u => _db.AccountProfiles.Any(p =>
+                p.UserIdentityId == u.Id
+                && p.Status == activeProfile
+                && p.AccountClass == personalClass));
+        }
+
+        query = ApplySort(query, sortBy, sortDesc);
 
         var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
         var records = await query
-            .OrderBy(u => u.NormalizedUsername)
             .Skip(skip)
             .Take(take)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
         return (records.Select(IdentityAccessEntityMapper.ToDomain).ToList(), total);
+    }
+
+    private IQueryable<PlatformUserRecord> ApplySort(
+        IQueryable<PlatformUserRecord> query,
+        string? sortBy,
+        bool sortDesc)
+    {
+        var sortKey = sortBy?.Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(sortKey))
+        {
+            return query.OrderBy(u => u.NormalizedUsername).ThenBy(u => u.Id);
+        }
+
+        var activeProfile = nameof(AccountStatus.Active);
+        var activeMembership = nameof(MembershipStatus.Active);
+        var platformClass = nameof(AccountClass.Platform);
+        var organizationClass = nameof(AccountClass.Organization);
+        var personalClass = nameof(AccountClass.Personal);
+
+        return sortKey switch
+        {
+            "displayname" => sortDesc
+                ? query.OrderByDescending(u => u.DisplayName).ThenBy(u => u.Id)
+                : query.OrderBy(u => u.DisplayName).ThenBy(u => u.Id),
+            "username" => sortDesc
+                ? query.OrderByDescending(u => u.NormalizedUsername).ThenBy(u => u.Id)
+                : query.OrderBy(u => u.NormalizedUsername).ThenBy(u => u.Id),
+            "email" => sortDesc
+                ? query.OrderByDescending(u => u.NormalizedEmail).ThenBy(u => u.Id)
+                : query.OrderBy(u => u.NormalizedEmail).ThenBy(u => u.Id),
+            "status" => sortDesc
+                ? query.OrderByDescending(u => u.Status).ThenBy(u => u.Id)
+                : query.OrderBy(u => u.Status).ThenBy(u => u.Id),
+            "updatedutc" => sortDesc
+                ? query.OrderByDescending(u => u.UpdatedAtUtc).ThenBy(u => u.Id)
+                : query.OrderBy(u => u.UpdatedAtUtc).ThenBy(u => u.Id),
+            "accounttype" => ApplyAccountTypeSort(query, activeProfile, platformClass, organizationClass, personalClass, sortDesc),
+            "organization" => ApplyOrganizationSort(query, activeMembership, sortDesc),
+            _ => query.OrderBy(u => u.NormalizedUsername).ThenBy(u => u.Id)
+        };
+    }
+
+    private IQueryable<PlatformUserRecord> ApplyAccountTypeSort(
+        IQueryable<PlatformUserRecord> query,
+        string activeProfile,
+        string platformClass,
+        string organizationClass,
+        string personalClass,
+        bool sortDesc)
+    {
+        if (sortDesc)
+        {
+            return query.OrderByDescending(u =>
+                    _db.AccountProfiles
+                        .Where(p => p.UserIdentityId == u.Id && p.Status == activeProfile)
+                        .Select(p => p.AccountClass == platformClass ? 0
+                            : p.AccountClass == organizationClass ? 1
+                            : p.AccountClass == personalClass ? 2
+                            : 99)
+                        .DefaultIfEmpty(99)
+                        .Min())
+                .ThenBy(u => u.Id);
+        }
+
+        return query.OrderBy(u =>
+                _db.AccountProfiles
+                    .Where(p => p.UserIdentityId == u.Id && p.Status == activeProfile)
+                    .Select(p => p.AccountClass == platformClass ? 0
+                        : p.AccountClass == organizationClass ? 1
+                        : p.AccountClass == personalClass ? 2
+                        : 99)
+                    .DefaultIfEmpty(99)
+                    .Min())
+            .ThenBy(u => u.Id);
+    }
+
+    private IQueryable<PlatformUserRecord> ApplyOrganizationSort(
+        IQueryable<PlatformUserRecord> query,
+        string activeMembership,
+        bool sortDesc)
+    {
+        if (sortDesc)
+        {
+            return query
+                .OrderByDescending(u =>
+                    _db.OrganizationMemberships
+                        .Where(m => m.UserId == u.Id && m.Status == activeMembership)
+                        .Join(
+                            _db.Organizations,
+                            m => m.OrganizationId,
+                            o => o.Id,
+                            (_, o) => o.DisplayName)
+                        .Any())
+                .ThenByDescending(u =>
+                    _db.OrganizationMemberships
+                        .Where(m => m.UserId == u.Id && m.Status == activeMembership)
+                        .Join(
+                            _db.Organizations,
+                            m => m.OrganizationId,
+                            o => o.Id,
+                            (_, o) => o.DisplayName)
+                        .Min())
+                .ThenBy(u => u.Id);
+        }
+
+        return query.OrderBy(u =>
+                _db.OrganizationMemberships
+                    .Where(m => m.UserId == u.Id && m.Status == activeMembership)
+                    .Join(
+                        _db.Organizations,
+                        m => m.OrganizationId,
+                        o => o.Id,
+                        (_, o) => o.DisplayName)
+                    .Min() ?? string.Empty)
+            .ThenBy(u => u.Id);
     }
 
     public async Task<IReadOnlyDictionary<Guid, PlatformUserDirectoryExtras>> GetDirectoryExtrasAsync(

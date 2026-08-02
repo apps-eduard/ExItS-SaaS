@@ -373,7 +373,7 @@ public sealed class ProductAccessUseCaseTests
                 .ExecuteAsync("ada", "Ada Lovelace", "ada@example.com")).Value!;
             var org = (await new CreatePlatformOrganization(orgs, uow, clock)
                 .ExecuteAsync("Acme Group", "acme-access")).Value!;
-            var membership = (await new AddOrganizationMembership(users, orgs, memberships, uow, clock)
+            var membership = (await new AddOrganizationMembership(users, orgs, memberships, new EnsureAccountProfilesForUser(new InMemoryAccountProfileRepository(), new InMemoryPlatformRoleAssignmentRepository(), memberships, uow, clock), uow, clock)
                 .ExecuteAsync(org.Id, user.Id, OrganizationRole.OrganizationMember)).Value!;
 
             var product = Product.Create(ProductCode.Create(ProductCode.PinoyBusinessPos), "PinoyBusinessPOS", T0);

@@ -173,7 +173,8 @@ public sealed class InitializePhase16AccountSeed
             throw new InvalidOperationException(roleResult.ErrorMessage ?? "Unable to assign Platform Administrator.");
         }
 
-        await _ensureProfiles.ExecuteAsync(user.Id, AccountClass.Platform, cancellationToken)
+        await _ensureProfiles
+            .ExecuteAsync(user.Id, AccountClass.Platform, exclusivePreferredClass: true, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -186,7 +187,8 @@ public sealed class InitializePhase16AccountSeed
     {
         var user = await EnsureUserAsync(username, displayName, email, password, cancellationToken)
             .ConfigureAwait(false);
-        await _ensureProfiles.ExecuteAsync(user.Id, AccountClass.Personal, cancellationToken)
+        await _ensureProfiles
+            .ExecuteAsync(user.Id, AccountClass.Personal, exclusivePreferredClass: true, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -219,7 +221,8 @@ public sealed class InitializePhase16AccountSeed
             }
         }
 
-        await _ensureProfiles.ExecuteAsync(user.Id, AccountClass.Organization, cancellationToken)
+        await _ensureProfiles
+            .ExecuteAsync(user.Id, AccountClass.Organization, exclusivePreferredClass: true, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
 

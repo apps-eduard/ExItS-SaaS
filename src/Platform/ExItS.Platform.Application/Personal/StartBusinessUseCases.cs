@@ -188,7 +188,7 @@ public sealed class StartBusinessForPersonalUser
         try
         {
             orgProfile = await _ensureProfiles
-                .ExecuteAsync(userId, AccountClass.Organization, cancellationToken)
+                .ExecuteAsync(userId, AccountClass.Organization, exclusivePreferredClass: false, cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (DomainException ex)

@@ -23,6 +23,8 @@ internal static class IdentityEndpoints
             string? status,
             string? search,
             string? directory,
+            string? sortBy,
+            bool? sortDesc,
             int? page,
             int? pageSize,
             PlatformUserQueryService queries,
@@ -62,7 +64,7 @@ internal static class IdentityEndpoints
                 {
                     return PlatformApiResults.Problem(
                         "platform.user.directory.invalid",
-                        $"Unrecognized directory filter '{directory}'. Use All, Unassigned, Organization, or PlatformStaff.",
+                        $"Unrecognized directory filter '{directory}'. Use All, Unassigned, Organization, PlatformStaff, or Personal.",
                         StatusCodes.Status400BadRequest);
                 }
 
@@ -70,7 +72,7 @@ internal static class IdentityEndpoints
             }
 
             var result = await queries
-                .ListAsync(parsed, search, page, pageSize, directoryFilter, ct)
+                .ListAsync(parsed, search, page, pageSize, directoryFilter, sortBy, sortDesc ?? false, ct)
                 .ConfigureAwait(false);
             return Results.Ok(result);
         });

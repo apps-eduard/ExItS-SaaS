@@ -5,12 +5,15 @@ using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Application.Personal;
 using ExItS.Platform.Application.Subscriptions;
+using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Personal;
 using ExItS.Platform.Domain.Products;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -51,14 +54,25 @@ public sealed class InitializeLocalValidationDataset
     private readonly IPlatformUserRepository _users;
     private readonly SetPlatformUserPassword _setPassword;
     private readonly EnsureAccountProfilesForUser _ensureProfiles;
+    private readonly IAccountProfileRepository _profiles;
     private readonly AssignPlatformRole _assignPlatformRole;
+    private readonly RevokePlatformRole _revokePlatformRole;
+    private readonly IPlatformRoleAssignmentRepository _roleAssignments;
     private readonly AddOrganizationMembership _addMembership;
+    private readonly ChangeOrganizationRole _changeMembershipRole;
+    private readonly RevokeOrganizationMembership _revokeMembership;
     private readonly IOrganizationMembershipRepository _memberships;
     private readonly GrantProductAccess _grantProductAccess;
+    private readonly RevokeProductAccess _revokeProductAccess;
     private readonly IProductAccessAssignmentRepository _accessAssignments;
+    private readonly DeactivatePlatformUser _deactivateUser;
+    private readonly IPersonalContactRepository _contacts;
+    private readonly IPersonalDebtRelationshipRepository _relationships;
     private readonly IPlanRepository _plans;
     private readonly ITrialDefinitionRepository _trials;
     private readonly ISubscriptionRepository _subscriptions;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
     private readonly ILogger<InitializeLocalValidationDataset> _logger;
 
     public InitializeLocalValidationDataset(
@@ -79,14 +93,25 @@ public sealed class InitializeLocalValidationDataset
         IPlatformUserRepository users,
         SetPlatformUserPassword setPassword,
         EnsureAccountProfilesForUser ensureProfiles,
+        IAccountProfileRepository profiles,
         AssignPlatformRole assignPlatformRole,
+        RevokePlatformRole revokePlatformRole,
+        IPlatformRoleAssignmentRepository roleAssignments,
         AddOrganizationMembership addMembership,
+        ChangeOrganizationRole changeMembershipRole,
+        RevokeOrganizationMembership revokeMembership,
         IOrganizationMembershipRepository memberships,
         GrantProductAccess grantProductAccess,
+        RevokeProductAccess revokeProductAccess,
         IProductAccessAssignmentRepository accessAssignments,
+        DeactivatePlatformUser deactivateUser,
+        IPersonalContactRepository contacts,
+        IPersonalDebtRelationshipRepository relationships,
         IPlanRepository plans,
         ITrialDefinitionRepository trials,
         ISubscriptionRepository subscriptions,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock,
         ILogger<InitializeLocalValidationDataset> logger)
     {
         _options = options.Value;
@@ -106,14 +131,25 @@ public sealed class InitializeLocalValidationDataset
         _users = users;
         _setPassword = setPassword;
         _ensureProfiles = ensureProfiles;
+        _profiles = profiles;
         _assignPlatformRole = assignPlatformRole;
+        _revokePlatformRole = revokePlatformRole;
+        _roleAssignments = roleAssignments;
         _addMembership = addMembership;
+        _changeMembershipRole = changeMembershipRole;
+        _revokeMembership = revokeMembership;
         _memberships = memberships;
         _grantProductAccess = grantProductAccess;
+        _revokeProductAccess = revokeProductAccess;
         _accessAssignments = accessAssignments;
+        _deactivateUser = deactivateUser;
+        _contacts = contacts;
+        _relationships = relationships;
         _plans = plans;
         _trials = trials;
         _subscriptions = subscriptions;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
         _logger = logger;
     }
 
@@ -132,6 +168,8 @@ public sealed class InitializeLocalValidationDataset
 
         _logger.LogInformation("Local validation dataset initialization starting.");
 
+        await CleanupObsoletePhase16SeedAsync(cancellationToken).ConfigureAwait(false);
+
         var productCode = ProductCode.PinoyBusinessPos;
         var organizations = new Dictionary<string, PlatformOrganization>(StringComparer.OrdinalIgnoreCase);
         foreach (var orgDef in LocalValidationOrganizationCatalog.All)
@@ -146,42 +184,284 @@ public sealed class InitializeLocalValidationDataset
             var user = await EnsureUserAsync(identity, cancellationToken).ConfigureAwait(false);
             await EnsurePasswordAsync(user.Id.Value, cancellationToken).ConfigureAwait(false);
 
-            if (identity.AssignPlatformAdministrator)
-            {
-                await EnsurePlatformAdminAsync(user.Id.Value, cancellationToken).ConfigureAwait(false);
-            }
-
-            if (identity.HasOrganizationMembership
-                && identity.OrganizationRole is not null
-                && !string.IsNullOrWhiteSpace(identity.OrganizationSlug))
-            {
-                if (!organizations.TryGetValue(identity.OrganizationSlug, out var organization))
-                {
-                    throw new InvalidOperationException(
-                        $"Local validation identity '{identity.Key}' references unknown organization '{identity.OrganizationSlug}'.");
-                }
-
-                var role = identity.OrganizationRole.Value switch
-                {
-                    OrganizationMembershipValidationRole.OrganizationOwner => OrganizationRole.OrganizationOwner,
-                    OrganizationMembershipValidationRole.OrganizationAdministrator => OrganizationRole.OrganizationAdministrator,
-                    _ => OrganizationRole.OrganizationMember
-                };
-                await EnsureMembershipAsync(organization.Id, user.Id, role, cancellationToken).ConfigureAwait(false);
-
-                if (identity.GrantPosProductAccess)
-                {
-                    await EnsureProductAccessAsync(organization.Id, user.Id, productCode, cancellationToken)
-                        .ConfigureAwait(false);
-                }
-            }
+            await ReconcilePlatformRolesAsync(user.Id, identity, cancellationToken).ConfigureAwait(false);
+            await ReconcileOrganizationAccessAsync(user.Id, identity, organizations, productCode, cancellationToken)
+                .ConfigureAwait(false);
 
             await _ensureProfiles
-                .ExecuteAsync(user.Id, identity.PreferredAccountClass, cancellationToken)
+                .ExecuteAsync(
+                    user.Id,
+                    identity.PreferredAccountClass,
+                    exclusivePreferredClass: true,
+                    cancellationToken)
                 .ConfigureAwait(false);
         }
 
         _logger.LogInformation("Local validation dataset initialization completed.");
+    }
+
+    private async Task CleanupObsoletePhase16SeedAsync(CancellationToken ct)
+    {
+        var seen = new HashSet<Guid>();
+        foreach (var email in ObsoletePhase16SeedIdentities.NormalizedEmails)
+        {
+            var user = await _users.GetByNormalizedEmailAsync(email, ct).ConfigureAwait(false);
+            if (user is not null && seen.Add(user.Id.Value))
+            {
+                await DecommissionObsoleteUserAsync(user, ct).ConfigureAwait(false);
+            }
+        }
+
+        foreach (var username in ObsoletePhase16SeedIdentities.NormalizedUsernames)
+        {
+            var user = await _users.GetByNormalizedUsernameAsync(username, ct).ConfigureAwait(false);
+            if (user is not null && seen.Add(user.Id.Value))
+            {
+                await DecommissionObsoleteUserAsync(user, ct).ConfigureAwait(false);
+            }
+        }
+
+        var seedOrg = await _organizations.GetBySlugAsync(ObsoletePhase16SeedIdentities.SeedOrgSlug, ct)
+            .ConfigureAwait(false);
+        if (seedOrg is not null && seedOrg.Status == OrganizationStatus.Active)
+        {
+            seedOrg.Close(_clock.UtcNow);
+            await _organizations.UpdateAsync(seedOrg, ct).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
+            _logger.LogInformation(
+                "Closed obsolete Phase16 seed organization '{Slug}'.",
+                ObsoletePhase16SeedIdentities.SeedOrgSlug);
+        }
+    }
+
+    private async Task DecommissionObsoleteUserAsync(PlatformUser user, CancellationToken ct)
+    {
+        _logger.LogInformation(
+            "Removing obsolete Phase16 seed identity {Username} ({Email}).",
+            user.Username,
+            user.NormalizedEmail);
+
+        var utcNow = _clock.UtcNow;
+        foreach (var profile in await _profiles.ListByUserAsync(user.Id, ct).ConfigureAwait(false))
+        {
+            if (!profile.IsActive)
+            {
+                continue;
+            }
+
+            profile.Deactivate(utcNow);
+            await _profiles.UpdateAsync(profile, ct).ConfigureAwait(false);
+        }
+
+        await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
+
+        var roles = await _roleAssignments.ListActiveByUserAsync(user.Id, ct).ConfigureAwait(false);
+        foreach (var role in roles)
+        {
+            var revoke = await _revokePlatformRole
+                .ExecuteAsync(
+                    role.Id.Value,
+                    LocalValidationOptions.Actor,
+                    AuditActorType.System,
+                    reason: "obsolete phase16 seed cleanup",
+                    cancellationToken: ct)
+                .ConfigureAwait(false);
+            if (!revoke.IsSuccess
+                && revoke.ErrorCode != ApplicationErrorCodes.LastPlatformAdministratorProtected)
+            {
+                _logger.LogWarning(
+                    "Could not revoke platform role {Role} for obsolete user {UserId}: {Code}",
+                    role.Role,
+                    user.Id.Value,
+                    revoke.ErrorCode);
+            }
+        }
+
+        var (memberships, _) = await _memberships
+            .ListByUserAsync(user.Id, MembershipStatus.Active, skip: 0, take: 200, ct)
+            .ConfigureAwait(false);
+        foreach (var membership in memberships)
+        {
+            await _revokeMembership
+                .ExecuteAsync(membership.Id, reason: "obsolete phase16 seed cleanup", actorReference: LocalValidationOptions.Actor, cancellationToken: ct)
+                .ConfigureAwait(false);
+        }
+
+        var (accessItems, _) = await _accessAssignments
+            .ListByUserAsync(user.Id, ProductAccessStatus.Active, skip: 0, take: 200, ct)
+            .ConfigureAwait(false);
+        foreach (var access in accessItems)
+        {
+            await _revokeProductAccess
+                .ExecuteAsync(access.Id, LocalValidationOptions.Actor, "obsolete phase16 seed cleanup", ct)
+                .ConfigureAwait(false);
+        }
+
+        var contacts = await _contacts.ListByOwnerAsync(user.Id, ct).ConfigureAwait(false);
+        foreach (var contact in contacts.Where(c => c.Status != PersonalContactStatus.Archived))
+        {
+            contact.Archive(utcNow);
+            await _contacts.UpdateAsync(contact, ct).ConfigureAwait(false);
+        }
+
+        var relationships = await _relationships.ListForUserAsync(user.Id, ct).ConfigureAwait(false);
+        foreach (var relationship in relationships.Where(r => r.Status != PersonalDebtRelationshipStatus.Archived))
+        {
+            relationship.Archive(utcNow);
+            await _relationships.UpdateAsync(relationship, ct).ConfigureAwait(false);
+        }
+
+        await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
+
+        if (user.Status != AccountStatus.Deactivated)
+        {
+            var deactivated = await _deactivateUser.ExecuteAsync(user.Id, ct).ConfigureAwait(false);
+            if (!deactivated.IsSuccess)
+            {
+                _logger.LogWarning(
+                    "Could not deactivate obsolete user {UserId}: {Code}",
+                    user.Id.Value,
+                    deactivated.ErrorCode);
+            }
+        }
+    }
+
+    private async Task ReconcilePlatformRolesAsync(
+        PlatformUserId userId,
+        LocalValidationIdentityDefinition identity,
+        CancellationToken ct)
+    {
+        var active = await _roleAssignments.ListActiveByUserAsync(userId, ct).ConfigureAwait(false);
+        var desired = identity.AssignPlatformRole;
+
+        foreach (var assignment in active)
+        {
+            if (desired is PlatformSystemRole wanted && assignment.Role == wanted && assignment.OrganizationId is null)
+            {
+                continue;
+            }
+
+            var revoke = await _revokePlatformRole
+                .ExecuteAsync(
+                    assignment.Id.Value,
+                    LocalValidationOptions.Actor,
+                    AuditActorType.System,
+                    reason: "local-validation single-scope reconcile",
+                    cancellationToken: ct)
+                .ConfigureAwait(false);
+            if (!revoke.IsSuccess
+                && revoke.ErrorCode != ApplicationErrorCodes.LastPlatformAdministratorProtected)
+            {
+                throw new InvalidOperationException(
+                    $"Local validation platform role revoke failed: {revoke.ErrorCode} {revoke.ErrorMessage}");
+            }
+        }
+
+        if (desired is PlatformSystemRole role)
+        {
+            await EnsurePlatformRoleAsync(userId.Value, role, ct).ConfigureAwait(false);
+        }
+    }
+
+    private async Task ReconcileOrganizationAccessAsync(
+        PlatformUserId userId,
+        LocalValidationIdentityDefinition identity,
+        IReadOnlyDictionary<string, PlatformOrganization> organizations,
+        string productCode,
+        CancellationToken ct)
+    {
+        var (memberships, _) = await _memberships
+            .ListByUserAsync(userId, MembershipStatus.Active, skip: 0, take: 200, ct)
+            .ConfigureAwait(false);
+
+        Guid? desiredOrgId = null;
+        OrganizationRole? desiredRole = null;
+        if (identity.HasOrganizationMembership
+            && identity.OrganizationRole is not null
+            && !string.IsNullOrWhiteSpace(identity.OrganizationSlug))
+        {
+            if (!organizations.TryGetValue(identity.OrganizationSlug, out var organization))
+            {
+                throw new InvalidOperationException(
+                    $"Local validation identity '{identity.Key}' references unknown organization '{identity.OrganizationSlug}'.");
+            }
+
+            desiredOrgId = organization.Id.Value;
+            desiredRole = identity.OrganizationRole.Value switch
+            {
+                OrganizationMembershipValidationRole.OrganizationOwner => OrganizationRole.OrganizationOwner,
+                OrganizationMembershipValidationRole.OrganizationAdministrator => OrganizationRole.OrganizationAdministrator,
+                _ => OrganizationRole.OrganizationMember
+            };
+        }
+
+        foreach (var membership in memberships)
+        {
+            if (desiredOrgId is Guid orgId && membership.OrganizationId.Value == orgId)
+            {
+                if (desiredRole is OrganizationRole role && membership.Role != role)
+                {
+                    var changed = await _changeMembershipRole
+                        .ExecuteAsync(membership.Id, role, LocalValidationOptions.Actor, cancellationToken: ct)
+                        .ConfigureAwait(false);
+                    if (!changed.IsSuccess)
+                    {
+                        throw new InvalidOperationException(
+                            $"Local validation membership role change failed: {changed.ErrorCode} {changed.ErrorMessage}");
+                    }
+                }
+
+                continue;
+            }
+
+            var revoked = await _revokeMembership
+                .ExecuteAsync(
+                    membership.Id,
+                    reason: "local-validation single-scope reconcile",
+                    actorReference: LocalValidationOptions.Actor,
+                    cancellationToken: ct)
+                .ConfigureAwait(false);
+            if (!revoked.IsSuccess)
+            {
+                throw new InvalidOperationException(
+                    $"Local validation membership revoke failed: {revoked.ErrorCode} {revoked.ErrorMessage}");
+            }
+        }
+
+        if (desiredOrgId is Guid ensureOrgId && desiredRole is OrganizationRole ensureRole)
+        {
+            var org = organizations.Values.First(o => o.Id.Value == ensureOrgId);
+            await EnsureMembershipAsync(org.Id, userId, ensureRole, ct).ConfigureAwait(false);
+
+            if (identity.GrantPosProductAccess)
+            {
+                await EnsureProductAccessAsync(org.Id, userId, productCode, ct).ConfigureAwait(false);
+            }
+            else
+            {
+                var access = await _accessAssignments
+                    .FindActiveByUserOrganizationProductAsync(userId, org.Id, ProductCode.Create(productCode), ct)
+                    .ConfigureAwait(false);
+                if (access is not null)
+                {
+                    await _revokeProductAccess
+                        .ExecuteAsync(access.Id, LocalValidationOptions.Actor, "local-validation single-scope reconcile", ct)
+                        .ConfigureAwait(false);
+                }
+            }
+        }
+        else
+        {
+            var (accessItems, _) = await _accessAssignments
+                .ListByUserAsync(userId, ProductAccessStatus.Active, skip: 0, take: 200, ct)
+                .ConfigureAwait(false);
+            foreach (var access in accessItems)
+            {
+                await _revokeProductAccess
+                    .ExecuteAsync(access.Id, LocalValidationOptions.Actor, "local-validation single-scope reconcile", ct)
+                    .ConfigureAwait(false);
+            }
+        }
     }
 
     private async Task<PlatformOrganization> EnsureOrganizationAsync(
@@ -199,7 +479,6 @@ public sealed class InitializeLocalValidationDataset
             .ConfigureAwait(false);
         if (!created.IsSuccess || created.Value is null)
         {
-            // Race: reload by slug
             existing = await _organizations.GetBySlugAsync(orgDef.Slug, ct).ConfigureAwait(false);
             if (existing is not null)
             {
@@ -419,11 +698,11 @@ public sealed class InitializeLocalValidationDataset
         }
     }
 
-    private async Task EnsurePlatformAdminAsync(Guid userId, CancellationToken ct)
+    private async Task EnsurePlatformRoleAsync(Guid userId, PlatformSystemRole role, CancellationToken ct)
     {
         var result = await _assignPlatformRole.ExecuteAsync(
             userId,
-            PlatformSystemRole.PlatformAdministrator,
+            role,
             organizationId: null,
             actorIdentifier: LocalValidationOptions.Actor,
             actorType: AuditActorType.System,
@@ -433,7 +712,7 @@ public sealed class InitializeLocalValidationDataset
         if (!result.IsSuccess && result.ErrorCode != ApplicationErrorCodes.RoleAssignmentConflict)
         {
             throw new InvalidOperationException(
-                $"Local validation PlatformAdministrator assign failed: {result.ErrorCode} {result.ErrorMessage}");
+                $"Local validation {role} assign failed: {result.ErrorCode} {result.ErrorMessage}");
         }
     }
 
@@ -448,6 +727,18 @@ public sealed class InitializeLocalValidationDataset
             .ConfigureAwait(false);
         if (existing is not null)
         {
+            if (existing.Role != role)
+            {
+                var changed = await _changeMembershipRole
+                    .ExecuteAsync(existing.Id, role, LocalValidationOptions.Actor, cancellationToken: ct)
+                    .ConfigureAwait(false);
+                if (!changed.IsSuccess)
+                {
+                    throw new InvalidOperationException(
+                        $"Local validation membership role change failed: {changed.ErrorCode} {changed.ErrorMessage}");
+                }
+            }
+
             return;
         }
 

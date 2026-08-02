@@ -33,7 +33,7 @@ public sealed class AdminDashboardRefactoringTests
 
         foreach (var (file, markers) in new (string, string[])[]
                  {
-                     ("Users.razor", ["<Table", "RemoteDataSource", "GetUsersAsync", "OnPageIndexChange"]),
+                     ("Users.razor", ["<Table", "RemoteDataSource", "GetUsersAsync", "OnChange"]),
                      ("Organizations.razor", ["<Table", "RemoteDataSource", "GetOrganizationsAsync", "OnPageIndexChange"]),
                      ("Subscriptions.razor", ["<Table", "RemoteDataSource", "GetSubscriptionsAsync", "OnPageIndexChange"]),
                      ("Entitlements.razor", ["<Table", "RemoteDataSource", "GetLatestEntitlementsAsync", "OnPageIndexChange"]),

@@ -3,8 +3,10 @@
 @page "/admin/users/unassigned"
 @page "/admin/users/organization"
 @page "/admin/users/platform-staff"
+@page "/admin/users/personal"
 @page "/admin/users/{Id:guid}"
 @using AntDesign
+@using AntDesign.TableModels
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject IPlatformApiClient Api
@@ -110,14 +112,14 @@ else if (Id is null)
                Size="@TableSize.Small"
                Bordered
                RemoteDataSource
-               OnPageIndexChange="OnUserPageChangedAsync"
+               OnChange="OnUsersTableChangeAsync"
                ScrollX="1200">
             <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_User"]" Sortable>
                 <a href="/admin/users/@context.Id">@context.DisplayName</a>
             </PropertyColumn>
             <PropertyColumn Property="c => c.Username" Title="@L["Common_Username"]" Sortable />
             <PropertyColumn Property="c => c.Email" Title="@L["Common_Email"]" Ellipsis Sortable />
-            <PropertyColumn Property="c => c.AccountClasses" Title="@L["Users_AccountType"]">
+            <PropertyColumn Property="c => c.AccountClasses" Title="@L["Users_AccountType"]" Sortable>
                 @foreach (var accountClass in (context.AccountClasses ?? Array.Empty<string>()))
                 {
                     <Tag Color="@AccountClassColor(accountClass)" Style="margin-right:4px;">@accountClass</Tag>
@@ -127,7 +129,7 @@ else if (Id is null)
                     <span>—</span>
                 }
             </PropertyColumn>
-            <PropertyColumn Property="c => c.OrganizationNames" Title="@L["Users_OrganizationName"]" Ellipsis>
+            <PropertyColumn Property="c => c.OrganizationNames" Title="@L["Users_OrganizationName"]" Ellipsis Sortable>
                 @{
                     var orgNames = context.OrganizationNames ?? Array.Empty<string>();
                 }
@@ -307,6 +309,8 @@ else
     private string? _fieldEmail;
     private bool _busy;
     private int _page = 1;
+    private string? _sortBy;
+    private bool _sortDesc;
     private Guid? _loadedId;
     private string? _loadedDirectory;
 
@@ -406,7 +410,9 @@ else
             page: _page,
             status: string.IsNullOrWhiteSpace(_status) ? null : _status,
             search: string.IsNullOrWhiteSpace(_search) ? null : _search,
-            directory: DirectoryFilter);
+            directory: DirectoryFilter,
+            sortBy: _sortBy,
+            sortDesc: _sortBy is null ? null : _sortDesc);
 
     private string? DirectoryFilter
     {
@@ -416,6 +422,7 @@ else
             if (path.EndsWith("/users/unassigned", StringComparison.OrdinalIgnoreCase)) return "Unassigned";
             if (path.EndsWith("/users/organization", StringComparison.OrdinalIgnoreCase)) return "Organization";
             if (path.EndsWith("/users/platform-staff", StringComparison.OrdinalIgnoreCase)) return "PlatformStaff";
+            if (path.EndsWith("/users/personal", StringComparison.OrdinalIgnoreCase)) return "Personal";
             return null;
         }
     }
@@ -425,6 +432,7 @@ else
         "Unassigned" => L["Users_Directory_Unassigned"],
         "Organization" => L["Users_Directory_Organization"],
         "PlatformStaff" => L["Users_Directory_PlatformStaff"],
+        "Personal" => L["Users_Directory_Personal"],
         _ => L["Users_Description"]
     };
 
@@ -438,15 +446,72 @@ else
     {
         _search = "";
         _status = "";
+        _sortBy = null;
+        _sortDesc = false;
         _page = 1;
         await ReloadListAsync();
     }
 
-    private async Task OnUserPageChangedAsync(PaginationEventArgs args)
+    private async Task OnUsersTableChangeAsync(QueryModel<PlatformUserDto> queryModel)
     {
-        _page = args.Page;
+        var newPage = queryModel.PageIndex >= 1 ? queryModel.PageIndex : 1;
+        var (newSortBy, newSortDesc) = ExtractSort(queryModel);
+        var sortChanged = !string.Equals(_sortBy, newSortBy, StringComparison.Ordinal) || _sortDesc != newSortDesc;
+        var pageChanged = _page != newPage;
+
+        if (!sortChanged && !pageChanged)
+        {
+            return;
+        }
+
+        if (sortChanged)
+        {
+            _sortBy = newSortBy;
+            _sortDesc = newSortDesc;
+            _page = 1;
+        }
+        else
+        {
+            _page = newPage;
+        }
+
         await ReloadListAsync();
     }
+
+    private static (string? SortBy, bool SortDesc) ExtractSort(QueryModel<PlatformUserDto> queryModel)
+    {
+        var activeSort = queryModel.SortModel
+            .FirstOrDefault(s => !IsClearedSort(s.SortDirection));
+
+        if (activeSort is null)
+        {
+            return (null, false);
+        }
+
+        var sortBy = MapSortField(activeSort.FieldName);
+        if (sortBy is null)
+        {
+            return (null, false);
+        }
+
+        return (sortBy, IsDescendingSortDirection(activeSort.SortDirection));
+    }
+
+    private static string? MapSortField(string? fieldName) => fieldName switch
+    {
+        "DisplayName" => "displayName",
+        "Username" => "username",
+        "Email" => "email",
+        "AccountClasses" => "accountType",
+        "OrganizationNames" => "organization",
+        "Status" => "status",
+        "UpdatedAtUtc" => "updatedUtc",
+        _ => null
+    };
+
+    private static bool IsClearedSort(SortDirection sort) => sort == SortDirection.None;
+
+    private static bool IsDescendingSortDirection(SortDirection sort) => sort == SortDirection.Descending;
 
     private async Task ReloadDetailAsync()
     {

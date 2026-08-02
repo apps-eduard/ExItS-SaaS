@@ -119,6 +119,7 @@
   <data name="Common_Search" xml:space="preserve"><value>Search</value></data>
   <data name="Common_Filter" xml:space="preserve"><value>Filter</value></data>
   <data name="Common_Apply" xml:space="preserve"><value>Apply</value></data>
+  <data name="Common_Reset" xml:space="preserve"><value>Reset</value></data>
   <data name="Common_Close" xml:space="preserve"><value>Close</value></data>
   <data name="Common_Retry" xml:space="preserve"><value>Retry</value></data>
   <data name="Common_Saving" xml:space="preserve"><value>Saving…</value></data>
@@ -693,6 +694,7 @@
   <data name="Users_Directory_Unassigned" xml:space="preserve"><value>Users with no organization membership</value></data>
   <data name="Users_Directory_Organization" xml:space="preserve"><value>Users with organization memberships</value></data>
   <data name="Users_Directory_PlatformStaff" xml:space="preserve"><value>Users with platform role assignments</value></data>
+  <data name="Users_Directory_Personal" xml:space="preserve"><value>Personal Accounts</value></data>
   <data name="PlatformRoles_Title" xml:space="preserve"><value>Roles &amp; Permissions</value></data>
   <data name="PlatformRoles_Description" xml:space="preserve"><value>Platform built-in and custom roles</value></data>
   <data name="PlatformRoles_Create" xml:space="preserve"><value>Create custom role</value></data>

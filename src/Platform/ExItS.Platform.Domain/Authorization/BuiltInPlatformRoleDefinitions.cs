@@ -32,5 +32,6 @@ public enum UserDirectoryFilter
     All = 0,
     Unassigned = 1,
     Organization = 2,
-    PlatformStaff = 3
+    PlatformStaff = 3,
+    Personal = 4
 }

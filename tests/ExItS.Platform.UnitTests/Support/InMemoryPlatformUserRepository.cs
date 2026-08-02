@@ -43,6 +43,8 @@ internal sealed class InMemoryPlatformUserRepository : IPlatformUserRepository
         AccountStatus? status,
         string? search,
         UserDirectoryFilter? directoryFilter,
+        string? sortBy,
+        bool sortDesc,
         int skip,
         int take,
         CancellationToken cancellationToken = default)
@@ -63,6 +65,8 @@ internal sealed class InMemoryPlatformUserRepository : IPlatformUserRepository
         }
 
         _ = directoryFilter;
+        _ = sortBy;
+        _ = sortDesc;
 
         var ordered = query.OrderBy(u => u.NormalizedUsername, StringComparer.Ordinal).ToList();
         return Task.FromResult<(IReadOnlyList<PlatformUser>, int)>((ordered.Skip(skip).Take(take).ToList(), ordered.Count));

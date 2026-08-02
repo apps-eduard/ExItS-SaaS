@@ -12,14 +12,14 @@ public sealed class AdminAccountUserNavTests
         Assert.Equal(
             ["all-accounts", "platform-accounts", "organization-accounts", "personal-accounts", "needs-review"],
             items.Select(i => i.Key).ToArray());
-        Assert.All(items.Where(i => i.Key != "personal-accounts"), i =>
+        Assert.All(items, i =>
         {
             Assert.True(i.Implemented);
             Assert.False(string.IsNullOrWhiteSpace(i.Route));
         });
         var personal = items.Single(i => i.Key == "personal-accounts");
-        Assert.False(personal.Implemented);
-        Assert.Null(personal.Route);
+        Assert.True(personal.Implemented);
+        Assert.Equal("/admin/users/personal", personal.Route);
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public sealed class AdminAccountUserNavTests
     public void Planned_items_are_disabled_shape_with_no_route()
     {
         var platformPlanned = AdminAccountUserNav.PlatformAccounts(true).Where(i => !i.Implemented).ToList();
-        Assert.Contains(platformPlanned, i => i.Key == "personal-accounts" && i.Route is null);
+        Assert.Empty(platformPlanned);
 
         var orgPlanned = AdminAccountUserNav.OrganizationPeople(true, Guid.NewGuid()).Where(i => !i.Implemented).ToList();
         Assert.All(orgPlanned, i => Assert.Null(i.Route));
@@ -125,11 +125,11 @@ public sealed class AdminAccountUserNavTests
         var identities = new (string Key, string Class, bool PlatformAdmin, bool OrgOwner)[]
         {
             ("olivia-mendoza", "Platform", true, false),
-            ("rafael-torres", "Organization", false, true),
-            ("maria-santos", "Organization", false, false),
-            ("carlo-reyes", "Organization", false, true),
-            ("ana-cruz", "Organization", false, false),
-            ("daniel-garcia", "Platform", false, false),
+            ("rafael-torres", "Platform", false, false),
+            ("maria-santos", "Organization", false, true),
+            ("carlo-reyes", "Organization", false, false),
+            ("ana-cruz", "Organization", false, true),
+            ("daniel-garcia", "Organization", false, false),
             ("luis-navarro", "Personal", false, false),
             ("sofia-ramos", "Personal", false, false)
         };

@@ -28,8 +28,7 @@ public static class AdminAccountUserNav
             new("all-accounts", "Nav_AllAccounts", "/admin/users", Implemented: true, Authorized: true),
             new("platform-accounts", "Nav_PlatformAccounts", "/admin/users/platform-staff", Implemented: true, Authorized: true),
             new("organization-accounts", "Nav_OrganizationAccounts", "/admin/users/organization", Implemented: true, Authorized: true),
-            // Personal directory filter is not implemented without API/directory changes.
-            new("personal-accounts", "Nav_PersonalAccounts", Route: null, Implemented: false, Authorized: true),
+            new("personal-accounts", "Nav_PersonalAccounts", "/admin/users/personal", Implemented: true, Authorized: true),
             new("needs-review", "Nav_NeedsReview", "/admin/users/unassigned", Implemented: true, Authorized: true)
         ];
     }

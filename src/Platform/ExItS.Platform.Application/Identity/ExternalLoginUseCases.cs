@@ -205,7 +205,8 @@ public sealed class CompleteExternalLogin
             await _credentials.UpdateAsync(credential, cancellationToken).ConfigureAwait(false);
         }
 
-        var profile = await _ensureProfiles.ExecuteAsync(user.Id, preferredClass: null, cancellationToken)
+        var profile = await _ensureProfiles
+            .ExecuteAsync(user.Id, preferredClass: null, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
         var opaqueToken = _tokens.CreateOpaqueToken();

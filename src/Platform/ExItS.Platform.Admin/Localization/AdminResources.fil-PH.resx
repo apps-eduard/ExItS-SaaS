@@ -119,6 +119,7 @@
   <data name="Common_Search" xml:space="preserve"><value>Maghanap</value></data>
   <data name="Common_Filter" xml:space="preserve"><value>I-filter</value></data>
   <data name="Common_Apply" xml:space="preserve"><value>I-apply</value></data>
+  <data name="Common_Reset" xml:space="preserve"><value>I-reset</value></data>
   <data name="Common_Close" xml:space="preserve"><value>Isara</value></data>
   <data name="Common_Retry" xml:space="preserve"><value>Subukan muli</value></data>
   <data name="Common_Saving" xml:space="preserve"><value>Sinese-save…</value></data>
@@ -691,6 +692,7 @@
   <data name="Users_Directory_Unassigned" xml:space="preserve"><value>Users with no organization membership</value></data>
   <data name="Users_Directory_Organization" xml:space="preserve"><value>Users with organization memberships</value></data>
   <data name="Users_Directory_PlatformStaff" xml:space="preserve"><value>Users with platform role assignments</value></data>
+  <data name="Users_Directory_Personal" xml:space="preserve"><value>Mga Personal Account</value></data>
   <data name="PlatformRoles_Title" xml:space="preserve"><value>Roles &amp; Permissions</value></data>
   <data name="PlatformRoles_Description" xml:space="preserve"><value>Platform built-in and custom roles</value></data>
   <data name="PlatformRoles_Create" xml:space="preserve"><value>Create custom role</value></data>

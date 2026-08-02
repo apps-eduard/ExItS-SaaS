@@ -44,11 +44,16 @@ public sealed class EnsureAccountProfilesForUser
     }
 
     /// <summary>
-    /// Ensures implied account profiles exist. Returns the preferred profile for a new session.
+    /// Ensures the required account profile exists. When <paramref name="preferredClass"/> is set,
+    /// that class is created without an automatic Personal companion.
+    /// When <paramref name="exclusivePreferredClass"/> is true, other active profiles are deactivated
+    /// (Local Validation single-scope reconciliation). When null preferred class (login), reuses
+    /// existing active profiles; otherwise infers exactly one class.
     /// </summary>
     public async Task<AccountProfile> ExecuteAsync(
         PlatformUserId userId,
         AccountClass? preferredClass = null,
+        bool exclusivePreferredClass = false,
         CancellationToken cancellationToken = default)
     {
         var utcNow = _clock.UtcNow;
@@ -62,18 +67,50 @@ public sealed class EnsureAccountProfilesForUser
                 return found;
             }
 
+            var inactive = existing.FirstOrDefault(p => p.AccountClass == accountClass && !p.IsActive);
+            if (inactive is not null)
+            {
+                inactive.Activate(utcNow);
+                await _profiles.UpdateAsync(inactive, cancellationToken).ConfigureAwait(false);
+                return inactive;
+            }
+
             var created = AccountProfile.Create(userId, accountClass, utcNow);
             await _profiles.AddAsync(created, cancellationToken).ConfigureAwait(false);
             existing.Add(created);
             return created;
         }
 
-        await Ensure(AccountClass.Personal).ConfigureAwait(false);
+        if (preferredClass is AccountClass preferred)
+        {
+            var profile = await Ensure(preferred).ConfigureAwait(false);
+            if (exclusivePreferredClass)
+            {
+                foreach (var other in existing.Where(p => p.IsActive && p.AccountClass != preferred).ToList())
+                {
+                    other.Deactivate(utcNow);
+                    await _profiles.UpdateAsync(other, cancellationToken).ConfigureAwait(false);
+                }
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return profile;
+        }
+
+        var active = existing.Where(p => p.IsActive).ToList();
+        if (active.Count > 0)
+        {
+            return active.FirstOrDefault(p => p.AccountClass == AccountClass.Platform)
+                   ?? active.FirstOrDefault(p => p.AccountClass == AccountClass.Organization)
+                   ?? active.First(p => p.AccountClass == AccountClass.Personal);
+        }
 
         var roles = await _roles.ListActiveByUserAsync(userId, cancellationToken).ConfigureAwait(false);
         if (roles.Count > 0)
         {
-            await Ensure(AccountClass.Platform).ConfigureAwait(false);
+            var platform = await Ensure(AccountClass.Platform).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return platform;
         }
 
         var (memberships, _) = await _memberships
@@ -81,28 +118,14 @@ public sealed class EnsureAccountProfilesForUser
             .ConfigureAwait(false);
         if (memberships.Count > 0)
         {
-            await Ensure(AccountClass.Organization).ConfigureAwait(false);
+            var organization = await Ensure(AccountClass.Organization).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return organization;
         }
 
-        if (preferredClass is AccountClass requestedPreferred)
-        {
-            await Ensure(requestedPreferred).ConfigureAwait(false);
-        }
-
+        var personal = await Ensure(AccountClass.Personal).ConfigureAwait(false);
         await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-        if (preferredClass is AccountClass requested)
-        {
-            var preferred = existing.FirstOrDefault(p => p.AccountClass == requested && p.IsActive)
-                ?? throw new DomainException(
-                    DomainErrorCodes.InvalidAccountStatusTransition,
-                    $"Account profile class '{requested}' is not available for this identity.");
-            return preferred;
-        }
-
-        return existing.FirstOrDefault(p => p.AccountClass == AccountClass.Platform && p.IsActive)
-               ?? existing.FirstOrDefault(p => p.AccountClass == AccountClass.Organization && p.IsActive)
-               ?? existing.First(p => p.AccountClass == AccountClass.Personal && p.IsActive);
+        return personal;
     }
 }
 

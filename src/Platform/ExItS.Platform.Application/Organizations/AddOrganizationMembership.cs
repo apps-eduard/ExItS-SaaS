@@ -13,6 +13,7 @@ public sealed class AddOrganizationMembership
     private readonly IPlatformUserRepository _users;
     private readonly IPlatformOrganizationRepository _organizations;
     private readonly IOrganizationMembershipRepository _memberships;
+    private readonly EnsureAccountProfilesForUser _ensureProfiles;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -20,12 +21,14 @@ public sealed class AddOrganizationMembership
         IPlatformUserRepository users,
         IPlatformOrganizationRepository organizations,
         IOrganizationMembershipRepository memberships,
+        EnsureAccountProfilesForUser ensureProfiles,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _users = users;
         _organizations = organizations;
         _memberships = memberships;
+        _ensureProfiles = ensureProfiles;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -82,6 +85,9 @@ public sealed class AddOrganizationMembership
             var membership = OrganizationMembership.Create(organizationId, userId, role, _clock.UtcNow);
             await _memberships.AddAsync(membership, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            await _ensureProfiles
+                .ExecuteAsync(userId, AccountClass.Organization, exclusivePreferredClass: false, cancellationToken)
+                .ConfigureAwait(false);
             return ApplicationResult<OrganizationMembership>.Success(membership);
         }
         catch (DomainException ex)

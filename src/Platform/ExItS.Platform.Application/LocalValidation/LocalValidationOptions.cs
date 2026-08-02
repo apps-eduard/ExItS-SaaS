@@ -1,3 +1,4 @@
+using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Identity;
 
 namespace ExItS.Platform.Application.LocalValidation;
@@ -64,7 +65,7 @@ public sealed record LocalValidationIdentityDefinition(
     string Email,
     string Summary,
     AccountClass PreferredAccountClass,
-    bool AssignPlatformAdministrator,
+    PlatformSystemRole? AssignPlatformRole,
     bool HasOrganizationMembership,
     string? OrganizationSlug,
     OrganizationMembershipValidationRole? OrganizationRole,
@@ -78,6 +79,30 @@ public enum OrganizationMembershipValidationRole
     OrganizationMember
 }
 
+/// <summary>Known obsolete Phase 16 / Development seed identities removed by Local Validation cleanup.</summary>
+public static class ObsoletePhase16SeedIdentities
+{
+    public static IReadOnlyList<string> NormalizedEmails { get; } =
+    [
+        "platform.admin1@exits.test",
+        "platform.admin2@exits.test",
+        "org.seed.owner@exits.test",
+        "personal.user1@exits.test",
+        "personal.user2@exits.test"
+    ];
+
+    public static IReadOnlyList<string> NormalizedUsernames { get; } =
+    [
+        "platform.admin1",
+        "platform.admin2",
+        "org.seed.owner",
+        "personal.user1",
+        "personal.user2"
+    ];
+
+    public const string SeedOrgSlug = "phase16-seed-org";
+}
+
 public static class LocalValidationIdentityCatalog
 {
     public static IReadOnlyList<LocalValidationIdentityDefinition> All { get; } =
@@ -87,9 +112,9 @@ public static class LocalValidationIdentityCatalog
             Username: "olivia.mendoza",
             DisplayName: "Olivia Mendoza",
             Email: "olivia.mendoza@exits.local",
-            Summary: "Platform account — Platform Administrator; no organization membership or POS access.",
+            Summary: "Platform account — Platform Administrator only.",
             PreferredAccountClass: AccountClass.Platform,
-            AssignPlatformAdministrator: true,
+            AssignPlatformRole: PlatformSystemRole.PlatformAdministrator,
             HasOrganizationMembership: false,
             OrganizationSlug: null,
             OrganizationRole: null,
@@ -100,74 +125,74 @@ public static class LocalValidationIdentityCatalog
             Username: "rafael.torres",
             DisplayName: "Rafael Torres",
             Email: "rafael.torres@exits.local",
-            Summary: "Sampaguita Neighborhood Store — Organization Owner with POS Owner role.",
-            PreferredAccountClass: AccountClass.Organization,
-            AssignPlatformAdministrator: false,
-            HasOrganizationMembership: true,
-            OrganizationSlug: LocalValidationOrganizationCatalog.SampaguitaSlug,
-            OrganizationRole: OrganizationMembershipValidationRole.OrganizationOwner,
-            GrantPosProductAccess: true,
-            PosLocalRoleCode: "Owner"),
-        new(
-            Key: "maria-santos",
-            Username: "maria.santos",
-            DisplayName: "Maria Santos",
-            Email: "maria.santos@exits.local",
-            Summary: "Sampaguita Neighborhood Store — Organization Member with POS Cashier role.",
-            PreferredAccountClass: AccountClass.Organization,
-            AssignPlatformAdministrator: false,
-            HasOrganizationMembership: true,
-            OrganizationSlug: LocalValidationOrganizationCatalog.SampaguitaSlug,
-            OrganizationRole: OrganizationMembershipValidationRole.OrganizationMember,
-            GrantPosProductAccess: true,
-            PosLocalRoleCode: "Cashier"),
-        new(
-            Key: "carlo-reyes",
-            Username: "carlo.reyes",
-            DisplayName: "Carlo Reyes",
-            Email: "carlo.reyes@exits.local",
-            Summary: "Mabuhay Mini Mart — Organization Owner with POS Owner role.",
-            PreferredAccountClass: AccountClass.Organization,
-            AssignPlatformAdministrator: false,
-            HasOrganizationMembership: true,
-            OrganizationSlug: LocalValidationOrganizationCatalog.MabuhaySlug,
-            OrganizationRole: OrganizationMembershipValidationRole.OrganizationOwner,
-            GrantPosProductAccess: true,
-            PosLocalRoleCode: "Owner"),
-        new(
-            Key: "ana-cruz",
-            Username: "ana.cruz",
-            DisplayName: "Ana Cruz",
-            Email: "ana.cruz@exits.local",
-            Summary: "Mabuhay Mini Mart — Organization Member without POS product access.",
-            PreferredAccountClass: AccountClass.Organization,
-            AssignPlatformAdministrator: false,
-            HasOrganizationMembership: true,
-            OrganizationSlug: LocalValidationOrganizationCatalog.MabuhaySlug,
-            OrganizationRole: OrganizationMembershipValidationRole.OrganizationMember,
-            GrantPosProductAccess: false,
-            PosLocalRoleCode: null),
-        new(
-            Key: "daniel-garcia",
-            Username: "daniel.garcia",
-            DisplayName: "Daniel Garcia",
-            Email: "daniel.garcia@exits.local",
-            Summary: "Platform account — no Platform Administrator role; no organization membership or POS access.",
+            Summary: "Platform account — Platform Support only.",
             PreferredAccountClass: AccountClass.Platform,
-            AssignPlatformAdministrator: false,
+            AssignPlatformRole: PlatformSystemRole.PlatformSupport,
             HasOrganizationMembership: false,
             OrganizationSlug: null,
             OrganizationRole: null,
             GrantPosProductAccess: false,
             PosLocalRoleCode: null),
         new(
+            Key: "maria-santos",
+            Username: "maria.santos",
+            DisplayName: "Maria Santos",
+            Email: "maria.santos@exits.local",
+            Summary: "Sampaguita Neighborhood Store — Organization Owner with POS Owner role.",
+            PreferredAccountClass: AccountClass.Organization,
+            AssignPlatformRole: null,
+            HasOrganizationMembership: true,
+            OrganizationSlug: LocalValidationOrganizationCatalog.SampaguitaSlug,
+            OrganizationRole: OrganizationMembershipValidationRole.OrganizationOwner,
+            GrantPosProductAccess: true,
+            PosLocalRoleCode: "Owner"),
+        new(
+            Key: "carlo-reyes",
+            Username: "carlo.reyes",
+            DisplayName: "Carlo Reyes",
+            Email: "carlo.reyes@exits.local",
+            Summary: "Sampaguita Neighborhood Store — Organization Member with POS Cashier role.",
+            PreferredAccountClass: AccountClass.Organization,
+            AssignPlatformRole: null,
+            HasOrganizationMembership: true,
+            OrganizationSlug: LocalValidationOrganizationCatalog.SampaguitaSlug,
+            OrganizationRole: OrganizationMembershipValidationRole.OrganizationMember,
+            GrantPosProductAccess: true,
+            PosLocalRoleCode: "Cashier"),
+        new(
+            Key: "ana-cruz",
+            Username: "ana.cruz",
+            DisplayName: "Ana Cruz",
+            Email: "ana.cruz@exits.local",
+            Summary: "Mabuhay Mini Mart — Organization Owner with POS Owner role.",
+            PreferredAccountClass: AccountClass.Organization,
+            AssignPlatformRole: null,
+            HasOrganizationMembership: true,
+            OrganizationSlug: LocalValidationOrganizationCatalog.MabuhaySlug,
+            OrganizationRole: OrganizationMembershipValidationRole.OrganizationOwner,
+            GrantPosProductAccess: true,
+            PosLocalRoleCode: "Owner"),
+        new(
+            Key: "daniel-garcia",
+            Username: "daniel.garcia",
+            DisplayName: "Daniel Garcia",
+            Email: "daniel.garcia@exits.local",
+            Summary: "Mabuhay Mini Mart — Organization Member with POS Cashier role.",
+            PreferredAccountClass: AccountClass.Organization,
+            AssignPlatformRole: null,
+            HasOrganizationMembership: true,
+            OrganizationSlug: LocalValidationOrganizationCatalog.MabuhaySlug,
+            OrganizationRole: OrganizationMembershipValidationRole.OrganizationMember,
+            GrantPosProductAccess: true,
+            PosLocalRoleCode: "Cashier"),
+        new(
             Key: "luis-navarro",
             Username: "luis.navarro",
             DisplayName: "Luis Navarro",
             Email: "luis.navarro@exits.local",
-            Summary: "Personal account — no organization membership or POS access.",
+            Summary: "Personal account only.",
             PreferredAccountClass: AccountClass.Personal,
-            AssignPlatformAdministrator: false,
+            AssignPlatformRole: null,
             HasOrganizationMembership: false,
             OrganizationSlug: null,
             OrganizationRole: null,
@@ -178,9 +203,9 @@ public static class LocalValidationIdentityCatalog
             Username: "sofia.ramos",
             DisplayName: "Sofia Ramos",
             Email: "sofia.ramos@exits.local",
-            Summary: "Personal account — no organization membership or POS access.",
+            Summary: "Personal account only.",
             PreferredAccountClass: AccountClass.Personal,
-            AssignPlatformAdministrator: false,
+            AssignPlatformRole: null,
             HasOrganizationMembership: false,
             OrganizationSlug: null,
             OrganizationRole: null,

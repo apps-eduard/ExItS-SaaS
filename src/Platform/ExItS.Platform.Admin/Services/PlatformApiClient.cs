@@ -158,8 +158,8 @@ public sealed class PlatformApiClient(
     public Task<ApiCallResult<FeatureOverrideDto>> RevokeFeatureOverrideAsync(Guid overrideId, RevokeFeatureOverrideRequest request, CancellationToken ct = default) =>
         SendAsync<FeatureOverrideDto>(HttpMethod.Post, $"/api/v1/platform/feature-overrides/{overrideId}/revoke", request, ct);
 
-    public Task<ApiCallResult<PagedResult<PlatformUserDto>>> GetUsersAsync(int page = 1, int pageSize = 20, string? status = null, string? search = null, string? directory = null, CancellationToken ct = default) =>
-        GetAsync<PagedResult<PlatformUserDto>>($"/api/v1/platform/users?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("search", search), ("directory", directory))}", ct);
+    public Task<ApiCallResult<PagedResult<PlatformUserDto>>> GetUsersAsync(int page = 1, int pageSize = 20, string? status = null, string? search = null, string? directory = null, string? sortBy = null, bool? sortDesc = null, CancellationToken ct = default) =>
+        GetAsync<PagedResult<PlatformUserDto>>($"/api/v1/platform/users?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("search", search), ("directory", directory), ("sortBy", sortBy), ("sortDesc", sortDesc))}", ct);
     public Task<ApiCallResult<PlatformUserDto>> GetUserAsync(Guid id, CancellationToken ct = default) =>
         GetAsync<PlatformUserDto>($"/api/v1/platform/users/{id}", ct);
     public Task<ApiCallResult<PlatformUserDto>> CreateUserAsync(CreatePlatformUserRequest request, CancellationToken ct = default) =>

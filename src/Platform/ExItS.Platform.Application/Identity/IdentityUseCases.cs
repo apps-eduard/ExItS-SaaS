@@ -55,11 +55,13 @@ public sealed class PlatformUserQueryService
         int? page,
         int? pageSize,
         UserDirectoryFilter? directoryFilter = null,
+        string? sortBy = null,
+        bool sortDesc = false,
         CancellationToken cancellationToken = default)
     {
         var (skip, take) = CatalogPagination.Normalize(page, pageSize);
         var (items, total) = await _users
-            .ListAsync(status, search, directoryFilter, skip, take, cancellationToken)
+            .ListAsync(status, search, directoryFilter, sortBy, sortDesc, skip, take, cancellationToken)
             .ConfigureAwait(false);
         var extras = await _users
             .GetDirectoryExtrasAsync(items.Select(u => u.Id.Value).ToList(), cancellationToken)

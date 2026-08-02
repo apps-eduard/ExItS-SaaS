@@ -90,6 +90,7 @@ public sealed class AssignPlatformRole
     private readonly IPlatformRoleAssignmentRepository _assignments;
     private readonly IPlatformUserRepository _users;
     private readonly IPlatformOrganizationRepository _organizations;
+    private readonly EnsureAccountProfilesForUser _ensureProfiles;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -98,6 +99,7 @@ public sealed class AssignPlatformRole
         IPlatformRoleAssignmentRepository assignments,
         IPlatformUserRepository users,
         IPlatformOrganizationRepository organizations,
+        EnsureAccountProfilesForUser ensureProfiles,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
@@ -105,6 +107,7 @@ public sealed class AssignPlatformRole
         _assignments = assignments;
         _users = users;
         _organizations = organizations;
+        _ensureProfiles = ensureProfiles;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -157,6 +160,13 @@ public sealed class AssignPlatformRole
             var assignment = PlatformRoleAssignment.Grant(userId, role, orgId, actorIdentifier, _clock.UtcNow, reason);
             await _assignments.AddAsync(assignment, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            if (orgId is null)
+            {
+                await _ensureProfiles
+                    .ExecuteAsync(userId, AccountClass.Platform, exclusivePreferredClass: false, cancellationToken)
+                    .ConfigureAwait(false);
+            }
 
             await _auditWriter.WriteAsync(
                 actorIdentifier,

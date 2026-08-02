@@ -15,6 +15,8 @@ public interface IPlatformUserRepository
         AccountStatus? status,
         string? search,
         UserDirectoryFilter? directoryFilter,
+        string? sortBy,
+        bool sortDesc,
         int skip,
         int take,
         CancellationToken cancellationToken = default);
