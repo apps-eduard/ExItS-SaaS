@@ -54,6 +54,10 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PlatformExternalLoginRecord> PlatformExternalLogins => Set<PlatformExternalLoginRecord>();
     internal DbSet<OrganizationMembershipRecord> OrganizationMemberships => Set<OrganizationMembershipRecord>();
     internal DbSet<OrganizationInvitationRecord> OrganizationInvitations => Set<OrganizationInvitationRecord>();
+    internal DbSet<BusinessCustomerRecord> BusinessCustomers => Set<BusinessCustomerRecord>();
+    internal DbSet<CreditCustomerRecord> CreditCustomers => Set<CreditCustomerRecord>();
+    internal DbSet<CustomerLinkRequestRecord> CustomerLinkRequests => Set<CustomerLinkRequestRecord>();
+    internal DbSet<LinkedCustomerAppUserRecord> LinkedCustomerAppUsers => Set<LinkedCustomerAppUserRecord>();
     internal DbSet<ProductAccessAssignmentRecord> ProductAccessAssignments => Set<ProductAccessAssignmentRecord>();
     internal DbSet<PlatformRoleAssignmentRecord> PlatformRoleAssignments => Set<PlatformRoleAssignmentRecord>();
     internal DbSet<PlatformRoleDefinitionRecord> PlatformRoleDefinitions => Set<PlatformRoleDefinitionRecord>();
@@ -1237,6 +1241,149 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.RecipientUserIdentityId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<BusinessCustomerRecord>(entity =>
+        {
+            entity.ToTable("business_customers");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.DisplayName).HasColumnName("display_name").HasMaxLength(128).IsRequired();
+            entity.Property(e => e.NormalizedEmail).HasColumnName("normalized_email").HasMaxLength(320);
+            entity.Property(e => e.Phone).HasColumnName("phone").HasMaxLength(32);
+            entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(512);
+            entity.Property(e => e.OwningProductCode).HasColumnName("owning_product_code").HasMaxLength(64);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.LinkedUserIdentityId).HasColumnName("linked_user_identity_id");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+            entity.HasIndex(e => e.OrganizationId).HasDatabaseName("ix_business_customers_organization_id");
+            entity.HasIndex(e => new { e.OrganizationId, e.OwningProductCode })
+                .HasDatabaseName("ix_business_customers_org_product");
+
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<CreditCustomerRecord>(entity =>
+        {
+            entity.ToTable("credit_customers");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BusinessCustomerId).HasColumnName("business_customer_id");
+            entity.Property(e => e.CurrencyCode).HasColumnName("currency_code").HasMaxLength(3).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+            entity.HasIndex(e => e.OrganizationId).HasDatabaseName("ix_credit_customers_organization_id");
+            entity.HasIndex(e => e.BusinessCustomerId)
+                .IsUnique()
+                .HasFilter("status = 'Active'")
+                .HasDatabaseName("ux_credit_customers_active_business_customer");
+
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<BusinessCustomerRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.BusinessCustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<CustomerLinkRequestRecord>(entity =>
+        {
+            entity.ToTable("customer_link_requests");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BusinessCustomerId).HasColumnName("business_customer_id");
+            entity.Property(e => e.NormalizedEmail).HasColumnName("normalized_email").HasMaxLength(320).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.TokenHash).HasColumnName("token_hash").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.InvitedByUserId).HasColumnName("invited_by_user_id");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
+            entity.Property(e => e.AcceptedAtUtc).HasColumnName("accepted_at_utc");
+            entity.Property(e => e.DeclinedAtUtc).HasColumnName("declined_at_utc");
+            entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
+            entity.Property(e => e.AcceptedByUserId).HasColumnName("accepted_by_user_id");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+            entity.HasIndex(e => e.TokenHash).IsUnique().HasDatabaseName("ux_customer_link_requests_token_hash");
+            entity.HasIndex(e => e.BusinessCustomerId)
+                .IsUnique()
+                .HasFilter("status = 'Pending'")
+                .HasDatabaseName("ux_customer_link_requests_pending_customer");
+
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<BusinessCustomerRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.BusinessCustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<LinkedCustomerAppUserRecord>(entity =>
+        {
+            entity.ToTable("linked_customer_app_users");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BusinessCustomerId).HasColumnName("business_customer_id");
+            entity.Property(e => e.UserIdentityId).HasColumnName("user_identity_id");
+            entity.Property(e => e.SourceLinkRequestId).HasColumnName("source_link_request_id");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.LinkedAtUtc).HasColumnName("linked_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+            entity.HasIndex(e => e.OrganizationId).HasDatabaseName("ix_linked_customer_app_users_organization_id");
+            entity.HasIndex(e => e.BusinessCustomerId)
+                .IsUnique()
+                .HasFilter("status = 'Active'")
+                .HasDatabaseName("ux_linked_customer_app_users_active_customer");
+
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<BusinessCustomerRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.BusinessCustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.UserIdentityId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<CustomerLinkRequestRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SourceLinkRequestId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

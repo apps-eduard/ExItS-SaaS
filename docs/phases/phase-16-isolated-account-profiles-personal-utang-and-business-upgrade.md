@@ -20,7 +20,7 @@ The application remains **not production-ready**.
 | P16-WP04 | **Complete** | `17f53e204243844b86602eaf12369495ffd8db01` | [report](../reports/P16-WP04-personal-account-foundation.md) |
 | P16-WP05 | **Complete** | `4b7b4d5c223bf4e293248881df14c970e76e80d1` | [report](../reports/P16-WP05-personal-utang-core.md) |
 | P16-WP06 | **Complete** | `6f85bd3fb324a93fc8eadf2f82426be0178b064e` | [report](../reports/P16-WP06-invitations-linking-reminders-notifications.md) |
-| P16-WP07 | Not started | — | — |
+| P16-WP07 | **Complete** | *(feature SHA recorded after feature commit)* | [report](../reports/P16-WP07-organization-staff-customer-separation.md) |
 | P16-WP08 | Not started | — | — |
 | P16-WP09 | Not started | — | — |
 | P16-WP10 | Not started | — | — |
@@ -179,7 +179,7 @@ Phase 16 does not:
 | P16-WP04 | Personal Account Foundation | **Complete** |
 | P16-WP05 | Personal Utang Core | **Complete** |
 | P16-WP06 | Invitations, Linking, Reminders, and Notifications | **Complete** |
-| P16-WP07 | Organization Staff and Customer Separation | Not started |
+| P16-WP07 | Organization Staff and Customer Separation | **Complete** |
 | P16-WP08 | Start a Business and Utang Migration | Not started |
 | P16-WP09 | Product Access and Navigation Integration | Not started |
 | P16-WP10 | Security, Privacy, UX Hardening, and Closeout | Not started |
@@ -435,12 +435,14 @@ Create clear boundaries between workers and customers.
 
 ## Exit Criteria
 
-- Business Customer is never treated as Organization Staff
-- Customer Link acceptance creates no staff membership
-- staff roles cannot expose unrelated personal records
-- product-local roles remain isolated
-- regression suite passes
-- explicit authorization received for P16-WP08
+- Business Customer is never treated as Organization Staff — **met**
+- Customer Link acceptance creates no staff membership — **met**
+- staff roles cannot expose unrelated personal records — **met**
+- product-local roles remain isolated — **met**
+- regression suite passes — **met** (unit 333 / integration 166)
+- explicit authorization received for P16-WP08 — required before starting WP08
+
+See [P16-WP07 report](../reports/P16-WP07-organization-staff-customer-separation.md).
 
 ---
 

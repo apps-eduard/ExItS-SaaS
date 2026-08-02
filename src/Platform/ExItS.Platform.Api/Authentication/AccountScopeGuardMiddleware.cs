@@ -91,6 +91,13 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
             return true;
         }
 
+        // Customer link accept/decline is identity-bound and must not create staff membership (WP07).
+        if (path.Equals("/api/v1/organizations/customer-link-requests/accept", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/api/v1/organizations/customer-link-requests/decline", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
         return false;
     }
 

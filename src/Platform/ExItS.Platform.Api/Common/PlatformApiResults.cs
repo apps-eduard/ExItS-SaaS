@@ -32,7 +32,10 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.AccountScopeDenied
             or ApplicationErrorCodes.ProductEntryDenied
             or ApplicationErrorCodes.PersonalUtangUnauthorized
-            or DomainErrorCodes.PersonalReminderUnauthorized => StatusCodes.Status403Forbidden,
+            or DomainErrorCodes.PersonalReminderUnauthorized
+            or DomainErrorCodes.CustomerToStaffConversionDenied
+            or DomainErrorCodes.CustomerLinkMustNotCreateStaff
+            or DomainErrorCodes.StaffCannotAccessUnrelatedPersonalRecords => StatusCodes.Status403Forbidden,
 
         ApplicationErrorCodes.LoginFailed
             or ApplicationErrorCodes.SessionInvalid
@@ -63,7 +66,10 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.PersonalUtangRelationshipNotFound
             or ApplicationErrorCodes.PersonalUtangInvitationNotFound
             or ApplicationErrorCodes.PersonalReminderNotFound
-            or ApplicationErrorCodes.PersonalNotificationNotFound => StatusCodes.Status404NotFound,
+            or ApplicationErrorCodes.PersonalNotificationNotFound
+            or ApplicationErrorCodes.BusinessCustomerNotFound
+            or ApplicationErrorCodes.CreditCustomerNotFound
+            or ApplicationErrorCodes.CustomerLinkRequestNotFound => StatusCodes.Status404NotFound,
 
         ApplicationErrorCodes.SlugConflict
             or ApplicationErrorCodes.EmailConflict
@@ -118,7 +124,11 @@ internal static class PlatformApiResults
             or DomainErrorCodes.InvalidOrganizationRoleStatusTransition
             or DomainErrorCodes.InvitationExpired
             or DomainErrorCodes.PersonalUtangInvitationExpired
-            or ApplicationErrorCodes.PersonalUtangInvitationConflict => StatusCodes.Status409Conflict,
+            or ApplicationErrorCodes.PersonalUtangInvitationConflict
+            or ApplicationErrorCodes.CreditCustomerConflict
+            or ApplicationErrorCodes.CustomerLinkRequestConflict
+            or DomainErrorCodes.CustomerLinkRequestExpired
+            or DomainErrorCodes.BusinessCustomerAlreadyLinked => StatusCodes.Status409Conflict,
 
         ApplicationErrorCodes.PersonalReminderRateLimited
             or DomainErrorCodes.PersonalReminderRateLimited => StatusCodes.Status429TooManyRequests,

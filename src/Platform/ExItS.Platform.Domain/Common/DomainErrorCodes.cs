@@ -132,4 +132,23 @@ public static class DomainErrorCodes
     public const string PersonalReminderUnauthorized = "platform.personal.reminder.unauthorized";
 
     public const string InvalidPersonalNotificationId = "platform.personal.notification.id.invalid";
+
+    public const string InvalidBusinessCustomerId = "platform.business_customer.id.invalid";
+    public const string InvalidBusinessCustomerDisplayName = "platform.business_customer.display_name.invalid";
+    public const string InvalidBusinessCustomerStatusTransition =
+        "platform.business_customer.status.invalid_transition";
+    public const string BusinessCustomerAlreadyLinked = "platform.business_customer.already_linked";
+    public const string InvalidCreditCustomerId = "platform.credit_customer.id.invalid";
+    public const string InvalidCreditCustomerCurrency = "platform.credit_customer.currency.invalid";
+    public const string InvalidCustomerLinkRequestId = "platform.customer_link_request.id.invalid";
+    public const string InvalidCustomerLinkRequestStatusTransition =
+        "platform.customer_link_request.status.invalid_transition";
+    public const string CustomerLinkRequestExpired = "platform.customer_link_request.expired";
+    public const string InvalidCustomerLinkRequestToken = "platform.customer_link_request.token.invalid";
+    public const string CustomerLinkRequestEmailMismatch = "platform.customer_link_request.email_mismatch";
+    public const string InvalidLinkedCustomerAppUserId = "platform.linked_customer_app_user.id.invalid";
+    public const string CustomerToStaffConversionDenied = "platform.customer.staff_conversion_denied";
+    public const string CustomerLinkMustNotCreateStaff = "platform.customer_link.must_not_create_staff";
+    public const string StaffCannotAccessUnrelatedPersonalRecords =
+        "platform.staff.unrelated_personal_records_denied";
 }

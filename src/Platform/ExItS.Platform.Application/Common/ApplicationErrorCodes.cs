@@ -128,4 +128,10 @@ public static class ApplicationErrorCodes
     public const string PersonalReminderNotFound = "application.personal.reminder.not_found";
     public const string PersonalReminderRateLimited = "application.personal.reminder.rate_limited";
     public const string PersonalNotificationNotFound = "application.personal.notification.not_found";
+
+    public const string BusinessCustomerNotFound = "application.business_customer.not_found";
+    public const string CreditCustomerNotFound = "application.credit_customer.not_found";
+    public const string CreditCustomerConflict = "application.credit_customer.conflict";
+    public const string CustomerLinkRequestNotFound = "application.customer_link_request.not_found";
+    public const string CustomerLinkRequestConflict = "application.customer_link_request.conflict";
 }

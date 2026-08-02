@@ -6,48 +6,49 @@ using ExItS.Platform.Domain.Identity;
 namespace ExItS.Platform.Domain.Organizations;
 
 /// <summary>
-/// Organization Staff Invitation. Stores only a token hash — never plaintext secrets.
-/// Accepting creates an Organization membership + staff role only; never grants platform-wide roles,
-/// product-local roles, Business Customer records, or Customer Links.
+/// Explicit Customer Link Request. Acceptance links one Platform User to one Business Customer —
+/// never Organization Staff membership and never a product-local role.
 /// </summary>
-public sealed class OrganizationInvitation
+public sealed class CustomerLinkRequest
 {
     public const int DefaultLifetimeHours = 24 * 7;
-    public const string InvitationType = InvitationKinds.OrganizationStaffInvitation;
+    public const string InvitationType = InvitationKinds.CustomerLinkRequest;
 
-    public OrganizationInvitationId Id { get; }
+    public CustomerLinkRequestId Id { get; }
     public PlatformOrganizationId OrganizationId { get; }
+    public BusinessCustomerId BusinessCustomerId { get; }
     public string NormalizedEmail { get; private set; }
-    public OrganizationRole Role { get; private set; }
-    public InvitationStatus Status { get; private set; }
+    public CustomerLinkRequestStatus Status { get; private set; }
     public string TokenHash { get; private set; }
     public PlatformUserId? InvitedByUserId { get; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
     public DateTimeOffset ExpiresAtUtc { get; private set; }
     public DateTimeOffset? AcceptedAtUtc { get; private set; }
+    public DateTimeOffset? DeclinedAtUtc { get; private set; }
     public DateTimeOffset? RevokedAtUtc { get; private set; }
     public PlatformUserId? AcceptedByUserId { get; private set; }
 
-    private OrganizationInvitation(
-        OrganizationInvitationId id,
+    private CustomerLinkRequest(
+        CustomerLinkRequestId id,
         PlatformOrganizationId organizationId,
+        BusinessCustomerId businessCustomerId,
         string normalizedEmail,
-        OrganizationRole role,
-        InvitationStatus status,
+        CustomerLinkRequestStatus status,
         string tokenHash,
         PlatformUserId? invitedByUserId,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         DateTimeOffset expiresAtUtc,
         DateTimeOffset? acceptedAtUtc,
+        DateTimeOffset? declinedAtUtc,
         DateTimeOffset? revokedAtUtc,
         PlatformUserId? acceptedByUserId)
     {
         Id = id;
         OrganizationId = organizationId;
+        BusinessCustomerId = businessCustomerId;
         NormalizedEmail = normalizedEmail;
-        Role = role;
         Status = status;
         TokenHash = tokenHash;
         InvitedByUserId = invitedByUserId;
@@ -55,31 +56,31 @@ public sealed class OrganizationInvitation
         UpdatedAtUtc = updatedAtUtc;
         ExpiresAtUtc = expiresAtUtc;
         AcceptedAtUtc = acceptedAtUtc;
+        DeclinedAtUtc = declinedAtUtc;
         RevokedAtUtc = revokedAtUtc;
         AcceptedByUserId = acceptedByUserId;
     }
 
-    /// <summary>Creates a pending invitation and returns the plaintext accept token (show once).</summary>
-    public static (OrganizationInvitation Invitation, string AcceptToken) Create(
+    public static (CustomerLinkRequest Request, string AcceptToken) Create(
         PlatformOrganizationId organizationId,
+        BusinessCustomerId businessCustomerId,
         string email,
-        OrganizationRole role,
         DateTimeOffset utcNow,
         PlatformUserId? invitedByUserId = null,
         TimeSpan? lifetime = null,
-        OrganizationInvitationId? id = null)
+        CustomerLinkRequestId? id = null)
     {
         ArgumentNullException.ThrowIfNull(organizationId);
+        ArgumentNullException.ThrowIfNull(businessCustomerId);
         EnsureUtc(utcNow);
-        EnsureDefinedRole(role);
-        var normalizedEmail = PlatformUser.NormalizeEmail(email);
+
         var acceptToken = CreateAcceptToken();
-        var invitation = new OrganizationInvitation(
-            id ?? OrganizationInvitationId.New(),
+        var request = new CustomerLinkRequest(
+            id ?? CustomerLinkRequestId.New(),
             organizationId,
-            normalizedEmail,
-            role,
-            InvitationStatus.Pending,
+            businessCustomerId,
+            PlatformUser.NormalizeEmail(email),
+            CustomerLinkRequestStatus.Pending,
             HashToken(acceptToken),
             invitedByUserId,
             utcNow,
@@ -87,29 +88,31 @@ public sealed class OrganizationInvitation
             utcNow.Add(lifetime ?? TimeSpan.FromHours(DefaultLifetimeHours)),
             null,
             null,
+            null,
             null);
-        return (invitation, acceptToken);
+        return (request, acceptToken);
     }
 
-    public static OrganizationInvitation Rehydrate(
-        OrganizationInvitationId id,
+    public static CustomerLinkRequest Rehydrate(
+        CustomerLinkRequestId id,
         PlatformOrganizationId organizationId,
+        BusinessCustomerId businessCustomerId,
         string normalizedEmail,
-        OrganizationRole role,
-        InvitationStatus status,
+        CustomerLinkRequestStatus status,
         string tokenHash,
         PlatformUserId? invitedByUserId,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         DateTimeOffset expiresAtUtc,
         DateTimeOffset? acceptedAtUtc,
+        DateTimeOffset? declinedAtUtc,
         DateTimeOffset? revokedAtUtc,
         PlatformUserId? acceptedByUserId) =>
         new(
             id,
             organizationId,
+            businessCustomerId,
             normalizedEmail,
-            role,
             status,
             tokenHash,
             invitedByUserId,
@@ -117,10 +120,10 @@ public sealed class OrganizationInvitation
             updatedAtUtc,
             expiresAtUtc,
             acceptedAtUtc,
+            declinedAtUtc,
             revokedAtUtc,
             acceptedByUserId);
 
-    /// <summary>Rotates the accept token and extends expiry for a still-pending invitation.</summary>
     public string Resend(DateTimeOffset utcNow, TimeSpan? lifetime = null)
     {
         EnsureUtc(utcNow);
@@ -135,15 +138,26 @@ public sealed class OrganizationInvitation
     public void Revoke(DateTimeOffset utcNow)
     {
         EnsureUtc(utcNow);
-        if (Status is InvitationStatus.Accepted or InvitationStatus.Revoked)
+        if (Status is CustomerLinkRequestStatus.Active
+            or CustomerLinkRequestStatus.Revoked
+            or CustomerLinkRequestStatus.Declined)
         {
             throw new DomainException(
-                DomainErrorCodes.InvalidInvitationStatusTransition,
-                $"Cannot revoke an invitation in status {Status}.");
+                DomainErrorCodes.InvalidCustomerLinkRequestStatusTransition,
+                $"Cannot revoke a customer link request in status {Status}.");
         }
 
-        Status = InvitationStatus.Revoked;
+        Status = CustomerLinkRequestStatus.Revoked;
         RevokedAtUtc = utcNow;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void Decline(DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        EnsurePendingUsable(utcNow);
+        Status = CustomerLinkRequestStatus.Declined;
+        DeclinedAtUtc = utcNow;
         UpdatedAtUtc = utcNow;
     }
 
@@ -157,11 +171,11 @@ public sealed class OrganizationInvitation
         if (!string.Equals(normalized, NormalizedEmail, StringComparison.Ordinal))
         {
             throw new DomainException(
-                DomainErrorCodes.InvitationEmailMismatch,
-                "Invitation email does not match the accepting user.");
+                DomainErrorCodes.CustomerLinkRequestEmailMismatch,
+                "Customer link email does not match the accepting user.");
         }
 
-        Status = InvitationStatus.Accepted;
+        Status = CustomerLinkRequestStatus.Active;
         AcceptedAtUtc = utcNow;
         AcceptedByUserId = acceptedByUserId;
         UpdatedAtUtc = utcNow;
@@ -170,7 +184,7 @@ public sealed class OrganizationInvitation
     public void MarkExpired(DateTimeOffset utcNow)
     {
         EnsureUtc(utcNow);
-        if (Status != InvitationStatus.Pending)
+        if (Status != CustomerLinkRequestStatus.Pending)
         {
             return;
         }
@@ -178,24 +192,24 @@ public sealed class OrganizationInvitation
         if (utcNow < ExpiresAtUtc)
         {
             throw new DomainException(
-                DomainErrorCodes.InvalidInvitationStatusTransition,
-                "Invitation has not expired yet.");
+                DomainErrorCodes.InvalidCustomerLinkRequestStatusTransition,
+                "Customer link request has not expired yet.");
         }
 
-        Status = InvitationStatus.Expired;
+        Status = CustomerLinkRequestStatus.Expired;
         UpdatedAtUtc = utcNow;
     }
 
     public bool IsExpired(DateTimeOffset utcNow) =>
-        Status == InvitationStatus.Pending && utcNow >= ExpiresAtUtc;
+        Status == CustomerLinkRequestStatus.Pending && utcNow >= ExpiresAtUtc;
 
     public static string HashToken(string acceptToken)
     {
         if (string.IsNullOrWhiteSpace(acceptToken))
         {
             throw new DomainException(
-                DomainErrorCodes.InvalidInvitationToken,
-                "Invitation token cannot be blank.");
+                DomainErrorCodes.InvalidCustomerLinkRequestToken,
+                "Customer link token cannot be blank.");
         }
 
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(acceptToken.Trim()));
@@ -204,20 +218,20 @@ public sealed class OrganizationInvitation
 
     private void EnsurePendingUsable(DateTimeOffset utcNow)
     {
-        if (Status != InvitationStatus.Pending)
+        if (Status != CustomerLinkRequestStatus.Pending)
         {
             throw new DomainException(
-                DomainErrorCodes.InvalidInvitationStatusTransition,
-                $"Invitation is not pending (status {Status}).");
+                DomainErrorCodes.InvalidCustomerLinkRequestStatusTransition,
+                $"Customer link request is not pending (status {Status}).");
         }
 
         if (utcNow >= ExpiresAtUtc)
         {
-            Status = InvitationStatus.Expired;
+            Status = CustomerLinkRequestStatus.Expired;
             UpdatedAtUtc = utcNow;
             throw new DomainException(
-                DomainErrorCodes.InvitationExpired,
-                "Invitation has expired.");
+                DomainErrorCodes.CustomerLinkRequestExpired,
+                "Customer link request has expired.");
         }
     }
 
@@ -227,23 +241,11 @@ public sealed class OrganizationInvitation
         return Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
     }
 
-    private static void EnsureDefinedRole(OrganizationRole role)
-    {
-        if (!Enum.IsDefined(role))
-        {
-            throw new DomainException(
-                DomainErrorCodes.InvalidOrganizationRole,
-                "Organization role is not defined.");
-        }
-    }
-
     private static void EnsureUtc(DateTimeOffset value)
     {
         if (value.Offset != TimeSpan.Zero)
         {
-            throw new DomainException(
-                DomainErrorCodes.InvalidUtcTimestamp,
-                "Timestamps must be UTC (offset zero).");
+            throw new DomainException(DomainErrorCodes.InvalidUtcTimestamp, "Timestamps must be UTC.");
         }
     }
 }

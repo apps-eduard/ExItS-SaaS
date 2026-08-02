@@ -11,6 +11,7 @@ namespace ExItS.Platform.Application.Organizations;
 public sealed record OrganizationInvitationDto(
     Guid Id,
     Guid OrganizationId,
+    string InvitationType,
     string Email,
     string Role,
     string Status,
@@ -73,6 +74,7 @@ public sealed class OrganizationInvitationQueryService
         new(
             invitation.Id.Value,
             invitation.OrganizationId.Value,
+            OrganizationInvitation.InvitationType,
             invitation.NormalizedEmail,
             invitation.Role.ToString(),
             effectiveNow is not null && invitation.IsExpired(effectiveNow.Value)

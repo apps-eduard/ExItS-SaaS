@@ -84,6 +84,19 @@ public static class PlatformAuditActions
     public const string InvitationRevoked = "platform.invitation.revoked";
     public const string InvitationAccepted = "platform.invitation.accepted";
 
+    public const string BusinessCustomerCreated = "platform.business_customer.created";
+    public const string BusinessCustomerUpdated = "platform.business_customer.updated";
+    public const string BusinessCustomerArchived = "platform.business_customer.archived";
+    public const string CreditCustomerEnabled = "platform.credit_customer.enabled";
+    public const string CreditCustomerClosed = "platform.credit_customer.closed";
+    public const string CustomerLinkRequestCreated = "platform.customer_link_request.created";
+    public const string CustomerLinkRequestResent = "platform.customer_link_request.resent";
+    public const string CustomerLinkRequestRevoked = "platform.customer_link_request.revoked";
+    public const string CustomerLinkRequestAccepted = "platform.customer_link_request.accepted";
+    public const string CustomerLinkRequestDeclined = "platform.customer_link_request.declined";
+    public const string LinkedCustomerAppUserRevoked = "platform.linked_customer_app_user.revoked";
+    public const string CustomerToStaffConversionDenied = "platform.customer.staff_conversion_denied";
+
     public const string CatalogProductCreated = "platform.catalog.product.created";
     public const string CatalogProductUpdated = "platform.catalog.product.updated";
     public const string CatalogProductActivated = "platform.catalog.product.activated";

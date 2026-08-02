@@ -8,8 +8,9 @@ using ExItS.Platform.Domain.Organizations;
 namespace ExItS.Platform.Api.Organizations;
 
 /// <summary>
-/// Organization invitation lifecycle. Tokens are returned once on create/resend for delivery channels;
-/// list/get DTOs never include token hashes. Accept requires an authenticated Platform User whose email matches.
+/// Organization Staff Invitation lifecycle (<see cref="InvitationKinds.OrganizationStaffInvitation"/>).
+/// Tokens are returned once on create/resend for delivery channels; list/get DTOs never include token hashes.
+/// Accept creates Organization membership + staff role only — never Business Customer or Customer Link.
 /// </summary>
 internal static class InvitationEndpoints
 {
