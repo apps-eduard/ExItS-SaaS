@@ -4,7 +4,7 @@
 |---|---|
 | Status | **Complete** |
 | Starting commit | `6f0ff2311c0141be92cfd52de279d1878d0b86c0` |
-| Feature commit | *(recorded below after commit)* |
+| Feature commit | `d1e0096caac1b5aa0e47721938635a1e9766c66b` |
 | Date | 2026-08-02 |
 
 ## Scope completed
