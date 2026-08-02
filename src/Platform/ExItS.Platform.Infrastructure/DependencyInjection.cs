@@ -7,6 +7,7 @@ using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Payments;
+using ExItS.Platform.Application.Personal;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Infrastructure.Authorization;
@@ -61,6 +62,7 @@ public static class DependencyInjection
         services.AddScoped<IOrganizationRoleDefinitionRepository, OrganizationRoleDefinitionRepository>();
         services.AddScoped<IOrganizationCustomRoleAssignmentRepository, OrganizationCustomRoleAssignmentRepository>();
         services.AddScoped<IAuditRecordRepository, AuditRecordRepository>();
+        services.AddScoped<IPersonalAccountSettingsRepository, PersonalAccountSettingsRepository>();
         services.AddScoped<IPlatformUnitOfWork, PlatformUnitOfWork>();
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IEntitlementRefreshPolicy, ProvisionalEntitlementRefreshPolicy>();

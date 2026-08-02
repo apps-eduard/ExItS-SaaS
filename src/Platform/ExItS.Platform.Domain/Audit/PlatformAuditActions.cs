@@ -120,4 +120,6 @@ public static class PlatformAuditActions
 
     /// <summary>Generic action code recorded when a permission-gated read is denied (e.g. audit or role-assignment views).</summary>
     public const string PlatformAccessChecked = "platform.access.checked";
+
+    public const string PersonalAccountSettingsUpdated = "platform.personal.account_settings.updated";
 }

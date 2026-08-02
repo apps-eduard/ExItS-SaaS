@@ -6,6 +6,7 @@ using ExItS.Platform.Infrastructure.Persistence.Entitlements;
 using ExItS.Platform.Infrastructure.Persistence.Identity;
 using ExItS.Platform.Infrastructure.Persistence.Organizations;
 using ExItS.Platform.Infrastructure.Persistence.Payments;
+using ExItS.Platform.Infrastructure.Persistence.Personal;
 using ExItS.Platform.Infrastructure.Persistence.Subscriptions;
 using Microsoft.EntityFrameworkCore;
 
@@ -60,6 +61,7 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<OrganizationRoleDefinitionRecord> OrganizationRoleDefinitions => Set<OrganizationRoleDefinitionRecord>();
     internal DbSet<OrganizationCustomRoleAssignmentRecord> OrganizationCustomRoleAssignments => Set<OrganizationCustomRoleAssignmentRecord>();
     internal DbSet<AuditRecordRecord> AuditRecords => Set<AuditRecordRecord>();
+    internal DbSet<PersonalAccountSettingsRecord> PersonalAccountSettings => Set<PersonalAccountSettingsRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -956,6 +958,30 @@ public sealed class PlatformDbContext : DbContext
             entity.HasIndex(e => e.ActionCode).HasDatabaseName("ix_audit_records_action_code");
             entity.HasIndex(e => e.OrganizationId).HasDatabaseName("ix_audit_records_organization_id");
             entity.HasIndex(e => e.Outcome).HasDatabaseName("ix_audit_records_outcome");
+        });
+
+        modelBuilder.Entity<PersonalAccountSettingsRecord>(entity =>
+        {
+            entity.ToTable("personal_account_settings");
+            entity.HasKey(e => e.UserIdentityId);
+            entity.Property(e => e.UserIdentityId).HasColumnName("user_identity_id");
+            entity.Property(e => e.EmailNotificationsEnabled).HasColumnName("email_notifications_enabled");
+            entity.Property(e => e.PushNotificationsEnabled).HasColumnName("push_notifications_enabled");
+            entity.Property(e => e.InAppNotificationsEnabled).HasColumnName("in_app_notifications_enabled");
+            entity.Property(e => e.ReminderNotificationsEnabled).HasColumnName("reminder_notifications_enabled");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Version).HasColumnName("version").IsConcurrencyToken();
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.UserIdentityId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

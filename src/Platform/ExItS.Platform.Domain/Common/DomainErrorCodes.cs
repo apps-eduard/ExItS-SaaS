@@ -103,4 +103,7 @@ public static class DomainErrorCodes
     public const string InvalidAuditCorrelationId = "platform.audit_record.correlation_id.invalid";
     public const string InvalidAuditReason = "platform.audit_record.reason.invalid";
     public const string InvalidAuditSummary = "platform.audit_record.summary.invalid";
+
+    public const string PersonalAccountSettingsConcurrencyConflict =
+        "platform.personal.account_settings.concurrency_conflict";
 }

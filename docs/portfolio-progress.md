@@ -12,9 +12,9 @@
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 16 — Isolated Account Profiles, Personal Utang, and Business Upgrade (**in progress**) |
-| Current work package | P16-WP03 — Organization Context and Navigation (**complete**) |
-| Overall status | **Phase 16 authorized and in progress.** P16-WP03 complete ([report](reports/P16-WP03-organization-context-and-navigation.md)). Exact next: **P16-WP04**. Phase 15 complete. Phase 14 remains in progress through **P14-WP03** and was **not** closed or weakened by Phase 16. Live Preview hardening must not be rolled back. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | `3454a7e6caa0d307d03a03d91abe7250ccad96a1` |
+| Current work package | P16-WP04 — Personal Account Foundation (**complete**) |
+| Overall status | **Phase 16 authorized and in progress.** P16-WP04 complete ([report](reports/P16-WP04-personal-account-foundation.md)). Exact next: **P16-WP05**. Phase 15 complete. Phase 14 remains in progress through **P14-WP03** and was **not** closed or weakened by Phase 16. Live Preview hardening must not be rolled back. Production remains **Blocked**. **Not production-ready.** |
+| Latest verified commit | *(recorded after commit)* |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-08-02 |
 
@@ -129,9 +129,11 @@ P16-WP02 ✓ Account Profiles and Session Isolation
         ↓
 P16-WP03 ✓ Organization Context and Navigation
         ↓
-P16-WP04 ○ Personal Account Foundation (next)
+P16-WP04 ✓ Personal Account Foundation
         ↓
-P16-WP05…P16-WP10 ○ (authorized; do not skip ahead)
+P16-WP05 ○ Personal Utang Core (next)
+        ↓
+P16-WP06…P16-WP10 ○ (authorized; do not skip ahead)
 ```
 
 ## Phase progress
@@ -154,7 +156,7 @@ P16-WP05…P16-WP10 ○ (authorized; do not skip ahead)
 | 13 | Production Authentication and Identity | **Complete with documented residuals** | 9 | 9 | 100% | [Open](phases/phase-13-production-authentication-and-identity.md) |
 | 14 | Production Deployment and Operations | **In progress** | 3 | 7 | — | [Open](phases/phase-14-production-deployment-and-operations.md) |
 | 15 | Ant Design Platform Administration | **Complete** | 7 | 7 | 100% | [Open](phases/phase-15-ant-design-platform-admin.md) |
-| 16 | Isolated Account Profiles, Personal Utang, Business Upgrade | **In progress** | 3 | 10 | 30% | [Open](phases/phase-16-isolated-account-profiles-personal-utang-and-business-upgrade.md) |
+| 16 | Isolated Account Profiles, Personal Utang, Business Upgrade | **In progress** | 4 | 10 | 40% | [Open](phases/phase-16-isolated-account-profiles-personal-utang-and-business-upgrade.md) |
 
 **MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
@@ -163,7 +165,7 @@ P16-WP05…P16-WP10 ○ (authorized; do not skip ahead)
 **Phase 13 Production Authentication:** 9 / 9 = **100%** (R-091 closed for Phase 13 scope; residuals documented; not Production-ready).
 **Phase 14 Production Deployment:** 3 / 7 WPs complete (through P14-WP03 reverse-proxy/TLS template; Production blocked).
 **Phase 15 Ant Design Platform Admin:** 7 / 7 WPs complete (closeout [P15-WP07](reports/P15-WP07-phase-15-closeout.md); Fluent UI direction cancelled/superseded).
-**Phase 16 Account Profiles / Personal Utang:** 3 / 10 WPs complete (through P16-WP03; Phase 14 unchanged).
+**Phase 16 Account Profiles / Personal Utang:** 4 / 10 WPs complete (through P16-WP04; Phase 14 unchanged).
 
 ## Phase 16 work packages
 
@@ -172,7 +174,7 @@ P16-WP05…P16-WP10 ○ (authorized; do not skip ahead)
 | P16-WP01 — Architecture and Domain Reconciliation | Complete | `d1e0096caac1b5aa0e47721938635a1e9766c66b` — [report](reports/P16-WP01-architecture-and-domain-reconciliation.md) |
 | P16-WP02 — Account Profiles and Session Isolation | Complete | `f0bb6c9ec87e75e7505087404cad463f931f5a67` — [report](reports/P16-WP02-account-profiles-and-session-isolation.md) |
 | P16-WP03 — Organization Context and Navigation | Complete | `3454a7e6caa0d307d03a03d91abe7250ccad96a1` — [report](reports/P16-WP03-organization-context-and-navigation.md) |
-| P16-WP04 — Personal Account Foundation | Not started | — |
+| P16-WP04 — Personal Account Foundation | Complete | *(recorded after commit)* — [report](reports/P16-WP04-personal-account-foundation.md) |
 | P16-WP05 — Personal Utang Core | Not started | — |
 | P16-WP06 — Invitations, Linking, Reminders, Notifications | Not started | — |
 | P16-WP07 — Organization Staff and Customer Separation | Not started | — |
