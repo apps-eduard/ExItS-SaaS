@@ -63,6 +63,7 @@ else if (Id is null)
                 <SelectOption TItemValue="string" TItem="string" Value="@("Active")" Label="@L["Status_Active"]" />
                 <SelectOption TItemValue="string" TItem="string" Value="@("Suspended")" Label="@L["Status_Suspended"]" />
                 <SelectOption TItemValue="string" TItem="string" Value="@("Deactivated")" Label="@L["Status_Deactivated"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("PendingVerification")" Label="@L["Status_PendingVerification"]" />
             </SelectOptions>
         </Select>
         <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ApplyUserFiltersAsync">@L["Common_Apply"]</Button>
@@ -75,9 +76,14 @@ else if (Id is null)
             <FormValidationSummary Title="@L["Users_CreateFailed"]" Message="@_formError" IsConflict="_formConflict" />
             <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
                 <div>
-                    <label class="ant-form-item-label" for="user-create-username">@L["Common_Username"]</label>
-                    <Input Id="user-create-username" @bind-Value="_newUsername" Size="@InputSize.Small" Disabled="_busy" />
-                    @if (_fieldUsername is not null) { <span class="exits-field-error">@_fieldUsername</span> }
+                    <label class="ant-form-item-label" for="user-create-firstname">@L["Users_FirstName"]</label>
+                    <Input Id="user-create-firstname" @bind-Value="_newFirstName" Size="@InputSize.Small" Disabled="_busy" />
+                    @if (_fieldFirstName is not null) { <span class="exits-field-error">@_fieldFirstName</span> }
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="user-create-lastname">@L["Users_LastName"]</label>
+                    <Input Id="user-create-lastname" @bind-Value="_newLastName" Size="@InputSize.Small" Disabled="_busy" />
+                    @if (_fieldLastName is not null) { <span class="exits-field-error">@_fieldLastName</span> }
                 </div>
                 <div>
                     <label class="ant-form-item-label" for="user-create-displayname">@L["Common_DisplayName"]</label>
@@ -89,6 +95,46 @@ else if (Id is null)
                     <Input Id="user-create-email" @bind-Value="_newEmail" Size="@InputSize.Small" Disabled="_busy" />
                     @if (_fieldEmail is not null) { <span class="exits-field-error">@_fieldEmail</span> }
                 </div>
+                <div>
+                    <label class="ant-form-item-label" for="user-create-phone">@L["Users_Phone"]</label>
+                    <Input Id="user-create-phone" @bind-Value="_newPhone" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="user-create-employee-code">@L["Users_EmployeeCode"]</label>
+                    <Input Id="user-create-employee-code" @bind-Value="_newEmployeeCode" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="user-create-platform-role">@L["Users_PlatformRole"]</label>
+                    <Select Id="user-create-platform-role"
+                            TItemValue="string"
+                            TItem="string"
+                            @bind-Value="_newPlatformRole"
+                            Size="@InputSize.Small"
+                            Style="width:100%;"
+                            Disabled="_busy"
+                            Placeholder="@L["Users_PlatformRolePlaceholder"]">
+                        <SelectOptions>
+                            <SelectOption TItemValue="string" TItem="string" Value="@("PlatformAdministrator")" Label="@L["Users_Role_PlatformAdministrator"]" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("BillingAdministrator")" Label="@L["Users_Role_BillingAdministrator"]" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("PlatformSupport")" Label="@L["Users_Role_PlatformSupport"]" />
+                        </SelectOptions>
+                    </Select>
+                    @if (_fieldPlatformRole is not null) { <span class="exits-field-error">@_fieldPlatformRole</span> }
+                </div>
+                <div>
+                    <Checkbox Checked="_sendEmailVerification"
+                              CheckedChanged="OnSendEmailVerificationChanged"
+                              Disabled="_busy">@L["Users_RequireEmailVerification"]</Checkbox>
+                </div>
+                @if (_sendEmailVerification)
+                {
+                    <div>
+                        <label class="ant-form-item-label" for="user-create-initial-password">@L["Users_InitialPassword"]</label>
+                        <InputPassword Id="user-create-initial-password" @bind-Value="_newInitialPassword" Size="@InputSize.Small" Disabled="_busy" />
+                        @if (_fieldInitialPassword is not null) { <span class="exits-field-error">@_fieldInitialPassword</span> }
+                        <div class="ant-form-item-explain" style="margin-top:4px;">@L["Users_SendEmailVerificationHint"]</div>
+                    </div>
+                }
                 <Space>
                     <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">@L["Common_Create"]</Button>
                     <Button Size="@ButtonSize.Small" OnClick="HideCreate" Disabled="_busy">@L["Common_Cancel"]</Button>
@@ -131,12 +177,30 @@ else if (Id is null)
             </PropertyColumn>
             <PropertyColumn Property="c => c.OrganizationNames" Title="@L["Users_OrganizationName"]" Ellipsis Sortable>
                 @{
-                    var orgNames = context.OrganizationNames ?? Array.Empty<string>();
+                    var orgs = context.Organizations ?? Array.Empty<PlatformUserOrganizationDirectoryItem>();
                 }
-                @(orgNames.Count == 0 ? "—" : string.Join(", ", orgNames))
+                @if (orgs.Count == 0)
+                {
+                    <span>—</span>
+                }
+                else
+                {
+                    @foreach (var org in orgs)
+                    {
+                        <div style="margin-bottom:2px;">
+                            <span>@org.Name</span>
+                            <Tag Color="@(org.Role == "OrganizationOwner" ? "gold" : "default")"
+                                 Style="@(org.Role == "OrganizationOwner" ? "font-weight:600;margin-left:6px;" : "margin-left:6px;")">
+                                @org.RoleDisplay
+                            </Tag>
+                        </div>
+                    }
+                }
             </PropertyColumn>
             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable>
-                <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                <Tag Color="@StatusColor(context.Status)">
+                    @(context.Status == "PendingVerification" ? L["Status_PendingVerification"] : context.Status)
+                </Tag>
             </PropertyColumn>
             <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Format="u" Sortable />
             <ActionColumn Title="@L["Common_Open"]" Width="88">
@@ -163,8 +227,17 @@ else
         <FormValidationSummary Title="@L["Common_ActionFailed"]" Message="@_formError" IsConflict="_formConflict" />
 
         <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
+            <DescriptionsItem Title="@L["Users_StaffNumber"]">@(u.StaffNumber ?? "—")</DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_Status"]">
+                <Tag Color="@StatusColor(u.Status)">
+                    @(u.Status == "PendingVerification" ? L["Status_PendingVerification"] : u.Status)
+                </Tag>
+            </DescriptionsItem>
+            <DescriptionsItem Title="@L["Users_FirstName"]">@(u.FirstName ?? "—")</DescriptionsItem>
+            <DescriptionsItem Title="@L["Users_LastName"]">@(u.LastName ?? "—")</DescriptionsItem>
             <DescriptionsItem Title="@L["Common_Username"]">@u.Username</DescriptionsItem>
-            <DescriptionsItem Title="@L["Common_Status"]"><Tag Color="@StatusColor(u.Status)">@u.Status</Tag></DescriptionsItem>
+            <DescriptionsItem Title="@L["Users_Phone"]">@(u.Phone ?? "—")</DescriptionsItem>
+            <DescriptionsItem Title="@L["Users_EmployeeCode"]">@(u.EmployeeCode ?? "—")</DescriptionsItem>
             <DescriptionsItem Title="@L["Users_AccountType"]">
                 @foreach (var accountClass in (u.AccountClasses ?? Array.Empty<string>()))
                 {
@@ -177,9 +250,25 @@ else
             </DescriptionsItem>
             <DescriptionsItem Title="@L["Users_OrganizationName"]">
                 @{
-                    var detailOrgs = u.OrganizationNames ?? Array.Empty<string>();
+                    var detailOrgs = u.Organizations ?? Array.Empty<PlatformUserOrganizationDirectoryItem>();
                 }
-                @(detailOrgs.Count == 0 ? "—" : string.Join(", ", detailOrgs))
+                @if (detailOrgs.Count == 0)
+                {
+                    <text>—</text>
+                }
+                else
+                {
+                    @foreach (var org in detailOrgs)
+                    {
+                        <div style="margin-bottom:4px;">
+                            <span>@org.Name</span>
+                            <Tag Color="@(org.Role == "OrganizationOwner" ? "gold" : "default")"
+                                 Style="@(org.Role == "OrganizationOwner" ? "font-weight:600;margin-left:6px;" : "margin-left:6px;")">
+                                @org.RoleDisplay
+                            </Tag>
+                        </div>
+                    }
+                }
             </DescriptionsItem>
             <DescriptionsItem Title="@L["Common_CreatedUtc"]"><UtcTimestamp Value="@u.CreatedAtUtc" /></DescriptionsItem>
             <DescriptionsItem Title="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@u.UpdatedAtUtc" /></DescriptionsItem>
@@ -193,6 +282,18 @@ else
         <Card Size="@CardSize.Small" Title="@L["Users_EditProfile"]" Style="margin-bottom:12px;">
             <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
                 <div>
+                    <label class="ant-form-item-label">@L["Users_StaffNumber"]</label>
+                    <Input Value="@(u.StaffNumber ?? "—")" Size="@InputSize.Small" Disabled="true" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="user-edit-firstname">@L["Users_FirstName"]</label>
+                    <Input Id="user-edit-firstname" @bind-Value="_editFirstName" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="user-edit-lastname">@L["Users_LastName"]</label>
+                    <Input Id="user-edit-lastname" @bind-Value="_editLastName" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <div>
                     <label class="ant-form-item-label" for="user-edit-displayname">@L["Common_DisplayName"]</label>
                     <Input Id="user-edit-displayname" @bind-Value="_editDisplayName" Size="@InputSize.Small" Disabled="_busy" />
                     @if (_fieldDisplayName is not null) { <span class="exits-field-error">@_fieldDisplayName</span> }
@@ -202,6 +303,14 @@ else
                     <Input Id="user-edit-email" @bind-Value="_editEmail" Size="@InputSize.Small" Disabled="_busy" />
                     @if (_fieldEmail is not null) { <span class="exits-field-error">@_fieldEmail</span> }
                 </div>
+                <div>
+                    <label class="ant-form-item-label" for="user-edit-phone">@L["Users_Phone"]</label>
+                    <Input Id="user-edit-phone" @bind-Value="_editPhone" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="user-edit-employee-code">@L["Users_EmployeeCode"]</label>
+                    <Input Id="user-edit-employee-code" @bind-Value="_editEmployeeCode" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
                 <Space>
                     <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveProfileAsync">@L["Users_SaveProfile"]</Button>
                     <Button Size="@ButtonSize.Small" OnClick="ResetProfileAsync" Disabled="_busy">@L["Common_Cancel"]</Button>
@@ -210,24 +319,104 @@ else
         </Card>
 
         <Card Size="@CardSize.Small" Title="@L["Users_Lifecycle"]" Style="margin-bottom:12px;">
-            <Space>
-                <Popconfirm Title="@L["Users_SuspendConfirmMessage"]"
-                            OnConfirm="SuspendAsync"
-                            OkText="@L["Common_Confirm"]"
-                            CancelText="@L["Common_Cancel"]"
-                            Disabled="_busy">
-                    <Button Size="@ButtonSize.Small" Danger Disabled="_busy">@L["Users_SuspendUser"]</Button>
-                </Popconfirm>
-                <Button Size="@ButtonSize.Small" OnClick="ReactivateAsync" Disabled="_busy">@L["Users_ReactivateUser"]</Button>
-                <Popconfirm Title="@L["Users_DisableConfirmMessage"]"
-                            OnConfirm="DisableAsync"
-                            OkText="@L["Common_Confirm"]"
-                            CancelText="@L["Common_Cancel"]"
-                            Disabled="_busy">
-                    <Button Size="@ButtonSize.Small" Danger Disabled="_busy">@L["Users_DisableUser"]</Button>
-                </Popconfirm>
+            <Paragraph Type="@TextElementType.Secondary">@L["Users_LifecycleHint"]</Paragraph>
+            @{
+                var status = _detail?.Data?.Status;
+                var isPlatformAccount = _detail?.Data?.AccountClasses?.Any(c =>
+                    string.Equals(c, "Platform", StringComparison.OrdinalIgnoreCase)) == true;
+            }
+            <Space Wrap>
+                @if (status == "Active")
+                {
+                    @if (isPlatformAccount)
+                    {
+                        <Button Size="@ButtonSize.Small" Danger Disabled="_busy" OnClick="() => OpenLifecycleModal(LifecycleAction.Suspend)">
+                            @L["Users_Action_Suspend"]
+                        </Button>
+                        <Button Size="@ButtonSize.Small" Danger Disabled="_busy" OnClick="() => OpenLifecycleModal(LifecycleAction.Deactivate)">
+                            @L["Users_Action_Deactivate"]
+                        </Button>
+                    }
+                    else
+                    {
+                        <Button Size="@ButtonSize.Small" Danger Disabled="_busy" OnClick="() => OpenLifecycleModal(LifecycleAction.GlobalSuspend)">
+                            @L["Users_Action_GlobalSuspend"]
+                        </Button>
+                    }
+                }
+                else if (status == "Suspended")
+                {
+                    @if (isPlatformAccount)
+                    {
+                        <Popconfirm Title="@L["Users_ReactivateConfirmMessage"]"
+                                    OnConfirm="() => ConfirmSimpleReactivateAsync(global: false)"
+                                    OkText="@L["Common_Confirm"]"
+                                    CancelText="@L["Common_Cancel"]"
+                                    Disabled="_busy">
+                            <Button Size="@ButtonSize.Small" Disabled="_busy">@L["Users_Action_Reactivate"]</Button>
+                        </Popconfirm>
+                        <Button Size="@ButtonSize.Small" Danger Disabled="_busy" OnClick="() => OpenLifecycleModal(LifecycleAction.Deactivate)">
+                            @L["Users_Action_Deactivate"]
+                        </Button>
+                    }
+                    else
+                    {
+                        <Popconfirm Title="@L["Users_GlobalReactivateConfirmMessage"]"
+                                    OnConfirm="() => ConfirmSimpleReactivateAsync(global: true)"
+                                    OkText="@L["Common_Confirm"]"
+                                    CancelText="@L["Common_Cancel"]"
+                                    Disabled="_busy">
+                            <Button Size="@ButtonSize.Small" Disabled="_busy">@L["Users_Action_GlobalReactivate"]</Button>
+                        </Popconfirm>
+                    }
+                }
+                else if (status == "Deactivated")
+                {
+                    <Button Size="@ButtonSize.Small" Disabled="_busy" OnClick="() => OpenLifecycleModal(LifecycleAction.ReactivateFromDeactivated)">
+                        @L["Users_Action_Reactivate"]
+                    </Button>
+                    <Button Size="@ButtonSize.Small" Danger Disabled="_busy" OnClick="() => OpenLifecycleModal(LifecycleAction.MoveToSuspended)">
+                        @L["Users_Action_MoveToSuspended"]
+                    </Button>
+                }
             </Space>
         </Card>
+
+        <Modal Title="@_lifecycleModalTitle"
+               Visible="_lifecycleModalVisible"
+               ConfirmLoading="_busy"
+               OnOk="SubmitLifecycleModalAsync"
+               OnCancel="CloseLifecycleModal"
+               OkText="@L["Common_Confirm"].Value"
+               CancelText="@L["Common_Cancel"].Value">
+            <Alert Type="@AlertType.Warning" ShowIcon="true" Message="@_lifecycleModalHint" Style="margin-bottom:12px;" />
+            <Descriptions Size="@DescriptionsSize.Small" Column="1" Bordered Style="margin-bottom:12px;">
+                <DescriptionsItem Title="@L["Common_DisplayName"]">@(_detail?.Data?.DisplayName ?? "—")</DescriptionsItem>
+                <DescriptionsItem Title="@L["Common_Email"]">@(_detail?.Data?.Email ?? "—")</DescriptionsItem>
+                <DescriptionsItem Title="@L["Common_Status"]">@(_detail?.Data?.Status ?? "—")</DescriptionsItem>
+                <DescriptionsItem Title="@L["OrgMembers_TargetStatus"]">@_lifecycleTargetStatus</DescriptionsItem>
+            </Descriptions>
+            @if (_lifecycleRequiresReason)
+            {
+                <div style="margin-bottom:12px;">
+                    <label class="ant-form-item-label">@L["Users_LifecycleReason"]</label>
+                    <TextArea @bind-Value="_lifecycleReason" Rows="3" Disabled="_busy" />
+                    @if (_fieldLifecycleReason is not null) { <span class="exits-field-error">@_fieldLifecycleReason</span> }
+                </div>
+            }
+            @if (_lifecycleRequiresStepUp)
+            {
+                <div style="margin-bottom:12px;">
+                    <label class="ant-form-item-label">@L["Users_ActorPassword"]</label>
+                    <InputPassword @bind-Value="_lifecycleActorPassword" Disabled="_busy" />
+                    @if (_fieldLifecyclePassword is not null) { <span class="exits-field-error">@_fieldLifecyclePassword</span> }
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label class="ant-form-item-label">@L["Users_MfaCode"]</label>
+                    <Input @bind-Value="_lifecycleMfaCode" Size="@InputSize.Small" Disabled="_busy" Placeholder="@L["Users_MfaCodeHint"]" />
+                </div>
+            }
+        </Modal>
 
         <Card Size="@CardSize.Small" Title="Credentials" Style="margin-bottom:12px;">
             @if (_credentials is null) { <Spin /> }
@@ -257,11 +446,16 @@ else
         else if (_memberships.Data!.Items.Count == 0) { <Empty Description="@L["Users_MembershipsEmpty"].Value" /> }
         else
         {
-            <Table TItem="OrganizationMembershipDto" DataSource="_memberships.Data.Items" Size="@TableSize.Small" HidePagination Bordered>
+            <Table TItem="OrganizationMembershipDto" DataSource="_memberships.Data.Items" Size="@TableSize.Small" HidePagination Bordered ScrollX="720">
                 <PropertyColumn Property="c => c.OrganizationId" Title="@L["Common_Organization"]">
                     <a href="/admin/organizations/@context.OrganizationId/members">@context.OrganizationId</a>
                 </PropertyColumn>
-                <PropertyColumn Property="c => c.Role" Title="@L["Common_Role"]" />
+                <PropertyColumn Property="c => c.Role" Title="@L["Common_Role"]">
+                    <Tag Color="@(context.Role == "OrganizationOwner" ? "gold" : "default")"
+                         Style="@(context.Role == "OrganizationOwner" ? "font-weight:600;" : null)">
+                        @(context.RoleDisplay ?? FormatOrgRoleDisplay(context.Role))
+                    </Tag>
+                </PropertyColumn>
                 <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
                     <Tag>@context.Status</Tag>
                 </PropertyColumn>
@@ -275,7 +469,7 @@ else
         else if (_access.Data!.Items.Count == 0) { <Empty Description="@L["Users_ProductAccessEmpty"].Value" /> }
         else
         {
-            <Table TItem="ProductAccessAssignmentDto" DataSource="_access.Data.Items" Size="@TableSize.Small" HidePagination Bordered>
+            <Table TItem="ProductAccessAssignmentDto" DataSource="_access.Data.Items" Size="@TableSize.Small" HidePagination Bordered ScrollX="720">
                 <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" />
                 <PropertyColumn Property="c => c.OrganizationId" Title="@L["Common_Organization"]" />
                 <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]"><Tag>@context.Status</Tag></PropertyColumn>
@@ -295,18 +489,56 @@ else
     private string _search = "";
     private string _status = "";
     private bool _showCreate;
-    private string _newUsername = "";
+    private enum LifecycleAction
+    {
+        Suspend,
+        GlobalSuspend,
+        Deactivate,
+        MoveToSuspended,
+        ReactivateFromDeactivated
+    }
+
+    private bool _lifecycleModalVisible;
+    private LifecycleAction _lifecycleAction;
+    private string _lifecycleModalTitle = "";
+    private string _lifecycleModalHint = "";
+    private string _lifecycleTargetStatus = "";
+    private bool _lifecycleRequiresReason;
+    private bool _lifecycleRequiresStepUp;
+    private string _lifecycleReason = "";
+    private string _lifecycleActorPassword = "";
+    private string _lifecycleMfaCode = "";
+    private string? _fieldLifecycleReason;
+    private string? _fieldLifecyclePassword;
+    private string _newFirstName = "";
+    private string _newLastName = "";
     private string _newDisplayName = "";
     private string _newEmail = "";
+    private string _newPhone = "";
+    private string _newEmployeeCode = "";
+    private string _newPlatformRole = "";
+    private bool _sendEmailVerification;
+    private string _newInitialPassword = "";
     private string _editDisplayName = "";
     private string _editEmail = "";
+    private string _editFirstName = "";
+    private string _editLastName = "";
+    private string _editPhone = "";
+    private string _editEmployeeCode = "";
     private string _savedDisplayName = "";
     private string _savedEmail = "";
+    private string _savedFirstName = "";
+    private string _savedLastName = "";
+    private string _savedPhone = "";
+    private string _savedEmployeeCode = "";
     private string? _formError;
     private bool _formConflict;
-    private string? _fieldUsername;
+    private string? _fieldFirstName;
+    private string? _fieldLastName;
     private string? _fieldDisplayName;
     private string? _fieldEmail;
+    private string? _fieldPlatformRole;
+    private string? _fieldInitialPassword;
     private bool _busy;
     private int _page = 1;
     private string? _sortBy;
@@ -394,7 +626,16 @@ else
         "Active" => "success",
         "Suspended" => "error",
         "Deactivated" => "default",
+        "PendingVerification" => "warning",
         _ => "processing"
+    };
+
+    private static string FormatOrgRoleDisplay(string? role) => role switch
+    {
+        "OrganizationOwner" => "Owner",
+        "OrganizationMember" => "Staff",
+        "OrganizationAdministrator" => "Administrator",
+        _ => role ?? "—"
     };
 
     private static string AccountClassColor(string accountClass) => accountClass switch
@@ -521,6 +762,14 @@ else
         {
             _editDisplayName = _detail.Data!.DisplayName;
             _editEmail = _detail.Data.Email;
+            _editFirstName = _detail.Data.FirstName ?? "";
+            _editLastName = _detail.Data.LastName ?? "";
+            _editPhone = _detail.Data.Phone ?? "";
+            _editEmployeeCode = _detail.Data.EmployeeCode ?? "";
+            _savedFirstName = _editFirstName;
+            _savedLastName = _editLastName;
+            _savedPhone = _editPhone;
+            _savedEmployeeCode = _editEmployeeCode;
             _savedDisplayName = _editDisplayName;
             _savedEmail = _editEmail;
         }
@@ -592,6 +841,16 @@ else
         await ReloadDetailAsync();
     }
 
+    private void OnSendEmailVerificationChanged(bool value)
+    {
+        _sendEmailVerification = value;
+        if (!value)
+        {
+            _newInitialPassword = "";
+            _fieldInitialPassword = null;
+        }
+    }
+
     private async Task ToggleCreate()
     {
         if (_showCreate && HasCreateDraft())
@@ -638,13 +897,22 @@ else
     }
 
     private bool HasCreateDraft() =>
-        !string.IsNullOrWhiteSpace(_newUsername)
+        !string.IsNullOrWhiteSpace(_newFirstName)
+        || !string.IsNullOrWhiteSpace(_newLastName)
         || !string.IsNullOrWhiteSpace(_newDisplayName)
-        || !string.IsNullOrWhiteSpace(_newEmail);
+        || !string.IsNullOrWhiteSpace(_newEmail)
+        || !string.IsNullOrWhiteSpace(_newPhone)
+        || !string.IsNullOrWhiteSpace(_newEmployeeCode)
+        || !string.IsNullOrWhiteSpace(_newPlatformRole)
+        || _sendEmailVerification
+        || !string.IsNullOrWhiteSpace(_newInitialPassword);
 
     private void ClearCreate()
     {
-        _newUsername = _newDisplayName = _newEmail = "";
+        _newFirstName = _newLastName = _newDisplayName = _newEmail = _newPhone = _newEmployeeCode = "";
+        _newPlatformRole = "";
+        _sendEmailVerification = false;
+        _newInitialPassword = "";
         ClearFieldErrors();
         _formError = null;
         _formConflict = false;
@@ -661,9 +929,14 @@ else
         _formError = null;
         _formConflict = false;
 
-        if (string.IsNullOrWhiteSpace(_newUsername))
+        if (string.IsNullOrWhiteSpace(_newFirstName))
         {
-            _fieldUsername = L["Users_UsernameRequired"];
+            _fieldFirstName = L["Users_FirstNameRequired"];
+        }
+
+        if (string.IsNullOrWhiteSpace(_newLastName))
+        {
+            _fieldLastName = L["Users_LastNameRequired"];
         }
 
         if (string.IsNullOrWhiteSpace(_newDisplayName))
@@ -676,13 +949,38 @@ else
             _fieldEmail = L["Users_EmailRequired"];
         }
 
-        if (_fieldUsername is not null || _fieldDisplayName is not null || _fieldEmail is not null)
+        if (string.IsNullOrWhiteSpace(_newPlatformRole))
+        {
+            _fieldPlatformRole = L["Users_PlatformRoleRequired"];
+        }
+
+        if (_sendEmailVerification && string.IsNullOrWhiteSpace(_newInitialPassword))
+        {
+            _fieldInitialPassword = L["Users_InitialPasswordRequired"];
+        }
+
+        if (_fieldFirstName is not null
+            || _fieldLastName is not null
+            || _fieldDisplayName is not null
+            || _fieldEmail is not null
+            || _fieldPlatformRole is not null
+            || _fieldInitialPassword is not null)
         {
             _busy = false;
             return;
         }
 
-        var result = await Api.CreateUserAsync(new CreatePlatformUserRequest(_newUsername, _newDisplayName, _newEmail));
+        var result = await Api.CreateUserAsync(new CreatePlatformUserRequest(
+            _newDisplayName,
+            _newEmail,
+            _newPlatformRole,
+            FirstName: _newFirstName,
+            LastName: _newLastName,
+            Phone: string.IsNullOrWhiteSpace(_newPhone) ? null : _newPhone,
+            EmployeeCode: string.IsNullOrWhiteSpace(_newEmployeeCode) ? null : _newEmployeeCode,
+            RequireEmailVerification: _sendEmailVerification,
+            SendEmailVerification: _sendEmailVerification,
+            InitialPassword: _sendEmailVerification ? _newInitialPassword : null));
         _busy = false;
         if (!result.IsSuccess)
         {
@@ -724,7 +1022,13 @@ else
             return;
         }
 
-        var result = await Api.UpdateUserAsync(Id.Value, new UpdatePlatformUserRequest(_editDisplayName, _editEmail));
+        var result = await Api.UpdateUserAsync(Id.Value, new UpdatePlatformUserRequest(
+            _editDisplayName,
+            _editEmail,
+            FirstName: string.IsNullOrWhiteSpace(_editFirstName) ? null : _editFirstName,
+            LastName: string.IsNullOrWhiteSpace(_editLastName) ? null : _editLastName,
+            Phone: string.IsNullOrWhiteSpace(_editPhone) ? null : _editPhone,
+            EmployeeCode: string.IsNullOrWhiteSpace(_editEmployeeCode) ? null : _editEmployeeCode));
         _busy = false;
         if (!result.IsSuccess)
         {
@@ -741,35 +1045,73 @@ else
     {
         _editDisplayName = _savedDisplayName;
         _editEmail = _savedEmail;
+        _editFirstName = _savedFirstName;
+        _editLastName = _savedLastName;
+        _editPhone = _savedPhone;
+        _editEmployeeCode = _savedEmployeeCode;
         ClearFieldErrors();
         _formError = null;
         _formConflict = false;
         return Task.CompletedTask;
     }
 
-    private async Task SuspendAsync()
+    private void OpenLifecycleModal(LifecycleAction action)
     {
-        if (Id is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
-        {
-            return;
-        }
-
+        _lifecycleAction = action;
+        _lifecycleReason = "";
+        _lifecycleActorPassword = "";
+        _lifecycleMfaCode = "";
+        _fieldLifecycleReason = null;
+        _fieldLifecyclePassword = null;
         _formError = null;
-        _formConflict = false;
-        var result = await Api.SuspendUserAsync(Id.Value, "Suspended from Platform Admin");
-        _busy = false;
-        if (!result.IsSuccess)
+        (_lifecycleModalTitle, _lifecycleModalHint, _lifecycleTargetStatus, _lifecycleRequiresReason, _lifecycleRequiresStepUp) = action switch
         {
-            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
-            _formError = AdminFormErrorMapper.MapPageError(result);
-            return;
-        }
-
-        await Message.SuccessAsync(L["Users_ToastSuspended"].Value);
-        await ReloadDetailAsync();
+            LifecycleAction.Suspend => (
+                L["Users_Action_Suspend"].Value,
+                L["Users_SuspendConfirmMessage"].Value,
+                L["Status_Suspended"].Value,
+                true,
+                false),
+            LifecycleAction.GlobalSuspend => (
+                L["Users_Action_GlobalSuspend"].Value,
+                L["Users_GlobalSuspendConfirmMessage"].Value,
+                L["Status_Suspended"].Value,
+                true,
+                false),
+            LifecycleAction.Deactivate => (
+                L["Users_Action_Deactivate"].Value,
+                L["Users_DeactivateConfirmMessage"].Value,
+                L["Status_Deactivated"].Value,
+                true,
+                true),
+            LifecycleAction.MoveToSuspended => (
+                L["Users_Action_MoveToSuspended"].Value,
+                L["Users_MoveToSuspendedConfirmMessage"].Value,
+                L["Status_Suspended"].Value,
+                true,
+                true),
+            LifecycleAction.ReactivateFromDeactivated => (
+                L["Users_Action_Reactivate"].Value,
+                L["Users_ReactivateDeactivatedConfirmMessage"].Value,
+                L["Status_Active"].Value,
+                true,
+                true),
+            _ => ("", "", "", false, false)
+        };
+        _lifecycleModalVisible = true;
     }
 
-    private async Task ReactivateAsync()
+    private void CloseLifecycleModal()
+    {
+        _lifecycleModalVisible = false;
+        _lifecycleReason = "";
+        _lifecycleActorPassword = "";
+        _lifecycleMfaCode = "";
+        _fieldLifecycleReason = null;
+        _fieldLifecyclePassword = null;
+    }
+
+    private async Task ConfirmSimpleReactivateAsync(bool global)
     {
         if (Id is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
         {
@@ -778,7 +1120,7 @@ else
 
         _formError = null;
         _formConflict = false;
-        var result = await Api.ReactivateUserAsync(Id.Value);
+        var result = await Api.ReactivateUserAsync(Id.Value, new ReactivatePlatformUserRequest(Global: global));
         _busy = false;
         if (!result.IsSuccess)
         {
@@ -791,16 +1133,55 @@ else
         await ReloadDetailAsync();
     }
 
-    private async Task DisableAsync()
+    private async Task SubmitLifecycleModalAsync()
     {
         if (Id is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
         {
             return;
         }
 
+        _fieldLifecycleReason = null;
+        _fieldLifecyclePassword = null;
         _formError = null;
         _formConflict = false;
-        var result = await Api.DisableUserAsync(Id.Value);
+
+        if (_lifecycleRequiresReason && string.IsNullOrWhiteSpace(_lifecycleReason))
+        {
+            _fieldLifecycleReason = L["Users_LifecycleReasonRequired"];
+            _busy = false;
+            return;
+        }
+
+        if (_lifecycleRequiresStepUp && string.IsNullOrWhiteSpace(_lifecycleActorPassword))
+        {
+            _fieldLifecyclePassword = L["Users_ActorPasswordRequired"];
+            _busy = false;
+            return;
+        }
+
+        ApiCallResult<PlatformUserDto> result = _lifecycleAction switch
+        {
+            LifecycleAction.Suspend => await Api.SuspendUserAsync(Id.Value, _lifecycleReason.Trim()),
+            LifecycleAction.GlobalSuspend => await Api.SuspendUserAsync(Id.Value, _lifecycleReason.Trim(), global: true),
+            LifecycleAction.Deactivate => await Api.DeactivateUserAsync(
+                Id.Value,
+                _lifecycleReason.Trim(),
+                _lifecycleActorPassword,
+                string.IsNullOrWhiteSpace(_lifecycleMfaCode) ? null : _lifecycleMfaCode.Trim()),
+            LifecycleAction.MoveToSuspended => await Api.MoveUserToSuspendedAsync(
+                Id.Value,
+                _lifecycleReason.Trim(),
+                _lifecycleActorPassword,
+                string.IsNullOrWhiteSpace(_lifecycleMfaCode) ? null : _lifecycleMfaCode.Trim()),
+            LifecycleAction.ReactivateFromDeactivated => await Api.ReactivateUserAsync(
+                Id.Value,
+                new ReactivatePlatformUserRequest(
+                    _lifecycleReason.Trim(),
+                    _lifecycleActorPassword,
+                    string.IsNullOrWhiteSpace(_lifecycleMfaCode) ? null : _lifecycleMfaCode.Trim())),
+            _ => new ApiCallResult<PlatformUserDto>(ApiCallStatus.Failed)
+        };
+
         _busy = false;
         if (!result.IsSuccess)
         {
@@ -809,12 +1190,20 @@ else
             return;
         }
 
-        await Message.SuccessAsync(L["Users_ToastDisabled"].Value);
+        CloseLifecycleModal();
+        var toast = _lifecycleAction switch
+        {
+            LifecycleAction.Suspend or LifecycleAction.GlobalSuspend => L["Users_ToastSuspended"].Value,
+            LifecycleAction.Deactivate => L["Users_ToastDeactivated"].Value,
+            LifecycleAction.MoveToSuspended => L["Users_ToastMovedToSuspended"].Value,
+            _ => L["Users_ToastReactivated"].Value
+        };
+        await Message.SuccessAsync(toast);
         await ReloadDetailAsync();
     }
 
     private void ClearFieldErrors()
     {
-        _fieldUsername = _fieldDisplayName = _fieldEmail = null;
+        _fieldFirstName = _fieldLastName = _fieldDisplayName = _fieldEmail = _fieldPlatformRole = _fieldInitialPassword = null;
     }
 }

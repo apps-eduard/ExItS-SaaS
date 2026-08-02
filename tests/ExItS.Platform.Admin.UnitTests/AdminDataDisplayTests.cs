@@ -26,6 +26,13 @@ public sealed class AdminDataDisplayTests
         Assert.Contains("responsive-table", table, StringComparison.Ordinal);
         Assert.Contains("AdminSortHeader", table, StringComparison.Ordinal);
 
+        var css = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "wwwroot", "app.css"));
+        Assert.Contains("admin-data-cards", css, StringComparison.Ordinal);
+        Assert.Contains("admin-data-table-wrap", css, StringComparison.Ordinal);
+        Assert.Contains("@media (max-width: 800px)", css, StringComparison.Ordinal);
+        Assert.Contains("ant-table-content", css, StringComparison.Ordinal);
+        Assert.Contains("-webkit-overflow-scrolling: touch", css, StringComparison.Ordinal);
+
         var badge = File.ReadAllText(Path.Combine(shared, "StatusBadge.razor"));
         Assert.Contains("status-badge-text", badge, StringComparison.Ordinal);
         Assert.Contains("aria-label", badge, StringComparison.Ordinal);
@@ -61,7 +68,10 @@ public sealed class AdminDataDisplayTests
         var users = File.ReadAllText(Path.Combine(pages, "Users.razor"));
         Assert.Contains("<Table", users, StringComparison.Ordinal);
         Assert.Contains("RemoteDataSource", users, StringComparison.Ordinal);
-        Assert.Contains("OnPageIndexChange", users, StringComparison.Ordinal);
+        Assert.True(
+            users.Contains("OnPageIndexChange", StringComparison.Ordinal)
+            || users.Contains("OnChange=", StringComparison.Ordinal),
+            "Users table must wire remote pagination via OnPageIndexChange or OnChange.");
         Assert.DoesNotContain("ReportTable", users, StringComparison.Ordinal);
         Assert.DoesNotContain("AdminPagination", users, StringComparison.Ordinal);
 

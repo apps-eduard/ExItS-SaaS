@@ -18,11 +18,21 @@ public sealed class PlatformUser
         @"^[a-z0-9][a-z0-9._-]{1,62}[a-z0-9]$",
         RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
+    public const int StaffNumberPrefixLength = 4;
+    public const int StaffNumberSequenceDigits = 6;
+    public const string StaffNumberPrefix = "STF-";
+
     public PlatformUserId Id { get; }
     public string Username { get; private set; }
     public string NormalizedUsername { get; private set; }
     public string DisplayName { get; private set; }
     public string NormalizedEmail { get; private set; }
+    public string? FirstName { get; private set; }
+    public string? LastName { get; private set; }
+    public string? Phone { get; private set; }
+    public string? EmployeeCode { get; private set; }
+    public string? StaffNumber { get; private set; }
+    public PlatformUserId? CreatedByUserId { get; private set; }
     public AccountStatus Status { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
@@ -35,6 +45,12 @@ public sealed class PlatformUser
         string normalizedUsername,
         string displayName,
         string normalizedEmail,
+        string? firstName,
+        string? lastName,
+        string? phone,
+        string? employeeCode,
+        string? staffNumber,
+        PlatformUserId? createdByUserId,
         AccountStatus status,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
@@ -46,6 +62,12 @@ public sealed class PlatformUser
         NormalizedUsername = normalizedUsername;
         DisplayName = displayName;
         NormalizedEmail = normalizedEmail;
+        FirstName = firstName;
+        LastName = lastName;
+        Phone = phone;
+        EmployeeCode = employeeCode;
+        StaffNumber = staffNumber;
+        CreatedByUserId = createdByUserId;
         Status = status;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
@@ -71,7 +93,89 @@ public sealed class PlatformUser
             normalizedUsername,
             normalizedName,
             normalizedEmail,
+            firstName: null,
+            lastName: null,
+            phone: null,
+            employeeCode: null,
+            staffNumber: null,
+            createdByUserId: null,
             AccountStatus.Active,
+            utcNow,
+            utcNow,
+            null,
+            null);
+    }
+
+    /// <summary>Public Personal signup — identity exists but login remains blocked until email verification and password activation.</summary>
+    public static PlatformUser CreatePendingVerification(
+        string username,
+        string displayName,
+        string email,
+        DateTimeOffset utcNow,
+        PlatformUserId? id = null)
+    {
+        EnsureUtc(utcNow);
+        var (displayUsername, normalizedUsername) = NormalizeUsername(username);
+        var normalizedName = NormalizeDisplayName(displayName);
+        var normalizedEmail = NormalizeEmail(email);
+
+        return new PlatformUser(
+            id ?? PlatformUserId.New(),
+            displayUsername,
+            normalizedUsername,
+            normalizedName,
+            normalizedEmail,
+            firstName: null,
+            lastName: null,
+            phone: null,
+            employeeCode: null,
+            staffNumber: null,
+            createdByUserId: null,
+            AccountStatus.PendingVerification,
+            utcNow,
+            utcNow,
+            null,
+            null);
+    }
+
+    /// <summary>Platform Administrator staff provisioning — assigns immutable StaffNumber.</summary>
+    public static PlatformUser CreatePlatformStaff(
+        string username,
+        string firstName,
+        string lastName,
+        string displayName,
+        string email,
+        string staffNumber,
+        DateTimeOffset utcNow,
+        string? phone = null,
+        string? employeeCode = null,
+        PlatformUserId? createdByUserId = null,
+        bool requireEmailVerification = false,
+        PlatformUserId? id = null)
+    {
+        EnsureUtc(utcNow);
+        var (displayUsername, normalizedUsername) = NormalizeUsername(username);
+        var normalizedFirstName = NormalizeOptionalName(firstName, nameof(firstName));
+        var normalizedLastName = NormalizeOptionalName(lastName, nameof(lastName));
+        var normalizedName = NormalizeDisplayName(displayName);
+        var normalizedEmail = NormalizeEmail(email);
+        var normalizedStaffNumber = NormalizeStaffNumber(staffNumber, expectAssigned: true);
+        var normalizedPhone = NormalizeOptionalPhone(phone);
+        var normalizedEmployeeCode = NormalizeOptionalEmployeeCode(employeeCode);
+
+        return new PlatformUser(
+            id ?? PlatformUserId.New(),
+            displayUsername,
+            normalizedUsername,
+            normalizedName,
+            normalizedEmail,
+            normalizedFirstName,
+            normalizedLastName,
+            normalizedPhone,
+            normalizedEmployeeCode,
+            normalizedStaffNumber,
+            createdByUserId,
+            requireEmailVerification ? AccountStatus.PendingVerification : AccountStatus.Active,
             utcNow,
             utcNow,
             null,
@@ -85,6 +189,12 @@ public sealed class PlatformUser
         string normalizedUsername,
         string displayName,
         string normalizedEmail,
+        string? firstName,
+        string? lastName,
+        string? phone,
+        string? employeeCode,
+        string? staffNumber,
+        PlatformUserId? createdByUserId,
         AccountStatus status,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
@@ -96,6 +206,12 @@ public sealed class PlatformUser
             normalizedUsername,
             displayName,
             normalizedEmail,
+            firstName,
+            lastName,
+            phone,
+            employeeCode,
+            staffNumber,
+            createdByUserId,
             status,
             createdAtUtc,
             updatedAtUtc,
@@ -112,6 +228,39 @@ public sealed class PlatformUser
         UpdatedAtUtc = utcNow;
     }
 
+    /// <summary>
+    /// Updates Platform Staff identity fields. StaffNumber is immutable once assigned.
+    /// </summary>
+    public void UpdateStaffProfile(
+        string? firstName,
+        string? lastName,
+        string displayName,
+        string email,
+        DateTimeOffset utcNow,
+        string? phone = null,
+        string? employeeCode = null,
+        string? attemptedStaffNumber = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureStaffProfileEditable();
+
+        if (attemptedStaffNumber is not null
+            && !string.Equals(NormalizeStaffNumber(attemptedStaffNumber, expectAssigned: false), StaffNumber, StringComparison.Ordinal))
+        {
+            throw new DomainException(
+                DomainErrorCodes.StaffNumberImmutable,
+                "Staff Number cannot be changed once assigned.");
+        }
+
+        FirstName = NormalizeOptionalName(firstName, nameof(firstName));
+        LastName = NormalizeOptionalName(lastName, nameof(lastName));
+        DisplayName = NormalizeDisplayName(displayName);
+        NormalizedEmail = NormalizeEmail(email);
+        Phone = NormalizeOptionalPhone(phone);
+        EmployeeCode = NormalizeOptionalEmployeeCode(employeeCode);
+        UpdatedAtUtc = utcNow;
+    }
+
     public void Suspend(DateTimeOffset utcNow, string? reason = null)
     {
         EnsureUtc(utcNow);
@@ -120,14 +269,17 @@ public sealed class PlatformUser
         SuspensionReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
     }
 
-    public void Reactivate(DateTimeOffset utcNow)
+    /// <summary>
+    /// Pending Verification → Active after email verification and password setup.
+    /// </summary>
+    public void ActivateFromPendingVerification(DateTimeOffset utcNow)
     {
         EnsureUtc(utcNow);
-        if (Status == AccountStatus.Deactivated)
+        if (Status != AccountStatus.PendingVerification)
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidAccountStatusTransition,
-                "A deactivated Platform User cannot be reactivated.");
+                $"Cannot activate Platform User from {Status} (Pending Verification required).");
         }
 
         TransitionTo(AccountStatus.Active, utcNow);
@@ -135,10 +287,59 @@ public sealed class PlatformUser
         SuspensionReason = null;
     }
 
-    public void Deactivate(DateTimeOffset utcNow)
+    /// <summary>
+    /// Restores Active from Suspended (confirmation only) or from Deactivated
+    /// (caller must enforce step-up: acting administrator password + MFA when enabled + reason).
+    /// </summary>
+    public void Reactivate(DateTimeOffset utcNow, string? reason = null)
     {
         EnsureUtc(utcNow);
+        TransitionTo(AccountStatus.Active, utcNow);
+        SuspendedAtUtc = null;
+        SuspensionReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+    }
+
+    /// <summary>
+    /// Deactivated is a reversible retained state (not deletion). Login remains blocked until reactivation.
+    /// </summary>
+    public void Deactivate(DateTimeOffset utcNow, string? reason = null)
+    {
+        EnsureUtc(utcNow);
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidAccountStatusTransition,
+                "A reason is required to deactivate a Platform User.");
+        }
+
         TransitionTo(AccountStatus.Deactivated, utcNow);
+        SuspendedAtUtc = null;
+        SuspensionReason = reason.Trim();
+    }
+
+    /// <summary>
+    /// Deactivated → Suspended. Login remains blocked; does not restore access.
+    /// </summary>
+    public void MoveToSuspended(DateTimeOffset utcNow, string reason)
+    {
+        EnsureUtc(utcNow);
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidAccountStatusTransition,
+                "A reason is required to move a deactivated Platform User to Suspended.");
+        }
+
+        if (Status != AccountStatus.Deactivated)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidAccountStatusTransition,
+                $"Cannot move Platform User from {Status} to Suspended via Move to Suspended (Deactivated only).");
+        }
+
+        TransitionTo(AccountStatus.Suspended, utcNow);
+        SuspendedAtUtc = utcNow;
+        SuspensionReason = reason.Trim();
     }
 
     private void TransitionTo(AccountStatus target, DateTimeOffset utcNow)
@@ -150,9 +351,10 @@ public sealed class PlatformUser
 
         var allowed = Status switch
         {
+            AccountStatus.PendingVerification => target is AccountStatus.Active or AccountStatus.Deactivated,
             AccountStatus.Active => target is AccountStatus.Suspended or AccountStatus.Deactivated,
             AccountStatus.Suspended => target is AccountStatus.Active or AccountStatus.Deactivated,
-            AccountStatus.Deactivated => false,
+            AccountStatus.Deactivated => target is AccountStatus.Active or AccountStatus.Suspended,
             _ => false
         };
 
@@ -168,6 +370,16 @@ public sealed class PlatformUser
     }
 
     private void EnsureNotDeactivated()
+    {
+        if (Status is AccountStatus.Deactivated or AccountStatus.PendingVerification)
+        {
+            throw new DomainException(
+                DomainErrorCodes.UserNotActive,
+                "A deactivated or pending-verification Platform User cannot be updated.");
+        }
+    }
+
+    private void EnsureStaffProfileEditable()
     {
         if (Status == AccountStatus.Deactivated)
         {
@@ -213,6 +425,105 @@ public sealed class PlatformUser
             throw new DomainException(
                 DomainErrorCodes.InvalidDisplayName,
                 "Display name must be 2–100 characters and use letters, numbers, spaces, apostrophes, periods, or hyphens.");
+        }
+
+        return trimmed;
+    }
+
+    internal static string? NormalizeOptionalName(string? value, string fieldName)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        var trimmed = Regex.Replace(value.Trim(), @"\s+", " ");
+        if (trimmed.Length == 0)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidDisplayName,
+                $"{fieldName} cannot be blank when provided.");
+        }
+
+        if (trimmed.Length > 100 || !DisplayNamePattern.IsMatch(trimmed))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidDisplayName,
+                $"{fieldName} must be 1–100 characters and use letters, numbers, spaces, apostrophes, periods, or hyphens.");
+        }
+
+        return trimmed;
+    }
+
+    internal static string? NormalizeOptionalPhone(string? phone)
+    {
+        if (phone is null)
+        {
+            return null;
+        }
+
+        var trimmed = phone.Trim();
+        if (trimmed.Length == 0)
+        {
+            return null;
+        }
+
+        if (trimmed.Length > 32)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPhone,
+                "Phone must be 32 characters or fewer.");
+        }
+
+        return trimmed;
+    }
+
+    internal static string? NormalizeOptionalEmployeeCode(string? employeeCode)
+    {
+        if (employeeCode is null)
+        {
+            return null;
+        }
+
+        var trimmed = employeeCode.Trim();
+        if (trimmed.Length == 0)
+        {
+            return null;
+        }
+
+        if (trimmed.Length > 64)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidEmployeeCode,
+                "Employee code must be 64 characters or fewer.");
+        }
+
+        return trimmed;
+    }
+
+    internal static string? NormalizeStaffNumber(string? staffNumber, bool expectAssigned)
+    {
+        if (staffNumber is null)
+        {
+            if (expectAssigned)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidStaffNumber,
+                    "Staff Number is required for Platform Staff.");
+            }
+
+            return null;
+        }
+
+        var trimmed = staffNumber.Trim();
+        if (trimmed.Length != StaffNumberPrefixLength + StaffNumberSequenceDigits
+            || !trimmed.StartsWith(StaffNumberPrefix, StringComparison.Ordinal)
+            || !int.TryParse(trimmed.AsSpan(StaffNumberPrefixLength), out var sequence)
+            || sequence < 1)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidStaffNumber,
+                $"Staff Number must match format {StaffNumberPrefix}000001.");
         }
 
         return trimmed;

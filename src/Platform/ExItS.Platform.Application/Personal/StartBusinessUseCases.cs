@@ -175,7 +175,12 @@ public sealed class StartBusinessForPersonalUser
 
         var organization = orgResult.Value;
         var membershipResult = await _addMembership
-            .ExecuteAsync(organization.Id, userId, OrganizationRole.OrganizationOwner, cancellationToken)
+            .ExecuteAsync(
+                organization.Id,
+                userId,
+                OrganizationRole.OrganizationOwner,
+                exclusiveOrganizationProfile: false,
+                cancellationToken)
             .ConfigureAwait(false);
         if (!membershipResult.IsSuccess || membershipResult.Value is null)
         {
@@ -374,7 +379,7 @@ public sealed class StartBusinessForPersonalUser
         if (product is null)
         {
             var created = await _createProduct
-                .ExecuteAsync(productCode, "PinoyBusinessPOS", cancellationToken)
+                .ExecuteAsync(productCode, "Pinoy Business POS", cancellationToken)
                 .ConfigureAwait(false);
             if (!created.IsSuccess && created.ErrorCode != ApplicationErrorCodes.DuplicateProductCode)
             {

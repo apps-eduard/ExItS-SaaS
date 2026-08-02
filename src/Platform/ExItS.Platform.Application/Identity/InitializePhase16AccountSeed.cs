@@ -243,7 +243,7 @@ public sealed class InitializePhase16AccountSeed
             return existing;
         }
 
-        var created = await _createUser.ExecuteAsync(username, displayName, email, cancellationToken)
+        var created = await _createUser.ExecuteAsync(username, displayName, email, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
         if (!created.IsSuccess || created.Value is null)
         {

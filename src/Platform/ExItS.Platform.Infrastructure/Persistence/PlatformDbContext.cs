@@ -461,6 +461,16 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.SuspendedAtUtc).HasColumnName("suspended_at_utc");
             entity.Property(e => e.SuspensionReason).HasColumnName("suspension_reason").HasMaxLength(512);
+            entity.Property(e => e.FirstName).HasColumnName("first_name").HasMaxLength(100);
+            entity.Property(e => e.LastName).HasColumnName("last_name").HasMaxLength(100);
+            entity.Property(e => e.Phone).HasColumnName("phone").HasMaxLength(32);
+            entity.Property(e => e.EmployeeCode).HasColumnName("employee_code").HasMaxLength(64);
+            entity.Property(e => e.StaffNumber).HasColumnName("staff_number").HasMaxLength(16);
+            entity.HasIndex(e => e.StaffNumber)
+                .IsUnique()
+                .HasFilter("staff_number IS NOT NULL")
+                .HasDatabaseName("ux_platform_users_staff_number");
+            entity.Property(e => e.CreatedByUserId).HasColumnName("created_by_user_id");
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")

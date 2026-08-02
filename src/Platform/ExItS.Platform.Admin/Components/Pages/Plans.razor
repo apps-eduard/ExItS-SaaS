@@ -215,7 +215,7 @@ else
                 }
                 else
                 {
-                    <Table TItem="PlanVersionDto" DataSource="_versions.Data" Size="@TableSize.Small" HidePagination Bordered>
+                    <Table TItem="PlanVersionDto" DataSource="_versions.Data" Size="@TableSize.Small" HidePagination Bordered ScrollX="720">
                         <PropertyColumn Property="c => c.VersionNumber" Title="@L["Common_Version"]" />
                         <PropertyColumn Property="c => c.BillingPeriod" Title="@L["Products_Column_Billing"]" />
                         <PropertyColumn Property="c => c.TrialEligible" Title="@L["Products_Column_TrialEligible"]" />

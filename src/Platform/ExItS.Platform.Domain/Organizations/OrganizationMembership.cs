@@ -120,31 +120,40 @@ public sealed class OrganizationMembership
         EnsureUtc(utcNow);
         TransitionTo(MembershipStatus.Suspended, utcNow);
         SuspendedAtUtc = utcNow;
+        RemovedAtUtc = null;
         Reason = NormalizeOptional(reason) ?? Reason;
         ActorReference = NormalizeOptional(actorReference) ?? ActorReference;
     }
 
-    public void Reactivate(DateTimeOffset utcNow, string? actorReference = null)
+    public void Reactivate(DateTimeOffset utcNow, string? actorReference = null, string? reason = null)
     {
         EnsureUtc(utcNow);
-        if (Status == MembershipStatus.Removed)
-        {
-            throw new DomainException(
-                DomainErrorCodes.InvalidMembershipStatusTransition,
-                "A removed membership cannot be reactivated. Create a new membership explicitly.");
-        }
-
         TransitionTo(MembershipStatus.Active, utcNow);
         SuspendedAtUtc = null;
+        RemovedAtUtc = null;
+        Reason = NormalizeOptional(reason) ?? Reason;
         ActorReference = NormalizeOptional(actorReference) ?? ActorReference;
     }
+
+    /// <summary>
+    /// Deactivate Membership — retained reversible state (persisted as <see cref="MembershipStatus.Removed"/>).
+    /// </summary>
+    public void Deactivate(DateTimeOffset utcNow, string? reason = null, string? actorReference = null) =>
+        Remove(utcNow, reason, actorReference);
 
     public void Remove(DateTimeOffset utcNow, string? reason = null, string? actorReference = null)
     {
         EnsureUtc(utcNow);
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidMembershipStatusTransition,
+                "A reason is required to deactivate a membership.");
+        }
+
         TransitionTo(MembershipStatus.Removed, utcNow);
         RemovedAtUtc = utcNow;
-        Reason = NormalizeOptional(reason) ?? Reason;
+        Reason = reason.Trim();
         ActorReference = NormalizeOptional(actorReference) ?? ActorReference;
     }
 
@@ -159,7 +168,7 @@ public sealed class OrganizationMembership
         {
             MembershipStatus.Active => target is MembershipStatus.Suspended or MembershipStatus.Removed,
             MembershipStatus.Suspended => target is MembershipStatus.Active or MembershipStatus.Removed,
-            MembershipStatus.Removed => false,
+            MembershipStatus.Removed => target is MembershipStatus.Active or MembershipStatus.Suspended,
             _ => false
         };
 

@@ -111,12 +111,11 @@ internal sealed class OrganizationMembershipRepository : IOrganizationMembership
     {
         var active = nameof(MembershipStatus.Active);
         var owner = nameof(OrganizationRole.OrganizationOwner);
-        var admin = nameof(OrganizationRole.OrganizationAdministrator);
         return await _db.OrganizationMemberships.AsNoTracking()
             .CountAsync(
                 m => m.OrganizationId == organizationId.Value
                      && m.Status == active
-                     && (m.Role == owner || m.Role == admin),
+                     && m.Role == owner,
                 cancellationToken)
             .ConfigureAwait(false);
     }

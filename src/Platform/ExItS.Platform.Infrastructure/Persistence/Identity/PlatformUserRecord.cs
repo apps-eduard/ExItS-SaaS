@@ -12,5 +12,11 @@ internal sealed class PlatformUserRecord
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public DateTimeOffset? SuspendedAtUtc { get; set; }
     public string? SuspensionReason { get; set; }
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public string? Phone { get; set; }
+    public string? EmployeeCode { get; set; }
+    public string? StaffNumber { get; set; }
+    public Guid? CreatedByUserId { get; set; }
     public uint Xmin { get; set; }
 }

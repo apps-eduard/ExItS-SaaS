@@ -7,7 +7,7 @@ namespace ExItS.Platform.Api.Common;
 
 /// <summary>
 /// Membership-management authorization: Platform <see cref="PlatformPermission.ManageMemberships"/>
-/// or an active Organization Owner/Administrator in trusted organization context.
+/// (emergency override) or an active Organization Owner in trusted organization context.
 /// </summary>
 internal sealed class PlatformMembershipAuthz(
     PlatformAuthz authz,
@@ -45,7 +45,7 @@ internal sealed class PlatformMembershipAuthz(
             return denied;
         }
 
-        // Org-admin path requires trusted selected organization context matching the target org.
+        // Org Owner path requires trusted selected organization context matching the target org.
         if (actor.OrganizationId is null || actor.OrganizationId.Value != organizationId)
         {
             return denied;
@@ -57,7 +57,7 @@ internal sealed class PlatformMembershipAuthz(
                 PlatformOrganizationId.From(organizationId),
                 cancellationToken)
             .ConfigureAwait(false);
-        if (membership is not null && OrganizationMembershipGuard.IsGoverningAdmin(membership.Role))
+        if (membership is not null && OrganizationMembershipGuard.CanManageOrganizationStaff(membership.Role))
         {
             return null;
         }

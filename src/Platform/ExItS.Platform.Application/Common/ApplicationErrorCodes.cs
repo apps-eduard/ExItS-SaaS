@@ -85,6 +85,8 @@ public static class ApplicationErrorCodes
     public const string OrganizationCustomRoleAssignmentNotFound = "application.organization_custom_role_assignment.not_found";
     public const string OrganizationCustomRoleAssignmentConflict = "application.organization_custom_role_assignment.conflict";
     public const string LastPlatformAdministratorProtected = "application.role_assignment.last_platform_administrator";
+    public const string StepUpRequired = "application.auth.step_up_required";
+    public const string MfaStepUpRequired = "application.auth.mfa_step_up_required";
     public const string AuditRecordNotFound = "application.audit_record.not_found";
 
     public const string CredentialNotFound = "application.credential.not_found";

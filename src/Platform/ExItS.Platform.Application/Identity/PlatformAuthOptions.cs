@@ -68,3 +68,26 @@ public sealed class PlatformCredentialLifecycleOptions
     /// </summary>
     public bool ExposeDebugTokens { get; set; }
 }
+
+/// <summary>
+/// Optional SMTP delivery for auth outbound messages (Local Validation Mailpit / production provider).
+/// When SmtpHost is empty, the null sink is used (tokens still issued).
+/// </summary>
+public sealed class PlatformEmailDeliveryOptions
+{
+    public const string SectionName = "PlatformEmail";
+
+    public string? SmtpHost { get; set; }
+    public int SmtpPort { get; set; } = 1025;
+    public bool UseSsl { get; set; }
+    public string FromAddress { get; set; } = "noreply@exits.local";
+    public string FromDisplayName { get; set; } = "ExItS";
+    /// <summary>Public Admin base URL used to build verification / reset links (e.g. http://localhost:8090).</summary>
+    public string? AdminPublicBaseUrl { get; set; }
+
+    public bool IsConfigured =>
+        !string.IsNullOrWhiteSpace(SmtpHost)
+        && SmtpPort > 0
+        && !string.IsNullOrWhiteSpace(FromAddress)
+        && !string.IsNullOrWhiteSpace(AdminPublicBaseUrl);
+}

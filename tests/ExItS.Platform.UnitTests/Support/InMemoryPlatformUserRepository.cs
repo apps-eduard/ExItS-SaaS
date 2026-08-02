@@ -61,7 +61,11 @@ internal sealed class InMemoryPlatformUserRepository : IPlatformUserRepository
             query = query.Where(u =>
                 u.NormalizedUsername.Contains(term, StringComparison.Ordinal)
                 || u.NormalizedEmail.Contains(term, StringComparison.Ordinal)
-                || u.DisplayName.Contains(term, StringComparison.OrdinalIgnoreCase));
+                || u.DisplayName.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || (u.FirstName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (u.LastName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (u.StaffNumber?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (u.EmployeeCode?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false));
         }
 
         _ = directoryFilter;

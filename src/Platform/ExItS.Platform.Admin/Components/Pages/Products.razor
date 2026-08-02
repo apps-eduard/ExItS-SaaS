@@ -195,7 +195,7 @@ else
                 }
                 else
                 {
-                    <Table TItem="PlanDto" DataSource="o.Plans" Size="@TableSize.Small" HidePagination Bordered>
+                    <Table TItem="PlanDto" DataSource="o.Plans" Size="@TableSize.Small" HidePagination Bordered ScrollX="720">
                         <PropertyColumn Property="c => c.Code" Title="@L["Common_Code"]">
                             <a href="/admin/plans/@context.Id">@context.Code</a>
                         </PropertyColumn>
@@ -217,7 +217,7 @@ else
                 }
                 else
                 {
-                    <Table TItem="FeatureDefinitionDto" DataSource="o.Features" Size="@TableSize.Small" HidePagination Bordered>
+                    <Table TItem="FeatureDefinitionDto" DataSource="o.Features" Size="@TableSize.Small" HidePagination Bordered ScrollX="720">
                         <PropertyColumn Property="c => c.FeatureCode" Title="@L["Common_Code"]" />
                         <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Name"]" />
                         <PropertyColumn Property="c => c.ValueType" Title="@L["Common_Type"]" />
@@ -235,7 +235,7 @@ else
                 }
                 else
                 {
-                    <Table TItem="PlanVersionDto" DataSource="o.PublishedPlanVersions" Size="@TableSize.Small" HidePagination Bordered>
+                    <Table TItem="PlanVersionDto" DataSource="o.PublishedPlanVersions" Size="@TableSize.Small" HidePagination Bordered ScrollX="720">
                         <PropertyColumn Property="c => c.PlanId" Title="@L["Common_Plan"]" />
                         <PropertyColumn Property="c => c.VersionNumber" Title="@L["Common_Version"]" />
                         <PropertyColumn Property="c => c.BillingPeriod" Title="@L["Products_Column_Billing"]" />
@@ -254,7 +254,7 @@ else
                 }
                 else
                 {
-                    <Table TItem="TrialDefinitionDto" DataSource="o.Trials" Size="@TableSize.Small" HidePagination Bordered>
+                    <Table TItem="TrialDefinitionDto" DataSource="o.Trials" Size="@TableSize.Small" HidePagination Bordered ScrollX="720">
                         <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Name"]" />
                         <PropertyColumn Property="c => c.DurationIso" Title="@L["Common_Duration"]" />
                         <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">

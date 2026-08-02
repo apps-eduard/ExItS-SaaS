@@ -1,0 +1,108 @@
+@page "/admin/activate-account"
+@layout EmptyLayout
+@using AntDesign
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.WebUtilities
+@attribute [AllowAnonymous]
+@inject IPlatformApiClient Api
+@inject IStringLocalizer<AdminResources> L
+@inject NavigationManager Nav
+
+<PageTitle>@L["Brand_Name"] — Activate</PageTitle>
+
+<div class="exits-login-shell">
+    <Card Class="exits-login-card" Bordered>
+        <TitleTemplate>
+            <div class="exits-login-brand">
+                <span class="exits-brand-mark">EA</span>
+                <span>@L["Activate_Title"]</span>
+            </div>
+        </TitleTemplate>
+        <Body>
+            <Paragraph Type="@TextElementType.Secondary">@L["Activate_Hint"]</Paragraph>
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" Closable="true" OnClose="() => _error = null" Style="margin-bottom: 1rem;" />
+            }
+
+            @if (_done)
+            {
+                <Alert Type="@AlertType.Success" Message="@L["Activate_Success"]" ShowIcon="true" Style="margin-bottom: 1rem;" />
+                <Button Type="@ButtonType.Primary" Block Size="@ButtonSize.Small" OnClick="@(() => Nav.NavigateTo("/admin/login"))">
+                    @L["Login_SignIn"]
+                </Button>
+            }
+            else
+            {
+                <div class="exits-login-form">
+                    <div class="ant-form-item">
+                        <label class="ant-form-item-label" for="act-password">@L["Login_Password"]</label>
+                        <InputPassword Id="act-password" @bind-Value="_password" Disabled="_busy" />
+                    </div>
+                    <div class="ant-form-item">
+                        <label class="ant-form-item-label" for="act-confirm">@L["Activate_ConfirmPassword"]</label>
+                        <InputPassword Id="act-confirm" @bind-Value="_confirm" Disabled="_busy" />
+                    </div>
+                    <Button Type="@ButtonType.Primary" Block Size="@ButtonSize.Small" Loading="_busy" Disabled="_busy || string.IsNullOrWhiteSpace(_token)" OnClick="SubmitAsync">
+                        @L["Activate_Submit"]
+                    </Button>
+                    <div class="exits-login-links">
+                        <a href="/admin/login">@L["Login_SignIn"]</a>
+                    </div>
+                </div>
+            }
+        </Body>
+    </Card>
+</div>
+
+@code {
+    private string _token = "";
+    private string _password = "";
+    private string _confirm = "";
+    private string? _error;
+    private bool _busy;
+    private bool _done;
+
+    protected override void OnInitialized()
+    {
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("token", out var tokenValues))
+        {
+            _token = tokenValues.ToString();
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_token))
+        {
+            _error = "Verification token is missing. Open the link from your email.";
+            return;
+        }
+
+        if (!string.Equals(_password, _confirm, StringComparison.Ordinal))
+        {
+            _error = L["Activate_PasswordMismatch"];
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Api.ActivatePersonalAccountAsync(new ActivatePersonalAccountRequest(_token, _password));
+            if (!result.IsSuccess)
+            {
+                _error = result.Error?.Detail ?? L["Common_ActionFailed"];
+                return;
+            }
+
+            _done = true;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

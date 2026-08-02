@@ -39,7 +39,7 @@ public static class AdminAccountUserNav
         var orgId = selectedOrganizationId;
         var staffRoute = orgId is Guid id ? $"/admin/organizations/{id}/members" : null;
         var invitationsRoute = orgId is Guid inviteOrg
-            ? $"/admin/organizations/{inviteOrg}/members?tab=invitations"
+            ? $"/admin/organizations/{inviteOrg}/invitations"
             : null;
 
         var items = new List<Item>();

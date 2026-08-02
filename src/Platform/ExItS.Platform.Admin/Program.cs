@@ -181,22 +181,29 @@ app.MapGet("/", (HttpContext http) =>
 app.MapGet("/health", () => Results.Ok(new { status = "Healthy", service = "platform-admin" }))
     .AllowAnonymous();
 
+// Full HTTP round-trip so auth cookies are set (Interactive Server cannot SignIn from a circuit event).
 app.MapPost("/admin/login/credentials", async (
     HttpContext http,
     PlatformBrowserSessionService sessions) =>
 {
     var form = await http.Request.ReadFormAsync().ConfigureAwait(false);
-    var usernameOrEmail = form["UsernameOrEmail"].ToString();
+    // Public login is email-only; UsernameOrEmail kept for older clients.
+    var email = form["Email"].ToString();
+    if (string.IsNullOrWhiteSpace(email))
+    {
+        email = form["UsernameOrEmail"].ToString();
+    }
+
     var password = form["Password"].ToString();
-    var (ok, error) = await sessions.LoginAsync(usernameOrEmail, password).ConfigureAwait(false);
+    var (ok, error) = await sessions.LoginAsync(email, password).ConfigureAwait(false);
     if (!ok)
     {
         return Results.Redirect(
-            "/admin/login?error=" + Uri.EscapeDataString(error ?? "Invalid username/email or password."));
+            "/admin/login?error=" + Uri.EscapeDataString(error ?? "Invalid email or password."));
     }
 
     return Results.Redirect("/admin");
-}).AllowAnonymous();
+}).AllowAnonymous().DisableAntiforgery();
 
 // Local Validation only: full HTTP round-trip so auth cookies are set (Interactive Server cannot).
 app.MapGet("/admin/login/as/{key}", async (

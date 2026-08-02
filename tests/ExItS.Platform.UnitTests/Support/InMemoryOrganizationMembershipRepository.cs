@@ -86,7 +86,7 @@ internal sealed class InMemoryOrganizationMembershipRepository : IOrganizationMe
         var count = _byId.Values.Count(m =>
             m.OrganizationId == organizationId
             && m.Status == MembershipStatus.Active
-            && OrganizationMembershipGuard.IsGoverningAdmin(m.Role));
+            && OrganizationMembershipGuard.IsProtectedGoverningSeat(m.Role));
         return Task.FromResult(count);
     }
 

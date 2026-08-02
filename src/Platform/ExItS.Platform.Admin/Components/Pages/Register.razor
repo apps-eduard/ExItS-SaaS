@@ -1,0 +1,114 @@
+@page "/admin/register"
+@layout EmptyLayout
+@using AntDesign
+@using Microsoft.AspNetCore.Authorization
+@attribute [AllowAnonymous]
+@inject IPlatformApiClient Api
+@inject IStringLocalizer<AdminResources> L
+@inject NavigationManager Nav
+
+<PageTitle>@L["Brand_Name"] — Register</PageTitle>
+
+<div class="exits-login-shell">
+    <Card Class="exits-login-card" Bordered>
+        <TitleTemplate>
+            <div class="exits-login-brand">
+                <span class="exits-brand-mark">EA</span>
+                <span>@L["Register_Title"]</span>
+            </div>
+        </TitleTemplate>
+        <Body>
+            <Paragraph Type="@TextElementType.Secondary">@L["Register_Hint"]</Paragraph>
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" Closable="true" OnClose="() => _error = null" Style="margin-bottom: 1rem;" />
+            }
+
+            @if (_done)
+            {
+                <Alert Type="@AlertType.Success" Message="@L["Register_Success"]" Description="@_message" ShowIcon="true" Style="margin-bottom: 1rem;" />
+                @if (!string.IsNullOrWhiteSpace(_debugToken))
+                {
+                    <Paragraph Type="@TextElementType.Secondary" Style="font-size:12px;">
+                        Debug token (non-Production only): <code>@_debugToken</code>
+                        — <a href="@($"/admin/activate-account?token={Uri.EscapeDataString(_debugToken)}")">Activate now</a>
+                    </Paragraph>
+                }
+                <Paragraph>
+                    <a href="http://localhost:8025" target="_blank" rel="noopener">Open Mailpit</a>
+                    · <a href="/admin/login">@L["Login_SignIn"]</a>
+                </Paragraph>
+            }
+            else
+            {
+                <div class="exits-login-form">
+                    <div class="ant-form-item">
+                        <label class="ant-form-item-label" for="reg-displayname">@L["Common_DisplayName"]</label>
+                        <Input Id="reg-displayname" @bind-Value="_displayName" Disabled="_busy" />
+                    </div>
+                    <div class="ant-form-item">
+                        <label class="ant-form-item-label" for="reg-email">@L["Common_Email"]</label>
+                        <Input Id="reg-email" @bind-Value="_email" Disabled="_busy" />
+                    </div>
+                    <div class="ant-form-item">
+                        <Checkbox @bind-Checked="_acceptTerms" Disabled="_busy">@L["Register_AcceptTerms"]</Checkbox>
+                    </div>
+                    <Button Type="@ButtonType.Primary" Block Size="@ButtonSize.Small" Loading="_busy" Disabled="_busy" OnClick="SubmitAsync">
+                        @L["Register_Submit"]
+                    </Button>
+                    <div class="exits-login-links">
+                        <a href="/admin/login">@L["Login_SignIn"]</a>
+                    </div>
+                </div>
+            }
+        </Body>
+    </Card>
+</div>
+
+@code {
+    private string _displayName = "";
+    private string _email = "";
+    private bool _acceptTerms;
+    private string? _error;
+    private string? _message;
+    private string? _debugToken;
+    private bool _busy;
+    private bool _done;
+
+    private async Task SubmitAsync()
+    {
+        _error = null;
+        if (!_acceptTerms)
+        {
+            _error = L["Register_TermsRequired"];
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_displayName) || string.IsNullOrWhiteSpace(_email))
+        {
+            _error = L["Common_ActionFailed"];
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Api.RegisterPersonalAccountAsync(
+                new RegisterPersonalAccountRequest(_displayName.Trim(), _email.Trim()));
+            if (!result.IsSuccess)
+            {
+                _error = result.Error?.Detail ?? L["Common_ActionFailed"];
+                return;
+            }
+
+            _message = result.Data?.Message ?? L["Register_Success"];
+            _debugToken = result.Data?.DebugToken;
+            _done = true;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

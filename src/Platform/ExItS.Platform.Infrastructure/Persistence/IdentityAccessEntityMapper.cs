@@ -16,6 +16,12 @@ internal static class IdentityAccessEntityMapper
             record.NormalizedUsername,
             record.DisplayName,
             record.NormalizedEmail,
+            record.FirstName,
+            record.LastName,
+            record.Phone,
+            record.EmployeeCode,
+            record.StaffNumber,
+            record.CreatedByUserId is null ? null : PlatformUserId.From(record.CreatedByUserId.Value),
             Enum.Parse<AccountStatus>(record.Status),
             record.CreatedAtUtc,
             record.UpdatedAtUtc,
@@ -30,6 +36,12 @@ internal static class IdentityAccessEntityMapper
             NormalizedUsername = user.NormalizedUsername,
             DisplayName = user.DisplayName,
             NormalizedEmail = user.NormalizedEmail,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Phone = user.Phone,
+            EmployeeCode = user.EmployeeCode,
+            StaffNumber = user.StaffNumber,
+            CreatedByUserId = user.CreatedByUserId?.Value,
             Status = user.Status.ToString(),
             CreatedAtUtc = user.CreatedAtUtc,
             UpdatedAtUtc = user.UpdatedAtUtc,
@@ -43,6 +55,12 @@ internal static class IdentityAccessEntityMapper
         record.NormalizedUsername = user.NormalizedUsername;
         record.DisplayName = user.DisplayName;
         record.NormalizedEmail = user.NormalizedEmail;
+        record.FirstName = user.FirstName;
+        record.LastName = user.LastName;
+        record.Phone = user.Phone;
+        record.EmployeeCode = user.EmployeeCode;
+        record.StaffNumber = user.StaffNumber;
+        record.CreatedByUserId = user.CreatedByUserId?.Value;
         record.Status = user.Status.ToString();
         record.UpdatedAtUtc = user.UpdatedAtUtc;
         record.SuspendedAtUtc = user.SuspendedAtUtc;

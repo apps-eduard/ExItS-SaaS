@@ -245,6 +245,11 @@ public sealed record PortfolioSummaryDto(
     int LatestEntitlementSnapshotCount,
     IReadOnlyList<string> PartialFailures);
 
+public sealed record PlatformUserOrganizationDirectoryItem(
+    string Name,
+    string Role,
+    string RoleDisplay);
+
 public sealed record PlatformUserDto(
     Guid Id,
     string Username,
@@ -256,7 +261,14 @@ public sealed record PlatformUserDto(
     DateTimeOffset? SuspendedAtUtc,
     string? SuspensionReason,
     IReadOnlyList<string>? AccountClasses = null,
-    IReadOnlyList<string>? OrganizationNames = null);
+    IReadOnlyList<string>? OrganizationNames = null,
+    IReadOnlyList<PlatformUserOrganizationDirectoryItem>? Organizations = null,
+    string? FirstName = null,
+    string? LastName = null,
+    string? Phone = null,
+    string? EmployeeCode = null,
+    string? StaffNumber = null,
+    Guid? CreatedByUserId = null);
 
 public sealed record PlatformCredentialStatusDto(
     Guid UserId,
@@ -281,6 +293,9 @@ public sealed record CredentialWorkflowAckDto(
 public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 public sealed record ForgotPasswordRequest(string UsernameOrEmail);
 public sealed record ResetPasswordRequest(string Token, string NewPassword);
+public sealed record RegisterPersonalAccountRequest(string DisplayName, string Email);
+public sealed record ActivatePersonalAccountRequest(string Token, string Password);
+public sealed record PersonalRegistrationAckDto(string Message, string? DebugToken, DateTimeOffset? ExpiresAtUtc);
 public sealed record ConfirmEmailVerificationRequest(string Token);
 public sealed record RequestRecoveryEmailRequest(string RecoveryEmail);
 public sealed record ConfirmRecoveryEmailRequest(string Token);
@@ -373,7 +388,12 @@ public sealed record OrganizationMembershipDto(
     string? ActorReference,
     string? Username = null,
     string? DisplayName = null,
-    string? Email = null);
+    string? Email = null,
+    string? RoleDisplay = null,
+    IReadOnlyList<string>? ProductRoles = null,
+    string? AccountStatus = null,
+    string? EmployeeCode = null,
+    string? Branch = null);
 
 public sealed record OrganizationInvitationDto(
     Guid Id,
@@ -388,9 +408,21 @@ public sealed record OrganizationInvitationDto(
     DateTimeOffset? AcceptedAtUtc,
     DateTimeOffset? RevokedAtUtc,
     Guid? AcceptedByUserId,
-    string? AcceptToken = null);
+    string? AcceptToken = null,
+    string? InvitationType = null,
+    string? RoleDisplay = null);
 
-public sealed record CreateInvitationRequest(string Email, string Role);
+public sealed record CreateInvitationRequest(
+    string Email,
+    string Role,
+    string? FirstName = null,
+    string? LastName = null,
+    string? DisplayName = null,
+    string? Phone = null,
+    string? EmployeeCode = null,
+    string? Branch = null,
+    string? ProductRole = null,
+    bool RequireEmailVerification = true);
 
 public sealed record ProductAccessAssignmentDto(
     Guid Id,
@@ -484,9 +516,36 @@ public sealed record ProductLaunchResultDto(
     string LaunchPath,
     string ReasonCode);
 
-public sealed record CreatePlatformUserRequest(string Username, string DisplayName, string Email);
-public sealed record UpdatePlatformUserRequest(string DisplayName, string Email);
-public sealed record LifecycleReasonRequest(string? Reason);
+public sealed record CreatePlatformUserRequest(
+    string DisplayName,
+    string Email,
+    string PlatformRole,
+    string? Username = null,
+    string? FirstName = null,
+    string? LastName = null,
+    string? Phone = null,
+    string? EmployeeCode = null,
+    bool SendEmailVerification = false,
+    bool RequireEmailVerification = false,
+    string? InitialPassword = null,
+    Guid? CreatedByUserId = null);
+public sealed record LifecycleReasonRequest(
+    string? Reason,
+    bool Global = false,
+    string? ActorPassword = null,
+    string? MfaCode = null);
+public sealed record ReactivatePlatformUserRequest(
+    string? Reason = null,
+    string? ActorPassword = null,
+    string? MfaCode = null,
+    bool Global = false);
+public sealed record UpdatePlatformUserRequest(
+    string DisplayName,
+    string Email,
+    string? FirstName = null,
+    string? LastName = null,
+    string? Phone = null,
+    string? EmployeeCode = null);
 public sealed record AddMemberRequest(Guid UserId, string Role);
 public sealed record ChangeRoleRequest(string Role, string? ActorReference);
 public sealed record MembershipLifecycleRequest(string? Reason, string? ActorReference);

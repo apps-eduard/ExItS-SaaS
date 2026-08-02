@@ -30,7 +30,7 @@ public sealed class PlatformBrowserSessionService(
 
         if (!response.IsSuccessStatusCode)
         {
-            return (false, "Invalid username/email or password.");
+            return (false, "Invalid email or password.");
         }
 
         await using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);

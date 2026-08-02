@@ -5,20 +5,29 @@ using ExItS.Platform.Domain.Organizations;
 namespace ExItS.Platform.Application.Organizations;
 
 /// <summary>
-/// Safety rules for organization membership lifecycle: last governing admin protection
-/// and OrganizationOwner assignment restrictions for OrganizationAdministrators.
+/// Safety rules for organization membership lifecycle: last active Owner protection
+/// and OrganizationOwner assignment restrictions for non-Owner actors.
 /// </summary>
 public static class OrganizationMembershipGuard
 {
+    /// <summary>Organization Owner may manage staff memberships in their own Organization.</summary>
+    public static bool CanManageOrganizationStaff(OrganizationRole role) =>
+        role == OrganizationRole.OrganizationOwner;
+
+    /// <summary>Last-seat protection applies to Organization Owner only (not legacy Administrator).</summary>
+    public static bool IsProtectedGoverningSeat(OrganizationRole role) =>
+        role == OrganizationRole.OrganizationOwner;
+
+    [Obsolete("Use CanManageOrganizationStaff or IsProtectedGoverningSeat.")]
     public static bool IsGoverningAdmin(OrganizationRole role) =>
-        role is OrganizationRole.OrganizationOwner or OrganizationRole.OrganizationAdministrator;
+        CanManageOrganizationStaff(role);
 
     public static async Task<ApplicationResult?> EnsureCanRemoveGoverningSeatAsync(
         IOrganizationMembershipRepository memberships,
         OrganizationMembership membership,
         CancellationToken cancellationToken = default)
     {
-        if (membership.Status != MembershipStatus.Active || !IsGoverningAdmin(membership.Role))
+        if (membership.Status != MembershipStatus.Active || !IsProtectedGoverningSeat(membership.Role))
         {
             return null;
         }
@@ -30,7 +39,7 @@ public static class OrganizationMembershipGuard
         {
             return ApplicationResult.Failure(
                 DomainErrorCodes.LastGoverningAdminProtected,
-                "Cannot remove or demote the final Organization Owner/Administrator for this organization.");
+                "Cannot remove or demote the final Organization Owner for this organization.");
         }
 
         return null;
@@ -44,13 +53,21 @@ public static class OrganizationMembershipGuard
         bool actorHasPlatformManageMemberships,
         CancellationToken cancellationToken = default)
     {
+        if (!OrganizationRoleDisplay.IsAssignableOrganizationStaffRole(newRole)
+            && !actorHasPlatformManageMemberships)
+        {
+            return ApplicationResult.Failure(
+                DomainErrorCodes.InvalidOrganizationRole,
+                "Organization staff roles are Owner and Staff only.");
+        }
+
         if (!actorHasPlatformManageMemberships
-            && actorMembershipRole == OrganizationRole.OrganizationAdministrator
+            && actorMembershipRole != OrganizationRole.OrganizationOwner
             && newRole == OrganizationRole.OrganizationOwner)
         {
             return ApplicationResult.Failure(
                 DomainErrorCodes.OrganizationOwnerAssignmentDenied,
-                "Organization Administrators cannot assign the OrganizationOwner role.");
+                "Only Organization Owners can assign the Owner role.");
         }
 
         if (membership.Role == newRole)
@@ -59,8 +76,8 @@ public static class OrganizationMembershipGuard
         }
 
         if (membership.Status == MembershipStatus.Active
-            && IsGoverningAdmin(membership.Role)
-            && !IsGoverningAdmin(newRole))
+            && IsProtectedGoverningSeat(membership.Role)
+            && !IsProtectedGoverningSeat(newRole))
         {
             return await EnsureCanRemoveGoverningSeatAsync(memberships, membership, cancellationToken)
                 .ConfigureAwait(false);

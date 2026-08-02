@@ -43,9 +43,9 @@ Cleanup is keyed by normalized email/username and the known seed org slug (not b
 | Olivia Mendoza | Platform only | Platform Administrator |
 | Rafael Torres | Platform only | Platform Support |
 | Maria Santos | Organization only | Sampaguita Owner / POS Owner |
-| Carlo Reyes | Organization only | Sampaguita Member / POS Cashier |
+| Carlo Reyes | Organization only | Sampaguita Staff / POS Cashier |
 | Ana Cruz | Organization only | Mabuhay Owner / POS Owner |
-| Daniel Garcia | Organization only | Mabuhay Member / POS Cashier |
+| Daniel Garcia | Organization only | Mabuhay Staff / POS Cashier |
 | Luis Navarro | Personal only | — |
 | Sofia Ramos | Personal only | — |
 

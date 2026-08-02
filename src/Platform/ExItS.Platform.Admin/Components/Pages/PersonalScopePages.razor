@@ -47,16 +47,16 @@ else
     }
     else if (_mode == "people")
     {
-        <Table TItem="PersonalContactDto" DataSource="_contacts" Size="@TableSize.Small" Bordered>
-            <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_User"]" />
-            <PropertyColumn Property="c => c.Email" Title="@L["Common_Email"]" />
+        <Table TItem="PersonalContactDto" DataSource="_contacts" Size="@TableSize.Small" Bordered ScrollX="720">
+            <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_User"]" Ellipsis />
+            <PropertyColumn Property="c => c.Email" Title="@L["Common_Email"]" Ellipsis />
             <PropertyColumn Property="c => c.Phone" Title="Phone" />
             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" />
         </Table>
     }
     else if (_mode is "lent" or "borrowed")
     {
-        <Table TItem="PersonalDebtRelationshipSummaryDto" DataSource="_relationships" Size="@TableSize.Small" Bordered>
+        <Table TItem="PersonalDebtRelationshipSummaryDto" DataSource="_relationships" Size="@TableSize.Small" Bordered ScrollX="720">
             <PropertyColumn Property="c => c.Perspective" Title="Perspective" />
             <PropertyColumn Property="c => c.CurrentBalance" Title="Balance" />
             <PropertyColumn Property="c => c.CurrencyCode" Title="Currency" />
@@ -66,8 +66,8 @@ else
     }
     else if (_mode == "invitations")
     {
-        <Table TItem="PersonalUtangInvitationDto" DataSource="_invitations" Size="@TableSize.Small" Bordered>
-            <PropertyColumn Property="c => c.InviteTargetEmailMasked" Title="@L["Common_Email"]" />
+        <Table TItem="PersonalUtangInvitationDto" DataSource="_invitations" Size="@TableSize.Small" Bordered ScrollX="720">
+            <PropertyColumn Property="c => c.InviteTargetEmailMasked" Title="@L["Common_Email"]" Ellipsis />
             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" />
             <PropertyColumn Property="c => c.CreatedAtUtc" Title="@L["Common_CreatedUtc"]" />
             <PropertyColumn Property="c => c.ExpiresAtUtc" Title="Expires" />
@@ -75,9 +75,9 @@ else
     }
     else if (_mode == "notifications")
     {
-        <Table TItem="PersonalInAppNotificationDto" DataSource="_notifications" Size="@TableSize.Small" Bordered>
-            <PropertyColumn Property="c => c.Title" Title="Title" />
-            <PropertyColumn Property="c => c.Preview" Title="Preview" />
+        <Table TItem="PersonalInAppNotificationDto" DataSource="_notifications" Size="@TableSize.Small" Bordered ScrollX="720">
+            <PropertyColumn Property="c => c.Title" Title="Title" Ellipsis />
+            <PropertyColumn Property="c => c.Preview" Title="Preview" Ellipsis />
             <PropertyColumn Property="c => c.IsRead" Title="Read" />
             <PropertyColumn Property="c => c.CreatedAtUtc" Title="@L["Common_CreatedUtc"]" />
         </Table>

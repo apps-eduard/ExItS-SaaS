@@ -96,9 +96,14 @@ public sealed class AdminArchitectureGuardTests
                 Assert.DoesNotContain($"value=\"{phrase}\"", text, StringComparison.OrdinalIgnoreCase);
             }
 
-            Assert.DoesNotContain("MFA", text, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("SSO", text, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("Active Directory", text, StringComparison.OrdinalIgnoreCase);
+
+            // MFA challenge is allowed on Users lifecycle reactivation (P16-WP11); not on membership/access pages.
+            if (!string.Equals(file, "Users.razor", StringComparison.Ordinal))
+            {
+                Assert.DoesNotContain("MFA", text, StringComparison.OrdinalIgnoreCase);
+            }
 
             // Credential password fields are allowed on Users detail (P13-WP04); not on membership/access pages.
             if (!string.Equals(file, "Users.razor", StringComparison.Ordinal))
@@ -361,7 +366,8 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("Nav_People", nav, StringComparison.Ordinal);
         Assert.Contains("Nav_Contacts", accountNav, StringComparison.Ordinal);
         Assert.Contains("Nav_SelectOrganization", nav, StringComparison.Ordinal);
-        Assert.Contains("tab=invitations", accountNav, StringComparison.Ordinal);
+        Assert.Contains("/invitations", accountNav, StringComparison.Ordinal);
+        Assert.DoesNotContain("tab=invitations", accountNav, StringComparison.Ordinal);
         Assert.Contains("IsPlatformShell", nav, StringComparison.Ordinal);
         Assert.Contains("IsOrganizationShell", nav, StringComparison.Ordinal);
         Assert.Contains("IsPersonalShell", nav, StringComparison.Ordinal);
@@ -468,17 +474,15 @@ public sealed class AdminArchitectureGuardTests
         var signIn = File.ReadAllText(Path.Combine(adminRoot, "Services", "LocalValidationSignInService.cs"));
 
         Assert.Contains("@using AntDesign", login, StringComparison.Ordinal);
-        Assert.Contains("<Input", login, StringComparison.Ordinal);
-        Assert.Contains("<InputPassword", login, StringComparison.Ordinal);
+        Assert.Contains("method=\"post\"", login, StringComparison.Ordinal);
+        Assert.Contains("/admin/login/credentials", login, StringComparison.Ordinal);
+        Assert.Contains("type=\"password\"", login, StringComparison.Ordinal);
         Assert.Contains("<Alert", login, StringComparison.Ordinal);
-        Assert.Contains("LoginAsync", login, StringComparison.Ordinal);
         Assert.Contains("LocalValidationIdentityPicker", login, StringComparison.Ordinal);
-        Assert.Contains("_busy", login, StringComparison.Ordinal);
         Assert.DoesNotContain("<select", login, StringComparison.Ordinal);
         Assert.DoesNotContain("SharedPassword", login, StringComparison.Ordinal);
         Assert.DoesNotContain("FluentUI", login, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("exits-native-select", login, StringComparison.Ordinal);
-        Assert.DoesNotContain("exits-native-input", login, StringComparison.Ordinal);
 
         Assert.Contains("<Select", picker, StringComparison.Ordinal);
         Assert.Contains("DisplayName", picker, StringComparison.Ordinal);

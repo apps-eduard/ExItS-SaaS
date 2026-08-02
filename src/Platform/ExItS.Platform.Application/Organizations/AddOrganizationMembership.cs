@@ -37,6 +37,19 @@ public sealed class AddOrganizationMembership
         PlatformOrganizationId organizationId,
         PlatformUserId userId,
         OrganizationRole role,
+        CancellationToken cancellationToken = default) =>
+        await ExecuteAsync(
+            organizationId,
+            userId,
+            role,
+            exclusiveOrganizationProfile: true,
+            cancellationToken).ConfigureAwait(false);
+
+    public async Task<ApplicationResult<OrganizationMembership>> ExecuteAsync(
+        PlatformOrganizationId organizationId,
+        PlatformUserId userId,
+        OrganizationRole role,
+        bool exclusiveOrganizationProfile,
         CancellationToken cancellationToken = default)
     {
         var organization = await _organizations.GetByIdAsync(organizationId, cancellationToken)
@@ -86,7 +99,11 @@ public sealed class AddOrganizationMembership
             await _memberships.AddAsync(membership, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             await _ensureProfiles
-                .ExecuteAsync(userId, AccountClass.Organization, exclusivePreferredClass: false, cancellationToken)
+                .ExecuteAsync(
+                    userId,
+                    AccountClass.Organization,
+                    exclusivePreferredClass: exclusiveOrganizationProfile,
+                    cancellationToken)
                 .ConfigureAwait(false);
             return ApplicationResult<OrganizationMembership>.Success(membership);
         }

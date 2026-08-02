@@ -86,6 +86,39 @@ public sealed class ProductAuthorizationAndDiscoveryTests
     }
 
     [Fact]
+    public async Task Discovery_returns_pinoy_business_pos_once_with_display_name()
+    {
+        var harness = await AuthHarness.CreateAsync();
+        Assert.True((await harness.GrantAccess.ExecuteAsync(
+            harness.Organization.Id,
+            harness.User.Id,
+            harness.Product.Code.Value,
+            "dev-admin")).IsSuccess);
+        Assert.True((await harness.AssignRole.ExecuteAsync(
+            harness.Organization.Id,
+            harness.User.Id,
+            harness.Product.Code.Value,
+            ProductLocalRoleCodes.Cashier,
+            harness.User.Id)).IsSuccess);
+
+        // Duplicate subscription row for the same product code must not duplicate My Products.
+        var duplicate = Subscription.StartTrial(
+            harness.Organization.Id,
+            harness.Plan,
+            harness.PlanVersion,
+            harness.Trial,
+            T0.AddMinutes(1));
+        await harness.Subscriptions.AddAsync(duplicate);
+
+        var discovered = await harness.Discover.ExecuteAsync(harness.User.Id, harness.Organization.Id);
+        Assert.True(discovered.IsSuccess);
+        var item = Assert.Single(discovered.Value!);
+        Assert.Equal(ProductCode.PinoyBusinessPos, item.ProductCode);
+        Assert.Equal("Pinoy Business POS", item.DisplayName);
+        Assert.DoesNotContain("pinoy-business-pos", item.DisplayName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task Discovery_lists_subscribed_product_and_launch_requires_role()
     {
         var harness = await AuthHarness.CreateAsync();
@@ -158,6 +191,10 @@ public sealed class ProductAuthorizationAndDiscoveryTests
         public required DiscoverEnabledProducts Discover { get; init; }
         public required AssignProductLocalRole AssignRole { get; init; }
         public required RevokeProductLocalRole RevokeRole { get; init; }
+        public required InMemorySubscriptionRepository Subscriptions { get; init; }
+        public required Plan Plan { get; init; }
+        public required PlanVersion PlanVersion { get; init; }
+        public required TrialDefinition Trial { get; init; }
         public required FixedClock Clock { get; init; }
 
         public static async Task<AuthHarness> CreateAsync()
@@ -180,7 +217,7 @@ public sealed class ProductAuthorizationAndDiscoveryTests
             _ = (await new AddOrganizationMembership(users, orgs, memberships, new EnsureAccountProfilesForUser(new InMemoryAccountProfileRepository(), new InMemoryPlatformRoleAssignmentRepository(), memberships, uow, clock), uow, clock)
                 .ExecuteAsync(org.Id, user.Id, OrganizationRole.OrganizationOwner)).Value!;
 
-            var product = Product.Create(ProductCode.Create(ProductCode.PinoyBusinessPos), "PinoyBusinessPOS", T0);
+            var product = Product.Create(ProductCode.Create(ProductCode.PinoyBusinessPos), "Pinoy Business POS", T0);
             await products.AddAsync(product);
 
             var plan = Plan.CreateDraft(product.Code, PlanCode.Create("utang-trial"), "Utang Trial", T0);
@@ -233,6 +270,10 @@ public sealed class ProductAuthorizationAndDiscoveryTests
                 Discover = discover,
                 AssignRole = assignRole,
                 RevokeRole = revokeRole,
+                Subscriptions = subscriptions,
+                Plan = plan,
+                PlanVersion = version,
+                Trial = trial,
                 Clock = clock
             };
         }

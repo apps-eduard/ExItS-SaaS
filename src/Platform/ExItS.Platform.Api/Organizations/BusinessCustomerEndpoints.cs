@@ -375,7 +375,7 @@ internal static class BusinessCustomerEndpoints
                     membershipAuthz.Inner.CurrentActor.PlatformUserId,
                     authority.ActorMembershipRole,
                     authority.HasPlatformManageMemberships,
-                    ct)
+                    cancellationToken: ct)
                 .ConfigureAwait(false);
             if (result.IsSuccess)
             {
@@ -644,7 +644,7 @@ internal static class BusinessCustomerEndpoints
         {
             error = PlatformApiResults.Problem(
                 DomainErrorCodes.InvalidOrganizationRole,
-                "Role must be OrganizationOwner, OrganizationAdministrator, or OrganizationMember.",
+                "Role must be OrganizationOwner (Owner) or OrganizationMember (Staff). OrganizationAdministrator is legacy-only.",
                 StatusCodes.Status400BadRequest);
             return false;
         }

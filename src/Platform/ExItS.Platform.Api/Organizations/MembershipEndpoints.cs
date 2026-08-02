@@ -11,7 +11,8 @@ namespace ExItS.Platform.Api.Organizations;
 
 /// <summary>
 /// Organization membership endpoints. Platform organization roles only — never product-local roles.
-/// Mutations and reads require ManageMemberships or an org Owner/Administrator in trusted org context.
+/// Mutations and reads require ManageMemberships (Platform emergency override) or an Organization Owner
+/// in trusted organization context.
 /// </summary>
 internal static class MembershipEndpoints
 {
@@ -76,13 +77,22 @@ internal static class MembershipEndpoints
                 .ResolveActorMembershipAuthorityAsync(organizationId, ct)
                 .ConfigureAwait(false);
             if (!authority.HasPlatformManageMemberships
-                && authority.ActorMembershipRole == OrganizationRole.OrganizationAdministrator
+                && authority.ActorMembershipRole != OrganizationRole.OrganizationOwner
                 && role == OrganizationRole.OrganizationOwner)
             {
                 return PlatformApiResults.Problem(
                     DomainErrorCodes.OrganizationOwnerAssignmentDenied,
-                    "Organization Administrators cannot assign the OrganizationOwner role.",
+                    "Only Organization Owners can assign the Owner role.",
                     StatusCodes.Status403Forbidden);
+            }
+
+            if (!OrganizationRoleDisplay.IsAssignableOrganizationStaffRole(role)
+                && !authority.HasPlatformManageMemberships)
+            {
+                return PlatformApiResults.Problem(
+                    DomainErrorCodes.InvalidOrganizationRole,
+                    "Organization staff roles are Owner and Staff only.",
+                    StatusCodes.Status400BadRequest);
             }
 
             try
@@ -380,10 +390,18 @@ internal static class MembershipEndpoints
                 return denied;
             }
 
+            if (string.IsNullOrWhiteSpace(body?.Reason))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.DomainViolation,
+                    "A reason is required to deactivate a membership.",
+                    StatusCodes.Status400BadRequest);
+            }
+
             try
             {
                 var result = await useCase
-                    .ExecuteAsync(OrganizationMembershipId.From(membershipId), body?.Reason, body?.ActorReference, ct)
+                    .ExecuteAsync(OrganizationMembershipId.From(membershipId), body.Reason, body?.ActorReference, ct)
                     .ConfigureAwait(false);
                 if (result.IsSuccess)
                 {
@@ -415,7 +433,7 @@ internal static class MembershipEndpoints
         {
             error = PlatformApiResults.Problem(
                 DomainErrorCodes.InvalidOrganizationRole,
-                "Role must be OrganizationOwner, OrganizationAdministrator, or OrganizationMember.",
+                "Role must be OrganizationOwner (Owner) or OrganizationMember (Staff). OrganizationAdministrator is legacy-only.",
                 StatusCodes.Status400BadRequest);
             return false;
         }

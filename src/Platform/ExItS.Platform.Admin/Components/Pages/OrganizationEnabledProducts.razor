@@ -190,7 +190,8 @@ else
         switch (ctx.Column.Key)
         {
             case "product":
-                b.AddContent(0, $"{ctx.Item.DisplayName} ({ctx.Item.ProductCode})");
+                // Display friendly name only; keep ProductCode for launch/routing via row actions.
+                b.AddContent(0, string.IsNullOrWhiteSpace(ctx.Item.DisplayName) ? ctx.Item.ProductCode : ctx.Item.DisplayName);
                 break;
             case "entitlement":
                 b.AddContent(0, ctx.Item.EntitlementActive ? L["Common_Yes"] : L["Common_No"]);

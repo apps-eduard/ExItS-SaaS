@@ -29,6 +29,11 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.DoesNotContain("HealthCare/", live, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(".Migrate(", live, StringComparison.Ordinal);
 
+        Assert.Contains("mailpit", live, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("exits-local-validation-mailpit", live, StringComparison.Ordinal);
+        Assert.Contains("8025", live, StringComparison.Ordinal);
+        Assert.Contains("1025", live, StringComparison.Ordinal);
+
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "README.local-validation.md")));
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "README.local-validation-workflow.md")));
         Assert.True(File.Exists(Path.Combine(root, "tools", "Start-LocalValidation.ps1")));
@@ -39,6 +44,8 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Reset-LocalValidation.ps1")));
 
         var startScript = File.ReadAllText(Path.Combine(root, "tools", "Start-LocalValidation.ps1"));
+        Assert.Contains("Mailpit", startScript, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("PlatformEmail__SmtpHost", startScript, StringComparison.Ordinal);
         Assert.Contains("dotnet watch", startScript, StringComparison.Ordinal);
         Assert.Contains("DataProtectionKeys", startScript, StringComparison.Ordinal);
         Assert.Contains("exits-local-validation-platform-db", startScript, StringComparison.Ordinal);

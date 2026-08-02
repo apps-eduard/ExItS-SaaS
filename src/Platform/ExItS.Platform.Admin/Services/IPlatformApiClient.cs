@@ -80,9 +80,21 @@ public interface IPlatformApiClient
     Task<ApiCallResult<PlatformUserDto>> GetUserAsync(Guid id, CancellationToken ct = default);
     Task<ApiCallResult<PlatformUserDto>> CreateUserAsync(CreatePlatformUserRequest request, CancellationToken ct = default);
     Task<ApiCallResult<PlatformUserDto>> UpdateUserAsync(Guid id, UpdatePlatformUserRequest request, CancellationToken ct = default);
-    Task<ApiCallResult<PlatformUserDto>> SuspendUserAsync(Guid id, string? reason = null, CancellationToken ct = default);
-    Task<ApiCallResult<PlatformUserDto>> ReactivateUserAsync(Guid id, CancellationToken ct = default);
-    Task<ApiCallResult<PlatformUserDto>> DisableUserAsync(Guid id, CancellationToken ct = default);
+    Task<ApiCallResult<PlatformUserDto>> SuspendUserAsync(Guid id, string? reason = null, bool global = false, CancellationToken ct = default);
+    Task<ApiCallResult<PlatformUserDto>> ReactivateUserAsync(Guid id, ReactivatePlatformUserRequest? request = null, CancellationToken ct = default);
+    Task<ApiCallResult<PlatformUserDto>> DeactivateUserAsync(
+        Guid id,
+        string reason,
+        string? actorPassword = null,
+        string? mfaCode = null,
+        CancellationToken ct = default);
+    Task<ApiCallResult<PlatformUserDto>> MoveUserToSuspendedAsync(
+        Guid id,
+        string reason,
+        string? actorPassword = null,
+        string? mfaCode = null,
+        CancellationToken ct = default);
+    Task<ApiCallResult<PlatformUserDto>> DisableUserAsync(Guid id, string reason, CancellationToken ct = default);
 
     Task<ApiCallResult<PagedResult<OrganizationMembershipDto>>> GetOrganizationMembersAsync(Guid organizationId, int page = 1, int pageSize = 20, string? status = null, CancellationToken ct = default);
     Task<ApiCallResult<PagedResult<OrganizationMembershipDto>>> GetUserMembershipsAsync(Guid userId, int page = 1, int pageSize = 20, string? status = null, CancellationToken ct = default);
@@ -167,6 +179,8 @@ public interface IPlatformApiClient
     Task<ApiCallResult<PlatformCredentialStatusDto>> ChangePasswordAsync(ChangePasswordRequest request, CancellationToken ct = default);
     Task<ApiCallResult<CredentialWorkflowAckDto>> ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken ct = default);
     Task<ApiCallResult<PlatformCredentialStatusDto>> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<PersonalRegistrationAckDto>> RegisterPersonalAccountAsync(RegisterPersonalAccountRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<PlatformCredentialStatusDto>> ActivatePersonalAccountAsync(ActivatePersonalAccountRequest request, CancellationToken ct = default);
     Task<ApiCallResult<PlatformCredentialStatusDto>> GetMyCredentialsAsync(CancellationToken ct = default);
     Task<ApiCallResult<CredentialWorkflowAckDto>> RequestEmailVerificationAsync(CancellationToken ct = default);
     Task<ApiCallResult<PlatformCredentialStatusDto>> ConfirmEmailVerificationAsync(ConfirmEmailVerificationRequest request, CancellationToken ct = default);

@@ -105,6 +105,8 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.EntitlementSubscriptionInvalid
             or ApplicationErrorCodes.RoleAssignmentConflict
             or ApplicationErrorCodes.LastPlatformAdministratorProtected
+            or ApplicationErrorCodes.StepUpRequired
+            or ApplicationErrorCodes.MfaStepUpRequired
             or ApplicationErrorCodes.RoleDefinitionConflict
             or ApplicationErrorCodes.CustomRoleAssignmentConflict
             or ApplicationErrorCodes.OrganizationRoleDefinitionConflict

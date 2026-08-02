@@ -298,3 +298,238 @@ html, body {
     position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
     overflow: hidden; clip: rect(0,0,0,0); border: 0;
 }
+
+/* ——— Responsive shell / tables (P16-WP11) ——— */
+.exits-admin-layout,
+.exits-admin-layout > .ant-layout {
+    max-width: 100vw;
+    overflow-x: clip;
+}
+
+.exits-admin-content {
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: auto;
+}
+
+.exits-page-header .ant-page-header-heading {
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.exits-page-header .ant-page-header-heading-left,
+.exits-page-header .ant-page-header-heading-extra {
+    max-width: 100%;
+}
+
+.exits-login-form input.ant-input,
+.exits-login-form .ant-input,
+.exits-login-form .ant-input-password {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Ant Design tables: contain overflow and scroll horizontally on narrow viewports */
+.exits-admin-content .ant-table-wrapper {
+    max-width: 100%;
+}
+
+.exits-admin-content .ant-table-container,
+.exits-admin-content .ant-table-content,
+.exits-admin-content .ant-table-body {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+}
+
+.exits-admin-content .ant-table {
+    min-width: 36rem;
+}
+
+.exits-admin-content .ant-table-pagination {
+    flex-wrap: wrap;
+    row-gap: .5rem;
+}
+
+.exits-admin-content .ant-descriptions {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+.exits-admin-content .ant-tabs-nav {
+    margin-bottom: 12px;
+}
+
+/* AdminDataTable — desktop table + mobile labeled cards */
+.admin-data-table {
+    width: 100%;
+    max-width: 100%;
+}
+
+.admin-data-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.admin-data-table .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--exits-surface);
+}
+
+.admin-data-table .data-table th,
+.admin-data-table .data-table td {
+    text-align: left;
+    padding: .55rem .7rem;
+    border-bottom: 1px solid var(--exits-border);
+    vertical-align: top;
+    overflow-wrap: anywhere;
+}
+
+.admin-data-table .data-table th {
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--exits-muted);
+    white-space: nowrap;
+}
+
+.admin-data-table .data-table th.is-numeric,
+.admin-data-table .data-table td.is-numeric {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-data-table .col-actions { white-space: nowrap; }
+
+.admin-data-cards { display: none; }
+
+.admin-row-card {
+    background: var(--exits-surface);
+    border: 1px solid var(--exits-border);
+    border-radius: 6px;
+    padding: .35rem 0;
+    margin-bottom: .75rem;
+}
+
+.admin-row-card-field {
+    display: grid;
+    grid-template-columns: minmax(5.5rem, 7.5rem) 1fr;
+    gap: .5rem;
+    padding: .4rem .75rem;
+    align-items: start;
+}
+
+.admin-row-card-field.is-primary .admin-row-card-value { font-weight: 600; }
+.admin-row-card-label {
+    font-weight: 600;
+    color: var(--exits-muted);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+.admin-row-card-value { min-width: 0; overflow-wrap: anywhere; }
+.admin-row-card-actions {
+    padding: .45rem .75rem;
+    border-top: 1px solid var(--exits-border);
+}
+
+.report-table { margin-top: .25rem; max-width: 100%; }
+
+.responsive-report-layout {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    max-width: 100%;
+}
+
+.responsive-report-filters,
+.responsive-report-kpis,
+.responsive-report-body {
+    min-width: 0;
+    max-width: 100%;
+}
+
+@media (max-width: 800px) {
+    .exits-admin-content {
+        margin: 8px 8px 0;
+        padding: 12px;
+        min-height: calc(100vh - 48px - 48px - 16px);
+        border-radius: 4px;
+    }
+
+    .exits-header-title { max-width: 42vw; }
+    .exits-identity { max-width: 140px; }
+    .exits-identity-meta { display: none; }
+
+    .exits-admin-content .ant-table {
+        min-width: 28rem;
+        font-size: 12px;
+    }
+
+    .exits-admin-content .ant-space {
+        width: 100%;
+    }
+
+    .exits-admin-content > .ant-space .ant-space-item,
+    .exits-admin-content > .ant-space .ant-input,
+    .exits-admin-content > .ant-space .ant-select,
+    .exits-admin-content > .ant-space .ant-picker {
+        width: 100% !important;
+        max-width: 100%;
+    }
+
+    .exits-admin-content .ant-page-header-heading-extra {
+        width: 100%;
+    }
+
+    .exits-admin-content .ant-page-header-heading-extra .ant-space {
+        width: 100%;
+    }
+
+    .admin-data-table-wrap { display: none; }
+    .admin-data-cards { display: block; }
+
+    .responsive-table thead { display: none; }
+    .responsive-table,
+    .responsive-table tbody,
+    .responsive-table tr,
+    .responsive-table td {
+        display: block;
+        width: 100%;
+    }
+    .responsive-table tr {
+        border: 1px solid var(--exits-border);
+        border-radius: 6px;
+        background: var(--exits-surface);
+        margin-bottom: .75rem;
+        padding: .25rem 0;
+    }
+    .responsive-table td {
+        border: 0;
+        display: grid;
+        grid-template-columns: minmax(5.5rem, 7.5rem) 1fr;
+        gap: .5rem;
+        padding: .4rem .75rem;
+    }
+    .responsive-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--exits-muted);
+        overflow-wrap: anywhere;
+    }
+
+    .responsive-report-filters,
+    .responsive-report-kpis {
+        display: flex;
+        flex-direction: column;
+        gap: .5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .exits-admin-content .ant-table {
+        min-width: 22rem;
+    }
+
+    .exits-login-shell { padding: 1rem; }
+    .exits-login-card { width: 100%; }
+}

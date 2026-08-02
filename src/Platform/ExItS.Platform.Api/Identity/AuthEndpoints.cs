@@ -156,6 +156,35 @@ internal static class AuthEndpoints
         .RequireRateLimiting(PlatformSecurityPipeline.AuthPasswordResetRateLimitPolicy)
         .AllowAnonymous();
 
+        app.MapPost("/api/v1/platform/auth/register", async (
+            RegisterPersonalAccountRequest body,
+            RegisterPersonalAccount useCase,
+            CancellationToken ct) =>
+        {
+            var result = await useCase
+                .ExecuteAsync(
+                    body.DisplayName ?? string.Empty,
+                    body.Email ?? string.Empty,
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        })
+        .RequireRateLimiting(PlatformSecurityPipeline.AuthPasswordResetRateLimitPolicy)
+        .AllowAnonymous();
+
+        app.MapPost("/api/v1/platform/auth/activate-account", async (
+            ActivatePersonalAccountRequest body,
+            ActivatePersonalAccountRegistration useCase,
+            CancellationToken ct) =>
+        {
+            var result = await useCase
+                .ExecuteAsync(body.Token, body.Password, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        })
+        .RequireRateLimiting(PlatformSecurityPipeline.AuthPasswordResetRateLimitPolicy)
+        .AllowAnonymous();
+
         app.MapPost("/api/v1/platform/auth/email-verification/request", async (
             HttpContext http,
             RequestEmailVerification useCase,
@@ -473,6 +502,8 @@ internal static class AuthEndpoints
     internal sealed record ChangePasswordRequest(string? CurrentPassword, string? NewPassword);
     internal sealed record ForgotPasswordRequest(string? UsernameOrEmail);
     internal sealed record ResetPasswordRequest(string? Token, string? NewPassword);
+    internal sealed record RegisterPersonalAccountRequest(string? DisplayName, string? Email);
+    internal sealed record ActivatePersonalAccountRequest(string? Token, string? Password);
     internal sealed record ConfirmEmailVerificationRequest(string? Token);
     internal sealed record RequestRecoveryEmailRequest(string? RecoveryEmail);
     internal sealed record ConfirmRecoveryEmailRequest(string? Token);

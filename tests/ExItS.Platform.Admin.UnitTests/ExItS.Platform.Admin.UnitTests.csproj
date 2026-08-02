@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Platform\ExItS.Platform.Admin\ExItS.Platform.Admin.csproj" />
+    <ProjectReference Include="..\..\src\Platform\ExItS.Platform.Domain\ExItS.Platform.Domain.csproj" />
     <Using Include="Xunit" />
   </ItemGroup>
 

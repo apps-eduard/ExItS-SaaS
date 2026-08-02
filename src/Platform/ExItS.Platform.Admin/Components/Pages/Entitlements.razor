@@ -92,7 +92,7 @@
         }
         else
         {
-            <Table TItem="EntitlementGrantDto" DataSource="s.Grants" Size="@TableSize.Small" HidePagination Bordered Style="margin-bottom:16px;">
+            <Table TItem="EntitlementGrantDto" DataSource="s.Grants" Size="@TableSize.Small" HidePagination Bordered ScrollX="720" Style="margin-bottom:16px;">
                 <PropertyColumn Property="c => c.FeatureCode" Title="@L["Common_Feature"]" />
                 <PropertyColumn Property="c => c.Enabled" Title="@L["Common_Enabled"]" />
                 <PropertyColumn Property="c => c.NumericLimit" Title="@L["Common_Limit"]">
@@ -123,7 +123,7 @@
         }
         else
         {
-            <Table TItem="FeatureOverrideDto" DataSource="_overrides.Data.Items" Size="@TableSize.Small" HidePagination Bordered Style="margin-bottom:16px;">
+            <Table TItem="FeatureOverrideDto" DataSource="_overrides.Data.Items" Size="@TableSize.Small" HidePagination Bordered ScrollX="720" Style="margin-bottom:16px;">
                 <PropertyColumn Property="c => c.FeatureCode" Title="@L["Common_Feature"]" />
                 <PropertyColumn Property="c => c.Enabled" Title="@L["Common_Enabled"]" />
                 <PropertyColumn Property="c => c.NumericLimit" Title="@L["Common_Limit"]">

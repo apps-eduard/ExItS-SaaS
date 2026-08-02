@@ -17,6 +17,7 @@ using ExItS.Platform.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace ExItS.Platform.Infrastructure;
 
@@ -43,6 +44,7 @@ public static class DependencyInjection
         services.AddScoped<IEntitlementSnapshotRepository, EntitlementSnapshotRepository>();
         services.AddScoped<IAdminPortfolioReadStore, AdminPortfolioReadStore>();
         services.AddScoped<IPlatformUserRepository, PlatformUserRepository>();
+        services.AddScoped<IStaffNumberGenerator, EfStaffNumberGenerator>();
         services.AddScoped<IPlatformUserCredentialRepository, PlatformUserCredentialRepository>();
         services.AddScoped<IPlatformAuthSessionRepository, PlatformAuthSessionRepository>();
         services.AddScoped<IAccountProfileRepository, AccountProfileRepository>();
@@ -52,7 +54,6 @@ public static class DependencyInjection
         services.AddScoped<IPlatformCredentialTokenRepository, PlatformCredentialTokenRepository>();
         services.AddSingleton<IPlatformPasswordHasher, AspNetCorePlatformPasswordHasher>();
         services.AddSingleton<IPlatformSessionTokenService, PlatformSessionTokenService>();
-        services.AddSingleton<IPlatformAuthOutboundMessageSink, NullPlatformAuthOutboundMessageSink>();
         services.AddScoped<IOrganizationMembershipRepository, OrganizationMembershipRepository>();
         services.AddScoped<IOrganizationInvitationRepository, OrganizationInvitationRepository>();
         services.AddScoped<IBusinessCustomerRepository, BusinessCustomerRepository>();
@@ -93,10 +94,21 @@ public static class DependencyInjection
         services.Configure<PlatformSessionOptions>(config.GetSection(PlatformSessionOptions.SectionName));
         services.Configure<PlatformAccessTokenOptions>(config.GetSection(PlatformAccessTokenOptions.SectionName));
         services.Configure<PlatformCredentialLifecycleOptions>(config.GetSection(PlatformCredentialLifecycleOptions.SectionName));
+        services.Configure<PlatformEmailDeliveryOptions>(config.GetSection(PlatformEmailDeliveryOptions.SectionName));
         services.Configure<PlatformMfaOptions>(config.GetSection(PlatformMfaOptions.SectionName));
         services.Configure<PlatformExternalAuthOptions>(config.GetSection(PlatformExternalAuthOptions.SectionName));
         services.AddSingleton<IPlatformMfaFactorStore, NullPlatformMfaFactorStore>();
         services.AddScoped<IPlatformMfaReadinessService, PlatformMfaReadinessService>();
+        services.AddSingleton<IPlatformAuthOutboundMessageSink>(sp =>
+        {
+            var email = sp.GetRequiredService<IOptions<PlatformEmailDeliveryOptions>>().Value;
+            if (email.IsConfigured)
+            {
+                return ActivatorUtilities.CreateInstance<SmtpPlatformAuthOutboundMessageSink>(sp);
+            }
+
+            return ActivatorUtilities.CreateInstance<NullPlatformAuthOutboundMessageSink>(sp);
+        });
 
         return services;
     }

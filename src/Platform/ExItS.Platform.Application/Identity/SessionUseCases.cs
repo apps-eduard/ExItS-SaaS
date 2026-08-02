@@ -79,32 +79,25 @@ public sealed class LoginPlatformUser
             return LoginFailedResult();
         }
 
+        // Public Admin login is email-only. Username lookup remains for Local Validation / API tooling.
         PlatformUser? user = null;
-        if (identifier.Contains('@', StringComparison.Ordinal))
+        try
         {
-            try
+            if (identifier.Contains('@', StringComparison.Ordinal))
             {
                 var normalizedEmail = PlatformUser.NormalizeEmail(identifier);
                 user = await _users.GetByNormalizedEmailAsync(normalizedEmail, cancellationToken).ConfigureAwait(false);
             }
-            catch (DomainException)
-            {
-                await WriteLoginFailedAsync(null, cancellationToken).ConfigureAwait(false);
-                return LoginFailedResult();
-            }
-        }
-        else
-        {
-            try
+            else
             {
                 var (_, normalizedUsername) = PlatformUser.NormalizeUsername(identifier);
                 user = await _users.GetByNormalizedUsernameAsync(normalizedUsername, cancellationToken).ConfigureAwait(false);
             }
-            catch (DomainException)
-            {
-                await WriteLoginFailedAsync(null, cancellationToken).ConfigureAwait(false);
-                return LoginFailedResult();
-            }
+        }
+        catch (DomainException)
+        {
+            await WriteLoginFailedAsync(null, cancellationToken).ConfigureAwait(false);
+            return LoginFailedResult();
         }
 
         if (user is null)
@@ -259,7 +252,7 @@ public sealed class LoginPlatformUser
     private static ApplicationResult<PlatformLoginResultDto> LoginFailedResult() =>
         ApplicationResult<PlatformLoginResultDto>.Failure(
             ApplicationErrorCodes.LoginFailed,
-            "Invalid username/email or password.");
+            "Invalid email or password.");
 
     private async Task WriteLoginFailedAsync(
         PlatformUserId? userId,

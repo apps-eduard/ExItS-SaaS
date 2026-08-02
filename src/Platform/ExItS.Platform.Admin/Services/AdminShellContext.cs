@@ -185,9 +185,9 @@ public sealed class AdminShellContext(
 
     private static string? FormatMembershipRole(string? role) => role switch
     {
-        "OrganizationOwner" => "Organization Owner",
-        "OrganizationAdministrator" => "Organization Administrator",
-        "OrganizationMember" => "Organization Member",
+        "OrganizationOwner" => "Owner",
+        "OrganizationAdministrator" => "Administrator",
+        "OrganizationMember" => "Staff",
         _ => null
     };
 }

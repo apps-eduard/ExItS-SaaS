@@ -1477,11 +1477,30 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
                     b.Property<string>("DisplayName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("display_name");
+
+                    b.Property<string>("EmployeeCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("employee_code");
+
+                    b.Property<string>("FirstName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("first_name");
+
+                    b.Property<string>("LastName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("last_name");
 
                     b.Property<string>("NormalizedEmail")
                         .IsRequired()
@@ -1494,6 +1513,16 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
                         .HasColumnName("normalized_username");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("phone");
+
+                    b.Property<string>("StaffNumber")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("staff_number");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -1535,6 +1564,11 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.HasIndex("NormalizedUsername")
                         .IsUnique()
                         .HasDatabaseName("ux_platform_users_normalized_username");
+
+                    b.HasIndex("StaffNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ux_platform_users_staff_number")
+                        .HasFilter("staff_number IS NOT NULL");
 
                     b.ToTable("platform_users", "platform");
                 });

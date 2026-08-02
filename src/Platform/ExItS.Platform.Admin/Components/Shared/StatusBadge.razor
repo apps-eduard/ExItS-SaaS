@@ -15,6 +15,7 @@
         "Removed" => L["Status_Removed"],
         "Revoked" => L["Status_Revoked"],
         "PendingConfirmation" => L["Status_PendingConfirmation"],
+        "PendingVerification" => L["Status_PendingVerification"],
         "Confirmed" => L["Status_Confirmed"],
         "Rejected" => L["Status_Rejected"],
         "Voided" => L["Status_Voided"],
@@ -32,7 +33,7 @@
     private string Tone => Value switch
     {
         "Suspended" or "PastDue" or "Rejected" or "Denied" or "Failed" => "danger",
-        "GracePeriod" or "PendingConfirmation" or "Trialing" => "warning",
+        "GracePeriod" or "PendingConfirmation" or "PendingVerification" or "Trialing" => "warning",
         "Cancelled" or "Expired" or "Voided" or "Removed" or "Deactivated" or "Revoked" => "neutral",
         "Active" or "Confirmed" or "Succeeded" => "success",
         _ => "info"

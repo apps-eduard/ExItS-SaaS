@@ -33,7 +33,8 @@ else
            Size="@TableSize.Small"
            Bordered
            RemoteDataSource
-           OnPageIndexChange="OnPageChangedAsync">
+           OnPageIndexChange="OnPageChangedAsync"
+           ScrollX="720">
         <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_DisplayName"]">
             <a href="/admin/organizations/@context.Id/members">@context.DisplayName</a>
         </PropertyColumn>

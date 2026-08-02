@@ -163,15 +163,20 @@
   <data name="Users_UsernameRequired" xml:space="preserve"><value>Kailangan ang username.</value></data>
   <data name="Users_DisplayNameRequired" xml:space="preserve"><value>Kailangan ang display name.</value></data>
   <data name="Users_EmailRequired" xml:space="preserve"><value>Kailangan ang email.</value></data>
-  <data name="Users_SuspendConfirmMessage" xml:space="preserve"><value>I-suspend ang Platform user na ito? Tataanggihan ang effective product access habang naka-suspend.</value></data>
   <data name="Users_DisableConfirmMessage" xml:space="preserve"><value>I-disable (deactivate) nang permanente ang Platform user na ito para sa bagong access? Mananatili ang historical records.</value></data>
-  <data name="OrgMembers_ToastAdded" xml:space="preserve"><value>Naidagdag ang member.</value></data>
+  <data name="OrgMembers_ToastAdded" xml:space="preserve"><value>Naidagdag ang staff.</value></data>
   <data name="OrgMembers_ToastRoleUpdated" xml:space="preserve"><value>Na-update ang role.</value></data>
   <data name="OrgMembers_ToastSuspended" xml:space="preserve"><value>Na-suspend ang membership.</value></data>
   <data name="OrgMembers_ToastReactivated" xml:space="preserve"><value>Na-reactivate ang membership pagkatapos ng eligibility revalidation.</value></data>
   <data name="OrgMembers_ToastRevoked" xml:space="preserve"><value>Na-revoke ang membership; na-revoke din ang related product access.</value></data>
   <data name="OrgMembers_UserIdInvalid" xml:space="preserve"><value>Dapat valid GUID ang User ID.</value></data>
-  <data name="OrgMembers_SuspendConfirmMessage" xml:space="preserve"><value>I-suspend ang membership na ito? Tataanggihan ang effective product access para sa organisasyong ito.</value></data>
+  <data name="OrgMembers_SuspendConfirmMessage" xml:space="preserve"><value>I-suspend ang Membership para sa organisasyong ito lamang? Active pa rin ang global identity.</value></data>
+  <data name="OrgMembers_ReactivateConfirmMessage" xml:space="preserve"><value>I-reactivate ang Membership? Mababalik ang Organization access.</value></data>
+  <data name="OrgMembers_DeactivateConfirmMessage" xml:space="preserve"><value>I-deactivate ang Membership? Naka-block pa rin ang access sa organisasyong ito. Nananatili ang history.</value></data>
+  <data name="OrgMembers_MoveToSuspendedConfirmMessage" xml:space="preserve"><value>Ilipat ang deactivated membership sa Suspended?</value></data>
+  <data name="OrgMembers_DeactivateMembership" xml:space="preserve"><value>Deactivate Membership</value></data>
+  <data name="OrgMembers_MoveToSuspended" xml:space="preserve"><value>Move to Suspended</value></data>
+  <data name="OrgMembers_ToastDeactivated" xml:space="preserve"><value>Na-deactivate ang membership.</value></data>
   <data name="OrgMembers_RevokeConfirmMessage" xml:space="preserve"><value>I-revoke ang membership na ito? Mare-revoke ang active product-access assignments. Mananatili ang historical rows.</value></data>
   <data name="OrgMembers_RevokeSuspendedConfirmMessage" xml:space="preserve"><value>I-revoke nang permanente ang membership na ito para sa organisasyong ito?</value></data>
   <data name="Payments_ToastCreated" xml:space="preserve"><value>Nagawa ang manual payment.</value></data>
@@ -288,7 +293,7 @@
   <data name="Common_Related" xml:space="preserve"><value>Kaugnay</value></data>
   <data name="Common_Payments" xml:space="preserve"><value>Mga Bayad</value></data>
   <data name="Common_ProductAccess" xml:space="preserve"><value>Product access</value></data>
-  <data name="Common_Members" xml:space="preserve"><value>Mga miyembro</value></data>
+  <data name="Common_Members" xml:space="preserve"><value>Staff</value></data>
   <data name="Common_CommercialSummary" xml:space="preserve"><value>commercial summary</value></data>
   <data name="Common_Grants" xml:space="preserve"><value>Mga grant</value></data>
   <data name="Common_Duration" xml:space="preserve"><value>Tagal</value></data>
@@ -482,7 +487,7 @@
   <data name="Organizations_ClosedAlert" xml:space="preserve"><value>Sarado na ang organisasyong ito at hindi na maa-update o ma-reactivate.</value></data>
   <data name="Organizations_TabOverview" xml:space="preserve"><value>Overview</value></data>
   <data name="Organizations_TabProfile" xml:space="preserve"><value>Profile / settings</value></data>
-  <data name="Organizations_TabMembers" xml:space="preserve"><value>Mga miyembro</value></data>
+  <data name="Organizations_TabMembers" xml:space="preserve"><value>Staff</value></data>
   <data name="Organizations_TabSubscriptions" xml:space="preserve"><value>Mga subscription</value></data>
   <data name="Organizations_TabProductAccess" xml:space="preserve"><value>Product access</value></data>
   <data name="Organizations_TabAudit" xml:space="preserve"><value>Audit</value></data>
@@ -515,25 +520,31 @@
   <data name="Branding_Saved" xml:space="preserve"><value>Na-save ang branding.</value></data>
   <data name="Branding_InactiveAlert" xml:space="preserve"><value>Maaari lang i-edit ang branding para sa active trusted organization.</value></data>
 
-  <data name="OrgMembers_Title" xml:space="preserve"><value>Mga miyembro ng organisasyon</value></data>
-  <data name="OrgMembers_Description" xml:space="preserve"><value>Platform organization membership at mga role.</value></data>
-  <data name="OrgMembers_Warning" xml:space="preserve"><value>Ang mga Platform organization role (Owner, Administrator, Member) ay hindi product-local role. Ang pag-alis ng membership ay nagre-revoke ng product-access assignment para sa organisasyong ito.</value></data>
+  <data name="OrgMembers_Title" xml:space="preserve"><value>Organization staff</value></data>
+  <data name="OrgMembers_Description" xml:space="preserve"><value>Organization Owner at Staff membership para sa organisasyong ito.</value></data>
+  <data name="OrgMembers_Warning" xml:space="preserve"><value>Ang mga Organization role (Owner, Staff) ay hindi product-local role. Ang pag-alis ng membership ay nagre-revoke ng product-access assignment para sa organisasyong ito.</value></data>
   <data name="OrgMembers_Loading" xml:space="preserve"><value>Naglo-load ng organisasyon…</value></data>
-  <data name="OrgMembers_AddSection" xml:space="preserve"><value>Magdagdag ng umiiral na Platform user</value></data>
+  <data name="OrgMembers_AddSection" xml:space="preserve"><value>Magdagdag ng umiiral na user</value></data>
   <data name="OrgMembers_UserId" xml:space="preserve"><value>User ID</value></data>
   <data name="OrgMembers_OrgRole" xml:space="preserve"><value>Organization role</value></data>
-  <data name="OrgMembers_AddMember" xml:space="preserve"><value>Magdagdag ng miyembro</value></data>
-  <data name="OrgMembers_LoadingMembers" xml:space="preserve"><value>Naglo-load ng mga miyembro…</value></data>
-  <data name="OrgMembers_Unavailable" xml:space="preserve"><value>Hindi available ang mga miyembro</value></data>
-  <data name="OrgMembers_Empty" xml:space="preserve"><value>Walang membership para sa organisasyong ito.</value></data>
-  <data name="OrgMembers_SuspendMembership" xml:space="preserve"><value>I-suspend ang membership</value></data>
+  <data name="OrgMembers_OrgRoleRequired" xml:space="preserve"><value>Kailangan ang Organization role (Owner o Staff).</value></data>
+  <data name="OrgMembers_Role_Owner" xml:space="preserve"><value>Owner</value></data>
+  <data name="OrgMembers_Role_Administrator" xml:space="preserve"><value>Administrator</value></data>
+  <data name="OrgMembers_Role_Member" xml:space="preserve"><value>Staff</value></data>
+  <data name="OrgMembers_Role_Staff" xml:space="preserve"><value>Staff</value></data>
+  <data name="OrgMembers_TargetStatus" xml:space="preserve"><value>Target status</value></data>
+  <data name="OrgMembers_AddMember" xml:space="preserve"><value>Magdagdag ng staff</value></data>
+  <data name="OrgMembers_LoadingMembers" xml:space="preserve"><value>Naglo-load ng staff…</value></data>
+  <data name="OrgMembers_Unavailable" xml:space="preserve"><value>Hindi available ang staff</value></data>
+  <data name="OrgMembers_Empty" xml:space="preserve"><value>Walang staff membership para sa organisasyong ito.</value></data>
+  <data name="OrgMembers_SuspendMembership" xml:space="preserve"><value>Suspend Membership</value></data>
   <data name="OrgMembers_RevokeMembership" xml:space="preserve"><value>I-revoke ang membership</value></data>
-  <data name="OrgMembers_ReactivateMembership" xml:space="preserve"><value>I-reactivate ang membership</value></data>
-  <data name="OrgMembers_TabMembers" xml:space="preserve"><value>Mga miyembro</value></data>
+  <data name="OrgMembers_ReactivateMembership" xml:space="preserve"><value>Reactivate Membership</value></data>
+  <data name="OrgMembers_TabMembers" xml:space="preserve"><value>Staff</value></data>
   <data name="OrgMembers_TabInvitations" xml:space="preserve"><value>Mga imbitasyon</value></data>
   <data name="OrgMembers_TabProductAccess" xml:space="preserve"><value>Product access</value></data>
   <data name="OrgMembers_Invite" xml:space="preserve"><value>Mag-imbita sa email</value></data>
-  <data name="OrgMembers_InviteSection" xml:space="preserve"><value>Mag-imbita ng miyembro</value></data>
+  <data name="OrgMembers_InviteSection" xml:space="preserve"><value>Mag-imbita ng staff</value></data>
   <data name="OrgMembers_InvitationsUnavailable" xml:space="preserve"><value>Hindi available ang mga imbitasyon</value></data>
   <data name="OrgMembers_ExpiresUtc" xml:space="preserve"><value>Mag-e-expire (UTC)</value></data>
   <data name="OrgMembers_Resend" xml:space="preserve"><value>Ipadala muli</value></data>
@@ -579,8 +590,26 @@
   <data name="Users_HideCreate" xml:space="preserve"><value>Itago ang create</value></data>
   <data name="Users_CreateUser" xml:space="preserve"><value>Gumawa ng user</value></data>
   <data name="Users_AriaCreate" xml:space="preserve"><value>Gumawa ng Platform user</value></data>
-  <data name="Users_CreateSection" xml:space="preserve"><value>Gumawa ng Platform user</value></data>
+  <data name="Users_CreateSection" xml:space="preserve"><value>Gumawa ng Platform staff</value></data>
   <data name="Users_CreateFailed" xml:space="preserve"><value>Hindi makagawa ng user</value></data>
+  <data name="Users_PlatformRole" xml:space="preserve"><value>Platform role</value></data>
+  <data name="Users_PlatformRolePlaceholder" xml:space="preserve"><value>Pumili ng Platform role</value></data>
+  <data name="Users_PlatformRoleRequired" xml:space="preserve"><value>Kailangan ang Platform role.</value></data>
+  <data name="Users_Role_PlatformAdministrator" xml:space="preserve"><value>Platform Administrator</value></data>
+  <data name="Users_Role_BillingAdministrator" xml:space="preserve"><value>Billing Administrator</value></data>
+  <data name="Users_Role_PlatformSupport" xml:space="preserve"><value>Platform Support</value></data>
+  <data name="Users_SendEmailVerification" xml:space="preserve"><value>Kailangan ng email verification</value></data>
+  <data name="Users_RequireEmailVerification" xml:space="preserve"><value>Kailangan ng email verification</value></data>
+  <data name="Users_SendEmailVerificationHint" xml:space="preserve"><value>Kapag naka-check, Pending Verification ang account hanggang ma-activate via email. Nagse-set ng initial password at verification token.</value></data>
+  <data name="Users_FirstName" xml:space="preserve"><value>Pangalan</value></data>
+  <data name="Users_LastName" xml:space="preserve"><value>Apelyido</value></data>
+  <data name="Users_FirstNameRequired" xml:space="preserve"><value>Kailangan ang pangalan.</value></data>
+  <data name="Users_LastNameRequired" xml:space="preserve"><value>Kailangan ang apelyido.</value></data>
+  <data name="Users_Phone" xml:space="preserve"><value>Telepono</value></data>
+  <data name="Users_EmployeeCode" xml:space="preserve"><value>Employee code</value></data>
+  <data name="Users_StaffNumber" xml:space="preserve"><value>Staff number</value></data>
+  <data name="Users_InitialPassword" xml:space="preserve"><value>Initial password</value></data>
+  <data name="Users_InitialPasswordRequired" xml:space="preserve"><value>Kailangan ang initial password kapag naka-enable ang email verification.</value></data>
   <data name="Users_Loading" xml:space="preserve"><value>Naglo-load ng mga user…</value></data>
   <data name="Users_Empty" xml:space="preserve"><value>Walang Platform user na tumugma sa kasalukuyang filter.</value></data>
   <data name="Users_DetailTitle" xml:space="preserve"><value>Detalye ng Platform user</value></data>
@@ -591,10 +620,31 @@
   <data name="Users_EditProfile" xml:space="preserve"><value>I-edit ang profile</value></data>
   <data name="Users_SaveProfile" xml:space="preserve"><value>I-save ang profile</value></data>
   <data name="Users_Lifecycle" xml:space="preserve"><value>Lifecycle</value></data>
-  <data name="Users_LifecycleHint" xml:space="preserve"><value>Ang pag-suspend ng user ay ginagawang hindi epektibo ang lahat ng membership at product assignment para sa commercial access evaluation.</value></data>
-  <data name="Users_SuspendUser" xml:space="preserve"><value>I-suspend ang user</value></data>
-  <data name="Users_ReactivateUser" xml:space="preserve"><value>I-reactivate ang user</value></data>
-  <data name="Users_DisableUser" xml:space="preserve"><value>I-disable ang user</value></data>
+  <data name="Users_LifecycleHint" xml:space="preserve"><value>Ang Suspend ay pansamantala. Ang Deactivate ay reversible retained state (hindi deletion). Nananatili ang Platform profile at role. Ang Global Account Suspension ay para sa emergency Org/Personal block lamang.</value></data>
+  <data name="Users_SuspendUser" xml:space="preserve"><value>Suspend</value></data>
+  <data name="Users_ReactivateUser" xml:space="preserve"><value>Reactivate</value></data>
+  <data name="Users_DisableUser" xml:space="preserve"><value>Deactivate</value></data>
+  <data name="Users_Action_Suspend" xml:space="preserve"><value>Suspend</value></data>
+  <data name="Users_Action_Reactivate" xml:space="preserve"><value>Reactivate</value></data>
+  <data name="Users_Action_Deactivate" xml:space="preserve"><value>Deactivate</value></data>
+  <data name="Users_Action_MoveToSuspended" xml:space="preserve"><value>Move to Suspended</value></data>
+  <data name="Users_Action_GlobalSuspend" xml:space="preserve"><value>Global Account Suspension</value></data>
+  <data name="Users_Action_GlobalReactivate" xml:space="preserve"><value>Global Account Reactivation</value></data>
+  <data name="Users_SuspendConfirmMessage" xml:space="preserve"><value>I-suspend ang Platform Account na ito? Mabblock ang login. Nananatili ang profile at role.</value></data>
+  <data name="Users_ReactivateConfirmMessage" xml:space="preserve"><value>I-reactivate ang suspended Platform Account? Kailangang mag-login ulit ang user.</value></data>
+  <data name="Users_DeactivateConfirmMessage" xml:space="preserve"><value>I-deactivate ang Platform Account? Reversible retained state ito, hindi deletion. Kailangan ang reason.</value></data>
+  <data name="Users_MoveToSuspendedConfirmMessage" xml:space="preserve"><value>Ilipat ang deactivated account sa Suspended? Nananatiling naka-block ang login.</value></data>
+  <data name="Users_ReactivateDeactivatedConfirmMessage" xml:space="preserve"><value>High-risk reactivation. Ilagay ang administrator password mo (at MFA kung naka-enable). Huwag ilagay ang password ng deactivated user.</value></data>
+  <data name="Users_GlobalSuspendConfirmMessage" xml:space="preserve"><value>Ang Global Account Suspension ay nagba-block ng login sa lahat ng scope. Para lamang sa compromise, fraud, abuse, o compliance.</value></data>
+  <data name="Users_GlobalReactivateConfirmMessage" xml:space="preserve"><value>Ibalik ang global login para sa identity na ito?</value></data>
+  <data name="Users_LifecycleReason" xml:space="preserve"><value>Reason</value></data>
+  <data name="Users_LifecycleReasonRequired" xml:space="preserve"><value>Kailangan ang reason.</value></data>
+  <data name="Users_ActorPassword" xml:space="preserve"><value>Administrator password mo</value></data>
+  <data name="Users_ActorPasswordRequired" xml:space="preserve"><value>Kailangan ang administrator password.</value></data>
+  <data name="Users_MfaCode" xml:space="preserve"><value>MFA code</value></data>
+  <data name="Users_MfaCodeHint" xml:space="preserve"><value>Kailangan kung naka-enable ang MFA sa account mo</value></data>
+  <data name="Users_ToastDeactivated" xml:space="preserve"><value>Na-deactivate ang account.</value></data>
+  <data name="Users_ToastMovedToSuspended" xml:space="preserve"><value>Nilipat ang account sa Suspended.</value></data>
   <data name="Users_OrgMemberships" xml:space="preserve"><value>Mga organization membership</value></data>
   <data name="Users_OrgMembershipsHint" xml:space="preserve"><value>Platform organization role lamang — hindi Doctor, Nurse, Cashier, o iba pang product-local role.</value></data>
   <data name="Users_LoadingMemberships" xml:space="preserve"><value>Naglo-load ng mga membership…</value></data>
@@ -748,11 +798,26 @@
   <data name="OrgEnabledProducts_ToastRoleAssigned" xml:space="preserve"><value>Naitalaga ang product-local role.</value></data>
   <data name="OrgEnabledProducts_ToastRoleRevoked" xml:space="preserve"><value>Nabawi ang product-local role.</value></data>
   <data name="OrgEnabledProducts_InvalidUserId" xml:space="preserve"><value>Maglagay ng wastong user id (GUID).</value></data>
-  <data name="Login_CredentialsHint" xml:space="preserve"><value>Mag-sign in gamit ang iyong Platform User credentials.</value></data>
-  <data name="Login_UsernameOrEmail" xml:space="preserve"><value>Username o email</value></data>
+  <data name="Login_CredentialsHint" xml:space="preserve"><value>Mag-sign in gamit ang iyong email at password.</value></data>
+  <data name="Login_UsernameOrEmail" xml:space="preserve"><value>Email</value></data>
+  <data name="Login_Email" xml:space="preserve"><value>Email</value></data>
   <data name="Login_Password" xml:space="preserve"><value>Password</value></data>
   <data name="Login_SignIn" xml:space="preserve"><value>Mag-sign in</value></data>
+  <data name="Login_Register" xml:space="preserve"><value>Mag-register</value></data>
   <data name="Login_ForgotPassword" xml:space="preserve"><value>Nakalimutan ang password</value></data>
+  <data name="Register_Title" xml:space="preserve"><value>Gumawa ng Personal Account</value></data>
+  <data name="Register_Hint" xml:space="preserve"><value>Gumagawa ng Personal Account gamit ang pangalan at email. Magpapadala kami ng verification link. Sa Local Validation, buksan ang Mailpit sa http://localhost:8025. Mag-sign in gamit ang email pagkatapos i-activate.</value></data>
+  <data name="Register_Submit" xml:space="preserve"><value>Mag-register</value></data>
+  <data name="Register_Success" xml:space="preserve"><value>Tingnan ang email para i-activate ang account.</value></data>
+  <data name="Register_AcceptTerms" xml:space="preserve"><value>Tinatanggap ko ang terms at privacy notice</value></data>
+  <data name="Register_TermsRequired" xml:space="preserve"><value>Tanggapin ang terms para magpatuloy.</value></data>
+  <data name="Activate_Title" xml:space="preserve"><value>I-activate ang account</value></data>
+  <data name="Activate_Hint" xml:space="preserve"><value>Gumawa ng password para tapusin ang email verification at i-activate ang Personal Account.</value></data>
+  <data name="Activate_Submit" xml:space="preserve"><value>I-activate at magtakda ng password</value></data>
+  <data name="Activate_Success" xml:space="preserve"><value>Na-activate ang account. Maaari ka nang mag-sign in.</value></data>
+  <data name="Activate_ConfirmPassword" xml:space="preserve"><value>Kumpirmahin ang password</value></data>
+  <data name="Activate_PasswordMismatch" xml:space="preserve"><value>Hindi tugma ang mga password.</value></data>
+  <data name="Status_PendingVerification" xml:space="preserve"><value>Pending Verification</value></data>
   <data name="Login_InvalidCredentials" xml:space="preserve"><value>Mali ang username/email o password.</value></data>
   <data name="Login_LocalValidationTitle" xml:space="preserve"><value>Local Validation identities</value></data>
   <data name="Login_LocalValidationHint" xml:space="preserve"><value>Pumili ng approved identity. Ang sign-in ay normal Platform credential login sa server (hindi ipinapakita ang password sa browser).</value></data>

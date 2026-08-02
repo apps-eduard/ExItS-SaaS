@@ -61,7 +61,11 @@ internal sealed class PlatformUserRepository : IPlatformUserRepository
             query = query.Where(u =>
                 u.NormalizedUsername.Contains(term)
                 || u.NormalizedEmail.Contains(term)
-                || u.DisplayName.ToLower().Contains(term));
+                || u.DisplayName.ToLower().Contains(term)
+                || (u.FirstName != null && u.FirstName.ToLower().Contains(term))
+                || (u.LastName != null && u.LastName.ToLower().Contains(term))
+                || (u.StaffNumber != null && u.StaffNumber.ToLower().Contains(term))
+                || (u.EmployeeCode != null && u.EmployeeCode.ToLower().Contains(term)));
         }
 
         var activeProfile = nameof(AccountStatus.Active);
@@ -156,29 +160,36 @@ internal sealed class PlatformUserRepository : IPlatformUserRepository
         string personalClass,
         bool sortDesc)
     {
+        // Prefer EXISTS-based ranks — nested ternaries over AccountClass are not reliably translated by EF.
         if (sortDesc)
         {
-            return query.OrderByDescending(u =>
-                    _db.AccountProfiles
-                        .Where(p => p.UserIdentityId == u.Id && p.Status == activeProfile)
-                        .Select(p => p.AccountClass == platformClass ? 0
-                            : p.AccountClass == organizationClass ? 1
-                            : p.AccountClass == personalClass ? 2
-                            : 99)
-                        .DefaultIfEmpty(99)
-                        .Min())
+            return query
+                .OrderByDescending(u =>
+                    _db.AccountProfiles.Any(p =>
+                        p.UserIdentityId == u.Id && p.Status == activeProfile && p.AccountClass == platformClass)
+                        ? 0
+                        : _db.AccountProfiles.Any(p =>
+                            p.UserIdentityId == u.Id && p.Status == activeProfile && p.AccountClass == organizationClass)
+                            ? 1
+                            : _db.AccountProfiles.Any(p =>
+                                p.UserIdentityId == u.Id && p.Status == activeProfile && p.AccountClass == personalClass)
+                                ? 2
+                                : 99)
                 .ThenBy(u => u.Id);
         }
 
-        return query.OrderBy(u =>
-                _db.AccountProfiles
-                    .Where(p => p.UserIdentityId == u.Id && p.Status == activeProfile)
-                    .Select(p => p.AccountClass == platformClass ? 0
-                        : p.AccountClass == organizationClass ? 1
-                        : p.AccountClass == personalClass ? 2
-                        : 99)
-                    .DefaultIfEmpty(99)
-                    .Min())
+        return query
+            .OrderBy(u =>
+                _db.AccountProfiles.Any(p =>
+                    p.UserIdentityId == u.Id && p.Status == activeProfile && p.AccountClass == platformClass)
+                    ? 0
+                    : _db.AccountProfiles.Any(p =>
+                        p.UserIdentityId == u.Id && p.Status == activeProfile && p.AccountClass == organizationClass)
+                        ? 1
+                        : _db.AccountProfiles.Any(p =>
+                            p.UserIdentityId == u.Id && p.Status == activeProfile && p.AccountClass == personalClass)
+                            ? 2
+                            : 99)
             .ThenBy(u => u.Id);
     }
 
@@ -247,7 +258,7 @@ internal sealed class PlatformUserRepository : IPlatformUserRepository
                 join o in _db.Organizations.AsNoTracking() on m.OrganizationId equals o.Id
                 where ids.Contains(m.UserId) && m.Status == activeMembership
                 orderby o.DisplayName
-                select new { m.UserId, o.DisplayName })
+                select new { m.UserId, o.DisplayName, m.Role })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
@@ -269,13 +280,27 @@ internal sealed class PlatformUserRepository : IPlatformUserRepository
                 .ThenBy(c => c, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            var orgs = memberships
+            var organizations = memberships
                 .Where(m => m.UserId == id)
-                .Select(m => m.DisplayName)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .GroupBy(m => m.DisplayName, StringComparer.OrdinalIgnoreCase)
+                .Select(g =>
+                {
+                    var row = g.First();
+                    var role = Enum.TryParse<OrganizationRole>(row.Role, ignoreCase: true, out var parsed)
+                        ? parsed
+                        : OrganizationRole.OrganizationMember;
+                    return new PlatformUserOrganizationDirectoryItem(
+                        row.DisplayName,
+                        role.ToString(),
+                        OrganizationRoleDisplay.ToDisplayLabel(role));
+                })
+                .OrderBy(o => o.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            result[id] = new PlatformUserDirectoryExtras(classes, orgs);
+            result[id] = new PlatformUserDirectoryExtras(
+                classes,
+                organizations.Select(o => o.Name).ToList(),
+                organizations);
         }
 
         return result;

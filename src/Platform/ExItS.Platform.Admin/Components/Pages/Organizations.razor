@@ -290,7 +290,7 @@ else
                     }
                     else
                     {
-                        <Table TItem="SubscriptionDto" DataSource="_detail.Data.Subscriptions" Size="@TableSize.Small" HidePagination Bordered Style="margin-bottom:12px;">
+                        <Table TItem="SubscriptionDto" DataSource="_detail.Data.Subscriptions" Size="@TableSize.Small" HidePagination Bordered ScrollX="720" Style="margin-bottom:12px;">
                             <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" />
                             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
                                 <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
@@ -308,7 +308,7 @@ else
                     }
                     else
                     {
-                        <Table TItem="PaymentDto" DataSource="_detail.Data.Payments" Size="@TableSize.Small" HidePagination Bordered>
+                        <Table TItem="PaymentDto" DataSource="_detail.Data.Payments" Size="@TableSize.Small" HidePagination Bordered ScrollX="720">
                             <PropertyColumn Property="c => c.ExternalReference" Title="@L["Common_Reference"]" />
                             <PropertyColumn Property="c => c.Amount" Title="@L["Common_Amount"]">
                                 <AmountDisplay Amount="@((decimal?)context.Amount)" CurrencyCode="@context.CurrencyCode" />
@@ -332,7 +332,7 @@ else
                 @if (_detail?.IsSuccess == true && _detail.Data!.LatestEntitlements.Count > 0)
                 {
                     <Title Level="5">@L["Organizations_LatestEntitlements"]</Title>
-                    <Table TItem="EntitlementLatestSummaryDto" DataSource="_detail.Data.LatestEntitlements" Size="@TableSize.Small" HidePagination Bordered>
+                    <Table TItem="EntitlementLatestSummaryDto" DataSource="_detail.Data.LatestEntitlements" Size="@TableSize.Small" HidePagination Bordered ScrollX="720">
                         <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" />
                         <PropertyColumn Property="c => c.SnapshotVersion" Title="@L["Common_Version"]" />
                         <PropertyColumn Property="c => c.SubscriptionStatus" Title="@L["Common_Status"]">

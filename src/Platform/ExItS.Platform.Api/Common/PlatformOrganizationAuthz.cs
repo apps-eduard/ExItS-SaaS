@@ -8,7 +8,7 @@ namespace ExItS.Platform.Api.Common;
 
 /// <summary>
 /// Organization lifecycle authorization: Platform manage/view permissions, or trusted
-/// organization Owner/Administrator for permitted self-service profile/branding.
+/// organization Owner for permitted self-service profile/branding.
 /// </summary>
 internal sealed class PlatformOrganizationAuthz(
     PlatformAuthz authz,
@@ -120,7 +120,7 @@ internal sealed class PlatformOrganizationAuthz(
             return false;
         }
 
-        return !governingAdminOnly || OrganizationMembershipGuard.IsGoverningAdmin(membership.Role);
+        return !governingAdminOnly || OrganizationMembershipGuard.CanManageOrganizationStaff(membership.Role);
     }
 
     public Task<bool> HasPlatformManageOrganizationsAsync(

@@ -273,6 +273,8 @@ $posDbPort = if ($envMap['LOCAL_VALIDATION_POS_DB_HOST_PORT']) { [int]$envMap['L
 $adminPort = if ($envMap['LOCAL_VALIDATION_ADMIN_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_ADMIN_HOST_PORT'] } else { 8090 }
 $platformApiPort = if ($envMap['LOCAL_VALIDATION_PLATFORM_API_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_PLATFORM_API_HOST_PORT'] } else { 8091 }
 $posApiPort = if ($envMap['LOCAL_VALIDATION_POS_API_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_POS_API_HOST_PORT'] } else { 8092 }
+$mailpitUiPort = if ($envMap['LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT'] } else { 8025 }
+$mailpitSmtpPort = if ($envMap['LOCAL_VALIDATION_MAILPIT_SMTP_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_MAILPIT_SMTP_HOST_PORT'] } else { 1025 }
 $adminOrigin = if ($envMap['LOCAL_VALIDATION_ADMIN_ORIGIN']) { [string]$envMap['LOCAL_VALIDATION_ADMIN_ORIGIN'] } else { "http://localhost:$adminPort" }
 
 New-Item -ItemType Directory -Force -Path $dpKeys | Out-Null
@@ -287,15 +289,17 @@ if ($conflicts.Count -gt 0) {
 }
 Write-Ok 'App ports 8090/8091/8092 are free'
 
-Write-Step 'Starting local-validation PostgreSQL only (volumes preserved; never compose down with -v)...'
-& docker compose -f $composeFile --env-file $envFile up -d platform-db pos-db
-if ($LASTEXITCODE -ne 0) { throw "docker compose up platform-db pos-db failed ($LASTEXITCODE)." }
+Write-Step 'Starting local-validation PostgreSQL + Mailpit (volumes preserved; never compose down with -v)...'
+& docker compose -f $composeFile --env-file $envFile up -d platform-db pos-db mailpit
+if ($LASTEXITCODE -ne 0) { throw "docker compose up platform-db pos-db mailpit failed ($LASTEXITCODE)." }
 
 Wait-ContainerHealthy -Name 'exits-local-validation-platform-db' -TimeoutSeconds $DbHealthySeconds
 Wait-ContainerHealthy -Name 'exits-local-validation-pos-db' -TimeoutSeconds $DbHealthySeconds
 Wait-TcpPort -Label 'Platform DB' -HostName '127.0.0.1' -Port $platformDbPort -TimeoutSeconds 30
 Wait-TcpPort -Label 'POS DB' -HostName '127.0.0.1' -Port $posDbPort -TimeoutSeconds 30
-
+Wait-TcpPort -Label 'Mailpit SMTP' -HostName '127.0.0.1' -Port $mailpitSmtpPort -TimeoutSeconds 30
+Wait-TcpPort -Label 'Mailpit UI' -HostName '127.0.0.1' -Port $mailpitUiPort -TimeoutSeconds 30
+Write-Ok "Mailpit UI: http://localhost:$mailpitUiPort"
 $platformCs = "Host=127.0.0.1;Port=$platformDbPort;Database=exits_platform;Username=$($envMap['LOCAL_VALIDATION_PLATFORM_DB_USER']);Password=$($envMap['LOCAL_VALIDATION_PLATFORM_DB_PASSWORD'])"
 $posCs = "Host=127.0.0.1;Port=$posDbPort;Database=exits_pos;Username=$($envMap['LOCAL_VALIDATION_POS_DB_USER']);Password=$($envMap['LOCAL_VALIDATION_POS_DB_PASSWORD'])"
 $platformApiUrl = "http://localhost:$platformApiPort"
@@ -318,6 +322,12 @@ $windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Platform API' -Re
     Security__EnforceHttps = 'false'
     LocalValidation__Enabled = 'true'
     LocalValidation__SharedPassword = [string]$envMap['LOCAL_VALIDATION_SHARED_PASSWORD']
+    PlatformEmail__SmtpHost = '127.0.0.1'
+    PlatformEmail__SmtpPort = "$mailpitSmtpPort"
+    PlatformEmail__UseSsl = 'false'
+    PlatformEmail__FromAddress = 'noreply@exits.local'
+    PlatformEmail__FromDisplayName = 'ExItS Local Validation'
+    PlatformEmail__AdminPublicBaseUrl = $adminOrigin
 }
 Wait-TcpPort -Label 'Platform API' -HostName '127.0.0.1' -Port $platformApiPort -TimeoutSeconds $PortWaitSeconds
 
@@ -370,6 +380,8 @@ Write-Host "  Platform API: $platformApiUrl"
 Write-Host "  POS API:      $posApiUrl"
 Write-Host "  Platform DB:  127.0.0.1:$platformDbPort"
 Write-Host "  POS DB:       127.0.0.1:$posDbPort"
+Write-Host "  Mailpit UI:   http://localhost:$mailpitUiPort"
+Write-Host "  Mailpit SMTP: 127.0.0.1:$mailpitSmtpPort"
 Write-Host "  DP keys:      $dpKeys"
 Write-Host '=========================================' -ForegroundColor Green
 Write-Note 'If the browser still has an old localhost antiforgery cookie, open an Incognito window or clear localhost site data once.'

@@ -22,7 +22,8 @@ public sealed record OrganizationInvitationDto(
     DateTimeOffset? AcceptedAtUtc,
     DateTimeOffset? RevokedAtUtc,
     Guid? AcceptedByUserId,
-    string? AcceptToken = null);
+    string? AcceptToken = null,
+    string? RoleDisplay = null);
 
 public sealed class OrganizationInvitationQueryService
 {
@@ -87,7 +88,8 @@ public sealed class OrganizationInvitationQueryService
             invitation.AcceptedAtUtc,
             invitation.RevokedAtUtc,
             invitation.AcceptedByUserId?.Value,
-            acceptToken);
+            acceptToken,
+            OrganizationRoleDisplay.ToDisplayLabel(invitation.Role));
 }
 
 public sealed class CreateOrganizationInvitation
@@ -95,7 +97,7 @@ public sealed class CreateOrganizationInvitation
     private readonly IPlatformOrganizationRepository _organizations;
     private readonly IOrganizationInvitationRepository _invitations;
     private readonly IOrganizationMembershipRepository _memberships;
-    private readonly IPlatformUserRepository _users;
+    private readonly EnsureOrganizationStaffIdentity _ensureStaffIdentity;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -103,14 +105,14 @@ public sealed class CreateOrganizationInvitation
         IPlatformOrganizationRepository organizations,
         IOrganizationInvitationRepository invitations,
         IOrganizationMembershipRepository memberships,
-        IPlatformUserRepository users,
+        EnsureOrganizationStaffIdentity ensureStaffIdentity,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _organizations = organizations;
         _invitations = invitations;
         _memberships = memberships;
-        _users = users;
+        _ensureStaffIdentity = ensureStaffIdentity;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -122,15 +124,25 @@ public sealed class CreateOrganizationInvitation
         PlatformUserId? invitedByUserId,
         OrganizationRole? actorMembershipRole,
         bool actorHasPlatformManageMemberships,
+        string? displayName = null,
+        string? firstName = null,
+        string? lastName = null,
         CancellationToken cancellationToken = default)
     {
+        if (!OrganizationRoleDisplay.IsAssignableOrganizationStaffRole(role))
+        {
+            return ApplicationResult<OrganizationInvitationDto>.Failure(
+                DomainErrorCodes.InvalidOrganizationRole,
+                "Organization staff roles are Owner and Staff only.");
+        }
+
         if (!actorHasPlatformManageMemberships
-            && actorMembershipRole == OrganizationRole.OrganizationAdministrator
+            && actorMembershipRole != OrganizationRole.OrganizationOwner
             && role == OrganizationRole.OrganizationOwner)
         {
             return ApplicationResult<OrganizationInvitationDto>.Failure(
                 DomainErrorCodes.OrganizationOwnerAssignmentDenied,
-                "Organization Administrators cannot invite OrganizationOwner.");
+                "Only Organization Owners can invite an Owner.");
         }
 
         var organization = await _organizations.GetByIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
@@ -151,19 +163,26 @@ public sealed class CreateOrganizationInvitation
         try
         {
             var normalizedEmail = PlatformUser.NormalizeEmail(email);
-            var existingUser = await _users.GetByNormalizedEmailAsync(normalizedEmail, cancellationToken)
+            var resolvedDisplayName = ResolveInviteDisplayName(displayName, firstName, lastName, normalizedEmail);
+            var staffIdentity = await _ensureStaffIdentity
+                .ExecuteAsync(normalizedEmail, displayNameHint: resolvedDisplayName, cancellationToken)
                 .ConfigureAwait(false);
-            if (existingUser is not null)
+            if (!staffIdentity.IsSuccess || staffIdentity.Value is null)
             {
-                var current = await _memberships
-                    .FindCurrentByUserAndOrganizationAsync(existingUser.Id, organizationId, cancellationToken)
-                    .ConfigureAwait(false);
-                if (current is not null)
-                {
-                    return ApplicationResult<OrganizationInvitationDto>.Failure(
-                        ApplicationErrorCodes.MembershipConflict,
-                        "A current membership already exists for this user and organization.");
-                }
+                return ApplicationResult<OrganizationInvitationDto>.Failure(
+                    staffIdentity.ErrorCode ?? ApplicationErrorCodes.DomainViolation,
+                    staffIdentity.ErrorMessage ?? "Unable to provision Organization staff identity.");
+            }
+
+            var existingUser = staffIdentity.Value;
+            var current = await _memberships
+                .FindCurrentByUserAndOrganizationAsync(existingUser.Id, organizationId, cancellationToken)
+                .ConfigureAwait(false);
+            if (current is not null)
+            {
+                return ApplicationResult<OrganizationInvitationDto>.Failure(
+                    ApplicationErrorCodes.MembershipConflict,
+                    "A current membership already exists for this user and organization.");
             }
 
             var pending = await _invitations
@@ -197,6 +216,28 @@ public sealed class CreateOrganizationInvitation
         {
             return ApplicationResult<OrganizationInvitationDto>.Failure(ex.ErrorCode, ex.Message);
         }
+    }
+
+    private static string ResolveInviteDisplayName(
+        string? displayName,
+        string? firstName,
+        string? lastName,
+        string normalizedEmail)
+    {
+        if (!string.IsNullOrWhiteSpace(displayName))
+        {
+            return displayName.Trim();
+        }
+
+        var composed = string.Join(
+            ' ',
+            new[] { firstName?.Trim(), lastName?.Trim() }.Where(static s => !string.IsNullOrWhiteSpace(s)));
+        if (!string.IsNullOrWhiteSpace(composed))
+        {
+            return composed;
+        }
+
+        return PlatformUsernameDerivation.DeriveFromEmail(normalizedEmail);
     }
 }
 

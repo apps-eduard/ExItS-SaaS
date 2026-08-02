@@ -232,7 +232,7 @@ else
             <TabPane Key="related" Tab="@L["Common_Related"]">
                 @if (_payments is { IsSuccess: true })
                 {
-                    <Table TItem="PaymentDto" DataSource="@_payments.Data!.Items" Size="@TableSize.Small" Bordered HidePagination="true">
+                    <Table TItem="PaymentDto" DataSource="@_payments.Data!.Items" Size="@TableSize.Small" Bordered HidePagination="true" ScrollX="720">
                         <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" />
                         <PropertyColumn Property="c => c.Amount" Title="Amount" />
                         <PropertyColumn Property="c => c.CurrencyCode" Title="Currency" />

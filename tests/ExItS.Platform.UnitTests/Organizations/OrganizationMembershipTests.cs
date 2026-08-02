@@ -52,25 +52,33 @@ public sealed class OrganizationMembershipTests
         Assert.Equal(MembershipStatus.Active, membership.Status);
 
         var t4 = t3.AddMinutes(1);
-        membership.Remove(t4);
+        membership.Remove(t4, "staff left");
         Assert.Equal(MembershipStatus.Removed, membership.Status);
+
+        var t5 = t4.AddMinutes(1);
+        membership.Reactivate(t5, reason: "returned");
+        Assert.Equal(MembershipStatus.Active, membership.Status);
+        Assert.Null(membership.RemovedAtUtc);
     }
 
     [Fact]
-    public void Removed_membership_cannot_reactivate_or_change_role()
+    public void Deactivated_membership_can_move_to_suspended_and_requires_reason_to_deactivate()
     {
         var membership = OrganizationMembership.Create(
             PlatformOrganizationId.New(),
             PlatformUserId.New(),
             OrganizationRole.OrganizationMember,
             T0);
-        membership.Remove(T1);
+        Assert.Throws<DomainException>(() => membership.Remove(T1, " "));
+        membership.Remove(T1, "exit");
+        membership.Suspend(T1.AddMinutes(1), "hold");
+        Assert.Equal(MembershipStatus.Suspended, membership.Status);
+        Assert.Null(membership.RemovedAtUtc);
 
-        var reactivate = Assert.Throws<DomainException>(() => membership.Reactivate(T1.AddMinutes(1)));
-        Assert.Equal(DomainErrorCodes.InvalidMembershipStatusTransition, reactivate.ErrorCode);
-
+        membership.Reactivate(T1.AddMinutes(2));
+        membership.Remove(T1.AddMinutes(3), "exit again");
         var role = Assert.Throws<DomainException>(() =>
-            membership.ChangeRole(OrganizationRole.OrganizationOwner, T1.AddMinutes(2)));
+            membership.ChangeRole(OrganizationRole.OrganizationOwner, T1.AddMinutes(4)));
         Assert.Equal(DomainErrorCodes.MembershipNotActive, role.ErrorCode);
     }
 }

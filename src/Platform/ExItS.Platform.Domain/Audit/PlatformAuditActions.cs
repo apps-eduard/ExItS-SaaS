@@ -36,6 +36,10 @@ public static class PlatformAuditActions
     public const string PlatformUserSuspended = "platform.user.suspended";
     public const string PlatformUserReactivated = "platform.user.reactivated";
     public const string PlatformUserDeactivated = "platform.user.deactivated";
+    public const string PlatformUserMovedToSuspended = "platform.user.moved_to_suspended";
+    public const string PlatformUserGlobalSuspended = "platform.user.global_suspended";
+    public const string PlatformUserGlobalReactivated = "platform.user.global_reactivated";
+    public const string PlatformUserReactivationStepUpSucceeded = "platform.user.reactivation_step_up_succeeded";
 
     public const string PlatformUserPasswordSet = "platform.user.password_set";
     public const string PlatformUserCredentialUnlocked = "platform.user.credential_unlocked";
@@ -52,6 +56,8 @@ public static class PlatformAuditActions
     public const string PlatformAuthPasswordResetCompleted = "platform.auth.password_reset_completed";
     public const string PlatformAuthEmailVerificationRequested = "platform.auth.email_verification_requested";
     public const string PlatformAuthEmailVerificationCompleted = "platform.auth.email_verification_completed";
+    public const string PersonalAccountRegistrationStarted = "platform.personal.registration_started";
+    public const string PersonalAccountRegistrationActivated = "platform.personal.registration_activated";
     public const string PlatformAuthRecoveryEmailRequested = "platform.auth.recovery_email_requested";
     public const string PlatformAuthRecoveryEmailConfirmed = "platform.auth.recovery_email_confirmed";
     public const string PlatformAuthRecoveryEmailSkipped = "platform.auth.recovery_email_skipped";

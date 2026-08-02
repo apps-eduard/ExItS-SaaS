@@ -163,15 +163,20 @@
   <data name="Users_UsernameRequired" xml:space="preserve"><value>Username is required.</value></data>
   <data name="Users_DisplayNameRequired" xml:space="preserve"><value>Display name is required.</value></data>
   <data name="Users_EmailRequired" xml:space="preserve"><value>Email is required.</value></data>
-  <data name="Users_SuspendConfirmMessage" xml:space="preserve"><value>Suspend this Platform user? Effective product access will be denied while suspended.</value></data>
   <data name="Users_DisableConfirmMessage" xml:space="preserve"><value>Disable (deactivate) this Platform user permanently for new access? Historical records remain.</value></data>
-  <data name="OrgMembers_ToastAdded" xml:space="preserve"><value>Member added.</value></data>
+  <data name="OrgMembers_ToastAdded" xml:space="preserve"><value>Staff added.</value></data>
   <data name="OrgMembers_ToastRoleUpdated" xml:space="preserve"><value>Role updated.</value></data>
   <data name="OrgMembers_ToastSuspended" xml:space="preserve"><value>Membership suspended.</value></data>
   <data name="OrgMembers_ToastReactivated" xml:space="preserve"><value>Membership reactivated after eligibility revalidation.</value></data>
   <data name="OrgMembers_ToastRevoked" xml:space="preserve"><value>Membership revoked; related product access revoked.</value></data>
   <data name="OrgMembers_UserIdInvalid" xml:space="preserve"><value>User ID must be a valid GUID.</value></data>
-  <data name="OrgMembers_SuspendConfirmMessage" xml:space="preserve"><value>Suspend this membership? Effective product access for this organization will be denied.</value></data>
+  <data name="OrgMembers_SuspendConfirmMessage" xml:space="preserve"><value>Suspend Membership for this organization only? Global identity stays Active.</value></data>
+  <data name="OrgMembers_ReactivateConfirmMessage" xml:space="preserve"><value>Reactivate Membership? Organization access will be restored.</value></data>
+  <data name="OrgMembers_DeactivateConfirmMessage" xml:space="preserve"><value>Deactivate Membership? Access stays blocked for this organization. History is retained.</value></data>
+  <data name="OrgMembers_MoveToSuspendedConfirmMessage" xml:space="preserve"><value>Move deactivated membership to Suspended?</value></data>
+  <data name="OrgMembers_DeactivateMembership" xml:space="preserve"><value>Deactivate Membership</value></data>
+  <data name="OrgMembers_MoveToSuspended" xml:space="preserve"><value>Move to Suspended</value></data>
+  <data name="OrgMembers_ToastDeactivated" xml:space="preserve"><value>Membership deactivated.</value></data>
   <data name="OrgMembers_RevokeConfirmMessage" xml:space="preserve"><value>Revoke this membership? Active product-access assignments for this organization will be revoked. Historical rows remain.</value></data>
   <data name="OrgMembers_RevokeSuspendedConfirmMessage" xml:space="preserve"><value>Revoke this membership permanently for this organization?</value></data>
   <data name="Payments_ToastCreated" xml:space="preserve"><value>Manual payment created.</value></data>
@@ -290,7 +295,7 @@
   <data name="Common_Related" xml:space="preserve"><value>Related</value></data>
   <data name="Common_Payments" xml:space="preserve"><value>Payments</value></data>
   <data name="Common_ProductAccess" xml:space="preserve"><value>Product access</value></data>
-  <data name="Common_Members" xml:space="preserve"><value>Members</value></data>
+  <data name="Common_Members" xml:space="preserve"><value>Staff</value></data>
   <data name="Common_CommercialSummary" xml:space="preserve"><value>commercial summary</value></data>
   <data name="Common_Grants" xml:space="preserve"><value>Grants</value></data>
   <data name="Common_Duration" xml:space="preserve"><value>Duration</value></data>
@@ -484,7 +489,7 @@
   <data name="Organizations_ClosedAlert" xml:space="preserve"><value>This organization is closed and cannot be updated or reactivated.</value></data>
   <data name="Organizations_TabOverview" xml:space="preserve"><value>Overview</value></data>
   <data name="Organizations_TabProfile" xml:space="preserve"><value>Profile / settings</value></data>
-  <data name="Organizations_TabMembers" xml:space="preserve"><value>Members</value></data>
+  <data name="Organizations_TabMembers" xml:space="preserve"><value>Staff</value></data>
   <data name="Organizations_TabSubscriptions" xml:space="preserve"><value>Subscriptions</value></data>
   <data name="Organizations_TabProductAccess" xml:space="preserve"><value>Product access</value></data>
   <data name="Organizations_TabAudit" xml:space="preserve"><value>Audit</value></data>
@@ -517,25 +522,31 @@
   <data name="Branding_Saved" xml:space="preserve"><value>Branding saved.</value></data>
   <data name="Branding_InactiveAlert" xml:space="preserve"><value>Branding can only be edited for an active trusted organization.</value></data>
 
-  <data name="OrgMembers_Title" xml:space="preserve"><value>Organization members</value></data>
-  <data name="OrgMembers_Description" xml:space="preserve"><value>Platform organization membership and roles.</value></data>
-  <data name="OrgMembers_Warning" xml:space="preserve"><value>Platform organization roles (Owner, Administrator, Member) are not product-local roles. Removing membership revokes product-access assignments for this organization.</value></data>
+  <data name="OrgMembers_Title" xml:space="preserve"><value>Organization staff</value></data>
+  <data name="OrgMembers_Description" xml:space="preserve"><value>Organization Owner and Staff membership for this organization.</value></data>
+  <data name="OrgMembers_Warning" xml:space="preserve"><value>Organization roles (Owner, Staff) are not product-local roles. Removing membership revokes product-access assignments for this organization.</value></data>
   <data name="OrgMembers_Loading" xml:space="preserve"><value>Loading organization…</value></data>
-  <data name="OrgMembers_AddSection" xml:space="preserve"><value>Add existing Platform user</value></data>
+  <data name="OrgMembers_AddSection" xml:space="preserve"><value>Add existing user</value></data>
   <data name="OrgMembers_UserId" xml:space="preserve"><value>User ID</value></data>
   <data name="OrgMembers_OrgRole" xml:space="preserve"><value>Organization role</value></data>
-  <data name="OrgMembers_AddMember" xml:space="preserve"><value>Add member</value></data>
-  <data name="OrgMembers_LoadingMembers" xml:space="preserve"><value>Loading members…</value></data>
-  <data name="OrgMembers_Unavailable" xml:space="preserve"><value>Members unavailable</value></data>
-  <data name="OrgMembers_Empty" xml:space="preserve"><value>No memberships for this organization.</value></data>
-  <data name="OrgMembers_SuspendMembership" xml:space="preserve"><value>Suspend membership</value></data>
+  <data name="OrgMembers_OrgRoleRequired" xml:space="preserve"><value>Organization role is required (Owner or Staff).</value></data>
+  <data name="OrgMembers_Role_Owner" xml:space="preserve"><value>Owner</value></data>
+  <data name="OrgMembers_Role_Administrator" xml:space="preserve"><value>Administrator</value></data>
+  <data name="OrgMembers_Role_Member" xml:space="preserve"><value>Staff</value></data>
+  <data name="OrgMembers_Role_Staff" xml:space="preserve"><value>Staff</value></data>
+  <data name="OrgMembers_TargetStatus" xml:space="preserve"><value>Target status</value></data>
+  <data name="OrgMembers_AddMember" xml:space="preserve"><value>Add staff</value></data>
+  <data name="OrgMembers_LoadingMembers" xml:space="preserve"><value>Loading staff…</value></data>
+  <data name="OrgMembers_Unavailable" xml:space="preserve"><value>Staff unavailable</value></data>
+  <data name="OrgMembers_Empty" xml:space="preserve"><value>No staff memberships for this organization.</value></data>
+  <data name="OrgMembers_SuspendMembership" xml:space="preserve"><value>Suspend Membership</value></data>
   <data name="OrgMembers_RevokeMembership" xml:space="preserve"><value>Revoke membership</value></data>
-  <data name="OrgMembers_ReactivateMembership" xml:space="preserve"><value>Reactivate membership</value></data>
-  <data name="OrgMembers_TabMembers" xml:space="preserve"><value>Members</value></data>
+  <data name="OrgMembers_ReactivateMembership" xml:space="preserve"><value>Reactivate Membership</value></data>
+  <data name="OrgMembers_TabMembers" xml:space="preserve"><value>Staff</value></data>
   <data name="OrgMembers_TabInvitations" xml:space="preserve"><value>Invitations</value></data>
   <data name="OrgMembers_TabProductAccess" xml:space="preserve"><value>Product access</value></data>
   <data name="OrgMembers_Invite" xml:space="preserve"><value>Invite by email</value></data>
-  <data name="OrgMembers_InviteSection" xml:space="preserve"><value>Invite member</value></data>
+  <data name="OrgMembers_InviteSection" xml:space="preserve"><value>Invite staff</value></data>
   <data name="OrgMembers_InvitationsUnavailable" xml:space="preserve"><value>Invitations unavailable</value></data>
   <data name="OrgMembers_ExpiresUtc" xml:space="preserve"><value>Expires (UTC)</value></data>
   <data name="OrgMembers_Resend" xml:space="preserve"><value>Resend</value></data>
@@ -581,8 +592,26 @@
   <data name="Users_HideCreate" xml:space="preserve"><value>Hide create</value></data>
   <data name="Users_CreateUser" xml:space="preserve"><value>Create user</value></data>
   <data name="Users_AriaCreate" xml:space="preserve"><value>Create Platform user</value></data>
-  <data name="Users_CreateSection" xml:space="preserve"><value>Create Platform user</value></data>
+  <data name="Users_CreateSection" xml:space="preserve"><value>Create Platform staff</value></data>
   <data name="Users_CreateFailed" xml:space="preserve"><value>Could not create user</value></data>
+  <data name="Users_PlatformRole" xml:space="preserve"><value>Platform role</value></data>
+  <data name="Users_PlatformRolePlaceholder" xml:space="preserve"><value>Select a Platform role</value></data>
+  <data name="Users_PlatformRoleRequired" xml:space="preserve"><value>Platform role is required.</value></data>
+  <data name="Users_Role_PlatformAdministrator" xml:space="preserve"><value>Platform Administrator</value></data>
+  <data name="Users_Role_BillingAdministrator" xml:space="preserve"><value>Billing Administrator</value></data>
+  <data name="Users_Role_PlatformSupport" xml:space="preserve"><value>Platform Support</value></data>
+  <data name="Users_SendEmailVerification" xml:space="preserve"><value>Require email verification</value></data>
+  <data name="Users_RequireEmailVerification" xml:space="preserve"><value>Require email verification</value></data>
+  <data name="Users_SendEmailVerificationHint" xml:space="preserve"><value>When checked, the account is Pending Verification until the staff member activates via email. Sets an initial password and issues a verification token.</value></data>
+  <data name="Users_FirstName" xml:space="preserve"><value>First name</value></data>
+  <data name="Users_LastName" xml:space="preserve"><value>Last name</value></data>
+  <data name="Users_FirstNameRequired" xml:space="preserve"><value>First name is required.</value></data>
+  <data name="Users_LastNameRequired" xml:space="preserve"><value>Last name is required.</value></data>
+  <data name="Users_Phone" xml:space="preserve"><value>Phone</value></data>
+  <data name="Users_EmployeeCode" xml:space="preserve"><value>Employee code</value></data>
+  <data name="Users_StaffNumber" xml:space="preserve"><value>Staff number</value></data>
+  <data name="Users_InitialPassword" xml:space="preserve"><value>Initial password</value></data>
+  <data name="Users_InitialPasswordRequired" xml:space="preserve"><value>Initial password is required when email verification is enabled.</value></data>
   <data name="Users_Loading" xml:space="preserve"><value>Loading users…</value></data>
   <data name="Users_Empty" xml:space="preserve"><value>No Platform users match the current filters.</value></data>
   <data name="Users_DetailTitle" xml:space="preserve"><value>Platform user detail</value></data>
@@ -593,10 +622,31 @@
   <data name="Users_EditProfile" xml:space="preserve"><value>Edit profile</value></data>
   <data name="Users_SaveProfile" xml:space="preserve"><value>Save profile</value></data>
   <data name="Users_Lifecycle" xml:space="preserve"><value>Lifecycle</value></data>
-  <data name="Users_LifecycleHint" xml:space="preserve"><value>Suspending a user makes all memberships and product assignments ineffective for commercial access evaluation.</value></data>
-  <data name="Users_SuspendUser" xml:space="preserve"><value>Suspend user</value></data>
-  <data name="Users_ReactivateUser" xml:space="preserve"><value>Reactivate user</value></data>
-  <data name="Users_DisableUser" xml:space="preserve"><value>Disable user</value></data>
+  <data name="Users_LifecycleHint" xml:space="preserve"><value>Suspend is temporary. Deactivate is reversible retained state (not deletion). Platform profiles and roles are retained on all transitions. Global Account Suspension is for emergency Org/Personal identity blocks only.</value></data>
+  <data name="Users_SuspendUser" xml:space="preserve"><value>Suspend</value></data>
+  <data name="Users_ReactivateUser" xml:space="preserve"><value>Reactivate</value></data>
+  <data name="Users_DisableUser" xml:space="preserve"><value>Deactivate</value></data>
+  <data name="Users_Action_Suspend" xml:space="preserve"><value>Suspend</value></data>
+  <data name="Users_Action_Reactivate" xml:space="preserve"><value>Reactivate</value></data>
+  <data name="Users_Action_Deactivate" xml:space="preserve"><value>Deactivate</value></data>
+  <data name="Users_Action_MoveToSuspended" xml:space="preserve"><value>Move to Suspended</value></data>
+  <data name="Users_Action_GlobalSuspend" xml:space="preserve"><value>Global Account Suspension</value></data>
+  <data name="Users_Action_GlobalReactivate" xml:space="preserve"><value>Global Account Reactivation</value></data>
+  <data name="Users_SuspendConfirmMessage" xml:space="preserve"><value>Suspend this Platform Account? Login will be blocked. Profile and role are retained.</value></data>
+  <data name="Users_ReactivateConfirmMessage" xml:space="preserve"><value>Reactivate this suspended Platform Account? The user must log in again.</value></data>
+  <data name="Users_DeactivateConfirmMessage" xml:space="preserve"><value>Deactivate this Platform Account? This is reversible retained state, not deletion. A reason is required.</value></data>
+  <data name="Users_MoveToSuspendedConfirmMessage" xml:space="preserve"><value>Move this deactivated account to Suspended? Login remains blocked.</value></data>
+  <data name="Users_ReactivateDeactivatedConfirmMessage" xml:space="preserve"><value>High-risk reactivation. Enter your administrator password (and MFA when enabled). Do not enter the deactivated user’s password.</value></data>
+  <data name="Users_GlobalSuspendConfirmMessage" xml:space="preserve"><value>Global Account Suspension blocks login across all scopes. Use only for compromise, fraud, abuse, or compliance. Routine Org staff restriction must use Suspend Membership.</value></data>
+  <data name="Users_GlobalReactivateConfirmMessage" xml:space="preserve"><value>Restore global login for this identity?</value></data>
+  <data name="Users_LifecycleReason" xml:space="preserve"><value>Reason</value></data>
+  <data name="Users_LifecycleReasonRequired" xml:space="preserve"><value>Reason is required.</value></data>
+  <data name="Users_ActorPassword" xml:space="preserve"><value>Your administrator password</value></data>
+  <data name="Users_ActorPasswordRequired" xml:space="preserve"><value>Administrator password is required.</value></data>
+  <data name="Users_MfaCode" xml:space="preserve"><value>MFA code</value></data>
+  <data name="Users_MfaCodeHint" xml:space="preserve"><value>Required when MFA is enabled on your account</value></data>
+  <data name="Users_ToastDeactivated" xml:space="preserve"><value>Account deactivated.</value></data>
+  <data name="Users_ToastMovedToSuspended" xml:space="preserve"><value>Account moved to Suspended.</value></data>
   <data name="Users_OrgMemberships" xml:space="preserve"><value>Organization memberships</value></data>
   <data name="Users_OrgMembershipsHint" xml:space="preserve"><value>Platform organization roles only — not Doctor, Nurse, Cashier, or other product-local roles.</value></data>
   <data name="Users_LoadingMemberships" xml:space="preserve"><value>Loading memberships…</value></data>
@@ -748,11 +798,27 @@
   <data name="OrgEnabledProducts_ToastRoleAssigned" xml:space="preserve"><value>Product-local role assigned.</value></data>
   <data name="OrgEnabledProducts_ToastRoleRevoked" xml:space="preserve"><value>Product-local role revoked.</value></data>
   <data name="OrgEnabledProducts_InvalidUserId" xml:space="preserve"><value>Enter a valid user id (GUID).</value></data>
-  <data name="Login_CredentialsHint" xml:space="preserve"><value>Sign in with your Platform User credentials.</value></data>
-  <data name="Login_UsernameOrEmail" xml:space="preserve"><value>Username or email</value></data>
+  <data name="Login_CredentialsHint" xml:space="preserve"><value>Sign in with your email and password.</value></data>
+  <data name="Login_UsernameOrEmail" xml:space="preserve"><value>Email</value></data>
+  <data name="Login_Email" xml:space="preserve"><value>Email</value></data>
   <data name="Login_Password" xml:space="preserve"><value>Password</value></data>
   <data name="Login_SignIn" xml:space="preserve"><value>Sign in</value></data>
+  <data name="Login_Register" xml:space="preserve"><value>Register</value></data>
   <data name="Login_ForgotPassword" xml:space="preserve"><value>Forgot password</value></data>
+  <data name="Register_Title" xml:space="preserve"><value>Create a Personal Account</value></data>
+  <data name="Register_Hint" xml:space="preserve"><value>Creates a Personal Account with your name and email. We will email a verification link. During Local Validation, open Mailpit at http://localhost:8025 to capture the message. Sign in with email after activation.</value></data>
+  <data name="Register_Submit" xml:space="preserve"><value>Register</value></data>
+  <data name="Register_Success" xml:space="preserve"><value>Check your email to activate your account.</value></data>
+  <data name="Register_AcceptTerms" xml:space="preserve"><value>I accept the terms and privacy notice</value></data>
+  <data name="Register_TermsRequired" xml:space="preserve"><value>Accept the terms to continue.</value></data>
+  <data name="Activate_Title" xml:space="preserve"><value>Activate your account</value></data>
+  <data name="Activate_Hint" xml:space="preserve"><value>Create a password to finish email verification and activate your Personal Account.</value></data>
+  <data name="Activate_Submit" xml:space="preserve"><value>Activate and set password</value></data>
+  <data name="Activate_Success" xml:space="preserve"><value>Account activated. You can sign in now.</value></data>
+  <data name="Activate_ConfirmPassword" xml:space="preserve"><value>Confirm password</value></data>
+  <data name="Activate_PasswordMismatch" xml:space="preserve"><value>Passwords do not match.</value></data>
+  <data name="Status_PendingVerification" xml:space="preserve"><value>Pending Verification</value></data>
+
   <data name="Login_InvalidCredentials" xml:space="preserve"><value>Invalid username/email or password.</value></data>
   <data name="Login_LocalValidationTitle" xml:space="preserve"><value>Local Validation identities</value></data>
   <data name="Login_LocalValidationHint" xml:space="preserve"><value>Choose an approved identity. Sign-in uses normal Platform credential login on the server (password is not shown in the browser).</value></data>

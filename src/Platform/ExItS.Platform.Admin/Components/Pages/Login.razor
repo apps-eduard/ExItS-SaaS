@@ -5,7 +5,6 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.Extensions.Options
 @attribute [AllowAnonymous]
-@inject PlatformBrowserSessionService SessionService
 @inject NavigationManager Nav
 @inject IStringLocalizer<AdminResources> L
 
@@ -29,43 +28,43 @@
 
             <LocalValidationIdentityPicker />
 
-            <div class="exits-login-form">
-
+            @* Native form POST — Interactive Server cannot set auth cookies from a Blazor event. *@
+            <form method="post" action="/admin/login/credentials" class="exits-login-form">
                 <div class="ant-form-item">
-                    <label class="ant-form-item-label" for="login-user">@L["Login_UsernameOrEmail"]</label>
-                    <Input Id="login-user"
-                           @bind-Value="_usernameOrEmail"
-                           Placeholder="@L["Login_UsernameOrEmail"]"
-                           Disabled="_busy"
-                           OnPressEnter="SignInCredentialsAsync" />
+                    <label class="ant-form-item-label" for="login-email">@L["Login_Email"]</label>
+                    <input id="login-email"
+                           name="Email"
+                           type="email"
+                           class="ant-input"
+                           autocomplete="username"
+                           required
+                           placeholder="@L["Login_Email"]" />
                 </div>
                 <div class="ant-form-item">
                     <label class="ant-form-item-label" for="login-password">@L["Login_Password"]</label>
-                    <InputPassword Id="login-password"
-                                   @bind-Value="_password"
-                                   Placeholder="@L["Login_Password"]"
-                                   Disabled="_busy"
-                                   OnPressEnter="SignInCredentialsAsync" />
+                    <input id="login-password"
+                           name="Password"
+                           type="password"
+                           class="ant-input"
+                           autocomplete="current-password"
+                           required
+                           placeholder="@L["Login_Password"]" />
                 </div>
-                <Button Type="@ButtonType.Primary"
-                        Block
-                        Size="@ButtonSize.Small"
-                        Loading="_busy"
-                        Disabled="_busy"
-                        OnClick="SignInCredentialsAsync">
+                <button type="submit" class="ant-btn ant-btn-primary ant-btn-block ant-btn-sm">
                     @L["Login_SignIn"]
-                </Button>
+                </button>
                 <div class="exits-login-links">
+                    <a href="/admin/register">@L["Login_Register"]</a>
                     <a href="/admin/forgot-password">@L["Login_ForgotPassword"]</a>
                 </div>
-            </div>
+            </form>
 
             <Divider>@L["Login_OrContinueWith"]</Divider>
             <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
-                <Button Block Size="@ButtonSize.Small" Disabled="_busy" OnClick="() => Nav.NavigateTo(GoogleChallengeUrl, forceLoad: true)">
+                <Button Block Size="@ButtonSize.Small" OnClick="() => Nav.NavigateTo(GoogleChallengeUrl, forceLoad: true)">
                     @L["Login_ContinueGoogle"]
                 </Button>
-                <Button Block Size="@ButtonSize.Small" Disabled="_busy" OnClick="() => Nav.NavigateTo(FacebookChallengeUrl, forceLoad: true)">
+                <Button Block Size="@ButtonSize.Small" OnClick="() => Nav.NavigateTo(FacebookChallengeUrl, forceLoad: true)">
                     @L["Login_ContinueFacebook"]
                 </Button>
             </Space>
@@ -78,9 +77,6 @@
 
 @code {
     private string? _error;
-    private bool _busy;
-    private string? _usernameOrEmail;
-    private string? _password;
 
     [Inject] private IOptions<PlatformApiOptions> PlatformApi { get; set; } = default!;
 
@@ -93,32 +89,6 @@
     protected override void OnInitialized()
     {
         _error = string.IsNullOrWhiteSpace(ErrorQuery) ? null : ErrorQuery;
-    }
-
-    private async Task SignInCredentialsAsync()
-    {
-        if (_busy)
-        {
-            return;
-        }
-
-        _busy = true;
-        _error = null;
-        try
-        {
-            var (ok, error) = await SessionService.LoginAsync(_usernameOrEmail ?? string.Empty, _password ?? string.Empty);
-            if (!ok)
-            {
-                _error = error ?? L["Login_InvalidCredentials"];
-                return;
-            }
-
-            Nav.NavigateTo("/admin", forceLoad: true);
-        }
-        finally
-        {
-            _busy = false;
-        }
     }
 
     private string BuildChallengeUrl(string provider)

@@ -24,26 +24,36 @@ public sealed record OrganizationMembershipDto(
     string? ActorReference,
     string? Username = null,
     string? DisplayName = null,
-    string? Email = null);
+    string? Email = null,
+    string? RoleDisplay = null,
+    IReadOnlyList<string>? ProductRoles = null,
+    string? AccountStatus = null,
+    string? EmployeeCode = null,
+    string? Branch = null);
 
 public sealed class MembershipQueryService
 {
     private readonly IOrganizationMembershipRepository _memberships;
     private readonly IPlatformUserRepository _users;
+    private readonly IProductLocalRoleGrantRepository _roleGrants;
 
     public MembershipQueryService(
         IOrganizationMembershipRepository memberships,
-        IPlatformUserRepository users)
+        IPlatformUserRepository users,
+        IProductLocalRoleGrantRepository roleGrants)
     {
         _memberships = memberships;
         _users = users;
+        _roleGrants = roleGrants;
     }
 
     public async Task<OrganizationMembershipDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var membership = await _memberships.GetByIdAsync(OrganizationMembershipId.From(id), cancellationToken)
             .ConfigureAwait(false);
-        return membership is null ? null : await MapAsync(membership, cancellationToken).ConfigureAwait(false);
+        return membership is null
+            ? null
+            : await MapAsync(membership, productRolesByUser: null, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<PagedResult<OrganizationMembershipDto>> ListByOrganizationAsync(
@@ -57,10 +67,14 @@ public sealed class MembershipQueryService
         var (items, total) = await _memberships
             .ListByOrganizationAsync(PlatformOrganizationId.From(organizationId), status, skip, take, cancellationToken)
             .ConfigureAwait(false);
+        var productRolesByUser = await BuildProductRolesByUserAsync(
+                PlatformOrganizationId.From(organizationId),
+                cancellationToken)
+            .ConfigureAwait(false);
         var mapped = new List<OrganizationMembershipDto>(items.Count);
         foreach (var item in items)
         {
-            mapped.Add(await MapAsync(item, cancellationToken).ConfigureAwait(false));
+            mapped.Add(await MapAsync(item, productRolesByUser, cancellationToken).ConfigureAwait(false));
         }
 
         return new PagedResult<OrganizationMembershipDto>(
@@ -84,7 +98,7 @@ public sealed class MembershipQueryService
         var mapped = new List<OrganizationMembershipDto>(items.Count);
         foreach (var item in items)
         {
-            mapped.Add(await MapAsync(item, cancellationToken).ConfigureAwait(false));
+            mapped.Add(await MapAsync(item, productRolesByUser: null, cancellationToken).ConfigureAwait(false));
         }
 
         return new PagedResult<OrganizationMembershipDto>(
@@ -106,13 +120,59 @@ public sealed class MembershipQueryService
             membership.SuspendedAtUtc,
             membership.RemovedAtUtc,
             membership.Reason,
-            membership.ActorReference);
+            membership.ActorReference,
+            RoleDisplay: OrganizationRoleDisplay.ToDisplayLabel(membership.Role));
+
+    private async Task<IReadOnlyDictionary<Guid, IReadOnlyList<string>>> BuildProductRolesByUserAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken)
+    {
+        var grants = await _roleGrants
+            .ListByOrganizationAsync(organizationId, ProductLocalRoleGrantStatus.Active, cancellationToken)
+            .ConfigureAwait(false);
+        return grants
+            .GroupBy(g => g.UserIdentityId.Value)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyList<string>)g
+                    .Select(x => ProductRoleDisplay.ToDisplayLabel(x.RoleCode))
+                    .Where(label => !string.IsNullOrWhiteSpace(label))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList());
+    }
+
+    private async Task<IReadOnlyList<string>> ResolveProductRolesAsync(
+        OrganizationMembership membership,
+        IReadOnlyDictionary<Guid, IReadOnlyList<string>>? productRolesByUser,
+        CancellationToken cancellationToken)
+    {
+        if (productRolesByUser is not null
+            && productRolesByUser.TryGetValue(membership.UserId.Value, out var cached))
+        {
+            return cached;
+        }
+
+        var grants = await _roleGrants
+            .ListActiveByUserOrganizationAsync(
+                membership.OrganizationId,
+                membership.UserId,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return grants
+            .Select(g => ProductRoleDisplay.ToDisplayLabel(g.RoleCode))
+            .Where(label => !string.IsNullOrWhiteSpace(label))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
 
     private async Task<OrganizationMembershipDto> MapAsync(
         OrganizationMembership membership,
+        IReadOnlyDictionary<Guid, IReadOnlyList<string>>? productRolesByUser,
         CancellationToken cancellationToken)
     {
         var user = await _users.GetByIdAsync(membership.UserId, cancellationToken).ConfigureAwait(false);
+        var productRoles = await ResolveProductRolesAsync(membership, productRolesByUser, cancellationToken)
+            .ConfigureAwait(false);
         return new OrganizationMembershipDto(
             membership.Id.Value,
             membership.OrganizationId.Value,
@@ -127,7 +187,12 @@ public sealed class MembershipQueryService
             membership.ActorReference,
             user?.Username,
             user?.DisplayName,
-            user?.NormalizedEmail);
+            user?.NormalizedEmail,
+            OrganizationRoleDisplay.ToDisplayLabel(membership.Role),
+            productRoles.Count > 0 ? productRoles : null,
+            user?.Status.ToString(),
+            user?.EmployeeCode,
+            Branch: null);
     }
 }
 
@@ -247,7 +312,7 @@ public sealed class RevokeOrganizationMembership
         try
         {
             var actor = string.IsNullOrWhiteSpace(actorReference) ? "system" : actorReference;
-            membership.Remove(_clock.UtcNow, reason, actor);
+            membership.Remove(_clock.UtcNow, reason ?? "Membership deactivated.", actor);
             await _memberships.UpdateAsync(membership, cancellationToken).ConfigureAwait(false);
 
             var activeAssignments = await _assignments

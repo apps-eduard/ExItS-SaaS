@@ -746,18 +746,27 @@ public sealed class DiscoverEnabledProducts
             .ListByOrganizationAsync(organizationId, status: null, skip: 0, take: 100, cancellationToken)
             .ConfigureAwait(false);
 
+        // Deduplicate by stable product code so role grants / multiple subscription rows never duplicate UI.
         var productCodes = subscriptions
             .Select(s => s.ProductCode.Value)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .GroupBy(c => c.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
             .OrderBy(c => c, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         var results = new List<EnabledProductDto>(productCodes.Count);
+        var seenProductIds = new HashSet<Guid>();
         foreach (var code in productCodes)
         {
             var product = await _products.GetByCodeAsync(ProductCode.Create(code), cancellationToken)
                 .ConfigureAwait(false);
             if (product is null || product.Status != ProductStatus.Active)
+            {
+                continue;
+            }
+
+            if (!seenProductIds.Add(product.Id.Value))
             {
                 continue;
             }

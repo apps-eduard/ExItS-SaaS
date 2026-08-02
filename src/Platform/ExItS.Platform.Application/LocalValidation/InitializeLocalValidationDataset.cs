@@ -352,7 +352,9 @@ public sealed class InitializeLocalValidationDataset
 
         if (user.Status != AccountStatus.Deactivated)
         {
-            var deactivated = await _deactivateUser.ExecuteAsync(user.Id, ct).ConfigureAwait(false);
+            var deactivated = await _deactivateUser
+                .ExecuteAsync(user.Id, "Obsolete Local Validation identity cleanup", cancellationToken: ct)
+                .ConfigureAwait(false);
             if (!deactivated.IsSuccess)
             {
                 _logger.LogWarning(
@@ -534,10 +536,11 @@ public sealed class InitializeLocalValidationDataset
         string productCode,
         CancellationToken ct)
     {
+        const string productDisplayName = "Pinoy Business POS";
         var product = await _products.GetByCodeAsync(ProductCode.Create(productCode), ct).ConfigureAwait(false);
         if (product is null)
         {
-            var created = await _createProduct.ExecuteAsync(productCode, "PinoyBusinessPOS", ct).ConfigureAwait(false);
+            var created = await _createProduct.ExecuteAsync(productCode, productDisplayName, ct).ConfigureAwait(false);
             if (!created.IsSuccess)
             {
                 product = await _products.GetByCodeAsync(ProductCode.Create(productCode), ct).ConfigureAwait(false);
@@ -547,6 +550,18 @@ public sealed class InitializeLocalValidationDataset
                         $"Local validation product create failed: {created.ErrorCode} {created.ErrorMessage}");
                 }
             }
+            else
+            {
+                product = created.Value;
+            }
+        }
+
+        if (product is not null
+            && !string.Equals(product.DisplayName, productDisplayName, StringComparison.Ordinal))
+        {
+            product.Rename(productDisplayName, _clock.UtcNow);
+            await _products.UpdateAsync(product, ct).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
         }
 
         foreach (var featureCode in LocalValidationFeatureCodes)
@@ -708,7 +723,7 @@ public sealed class InitializeLocalValidationDataset
         }
 
         var created = await _createUser
-            .ExecuteAsync(identity.Username, identity.DisplayName, identity.Email, ct)
+            .ExecuteAsync(identity.Username, identity.DisplayName, identity.Email, cancellationToken: ct)
             .ConfigureAwait(false);
         if (!created.IsSuccess || created.Value is null)
         {

@@ -51,6 +51,54 @@ public sealed class PlatformUserTests
     }
 
     [Fact]
+    public void CreatePlatformStaff_assigns_staff_number_and_optional_fields()
+    {
+        var user = PlatformUser.CreatePlatformStaff(
+            "olivia.staff",
+            "Olivia",
+            "Staff",
+            "Olivia Staff",
+            "olivia.staff@example.com",
+            "STF-000001",
+            T0,
+            phone: "+63 912 345 6789",
+            employeeCode: "EMP-42");
+
+        Assert.Equal("STF-000001", user.StaffNumber);
+        Assert.Equal("Olivia", user.FirstName);
+        Assert.Equal("Staff", user.LastName);
+        Assert.Equal("+63 912 345 6789", user.Phone);
+        Assert.Equal("EMP-42", user.EmployeeCode);
+        Assert.Null(user.CreatedByUserId);
+    }
+
+    [Fact]
+    public void UpdateStaffProfile_rejects_staff_number_change()
+    {
+        var user = PlatformUser.CreatePlatformStaff(
+            "olivia.staff",
+            "Olivia",
+            "Staff",
+            "Olivia Staff",
+            "olivia.staff@example.com",
+            "STF-000001",
+            T0);
+
+        var ex = Assert.Throws<DomainException>(() =>
+            user.UpdateStaffProfile("Olivia", "Staff", "Olivia Staff", "olivia.staff@example.com", T1, attemptedStaffNumber: "STF-000002"));
+        Assert.Equal(DomainErrorCodes.StaffNumberImmutable, ex.ErrorCode);
+    }
+
+    [Fact]
+    public void Personal_create_leaves_staff_number_null()
+    {
+        var user = PlatformUser.CreatePendingVerification("new.user", "New User", "new.user@example.com", T0);
+        Assert.Null(user.StaffNumber);
+        Assert.Null(user.FirstName);
+        Assert.Null(user.LastName);
+    }
+
+    [Fact]
     public void Suspend_reactivate_and_deactivate_follow_transitions()
     {
         var user = PlatformUser.Create("ada", "Ada Lovelace", "ada@example.com", T0);
@@ -65,22 +113,24 @@ public sealed class PlatformUserTests
         Assert.Null(user.SuspendedAtUtc);
 
         var t3 = t2.AddMinutes(1);
-        user.Deactivate(t3);
+        user.Deactivate(t3, "exit");
         Assert.Equal(AccountStatus.Deactivated, user.Status);
     }
 
     [Fact]
-    public void Deactivated_user_cannot_reactivate_or_update()
+    public void Deactivated_user_can_reactivate_and_cannot_update_profile_until_active()
     {
         var user = PlatformUser.Create("ada", "Ada Lovelace", "ada@example.com", T0);
-        user.Deactivate(T1);
-
-        var reactivate = Assert.Throws<DomainException>(() => user.Reactivate(T1.AddMinutes(1)));
-        Assert.Equal(DomainErrorCodes.InvalidAccountStatusTransition, reactivate.ErrorCode);
+        user.Deactivate(T1, "exit");
 
         var update = Assert.Throws<DomainException>(() =>
-            user.UpdateProfile("Ada", "ada2@example.com", T1.AddMinutes(2)));
+            user.UpdateProfile("Ada", "ada2@example.com", T1.AddMinutes(1)));
         Assert.Equal(DomainErrorCodes.UserNotActive, update.ErrorCode);
+
+        user.Reactivate(T1.AddMinutes(2), "return");
+        Assert.Equal(AccountStatus.Active, user.Status);
+        user.UpdateProfile("Ada Two", "ada2@example.com", T1.AddMinutes(3));
+        Assert.Equal("Ada Two", user.DisplayName);
     }
 
     [Fact]

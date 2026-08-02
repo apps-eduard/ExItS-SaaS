@@ -88,6 +88,9 @@ internal static class InvitationEndpoints
                     membershipAuthz.Inner.CurrentActor.PlatformUserId,
                     authority.ActorMembershipRole,
                     authority.HasPlatformManageMemberships,
+                    body.DisplayName,
+                    body.FirstName,
+                    body.LastName,
                     ct)
                 .ConfigureAwait(false);
             if (result.IsSuccess)
@@ -237,7 +240,7 @@ internal static class InvitationEndpoints
         {
             error = PlatformApiResults.Problem(
                 DomainErrorCodes.InvalidOrganizationRole,
-                "Role must be OrganizationOwner, OrganizationAdministrator, or OrganizationMember.",
+                "Role must be OrganizationOwner (Owner) or OrganizationMember (Staff). OrganizationAdministrator is legacy-only.",
                 StatusCodes.Status400BadRequest);
             return false;
         }
@@ -268,5 +271,15 @@ internal static class InvitationEndpoints
     }
 }
 
-internal sealed record CreateInvitationRequest(string? Email, string? Role);
+internal sealed record CreateInvitationRequest(
+    string? Email,
+    string? Role,
+    string? FirstName = null,
+    string? LastName = null,
+    string? DisplayName = null,
+    string? Phone = null,
+    string? EmployeeCode = null,
+    string? Branch = null,
+    string? ProductRole = null,
+    bool? RequireEmailVerification = null);
 internal sealed record AcceptInvitationRequest(string? Token);

@@ -51,7 +51,7 @@ People
   Customer Linking    → Coming soon (Owner/Admin only)
 ```
 
-Organization Members see only Customers (Coming soon). Staff / Invitations / Customer Linking are hidden.
+Organization Staff see only Customers (Coming soon). Staff directory / Invitations / Customer Linking are hidden for non-Owners.
 
 ## Final Personal Contacts menu
 
@@ -83,7 +83,7 @@ No Accounts or People sections on Personal sessions.
 | Olivia Mendoza — Platform Administrator | Full Accounts (5 items; Personal Accounts Coming soon) |
 | Daniel Garcia — Platform (no admin role) | No Accounts items (unauthorized hidden) |
 | Rafael Torres / Carlo Reyes — Organization Owner | People: Staff, Invitations, Customers, Customer Linking |
-| Maria Santos / Ana Cruz — Organization Member | People: Customers only (Coming soon) |
+| Maria Santos / Ana Cruz — Organization Staff | People: Customers only (Coming soon) |
 | Luis Navarro / Sofia Ramos — Personal | Contacts only |
 
 Note: Prompt examples naming Rafael as Platform Support / Maria as ABC Owner differ from the current Local Validation seed. Seed was not changed for this menu fix. Validation uses the catalog above.
@@ -95,7 +95,7 @@ Note: Prompt examples naming Rafael as Platform Support / Maria as ABC Owner dif
 1. Platform Administrator five Accounts items  
 2. Platform Support / no ManagePlatformUsers → empty Accounts  
 3. Organization Owner People items  
-4. Organization Member Owner-only items hidden  
+4. Organization Staff Owner-only items hidden  
 5. Personal Contacts only  
 6–8. Cross-scope menu key isolation  
 9. Planned items have no route  

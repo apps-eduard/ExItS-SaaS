@@ -139,10 +139,15 @@ builder.Services.AddScoped<UpdateOrganizationBranding>();
 
 builder.Services.AddScoped<PlatformUserQueryService>();
 builder.Services.AddScoped<CreatePlatformUser>();
+builder.Services.AddScoped<CreatePlatformStaffUser>();
+builder.Services.AddScoped<IssueEmailVerificationForUser>();
+builder.Services.AddScoped<EnsureOrganizationStaffIdentity>();
 builder.Services.AddScoped<UpdatePlatformUserProfile>();
 builder.Services.AddScoped<SuspendPlatformUser>();
 builder.Services.AddScoped<ReactivatePlatformUser>();
 builder.Services.AddScoped<DeactivatePlatformUser>();
+builder.Services.AddScoped<MovePlatformUserToSuspended>();
+builder.Services.AddScoped<PlatformLifecycleStepUp>();
 
 builder.Services.AddScoped<GetPlatformCredentialStatus>();
 builder.Services.AddScoped<SetPlatformUserPassword>();
@@ -196,6 +201,8 @@ builder.Services.AddScoped<RequestPasswordReset>();
 builder.Services.AddScoped<ResetPasswordWithToken>();
 builder.Services.AddScoped<RequestEmailVerification>();
 builder.Services.AddScoped<ConfirmEmailVerification>();
+builder.Services.AddScoped<RegisterPersonalAccount>();
+builder.Services.AddScoped<ActivatePersonalAccountRegistration>();
 builder.Services.AddScoped<RequestRecoveryEmailChange>();
 builder.Services.AddScoped<ConfirmRecoveryEmailChange>();
 builder.Services.AddScoped<SkipRecoveryEmailPrompt>();

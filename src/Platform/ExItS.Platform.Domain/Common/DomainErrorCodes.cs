@@ -19,6 +19,10 @@ public static class DomainErrorCodes
     public const string InvalidDisplayName = "platform.display_name.invalid";
     public const string InvalidEmail = "platform.email.invalid";
     public const string InvalidUsername = "platform.username.invalid";
+    public const string InvalidPhone = "platform.phone.invalid";
+    public const string InvalidEmployeeCode = "platform.employee_code.invalid";
+    public const string InvalidStaffNumber = "platform.staff_number.invalid";
+    public const string StaffNumberImmutable = "platform.staff_number.immutable";
     public const string InvalidOrganizationSlug = "platform.organization.slug.invalid";
     public const string InvalidOrganizationProfile = "platform.organization.profile.invalid";
     public const string InvalidOrganizationBranding = "platform.organization.branding.invalid";

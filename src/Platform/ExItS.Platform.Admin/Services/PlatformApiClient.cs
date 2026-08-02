@@ -166,12 +166,34 @@ public sealed class PlatformApiClient(
         SendAsync<PlatformUserDto>(HttpMethod.Post, "/api/v1/platform/users", request, ct);
     public Task<ApiCallResult<PlatformUserDto>> UpdateUserAsync(Guid id, UpdatePlatformUserRequest request, CancellationToken ct = default) =>
         SendAsync<PlatformUserDto>(HttpMethod.Put, $"/api/v1/platform/users/{id}", request, ct);
-    public Task<ApiCallResult<PlatformUserDto>> SuspendUserAsync(Guid id, string? reason = null, CancellationToken ct = default) =>
-        SendAsync<PlatformUserDto>(HttpMethod.Post, $"/api/v1/platform/users/{id}/suspend", new LifecycleReasonRequest(reason), ct);
-    public Task<ApiCallResult<PlatformUserDto>> ReactivateUserAsync(Guid id, CancellationToken ct = default) =>
-        SendAsync<PlatformUserDto>(HttpMethod.Post, $"/api/v1/platform/users/{id}/reactivate", null, ct);
-    public Task<ApiCallResult<PlatformUserDto>> DisableUserAsync(Guid id, CancellationToken ct = default) =>
-        SendAsync<PlatformUserDto>(HttpMethod.Post, $"/api/v1/platform/users/{id}/disable", null, ct);
+    public Task<ApiCallResult<PlatformUserDto>> SuspendUserAsync(Guid id, string? reason = null, bool global = false, CancellationToken ct = default) =>
+        SendAsync<PlatformUserDto>(HttpMethod.Post, $"/api/v1/platform/users/{id}/suspend", new LifecycleReasonRequest(reason, global), ct);
+    public Task<ApiCallResult<PlatformUserDto>> ReactivateUserAsync(Guid id, ReactivatePlatformUserRequest? request = null, CancellationToken ct = default) =>
+        SendAsync<PlatformUserDto>(HttpMethod.Post, $"/api/v1/platform/users/{id}/reactivate", request ?? new ReactivatePlatformUserRequest(), ct);
+    public Task<ApiCallResult<PlatformUserDto>> DeactivateUserAsync(
+        Guid id,
+        string reason,
+        string? actorPassword = null,
+        string? mfaCode = null,
+        CancellationToken ct = default) =>
+        SendAsync<PlatformUserDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/users/{id}/deactivate",
+            new LifecycleReasonRequest(reason, ActorPassword: actorPassword, MfaCode: mfaCode),
+            ct);
+    public Task<ApiCallResult<PlatformUserDto>> MoveUserToSuspendedAsync(
+        Guid id,
+        string reason,
+        string? actorPassword = null,
+        string? mfaCode = null,
+        CancellationToken ct = default) =>
+        SendAsync<PlatformUserDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/users/{id}/move-to-suspended",
+            new LifecycleReasonRequest(reason, ActorPassword: actorPassword, MfaCode: mfaCode),
+            ct);
+    public Task<ApiCallResult<PlatformUserDto>> DisableUserAsync(Guid id, string reason, CancellationToken ct = default) =>
+        DeactivateUserAsync(id, reason, ct: ct);
 
     public Task<ApiCallResult<PagedResult<OrganizationMembershipDto>>> GetOrganizationMembersAsync(Guid organizationId, int page = 1, int pageSize = 20, string? status = null, CancellationToken ct = default) =>
         GetAsync<PagedResult<OrganizationMembershipDto>>($"/api/v1/platform/organizations/{organizationId}/members?{Query(("page", page), ("pageSize", pageSize), ("status", status))}", ct);
@@ -349,6 +371,10 @@ public sealed class PlatformApiClient(
         SendAsync<CredentialWorkflowAckDto>(HttpMethod.Post, "/api/v1/platform/auth/forgot-password", request, ct);
     public Task<ApiCallResult<PlatformCredentialStatusDto>> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken ct = default) =>
         SendAsync<PlatformCredentialStatusDto>(HttpMethod.Post, "/api/v1/platform/auth/reset-password", request, ct);
+    public Task<ApiCallResult<PersonalRegistrationAckDto>> RegisterPersonalAccountAsync(RegisterPersonalAccountRequest request, CancellationToken ct = default) =>
+        SendAsync<PersonalRegistrationAckDto>(HttpMethod.Post, "/api/v1/platform/auth/register", request, ct);
+    public Task<ApiCallResult<PlatformCredentialStatusDto>> ActivatePersonalAccountAsync(ActivatePersonalAccountRequest request, CancellationToken ct = default) =>
+        SendAsync<PlatformCredentialStatusDto>(HttpMethod.Post, "/api/v1/platform/auth/activate-account", request, ct);
     public Task<ApiCallResult<CredentialWorkflowAckDto>> RequestEmailVerificationAsync(CancellationToken ct = default) =>
         SendAsync<CredentialWorkflowAckDto>(HttpMethod.Post, "/api/v1/platform/auth/email-verification/request", null, ct);
     public Task<ApiCallResult<PlatformCredentialStatusDto>> ConfirmEmailVerificationAsync(ConfirmEmailVerificationRequest request, CancellationToken ct = default) =>
