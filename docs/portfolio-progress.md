@@ -14,7 +14,7 @@
 | Current phase | Phase 16  -  Implementation Complete, Under Validation (**P16-WP11 in progress**; Phase 14 still open) |
 | Current work package | **P16-WP11**  -  Validation, Stabilization, and User Acceptance (**in progress**); **P16-WP12** Final Closeout (**not started**); P14-WP04 remains next Production WP after authorization |
 | Overall status | **Phase 16 under validation** (P16-WP01-WP10 feature WPs complete; **P16-WP11 in progress**  -  [Local Validation report](reports/P16-WP11-local-validation-replaces-live-preview.md)). Phase 15 complete. **Phase 14 remains in progress**. Local Validation replaces Live Preview (same app code; config-only vs Production). Phase 16 is **not closed**. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | `4118797ed3555640cccca8e0c7bb15458035dd75` |
+| Latest verified commit | `df76759289d3ca171e2ccb37bda890146a7223fa` |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-08-02 |
 
