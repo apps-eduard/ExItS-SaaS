@@ -30,18 +30,25 @@ public sealed class Phase16AccountSeedArchitectureTests
         var root = FindRepoRoot();
         var init = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Application", "LocalValidation", "InitializeLocalValidationDataset.cs"));
-        Assert.Contains("CleanupObsoletePhase16SeedAsync", init, StringComparison.Ordinal);
+        Assert.Contains("CleanupObsoleteSeedAsync", init, StringComparison.Ordinal);
+        Assert.Contains("CloseObsoleteOrganizationsAsync", init, StringComparison.Ordinal);
+        Assert.Contains("ObsoleteLocalValidationOrganizations", init, StringComparison.Ordinal);
         Assert.Contains("ObsoletePhase16SeedIdentities", init, StringComparison.Ordinal);
         Assert.Contains("exclusivePreferredClass: true", init, StringComparison.Ordinal);
+        Assert.Contains("InitializeLocalValidationPersonalUtangSeed", init, StringComparison.Ordinal);
 
         var options = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Application", "LocalValidation", "LocalValidationOptions.cs"));
         Assert.Contains("platform.admin1@exits.test", options, StringComparison.Ordinal);
         Assert.Contains("personal.user2@exits.test", options, StringComparison.Ordinal);
         Assert.Contains("phase16-seed-org", options, StringComparison.Ordinal);
+        Assert.Contains("abc-sari-sari", options, StringComparison.Ordinal);
+        Assert.Contains("xyz-mini-grocery", options, StringComparison.Ordinal);
+        Assert.Contains("sampaguita-store", options, StringComparison.Ordinal);
         Assert.Contains("AssignPlatformRole", options, StringComparison.Ordinal);
         Assert.Contains("rafael.torres@exits.local", options, StringComparison.Ordinal);
         Assert.Contains("PlatformSupport", options, StringComparison.Ordinal);
+        Assert.Contains("local-validation:luis-lends-sofia", options, StringComparison.Ordinal);
 
         var ensure = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Application", "Identity", "AccountProfileUseCases.cs"));

@@ -20,38 +20,41 @@ public sealed class LocalValidationOptions
     /// </summary>
     public string SharedPassword { get; set; } = string.Empty;
 
-    public const string ProductPlanCode = "sampaguita-pos";
-    public const string ProductPlanDisplayName = "Sampaguita POS Plan";
-    public const string TrialDisplayName = "Sampaguita POS Trial";
+    /// <summary>Deterministic Local Validation dataset version (logged on seed).</summary>
+    public const string DatasetVersion = "2026-08-02-abc-xyz-v1";
+
+    public const string ProductPlanCode = "local-validation-pos";
+    public const string ProductPlanDisplayName = "Local Validation POS Plan";
+    public const string TrialDisplayName = "Local Validation POS Trial";
 
     public const string Actor = "local-validation-initializer";
 
     /// <summary>Legacy single-org slug kept for callers that still expect the first store.</summary>
-    public const string OrgSlug = LocalValidationOrganizationCatalog.SampaguitaSlug;
+    public const string OrgSlug = LocalValidationOrganizationCatalog.AbcSariSariSlug;
 
     /// <summary>Legacy single-org display name kept for callers that still expect the first store.</summary>
-    public const string OrgDisplayName = LocalValidationOrganizationCatalog.SampaguitaDisplayName;
+    public const string OrgDisplayName = LocalValidationOrganizationCatalog.AbcSariSariDisplayName;
 }
 
 public sealed record LocalValidationOrganizationDefinition(string Slug, string DisplayName);
 
 public static class LocalValidationOrganizationCatalog
 {
-    public const string SampaguitaSlug = "sampaguita-store";
-    public const string SampaguitaDisplayName = "Sampaguita Neighborhood Store";
-    public const string MabuhaySlug = "mabuhay-mini-mart";
-    public const string MabuhayDisplayName = "Mabuhay Mini Mart";
+    public const string AbcSariSariSlug = "abc-sari-sari";
+    public const string AbcSariSariDisplayName = "ABC Sari-Sari Store";
+    public const string XyzMiniGrocerySlug = "xyz-mini-grocery";
+    public const string XyzMiniGroceryDisplayName = "XYZ Mini Grocery";
 
-    public static LocalValidationOrganizationDefinition Sampaguita { get; } =
-        new(SampaguitaSlug, SampaguitaDisplayName);
+    public static LocalValidationOrganizationDefinition AbcSariSari { get; } =
+        new(AbcSariSariSlug, AbcSariSariDisplayName);
 
-    public static LocalValidationOrganizationDefinition Mabuhay { get; } =
-        new(MabuhaySlug, MabuhayDisplayName);
+    public static LocalValidationOrganizationDefinition XyzMiniGrocery { get; } =
+        new(XyzMiniGrocerySlug, XyzMiniGroceryDisplayName);
 
     public static IReadOnlyList<LocalValidationOrganizationDefinition> All { get; } =
     [
-        Sampaguita,
-        Mabuhay
+        AbcSariSari,
+        XyzMiniGrocery
     ];
 
     public static LocalValidationOrganizationDefinition? FindBySlug(string? slug) =>
@@ -103,6 +106,21 @@ public static class ObsoletePhase16SeedIdentities
     public const string SeedOrgSlug = "phase16-seed-org";
 }
 
+/// <summary>
+/// Obsolete Local Validation / Phase16 organization slugs closed during seed cleanup.
+/// Does not delete manually created orgs outside this explicit list.
+/// </summary>
+public static class ObsoleteLocalValidationOrganizations
+{
+    public static IReadOnlyList<string> Slugs { get; } =
+    [
+        ObsoletePhase16SeedIdentities.SeedOrgSlug,
+        "sampaguita-store",
+        "mabuhay-mini-mart",
+        "phase16-seed-org"
+    ];
+}
+
 public static class LocalValidationIdentityCatalog
 {
     public static IReadOnlyList<LocalValidationIdentityDefinition> All { get; } =
@@ -138,11 +156,11 @@ public static class LocalValidationIdentityCatalog
             Username: "maria.santos",
             DisplayName: "Maria Santos",
             Email: "maria.santos@exits.local",
-            Summary: "Sampaguita Neighborhood Store — Organization Owner with POS Owner role.",
+            Summary: "ABC Sari-Sari Store — Organization Owner with POS Owner role.",
             PreferredAccountClass: AccountClass.Organization,
             AssignPlatformRole: null,
             HasOrganizationMembership: true,
-            OrganizationSlug: LocalValidationOrganizationCatalog.SampaguitaSlug,
+            OrganizationSlug: LocalValidationOrganizationCatalog.AbcSariSariSlug,
             OrganizationRole: OrganizationMembershipValidationRole.OrganizationOwner,
             GrantPosProductAccess: true,
             PosLocalRoleCode: "Owner"),
@@ -151,11 +169,11 @@ public static class LocalValidationIdentityCatalog
             Username: "carlo.reyes",
             DisplayName: "Carlo Reyes",
             Email: "carlo.reyes@exits.local",
-            Summary: "Sampaguita Neighborhood Store — Organization Member with POS Cashier role.",
+            Summary: "ABC Sari-Sari Store — Organization Member with POS Cashier role.",
             PreferredAccountClass: AccountClass.Organization,
             AssignPlatformRole: null,
             HasOrganizationMembership: true,
-            OrganizationSlug: LocalValidationOrganizationCatalog.SampaguitaSlug,
+            OrganizationSlug: LocalValidationOrganizationCatalog.AbcSariSariSlug,
             OrganizationRole: OrganizationMembershipValidationRole.OrganizationMember,
             GrantPosProductAccess: true,
             PosLocalRoleCode: "Cashier"),
@@ -164,11 +182,11 @@ public static class LocalValidationIdentityCatalog
             Username: "ana.cruz",
             DisplayName: "Ana Cruz",
             Email: "ana.cruz@exits.local",
-            Summary: "Mabuhay Mini Mart — Organization Owner with POS Owner role.",
+            Summary: "XYZ Mini Grocery — Organization Owner with POS Owner role.",
             PreferredAccountClass: AccountClass.Organization,
             AssignPlatformRole: null,
             HasOrganizationMembership: true,
-            OrganizationSlug: LocalValidationOrganizationCatalog.MabuhaySlug,
+            OrganizationSlug: LocalValidationOrganizationCatalog.XyzMiniGrocerySlug,
             OrganizationRole: OrganizationMembershipValidationRole.OrganizationOwner,
             GrantPosProductAccess: true,
             PosLocalRoleCode: "Owner"),
@@ -177,11 +195,11 @@ public static class LocalValidationIdentityCatalog
             Username: "daniel.garcia",
             DisplayName: "Daniel Garcia",
             Email: "daniel.garcia@exits.local",
-            Summary: "Mabuhay Mini Mart — Organization Member with POS Cashier role.",
+            Summary: "XYZ Mini Grocery — Organization Member with POS Cashier role.",
             PreferredAccountClass: AccountClass.Organization,
             AssignPlatformRole: null,
             HasOrganizationMembership: true,
-            OrganizationSlug: LocalValidationOrganizationCatalog.MabuhaySlug,
+            OrganizationSlug: LocalValidationOrganizationCatalog.XyzMiniGrocerySlug,
             OrganizationRole: OrganizationMembershipValidationRole.OrganizationMember,
             GrantPosProductAccess: true,
             PosLocalRoleCode: "Cashier"),
@@ -215,6 +233,17 @@ public static class LocalValidationIdentityCatalog
 
     public static LocalValidationIdentityDefinition? FindByKey(string? key) =>
         All.FirstOrDefault(i => string.Equals(i.Key, key, StringComparison.OrdinalIgnoreCase));
+}
+
+/// <summary>Deterministic Personal Utang seed markers for Local Validation (Luis ↔ Sofia).</summary>
+public static class LocalValidationPersonalUtangSeedMarkers
+{
+    public const string LuisToSofiaNotes = "local-validation:luis-lends-sofia";
+    public const string SofiaToLuisNotes = "local-validation:sofia-lends-luis";
+    public const string LuisToSofiaPaymentNotes = "local-validation:sofia-payment-on-luis-loan";
+    public const decimal LuisToSofiaLoan = 5000m;
+    public const decimal LuisToSofiaPayment = 1500m;
+    public const decimal SofiaToLuisLoan = 1000m;
 }
 
 public sealed record LocalValidationIdentityDto(

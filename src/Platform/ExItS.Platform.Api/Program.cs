@@ -298,6 +298,7 @@ builder.Services.AddScoped<PlatformOrganizationAuthz>();
 
 builder.Services.Configure<LocalValidationOptions>(builder.Configuration.GetSection(LocalValidationOptions.SectionName));
 builder.Services.AddScoped<InitializeLocalValidationDataset>();
+builder.Services.AddScoped<InitializeLocalValidationPersonalUtangSeed>();
 builder.Services.AddScoped<ListLocalValidationIdentities>();
 builder.Services.AddHostedService<LocalValidationHostedService>();
 

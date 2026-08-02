@@ -33,8 +33,10 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "README.local-validation-workflow.md")));
         Assert.True(File.Exists(Path.Combine(root, "tools", "Start-LocalValidation.ps1")));
         Assert.True(File.Exists(Path.Combine(root, "tools", "Stop-LocalValidation.ps1")));
+        Assert.True(File.Exists(Path.Combine(root, "tools", "Reset-LocalValidation.ps1")));
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Start-LocalValidation.ps1")));
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Stop-LocalValidation.ps1")));
+        Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Reset-LocalValidation.ps1")));
 
         var startScript = File.ReadAllText(Path.Combine(root, "tools", "Start-LocalValidation.ps1"));
         Assert.Contains("dotnet watch", startScript, StringComparison.Ordinal);
@@ -42,6 +44,14 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("exits-local-validation-platform-db", startScript, StringComparison.Ordinal);
         Assert.Contains("volumes preserved", startScript, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("docker compose down -v", startScript, StringComparison.Ordinal);
+
+        var resetScript = File.ReadAllText(Path.Combine(root, "tools", "Reset-LocalValidation.ps1"));
+        Assert.Contains("ConfirmReset", resetScript, StringComparison.Ordinal);
+        Assert.Contains("exits_local_validation_platform_db_data", resetScript, StringComparison.Ordinal);
+        Assert.Contains("exits_local_validation_pos_db_data", resetScript, StringComparison.Ordinal);
+        Assert.Contains("Production", resetScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("docker compose down -v", resetScript, StringComparison.Ordinal);
+        Assert.Contains("docker volume rm", resetScript, StringComparison.Ordinal);
 
         Assert.Contains("${LOCAL_VALIDATION_ADMIN_HOST_PORT:-8090}:8080", live, StringComparison.Ordinal);
         Assert.Contains("${LOCAL_VALIDATION_PLATFORM_API_HOST_PORT:-8091}:8080", live, StringComparison.Ordinal);

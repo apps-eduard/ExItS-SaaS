@@ -68,6 +68,7 @@ public sealed class InitializeLocalValidationDataset
     private readonly DeactivatePlatformUser _deactivateUser;
     private readonly IPersonalContactRepository _contacts;
     private readonly IPersonalDebtRelationshipRepository _relationships;
+    private readonly InitializeLocalValidationPersonalUtangSeed _personalUtangSeed;
     private readonly IPlanRepository _plans;
     private readonly ITrialDefinitionRepository _trials;
     private readonly ISubscriptionRepository _subscriptions;
@@ -107,6 +108,7 @@ public sealed class InitializeLocalValidationDataset
         DeactivatePlatformUser deactivateUser,
         IPersonalContactRepository contacts,
         IPersonalDebtRelationshipRepository relationships,
+        InitializeLocalValidationPersonalUtangSeed personalUtangSeed,
         IPlanRepository plans,
         ITrialDefinitionRepository trials,
         ISubscriptionRepository subscriptions,
@@ -145,6 +147,7 @@ public sealed class InitializeLocalValidationDataset
         _deactivateUser = deactivateUser;
         _contacts = contacts;
         _relationships = relationships;
+        _personalUtangSeed = personalUtangSeed;
         _plans = plans;
         _trials = trials;
         _subscriptions = subscriptions;
@@ -166,9 +169,11 @@ public sealed class InitializeLocalValidationDataset
                 "LocalValidation:SharedPassword must be configured (minimum 12 characters) when LocalValidation:Enabled=true.");
         }
 
-        _logger.LogInformation("Local validation dataset initialization starting.");
+        _logger.LogInformation(
+            "Local validation dataset initialization starting (version {DatasetVersion}).",
+            LocalValidationOptions.DatasetVersion);
 
-        await CleanupObsoletePhase16SeedAsync(cancellationToken).ConfigureAwait(false);
+        await CleanupObsoleteSeedAsync(cancellationToken).ConfigureAwait(false);
 
         var productCode = ProductCode.PinoyBusinessPos;
         var organizations = new Dictionary<string, PlatformOrganization>(StringComparer.OrdinalIgnoreCase);
@@ -197,10 +202,15 @@ public sealed class InitializeLocalValidationDataset
                 .ConfigureAwait(false);
         }
 
-        _logger.LogInformation("Local validation dataset initialization completed.");
+        await CloseObsoleteOrganizationsAsync(cancellationToken).ConfigureAwait(false);
+        await _personalUtangSeed.ExecuteAsync(cancellationToken).ConfigureAwait(false);
+
+        _logger.LogInformation(
+            "Local validation dataset initialization completed (version {DatasetVersion}).",
+            LocalValidationOptions.DatasetVersion);
     }
 
-    private async Task CleanupObsoletePhase16SeedAsync(CancellationToken ct)
+    private async Task CleanupObsoleteSeedAsync(CancellationToken ct)
     {
         var seen = new HashSet<Guid>();
         foreach (var email in ObsoletePhase16SeedIdentities.NormalizedEmails)
@@ -220,17 +230,44 @@ public sealed class InitializeLocalValidationDataset
                 await DecommissionObsoleteUserAsync(user, ct).ConfigureAwait(false);
             }
         }
+    }
 
-        var seedOrg = await _organizations.GetBySlugAsync(ObsoletePhase16SeedIdentities.SeedOrgSlug, ct)
-            .ConfigureAwait(false);
-        if (seedOrg is not null && seedOrg.Status == OrganizationStatus.Active)
+    private async Task CloseObsoleteOrganizationsAsync(CancellationToken ct)
+    {
+        foreach (var slug in ObsoleteLocalValidationOrganizations.Slugs.Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            seedOrg.Close(_clock.UtcNow);
-            await _organizations.UpdateAsync(seedOrg, ct).ConfigureAwait(false);
-            await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
-            _logger.LogInformation(
-                "Closed obsolete Phase16 seed organization '{Slug}'.",
-                ObsoletePhase16SeedIdentities.SeedOrgSlug);
+            if (LocalValidationOrganizationCatalog.FindBySlug(slug) is not null)
+            {
+                continue;
+            }
+
+            var org = await _organizations.GetBySlugAsync(slug, ct).ConfigureAwait(false);
+            if (org is null)
+            {
+                continue;
+            }
+
+            var (memberships, _) = await _memberships
+                .ListByOrganizationAsync(org.Id, MembershipStatus.Active, skip: 0, take: 500, ct)
+                .ConfigureAwait(false);
+            foreach (var membership in memberships)
+            {
+                await _revokeMembership
+                    .ExecuteAsync(
+                        membership.Id,
+                        reason: "obsolete local-validation organization cleanup",
+                        actorReference: LocalValidationOptions.Actor,
+                        cancellationToken: ct)
+                    .ConfigureAwait(false);
+            }
+
+            if (org.Status == OrganizationStatus.Active || org.Status == OrganizationStatus.Suspended)
+            {
+                org.Close(_clock.UtcNow);
+                await _organizations.UpdateAsync(org, ct).ConfigureAwait(false);
+                await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
+                _logger.LogInformation("Closed obsolete Local Validation organization '{Slug}'.", slug);
+            }
         }
     }
 

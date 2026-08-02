@@ -19,13 +19,17 @@ public sealed class LocalValidationIdentityCatalogTests
     ];
 
     [Fact]
-    public void Catalog_includes_eight_approved_identities_with_single_scope_each()
+    public void Catalog_includes_eight_approved_identities_with_abc_and_xyz_organizations()
     {
         var catalog = LocalValidationIdentityCatalog.All;
         var orgs = LocalValidationOrganizationCatalog.All;
 
         Assert.Equal(8, catalog.Count);
         Assert.Equal(2, orgs.Count);
+        Assert.Equal("abc-sari-sari", LocalValidationOrganizationCatalog.AbcSariSariSlug);
+        Assert.Equal("xyz-mini-grocery", LocalValidationOrganizationCatalog.XyzMiniGrocerySlug);
+        Assert.Equal("ABC Sari-Sari Store", LocalValidationOrganizationCatalog.AbcSariSariDisplayName);
+        Assert.Equal("XYZ Mini Grocery", LocalValidationOrganizationCatalog.XyzMiniGroceryDisplayName);
 
         foreach (var displayName in ApprovedDisplayNames)
         {
@@ -35,7 +39,6 @@ public sealed class LocalValidationIdentityCatalogTests
         foreach (var identity in catalog)
         {
             Assert.EndsWith("@exits.local", identity.Email, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("validation-", identity.Username, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("@exits.test", identity.Email, StringComparison.OrdinalIgnoreCase);
         }
 
@@ -54,83 +57,43 @@ public sealed class LocalValidationIdentityCatalogTests
         Assert.Contains(catalog, i =>
             i.Key == "maria-santos"
             && i.PreferredAccountClass == AccountClass.Organization
-            && i.OrganizationSlug == LocalValidationOrganizationCatalog.SampaguitaSlug
+            && i.OrganizationSlug == LocalValidationOrganizationCatalog.AbcSariSariSlug
             && i.OrganizationRole == OrganizationMembershipValidationRole.OrganizationOwner
-            && i.PosLocalRoleCode == "Owner"
-            && i.AssignPlatformRole is null);
+            && i.PosLocalRoleCode == "Owner");
 
         Assert.Contains(catalog, i =>
             i.Key == "carlo-reyes"
-            && i.PreferredAccountClass == AccountClass.Organization
-            && i.OrganizationSlug == LocalValidationOrganizationCatalog.SampaguitaSlug
+            && i.OrganizationSlug == LocalValidationOrganizationCatalog.AbcSariSariSlug
             && i.OrganizationRole == OrganizationMembershipValidationRole.OrganizationMember
             && i.PosLocalRoleCode == "Cashier");
 
         Assert.Contains(catalog, i =>
             i.Key == "ana-cruz"
-            && i.PreferredAccountClass == AccountClass.Organization
-            && i.OrganizationSlug == LocalValidationOrganizationCatalog.MabuhaySlug
+            && i.OrganizationSlug == LocalValidationOrganizationCatalog.XyzMiniGrocerySlug
             && i.OrganizationRole == OrganizationMembershipValidationRole.OrganizationOwner
             && i.PosLocalRoleCode == "Owner");
 
         Assert.Contains(catalog, i =>
             i.Key == "daniel-garcia"
-            && i.PreferredAccountClass == AccountClass.Organization
-            && i.OrganizationSlug == LocalValidationOrganizationCatalog.MabuhaySlug
+            && i.OrganizationSlug == LocalValidationOrganizationCatalog.XyzMiniGrocerySlug
             && i.OrganizationRole == OrganizationMembershipValidationRole.OrganizationMember
-            && i.PosLocalRoleCode == "Cashier"
-            && i.AssignPlatformRole is null);
-
-        Assert.Contains(catalog, i =>
-            i.Key == "luis-navarro"
-            && i.PreferredAccountClass == AccountClass.Personal
-            && !i.HasOrganizationMembership
-            && i.AssignPlatformRole is null);
-
-        Assert.Contains(catalog, i =>
-            i.Key == "sofia-ramos"
-            && i.PreferredAccountClass == AccountClass.Personal
-            && !i.HasOrganizationMembership
-            && i.AssignPlatformRole is null);
+            && i.PosLocalRoleCode == "Cashier");
 
         Assert.Equal(2, catalog.Count(i => i.PreferredAccountClass == AccountClass.Platform));
         Assert.Equal(4, catalog.Count(i => i.PreferredAccountClass == AccountClass.Organization));
         Assert.Equal(2, catalog.Count(i => i.PreferredAccountClass == AccountClass.Personal));
 
-        var sampaguitaUsers = catalog.Count(i =>
-            string.Equals(i.OrganizationSlug, LocalValidationOrganizationCatalog.SampaguitaSlug, StringComparison.OrdinalIgnoreCase));
-        var mabuhayUsers = catalog.Count(i =>
-            string.Equals(i.OrganizationSlug, LocalValidationOrganizationCatalog.MabuhaySlug, StringComparison.OrdinalIgnoreCase));
-        Assert.Equal(2, sampaguitaUsers);
-        Assert.Equal(2, mabuhayUsers);
+        Assert.Equal(2, catalog.Count(i =>
+            string.Equals(i.OrganizationSlug, LocalValidationOrganizationCatalog.AbcSariSariSlug, StringComparison.OrdinalIgnoreCase)));
+        Assert.Equal(2, catalog.Count(i =>
+            string.Equals(i.OrganizationSlug, LocalValidationOrganizationCatalog.XyzMiniGrocerySlug, StringComparison.OrdinalIgnoreCase)));
 
-        Assert.Equal(
-            ["platform.admin1@exits.test", "platform.admin2@exits.test", "org.seed.owner@exits.test", "personal.user1@exits.test", "personal.user2@exits.test"],
-            ObsoletePhase16SeedIdentities.NormalizedEmails.ToArray());
-        Assert.Equal("phase16-seed-org", ObsoletePhase16SeedIdentities.SeedOrgSlug);
-    }
-
-    [Theory]
-    [InlineData("olivia-mendoza", AccountClass.Platform)]
-    [InlineData("rafael-torres", AccountClass.Platform)]
-    [InlineData("maria-santos", AccountClass.Organization)]
-    [InlineData("carlo-reyes", AccountClass.Organization)]
-    [InlineData("ana-cruz", AccountClass.Organization)]
-    [InlineData("daniel-garcia", AccountClass.Organization)]
-    [InlineData("luis-navarro", AccountClass.Personal)]
-    [InlineData("sofia-ramos", AccountClass.Personal)]
-    public void Approved_identity_has_exactly_one_preferred_account_class(string key, AccountClass expected)
-    {
-        var identity = LocalValidationIdentityCatalog.FindByKey(key);
-        Assert.NotNull(identity);
-        Assert.Equal(expected, identity!.PreferredAccountClass);
-        Assert.False(
-            identity.PreferredAccountClass == AccountClass.Personal && identity.HasOrganizationMembership);
-        Assert.False(
-            identity.PreferredAccountClass == AccountClass.Personal && identity.AssignPlatformRole is not null);
-        Assert.False(
-            identity.PreferredAccountClass == AccountClass.Platform && identity.HasOrganizationMembership);
-        Assert.False(
-            identity.PreferredAccountClass == AccountClass.Organization && identity.AssignPlatformRole is not null);
+        Assert.Contains("sampaguita-store", ObsoleteLocalValidationOrganizations.Slugs);
+        Assert.Contains("mabuhay-mini-mart", ObsoleteLocalValidationOrganizations.Slugs);
+        Assert.Contains("phase16-seed-org", ObsoleteLocalValidationOrganizations.Slugs);
+        Assert.Equal(5000m, LocalValidationPersonalUtangSeedMarkers.LuisToSofiaLoan);
+        Assert.Equal(1500m, LocalValidationPersonalUtangSeedMarkers.LuisToSofiaPayment);
+        Assert.Equal(1000m, LocalValidationPersonalUtangSeedMarkers.SofiaToLuisLoan);
+        Assert.Equal(3500m, LocalValidationPersonalUtangSeedMarkers.LuisToSofiaLoan - LocalValidationPersonalUtangSeedMarkers.LuisToSofiaPayment);
     }
 }

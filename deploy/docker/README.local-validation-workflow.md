@@ -33,6 +33,16 @@ Stop apps and DB containers (volumes kept):
 .\tools\Stop-LocalValidation.ps1 -StopDatabases
 ```
 
+## Destructive reset and reseed (Local Validation volumes only)
+
+When seed data is wrong or obsolete:
+
+```powershell
+.\tools\Reset-LocalValidation.ps1 -ConfirmReset
+```
+
+This stops apps/DBs, removes **only** `exits_local_validation_*_db_data` volumes, starts Local Validation again, and verifies eight seed identities. Production is rejected. Ordinary startup never performs this wipe.
+
 ## Prerequisites
 
 ```powershell
