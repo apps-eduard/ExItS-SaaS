@@ -30,7 +30,8 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.AccountNotEligibleForLogin
             or ApplicationErrorCodes.OrganizationContextNotEligible
             or ApplicationErrorCodes.AccountScopeDenied
-            or ApplicationErrorCodes.ProductEntryDenied => StatusCodes.Status403Forbidden,
+            or ApplicationErrorCodes.ProductEntryDenied
+            or ApplicationErrorCodes.PersonalUtangUnauthorized => StatusCodes.Status403Forbidden,
 
         ApplicationErrorCodes.LoginFailed
             or ApplicationErrorCodes.SessionInvalid
@@ -56,7 +57,9 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.RoleAssignmentNotFound
             or ApplicationErrorCodes.AuditRecordNotFound
             or ApplicationErrorCodes.CredentialNotFound
-            or ApplicationErrorCodes.InvitationNotFound => StatusCodes.Status404NotFound,
+            or ApplicationErrorCodes.InvitationNotFound
+            or ApplicationErrorCodes.PersonalContactNotFound
+            or ApplicationErrorCodes.PersonalUtangRelationshipNotFound => StatusCodes.Status404NotFound,
 
         ApplicationErrorCodes.SlugConflict
             or ApplicationErrorCodes.EmailConflict

@@ -32,6 +32,7 @@ public sealed class InitializePhase16AccountSeed
     private readonly AddOrganizationMembership _addMembership;
     private readonly IOrganizationMembershipRepository _memberships;
     private readonly EnsureAccountProfilesForUser _ensureProfiles;
+    private readonly InitializePhase16PersonalUtangSeed _personalUtangSeed;
     private readonly ILogger<InitializePhase16AccountSeed> _logger;
 
     public InitializePhase16AccountSeed(
@@ -46,6 +47,7 @@ public sealed class InitializePhase16AccountSeed
         AddOrganizationMembership addMembership,
         IOrganizationMembershipRepository memberships,
         EnsureAccountProfilesForUser ensureProfiles,
+        InitializePhase16PersonalUtangSeed personalUtangSeed,
         ILogger<InitializePhase16AccountSeed> logger)
     {
         _environment = environment;
@@ -59,6 +61,7 @@ public sealed class InitializePhase16AccountSeed
         _addMembership = addMembership;
         _memberships = memberships;
         _ensureProfiles = ensureProfiles;
+        _personalUtangSeed = personalUtangSeed;
         _logger = logger;
     }
 
@@ -122,6 +125,8 @@ public sealed class InitializePhase16AccountSeed
             org.Id,
             OrganizationRole.OrganizationOwner,
             cancellationToken).ConfigureAwait(false);
+
+        await _personalUtangSeed.ExecuteAsync(cancellationToken).ConfigureAwait(false);
 
         _logger.LogInformation("Phase 16 account seed finished.");
     }

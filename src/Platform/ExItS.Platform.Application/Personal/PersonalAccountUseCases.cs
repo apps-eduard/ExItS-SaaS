@@ -49,13 +49,19 @@ public sealed class GetPersonalDashboard
 {
     private readonly IPlatformUserRepository _users;
     private readonly IAccountProfileRepository _profiles;
+    private readonly IPersonalContactRepository _contacts;
+    private readonly IPersonalDebtRelationshipRepository _relationships;
 
     public GetPersonalDashboard(
         IPlatformUserRepository users,
-        IAccountProfileRepository profiles)
+        IAccountProfileRepository profiles,
+        IPersonalContactRepository contacts,
+        IPersonalDebtRelationshipRepository relationships)
     {
         _users = users;
         _profiles = profiles;
+        _contacts = contacts;
+        _relationships = relationships;
     }
 
     public async Task<ApplicationResult<PersonalDashboardDto>> ExecuteAsync(
@@ -79,16 +85,41 @@ public sealed class GetPersonalDashboard
                 "Personal account profile is not available.");
         }
 
-        // Utang aggregates are populated in P16-WP05; WP04 exposes availability + zeroed stubs.
+        var contacts = await _contacts.ListByOwnerAsync(userIdentityId, cancellationToken).ConfigureAwait(false);
+        var relationships = await _relationships.ListForUserAsync(userIdentityId, cancellationToken).ConfigureAwait(false);
+        var active = relationships.Where(r => r.Status is PersonalDebtRelationshipStatus.Active).ToList();
+
+        decimal lent = 0m;
+        decimal borrowed = 0m;
+        foreach (var relationship in active)
+        {
+            if (relationship.CreditorUserIdentityId == userIdentityId)
+            {
+                lent += relationship.CurrentBalance;
+            }
+            else if (relationship.DebtorUserIdentityId == userIdentityId)
+            {
+                borrowed += relationship.CurrentBalance;
+            }
+            else if (relationship.CreditorContactId is not null)
+            {
+                lent += relationship.CurrentBalance;
+            }
+            else if (relationship.DebtorContactId is not null)
+            {
+                borrowed += relationship.CurrentBalance;
+            }
+        }
+
         return ApplicationResult<PersonalDashboardDto>.Success(new PersonalDashboardDto(
             userIdentityId.Value,
             accountProfileId.Value,
             AccountClass.Personal.ToString(),
             UtangAvailable: true,
-            ContactCount: 0,
-            ActiveRelationshipCount: 0,
-            TotalLentBalance: 0m,
-            TotalBorrowedBalance: 0m));
+            contacts.Count,
+            active.Count,
+            lent,
+            borrowed));
     }
 }
 

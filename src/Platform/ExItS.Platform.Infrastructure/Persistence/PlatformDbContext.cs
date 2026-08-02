@@ -62,6 +62,9 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<OrganizationCustomRoleAssignmentRecord> OrganizationCustomRoleAssignments => Set<OrganizationCustomRoleAssignmentRecord>();
     internal DbSet<AuditRecordRecord> AuditRecords => Set<AuditRecordRecord>();
     internal DbSet<PersonalAccountSettingsRecord> PersonalAccountSettings => Set<PersonalAccountSettingsRecord>();
+    internal DbSet<PersonalContactRecord> PersonalContacts => Set<PersonalContactRecord>();
+    internal DbSet<PersonalDebtRelationshipRecord> PersonalDebtRelationships => Set<PersonalDebtRelationshipRecord>();
+    internal DbSet<PersonalUtangEntryRecord> PersonalUtangEntries => Set<PersonalUtangEntryRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -982,6 +985,122 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.UserIdentityId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PersonalContactRecord>(entity =>
+        {
+            entity.ToTable("personal_contacts");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OwnerUserIdentityId).HasColumnName("owner_user_identity_id");
+            entity.Property(e => e.DisplayName).HasColumnName("display_name").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Phone).HasColumnName("phone").HasMaxLength(32);
+            entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(320);
+            entity.Property(e => e.LinkedUserIdentityId).HasColumnName("linked_user_identity_id");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.HasIndex(e => e.OwnerUserIdentityId);
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OwnerUserIdentityId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.LinkedUserIdentityId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<PersonalDebtRelationshipRecord>(entity =>
+        {
+            entity.ToTable("personal_debt_relationships", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_personal_debt_relationships_creditor_side",
+                    "(creditor_user_identity_id IS NOT NULL AND creditor_contact_id IS NULL) OR (creditor_user_identity_id IS NULL AND creditor_contact_id IS NOT NULL)");
+                tb.HasCheckConstraint(
+                    "ck_personal_debt_relationships_debtor_side",
+                    "(debtor_user_identity_id IS NOT NULL AND debtor_contact_id IS NULL) OR (debtor_user_identity_id IS NULL AND debtor_contact_id IS NOT NULL)");
+            });
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreditorUserIdentityId).HasColumnName("creditor_user_identity_id");
+            entity.Property(e => e.CreditorContactId).HasColumnName("creditor_contact_id");
+            entity.Property(e => e.DebtorUserIdentityId).HasColumnName("debtor_user_identity_id");
+            entity.Property(e => e.DebtorContactId).HasColumnName("debtor_contact_id");
+            entity.Property(e => e.CurrencyCode).HasColumnName("currency_code").HasMaxLength(3).IsFixedLength().IsRequired();
+            entity.Property(e => e.CurrentBalance).HasColumnName("current_balance").HasColumnType("decimal(18,4)");
+            entity.Property(e => e.DueDateUtc).HasColumnName("due_date_utc");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.AggregateVersion).HasColumnName("aggregate_version").IsConcurrencyToken();
+            entity.HasIndex(e => e.CreditorUserIdentityId);
+            entity.HasIndex(e => e.DebtorUserIdentityId);
+            entity.HasIndex(e => e.CreditorContactId);
+            entity.HasIndex(e => e.DebtorContactId);
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CreditorUserIdentityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.DebtorUserIdentityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<PersonalContactRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CreditorContactId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<PersonalContactRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.DebtorContactId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PersonalUtangEntryRecord>(entity =>
+        {
+            entity.ToTable("personal_utang_entries", tb =>
+            {
+                tb.HasCheckConstraint("ck_personal_utang_entries_positive_amount", "amount > 0");
+            });
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.RelationshipId).HasColumnName("relationship_id");
+            entity.Property(e => e.EntryType).HasColumnName("entry_type").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.Amount).HasColumnName("amount").HasColumnType("decimal(18,4)");
+            entity.Property(e => e.SignedDelta).HasColumnName("signed_delta").HasColumnType("decimal(18,4)");
+            entity.Property(e => e.BalanceAfter).HasColumnName("balance_after").HasColumnType("decimal(18,4)");
+            entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(512);
+            entity.Property(e => e.DueDateUtc).HasColumnName("due_date_utc");
+            entity.Property(e => e.CreatedByUserIdentityId).HasColumnName("created_by_user_identity_id");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.HasIndex(e => e.RelationshipId);
+
+            entity.HasOne<PersonalDebtRelationshipRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.RelationshipId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserIdentityId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

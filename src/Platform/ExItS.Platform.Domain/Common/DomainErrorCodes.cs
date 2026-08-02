@@ -106,4 +106,14 @@ public static class DomainErrorCodes
 
     public const string PersonalAccountSettingsConcurrencyConflict =
         "platform.personal.account_settings.concurrency_conflict";
+
+    public const string InvalidPersonalContactId = "platform.personal.contact.id.invalid";
+    public const string InvalidPersonalContactDisplayName = "platform.personal.contact.display_name.invalid";
+    public const string InvalidPersonalDebtRelationshipId = "platform.personal.debt_relationship.id.invalid";
+    public const string InvalidPersonalDebtRelationship = "platform.personal.debt_relationship.invalid";
+    public const string InvalidPersonalUtangEntryId = "platform.personal.utang_entry.id.invalid";
+    public const string InvalidPersonalUtangEntryType = "platform.personal.utang_entry.type.invalid";
+    public const string PersonalUtangAmountInvalid = "platform.personal.utang.amount.invalid";
+    public const string PersonalUtangUnauthorized = "platform.personal.utang.unauthorized";
+    public const string PersonalUtangConcurrencyConflict = "platform.personal.utang.concurrency_conflict";
 }

@@ -63,6 +63,9 @@ public static class DependencyInjection
         services.AddScoped<IOrganizationCustomRoleAssignmentRepository, OrganizationCustomRoleAssignmentRepository>();
         services.AddScoped<IAuditRecordRepository, AuditRecordRepository>();
         services.AddScoped<IPersonalAccountSettingsRepository, PersonalAccountSettingsRepository>();
+        services.AddScoped<IPersonalContactRepository, PersonalContactRepository>();
+        services.AddScoped<IPersonalDebtRelationshipRepository, PersonalDebtRelationshipRepository>();
+        services.AddScoped<IPersonalUtangEntryRepository, PersonalUtangEntryRepository>();
         services.AddScoped<IPlatformUnitOfWork, PlatformUnitOfWork>();
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IEntitlementRefreshPolicy, ProvisionalEntitlementRefreshPolicy>();

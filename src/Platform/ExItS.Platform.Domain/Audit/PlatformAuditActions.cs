@@ -122,4 +122,7 @@ public static class PlatformAuditActions
     public const string PlatformAccessChecked = "platform.access.checked";
 
     public const string PersonalAccountSettingsUpdated = "platform.personal.account_settings.updated";
+    public const string PersonalContactCreated = "platform.personal.contact.created";
+    public const string PersonalUtangRelationshipCreated = "platform.personal.utang_relationship.created";
+    public const string PersonalUtangEntryRecorded = "platform.personal.utang_entry.recorded";
 }
