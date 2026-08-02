@@ -2,45 +2,55 @@
 @using ExItS.Platform.Admin.Services
 @using Microsoft.AspNetCore.Components.Authorization
 @inject IPlatformApiClient Api
+@inject AdminShellContext Shell
+@inject PlatformPermissionState Permissions
+@inject NavigationManager Nav
 
+@*
+  Organization switcher is for Organization-shell actors only.
+  Platform Administration must never appear beside ordinary organizations here.
+*@
 <AuthorizeView>
     <Authorized>
-        <div class="org-context" aria-live="polite">
-            @if (_loading)
-            {
-                <span class="app-header-chip">Org…</span>
-            }
-            else if (_activeCount == 0)
-            {
-                <span class="app-header-chip" title="No active organization membership">No organization</span>
-            }
-            else if (_activeCount == 1 && _selectedId is not null)
-            {
-                <span class="app-header-chip" title="@_selectedName">@_selectedName</span>
-            }
-            else
-            {
-                <label class="org-context-label" for="org-context-select">Org</label>
-                <select id="org-context-select"
-                        class="org-context-select"
-                        value="@(_selectedId?.ToString("D") ?? string.Empty)"
-                        @onchange="OnOrganizationChangedAsync"
-                        disabled="@_busy">
-                    @if (_selectedId is null)
-                    {
-                        <option value="">Select organization…</option>
-                    }
-                    @foreach (var org in _organizations)
-                    {
-                        <option value="@org.OrganizationId.ToString("D")">@org.DisplayName</option>
-                    }
-                </select>
-            }
-            @if (!string.IsNullOrWhiteSpace(_error))
-            {
-                <span class="org-context-error" role="alert">@_error</span>
-            }
-        </div>
+        @if (Shell.Loaded && Shell.IsOrganizationShell)
+        {
+            <div class="org-context" aria-live="polite">
+                @if (_loading)
+                {
+                    <span class="app-header-chip">Org…</span>
+                }
+                else if (_activeCount == 0)
+                {
+                    <span class="app-header-chip" title="No active organization membership">No organization</span>
+                }
+                else if (_activeCount == 1 && _selectedId is not null)
+                {
+                    <span class="app-header-chip" title="@_selectedName">@_selectedName</span>
+                }
+                else
+                {
+                    <label class="org-context-label" for="org-context-select">Org</label>
+                    <select id="org-context-select"
+                            class="org-context-select"
+                            value="@(_selectedId?.ToString("D") ?? string.Empty)"
+                            @onchange="OnOrganizationChangedAsync"
+                            disabled="@_busy">
+                        @if (_selectedId is null)
+                        {
+                            <option value="">Select organization…</option>
+                        }
+                        @foreach (var org in _organizations)
+                        {
+                            <option value="@org.OrganizationId.ToString("D")">@org.DisplayName</option>
+                        }
+                    </select>
+                }
+                @if (!string.IsNullOrWhiteSpace(_error))
+                {
+                    <span class="org-context-error" role="alert">@_error</span>
+                }
+            </div>
+        }
     </Authorized>
 </AuthorizeView>
 
@@ -55,7 +65,15 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await RefreshAsync();
+        await Shell.EnsureLoadedAsync();
+        if (Shell.IsOrganizationShell)
+        {
+            await RefreshAsync();
+        }
+        else
+        {
+            _loading = false;
+        }
     }
 
     private async Task RefreshAsync()
@@ -119,6 +137,19 @@
             _selectedId = result.Data.SelectedOrganizationId;
             _selectedName = result.Data.SelectedOrganizationDisplayName;
             _activeCount = result.Data.ActiveOrganizationCount;
+
+            // Clear organization/product caches after trusted switch (architecture §11.2).
+            await Permissions.RefreshAsync();
+            await Shell.RefreshAsync();
+
+            if (_selectedId is Guid selected)
+            {
+                Nav.NavigateTo($"/admin/organizations/{selected:D}", forceLoad: false);
+            }
+            else
+            {
+                Nav.NavigateTo("/admin", forceLoad: false);
+            }
         }
         finally
         {

@@ -181,6 +181,81 @@ public sealed class ApiOrganizationContextTests(PostgreSqlFixture fixture) : IAs
     }
 
     [Fact]
+    public async Task Last_active_organization_is_restored_on_login_when_still_eligible()
+    {
+        var (userId, username, password) = await SeedUserWithPasswordAsync();
+        var orgA = await CreateOrganizationAsync("la");
+        var orgB = await CreateOrganizationAsync("lb");
+        (await _admin.PostAsJsonAsync(
+            $"/api/v1/platform/organizations/{orgA}/members",
+            new { userId, role = "OrganizationMember" })).EnsureSuccessStatusCode();
+        (await _admin.PostAsJsonAsync(
+            $"/api/v1/platform/organizations/{orgB}/members",
+            new { userId, role = "OrganizationMember" })).EnsureSuccessStatusCode();
+
+        var token = await LoginAsync(username, password);
+        using (var selectB = Authed(
+                   HttpMethod.Put,
+                   "/api/v1/platform/auth/organization-context",
+                   token,
+                   new { organizationId = orgB }))
+        {
+            Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(selectB)).StatusCode);
+        }
+
+        using var logout = Authed(HttpMethod.Post, "/api/v1/platform/auth/logout", token);
+        Assert.Equal(HttpStatusCode.NoContent, (await _client.SendAsync(logout)).StatusCode);
+
+        var relogin = await _client.PostAsJsonAsync(
+            "/api/v1/platform/auth/login",
+            new { usernameOrEmail = username, password });
+        Assert.Equal(HttpStatusCode.OK, relogin.StatusCode);
+        var body = await relogin.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(orgB, body.GetProperty("selectedOrganizationId").GetGuid());
+        Assert.Equal(OrganizationSelectionStates.Selected, body.GetProperty("organizationSelectionState").GetString());
+    }
+
+    [Fact]
+    public async Task Cross_organization_deep_link_api_denied_for_other_org_membership_context()
+    {
+        var (userId, username, password) = await SeedUserWithPasswordAsync();
+        var orgA = await CreateOrganizationAsync("xa");
+        var orgB = await CreateOrganizationAsync("xb");
+        (await _admin.PostAsJsonAsync(
+            $"/api/v1/platform/organizations/{orgA}/members",
+            new { userId, role = "OrganizationAdministrator" })).EnsureSuccessStatusCode();
+        (await _admin.PostAsJsonAsync(
+            $"/api/v1/platform/organizations/{orgB}/members",
+            new { userId, role = "OrganizationAdministrator" })).EnsureSuccessStatusCode();
+
+        var token = await LoginAsync(username, password);
+        using (var selectA = Authed(
+                   HttpMethod.Put,
+                   "/api/v1/platform/auth/organization-context",
+                   token,
+                   new { organizationId = orgA }))
+        {
+            Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(selectA)).StatusCode);
+        }
+
+        // Mutating foreign org profile while context is orgA must fail server-side authz.
+        using var foreignPut = Authed(
+            HttpMethod.Put,
+            $"/api/v1/platform/organizations/{orgB}",
+            token,
+            new
+            {
+                displayName = "Hack Other Org",
+                contactEmail = "hack@example.com",
+                locale = "en-PH",
+                currencyCode = "PHP",
+                timeZoneId = "UTC"
+            });
+        var denied = await _client.SendAsync(foreignPut);
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+    }
+
+    [Fact]
     public async Task Suspend_membership_clears_stale_organization_context()
     {
         var (userId, username, password) = await SeedUserWithPasswordAsync();

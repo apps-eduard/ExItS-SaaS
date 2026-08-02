@@ -42,6 +42,13 @@ public sealed class ListEligibleOrganizationsForSession
                 "Session is invalid.");
         }
 
+        if (session.AccountClass is not AccountClass.Organization)
+        {
+            return ApplicationResult<IReadOnlyList<EligibleOrganizationDto>>.Failure(
+                ApplicationErrorCodes.AccountScopeDenied,
+                "Organization listing requires an Organization account session.");
+        }
+
         var eligible = await LoadEligibleAsync(session.UserId, cancellationToken).ConfigureAwait(false);
         return ApplicationResult<IReadOnlyList<EligibleOrganizationDto>>.Success(eligible);
     }
@@ -106,8 +113,10 @@ public sealed class SetSessionOrganizationContext
     private readonly IPlatformSessionTokenService _tokens;
     private readonly IOrganizationMembershipRepository _memberships;
     private readonly IPlatformOrganizationRepository _organizations;
+    private readonly IOrganizationContextPreferenceRepository _preferences;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
     private readonly ListEligibleOrganizationsForSession _eligible;
 
     public SetSessionOrganizationContext(
@@ -115,16 +124,20 @@ public sealed class SetSessionOrganizationContext
         IPlatformSessionTokenService tokens,
         IOrganizationMembershipRepository memberships,
         IPlatformOrganizationRepository organizations,
+        IOrganizationContextPreferenceRepository preferences,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
+        IClock clock,
         ListEligibleOrganizationsForSession eligible)
     {
         _sessions = sessions;
         _tokens = tokens;
         _memberships = memberships;
         _organizations = organizations;
+        _preferences = preferences;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
+        _clock = clock;
         _eligible = eligible;
     }
 
@@ -161,6 +174,9 @@ public sealed class SetSessionOrganizationContext
         {
             session.ClearSelectedOrganization();
             await _sessions.UpdateAsync(session, cancellationToken).ConfigureAwait(false);
+            await _preferences
+                .UpsertLastActiveOrganizationAsync(session.UserId, null, _clock.UtcNow, cancellationToken)
+                .ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             await WriteAuditAsync(session, null, cancellationToken).ConfigureAwait(false);
             return ApplicationResult<OrganizationContextResultDto>.Success(
@@ -197,6 +213,9 @@ public sealed class SetSessionOrganizationContext
 
         session.SelectOrganization(orgId);
         await _sessions.UpdateAsync(session, cancellationToken).ConfigureAwait(false);
+        await _preferences
+            .UpsertLastActiveOrganizationAsync(session.UserId, orgId, _clock.UtcNow, cancellationToken)
+            .ConfigureAwait(false);
         await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         await WriteAuditAsync(session, organization.DisplayName, cancellationToken).ConfigureAwait(false);
 
@@ -275,7 +294,9 @@ public static class OrganizationContextResolver
         IPlatformOrganizationRepository organizations,
         IPlatformAuthSessionRepository sessions,
         IPlatformUnitOfWork unitOfWork,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IOrganizationContextPreferenceRepository? preferences = null,
+        DateTimeOffset? utcNow = null)
     {
         var (activeMemberships, _) = await memberships
             .ListByUserAsync(session.UserId, MembershipStatus.Active, skip: 0, take: 200, cancellationToken)
@@ -310,10 +331,32 @@ public static class OrganizationContextResolver
             session.SelectOrganization(eligible[0].Id);
             changed = true;
         }
+        else if (eligible.Count > 1 && preferences is not null)
+        {
+            var lastActive = await preferences
+                .GetLastActiveOrganizationIdAsync(session.UserId, cancellationToken)
+                .ConfigureAwait(false);
+            if (lastActive is not null && eligible.Any(x => x.Id == lastActive))
+            {
+                session.SelectOrganization(lastActive);
+                changed = true;
+            }
+        }
 
         if (changed)
         {
             await sessions.UpdateAsync(session, cancellationToken).ConfigureAwait(false);
+            if (preferences is not null && session.SelectedOrganizationId is not null && utcNow is DateTimeOffset now)
+            {
+                await preferences
+                    .UpsertLastActiveOrganizationAsync(
+                        session.UserId,
+                        session.SelectedOrganizationId,
+                        now,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
             await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
 

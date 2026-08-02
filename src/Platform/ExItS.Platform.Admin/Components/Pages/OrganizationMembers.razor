@@ -8,10 +8,23 @@
 @inject AdminShellContext Shell
 @inject NavigationManager Nav
 @inject PlatformPermissionState Permissions
+@inject OrganizationDeepLinkGuard DeepLinkGuard
 
 @if (!Permissions.Loaded)
 {
     <div style="padding:2rem;text-align:center;"><Spin /></div>
+}
+else if (Shell.IsOrganizationShell && !DeepLinkGuard.CanOpenOrganization(OrganizationId))
+{
+    <Result Status="@ResultStatus.Warning"
+            Title="Organization context required"
+            SubTitle="This organization is not the active organization context.">
+        <Extra>
+            <Button Type="@ButtonType.Primary" OnClick="@(() => Nav.NavigateTo(DeepLinkGuard.DeniedRedirectUrl(OrganizationId)))">
+                Back
+            </Button>
+        </Extra>
+    </Result>
 }
 else if (!CanAccessMembers)
 {

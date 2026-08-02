@@ -28,6 +28,17 @@ public sealed class PlatformPermissionState(
         return _loadTask;
     }
 
+    /// <summary>Clears the circuit cache and reloads permissions (call after organization switch).</summary>
+    public async Task RefreshAsync()
+    {
+        Loaded = false;
+        LoadFailed = false;
+        ActorIdentifier = null;
+        _permissions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        _loadTask = LoadAsync();
+        await _loadTask;
+    }
+
     private async Task LoadAsync()
     {
         try

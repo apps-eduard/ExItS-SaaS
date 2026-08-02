@@ -46,6 +46,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PlatformUserCredentialRecord> PlatformUserCredentials => Set<PlatformUserCredentialRecord>();
     internal DbSet<PlatformAuthSessionRecord> PlatformAuthSessions => Set<PlatformAuthSessionRecord>();
     internal DbSet<AccountProfileRecord> AccountProfiles => Set<AccountProfileRecord>();
+    internal DbSet<OrganizationContextPreferenceRecord> OrganizationContextPreferences =>
+        Set<OrganizationContextPreferenceRecord>();
     internal DbSet<PlatformAccessTokenRecord> PlatformAccessTokens => Set<PlatformAccessTokenRecord>();
     internal DbSet<PlatformCredentialTokenRecord> PlatformCredentialTokens => Set<PlatformCredentialTokenRecord>();
     internal DbSet<PlatformExternalLoginRecord> PlatformExternalLogins => Set<PlatformExternalLoginRecord>();
@@ -504,6 +506,31 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.UserIdentityId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<OrganizationContextPreferenceRecord>(entity =>
+        {
+            entity.ToTable("organization_context_preferences");
+            entity.HasKey(e => e.UserIdentityId);
+            entity.Property(e => e.UserIdentityId).HasColumnName("user_identity_id");
+            entity.Property(e => e.LastActiveOrganizationId).HasColumnName("last_active_organization_id");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.HasIndex(e => e.LastActiveOrganizationId);
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.UserIdentityId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.LastActiveOrganizationId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<PlatformAuthSessionRecord>(entity =>

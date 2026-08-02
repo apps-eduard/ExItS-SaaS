@@ -27,6 +27,7 @@ public sealed class CompleteExternalLogin
     private readonly IPlatformAuthSessionRepository _sessions;
     private readonly IOrganizationMembershipRepository _memberships;
     private readonly IPlatformOrganizationRepository _organizations;
+    private readonly IOrganizationContextPreferenceRepository _orgPreferences;
     private readonly EnsureAccountProfilesForUser _ensureProfiles;
     private readonly IPlatformSessionTokenService _tokens;
     private readonly IAuditWriter _auditWriter;
@@ -42,6 +43,7 @@ public sealed class CompleteExternalLogin
         IPlatformAuthSessionRepository sessions,
         IOrganizationMembershipRepository memberships,
         IPlatformOrganizationRepository organizations,
+        IOrganizationContextPreferenceRepository orgPreferences,
         EnsureAccountProfilesForUser ensureProfiles,
         IPlatformSessionTokenService tokens,
         IAuditWriter auditWriter,
@@ -56,6 +58,7 @@ public sealed class CompleteExternalLogin
         _sessions = sessions;
         _memberships = memberships;
         _organizations = organizations;
+        _orgPreferences = orgPreferences;
         _ensureProfiles = ensureProfiles;
         _tokens = tokens;
         _auditWriter = auditWriter;
@@ -231,7 +234,15 @@ public sealed class CompleteExternalLogin
         if (profile.AccountClass is AccountClass.Organization)
         {
             (orgId, orgName, selectionState, activeCount) = await OrganizationContextResolver
-                .ResolveAsync(session, _memberships, _organizations, _sessions, _unitOfWork, cancellationToken)
+                .ResolveAsync(
+                    session,
+                    _memberships,
+                    _organizations,
+                    _sessions,
+                    _unitOfWork,
+                    cancellationToken,
+                    _orgPreferences,
+                    utcNow)
                 .ConfigureAwait(false);
         }
 

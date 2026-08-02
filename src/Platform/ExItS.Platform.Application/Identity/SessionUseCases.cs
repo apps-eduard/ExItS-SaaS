@@ -19,6 +19,7 @@ public sealed class LoginPlatformUser
     private readonly IPlatformAuthSessionRepository _sessions;
     private readonly IOrganizationMembershipRepository _memberships;
     private readonly IPlatformOrganizationRepository _organizations;
+    private readonly IOrganizationContextPreferenceRepository _orgPreferences;
     private readonly EnsureAccountProfilesForUser _ensureProfiles;
     private readonly IPlatformPasswordHasher _hasher;
     private readonly IPlatformSessionTokenService _tokens;
@@ -35,6 +36,7 @@ public sealed class LoginPlatformUser
         IPlatformAuthSessionRepository sessions,
         IOrganizationMembershipRepository memberships,
         IPlatformOrganizationRepository organizations,
+        IOrganizationContextPreferenceRepository orgPreferences,
         EnsureAccountProfilesForUser ensureProfiles,
         IPlatformPasswordHasher hasher,
         IPlatformSessionTokenService tokens,
@@ -50,6 +52,7 @@ public sealed class LoginPlatformUser
         _sessions = sessions;
         _memberships = memberships;
         _organizations = organizations;
+        _orgPreferences = orgPreferences;
         _ensureProfiles = ensureProfiles;
         _hasher = hasher;
         _tokens = tokens;
@@ -209,7 +212,15 @@ public sealed class LoginPlatformUser
         if (profile.AccountClass is AccountClass.Organization)
         {
             (orgId, orgName, selectionState, activeCount) = await OrganizationContextResolver
-                .ResolveAsync(session, _memberships, _organizations, _sessions, _unitOfWork, cancellationToken)
+                .ResolveAsync(
+                    session,
+                    _memberships,
+                    _organizations,
+                    _sessions,
+                    _unitOfWork,
+                    cancellationToken,
+                    _orgPreferences,
+                    utcNow)
                 .ConfigureAwait(false);
         }
 
@@ -348,6 +359,7 @@ public sealed class ValidateAndRenewPlatformSession
     private readonly IPlatformAuthSessionRepository _sessions;
     private readonly IOrganizationMembershipRepository _memberships;
     private readonly IPlatformOrganizationRepository _organizations;
+    private readonly IOrganizationContextPreferenceRepository _orgPreferences;
     private readonly IPlatformSessionTokenService _tokens;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -360,6 +372,7 @@ public sealed class ValidateAndRenewPlatformSession
         IPlatformAuthSessionRepository sessions,
         IOrganizationMembershipRepository memberships,
         IPlatformOrganizationRepository organizations,
+        IOrganizationContextPreferenceRepository orgPreferences,
         IPlatformSessionTokenService tokens,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
@@ -371,6 +384,7 @@ public sealed class ValidateAndRenewPlatformSession
         _sessions = sessions;
         _memberships = memberships;
         _organizations = organizations;
+        _orgPreferences = orgPreferences;
         _tokens = tokens;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -446,7 +460,15 @@ public sealed class ValidateAndRenewPlatformSession
         if (session.AccountClass is AccountClass.Organization)
         {
             (orgId, orgName, selectionState, activeCount) = await OrganizationContextResolver
-                .ResolveAsync(session, _memberships, _organizations, _sessions, _unitOfWork, cancellationToken)
+                .ResolveAsync(
+                    session,
+                    _memberships,
+                    _organizations,
+                    _sessions,
+                    _unitOfWork,
+                    cancellationToken,
+                    _orgPreferences,
+                    utcNow)
                 .ConfigureAwait(false);
         }
 

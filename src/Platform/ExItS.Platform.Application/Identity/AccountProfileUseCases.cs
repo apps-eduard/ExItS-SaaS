@@ -133,6 +133,7 @@ public sealed class SelectAccountProfileSession
     private readonly IPlatformAuthSessionRepository _sessions;
     private readonly IOrganizationMembershipRepository _memberships;
     private readonly IPlatformOrganizationRepository _organizations;
+    private readonly IOrganizationContextPreferenceRepository _orgPreferences;
     private readonly IPlatformSessionTokenService _tokens;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
@@ -146,6 +147,7 @@ public sealed class SelectAccountProfileSession
         IPlatformAuthSessionRepository sessions,
         IOrganizationMembershipRepository memberships,
         IPlatformOrganizationRepository organizations,
+        IOrganizationContextPreferenceRepository orgPreferences,
         IPlatformSessionTokenService tokens,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
@@ -158,6 +160,7 @@ public sealed class SelectAccountProfileSession
         _sessions = sessions;
         _memberships = memberships;
         _organizations = organizations;
+        _orgPreferences = orgPreferences;
         _tokens = tokens;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
@@ -232,7 +235,15 @@ public sealed class SelectAccountProfileSession
         if (profile.AccountClass is AccountClass.Organization)
         {
             (orgId, orgName, selectionState, activeCount) = await OrganizationContextResolver
-                .ResolveAsync(session, _memberships, _organizations, _sessions, _unitOfWork, cancellationToken)
+                .ResolveAsync(
+                    session,
+                    _memberships,
+                    _organizations,
+                    _sessions,
+                    _unitOfWork,
+                    cancellationToken,
+                    _orgPreferences,
+                    utcNow)
                 .ConfigureAwait(false);
         }
 

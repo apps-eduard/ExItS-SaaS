@@ -296,7 +296,10 @@ public sealed record AuthSessionInfoDto(
     Guid? SelectedOrganizationId,
     string? SelectedOrganizationDisplayName,
     string OrganizationSelectionState,
-    int ActiveOrganizationCount);
+    int ActiveOrganizationCount,
+    Guid? AccountProfileId = null,
+    string? AccountClass = null,
+    string? AllowedScope = null);
 
 public sealed record EligibleOrganizationDto(
     Guid OrganizationId,

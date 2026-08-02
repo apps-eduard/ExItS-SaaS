@@ -91,6 +91,7 @@ public sealed class PlatformExternalLoginTests
             new InMemoryPlatformAuthSessionRepository(),
             memberships,
             new InMemoryPlatformOrganizationRepository(),
+            new InMemoryOrganizationContextPreferenceRepository(),
             ensure,
             new StubSessionTokenService(),
             new NoOpAuditWriter(),
@@ -102,3 +103,4 @@ public sealed class PlatformExternalLoginTests
                 Options.Create(new PlatformMfaOptions())));
     }
 }
+

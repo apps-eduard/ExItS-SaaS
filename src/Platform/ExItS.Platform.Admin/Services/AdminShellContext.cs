@@ -75,25 +75,32 @@ public sealed class AdminShellContext(
             orgCount = me.Data.ActiveOrganizationCount;
         }
 
-        var orgs = await api.GetEligibleOrganizationsAsync();
-        if (orgs.IsSuccess && orgs.Data is not null)
+        // Organization listing is Organization-session only (WP03). Platform shells skip the switcher list.
+        var accountClass = me.IsSuccess ? me.Data?.AccountClass : null;
+        var isOrganizationAccount = string.Equals(accountClass, "Organization", StringComparison.OrdinalIgnoreCase);
+        ApiCallResult<IReadOnlyList<EligibleOrganizationDto>>? orgs = null;
+        if (isOrganizationAccount)
         {
-            var list = orgs.Data;
-            orgCount = Math.Max(orgCount, list.Count);
-            if (selectedOrgId is Guid sid)
+            orgs = await api.GetEligibleOrganizationsAsync();
+            if (orgs.IsSuccess && orgs.Data is not null)
             {
-                var match = list.FirstOrDefault(o => o.OrganizationId == sid);
-                if (match is not null)
+                var list = orgs.Data;
+                orgCount = Math.Max(orgCount, list.Count);
+                if (selectedOrgId is Guid sid)
                 {
-                    membershipRole = match.MembershipRole;
-                    selectedOrgName ??= match.DisplayName;
+                    var match = list.FirstOrDefault(o => o.OrganizationId == sid);
+                    if (match is not null)
+                    {
+                        membershipRole = match.MembershipRole;
+                        selectedOrgName ??= match.DisplayName;
+                    }
                 }
-            }
-            else if (list.Count == 1)
-            {
-                membershipRole = list[0].MembershipRole;
-                selectedOrgId = list[0].OrganizationId;
-                selectedOrgName = list[0].DisplayName;
+                else if (list.Count == 1)
+                {
+                    membershipRole = list[0].MembershipRole;
+                    selectedOrgId = list[0].OrganizationId;
+                    selectedOrgName = list[0].DisplayName;
+                }
             }
         }
 
@@ -117,7 +124,7 @@ public sealed class AdminShellContext(
             PlatformPermissionCodes.ViewAuditRecords);
 
         var isOrgAdminMembership = IsOrgAdminRole(membershipRole)
-            || (orgs.IsSuccess && orgs.Data is not null
+            || (orgs is { IsSuccess: true, Data: not null }
                 && orgs.Data.Any(o => IsOrgAdminRole(o.MembershipRole)));
 
         if (isPlatform)
