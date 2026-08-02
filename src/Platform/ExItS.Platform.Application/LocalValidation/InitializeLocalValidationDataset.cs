@@ -132,9 +132,14 @@ public sealed class InitializeLocalValidationDataset
 
         _logger.LogInformation("Local validation dataset initialization starting.");
 
-        var organization = await EnsureOrganizationAsync(cancellationToken).ConfigureAwait(false);
         var productCode = ProductCode.PinoyBusinessPos;
-        await EnsureCatalogAndCommercialAsync(organization.Id, productCode, cancellationToken).ConfigureAwait(false);
+        var organizations = new Dictionary<string, PlatformOrganization>(StringComparer.OrdinalIgnoreCase);
+        foreach (var orgDef in LocalValidationOrganizationCatalog.All)
+        {
+            var organization = await EnsureOrganizationAsync(orgDef, cancellationToken).ConfigureAwait(false);
+            organizations[orgDef.Slug] = organization;
+            await EnsureCatalogAndCommercialAsync(organization.Id, productCode, cancellationToken).ConfigureAwait(false);
+        }
 
         foreach (var identity in LocalValidationIdentityCatalog.All)
         {
@@ -146,8 +151,16 @@ public sealed class InitializeLocalValidationDataset
                 await EnsurePlatformAdminAsync(user.Id.Value, cancellationToken).ConfigureAwait(false);
             }
 
-            if (identity.HasOrganizationMembership && identity.OrganizationRole is not null)
+            if (identity.HasOrganizationMembership
+                && identity.OrganizationRole is not null
+                && !string.IsNullOrWhiteSpace(identity.OrganizationSlug))
             {
+                if (!organizations.TryGetValue(identity.OrganizationSlug, out var organization))
+                {
+                    throw new InvalidOperationException(
+                        $"Local validation identity '{identity.Key}' references unknown organization '{identity.OrganizationSlug}'.");
+                }
+
                 var role = identity.OrganizationRole.Value switch
                 {
                     OrganizationMembershipValidationRole.OrganizationOwner => OrganizationRole.OrganizationOwner,
@@ -155,12 +168,12 @@ public sealed class InitializeLocalValidationDataset
                     _ => OrganizationRole.OrganizationMember
                 };
                 await EnsureMembershipAsync(organization.Id, user.Id, role, cancellationToken).ConfigureAwait(false);
-            }
 
-            if (identity.GrantPosProductAccess)
-            {
-                await EnsureProductAccessAsync(organization.Id, user.Id, productCode, cancellationToken)
-                    .ConfigureAwait(false);
+                if (identity.GrantPosProductAccess)
+                {
+                    await EnsureProductAccessAsync(organization.Id, user.Id, productCode, cancellationToken)
+                        .ConfigureAwait(false);
+                }
             }
 
             await _ensureProfiles
@@ -171,28 +184,30 @@ public sealed class InitializeLocalValidationDataset
         _logger.LogInformation("Local validation dataset initialization completed.");
     }
 
-    private async Task<PlatformOrganization> EnsureOrganizationAsync(CancellationToken ct)
+    private async Task<PlatformOrganization> EnsureOrganizationAsync(
+        LocalValidationOrganizationDefinition orgDef,
+        CancellationToken ct)
     {
-        var existing = await _organizations.GetBySlugAsync(LocalValidationOptions.OrgSlug, ct).ConfigureAwait(false);
+        var existing = await _organizations.GetBySlugAsync(orgDef.Slug, ct).ConfigureAwait(false);
         if (existing is not null)
         {
             return existing;
         }
 
         var created = await _createOrg
-            .ExecuteAsync(LocalValidationOptions.OrgDisplayName, LocalValidationOptions.OrgSlug, ct)
+            .ExecuteAsync(orgDef.DisplayName, orgDef.Slug, ct)
             .ConfigureAwait(false);
         if (!created.IsSuccess || created.Value is null)
         {
             // Race: reload by slug
-            existing = await _organizations.GetBySlugAsync(LocalValidationOptions.OrgSlug, ct).ConfigureAwait(false);
+            existing = await _organizations.GetBySlugAsync(orgDef.Slug, ct).ConfigureAwait(false);
             if (existing is not null)
             {
                 return existing;
             }
 
             throw new InvalidOperationException(
-                $"Local validation organization create failed: {created.ErrorCode} {created.ErrorMessage}");
+                $"Local validation organization '{orgDef.Slug}' create failed: {created.ErrorCode} {created.ErrorMessage}");
         }
 
         return created.Value;

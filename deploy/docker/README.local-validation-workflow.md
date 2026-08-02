@@ -66,7 +66,7 @@ If an old antiforgery cookie still fails: use Incognito or clear localhost site 
 
 ## Open
 
-**http://localhost:8090/** → `/admin/login` → approved Local Validation identities (Olivia Mendoza, Rafael Torres, Maria Santos, Carlo Reyes, Ana Cruz, Daniel Garcia, Luis Navarro, Sofia Ramos) via normal Platform credential login; password from `LocalValidation:SharedPassword` / `LOCAL_VALIDATION_SHARED_PASSWORD` env (never commit the secret).
+**http://localhost:8090/** → `/admin/login` → use the Local Validation identity dropdown (or manual credentials). Sign-in is normal Platform `/auth/login` on the Admin server; password from `LOCAL_VALIDATION_SHARED_PASSWORD` (never commit; never shown in the browser).
 
 ## Related
 

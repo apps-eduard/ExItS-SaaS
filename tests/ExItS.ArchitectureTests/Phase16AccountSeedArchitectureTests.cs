@@ -3,17 +3,19 @@ namespace ExItS.ArchitectureTests;
 public sealed class Phase16AccountSeedArchitectureTests
 {
     [Fact]
-    public void Phase16_seed_guards_Production_and_is_invoked_only_from_non_production_LocalValidation_host()
+    public void Phase16_seed_guards_Production_and_is_not_invoked_from_LocalValidation_host()
     {
         var root = FindRepoRoot();
         var seed = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Application", "Identity", "InitializePhase16AccountSeed.cs"));
         Assert.Contains("must never run in Production", seed, StringComparison.Ordinal);
         Assert.Contains("IsProduction()", seed, StringComparison.Ordinal);
+        Assert.Contains("LocalValidation:Enabled=true", seed, StringComparison.Ordinal);
 
         var hosted = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Infrastructure", "LocalValidation", "LocalValidationHostedService.cs"));
-        Assert.Contains("InitializePhase16AccountSeed", hosted, StringComparison.Ordinal);
+        Assert.DoesNotContain("InitializePhase16AccountSeed", hosted, StringComparison.Ordinal);
+        Assert.Contains("InitializeLocalValidationDataset", hosted, StringComparison.Ordinal);
         Assert.Contains("IsProduction()", hosted, StringComparison.Ordinal);
 
         var production = File.ReadAllText(Path.Combine(root, "deploy", "docker", "compose.production.yaml"));

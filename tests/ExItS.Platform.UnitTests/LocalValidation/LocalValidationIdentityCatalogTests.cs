@@ -18,11 +18,13 @@ public sealed class LocalValidationIdentityCatalogTests
     ];
 
     [Fact]
-    public void Catalog_includes_eight_approved_identities_with_role_mappings()
+    public void Catalog_includes_eight_approved_identities_with_two_organizations()
     {
         var catalog = LocalValidationIdentityCatalog.All;
+        var orgs = LocalValidationOrganizationCatalog.All;
 
         Assert.Equal(8, catalog.Count);
+        Assert.Equal(2, orgs.Count);
 
         foreach (var displayName in ApprovedDisplayNames)
         {
@@ -38,13 +40,34 @@ public sealed class LocalValidationIdentityCatalogTests
         }
 
         Assert.Contains(catalog, i => i.Key == "olivia-mendoza" && i.AssignPlatformAdministrator && i.PreferredAccountClass == AccountClass.Platform);
-        Assert.Contains(catalog, i => i.Key == "rafael-torres" && i.OrganizationRole == OrganizationMembershipValidationRole.OrganizationOwner && i.PosLocalRoleCode == "Owner");
-        Assert.Contains(catalog, i => i.Key == "maria-santos" && i.PosLocalRoleCode == "Cashier");
-        Assert.Contains(catalog, i => i.Key == "carlo-reyes" && i.PosLocalRoleCode == "StoreManager");
-        Assert.Contains(catalog, i => i.Key == "ana-cruz" && !i.GrantPosProductAccess);
+        Assert.Contains(catalog, i =>
+            i.Key == "rafael-torres"
+            && i.OrganizationSlug == LocalValidationOrganizationCatalog.SampaguitaSlug
+            && i.OrganizationRole == OrganizationMembershipValidationRole.OrganizationOwner
+            && i.PosLocalRoleCode == "Owner");
+        Assert.Contains(catalog, i =>
+            i.Key == "maria-santos"
+            && i.OrganizationSlug == LocalValidationOrganizationCatalog.SampaguitaSlug
+            && i.PosLocalRoleCode == "Cashier");
+        Assert.Contains(catalog, i =>
+            i.Key == "carlo-reyes"
+            && i.OrganizationSlug == LocalValidationOrganizationCatalog.MabuhaySlug
+            && i.OrganizationRole == OrganizationMembershipValidationRole.OrganizationOwner
+            && i.PosLocalRoleCode == "Owner");
+        Assert.Contains(catalog, i =>
+            i.Key == "ana-cruz"
+            && i.OrganizationSlug == LocalValidationOrganizationCatalog.MabuhaySlug
+            && !i.GrantPosProductAccess);
         Assert.Contains(catalog, i => i.Key == "daniel-garcia" && !i.AssignPlatformAdministrator && i.PreferredAccountClass == AccountClass.Platform);
         Assert.Contains(catalog, i => i.Key == "luis-navarro" && i.PreferredAccountClass == AccountClass.Personal && !i.HasOrganizationMembership);
         Assert.Contains(catalog, i => i.Key == "sofia-ramos" && i.PreferredAccountClass == AccountClass.Personal && !i.HasOrganizationMembership);
+
+        var sampaguitaUsers = catalog.Count(i =>
+            string.Equals(i.OrganizationSlug, LocalValidationOrganizationCatalog.SampaguitaSlug, StringComparison.OrdinalIgnoreCase));
+        var mabuhayUsers = catalog.Count(i =>
+            string.Equals(i.OrganizationSlug, LocalValidationOrganizationCatalog.MabuhaySlug, StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(2, sampaguitaUsers);
+        Assert.Equal(2, mabuhayUsers);
 
         Assert.Equal("sampaguita-store", LocalValidationOptions.OrgSlug);
         Assert.Equal("Sampaguita Neighborhood Store", LocalValidationOptions.OrgDisplayName);
@@ -54,5 +77,6 @@ public sealed class LocalValidationIdentityCatalogTests
 
         Assert.NotNull(LocalValidationIdentityCatalog.FindByKey("RAFAEL-TORRES"));
         Assert.Null(LocalValidationIdentityCatalog.FindByKey("missing"));
+        Assert.NotNull(LocalValidationOrganizationCatalog.FindBySlug("MABUHAY-MINI-MART"));
     }
 }

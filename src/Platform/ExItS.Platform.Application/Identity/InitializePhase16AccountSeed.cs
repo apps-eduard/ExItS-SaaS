@@ -13,7 +13,8 @@ using Microsoft.Extensions.Options;
 namespace ExItS.Platform.Application.Identity;
 
 /// <summary>
-/// Development/Testing/LocalValidation-only deterministic Phase 16 identity seed (idempotent).
+/// Development/Testing-only deterministic Phase 16 identity seed (idempotent).
+/// Skipped when LocalValidation:Enabled (approved Local Validation identities only).
 /// Never runs in Production.
 /// </summary>
 public sealed class InitializePhase16AccountSeed
@@ -73,19 +74,20 @@ public sealed class InitializePhase16AccountSeed
         }
 
         var testing = _environment.IsEnvironment("Testing");
-        if (!_localValidation.Enabled && !testing && !_environment.IsDevelopment())
+        // Local Validation operator path uses only approved named identities — never Phase16 seed org/users.
+        if (_localValidation.Enabled)
+        {
+            _logger.LogInformation(
+                "Phase 16 account seed skipped because LocalValidation:Enabled=true (approved Local Validation identities only).");
+            return;
+        }
+
+        if (!testing && !_environment.IsDevelopment())
         {
             return;
         }
 
-        if (_localValidation.Enabled && string.IsNullOrWhiteSpace(_localValidation.SharedPassword))
-        {
-            throw new InvalidOperationException("LocalValidation:SharedPassword is required to seed Phase 16 accounts.");
-        }
-
-        var password = !string.IsNullOrWhiteSpace(_localValidation.SharedPassword)
-            ? _localValidation.SharedPassword
-            : "Phase16-Test-Only-Password!";
+        var password = "Phase16-Test-Only-Password!";
 
         _logger.LogInformation("Phase 16 account seed beginning (non-Production).");
 

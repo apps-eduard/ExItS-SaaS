@@ -122,7 +122,14 @@ else
                        OnPageIndexChange="OnMembersPageAsync"
                        ScrollX="1100">
                     <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_User"]">
-                        <a href="/admin/users/@context.UserId">@(context.DisplayName ?? context.Username ?? context.UserId.ToString("D"))</a>
+                        @if (Shell.IsPlatformShell)
+                        {
+                            <a href="/admin/users/@context.UserId">@(context.DisplayName ?? context.Username ?? context.UserId.ToString("D"))</a>
+                        }
+                        else
+                        {
+                            @(context.DisplayName ?? context.Username ?? context.UserId.ToString("D"))
+                        }
                     </PropertyColumn>
                     <PropertyColumn Property="c => c.Email" Title="@L["Common_Email"]" Ellipsis />
                     <PropertyColumn Property="c => c.Role" Title="@L["Common_Role"]">

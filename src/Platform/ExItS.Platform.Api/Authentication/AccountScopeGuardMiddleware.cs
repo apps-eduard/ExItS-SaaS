@@ -67,6 +67,14 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
             return true;
         }
 
+        // Shell permission discovery for any authenticated class. Returns empty Platform
+        // permissions for Organization/Personal (see ResolveCurrentPermissions). Other
+        // /authorization/* routes remain Platform-only.
+        if (path.Equals("/api/v1/platform/authorization/me", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
         if (path.StartsWith("/api/v1/platform/local-validation", StringComparison.OrdinalIgnoreCase))
         {
             return true;

@@ -43,12 +43,21 @@ internal sealed class DevelopmentPlatformActorAccessor(
                     organizationId = PlatformOrganizationId.From(orgGuid);
                 }
 
+                AccountClass? accountClass = null;
+                var accountClassRaw = user.FindFirstValue(PlatformSessionClaimTypes.AccountClass);
+                if (!string.IsNullOrWhiteSpace(accountClassRaw)
+                    && Enum.TryParse<AccountClass>(accountClassRaw, ignoreCase: true, out var parsedClass))
+                {
+                    accountClass = parsedClass;
+                }
+
                 return new PlatformActorContext(
                     $"platform-user:{userId:D}",
                     AuditActorType.PlatformUser,
                     PlatformUserId.From(userId),
                     correlationId,
-                    organizationId);
+                    organizationId,
+                    accountClass);
             }
         }
 

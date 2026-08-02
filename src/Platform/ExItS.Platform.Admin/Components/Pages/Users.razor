@@ -1,3 +1,4 @@
+@implements IDisposable
 @page "/admin/users"
 @page "/admin/users/unassigned"
 @page "/admin/users/organization"
@@ -12,10 +13,17 @@
 @inject IStringLocalizer<AdminResources> L
 @inject NavigationManager Nav
 @inject PlatformPermissionState Permissions
+@inject AdminShellContext Shell
 
-@if (!Permissions.Loaded)
+@if (!Permissions.Loaded || !Shell.Loaded)
 {
     <div style="padding:2rem;text-align:center;"><Spin /></div>
+}
+else if (!Shell.IsPlatformShell)
+{
+    <Result Status="@ResultStatus.Warning"
+            Title="@L["Scope_PlatformAccountsDenied"]"
+            SubTitle="@Shell.RoleLabel" />
 }
 else if (!Permissions.HasPermission(PlatformPermissionCodes.ManagePlatformUsers))
 {
@@ -103,12 +111,28 @@ else if (Id is null)
                Bordered
                RemoteDataSource
                OnPageIndexChange="OnUserPageChangedAsync"
-               ScrollX="960">
+               ScrollX="1200">
             <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_User"]" Sortable>
                 <a href="/admin/users/@context.Id">@context.DisplayName</a>
             </PropertyColumn>
             <PropertyColumn Property="c => c.Username" Title="@L["Common_Username"]" Sortable />
             <PropertyColumn Property="c => c.Email" Title="@L["Common_Email"]" Ellipsis Sortable />
+            <PropertyColumn Property="c => c.AccountClasses" Title="@L["Users_AccountType"]">
+                @foreach (var accountClass in (context.AccountClasses ?? Array.Empty<string>()))
+                {
+                    <Tag Color="@AccountClassColor(accountClass)" Style="margin-right:4px;">@accountClass</Tag>
+                }
+                @if (context.AccountClasses is null || context.AccountClasses.Count == 0)
+                {
+                    <span>—</span>
+                }
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.OrganizationNames" Title="@L["Users_OrganizationName"]" Ellipsis>
+                @{
+                    var orgNames = context.OrganizationNames ?? Array.Empty<string>();
+                }
+                @(orgNames.Count == 0 ? "—" : string.Join(", ", orgNames))
+            </PropertyColumn>
             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable>
                 <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
             </PropertyColumn>
@@ -139,6 +163,22 @@ else
         <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
             <DescriptionsItem Title="@L["Common_Username"]">@u.Username</DescriptionsItem>
             <DescriptionsItem Title="@L["Common_Status"]"><Tag Color="@StatusColor(u.Status)">@u.Status</Tag></DescriptionsItem>
+            <DescriptionsItem Title="@L["Users_AccountType"]">
+                @foreach (var accountClass in (u.AccountClasses ?? Array.Empty<string>()))
+                {
+                    <Tag Color="@AccountClassColor(accountClass)" Style="margin-right:4px;">@accountClass</Tag>
+                }
+                @if (u.AccountClasses is null || u.AccountClasses.Count == 0)
+                {
+                    <text>—</text>
+                }
+            </DescriptionsItem>
+            <DescriptionsItem Title="@L["Users_OrganizationName"]">
+                @{
+                    var detailOrgs = u.OrganizationNames ?? Array.Empty<string>();
+                }
+                @(detailOrgs.Count == 0 ? "—" : string.Join(", ", detailOrgs))
+            </DescriptionsItem>
             <DescriptionsItem Title="@L["Common_CreatedUtc"]"><UtcTimestamp Value="@u.CreatedAtUtc" /></DescriptionsItem>
             <DescriptionsItem Title="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@u.UpdatedAtUtc" /></DescriptionsItem>
             @if (u.SuspendedAtUtc is not null)
@@ -270,33 +310,25 @@ else
     private Guid? _loadedId;
     private string? _loadedDirectory;
 
+    protected override void OnInitialized()
+    {
+        // Same component serves /users, /users/unassigned, etc. — parameters do not change,
+        // so OnParametersSetAsync alone will not reload when only the directory path changes.
+        Nav.LocationChanged += OnLocationChanged;
+    }
+
     protected override async Task OnParametersSetAsync()
     {
+        await Shell.EnsureLoadedAsync();
         await Permissions.EnsureLoadedAsync();
-        if (!Permissions.HasPermission(PlatformPermissionCodes.ManagePlatformUsers))
+        if (!Shell.IsPlatformShell || !Permissions.HasPermission(PlatformPermissionCodes.ManagePlatformUsers))
         {
             return;
         }
 
         if (Id is null)
         {
-            var directory = DirectoryFilter;
-            // Parent layout re-renders on every navigation; only reload when the directory route changes.
-            if (_list is not null
-                && _loadedId is null
-                && string.Equals(_loadedDirectory, directory, StringComparison.Ordinal))
-            {
-                return;
-            }
-
-            _formError = null;
-            _formConflict = false;
-            ClearFieldErrors();
-            _page = 1;
-            _list = null;
-            _loadedId = null;
-            _loadedDirectory = directory;
-            await ReloadListAsync();
+            await EnsureDirectoryListAsync(force: false);
         }
         else if (_loadedId != Id || _detail is null)
         {
@@ -309,12 +341,64 @@ else
         }
     }
 
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            if (!Shell.IsPlatformShell
+                || !Permissions.Loaded
+                || !Permissions.HasPermission(PlatformPermissionCodes.ManagePlatformUsers))
+            {
+                return;
+            }
+
+            if (Id is not null)
+            {
+                return;
+            }
+
+            await EnsureDirectoryListAsync(force: false);
+            StateHasChanged();
+        });
+    }
+
+    private async Task EnsureDirectoryListAsync(bool force)
+    {
+        var directory = DirectoryFilter;
+        if (!force
+            && _list is not null
+            && _loadedId is null
+            && string.Equals(_loadedDirectory, directory, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _formError = null;
+        _formConflict = false;
+        ClearFieldErrors();
+        _page = 1;
+        _list = null;
+        _loadedId = null;
+        _loadedDirectory = directory;
+        await ReloadListAsync();
+    }
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+
     private static string StatusColor(string status) => status switch
     {
         "Active" => "success",
         "Suspended" => "error",
         "Deactivated" => "default",
         _ => "processing"
+    };
+
+    private static string AccountClassColor(string accountClass) => accountClass switch
+    {
+        "Platform" => "geekblue",
+        "Organization" => "cyan",
+        "Personal" => "purple",
+        _ => "default"
     };
 
     private async Task ReloadListAsync() =>

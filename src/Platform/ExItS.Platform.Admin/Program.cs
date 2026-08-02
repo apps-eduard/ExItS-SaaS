@@ -52,6 +52,9 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 });
 
 builder.Services.Configure<PlatformApiOptions>(builder.Configuration.GetSection(PlatformApiOptions.SectionName));
+builder.Services.Configure<LocalValidationAdminOptions>(
+    builder.Configuration.GetSection(LocalValidationAdminOptions.SectionName));
+builder.Services.AddScoped<LocalValidationSignInService>();
 builder.Services.Configure<DevelopmentOperatorOptions>(options =>
 {
     if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing"))
@@ -186,6 +189,27 @@ app.MapPost("/admin/login/credentials", async (
     var usernameOrEmail = form["UsernameOrEmail"].ToString();
     var password = form["Password"].ToString();
     var (ok, error) = await sessions.LoginAsync(usernameOrEmail, password).ConfigureAwait(false);
+    if (!ok)
+    {
+        return Results.Redirect(
+            "/admin/login?error=" + Uri.EscapeDataString(error ?? "Invalid username/email or password."));
+    }
+
+    return Results.Redirect("/admin");
+}).AllowAnonymous();
+
+// Local Validation only: full HTTP round-trip so auth cookies are set (Interactive Server cannot).
+app.MapGet("/admin/login/as/{key}", async (
+    string key,
+    LocalValidationSignInService localValidation,
+    IHostEnvironment env) =>
+{
+    if (env.IsProduction() || !localValidation.IsAvailable)
+    {
+        return Results.NotFound();
+    }
+
+    var (ok, error) = await localValidation.SignInAsKeyAsync(key).ConfigureAwait(false);
     if (!ok)
     {
         return Results.Redirect(

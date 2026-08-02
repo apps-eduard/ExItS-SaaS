@@ -94,6 +94,12 @@
                                                 @L["Account_OrganizationSettings"] <span class="exits-phase15-tag">@L["Nav_ComingSoon"]</span>
                                             </MenuItem>
                                         }
+                                        else if (_shellReady && Shell.IsPersonalShell)
+                                        {
+                                            <MenuItem OnClick='() => Nav.NavigateTo("/admin/personal/settings")'>
+                                                @L["Nav_PersonalSettings"]
+                                            </MenuItem>
+                                        }
                                         else
                                         {
                                             <MenuItem Disabled Class="exits-nav-phase15">

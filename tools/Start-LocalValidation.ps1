@@ -11,10 +11,9 @@
   - Starts apps with dotnet watch in separate PowerShell windows, in order.
   - Uses deploy/docker/.env.local-validation (gitignored) - no secrets committed.
   - Admin DataProtection keys: %LOCALAPPDATA%\ExItS\LocalValidation\DataProtectionKeys
-  - Sign in with approved Local Validation identities (Olivia Mendoza, Rafael Torres, Maria Santos,
-    Carlo Reyes, Ana Cruz, Daniel Garcia, Luis Navarro, Sofia Ramos) via normal Platform credential
-    login; password from LocalValidation:SharedPassword / LOCAL_VALIDATION_SHARED_PASSWORD env
-    (never commit the secret).
+  - Sign in with approved Local Validation identities via the login dropdown (server-side normal
+    Platform /auth/login) or manual credentials. Password from LOCAL_VALIDATION_SHARED_PASSWORD
+    (never commit the secret; never exposed to the browser).
   - Not Production. Does not start P14-WP03.
 
 .EXAMPLE
@@ -338,14 +337,16 @@ Wait-TcpPort -Label 'POS API' -HostName '127.0.0.1' -Port $posApiPort -TimeoutSe
 
 Write-Step 'Starting Platform Admin (dotnet watch)...'
 # Admin runs Development so Ant Design / Blazor static assets load without Staging SWA hacks.
-# Credential login only (no Local Validation identity selector). Sign in with approved Local Validation
-# identities via normal Platform credential login; password from LOCAL_VALIDATION_SHARED_PASSWORD env.
+# Local Validation identity dropdown uses normal Platform /auth/login server-side
+# (SharedPassword stays in Admin process env — never sent to the browser).
 $windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Admin' -RepoRoot $repoRoot -Project $adminProject -EnvMap @{
     ASPNETCORE_ENVIRONMENT = 'Development'
     ASPNETCORE_URLS = $adminUrl
     AllowedHosts = 'localhost;127.0.0.1'
     PlatformApi__BaseUrl = $platformApiUrl
     PlatformApi__TimeoutSeconds = '30'
+    LocalValidation__Enabled = 'true'
+    LocalValidation__SharedPassword = [string]$envMap['LOCAL_VALIDATION_SHARED_PASSWORD']
 }
 Wait-TcpPort -Label 'Platform Admin' -HostName '127.0.0.1' -Port $adminPort -TimeoutSeconds $PortWaitSeconds
 

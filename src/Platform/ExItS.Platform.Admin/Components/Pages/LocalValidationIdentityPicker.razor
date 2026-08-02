@@ -1,0 +1,86 @@
+@using AntDesign
+@using ExItS.Platform.Admin.Services
+@inject LocalValidationSignInService LocalValidationSignIn
+@inject NavigationManager Nav
+@inject IJSRuntime Js
+@inject IStringLocalizer<AdminResources> L
+
+@if (_show)
+{
+    <div class="ant-form-item" style="margin-bottom: 1rem;">
+        <label class="ant-form-item-label" for="lv-identity">@L["Login_LocalValidationSelect"]</label>
+        <Select TItemValue="string"
+                TItem="string"
+                Id="lv-identity"
+                Placeholder="@L["Login_LocalValidationSelect"]"
+                Disabled="_busy || _identities.Count == 0"
+                Loading="_loading"
+                Style="width:100%;"
+                Value="@(_selectedKey ?? string.Empty)"
+                ValueChanged="OnIdentitySelectedAsync">
+            <SelectOptions>
+                @foreach (var identity in _identities)
+                {
+                    <SelectOption TItemValue="string"
+                                  TItem="string"
+                                  Value="@identity.Key"
+                                  Label="@identity.DisplayName" />
+                }
+            </SelectOptions>
+        </Select>
+        @if (!string.IsNullOrWhiteSpace(_loadNote))
+        {
+            <Paragraph Type="@TextElementType.Secondary" Style="margin-top:.35rem; font-size:12px;">@_loadNote</Paragraph>
+        }
+    </div>
+}
+
+@code {
+    private bool _show;
+    private bool _loading;
+    private bool _busy;
+    private string? _selectedKey;
+    private string? _loadNote;
+    private IReadOnlyList<LocalValidationIdentityOption> _identities = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _show = LocalValidationSignIn.IsAvailable;
+        if (!_show)
+        {
+            return;
+        }
+
+        _loading = true;
+        try
+        {
+            _identities = await LocalValidationSignIn.ListIdentitiesAsync();
+            if (_identities.Count == 0)
+            {
+                _loadNote = L["Login_LocalValidationUnavailable"];
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OnIdentitySelectedAsync(string value)
+    {
+        _selectedKey = value;
+        if (string.IsNullOrWhiteSpace(value) || _busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        // Defer navigation: AntDesign DomEventListener is still enumerating handlers when
+        // ValueChanged returns; forceLoad dispose races with that and throws
+        // "Collection was modified; enumeration operation may not execute."
+        await Task.Yield();
+        await Task.Delay(1);
+        var url = Nav.ToAbsoluteUri($"/admin/login/as/{Uri.EscapeDataString(value)}").AbsoluteUri;
+        await Js.InvokeVoidAsync("location.assign", url);
+    }
+}

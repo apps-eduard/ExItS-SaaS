@@ -570,6 +570,8 @@
   <data name="Common_BackToSummary" xml:space="preserve"><value>Bumalik sa commercial summary</value></data>
 
   <data name="Users_Title" xml:space="preserve"><value>Mga Platform user</value></data>
+  <data name="Users_AccountType" xml:space="preserve"><value>Uri ng account</value></data>
+  <data name="Users_OrganizationName" xml:space="preserve"><value>Organisasyon</value></data>
   <data name="Users_Description" xml:space="preserve"><value>Pamamahala ng Platform user.</value></data>
   <data name="Users_Warning" xml:space="preserve"><value>Ang Platform membership ay hindi product operational authorization. Ang organization invitations at memberships ay hindi nagbibigay ng product-local roles.</value></data>
   <data name="Users_SearchPlaceholder" xml:space="preserve"><value>Username, email, o pangalan</value></data>
@@ -672,6 +674,16 @@
   <data name="Error_Dismiss" xml:space="preserve"><value>Isara</value></data>
   <data name="Nav_RolesPermissions" xml:space="preserve"><value>Roles &amp; Permissions</value></data>
   <data name="Nav_People" xml:space="preserve"><value>People</value></data>
+  <data name="Nav_Accounts" xml:space="preserve"><value>Accounts</value></data>
+  <data name="Nav_AllAccounts" xml:space="preserve"><value>Lahat ng Account</value></data>
+  <data name="Nav_PlatformAccounts" xml:space="preserve"><value>Mga Platform Account</value></data>
+  <data name="Nav_OrganizationAccounts" xml:space="preserve"><value>Mga Organization Account</value></data>
+  <data name="Nav_PersonalAccounts" xml:space="preserve"><value>Mga Personal Account</value></data>
+  <data name="Nav_NeedsReview" xml:space="preserve"><value>Kailangan ng Review</value></data>
+  <data name="Nav_OrganizationStaff" xml:space="preserve"><value>Organization Staff</value></data>
+  <data name="Nav_Customers" xml:space="preserve"><value>Mga Customer</value></data>
+  <data name="Nav_CustomerLinking" xml:space="preserve"><value>Customer Linking</value></data>
+  <data name="Nav_Contacts" xml:space="preserve"><value>Mga Contact</value></data>
   <data name="Nav_AllUsers" xml:space="preserve"><value>All Users</value></data>
   <data name="Nav_UnassignedUsers" xml:space="preserve"><value>Unassigned Users</value></data>
   <data name="Nav_PlatformStaff" xml:space="preserve"><value>Platform Staff</value></data>
@@ -689,6 +701,23 @@
   <data name="Nav_OrganizationMemberships" xml:space="preserve"><value>Organization Memberships</value></data>
   <data name="Nav_SelectOrganization" xml:space="preserve"><value>Select organization</value></data>
   <data name="Nav_ComingSoon" xml:space="preserve"><value>Coming soon</value></data>
+  <data name="Nav_Home" xml:space="preserve"><value>Home</value></data>
+  <data name="Nav_UtangTracker" xml:space="preserve"><value>Utang Tracker</value></data>
+  <data name="Nav_UtangPeople" xml:space="preserve"><value>Mga Tao</value></data>
+  <data name="Nav_UtangLent" xml:space="preserve"><value>Ipinahiram Ko</value></data>
+  <data name="Nav_UtangBorrowed" xml:space="preserve"><value>Hiniram Ko</value></data>
+  <data name="Nav_UtangPayments" xml:space="preserve"><value>Bayad</value></data>
+  <data name="Nav_UtangReminders" xml:space="preserve"><value>Paalala</value></data>
+  <data name="Nav_UtangHistory" xml:space="preserve"><value>Kasaysayan</value></data>
+  <data name="Nav_Notifications" xml:space="preserve"><value>Mga Notification</value></data>
+  <data name="Nav_Profile" xml:space="preserve"><value>Profile</value></data>
+  <data name="Nav_PersonalSettings" xml:space="preserve"><value>Mga Setting</value></data>
+  <data name="Personal_HomeTitle" xml:space="preserve"><value>Personal Home</value></data>
+  <data name="Personal_HomeDescription" xml:space="preserve"><value>Personal Scope dashboard — Utang Tracker at account tools para sa session na ito lamang.</value></data>
+  <data name="Personal_ShellRequired" xml:space="preserve"><value>Kailangan ng Personal account session ang page na ito.</value></data>
+  <data name="Organization_HomeTitle" xml:space="preserve"><value>Organization Home</value></data>
+  <data name="Organization_HomeDescription" xml:space="preserve"><value>Organization Administration para sa aktibong membership. Hindi available ang Platform accounts at global portfolio sa session na ito.</value></data>
+  <data name="Scope_PlatformAccountsDenied" xml:space="preserve"><value>Ang Platform account directory ay para sa Platform Administration session lamang.</value></data>
   <data name="OrgProductAccess_ReadOnlyHint" xml:space="preserve"><value>Product-access grants require ManageProductAccess. Organization admins can view and evaluate only.</value></data>
   <data name="Common_Yes" xml:space="preserve"><value>Oo</value></data>
   <data name="Common_No" xml:space="preserve"><value>Hindi</value></data>
@@ -722,7 +751,12 @@
   <data name="Login_Password" xml:space="preserve"><value>Password</value></data>
   <data name="Login_SignIn" xml:space="preserve"><value>Mag-sign in</value></data>
   <data name="Login_ForgotPassword" xml:space="preserve"><value>Nakalimutan ang password</value></data>
-  <data name="Login_InvalidCredentials" xml:space="preserve"><value>Mali ang username/email o password.</value></data>  <data name="Login_OrContinueWith" xml:space="preserve"><value>O magpatuloy gamit ang</value></data>
+  <data name="Login_InvalidCredentials" xml:space="preserve"><value>Mali ang username/email o password.</value></data>
+  <data name="Login_LocalValidationTitle" xml:space="preserve"><value>Local Validation identities</value></data>
+  <data name="Login_LocalValidationHint" xml:space="preserve"><value>Pumili ng approved identity. Ang sign-in ay normal Platform credential login sa server (hindi ipinapakita ang password sa browser).</value></data>
+  <data name="Login_LocalValidationSelect" xml:space="preserve"><value>Mag-sign in bilang…</value></data>
+  <data name="Login_LocalValidationUnavailable" xml:space="preserve"><value>Hindi pa handa ang identities. Maghintay sa Platform API seed, tapos i-refresh.</value></data>
+  <data name="Login_OrContinueWith" xml:space="preserve"><value>O magpatuloy gamit ang</value></data>
   <data name="Login_ContinueGoogle" xml:space="preserve"><value>Magpatuloy sa Google</value></data>
   <data name="Login_ContinueFacebook" xml:space="preserve"><value>Magpatuloy sa Facebook</value></data>
   <data name="Login_SocialDisclaimer" xml:space="preserve"><value>Ang social sign-in ay lumilikha o nagli-link lamang ng Platform User. Hindi ito nagbibigay ng administrator, membership, o product access.</value></data>

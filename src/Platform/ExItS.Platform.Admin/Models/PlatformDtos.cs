@@ -254,7 +254,9 @@ public sealed record PlatformUserDto(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc,
     DateTimeOffset? SuspendedAtUtc,
-    string? SuspensionReason);
+    string? SuspensionReason,
+    IReadOnlyList<string>? AccountClasses = null,
+    IReadOnlyList<string>? OrganizationNames = null);
 
 public sealed record PlatformCredentialStatusDto(
     Guid UserId,
@@ -659,3 +661,80 @@ public sealed record AssignSystemRoleRequest(Guid PlatformUserId, string Role, G
 public sealed record AssignCustomRoleRequest(Guid PlatformUserId, Guid RoleDefinitionId, string? Reason = null);
 public sealed record AssignOrgCustomRoleRequest(Guid PlatformUserId, Guid RoleDefinitionId, string? Reason = null);
 public sealed record RevokeRoleAssignmentRequest(string? Reason = null);
+
+public sealed record PersonalDashboardDto(
+    Guid UserIdentityId,
+    Guid AccountProfileId,
+    string AccountClass,
+    bool UtangAvailable,
+    int ContactCount,
+    int ActiveRelationshipCount,
+    decimal TotalLentBalance,
+    decimal TotalBorrowedBalance);
+
+public sealed record PersonalProfileDto(
+    Guid UserIdentityId,
+    Guid AccountProfileId,
+    string Username,
+    string DisplayName,
+    string Email,
+    string AccountClass,
+    string Status);
+
+public sealed record PersonalAccountSettingsDto(
+    Guid UserIdentityId,
+    bool EmailNotificationsEnabled,
+    bool PushNotificationsEnabled,
+    bool InAppNotificationsEnabled,
+    bool ReminderNotificationsEnabled,
+    int Version,
+    DateTimeOffset UpdatedAtUtc);
+
+public sealed record PersonalContactDto(
+    Guid Id,
+    string DisplayName,
+    string? Phone,
+    string? Email,
+    Guid? LinkedUserIdentityId,
+    string Status,
+    DateTimeOffset CreatedAtUtc);
+
+public sealed record PersonalDebtRelationshipSummaryDto(
+    Guid Id,
+    string Perspective,
+    Guid? CreditorUserIdentityId,
+    Guid? CreditorContactId,
+    Guid? DebtorUserIdentityId,
+    Guid? DebtorContactId,
+    string CurrencyCode,
+    decimal CurrentBalance,
+    DateTimeOffset? DueDateUtc,
+    string Status,
+    int Version,
+    DateTimeOffset UpdatedAtUtc);
+
+public sealed record PersonalUtangInvitationDto(
+    Guid Id,
+    Guid DebtRelationshipId,
+    Guid InviteeContactId,
+    Guid InvitedByUserIdentityId,
+    string? InviteTargetEmailMasked,
+    string Status,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    DateTimeOffset ExpiresAtUtc,
+    DateTimeOffset? AcceptedAtUtc,
+    DateTimeOffset? DeclinedAtUtc,
+    DateTimeOffset? RevokedAtUtc,
+    Guid? AcceptedByUserIdentityId,
+    string? AcceptToken);
+
+public sealed record PersonalInAppNotificationDto(
+    Guid Id,
+    string Title,
+    string Preview,
+    string RelatedType,
+    string? RelatedId,
+    bool IsRead,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset? ReadAtUtc);

@@ -93,6 +93,64 @@ internal sealed class PlatformUserRepository : IPlatformUserRepository
         return (records.Select(IdentityAccessEntityMapper.ToDomain).ToList(), total);
     }
 
+    public async Task<IReadOnlyDictionary<Guid, PlatformUserDirectoryExtras>> GetDirectoryExtrasAsync(
+        IReadOnlyList<Guid> userIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (userIds.Count == 0)
+        {
+            return new Dictionary<Guid, PlatformUserDirectoryExtras>();
+        }
+
+        var ids = userIds.Distinct().ToArray();
+        var activeProfile = nameof(AccountStatus.Active);
+        var activeMembership = nameof(MembershipStatus.Active);
+
+        var profiles = await _db.AccountProfiles.AsNoTracking()
+            .Where(p => ids.Contains(p.UserIdentityId) && p.Status == activeProfile)
+            .Select(p => new { p.UserIdentityId, p.AccountClass })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var memberships = await (
+                from m in _db.OrganizationMemberships.AsNoTracking()
+                join o in _db.Organizations.AsNoTracking() on m.OrganizationId equals o.Id
+                where ids.Contains(m.UserId) && m.Status == activeMembership
+                orderby o.DisplayName
+                select new { m.UserId, o.DisplayName })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var classOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            [nameof(AccountClass.Platform)] = 0,
+            [nameof(AccountClass.Organization)] = 1,
+            [nameof(AccountClass.Personal)] = 2
+        };
+
+        var result = new Dictionary<Guid, PlatformUserDirectoryExtras>(ids.Length);
+        foreach (var id in ids)
+        {
+            var classes = profiles
+                .Where(p => p.UserIdentityId == id)
+                .Select(p => p.AccountClass)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(c => classOrder.TryGetValue(c, out var rank) ? rank : 99)
+                .ThenBy(c => c, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var orgs = memberships
+                .Where(m => m.UserId == id)
+                .Select(m => m.DisplayName)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            result[id] = new PlatformUserDirectoryExtras(classes, orgs);
+        }
+
+        return result;
+    }
+
     public Task AddAsync(PlatformUser user, CancellationToken cancellationToken = default)
     {
         _db.PlatformUsers.Add(IdentityAccessEntityMapper.ToRecord(user));

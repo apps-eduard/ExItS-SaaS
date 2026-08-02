@@ -8,7 +8,7 @@ namespace ExItS.Platform.Application.LocalValidation;
 
 /// <summary>
 /// Lists seeded local-validation identities for POS bootstrap coordination.
-/// Operators authenticate through normal Platform login — there is no normal login path.
+/// Operators authenticate through normal Platform login — there is no session bypass.
 /// </summary>
 public sealed class ListLocalValidationIdentities
 {
@@ -37,9 +37,17 @@ public sealed class ListLocalValidationIdentities
                 "Local validation seed identities are unavailable.");
         }
 
-        var org = await _organizations.GetBySlugAsync(LocalValidationOptions.OrgSlug, cancellationToken)
-            .ConfigureAwait(false);
-        Guid? orgId = org?.Id.Value;
+        var orgBySlug = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+        var orgDisplayBySlug = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var orgDef in LocalValidationOrganizationCatalog.All)
+        {
+            var org = await _organizations.GetBySlugAsync(orgDef.Slug, cancellationToken).ConfigureAwait(false);
+            if (org is not null)
+            {
+                orgBySlug[orgDef.Slug] = org.Id.Value;
+                orgDisplayBySlug[orgDef.Slug] = org.DisplayName;
+            }
+        }
 
         var list = new List<LocalValidationIdentityDto>(LocalValidationIdentityCatalog.All.Count);
         foreach (var identity in LocalValidationIdentityCatalog.All)
@@ -54,15 +62,40 @@ public sealed class ListLocalValidationIdentities
                     "Local validation seed identities have not been initialized yet.");
             }
 
+            Guid? orgId = null;
+            string? orgDisplay = null;
+            if (!string.IsNullOrWhiteSpace(identity.OrganizationSlug))
+            {
+                if (!orgBySlug.TryGetValue(identity.OrganizationSlug, out var resolvedOrgId))
+                {
+                    return ApplicationResult<IReadOnlyList<LocalValidationIdentityDto>>.Failure(
+                        ApplicationErrorCodes.LocalValidationNotInitialized,
+                        $"Local validation organization '{identity.OrganizationSlug}' has not been initialized yet.");
+                }
+
+                orgId = resolvedOrgId;
+                orgDisplay = orgDisplayBySlug.GetValueOrDefault(identity.OrganizationSlug)
+                             ?? LocalValidationOrganizationCatalog.FindBySlug(identity.OrganizationSlug)?.DisplayName;
+            }
+
+            var listLabel = identity.PreferredAccountClass switch
+            {
+                AccountClass.Platform => $"Platform - {user.DisplayName}",
+                AccountClass.Personal => $"Personal - {user.DisplayName}",
+                AccountClass.Organization => $"{orgDisplay ?? "Organization"} - {user.DisplayName}",
+                _ => user.DisplayName
+            };
+
             list.Add(new LocalValidationIdentityDto(
                 identity.Key,
                 user.Username,
                 user.DisplayName,
                 user.NormalizedEmail,
                 user.Id.Value,
-                identity.HasOrganizationMembership ? orgId : null,
+                orgId,
                 identity.Summary,
-                identity.PosLocalRoleCode));
+                identity.PosLocalRoleCode,
+                listLabel));
         }
 
         return ApplicationResult<IReadOnlyList<LocalValidationIdentityDto>>.Success(list);

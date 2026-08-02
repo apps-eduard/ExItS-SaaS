@@ -340,21 +340,34 @@ public sealed class AdminArchitectureGuardTests
     {
         var root = FindRepositoryRoot();
         var nav = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "AdminNav.razor"));
-        foreach (var href in new[] { "/admin", "/admin/products", "/admin/organizations", "/admin/subscriptions", "/admin/users", "/admin/users/unassigned", "/admin/platform-roles", "/admin/audit", "/admin/payments", "/admin/entitlements" })
+        var accountNav = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Services", "AdminAccountUserNav.cs"));
+        foreach (var href in new[] { "/admin/products", "/admin/organizations", "/admin/subscriptions", "/admin/platform-roles", "/admin/audit", "/admin/payments", "/admin/entitlements" })
         {
             Assert.Contains($"RouterLink=\"{href}\"", nav, StringComparison.Ordinal);
         }
 
-        Assert.Contains("Nav_AllUsers", nav, StringComparison.Ordinal);
+        Assert.Contains("RouterLink=\"/admin\"", nav, StringComparison.Ordinal);
+        Assert.Contains("/admin/users", accountNav, StringComparison.Ordinal);
+        Assert.Contains("/admin/users/unassigned", accountNav, StringComparison.Ordinal);
+        Assert.Contains("/admin/users/organization", accountNav, StringComparison.Ordinal);
+        Assert.Contains("/admin/users/platform-staff", accountNav, StringComparison.Ordinal);
+        Assert.Contains("Nav_Accounts", nav, StringComparison.Ordinal);
+        Assert.Contains("AdminAccountUserNav", nav, StringComparison.Ordinal);
+        Assert.Contains("Nav_AllAccounts", accountNav, StringComparison.Ordinal);
+        Assert.Contains("Nav_NeedsReview", accountNav, StringComparison.Ordinal);
         Assert.Contains("Nav_RolesPermissions", nav, StringComparison.Ordinal);
-        Assert.Contains("Nav_OrganizationUsers", nav, StringComparison.Ordinal);
         Assert.Contains("Nav_OrganizationMemberships", nav, StringComparison.Ordinal);
-        Assert.Contains("Nav_PlatformUsers", nav, StringComparison.Ordinal);
+        Assert.Contains("Nav_OrganizationStaff", accountNav, StringComparison.Ordinal);
         Assert.Contains("Nav_People", nav, StringComparison.Ordinal);
+        Assert.Contains("Nav_Contacts", accountNav, StringComparison.Ordinal);
         Assert.Contains("Nav_SelectOrganization", nav, StringComparison.Ordinal);
-        Assert.Contains("tab=invitations", nav, StringComparison.Ordinal);
+        Assert.Contains("tab=invitations", accountNav, StringComparison.Ordinal);
         Assert.Contains("IsPlatformShell", nav, StringComparison.Ordinal);
         Assert.Contains("IsOrganizationShell", nav, StringComparison.Ordinal);
+        Assert.Contains("IsPersonalShell", nav, StringComparison.Ordinal);
+        Assert.Contains("/admin/personal/utang/people", accountNav, StringComparison.Ordinal);
+        Assert.Contains("Nav_UtangTracker", nav, StringComparison.Ordinal);
+        Assert.DoesNotContain("CanView(PlatformPermissionCodes.ViewPortfolio) || IsOrgAdminMembership", nav, StringComparison.Ordinal);
         Assert.Contains("RouterMatch=\"NavLinkMatch.All\"", nav, StringComparison.Ordinal);
         Assert.DoesNotContain("Sign out", nav, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("/admin/logout", nav, StringComparison.Ordinal);
@@ -364,6 +377,14 @@ public sealed class AdminArchitectureGuardTests
 
         var usersPage = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Users.razor"));
         Assert.Contains("_loadedDirectory", usersPage, StringComparison.Ordinal);
+        Assert.Contains("LocationChanged", usersPage, StringComparison.Ordinal);
+        Assert.Contains("EnsureDirectoryListAsync", usersPage, StringComparison.Ordinal);
+        Assert.Contains("IsPlatformShell", usersPage, StringComparison.Ordinal);
+        Assert.Contains("Scope_PlatformAccountsDenied", usersPage, StringComparison.Ordinal);
+        Assert.Contains("Users_AccountType", usersPage, StringComparison.Ordinal);
+        Assert.Contains("Users_OrganizationName", usersPage, StringComparison.Ordinal);
+        Assert.Contains("AccountClasses", usersPage, StringComparison.Ordinal);
+        Assert.Contains("OrganizationNames", usersPage, StringComparison.Ordinal);
 
         var apiClient = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Services", "PlatformApiClient.cs"));
         Assert.DoesNotContain(".ConfigureAwait(false)", apiClient, StringComparison.Ordinal);
@@ -374,6 +395,22 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("AddScoped<AdminShellContext>",
             File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Program.cs")),
             StringComparison.Ordinal);
+
+        var shell = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Services", "AdminShellContext.cs"));
+        Assert.Contains("AdminShellMode.Personal", shell, StringComparison.Ordinal);
+        Assert.Contains("AccountClass", shell, StringComparison.Ordinal);
+        Assert.Contains("isPlatformAccount", shell, StringComparison.Ordinal);
+        Assert.DoesNotContain("HasAnyPermission(", shell, StringComparison.Ordinal);
+
+        var permissionState = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Services", "PlatformPermissionState.cs"));
+        Assert.Contains("EnsureLoadedForNonPlatformAsync", permissionState, StringComparison.Ordinal);
+        Assert.Contains("allowDevFallback", permissionState, StringComparison.Ordinal);
+
+        var membersPage = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "OrganizationMembers.razor"));
+        Assert.Contains("Shell.IsPlatformShell", membersPage, StringComparison.Ordinal);
+
+        var guard = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "Authentication", "AccountScopeGuardMiddleware.cs"));
+        Assert.Contains("/api/v1/platform/authorization/me", guard, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -422,26 +459,46 @@ public sealed class AdminArchitectureGuardTests
     }
 
     [Fact]
-    public void Login_uses_antdesign_without_live_preview_selector_or_fluent()
+    public void Login_uses_antdesign_with_local_validation_picker_but_no_password_leak_or_fluent()
     {
         var root = FindRepositoryRoot();
         var adminRoot = Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin");
         var login = File.ReadAllText(Path.Combine(adminRoot, "Components", "Pages", "Login.razor"));
+        var picker = File.ReadAllText(Path.Combine(adminRoot, "Components", "Pages", "LocalValidationIdentityPicker.razor"));
+        var signIn = File.ReadAllText(Path.Combine(adminRoot, "Services", "LocalValidationSignInService.cs"));
 
         Assert.Contains("@using AntDesign", login, StringComparison.Ordinal);
         Assert.Contains("<Input", login, StringComparison.Ordinal);
         Assert.Contains("<InputPassword", login, StringComparison.Ordinal);
         Assert.Contains("<Alert", login, StringComparison.Ordinal);
         Assert.Contains("LoginAsync", login, StringComparison.Ordinal);
+        Assert.Contains("LocalValidationIdentityPicker", login, StringComparison.Ordinal);
         Assert.Contains("_busy", login, StringComparison.Ordinal);
-        Assert.DoesNotContain("<Select", login, StringComparison.Ordinal);
         Assert.DoesNotContain("<select", login, StringComparison.Ordinal);
-        Assert.DoesNotContain("LocalValidation", login, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("local-validation", login, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("SharedPassword", login, StringComparison.Ordinal);
         Assert.DoesNotContain("FluentUI", login, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("exits-native-select", login, StringComparison.Ordinal);
         Assert.DoesNotContain("exits-native-input", login, StringComparison.Ordinal);
+
+        Assert.Contains("<Select", picker, StringComparison.Ordinal);
+        Assert.Contains("DisplayName", picker, StringComparison.Ordinal);
+        Assert.Contains("/admin/login/as/", picker, StringComparison.Ordinal);
+        Assert.Contains("location.assign", picker, StringComparison.Ordinal);
+        Assert.DoesNotContain("Summary", picker, StringComparison.Ordinal);
+        Assert.DoesNotContain("SharedPassword", picker, StringComparison.Ordinal);
+        Assert.DoesNotContain("<select", picker, StringComparison.Ordinal);
+        Assert.DoesNotContain("/local-validation/sessions", picker, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("live-preview", picker, StringComparison.OrdinalIgnoreCase);
+
+        Assert.Contains("SignInAsKeyAsync", signIn, StringComparison.Ordinal);
+        Assert.Contains("seed-identities", signIn, StringComparison.Ordinal);
+        Assert.DoesNotContain("/local-validation/sessions", signIn, StringComparison.OrdinalIgnoreCase);
+        var sessionService = File.ReadAllText(Path.Combine(adminRoot, "Services", "PlatformBrowserSessionService.cs"));
+        Assert.Contains("/api/v1/platform/auth/login", sessionService, StringComparison.Ordinal);
+
+        var program = File.ReadAllText(Path.Combine(adminRoot, "Program.cs"));
+        Assert.Contains("/admin/login/as/{key}", program, StringComparison.Ordinal);
+        Assert.Contains("LocalValidationSignInService", program, StringComparison.Ordinal);
 
         Assert.False(File.Exists(Path.Combine(adminRoot, "Services", "LivePreviewStaticWebAssetMaterializer.cs")));
         var servicesDir = Path.Combine(adminRoot, "Services");

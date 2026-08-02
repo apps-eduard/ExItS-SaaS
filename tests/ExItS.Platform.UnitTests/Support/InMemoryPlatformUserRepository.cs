@@ -68,6 +68,18 @@ internal sealed class InMemoryPlatformUserRepository : IPlatformUserRepository
         return Task.FromResult<(IReadOnlyList<PlatformUser>, int)>((ordered.Skip(skip).Take(take).ToList(), ordered.Count));
     }
 
+    public Task<IReadOnlyDictionary<Guid, PlatformUserDirectoryExtras>> GetDirectoryExtrasAsync(
+        IReadOnlyList<Guid> userIds,
+        CancellationToken cancellationToken = default)
+    {
+        var result = userIds
+            .Distinct()
+            .ToDictionary(
+                id => id,
+                _ => new PlatformUserDirectoryExtras([], []));
+        return Task.FromResult<IReadOnlyDictionary<Guid, PlatformUserDirectoryExtras>>(result);
+    }
+
     public Task AddAsync(PlatformUser user, CancellationToken cancellationToken = default)
     {
         _byId[user.Id.Value] = user;

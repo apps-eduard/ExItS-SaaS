@@ -158,4 +158,38 @@ public sealed class ApiAccountScopeIsolationTests(PostgreSqlFixture fixture) : I
         var body = await denied.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(ApplicationErrorCodes.AccountProfileNotAvailable, body.GetProperty("errorCode").GetString());
     }
+
+    [Fact]
+    public async Task Organization_session_can_resolve_empty_authorization_me_but_not_platform_users()
+    {
+        var (userId, username, password) = await SeedUserAsync("orgz");
+        var org = await _admin.PostAsJsonAsync(
+            "/api/v1/platform/organizations",
+            new { displayName = "Authz Org", slug = Unique("azorg") });
+        org.EnsureSuccessStatusCode();
+        var organizationId = (await org.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        (await _admin.PostAsJsonAsync(
+            $"/api/v1/platform/organizations/{organizationId}/members",
+            new { userId, role = "OrganizationOwner" })).EnsureSuccessStatusCode();
+
+        var login = await LoginAsync(username, password);
+        Assert.Equal("Organization", login.GetProperty("accountClass").GetString());
+        var token = login.GetProperty("sessionToken").GetString()!;
+
+        using var meAuthz = Authed(HttpMethod.Get, "/api/v1/platform/authorization/me", token);
+        var authz = await _client.SendAsync(meAuthz);
+        Assert.Equal(HttpStatusCode.OK, authz.StatusCode);
+        var authzBody = await authz.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(0, authzBody.GetProperty("permissions").GetArrayLength());
+
+        using var users = Authed(HttpMethod.Get, "/api/v1/platform/users?page=1&pageSize=10&search=admin", token);
+        await AssertScopeDeniedAsync(await _client.SendAsync(users));
+
+        using var userById = Authed(HttpMethod.Get, $"/api/v1/platform/users/{userId}", token);
+        await AssertScopeDeniedAsync(await _client.SendAsync(userById));
+
+        using var members = Authed(HttpMethod.Get, $"/api/v1/platform/organizations/{organizationId}/members?page=1&pageSize=10", token);
+        var membersOk = await _client.SendAsync(members);
+        Assert.Equal(HttpStatusCode.OK, membersOk.StatusCode);
+    }
 }

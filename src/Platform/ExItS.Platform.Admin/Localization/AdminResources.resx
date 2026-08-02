@@ -572,6 +572,8 @@
   <data name="Common_BackToSummary" xml:space="preserve"><value>Back to commercial summary</value></data>
 
   <data name="Users_Title" xml:space="preserve"><value>Platform users</value></data>
+  <data name="Users_AccountType" xml:space="preserve"><value>Account type</value></data>
+  <data name="Users_OrganizationName" xml:space="preserve"><value>Organization</value></data>
   <data name="Users_Description" xml:space="preserve"><value>Platform user administration.</value></data>
   <data name="Users_Warning" xml:space="preserve"><value>Platform membership is not product operational authorization. Organization invitations and memberships never grant product-local roles.</value></data>
   <data name="Users_SearchPlaceholder" xml:space="preserve"><value>Username, email, or name</value></data>
@@ -674,6 +676,16 @@
   <data name="Error_Dismiss" xml:space="preserve"><value>Dismiss</value></data>
   <data name="Nav_RolesPermissions" xml:space="preserve"><value>Roles &amp; Permissions</value></data>
   <data name="Nav_People" xml:space="preserve"><value>People</value></data>
+  <data name="Nav_Accounts" xml:space="preserve"><value>Accounts</value></data>
+  <data name="Nav_AllAccounts" xml:space="preserve"><value>All Accounts</value></data>
+  <data name="Nav_PlatformAccounts" xml:space="preserve"><value>Platform Accounts</value></data>
+  <data name="Nav_OrganizationAccounts" xml:space="preserve"><value>Organization Accounts</value></data>
+  <data name="Nav_PersonalAccounts" xml:space="preserve"><value>Personal Accounts</value></data>
+  <data name="Nav_NeedsReview" xml:space="preserve"><value>Needs Review</value></data>
+  <data name="Nav_OrganizationStaff" xml:space="preserve"><value>Organization Staff</value></data>
+  <data name="Nav_Customers" xml:space="preserve"><value>Customers</value></data>
+  <data name="Nav_CustomerLinking" xml:space="preserve"><value>Customer Linking</value></data>
+  <data name="Nav_Contacts" xml:space="preserve"><value>Contacts</value></data>
   <data name="Nav_AllUsers" xml:space="preserve"><value>All Users</value></data>
   <data name="Nav_UnassignedUsers" xml:space="preserve"><value>Unassigned Users</value></data>
   <data name="Nav_PlatformStaff" xml:space="preserve"><value>Platform Staff</value></data>
@@ -691,6 +703,23 @@
   <data name="Nav_OrganizationMemberships" xml:space="preserve"><value>Organization Memberships</value></data>
   <data name="Nav_SelectOrganization" xml:space="preserve"><value>Select organization</value></data>
   <data name="Nav_ComingSoon" xml:space="preserve"><value>Coming soon</value></data>
+  <data name="Nav_Home" xml:space="preserve"><value>Home</value></data>
+  <data name="Nav_UtangTracker" xml:space="preserve"><value>Utang Tracker</value></data>
+  <data name="Nav_UtangPeople" xml:space="preserve"><value>People</value></data>
+  <data name="Nav_UtangLent" xml:space="preserve"><value>I Lent</value></data>
+  <data name="Nav_UtangBorrowed" xml:space="preserve"><value>I Borrowed</value></data>
+  <data name="Nav_UtangPayments" xml:space="preserve"><value>Payments</value></data>
+  <data name="Nav_UtangReminders" xml:space="preserve"><value>Reminders</value></data>
+  <data name="Nav_UtangHistory" xml:space="preserve"><value>History</value></data>
+  <data name="Nav_Notifications" xml:space="preserve"><value>Notifications</value></data>
+  <data name="Nav_Profile" xml:space="preserve"><value>Profile</value></data>
+  <data name="Nav_PersonalSettings" xml:space="preserve"><value>Settings</value></data>
+  <data name="Personal_HomeTitle" xml:space="preserve"><value>Personal Home</value></data>
+  <data name="Personal_HomeDescription" xml:space="preserve"><value>Your Personal Scope dashboard — Utang Tracker and account tools for this session only.</value></data>
+  <data name="Personal_ShellRequired" xml:space="preserve"><value>This page requires a Personal account session.</value></data>
+  <data name="Organization_HomeTitle" xml:space="preserve"><value>Organization Home</value></data>
+  <data name="Organization_HomeDescription" xml:space="preserve"><value>Organization Administration for the active membership. Platform accounts and global portfolio are not available in this session.</value></data>
+  <data name="Scope_PlatformAccountsDenied" xml:space="preserve"><value>Platform account directory requires a Platform Administration session.</value></data>
   <data name="OrgProductAccess_ReadOnlyHint" xml:space="preserve"><value>Product-access grants require ManageProductAccess. Organization admins can view and evaluate only.</value></data>
   <data name="OrgEnabledProducts_Title" xml:space="preserve"><value>Enabled products</value></data>
   <data name="OrgEnabledProducts_Description" xml:space="preserve"><value>Discover Organization-enabled products and launch only when entitlement and a product-local role are both present.</value></data>
@@ -722,7 +751,12 @@
   <data name="Login_Password" xml:space="preserve"><value>Password</value></data>
   <data name="Login_SignIn" xml:space="preserve"><value>Sign in</value></data>
   <data name="Login_ForgotPassword" xml:space="preserve"><value>Forgot password</value></data>
-  <data name="Login_InvalidCredentials" xml:space="preserve"><value>Invalid username/email or password.</value></data>  <data name="Login_OrContinueWith" xml:space="preserve"><value>Or continue with</value></data>
+  <data name="Login_InvalidCredentials" xml:space="preserve"><value>Invalid username/email or password.</value></data>
+  <data name="Login_LocalValidationTitle" xml:space="preserve"><value>Local Validation identities</value></data>
+  <data name="Login_LocalValidationHint" xml:space="preserve"><value>Choose an approved identity. Sign-in uses normal Platform credential login on the server (password is not shown in the browser).</value></data>
+  <data name="Login_LocalValidationSelect" xml:space="preserve"><value>Sign in as…</value></data>
+  <data name="Login_LocalValidationUnavailable" xml:space="preserve"><value>Identities are not ready yet. Wait for Platform API seed, then refresh.</value></data>
+  <data name="Login_OrContinueWith" xml:space="preserve"><value>Or continue with</value></data>
   <data name="Login_ContinueGoogle" xml:space="preserve"><value>Continue with Google</value></data>
   <data name="Login_ContinueFacebook" xml:space="preserve"><value>Continue with Facebook</value></data>
   <data name="Login_SocialDisclaimer" xml:space="preserve"><value>Social sign-in creates or links a Platform User only. It does not grant administrator, membership, or product access.</value></data>

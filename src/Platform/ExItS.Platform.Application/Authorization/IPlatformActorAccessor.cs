@@ -14,7 +14,8 @@ public sealed record PlatformActorContext(
     AuditActorType ActorType,
     PlatformUserId? PlatformUserId,
     string? CorrelationId,
-    PlatformOrganizationId? OrganizationId = null);
+    PlatformOrganizationId? OrganizationId = null,
+    AccountClass? AccountClass = null);
 
 /// <summary>Resolves the actor associated with the current operation (for audit and authorization).</summary>
 public interface IPlatformActorAccessor

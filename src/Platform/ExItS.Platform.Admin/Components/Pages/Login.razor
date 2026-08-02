@@ -27,7 +27,10 @@
                 <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" Closable="true" OnClose="() => _error = null" Style="margin-bottom: 1rem;" />
             }
 
+            <LocalValidationIdentityPicker />
+
             <div class="exits-login-form">
+
                 <div class="ant-form-item">
                     <label class="ant-form-item-label" for="login-user">@L["Login_UsernameOrEmail"]</label>
                     <Input Id="login-user"

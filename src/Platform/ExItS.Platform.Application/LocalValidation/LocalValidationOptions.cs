@@ -19,13 +19,42 @@ public sealed class LocalValidationOptions
     /// </summary>
     public string SharedPassword { get; set; } = string.Empty;
 
-    public const string OrgSlug = "sampaguita-store";
-    public const string OrgDisplayName = "Sampaguita Neighborhood Store";
     public const string ProductPlanCode = "sampaguita-pos";
     public const string ProductPlanDisplayName = "Sampaguita POS Plan";
     public const string TrialDisplayName = "Sampaguita POS Trial";
 
     public const string Actor = "local-validation-initializer";
+
+    /// <summary>Legacy single-org slug kept for callers that still expect the first store.</summary>
+    public const string OrgSlug = LocalValidationOrganizationCatalog.SampaguitaSlug;
+
+    /// <summary>Legacy single-org display name kept for callers that still expect the first store.</summary>
+    public const string OrgDisplayName = LocalValidationOrganizationCatalog.SampaguitaDisplayName;
+}
+
+public sealed record LocalValidationOrganizationDefinition(string Slug, string DisplayName);
+
+public static class LocalValidationOrganizationCatalog
+{
+    public const string SampaguitaSlug = "sampaguita-store";
+    public const string SampaguitaDisplayName = "Sampaguita Neighborhood Store";
+    public const string MabuhaySlug = "mabuhay-mini-mart";
+    public const string MabuhayDisplayName = "Mabuhay Mini Mart";
+
+    public static LocalValidationOrganizationDefinition Sampaguita { get; } =
+        new(SampaguitaSlug, SampaguitaDisplayName);
+
+    public static LocalValidationOrganizationDefinition Mabuhay { get; } =
+        new(MabuhaySlug, MabuhayDisplayName);
+
+    public static IReadOnlyList<LocalValidationOrganizationDefinition> All { get; } =
+    [
+        Sampaguita,
+        Mabuhay
+    ];
+
+    public static LocalValidationOrganizationDefinition? FindBySlug(string? slug) =>
+        All.FirstOrDefault(o => string.Equals(o.Slug, slug, StringComparison.OrdinalIgnoreCase));
 }
 
 public sealed record LocalValidationIdentityDefinition(
@@ -37,6 +66,7 @@ public sealed record LocalValidationIdentityDefinition(
     AccountClass PreferredAccountClass,
     bool AssignPlatformAdministrator,
     bool HasOrganizationMembership,
+    string? OrganizationSlug,
     OrganizationMembershipValidationRole? OrganizationRole,
     bool GrantPosProductAccess,
     string? PosLocalRoleCode);
@@ -61,6 +91,7 @@ public static class LocalValidationIdentityCatalog
             PreferredAccountClass: AccountClass.Platform,
             AssignPlatformAdministrator: true,
             HasOrganizationMembership: false,
+            OrganizationSlug: null,
             OrganizationRole: null,
             GrantPosProductAccess: false,
             PosLocalRoleCode: null),
@@ -69,10 +100,11 @@ public static class LocalValidationIdentityCatalog
             Username: "rafael.torres",
             DisplayName: "Rafael Torres",
             Email: "rafael.torres@exits.local",
-            Summary: "Organization account — Organization Owner with POS access (Owner role).",
+            Summary: "Sampaguita Neighborhood Store — Organization Owner with POS Owner role.",
             PreferredAccountClass: AccountClass.Organization,
             AssignPlatformAdministrator: false,
             HasOrganizationMembership: true,
+            OrganizationSlug: LocalValidationOrganizationCatalog.SampaguitaSlug,
             OrganizationRole: OrganizationMembershipValidationRole.OrganizationOwner,
             GrantPosProductAccess: true,
             PosLocalRoleCode: "Owner"),
@@ -81,10 +113,11 @@ public static class LocalValidationIdentityCatalog
             Username: "maria.santos",
             DisplayName: "Maria Santos",
             Email: "maria.santos@exits.local",
-            Summary: "Organization account — Organization Member with POS access (Cashier role).",
+            Summary: "Sampaguita Neighborhood Store — Organization Member with POS Cashier role.",
             PreferredAccountClass: AccountClass.Organization,
             AssignPlatformAdministrator: false,
             HasOrganizationMembership: true,
+            OrganizationSlug: LocalValidationOrganizationCatalog.SampaguitaSlug,
             OrganizationRole: OrganizationMembershipValidationRole.OrganizationMember,
             GrantPosProductAccess: true,
             PosLocalRoleCode: "Cashier"),
@@ -93,22 +126,24 @@ public static class LocalValidationIdentityCatalog
             Username: "carlo.reyes",
             DisplayName: "Carlo Reyes",
             Email: "carlo.reyes@exits.local",
-            Summary: "Organization account — Organization Member with POS access (Store Manager role).",
+            Summary: "Mabuhay Mini Mart — Organization Owner with POS Owner role.",
             PreferredAccountClass: AccountClass.Organization,
             AssignPlatformAdministrator: false,
             HasOrganizationMembership: true,
-            OrganizationRole: OrganizationMembershipValidationRole.OrganizationMember,
+            OrganizationSlug: LocalValidationOrganizationCatalog.MabuhaySlug,
+            OrganizationRole: OrganizationMembershipValidationRole.OrganizationOwner,
             GrantPosProductAccess: true,
-            PosLocalRoleCode: "StoreManager"),
+            PosLocalRoleCode: "Owner"),
         new(
             Key: "ana-cruz",
             Username: "ana.cruz",
             DisplayName: "Ana Cruz",
             Email: "ana.cruz@exits.local",
-            Summary: "Organization account — Organization Member without POS product access.",
+            Summary: "Mabuhay Mini Mart — Organization Member without POS product access.",
             PreferredAccountClass: AccountClass.Organization,
             AssignPlatformAdministrator: false,
             HasOrganizationMembership: true,
+            OrganizationSlug: LocalValidationOrganizationCatalog.MabuhaySlug,
             OrganizationRole: OrganizationMembershipValidationRole.OrganizationMember,
             GrantPosProductAccess: false,
             PosLocalRoleCode: null),
@@ -121,6 +156,7 @@ public static class LocalValidationIdentityCatalog
             PreferredAccountClass: AccountClass.Platform,
             AssignPlatformAdministrator: false,
             HasOrganizationMembership: false,
+            OrganizationSlug: null,
             OrganizationRole: null,
             GrantPosProductAccess: false,
             PosLocalRoleCode: null),
@@ -133,6 +169,7 @@ public static class LocalValidationIdentityCatalog
             PreferredAccountClass: AccountClass.Personal,
             AssignPlatformAdministrator: false,
             HasOrganizationMembership: false,
+            OrganizationSlug: null,
             OrganizationRole: null,
             GrantPosProductAccess: false,
             PosLocalRoleCode: null),
@@ -145,6 +182,7 @@ public static class LocalValidationIdentityCatalog
             PreferredAccountClass: AccountClass.Personal,
             AssignPlatformAdministrator: false,
             HasOrganizationMembership: false,
+            OrganizationSlug: null,
             OrganizationRole: null,
             GrantPosProductAccess: false,
             PosLocalRoleCode: null)
@@ -162,4 +200,5 @@ public sealed record LocalValidationIdentityDto(
     Guid UserId,
     Guid? OrganizationId,
     string Summary,
-    string? PosLocalRoleCode);
+    string? PosLocalRoleCode,
+    string ListLabel);

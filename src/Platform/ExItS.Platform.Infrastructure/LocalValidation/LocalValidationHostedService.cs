@@ -1,4 +1,3 @@
-using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.LocalValidation;
 using ExItS.Platform.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +10,7 @@ namespace ExItS.Platform.Infrastructure.LocalValidation;
 
 /// <summary>
 /// Applies Platform migrations and seeds local-validation identities when LocalValidation:Enabled.
-/// Explicit preview-only path — not a Production startup Migrate().
+/// Explicit local-validation-only path — not a Production startup Migrate().
 /// </summary>
 public sealed class LocalValidationHostedService(
     IServiceScopeFactory scopeFactory,
@@ -44,9 +43,6 @@ public sealed class LocalValidationHostedService(
 
         var initializer = scope.ServiceProvider.GetRequiredService<InitializeLocalValidationDataset>();
         await initializer.ExecuteAsync(cancellationToken).ConfigureAwait(false);
-
-        var phase16Seed = scope.ServiceProvider.GetRequiredService<InitializePhase16AccountSeed>();
-        await phase16Seed.ExecuteAsync(cancellationToken).ConfigureAwait(false);
 
         logger.LogInformation("LocalValidation hosted initialization finished.");
     }

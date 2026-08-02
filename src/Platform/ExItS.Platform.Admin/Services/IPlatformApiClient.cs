@@ -179,6 +179,15 @@ public interface IPlatformApiClient
     Task<ApiCallResult<IReadOnlyList<EligibleOrganizationDto>>> GetEligibleOrganizationsAsync(CancellationToken ct = default);
     Task<ApiCallResult<OrganizationContextResultDto>> SetOrganizationContextAsync(SetOrganizationContextRequest request, CancellationToken ct = default);
 
+    Task<ApiCallResult<PersonalDashboardDto>> GetPersonalDashboardAsync(CancellationToken ct = default);
+    Task<ApiCallResult<PersonalProfileDto>> GetPersonalProfileAsync(CancellationToken ct = default);
+    Task<ApiCallResult<PersonalAccountSettingsDto>> GetPersonalSettingsAsync(CancellationToken ct = default);
+    Task<ApiCallResult<IReadOnlyList<PersonalContactDto>>> GetPersonalUtangContactsAsync(CancellationToken ct = default);
+    Task<ApiCallResult<IReadOnlyList<PersonalDebtRelationshipSummaryDto>>> GetPersonalUtangLentAsync(CancellationToken ct = default);
+    Task<ApiCallResult<IReadOnlyList<PersonalDebtRelationshipSummaryDto>>> GetPersonalUtangBorrowedAsync(CancellationToken ct = default);
+    Task<ApiCallResult<IReadOnlyList<PersonalUtangInvitationDto>>> GetPersonalUtangInvitationsAsync(CancellationToken ct = default);
+    Task<ApiCallResult<IReadOnlyList<PersonalInAppNotificationDto>>> GetPersonalNotificationsAsync(CancellationToken ct = default);
+
     Task<ApiCallResult<AccessTokenIssueDto>> IssueAccessTokenAsync(IssueAccessTokenRequest request, CancellationToken ct = default);
     Task<ApiCallResult<AccessTokenIntrospectionDto>> IntrospectAccessTokenAsync(IntrospectAccessTokenRequest request, CancellationToken ct = default);
 }

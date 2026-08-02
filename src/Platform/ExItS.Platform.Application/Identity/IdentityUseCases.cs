@@ -17,10 +17,19 @@ public sealed record PlatformUserDto(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc,
     DateTimeOffset? SuspendedAtUtc,
-    string? SuspensionReason);
+    string? SuspensionReason,
+    IReadOnlyList<string> AccountClasses,
+    IReadOnlyList<string> OrganizationNames);
+
+/// <summary>Directory extras for Platform Admin user lists (account class + org memberships).</summary>
+public sealed record PlatformUserDirectoryExtras(
+    IReadOnlyList<string> AccountClasses,
+    IReadOnlyList<string> OrganizationNames);
 
 public sealed class PlatformUserQueryService
 {
+    private static readonly PlatformUserDirectoryExtras EmptyExtras = new([], []);
+
     private readonly IPlatformUserRepository _users;
 
     public PlatformUserQueryService(IPlatformUserRepository users) => _users = users;
@@ -28,7 +37,16 @@ public sealed class PlatformUserQueryService
     public async Task<PlatformUserDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var user = await _users.GetByIdAsync(PlatformUserId.From(id), cancellationToken).ConfigureAwait(false);
-        return user is null ? null : Map(user);
+        if (user is null)
+        {
+            return null;
+        }
+
+        var extras = await _users
+            .GetDirectoryExtrasAsync([id], cancellationToken)
+            .ConfigureAwait(false);
+        extras.TryGetValue(id, out var directory);
+        return Map(user, directory);
     }
 
     public async Task<PagedResult<PlatformUserDto>> ListAsync(
@@ -43,15 +61,24 @@ public sealed class PlatformUserQueryService
         var (items, total) = await _users
             .ListAsync(status, search, directoryFilter, skip, take, cancellationToken)
             .ConfigureAwait(false);
+        var extras = await _users
+            .GetDirectoryExtrasAsync(items.Select(u => u.Id.Value).ToList(), cancellationToken)
+            .ConfigureAwait(false);
         return new PagedResult<PlatformUserDto>(
-            items.Select(Map).ToList(),
+            items.Select(u =>
+            {
+                extras.TryGetValue(u.Id.Value, out var directory);
+                return Map(u, directory);
+            }).ToList(),
             total,
             Math.Max(page ?? 1, 1),
             take);
     }
 
-    public static PlatformUserDto Map(PlatformUser user) =>
-        new(
+    public static PlatformUserDto Map(PlatformUser user, PlatformUserDirectoryExtras? extras = null)
+    {
+        extras ??= EmptyExtras;
+        return new(
             user.Id.Value,
             user.Username,
             user.DisplayName,
@@ -60,7 +87,10 @@ public sealed class PlatformUserQueryService
             user.CreatedAtUtc,
             user.UpdatedAtUtc,
             user.SuspendedAtUtc,
-            user.SuspensionReason);
+            user.SuspensionReason,
+            extras.AccountClasses,
+            extras.OrganizationNames);
+    }
 }
 
 public sealed class CreatePlatformUser

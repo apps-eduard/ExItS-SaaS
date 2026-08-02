@@ -298,6 +298,18 @@ public sealed class ResolveCurrentPermissions
         var orgId = organizationId.HasValue
             ? PlatformOrganizationId.From(organizationId.Value)
             : actor.OrganizationId;
+
+        // Platform permission codes never apply to Organization or Personal sessions.
+        if (actor.AccountClass is AccountClass.Organization or AccountClass.Personal)
+        {
+            return new ResolvedPermissionsDto(
+                actor.ActorIdentifier,
+                actor.ActorType.ToString(),
+                actor.PlatformUserId?.Value,
+                orgId?.Value,
+                Array.Empty<string>());
+        }
+
         var permissions = await _authorizationService
             .ResolvePermissionsForActorAsync(actor, orgId, cancellationToken)
             .ConfigureAwait(false);

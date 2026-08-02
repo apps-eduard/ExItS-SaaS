@@ -5,92 +5,178 @@
 @inject IPlatformApiClient Api
 @inject IStringLocalizer<AdminResources> L
 @inject NavigationManager Nav
+@inject AdminShellContext Shell
 
-<PageHeader Class="exits-page-header" Title="@L["Dashboard_Title"]" SubTitle="@L["Dashboard_Description"]">
-    <PageHeaderBreadcrumb>
-        <Breadcrumb>
-            <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
-            <BreadcrumbItem>@L["Nav_Dashboard"]</BreadcrumbItem>
-        </Breadcrumb>
-    </PageHeaderBreadcrumb>
-</PageHeader>
-
-@if (_result is null)
+@if (!_shellReady)
 {
-    <div style="padding:2rem; text-align:center;"><Spin Tip="@L["Dashboard_Loading"]" /></div>
+    <div style="padding:2rem; text-align:center;"><Spin /></div>
 }
-else if (!_result.IsSuccess)
+else if (Shell.IsPersonalShell)
 {
-    <Result Status="@ResultStatus.Error"
-            Title="@(_result.Error?.Title ?? L["Common_Unavailable"])"
-            SubTitle="@(_result.Error?.Detail ?? "")" />
-    <div style="text-align:center;margin-top:1rem;">
-        <Button Type="@ButtonType.Primary" OnClick="ReloadAsync" Loading="_loading">@L["Common_Retry"]</Button>
-    </div>
+    <PageHeader Class="exits-page-header" Title="@L["Personal_HomeTitle"]" SubTitle="@L["Personal_HomeDescription"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_Home"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+    </PageHeader>
+
+    @if (_personal is null)
+    {
+        <div style="padding:2rem; text-align:center;"><Spin Tip="@L["Dashboard_Loading"]" /></div>
+    }
+    else if (!_personal.IsSuccess)
+    {
+        <Result Status="@ResultStatus.Error"
+                Title="@(_personal.Error?.Title ?? L["Common_Unavailable"])"
+                SubTitle="@(_personal.Error?.Detail ?? "")" />
+    }
+    else
+    {
+        var data = _personal.Data!;
+        <Row Gutter="(12,12)" Style="margin-bottom:1rem;">
+            <AntDesign.Col Xs="24" Sm="12" Md="6">
+                <Statistic Title="@L["Nav_UtangPeople"]" Value="@data.ContactCount" />
+            </AntDesign.Col>
+            <AntDesign.Col Xs="24" Sm="12" Md="6">
+                <Statistic Title="Active relationships" Value="@data.ActiveRelationshipCount" />
+            </AntDesign.Col>
+            <AntDesign.Col Xs="24" Sm="12" Md="6">
+                <Statistic Title="@L["Nav_UtangLent"]" Value="@data.TotalLentBalance" />
+            </AntDesign.Col>
+            <AntDesign.Col Xs="24" Sm="12" Md="6">
+                <Statistic Title="@L["Nav_UtangBorrowed"]" Value="@data.TotalBorrowedBalance" />
+            </AntDesign.Col>
+        </Row>
+        <Space Wrap>
+            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/personal/utang/people")'>@L["Nav_UtangPeople"]</Button>
+            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/personal/utang/lent")'>@L["Nav_UtangLent"]</Button>
+            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/personal/utang/borrowed")'>@L["Nav_UtangBorrowed"]</Button>
+            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/personal/profile")'>@L["Nav_Profile"]</Button>
+        </Space>
+    }
+}
+else if (Shell.IsOrganizationShell)
+{
+    <PageHeader Class="exits-page-header" Title="@L["Organization_HomeTitle"]" SubTitle="@L["Organization_HomeDescription"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_Dashboard"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+    </PageHeader>
+
+    <Alert Type="@AlertType.Info"
+           ShowIcon="true"
+           Style="margin-bottom:1rem;"
+           Message="@($"{Shell.RoleLabel}{(string.IsNullOrWhiteSpace(Shell.SelectedOrganizationName) ? "" : $" · {Shell.SelectedOrganizationName}")}")" />
+
+    <Space Wrap>
+        @if (Shell.SelectedOrganizationId is Guid orgId)
+        {
+            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick="@(() => Nav.NavigateTo($"/admin/organizations/{orgId}"))">@L["Nav_OrganizationProfile"]</Button>
+            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick="@(() => Nav.NavigateTo($"/admin/organizations/{orgId}/members"))">@L["Nav_Members"]</Button>
+            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick="@(() => Nav.NavigateTo($"/admin/organizations/{orgId}/enabled-products"))">@L["Nav_LaunchProduct"]</Button>
+        }
+    </Space>
+}
+else if (Shell.IsPlatformShell)
+{
+    <PageHeader Class="exits-page-header" Title="@L["Dashboard_Title"]" SubTitle="@L["Dashboard_Description"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_Dashboard"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+    </PageHeader>
+
+    @if (_result is null)
+    {
+        <div style="padding:2rem; text-align:center;"><Spin Tip="@L["Dashboard_Loading"]" /></div>
+    }
+    else if (!_result.IsSuccess)
+    {
+        <Result Status="@ResultStatus.Error"
+                Title="@(_result.Error?.Title ?? L["Common_Unavailable"])"
+                SubTitle="@(_result.Error?.Detail ?? "")" />
+        <div style="text-align:center;margin-top:1rem;">
+            <Button Type="@ButtonType.Primary" OnClick="ReloadAsync" Loading="_loading">@L["Common_Retry"]</Button>
+        </div>
+    }
+    else
+    {
+        var data = _result.Data!;
+
+        <Title Level="5">@L["Dashboard_Section_Primary"]</Title>
+        <Paragraph Type="@TextElementType.Secondary">@L["Dashboard_Section_PrimaryDetail"]</Paragraph>
+        <Row Gutter="(12,12)" Style="margin-bottom:1rem;">
+            <AntDesign.Col Xs="24" Sm="12" Md="6">
+                <Statistic Title="@L["Dashboard_Card_ActiveProducts"]" Value="@StatInt(data.ActiveProductCount, "activeProducts")" />
+            </AntDesign.Col>
+            <AntDesign.Col Xs="24" Sm="12" Md="6">
+                <Statistic Title="@L["Dashboard_Card_Organizations"]" Value="@StatInt(data.OrganizationCount, "organizations")" />
+            </AntDesign.Col>
+            <AntDesign.Col Xs="24" Sm="12" Md="6">
+                <Statistic Title="@L["Dashboard_Card_ActiveSubscriptions"]" Value="@StatInt(data.ActiveSubscriptionCount, "activeSubscriptions")" />
+            </AntDesign.Col>
+            <AntDesign.Col Xs="24" Sm="12" Md="6">
+                <Statistic Title="@L["Dashboard_Card_PendingManualPayments"]" Value="@StatInt(data.PendingManualPaymentCount, "pendingManualPayments")" />
+            </AntDesign.Col>
+        </Row>
+
+        <Title Level="5">@L["Dashboard_Section_Lifecycle"]</Title>
+        <Paragraph Type="@TextElementType.Secondary">@L["Dashboard_Section_LifecycleDetail"]</Paragraph>
+        <Row Gutter="(12,12)" Style="margin-bottom:1rem;">
+            <AntDesign.Col Xs="24" Sm="12" Md="6">
+                <Statistic Title="@L["Dashboard_Card_TrialingSubscriptions"]" Value="@StatInt(data.TrialingSubscriptionCount, "trialingSubscriptions")" />
+            </AntDesign.Col>
+            <AntDesign.Col Xs="24" Sm="12" Md="6">
+                <Statistic TValue="string" Title="@L["Dashboard_Card_GracePastDueSuspended"]" Value="@GraceCombo(data)" />
+            </AntDesign.Col>
+            <AntDesign.Col Xs="24" Sm="12" Md="6">
+                <Statistic Title="@L["Dashboard_Card_PublishedPlanVersions"]" Value="@StatInt(data.PublishedPlanVersionCount, "publishedPlanVersions")" />
+            </AntDesign.Col>
+            <AntDesign.Col Xs="24" Sm="12" Md="6">
+                <Statistic Title="@L["Dashboard_Card_LatestEntitlementSnapshots"]" Value="@StatInt(data.LatestEntitlementSnapshotCount, "latestEntitlementSnapshots")" />
+            </AntDesign.Col>
+        </Row>
+
+        <Title Level="5">@L["Dashboard_Section_Operations"]</Title>
+        <Space Wrap>
+            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/subscriptions")'>@L["Nav_Subscriptions"]</Button>
+            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/payments")'>@L["Nav_Payments"]</Button>
+            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/products")'>@L["Nav_Products"]</Button>
+            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/organizations")'>@L["Nav_Organizations"]</Button>
+            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/users")'>@L["Nav_Users"]</Button>
+            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/audit")'>@L["Nav_Audit"]</Button>
+        </Space>
+
+        @if (data.PartialFailures.Count > 0)
+        {
+            <Alert Type="@AlertType.Warning"
+                   ShowIcon="true"
+                   Style="margin-top:1rem;"
+                   Message="@L["Dashboard_PartialUnavailable"]"
+                   Description="@string.Join("; ", data.PartialFailures)" />
+        }
+    }
 }
 else
 {
-    var data = _result.Data!;
-
-    <Title Level="5">@L["Dashboard_Section_Primary"]</Title>
-    <Paragraph Type="@TextElementType.Secondary">@L["Dashboard_Section_PrimaryDetail"]</Paragraph>
-    <Row Gutter="(12,12)" Style="margin-bottom:1rem;">
-        <AntDesign.Col Xs="24" Sm="12" Md="6">
-            <Statistic Title="@L["Dashboard_Card_ActiveProducts"]" Value="@StatInt(data.ActiveProductCount, "activeProducts")" />
-        </AntDesign.Col>
-        <AntDesign.Col Xs="24" Sm="12" Md="6">
-            <Statistic Title="@L["Dashboard_Card_Organizations"]" Value="@StatInt(data.OrganizationCount, "organizations")" />
-        </AntDesign.Col>
-        <AntDesign.Col Xs="24" Sm="12" Md="6">
-            <Statistic Title="@L["Dashboard_Card_ActiveSubscriptions"]" Value="@StatInt(data.ActiveSubscriptionCount, "activeSubscriptions")" />
-        </AntDesign.Col>
-        <AntDesign.Col Xs="24" Sm="12" Md="6">
-            <Statistic Title="@L["Dashboard_Card_PendingManualPayments"]" Value="@StatInt(data.PendingManualPaymentCount, "pendingManualPayments")" />
-        </AntDesign.Col>
-    </Row>
-
-    <Title Level="5">@L["Dashboard_Section_Lifecycle"]</Title>
-    <Paragraph Type="@TextElementType.Secondary">@L["Dashboard_Section_LifecycleDetail"]</Paragraph>
-    <Row Gutter="(12,12)" Style="margin-bottom:1rem;">
-        <AntDesign.Col Xs="24" Sm="12" Md="6">
-            <Statistic Title="@L["Dashboard_Card_TrialingSubscriptions"]" Value="@StatInt(data.TrialingSubscriptionCount, "trialingSubscriptions")" />
-        </AntDesign.Col>
-        <AntDesign.Col Xs="24" Sm="12" Md="6">
-            <Statistic TValue="string" Title="@L["Dashboard_Card_GracePastDueSuspended"]" Value="@GraceCombo(data)" />
-        </AntDesign.Col>
-        <AntDesign.Col Xs="24" Sm="12" Md="6">
-            <Statistic Title="@L["Dashboard_Card_PublishedPlanVersions"]" Value="@StatInt(data.PublishedPlanVersionCount, "publishedPlanVersions")" />
-        </AntDesign.Col>
-        <AntDesign.Col Xs="24" Sm="12" Md="6">
-            <Statistic Title="@L["Dashboard_Card_LatestEntitlementSnapshots"]" Value="@StatInt(data.LatestEntitlementSnapshotCount, "latestEntitlementSnapshots")" />
-        </AntDesign.Col>
-    </Row>
-
-    <Title Level="5">@L["Dashboard_Section_Operations"]</Title>
-    <Space Wrap>
-        <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/subscriptions")'>@L["Nav_Subscriptions"]</Button>
-        <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/payments")'>@L["Nav_Payments"]</Button>
-        <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/products")'>@L["Nav_Products"]</Button>
-        <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/organizations")'>@L["Nav_Organizations"]</Button>
-        <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/users")'>@L["Nav_Users"]</Button>
-        <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/audit")'>@L["Nav_Audit"]</Button>
-    </Space>
-
-    @if (data.PartialFailures.Count > 0)
-    {
-        <Alert Type="@AlertType.Warning"
-               ShowIcon="true"
-               Style="margin-top:1rem;"
-               Message="@L["Dashboard_PartialUnavailable"]"
-               Description="@string.Join("; ", data.PartialFailures)" />
-    }
+    <PageHeader Class="exits-page-header" Title="@L["Dashboard_Title"]" SubTitle="@L["Common_Unavailable"]" />
+    <Result Status="@ResultStatus.Info" Title="@L["Common_Unavailable"]" SubTitle="@Shell.RoleLabel" />
 }
 
 @code {
     private ApiCallResult<PortfolioSummaryDto>? _result;
+    private ApiCallResult<PersonalDashboardDto>? _personal;
     private HashSet<string> _failed = new(StringComparer.OrdinalIgnoreCase);
     private bool _loading;
     private bool _started;
+    private bool _shellReady;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -100,8 +186,18 @@ else
         }
 
         _started = true;
-        // Defer until Interactive Server circuit + session cookie are available.
-        await LoadWithRetryAsync();
+        await Shell.EnsureLoadedAsync();
+        _shellReady = true;
+
+        if (Shell.IsPlatformShell)
+        {
+            await LoadWithRetryAsync();
+        }
+        else if (Shell.IsPersonalShell)
+        {
+            _personal = await Api.GetPersonalDashboardAsync();
+        }
+
         StateHasChanged();
     }
 
@@ -129,7 +225,6 @@ else
                     break;
                 }
 
-                // Rate limit / brief auth race right after local validation login.
                 var status = last.Error?.StatusCode;
                 if (status is not (System.Net.HttpStatusCode.TooManyRequests
                     or System.Net.HttpStatusCode.Unauthorized

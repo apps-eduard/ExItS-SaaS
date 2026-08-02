@@ -269,10 +269,17 @@ else
         switch (ctx.Column.Key)
         {
             case "user":
-                b.OpenElement(0, "a");
-                b.AddAttribute(1, "href", $"/admin/users/{ctx.Item.UserId}");
-                b.AddContent(2, ctx.Item.UserId);
-                b.CloseElement();
+                if (Shell.IsPlatformShell)
+                {
+                    b.OpenElement(0, "a");
+                    b.AddAttribute(1, "href", $"/admin/users/{ctx.Item.UserId}");
+                    b.AddContent(2, ctx.Item.UserId);
+                    b.CloseElement();
+                }
+                else
+                {
+                    b.AddContent(0, ctx.Item.UserId);
+                }
                 break;
             case "product":
                 b.AddContent(0, ctx.Item.ProductCode);

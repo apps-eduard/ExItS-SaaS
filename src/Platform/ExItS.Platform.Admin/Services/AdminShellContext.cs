@@ -3,23 +3,28 @@ using ExItS.Platform.Admin.Models;
 namespace ExItS.Platform.Admin.Services;
 
 /// <summary>
-/// UI shell mode derived from Platform permissions and organization memberships.
+/// UI shell mode derived from the server-validated account class (and org membership for labels).
 /// Convenience only — never replaces server-side authorization.
 /// </summary>
 public enum AdminShellMode
 {
-    /// <summary>No platform permissions and no org-admin membership.</summary>
+    /// <summary>No usable account class / unsigned shell chrome.</summary>
     Limited,
 
-    /// <summary>Holds one or more Platform permission codes → Platform Admin menu.</summary>
+    /// <summary>Platform account class → Platform Administration menu.</summary>
     Platform,
 
-    /// <summary>Org Owner/Administrator membership without Platform permissions → Organization Admin menu.</summary>
-    Organization
+    /// <summary>Organization account class → Organization Administration menu.</summary>
+    Organization,
+
+    /// <summary>Personal account class → Personal Scope menu.</summary>
+    Personal
 }
 
 /// <summary>
 /// Circuit-scoped identity + shell mode for the Ant Design Admin chrome.
+/// Shell mode follows AccountClass from <c>GET /api/v1/platform/auth/me</c>, not selected-org UI state
+/// and not Platform permission elevation.
 /// </summary>
 public sealed class AdminShellContext(
     IPlatformApiClient api,
@@ -29,6 +34,8 @@ public sealed class AdminShellContext(
 
     public bool Loaded { get; private set; }
     public AdminShellMode Mode { get; private set; } = AdminShellMode.Limited;
+    public string? AccountClass { get; private set; }
+    public string? AllowedScope { get; private set; }
     public string? DisplayName { get; private set; }
     public string? Username { get; private set; }
     public string RoleLabel { get; private set; } = "—";
@@ -40,6 +47,7 @@ public sealed class AdminShellContext(
 
     public bool IsPlatformShell => Mode == AdminShellMode.Platform;
     public bool IsOrganizationShell => Mode == AdminShellMode.Organization;
+    public bool IsPersonalShell => Mode == AdminShellMode.Personal;
 
     public Task EnsureLoadedAsync()
     {
@@ -56,14 +64,14 @@ public sealed class AdminShellContext(
     private async Task LoadAsync()
     {
         // Blazor circuit-scoped: keep awaits on the sync context when mutating shell state.
-        await permissions.EnsureLoadedAsync();
-
         string? displayName = null;
         string? username = null;
         Guid? selectedOrgId = null;
         string? selectedOrgName = null;
         var orgCount = 0;
         string? membershipRole = null;
+        string? accountClass = null;
+        string? allowedScope = null;
 
         var me = await api.GetAuthMeAsync();
         if (me.IsSuccess && me.Data is not null)
@@ -73,11 +81,14 @@ public sealed class AdminShellContext(
             selectedOrgId = me.Data.SelectedOrganizationId;
             selectedOrgName = me.Data.SelectedOrganizationDisplayName;
             orgCount = me.Data.ActiveOrganizationCount;
+            accountClass = me.Data.AccountClass;
+            allowedScope = me.Data.AllowedScope;
         }
 
-        // Organization listing is Organization-session only (WP03). Platform shells skip the switcher list.
-        var accountClass = me.IsSuccess ? me.Data?.AccountClass : null;
         var isOrganizationAccount = string.Equals(accountClass, "Organization", StringComparison.OrdinalIgnoreCase);
+        var isPlatformAccount = string.Equals(accountClass, "Platform", StringComparison.OrdinalIgnoreCase);
+        var isPersonalAccount = string.Equals(accountClass, "Personal", StringComparison.OrdinalIgnoreCase);
+
         ApiCallResult<IReadOnlyList<EligibleOrganizationDto>>? orgs = null;
         if (isOrganizationAccount)
         {
@@ -104,38 +115,39 @@ public sealed class AdminShellContext(
             }
         }
 
+        // Platform permission codes are only meaningful for Platform sessions.
+        if (isPlatformAccount)
+        {
+            await permissions.EnsureLoadedAsync();
+        }
+        else
+        {
+            await permissions.EnsureLoadedForNonPlatformAsync();
+        }
+
         DisplayName = string.IsNullOrWhiteSpace(displayName) ? username : displayName;
         Username = username;
+        AccountClass = accountClass;
+        AllowedScope = allowedScope;
         SelectedOrganizationId = selectedOrgId;
         SelectedOrganizationName = selectedOrgName;
         MembershipRole = membershipRole;
         OrganizationCount = orgCount;
 
-        var isPlatform = permissions.HasAnyPermission(
-            PlatformPermissionCodes.ViewPortfolio,
-            PlatformPermissionCodes.ManageOrganizations,
-            PlatformPermissionCodes.ManageCatalog,
-            PlatformPermissionCodes.ManagePlatformUsers,
-            PlatformPermissionCodes.ManageMemberships,
-            PlatformPermissionCodes.ManageProductAccess,
-            PlatformPermissionCodes.ManageSubscriptions,
-            PlatformPermissionCodes.ManageManualPayments,
-            PlatformPermissionCodes.ManageEntitlementOverrides,
-            PlatformPermissionCodes.ViewAuditRecords);
-
-        var isOrgAdminMembership = IsOrgAdminRole(membershipRole)
-            || (orgs is { IsSuccess: true, Data: not null }
-                && orgs.Data.Any(o => IsOrgAdminRole(o.MembershipRole)));
-
-        if (isPlatform)
+        if (isPlatformAccount)
         {
             Mode = AdminShellMode.Platform;
             RoleLabel = ResolvePlatformRoleLabel();
         }
-        else if (isOrgAdminMembership)
+        else if (isOrganizationAccount)
         {
             Mode = AdminShellMode.Organization;
-            RoleLabel = FormatMembershipRole(membershipRole) ?? "Organization Administrator";
+            RoleLabel = FormatMembershipRole(membershipRole) ?? "Organization";
+        }
+        else if (isPersonalAccount)
+        {
+            Mode = AdminShellMode.Personal;
+            RoleLabel = "Personal";
         }
         else
         {
@@ -170,10 +182,6 @@ public sealed class AdminShellContext(
 
         return "Platform operator";
     }
-
-    private static bool IsOrgAdminRole(string? role) =>
-        string.Equals(role, "OrganizationOwner", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(role, "OrganizationAdministrator", StringComparison.OrdinalIgnoreCase);
 
     private static string? FormatMembershipRole(string? role) => role switch
     {

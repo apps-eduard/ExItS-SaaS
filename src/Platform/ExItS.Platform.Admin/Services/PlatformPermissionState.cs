@@ -22,7 +22,17 @@ public sealed class PlatformPermissionState(
 
     public Task EnsureLoadedAsync()
     {
-        _loadTask ??= LoadAsync();
+        _loadTask ??= LoadAsync(allowDevFallback: true);
+        return _loadTask;
+    }
+
+    /// <summary>
+    /// Marks permissions loaded as empty for Organization/Personal shells.
+    /// Never applies the Development “all permissions” fallback (that would force Platform chrome).
+    /// </summary>
+    public Task EnsureLoadedForNonPlatformAsync()
+    {
+        _loadTask ??= LoadAsync(allowDevFallback: false);
         return _loadTask;
     }
 
@@ -33,11 +43,11 @@ public sealed class PlatformPermissionState(
         LoadFailed = false;
         ActorIdentifier = null;
         _permissions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        _loadTask = LoadAsync();
+        _loadTask = LoadAsync(allowDevFallback: true);
         await _loadTask;
     }
 
-    private async Task LoadAsync()
+    private async Task LoadAsync(bool allowDevFallback)
     {
         try
         {
@@ -53,13 +63,19 @@ public sealed class PlatformPermissionState(
             else
             {
                 LoadFailed = true;
-                ApplyFallbackPermissions();
+                if (allowDevFallback)
+                {
+                    ApplyFallbackPermissions();
+                }
             }
         }
         catch
         {
             LoadFailed = true;
-            ApplyFallbackPermissions();
+            if (allowDevFallback)
+            {
+                ApplyFallbackPermissions();
+            }
         }
 
         Loaded = true;
@@ -67,8 +83,8 @@ public sealed class PlatformPermissionState(
 
     private void ApplyFallbackPermissions()
     {
-        // Development/Testing only: keep the shell usable when /authorization/me fails.
-        // Production-like hosts stay closed.
+        // Development/Testing only: keep Platform shell usable when /authorization/me fails
+        // for a Platform session. Never used for Organization/Personal (would leak Platform nav).
         if (env.IsDevelopment() || env.IsEnvironment("Testing"))
         {
             _permissions = new HashSet<string>(PlatformPermissionCodes.All, StringComparer.OrdinalIgnoreCase);

@@ -19,6 +19,10 @@ public interface IPlatformUserRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyDictionary<Guid, PlatformUserDirectoryExtras>> GetDirectoryExtrasAsync(
+        IReadOnlyList<Guid> userIds,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(PlatformUser user, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(PlatformUser user, CancellationToken cancellationToken = default);

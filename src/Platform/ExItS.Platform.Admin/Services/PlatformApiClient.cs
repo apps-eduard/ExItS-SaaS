@@ -373,6 +373,30 @@ public sealed class PlatformApiClient(
     public Task<ApiCallResult<OrganizationContextResultDto>> SetOrganizationContextAsync(SetOrganizationContextRequest request, CancellationToken ct = default) =>
         SendAsync<OrganizationContextResultDto>(HttpMethod.Put, "/api/v1/platform/auth/organization-context", request, ct);
 
+    public Task<ApiCallResult<PersonalDashboardDto>> GetPersonalDashboardAsync(CancellationToken ct = default) =>
+        GetAsync<PersonalDashboardDto>("/api/v1/personal/dashboard", ct);
+
+    public Task<ApiCallResult<PersonalProfileDto>> GetPersonalProfileAsync(CancellationToken ct = default) =>
+        GetAsync<PersonalProfileDto>("/api/v1/personal/profile", ct);
+
+    public Task<ApiCallResult<PersonalAccountSettingsDto>> GetPersonalSettingsAsync(CancellationToken ct = default) =>
+        GetAsync<PersonalAccountSettingsDto>("/api/v1/personal/settings", ct);
+
+    public Task<ApiCallResult<IReadOnlyList<PersonalContactDto>>> GetPersonalUtangContactsAsync(CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<PersonalContactDto>>("/api/v1/personal/utang/contacts", ct);
+
+    public Task<ApiCallResult<IReadOnlyList<PersonalDebtRelationshipSummaryDto>>> GetPersonalUtangLentAsync(CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<PersonalDebtRelationshipSummaryDto>>("/api/v1/personal/utang/relationships/lent", ct);
+
+    public Task<ApiCallResult<IReadOnlyList<PersonalDebtRelationshipSummaryDto>>> GetPersonalUtangBorrowedAsync(CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<PersonalDebtRelationshipSummaryDto>>("/api/v1/personal/utang/relationships/borrowed", ct);
+
+    public Task<ApiCallResult<IReadOnlyList<PersonalUtangInvitationDto>>> GetPersonalUtangInvitationsAsync(CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<PersonalUtangInvitationDto>>("/api/v1/personal/utang/invitations", ct);
+
+    public Task<ApiCallResult<IReadOnlyList<PersonalInAppNotificationDto>>> GetPersonalNotificationsAsync(CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<PersonalInAppNotificationDto>>("/api/v1/personal/notifications", ct);
+
     public Task<ApiCallResult<AccessTokenIssueDto>> IssueAccessTokenAsync(IssueAccessTokenRequest request, CancellationToken ct = default) =>
         SendAsync<AccessTokenIssueDto>(HttpMethod.Post, "/api/v1/platform/auth/token", request, ct);
 

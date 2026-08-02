@@ -35,7 +35,15 @@ Copy-Item .env.local-validation.example .env.local-validation
 # Fill REPLACE_* values. Never commit .env.local-validation.
 ``
 
-Sign in through normal Admin credential login using the approved Local Validation identities (Olivia Mendoza, Rafael Torres, Maria Santos, Carlo Reyes, Ana Cruz, Daniel Garcia, Luis Navarro, Sofia Ramos) via normal Platform credential login; password from `LocalValidation:SharedPassword` / `LOCAL_VALIDATION_SHARED_PASSWORD` env (never commit the secret). No quick-login UI.
+Sign in on Admin via the Local Validation identity dropdown (server-side normal `POST /auth/login`) or manual credentials.
+
+Organizations (2 users each):
+- **Sampaguita Neighborhood Store** (`sampaguita-store`) — Rafael Torres (Owner), Maria Santos (Cashier)
+- **Mabuhay Mini Mart** (`mabuhay-mini-mart`) — Carlo Reyes (Owner), Ana Cruz (Member, no POS)
+
+Also: Platform (Olivia Mendoza, Daniel Garcia), Personal (Luis Navarro, Sofia Ramos). Password from `LOCAL_VALIDATION_SHARED_PASSWORD` env only (never commit; never exposed in the browser).
+
+Local Validation does **not** seed `phase16-seed-org` / Phase16 test users. If that org still appears, it is leftover from an older seed on a preserved volume — recreate Platform DB volumes (or wipe the Platform database) and restart `.\tools\Start-LocalValidation.ps1`.
 
 ## Migration from Live Preview
 

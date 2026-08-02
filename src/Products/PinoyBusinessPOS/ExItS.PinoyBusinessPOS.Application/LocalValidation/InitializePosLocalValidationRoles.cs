@@ -30,64 +30,43 @@ public sealed class InitializePosLocalValidationRoles
             return;
         }
 
-        var owner = identities.FirstOrDefault(i =>
-            string.Equals(i.Key, "rafael-torres", StringComparison.OrdinalIgnoreCase));
-        var cashier = identities.FirstOrDefault(i =>
-            string.Equals(i.Key, "maria-santos", StringComparison.OrdinalIgnoreCase));
-        var storeManager = identities.FirstOrDefault(i =>
-            string.Equals(i.Key, "carlo-reyes", StringComparison.OrdinalIgnoreCase));
+        var withPos = identities
+            .Where(i => i.OrganizationId is not null
+                        && i.OrganizationId != Guid.Empty
+                        && !string.IsNullOrWhiteSpace(i.PosLocalRoleCode))
+            .ToList();
 
-        if (owner is null || owner.OrganizationId is null || owner.OrganizationId == Guid.Empty)
+        if (withPos.Count == 0)
         {
-            throw new InvalidOperationException("Local validation rafael-torres identity is missing organization id.");
+            _logger.LogInformation("POS local validation role initialization skipped (no POS-mapped identities).");
+            return;
         }
 
-        var organizationId = owner.OrganizationId.Value;
-        var actorUserId = owner.UserId;
-
-        var ownerResult = await _assignPosRole
-            .ExecuteAsync(organizationId, owner.UserId, PosRoleCodes.Owner, actorUserId, ct: cancellationToken)
-            .ConfigureAwait(false);
-        if (!ownerResult.IsSuccess)
+        foreach (var group in withPos.GroupBy(i => i.OrganizationId!.Value))
         {
-            throw new InvalidOperationException(
-                $"Local validation POS Owner bootstrap failed: {ownerResult.ErrorCode} {ownerResult.ErrorMessage}");
-        }
+            var organizationId = group.Key;
+            var owner = group.FirstOrDefault(i =>
+                            string.Equals(i.PosLocalRoleCode, PosRoleCodes.Owner, StringComparison.OrdinalIgnoreCase))
+                        ?? group.First();
+            var actorUserId = owner.UserId;
 
-        if (cashier is not null)
-        {
-            var cashierResult = await _assignPosRole
-                .ExecuteAsync(
-                    organizationId,
-                    cashier.UserId,
-                    PosRoleCodes.Cashier,
-                    actorUserId,
-                    ct: cancellationToken)
-                .ConfigureAwait(false);
-            if (!cashierResult.IsSuccess)
+            foreach (var identity in group)
             {
-                throw new InvalidOperationException(
-                    $"Local validation POS Cashier assign failed: {cashierResult.ErrorCode} {cashierResult.ErrorMessage}");
+                var roleCode = identity.PosLocalRoleCode!;
+                var result = await _assignPosRole
+                    .ExecuteAsync(organizationId, identity.UserId, roleCode, actorUserId, ct: cancellationToken)
+                    .ConfigureAwait(false);
+                if (!result.IsSuccess)
+                {
+                    throw new InvalidOperationException(
+                        $"Local validation POS role '{roleCode}' assign failed for '{identity.Key}': {result.ErrorCode} {result.ErrorMessage}");
+                }
             }
-        }
 
-        if (storeManager is not null)
-        {
-            var storeManagerResult = await _assignPosRole
-                .ExecuteAsync(
-                    organizationId,
-                    storeManager.UserId,
-                    PosRoleCodes.StoreManager,
-                    actorUserId,
-                    ct: cancellationToken)
-                .ConfigureAwait(false);
-            if (!storeManagerResult.IsSuccess)
-            {
-                throw new InvalidOperationException(
-                    $"Local validation POS Store Manager assign failed: {storeManagerResult.ErrorCode} {storeManagerResult.ErrorMessage}");
-            }
+            _logger.LogInformation(
+                "POS local validation roles initialized for organization {OrganizationId} ({Count} users).",
+                organizationId,
+                group.Count());
         }
-
-        _logger.LogInformation("POS local validation role initialization completed for organization {OrganizationId}.", organizationId);
     }
 }
