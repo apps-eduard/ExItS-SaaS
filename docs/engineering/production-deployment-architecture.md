@@ -75,7 +75,7 @@ Authentication SoR remains Platform (**D-P13-02**). Deployment does not grant me
 | Pilot packaging | `deploy/docker/docker-compose.pilot.yml`, nginx `pilot.conf` | **Non-production only** |
 | Packaging baseline | `deploy/docker/compose.yaml` (P14-WP02) | Local Compose testing; **not** Production cutover |
 | Production proxy/TLS template | `deploy/docker/compose.production.yaml`, `nginx/production.conf` (P14-WP03) | Topology baseline; operator certs required; **not** Production-ready claim |
-| Live preview (personal) | `deploy/docker/compose.live-preview.yaml` (`exits-live-preview`) | **Default:** Docker DBs only (ports 15533/15534); local Platform/POS/Admin via `Start-LivePreviewLocal.ps1`. Optional `--profile apps` for containerized APIs/Admin. **Not** Production; **not** packaging |
+| Local validation (production-equivalent) | `deploy/docker/compose.local-validation.yaml` (`exits-local-validation`) | **Default:** Docker DBs only (ports 15533/15534); local Platform/POS/Admin via `Start-LocalValidation.ps1`. Optional `--profile apps` for containerized APIs/Admin. Same app code as Production; config-only differences. **Not** packaging baseline |
 | Ops scripts | `ops/deploy/*`, `ops/backup/*` | Pilot/ops helpers; Production cutover **not** evidenced |
 | Deployment library | `ExItS.Deployment` + CLI | Validation, backup gate, migration order, readiness evaluator |
 | AuthN | Phase 13 sessions + Bearer + external login | **R-091 closed for Phase 13 scope**; residuals remain |

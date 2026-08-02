@@ -21,7 +21,7 @@ Visual consistency for **POS** comes from DesignSystem semantic tokens. **Platfo
 
 ### Platform Admin (P15-WP01 — Ant Design)
 
-Commercial Admin shell: Ant Design `Layout` / `Sider` / `Header` / `Content` / `Menu`, compact tables/forms, Light/Dark/System theme. Permission-aware nav is UI convenience only. SSR credential + Live Preview login preserved. Residual native/report controls remain only on pages not yet migrated (later Phase 15 WPs). **No Tailwind. No Fluent UI.**
+Commercial Admin shell: Ant Design `Layout` / `Sider` / `Header` / `Content` / `Menu`, compact tables/forms, Light/Dark/System theme. Permission-aware nav is UI convenience only. Credential login only (no Live Preview / identity quick-login). Residual native/report controls remain only on pages not yet migrated. **No Tailwind. No Fluent UI.**
 
 ### Historical note (P4-WP04 native shell)
 

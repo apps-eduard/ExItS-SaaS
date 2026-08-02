@@ -1,5 +1,10 @@
 # P14-WP02A — Live Preview Test Users and Quick Login
 
+> **Historical / superseded.** This report documents the former Live Preview stack and quick-login path.
+> Current operator runtime is **Local Validation** (`deploy/docker/compose.local-validation.yaml`, `tools/Start-LocalValidation.ps1`).
+> See [P16-WP11 Local Validation replaces Live Preview](P16-WP11-local-validation-replaces-live-preview.md).
+> Filenames are retained for history; do not treat this package as active guidance.
+
 Phase marker: `P14-WP02A-live-preview-test-users-and-quick-login`
 
 Package: **P14-WP02A — Reliable local Live Preview launcher (one command)**

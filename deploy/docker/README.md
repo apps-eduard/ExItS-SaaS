@@ -1,4 +1,4 @@
-# ExItS Docker packaging + live preview (P14-WP02 / P14-WP02A)
+# ExItS Docker packaging + Local Validation (P14-WP02 / P16-WP11)
 
 ## Layout
 
@@ -6,10 +6,10 @@
 |---|---|
 | `compose.yaml` | **Default** packaging baseline (Platform API + POS API + separate PostgreSQL). Local deployment testing. **Not Production-ready.** |
 | `compose.production.yaml` | Production topology template: nginx reverse proxy TLS, internal DBs/APIs only (**P14-WP03**). **Not** a Production-ready claim. |
-| `compose.live-preview.yaml` | Live-preview project `exits-live-preview`. **Default `up` = DBs only**; app services behind profile `apps`. |
-| `README.live-preview.md` | Authoritative daily workflow: Docker DBs + local .NET APIs/Admin |
-| `Start-LivePreviewLocal.ps1` | Bring up DBs (if needed) and start local Platform/POS/Admin |
-| `Stop-LivePreviewLocal.ps1` | Stop DBs without deleting volumes |
+| `compose.local-validation.yaml` | Local Validation project `exits-local-validation`. **Default `up` = DBs only**; app services behind profile `apps`. |
+| `README.local-validation.md` | Authoritative daily workflow: Docker DBs + local .NET APIs/Admin |
+| `Start-LocalValidation.ps1` | Bring up DBs (if needed) and start local Platform/POS/Admin |
+| `Stop-LocalValidation.ps1` | Stop DBs without deleting volumes |
 | `docker-compose.pilot.yml` | Controlled **pilot** stack with Admin + nginx TLS template (NON-PRODUCTION) |
 | `Dockerfile.platform-api` | Platform API image |
 | `Dockerfile.pos-api` | PinoyBusinessPOS API image |
@@ -18,7 +18,7 @@
 | `nginx/production.conf` | Production reverse-proxy template (P14-WP03) |
 | `certs/README.md` | Operator TLS mount guidance (no real certs in repo) |
 | `.env.example` | Packaging baseline placeholders |
-| `.env.live-preview.example` | Live-preview placeholders (copy to `.env.live-preview`) |
+| `.env.local-validation.example` | Local Validation placeholders (copy to `.env.local-validation`) |
 | `.env.production.example` | Production Compose placeholders (copy to `.env.production`) |
 
 ## Packaging baseline (P14-WP02)
@@ -61,21 +61,21 @@ docker compose -f compose.production.yaml --env-file .env.production up -d
 | Reverse proxy HTTPS | **443** | Sole intended app entry |
 | Platform API / POS API / Admin / DBs | internal only | No host ports published |
 
-Routes: `/admin/*`, `/platform/*`, `/pos/*`. Proxy technology: **nginx** (same family as pilot; production conf is separate). Forwarded headers are constrained via `ForwardedHeaders:KnownNetworks`. Live Preview ports **8090–8092 / 15533–15534** are unchanged. **Not Production-ready** — see [P14-WP03 report](../../docs/reports/P14-WP03-reverse-proxy-tls-network-hardening.md).
+Routes: `/admin/*`, `/platform/*`, `/pos/*`. Proxy technology: **nginx** (same family as pilot; production conf is separate). Forwarded headers are constrained via `ForwardedHeaders:KnownNetworks`. Local Validation ports **8090–8092 / 15533–15534** are unchanged. **Not Production-ready** — see [P14-WP03 report](../../docs/reports/P14-WP03-reverse-proxy-tls-network-hardening.md).
 
-## Live preview (P14-WP02A) — recommended daily workflow
+## Local Validation — recommended daily workflow
 
-**Docker: databases only. Host: Platform API + POS API + Admin.**
+**Docker: databases only. Host: Platform API + POS API + Admin.** Sign in with approved named Local Validation identities via normal `POST /auth/login` (password from `LOCAL_VALIDATION_SHARED_PASSWORD` in `.env.local-validation` — never commit the secret).
 
 ```powershell
 # from repository root
-.\tools\Start-LivePreviewLocal.ps1
+.\tools\Start-LocalValidation.ps1
 ```
 
-Full guide: [`README.live-preview-local-development.md`](README.live-preview-local-development.md) · overview: [`README.live-preview.md`](README.live-preview.md).
+Full guide: [`README.local-validation-workflow.md`](README.local-validation-workflow.md) · overview: [`README.local-validation.md`](README.local-validation.md).
 
 ```powershell
-Copy-Item deploy\docker\.env.live-preview.example deploy\docker\.env.live-preview
+Copy-Item deploy\docker\.env.local-validation.example deploy\docker\.env.local-validation
 # Edit — replace REPLACE_* passwords; never commit
 ```
 
@@ -99,9 +99,10 @@ See `ops/deploy/README.md` and `docs/operations/pilot-and-deployment/`.
 
 ## Related docs
 
-- [Live preview workflow](README.live-preview.md)
+- [Local Validation workflow](README.local-validation.md)
+- [P16-WP11 Local Validation report](../../docs/reports/P16-WP11-local-validation-replaces-live-preview.md)
 - [Production deployment architecture](../../docs/engineering/production-deployment-architecture.md)
 - [Production readiness audit](../../docs/engineering/production-readiness-audit.md)
 - [P14-WP02 report](../../docs/reports/P14-WP02-production-packaging-and-compose-baseline.md)
-- [P14-WP02 live-preview gap fix](../../docs/reports/P14-WP02-gap-fix-separate-live-preview-stack.md)
-- [P14-WP02A quick login](../../docs/reports/P14-WP02A-live-preview-test-users-and-quick-login.md)
+- [P14-WP02 Live Preview gap fix (historical)](../../docs/reports/P14-WP02-gap-fix-separate-live-preview-stack.md)
+- [P14-WP02A Live Preview launcher (historical)](../../docs/reports/P14-WP02A-live-preview-test-users-and-quick-login.md)

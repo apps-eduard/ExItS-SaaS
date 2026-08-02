@@ -1,5 +1,10 @@
 # P14-WP02 Gap Fix — Separate ExItS Live Preview Stack
 
+> **Historical / superseded.** This report documents the former separate Live Preview Compose stack (`exits-live-preview`).
+> Current operator runtime is **Local Validation** (`exits-local-validation`).
+> See [P16-WP11 Local Validation replaces Live Preview](P16-WP11-local-validation-replaces-live-preview.md).
+> Filenames are retained for history; do not treat this package as active guidance.
+
 Phase marker: `P14-WP02-gap-fix-separate-live-preview-stack`
 
 Package: **P14-WP02 Gap Fix — Separate ExItS Live Preview Stack**

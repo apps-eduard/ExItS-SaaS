@@ -1,5 +1,8 @@
 # Platform Admin — Live Preview hardening notes (2026-08-01)
 
+> **Historical / superseded naming.** Hardening notes still apply to Admin Interactive Server behavior, but the operator stack is now **Local Validation**, not Live Preview.
+> See [P16-WP11 Local Validation replaces Live Preview](P16-WP11-local-validation-replaces-live-preview.md).
+
 Post–P15-WP01 session fixes on `main` at tip `6145953f34e28ff5a5b4c90130b93638096946f8`. **Do not roll back** these changes; they stabilize Interactive Server auth, nav, culture, and theme.
 
 [Portfolio](../portfolio-progress.md) | [P15-WP01](P15-WP01-antdesign-admin-foundation.md)
