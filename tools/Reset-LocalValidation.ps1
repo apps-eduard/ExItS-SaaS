@@ -112,7 +112,7 @@ Write-Step 'Destructive Local Validation reset confirmed by operator (-ConfirmRe
 Write-Step 'Target volumes: exits_local_validation_platform_db_data, exits_local_validation_pos_db_data'
 
 if (-not (Test-Path -LiteralPath $envFile)) {
-    throw "Missing $envFile — copy from .env.local-validation.example first."
+    throw "Missing $envFile - copy from .env.local-validation.example first."
 }
 if (-not (Test-Path -LiteralPath $composeFile)) {
     throw "Missing $composeFile"
@@ -121,6 +121,16 @@ if (-not (Test-Path -LiteralPath $composeFile)) {
 Write-Step 'Stopping Local Validation apps and database containers...'
 & $stopScript -StopDatabases
 if ($LASTEXITCODE -ne 0) { throw "Stop-LocalValidation.ps1 failed ($LASTEXITCODE)." }
+
+Write-Step 'Removing Local Validation DB containers so volumes can be deleted...'
+& docker compose -f $composeFile --env-file $envFile rm -f -s -v platform-db pos-db
+# Note: compose rm -v removes anonymous volumes only; named volumes are removed explicitly below.
+if ($LASTEXITCODE -ne 0) {
+    Write-Note "compose rm returned $LASTEXITCODE - continuing with explicit container/volume cleanup."
+}
+foreach ($name in @('exits-local-validation-platform-db', 'exits-local-validation-pos-db')) {
+    cmd /c "docker rm -f $name >NUL 2>&1" | Out-Null
+}
 
 Write-Step 'Removing Local Validation Docker volumes only (explicit volume rm; not compose down -v)...'
 foreach ($volume in @($volumePlatform, $volumePos)) {
@@ -192,7 +202,7 @@ while ([DateTime]::UtcNow -lt $deadline) {
 }
 
 if (-not $verified) {
-    Write-Fail 'Could not verify seed identities within timeout. Apps may still be starting — check Platform API logs.'
+    Write-Fail 'Could not verify seed identities within timeout. Apps may still be starting - check Platform API logs.'
     exit 1
 }
 
