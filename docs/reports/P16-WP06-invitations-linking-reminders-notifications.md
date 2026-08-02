@@ -4,7 +4,7 @@
 |---|---|
 | Status | **Complete** |
 | Starting commit | `42e7bca260bb8e00f57af65f7e2fb9313d3f3ecb` (after P16-WP05 tip-hash) |
-| Feature commit | *(recorded after commit)* |
+| Feature commit | `6f85bd3fb324a93fc8eadf2f82426be0178b064e` |
 | Date | 2026-08-02 |
 
 ## Scope completed

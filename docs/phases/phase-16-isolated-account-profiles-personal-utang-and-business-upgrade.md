@@ -19,7 +19,7 @@ The application remains **not production-ready**.
 | P16-WP03 | **Complete** | `3454a7e6caa0d307d03a03d91abe7250ccad96a1` | [report](../reports/P16-WP03-organization-context-and-navigation.md) |
 | P16-WP04 | **Complete** | `17f53e204243844b86602eaf12369495ffd8db01` | [report](../reports/P16-WP04-personal-account-foundation.md) |
 | P16-WP05 | **Complete** | `4b7b4d5c223bf4e293248881df14c970e76e80d1` | [report](../reports/P16-WP05-personal-utang-core.md) |
-| P16-WP06 | **Complete** | *(recorded after commit)* | [report](../reports/P16-WP06-invitations-linking-reminders-notifications.md) |
+| P16-WP06 | **Complete** | `6f85bd3fb324a93fc8eadf2f82426be0178b064e` | [report](../reports/P16-WP06-invitations-linking-reminders-notifications.md) |
 | P16-WP07 | Not started | — | — |
 | P16-WP08 | Not started | — | — |
 | P16-WP09 | Not started | — | — |

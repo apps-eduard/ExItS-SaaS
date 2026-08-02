@@ -14,7 +14,7 @@
 | Current phase | Phase 16 — Isolated Account Profiles, Personal Utang, and Business Upgrade (**in progress**) |
 | Current work package | P16-WP06 — Invitations, Linking, Reminders, and Notifications (**complete**) |
 | Overall status | **Phase 16 authorized and in progress.** P16-WP06 complete ([report](reports/P16-WP06-invitations-linking-reminders-notifications.md)). Exact next: **P16-WP07**. Phase 15 complete. Phase 14 remains in progress through **P14-WP03** and was **not** closed or weakened by Phase 16. Live Preview hardening must not be rolled back. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | *(recorded after commit)* |
+| Latest verified commit | `6f85bd3fb324a93fc8eadf2f82426be0178b064e` |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-08-02 |
 
@@ -180,7 +180,7 @@ P16-WP08…P16-WP10 ○ (authorized; do not skip ahead)
 | P16-WP03 — Organization Context and Navigation | Complete | `3454a7e6caa0d307d03a03d91abe7250ccad96a1` — [report](reports/P16-WP03-organization-context-and-navigation.md) |
 | P16-WP04 — Personal Account Foundation | Complete | `17f53e204243844b86602eaf12369495ffd8db01` — [report](reports/P16-WP04-personal-account-foundation.md) |
 | P16-WP05 — Personal Utang Core | Complete | `4b7b4d5c223bf4e293248881df14c970e76e80d1` — [report](reports/P16-WP05-personal-utang-core.md) |
-| P16-WP06 — Invitations, Linking, Reminders, Notifications | Complete | *(recorded after commit)* — [report](reports/P16-WP06-invitations-linking-reminders-notifications.md) |
+| P16-WP06 — Invitations, Linking, Reminders, Notifications | Complete | `6f85bd3fb324a93fc8eadf2f82426be0178b064e` — [report](reports/P16-WP06-invitations-linking-reminders-notifications.md) |
 | P16-WP07 — Organization Staff and Customer Separation | Not started | — |
 | P16-WP08 — Start a Business and Utang Migration | Not started | — |
 | P16-WP09 — Product Access and Navigation Integration | Not started | — |
