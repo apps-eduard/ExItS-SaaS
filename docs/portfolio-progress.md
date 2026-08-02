@@ -14,7 +14,7 @@
 | Current phase | Phase 14 — Production Deployment and Operations (**in progress**; Phase 16 complete) |
 | Current work package | P14-WP04 — Production Backup, Restore, and Ops Evidence (**not started**; authorize before beginning) |
 | Overall status | **Phase 16 complete** (10/10; [P16-WP10 closeout](reports/P16-WP10-phase-16-closeout.md)). Phase 15 complete. **Phase 14 remains in progress** through P14-WP03; P14-WP04–WP07 not started. Phase 16 did **not** close, replace, or weaken Phase 14. Live Preview hardening must not be rolled back. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | `FEATURE_SHA` |
+| Latest verified commit | `4118797ed3555640cccca8e0c7bb15458035dd75` |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-08-02 |
 
@@ -188,7 +188,7 @@ P16-WP10 ✓ Security, Privacy, UX Hardening, and Closeout (Phase 16 complete)
 | P16-WP07 — Organization Staff and Customer Separation | Complete | `ae39e9f7084f44c6c5a9a5e598767fc91987feae` — [report](reports/P16-WP07-organization-staff-customer-separation.md) |
 | P16-WP08 — Start a Business and Utang Migration | Complete | `cb3f3585e07e6b0865df1a40175b9f5b99a22a78` — [report](reports/P16-WP08-start-a-business-and-utang-migration.md) |
 | P16-WP09 — Product Access and Navigation Integration | Complete | `9ae47bc635eb30b357c6f8317c9025ad850e054e` — [report](reports/P16-WP09-product-access-and-navigation-integration.md) |
-| P16-WP10 — Security, Privacy, UX Hardening, and Closeout | Complete | `FEATURE_SHA` — [report](reports/P16-WP10-phase-16-closeout.md) |
+| P16-WP10 — Security, Privacy, UX Hardening, and Closeout | Complete | `4118797ed3555640cccca8e0c7bb15458035dd75` — [report](reports/P16-WP10-phase-16-closeout.md) |
 
 ## Phase 15 work packages
 

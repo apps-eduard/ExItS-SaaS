@@ -4,7 +4,7 @@
 |---|---|
 | Status | **Complete** |
 | Starting commit | `8830f7b86b476292caf6e2a0a77f9921ff8f045d` (after P16-WP09 tip-hash) |
-| Feature commit | `FEATURE_SHA` |
+| Feature commit | `4118797ed3555640cccca8e0c7bb15458035dd75` |
 | Date | 2026-08-02 |
 
 ## Scope completed

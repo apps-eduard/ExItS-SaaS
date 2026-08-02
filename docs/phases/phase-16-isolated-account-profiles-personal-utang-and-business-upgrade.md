@@ -23,7 +23,7 @@ The application remains **not production-ready**.
 | P16-WP07 | **Complete** | `ae39e9f7084f44c6c5a9a5e598767fc91987feae` | [report](../reports/P16-WP07-organization-staff-customer-separation.md) |
 | P16-WP08 | **Complete** | `cb3f3585e07e6b0865df1a40175b9f5b99a22a78` | [report](../reports/P16-WP08-start-a-business-and-utang-migration.md) |
 | P16-WP09 | **Complete** | `9ae47bc635eb30b357c6f8317c9025ad850e054e` | [report](../reports/P16-WP09-product-access-and-navigation-integration.md) |
-| P16-WP10 | **Complete** | `FEATURE_SHA` | [report](../reports/P16-WP10-phase-16-closeout.md) |
+| P16-WP10 | **Complete** | `4118797ed3555640cccca8e0c7bb15458035dd75` | [report](../reports/P16-WP10-phase-16-closeout.md) |
 
 ---
 
@@ -568,7 +568,7 @@ Complete Phase 16 verification and closeout.
 
 ## Status
 
-**Complete** (feature `FEATURE_SHA`). Residual: Support Session (ADR-018) unimplemented; Phase 14 unchanged; app **not production-ready**.
+**Complete** (feature `4118797ed3555640cccca8e0c7bb15458035dd75`). Residual: Support Session (ADR-018) unimplemented; Phase 14 unchanged; app **not production-ready**.
 
 ## Required Reviews
 
