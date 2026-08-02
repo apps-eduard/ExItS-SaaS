@@ -152,6 +152,28 @@ public sealed class PersonalUtangDomainTests
         Assert.DoesNotContain("₱", preview, StringComparison.Ordinal);
         Assert.DoesNotContain("1000", preview, StringComparison.Ordinal);
         Assert.Equal("Payment due soon", preview);
+
+        var amountPreview = PersonalReminder.BuildMinimizedPreview("Please pay ₱9,999.50 today");
+        Assert.DoesNotContain("₱", amountPreview, StringComparison.Ordinal);
+        Assert.DoesNotContain("9,999", amountPreview, StringComparison.Ordinal);
+        Assert.DoesNotContain("9999", amountPreview, StringComparison.Ordinal);
+        Assert.Contains("Please pay", amountPreview, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Invitation_resend_is_rate_limited()
+    {
+        var owner = PlatformUserId.New();
+        var contactId = PersonalContactId.New();
+        var relationshipId = PersonalDebtRelationshipId.New();
+        var now = DateTimeOffset.UtcNow;
+        var (invitation, _) = PersonalUtangInvitation.Create(relationshipId, contactId, owner, now);
+
+        var ex = Assert.Throws<DomainException>(() => invitation.Resend(now.AddMinutes(10)));
+        Assert.Equal(DomainErrorCodes.PersonalUtangInvitationRateLimited, ex.ErrorCode);
+
+        var token = invitation.Resend(now.AddHours(1));
+        Assert.False(string.IsNullOrWhiteSpace(token));
     }
 
     [Fact]

@@ -123,6 +123,7 @@ public static class DomainErrorCodes
     public const string PersonalUtangInvitationExpired = "platform.personal.utang_invitation.expired";
     public const string PersonalUtangInvitationTokenInvalid = "platform.personal.utang_invitation.token.invalid";
     public const string PersonalUtangInvitationEmailMismatch = "platform.personal.utang_invitation.email_mismatch";
+    public const string PersonalUtangInvitationRateLimited = "platform.personal.utang_invitation.rate_limited";
     public const string PersonalContactAlreadyLinked = "platform.personal.contact.already_linked";
     public const string PersonalContactLinkInvalid = "platform.personal.contact.link.invalid";
 

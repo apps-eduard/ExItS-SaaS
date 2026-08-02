@@ -76,13 +76,13 @@
                                 <Overlay>
                                     <Menu Class="exits-account-menu">
                                         <MenuItem Disabled Class="exits-nav-phase15">
-                                            @L["Account_MyProfile"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                                            @L["Account_MyProfile"] <span class="exits-phase15-tag">@L["Nav_ComingSoon"]</span>
                                         </MenuItem>
                                         <MenuItem OnClick='() => Nav.NavigateTo("/admin/account/recovery-email")'>
                                             @L["Account_AccountSettings"]
                                         </MenuItem>
                                         <MenuItem Disabled Class="exits-nav-phase15">
-                                            @L["Account_Preferences"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                                            @L["Account_Preferences"] <span class="exits-phase15-tag">@L["Nav_ComingSoon"]</span>
                                         </MenuItem>
                                         <MenuItem OnClick='() => Nav.NavigateTo("/admin/account/change-password")'>
                                             @L["Account_ChangePassword"]
@@ -91,13 +91,13 @@
                                         @if (_shellReady && Shell.IsOrganizationShell)
                                         {
                                             <MenuItem Disabled Class="exits-nav-phase15">
-                                                @L["Account_OrganizationSettings"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                                                @L["Account_OrganizationSettings"] <span class="exits-phase15-tag">@L["Nav_ComingSoon"]</span>
                                             </MenuItem>
                                         }
                                         else
                                         {
                                             <MenuItem Disabled Class="exits-nav-phase15">
-                                                @L["Account_PlatformSettings"] <span class="exits-phase15-tag">@L["Nav_Phase15"]</span>
+                                                @L["Account_PlatformSettings"] <span class="exits-phase15-tag">@L["Nav_ComingSoon"]</span>
                                             </MenuItem>
                                         }
                                         <MenuDivider />

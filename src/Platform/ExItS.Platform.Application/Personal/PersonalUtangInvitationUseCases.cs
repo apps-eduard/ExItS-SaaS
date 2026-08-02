@@ -318,6 +318,12 @@ public sealed class ResendPersonalUtangInvitation
             return ApplicationResult<PersonalUtangInvitationDto>.Success(
                 CreatePersonalUtangInvitation.ToDto(invitation, token));
         }
+        catch (DomainException ex) when (ex.ErrorCode == DomainErrorCodes.PersonalUtangInvitationRateLimited)
+        {
+            return ApplicationResult<PersonalUtangInvitationDto>.Failure(
+                ApplicationErrorCodes.PersonalUtangInvitationRateLimited,
+                ex.Message);
+        }
         catch (DomainException ex)
         {
             return ApplicationResult<PersonalUtangInvitationDto>.Failure(ex.ErrorCode, ex.Message);

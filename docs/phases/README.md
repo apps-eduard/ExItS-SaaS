@@ -20,4 +20,4 @@
 | 13 | Production Authentication and Identity | **Complete with documented residuals** | [Open](phase-13-production-authentication-and-identity.md) |
 | 14 | Production Deployment and Operations | **In progress** (through P14-WP03; unchanged by Phase 16) | [Open](phase-14-production-deployment-and-operations.md) |
 | 15 | Ant Design Platform Administration | **Complete** | [Open](phase-15-ant-design-platform-admin.md) |
-| 16 | Isolated Account Profiles, Personal Utang, and Business Upgrade | **In progress** (P16-WP02 complete) | [Open](phase-16-isolated-account-profiles-personal-utang-and-business-upgrade.md) |
+| 16 | Isolated Account Profiles, Personal Utang, and Business Upgrade | **Complete** (with documented residuals; Phase 14 unchanged) | [Open](phase-16-isolated-account-profiles-personal-utang-and-business-upgrade.md) |

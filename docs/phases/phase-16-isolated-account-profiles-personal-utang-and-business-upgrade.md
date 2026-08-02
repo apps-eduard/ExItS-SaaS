@@ -4,11 +4,11 @@
 
 ## Status
 
-**In progress** (authorized 2026-08-02).
+**Complete** (with documented residuals; closed 2026-08-02).
 
-Phase 16 introduces isolated Platform, Personal, and Organization account profiles; scope-bound sessions; Personal Utang as the free acquisition feature; Organization creation; controlled migration into Business Credit; and product-aware navigation.
+Phase 16 introduced isolated Platform, Personal, and Organization account profiles; scope-bound sessions; Personal Utang as the free acquisition feature; Organization creation; controlled migration into Business Credit; and product-aware navigation.
 
-Phase 14 Production Deployment and Operations remains separate and unfinished. Phase 16 must not silently close, replace, or weaken any Phase 14 production requirement.
+Phase 14 Production Deployment and Operations remains separate and unfinished. Phase 16 did **not** silently close, replace, or weaken any Phase 14 production requirement.
 
 The application remains **not production-ready**.
 
@@ -23,7 +23,7 @@ The application remains **not production-ready**.
 | P16-WP07 | **Complete** | `ae39e9f7084f44c6c5a9a5e598767fc91987feae` | [report](../reports/P16-WP07-organization-staff-customer-separation.md) |
 | P16-WP08 | **Complete** | `cb3f3585e07e6b0865df1a40175b9f5b99a22a78` | [report](../reports/P16-WP08-start-a-business-and-utang-migration.md) |
 | P16-WP09 | **Complete** | `9ae47bc635eb30b357c6f8317c9025ad850e054e` | [report](../reports/P16-WP09-product-access-and-navigation-integration.md) |
-| P16-WP10 | Not started | — | — |
+| P16-WP10 | **Complete** | `FEATURE_SHA` | [report](../reports/P16-WP10-phase-16-closeout.md) |
 
 ---
 
@@ -182,7 +182,7 @@ Phase 16 does not:
 | P16-WP07 | Organization Staff and Customer Separation | **Complete** |
 | P16-WP08 | Start a Business and Utang Migration | **Complete** |
 | P16-WP09 | Product Access and Navigation Integration | **Complete** |
-| P16-WP10 | Security, Privacy, UX Hardening, and Closeout | Not started |
+| P16-WP10 | Security, Privacy, UX Hardening, and Closeout | **Complete** |
 
 ---
 
@@ -554,7 +554,9 @@ Integrate account, Organization, entitlement, and product-local authorization in
 - removing product role disables individual access
 - Platform role grants no POS operation
 - regression suite passes
-- explicit authorization received for P16-WP10
+- explicit authorization received for P16-WP10 — **met**
+
+See [P16-WP10 report](../reports/P16-WP10-phase-16-closeout.md).
 
 ---
 
@@ -564,43 +566,47 @@ Integrate account, Organization, entitlement, and product-local authorization in
 
 Complete Phase 16 verification and closeout.
 
+## Status
+
+**Complete** (feature `FEATURE_SHA`). Residual: Support Session (ADR-018) unimplemented; Phase 14 unchanged; app **not production-ready**.
+
 ## Required Reviews
 
-- cross-account-class authorization
-- cross-user Personal Utang access
-- cross-Organization isolation
-- invitation abuse
-- customer-link abuse
-- migration duplication and replay
-- linked-participant consent
-- notification abuse
-- Support Session isolation
-- audit completeness
-- cache contamination
-- direct URL and API authorization
-- accessibility and human-readable navigation
-- full regression
+- cross-account-class authorization — **met**
+- cross-user Personal Utang access — **met**
+- cross-Organization isolation — **met**
+- invitation abuse — **met**
+- customer-link abuse — **met** (WP07 + closeout)
+- migration duplication and replay — **met**
+- linked-participant consent — **met** (WP08)
+- notification abuse — **met** (rate limits + preview minimization)
+- Support Session isolation — **reviewed; residual (not implemented)**
+- audit completeness — **met for key Phase 16 actions** (Failed-audit residual documented)
+- cache contamination — **met** (org switch clears permission/shell caches; WP03)
+- direct URL and API authorization — **met**
+- accessibility and human-readable navigation — **met** (small UX hardening; no Admin redesign)
+- full regression — **met** (unit 343 / integration 184 / Admin 68)
 
 ## Closeout Deliverables
 
-- Phase 16 closeout report
-- final test totals
-- residual risk register
-- open decisions
-- production blockers
-- updated portfolio progress
-- verified commit hashes
-- confirmation that Phase 14 remains unchanged unless separately completed
+- Phase 16 closeout report — [P16-WP10](../reports/P16-WP10-phase-16-closeout.md)
+- final test totals — recorded in report
+- residual risk register — recorded in report
+- open decisions — recorded in report
+- production blockers — unchanged; Phase 14 still open
+- updated portfolio progress — Phase 16 10/10 Complete
+- verified commit hashes — tip-hash docs commit
+- confirmation that Phase 14 remains unchanged — **confirmed**
 
 ## Exit Criteria
 
-- all Phase 16 acceptance criteria pass
-- no critical or high-severity isolation defect remains
-- full Release test suite passes
-- documentation matches implementation
-- working tree clean
-- focused commits recorded
-- Phase 16 formally closed
+- all Phase 16 acceptance criteria pass — **met**
+- no critical or high-severity isolation defect remains — **met** (Support Session residual is ops capability gap, not cross-tenant isolation bypass)
+- full Release test suite passes — **met**
+- documentation matches implementation — **met**
+- working tree clean — required at push
+- focused commits recorded — required at closeout
+- Phase 16 formally closed — **yes**
 
 ---
 

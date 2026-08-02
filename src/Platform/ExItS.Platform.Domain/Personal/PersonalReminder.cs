@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 
@@ -194,7 +195,16 @@ public sealed class PersonalReminder
         if (!string.IsNullOrWhiteSpace(customMessage))
         {
             var trimmed = customMessage.Trim();
-            return trimmed.Length <= 80 ? trimmed : trimmed[..80];
+            // Strip currency markers and digit runs so custom messages cannot leak balances.
+            var redacted = Regex.Replace(trimmed, @"[₱$€£¥]", string.Empty);
+            redacted = Regex.Replace(redacted, @"\d[\d,]*(?:\.\d+)?", string.Empty);
+            redacted = Regex.Replace(redacted, @"\s{2,}", " ").Trim(' ', '-', ':', ',', '.');
+            if (string.IsNullOrWhiteSpace(redacted))
+            {
+                return "You have a Personal Utang reminder.";
+            }
+
+            return redacted.Length <= 80 ? redacted : redacted[..80];
         }
 
         return "You have a Personal Utang reminder.";

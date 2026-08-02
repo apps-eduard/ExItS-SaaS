@@ -22,6 +22,25 @@ public sealed class Phase16AccountSeedArchitectureTests
         Assert.DoesNotContain("InitializePhase16AccountSeed", production, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Support_session_is_not_implemented_in_platform_source()
+    {
+        var root = FindRepoRoot();
+        var platformRoot = Path.Combine(root, "src", "Platform");
+        foreach (var path in Directory.EnumerateFiles(platformRoot, "*.cs", SearchOption.AllDirectories))
+        {
+            if (path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                || path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var text = File.ReadAllText(path);
+            Assert.DoesNotContain("SupportSession", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("support_session", text, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     private static string FindRepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);

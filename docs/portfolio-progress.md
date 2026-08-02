@@ -11,10 +11,10 @@
 | Portfolio | ExITS SaaS |
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 16 — Isolated Account Profiles, Personal Utang, and Business Upgrade (**in progress**) |
-| Current work package | P16-WP09 — Product Access and Navigation Integration (**complete**) |
-| Overall status | **Phase 16 authorized and in progress.** P16-WP09 complete ([report](reports/P16-WP09-product-access-and-navigation-integration.md)). Exact next: **P16-WP10**. Phase 15 complete. Phase 14 remains in progress through **P14-WP03** and was **not** closed or weakened by Phase 16. Live Preview hardening must not be rolled back. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | `9ae47bc635eb30b357c6f8317c9025ad850e054e` |
+| Current phase | Phase 14 — Production Deployment and Operations (**in progress**; Phase 16 complete) |
+| Current work package | P14-WP04 — Production Backup, Restore, and Ops Evidence (**not started**; authorize before beginning) |
+| Overall status | **Phase 16 complete** (10/10; [P16-WP10 closeout](reports/P16-WP10-phase-16-closeout.md)). Phase 15 complete. **Phase 14 remains in progress** through P14-WP03; P14-WP04–WP07 not started. Phase 16 did **not** close, replace, or weaken Phase 14. Live Preview hardening must not be rolled back. Production remains **Blocked**. **Not production-ready.** |
+| Latest verified commit | `FEATURE_SHA` |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-08-02 |
 
@@ -141,7 +141,7 @@ P16-WP08 ✓ Start a Business and Utang Migration
         ↓
 P16-WP09 ✓ Product Access and Navigation Integration
         ↓
-P16-WP10 ○ Security, Privacy, UX Hardening, and Closeout (next)
+P16-WP10 ✓ Security, Privacy, UX Hardening, and Closeout (Phase 16 complete)
 ```
 
 ## Phase progress
@@ -164,7 +164,7 @@ P16-WP10 ○ Security, Privacy, UX Hardening, and Closeout (next)
 | 13 | Production Authentication and Identity | **Complete with documented residuals** | 9 | 9 | 100% | [Open](phases/phase-13-production-authentication-and-identity.md) |
 | 14 | Production Deployment and Operations | **In progress** | 3 | 7 | — | [Open](phases/phase-14-production-deployment-and-operations.md) |
 | 15 | Ant Design Platform Administration | **Complete** | 7 | 7 | 100% | [Open](phases/phase-15-ant-design-platform-admin.md) |
-| 16 | Isolated Account Profiles, Personal Utang, Business Upgrade | **In progress** | 9 | 10 | 90% | [Open](phases/phase-16-isolated-account-profiles-personal-utang-and-business-upgrade.md) |
+| 16 | Isolated Account Profiles, Personal Utang, Business Upgrade | **Complete with documented residuals** | 10 | 10 | 100% | [Open](phases/phase-16-isolated-account-profiles-personal-utang-and-business-upgrade.md) |
 
 **MVP phases 0–9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
@@ -173,7 +173,7 @@ P16-WP10 ○ Security, Privacy, UX Hardening, and Closeout (next)
 **Phase 13 Production Authentication:** 9 / 9 = **100%** (R-091 closed for Phase 13 scope; residuals documented; not Production-ready).
 **Phase 14 Production Deployment:** 3 / 7 WPs complete (through P14-WP03 reverse-proxy/TLS template; Production blocked).
 **Phase 15 Ant Design Platform Admin:** 7 / 7 WPs complete (closeout [P15-WP07](reports/P15-WP07-phase-15-closeout.md); Fluent UI direction cancelled/superseded).
-**Phase 16 Account Profiles / Personal Utang:** 9 / 10 WPs complete (through P16-WP09; Phase 14 unchanged).
+**Phase 16 Account Profiles / Personal Utang:** 10 / 10 WPs complete (closeout [P16-WP10](reports/P16-WP10-phase-16-closeout.md); Phase 14 unchanged; not Production-ready).
 
 ## Phase 16 work packages
 
@@ -188,7 +188,7 @@ P16-WP10 ○ Security, Privacy, UX Hardening, and Closeout (next)
 | P16-WP07 — Organization Staff and Customer Separation | Complete | `ae39e9f7084f44c6c5a9a5e598767fc91987feae` — [report](reports/P16-WP07-organization-staff-customer-separation.md) |
 | P16-WP08 — Start a Business and Utang Migration | Complete | `cb3f3585e07e6b0865df1a40175b9f5b99a22a78` — [report](reports/P16-WP08-start-a-business-and-utang-migration.md) |
 | P16-WP09 — Product Access and Navigation Integration | Complete | `9ae47bc635eb30b357c6f8317c9025ad850e054e` — [report](reports/P16-WP09-product-access-and-navigation-integration.md) |
-| P16-WP10 — Security, Privacy, UX Hardening, and Closeout | Not started | — |
+| P16-WP10 — Security, Privacy, UX Hardening, and Closeout | Complete | `FEATURE_SHA` — [report](reports/P16-WP10-phase-16-closeout.md) |
 
 ## Phase 15 work packages
 
@@ -281,4 +281,4 @@ P16-WP10 ○ Security, Privacy, UX Hardening, and Closeout (next)
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P14-WP04** until explicitly authorized. Platform Admin UI direction is **Ant Design Blazor (ADR-015)**; Fluent UI Admin work is cancelled. Phase 15 is complete.
+Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P14-WP04** until explicitly authorized. Platform Admin UI direction is **Ant Design Blazor (ADR-015)**; Fluent UI Admin work is cancelled. Phase 15 and Phase 16 are complete. Phase 14 remains in progress; Production remains Blocked.

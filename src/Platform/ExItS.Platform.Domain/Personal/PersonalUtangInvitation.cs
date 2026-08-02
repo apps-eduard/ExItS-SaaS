@@ -12,6 +12,7 @@ namespace ExItS.Platform.Domain.Personal;
 public sealed class PersonalUtangInvitation
 {
     public const int DefaultLifetimeHours = 24 * 7;
+    public static readonly TimeSpan MinIntervalBetweenResends = TimeSpan.FromHours(1);
 
     public PersonalUtangInvitationId Id { get; }
     public PersonalDebtRelationshipId DebtRelationshipId { get; }
@@ -135,11 +136,27 @@ public sealed class PersonalUtangInvitation
     {
         EnsureUtc(utcNow);
         EnsurePendingUsable(utcNow);
+        EnsureResendAllowed(utcNow);
         var acceptToken = CreateAcceptToken();
         TokenHash = HashToken(acceptToken);
         ExpiresAtUtc = utcNow.Add(lifetime ?? TimeSpan.FromHours(DefaultLifetimeHours));
         UpdatedAtUtc = utcNow;
         return acceptToken;
+    }
+
+    /// <summary>
+    /// Anti-harassment: resends must be spaced (same floor as reminder delivery interval)
+    /// from create or the previous resend (<see cref="UpdatedAtUtc"/>).
+    /// </summary>
+    public void EnsureResendAllowed(DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (utcNow - UpdatedAtUtc < MinIntervalBetweenResends)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangInvitationRateLimited,
+                "Invitation resends must be spaced at least one hour apart.");
+        }
     }
 
     public void Revoke(DateTimeOffset utcNow)

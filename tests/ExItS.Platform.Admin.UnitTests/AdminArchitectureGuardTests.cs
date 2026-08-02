@@ -397,6 +397,24 @@ public sealed class AdminArchitectureGuardTests
         }
     }
 
+    [Fact]
+    public void Organization_switcher_excludes_platform_administration_and_support_session()
+    {
+        var root = FindRepositoryRoot();
+        var switcher = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "OrganizationContextSwitcher.razor"));
+        Assert.Contains("IsOrganizationShell", switcher, StringComparison.Ordinal);
+        Assert.Contains("Platform Administration must never appear", switcher, StringComparison.Ordinal);
+        Assert.DoesNotContain("Support Session", switcher, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("PlatformAdministration", switcher, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Organization", switcher, StringComparison.Ordinal);
+
+        var layout = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "MainLayout.razor"));
+        Assert.Contains("Nav_ComingSoon", layout, StringComparison.Ordinal);
+        Assert.DoesNotContain("Account_MyProfile\"] <span class=\"exits-phase15-tag\">@L[\"Nav_Phase15\"]", layout, StringComparison.Ordinal);
+    }
+
     private static string FindRepositoryRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);

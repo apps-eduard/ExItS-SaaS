@@ -141,7 +141,9 @@ internal static class PlatformApiResults
             or DomainErrorCodes.PersonalUtangAlreadyMigrated => StatusCodes.Status409Conflict,
 
         ApplicationErrorCodes.PersonalReminderRateLimited
-            or DomainErrorCodes.PersonalReminderRateLimited => StatusCodes.Status429TooManyRequests,
+            or DomainErrorCodes.PersonalReminderRateLimited
+            or ApplicationErrorCodes.PersonalUtangInvitationRateLimited
+            or DomainErrorCodes.PersonalUtangInvitationRateLimited => StatusCodes.Status429TooManyRequests,
 
         ApplicationErrorCodes.PaymentAmountInvalid
             or ApplicationErrorCodes.PaymentCurrencyInvalid
