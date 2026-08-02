@@ -123,4 +123,9 @@ public static class ApplicationErrorCodes
     public const string PersonalUtangRelationshipNotFound = "application.personal.utang_relationship.not_found";
     public const string PersonalUtangUnauthorized = "application.personal.utang.unauthorized";
     public const string PersonalUtangEntryInvalid = "application.personal.utang_entry.invalid";
+    public const string PersonalUtangInvitationNotFound = "application.personal.utang_invitation.not_found";
+    public const string PersonalUtangInvitationConflict = "application.personal.utang_invitation.conflict";
+    public const string PersonalReminderNotFound = "application.personal.reminder.not_found";
+    public const string PersonalReminderRateLimited = "application.personal.reminder.rate_limited";
+    public const string PersonalNotificationNotFound = "application.personal.notification.not_found";
 }

@@ -123,6 +123,18 @@ public static class PlatformAuditActions
 
     public const string PersonalAccountSettingsUpdated = "platform.personal.account_settings.updated";
     public const string PersonalContactCreated = "platform.personal.contact.created";
+    public const string PersonalContactLinked = "platform.personal.contact.linked";
     public const string PersonalUtangRelationshipCreated = "platform.personal.utang_relationship.created";
+    public const string PersonalUtangParticipantAuthorized = "platform.personal.utang_participant.authorized";
     public const string PersonalUtangEntryRecorded = "platform.personal.utang_entry.recorded";
+    public const string PersonalUtangInvitationCreated = "platform.personal.utang_invitation.created";
+    public const string PersonalUtangInvitationResent = "platform.personal.utang_invitation.resent";
+    public const string PersonalUtangInvitationRevoked = "platform.personal.utang_invitation.revoked";
+    public const string PersonalUtangInvitationAccepted = "platform.personal.utang_invitation.accepted";
+    public const string PersonalUtangInvitationDeclined = "platform.personal.utang_invitation.declined";
+    public const string PersonalUtangInvitationExpired = "platform.personal.utang_invitation.expired";
+    public const string PersonalReminderCreated = "platform.personal.reminder.created";
+    public const string PersonalReminderDelivered = "platform.personal.reminder.delivered";
+    public const string PersonalReminderCancelled = "platform.personal.reminder.cancelled";
+    public const string PersonalNotificationDelivered = "platform.personal.notification.delivered";
 }

@@ -8,7 +8,7 @@ using ExItS.Platform.Domain.Identity;
 namespace ExItS.Platform.Api.Personal;
 
 /// <summary>
-/// Personal Scope API surface (P16-WP04/WP05).
+/// Personal Scope API surface (P16-WP04/WP05/WP06).
 /// </summary>
 internal static class PersonalEndpoints
 {
@@ -100,6 +100,7 @@ internal static class PersonalEndpoints
         });
 
         MapPersonalUtangEndpoints(personal);
+        MapPersonalNotificationEndpoints(personal);
 
         return app;
     }
@@ -253,6 +254,233 @@ internal static class PersonalEndpoints
                 dto => Results.Created(
                     $"/api/v1/personal/utang/relationships/{relationshipId}/history",
                     dto));
+        });
+
+        utang.MapPost("/relationships/{relationshipId:guid}/invitations", async (
+            HttpContext http,
+            Guid relationshipId,
+            CreatePersonalUtangInvitationRequest body,
+            CreatePersonalUtangInvitation createInvitation,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await createInvitation.ExecuteAsync(PlatformUserId.From(userId), relationshipId, body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(
+                result,
+                dto => Results.Created($"/api/v1/personal/utang/invitations/{dto.Id}", dto));
+        });
+
+        utang.MapGet("/invitations", async (
+            HttpContext http,
+            ListPersonalUtangInvitations listInvitations,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var list = await listInvitations.ExecuteAsync(PlatformUserId.From(userId), ct).ConfigureAwait(false);
+            return Results.Ok(list);
+        });
+
+        utang.MapPost("/invitations/accept", async (
+            HttpContext http,
+            AcceptPersonalUtangInvitationRequest body,
+            AcceptPersonalUtangInvitation acceptInvitation,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await acceptInvitation.ExecuteAsync(PlatformUserId.From(userId), body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        utang.MapPost("/invitations/decline", async (
+            HttpContext http,
+            AcceptPersonalUtangInvitationRequest body,
+            DeclinePersonalUtangInvitation declineInvitation,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await declineInvitation.ExecuteAsync(PlatformUserId.From(userId), body.Token, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        utang.MapPost("/invitations/{invitationId:guid}/resend", async (
+            HttpContext http,
+            Guid invitationId,
+            ResendPersonalUtangInvitation resendInvitation,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await resendInvitation.ExecuteAsync(PlatformUserId.From(userId), invitationId, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        utang.MapPost("/invitations/{invitationId:guid}/revoke", async (
+            HttpContext http,
+            Guid invitationId,
+            RevokePersonalUtangInvitation revokeInvitation,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await revokeInvitation.ExecuteAsync(PlatformUserId.From(userId), invitationId, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        utang.MapPost("/relationships/{relationshipId:guid}/reminders", async (
+            HttpContext http,
+            Guid relationshipId,
+            CreatePersonalReminderRequest body,
+            CreatePersonalReminder createReminder,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await createReminder.ExecuteAsync(PlatformUserId.From(userId), relationshipId, body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(
+                result,
+                dto => Results.Created($"/api/v1/personal/utang/reminders/{dto.Id}", dto));
+        });
+
+        utang.MapGet("/relationships/{relationshipId:guid}/reminders", async (
+            HttpContext http,
+            Guid relationshipId,
+            ListPersonalReminders listReminders,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await listReminders.ExecuteAsync(PlatformUserId.From(userId), relationshipId, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        utang.MapGet("/reminders/due", async (
+            HttpContext http,
+            ListDuePersonalReminders listDue,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out _, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var list = await listDue.ExecuteAsync(cancellationToken: ct).ConfigureAwait(false);
+            return Results.Ok(list);
+        });
+
+        utang.MapPost("/reminders/{reminderId:guid}/deliver", async (
+            HttpContext http,
+            Guid reminderId,
+            DeliverPersonalReminder deliverReminder,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await deliverReminder.ExecuteAsync(PlatformUserId.From(userId), reminderId, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        utang.MapPost("/reminders/{reminderId:guid}/cancel", async (
+            HttpContext http,
+            Guid reminderId,
+            CancelPersonalReminder cancelReminder,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await cancelReminder.ExecuteAsync(PlatformUserId.From(userId), reminderId, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        utang.MapGet("/delivery-audit", async (
+            HttpContext http,
+            Guid? reminderId,
+            ListPersonalNotificationDeliveries listDeliveries,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await listDeliveries.ExecuteAsync(PlatformUserId.From(userId), reminderId, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+    }
+
+    private static void MapPersonalNotificationEndpoints(RouteGroupBuilder personal)
+    {
+        personal.MapGet("/notifications", async (
+            HttpContext http,
+            ListPersonalInAppNotifications listNotifications,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var list = await listNotifications.ExecuteAsync(PlatformUserId.From(userId), ct).ConfigureAwait(false);
+            return Results.Ok(list);
+        });
+
+        personal.MapPost("/notifications/{notificationId:guid}/read", async (
+            HttpContext http,
+            Guid notificationId,
+            MarkPersonalInAppNotificationRead markRead,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await markRead.ExecuteAsync(PlatformUserId.From(userId), notificationId, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         });
     }
 

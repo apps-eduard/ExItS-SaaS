@@ -15,6 +15,8 @@ public sealed class PersonalContact
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
+    public bool IsLinked => LinkedUserIdentityId is not null;
+
     private PersonalContact(
         PersonalContactId id,
         PlatformUserId ownerUserIdentityId,
@@ -77,6 +79,40 @@ public sealed class PersonalContact
 
     public bool IsOwnedBy(PlatformUserId userIdentityId) =>
         OwnerUserIdentityId == userIdentityId;
+
+    /// <summary>
+    /// Links this contact to a Platform User after explicit invitation acceptance.
+    /// Never matches silently by name, email, or phone.
+    /// </summary>
+    public void LinkUser(PlatformUserId linkedUserIdentityId, DateTimeOffset utcNow)
+    {
+        ArgumentNullException.ThrowIfNull(linkedUserIdentityId);
+        EnsureUtc(utcNow);
+
+        if (LinkedUserIdentityId is not null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalContactAlreadyLinked,
+                "Personal contact is already linked to a user.");
+        }
+
+        if (linkedUserIdentityId == OwnerUserIdentityId)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalContactLinkInvalid,
+                "Cannot link a contact to its owner.");
+        }
+
+        if (Status is not PersonalContactStatus.Active)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalContactLinkInvalid,
+                "Only active contacts can be linked.");
+        }
+
+        LinkedUserIdentityId = linkedUserIdentityId;
+        UpdatedAtUtc = utcNow;
+    }
 
     private static string NormalizeDisplayName(string displayName)
     {

@@ -18,3 +18,43 @@ public enum PersonalUtangEntryType
     Payment,
     Adjustment
 }
+
+public enum PersonalUtangInvitationStatus
+{
+    Pending,
+    Accepted,
+    Declined,
+    Revoked,
+    Expired
+}
+
+public enum PersonalReminderScheduleType
+{
+    OneTime,
+    OnDueDate,
+    BeforeDueDate,
+    RecurringOverdue
+}
+
+public enum PersonalReminderStatus
+{
+    Scheduled,
+    Delivered,
+    Cancelled,
+    Failed
+}
+
+public enum PersonalNotificationChannel
+{
+    InApp,
+    Push,
+    Email
+}
+
+public enum PersonalNotificationDeliveryStatus
+{
+    Queued,
+    Delivered,
+    Skipped,
+    Failed
+}

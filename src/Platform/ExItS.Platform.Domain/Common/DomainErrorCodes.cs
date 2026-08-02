@@ -116,4 +116,20 @@ public static class DomainErrorCodes
     public const string PersonalUtangAmountInvalid = "platform.personal.utang.amount.invalid";
     public const string PersonalUtangUnauthorized = "platform.personal.utang.unauthorized";
     public const string PersonalUtangConcurrencyConflict = "platform.personal.utang.concurrency_conflict";
+
+    public const string InvalidPersonalUtangInvitationId = "platform.personal.utang_invitation.id.invalid";
+    public const string InvalidPersonalUtangInvitationStatusTransition =
+        "platform.personal.utang_invitation.status.invalid_transition";
+    public const string PersonalUtangInvitationExpired = "platform.personal.utang_invitation.expired";
+    public const string PersonalUtangInvitationTokenInvalid = "platform.personal.utang_invitation.token.invalid";
+    public const string PersonalUtangInvitationEmailMismatch = "platform.personal.utang_invitation.email_mismatch";
+    public const string PersonalContactAlreadyLinked = "platform.personal.contact.already_linked";
+    public const string PersonalContactLinkInvalid = "platform.personal.contact.link.invalid";
+
+    public const string InvalidPersonalReminderId = "platform.personal.reminder.id.invalid";
+    public const string InvalidPersonalReminder = "platform.personal.reminder.invalid";
+    public const string PersonalReminderRateLimited = "platform.personal.reminder.rate_limited";
+    public const string PersonalReminderUnauthorized = "platform.personal.reminder.unauthorized";
+
+    public const string InvalidPersonalNotificationId = "platform.personal.notification.id.invalid";
 }

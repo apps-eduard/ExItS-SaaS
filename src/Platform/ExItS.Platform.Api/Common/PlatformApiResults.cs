@@ -31,7 +31,8 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.OrganizationContextNotEligible
             or ApplicationErrorCodes.AccountScopeDenied
             or ApplicationErrorCodes.ProductEntryDenied
-            or ApplicationErrorCodes.PersonalUtangUnauthorized => StatusCodes.Status403Forbidden,
+            or ApplicationErrorCodes.PersonalUtangUnauthorized
+            or DomainErrorCodes.PersonalReminderUnauthorized => StatusCodes.Status403Forbidden,
 
         ApplicationErrorCodes.LoginFailed
             or ApplicationErrorCodes.SessionInvalid
@@ -59,7 +60,10 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.CredentialNotFound
             or ApplicationErrorCodes.InvitationNotFound
             or ApplicationErrorCodes.PersonalContactNotFound
-            or ApplicationErrorCodes.PersonalUtangRelationshipNotFound => StatusCodes.Status404NotFound,
+            or ApplicationErrorCodes.PersonalUtangRelationshipNotFound
+            or ApplicationErrorCodes.PersonalUtangInvitationNotFound
+            or ApplicationErrorCodes.PersonalReminderNotFound
+            or ApplicationErrorCodes.PersonalNotificationNotFound => StatusCodes.Status404NotFound,
 
         ApplicationErrorCodes.SlugConflict
             or ApplicationErrorCodes.EmailConflict
@@ -112,7 +116,12 @@ internal static class PlatformApiResults
             or DomainErrorCodes.RoleDefinitionNotAssignable
             or DomainErrorCodes.InvalidPlatformRoleStatusTransition
             or DomainErrorCodes.InvalidOrganizationRoleStatusTransition
-            or DomainErrorCodes.InvitationExpired => StatusCodes.Status409Conflict,
+            or DomainErrorCodes.InvitationExpired
+            or DomainErrorCodes.PersonalUtangInvitationExpired
+            or ApplicationErrorCodes.PersonalUtangInvitationConflict => StatusCodes.Status409Conflict,
+
+        ApplicationErrorCodes.PersonalReminderRateLimited
+            or DomainErrorCodes.PersonalReminderRateLimited => StatusCodes.Status429TooManyRequests,
 
         ApplicationErrorCodes.PaymentAmountInvalid
             or ApplicationErrorCodes.PaymentCurrencyInvalid

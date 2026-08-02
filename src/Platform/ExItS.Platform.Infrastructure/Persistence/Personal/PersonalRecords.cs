@@ -57,3 +57,65 @@ internal sealed class PersonalUtangEntryRecord
     public Guid CreatedByUserIdentityId { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
 }
+
+internal sealed class PersonalUtangInvitationRecord
+{
+    public Guid Id { get; set; }
+    public Guid DebtRelationshipId { get; set; }
+    public Guid InviteeContactId { get; set; }
+    public Guid InvitedByUserIdentityId { get; set; }
+    public string? InviteTargetNormalizedEmail { get; set; }
+    public string? InviteTargetPhone { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string TokenHash { get; set; } = string.Empty;
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+    public DateTimeOffset ExpiresAtUtc { get; set; }
+    public DateTimeOffset? AcceptedAtUtc { get; set; }
+    public DateTimeOffset? DeclinedAtUtc { get; set; }
+    public DateTimeOffset? RevokedAtUtc { get; set; }
+    public Guid? AcceptedByUserIdentityId { get; set; }
+}
+
+internal sealed class PersonalReminderRecord
+{
+    public Guid Id { get; set; }
+    public Guid DebtRelationshipId { get; set; }
+    public Guid CreatedByUserIdentityId { get; set; }
+    public string ScheduleType { get; set; } = string.Empty;
+    public string? Message { get; set; }
+    public DateTimeOffset ScheduledForUtc { get; set; }
+    public DateTimeOffset? NextDeliveryAtUtc { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+    public DateTimeOffset? DeliveredAtUtc { get; set; }
+    public int DeliveryAttemptCount { get; set; }
+}
+
+internal sealed class PersonalInAppNotificationRecord
+{
+    public Guid Id { get; set; }
+    public Guid RecipientUserIdentityId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Preview { get; set; } = string.Empty;
+    public string RelatedType { get; set; } = string.Empty;
+    public string? RelatedId { get; set; }
+    public bool IsRead { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset? ReadAtUtc { get; set; }
+}
+
+internal sealed class PersonalNotificationDeliveryRecord
+{
+    public Guid Id { get; set; }
+    public Guid? ReminderId { get; set; }
+    public Guid? NotificationId { get; set; }
+    public Guid RecipientUserIdentityId { get; set; }
+    public string Channel { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public string PreviewText { get; set; } = string.Empty;
+    public DateTimeOffset AttemptedAtUtc { get; set; }
+    public DateTimeOffset? DeliveredAtUtc { get; set; }
+    public string? FailureReason { get; set; }
+}

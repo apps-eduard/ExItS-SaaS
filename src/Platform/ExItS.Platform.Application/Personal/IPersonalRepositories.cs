@@ -21,6 +21,8 @@ public interface IPersonalContactRepository
         CancellationToken cancellationToken = default);
 
     Task AddAsync(PersonalContact contact, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(PersonalContact contact, CancellationToken cancellationToken = default);
 }
 
 public interface IPersonalDebtRelationshipRepository
@@ -43,4 +45,97 @@ public interface IPersonalUtangEntryRepository
         CancellationToken cancellationToken = default);
 
     Task AddAsync(PersonalUtangEntry entry, CancellationToken cancellationToken = default);
+}
+
+public interface IPersonalUtangInvitationRepository
+{
+    Task<PersonalUtangInvitation?> GetByIdAsync(PersonalUtangInvitationId id, CancellationToken cancellationToken = default);
+
+    Task<PersonalUtangInvitation?> FindPendingByTokenHashAsync(string tokenHash, CancellationToken cancellationToken = default);
+
+    Task<PersonalUtangInvitation?> FindPendingByRelationshipAndContactAsync(
+        PersonalDebtRelationshipId relationshipId,
+        PersonalContactId contactId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PersonalUtangInvitation>> ListSentByUserAsync(
+        PlatformUserId invitedByUserIdentityId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PersonalUtangInvitation>> ListPendingForEmailAsync(
+        string normalizedEmail,
+        CancellationToken cancellationToken = default);
+
+    Task AddAsync(PersonalUtangInvitation invitation, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(PersonalUtangInvitation invitation, CancellationToken cancellationToken = default);
+}
+
+public interface IPersonalReminderRepository
+{
+    Task<PersonalReminder?> GetByIdAsync(PersonalReminderId id, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PersonalReminder>> ListByRelationshipAsync(
+        PersonalDebtRelationshipId relationshipId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PersonalReminder>> ListDueAsync(
+        DateTimeOffset asOfUtc,
+        int take,
+        CancellationToken cancellationToken = default);
+
+    Task<int> CountDeliveriesSinceAsync(
+        PersonalDebtRelationshipId relationshipId,
+        DateTimeOffset sinceUtc,
+        CancellationToken cancellationToken = default);
+
+    Task<DateTimeOffset?> GetLastDeliveryAtAsync(
+        PersonalDebtRelationshipId relationshipId,
+        CancellationToken cancellationToken = default);
+
+    Task AddAsync(PersonalReminder reminder, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(PersonalReminder reminder, CancellationToken cancellationToken = default);
+}
+
+public interface IPersonalInAppNotificationRepository
+{
+    Task<PersonalInAppNotification?> GetByIdAsync(
+        PersonalInAppNotificationId id,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PersonalInAppNotification>> ListForUserAsync(
+        PlatformUserId recipientUserIdentityId,
+        int take,
+        CancellationToken cancellationToken = default);
+
+    Task AddAsync(PersonalInAppNotification notification, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(PersonalInAppNotification notification, CancellationToken cancellationToken = default);
+}
+
+public interface IPersonalNotificationDeliveryRepository
+{
+    Task<IReadOnlyList<PersonalNotificationDelivery>> ListByReminderAsync(
+        PersonalReminderId reminderId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PersonalNotificationDelivery>> ListForRecipientAsync(
+        PlatformUserId recipientUserIdentityId,
+        int take,
+        CancellationToken cancellationToken = default);
+
+    Task AddAsync(PersonalNotificationDelivery delivery, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(PersonalNotificationDelivery delivery, CancellationToken cancellationToken = default);
+}
+
+/// <summary>Pluggable push sink. Null implementation records audit without vendor delivery.</summary>
+public interface IPersonalPushNotificationSink
+{
+    Task<bool> TryDeliverAsync(
+        PlatformUserId recipientUserIdentityId,
+        string title,
+        string minimizedPreview,
+        CancellationToken cancellationToken = default);
 }

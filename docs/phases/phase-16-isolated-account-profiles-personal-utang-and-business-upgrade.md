@@ -19,7 +19,7 @@ The application remains **not production-ready**.
 | P16-WP03 | **Complete** | `3454a7e6caa0d307d03a03d91abe7250ccad96a1` | [report](../reports/P16-WP03-organization-context-and-navigation.md) |
 | P16-WP04 | **Complete** | `17f53e204243844b86602eaf12369495ffd8db01` | [report](../reports/P16-WP04-personal-account-foundation.md) |
 | P16-WP05 | **Complete** | `4b7b4d5c223bf4e293248881df14c970e76e80d1` | [report](../reports/P16-WP05-personal-utang-core.md) |
-| P16-WP06 | Not started | — | — |
+| P16-WP06 | **Complete** | *(recorded after commit)* | [report](../reports/P16-WP06-invitations-linking-reminders-notifications.md) |
 | P16-WP07 | Not started | — | — |
 | P16-WP08 | Not started | — | — |
 | P16-WP09 | Not started | — | — |
@@ -178,7 +178,7 @@ Phase 16 does not:
 | P16-WP03 | Organization Context and Navigation | **Complete** |
 | P16-WP04 | Personal Account Foundation | **Complete** |
 | P16-WP05 | Personal Utang Core | **Complete** |
-| P16-WP06 | Invitations, Linking, Reminders, and Notifications | Not started |
+| P16-WP06 | Invitations, Linking, Reminders, and Notifications | **Complete** |
 | P16-WP07 | Organization Staff and Customer Separation | Not started |
 | P16-WP08 | Start a Business and Utang Migration | Not started |
 | P16-WP09 | Product Access and Navigation Integration | Not started |
@@ -402,13 +402,15 @@ Allow safe participant linking and communication.
 
 ## Exit Criteria
 
-- no silent matching by name, email, or phone
-- invitation acceptance creates no Organization membership
-- invitation acceptance grants no product role
-- sensitive values are minimized in notification previews
-- repeated reminders are rate-limited
-- regression suite passes
-- explicit authorization received for P16-WP07
+- no silent matching by name, email, or phone — **met**
+- invitation acceptance creates no Organization membership — **met**
+- invitation acceptance grants no product role — **met**
+- sensitive values are minimized in notification previews — **met**
+- repeated reminders are rate-limited — **met**
+- regression suite passes — **met** (unit 327 / integration 162)
+- explicit authorization received for P16-WP07 — required before starting WP07
+
+See [P16-WP06 report](../reports/P16-WP06-invitations-linking-reminders-notifications.md).
 
 ---
 

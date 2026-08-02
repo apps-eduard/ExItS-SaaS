@@ -65,6 +65,10 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PersonalContactRecord> PersonalContacts => Set<PersonalContactRecord>();
     internal DbSet<PersonalDebtRelationshipRecord> PersonalDebtRelationships => Set<PersonalDebtRelationshipRecord>();
     internal DbSet<PersonalUtangEntryRecord> PersonalUtangEntries => Set<PersonalUtangEntryRecord>();
+    internal DbSet<PersonalUtangInvitationRecord> PersonalUtangInvitations => Set<PersonalUtangInvitationRecord>();
+    internal DbSet<PersonalReminderRecord> PersonalReminders => Set<PersonalReminderRecord>();
+    internal DbSet<PersonalInAppNotificationRecord> PersonalInAppNotifications => Set<PersonalInAppNotificationRecord>();
+    internal DbSet<PersonalNotificationDeliveryRecord> PersonalNotificationDeliveries => Set<PersonalNotificationDeliveryRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -1101,6 +1105,138 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.CreatedByUserIdentityId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PersonalUtangInvitationRecord>(entity =>
+        {
+            entity.ToTable("personal_utang_invitations");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.DebtRelationshipId).HasColumnName("debt_relationship_id");
+            entity.Property(e => e.InviteeContactId).HasColumnName("invitee_contact_id");
+            entity.Property(e => e.InvitedByUserIdentityId).HasColumnName("invited_by_user_identity_id");
+            entity.Property(e => e.InviteTargetNormalizedEmail)
+                .HasColumnName("invite_target_normalized_email")
+                .HasMaxLength(320);
+            entity.Property(e => e.InviteTargetPhone).HasColumnName("invite_target_phone").HasMaxLength(32);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.TokenHash).HasColumnName("token_hash").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
+            entity.Property(e => e.AcceptedAtUtc).HasColumnName("accepted_at_utc");
+            entity.Property(e => e.DeclinedAtUtc).HasColumnName("declined_at_utc");
+            entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
+            entity.Property(e => e.AcceptedByUserIdentityId).HasColumnName("accepted_by_user_identity_id");
+            entity.HasIndex(e => e.TokenHash).IsUnique();
+            entity.HasIndex(e => e.InvitedByUserIdentityId);
+            entity.HasIndex(e => e.InviteTargetNormalizedEmail);
+            entity.HasIndex(e => new { e.DebtRelationshipId, e.InviteeContactId, e.Status })
+                .HasDatabaseName("ix_personal_utang_invitations_relationship_contact_status");
+
+            entity.HasOne<PersonalDebtRelationshipRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.DebtRelationshipId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne<PersonalContactRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.InviteeContactId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.InvitedByUserIdentityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.AcceptedByUserIdentityId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<PersonalReminderRecord>(entity =>
+        {
+            entity.ToTable("personal_reminders");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.DebtRelationshipId).HasColumnName("debt_relationship_id");
+            entity.Property(e => e.CreatedByUserIdentityId).HasColumnName("created_by_user_identity_id");
+            entity.Property(e => e.ScheduleType).HasColumnName("schedule_type").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.Message).HasColumnName("message").HasMaxLength(280);
+            entity.Property(e => e.ScheduledForUtc).HasColumnName("scheduled_for_utc");
+            entity.Property(e => e.NextDeliveryAtUtc).HasColumnName("next_delivery_at_utc");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.DeliveredAtUtc).HasColumnName("delivered_at_utc");
+            entity.Property(e => e.DeliveryAttemptCount).HasColumnName("delivery_attempt_count");
+            entity.HasIndex(e => e.DebtRelationshipId);
+            entity.HasIndex(e => e.NextDeliveryAtUtc);
+
+            entity.HasOne<PersonalDebtRelationshipRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.DebtRelationshipId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserIdentityId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PersonalInAppNotificationRecord>(entity =>
+        {
+            entity.ToTable("personal_in_app_notifications");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.RecipientUserIdentityId).HasColumnName("recipient_user_identity_id");
+            entity.Property(e => e.Title).HasColumnName("title").HasMaxLength(120).IsRequired();
+            entity.Property(e => e.Preview).HasColumnName("preview").HasMaxLength(200).IsRequired();
+            entity.Property(e => e.RelatedType).HasColumnName("related_type").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.RelatedId).HasColumnName("related_id").HasMaxLength(64);
+            entity.Property(e => e.IsRead).HasColumnName("is_read");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.ReadAtUtc).HasColumnName("read_at_utc");
+            entity.HasIndex(e => e.RecipientUserIdentityId);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.RecipientUserIdentityId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PersonalNotificationDeliveryRecord>(entity =>
+        {
+            entity.ToTable("personal_notification_deliveries");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ReminderId).HasColumnName("reminder_id");
+            entity.Property(e => e.NotificationId).HasColumnName("notification_id");
+            entity.Property(e => e.RecipientUserIdentityId).HasColumnName("recipient_user_identity_id");
+            entity.Property(e => e.Channel).HasColumnName("channel").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.PreviewText).HasColumnName("preview_text").HasMaxLength(200).IsRequired();
+            entity.Property(e => e.AttemptedAtUtc).HasColumnName("attempted_at_utc");
+            entity.Property(e => e.DeliveredAtUtc).HasColumnName("delivered_at_utc");
+            entity.Property(e => e.FailureReason).HasColumnName("failure_reason").HasMaxLength(256);
+            entity.HasIndex(e => e.ReminderId);
+            entity.HasIndex(e => e.RecipientUserIdentityId);
+
+            entity.HasOne<PersonalReminderRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ReminderId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne<PersonalInAppNotificationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.NotificationId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.RecipientUserIdentityId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

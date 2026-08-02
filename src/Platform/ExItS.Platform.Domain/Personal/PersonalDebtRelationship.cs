@@ -10,10 +10,10 @@ namespace ExItS.Platform.Domain.Personal;
 public sealed class PersonalDebtRelationship
 {
     public PersonalDebtRelationshipId Id { get; }
-    public PlatformUserId? CreditorUserIdentityId { get; }
-    public PersonalContactId? CreditorContactId { get; }
-    public PlatformUserId? DebtorUserIdentityId { get; }
-    public PersonalContactId? DebtorContactId { get; }
+    public PlatformUserId? CreditorUserIdentityId { get; private set; }
+    public PersonalContactId? CreditorContactId { get; private set; }
+    public PlatformUserId? DebtorUserIdentityId { get; private set; }
+    public PersonalContactId? DebtorContactId { get; private set; }
     public string CurrencyCode { get; }
     public decimal CurrentBalance { get; private set; }
     public DateTimeOffset? DueDateUtc { get; private set; }
@@ -137,6 +137,63 @@ public sealed class PersonalDebtRelationship
     public bool CanBeViewedByContactOwner(PlatformUserId ownerUserIdentityId, PersonalContact contact) =>
         (CreditorContactId is not null && contact.Id == CreditorContactId && contact.IsOwnedBy(ownerUserIdentityId))
         || (DebtorContactId is not null && contact.Id == DebtorContactId && contact.IsOwnedBy(ownerUserIdentityId));
+
+    /// <summary>
+    /// After explicit invitation acceptance, promote a contact participant to the linked user.
+    /// Does not create Organization membership or product roles.
+    /// </summary>
+    public void AuthorizeLinkedParticipant(
+        PersonalContactId contactId,
+        PlatformUserId linkedUserIdentityId,
+        DateTimeOffset utcNow,
+        int? expectedVersion = null)
+    {
+        ArgumentNullException.ThrowIfNull(contactId);
+        ArgumentNullException.ThrowIfNull(linkedUserIdentityId);
+        EnsureUtc(utcNow);
+        EnsureVersion(expectedVersion);
+
+        if (Status is not PersonalDebtRelationshipStatus.Active)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPersonalDebtRelationship,
+                "Cannot authorize participants on a closed relationship.");
+        }
+
+        if (CreditorContactId == contactId)
+        {
+            if (DebtorUserIdentityId == linkedUserIdentityId)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidPersonalDebtRelationship,
+                    "Creditor and debtor cannot be the same user.");
+            }
+
+            CreditorUserIdentityId = linkedUserIdentityId;
+            CreditorContactId = null;
+        }
+        else if (DebtorContactId == contactId)
+        {
+            if (CreditorUserIdentityId == linkedUserIdentityId)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidPersonalDebtRelationship,
+                    "Creditor and debtor cannot be the same user.");
+            }
+
+            DebtorUserIdentityId = linkedUserIdentityId;
+            DebtorContactId = null;
+        }
+        else
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPersonalDebtRelationship,
+                "Contact is not a participant on this relationship.");
+        }
+
+        UpdatedAtUtc = utcNow;
+        Version++;
+    }
 
     public PersonalUtangEntry RecordEntry(
         PlatformUserId actingUserIdentityId,
