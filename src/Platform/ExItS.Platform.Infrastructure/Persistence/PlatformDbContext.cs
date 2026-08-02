@@ -58,6 +58,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<CreditCustomerRecord> CreditCustomers => Set<CreditCustomerRecord>();
     internal DbSet<CustomerLinkRequestRecord> CustomerLinkRequests => Set<CustomerLinkRequestRecord>();
     internal DbSet<LinkedCustomerAppUserRecord> LinkedCustomerAppUsers => Set<LinkedCustomerAppUserRecord>();
+    internal DbSet<BusinessCreditOpeningBalanceRecord> BusinessCreditOpeningBalances => Set<BusinessCreditOpeningBalanceRecord>();
+    internal DbSet<ProductLocalRoleGrantRecord> ProductLocalRoleGrants => Set<ProductLocalRoleGrantRecord>();
     internal DbSet<ProductAccessAssignmentRecord> ProductAccessAssignments => Set<ProductAccessAssignmentRecord>();
     internal DbSet<PlatformRoleAssignmentRecord> PlatformRoleAssignments => Set<PlatformRoleAssignmentRecord>();
     internal DbSet<PlatformRoleDefinitionRecord> PlatformRoleDefinitions => Set<PlatformRoleDefinitionRecord>();
@@ -73,6 +75,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PersonalReminderRecord> PersonalReminders => Set<PersonalReminderRecord>();
     internal DbSet<PersonalInAppNotificationRecord> PersonalInAppNotifications => Set<PersonalInAppNotificationRecord>();
     internal DbSet<PersonalNotificationDeliveryRecord> PersonalNotificationDeliveries => Set<PersonalNotificationDeliveryRecord>();
+    internal DbSet<PersonalUtangMigrationBatchRecord> PersonalUtangMigrationBatches => Set<PersonalUtangMigrationBatchRecord>();
+    internal DbSet<PersonalUtangMigrationItemRecord> PersonalUtangMigrationItems => Set<PersonalUtangMigrationItemRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -1047,6 +1051,9 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.CurrentBalance).HasColumnName("current_balance").HasColumnType("decimal(18,4)");
             entity.Property(e => e.DueDateUtc).HasColumnName("due_date_utc");
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.DestinationOrganizationId).HasColumnName("destination_organization_id");
+            entity.Property(e => e.DestinationCreditCustomerId).HasColumnName("destination_credit_customer_id");
+            entity.Property(e => e.MigrationBatchId).HasColumnName("migration_batch_id");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.AggregateVersion).HasColumnName("aggregate_version").IsConcurrencyToken();
@@ -1384,6 +1391,133 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.SourceLinkRequestId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<BusinessCreditOpeningBalanceRecord>(entity =>
+        {
+            entity.ToTable("business_credit_opening_balances");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.CreditCustomerId).HasColumnName("credit_customer_id");
+            entity.Property(e => e.BusinessCustomerId).HasColumnName("business_customer_id");
+            entity.Property(e => e.Amount).HasColumnName("amount").HasColumnType("decimal(18,4)");
+            entity.Property(e => e.CurrencyCode).HasColumnName("currency_code").HasMaxLength(3).IsRequired();
+            entity.Property(e => e.EffectiveDateUtc).HasColumnName("effective_date_utc");
+            entity.Property(e => e.SourceType).HasColumnName("source_type").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.SourceRecordId).HasColumnName("source_record_id");
+            entity.Property(e => e.MigrationBatchId).HasColumnName("migration_batch_id");
+            entity.Property(e => e.ImportedByUserId).HasColumnName("imported_by_user_id");
+            entity.Property(e => e.ImportedAtUtc).HasColumnName("imported_at_utc");
+            entity.Property(e => e.DestinationProduct).HasColumnName("destination_product").HasMaxLength(64).IsRequired();
+            entity.HasIndex(e => e.OrganizationId).HasDatabaseName("ix_business_credit_opening_balances_org");
+            entity.HasIndex(e => new { e.OrganizationId, e.SourceType, e.SourceRecordId })
+                .IsUnique()
+                .HasDatabaseName("ux_business_credit_opening_balances_org_source");
+
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<CreditCustomerRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CreditCustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<BusinessCustomerRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.BusinessCustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ProductLocalRoleGrantRecord>(entity =>
+        {
+            entity.ToTable("product_local_role_grants");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.UserIdentityId).HasColumnName("user_identity_id");
+            entity.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.RoleCode).HasColumnName("role_code").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.GrantedAtUtc).HasColumnName("granted_at_utc");
+            entity.Property(e => e.GrantedByUserIdentityId).HasColumnName("granted_by_user_identity_id");
+            entity.Property(e => e.Source).HasColumnName("source").HasMaxLength(64).IsRequired();
+            entity.HasIndex(e => new { e.OrganizationId, e.UserIdentityId, e.ProductCode, e.RoleCode })
+                .IsUnique()
+                .HasDatabaseName("ux_product_local_role_grants_org_user_product_role");
+
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.UserIdentityId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PersonalUtangMigrationBatchRecord>(entity =>
+        {
+            entity.ToTable("personal_utang_migration_batches");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OwnerUserIdentityId).HasColumnName("owner_user_identity_id");
+            entity.Property(e => e.DestinationOrganizationId).HasColumnName("destination_organization_id");
+            entity.Property(e => e.DestinationProductCode).HasColumnName("destination_product_code").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(128);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.EffectiveMigrationDateUtc).HasColumnName("effective_migration_date_utc");
+            entity.Property(e => e.IncludeContact).HasColumnName("include_contact");
+            entity.Property(e => e.IncludeOpeningBalance).HasColumnName("include_opening_balance");
+            entity.Property(e => e.IncludeSelectedHistory).HasColumnName("include_selected_history");
+            entity.Property(e => e.IncludeDueDatesAndNotes).HasColumnName("include_due_dates_and_notes");
+            entity.Property(e => e.SourceDisposition).HasColumnName("source_disposition").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.LinkedParticipantConsentAcknowledged).HasColumnName("linked_participant_consent_acknowledged");
+            entity.Property(e => e.ConfirmationToken).HasColumnName("confirmation_token");
+            entity.Property(e => e.PreviewedAtUtc).HasColumnName("previewed_at_utc");
+            entity.Property(e => e.ExecutedAtUtc).HasColumnName("executed_at_utc");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.HasIndex(e => new { e.OwnerUserIdentityId, e.IdempotencyKey })
+                .IsUnique()
+                .HasFilter("idempotency_key IS NOT NULL")
+                .HasDatabaseName("ux_personal_utang_migration_batches_owner_idempotency");
+            entity.HasIndex(e => e.DestinationOrganizationId)
+                .HasDatabaseName("ix_personal_utang_migration_batches_destination_org");
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OwnerUserIdentityId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.DestinationOrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PersonalUtangMigrationItemRecord>(entity =>
+        {
+            entity.ToTable("personal_utang_migration_items");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.BatchId).HasColumnName("batch_id");
+            entity.Property(e => e.SourceType).HasColumnName("source_type").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.SourceRecordId).HasColumnName("source_record_id");
+            entity.Property(e => e.DestinationType).HasColumnName("destination_type").HasMaxLength(64);
+            entity.Property(e => e.DestinationRecordId).HasColumnName("destination_record_id");
+            entity.Property(e => e.OpeningBalanceAmount).HasColumnName("opening_balance_amount").HasColumnType("decimal(18,4)");
+            entity.Property(e => e.CurrencyCode).HasColumnName("currency_code").HasMaxLength(3);
+            entity.Property(e => e.NotesSnapshot).HasColumnName("notes_snapshot").HasMaxLength(512);
+            entity.Property(e => e.DueDateUtc).HasColumnName("due_date_utc");
+            entity.Property(e => e.HistoryEntryIdsCsv).HasColumnName("history_entry_ids_csv").HasMaxLength(4000);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.BlockedReason).HasColumnName("blocked_reason").HasMaxLength(512);
+            entity.HasIndex(e => e.BatchId).HasDatabaseName("ix_personal_utang_migration_items_batch_id");
+            entity.HasIndex(e => new { e.SourceType, e.SourceRecordId, e.Status })
+                .HasDatabaseName("ix_personal_utang_migration_items_source_status");
+
+            entity.HasOne<PersonalUtangMigrationBatchRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.BatchId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

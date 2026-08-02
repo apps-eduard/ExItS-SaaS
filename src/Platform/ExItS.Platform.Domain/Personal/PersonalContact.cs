@@ -114,6 +114,18 @@ public sealed class PersonalContact
         UpdatedAtUtc = utcNow;
     }
 
+    public void Archive(DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (Status == PersonalContactStatus.Archived)
+        {
+            return;
+        }
+
+        Status = PersonalContactStatus.Archived;
+        UpdatedAtUtc = utcNow;
+    }
+
     private static string NormalizeDisplayName(string displayName)
     {
         if (string.IsNullOrWhiteSpace(displayName))

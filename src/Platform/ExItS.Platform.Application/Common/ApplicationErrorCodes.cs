@@ -134,4 +134,13 @@ public static class ApplicationErrorCodes
     public const string CreditCustomerConflict = "application.credit_customer.conflict";
     public const string CustomerLinkRequestNotFound = "application.customer_link_request.not_found";
     public const string CustomerLinkRequestConflict = "application.customer_link_request.conflict";
+
+    public const string UtangMigrationConsentRequired = "application.utang_migration.consent_required";
+    public const string UtangMigrationSelectionRequired = "application.utang_migration.selection_required";
+    public const string UtangMigrationAlreadyMigrated = "application.utang_migration.already_migrated";
+    public const string UtangMigrationPreviewRequired = "application.utang_migration.preview_required";
+    public const string UtangMigrationConfirmationMismatch = "application.utang_migration.confirmation_mismatch";
+    public const string UtangMigrationBatchNotFound = "application.utang_migration.batch_not_found";
+    public const string ProductLocalRoleGrantConflict = "application.product_local_role.conflict";
+    public const string StartBusinessOwnerRequired = "application.start_business.owner_required";
 }

@@ -38,10 +38,51 @@ internal sealed class PersonalDebtRelationshipRecord
     public decimal CurrentBalance { get; set; }
     public DateTimeOffset? DueDateUtc { get; set; }
     public string Status { get; set; } = string.Empty;
+    public Guid? DestinationOrganizationId { get; set; }
+    public Guid? DestinationCreditCustomerId { get; set; }
+    public Guid? MigrationBatchId { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public int AggregateVersion { get; set; }
     public uint Xmin { get; set; }
+}
+
+internal sealed class PersonalUtangMigrationBatchRecord
+{
+    public Guid Id { get; set; }
+    public Guid OwnerUserIdentityId { get; set; }
+    public Guid DestinationOrganizationId { get; set; }
+    public string DestinationProductCode { get; set; } = string.Empty;
+    public string? IdempotencyKey { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public DateTimeOffset EffectiveMigrationDateUtc { get; set; }
+    public bool IncludeContact { get; set; }
+    public bool IncludeOpeningBalance { get; set; }
+    public bool IncludeSelectedHistory { get; set; }
+    public bool IncludeDueDatesAndNotes { get; set; }
+    public string SourceDisposition { get; set; } = string.Empty;
+    public bool LinkedParticipantConsentAcknowledged { get; set; }
+    public Guid ConfirmationToken { get; set; }
+    public DateTimeOffset PreviewedAtUtc { get; set; }
+    public DateTimeOffset? ExecutedAtUtc { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
+}
+
+internal sealed class PersonalUtangMigrationItemRecord
+{
+    public Guid Id { get; set; }
+    public Guid BatchId { get; set; }
+    public string SourceType { get; set; } = string.Empty;
+    public Guid SourceRecordId { get; set; }
+    public string? DestinationType { get; set; }
+    public Guid? DestinationRecordId { get; set; }
+    public decimal? OpeningBalanceAmount { get; set; }
+    public string? CurrencyCode { get; set; }
+    public string? NotesSnapshot { get; set; }
+    public DateTimeOffset? DueDateUtc { get; set; }
+    public string? HistoryEntryIdsCsv { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string? BlockedReason { get; set; }
 }
 
 internal sealed class PersonalUtangEntryRecord

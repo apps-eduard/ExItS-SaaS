@@ -151,4 +151,21 @@ public static class DomainErrorCodes
     public const string CustomerLinkMustNotCreateStaff = "platform.customer_link.must_not_create_staff";
     public const string StaffCannotAccessUnrelatedPersonalRecords =
         "platform.staff.unrelated_personal_records_denied";
+
+    public const string InvalidPersonalUtangMigrationBatchId =
+        "platform.personal.utang_migration.batch_id.invalid";
+    public const string InvalidPersonalUtangMigrationItemId =
+        "platform.personal.utang_migration.item_id.invalid";
+    public const string PersonalUtangMigrationConsentRequired =
+        "platform.personal.utang_migration.consent_required";
+    public const string PersonalUtangMigrationSelectionRequired =
+        "platform.personal.utang_migration.selection_required";
+    public const string PersonalUtangAlreadyMigrated =
+        "platform.personal.utang_migration.already_migrated";
+    public const string InvalidPersonalUtangMigrationStatusTransition =
+        "platform.personal.utang_migration.status.invalid_transition";
+    public const string InvalidBusinessCreditOpeningBalanceId =
+        "platform.business_credit_opening_balance.id.invalid";
+    public const string InvalidProductLocalRoleGrantId =
+        "platform.product_local_role_grant.id.invalid";
 }

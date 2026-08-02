@@ -9,7 +9,45 @@ public enum PersonalContactStatus
 public enum PersonalDebtRelationshipStatus
 {
     Active,
-    Closed
+    Closed,
+    Archived,
+    Transferred
+}
+
+public enum PersonalUtangSourceDisposition
+{
+    Retain,
+    Archive,
+    MarkTransferred
+}
+
+public enum PersonalUtangMigrationBatchStatus
+{
+    Previewed,
+    Executed,
+    Failed
+}
+
+public enum PersonalUtangMigrationSourceType
+{
+    PersonalContact,
+    PersonalDebtRelationship,
+    PersonalUtangEntry
+}
+
+public enum PersonalUtangMigrationDestinationType
+{
+    BusinessCustomer,
+    CreditCustomer,
+    BusinessCreditOpeningBalance
+}
+
+public enum PersonalUtangMigrationItemStatus
+{
+    Previewed,
+    Migrated,
+    Skipped,
+    Blocked
 }
 
 public enum PersonalUtangEntryType

@@ -60,3 +60,32 @@ internal sealed class LinkedCustomerAppUserRecord
     public DateTimeOffset? RevokedAtUtc { get; set; }
     public uint Xmin { get; set; }
 }
+
+internal sealed class BusinessCreditOpeningBalanceRecord
+{
+    public Guid Id { get; set; }
+    public Guid OrganizationId { get; set; }
+    public Guid CreditCustomerId { get; set; }
+    public Guid BusinessCustomerId { get; set; }
+    public decimal Amount { get; set; }
+    public string CurrencyCode { get; set; } = "PHP";
+    public DateTimeOffset EffectiveDateUtc { get; set; }
+    public string SourceType { get; set; } = string.Empty;
+    public Guid SourceRecordId { get; set; }
+    public Guid MigrationBatchId { get; set; }
+    public Guid ImportedByUserId { get; set; }
+    public DateTimeOffset ImportedAtUtc { get; set; }
+    public string DestinationProduct { get; set; } = string.Empty;
+}
+
+internal sealed class ProductLocalRoleGrantRecord
+{
+    public Guid Id { get; set; }
+    public Guid OrganizationId { get; set; }
+    public Guid UserIdentityId { get; set; }
+    public string ProductCode { get; set; } = string.Empty;
+    public string RoleCode { get; set; } = string.Empty;
+    public DateTimeOffset GrantedAtUtc { get; set; }
+    public Guid GrantedByUserIdentityId { get; set; }
+    public string Source { get; set; } = string.Empty;
+}

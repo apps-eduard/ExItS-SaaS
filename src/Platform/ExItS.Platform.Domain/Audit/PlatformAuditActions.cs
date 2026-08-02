@@ -150,4 +150,10 @@ public static class PlatformAuditActions
     public const string PersonalReminderDelivered = "platform.personal.reminder.delivered";
     public const string PersonalReminderCancelled = "platform.personal.reminder.cancelled";
     public const string PersonalNotificationDelivered = "platform.personal.notification.delivered";
+
+    public const string BusinessUpgradeStarted = "platform.business_upgrade.started";
+    public const string BusinessUpgradeCompleted = "platform.business_upgrade.completed";
+    public const string UtangMigrationPreviewed = "platform.utang_migration.previewed";
+    public const string UtangMigrationExecuted = "platform.utang_migration.executed";
+    public const string ProductLocalRoleGranted = "platform.product_local_role.granted";
 }

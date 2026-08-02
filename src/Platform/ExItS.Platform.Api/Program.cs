@@ -228,6 +228,9 @@ builder.Services.AddScoped<RevokeCustomerLinkRequest>();
 builder.Services.AddScoped<DeclineCustomerLinkRequest>();
 builder.Services.AddScoped<AcceptCustomerLinkRequest>();
 builder.Services.AddScoped<DenyStaffAccessToUnrelatedPersonalRecords>();
+builder.Services.AddScoped<StartBusinessForPersonalUser>();
+builder.Services.AddScoped<PreviewPersonalUtangMigration>();
+builder.Services.AddScoped<ExecutePersonalUtangMigration>();
 
 builder.Services.AddScoped<ProductAccessQueryService>();
 builder.Services.AddScoped<GrantProductAccess>();
@@ -315,6 +318,7 @@ app.MapPersonalEndpoints();
 app.MapMembershipEndpoints();
 app.MapInvitationEndpoints();
 app.MapBusinessCustomerEndpoints();
+app.MapUtangMigrationEndpoints();
 app.MapAccessEndpoints();
 app.MapSubscriptionEndpoints();
 app.MapPaymentEndpoints();

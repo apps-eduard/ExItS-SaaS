@@ -1,4 +1,5 @@
 using ExItS.Platform.Domain.Identity;
+using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Personal;
 
 namespace ExItS.Platform.Application.Personal;
@@ -138,4 +139,37 @@ public interface IPersonalPushNotificationSink
         string title,
         string minimizedPreview,
         CancellationToken cancellationToken = default);
+}
+
+public interface IPersonalUtangMigrationBatchRepository
+{
+    Task<PersonalUtangMigrationBatch?> GetByIdAsync(
+        PersonalUtangMigrationBatchId id,
+        CancellationToken cancellationToken = default);
+
+    Task<PersonalUtangMigrationBatch?> FindByOwnerAndIdempotencyKeyAsync(
+        PlatformUserId ownerUserIdentityId,
+        string idempotencyKey,
+        CancellationToken cancellationToken = default);
+
+    Task AddAsync(PersonalUtangMigrationBatch batch, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(PersonalUtangMigrationBatch batch, CancellationToken cancellationToken = default);
+}
+
+public interface IPersonalUtangMigrationItemRepository
+{
+    Task<IReadOnlyList<PersonalUtangMigrationItem>> ListByBatchAsync(
+        PersonalUtangMigrationBatchId batchId,
+        CancellationToken cancellationToken = default);
+
+    Task<PersonalUtangMigrationItem?> FindMigratedByDestinationAndSourceAsync(
+        PlatformOrganizationId destinationOrganizationId,
+        PersonalUtangMigrationSourceType sourceType,
+        Guid sourceRecordId,
+        CancellationToken cancellationToken = default);
+
+    Task AddAsync(PersonalUtangMigrationItem item, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(PersonalUtangMigrationItem item, CancellationToken cancellationToken = default);
 }

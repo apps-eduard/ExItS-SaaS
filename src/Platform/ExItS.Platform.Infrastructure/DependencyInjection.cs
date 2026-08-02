@@ -74,6 +74,10 @@ public static class DependencyInjection
         services.AddScoped<IPersonalReminderRepository, PersonalReminderRepository>();
         services.AddScoped<IPersonalInAppNotificationRepository, PersonalInAppNotificationRepository>();
         services.AddScoped<IPersonalNotificationDeliveryRepository, PersonalNotificationDeliveryRepository>();
+        services.AddScoped<IPersonalUtangMigrationBatchRepository, PersonalUtangMigrationBatchRepository>();
+        services.AddScoped<IPersonalUtangMigrationItemRepository, PersonalUtangMigrationItemRepository>();
+        services.AddScoped<IBusinessCreditOpeningBalanceRepository, BusinessCreditOpeningBalanceRepository>();
+        services.AddScoped<IProductLocalRoleGrantRepository, ProductLocalRoleGrantRepository>();
         services.AddSingleton<IPersonalPushNotificationSink, NullPersonalPushNotificationSink>();
         services.AddScoped<IPlatformUnitOfWork, PlatformUnitOfWork>();
         services.AddSingleton<IClock, SystemClock>();

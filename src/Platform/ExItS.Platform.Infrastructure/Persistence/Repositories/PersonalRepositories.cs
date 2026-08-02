@@ -1,5 +1,6 @@
 using ExItS.Platform.Application.Personal;
 using ExItS.Platform.Domain.Identity;
+using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Personal;
 using ExItS.Platform.Infrastructure.Persistence.Personal;
 using Microsoft.EntityFrameworkCore;
@@ -199,6 +200,9 @@ internal sealed class PersonalDebtRelationshipRepository(PlatformDbContext db) :
         record.CurrentBalance = relationship.CurrentBalance;
         record.DueDateUtc = relationship.DueDateUtc;
         record.Status = relationship.Status.ToString();
+        record.DestinationOrganizationId = relationship.DestinationOrganizationId;
+        record.DestinationCreditCustomerId = relationship.DestinationCreditCustomerId;
+        record.MigrationBatchId = relationship.MigrationBatchId;
         record.UpdatedAtUtc = relationship.UpdatedAtUtc;
         record.AggregateVersion = relationship.Version;
     }
@@ -216,7 +220,10 @@ internal sealed class PersonalDebtRelationshipRepository(PlatformDbContext db) :
             Enum.Parse<PersonalDebtRelationshipStatus>(record.Status, ignoreCase: true),
             record.CreatedAtUtc,
             record.UpdatedAtUtc,
-            record.AggregateVersion);
+            record.AggregateVersion,
+            record.DestinationOrganizationId,
+            record.DestinationCreditCustomerId,
+            record.MigrationBatchId);
 
     private static PersonalDebtRelationshipRecord ToRecord(PersonalDebtRelationship relationship) =>
         new()
@@ -230,6 +237,9 @@ internal sealed class PersonalDebtRelationshipRepository(PlatformDbContext db) :
             CurrentBalance = relationship.CurrentBalance,
             DueDateUtc = relationship.DueDateUtc,
             Status = relationship.Status.ToString(),
+            DestinationOrganizationId = relationship.DestinationOrganizationId,
+            DestinationCreditCustomerId = relationship.DestinationCreditCustomerId,
+            MigrationBatchId = relationship.MigrationBatchId,
             CreatedAtUtc = relationship.CreatedAtUtc,
             UpdatedAtUtc = relationship.UpdatedAtUtc,
             AggregateVersion = relationship.Version
@@ -683,5 +693,189 @@ internal sealed class PersonalNotificationDeliveryRepository(PlatformDbContext d
             AttemptedAtUtc = delivery.AttemptedAtUtc,
             DeliveredAtUtc = delivery.DeliveredAtUtc,
             FailureReason = delivery.FailureReason
+        };
+}
+
+internal sealed class PersonalUtangMigrationBatchRepository(PlatformDbContext db) : IPersonalUtangMigrationBatchRepository
+{
+    public async Task<PersonalUtangMigrationBatch?> GetByIdAsync(
+        PersonalUtangMigrationBatchId id,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalUtangMigrationBatches.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public async Task<PersonalUtangMigrationBatch?> FindByOwnerAndIdempotencyKeyAsync(
+        PlatformUserId ownerUserIdentityId,
+        string idempotencyKey,
+        CancellationToken cancellationToken = default)
+    {
+        var key = idempotencyKey.Trim();
+        var record = await db.PersonalUtangMigrationBatches.AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.OwnerUserIdentityId == ownerUserIdentityId.Value && x.IdempotencyKey == key,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public Task AddAsync(PersonalUtangMigrationBatch batch, CancellationToken cancellationToken = default)
+    {
+        db.PersonalUtangMigrationBatches.Add(ToRecord(batch));
+        return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(PersonalUtangMigrationBatch batch, CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalUtangMigrationBatches
+            .FirstOrDefaultAsync(x => x.Id == batch.Id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (record is null)
+        {
+            return;
+        }
+
+        record.IdempotencyKey = batch.IdempotencyKey;
+        record.Status = batch.Status.ToString();
+        record.ExecutedAtUtc = batch.ExecutedAtUtc;
+    }
+
+    private static PersonalUtangMigrationBatch ToDomain(PersonalUtangMigrationBatchRecord record) =>
+        PersonalUtangMigrationBatch.Rehydrate(
+            PersonalUtangMigrationBatchId.From(record.Id),
+            PlatformUserId.From(record.OwnerUserIdentityId),
+            PlatformOrganizationId.From(record.DestinationOrganizationId),
+            record.DestinationProductCode,
+            record.IdempotencyKey,
+            Enum.Parse<PersonalUtangMigrationBatchStatus>(record.Status, ignoreCase: true),
+            record.EffectiveMigrationDateUtc,
+            record.IncludeContact,
+            record.IncludeOpeningBalance,
+            record.IncludeSelectedHistory,
+            record.IncludeDueDatesAndNotes,
+            Enum.Parse<PersonalUtangSourceDisposition>(record.SourceDisposition, ignoreCase: true),
+            record.LinkedParticipantConsentAcknowledged,
+            record.ConfirmationToken,
+            record.PreviewedAtUtc,
+            record.ExecutedAtUtc,
+            record.CreatedAtUtc);
+
+    private static PersonalUtangMigrationBatchRecord ToRecord(PersonalUtangMigrationBatch batch) =>
+        new()
+        {
+            Id = batch.Id.Value,
+            OwnerUserIdentityId = batch.OwnerUserIdentityId.Value,
+            DestinationOrganizationId = batch.DestinationOrganizationId.Value,
+            DestinationProductCode = batch.DestinationProductCode,
+            IdempotencyKey = batch.IdempotencyKey,
+            Status = batch.Status.ToString(),
+            EffectiveMigrationDateUtc = batch.EffectiveMigrationDateUtc,
+            IncludeContact = batch.IncludeContact,
+            IncludeOpeningBalance = batch.IncludeOpeningBalance,
+            IncludeSelectedHistory = batch.IncludeSelectedHistory,
+            IncludeDueDatesAndNotes = batch.IncludeDueDatesAndNotes,
+            SourceDisposition = batch.SourceDisposition.ToString(),
+            LinkedParticipantConsentAcknowledged = batch.LinkedParticipantConsentAcknowledged,
+            ConfirmationToken = batch.ConfirmationToken,
+            PreviewedAtUtc = batch.PreviewedAtUtc,
+            ExecutedAtUtc = batch.ExecutedAtUtc,
+            CreatedAtUtc = batch.CreatedAtUtc
+        };
+}
+
+internal sealed class PersonalUtangMigrationItemRepository(PlatformDbContext db) : IPersonalUtangMigrationItemRepository
+{
+    public async Task<IReadOnlyList<PersonalUtangMigrationItem>> ListByBatchAsync(
+        PersonalUtangMigrationBatchId batchId,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await db.PersonalUtangMigrationItems.AsNoTracking()
+            .Where(x => x.BatchId == batchId.Value)
+            .OrderBy(x => x.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
+    }
+
+    public async Task<PersonalUtangMigrationItem?> FindMigratedByDestinationAndSourceAsync(
+        PlatformOrganizationId destinationOrganizationId,
+        PersonalUtangMigrationSourceType sourceType,
+        Guid sourceRecordId,
+        CancellationToken cancellationToken = default)
+    {
+        var sourceTypeName = sourceType.ToString();
+        var migrated = nameof(PersonalUtangMigrationItemStatus.Migrated);
+        var record = await (
+                from item in db.PersonalUtangMigrationItems.AsNoTracking()
+                join batch in db.PersonalUtangMigrationBatches.AsNoTracking() on item.BatchId equals batch.Id
+                where batch.DestinationOrganizationId == destinationOrganizationId.Value
+                      && item.SourceType == sourceTypeName
+                      && item.SourceRecordId == sourceRecordId
+                      && item.Status == migrated
+                select item)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public Task AddAsync(PersonalUtangMigrationItem item, CancellationToken cancellationToken = default)
+    {
+        db.PersonalUtangMigrationItems.Add(ToRecord(item));
+        return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(PersonalUtangMigrationItem item, CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalUtangMigrationItems
+            .FirstOrDefaultAsync(x => x.Id == item.Id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (record is null)
+        {
+            return;
+        }
+
+        record.DestinationType = item.DestinationType?.ToString();
+        record.DestinationRecordId = item.DestinationRecordId;
+        record.Status = item.Status.ToString();
+        record.BlockedReason = item.BlockedReason;
+    }
+
+    private static PersonalUtangMigrationItem ToDomain(PersonalUtangMigrationItemRecord record) =>
+        PersonalUtangMigrationItem.Rehydrate(
+            PersonalUtangMigrationItemId.From(record.Id),
+            PersonalUtangMigrationBatchId.From(record.BatchId),
+            Enum.Parse<PersonalUtangMigrationSourceType>(record.SourceType, ignoreCase: true),
+            record.SourceRecordId,
+            string.IsNullOrWhiteSpace(record.DestinationType)
+                ? null
+                : Enum.Parse<PersonalUtangMigrationDestinationType>(record.DestinationType, ignoreCase: true),
+            record.DestinationRecordId,
+            record.OpeningBalanceAmount,
+            record.CurrencyCode,
+            record.NotesSnapshot,
+            record.DueDateUtc,
+            record.HistoryEntryIdsCsv,
+            Enum.Parse<PersonalUtangMigrationItemStatus>(record.Status, ignoreCase: true),
+            record.BlockedReason);
+
+    private static PersonalUtangMigrationItemRecord ToRecord(PersonalUtangMigrationItem item) =>
+        new()
+        {
+            Id = item.Id.Value,
+            BatchId = item.BatchId.Value,
+            SourceType = item.SourceType.ToString(),
+            SourceRecordId = item.SourceRecordId,
+            DestinationType = item.DestinationType?.ToString(),
+            DestinationRecordId = item.DestinationRecordId,
+            OpeningBalanceAmount = item.OpeningBalanceAmount,
+            CurrencyCode = item.CurrencyCode,
+            NotesSnapshot = item.NotesSnapshot,
+            DueDateUtc = item.DueDateUtc,
+            HistoryEntryIdsCsv = item.HistoryEntryIdsCsv,
+            Status = item.Status.ToString(),
+            BlockedReason = item.BlockedReason
         };
 }

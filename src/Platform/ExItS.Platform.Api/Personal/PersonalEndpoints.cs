@@ -99,6 +99,36 @@ internal static class PersonalEndpoints
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         });
 
+        personal.MapPost("/start-business", async (
+            HttpContext http,
+            StartBusinessRequest body,
+            StartBusinessForPersonalUser startBusiness,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var sessionIdRaw = http.User.FindFirstValue(PlatformSessionClaimTypes.SessionId);
+            if (!Guid.TryParse(sessionIdRaw, out var sessionId) || sessionId == Guid.Empty)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Session is invalid.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var result = await startBusiness.ExecuteAsync(
+                PlatformUserId.From(userId),
+                PlatformAuthSessionId.From(sessionId),
+                body,
+                http.Connection.RemoteIpAddress?.ToString(),
+                http.Request.Headers.UserAgent.ToString(),
+                ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Created($"/api/v1/organizations/{dto.OrganizationId}", dto));
+        });
+
         MapPersonalUtangEndpoints(personal);
         MapPersonalNotificationEndpoints(personal);
 

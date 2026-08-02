@@ -18,6 +18,9 @@ public sealed class PersonalDebtRelationship
     public decimal CurrentBalance { get; private set; }
     public DateTimeOffset? DueDateUtc { get; private set; }
     public PersonalDebtRelationshipStatus Status { get; private set; }
+    public Guid? DestinationOrganizationId { get; private set; }
+    public Guid? DestinationCreditCustomerId { get; private set; }
+    public Guid? MigrationBatchId { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
     public int Version { get; private set; }
@@ -32,6 +35,9 @@ public sealed class PersonalDebtRelationship
         decimal currentBalance,
         DateTimeOffset? dueDateUtc,
         PersonalDebtRelationshipStatus status,
+        Guid? destinationOrganizationId,
+        Guid? destinationCreditCustomerId,
+        Guid? migrationBatchId,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         int version)
@@ -45,6 +51,9 @@ public sealed class PersonalDebtRelationship
         CurrentBalance = currentBalance;
         DueDateUtc = dueDateUtc;
         Status = status;
+        DestinationOrganizationId = destinationOrganizationId;
+        DestinationCreditCustomerId = destinationCreditCustomerId;
+        MigrationBatchId = migrationBatchId;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
         Version = version;
@@ -98,6 +107,9 @@ public sealed class PersonalDebtRelationship
             currentBalance: 0m,
             dueDateUtc,
             PersonalDebtRelationshipStatus.Active,
+            destinationOrganizationId: null,
+            destinationCreditCustomerId: null,
+            migrationBatchId: null,
             utcNow,
             utcNow,
             version: 1);
@@ -115,7 +127,10 @@ public sealed class PersonalDebtRelationship
         PersonalDebtRelationshipStatus status,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
-        int version) =>
+        int version,
+        Guid? destinationOrganizationId = null,
+        Guid? destinationCreditCustomerId = null,
+        Guid? migrationBatchId = null) =>
         new(
             id,
             creditorUserIdentityId,
@@ -126,6 +141,9 @@ public sealed class PersonalDebtRelationship
             currentBalance,
             dueDateUtc,
             status,
+            destinationOrganizationId,
+            destinationCreditCustomerId,
+            migrationBatchId,
             createdAtUtc,
             updatedAtUtc,
             version);
@@ -259,6 +277,73 @@ public sealed class PersonalDebtRelationship
             PersonalUtangEntryType.Adjustment => adjustmentDelta!.Value,
             _ => throw new DomainException(DomainErrorCodes.InvalidPersonalUtangEntryType, "Entry type is invalid.")
         };
+
+    public void Archive(DateTimeOffset utcNow, int? expectedVersion = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureVersion(expectedVersion);
+        if (Status is PersonalDebtRelationshipStatus.Archived or PersonalDebtRelationshipStatus.Transferred)
+        {
+            return;
+        }
+
+        if (Status is not PersonalDebtRelationshipStatus.Active and not PersonalDebtRelationshipStatus.Closed)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPersonalDebtRelationship,
+                $"Cannot archive a relationship in status {Status}.");
+        }
+
+        Status = PersonalDebtRelationshipStatus.Archived;
+        UpdatedAtUtc = utcNow;
+        Version++;
+    }
+
+    public void MarkTransferred(
+        Guid destinationOrganizationId,
+        Guid destinationCreditCustomerId,
+        Guid migrationBatchId,
+        DateTimeOffset utcNow,
+        int? expectedVersion = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureVersion(expectedVersion);
+        if (destinationOrganizationId == Guid.Empty || destinationCreditCustomerId == Guid.Empty || migrationBatchId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPersonalDebtRelationship,
+                "Transfer destination identifiers are required.");
+        }
+
+        if (Status is PersonalDebtRelationshipStatus.Transferred)
+        {
+            if (DestinationOrganizationId == destinationOrganizationId
+                && DestinationCreditCustomerId == destinationCreditCustomerId
+                && MigrationBatchId == migrationBatchId)
+            {
+                return;
+            }
+
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangAlreadyMigrated,
+                "Relationship was already transferred to a different destination.");
+        }
+
+        if (Status is not PersonalDebtRelationshipStatus.Active and not PersonalDebtRelationshipStatus.Closed
+            and not PersonalDebtRelationshipStatus.Archived)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPersonalDebtRelationship,
+                $"Cannot transfer a relationship in status {Status}.");
+        }
+
+        Status = PersonalDebtRelationshipStatus.Transferred;
+        DestinationOrganizationId = destinationOrganizationId;
+        DestinationCreditCustomerId = destinationCreditCustomerId;
+        MigrationBatchId = migrationBatchId;
+        UpdatedAtUtc = utcNow;
+        Version++;
+    }
 
     private void EnsureVersion(int? expectedVersion)
     {

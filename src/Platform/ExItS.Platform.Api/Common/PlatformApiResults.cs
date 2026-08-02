@@ -35,7 +35,10 @@ internal static class PlatformApiResults
             or DomainErrorCodes.PersonalReminderUnauthorized
             or DomainErrorCodes.CustomerToStaffConversionDenied
             or DomainErrorCodes.CustomerLinkMustNotCreateStaff
-            or DomainErrorCodes.StaffCannotAccessUnrelatedPersonalRecords => StatusCodes.Status403Forbidden,
+            or DomainErrorCodes.StaffCannotAccessUnrelatedPersonalRecords
+            or ApplicationErrorCodes.UtangMigrationConsentRequired
+            or ApplicationErrorCodes.StartBusinessOwnerRequired
+            or DomainErrorCodes.PersonalUtangMigrationConsentRequired => StatusCodes.Status403Forbidden,
 
         ApplicationErrorCodes.LoginFailed
             or ApplicationErrorCodes.SessionInvalid
@@ -69,7 +72,8 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.PersonalNotificationNotFound
             or ApplicationErrorCodes.BusinessCustomerNotFound
             or ApplicationErrorCodes.CreditCustomerNotFound
-            or ApplicationErrorCodes.CustomerLinkRequestNotFound => StatusCodes.Status404NotFound,
+            or ApplicationErrorCodes.CustomerLinkRequestNotFound
+            or ApplicationErrorCodes.UtangMigrationBatchNotFound => StatusCodes.Status404NotFound,
 
         ApplicationErrorCodes.SlugConflict
             or ApplicationErrorCodes.EmailConflict
@@ -128,7 +132,12 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.CreditCustomerConflict
             or ApplicationErrorCodes.CustomerLinkRequestConflict
             or DomainErrorCodes.CustomerLinkRequestExpired
-            or DomainErrorCodes.BusinessCustomerAlreadyLinked => StatusCodes.Status409Conflict,
+            or DomainErrorCodes.BusinessCustomerAlreadyLinked
+            or ApplicationErrorCodes.UtangMigrationAlreadyMigrated
+            or ApplicationErrorCodes.UtangMigrationConfirmationMismatch
+            or ApplicationErrorCodes.UtangMigrationPreviewRequired
+            or ApplicationErrorCodes.ProductLocalRoleGrantConflict
+            or DomainErrorCodes.PersonalUtangAlreadyMigrated => StatusCodes.Status409Conflict,
 
         ApplicationErrorCodes.PersonalReminderRateLimited
             or DomainErrorCodes.PersonalReminderRateLimited => StatusCodes.Status429TooManyRequests,
@@ -138,6 +147,8 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.EntitlementSnapshotInvalid
             or ApplicationErrorCodes.EntitlementSchemaUnsupported
             or ApplicationErrorCodes.EntitlementRefreshPolicyMissing
+            or ApplicationErrorCodes.UtangMigrationSelectionRequired
+            or DomainErrorCodes.PersonalUtangMigrationSelectionRequired
             or DomainErrorCodes.PaymentAmountInvalid
             or DomainErrorCodes.PaymentCurrencyInvalid
             or DomainErrorCodes.PaymentReferenceRequired
