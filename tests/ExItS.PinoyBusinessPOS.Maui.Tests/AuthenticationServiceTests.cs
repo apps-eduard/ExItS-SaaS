@@ -155,6 +155,22 @@ public sealed class AuthenticationServiceTests
         var tokens = new MemorySecureTokenStore();
         var access = new FakeAccessClient
         {
+            LoginResult = ApiResult<PlatformLoginResultDto>.Success(new PlatformLoginResultDto(
+                "platform-session",
+                Guid.NewGuid(),
+                userId,
+                "cashier",
+                "Cashier",
+                "c@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                DateTimeOffset.UtcNow.AddHours(24),
+                null,
+                null,
+                "none",
+                2,
+                AccountProfileId: Guid.NewGuid(),
+                AccountClass: "Personal",
+                AllowedScope: "personal")),
             IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
                 "opaque-token",
                 "Bearer",
@@ -176,7 +192,9 @@ public sealed class AuthenticationServiceTests
         var result = await sut.SignInAsync(new SignInRequest("cashier", "secret"));
         Assert.True(result.Succeeded);
         Assert.Equal("opaque-token", result.Session!.AccessToken);
+        Assert.Equal("platform-session", result.Session.PlatformSessionToken);
         Assert.Equal("opaque-token", await tokens.GetAsync(SecureTokenKeys.AccessToken));
+        Assert.Equal("platform-session", await tokens.GetAsync(SecureTokenKeys.PlatformSessionToken));
     }
 
     [Fact]
@@ -230,6 +248,7 @@ public sealed class AuthenticationServiceTests
         public ApiResult<EffectiveAccessDto> EvaluateResult { get; set; } = ApiResult<EffectiveAccessDto>.Unavailable();
         public ApiResult<PlatformAccessTokenIssueDto> IssueTokenResult { get; set; } = ApiResult<PlatformAccessTokenIssueDto>.Unavailable();
         public ApiResult<PlatformAccessTokenIssueDto> BindTokenResult { get; set; } = ApiResult<PlatformAccessTokenIssueDto>.Unavailable();
+        public ApiResult<PlatformLoginResultDto> LoginResult { get; set; } = ApiResult<PlatformLoginResultDto>.Unavailable();
 
         public Task<ApiResult<PlatformUserDto>> GetUserAsync(Guid userId, CancellationToken ct = default) =>
             Task.FromResult(UserResult);
@@ -253,8 +272,62 @@ public sealed class AuthenticationServiceTests
         public Task<ApiResult<PlatformAccessTokenIntrospectionDto>> IntrospectTokenAsync(string? token = null, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<PlatformAccessTokenIntrospectionDto>.Unavailable());
 
+        public Task<ApiResult<object>> RevokeAccessTokenAsync(CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<object>.Success(new object()));
+
         public Task<ApiResult<IReadOnlyList<PlatformAuthEligibleOrganizationDto>>> GetAuthEligibleOrganizationsAsync(CancellationToken ct = default) =>
             Task.FromResult(ApiResult<IReadOnlyList<PlatformAuthEligibleOrganizationDto>>.Unavailable());
+
+        public Task<ApiResult<PlatformOrganizationDto>> UpdateOrganizationAsync(Guid organizationId, UpdatePlatformOrganizationRequest request, CancellationToken ct = default) =>
+            Task.FromResult(OrganizationResult);
+
+        public Task<ApiResult<PlatformPagedResult<PlatformMembershipDto>>> GetOrganizationMembersAsync(Guid organizationId, int page = 1, int pageSize = 50, string? status = null, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PlatformPagedResult<PlatformMembershipDto>>.Success(new PlatformPagedResult<PlatformMembershipDto>([], 0, page, pageSize)));
+
+        public Task<ApiResult<PlatformMembershipDto>> SuspendMembershipAsync(Guid membershipId, PlatformMembershipLifecycleRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PlatformMembershipDto>.Unavailable());
+
+        public Task<ApiResult<PlatformMembershipDto>> RevokeMembershipAsync(Guid membershipId, PlatformMembershipLifecycleRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PlatformMembershipDto>.Unavailable());
+
+        public Task<ApiResult<PersonalRegistrationAckDto>> RegisterPersonalAccountAsync(RegisterPersonalAccountRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PersonalRegistrationAckDto>.Unavailable());
+
+        public Task<ApiResult<object>> ActivatePersonalAccountAsync(ActivatePersonalAccountRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<object>.Unavailable());
+
+        public Task<ApiResult<PlatformLoginResultDto>> LoginAsync(PlatformLoginRequest request, CancellationToken ct = default) =>
+            Task.FromResult(LoginResult);
+
+        public Task<ApiResult<object>> LogoutSessionAsync(CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<object>.Success(new object()));
+
+        public Task<ApiResult<PlatformLoginResultDto>> SelectAccountProfileAsync(SelectAccountProfileRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PlatformLoginResultDto>.Unavailable());
+
+        public Task<ApiResult<StartBusinessResultDto>> StartBusinessAsync(StartBusinessRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<StartBusinessResultDto>.Unavailable());
+
+        public Task<ApiResult<OrganizationInvitationDto>> CreateOrganizationInvitationAsync(Guid organizationId, CreateInvitationRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<OrganizationInvitationDto>.Unavailable());
+
+        public Task<ApiResult<IReadOnlyList<ProductLocalRoleGrantDto>>> GetProductLocalRolesAsync(Guid organizationId, string? status = null, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<IReadOnlyList<ProductLocalRoleGrantDto>>.Success(Array.Empty<ProductLocalRoleGrantDto>()));
+
+        public Task<ApiResult<ProductLocalRoleGrantDto>> AssignProductLocalRoleAsync(Guid organizationId, AssignProductLocalRoleRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<ProductLocalRoleGrantDto>.Unavailable());
+
+        public Task<ApiResult<ProductLocalRoleGrantDto>> RevokeProductLocalRoleAsync(Guid organizationId, Guid grantId, RevokeProductLocalRoleRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<ProductLocalRoleGrantDto>.Unavailable());
+
+        public Task<ApiResult<PlatformSubscriptionDto>> GetCurrentSubscriptionAsync(Guid organizationId, string productCode, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PlatformSubscriptionDto>.Unavailable());
+
+        public Task<ApiResult<PlatformEntitlementSnapshotDto>> GetLatestEntitlementAsync(Guid organizationId, string productCode, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PlatformEntitlementSnapshotDto>.Unavailable());
+
+        public Task<ApiResult<object>> SetOrganizationContextAsync(SetOrganizationContextRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<object>.Success(new object()));
     }
 
     private sealed class MemorySecureTokenStore : ISecureTokenStore

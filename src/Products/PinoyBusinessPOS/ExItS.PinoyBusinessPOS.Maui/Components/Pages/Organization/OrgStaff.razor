@@ -1,0 +1,163 @@
+@page "/org/staff"
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Org_StaffTitle"]" Subtitle="@L["Org_StaffSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Primary" OnClick="GoInvite">@L["Org_InviteStaff"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Common_Back"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!string.IsNullOrEmpty(_error))
+    {
+        <ErrorState Title="@L["Org_ErrorTitle"]" Message="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    }
+    else if (_members.Count == 0)
+    {
+        <EmptyState Title="@L["Org_StaffEmptyTitle"]" Message="@L["Org_StaffEmptyMessage"]" />
+    }
+    else
+    {
+        <Stack Gap="3">
+            @foreach (var member in _members)
+            {
+                <Card>
+                    <Stack Gap="2">
+                        <span class="pos-value-md">@member.UserId.ToString("D")[..8]</span>
+                        <span class="pos-muted">@member.Role · @member.Status</span>
+                        <Stack Direction="StackDirection.Row" Gap="2" Wrap="true">
+                            <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="() => GoAssign(member.UserId)">@L["Org_AssignPosRole"]</Button>
+                            @if (string.Equals(member.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <Button Variant="ButtonVariant.Ghost" Disabled="_busy" OnClick="() => SuspendAsync(member.Id)">@L["Org_Suspend"]</Button>
+                                <Button Variant="ButtonVariant.Ghost" Disabled="_busy" OnClick="() => RevokeAsync(member.Id)">@L["Org_Remove"]</Button>
+                            }
+                        </Stack>
+                    </Stack>
+                </Card>
+            }
+        </Stack>
+    }
+
+    <Section Title="@L["Org_PosRolesSection"]">
+        @if (_grants.Count == 0)
+        {
+            <EmptyState Title="@L["Org_PosRolesEmptyTitle"]" Message="@L["Org_PosRolesEmptyMessage"]" />
+        }
+        else
+        {
+            <Stack Gap="2">
+                @foreach (var grant in _grants)
+                {
+                    <div class="pos-row">
+                        <span>@grant.RoleCode</span>
+                        <span class="pos-muted">@grant.Status</span>
+                        <Button Variant="ButtonVariant.Ghost" Disabled="_busy" OnClick="() => RevokeGrantAsync(grant.Id)">@L["Org_RevokePosRole"]</Button>
+                    </div>
+                }
+            </Stack>
+        }
+    </Section>
+
+    <InlineMessage Tone="InlineMessageTone.Info">@L["Org_WebAdminReminder"]</InlineMessage>
+</Page>
+
+@code {
+    private bool _loading = true;
+    private bool _busy;
+    private string? _error;
+    private IReadOnlyList<PlatformMembershipDto> _members = [];
+    private IReadOnlyList<ProductLocalRoleGrantDto> _grants = [];
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            var orgId = CurrentUser.Session?.OrganizationId;
+            if (orgId is null)
+            {
+                _error = L["Org_MissingMessage"];
+                return;
+            }
+
+            var members = await Platform.GetOrganizationMembersAsync(orgId.Value);
+            if (!members.IsSuccess || members.Data is null)
+            {
+                _error = L["Org_StaffLoadFailed"];
+                return;
+            }
+
+            _members = members.Data.Items;
+            var grants = await Platform.GetProductLocalRolesAsync(orgId.Value, status: "Active");
+            _grants = grants.IsSuccess && grants.Data is not null ? grants.Data : [];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SuspendAsync(Guid membershipId)
+    {
+        _busy = true;
+        try
+        {
+            await Platform.SuspendMembershipAsync(membershipId, new PlatformMembershipLifecycleRequest("Suspended from Mobile"));
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RevokeAsync(Guid membershipId)
+    {
+        _busy = true;
+        try
+        {
+            await Platform.RevokeMembershipAsync(membershipId, new PlatformMembershipLifecycleRequest("Removed from Mobile"));
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RevokeGrantAsync(Guid grantId)
+    {
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await Platform.RevokeProductLocalRoleAsync(orgId.Value, grantId, new RevokeProductLocalRoleRequest("Revoked from Mobile"));
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void GoInvite() => Nav.NavigateTo("/org/staff/invite");
+    private void GoAssign(Guid userId) => Nav.NavigateTo($"/org/staff/assign?userId={userId:D}");
+    private void GoBack() => Nav.NavigateTo("/org");
+}

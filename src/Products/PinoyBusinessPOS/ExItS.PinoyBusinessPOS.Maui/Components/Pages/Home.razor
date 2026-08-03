@@ -1,152 +1,17 @@
 ﻿@page "/home"
-@implements IDisposable
-@inject PosStatusState Status
-@inject IAppInfoService AppInfo
 @inject NavigationManager Nav
 @inject NavigationGate Gate
-@inject ICurrentUserContext CurrentUser
-@inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
 
-@if (!_ready)
-{
-    <Page><Spinner /></Page>
-}
-else
-{
 <Page>
-    <PageHeader Title="@L["Home_Title"]" Subtitle="@L["Home_Subtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoToSettings">@L["Home_SettingsLink"]</Button>
-        </Actions>
-    </PageHeader>
-
-    @if (CurrentUser.Session is not null)
-    {
-        <Alert Tone="AlertTone.Info" Title="@L["Home_SessionTitle"]" Message="@SessionSummary" />
-    }
-
-    <Section Title="@L["Home_AppSectionTitle"]">
-        <Card Elevated="true">
-            <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="3">
-                <Stack Gap="1">
-                    <span class="pos-value-lg">@AppInfo.AppName</span>
-                    <span class="pos-muted">@L["Home_VersionLabel"]: @AppInfo.Version</span>
-                    <span class="pos-muted">@L["Home_EnvironmentLabel"]: @EnvironmentLabel</span>
-                </Stack>
-                <Badge Tone="@(IsDevelopment ? BadgeTone.Warning : BadgeTone.Info)">@EnvironmentLabel</Badge>
-            </Stack>
-        </Card>
-    </Section>
-
-    <Section Title="@L["Home_StatusSectionTitle"]">
-        <div class="pos-status-grid">
-            <Card>
-                <Stack Gap="2">
-                    <span class="pos-muted">@L["Connectivity_Label"]</span>
-                    <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Gap="2">
-                        <span class="pos-value-md">@ConnectivityLabel</span>
-                        <Badge Tone="@ConnectivityTone">@ConnectivityLabel</Badge>
-                    </Stack>
-                </Stack>
-            </Card>
-
-            <Card>
-                <Stack Gap="2">
-                    <span class="pos-muted">@L["Api_Label"]</span>
-                    @if (Status.IsCheckingApi)
-                    {
-                        <Stack Direction="StackDirection.Row" Gap="2" Align="StackAlign.Center">
-                            <Spinner />
-                            <span>@L["Api_Checking"]</span>
-                        </Stack>
-                    }
-                    else if (Status.ApiStatus is { } apiStatus)
-                    {
-                        var described = ApiLocalizer.Describe(apiStatus, Status.LastApiError);
-                        <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Gap="2">
-                            <span class="pos-value-md pos-wrap">@described.Title</span>
-                            <Badge Tone="@ApiBadgeTone(apiStatus)">@described.Title</Badge>
-                        </Stack>
-                    }
-                    else
-                    {
-                        <span class="pos-muted">@L["Connectivity_Unknown"]</span>
-                    }
-                </Stack>
-            </Card>
-        </div>
-
-        @if (!Status.IsCheckingApi && Status.ApiStatus == ApiCallStatus.Success)
-        {
-            <Alert Tone="AlertTone.Success" Title="@L["Api_Available"]" Message="@L["Home_ApiHealthy"]" />
-        }
-        else if (!Status.IsCheckingApi && Status.ApiStatus is { } failing and not ApiCallStatus.Success)
-        {
-            var described = ApiLocalizer.Describe(failing, Status.LastApiError);
-            <ErrorState Title="@described.Title" Message="@described.Message" RetryLabel="@L["Common_Retry"]" OnRetry="RetryAsync" />
-        }
-    </Section>
-
-    <EmptyState IconName="inbox" Title="@L["Home_NoFeaturesTitle"]" Message="@L["Home_NoFeaturesMessage"]" />
+    <Spinner />
+    <span class="pos-muted">@L["Common_Loading"]</span>
 </Page>
-}
 
 @code {
-    private bool _ready;
-
     protected override async Task OnInitializedAsync()
     {
-        Status.Changed += OnChangedAsync;
-        if (!Gate.CanEnterProtectedShell)
-        {
-            var route = await Gate.ResolveStartRouteAsync();
-            if (route != "/home")
-            {
-                Nav.NavigateTo(route, replace: true);
-                return;
-            }
-        }
-
-        _ready = true;
+        var route = await Gate.ResolveStartRouteAsync();
+        Nav.NavigateTo(route == "/home" ? "/owner" : route, replace: true);
     }
-
-    private string SessionSummary =>
-        CurrentUser.Session is null
-            ? string.Empty
-            : $"{CurrentUser.Session.DisplayName} · {CurrentUser.Session.OrganizationDisplayName}";
-
-    private bool IsDevelopment => string.Equals(AppInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase);
-
-    private string EnvironmentLabel => IsDevelopment ? L["Env_Development"] : L["Env_Production"];
-
-    private BadgeTone ConnectivityTone => Status.Connectivity switch
-    {
-        ConnectivityStatus.Online => BadgeTone.Success,
-        ConnectivityStatus.Offline => BadgeTone.Danger,
-        _ => BadgeTone.Neutral,
-    };
-
-    private string ConnectivityLabel => Status.Connectivity switch
-    {
-        ConnectivityStatus.Online => L["Connectivity_Online"],
-        ConnectivityStatus.Offline => L["Connectivity_Offline"],
-        _ => L["Connectivity_Unknown"],
-    };
-
-    private static BadgeTone ApiBadgeTone(ApiCallStatus status) => status switch
-    {
-        ApiCallStatus.Success => BadgeTone.Success,
-        ApiCallStatus.Offline => BadgeTone.Danger,
-        ApiCallStatus.Unauthorized or ApiCallStatus.Forbidden => BadgeTone.Warning,
-        _ => BadgeTone.Warning,
-    };
-
-    private Task RetryAsync() => Status.RefreshApiHealthAsync();
-
-    private void GoToSettings() => Nav.NavigateTo("/settings");
-
-    private async Task OnChangedAsync() => await InvokeAsync(StateHasChanged);
-
-    public void Dispose() => Status.Changed -= OnChangedAsync;
 }

@@ -1,0 +1,91 @@
+@page "/more"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject SellingModeService SellingMode
+@inject RoleHomeResolver RoleHome
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IAuthenticationService Auth
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Nav_More"]" Subtitle="@L["More_Subtitle"]" />
+
+    <Section Title="@L["More_WorkspaceSection"]">
+        <Stack Gap="2">
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoRoleHome">@L["More_RoleHome"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoOrg">@L["Org_SummaryTitle"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoPersonal">@L["Personal_HomeTitle"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoOrgSelect">@L["OrgSelect_Title"]</Button>
+        </Stack>
+    </Section>
+
+    <Section Title="@L["Overdue_Title"]">
+        <Button Variant="ButtonVariant.Primary" OnClick="GoOverdue">@L["Overdue_OpenOrg"]</Button>
+    </Section>
+    <Section Title="@L["Inventory_Title"]">
+        <Button Variant="ButtonVariant.Primary" OnClick="GoInventory">@L["Nav_Inventory"]</Button>
+    </Section>
+    <Section Title="@L["Expenses_Title"]">
+        <Button Variant="ButtonVariant.Primary" OnClick="GoExpenses">@L["Nav_Expenses"]</Button>
+    </Section>
+    <Section Title="@L["Suppliers_Title"]">
+        <Button Variant="ButtonVariant.Primary" OnClick="GoSuppliers">@L["Nav_Suppliers"]</Button>
+    </Section>
+    <Section Title="@L["Purchasing_Title"]">
+        <Button Variant="ButtonVariant.Primary" OnClick="GoPurchasing">@L["Nav_Purchasing"]</Button>
+    </Section>
+    <Section Title="@L["Registers_Title"]">
+        <Button Variant="ButtonVariant.Primary" OnClick="GoRegisters">@L["Nav_Registers"]</Button>
+    </Section>
+    @if (Capabilities.IsAllowed(UtangCapability.ManageOperationalSetup))
+    {
+        <Section Title="@L["Setup_Title"]">
+            <Button Variant="ButtonVariant.Primary" OnClick="GoSetup">@L["Nav_Setup"]</Button>
+        </Section>
+    }
+    <Section Title="@L["Shifts_Title"]">
+        <Button Variant="ButtonVariant.Primary" OnClick="GoShifts">@L["Nav_Shifts"]</Button>
+    </Section>
+    <Section Title="@L["Permissions_Title"]">
+        <Button Variant="ButtonVariant.Primary" OnClick="GoPermissions">@L["Nav_Permissions"]</Button>
+    </Section>
+    <Section Title="@L["Reports_Title"]">
+        <Button Variant="ButtonVariant.Primary" OnClick="GoReports">@L["Nav_Reports"]</Button>
+    </Section>
+
+    <FormActions>
+        <Button Variant="ButtonVariant.Ghost" OnClick="LogoutAsync">@L["Auth_Logout"]</Button>
+    </FormActions>
+</Page>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+        }
+    }
+
+    private async Task GoRoleHome() => Nav.NavigateTo(await RoleHome.ResolvePosHomeAsync());
+    private void GoOrg() => Nav.NavigateTo("/org");
+    private void GoPersonal() => Nav.NavigateTo("/personal");
+    private void GoOrgSelect() => Nav.NavigateTo("/organization-select");
+    private void GoOverdue() => Nav.NavigateTo("/overdue");
+    private void GoInventory() => Nav.NavigateTo("/inventory");
+    private void GoExpenses() => Nav.NavigateTo("/expenses");
+    private void GoSuppliers() => Nav.NavigateTo("/suppliers");
+    private void GoPurchasing() => Nav.NavigateTo("/purchasing");
+    private void GoRegisters() => Nav.NavigateTo("/registers");
+    private void GoSetup() => Nav.NavigateTo("/setup");
+    private void GoShifts() => Nav.NavigateTo("/shifts");
+    private void GoPermissions() => Nav.NavigateTo("/permissions");
+    private void GoReports() => Nav.NavigateTo("/reports");
+
+    private async Task LogoutAsync()
+    {
+        SellingMode.Exit();
+        await Auth.LogoutAsync();
+        Nav.NavigateTo("/signin");
+    }
+}

@@ -12,7 +12,8 @@ public sealed class NavigationGate(
     IProtectedShellAccessPolicy accessPolicy,
     IPosSyncStatusService syncStatus,
     IPosOperationalSetupClient operationalSetup,
-    IUtangCapabilityEvaluator capabilities)
+    IUtangCapabilityEvaluator capabilities,
+    RoleHomeResolver roleHome)
 {
     public async Task<string> ResolveStartRouteAsync(CancellationToken ct = default)
     {
@@ -51,9 +52,16 @@ public sealed class NavigationGate(
             return "/signin";
         }
 
-        if (currentUser.Session.OrganizationId is null || !currentUser.HasPosAccess)
+        // Personal Mobile area when no organization is bound yet.
+        if (currentUser.Session.OrganizationId is null)
         {
-            return "/organization-select";
+            return RoleHomeResolver.PersonalHome;
+        }
+
+        if (!currentUser.HasPosAccess)
+        {
+            // Organization selected but POS entitlement/access not active — Org Owner essentials.
+            return RoleHomeResolver.OrgEssentials;
         }
 
         if (!accessPolicy.CanEnterProtectedShell)
@@ -71,7 +79,7 @@ public sealed class NavigationGate(
             }
         }
 
-        return "/home";
+        return await roleHome.ResolvePosHomeAsync(ct).ConfigureAwait(false);
     }
 
     public bool CanEnterProtectedShell => accessPolicy.CanEnterProtectedShell;

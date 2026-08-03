@@ -1314,4 +1314,147 @@
   <data name="Shifts_RegisterLabel" xml:space="preserve"><value>Pumili ng rehistro</value></data>
   <data name="Shifts_NoRegisterTitle" xml:space="preserve"><value>No available register</value></data>
   <data name="Shifts_NoRegisterMessage" xml:space="preserve"><value>Create an Active register without an open shift before opening.</value></data>
+<data name="Register_Title" xml:space="preserve"><value>Create account</value></data>
+  <data name="Register_Subtitle" xml:space="preserve"><value>Register a personal account to start on Mobile.</value></data>
+  <data name="Register_FormTitle" xml:space="preserve"><value>Personal registration</value></data>
+  <data name="Register_DisplayName" xml:space="preserve"><value>Display name</value></data>
+  <data name="Register_Email" xml:space="preserve"><value>Email</value></data>
+  <data name="Register_Submit" xml:space="preserve"><value>Register</value></data>
+  <data name="Register_ValidationRequired" xml:space="preserve"><value>Display name and email are required.</value></data>
+  <data name="Register_Failed" xml:space="preserve"><value>Registration could not be completed. Try again.</value></data>
+  <data name="Register_ActivationReadyTitle" xml:space="preserve"><value>Activation ready</value></data>
+  <data name="Register_ActivationReadyMessage" xml:space="preserve"><value>Use the activation token to set your password.</value></data>
+  <data name="Activate_Title" xml:space="preserve"><value>Activate account</value></data>
+  <data name="Activate_Subtitle" xml:space="preserve"><value>Set your password with the activation token.</value></data>
+  <data name="Activate_FormTitle" xml:space="preserve"><value>Activation</value></data>
+  <data name="Activate_Token" xml:space="preserve"><value>Activation token</value></data>
+  <data name="Activate_Password" xml:space="preserve"><value>Password</value></data>
+  <data name="Activate_ConfirmPassword" xml:space="preserve"><value>Confirm password</value></data>
+  <data name="Activate_Submit" xml:space="preserve"><value>Activate</value></data>
+  <data name="Activate_Continue" xml:space="preserve"><value>Continue to activation</value></data>
+  <data name="Activate_ValidationRequired" xml:space="preserve"><value>Token and password are required.</value></data>
+  <data name="Activate_PasswordMismatch" xml:space="preserve"><value>Passwords do not match.</value></data>
+  <data name="Activate_Failed" xml:space="preserve"><value>Activation failed. Check the token and try again.</value></data>
+  <data name="Personal_HomeTitle" xml:space="preserve"><value>Personal home</value></data>
+  <data name="Personal_HomeSubtitle" xml:space="preserve"><value>Manage your personal profile and organizations.</value></data>
+  <data name="Personal_ProfileSection" xml:space="preserve"><value>Profile</value></data>
+  <data name="Personal_ProfileLink" xml:space="preserve"><value>View profile</value></data>
+  <data name="Personal_ProfileTitle" xml:space="preserve"><value>Personal profile</value></data>
+  <data name="Personal_ProfileSubtitle" xml:space="preserve"><value>Your account details on this device.</value></data>
+  <data name="Personal_OrganizationsSection" xml:space="preserve"><value>Organizations</value></data>
+  <data name="Personal_NoOrgsTitle" xml:space="preserve"><value>No organizations yet</value></data>
+  <data name="Personal_NoOrgsMessage" xml:space="preserve"><value>Start a business to create your first organization.</value></data>
+  <data name="Personal_ContinueOrg" xml:space="preserve"><value>Continue</value></data>
+  <data name="Personal_StartBusiness" xml:space="preserve"><value>Start a Business</value></data>
+  <data name="Personal_BackHome" xml:space="preserve"><value>Back to personal home</value></data>
+  <data name="Personal_AccountClass" xml:space="preserve"><value>Account class</value></data>
+  <data name="Personal_AccountClassDefault" xml:space="preserve"><value>Personal</value></data>
+  <data name="StartBusiness_Title" xml:space="preserve"><value>Start a Business</value></data>
+  <data name="StartBusiness_Subtitle" xml:space="preserve"><value>Create an organization and continue in Mobile.</value></data>
+  <data name="StartBusiness_FormTitle" xml:space="preserve"><value>Business details</value></data>
+  <data name="StartBusiness_DisplayName" xml:space="preserve"><value>Business name</value></data>
+  <data name="StartBusiness_Slug" xml:space="preserve"><value>URL slug</value></data>
+  <data name="StartBusiness_SlugHint" xml:space="preserve"><value>Lowercase letters, numbers, and hyphens.</value></data>
+  <data name="StartBusiness_TrialHint" xml:space="preserve"><value>Starts a POS trial and assigns you as Organization Owner and first POS Owner when entitlement activates.</value></data>
+  <data name="StartBusiness_Submit" xml:space="preserve"><value>Create organization</value></data>
+  <data name="StartBusiness_ValidationRequired" xml:space="preserve"><value>Business name and slug are required.</value></data>
+  <data name="StartBusiness_SessionRequired" xml:space="preserve"><value>Sign in again so a Platform session is available.</value></data>
+  <data name="StartBusiness_Failed" xml:space="preserve"><value>Could not start the business. Try again.</value></data>
+  <data name="OrgSelect_NoneTitle" xml:space="preserve"><value>No organizations</value></data>
+  <data name="Org_SummaryTitle" xml:space="preserve"><value>Organization</value></data>
+  <data name="Org_MissingTitle" xml:space="preserve"><value>Organization required</value></data>
+  <data name="Org_MissingMessage" xml:space="preserve"><value>Select or create an organization to continue.</value></data>
+  <data name="Org_ErrorTitle" xml:space="preserve"><value>Organization error</value></data>
+  <data name="Org_StatusSection" xml:space="preserve"><value>Status</value></data>
+  <data name="Org_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Org_Subscription" xml:space="preserve"><value>Subscription</value></data>
+  <data name="Org_SubscriptionUnknown" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="Org_Entitlement" xml:space="preserve"><value>POS entitlement</value></data>
+  <data name="Org_EntitlementUnknown" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="Org_PosAccess" xml:space="preserve"><value>POS access</value></data>
+  <data name="Org_PosAccessYes" xml:space="preserve"><value>Active</value></data>
+  <data name="Org_PosAccessNo" xml:space="preserve"><value>Not active</value></data>
+  <data name="Org_EssentialsSection" xml:space="preserve"><value>Essentials</value></data>
+  <data name="Org_ProfileLink" xml:space="preserve"><value>Organization profile</value></data>
+  <data name="Org_StaffLink" xml:space="preserve"><value>Staff</value></data>
+  <data name="Org_SubscriptionLink" xml:space="preserve"><value>Subscription and entitlement</value></data>
+  <data name="Org_EnterPos" xml:space="preserve"><value>Continue to POS</value></data>
+  <data name="Org_WebAdminReminder" xml:space="preserve"><value>For full organization administration, use the Web application.</value></data>
+  <data name="Org_LoadFailed" xml:space="preserve"><value>Could not load organization details.</value></data>
+  <data name="Org_ProfileTitle" xml:space="preserve"><value>Organization profile</value></data>
+  <data name="Org_ProfileSubtitle" xml:space="preserve"><value>Update basic organization details.</value></data>
+  <data name="Org_ProfileForm" xml:space="preserve"><value>Profile</value></data>
+  <data name="Org_ProfileValidation" xml:space="preserve"><value>Display name is required.</value></data>
+  <data name="Org_ProfileSaveFailed" xml:space="preserve"><value>Could not save organization profile.</value></data>
+  <data name="Org_SubscriptionTitle" xml:space="preserve"><value>Subscription</value></data>
+  <data name="Org_SubscriptionSubtitle" xml:space="preserve"><value>Trial and entitlement status for POS.</value></data>
+  <data name="Org_Plan" xml:space="preserve"><value>Plan</value></data>
+  <data name="Org_TrialEnd" xml:space="preserve"><value>Trial ends</value></data>
+  <data name="Org_PeriodEnd" xml:space="preserve"><value>Period ends</value></data>
+  <data name="Org_SnapshotVersion" xml:space="preserve"><value>Snapshot version</value></data>
+  <data name="Org_SubscriptionLoadFailed" xml:space="preserve"><value>Could not load subscription or entitlement.</value></data>
+  <data name="Org_StaffTitle" xml:space="preserve"><value>Staff</value></data>
+  <data name="Org_StaffSubtitle" xml:space="preserve"><value>Invite staff and assign POS roles.</value></data>
+  <data name="Org_InviteStaff" xml:space="preserve"><value>Invite staff</value></data>
+  <data name="Org_StaffEmptyTitle" xml:space="preserve"><value>No staff yet</value></data>
+  <data name="Org_StaffEmptyMessage" xml:space="preserve"><value>Invite staff to join this organization.</value></data>
+  <data name="Org_StaffLoadFailed" xml:space="preserve"><value>Could not load staff.</value></data>
+  <data name="Org_AssignPosRole" xml:space="preserve"><value>Assign POS role</value></data>
+  <data name="Org_Suspend" xml:space="preserve"><value>Suspend</value></data>
+  <data name="Org_Remove" xml:space="preserve"><value>Remove</value></data>
+  <data name="Org_PosRolesSection" xml:space="preserve"><value>POS roles</value></data>
+  <data name="Org_PosRolesEmptyTitle" xml:space="preserve"><value>No POS roles</value></data>
+  <data name="Org_PosRolesEmptyMessage" xml:space="preserve"><value>Assign Owner, Manager, or Cashier roles to staff.</value></data>
+  <data name="Org_RevokePosRole" xml:space="preserve"><value>Revoke</value></data>
+  <data name="Org_InviteTitle" xml:space="preserve"><value>Invite staff</value></data>
+  <data name="Org_InviteSubtitle" xml:space="preserve"><value>Send an invitation for organization staff access.</value></data>
+  <data name="Org_InviteForm" xml:space="preserve"><value>Invitation</value></data>
+  <data name="Org_InviteRole" xml:space="preserve"><value>Organization role</value></data>
+  <data name="Org_InviteRoleHint" xml:space="preserve"><value>Use Staff for MVP invitations. Organization Owner remains unique.</value></data>
+  <data name="Org_InviteSubmit" xml:space="preserve"><value>Send invitation</value></data>
+  <data name="Org_InviteValidation" xml:space="preserve"><value>Email is required.</value></data>
+  <data name="Org_InviteFailed" xml:space="preserve"><value>Invitation could not be sent.</value></data>
+  <data name="Org_AssignTitle" xml:space="preserve"><value>Assign POS role</value></data>
+  <data name="Org_AssignSubtitle" xml:space="preserve"><value>Grant Owner, Manager, or Cashier access.</value></data>
+  <data name="Org_AssignForm" xml:space="preserve"><value>Role assignment</value></data>
+  <data name="Org_AssignUserId" xml:space="preserve"><value>User identity ID</value></data>
+  <data name="Org_AssignRole" xml:space="preserve"><value>POS role code</value></data>
+  <data name="Org_AssignRoleHint" xml:space="preserve"><value>Owner, StoreManager, or Cashier.</value></data>
+  <data name="Org_RoleOwner" xml:space="preserve"><value>POS Owner</value></data>
+  <data name="Org_RoleManager" xml:space="preserve"><value>POS Manager</value></data>
+  <data name="Org_RoleCashier" xml:space="preserve"><value>POS Cashier</value></data>
+  <data name="Org_AssignSubmit" xml:space="preserve"><value>Assign role</value></data>
+  <data name="Org_AssignValidation" xml:space="preserve"><value>A valid user ID is required.</value></data>
+  <data name="Org_AssignFailed" xml:space="preserve"><value>Could not assign the POS role.</value></data>
+  <data name="Owner_Title" xml:space="preserve"><value>Owner dashboard</value></data>
+  <data name="Owner_DeniedMessage" xml:space="preserve"><value>POS Owner access is required for this dashboard.</value></data>
+  <data name="Owner_SetupSection" xml:space="preserve"><value>Setup</value></data>
+  <data name="Owner_SetupComplete" xml:space="preserve"><value>Operational setup is complete.</value></data>
+  <data name="Owner_SetupIncomplete" xml:space="preserve"><value>Complete operational setup before daily selling.</value></data>
+  <data name="Owner_SellingSection" xml:space="preserve"><value>Selling</value></data>
+  <data name="Owner_StartSelling" xml:space="preserve"><value>Start Selling</value></data>
+  <data name="Owner_StartSellingHint" xml:space="preserve"><value>Opens the cashier selling interface. Your Owner role does not change.</value></data>
+  <data name="Owner_OperationsSection" xml:space="preserve"><value>Operations</value></data>
+  <data name="Manager_Title" xml:space="preserve"><value>Manager dashboard</value></data>
+  <data name="Manager_DeniedMessage" xml:space="preserve"><value>POS Manager access is required for this dashboard.</value></data>
+  <data name="Manager_StartSellingHint" xml:space="preserve"><value>Opens the selling interface. Your Manager role does not change.</value></data>
+  <data name="Manager_OperationsSection" xml:space="preserve"><value>Operations</value></data>
+  <data name="Cashier_Title" xml:space="preserve"><value>Cashier home</value></data>
+  <data name="Cashier_DeniedMessage" xml:space="preserve"><value>POS Cashier access is required for this home.</value></data>
+  <data name="Cashier_RegisterSection" xml:space="preserve"><value>Register</value></data>
+  <data name="Cashier_CurrentRegister" xml:space="preserve"><value>Current register</value></data>
+  <data name="Cashier_NoRegister" xml:space="preserve"><value>No register selected</value></data>
+  <data name="Cashier_ShiftSection" xml:space="preserve"><value>Shift</value></data>
+  <data name="Cashier_NoShiftTitle" xml:space="preserve"><value>No open shift</value></data>
+  <data name="Cashier_NoShiftMessage" xml:space="preserve"><value>Start a shift before selling.</value></data>
+  <data name="Cashier_ContinueShift" xml:space="preserve"><value>Continue shift</value></data>
+  <data name="Cashier_NewSale" xml:space="preserve"><value>New Sale</value></data>
+  <data name="Cashier_CloseShift" xml:space="preserve"><value>Close shift</value></data>
+  <data name="Cashier_HistorySection" xml:space="preserve"><value>History</value></data>
+  <data name="Cashier_OwnSales" xml:space="preserve"><value>My sales history</value></data>
+  <data name="SellingMode_Banner" xml:space="preserve"><value>Selling mode — role unchanged</value></data>
+  <data name="SellingMode_Exit" xml:space="preserve"><value>Return to dashboard</value></data>
+  <data name="More_Subtitle" xml:space="preserve"><value>Additional tools and organization links.</value></data>
+  <data name="More_WorkspaceSection" xml:space="preserve"><value>Workspace</value></data>
+  <data name="More_RoleHome" xml:space="preserve"><value>Role home</value></data>
 </root>

@@ -1,0 +1,122 @@
+@page "/cashier"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject RoleHomeResolver RoleHome
+@inject IPosCashierShiftClient Shifts
+@inject IPosRegisterClient Registers
+@inject ICurrentUserContext CurrentUser
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (!_authorized)
+{
+    <Page>
+        <ErrorState Title="@L["Access_DeniedTitle"]" Message="@L["Cashier_DeniedMessage"]" />
+    </Page>
+}
+else
+{
+    <Page>
+        <PageHeader Title="@L["Cashier_Title"]" Subtitle="@CurrentUser.Session?.OrganizationDisplayName" />
+
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Shifts_OfflineTitle"]" Message="@L["Shifts_OfflineMessage"]" />
+        }
+
+        <Section Title="@L["Cashier_RegisterSection"]">
+            <Stack Gap="2">
+                <span class="pos-muted">@L["Cashier_CurrentRegister"]</span>
+                <span class="pos-value-md">@(_registerLabel ?? L["Cashier_NoRegister"])</span>
+            </Stack>
+        </Section>
+
+        <Section Title="@L["Cashier_ShiftSection"]">
+            @if (_openShift is null)
+            {
+                <EmptyState Title="@L["Cashier_NoShiftTitle"]" Message="@L["Cashier_NoShiftMessage"]" />
+                <FormActions>
+                    <Button Variant="ButtonVariant.Primary" Disabled="_isOffline" OnClick="GoOpenShift">@L["Shifts_Open"]</Button>
+                </FormActions>
+            }
+            else
+            {
+                <Stack Gap="2">
+                    <span class="pos-value-md">@_openShift.Status</span>
+                    <span class="pos-muted">@_openShift.ShiftId.ToString("D")[..8]</span>
+                    <Button Variant="ButtonVariant.Secondary" OnClick="GoContinueShift">@L["Cashier_ContinueShift"]</Button>
+                    <Button Variant="ButtonVariant.Primary" OnClick="GoNewSale">@L["Cashier_NewSale"]</Button>
+                    <Button Variant="ButtonVariant.Ghost" OnClick="GoCloseShift">@L["Cashier_CloseShift"]</Button>
+                </Stack>
+            }
+        </Section>
+
+        <Section Title="@L["Cashier_HistorySection"]">
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoSales">@L["Cashier_OwnSales"]</Button>
+        </Section>
+    </Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _authorized;
+    private bool _isOffline;
+    private string? _registerLabel;
+    private PosCashierShiftDto? _openShift;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        var home = await RoleHome.ResolvePosHomeAsync();
+        _authorized = home == RoleHomeResolver.CashierHome;
+        if (!_authorized)
+        {
+            Nav.NavigateTo(home, replace: true);
+            return;
+        }
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (!_isOffline)
+        {
+            var current = await Shifts.GetCurrentAsync();
+            if (current.IsSuccess && current.Data is not null
+                && string.Equals(current.Data.Status, "Open", StringComparison.OrdinalIgnoreCase))
+            {
+                _openShift = current.Data;
+            }
+
+            if (_openShift is not null)
+            {
+                _registerLabel = _openShift.RegisterName
+                    ?? (_openShift.RegisterId is Guid registerId
+                        ? (await Registers.GetAsync(registerId)).Data?.Name
+                        : null);
+            }
+            else
+            {
+                var regs = await Registers.ListAsync(status: "Active", page: 1, pageSize: 5);
+                if (regs.IsSuccess && regs.Data?.Items.Count > 0)
+                {
+                    _registerLabel = regs.Data.Items[0].Name;
+                }
+            }
+        }
+
+        _ready = true;
+    }
+
+    private void GoOpenShift() => Nav.NavigateTo("/shifts/open");
+    private void GoContinueShift() => Nav.NavigateTo(_openShift is null ? "/shifts" : $"/shifts/{_openShift.ShiftId:D}");
+    private void GoCloseShift() => Nav.NavigateTo(_openShift is null ? "/shifts" : $"/shifts/{_openShift.ShiftId:D}");
+    private void GoNewSale() => Nav.NavigateTo("/sales/new");
+    private void GoSales() => Nav.NavigateTo("/sales");
+}

@@ -1,0 +1,67 @@
+@page "/org/staff/invite"
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Org_InviteTitle"]" Subtitle="@L["Org_InviteSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Common_Back"]</Button>
+        </Actions>
+    </PageHeader>
+
+    <FormValidationSummary Messages="_errors" />
+    <FormGroup Title="@L["Org_InviteForm"]">
+        <TextInput Label="@L["Register_Email"]" @bind-Value="_email" Type="email" Disabled="_busy" />
+        <TextInput Label="@L["Register_DisplayName"]" @bind-Value="_displayName" Disabled="_busy" />
+        <TextInput Label="@L["Org_InviteRole"]" Hint="@L["Org_InviteRoleHint"]" @bind-Value="_role" Disabled="_busy" />
+    </FormGroup>
+    <FormActions>
+        <Button IsLoading="_busy" Disabled="_busy" OnClick="InviteAsync">@L["Org_InviteSubmit"]</Button>
+    </FormActions>
+    <InlineMessage Tone="InlineMessageTone.Info">@L["Org_WebAdminReminder"]</InlineMessage>
+</Page>
+
+@code {
+    private bool _busy;
+    private string? _email;
+    private string? _displayName;
+    private string _role = "Staff";
+    private List<string> _errors = [];
+
+    private async Task InviteAsync()
+    {
+        _errors = [];
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null || string.IsNullOrWhiteSpace(_email))
+        {
+            _errors.Add(L["Org_InviteValidation"]);
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Platform.CreateOrganizationInvitationAsync(
+                orgId.Value,
+                new CreateInvitationRequest(
+                    Email: _email.Trim(),
+                    Role: string.IsNullOrWhiteSpace(_role) ? "Staff" : _role.Trim(),
+                    DisplayName: _displayName));
+            if (!result.IsSuccess)
+            {
+                _errors.Add(L["Org_InviteFailed"]);
+                return;
+            }
+
+            Nav.NavigateTo("/org/staff");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void GoBack() => Nav.NavigateTo("/org/staff");
+}

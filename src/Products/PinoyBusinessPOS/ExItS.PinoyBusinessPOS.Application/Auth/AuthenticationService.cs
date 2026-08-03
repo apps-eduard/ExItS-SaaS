@@ -53,6 +53,21 @@ public sealed class AuthenticationService(
         string password,
         CancellationToken ct)
     {
+        // Dual auth: Platform session (Personal/Org Owner APIs) + POS bearer access token.
+        var loginResult = await accessClient
+            .LoginAsync(new PlatformLoginRequest(usernameOrEmail.Trim(), password), ct)
+            .ConfigureAwait(false);
+
+        string? platformSessionToken = null;
+        Guid? accountProfileId = null;
+        string? accountClass = null;
+        if (loginResult.IsSuccess && loginResult.Data is not null)
+        {
+            platformSessionToken = loginResult.Data.SessionToken;
+            accountProfileId = loginResult.Data.AccountProfileId;
+            accountClass = loginResult.Data.AccountClass;
+        }
+
         var tokenResult = await accessClient
             .IssueTokenAsync(
                 new IssuePlatformAccessTokenRequest(
@@ -66,7 +81,48 @@ public sealed class AuthenticationService(
 
         if (!tokenResult.IsSuccess || tokenResult.Data is null)
         {
+            // Prefer Platform session login when bearer issue fails (personal-only accounts).
+            if (loginResult.IsSuccess && loginResult.Data is not null)
+            {
+                var login = loginResult.Data;
+                var personalNow = _clock.GetUtcNow();
+                var personalSession = new AuthSession(
+                    login.UserId,
+                    login.DisplayName,
+                    login.Username,
+                    login.Email,
+                    OrganizationId: login.SelectedOrganizationId,
+                    OrganizationDisplayName: login.SelectedOrganizationDisplayName,
+                    IssuedAtUtc: personalNow,
+                    ExpiresAtUtc: login.ExpiresAtUtc,
+                    HasPosAccess: false,
+                    AccessReasonCode: null,
+                    AccessToken: null,
+                    PlatformSessionToken: login.SessionToken,
+                    AccountClass: login.AccountClass,
+                    AccountProfileId: login.AccountProfileId);
+
+                try
+                {
+                    await sessionStore.SaveAsync(personalSession, Guid.NewGuid().ToString("N"), ct).ConfigureAwait(false);
+                }
+                catch
+                {
+                    events.Record("secure_storage_failure", Dict(("operation", "signin_session_save")));
+                    return new AuthResult(false, AuthFailureReason.SecureStorageFailure, SafeMessageKey: "Auth_SecureStorageFailure");
+                }
+
+                currentUser.Set(personalSession);
+                events.Record("signin_success", Dict(("userId", personalSession.UserId.ToString("D")), ("grant", "platform_session")));
+                return new AuthResult(true, AuthFailureReason.None, personalSession);
+            }
+
             var failure = MapTransport(tokenResult.Status);
+            if (!loginResult.IsSuccess)
+            {
+                failure = MapTransport(loginResult.Status);
+            }
+
             events.Record("signin_failure", Dict(("reason", failure.FailureReason.ToString())));
             return failure;
         }
@@ -85,7 +141,10 @@ public sealed class AuthenticationService(
             ExpiresAtUtc: issued.ExpiresAtUtc,
             HasPosAccess: issued.ProductAccessAllowed == true && issued.OrganizationId is not null,
             AccessReasonCode: issued.ProductAccessReasonCode,
-            AccessToken: issued.AccessToken);
+            AccessToken: issued.AccessToken,
+            PlatformSessionToken: platformSessionToken,
+            AccountClass: accountClass,
+            AccountProfileId: accountProfileId);
 
         try
         {
@@ -229,7 +288,10 @@ public sealed class AuthenticationService(
                     active.ProductAccessReasonCode,
                     active.SubscriptionStatus,
                     active.EnabledFeatureCodes,
-                    shell.AccessToken);
+                    shell.AccessToken,
+                    shell.PlatformSessionToken,
+                    shell.AccountClass,
+                    shell.AccountProfileId);
 
                 try
                 {
@@ -316,6 +378,34 @@ public sealed class AuthenticationService(
     public async Task LogoutAsync(CancellationToken ct = default)
     {
         events.Record("logout", Dict(("userId", currentUser.Session?.UserId.ToString("D"))));
+        var session = currentUser.Session;
+        if (session is not null)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(session.AccessToken))
+                {
+                    await accessClient.RevokeAccessTokenAsync(ct).ConfigureAwait(false);
+                }
+            }
+            catch
+            {
+                // Best-effort remote revoke; local clear still proceeds.
+            }
+
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(session.PlatformSessionToken))
+                {
+                    await accessClient.LogoutSessionAsync(ct).ConfigureAwait(false);
+                }
+            }
+            catch
+            {
+                // Best-effort remote logout; local clear still proceeds.
+            }
+        }
+
         await ClearLocalAsync(ct).ConfigureAwait(false);
     }
 
@@ -528,6 +618,7 @@ public sealed class AuthenticationService(
             }
         }
 
+        var existingShell = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
         var session = new AuthSession(
             userResult.Data.Id,
             userResult.Data.DisplayName,
@@ -541,7 +632,10 @@ public sealed class AuthenticationService(
             reason,
             subscriptionStatus,
             enabledFeatureCodes,
-            accessToken);
+            accessToken,
+            existingShell.Session?.PlatformSessionToken,
+            existingShell.Session?.AccountClass,
+            existingShell.Session?.AccountProfileId);
 
         try
         {
@@ -645,6 +739,73 @@ public sealed class AuthenticationService(
         {
             events.Record("local_context_close_failure", EmptyProps());
         }
+    }
+
+    public async Task<AuthResult> ContinueAfterStartBusinessAsync(
+        StartBusinessResultDto result,
+        CancellationToken ct = default)
+    {
+        var existing = currentUser.Session;
+        if (existing is null)
+        {
+            return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
+        }
+
+        var now = _clock.GetUtcNow();
+        var seeded = existing with
+        {
+            PlatformSessionToken = result.SessionToken,
+            AccountClass = result.AccountClass,
+            AccountProfileId = result.OrganizationAccountProfileId,
+            OrganizationId = result.SelectedOrganizationId ?? result.OrganizationId,
+            HasPosAccess = false,
+            AccessReasonCode = null
+        };
+
+        try
+        {
+            var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
+            marker ??= Guid.NewGuid().ToString("N");
+            await sessionStore.SaveAsync(seeded, marker, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            events.Record("secure_storage_failure", Dict(("operation", "start_business_session")));
+            return new AuthResult(false, AuthFailureReason.SecureStorageFailure, SafeMessageKey: "Auth_SecureStorageFailure");
+        }
+
+        currentUser.Set(seeded);
+
+        if (result.PosEntitlementActivated || result.PosOwnerRoleGranted)
+        {
+            return await SelectOrganizationAsync(result.OrganizationId, ct).ConfigureAwait(false);
+        }
+
+        await preferences.SetSelectedOrganizationIdAsync(result.OrganizationId, ct).ConfigureAwait(false);
+        var org = await accessClient.GetOrganizationAsync(result.OrganizationId, ct).ConfigureAwait(false);
+        var updated = seeded with
+        {
+            OrganizationId = result.OrganizationId,
+            OrganizationDisplayName = org.IsSuccess && org.Data is not null
+                ? org.Data.DisplayName
+                : result.OrganizationId.ToString("D"),
+            IssuedAtUtc = now
+        };
+
+        try
+        {
+            var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
+            marker ??= Guid.NewGuid().ToString("N");
+            await sessionStore.SaveAsync(updated, marker, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            return new AuthResult(false, AuthFailureReason.SecureStorageFailure, SafeMessageKey: "Auth_SecureStorageFailure");
+        }
+
+        currentUser.Set(updated);
+        events.Record("start_business_continued", Dict(("organizationId", result.OrganizationId.ToString("D"))));
+        return new AuthResult(true, AuthFailureReason.None, updated);
     }
 
     private async Task ClearLocalAsync(CancellationToken ct)

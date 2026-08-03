@@ -23,8 +23,10 @@
     }
     else if (_organizations.Count == 0)
     {
-        <ErrorState Title="@L["Access_DeniedTitle"]" Message="@L["OrgSelect_NoneEligible"]" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+        <EmptyState Title="@L["OrgSelect_NoneTitle"]" Message="@L["OrgSelect_NoneEligible"]" />
         <FormActions>
+            <Button Variant="ButtonVariant.Primary" OnClick="GoStartBusiness">@L["Personal_StartBusiness"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoPersonal">@L["Personal_HomeTitle"]</Button>
             <Button Variant="ButtonVariant.Ghost" OnClick="LogoutAsync">@L["Auth_Logout"]</Button>
         </FormActions>
     }
@@ -37,12 +39,16 @@
                 <Card>
                     <Stack Gap="2">
                         <span class="pos-value-md">@org.DisplayName</span>
-                        <span class="pos-muted">@org.OrganizationId</span>
+                        <span class="pos-muted">@(string.IsNullOrWhiteSpace(org.MembershipRole) ? org.MembershipStatus : org.MembershipRole)</span>
                         <Button Disabled="_busy" OnClick="() => SelectAsync(org.OrganizationId)">@L["OrgSelect_Choose"]</Button>
                     </Stack>
                 </Card>
             }
         </Stack>
+        <FormActions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoStartBusiness">@L["Personal_StartBusiness"]</Button>
+            <Button Variant="ButtonVariant.Ghost" OnClick="GoPersonal">@L["Personal_HomeTitle"]</Button>
+        </FormActions>
         @if (!string.IsNullOrEmpty(_error))
         {
             <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
@@ -107,7 +113,8 @@
             }
 
             await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.AccessConfirm));
-            Nav.NavigateTo("/onboarding/access-confirm");
+            await Prefs.SetOnboardingCompletedAsync(true);
+            Nav.NavigateTo("/boot", replace: true);
         }
         finally
         {
@@ -116,6 +123,8 @@
     }
 
     private void GoSignIn() => Nav.NavigateTo("/signin");
+    private void GoStartBusiness() => Nav.NavigateTo("/start-business");
+    private void GoPersonal() => Nav.NavigateTo("/personal");
 
     private async Task LogoutAsync()
     {

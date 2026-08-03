@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Application.Auth;
+using ExItS.PinoyBusinessPOS.Application.Platform;
 
 namespace ExItS.PinoyBusinessPOS.Application.Abstractions;
 
@@ -61,6 +62,13 @@ public interface IAuthenticationService
     Task<AuthResult> RefreshSessionAsync(CancellationToken ct = default);
     Task LogoutAsync(CancellationToken ct = default);
     Task<AuthResult> SelectOrganizationAsync(Guid organizationId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Applies a rotated Platform session after Start a Business and binds the new organization for POS when entitled.
+    /// </summary>
+    Task<AuthResult> ContinueAfterStartBusinessAsync(
+        StartBusinessResultDto result,
+        CancellationToken ct = default);
 }
 
 /// <summary>Local security-event sink. Does not replace Platform audit authority.</summary>

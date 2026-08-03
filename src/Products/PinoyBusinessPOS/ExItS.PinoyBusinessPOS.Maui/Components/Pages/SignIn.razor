@@ -25,6 +25,7 @@
     </FormGroup>
     <FormActions>
         <Button IsLoading="_busy" Disabled="_busy" OnClick="SignInPasswordAsync">@L["SignIn_Submit"]</Button>
+        <Button Variant="ButtonVariant.Ghost" Disabled="_busy" OnClick="GoRegister">@L["Register_Title"]</Button>
     </FormActions>
 
     @if (Auth.IsDevelopmentAuthenticationEnabled)
@@ -73,7 +74,7 @@
             }
 
             await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.OrganizationSelect));
-            Nav.NavigateTo("/organization-select");
+            Nav.NavigateTo(result.Session?.OrganizationId is null ? "/personal" : "/organization-select");
         }
         finally
         {
@@ -111,4 +112,6 @@
             _busy = false;
         }
     }
+
+    private void GoRegister() => Nav.NavigateTo("/register");
 }

@@ -119,10 +119,10 @@ public sealed class CatalogPageGuardTests
         Assert.Contains("href=\"/catalog\"", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("href=\"/products\"", shell, StringComparison.Ordinal);
 
-        var deferred = File.ReadAllText(Path.Combine(components, "Pages", "DeferredPage.razor"));
-        Assert.DoesNotContain("@page \"/products\"", deferred, StringComparison.Ordinal);
-        Assert.DoesNotContain("@page \"/sales\"", deferred, StringComparison.Ordinal);
-        Assert.Contains("@page \"/more\"", deferred, StringComparison.Ordinal);
+        var more = File.ReadAllText(Path.Combine(components, "Pages", "MoreHub.razor"));
+        Assert.DoesNotContain("@page \"/products\"", more, StringComparison.Ordinal);
+        Assert.DoesNotContain("@page \"/sales\"", more, StringComparison.Ordinal);
+        Assert.Contains("@page \"/more\"", more, StringComparison.Ordinal);
 
         var redirect = File.ReadAllText(Path.Combine(CatalogPagesDirectory(), "ProductsRedirect.razor"));
         Assert.Contains("@page \"/products\"", redirect, StringComparison.Ordinal);

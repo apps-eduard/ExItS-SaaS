@@ -1,0 +1,93 @@
+@page "/org/profile"
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Org_ProfileTitle"]" Subtitle="@L["Org_ProfileSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Common_Back"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (CurrentUser.Session?.OrganizationId is null)
+    {
+        <ErrorState Title="@L["Org_MissingTitle"]" Message="@L["Org_MissingMessage"]" />
+    }
+    else
+    {
+        <FormValidationSummary Messages="_errors" />
+        <FormGroup Title="@L["Org_ProfileForm"]">
+            <TextInput Label="@L["StartBusiness_DisplayName"]" @bind-Value="_displayName" Disabled="_busy" />
+            <TextInput Label="@L["StartBusiness_Slug"]" @bind-Value="_slug" Disabled="_busy" />
+        </FormGroup>
+        <FormActions>
+            <Button IsLoading="_busy" Disabled="_busy" OnClick="SaveAsync">@L["Common_Save"]</Button>
+        </FormActions>
+        <InlineMessage Tone="InlineMessageTone.Info">@L["Org_WebAdminReminder"]</InlineMessage>
+    }
+</Page>
+
+@code {
+    private bool _loading = true;
+    private bool _busy;
+    private string? _displayName;
+    private string? _slug;
+    private List<string> _errors = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null)
+        {
+            _loading = false;
+            return;
+        }
+
+        var result = await Platform.GetOrganizationAsync(orgId.Value);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _displayName = result.Data.DisplayName;
+            _slug = result.Data.Slug;
+        }
+
+        _loading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        _errors = [];
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null || string.IsNullOrWhiteSpace(_displayName))
+        {
+            _errors.Add(L["Org_ProfileValidation"]);
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Platform.UpdateOrganizationAsync(
+                orgId.Value,
+                new UpdatePlatformOrganizationRequest(_displayName.Trim(), _slug));
+            if (!result.IsSuccess)
+            {
+                _errors.Add(L["Org_ProfileSaveFailed"]);
+                return;
+            }
+
+            Nav.NavigateTo("/org");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void GoBack() => Nav.NavigateTo("/org");
+}

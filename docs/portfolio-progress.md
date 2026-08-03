@@ -11,12 +11,12 @@
 | Portfolio | ExITS SaaS |
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 17  -  **Complete** (POS MVP operational onboarding and first sale); Phase 16 validation residuals remain; Phase 14 still open |
-| Current work package | **P17-WP08** closeout complete; **P16-WP11** validation residuals may continue separately; P14-WP04 remains next Production WP after authorization |
-| Overall status | **Phase 17 complete** ([phase](phases/phase-17-pos-mvp-operational-onboarding-and-first-sale.md); [closeout](reports/P17-WP08-reports-hardening-and-closeout.md)). Phase 15 complete. Phase 16 feature WPs complete with validation residuals. **Phase 14 remains in progress**. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | post-validation alignment tip on `main` (see git log) |
-| Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; advanced tax/accounting deferred; formal WCAG cert not claimed |
-| Last updated | 2026-07-29 |
+| Current phase | Phase 18  -  **Code-complete / build-verified** (Mobile client experience); device verification blocked; Phase 14 still open |
+| Current work package | **P18-WP06** closeout recorded; Phase 17 remains complete; **P16-WP11** validation residuals may continue separately; P14-WP04 remains next Production WP after authorization |
+| Overall status | **Phase 18 code-complete** ([phase](phases/phase-18-mobile-client-experience-completion.md); [closeout](reports/P18-WP06-tests-build-and-closeout.md)). Device-verified **Blocked**. Phase 17 complete. Phase 15 complete. Phase 16 feature WPs complete with validation residuals. **Phase 14 remains in progress**. Production remains **Blocked**. **Not production-ready.** |
+| Latest verified commit | Phase 18 tip on `main` (see git log) |
+| Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; advanced tax/accounting deferred; formal WCAG cert not claimed; **MAUI device validation blocked** (no emulator/device run this phase) |
+| Last updated | 2026-08-03 |
 
 ## Delivery sequence
 

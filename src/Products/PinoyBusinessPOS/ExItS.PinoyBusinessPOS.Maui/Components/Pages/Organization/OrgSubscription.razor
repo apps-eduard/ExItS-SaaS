@@ -1,0 +1,91 @@
+@page "/org/subscription"
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Org_SubscriptionTitle"]" Subtitle="@L["Org_SubscriptionSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Common_Back"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!string.IsNullOrEmpty(_error))
+    {
+        <ErrorState Title="@L["Org_ErrorTitle"]" Message="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    }
+    else
+    {
+        <Section Title="@L["Org_Subscription"]">
+            <Stack Gap="2">
+                <div><span class="pos-muted">@L["Org_Status"]</span><div class="pos-value-md">@(_subscription?.Status ?? "—")</div></div>
+                <div><span class="pos-muted">@L["Org_Plan"]</span><div class="pos-value-md">@(_subscription?.PlanDisplayName ?? _subscription?.PlanKey ?? "—")</div></div>
+                <div><span class="pos-muted">@L["Org_TrialEnd"]</span><div class="pos-value-md">@Format(_subscription?.TrialEndUtc)</div></div>
+                <div><span class="pos-muted">@L["Org_PeriodEnd"]</span><div class="pos-value-md">@Format(_subscription?.CurrentPeriodEndUtc)</div></div>
+            </Stack>
+        </Section>
+        <Section Title="@L["Org_Entitlement"]">
+            <Stack Gap="2">
+                <div><span class="pos-muted">@L["Org_Status"]</span><div class="pos-value-md">@(_entitlement?.SubscriptionStatus ?? "—")</div></div>
+                <div><span class="pos-muted">@L["Org_SnapshotVersion"]</span><div class="pos-value-md">@(_entitlement?.SnapshotVersion.ToString() ?? "—")</div></div>
+                <div><span class="pos-muted">@L["Org_Plan"]</span><div class="pos-value-md">@(_entitlement?.PlanCode ?? "—")</div></div>
+            </Stack>
+        </Section>
+        <InlineMessage Tone="InlineMessageTone.Info">@L["Org_WebAdminReminder"]</InlineMessage>
+    }
+</Page>
+
+@code {
+    private bool _loading = true;
+    private string? _error;
+    private PlatformSubscriptionDto? _subscription;
+    private PlatformEntitlementSnapshotDto? _entitlement;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            var orgId = CurrentUser.Session?.OrganizationId;
+            if (orgId is null)
+            {
+                _error = L["Org_MissingMessage"];
+                return;
+            }
+
+            var sub = await Platform.GetCurrentSubscriptionAsync(orgId.Value, PosProductCodes.PinoyBusinessPos);
+            if (sub.IsSuccess)
+            {
+                _subscription = sub.Data;
+            }
+
+            var ent = await Platform.GetLatestEntitlementAsync(orgId.Value, PosProductCodes.PinoyBusinessPos);
+            if (ent.IsSuccess)
+            {
+                _entitlement = ent.Data;
+            }
+
+            if (_subscription is null && _entitlement is null)
+            {
+                _error = L["Org_SubscriptionLoadFailed"];
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string Format(DateTimeOffset? value) =>
+        value is null ? "—" : value.Value.ToLocalTime().ToString("g");
+
+    private void GoBack() => Nav.NavigateTo("/org");
+}

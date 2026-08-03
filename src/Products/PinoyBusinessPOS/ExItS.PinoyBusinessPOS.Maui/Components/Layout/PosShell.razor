@@ -12,6 +12,8 @@
 @inject IConnectivityService Connectivity
 @inject IAppInfoService AppInfo
 @inject NavigationManager Nav
+@inject SellingModeService SellingMode
+@inject RoleHomeResolver RoleHome
 @inject IStringLocalizer<PosResources> L
 
 <a class="skip-link" href="#pos-main">@L["Nav_SkipToContent"]</a>
@@ -65,11 +67,18 @@
     }
 
     <main class="pos-content" id="pos-main" tabindex="-1">
+        @if (SellingMode.IsSellingMode)
+        {
+            <div class="pos-sync-panel" role="status">
+                <strong>@L["SellingMode_Banner"]</strong>
+                <button type="button" class="pos-sync-panel__close" @onclick="ExitSellingMode">@L["SellingMode_Exit"]</button>
+            </div>
+        }
         @Body
     </main>
 
     <nav class="pos-bottom-nav" aria-label="@L["Nav_Primary"]">
-        <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/home" Match="NavLinkMatch.All">
+        <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="@_homeHref" Match="NavLinkMatch.All">
             <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("home")</span>
             <span class="pos-nav-item__label">@L["Nav_Home"]</span>
         </NavLink>
@@ -99,6 +108,7 @@
     private bool _refreshBusy;
     private bool _recoveryRequired;
     private bool _canRefreshFromServer;
+    private string _homeHref = "/home";
 
     protected override void OnInitialized()
     {
@@ -107,6 +117,7 @@
         CultureCtl.Changed += OnChangedAsync;
         Status.Changed += OnChangedAsync;
         SyncStatus.Changed += OnChangedAsync;
+        SellingMode.Changed += OnChangedAsync;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -123,7 +134,23 @@
         await Status.InitializeAsync();
         await SyncStatus.InitializeAsync();
         await RefreshQueueIndicatorsAsync();
+        try
+        {
+            _homeHref = await RoleHome.ResolvePosHomeAsync();
+        }
+        catch
+        {
+            _homeHref = "/home";
+        }
+
         StateHasChanged();
+    }
+
+    private void ExitSellingMode()
+    {
+        var route = SellingMode.ReturnRoute ?? _homeHref;
+        SellingMode.Exit();
+        Nav.NavigateTo(route);
     }
 
     private async Task RefreshQueueIndicatorsAsync()
@@ -304,5 +331,6 @@
         CultureCtl.Changed -= OnChangedAsync;
         Status.Changed -= OnChangedAsync;
         SyncStatus.Changed -= OnChangedAsync;
+        SellingMode.Changed -= OnChangedAsync;
     }
 }

@@ -7,6 +7,7 @@
 @inject IPosCatalogClient Catalog
 @inject IPosCustomerClient Customers
 @inject SaleCartService Cart
+@inject SellingModeService SellingMode
 @inject ICurrentUserContext CurrentUser
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
@@ -610,7 +611,18 @@ else
         _errorMessage = result.Error?.Detail ?? described.Message;
     }
 
-    private void GoList() => Nav.NavigateTo("/sales");
+    private void GoList()
+    {
+        if (SellingMode.IsSellingMode)
+        {
+            var returnRoute = SellingMode.ReturnRoute ?? "/owner";
+            SellingMode.Exit();
+            Nav.NavigateTo(returnRoute);
+            return;
+        }
+
+        Nav.NavigateTo("/sales");
+    }
 
     private void GoOpenShift() => Nav.NavigateTo("/shifts/open");
 

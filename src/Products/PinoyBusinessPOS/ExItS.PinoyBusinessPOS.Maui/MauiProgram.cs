@@ -101,6 +101,8 @@ public static class MauiProgram
         services.AddSingleton<IAuthenticationService, AuthenticationService>();
         services.AddSingleton<IUtangCapabilityEvaluator, UtangCapabilityEvaluator>();
         services.AddSingleton<IDocumentHandoffService, MauiDocumentHandoffService>();
+        services.AddSingleton<SellingModeService>();
+        services.AddSingleton<RoleHomeResolver>();
         services.AddSingleton<NavigationGate>();
         services.AddSingleton<OfflineFoundationDiagnostics>();
 

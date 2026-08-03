@@ -1,0 +1,79 @@
+@page "/manager"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject RoleHomeResolver RoleHome
+@inject SellingModeService SellingMode
+@inject ICurrentUserContext CurrentUser
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (!_authorized)
+{
+    <Page>
+        <ErrorState Title="@L["Access_DeniedTitle"]" Message="@L["Manager_DeniedMessage"]" />
+    </Page>
+}
+else
+{
+    <Page>
+        <PageHeader Title="@L["Manager_Title"]" Subtitle="@CurrentUser.Session?.OrganizationDisplayName" />
+
+        <Section Title="@L["Owner_SellingSection"]">
+            <Button Variant="ButtonVariant.Primary" OnClick="StartSelling">@L["Owner_StartSelling"]</Button>
+            <InlineMessage Tone="InlineMessageTone.Info">@L["Manager_StartSellingHint"]</InlineMessage>
+        </Section>
+
+        <Section Title="@L["Manager_OperationsSection"]">
+            <Stack Gap="2">
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Nav_Products"]</Button>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoInventory">@L["Nav_Inventory"]</Button>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoRegisters">@L["Nav_Registers"]</Button>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoShifts">@L["Nav_Shifts"]</Button>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoSales">@L["Nav_Sales"]</Button>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoReturns">@L["Nav_Sales"]</Button>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoReports">@L["Nav_Reports"]</Button>
+            </Stack>
+        </Section>
+    </Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _authorized;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        var home = await RoleHome.ResolvePosHomeAsync();
+        _authorized = home == RoleHomeResolver.ManagerHome;
+        if (!_authorized)
+        {
+            Nav.NavigateTo(home, replace: true);
+            return;
+        }
+
+        _ready = true;
+    }
+
+    private void StartSelling()
+    {
+        SellingMode.Enter(RoleHomeResolver.ManagerHome);
+        Nav.NavigateTo("/sales/new");
+    }
+
+    private void GoCatalog() => Nav.NavigateTo("/catalog");
+    private void GoInventory() => Nav.NavigateTo("/inventory");
+    private void GoRegisters() => Nav.NavigateTo("/registers");
+    private void GoShifts() => Nav.NavigateTo("/shifts");
+    private void GoSales() => Nav.NavigateTo("/sales");
+    private void GoReturns() => Nav.NavigateTo("/sales");
+    private void GoReports() => Nav.NavigateTo("/reports");
+}

@@ -1,0 +1,182 @@
+@page "/personal"
+@layout Layout.AuthShell
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IProductAccessResolver Access
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Personal_HomeTitle"]" Subtitle="@L["Personal_HomeSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Ghost" OnClick="LogoutAsync">@L["Auth_Logout"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else
+    {
+        <Section Title="@L["Personal_ProfileSection"]">
+            <Stack Gap="1">
+                <span class="pos-value-md">@_displayName</span>
+                <span class="pos-muted">@_email</span>
+                <span class="pos-muted">@_accountClass</span>
+            </Stack>
+            <FormActions>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoProfile">@L["Personal_ProfileLink"]</Button>
+            </FormActions>
+        </Section>
+
+        <Section Title="@L["Personal_OrganizationsSection"]">
+            @if (_organizations.Count == 0)
+            {
+                <EmptyState Title="@L["Personal_NoOrgsTitle"]" Message="@L["Personal_NoOrgsMessage"]" />
+            }
+            else
+            {
+                <Stack Gap="3">
+                    @foreach (var org in _organizations)
+                    {
+                        <Card>
+                            <Stack Gap="2">
+                                <span class="pos-value-md">@org.DisplayName</span>
+                                <span class="pos-muted">@RoleLabel(org.MembershipRole)</span>
+                                <Button Disabled="_busy" OnClick="() => ContinueOrgAsync(org.OrganizationId)">@L["Personal_ContinueOrg"]</Button>
+                            </Stack>
+                        </Card>
+                    }
+                </Stack>
+            }
+            <FormActions>
+                <Button Variant="ButtonVariant.Primary" OnClick="GoStartBusiness">@L["Personal_StartBusiness"]</Button>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoOrgSelect">@L["OrgSelect_Title"]</Button>
+            </FormActions>
+        </Section>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
+        }
+    }
+</Page>
+
+@code {
+    private bool _loading = true;
+    private bool _busy;
+    private bool _authenticated;
+    private string? _displayName;
+    private string? _email;
+    private string? _accountClass;
+    private string? _error;
+    private IReadOnlyList<EligibleOrganization> _organizations = [];
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            if (!CurrentUser.IsAuthenticated)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                if (!restore.Succeeded)
+                {
+                    _authenticated = false;
+                    return;
+                }
+            }
+
+            _authenticated = CurrentUser.IsAuthenticated;
+            var session = CurrentUser.Session;
+            if (!_authenticated || session is null)
+            {
+                return;
+            }
+
+            _displayName = session.DisplayName;
+            _email = session.Email;
+            _accountClass = session.AccountClass ?? L["Personal_AccountClassDefault"];
+            _organizations = await Access.ListEligibleOrganizationsAsync(session.UserId);
+
+            // Also surface memberships when bearer org list is empty but session exists.
+            if (_organizations.Count == 0 && !string.IsNullOrWhiteSpace(session.PlatformSessionToken))
+            {
+                var memberships = await Platform.GetUserMembershipsAsync(session.UserId);
+                if (memberships.IsSuccess && memberships.Data is not null)
+                {
+                    var list = new List<EligibleOrganization>();
+                    foreach (var m in memberships.Data.Items.Where(x =>
+                                 string.Equals(x.Status, "Active", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        var org = await Platform.GetOrganizationAsync(m.OrganizationId);
+                        list.Add(new EligibleOrganization(
+                            m.OrganizationId,
+                            org.Data?.DisplayName ?? m.OrganizationId.ToString("D"),
+                            m.Id,
+                            m.Status,
+                            AccessAllowed: false,
+                            AccessReasonCode: "pending",
+                            MembershipRole: m.Role));
+                    }
+
+                    _organizations = list;
+                }
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string RoleLabel(string? role) =>
+        string.IsNullOrWhiteSpace(role) ? "Member" : role;
+
+    private async Task ContinueOrgAsync(Guid organizationId)
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = await Auth.SelectOrganizationAsync(organizationId);
+            if (result.Succeeded && CurrentUser.HasPosAccess)
+            {
+                Nav.NavigateTo("/boot", replace: true);
+                return;
+            }
+
+            if (result.Succeeded)
+            {
+                Nav.NavigateTo("/org");
+                return;
+            }
+
+            _error = L[result.SafeMessageKey ?? "Access_Denied"];
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void GoStartBusiness() => Nav.NavigateTo("/start-business");
+    private void GoOrgSelect() => Nav.NavigateTo("/organization-select");
+    private void GoProfile() => Nav.NavigateTo("/personal/profile");
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+
+    private async Task LogoutAsync()
+    {
+        await Auth.LogoutAsync();
+        Nav.NavigateTo("/signin");
+    }
+}

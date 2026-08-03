@@ -33,6 +33,7 @@ public static class DependencyInjection
             .Validate(o => !requireHttps || IsHttpsAbsoluteUri(o.BaseUrl), "PosBusinessApi:BaseUrl must use HTTPS in Production (MAUI-HTTPS).");
 
         services.AddTransient<PlatformBearerHandler>();
+        services.AddTransient<PlatformSessionHeaderHandler>();
         services.AddTransient<DevPlatformUserHeaderHandler>();
         services.AddTransient<PosOrganizationHeaderHandler>();
         services.AddTransient<PosCommercialHeaderHandler>();
@@ -43,6 +44,7 @@ public static class DependencyInjection
                 client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
                 client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
             })
+            .AddHttpMessageHandler<PlatformSessionHeaderHandler>()
             .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
             .AddHttpMessageHandler<PlatformBearerHandler>();
 

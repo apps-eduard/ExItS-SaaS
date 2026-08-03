@@ -33,21 +33,21 @@ public sealed class MauiFoundationGuardTests
         Assert.True(File.Exists(Path.Combine(pages, "Layout", "PosShell.razor")));
         Assert.True(File.Exists(Path.Combine(pages, "Pages", "Home.razor")));
         Assert.True(File.Exists(Path.Combine(pages, "Pages", "Settings.razor")));
-        Assert.True(File.Exists(Path.Combine(pages, "Pages", "DeferredPage.razor")));
+        Assert.True(File.Exists(Path.Combine(pages, "Pages", "MoreHub.razor")));
 
         var home = File.ReadAllText(Path.Combine(pages, "Pages", "Home.razor"));
         Assert.DoesNotContain("fake sales", home, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("inventory count", home, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Status.", home, StringComparison.Ordinal);
-        Assert.Contains("ApiStatus", home, StringComparison.Ordinal);
+        Assert.Contains("ResolveStartRouteAsync", home, StringComparison.Ordinal);
         Assert.True(
             File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Products", "PinoyBusinessPOS",
                 "ExItS.PinoyBusinessPOS.Maui", "Services", "PosStatusState.cs"))
                 .Contains("GetHealthAsync", StringComparison.Ordinal));
 
-        var deferred = File.ReadAllText(Path.Combine(pages, "Pages", "DeferredPage.razor"));
-        Assert.Contains("Deferred_", deferred, StringComparison.Ordinal);
-        Assert.DoesNotContain("@page \"/customers\"", deferred, StringComparison.Ordinal);
+        var more = File.ReadAllText(Path.Combine(pages, "Pages", "MoreHub.razor"));
+        Assert.Contains("@page \"/more\"", more, StringComparison.Ordinal);
+        Assert.DoesNotContain("@page \"/customers\"", more, StringComparison.Ordinal);
+        Assert.DoesNotContain("Deferred_", more, StringComparison.Ordinal);
 
         var settings = File.ReadAllText(Path.Combine(pages, "Pages", "Settings.razor"));
         Assert.Contains("Theme", settings, StringComparison.OrdinalIgnoreCase);

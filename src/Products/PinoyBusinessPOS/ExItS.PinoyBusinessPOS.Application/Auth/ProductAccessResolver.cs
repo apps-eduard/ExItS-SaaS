@@ -38,7 +38,8 @@ public sealed class ProductAccessResolver(IPlatformAccessClient accessClient) : 
                     o.MembershipId,
                     "Active",
                     AccessAllowed: true,
-                    AccessReasonCode: "allowed"))
+                    AccessReasonCode: "allowed",
+                    MembershipRole: o.MembershipRole))
                 .ToArray();
         }
 
@@ -76,7 +77,8 @@ public sealed class ProductAccessResolver(IPlatformAccessClient accessClient) : 
                 membership.Id,
                 membership.Status,
                 true,
-                reason));
+                reason,
+                membership.Role));
         }
 
         return list;

@@ -1,0 +1,107 @@
+@page "/start-business"
+@layout Layout.AuthShell
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject IOnboardingPreferenceStore Prefs
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["StartBusiness_Title"]" Subtitle="@L["StartBusiness_Subtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Ghost" OnClick="GoPersonal">@L["Personal_BackHome"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else
+    {
+        <FormValidationSummary Messages="_errors" />
+        <FormGroup Title="@L["StartBusiness_FormTitle"]">
+            <TextInput Label="@L["StartBusiness_DisplayName"]" @bind-Value="_displayName" Disabled="_busy" />
+            <TextInput Label="@L["StartBusiness_Slug"]" Hint="@L["StartBusiness_SlugHint"]" @bind-Value="_slug" Disabled="_busy" />
+        </FormGroup>
+        <InlineMessage Tone="InlineMessageTone.Info">@L["StartBusiness_TrialHint"]</InlineMessage>
+        <FormActions>
+            <Button IsLoading="_busy" Disabled="_busy" OnClick="SubmitAsync">@L["StartBusiness_Submit"]</Button>
+        </FormActions>
+    }
+</Page>
+
+@code {
+    private bool _authenticated;
+    private bool _busy;
+    private string? _displayName;
+    private string? _slug;
+    private List<string> _errors = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!CurrentUser.IsAuthenticated)
+        {
+            var restore = await Auth.RestoreSessionAsync();
+            _authenticated = restore.Succeeded;
+        }
+        else
+        {
+            _authenticated = true;
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        _errors = [];
+        if (string.IsNullOrWhiteSpace(_displayName) || string.IsNullOrWhiteSpace(_slug))
+        {
+            _errors.Add(L["StartBusiness_ValidationRequired"]);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(CurrentUser.Session?.PlatformSessionToken))
+        {
+            _errors.Add(L["StartBusiness_SessionRequired"]);
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var created = await Platform.StartBusinessAsync(new StartBusinessRequest(
+                DisplayName: _displayName.Trim(),
+                Slug: _slug.Trim().ToLowerInvariant(),
+                ProductCode: PosProductCodes.PinoyBusinessPos,
+                StartAsTrial: true,
+                ActivatePosEntitlement: true,
+                ActivateProductAccess: true,
+                AssignPosOwnerRole: true));
+
+            if (!created.IsSuccess || created.Data is null)
+            {
+                _errors.Add(L["StartBusiness_Failed"]);
+                return;
+            }
+
+            var continued = await Auth.ContinueAfterStartBusinessAsync(created.Data);
+            if (!continued.Succeeded)
+            {
+                _errors.Add(L[continued.SafeMessageKey ?? "StartBusiness_Failed"]);
+                return;
+            }
+
+            await Prefs.SetOnboardingCompletedAsync(true);
+            await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.Complete));
+            Nav.NavigateTo(CurrentUser.HasPosAccess ? "/org" : "/org", replace: true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void GoPersonal() => Nav.NavigateTo("/personal");
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+}

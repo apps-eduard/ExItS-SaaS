@@ -1,0 +1,51 @@
+@page "/personal/profile"
+@layout Layout.AuthShell
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Personal_ProfileTitle"]" Subtitle="@L["Personal_ProfileSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoHome">@L["Personal_BackHome"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (!_ready)
+    {
+        <Spinner />
+    }
+    else if (CurrentUser.Session is null)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else
+    {
+        <Section Title="@L["Personal_ProfileSection"]">
+            <Stack Gap="2">
+                <div><span class="pos-muted">@L["Register_DisplayName"]</span><div class="pos-value-md">@CurrentUser.Session.DisplayName</div></div>
+                <div><span class="pos-muted">@L["SignIn_UsernameLabel"]</span><div class="pos-value-md">@CurrentUser.Session.Username</div></div>
+                <div><span class="pos-muted">@L["Register_Email"]</span><div class="pos-value-md">@CurrentUser.Session.Email</div></div>
+                <div><span class="pos-muted">@L["Personal_AccountClass"]</span><div class="pos-value-md">@(CurrentUser.Session.AccountClass ?? "—")</div></div>
+            </Stack>
+        </Section>
+    }
+</Page>
+
+@code {
+    private bool _ready;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!CurrentUser.IsAuthenticated)
+        {
+            await Auth.RestoreSessionAsync();
+        }
+
+        _ready = true;
+    }
+
+    private void GoHome() => Nav.NavigateTo("/personal");
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+}

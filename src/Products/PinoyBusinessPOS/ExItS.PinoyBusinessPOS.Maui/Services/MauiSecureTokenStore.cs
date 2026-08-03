@@ -14,7 +14,8 @@ public sealed class MauiSecureTokenStore : ISecureTokenStore
         SecureTokenKeys.ExpiresAtUtc,
         SecureTokenKeys.SubscriptionStatus,
         SecureTokenKeys.FeatureGrants,
-        SecureTokenKeys.AccessToken
+        SecureTokenKeys.AccessToken,
+        SecureTokenKeys.PlatformSessionToken
     ];
 
     public async Task<string?> GetAsync(string key, CancellationToken ct = default)

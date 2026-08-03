@@ -157,8 +157,8 @@ public sealed class SalePageGuardTests
         var shell = File.ReadAllText(Path.Combine(components, "Layout", "PosShell.razor"));
         Assert.Contains("href=\"/sales\"", shell, StringComparison.Ordinal);
 
-        var deferred = File.ReadAllText(Path.Combine(components, "Pages", "DeferredPage.razor"));
-        Assert.DoesNotContain("@page \"/sales\"", deferred, StringComparison.Ordinal);
+        var more = File.ReadAllText(Path.Combine(components, "Pages", "MoreHub.razor"));
+        Assert.DoesNotContain("@page \"/sales\"", more, StringComparison.Ordinal);
     }
 
     [Fact]

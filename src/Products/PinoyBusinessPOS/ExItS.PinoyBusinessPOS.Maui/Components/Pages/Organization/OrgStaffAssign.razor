@@ -1,0 +1,82 @@
+@page "/org/staff/assign"
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Org_AssignTitle"]" Subtitle="@L["Org_AssignSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Common_Back"]</Button>
+        </Actions>
+    </PageHeader>
+
+    <FormValidationSummary Messages="_errors" />
+    <FormGroup Title="@L["Org_AssignForm"]">
+        <TextInput Label="@L["Org_AssignUserId"]" @bind-Value="_userIdText" Disabled="_busy" />
+        <TextInput Label="@L["Org_AssignRole"]" Hint="@L["Org_AssignRoleHint"]" @bind-Value="_roleCode" Disabled="_busy" />
+    </FormGroup>
+    <FormActions>
+        <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="SetOwner">@L["Org_RoleOwner"]</Button>
+        <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="SetManager">@L["Org_RoleManager"]</Button>
+        <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="SetCashier">@L["Org_RoleCashier"]</Button>
+        <Button IsLoading="_busy" Disabled="_busy" OnClick="AssignAsync">@L["Org_AssignSubmit"]</Button>
+    </FormActions>
+</Page>
+
+@code {
+    [SupplyParameterFromQuery] public Guid? userId { get; set; }
+
+    private bool _busy;
+    private string? _userIdText;
+    private string _roleCode = "Cashier";
+    private List<string> _errors = [];
+
+    protected override void OnParametersSet()
+    {
+        if (userId is Guid id && string.IsNullOrWhiteSpace(_userIdText))
+        {
+            _userIdText = id.ToString("D");
+        }
+    }
+
+    private void SetOwner() => _roleCode = "Owner";
+    private void SetManager() => _roleCode = "StoreManager";
+    private void SetCashier() => _roleCode = "Cashier";
+
+    private async Task AssignAsync()
+    {
+        _errors = [];
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null || !Guid.TryParse(_userIdText, out var actorId))
+        {
+            _errors.Add(L["Org_AssignValidation"]);
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Platform.AssignProductLocalRoleAsync(
+                orgId.Value,
+                new AssignProductLocalRoleRequest(
+                    UserIdentityId: actorId,
+                    ProductCode: PosProductCodes.PinoyBusinessPos,
+                    RoleCode: _roleCode,
+                    Reason: "Assigned from Mobile Org Owner essentials"));
+            if (!result.IsSuccess)
+            {
+                _errors.Add(L["Org_AssignFailed"]);
+                return;
+            }
+
+            Nav.NavigateTo("/org/staff");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void GoBack() => Nav.NavigateTo("/org/staff");
+}

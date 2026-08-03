@@ -21,6 +21,15 @@ public sealed class SecureSessionStore(ISecureTokenStore tokens) : ISessionStore
             await tokens.SetAsync(SecureTokenKeys.AccessToken, session.AccessToken, ct).ConfigureAwait(false);
         }
 
+        if (string.IsNullOrWhiteSpace(session.PlatformSessionToken))
+        {
+            await tokens.ClearAsync(SecureTokenKeys.PlatformSessionToken, ct).ConfigureAwait(false);
+        }
+        else
+        {
+            await tokens.SetAsync(SecureTokenKeys.PlatformSessionToken, session.PlatformSessionToken, ct).ConfigureAwait(false);
+        }
+
         if (string.IsNullOrWhiteSpace(session.SubscriptionStatus))
         {
             await tokens.ClearAsync(SecureTokenKeys.SubscriptionStatus, ct).ConfigureAwait(false);
@@ -67,6 +76,7 @@ public sealed class SecureSessionStore(ISecureTokenStore tokens) : ISessionStore
             }
 
             var accessToken = await tokens.GetAsync(SecureTokenKeys.AccessToken, ct).ConfigureAwait(false);
+            var platformSessionToken = await tokens.GetAsync(SecureTokenKeys.PlatformSessionToken, ct).ConfigureAwait(false);
             var subscriptionStatus = await tokens.GetAsync(SecureTokenKeys.SubscriptionStatus, ct).ConfigureAwait(false);
             var grantsText = await tokens.GetAsync(SecureTokenKeys.FeatureGrants, ct).ConfigureAwait(false);
             IReadOnlyList<string>? grants = null;
@@ -92,7 +102,8 @@ public sealed class SecureSessionStore(ISecureTokenStore tokens) : ISessionStore
                 AccessReasonCode: null,
                 SubscriptionStatus: string.IsNullOrWhiteSpace(subscriptionStatus) ? null : subscriptionStatus.Trim(),
                 EnabledFeatureCodes: grants,
-                AccessToken: string.IsNullOrWhiteSpace(accessToken) ? null : accessToken);
+                AccessToken: string.IsNullOrWhiteSpace(accessToken) ? null : accessToken,
+                PlatformSessionToken: string.IsNullOrWhiteSpace(platformSessionToken) ? null : platformSessionToken);
 
             return (shell, marker);
         }

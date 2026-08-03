@@ -1,0 +1,80 @@
+@page "/register"
+@layout Layout.AuthShell
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Register_Title"]" Subtitle="@L["Register_Subtitle"]" />
+
+    <FormValidationSummary Messages="_errors" />
+    <FormGroup Title="@L["Register_FormTitle"]">
+        <TextInput Label="@L["Register_DisplayName"]" @bind-Value="_displayName" Disabled="_busy" IsInvalid="@_invalid" />
+        <TextInput Label="@L["Register_Email"]" @bind-Value="_email" Type="email" Disabled="_busy" IsInvalid="@_invalid" />
+    </FormGroup>
+    <FormActions>
+        <Button IsLoading="_busy" Disabled="_busy" OnClick="RegisterAsync">@L["Register_Submit"]</Button>
+        <Button Variant="ButtonVariant.Ghost" Disabled="_busy" OnClick="GoSignIn">@L["SignIn_Submit"]</Button>
+    </FormActions>
+
+    @if (!string.IsNullOrWhiteSpace(_debugToken))
+    {
+        <Alert Tone="AlertTone.Info" Title="@L["Register_ActivationReadyTitle"]" Message="@L["Register_ActivationReadyMessage"]" />
+        <InlineMessage Tone="InlineMessageTone.Info">@_ackMessage</InlineMessage>
+        <FormActions>
+            <Button Variant="ButtonVariant.Primary" OnClick="GoActivate">@L["Activate_Continue"]</Button>
+        </FormActions>
+    }
+</Page>
+
+@code {
+    private string? _displayName;
+    private string? _email;
+    private string? _debugToken;
+    private string? _ackMessage;
+    private bool _busy;
+    private bool _invalid;
+    private List<string> _errors = [];
+
+    private async Task RegisterAsync()
+    {
+        _errors = [];
+        _invalid = false;
+        _debugToken = null;
+        if (string.IsNullOrWhiteSpace(_displayName) || string.IsNullOrWhiteSpace(_email))
+        {
+            _invalid = true;
+            _errors.Add(L["Register_ValidationRequired"]);
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Platform.RegisterPersonalAccountAsync(
+                new RegisterPersonalAccountRequest(_displayName.Trim(), _email.Trim()));
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _invalid = true;
+                _errors.Add(L["Register_Failed"]);
+                return;
+            }
+
+            _ackMessage = result.Data.Message;
+            _debugToken = result.Data.DebugToken;
+            if (string.IsNullOrWhiteSpace(_debugToken))
+            {
+                Nav.NavigateTo("/activate");
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void GoActivate() =>
+        Nav.NavigateTo($"/activate?token={Uri.EscapeDataString(_debugToken ?? string.Empty)}");
+
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+}
