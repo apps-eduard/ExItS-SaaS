@@ -39,6 +39,22 @@ internal static class LocalValidationEndpoints
         .AllowAnonymous()
         .DisableRateLimiting();
 
+        app.MapGet("/api/v1/platform/local-validation/quick-login-identities", async (
+            ListLocalValidationQuickLoginIdentities useCase,
+            IHostEnvironment env,
+            CancellationToken ct) =>
+        {
+            if (env.IsProduction())
+            {
+                return Results.NotFound();
+            }
+
+            var result = await useCase.ExecuteAsync(env.IsProduction(), ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        })
+        .AllowAnonymous()
+        .DisableRateLimiting();
+
         app.MapPost("/api/v1/platform/local-validation/payments/simulate", async (
             SimulateLocalValidationPaymentRequest body,
             SimulateLocalValidationPayment useCase,

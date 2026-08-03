@@ -318,3 +318,21 @@ public sealed record LocalValidationIdentityDto(
     string Summary,
     string? PosLocalRoleCode,
     string ListLabel);
+
+/// <summary>
+/// One selectable Quick Login entry bound to an account profile (and optional organization membership).
+/// POS product-local roles are never listed here.
+/// </summary>
+public sealed record LocalValidationQuickLoginIdentityDto(
+    string Key,
+    string Username,
+    string DisplayName,
+    string Email,
+    Guid UserId,
+    Guid AccountProfileId,
+    string AccountClass,
+    Guid? OrganizationId,
+    string? OrganizationName,
+    string? OrganizationRole,
+    string ListLabel,
+    string ScopeLabel);

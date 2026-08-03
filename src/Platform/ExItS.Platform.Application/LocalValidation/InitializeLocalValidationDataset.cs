@@ -35,6 +35,7 @@ public sealed class InitializeLocalValidationDataset
     private readonly CreatePlatformUser _createUser;
     private readonly IPlatformUserRepository _users;
     private readonly SetPlatformUserPassword _setPassword;
+    private readonly MarkPlatformUserEmailVerified _markEmailVerified;
     private readonly EnsureAccountProfilesForUser _ensureProfiles;
     private readonly IAccountProfileRepository _profiles;
     private readonly AssignPlatformRole _assignPlatformRole;
@@ -73,6 +74,7 @@ public sealed class InitializeLocalValidationDataset
         CreatePlatformUser createUser,
         IPlatformUserRepository users,
         SetPlatformUserPassword setPassword,
+        MarkPlatformUserEmailVerified markEmailVerified,
         EnsureAccountProfilesForUser ensureProfiles,
         IAccountProfileRepository profiles,
         AssignPlatformRole assignPlatformRole,
@@ -110,6 +112,7 @@ public sealed class InitializeLocalValidationDataset
         _createUser = createUser;
         _users = users;
         _setPassword = setPassword;
+        _markEmailVerified = markEmailVerified;
         _ensureProfiles = ensureProfiles;
         _profiles = profiles;
         _assignPlatformRole = assignPlatformRole;
@@ -801,6 +804,13 @@ public sealed class InitializeLocalValidationDataset
         {
             throw new InvalidOperationException(
                 $"Local validation password set failed for {userId:D}: {result.ErrorCode} {result.ErrorMessage}");
+        }
+
+        var verified = await _markEmailVerified.ExecuteAsync(userId, ct).ConfigureAwait(false);
+        if (!verified.IsSuccess)
+        {
+            throw new InvalidOperationException(
+                $"Local validation email verify failed for {userId:D}: {verified.ErrorCode} {verified.ErrorMessage}");
         }
     }
 

@@ -28,10 +28,25 @@
                 }
             </SelectOptions>
         </Select>
-        @if (!string.IsNullOrWhiteSpace(_loadNote))
-        {
-            <Paragraph Type="@TextElementType.Secondary" Style="margin-top:.35rem; font-size:12px;">@_loadNote</Paragraph>
-        }
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.35rem;gap:8px;">
+            @if (!string.IsNullOrWhiteSpace(_loadNote))
+            {
+                <Paragraph Type="@TextElementType.Secondary" Style="margin:0; font-size:12px;">@_loadNote</Paragraph>
+            }
+            else if (_identities.Count > 0)
+            {
+                <Paragraph Type="@TextElementType.Secondary" Style="margin:0; font-size:12px;">
+                    @_identities.Count eligible test identities
+                </Paragraph>
+            }
+            else
+            {
+                <span></span>
+            }
+            <Button Type="@ButtonType.Link" Size="@ButtonSize.Small" Disabled="_loading || _busy" OnClick="ReloadAsync">
+                Refresh
+            </Button>
+        </div>
     </div>
 }
 
@@ -51,7 +66,13 @@
             return;
         }
 
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
         _loading = true;
+        _loadNote = null;
         try
         {
             _identities = await LocalValidationSignIn.ListIdentitiesAsync();
@@ -63,6 +84,7 @@
         finally
         {
             _loading = false;
+            await InvokeAsync(StateHasChanged);
         }
     }
 

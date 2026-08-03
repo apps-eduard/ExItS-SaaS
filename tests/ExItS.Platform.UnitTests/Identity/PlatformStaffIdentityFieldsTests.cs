@@ -1,6 +1,7 @@
 using ExItS.Platform.Application.Authorization;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Application.LocalValidation;
 using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
@@ -136,7 +137,8 @@ public sealed class PlatformStaffIdentityFieldsTests
             harness.Clock,
             Options.Create(new PlatformLockoutOptions()),
             Options.Create(new PlatformSessionOptions()),
-            new NullPlatformMfaReadinessService());
+            new NullPlatformMfaReadinessService(),
+            Options.Create(new LocalValidationOptions()));
 
         var loginResult = await login.ExecuteAsync(
             "pending.staff@example.com",

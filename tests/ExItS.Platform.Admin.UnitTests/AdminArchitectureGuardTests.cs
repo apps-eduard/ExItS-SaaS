@@ -508,7 +508,7 @@ public sealed class AdminArchitectureGuardTests
         Assert.DoesNotContain("live-preview", picker, StringComparison.OrdinalIgnoreCase);
 
         Assert.Contains("SignInAsKeyAsync", signIn, StringComparison.Ordinal);
-        Assert.Contains("seed-identities", signIn, StringComparison.Ordinal);
+        Assert.Contains("quick-login-identities", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain("/local-validation/sessions", signIn, StringComparison.OrdinalIgnoreCase);
         var sessionService = File.ReadAllText(Path.Combine(adminRoot, "Services", "PlatformBrowserSessionService.cs"));
         Assert.Contains("/api/v1/platform/auth/login", sessionService, StringComparison.Ordinal);

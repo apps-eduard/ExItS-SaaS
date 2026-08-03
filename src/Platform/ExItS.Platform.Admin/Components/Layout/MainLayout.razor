@@ -64,7 +64,8 @@
                                 <span class="exits-identity-meta">
                                     @if (_shellReady)
                                     {
-                                        @Shell.RoleLabel
+                                        @ScopeLabel
+                                        <text> · @Shell.RoleLabel</text>
                                         @if (!string.IsNullOrWhiteSpace(Shell.SelectedOrganizationName))
                                         {
                                             <text> · @Shell.SelectedOrganizationName</text>
@@ -225,9 +226,17 @@
         }
     }
 
+    private string ScopeLabel => Shell.Mode switch
+    {
+        AdminShellMode.Platform => "Platform Administration",
+        AdminShellMode.Organization => "Organization Administration",
+        AdminShellMode.Personal => "Personal",
+        _ => "Signed in"
+    };
+
     private string IdentityTooltip =>
         _shellReady
-            ? $"{Shell.DisplayName} · {Shell.RoleLabel}" +
+            ? $"{Shell.DisplayName} · {ScopeLabel} · {Shell.RoleLabel}" +
               (string.IsNullOrWhiteSpace(Shell.SelectedOrganizationName) ? "" : $" · {Shell.SelectedOrganizationName}")
             : L["Header_Account"];
 

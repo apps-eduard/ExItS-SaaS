@@ -334,6 +334,7 @@ builder.Services.Configure<LocalValidationOptions>(builder.Configuration.GetSect
 builder.Services.AddScoped<InitializeLocalValidationDataset>();
 builder.Services.AddScoped<InitializeLocalValidationPersonalUtangSeed>();
 builder.Services.AddScoped<ListLocalValidationIdentities>();
+builder.Services.AddScoped<ListLocalValidationQuickLoginIdentities>();
 builder.Services.AddHostedService<LocalValidationHostedService>();
 
 var app = builder.Build();
