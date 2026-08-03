@@ -116,6 +116,10 @@ Mobile should not block a newly subscribed Organization Owner from continuing th
 
 Where a function is not practical on Mobile, show a message such as:
 
+> For full organization administration, use the Web application.
+
+For longer Web guidance, operators may also see:
+
 > For complete organization administration, advanced settings, detailed audit history, and larger management views, open ExItS in a Web browser.
 
 ### Full Organization Administration on Web

@@ -15,7 +15,7 @@ The application remains **not production-ready**.
 | Layer | Status |
 |---|---|
 | Backend / domain / API workflow | **Validated** (unit + integration suites; provisioning aligned) |
-| MAUI implementation | **Partial** — setup, sales, shifts exist; Organization Owner essentials and Start Selling mode remain incomplete vs [client-experience-boundaries](../architecture/client-experience-boundaries.md) |
+| MAUI implementation | **Superseded by Phase 18 for Mobile Org essentials / Start Selling** — Phase 17 delivered setup/sales/shifts; Phase 18 delivered Personal/Org essentials and role homes (**Code Complete and Build Verified; Device Validation Pending**) per [Phase 18](phase-18-mobile-personal-organization-and-pos-experience.md) |
 | Device / Android SDK validation | **Not run** (Android SDK unavailable on validation host) |
 
 ### Client experience (authoritative)
