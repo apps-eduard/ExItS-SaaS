@@ -125,6 +125,116 @@ Do not display the internal key as the Product name.
 
 ---
 
+## 3A. Platform Plan and Organization Subscription
+
+Commercial packaging sits between Product and Entitlement:
+
+```text
+Platform Product
+→ has Plans
+→ Organization has a Subscription to one Plan
+→ Subscription controls commercial state
+→ Subscription enables or suspends the Organization Product Entitlement
+```
+
+### Plan
+
+A **Plan** is a Platform-owned commercial package for one Product.
+
+Recommended fields:
+
+```text
+PlanId
+ProductId
+PlanKey
+DisplayName
+Description
+Status
+MaxBranches
+MaxActiveStaff
+CustomerCreditEnabled
+AdvancedReportsEnabled
+ExportEnabled
+TrialAllowed
+DefaultTrialDays
+SortOrder
+CreatedAt
+UpdatedAt
+```
+
+Statuses:
+
+```text
+Draft
+Active
+Inactive
+Retired
+```
+
+Rules:
+
+- `PlanKey` is unique per Product and immutable after creation
+- Product association is fixed after create
+- only `Active` plans accept new subscriptions
+- `Retired` plans keep existing subscriptions but reject new enrollments
+- do not hard-delete a Plan that has subscription history (retire instead)
+
+### MVP Pinoy Business POS plans
+
+| PlanKey | Display name | Max branches | Max active staff | Customer credit | Advanced reports | Export | Sort |
+|---|---|---|---|---|---|---|---|
+| `starter` | Starter | 1 | 3 | Disabled | Disabled | Disabled | 10 |
+| `business` | Business | 3 | 15 | Enabled | Enabled | Enabled | 20 |
+| `pro` | Pro | 10 | 50 | Enabled | Enabled | Enabled | 30 |
+
+Business default trial: **14 days** when `TrialAllowed` is enabled.
+
+### Subscription
+
+A **Subscription** is one Organization’s enrollment in a Plan. It controls commercial eligibility only.
+
+It must **not**:
+
+- assign Product roles
+- create Organization membership
+- create Account Class
+- grant every staff member Product access
+
+Statuses:
+
+```text
+Trialing
+Active
+Past Due
+Suspended
+Cancelled
+Expired
+```
+
+Trial rules:
+
+- trial belongs to the Subscription; Plan defines whether trial is allowed
+- one trial per Organization per Product
+- no automatic repeated trial
+- trial expiration must not delete Organization or Product Instance data
+
+### Subscription → entitlement lifecycle
+
+| Subscription status | Entitlement effect |
+|---|---|
+| Trialing / Active | Entitlement Enabled |
+| Past Due | May remain Enabled during configured grace |
+| Suspended / Cancelled / Expired | Entitlement Suspended or Disabled per policy |
+
+Product Instance data and Product role assignments remain stored; launch is denied when entitlement is not enabled.
+
+### Platform Admin UX
+
+- **Commercial → Plans**: Plan list/create/view/edit/activate/deactivate/retire with human-readable Product selection (`Pinoy Business POS`)
+- **Commercial → Subscriptions**: list columns use Organization name, Product display name, Plan display name (not GUIDs or Product keys as primary values); technical IDs remain in advanced details
+
+---
+
 ## 4. Organization Product Entitlement
 
 An **Organization Product Entitlement** means an Organization is allowed to use a Platform Product.
