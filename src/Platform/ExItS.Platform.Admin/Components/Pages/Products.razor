@@ -270,6 +270,7 @@ else
     private bool _busy;
 
     private bool CanManage => Permissions.HasPermission(PlatformPermissionCodes.ManageCatalog);
+    private readonly AdminPageLoadGate _loadGate = new();
 
     protected override async Task OnParametersSetAsync()
     {
@@ -277,9 +278,14 @@ else
         _formConflict = false;
         if (Id is null)
         {
+            if (!_loadGate.ShouldLoad("list"))
+            {
+                return;
+            }
+
             await LoadProductsAsync();
         }
-        else
+        else if (_loadGate.ShouldLoad(Id))
         {
             await LoadDetailAsync();
         }

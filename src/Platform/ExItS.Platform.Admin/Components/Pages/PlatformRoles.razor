@@ -222,13 +222,20 @@ else
 
         if (Id is null)
         {
+            if (!_loadGate.ShouldLoad("list"))
+            {
+                return;
+            }
+
             await LoadListAsync();
         }
-        else
+        else if (_loadGate.ShouldLoad(Id))
         {
             await LoadDetailAsync();
         }
     }
+
+    private readonly AdminPageLoadGate _loadGate = new();
 
     private async Task LoadListAsync()
     {

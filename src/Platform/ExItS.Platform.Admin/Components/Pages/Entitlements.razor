@@ -371,12 +371,10 @@ else
         || Permissions.HasPermission(PlatformPermissionCodes.ManageSubscriptions)
         || Permissions.HasPermission(PlatformPermissionCodes.ManageEntitlementOverrides);
 
+    private readonly AdminPageLoadGate _loadGate = new();
+
     protected override async Task OnParametersSetAsync()
     {
-        _pageReady = false;
-        _overrideFormError = null;
-        _overrideFormConflict = false;
-
         await Shell.EnsureLoadedAsync();
         if (Shell.IsPlatformShell)
         {
@@ -389,26 +387,47 @@ else
             return;
         }
 
-        if (Id is not null)
+        object mode = Id is not null
+            ? Id
+            : OrganizationId is not null && ProductCode is not null
+                ? $"{OrganizationId:D}:{ProductCode}"
+                : "list";
+
+        if (!_loadGate.ShouldLoad(mode))
         {
-            await LoadDetailAsync();
-        }
-        else if (OrganizationId is not null && ProductCode is not null)
-        {
-            _history = await Api.GetEntitlementHistoryAsync(OrganizationId.Value, ProductCode);
-        }
-        else
-        {
-            _suppressInitialTableChange = true;
-            _tableReady = false;
-            _page = 1;
-            _list = null;
-            await LoadListAsync();
-            _tableReady = true;
-            _suppressInitialTableChange = false;
+            _pageReady = true;
+            return;
         }
 
-        _pageReady = true;
+        _pageReady = false;
+        _overrideFormError = null;
+        _overrideFormConflict = false;
+
+        try
+        {
+            if (Id is not null)
+            {
+                await LoadDetailAsync();
+            }
+            else if (OrganizationId is not null && ProductCode is not null)
+            {
+                _history = await Api.GetEntitlementHistoryAsync(OrganizationId.Value, ProductCode);
+            }
+            else
+            {
+                _suppressInitialTableChange = true;
+                _tableReady = false;
+                _page = 1;
+                _list = null;
+                await LoadListAsync();
+                _tableReady = true;
+                _suppressInitialTableChange = false;
+            }
+        }
+        finally
+        {
+            _pageReady = true;
+        }
     }
 
     private async Task LoadListAsync() =>

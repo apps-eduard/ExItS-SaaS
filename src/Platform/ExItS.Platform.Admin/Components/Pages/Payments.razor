@@ -74,7 +74,7 @@ else if (Id is null)
             </div>
         </AntDesign.Col>
     </Row>
-    <Paragraph Type="@TextElementType.Secondary" Style="margin:-8px 0 16px;">
+    <Paragraph Class="muted" Style="margin:-8px 0 16px;">
         Summary totals are unfiltered. Click a card to show that status in the list below.
     </Paragraph>
 
@@ -85,23 +85,21 @@ else if (Id is null)
                    Placeholder="Search reference or product"
                    Style="width:220px;"
                    AllowClear
-                   OnPressEnter="ApplyFiltersAsync"
-                   Disabled="_listBusy" />
+                   OnPressEnter="ApplyFiltersAsync" />
             <Button Size="@ButtonSize.Small" Type="@(_quickRange == ReportQuickRange.Today ? ButtonType.Primary : ButtonType.Default)"
-                    Disabled="_listBusy" OnClick="@(() => OnQuickRangeAsync(ReportQuickRange.Today))">Today</Button>
+                    OnClick="@(() => OnQuickRangeAsync(ReportQuickRange.Today))">Today</Button>
             <Button Size="@ButtonSize.Small" Type="@(_quickRange == ReportQuickRange.Last7Days ? ButtonType.Primary : ButtonType.Default)"
-                    Disabled="_listBusy" OnClick="@(() => OnQuickRangeAsync(ReportQuickRange.Last7Days))">7 days</Button>
+                    OnClick="@(() => OnQuickRangeAsync(ReportQuickRange.Last7Days))">7 days</Button>
             <Button Size="@ButtonSize.Small" Type="@(_quickRange == ReportQuickRange.Last30Days ? ButtonType.Primary : ButtonType.Default)"
-                    Disabled="_listBusy" OnClick="@(() => OnQuickRangeAsync(ReportQuickRange.Last30Days))">30 days</Button>
+                    OnClick="@(() => OnQuickRangeAsync(ReportQuickRange.Last30Days))">30 days</Button>
             <Button Size="@ButtonSize.Small" Type="@(_quickRange == ReportQuickRange.ThisMonth ? ButtonType.Primary : ButtonType.Default)"
-                    Disabled="_listBusy" OnClick="@(() => OnQuickRangeAsync(ReportQuickRange.ThisMonth))">This month</Button>
+                    OnClick="@(() => OnQuickRangeAsync(ReportQuickRange.ThisMonth))">This month</Button>
             <Select TItemValue="string"
                     TItem="string"
                     Value="@_status"
                     ValueChanged="OnStatusChangedAsync"
                     Size="@InputSize.Small"
                     Style="width:170px;"
-                    Disabled="_listBusy"
                     Placeholder="Status">
                 <SelectOptions>
                     <SelectOption TItemValue="string" TItem="string" Value="@("Confirmed")" Label="Confirmed" />
@@ -110,7 +108,7 @@ else if (Id is null)
                     <SelectOption TItemValue="string" TItem="string" Value="@("Voided")" Label="Voided" />
                 </SelectOptions>
             </Select>
-            <Select TItemValue="string" TItem="string" @bind-Value="_productCode" Size="@InputSize.Small" Style="width:180px;" Disabled="_listBusy" Placeholder="Product" AllowClear>
+            <Select TItemValue="string" TItem="string" @bind-Value="_productCode" Size="@InputSize.Small" Style="width:180px;" Placeholder="Product" AllowClear>
                 <SelectOptions>
                     <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="All products" />
                     @foreach (var product in _productOptions)
@@ -120,7 +118,7 @@ else if (Id is null)
                     }
                 </SelectOptions>
             </Select>
-            <Select TItemValue="string" TItem="string" @bind-Value="_organizationIdText" Size="@InputSize.Small" Style="width:200px;" Disabled="_listBusy" Placeholder="Organization" AllowClear>
+            <Select TItemValue="string" TItem="string" @bind-Value="_organizationIdText" Size="@InputSize.Small" Style="width:200px;" Placeholder="Organization" AllowClear>
                 <SelectOptions>
                     <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="All organizations" />
                     @foreach (var org in _organizationOptions)
@@ -135,9 +133,9 @@ else if (Id is null)
 
         <Space Wrap Style="width:100%;margin-bottom:16px;" Size="@("small")">
             <span class="muted">From</span>
-            <DatePicker TValue="DateTime?" @bind-Value="_fromDateTime" Size="@InputSize.Small" Disabled="_listBusy" Style="width:140px;" />
+            <DatePicker TValue="DateTime?" @bind-Value="_fromDateTime" Size="@InputSize.Small" Style="width:140px;" />
             <span class="muted">To</span>
-            <DatePicker TValue="DateTime?" @bind-Value="_toDateTime" Size="@InputSize.Small" Disabled="_listBusy" Style="width:140px;" />
+            <DatePicker TValue="DateTime?" @bind-Value="_toDateTime" Size="@InputSize.Small" Style="width:140px;" />
             @if (!string.IsNullOrWhiteSpace(_fromError) || !string.IsNullOrWhiteSpace(_toError))
             {
                 <span style="color:#ff4d4f;font-size:12px;">@(_toError ?? _fromError)</span>
@@ -148,7 +146,7 @@ else if (Id is null)
         {
             <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail" />
         }
-        else if (_list is null || _listBusy)
+        else if (_list is null)
         {
             <div style="padding:2rem;text-align:center;"><Spin Tip="@L["Payments_Loading"]" /></div>
         }
@@ -423,6 +421,8 @@ else
     private int _summaryPending;
     private int _summaryConfirmed;
     private int _summaryRejectedOrVoided;
+    /// <summary>Prevents Layout LocationChanged re-renders from re-entering list load and killing the circuit.</summary>
+    private readonly AdminPageLoadGate _loadGate = new();
 
     private IReadOnlyList<PaymentDto> VisiblePayments
     {
@@ -473,27 +473,36 @@ else
             return;
         }
 
+        if (Id is not null)
+        {
+            if (!_loadGate.ShouldLoad(Id))
+            {
+                return;
+            }
+
+            _detail = await Api.GetPaymentAsync(Id.Value);
+            return;
+        }
+
+        if (!_loadGate.ShouldLoad("list"))
+        {
+            return;
+        }
+
         _formError = null;
         _formConflict = false;
         await EnsureLookupsAsync();
 
-        if (Id is null)
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+        if (query.TryGetValue("organizationId", out var org) && Guid.TryParse(org, out var orgId))
         {
-            var uri = Nav.ToAbsoluteUri(Nav.Uri);
-            var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
-            if (query.TryGetValue("organizationId", out var org) && Guid.TryParse(org, out var orgId))
-            {
-                _organizationIdText = orgId.ToString("D");
-                _createOrgId = orgId.ToString("D");
-            }
+            _organizationIdText = orgId.ToString("D");
+            _createOrgId = orgId.ToString("D");
+        }
 
-            await LoadListAsync();
-            await LoadSummaryAsync();
-        }
-        else
-        {
-            _detail = await Api.GetPaymentAsync(Id.Value);
-        }
+        await LoadListAsync();
+        await LoadSummaryAsync();
     }
 
     private async Task EnsureLookupsAsync()
@@ -526,10 +535,16 @@ else
     {
         try
         {
-            var pending = await Api.GetPaymentsAsync(status: "PendingConfirmation", page: 1, pageSize: 1);
-            var confirmed = await Api.GetPaymentsAsync(status: "Confirmed", page: 1, pageSize: 1);
-            var rejected = await Api.GetPaymentsAsync(status: "Rejected", page: 1, pageSize: 1);
-            var voided = await Api.GetPaymentsAsync(status: "Voided", page: 1, pageSize: 1);
+            var pendingTask = Api.GetPaymentsAsync(status: "PendingConfirmation", page: 1, pageSize: 1);
+            var confirmedTask = Api.GetPaymentsAsync(status: "Confirmed", page: 1, pageSize: 1);
+            var rejectedTask = Api.GetPaymentsAsync(status: "Rejected", page: 1, pageSize: 1);
+            var voidedTask = Api.GetPaymentsAsync(status: "Voided", page: 1, pageSize: 1);
+            await Task.WhenAll(pendingTask, confirmedTask, rejectedTask, voidedTask);
+
+            var pending = await pendingTask;
+            var confirmed = await confirmedTask;
+            var rejected = await rejectedTask;
+            var voided = await voidedTask;
             _summaryPending = pending.IsSuccess ? pending.Data?.TotalCount ?? 0 : 0;
             _summaryConfirmed = confirmed.IsSuccess ? confirmed.Data?.TotalCount ?? 0 : 0;
             _summaryRejectedOrVoided =
@@ -544,6 +559,11 @@ else
 
     private async Task LoadListAsync()
     {
+        if (_listBusy)
+        {
+            return;
+        }
+
         _listBusy = true;
         try
         {
@@ -620,8 +640,21 @@ else
         await ApplyFiltersAsync();
     }
 
-    private async Task OnPaymentsTableChangeAsync(QueryModel<PaymentDto> _)
+    private async Task OnPaymentsTableChangeAsync(QueryModel<PaymentDto> queryModel)
     {
+        // Avoid reload loops: Table OnChange fires on mount/data bind; only page changes need a fetch.
+        if (_listBusy)
+        {
+            return;
+        }
+
+        var newPage = queryModel.PageIndex >= 1 ? queryModel.PageIndex : 1;
+        if (newPage == _page)
+        {
+            return;
+        }
+
+        _page = newPage;
         await LoadListAsync();
     }
 
@@ -650,7 +683,13 @@ else
 
     private async Task OnStatusChangedAsync(string status)
     {
-        _status = string.IsNullOrWhiteSpace(status) ? "Confirmed" : status;
+        var next = string.IsNullOrWhiteSpace(status) ? "Confirmed" : status;
+        if (string.Equals(_status, next, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _status = next;
         await ApplyFiltersAsync();
     }
 

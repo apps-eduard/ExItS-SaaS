@@ -156,13 +156,20 @@ else
 
         if (AuditId is null)
         {
+            if (!_loadGate.ShouldLoad("list"))
+            {
+                return;
+            }
+
             await LoadAsync();
         }
-        else
+        else if (_loadGate.ShouldLoad(AuditId))
         {
             _detail = await Api.GetAuditRecordAsync(AuditId.Value);
         }
     }
+
+    private readonly AdminPageLoadGate _loadGate = new();
 
     private async Task LoadAsync()
     {

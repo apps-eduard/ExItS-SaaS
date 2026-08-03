@@ -191,8 +191,10 @@
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
+        // Update the header title only. Do NOT StateHasChanged here — that re-renders @Body
+        // and re-enters the active page's OnParametersSetAsync (API flood → 500 / circuit drop).
+        // Router navigation already re-renders the layout with the new page.
         UpdatePageTitle();
-        _ = InvokeAsync(StateHasChanged);
     }
 
     private void UpdatePageTitle()

@@ -381,6 +381,7 @@ else
     private string? _formError;
     private bool _formConflict;
     private bool _busy;
+    private readonly AdminPageLoadGate _loadGate = new();
 
     private bool CanManage => Permissions.HasPermission(PlatformPermissionCodes.ManageCatalog);
 
@@ -399,9 +400,14 @@ else
 
         if (Id is null)
         {
+            if (!_loadGate.ShouldLoad("list"))
+            {
+                return;
+            }
+
             await LoadPlansAsync();
         }
-        else
+        else if (_loadGate.ShouldLoad(Id))
         {
             await LoadDetailAsync();
         }

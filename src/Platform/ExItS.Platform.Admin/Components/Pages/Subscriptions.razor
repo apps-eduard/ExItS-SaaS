@@ -401,15 +401,22 @@ else
             .OrderBy(p => p.SortOrder)
             .ThenBy(p => p.DisplayName, StringComparer.OrdinalIgnoreCase);
 
+    private readonly AdminPageLoadGate _loadGate = new();
+
     protected override async Task OnParametersSetAsync()
     {
         _formError = null;
         _formConflict = false;
         if (Id is null)
         {
+            if (!_loadGate.ShouldLoad("list"))
+            {
+                return;
+            }
+
             await LoadListAsync();
         }
-        else
+        else if (_loadGate.ShouldLoad(Id))
         {
             await LoadDetailAsync();
         }
