@@ -1,0 +1,58 @@
+# P16-WP11 — Admin table sizing, display, and sorting
+
+> **Status:** In Progress (validation)  
+> **Phase:** Phase 16 — Implementation Complete, Under Validation  
+> **Work package:** P16-WP11  
+> **Related:** Commercial → Entitlements (primary), other Platform Admin list tables
+
+---
+
+## Defect
+
+Platform Admin tables (starting with Entitlements) showed technical IDs as primary values, stretched to full page width, and had broken or unwired column sorting on server-paged lists.
+
+---
+
+## Correction
+
+### Entitlements columns
+
+| Column | Display |
+|---|---|
+| Product | Product display name (e.g. Pinoy Business POS) |
+| Organization | Organization display name (e.g. ABC Sari-Sari Store) |
+| Status | Subscription status (e.g. Trialing) |
+| Generated | Local time `dd MMM yyyy, h:mm tt` (UTC in tooltip) |
+| Revision | Snapshot version (renamed from Version) |
+| History | Link (not sortable) |
+| Actions | Open (not sortable) |
+
+API/DB remain UTC. UI converts via browser IANA timezone (`UserTimeZoneState` + `LocalTimestamp`).
+
+### Table width
+
+Content-fit CSS: tables use `max-content` up to container width; removed forced `min-width: 36rem` and excessive `ScrollX`. Bounded widths only for Status (~110), Generated (~180), Revision (~90), Actions (~80).
+
+### Sorting
+
+Server-side `Filter → OrderBy/ThenBy → Skip → Take` with safe sort keys. Entitlements default: Generated DESC, then Organization ASC. Wired OnChange handlers for Entitlements, Organizations, Products, Plans, Subscriptions (Users already worked).
+
+---
+
+## Tests
+
+Unit + integration coverage for friendly names, Revision label contract, local date format, asc/desc sorts, numeric Revision, sort-before-page, Actions/History not sortable, no GUID/ProductKey as primary display.
+
+---
+
+## Implementation SHA
+
+`d8bacd4673c5e5eb75641714193b37b76f9a31e8`
+
+---
+
+## Status
+
+- Phase 16 — Implementation Complete, Under Validation  
+- **P16-WP11 — In Progress**  
+- P16-WP12 — Not Started  
