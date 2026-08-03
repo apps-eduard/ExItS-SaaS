@@ -3,7 +3,7 @@
 > **Status:** In Progress (implementation complete; validation underway)  
 > **Phase:** 16 — Implementation Complete, Under Validation  
 > **Next:** P16-WP12 — Not Started  
-> **Commit SHA:** _(pending)_
+> **Commit SHA:** `0f45e4c6ed499786326c2b0ea79c884eb7964651`
 
 ---
 
