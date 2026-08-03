@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
+using ExItS.PinoyBusinessPOS.Application.Commercial;
 
 namespace ExItS.PinoyBusinessPOS.Maui.Services;
 
@@ -9,7 +10,9 @@ public sealed class NavigationGate(
     ICurrentUserContext currentUser,
     IOnboardingPreferenceStore preferences,
     IProtectedShellAccessPolicy accessPolicy,
-    IPosSyncStatusService syncStatus)
+    IPosSyncStatusService syncStatus,
+    IPosOperationalSetupClient operationalSetup,
+    IUtangCapabilityEvaluator capabilities)
 {
     public async Task<string> ResolveStartRouteAsync(CancellationToken ct = default)
     {
@@ -57,6 +60,15 @@ public sealed class NavigationGate(
         {
             syncStatus.SetReconnectRequired(true);
             return "/reconnect";
+        }
+
+        if (capabilities.IsAllowed(UtangCapability.ManageOperationalSetup))
+        {
+            var setupResult = await operationalSetup.GetAsync(ct).ConfigureAwait(false);
+            if (setupResult.IsSuccess && setupResult.Data is { IsCompleted: false })
+            {
+                return "/setup";
+            }
         }
 
         return "/home";

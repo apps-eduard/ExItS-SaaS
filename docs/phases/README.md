@@ -21,3 +21,4 @@
 | 14 | Production Deployment and Operations | **In progress** (through P14-WP03; unchanged by Phase 16) | [Open](phase-14-production-deployment-and-operations.md) |
 | 15 | Ant Design Platform Administration | **Complete** | [Open](phase-15-ant-design-platform-admin.md) |
 | 16 | Isolated Account Profiles, Personal Utang, and Business Upgrade | **Complete** (with documented residuals; Phase 14 unchanged) | [Open](phase-16-isolated-account-profiles-personal-utang-and-business-upgrade.md) |
+| 17 | POS MVP Operational Onboarding and First Sale | **Complete** (with documented residuals; Phase 14 unchanged) | [Open](phase-17-pos-mvp-operational-onboarding-and-first-sale.md) |

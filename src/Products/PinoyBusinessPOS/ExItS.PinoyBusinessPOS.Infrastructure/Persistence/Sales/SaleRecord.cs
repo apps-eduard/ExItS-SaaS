@@ -9,6 +9,7 @@ internal sealed class SaleRecord
     public string PaymentMethod { get; set; } = string.Empty;
     public decimal Subtotal { get; set; }
     public decimal Total { get; set; }
+    public decimal TaxAmount { get; set; }
     public decimal? AmountTendered { get; set; }
     public decimal? ChangeAmount { get; set; }
     public string? GcashReference { get; set; }

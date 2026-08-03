@@ -213,4 +213,14 @@ public static class DomainErrorCodes
     public const string CashierShiftRegisterRequired = "pos.cashier_shift.register.required";
     public const string CashierShiftRegisterConflict = "pos.cashier_shift.register.open_conflict";
     public const string SaleRegisterRequired = "pos.sale.register.required";
+
+    public const string InvalidOperationalSetupStoreDisplayName = "pos.operational_setup.store_display_name.invalid";
+    public const string InvalidOperationalSetupCurrencyCode = "pos.operational_setup.currency_code.invalid";
+    public const string InvalidOperationalSetupTaxRate = "pos.operational_setup.tax_rate.invalid";
+    public const string InvalidOperationalSetupReceiptHeader = "pos.operational_setup.receipt_header.invalid";
+    public const string InvalidOperationalSetupReceiptFooter = "pos.operational_setup.receipt_footer.invalid";
+    public const string InvalidOperationalSetupBusinessAddress = "pos.operational_setup.business_address.invalid";
+    public const string InvalidOperationalSetupContactPhone = "pos.operational_setup.contact_phone.invalid";
+    public const string OperationalSetupIncomplete = "pos.operational_setup.incomplete";
+    public const string OperationalSetupDefaultRegisterRequired = "pos.operational_setup.default_register.required";
 }

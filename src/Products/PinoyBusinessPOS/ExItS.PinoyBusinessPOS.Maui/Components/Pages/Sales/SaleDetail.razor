@@ -78,23 +78,45 @@ else
                 <span class="pos-muted">@L["Sales_Field_PaymentMethod"]</span>
                 <div class="pos-value-md">@SalesUiOptions.PaymentMethodLabel(L, sale.PaymentMethod)</div>
             </div>
+            @if (!string.IsNullOrWhiteSpace(sale.StoreDisplayName))
+            {
+                <div>
+                    <span class="pos-muted">@L["Sales_Field_Store"]</span>
+                    <div class="pos-value-md">@sale.StoreDisplayName</div>
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(sale.RegisterName) || !string.IsNullOrWhiteSpace(sale.RegisterCode))
+            {
+                <div>
+                    <span class="pos-muted">@L["Sales_Field_Register"]</span>
+                    <div class="pos-value-md">@(sale.RegisterName ?? sale.RegisterCode)</div>
+                </div>
+            }
+            <div>
+                <span class="pos-muted">@L["Sales_Field_Cashier"]</span>
+                <div class="pos-value-md">@sale.RecordedBy.ToString("D")</div>
+            </div>
             <div>
                 <span class="pos-muted">@L["Sales_Field_Subtotal"]</span>
-                <div class="pos-value-md"><MoneyDisplay Amount="@sale.Subtotal" CurrencyCode="PHP" /></div>
+                <div class="pos-value-md"><MoneyDisplay Amount="@sale.Subtotal" CurrencyCode="@(sale.CurrencyCode ?? "PHP")" /></div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Sales_Field_Tax"]</span>
+                <div class="pos-value-md"><MoneyDisplay Amount="@sale.TaxAmount" CurrencyCode="@(sale.CurrencyCode ?? "PHP")" /></div>
             </div>
             <div>
                 <span class="pos-muted">@L["Sales_Col_Total"]</span>
-                <div class="pos-value-md"><MoneyDisplay Amount="@sale.Total" CurrencyCode="PHP" /></div>
+                <div class="pos-value-md"><MoneyDisplay Amount="@sale.Total" CurrencyCode="@(sale.CurrencyCode ?? "PHP")" /></div>
             </div>
             @if (sale.AmountTendered is not null)
             {
                 <div>
                     <span class="pos-muted">@L["Sales_Field_AmountTendered"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@sale.AmountTendered.Value" CurrencyCode="PHP" /></div>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@sale.AmountTendered.Value" CurrencyCode="@(sale.CurrencyCode ?? "PHP")" /></div>
                 </div>
                 <div>
                     <span class="pos-muted">@L["Sales_Field_ChangeAmount"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@(sale.ChangeAmount ?? 0m)" CurrencyCode="PHP" /></div>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@(sale.ChangeAmount ?? 0m)" CurrencyCode="@(sale.CurrencyCode ?? "PHP")" /></div>
                 </div>
             }
             @if (!string.IsNullOrWhiteSpace(sale.GCashReference))

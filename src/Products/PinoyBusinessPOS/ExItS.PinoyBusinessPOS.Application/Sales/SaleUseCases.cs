@@ -4,6 +4,7 @@ using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
+using ExItS.PinoyBusinessPOS.Application.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
@@ -11,6 +12,8 @@ using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.OperationalSetup;
+using ExItS.PinoyBusinessPOS.Domain.Registers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.Application.Sales;
@@ -22,19 +25,25 @@ public sealed class SaleQueryService
     private readonly ICreditEntryRepository _credits;
     private readonly IOutstandingBalanceService _outstanding;
     private readonly ICashierShiftRepository _shifts;
+    private readonly IRegisterRepository _registers;
+    private readonly IPosOperationalSetupRepository _operationalSetups;
 
     public SaleQueryService(
         ISaleRepository sales,
         IPOSCustomerRepository customers,
         ICreditEntryRepository credits,
         IOutstandingBalanceService outstanding,
-        ICashierShiftRepository shifts)
+        ICashierShiftRepository shifts,
+        IRegisterRepository registers,
+        IPosOperationalSetupRepository operationalSetups)
     {
         _sales = sales;
         _customers = customers;
         _credits = credits;
         _outstanding = outstanding;
         _shifts = shifts;
+        _registers = registers;
+        _operationalSetups = operationalSetups;
     }
 
     public async Task<PosSaleDto?> GetByIdAsync(
@@ -82,6 +91,7 @@ public sealed class SaleQueryService
             SalePaymentMethods.ToCode(sale.PaymentMethod),
             sale.Subtotal,
             sale.Total,
+            sale.TaxAmount,
             sale.AmountTendered,
             sale.ChangeAmount,
             sale.GCashReference,
@@ -147,7 +157,34 @@ public sealed class SaleQueryService
             shiftNumber = shift?.ShiftNumber;
         }
 
-        if (sale.CustomerId is null && shiftNumber is null)
+        string? registerCode = null;
+        string? registerName = null;
+        if (sale.RegisterId is not null)
+        {
+            var register = await _registers
+                .GetByIdAsync(sale.OrganizationId, sale.RegisterId, cancellationToken)
+                .ConfigureAwait(false);
+            registerCode = register?.RegisterCode;
+            registerName = register?.Name;
+        }
+
+        string? storeDisplayName = null;
+        string? currencyCode = null;
+        string? taxPricingMode = null;
+        var setup = await _operationalSetups
+            .GetByOrganizationIdAsync(sale.OrganizationId, cancellationToken)
+            .ConfigureAwait(false);
+        if (setup is { IsCompleted: true })
+        {
+            storeDisplayName = setup.StoreDisplayName;
+            currencyCode = setup.CurrencyCode;
+            taxPricingMode = setup.TaxPricingMode.ToString();
+        }
+
+        if (sale.CustomerId is null
+            && shiftNumber is null
+            && registerCode is null
+            && storeDisplayName is null)
         {
             return dto;
         }
@@ -157,7 +194,13 @@ public sealed class SaleQueryService
             CustomerDisplayName = displayName,
             LinkedCreditDueDate = linkedDueDate,
             CustomerOutstandingAfter = outstandingAfter,
-            ShiftNumber = shiftNumber
+            ShiftNumber = shiftNumber,
+            RegisterId = sale.RegisterId?.Value,
+            RegisterCode = registerCode,
+            RegisterName = registerName,
+            StoreDisplayName = storeDisplayName,
+            CurrencyCode = currencyCode,
+            TaxPricingMode = taxPricingMode
         };
     }
 }
@@ -181,6 +224,7 @@ public sealed class CheckoutSale
     private readonly ICreditDueDateChangeRepository _dueDateChanges;
     private readonly ISaleStockService _saleStock;
     private readonly ICashierShiftRepository _shifts;
+    private readonly IPosOperationalSetupRepository _operationalSetups;
     private readonly IClock _clock;
 
     public CheckoutSale(
@@ -191,6 +235,7 @@ public sealed class CheckoutSale
         ICreditDueDateChangeRepository dueDateChanges,
         ISaleStockService saleStock,
         ICashierShiftRepository shifts,
+        IPosOperationalSetupRepository operationalSetups,
         IClock clock)
     {
         _sales = sales;
@@ -200,6 +245,7 @@ public sealed class CheckoutSale
         _dueDateChanges = dueDateChanges;
         _saleStock = saleStock;
         _shifts = shifts;
+        _operationalSetups = operationalSetups;
         _clock = clock;
     }
 
@@ -388,6 +434,26 @@ public sealed class CheckoutSale
             var capturedActorId = actorId;
             var productsById = byId;
 
+            var previewSubtotal = SaleMoney.RoundMoney(
+                drafts.Sum(d => SaleMoney.RoundMoney(d.UnitPrice * d.Quantity)));
+
+            decimal taxAmount = 0;
+            TaxPricingMode? taxPricingMode = null;
+            var setup = await _operationalSetups
+                .GetByOrganizationIdAsync(orgId, cancellationToken)
+                .ConfigureAwait(false);
+            if (setup is { IsCompleted: true } && setup.TaxRatePercent > 0)
+            {
+                taxPricingMode = setup.TaxPricingMode;
+                taxAmount = OperationalSetupTaxCalculator.ComputeTaxAmount(
+                    previewSubtotal,
+                    setup.TaxRatePercent,
+                    setup.TaxPricingMode);
+            }
+
+            var capturedTaxAmount = taxAmount;
+            var capturedTaxPricingMode = taxPricingMode;
+
             var sale = await _sales
                 .CheckoutAsync(
                     orgId,
@@ -405,7 +471,9 @@ public sealed class CheckoutSale
                         capturedCustomerId,
                         capturedCreditEntryId,
                         linkedShiftId,
-                        linkedRegisterId),
+                        linkedRegisterId,
+                        capturedTaxAmount,
+                        capturedTaxPricingMode),
                     async (createdSale, ct) =>
                     {
                         await _saleStock

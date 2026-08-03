@@ -238,8 +238,11 @@
   <data name="AccessConfirm_OrgLabel" xml:space="preserve"><value>Organization</value></data>
   <data name="AccessConfirm_Allowed" xml:space="preserve"><value>Access allowed</value></data>
   <data name="AccessConfirm_Enter" xml:space="preserve"><value>Enter Home</value></data>
-  <data name="AccessConfirm_RoleBoundaryTitle" xml:space="preserve"><value>Commercial access only</value></data>
-  <data name="AccessConfirm_RoleBoundaryMessage" xml:space="preserve"><value>This does not assign Cashier, Store Manager, or POS Administrator roles. Product-local roles come in a later phase.</value></data>
+  <data name="AccessConfirm_RoleBoundaryTitle" xml:space="preserve"><value>POS access requirements</value></data>
+  <data name="AccessConfirm_RoleBoundaryMessage" xml:space="preserve"><value>POS access requires an active organization membership, an active POS entitlement, and an active product-local POS role (Owner, Manager, or Cashier). Organization Owner alone does not grant POS access.</value></data>
+  <data name="Access_RoleMissing" xml:space="preserve"><value>An active POS role is required. Organization membership or entitlement alone is not enough.</value></data>
+  <data name="Access_NoEntitlement" xml:space="preserve"><value>This organization does not have an active POS entitlement.</value></data>
+  <data name="Access_UnauthorizedTitle" xml:space="preserve"><value>Unauthorized for POS</value></data>
   <data name="Auth_Logout" xml:space="preserve"><value>Sign out</value></data>
   <data name="Auth_LogoutConfirmTitle" xml:space="preserve"><value>Sign out?</value></data>
   <data name="Auth_LogoutConfirmMessage" xml:space="preserve"><value>Secure session data on this device will be cleared.</value></data>
@@ -751,6 +754,10 @@
   <data name="Sales_LinesSection" xml:space="preserve"><value>Items</value></data>
   <data name="Sales_Field_PaymentMethod" xml:space="preserve"><value>Payment method</value></data>
   <data name="Sales_Field_Subtotal" xml:space="preserve"><value>Subtotal</value></data>
+  <data name="Sales_Field_Tax" xml:space="preserve"><value>Tax</value></data>
+  <data name="Sales_Field_Store" xml:space="preserve"><value>Store</value></data>
+  <data name="Sales_Field_Register" xml:space="preserve"><value>Register</value></data>
+  <data name="Sales_Field_Cashier" xml:space="preserve"><value>Cashier</value></data>
   <data name="Sales_Field_AmountTendered" xml:space="preserve"><value>Amount tendered</value></data>
   <data name="Sales_Field_ChangeAmount" xml:space="preserve"><value>Change</value></data>
   <data name="Sales_Field_GCashReference" xml:space="preserve"><value>GCash reference</value></data>
@@ -1276,6 +1283,30 @@
   <data name="Registers_Edit" xml:space="preserve"><value>Edit</value></data>
   <data name="Registers_BackToList" xml:space="preserve"><value>Back to registers</value></data>
   <data name="Registers_NotFound" xml:space="preserve"><value>Register was not found.</value></data>
+  <data name="Setup_Title" xml:space="preserve"><value>Operational setup</value></data>
+  <data name="Setup_Subtitle" xml:space="preserve"><value>Configure store identity, tax, and receipt details before daily operations.</value></data>
+  <data name="Setup_StoreSection" xml:space="preserve"><value>Store and tax</value></data>
+  <data name="Setup_ReceiptSection" xml:space="preserve"><value>Receipt and contact</value></data>
+  <data name="Setup_StoreDisplayName" xml:space="preserve"><value>Store display name</value></data>
+  <data name="Setup_CurrencyCode" xml:space="preserve"><value>Currency code</value></data>
+  <data name="Setup_TaxPricingMode" xml:space="preserve"><value>Tax pricing mode</value></data>
+  <data name="Setup_TaxExclusive" xml:space="preserve"><value>Tax exclusive (added on top)</value></data>
+  <data name="Setup_TaxInclusive" xml:space="preserve"><value>Tax inclusive (embedded in prices)</value></data>
+  <data name="Setup_TaxRatePercent" xml:space="preserve"><value>Tax rate (%)</value></data>
+  <data name="Setup_ReceiptHeader" xml:space="preserve"><value>Receipt header</value></data>
+  <data name="Setup_ReceiptFooter" xml:space="preserve"><value>Receipt footer</value></data>
+  <data name="Setup_BusinessAddress" xml:space="preserve"><value>Business address</value></data>
+  <data name="Setup_ContactPhone" xml:space="preserve"><value>Contact phone</value></data>
+  <data name="Setup_Complete" xml:space="preserve"><value>Complete setup</value></data>
+  <data name="Setup_SaveChanges" xml:space="preserve"><value>Save changes</value></data>
+  <data name="Setup_BackToHome" xml:space="preserve"><value>Back to home</value></data>
+  <data name="Setup_OfflineTitle" xml:space="preserve"><value>Offline</value></data>
+  <data name="Setup_OfflineMessage" xml:space="preserve"><value>Operational setup requires an online connection.</value></data>
+  <data name="Setup_ReadOnlyTitle" xml:space="preserve"><value>View only</value></data>
+  <data name="Setup_ReadOnlyMessage" xml:space="preserve"><value>Only owners and admins can complete or change operational setup.</value></data>
+  <data name="Setup_ErrorTitle" xml:space="preserve"><value>Setup error</value></data>
+  <data name="Setup_InvalidTaxRate" xml:space="preserve"><value>Enter a valid tax rate between 0 and 100.</value></data>
+  <data name="Nav_Setup" xml:space="preserve"><value>Operational setup</value></data>
   <data name="Shifts_RegisterSection" xml:space="preserve"><value>Register</value></data>
   <data name="Shifts_RegisterLabel" xml:space="preserve"><value>Select register</value></data>
   <data name="Shifts_NoRegisterTitle" xml:space="preserve"><value>No available register</value></data>

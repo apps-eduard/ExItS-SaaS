@@ -6,6 +6,7 @@ using ExItS.PinoyBusinessPOS.Domain.Expenses;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Registers;
+using ExItS.PinoyBusinessPOS.Domain.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
@@ -18,6 +19,7 @@ using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Expenses;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Idempotency;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Payments;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Registers;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Sales;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Suppliers;
@@ -72,6 +74,7 @@ public sealed class PosDbContext : DbContext
     internal DbSet<Permissions.PosRoleAssignmentRecord> PosRoleAssignments => Set<Permissions.PosRoleAssignmentRecord>();
     internal DbSet<RegisterRecord> Registers => Set<RegisterRecord>();
     internal DbSet<RegisterCodeSequenceRecord> RegisterCodeSequences => Set<RegisterCodeSequenceRecord>();
+    internal DbSet<OperationalSetupRecord> OperationalSetups => Set<OperationalSetupRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -441,7 +444,7 @@ public sealed class PosDbContext : DbContext
                     $"payment_method IN ({string.Join(", ", SalePaymentMethods.Codes.Select(c => $"'{c}'"))})");
                 tb.HasCheckConstraint(
                     "ck_sales_totals_non_negative",
-                    "subtotal >= 0 AND total >= 0");
+                    "subtotal >= 0 AND total >= 0 AND tax_amount >= 0");
                 // Voided sales must carry the full void audit; completed sales must carry none of it.
                 tb.HasCheckConstraint(
                     "ck_sales_void_consistency",
@@ -467,6 +470,7 @@ public sealed class PosDbContext : DbContext
                 .IsRequired();
             entity.Property(e => e.Subtotal).HasColumnName("subtotal").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.Total).HasColumnName("total").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.TaxAmount).HasColumnName("tax_amount").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.AmountTendered).HasColumnName("amount_tendered").HasPrecision(18, 2);
             entity.Property(e => e.ChangeAmount).HasColumnName("change_amount").HasPrecision(18, 2);
             entity.Property(e => e.GcashReference)
@@ -1740,6 +1744,71 @@ public sealed class PosDbContext : DbContext
                 .HasName("pk_register_code_sequences");
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
             entity.Property(e => e.NextValue).HasColumnName("next_value").IsRequired();
+        });
+
+        modelBuilder.Entity<OperationalSetupRecord>(entity =>
+        {
+            entity.ToTable("operational_setups", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_operational_setups_tax_pricing_mode",
+                    "tax_pricing_mode IN ('TaxExclusive', 'TaxInclusive')");
+                tb.HasCheckConstraint(
+                    "ck_operational_setups_tax_rate_range",
+                    "tax_rate_percent >= 0 AND tax_rate_percent <= 100");
+                tb.HasCheckConstraint(
+                    "ck_operational_setups_completed_consistency",
+                    "(is_completed = FALSE AND completed_at_utc IS NULL) OR (is_completed = TRUE AND completed_at_utc IS NOT NULL)");
+            });
+
+            entity.HasKey(e => e.OrganizationId);
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.StoreDisplayName)
+                .HasColumnName("store_display_name")
+                .HasMaxLength(PosOperationalSetup.StoreDisplayNameMaxLength)
+                .IsRequired();
+            entity.Property(e => e.CurrencyCode)
+                .HasColumnName("currency_code")
+                .HasMaxLength(PosOperationalSetup.CurrencyCodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.TaxPricingMode)
+                .HasColumnName("tax_pricing_mode")
+                .HasMaxLength(32)
+                .IsRequired();
+            entity.Property(e => e.TaxRatePercent)
+                .HasColumnName("tax_rate_percent")
+                .HasPrecision(5, 2)
+                .IsRequired();
+            entity.Property(e => e.ReceiptHeader)
+                .HasColumnName("receipt_header")
+                .HasMaxLength(PosOperationalSetup.ReceiptHeaderMaxLength);
+            entity.Property(e => e.ReceiptFooter)
+                .HasColumnName("receipt_footer")
+                .HasMaxLength(PosOperationalSetup.ReceiptFooterMaxLength);
+            entity.Property(e => e.BusinessAddress)
+                .HasColumnName("business_address")
+                .HasMaxLength(PosOperationalSetup.BusinessAddressMaxLength);
+            entity.Property(e => e.ContactPhone)
+                .HasColumnName("contact_phone")
+                .HasMaxLength(PosOperationalSetup.ContactPhoneMaxLength);
+            entity.Property(e => e.DefaultRegisterId).HasColumnName("default_register_id");
+            entity.Property(e => e.IsCompleted).HasColumnName("is_completed").IsRequired();
+            entity.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by").IsRequired();
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by").IsRequired();
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasOne<RegisterRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.DefaultRegisterId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_operational_setups_default_register");
         });
     }
 }

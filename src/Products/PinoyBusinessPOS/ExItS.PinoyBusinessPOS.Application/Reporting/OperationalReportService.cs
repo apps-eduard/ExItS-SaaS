@@ -39,6 +39,19 @@ public sealed record PosSalesSummaryReportDto(
     int CompletedTransactionCount,
     decimal AverageTransactionValue);
 
+public sealed record PosSalesByCashierRowDto(
+    Guid CashierActorId,
+    int CompletedTransactionCount,
+    decimal CashCollected,
+    decimal GrossSales,
+    decimal VoidedSales,
+    decimal NetSales);
+
+public sealed record PosSalesByCashierReportDto(
+    DateOnly FromDate,
+    DateOnly ToDate,
+    IReadOnlyList<PosSalesByCashierRowDto> Rows);
+
 public sealed record PosPaymentMethodBreakdownDto(
     string PaymentMethod,
     decimal GrossCompleted,
@@ -256,6 +269,51 @@ public sealed class OperationalReportService(
                 net,
                 count,
                 avg));
+    }
+
+    public async Task<ApplicationResult<PosSalesByCashierReportDto>> GetSalesByCashierAsync(
+        Guid organizationId,
+        DateOnly? fromDate,
+        DateOnly? toDate,
+        CancellationToken ct = default)
+    {
+        var rangeResult = ReportDateRange.Resolve(fromDate, toDate, clock);
+        if (!rangeResult.IsSuccess)
+        {
+            return ApplicationResult<PosSalesByCashierReportDto>.Failure(rangeResult.ErrorCode!, rangeResult.ErrorMessage!);
+        }
+
+        var range = rangeResult.Value!;
+        var org = PosOrganizationId.From(organizationId);
+        var saleRows = await sales.ListForReportAsync(org, range.FromDate, range.ToDate, cancellationToken: ct)
+            .ConfigureAwait(false);
+
+        var rows = saleRows
+            .GroupBy(s => s.RecordedBy)
+            .Select(g =>
+            {
+                var completed = g.Where(s => s.Status == SaleStatus.Completed).ToList();
+                var voided = g.Where(s => s.Status == SaleStatus.Voided).ToList();
+                var gross = ReportMath.RoundMoney(completed.Sum(s => s.Total));
+                var voidedTotal = ReportMath.RoundMoney(voided.Sum(s => s.Total));
+                var cash = ReportMath.RoundMoney(
+                    completed
+                        .Where(s => s.PaymentMethod == SalePaymentMethod.Cash)
+                        .Sum(s => s.Total));
+                return new PosSalesByCashierRowDto(
+                    g.Key,
+                    completed.Count,
+                    cash,
+                    gross,
+                    voidedTotal,
+                    ReportMath.RoundMoney(gross - voidedTotal));
+            })
+            .OrderByDescending(r => r.GrossSales)
+            .ThenBy(r => r.CashierActorId)
+            .ToList();
+
+        return ApplicationResult<PosSalesByCashierReportDto>.Success(
+            new PosSalesByCashierReportDto(range.FromDate, range.ToDate, rows));
     }
 
     public async Task<ApplicationResult<PosSalesByPaymentReportDto>> GetSalesByPaymentAsync(

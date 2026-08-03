@@ -11,12 +11,12 @@
 | Portfolio | ExITS SaaS |
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 16  -  Implementation Complete, Under Validation (**P16-WP11 in progress**; Phase 14 still open) |
-| Current work package | **P16-WP11**  -  Validation, Stabilization, and User Acceptance (**in progress**); **P16-WP12** Final Closeout (**not started**); P14-WP04 remains next Production WP after authorization |
-| Overall status | **Phase 16 under validation** (P16-WP01-WP10 feature WPs complete; **P16-WP11 in progress**  -  [Local Validation report](reports/P16-WP11-local-validation-replaces-live-preview.md)). Phase 15 complete. **Phase 14 remains in progress**. Local Validation replaces Live Preview (same app code; config-only vs Production). Phase 16 is **not closed**. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | `df76759289d3ca171e2ccb37bda890146a7223fa` |
-| Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; tax/accounting deferred; formal WCAG cert not claimed |
-| Last updated | 2026-08-02 |
+| Current phase | Phase 17  -  **Complete** (POS MVP operational onboarding and first sale); Phase 16 validation residuals remain; Phase 14 still open |
+| Current work package | **P17-WP08** closeout complete; **P16-WP11** validation residuals may continue separately; P14-WP04 remains next Production WP after authorization |
+| Overall status | **Phase 17 complete** ([phase](phases/phase-17-pos-mvp-operational-onboarding-and-first-sale.md); [closeout](reports/P17-WP08-reports-hardening-and-closeout.md)). Phase 15 complete. Phase 16 feature WPs complete with validation residuals. **Phase 14 remains in progress**. Production remains **Blocked**. **Not production-ready.** |
+| Latest verified commit | See P17-WP08 final commit SHA after push |
+| Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; advanced tax/accounting deferred; formal WCAG cert not claimed |
+| Last updated | 2026-07-29 |
 
 ## Delivery sequence
 
@@ -142,6 +142,22 @@ P16-WP08 ? Start a Business and Utang Migration
 P16-WP09 ? Product Access and Navigation Integration
         ?
 P16-WP10 ? Security, Privacy, UX Hardening, and Closeout (Phase 16 complete)
+        ?
+P17-WP01 ? POS Access Handoff
+        ?
+P17-WP02 ? Initial POS Setup
+        ?
+P17-WP03 ? Product and Inventory Setup
+        ?
+P17-WP04 ? POS Staff and Role Access
+        ?
+P17-WP05 ? Register and Shift Operations
+        ?
+P17-WP06 ? Cash Sale and Receipt
+        ?
+P17-WP07 ? Void, Refund, and Audit
+        ?
+P17-WP08 ? Reports, Hardening, and Closeout (Phase 17 complete)
 ```
 
 ## Phase progress
@@ -165,6 +181,7 @@ P16-WP10 ? Security, Privacy, UX Hardening, and Closeout (Phase 16 complete)
 | 14 | Production Deployment and Operations | **In progress** | 3 | 7 |  -  | [Open](phases/phase-14-production-deployment-and-operations.md) |
 | 15 | Ant Design Platform Administration | **Complete** | 7 | 7 | 100% | [Open](phases/phase-15-ant-design-platform-admin.md) |
 | 16 | Isolated Account Profiles, Personal Utang, Business Upgrade | **Complete with documented residuals** | 10 | 10 | 100% | [Open](phases/phase-16-isolated-account-profiles-personal-utang-and-business-upgrade.md) |
+| 17 | POS MVP Operational Onboarding and First Sale | **Complete with documented residuals** | 8 | 8 | 100% | [Open](phases/phase-17-pos-mvp-operational-onboarding-and-first-sale.md) |
 
 **MVP phases 0-9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
@@ -174,6 +191,20 @@ P16-WP10 ? Security, Privacy, UX Hardening, and Closeout (Phase 16 complete)
 **Phase 14 Production Deployment:** 3 / 7 WPs complete (through P14-WP03 reverse-proxy/TLS template; Production blocked).
 **Phase 15 Ant Design Platform Admin:** 7 / 7 WPs complete (closeout [P15-WP07](reports/P15-WP07-phase-15-closeout.md); Fluent UI direction cancelled/superseded).
 **Phase 16 Account Profiles / Personal Utang:** 10 / 10 WPs complete (closeout [P16-WP10](reports/P16-WP10-phase-16-closeout.md); Phase 14 unchanged; not Production-ready).
+**Phase 17 POS MVP Operational Onboarding:** 8 / 8 WPs complete (closeout [P17-WP08](reports/P17-WP08-reports-hardening-and-closeout.md); Phase 14 unchanged; not Production-ready).
+
+## Phase 17 work packages
+
+| WP | Status | Key commit |
+|---|---|---|
+| P17-WP01  -  POS Access Handoff | Complete | See Phase 17 commit  -  [report](reports/P17-WP01-pos-access-handoff.md) |
+| P17-WP02  -  Initial POS Setup | Complete | See Phase 17 commit  -  [report](reports/P17-WP02-initial-pos-setup.md) |
+| P17-WP03  -  Product and Inventory Setup | Complete | See Phase 17 commit  -  [report](reports/P17-WP03-product-and-inventory-setup.md) |
+| P17-WP04  -  POS Staff and Role Access | Complete | See Phase 17 commit  -  [report](reports/P17-WP04-pos-staff-and-role-access.md) |
+| P17-WP05  -  Register and Shift Operations | Complete | See Phase 17 commit  -  [report](reports/P17-WP05-register-and-shift-operations.md) |
+| P17-WP06  -  Cash Sale and Receipt | Complete | See Phase 17 commit  -  [report](reports/P17-WP06-cash-sale-and-receipt.md) |
+| P17-WP07  -  Void, Refund, and Audit | Complete | See Phase 17 commit  -  [report](reports/P17-WP07-void-refund-and-audit.md) |
+| P17-WP08  -  Reports, Hardening, and Closeout | Complete | See Phase 17 commit  -  [report](reports/P17-WP08-reports-hardening-and-closeout.md) |
 
 ## Phase 16 work packages
 
@@ -283,4 +314,4 @@ P16-WP10 ? Security, Privacy, UX Hardening, and Closeout (Phase 16 complete)
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P14-WP04** until explicitly authorized. Platform Admin UI direction is **Ant Design Blazor (ADR-015)**; Fluent UI Admin work is cancelled. Phase 15 is complete. Phase 16 is **Implementation Complete, Under Validation** (P16-WP11 in progress; P16-WP12 not started). Phase 14 remains in progress; Production remains Blocked.
+Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P14-WP04** until explicitly authorized. Platform Admin UI direction is **Ant Design Blazor (ADR-015)**; Fluent UI Admin work is cancelled. Phase 15 is complete. Phase 17 is **complete**. Phase 16 feature closeout is complete with validation residuals (P16-WP11/WP12). Phase 14 remains in progress; Production remains Blocked.

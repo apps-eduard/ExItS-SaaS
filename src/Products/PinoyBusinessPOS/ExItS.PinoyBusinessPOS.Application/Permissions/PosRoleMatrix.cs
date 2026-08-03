@@ -42,7 +42,8 @@ public static class PosRoleMatrix
         UtangCapability.ProcessReturn,
         UtangCapability.ViewPermissions,
         UtangCapability.ViewRegisters,
-        UtangCapability.ManageRegisters
+        UtangCapability.ManageRegisters,
+        UtangCapability.ViewOperationalSetup
     ];
 
     private static readonly HashSet<UtangCapability> CashierCapabilities =
@@ -55,8 +56,8 @@ public static class PosRoleMatrix
         UtangCapability.ViewShifts,
         UtangCapability.ManageShifts,
         UtangCapability.ViewReturns,
-        UtangCapability.ProcessReturn,
-        UtangCapability.ViewRegisters
+        UtangCapability.ViewRegisters,
+        UtangCapability.ViewOperationalSetup
     ];
 
     private static readonly HashSet<UtangCapability> InventoryStaffCapabilities =
@@ -68,7 +69,8 @@ public static class PosRoleMatrix
         UtangCapability.ViewSuppliers,
         UtangCapability.ViewPurchasing,
         UtangCapability.ManagePurchasing,
-        UtangCapability.ViewRegisters
+        UtangCapability.ViewRegisters,
+        UtangCapability.ViewOperationalSetup
     ];
 
     private static readonly HashSet<UtangCapability> ReportingUserCapabilities =
@@ -86,7 +88,8 @@ public static class PosRoleMatrix
         UtangCapability.ViewCustomersAndHistory,
         UtangCapability.ViewGenerateStatement,
         UtangCapability.ViewGenerateReceipt,
-        UtangCapability.ViewRegisters
+        UtangCapability.ViewRegisters,
+        UtangCapability.ViewOperationalSetup
     ];
 
     public static bool Allows(PosRole role, UtangCapability capability) => role switch
@@ -154,5 +157,6 @@ public enum PosOperationalReportKind
     PurchaseOutstanding = 11,
     SupplierPurchasing = 12,
     Expenses = 13,
-    Utang = 14
+    Utang = 14,
+    SalesByCashier = 15
 }

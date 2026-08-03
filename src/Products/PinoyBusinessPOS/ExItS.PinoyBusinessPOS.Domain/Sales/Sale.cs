@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Domain.Registers;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Sales;
@@ -35,6 +36,9 @@ public sealed class Sale
     public SalePaymentMethod PaymentMethod { get; }
     public decimal Subtotal { get; }
     public decimal Total { get; }
+
+    /// <summary>Sales tax amount recorded at checkout. Zero for legacy sales and when tax is not configured.</summary>
+    public decimal TaxAmount { get; }
 
     /// <summary>Cash tendered by the customer. Always null for ManualGCash and Utang.</summary>
     public decimal? AmountTendered { get; }
@@ -78,6 +82,7 @@ public sealed class Sale
         SalePaymentMethod paymentMethod,
         decimal subtotal,
         decimal total,
+        decimal taxAmount,
         decimal? amountTendered,
         decimal? changeAmount,
         string? gcashReference,
@@ -100,6 +105,7 @@ public sealed class Sale
         PaymentMethod = paymentMethod;
         Subtotal = subtotal;
         Total = total;
+        TaxAmount = taxAmount;
         AmountTendered = amountTendered;
         ChangeAmount = changeAmount;
         GCashReference = gcashReference;
@@ -133,7 +139,9 @@ public sealed class Sale
         POSCustomerId? customerId = null,
         CreditEntryId? linkedCreditEntryId = null,
         CashierShiftId? cashierShiftId = null,
-        RegisterId? registerId = null)
+        RegisterId? registerId = null,
+        decimal taxAmount = 0,
+        TaxPricingMode? taxPricingMode = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(recordedBy);
@@ -181,8 +189,23 @@ public sealed class Sale
             throw new DomainException(DomainErrorCodes.SaleTotalTooLarge, "The sale total is too large.");
         }
 
-        // No tax, discount, fee, or tip adjustments exist in this scope, so total equals subtotal.
+        var normalizedTax = SaleMoney.RoundMoney(Math.Max(0m, taxAmount));
         var total = subtotal;
+        if (normalizedTax > 0)
+        {
+            total = taxPricingMode switch
+            {
+                TaxPricingMode.TaxExclusive => subtotal + normalizedTax,
+                TaxPricingMode.TaxInclusive => subtotal,
+                _ => subtotal
+            };
+            total = SaleMoney.RoundMoney(total);
+        }
+
+        if (total > MaxTotal)
+        {
+            throw new DomainException(DomainErrorCodes.SaleTotalTooLarge, "The sale total is too large.");
+        }
 
         ValidatePaymentLinkage(paymentMethod, customerId, linkedCreditEntryId, total);
 
@@ -197,6 +220,7 @@ public sealed class Sale
             paymentMethod,
             subtotal,
             total,
+            normalizedTax,
             tendered,
             change,
             reference,
@@ -221,6 +245,7 @@ public sealed class Sale
         SalePaymentMethod paymentMethod,
         decimal subtotal,
         decimal total,
+        decimal taxAmount,
         decimal? amountTendered,
         decimal? changeAmount,
         string? gcashReference,
@@ -243,6 +268,7 @@ public sealed class Sale
             paymentMethod,
             subtotal,
             total,
+            taxAmount,
             amountTendered,
             changeAmount,
             gcashReference,

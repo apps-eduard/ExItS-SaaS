@@ -3,6 +3,7 @@
 @inject ICurrentUserContext CurrentUser
 @inject IOnboardingPreferenceStore Prefs
 @inject IAuthenticationService Auth
+@inject NavigationGate Gate
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
@@ -38,6 +39,6 @@
     {
         await Prefs.SetOnboardingCompletedAsync(true);
         await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.Complete));
-        Nav.NavigateTo("/home");
+        Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
     }
 }

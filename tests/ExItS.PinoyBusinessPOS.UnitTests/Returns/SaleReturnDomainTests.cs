@@ -104,6 +104,7 @@ public sealed class SaleReturnDomainTests
             SalePaymentMethod.Cash,
             line.LineTotal,
             line.LineTotal,
+            0m,
             line.LineTotal,
             0m,
             null,

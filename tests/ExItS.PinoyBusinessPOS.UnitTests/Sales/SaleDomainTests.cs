@@ -472,7 +472,7 @@ public sealed class SaleDomainTests
     }
 
     [Fact]
-    public void Sale_exposes_no_inventory_tax_or_discount_state()
+    public void Sale_exposes_tax_amount_but_no_inventory_or_discount_state()
     {
         var names = typeof(Sale).GetProperties().Select(p => p.Name)
             .Concat(typeof(SaleLine).GetProperties().Select(p => p.Name))
@@ -480,10 +480,11 @@ public sealed class SaleDomainTests
 
         Assert.Contains("CustomerId", names);
         Assert.Contains("LinkedCreditEntryId", names);
+        Assert.Contains("TaxAmount", names);
 
         foreach (var forbidden in new[]
                  {
-                     "Stock", "QuantityOnHand", "Inventory", "Tax", "Vat", "Discount",
+                     "Stock", "QuantityOnHand", "Inventory", "Vat", "Discount",
                      "Refund", "Tip", "Fee"
                  })
         {

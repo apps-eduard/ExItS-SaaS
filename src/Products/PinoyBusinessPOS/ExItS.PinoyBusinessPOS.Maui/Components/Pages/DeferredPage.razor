@@ -1,6 +1,7 @@
 @page "/more"
 @inject NavigationManager Nav
 @inject NavigationGate Gate
+@inject IUtangCapabilityEvaluator Capabilities
 @inject IStringLocalizer<PosResources> L
 
 <Page>
@@ -44,6 +45,15 @@
                 <Button Variant="ButtonVariant.Primary" OnClick="GoRegisters">@L["Nav_Registers"]</Button>
             </Stack>
         </Section>
+        @if (Capabilities.IsAllowed(UtangCapability.ManageOperationalSetup))
+        {
+            <Section Title="@L["Setup_Title"]">
+                <Stack Gap="3">
+                    <div class="pos-muted">@L["Setup_Subtitle"]</div>
+                    <Button Variant="ButtonVariant.Primary" OnClick="GoSetup">@L["Nav_Setup"]</Button>
+                </Stack>
+            </Section>
+        }
         <Section Title="@L["Shifts_Title"]">
             <Stack Gap="3">
                 <div class="pos-muted">@L["Shifts_Subtitle"]</div>
@@ -109,6 +119,7 @@
     private void GoSuppliers() => Nav.NavigateTo("/suppliers");
     private void GoPurchasing() => Nav.NavigateTo("/purchasing");
     private void GoRegisters() => Nav.NavigateTo("/registers");
+    private void GoSetup() => Nav.NavigateTo("/setup");
     private void GoShifts() => Nav.NavigateTo("/shifts");
     private void GoPermissions() => Nav.NavigateTo("/permissions");
     private void GoDashboard() => Nav.NavigateTo("/dashboard");

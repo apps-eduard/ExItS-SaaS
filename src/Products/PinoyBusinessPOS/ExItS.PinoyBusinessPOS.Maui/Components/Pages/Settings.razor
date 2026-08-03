@@ -12,6 +12,7 @@
 @inject IOfflineOperationQueue OfflineQueue
 @inject NavigationGate Gate
 @inject NavigationManager Nav
+@inject IUtangCapabilityEvaluator Capabilities
 @inject IStringLocalizer<PosResources> L
 
 <Page>
@@ -82,6 +83,18 @@
             </Stack>
         </Card>
     </Section>
+
+    @if (Capabilities.IsAllowed(UtangCapability.ManageOperationalSetup))
+    {
+        <Section Title="@L["Setup_Title"]">
+            <Card>
+                <Stack Gap="3">
+                    <div class="pos-muted">@L["Setup_Subtitle"]</div>
+                    <Button Variant="ButtonVariant.Secondary" OnClick="GoSetup">@L["Nav_Setup"]</Button>
+                </Stack>
+            </Card>
+        </Section>
+    }
 
     <Section Title="@L["Settings_AboutSectionTitle"]">
         <Card>
@@ -163,6 +176,8 @@
     private void GoSwitchOrg() => Nav.NavigateTo("/organization-select");
 
     private void GoDevOffline() => Nav.NavigateTo("/dev/offline-foundation");
+
+    private void GoSetup() => Nav.NavigateTo("/setup");
 
     private async Task OpenLogoutAsync()
     {

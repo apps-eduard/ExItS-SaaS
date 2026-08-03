@@ -1,0 +1,201 @@
+@page "/setup"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosOperationalSetupClient SetupClient
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageOperationalSetup);
+    var readOnly = !canManage || _isOffline;
+<Page>
+    <PageHeader Title="@L["Setup_Title"]" Subtitle="@L["Setup_Subtitle"]">
+        <Actions>
+            @if (_setup?.IsCompleted == true)
+            {
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoHome">@L["Setup_BackToHome"]</Button>
+            }
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Setup_OfflineTitle"]" Message="@L["Setup_OfflineMessage"]" />
+    }
+    else if (!canManage)
+    {
+        <Alert Tone="AlertTone.Info" Title="@L["Setup_ReadOnlyTitle"]" Message="@L["Setup_ReadOnlyMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_formError))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@L["Setup_ErrorTitle"]" Message="@_formError" />
+    }
+
+    <Section Title="@L["Setup_StoreSection"]">
+        <TextInput Label="@L["Setup_StoreDisplayName"]" Value="@_storeDisplayName" ValueChanged="v => _storeDisplayName = v" Disabled="@readOnly" />
+        <TextInput Label="@L["Setup_CurrencyCode"]" Value="@_currencyCode" ValueChanged="v => _currencyCode = v" Disabled="@readOnly" />
+        <Select Label="@L["Setup_TaxPricingMode"]"
+                Value="@_taxPricingMode"
+                ValueChanged="v => _taxPricingMode = v ?? TaxExclusive"
+                Options="TaxModeOptions"
+                Disabled="@readOnly" />
+        <TextInput Label="@L["Setup_TaxRatePercent"]" Value="@_taxRatePercentText" ValueChanged="v => _taxRatePercentText = v" Disabled="@readOnly" />
+    </Section>
+
+    <Section Title="@L["Setup_ReceiptSection"]">
+        <TextInput Label="@L["Setup_ReceiptHeader"]" Value="@_receiptHeader" ValueChanged="v => _receiptHeader = v" Disabled="@readOnly" />
+        <TextInput Label="@L["Setup_ReceiptFooter"]" Value="@_receiptFooter" ValueChanged="v => _receiptFooter = v" Disabled="@readOnly" />
+        <TextInput Label="@L["Setup_BusinessAddress"]" Value="@_businessAddress" ValueChanged="v => _businessAddress = v" Disabled="@readOnly" />
+        <TextInput Label="@L["Setup_ContactPhone"]" Value="@_contactPhone" ValueChanged="v => _contactPhone = v" Disabled="@readOnly" />
+    </Section>
+
+    @if (canManage)
+    {
+        <FormActions>
+            <Button Variant="ButtonVariant.Primary"
+                    IsLoading="@_saving"
+                    Disabled="@readOnly"
+                    OnClick="SaveAsync">
+                @(_setup?.IsCompleted == true ? L["Setup_SaveChanges"] : L["Setup_Complete"])
+            </Button>
+        </FormActions>
+    }
+</Page>
+}
+
+@code {
+    private const string TaxExclusive = "TaxExclusive";
+    private const string TaxInclusive = "TaxInclusive";
+
+    private bool _ready;
+    private bool _saving;
+    private bool _isOffline;
+    private PosOperationalSetupDto? _setup;
+    private string? _storeDisplayName;
+    private string? _currencyCode = "PHP";
+    private string _taxPricingMode = TaxExclusive;
+    private string? _taxRatePercentText = "0";
+    private string? _receiptHeader;
+    private string? _receiptFooter;
+    private string? _businessAddress;
+    private string? _contactPhone;
+    private string? _formError;
+
+    private IReadOnlyList<SelectOption> TaxModeOptions =>
+    [
+        new(TaxExclusive, L["Setup_TaxExclusive"].Value),
+        new(TaxInclusive, L["Setup_TaxInclusive"].Value)
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewOperationalSetup))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        await LoadAsync();
+        _ready = true;
+    }
+
+    private async Task LoadAsync()
+    {
+        var result = await SetupClient.GetAsync();
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _formError = ApiLocalizer.Describe(result.Status, result.Error).Message;
+            return;
+        }
+
+        ApplySetup(result.Data);
+    }
+
+    private void ApplySetup(PosOperationalSetupDto setup)
+    {
+        _setup = setup;
+        _storeDisplayName = setup.StoreDisplayName;
+        _currencyCode = setup.CurrencyCode;
+        _taxPricingMode = setup.TaxPricingMode;
+        _taxRatePercentText = setup.TaxRatePercent.ToString("0.##");
+        _receiptHeader = setup.ReceiptHeader;
+        _receiptFooter = setup.ReceiptFooter;
+        _businessAddress = setup.BusinessAddress;
+        _contactPhone = setup.ContactPhone;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_saving || _isOffline || !Capabilities.IsAllowed(UtangCapability.ManageOperationalSetup))
+        {
+            return;
+        }
+
+        _formError = null;
+        if (!decimal.TryParse(_taxRatePercentText, out var taxRate))
+        {
+            _formError = L["Setup_InvalidTaxRate"];
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            var completeRequest = new CompleteOperationalSetupRequest(
+                _storeDisplayName ?? string.Empty,
+                _currencyCode ?? "PHP",
+                _taxPricingMode,
+                taxRate,
+                _receiptHeader,
+                _receiptFooter,
+                _businessAddress,
+                _contactPhone);
+
+            var result = _setup?.IsCompleted == true
+                ? await SetupClient.UpdateAsync(new UpdateOperationalSetupRequest(
+                    completeRequest.StoreDisplayName,
+                    completeRequest.CurrencyCode,
+                    completeRequest.TaxPricingMode,
+                    completeRequest.TaxRatePercent,
+                    _setup.UpdatedAtUtc,
+                    completeRequest.ReceiptHeader,
+                    completeRequest.ReceiptFooter,
+                    completeRequest.BusinessAddress,
+                    completeRequest.ContactPhone))
+                : await SetupClient.CompleteAsync(completeRequest);
+
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _formError = ApiLocalizer.Describe(result.Status, result.Error).Message;
+                return;
+            }
+
+            ApplySetup(result.Data);
+            if (result.Data.IsCompleted)
+            {
+                Nav.NavigateTo("/home", replace: true);
+            }
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void GoHome() => Nav.NavigateTo("/home");
+}

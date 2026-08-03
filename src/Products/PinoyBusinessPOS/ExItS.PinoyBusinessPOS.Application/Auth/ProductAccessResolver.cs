@@ -95,6 +95,9 @@ public sealed class ProductAccessResolver(IPlatformAccessClient accessClient) : 
         "entitlement_missing" => "Access_EntitlementMissing",
         "entitlement_stale" => "Access_EntitlementStale",
         "entitlement_denied" => "Access_EntitlementDenied",
+        "product_local_role_missing" => "Access_RoleMissing",
+        "product_local_role_inactive" => "Access_RoleMissing",
+        "product_role_missing" => "Access_RoleMissing",
         _ => "Access_Denied"
     };
 

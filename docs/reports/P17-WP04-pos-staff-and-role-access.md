@@ -1,0 +1,50 @@
+# P17-WP04 — POS Staff and Role Access
+
+| Field | Value |
+|---|---|
+| Status | **Complete** (reconciled + access messaging) |
+| Phase | [Phase 17](../phases/phase-17-pos-mvp-operational-onboarding-and-first-sale.md) |
+| Final Phase 17 commit | See [P17-WP08](P17-WP08-reports-hardening-and-closeout.md) |
+| Date | 2026-07-29 |
+
+## Objective
+
+Complete POS product-local role management for Owner, Manager (StoreManager), and Cashier without mixing Organization roles.
+
+## Existing functionality reused
+
+- POS `AssignPosRole` / `RevokePosRole`, `PosRoleAssignment` persistence, Permission endpoints.
+- Platform product-local role grants (P16-WP09) with membership checks on Platform Admin assign/launch.
+- Role-based Maui navigation via capability evaluator; API `PosRoleAuth`.
+- Immediate denial after revoke/suspension/entitlement loss via bearer + commercial + role middleware.
+
+## Implementation summary
+
+- Confirmed MVP mapping: Owner → Owner/Admin; Manager → StoreManager; Cashier → Cashier.
+- Creating Organization Staff does not auto-grant POS roles (Platform residual + POS assignment explicit).
+- Access messaging updated so missing POS role is explicit (WP01).
+- No custom roles introduced.
+
+## Files / components changed
+
+- Role matrix: `ManageOperationalSetup` Owner/Admin only (WP02).
+- WP01 access strings / reason mapping.
+
+## Authorization and isolation behavior
+
+- Assign/revoke require `ManagePermissions`.
+- Platform launch requires active membership + entitlement + product-local role.
+- POS API never trusts UI-only authorization.
+
+## Tests executed and results
+
+- Platform `ProductAuthorizationAndDiscoveryTests` / `ApiProductAccessNavigationTests` (role missing, entitlement-only, revoke blocks launch).
+- POS role matrix unit tests including operational setup manage.
+
+## Deferred items
+
+- POS-native `AssignPosRole` live Platform membership callback in Testing (Platform already enforces membership for product-local grants used for launch). Viewer/InventoryStaff remain available for Full POS but are not Phase 17 MVP labels.
+
+## Commit reference
+
+Final Phase 17 commit recorded in P17-WP08.

@@ -79,7 +79,9 @@ public enum UtangCapability
     ViewPermissions = 30,
     ManagePermissions = 31,
     ViewRegisters = 32,
-    ManageRegisters = 33
+    ManageRegisters = 33,
+    ViewOperationalSetup = 34,
+    ManageOperationalSetup = 35
 }
 
 /// <summary>
@@ -230,6 +232,10 @@ public static class UtangCapabilityPolicy
             UtangCapability.ManageRegisters =>
                 IsFullCommercialState(status)
                 && HasFeature(grants, PosFeatureCodes.StoreRegistersManage),
+
+            UtangCapability.ViewOperationalSetup => CanEnter(status, grants),
+
+            UtangCapability.ManageOperationalSetup => IsFullCommercialState(status),
 
             _ => false
         };

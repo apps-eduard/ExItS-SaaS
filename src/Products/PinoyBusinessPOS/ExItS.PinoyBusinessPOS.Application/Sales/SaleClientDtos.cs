@@ -20,6 +20,7 @@ public sealed record PosSaleDto(
     string PaymentMethod,
     decimal Subtotal,
     decimal Total,
+    decimal TaxAmount,
     decimal? AmountTendered,
     decimal? ChangeAmount,
     string? GCashReference,
@@ -36,7 +37,13 @@ public sealed record PosSaleDto(
     DateOnly? LinkedCreditDueDate = null,
     decimal? CustomerOutstandingAfter = null,
     Guid? ShiftId = null,
-    string? ShiftNumber = null);
+    string? ShiftNumber = null,
+    Guid? RegisterId = null,
+    string? RegisterCode = null,
+    string? RegisterName = null,
+    string? StoreDisplayName = null,
+    string? CurrencyCode = null,
+    string? TaxPricingMode = null);
 
 /// <summary>
 /// One requested checkout line. Only the product identity and quantity are accepted — name, unit of

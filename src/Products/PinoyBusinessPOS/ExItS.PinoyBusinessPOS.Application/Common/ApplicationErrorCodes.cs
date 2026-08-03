@@ -83,6 +83,8 @@ public static class ApplicationErrorCodes
     public const string RegisterNameConflict = "pos.register.name.conflict";
     public const string RegisterCodeConflict = "pos.register.code.conflict";
     public const string RegisterConcurrencyConflict = "pos.register.concurrency_conflict";
+
+    public const string OperationalSetupConcurrencyConflict = "pos.operational_setup.concurrency_conflict";
 }
 
 public sealed class PersistenceConflictException : Exception

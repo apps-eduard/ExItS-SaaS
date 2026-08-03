@@ -238,8 +238,11 @@
   <data name="AccessConfirm_OrgLabel" xml:space="preserve"><value>Organization</value></data>
   <data name="AccessConfirm_Allowed" xml:space="preserve"><value>Pinapayagan ang access</value></data>
   <data name="AccessConfirm_Enter" xml:space="preserve"><value>Pumasok sa Home</value></data>
-  <data name="AccessConfirm_RoleBoundaryTitle" xml:space="preserve"><value>Commercial access lang</value></data>
-  <data name="AccessConfirm_RoleBoundaryMessage" xml:space="preserve"><value>Hindi nito ina-assign ang Cashier, Store Manager, o POS Administrator. Ang product-local roles ay sa susunod na phase.</value></data>
+  <data name="AccessConfirm_RoleBoundaryTitle" xml:space="preserve"><value>Mga kinakailangan sa POS access</value></data>
+  <data name="AccessConfirm_RoleBoundaryMessage" xml:space="preserve"><value>Kailangan ng aktibong membership sa organisasyon, aktibong POS entitlement, at aktibong product-local POS role (Owner, Manager, o Cashier). Ang Organization Owner lang ay hindi sapat para sa POS access.</value></data>
+  <data name="Access_RoleMissing" xml:space="preserve"><value>Kailangan ng aktibong POS role. Hindi sapat ang membership o entitlement lang.</value></data>
+  <data name="Access_NoEntitlement" xml:space="preserve"><value>Walang aktibong POS entitlement ang organisasyong ito.</value></data>
+  <data name="Access_UnauthorizedTitle" xml:space="preserve"><value>Hindi awtorisado para sa POS</value></data>
   <data name="Auth_Logout" xml:space="preserve"><value>Mag-sign out</value></data>
   <data name="Auth_LogoutConfirmTitle" xml:space="preserve"><value>Mag-sign out?</value></data>
   <data name="Auth_LogoutConfirmMessage" xml:space="preserve"><value>Maki-clear ang secure session data sa device na ito.</value></data>
@@ -751,6 +754,10 @@
   <data name="Sales_LinesSection" xml:space="preserve"><value>Mga item</value></data>
   <data name="Sales_Field_PaymentMethod" xml:space="preserve"><value>Paraan ng bayad</value></data>
   <data name="Sales_Field_Subtotal" xml:space="preserve"><value>Subtotal</value></data>
+  <data name="Sales_Field_Tax" xml:space="preserve"><value>Buwis</value></data>
+  <data name="Sales_Field_Store" xml:space="preserve"><value>Tindahan</value></data>
+  <data name="Sales_Field_Register" xml:space="preserve"><value>Rehistro</value></data>
+  <data name="Sales_Field_Cashier" xml:space="preserve"><value>Cashier</value></data>
   <data name="Sales_Field_AmountTendered" xml:space="preserve"><value>Ibinayad</value></data>
   <data name="Sales_Field_ChangeAmount" xml:space="preserve"><value>Sukli</value></data>
   <data name="Sales_Field_GCashReference" xml:space="preserve"><value>GCash reference</value></data>
@@ -1276,6 +1283,30 @@
   <data name="Registers_Edit" xml:space="preserve"><value>Edit</value></data>
   <data name="Registers_BackToList" xml:space="preserve"><value>Back to registers</value></data>
   <data name="Registers_NotFound" xml:space="preserve"><value>Register was not found.</value></data>
+  <data name="Setup_Title" xml:space="preserve"><value>Operational setup</value></data>
+  <data name="Setup_Subtitle" xml:space="preserve"><value>I-configure ang store identity, tax, at receipt details bago ang daily operations.</value></data>
+  <data name="Setup_StoreSection" xml:space="preserve"><value>Store at tax</value></data>
+  <data name="Setup_ReceiptSection" xml:space="preserve"><value>Receipt at contact</value></data>
+  <data name="Setup_StoreDisplayName" xml:space="preserve"><value>Store display name</value></data>
+  <data name="Setup_CurrencyCode" xml:space="preserve"><value>Currency code</value></data>
+  <data name="Setup_TaxPricingMode" xml:space="preserve"><value>Tax pricing mode</value></data>
+  <data name="Setup_TaxExclusive" xml:space="preserve"><value>Tax exclusive (idinagdag sa presyo)</value></data>
+  <data name="Setup_TaxInclusive" xml:space="preserve"><value>Tax inclusive (kasama sa presyo)</value></data>
+  <data name="Setup_TaxRatePercent" xml:space="preserve"><value>Tax rate (%)</value></data>
+  <data name="Setup_ReceiptHeader" xml:space="preserve"><value>Receipt header</value></data>
+  <data name="Setup_ReceiptFooter" xml:space="preserve"><value>Receipt footer</value></data>
+  <data name="Setup_BusinessAddress" xml:space="preserve"><value>Business address</value></data>
+  <data name="Setup_ContactPhone" xml:space="preserve"><value>Contact phone</value></data>
+  <data name="Setup_Complete" xml:space="preserve"><value>Complete setup</value></data>
+  <data name="Setup_SaveChanges" xml:space="preserve"><value>Save changes</value></data>
+  <data name="Setup_BackToHome" xml:space="preserve"><value>Back to home</value></data>
+  <data name="Setup_OfflineTitle" xml:space="preserve"><value>Offline</value></data>
+  <data name="Setup_OfflineMessage" xml:space="preserve"><value>Kailangan ng online connection para sa operational setup.</value></data>
+  <data name="Setup_ReadOnlyTitle" xml:space="preserve"><value>View only</value></data>
+  <data name="Setup_ReadOnlyMessage" xml:space="preserve"><value>Owners at admins lang ang puwedeng mag-complete o magbago ng operational setup.</value></data>
+  <data name="Setup_ErrorTitle" xml:space="preserve"><value>Setup error</value></data>
+  <data name="Setup_InvalidTaxRate" xml:space="preserve"><value>Maglagay ng valid tax rate mula 0 hanggang 100.</value></data>
+  <data name="Nav_Setup" xml:space="preserve"><value>Operational setup</value></data>
   <data name="Shifts_RegisterSection" xml:space="preserve"><value>Register</value></data>
   <data name="Shifts_RegisterLabel" xml:space="preserve"><value>Pumili ng rehistro</value></data>
   <data name="Shifts_NoRegisterTitle" xml:space="preserve"><value>No available register</value></data>

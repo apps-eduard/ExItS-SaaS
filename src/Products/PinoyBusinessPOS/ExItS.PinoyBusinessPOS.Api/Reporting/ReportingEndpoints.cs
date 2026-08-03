@@ -26,6 +26,7 @@ internal static class ReportingEndpoints
         reports.MapGet("/expenses", GetExpensesReport);
         reports.MapGet("/overview", GetOperationalOverview);
         reports.MapGet("/sales-summary", GetSalesSummary);
+        reports.MapGet("/sales-by-cashier", GetSalesByCashier);
         reports.MapGet("/sales-by-payment", GetSalesByPayment);
         reports.MapGet("/sales-by-product", GetSalesByProductOperational);
         reports.MapGet("/returns", GetReturnsReport);
@@ -266,6 +267,28 @@ internal static class ReportingEndpoints
         }
 
         var result = await reports.GetSalesSummaryAsync(organizationId, from, to, ct).ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetSalesByCashier(
+        HttpRequest request,
+        string? fromDate,
+        string? toDate,
+        OperationalReportService reports,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorizeReport(request, access, PosOperationalReportKind.SalesByCashier, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        if (!TryParseOptionalDates(fromDate, toDate, out var from, out var to, out problem))
+        {
+            return problem!;
+        }
+
+        var result = await reports.GetSalesByCashierAsync(organizationId, from, to, ct).ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);
     }
 
