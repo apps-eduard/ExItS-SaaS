@@ -1,192 +1,229 @@
-# Data Ownership
+# Data Ownership and Authority
 
-[Architecture](architecture.md) | [Security](security.md) | [Data authority matrix](data-authority-matrix.md) | [Capability boundary](platform-product-capability-boundary.md) | [Contracts](platform-product-contracts.md) | [Classification](data-classification-matrix.md) | [Extraction sequence](../reuse/extraction-sequence.md) | [ADR-012](../decisions/ADR-012-versioned-platform-contracts-and-local-projections.md) | [ADR-013](../decisions/ADR-013-build-new-platform-before-healthcare-reconnection.md)
+[Architecture summary](approved-architecture-summary.md) | [Capability boundary](platform-product-capability-boundary.md) | [Contracts](platform-product-contracts.md)
 
-**Work package:** P1-WP02 (ownership docs); **P2-WP02** identity; **P2-WP03** commercial; **P2-WP04** outbound HC projection contracts (Platform-side only); **P2-WP05** migration dry-run validation (no real migration); **P3-WP02** organization + subscription persistence; **P4-WP02** Platform users, organization memberships, and product-access assignments (no product-local roles); **P4-WP03** Admin subscription/payment/trial workflows over existing Phase 3 persistence (no new commercial migration); **P4-WP04** Platform role assignments + append-only audit records (`platform.platform_role_assignments`, `platform.audit_records`).
-**Status:** Authoritative ownership + projection rules; identity/commercial domain + contract adaptation foundation in code; org/subscription rows for commercial lifecycle; authorization/audit tables for Platform Admin closeout
-
-Authoritative field-level matrix: [data-authority-matrix.md](data-authority-matrix.md). Contract shapes: [platform-product-contracts.md](platform-product-contracts.md).
-
-## Global rules
-
-1. One system of record per data type.
-2. Replication is **Platform → product projection** for commercial/identity facts only (unless a future approved product→Platform contract exists — none for operational domain today).
-3. No cross-database foreign keys; no direct cross-product DB access; no shared EF entities/DbContexts.
-4. Update authority = system of record (except products **apply** projection rows from Platform events/snapshots).
-5. Deletion of Platform entities does **not** cascade into product DBs; use explicit workflows.
-6. Legal retention periods: **pending compliance (OD-10)**.
+**Version:** 2.0  
+**Status:** Authoritative  
+**Current phase:** Phase 16 — P16-WP11 validation  
+**Last reconciled:** 2026-08-03
 
 ---
 
-## Platform database (summary)
+## 1. Permanent rule
 
-Users, organizations, memberships, products, plans, subscriptions, SaaS payments, entitlements/overrides, Platform system role assignments, Platform audit records.
+> Platform owns commercial and global identity truth. Products own operational truth.
 
-## HealthCare database (summary)
-
-Clinics, staff assignments, patients, appointments, medical notes, clinical authz, HC audit.
-
-## PinoyBusinessPOS database (summary)
-
-**P6-WP01 (customers):** Database `ExItS_PinoyBusinessPOS`, schema `pos`, table `customers`. OrganizationId is a Platform organization GUID value only (no cross-database FK). Soft deactivate; no physical delete. Notes are identification only — not credit records.
-
-**P6-WP02 (remarks-based credit):** Same database/schema, table `credit_entries`. Organization-owned append-only credit history with explicit reversal. Outstanding was initially active credits only.
-
-**P6-WP03 (payments and ledger):** Same database/schema, table `repayments`. Append-only repayments with explicit reversal and actor metadata. Unified ledger is a read model (UNION), not a persisted ledger table. Outstanding = active credits − active repayments. Inactive customers may repay existing debt. SaaS subscription payments remain distinct.
-
-**P6-WP04 (due dates and overdue):** Same database/schema. Nullable `current_due_date` on `credit_entries`; append-only `credit_due_date_changes` history (reason, actor, UTC). FIFO aging and overdue status are read models only — no persisted payment allocations. Effective business date = server UTC calendar day (org timezone not defined). Outstanding formula unchanged.
-
-**P6-WP05 (statements, receipts, trial rules):** Same database/schema — **no new tables/migrations**. Customer statements and repayment receipts are read-model projections. Receipt reference `RCPT-{guid:N}` is deterministic from repayment id. Commercial capability matrix and Platform continuity entry for PinoyBusinessPOS only (Suspended denies; PastDue/Cancelled/Expired continuity). Outstanding formula unchanged.
-
-**P8-WP01 (catalog and barcode):** Same database/schema — tables `pos.product_categories`, `pos.products` (migration `AddPosCatalogAndBarcodes`). OrganizationId is a Platform organization GUID value only (no cross-database FK). Soft Active/Inactive; no hard delete. Optional SKU/barcode uniqueness reserved while inactive. Server PostgreSQL is system of record; **no offline catalog cache or queue**.
-
-**P8-WP02 (simple sales):** Same database/schema — tables `pos.sales`, `pos.sale_lines`, `pos.sale_number_sequences` (migration `AddPosSimpleSales`). Sale lines snapshot catalog identity/price at checkout; product FK is restrictive. **No inventory balances or stock movements.** Online-only — cart is in-memory MAUI state only.
-
-**P8-WP03 (Product-Based Utang):** Same database/schema — migration `AddProductBasedUtang` adds `sales.customer_id`, `sales.linked_credit_entry_id`, `credit_entries.source_sale_id`, and payment method `Utang`. One atomic sale + linked remarks credit; credit amount equals sale total. Linked credit reverse only via sale void. **No inventory.** Online-only.
-
-**P8-WP04 (basic inventory):** Same database/schema — migration `AddPosBasicInventory` adds `pos.inventory_accounts`, `pos.stock_movements`. On-hand is movement-derived (denormalized projection protected). Sale checkout/void write SaleDeduction / SaleVoidRestoration movements. Online-only — no local stock projections.
-
-**P10-WP02 (purchasing):** Same database/schema — migrations add purchase orders, goods receipts, and `PurchaseReceipt` stock movements. Online-only.
-
-**P10-WP03 (advanced inventory):** Migration `AddPosAdvancedInventory` adds `reorder_quantity` on `inventory_accounts`, `inventory_reorder_changes`, `stock_counts`, `stock_count_lines`, `stock_count_number_sequences`, and stock-count variance movement types/sources. On-hand remains movement-derived; reconciliation compares on-hand to movement sum. Online-only.
-
-**P8-WP05 (expenses):** Same database/schema — migration `AddPosExpenses` adds `pos.expense_categories`, `pos.expenses`, `pos.expense_number_sequences`. Immutable expense entries; void corrections; derived summaries. Online-only — no local expense projections.
-
-**P8-WP06 (dashboard/reports):** No new tables. Read-only projections over existing `pos` sales, credit, inventory, and expense records.
-
-**P8-WP07 (Basic Store closeout):** No schema change. Reconciled Phase 8 migrations `AddPosCatalogAndBarcodes` → `AddPosSimpleSales` → `AddProductBasedUtang` → `AddPosBasicInventory` → `AddPosExpenses`. Confirmed absence of deferred supplier/tax/accounting/report-cache tables in `pos`.
-
-**P7-WP01 local device ownership (foundation only):** per-user/org/product SQLite files under the MAUI sandbox hold schema/context metadata only (`local_schema_info`, `local_context_info`). DeviceId lives in SecureStorage, not SQLite. No tokens, entitlements, customers, or financial rows locally.
-
-**P7-WP02 local queue ownership:** same isolated SQLite files also hold encrypted `offline_operations` outbox rows and `local_sync_meta`. Payloads are ciphertext-only; encryption key is SecureStorage-only. Server owns `pos.idempotency_records` for replay proofs (not duplicated business transactions).
-
-**P7-WP03 local encrypted customer/credit projections:** same isolated SQLite files also hold encrypted local customer and credit read-model rows (row-level AES-GCM; no plaintext PII or financial amounts). Server PostgreSQL (`pos.customers`, `pos.credit_entries`, etc.) remains system of record. Local rows are projections + pending offline mutations only; never authoritative over server state. Outstanding is derived — confirmed vs pending effects distinguished; no editable balance column.
-
-**P7-WP04 local encrypted repayment projections:** same isolated SQLite files also hold encrypted `local_repayment_projection` rows (schema v4). Server PostgreSQL `pos.repayments` remains system of record — no local mirror table named `repayments`. Repayment amount/remarks encrypted at row level. Projected outstanding = confirmed + pending credit − pending repayment (never below zero locally). Offline statements/receipts remain online read-model projections only (not queued offline).
-
-**P7-WP05 closeout:** pending due-date/reversal reasons live in encrypted projection JSON (legacy plaintext columns NULLed). Conflict JSON stores safe metadata only. Context isolation and OD-10 retention unchanged. Full-database encryption remains deferred.
-
-**OD-10 (resolved for pending ops):** Pending operations remain encrypted across logout and access loss, isolated to their original context, and are never processed until that context is reauthorized. They are not silently deleted. No time-based retention period is invented.
-
-Later POS ownership (not yet implemented): businesses, stores/branches/registers, retail payments, sales, inventory, expenses, suppliers, offline catalog cache (deferred), POS audit, **entitlement projection rows**.
+No cross-database foreign keys and no shared DbContext across bounded contexts.
 
 ---
 
-## Ownership catalog
+## 2. Platform database ownership
 
-### Platform user
+The Platform database owns:
 
-| Aspect | Rule |
-|---|---|
-| System of record | Platform |
-| Stable ID | PlatformUserId |
-| Replication | → products: DisplayName, status, access facts (see identity projection) |
-| Prohibited replication | Credentials, tokens, MFA, login history dumps |
-| Update / audit / deletion | Platform |
-| Retention | Platform (+ OD-10); products keep historical actor refs |
-| Projection | Optional identity cache; not auth SoR |
-
-### Platform organization
-
-| Aspect | Rule |
-|---|---|
-| System of record | Platform |
-| Stable ID | PlatformOrganizationId |
-| Replication | → products: name, slug, status, coarse subscription status |
-| Prohibited | Product clinic/store trees as Platform SoR |
-| Update / audit / deletion | Platform |
-| Retention | Platform |
-| Projection | Org projection row per product |
-
-### Membership
-
-| Aspect | Rule |
-|---|---|
-| System of record | Platform |
-| Stable ID | OrganizationMembershipId |
-| Replication | → products: membership/access status needed for gate |
-| Prohibited | Mixing HC StaffMember as Platform SoR |
-| Update / audit / deletion | Platform |
-| Projection | Membership/access summary |
-
-### Product / plan / subscription / entitlement / SaaS payment
-
-| Aspect | Rule |
-|---|---|
-| System of record | Platform |
-| Stable IDs | ProductCode, PlanCode+PlanVersion, SubscriptionId, EntitlementVersion/SnapshotId, SaaSPaymentId |
-| Replication | → products: status, plan, feature map/limits, grace/suspend, payment **status** refs only |
-| Prohibited | Product-owned billing ledger; POS retail/credit payments as SaaSPayment |
-| Update / audit / deletion | Platform |
-| Projection | Full commercial entitlement snapshot locally |
-
-**P3-WP04:** Platform persists authoritative `feature_overrides` and immutable `entitlement_snapshots` (+ grants). Product-local projection storage and delivery remain product-owned and out of scope.
-
-### Platform role assignment (P4-WP04)
-
-| Aspect | Rule |
-|---|---|
-| System of record | Platform |
-| Stable ID | PlatformRoleAssignmentId |
-| Table | `platform.platform_role_assignments` |
-| Scope | Platform-wide (`OrganizationId` null) or organization-scoped |
-| Replication | None to products (Platform Admin operations only) |
-| Prohibited | Product-local roles (Doctor, Cashier, etc.); clinical/POS permissions |
-| Update / audit / deletion | Platform (revoke is status change; mutations audited) |
-| Retention | Platform (+ OD-10) |
-
-### Platform audit record (P4-WP04)
-
-| Aspect | Rule |
-|---|---|
-| System of record | Platform |
-| Stable ID | AuditRecordId |
-| Table | `platform.audit_records` (append-only) |
-| Contents | Actor, action code, target, organization, product code, correlation id, outcome, reason, safe summary, UTC |
-| Prohibited | Passwords, tokens, card/GCash secrets, PHI, raw payloads, exception dumps |
-| Replication | None to products |
-| Retention | Platform; archival policy pending (R-096 / OD-10) |
-
-### Clinic / patient / appointment / medical note
-
-| Aspect | Rule |
-|---|---|
-| System of record | HealthCare |
-| Stable IDs | ClinicId, PatientId, AppointmentId, NoteId |
-| Replication | **None** to Platform commercial contracts |
-| Prohibited | Clinical payloads in Platform events/audit |
-| Update / audit / deletion / retention | HealthCare |
-| Projection | N/A (domain-local) |
-
-### POS business / store / branch / register / customer / credit / catalog / sale / inventory / supplier / retail payment / device state
-
-| Aspect | Rule |
-|---|---|
-| System of record | PinoyBusinessPOS |
-| Stable IDs | POSBusinessId, StoreId, BranchId, RegisterId, POSCustomerId, Credit*/Sale*/RetailPaymentId/CreditPaymentId, DeviceId later |
-| Replication | **None** to Platform except correlation metadata |
-| Prohibited | Treating Customer as Platform User; SaaSPayment confusion; storing GCash secrets |
-| Update / audit / deletion / retention | POS |
-| Projection | May store PlatformOrganizationId / UserId as values; entitlement projection separate |
-| MVP payment methods | Sale: `cash`, `gcash`, `customer-credit`. Credit repayment: `cash`, `gcash`. GCash = manual verification + required normalized reference. See [pinoy-business-pos-requirements.md](../product/pinoy-business-pos-requirements.md). |
-
-### Entitlement projection row
-
-| Aspect | Rule |
-|---|---|
-| System of record | **Commercial facts:** Platform; **row storage:** Product |
-| Stable ID | (PlatformOrganizationId, ProductCode, EntitlementVersion) / SnapshotId |
-| Replication | Platform → product only |
-| Update authority | Product applies Platform events/snapshots only |
-| Audit | Product apply audit + Platform source EventId |
-| Deletion | Product may prune old versions per policy; must not invent entitlements |
-| Behavior | See [entitlement-state-matrix.md](entitlement-state-matrix.md) |
+- User Identity
+- credentials and verification
+- Account Profiles: Platform, Personal, Organization
+- sessions, refresh tokens, revocation, security stamps
+- Organizations
+- Organization memberships and Organization roles
+- Product catalog
+- Plans
+- Plan prices and limits
+- trial policy
+- Organization Subscriptions
+- agreed-price snapshots
+- SaaS Payments
+- Plan-change requests
+- Product Entitlements
+- entitlement revisions and overrides
+- Product provisioning intent/status metadata
+- Platform roles and permissions
+- Platform audit and security events
+- Local Validation configuration metadata, never Production secrets
 
 ---
 
-## Prohibited coupling (ownership)
+## 3. Personal data ownership
 
-- Cross-DB FKs / shared DbContext
-- Product as SaaS billing SoR
-- Platform as clinical or retail operational SoR
-- Silent cascade deletes across boundaries
+Personal scope owns:
+
+- Personal settings
+- Personal contacts
+- Personal Utang records
+- Personal reminders
+- Personal relationship invitations
+- Personal notification preferences
+- migration source metadata
+
+Personal data is not automatically copied, merged, or synchronized with Organization data.
+
+---
+
+## 4. Organization data ownership
+
+Platform/Organization boundary owns:
+
+- Organization profile and status
+- membership
+- Organization Owner/Staff role
+- Subscription selection
+- billing-cycle choice
+- Plan-change request
+- Organization-level settings that are not Product operational settings
+- Organization audit references
+
+Product operational Organization data remains in the Product database.
+
+---
+
+## 5. Pinoy Business POS database ownership
+
+Authoritative location:
+
+```text
+Database: ExItS_PinoyBusinessPOS
+Schema: pos
+```
+
+The POS database owns:
+
+- POS business workspace
+- branches
+- stores
+- registers
+- terminals/devices
+- Product-local staff profiles where required
+- POS Product-role assignments and Product permissions
+- customers
+- catalog, categories, SKU, barcode
+- inventory and stock movements
+- sales and sale lines
+- returns and voids
+- retail payments
+- cash sessions
+- Customer Credit / Utang
+- credit repayments and reversals
+- expenses
+- purchasing and suppliers
+- reports
+- offline local/sync metadata
+- Product-local audit
+
+---
+
+## 6. Payment separation
+
+| Payment type | Owner | Example |
+|---|---|---|
+| SaaS Payment | Platform | Organization pays ExITS for Business Plan |
+| POS Retail Payment | POS | customer pays store for a sale |
+| POS Credit Repayment | POS | customer pays existing Utang balance |
+
+These must not share entities or tables.
+
+`LocalValidationPaymentProvider` applies only to Platform SaaS Payments.
+
+---
+
+## 7. Cross-boundary references
+
+Products may store stable value references:
+
+```text
+PlatformUserId
+PlatformOrganizationId
+OrganizationMembershipId
+SubscriptionId
+ProductKey
+PlanKey
+EntitlementRevision
+CorrelationId
+```
+
+These are not database foreign keys to Platform tables.
+
+---
+
+## 8. Projections
+
+A POS commercial projection may store:
+
+- Organization identifier and display name
+- Subscription ID/status
+- Plan key/version
+- Entitlement revision
+- feature grants and limits
+- trial/grace/expiry facts
+- effective and refresh timestamps
+- source event/version
+
+Projection rules:
+
+- versioned
+- idempotent
+- additive where possible
+- no authority to change Platform commercial state
+- no unnecessary Personal data
+- no payment secrets
+- no Platform credentials
+
+---
+
+## 9. Start a Business transaction ownership
+
+Platform orchestration creates:
+
+- Organization Account Profile
+- Organization
+- Owner membership
+- Subscription
+- Entitlement
+- provisioning request
+- Product-owner bootstrap request
+
+Product provisioning creates:
+
+- Organization Product Instance
+- Product-owned workspace
+- explicit Product-local POS Owner assignment
+
+The Personal Account and Personal data remain unchanged unless a separate migration operation is explicitly approved.
+
+---
+
+## 10. Migration ownership
+
+Personal-to-business migration is:
+
+- source read from Personal ownership
+- destination write to the selected Organization/Product
+- explicit and selective
+- previewed
+- idempotent
+- auditable
+- protected against duplicates
+- protected against cross-Organization import
+- consent-aware for linked participants
+
+After migration, the Organization Product owns the created destination operational records.
+
+No automatic two-way synchronization is allowed.
+
+---
+
+## 11. Retention and destructive behavior
+
+Subscription expiry, cancellation, suspension, downgrade, or payment failure must not automatically delete:
+
+- Organization
+- memberships
+- Product Instance
+- Product operational data
+- Product-role history
+- billing history
+- audit records
+
+Downgrade retains over-limit data and blocks new over-limit creation according to policy.
+
+Local Validation reset is an explicit environment-only operation and must fail closed outside Local Validation.

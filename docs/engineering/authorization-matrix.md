@@ -1,105 +1,288 @@
 # Authorization Matrix
 
-[Security](security.md) | [Authentication architecture](authentication-architecture.md) | [Home](../index.md) | [Capability boundary §12](platform-product-capability-boundary.md) | [Extraction sequence](../reuse/extraction-sequence.md) | [P4-WP04 report](../reports/P4-WP04-audit-authorization-and-closeout.md)
+[Architecture summary](approved-architecture-summary.md) | [Capability boundary](platform-product-capability-boundary.md) | [Contracts](platform-product-contracts.md)
 
-Platform grants **product access**; each product owns **operational permissions**. Platform Administrator does not automatically receive unrestricted clinical or POS operational access (break-glass deferred).
+**Version:** 2.0  
+**Status:** Authoritative  
+**Current phase:** Phase 16 — P16-WP11 validation  
+**Last reconciled:** 2026-08-03
 
-**P13-WP01 update:** Production authentication architecture locks the chain Platform User → Organization Membership → Product Access / Entitlement → Product-Local Role. See [authentication-architecture.md](authentication-architecture.md). **R-091 remains open** (no auth implementation in P13-WP01).
+---
 
-**P3-WP02 note:** Organization and subscription REST endpoints are development-stage regarding **authentication** (no JWT/passwords/MFA/SSO/AD).
-
-**P6-WP01 / P6-WP02 / P6-WP03 / P6-WP04 / P6-WP05 note:** POS customer, credit, repayment, ledger, due-date, overdue, statement, and receipt routes require `X-Pos-Organization-Id`. Commercial capability gates use Development-stage `X-Pos-Subscription-Status` and `X-Pos-Feature-Grants` (not production-secure). Repayment record/reverse and due-date set/clear also require Development/Testing actor header `X-Dev-Platform-User-Id`. Cross-organization access returns 404. Product entry vs feature authorization are separate (Suspended denies; PastDue/Cancelled/Expired continuity only). Development/Testing Platform identity remains the MAUI auth path.
-
-**P10-WP06 / P12-WP01 update:** Product-local POS operational roles (Owner, Admin, StoreManager, Cashier, InventoryStaff, ReportingUser) and grants are **implemented** via `PosRole` / `PosRoleMatrix`. Platform product access still does **not** grant operational permission. Production authentication remains open (**R-091**).
-
-## Authorization layers (fail closed)
+## 1. Authorization formula
 
 ```text
-Platform-wide system role
-→ organization membership role
-→ product-access assignment
-→ product-local authorization (never granted by Platform Admin)
+Authorization
+= active User Identity
++ active Account Profile
++ session bound to correct Account Class and scope
++ active Organization membership where required
++ valid Organization role
++ valid Subscription where required
++ enabled Product Entitlement
++ ready Product Instance
++ active Product-local role
++ operation permission
++ resource ownership
++ tenant isolation
 ```
 
-## Platform organization membership roles (P2-WP02)
+Every layer fails closed.
 
-Modeled in Domain as `OrganizationRole`:
+Navigation visibility is not authorization.
 
-| Role | Scope |
+---
+
+## 2. Account-class boundaries
+
+| Session | Allowed API families |
 |---|---|
-| OrganizationOwner | Platform organization ownership |
-| OrganizationAdministrator | Platform organization administration |
-| OrganizationMember | Platform organization participation |
+| Platform | Platform APIs only |
+| Personal | Personal APIs only |
+| Organization | Organization and authorized Product APIs only |
 
-These do **not** grant product-local permissions (Doctor, Cashier, etc.). Platform system roles remain separate from organization membership roles.
+Cross-class calls are denied before domain execution.
 
-## Platform system roles and permissions (P4-WP04)
+A session must never silently change Account Class.
 
-Assignments may be **platform-wide** (`OrganizationId` null) or **organization-scoped**. Cross-organization access fails closed.
+---
 
-| Permission code | PlatformAdministrator | BillingAdministrator | PlatformSupport |
+## 3. Platform roles
+
+Initial Platform roles:
+
+```text
+Platform Administrator
+Platform Support
+```
+
+Optional later roles may include Billing Administrator, Platform Auditor, and Platform Operations.
+
+### Platform permission matrix
+
+| Permission | Platform Administrator | Platform Support |
+|---|---:|---:|
+| `platform.accounts.view` | Yes | Yes |
+| `platform.platform-staff.manage` | Yes | No |
+| `platform.accounts.security-manage` | Yes | Limited by explicit permission |
+| `platform.organizations.view` | Yes | Yes |
+| `platform.catalog.manage` | Yes | No |
+| `platform.plans.manage` | Yes | No |
+| `platform.subscriptions.view` | Yes | Yes |
+| `platform.subscriptions.manage` | Yes | No |
+| `platform.entitlements.view` | Yes | Yes |
+| `platform.entitlements.manage` | Yes | No |
+| `platform.test-payments.view` | Local Validation only | Local Validation only |
+| `platform.test-payments.simulate` | Local Validation only | No by default |
+| `platform.audit.view` | Yes | Yes |
+| `platform.support-session.start` | According to explicit permission | According to explicit permission |
+
+`platform.test-payments.*` must not exist as an effective Production permission.
+
+Platform Admin may create or invite Platform Staff only. It must not normally create active Personal or Organization users.
+
+---
+
+## 4. Personal permissions
+
+| Permission | Personal Account |
+|---|---:|
+| `personal.profile.view` | Yes |
+| `personal.profile.manage` | Yes |
+| `personal.contacts.manage` | Yes |
+| `personal.utang.manage-own` | Yes |
+| `personal.business.start` | Yes, verified identity required |
+| `personal.organization.manage` | No |
+| `personal.platform.manage` | No |
+| `personal.pos.launch` | No from Personal session |
+
+`personal.business.start` initiates an orchestration that creates an explicit Organization profile and new Organization. It does not grant Organization operations to the existing Personal session.
+
+---
+
+## 5. Organization roles
+
+User-facing roles:
+
+```text
+Owner
+Staff
+```
+
+| Permission | Owner | Staff |
+|---|---:|---:|
+| `organization.profile.view` | Yes | Yes |
+| `organization.profile.manage` | Yes | No |
+| `organization.staff.view` | Yes | According to policy |
+| `organization.staff.invite` | Yes | No by default |
+| `organization.staff.manage-membership` | Yes | No |
+| `organization.subscription.view` | Yes | According to policy |
+| `organization.subscription.change-plan` | Yes | No |
+| `organization.billing.view` | Yes | No by default |
+| `organization.products.view` | Yes | Yes |
+| `organization.product-roles.manage` | Yes, within Product policy | No by default |
+| `organization.audit.view` | Yes | According to policy |
+
+The final active Owner is protected server-side from suspension, deactivation, removal, or demotion.
+
+---
+
+## 6. Start a Business authorization
+
+Required:
+
+1. authenticated Personal session
+2. verified active User Identity
+3. active Personal Account Profile
+4. accepted required terms
+5. authorized Product and active Plan
+6. one-trial-per-Organization/Product policy
+7. idempotency key
+8. no client-controlled assignment to an existing unrelated Organization
+
+Result:
+
+```text
+explicit Organization Account Profile
++ new Organization
++ Owner membership in new Organization only
++ Organization Subscription
++ Product Entitlement
++ Product provisioning
++ explicit POS Owner bootstrap
+```
+
+The resulting Organization session is newly issued or explicitly selected.
+
+---
+
+## 7. Commercial authorization
+
+### Trial
+
+| Action | Organization Owner | Platform Administrator |
+|---|---:|---:|
+| Start approved trial during onboarding | Yes | Support/repair only |
+| View trial dates | Yes | Yes |
+| Extend trial | No by default | Yes only with explicit permission, reason, and audit |
+| Start repeated trial | No | No unless explicit exception policy |
+
+### Plan change
+
+| Action | Organization Owner | Platform Administrator | Staff |
 |---|---:|---:|---:|
-| `platform.permission.view_portfolio` | Yes | Yes | Yes |
-| `platform.permission.manage_organizations` | Yes | Yes | No |
-| `platform.permission.manage_catalog` | Yes | No | No |
-| `platform.permission.manage_platform_users` | Yes | No | No |
-| `platform.permission.manage_memberships` | Yes | No | Yes |
-| `platform.permission.manage_product_access` | Yes | No | Yes |
-| `platform.permission.manage_subscriptions` | Yes | Yes | No |
-| `platform.permission.manage_manual_payments` | Yes | Yes | No |
-| `platform.permission.manage_entitlement_overrides` | Yes | No | No |
-| `platform.permission.view_audit_records` | Yes | Yes | Yes |
+| View Plans | Yes | Yes | According to policy |
+| Preview upgrade/downgrade | Yes | Yes | No |
+| Upgrade | Yes | Yes, audited | No |
+| Schedule downgrade | Yes | Yes, audited | No |
+| Bypass payment result | No | Local Validation simulation only | No |
+| Change another Organization | No | Yes only through Platform permission | No |
 
-Source of truth: `PlatformPermission` + `PlatformRolePermissionCatalog` in Domain.
+### Test payment
 
-### Capability summary (legacy matrix view)
+A Local Validation payment simulation requires:
 
-| Capability | Platform Admin | Billing Admin | Support Agent |
-|---|---:|---:|---:|
-| View organizations / portfolio | Yes | Yes | Yes |
-| Manage products/plans | Yes | No | No |
-| Manage Platform users | Yes | No | No |
-| Manage memberships / product access | Yes | No | Yes |
-| Activate / manage subscriptions | Yes | Yes | No |
-| Confirm manual SaaS payments | Yes | Yes | No |
-| Manage entitlement overrides | Yes | No | No |
-| View platform audit | Yes | Yes | Yes |
+- Local Validation environment
+- feature/configuration enabled
+- authorized Platform or Organization test action
+- current Organization/Subscription validation
+- idempotency
+- audit
 
-## Development operator limitation (not production authentication)
+The API must reject test-payment simulation in Production even when a client displays or submits the action.
 
-- APIs remain without JWT / passwords / MFA / SSO / Active Directory.
-- `DevelopmentOperator` receives full Platform permissions only when `DevelopmentAuthorizationOptions.GrantDevelopmentOperatorFullAccess` is true (**Development/Testing hosts only**).
-- Optional header `X-Dev-Platform-User-Id` selects a Platform User principal whose permissions come **strictly** from role assignments (for denial and scope tests).
-- Never enable development-operator full access in production configuration.
+---
 
-## Server-side enforcement
+## 8. Product access
 
-- Authoritative check: `PlatformAuthz.EnsureAsync` on sensitive mutation endpoints.
-- Denial: fail closed → `403` ProblemDetails + append-only denied audit record.
-- UI hiding of nav items / buttons must not be treated as authorization.
+Required for POS launch:
 
-## PinoyBusinessPOS roles
+```text
+Active identity
++ Organization session
++ active membership in active Organization
++ valid Subscription state
++ enabled Entitlement
++ ready Product Instance
++ active POS Product role
+```
 
-Product-local operational roles live in `ExItS_PinoyBusinessPOS` / schema `pos` (P10-WP06). They are **not** Platform roles. Authoritative matrix: `PosRoleMatrix` + `store-*` feature grants + commercial state.
+POS roles:
 
-Roles: **Owner**, **Admin**, **StoreManager**, **Cashier**, **InventoryStaff**, **ReportingUser**.
+```text
+POS Owner
+Store Manager
+Cashier
+Reporting User
+```
 
-| Concern | Status |
-|---|---|
-| Product-local POS roles | Implemented (P10-WP06) |
-| First-owner bootstrap / last-owner protection | Implemented |
-| Register permissions | `store-registers-view/manage` (P10-WP07) |
-| Production authentication (JWT/MFA/SSO) | **Open — R-091** |
+Product roles are separate from Organization roles.
 
-Platform Admin never assigns POS operational roles. Exact capability intersections are enforced by API/unit tests; UI hiding is not authorization.
+Correct:
 
-Historical note: older “Manager / View profit” rows below are superseded by the product-local matrix (no P&L/profit reports in Full POS).
+```text
+Organization role: Owner
+POS role: POS Owner
+```
 
-| Capability (illustrative) | Owner/Admin | StoreManager | Cashier | InventoryStaff | ReportingUser |
-|---|---:|---:|---:|---:|---:|
-| Manage POS role assignments | Yes | No | No | No | No |
-| Catalog / sales / shifts / returns (ops) | Yes | Yes | Partial | Partial | View-oriented |
-| Inventory manage / stock counts | Yes | Yes | No | Yes | View |
-| Purchasing manage (receive-scoped for InventoryStaff) | Yes | Yes | No | Partial | View |
-| Registers manage | Yes | Yes | No | No | No |
-| Operational reports | All | All | Own shift/cash variance | Inventory/purchasing family | All |
+Incorrect:
+
+```text
+Organization role: Cashier
+Account class: POS Owner
+```
+
+---
+
+## 9. Organization staff invitation
+
+Required:
+
+1. authenticated Organization session
+2. active membership
+3. staff-management permission
+4. active Organization resolved server-side
+5. valid requested Organization role: Owner or Staff
+6. optional Product role validated separately
+7. email/identity linking handled explicitly
+8. membership constrained to current Organization
+
+The normal Organization UI uses human fields and email. Raw User ID linking is support-only, permission-gated, reason-required, and audited.
+
+---
+
+## 10. Subscription and entitlement enforcement
+
+- Trialing and Active permit operations only according to feature grants and Product role.
+- PastDue follows explicit grace policy.
+- Suspended denies protected operations.
+- Cancelled and Expired deny new paid operations and may permit explicit continuity grants.
+- Missing, invalid, stale beyond policy, or unsupported Entitlement fails closed.
+- Plan limits are enforced server-side.
+- Downgrade over-limit state retains existing data but blocks additional over-limit creation.
+
+---
+
+## 11. Cross-tenant protections
+
+- Active Organization is resolved server-side.
+- Browser-provided Organization ID is never trusted alone.
+- Every Organization-owned query includes an Organization predicate.
+- Cross-Organization access is denied without revealing sensitive existence.
+- Organization switching clears Organization/Product caches and in-memory session state.
+- Product role assignment is constrained to the same Organization and Product.
+- Payment, Subscription, Entitlement, and provisioning identifiers are validated against the active Organization.
+
+---
+
+## 12. Production restrictions
+
+Production must reject:
+
+- development authorization headers
+- Local Validation payment simulation
+- Local Validation reset/reseed
+- shared validation passwords
+- quick login
+- automatic account-profile inference
+- fixed `10.0.2.2` endpoints as production URLs

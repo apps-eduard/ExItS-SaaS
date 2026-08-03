@@ -1,248 +1,321 @@
 # Platform–Product Capability Boundary
 
-[Home](../index.md) | [Ownership matrix](capability-ownership-matrix.md) | [Data authority](data-authority-matrix.md) | [ADR-011](../decisions/ADR-011-platform-authority-and-product-local-projections.md) | [Final portfolio boundaries](final-portfolio-boundaries.md)
+[Architecture summary](approved-architecture-summary.md) | [Contracts](platform-product-contracts.md) | [Authorization](authorization-matrix.md) | [Data ownership](data-ownership.md)
 
-**Work package:** P1-WP01 (boundaries); Phase 1 closed via P1-WP04 / ADR-014
-**Status:** Authoritative for Phase 1+ (documentation)
-**Date:** 2026-07-29
+**Version:** 2.0  
+**Status:** Authoritative  
+**Current phase:** Phase 16 — P16-WP11 validation  
+**Last reconciled:** 2026-08-03
 
 ---
 
 ## 1. Purpose
 
-Define the authoritative capability boundary between ExITS Platform, HealthCare, PinoyBusinessPOS, shared contracts, and engineering conventions so later implementation does not put product logic in Platform, duplicate commercial ownership, couple products, or require synchronous Platform calls for normal product operations.
+Define the permanent ownership and security boundary between the ExITS Platform and each Product so implementation does not:
 
-## 2. Definitions
+- place Product operational logic in Platform
+- duplicate commercial ownership inside Products
+- grant Product permissions from Platform membership alone
+- mix SaaS payments with retail or credit payments
+- create synchronous Platform coupling for every Product operation
+- leak Personal or tenant data across scopes
 
-| Term | Meaning |
-|---|---|
-| **Platform Organization** | Global SaaS customer/account boundary |
-| **Product** | Deployable SaaS offering (HealthCare, PinoyBusinessPOS) |
-| **Subscription** | Commercial right for an organization to use a product under a plan |
-| **Entitlement** | Feature codes and limits granted by subscription/override |
-| **Local projection** | Product-owned cache of Platform commercial/identity facts needed for offline-safe decisions |
-| **Operational permission** | Product-local authorization to perform domain actions |
-| **Product access** | Platform decision that an organization/user may use a product at all |
+---
 
-## 3. Boundary principles
+## 2. Core boundary principles
 
-1. One primary owner per capability (system of record).
-2. Products may project Platform data; projection ≠ ownership.
-3. No cross-database foreign keys; no direct cross-product DB access.
-4. No shared EF entities across bounded contexts.
-5. Normal product operations must not synchronously call Platform on every request.
-6. Clinical payloads never enter Platform contracts; POS operational payloads never enter entitlement contracts.
-7. Framework-specific UI is product-local (ADR-010).
-8. Shared code only after two verified consumers and product-neutral design.
-9. Do not rename Patient↔Customer or Clinic↔Store.
-10. HealthCare remains frozen/ignored until an approved import WP.
+1. One authoritative owner per capability.
+2. Platform owns identity, account profiles, Organizations, Plans, Subscriptions, SaaS Payments, and Entitlements.
+3. Products own operational data, operational workflows, Product-local roles, and Product-local audit.
+4. Products may store versioned Platform projections; projection is not ownership.
+5. No cross-database foreign keys.
+6. No shared DbContext or shared mutable Product entities.
+7. Product access and Product operational permission are separate.
+8. Platform Administrator does not automatically receive tenant operational access.
+9. SaaS Payment, POS Retail Payment, and POS Credit Repayment are separate concepts.
+10. Client-supplied Organization IDs are never authoritative.
 
-## 4. Platform ownership
+---
 
-Global identity and users; credentials and session/refresh lifecycle; Platform Organizations and memberships; product catalog; plans/trials/subscriptions; SaaS payments and billing status; entitlements and organization feature overrides; Platform Admin (native UI); Platform support ops; Platform audit and security events; subscription lifecycle jobs; Platform notifications (trial/payment/security).
+## 3. Platform ownership
 
-**P2-WP02 code status:** Domain models and Application contracts exist for Platform User, Organization, Membership, organization roles, and `ProductCode` / minimal product access. Credentials, sessions, catalog, plans, subscriptions, and entitlements are **not** implemented yet.
+The Platform is system of record for:
 
-**P2-WP03 code status:** Domain/Application foundation exists for Product, FeatureDefinition, Plan, PlanVersion, TrialDefinition, Subscription, FeatureOverride, EntitlementSnapshot, and deterministic composition. Persistence, SaaS payment collection, invoices, and transport remain **not** implemented.
+- User Identity
+- credentials, verification, activation, suspension, sessions, and revocation
+- Platform, Personal, and Organization Account Profiles
+- Organizations
+- Organization memberships and Organization roles
+- Product catalog
+- Plans and Plan pricing
+- trial policy
+- Organization Subscriptions
+- SaaS Payments
+- subscription lifecycle
+- Product Entitlements
+- entitlement revisions and overrides
+- Product provisioning intent and status metadata
+- Platform Admin
+- Platform audit, security events, and support operations
+- trial, payment, renewal, and suspension notifications
 
-**P2-WP04 code status:** Versioned outbound projection contracts and HealthCare delivery/reconciliation interfaces exist in Platform Application. HealthCare remains frozen; no transport, no HC DB access, no cutover.
+The Platform must not own POS sales, inventory, Utang transactions, Product customers, cash sessions, or Product operational roles.
 
-## 5. HealthCare ownership
+---
 
-Clinics; clinical workforce (doctor/nurse/receptionist/clinic admin); Patients and patient self-scope; appointments, availability, reminders; medical notes and amendments; clinical permissions and authorization; clinical and HC product audit details; HC product workflows; Staff Web Ant Design UI; PatientWeb and MAUI clinical UX; HC Hangfire jobs (reminders/summaries).
+## 4. Personal ownership
 
-## 6. PinoyBusinessPOS ownership
+Personal scope owns:
 
-POS business/operating profile; stores, branches, registers; POS roles/memberships; Customers; CustomerCredit / Utang, credit entries/payments, ledgers; catalog products, barcodes; sales; inventory; expenses; suppliers; purchasing; shifts; returns/refunds; POS reports; offline storage and sync state; POS notifications and jobs; native MAUI UI.
+- Personal profile settings
+- Personal contacts
+- Personal Utang relationships
+- personal reminders
+- personal notification preferences
+- Personal-to-business onboarding initiation
 
-## 7. Shared contracts
+A Personal Account does not directly own:
 
-Versioned DTOs/events for: UserId, PlatformOrganizationId, product code, plan code/version, subscription id/status, entitlement snapshot, correlation IDs, UTC timestamps, explicit status enums. Idempotent entitlement updates. Contract tests. Additive evolution and deprecation policy.
+- an Organization Subscription
+- a Product Entitlement
+- an Organization membership
+- a POS role
+- tenant operational data
 
-## 8. Shared conventions
+When a Personal user selects **Start a Business**, the Platform explicitly creates an Organization Account Profile and a new Organization. The Personal profile remains separate.
 
-ProblemDetails shape; pagination/filter request models; validation conventions; localization key conventions (`en`/`fil`); semantic design-token **names**; accessibility and motion standards; logging correlation; UTC time handling. Prefer conventions and patterns before packages.
+---
 
-## 9. Explicit non-shared areas
+## 5. Organization ownership
 
-| Prohibited | Reason |
-|---|---|
-| Cross-DB FKs / shared DbContext | Coupling and extraction risk |
-| Shared domain entity bases / generic repositories | Fake reuse |
-| Shared product permission catalogs | Roles differ by product |
-| Ant Design / Tailwind in Platform Admin or POS | ADR-010 |
-| Shared UI pages / Ant↔native switcher | Framework coupling |
-| Clinical data in Platform audit/events | Privacy / regulation |
-| SaaS billing ledger inside products | Wrong system of record |
-| POS retail payment entities as Platform payments | Different business |
+An Organization owns or controls:
 
-## 10. Identity boundary
+- Organization profile
+- Organization memberships
+- Organization role assignments
+- subscription selection and approved Plan-change requests
+- tenant settings
+- Organization-scoped audit references
+- Product Instances associated with that Organization
 
-| Concern | Owner |
-|---|---|
-| Global UserId, email, credentials, verification, activation/suspension | Platform |
-| Login attempts, refresh tokens, sessions, revocation, user security events | Platform |
-| User profile (global) | Platform |
-| Product access (may use product) | Platform |
-| HealthCare Patient profile | HealthCare |
-| POS Customer | POS |
-| Product-local employee/staff profiles | Product |
-| Dev-only test identities | Dev/test only; disabled outside Development/Testing |
-
-**Rules:** Platform owns global authentication identity. Products reference stable Platform UserId. Patient ≠ global user. POS Customer is **not** automatically a Platform User. Store customers may exist **without** login accounts. Future customer login (Customer ↔ Platform User link) is **deferred** (open decision). Do not merge Customer and ApplicationUser.
-
-## 11. Organization boundary
-
-```text
-Platform Organization
-├── HealthCare subscription → clinics (1..n)
-└── PinoyBusinessPOS subscription → POS business → stores/branches (1..n) → registers
-```
-
-- Platform Organization = SaaS customer boundary (**yes**).
-- One organization **may** subscribe to multiple products (**yes**).
-- One user **may** belong to multiple organizations (**yes**, target; HC MVP today is limited — generalize on extraction).
-- One organization **may** have multiple clinics/stores/branches (**yes**).
-- Clinic / Store / Branch / Register are product-local operational entities.
-- Mapping: products store `PlatformOrganizationId`; Platform does not store clinic/store tables as system of record.
-
-## 12. Role and permission boundary
-
-### Platform roles (examples)
-
-Platform Administrator, Platform Support, Billing Administrator, Organization Owner, Organization Administrator.
-
-### HealthCare roles
-
-Clinic Administrator, Doctor, Nurse, Receptionist, Patient (+ existing HC staff roles).
-
-### POS roles (documentation-level; do not over-finalize)
-
-Business Owner, Business Administrator, Store Manager, Cashier, Inventory Staff, Reporting User.
-
-| Question | Answer |
-|---|---|
-| Who owns role definitions? | Platform owns Platform roles; each product owns its operational roles |
-| Where stored? | Platform memberships for org/product access; product DBs for operational assignments |
-| Product access vs operational permission? | **Separated** — Platform grants access; product grants operations |
-| Platform Admin unrestricted clinical/POS access? | **No** — requires explicit support/break-glass (break-glass **deferred**) |
-
-## 13. Product catalog and billing boundary
-
-Platform owns: Product, product code/status/version metadata, Plan, plan version, trial definition, Subscription, billing period, Payment (SaaS), Entitlement, feature codes, organization feature override, grace, suspension, cancellation, upgrade/downgrade.
-
-Products may publish known feature identifiers via versioned contracts; Platform owns commercial assignment.
-
-**Not** Platform entitlements: ordinary product settings (e.g. “require stock confirmation before sale”).
+Organization roles for the current model are user-facing:
 
 ```text
-Platform payment → org pays ExITS for software (SaaS; may later include Platform GCash)
-POS sale payment → retail customer pays store (cash | gcash | customer-credit)
-POS credit payment → customer pays Utang balance (cash | gcash)
+Owner
+Staff
 ```
 
-Separate entities, services, permissions, and audit trails. POS MVP GCash is manually verified; direct GCash API integration is deferred. Do not reuse POS retail-payment entities for Platform SaaS billing.
+Organization role is not Product role.
 
-## 14. Entitlement boundary
+---
 
-- **Authoritative:** Platform.
-- **Projection:** each product stores what it needs: PlatformOrganizationId, product code, subscription id, plan code/version, entitlement version, feature codes/limits, effective/expiry/refresh times, subscription/grace/suspension state, last sync, source event/version.
+## 6. Product ownership
 
-**Principle:** Normal product operations must not require a synchronous Platform request on every transaction.
+Pinoy Business POS owns:
 
-High-level behaviors (detail in P1-WP02 / Phase 3): fresh snapshot; temporarily stale OK within policy; Platform unavailable → use fail-safe + grace; trial expiry / suspension / downgrade / feature removed with existing local data; duplicate/out-of-order events; manual override via Platform. Transport/messaging **not** specified here.
+- POS business/operational profile
+- stores and branches
+- registers and cash sessions
+- Product-local staff profiles where needed
+- POS Product roles and permissions
+- customers
+- Personal-to-business imported customer records after explicit migration
+- catalog and barcodes
+- inventory and stock movements
+- sales, returns, and retail payments
+- Customer Credit / Utang and repayments
+- expenses, purchasing, reports
+- offline database and synchronization state
+- Product-local audit
 
-## 15. Audit boundary
+Authoritative Product database:
 
-| Owner | Events |
-|---|---|
-| Platform | Auth, sessions, org/membership, plan/subscription/payment/entitlement, support/admin |
-| HealthCare | Clinical workflows, patient access, appointments, notes, HC authorization |
-| POS | Credit, sales, Cash/GCash retail & credit payments, voids, refunds, inventory, expenses, shifts, store permissions, sync conflicts |
+```text
+Database: ExItS_PinoyBusinessPOS
+Schema: pos
+```
 
-Cross-boundary correlation fields (not combined DBs): CorrelationId, PlatformUserId, PlatformOrganizationId, ProductCode, product-local actor/resource IDs, UTC timestamp, DeviceId (later), request/event id. **No PHI in Platform audit.**
+---
 
-## 16. Notification boundary
+## 7. Commercial hierarchy
 
-Platform: trial/payment/suspension, account security, announcements.  
-HealthCare: appointments/reminders/clinical.  
-POS: credit due, low stock, sync failure, shift/sales/inventory alerts.  
+```text
+Platform Product
+→ Plan
+→ Organization Subscription
+→ Organization Product Entitlement
+→ Organization Product Instance
+→ Organization Product Role Assignment
+```
 
-Content, consent, templates, triggers = domain-owned. Shared delivery abstraction **deferred**.
+Responsibilities:
 
-## 17. Background-job boundary
-
-Each service owns its jobs and preferably its job storage. Sharing Hangfire *patterns* ≠ one shared worker/DB for all products. Platform: subscription lifecycle, entitlement publish. HC: reminders/summaries. POS: sync, offline retries, product notifications.
-
-## 18. UI boundary
-
-| Surface | Technology |
-|---|---|
-| HC Staff Web | Ant Design Blazor (retain) |
-| HC PatientWeb / MAUI | Existing native (retain) |
-| New Platform Admin | Blazor Web App + native CSS/Razor; no Ant; no Tailwind |
-| POS | MAUI Blazor Hybrid + same native foundation |
-
-Share: models, validation/localization conventions, token names, a11y/motion, pagination/filter models.  
-Local: shells, navigation, pages, workflows, framework adapters, HC Ant, POS cashier UX.  
-No Ant↔native conditional component.
-
-## 19. Data ownership table
-
-See [data-authority-matrix.md](data-authority-matrix.md).
-
-## 20. Failure behavior
-
-| Situation | Expectation |
-|---|---|
-| Platform temporarily unavailable | Products continue with valid local projection within policy |
-| Auth unavailable | Existing sessions may continue until expiry/revoke policy; new logins fail |
-| Entitlement stale | Allowed within refresh window; then constrained fail-safe |
-| Subscription suspended | Product enforces projection state (e.g. block new credit) |
-| Product DB unavailable | Product outage; Platform may still manage subscriptions |
-| Offline POS device | Operate on local DB + queued sync (Phase 7 detail) |
-| Delayed/duplicate events | Idempotent projection apply |
-| Contract version mismatch | Compatibility policy; reject unsafe payloads |
-
-Exact SLAs **not** promised here.
-
-## 21. Open decisions (do not guess)
-
-| ID | Question | Status |
+| Concept | Owner | Purpose |
 |---|---|---|
-| OD-01 | Customer ↔ Platform User login linkage | Deferred — see contracts §20 |
-| OD-02 | Break-glass Platform support into product ops | Deferred |
-| OD-03 | Exact entitlement event transport (HTTP poll vs bus) | Deferred — P1-WP02 / Phase 3 |
-| OD-04 | MFA | Deferred |
-| OD-05 | When/how to import HealthCare into monorepo | After Platform foundation (Phase 1–2) |
-| OD-06 | Multi-org membership migration from HC single StaffMember | Phase 2 extraction design |
-| OD-07–OD-09 | Trial post-expiry UX (customer create/edit; historical correction) | **Resolved P6-WP05** — see [contracts §9/§20](platform-product-contracts.md) |
-| OD-10–OD-11 | Legal retention; GCash duplicate hard-block | Carried in [contracts §20](platform-product-contracts.md) / POS requirements |
+| Platform Product | Platform | Defines what ExITS offers |
+| Plan | Platform | Defines price, features, and limits |
+| Subscription | Platform | Commercial enrollment of one Organization in one Plan |
+| SaaS Payment | Platform | Payment for ExITS software service |
+| Entitlement | Platform | Commercial permission for an Organization to use a Product |
+| Product Instance | Product, provisioned from Platform intent | Organization-specific workspace and operational data |
+| Product Role | Product | Authorizes a staff member inside the Product |
 
-P1-WP02 expands contract mechanics in [platform-product-contracts.md](platform-product-contracts.md) and [ADR-012](../decisions/ADR-012-versioned-platform-contracts-and-local-projections.md).
+Permanent rule:
 
-## 22. Enforcement rules
+> Entitlement enables a Product for an Organization. Product Role authorizes a person inside that Product.
 
-- Reviewers reject PRs that put product domain in Platform or Ant in Platform Admin/POS.
-- Contract changes require version bump + consumer tests.
-- Shared packages need two consumers and ADR/governance check.
-- Client-supplied OrganizationId never authoritative.
+---
 
-## Required decisions (P1-WP01 answers)
+## 8. Plan and trial boundary
 
-| # | Decision | Answer |
-|---|---|---|
-| 1 | Platform Organization = global SaaS customer boundary? | **Yes** |
-| 2 | One org multiple products? | **Yes** |
-| 3 | One user multiple orgs? | **Yes** (target) |
-| 4 | Multiple clinics/stores/branches? | **Yes** |
-| 5 | Product roles only in product? | **Yes** (operational roles) |
-| 6 | Platform access vs product permissions? | **Separated** |
-| 7 | Platform authoritative for subscriptions/entitlements? | **Yes** |
-| 8 | Local entitlement projections? | **Yes** |
-| 9 | Cross-DB FKs prohibited? | **Yes** |
-| 10 | Clinical records prohibited from Platform payloads? | **Yes** |
-| 11 | POS Customer ≠ Platform User? | **Yes** |
-| 12 | SaaS payments ≠ POS retail payments? | **Yes** |
-| 13 | Framework UI product-local? | **Yes** |
-| 14 | Shared code only after two consumers? | **Yes** |
+The Platform owns Plan pricing and trial policy.
+
+Current Local Validation defaults:
+
+- Starter: PHP 299 monthly / PHP 2,990 annual
+- Business: PHP 699 monthly / PHP 6,990 annual
+- Pro: PHP 1,499 monthly / PHP 14,990 annual
+- Business trial: 14 days
+
+Prices and trial duration remain configurable.
+
+Personal Utang is a free Personal capability. It is not a separate three-calendar-month Platform Subscription trial.
+
+---
+
+## 9. Payment boundary
+
+```text
+Platform SaaS Payment
+→ Organization pays ExITS for software access
+
+POS Retail Payment
+→ store customer pays the Organization for a sale
+
+POS Credit Repayment
+→ customer pays an existing Organization-owned credit balance
+```
+
+These use separate:
+
+- entities
+- services
+- permissions
+- audit trails
+- idempotency keys
+- provider integrations
+- reporting
+
+`LocalValidationPaymentProvider` exists only for Platform SaaS payment testing and must never be reused for retail checkout.
+
+---
+
+## 10. Start a Business boundary
+
+Platform and web onboarding own:
+
+```text
+Personal user initiates
+→ Organization profile creation
+→ Organization creation
+→ Owner membership
+→ Plan selection
+→ trial or payment
+→ Subscription
+→ Entitlement
+→ provisioning intent
+→ explicit POS Owner role bootstrap
+```
+
+The POS MAUI application does not own:
+
+- Personal registration
+- Organization creation
+- Plan purchase
+- SaaS payment
+- subscription upgrade/downgrade
+
+MAUI consumes the resulting Organization/Product access contracts after web stabilization.
+
+---
+
+## 11. Authorization boundary
+
+Platform determines:
+
+- identity status
+- account class and scope
+- active Organization membership
+- Subscription and Entitlement state
+- whether the Organization may enter the Product
+
+Product determines:
+
+- Product-local role
+- operation-level permission
+- branch/register scope
+- Product-specific continuity rules
+
+A Platform commercial grant never creates an operational Product role automatically, except an explicitly designed, transactional first-owner bootstrap during Start a Business.
+
+---
+
+## 12. Offline and projection boundary
+
+Products use local projections so normal operations do not synchronously call Platform on every transaction.
+
+A projection may contain:
+
+- PlatformOrganizationId
+- ProductKey
+- SubscriptionId
+- PlanKey and PlanVersion
+- SubscriptionStatus
+- EntitlementRevision
+- feature grants and numeric limits
+- EffectiveAt
+- ExpiresAt or RefreshBy
+- grace and suspension facts
+- source event and correlation identifiers
+
+Rules:
+
+- duplicate and out-of-order updates are idempotent
+- missing, invalid, or unsupported projections fail closed
+- temporarily stale projections follow explicit policy
+- suspension or expiry does not delete Product data
+- offline queued writes must not synchronize when the authoritative commercial state forbids them
+
+---
+
+## 13. Support boundary
+
+Platform support access to tenant operational data is not ordinary scope switching.
+
+A Support Session must be:
+
+- explicit
+- Organization-specific
+- time-limited
+- reason-required
+- read-only by default
+- prominently displayed
+- fully audited
+- independently revocable
+
+Support Session implementation remains separate from normal Platform, Personal, and Organization sessions.
+
+---
+
+## 14. Prohibited models
+
+- Personal Account directly owns an Organization Subscription
+- Organization membership automatically grants POS access
+- Entitlement automatically grants all staff access
+- Product role creates an Entitlement
+- Platform Admin directly operates POS as ordinary staff
+- Platform SaaS Payment is stored as POS Retail Payment
+- Product operational data is stored in Platform
+- Product directly updates Platform commercial tables
+- automatic Personal-to-business ledger synchronization
+- automatic deletion of Product data after downgrade, cancellation, or expiry
