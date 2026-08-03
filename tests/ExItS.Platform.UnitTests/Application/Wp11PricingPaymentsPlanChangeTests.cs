@@ -500,19 +500,23 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
             root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "PersonalStartBusiness.razor"));
         Assert.Contains("Start Free Trial", startBusiness, StringComparison.Ordinal);
         Assert.Contains("Subscribe Now", startBusiness, StringComparison.Ordinal);
-        Assert.Contains("Try Business Free First", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("AssignPosOwnerRole: false", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("Processing test payment", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("AllowSubscribeUxDelay", startBusiness, StringComparison.Ordinal);
+        Assert.DoesNotContain("Try Business Free First", startBusiness, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task Starter_trial_is_rejected()
+    public async Task Starter_trial_is_accepted_with_14_day_duration()
     {
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);
         var start = new StartTrialSubscription(
             ctx.Organizations, ctx.Products, ctx.Plans, ctx.Trials, ctx.Subscriptions, ctx.UnitOfWork, ctx.Clock);
         var result = await start.ExecuteAsync(
             ctx.Organization.Id, ctx.StarterPlan.Id, ctx.StarterVersion.Id, ctx.Trial.Id);
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.TrialNotAllowed, result.ErrorCode);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(SubscriptionStatus.Trialing, result.Value!.Status);
+        Assert.InRange((result.Value.TrialEndUtc!.Value - result.Value.TrialStartUtc!.Value).TotalDays, 13.9, 14.1);
     }
 
     [Fact]
@@ -749,7 +753,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
         {
             var (trialAllowed, trialDays) = code switch
             {
-                MvpPosPlanCodes.Starter => (false, 0),
+                MvpPosPlanCodes.Starter => (true, 14),
                 MvpPosPlanCodes.Business => (true, 14),
                 MvpPosPlanCodes.Pro => (false, 0),
                 _ => (true, 14)

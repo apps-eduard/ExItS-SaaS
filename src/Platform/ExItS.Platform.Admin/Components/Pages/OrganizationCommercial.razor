@@ -38,6 +38,8 @@ else
                     <Alert Type="@_statusAlert.Value.Type" ShowIcon="true" Message="@_statusAlert.Value.Message" Style="margin-bottom:12px;" />
                 }
                 <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1">
+                    <DescriptionsItem Title="Scope">Organization Administration</DescriptionsItem>
+                    <DescriptionsItem Title="Role">@DisplayOrDash(FormatOrgRole(Shell.MembershipRole) ?? Shell.RoleLabel)</DescriptionsItem>
                     <DescriptionsItem Title="Product">@DisplayOrDash(_currentSubscription?.ProductCode ?? DefaultProductCode)</DescriptionsItem>
                     <DescriptionsItem Title="Organization">@DisplayOrDash(_org?.DisplayName)</DescriptionsItem>
                     <DescriptionsItem Title="Current plan">@DisplayOrDash(_currentSubscription?.PlanDisplayName ?? _currentPlan?.DisplayName)</DescriptionsItem>
@@ -334,6 +336,14 @@ else
     }
 
     private static string DisplayOrDash(string? value) => string.IsNullOrWhiteSpace(value) ? "—" : value;
+
+    private static string? FormatOrgRole(string? role) => role switch
+    {
+        "OrganizationOwner" => "Owner",
+        "OrganizationAdministrator" => "Administrator",
+        "OrganizationMember" => "Staff",
+        _ => string.IsNullOrWhiteSpace(role) ? null : role
+    };
 
     private static string AmountDisplay(decimal? amount, string? currency) =>
         amount is null ? "—" : $"{amount:0.00} {currency ?? ""}".Trim();

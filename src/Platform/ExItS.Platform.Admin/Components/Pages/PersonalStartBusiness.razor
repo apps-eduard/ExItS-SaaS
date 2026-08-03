@@ -10,12 +10,14 @@
 @inject PlatformPermissionState Permissions
 @inject PlatformCircuitSession CircuitSession
 @inject PlatformBrowserSessionService SessionService
+@inject LocalValidationSignInService LocalValidation
+@inject IHostEnvironment HostEnvironment
 
 @if (!_ready)
 {
     <div style="padding:2rem;text-align:center;"><Spin /></div>
 }
-else if (!Shell.IsPersonalShell)
+else if (!Shell.IsPersonalShell && !_completed)
 {
     <Result Status="@ResultStatus.Warning" Title="@L["Personal_ShellRequired"]">
         <Extra>
@@ -31,7 +33,7 @@ else if (_completed)
                 @if (_createdOrganizationId is Guid orgId)
                 {
                     <Button Type="@ButtonType.Primary" OnClick="@(() => Nav.NavigateTo($"/admin/organizations/{orgId}/commercial"))">
-                        Open Current Subscription
+                        Open Current Plan
                     </Button>
                 }
                 <Button OnClick='() => Nav.NavigateTo("/admin/account-profiles")'>Choose organization profile</Button>
@@ -52,13 +54,38 @@ else
     </PageHeader>
 
     <FormValidationSummary Title="Start business failed" Message="@_formError" IsConflict="_formConflict" />
+    @if (!string.IsNullOrWhiteSpace(_validationBanner))
+    {
+        <Alert Type="@AlertType.Warning"
+               ShowIcon="true"
+               Closable="false"
+               Style="margin-bottom:16px;"
+               Message="@_validationBanner" />
+    }
+
+    @if (_busy)
+    {
+        <Card Size="@CardSize.Small" Style="margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:16px;">
+                <Spin Size="SpinSize.Large" />
+                <div>
+                    <div style="font-weight:600;">@_progressTitle</div>
+                    <div style="color:var(--ant-color-text-secondary,#8c8c8c);">@_progressDetail</div>
+                </div>
+            </div>
+        </Card>
+    }
 
     <Row Gutter="(16, 16)" Style="margin-bottom:24px;">
         <AntDesign.Col Xs="24" Md="12">
-            <Card Size="@CardSize.Small" Title="Organization details">
+            <Card Size="@CardSize.Small" Title="Organization details" Id="start-business-org-fields">
                 <div style="margin-bottom:12px;">
                     <label class="ant-form-item-label"><span class="ant-form-item-required">Organization name</span></label>
-                    <Input @bind-Value="_displayName" Size="@InputSize.Small" Disabled="_busy" Placeholder="My Store" />
+                    <Input @bind-Value="_displayName"
+                           @bind-Value:after="OnDisplayNameChanged"
+                           Size="@InputSize.Small"
+                           Disabled="_busy"
+                           Placeholder="My Store" />
                     @if (!string.IsNullOrWhiteSpace(_nameError))
                     {
                         <div style="color:#ff4d4f;font-size:12px;margin-top:4px;">@_nameError</div>
@@ -66,7 +93,11 @@ else
                 </div>
                 <div style="margin-bottom:12px;">
                     <label class="ant-form-item-label"><span class="ant-form-item-required">Slug</span></label>
-                    <Input @bind-Value="_slug" Size="@InputSize.Small" Disabled="_busy" Placeholder="my-store" />
+                    <Input @bind-Value="_slug"
+                           @bind-Value:after="OnSlugChanged"
+                           Size="@InputSize.Small"
+                           Disabled="_busy"
+                           Placeholder="my-store" />
                     @if (!string.IsNullOrWhiteSpace(_slugError))
                     {
                         <div style="color:#ff4d4f;font-size:12px;margin-top:4px;">@_slugError</div>
@@ -86,10 +117,11 @@ else
         <AntDesign.Col Xs="24" Md="12">
             <Card Size="@CardSize.Small" Title="What happens next">
                 <Alert Type="@AlertType.Info" ShowIcon="true"
-                       Message="Pick a plan below. We create your organization, start the trial or paid subscription, then switch you into Organization scope." />
+                       Message="Pick a plan below. We create your organization, start the trial or paid subscription, then switch you into Organization Administration." />
                 <ul style="margin:12px 0 0;padding-left:1.25rem;">
-                    <li>Business includes a 14-day free trial (no card).</li>
-                    <li>Starter and Pro require Subscribe Now.</li>
+                    <li>Starter and Business include a 14-day free trial (no card).</li>
+                    <li>Subscribe Now uses the Local Validation test payment provider here.</li>
+                    <li>You become Organization Owner. POS product roles are assigned separately later.</li>
                     <li>Personal utang and profile stay separate.</li>
                 </ul>
             </Card>
@@ -116,16 +148,15 @@ else
                 @foreach (var plan in _plans.OrderBy(p => p.SortOrder))
                 {
                     var planKey = plan.PlanKey ?? plan.Code;
-                    var isBusiness = string.Equals(planKey, "business", StringComparison.OrdinalIgnoreCase);
-                    var isHighlighted = isBusiness && _highlightBusiness;
+                    var isStarter = string.Equals(planKey, "starter", StringComparison.OrdinalIgnoreCase);
                     <AntDesign.Col Xs="24" Sm="24" Md="8">
                         <Card Size="@CardSize.Small"
                               Title="@plan.DisplayName"
-                              Style="@CardStyle(isBusiness || isHighlighted)"
+                              Style="@CardStyle(isStarter)"
                               BodyStyle="display:flex;flex-direction:column;min-height:280px;">
-                            @if (isBusiness)
+                            @if (isStarter)
                             {
-                                <Tag Color="@("blue")" Style="margin-bottom:8px;align-self:flex-start;">Recommended</Tag>
+                                <Tag Color="@("blue")" Style="margin-bottom:8px;align-self:flex-start;">Starter</Tag>
                             }
                             <div style="margin-bottom:8px;">
                                 <div style="font-size:1.25rem;font-weight:600;">@($"{plan.MonthlyPrice:0} {plan.CurrencyCode}")<span style="font-size:0.875rem;font-weight:400;"> / month</span></div>
@@ -148,21 +179,15 @@ else
                             <Space Direction="SpaceDirection.Vertical" Style="width:100%;margin-top:auto;">
                                 @if (plan.TrialAllowed && plan.DefaultTrialDays > 0)
                                 {
-                                    <Button Type="@ButtonType.Primary" Block Loading="_busy"
+                                    <Button Type="@ButtonType.Primary" Block Loading="_busy" Disabled="_busy"
                                             OnClick="@(async () => await SubmitAsync(planKey, startAsTrial: true))">
                                         Start Free Trial
                                     </Button>
                                 }
-                                <Button Type="@(plan.TrialAllowed ? ButtonType.Default : ButtonType.Primary)" Block Loading="_busy"
+                                <Button Type="@(plan.TrialAllowed ? ButtonType.Default : ButtonType.Primary)" Block Loading="_busy" Disabled="_busy"
                                         OnClick="@(async () => await SubmitAsync(planKey, startAsTrial: false, payNow: true))">
                                     Subscribe Now
                                 </Button>
-                                @if (!plan.TrialAllowed && !isBusiness)
-                                {
-                                    <Button Type="@ButtonType.Link" Block Disabled="_busy" OnClick="@SelectBusinessPlan">
-                                        Try Business Free First
-                                    </Button>
-                                }
                             </Space>
                         </Card>
                     </AntDesign.Col>
@@ -178,6 +203,7 @@ else
     private bool _completed;
     private bool _plansLoading = true;
     private string? _formError;
+    private string? _validationBanner;
     private string? _plansError;
     private string? _nameError;
     private string? _slugError;
@@ -185,7 +211,9 @@ else
     private string _displayName = "";
     private string _slug = "";
     private string _billingCycle = "Monthly";
-    private bool _highlightBusiness;
+    private bool _slugTouched;
+    private string _progressTitle = "Working…";
+    private string _progressDetail = "Please wait.";
     private List<PlanDto> _plans = [];
     private Guid? _createdOrganizationId;
     private string _successDetail = "Select your organization profile to continue.";
@@ -247,10 +275,30 @@ else
         }
     }
 
-    private void SelectBusinessPlan()
+    private void OnDisplayNameChanged()
     {
-        _highlightBusiness = true;
-        Message.Info("Business is the recommended free-trial option. Choose Start Free Trial on the Business card.");
+        if (_slugTouched || string.IsNullOrWhiteSpace(_displayName))
+        {
+            return;
+        }
+
+        _slug = SuggestSlug(_displayName);
+    }
+
+    private void OnSlugChanged() => _slugTouched = !string.IsNullOrWhiteSpace(_slug);
+
+    private static string SuggestSlug(string displayName)
+    {
+        var chars = displayName.Trim().ToLowerInvariant()
+            .Select(c => char.IsLetterOrDigit(c) ? c : '-')
+            .ToArray();
+        var slug = new string(chars);
+        while (slug.Contains("--", StringComparison.Ordinal))
+        {
+            slug = slug.Replace("--", "-", StringComparison.Ordinal);
+        }
+
+        return slug.Trim('-');
     }
 
     private bool ValidateForm()
@@ -258,6 +306,7 @@ else
         _nameError = null;
         _slugError = null;
         _formError = null;
+        _validationBanner = null;
         _formConflict = false;
         var ok = true;
 
@@ -266,11 +315,19 @@ else
             _nameError = "Organization name is required.";
             ok = false;
         }
+        else if (!_slugTouched && string.IsNullOrWhiteSpace(_slug))
+        {
+            _slug = SuggestSlug(_displayName);
+        }
 
         if (string.IsNullOrWhiteSpace(_slug))
         {
             _slugError = "Organization slug is required.";
             ok = false;
+        }
+        else
+        {
+            _slugTouched = true;
         }
 
         if (_billingCycle is not ("Monthly" or "Annual"))
@@ -279,8 +336,27 @@ else
             ok = false;
         }
 
+        if (!ok)
+        {
+            _validationBanner = "Fill Organization name and Slug above, then try Start Free Trial or Subscribe again.";
+            _formError ??= _validationBanner;
+        }
+
         return ok;
     }
+
+    private async Task SetProgressAsync(string title, string detail)
+    {
+        _progressTitle = title;
+        _progressDetail = detail;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private bool AllowSubscribeUxDelay =>
+        !HostEnvironment.IsProduction()
+        && (LocalValidation.IsAvailable
+            || HostEnvironment.IsDevelopment()
+            || HostEnvironment.IsEnvironment("Testing"));
 
     private async Task SubmitAsync(string planKey, bool startAsTrial, bool payNow = false)
     {
@@ -294,7 +370,8 @@ else
         {
             if (!ValidateForm())
             {
-                await Message.WarningAsync(_nameError ?? _slugError ?? _formError ?? "Complete the required organization fields first.");
+                await InvokeAsync(StateHasChanged);
+                await Message.WarningAsync(_validationBanner ?? _nameError ?? _slugError ?? _formError ?? "Complete the required organization fields first.");
                 return;
             }
 
@@ -305,6 +382,28 @@ else
                 return;
             }
 
+            if (startAsTrial)
+            {
+                await SetProgressAsync("Creating your business…", "Provisioning organization and Owner membership.");
+            }
+            else
+            {
+                await SetProgressAsync("Processing test payment…", "Charging via Local Validation payment provider.");
+                if (AllowSubscribeUxDelay)
+                {
+                    await Task.Delay(2500);
+                }
+            }
+
+            if (startAsTrial)
+            {
+                await SetProgressAsync("Activating your trial…", "Creating the trial subscription and entitlements.");
+            }
+            else
+            {
+                await SetProgressAsync("Activating your subscription…", "Confirming payment and activating the plan.");
+            }
+
             var result = await Api.StartBusinessAsync(new StartBusinessRequest(
                 _displayName.Trim(),
                 _slug.Trim().ToLowerInvariant(),
@@ -312,26 +411,39 @@ else
                 PlanKey: planKey,
                 BillingCycle: _billingCycle,
                 StartAsTrial: startAsTrial,
-                PayNow: payNow));
+                PayNow: payNow,
+                AssignPosOwnerRole: false));
 
             if (!result.IsSuccess)
             {
                 _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
                 _formError = AdminFormErrorMapper.MapPageError(result) ?? "Start business failed.";
+                _validationBanner = _formError;
+                await InvokeAsync(StateHasChanged);
                 await Message.ErrorAsync(_formError);
                 return;
             }
 
+            await SetProgressAsync("Preparing your organization…", "Switching into Organization Administration.");
+
             var data = result.Data!;
             _createdOrganizationId = data.OrganizationId;
-            if (!string.IsNullOrWhiteSpace(data.SessionToken))
+            if (string.IsNullOrWhiteSpace(data.SessionToken))
             {
-                CircuitSession.SessionToken = data.SessionToken;
-                var (ok, sessionError) = await SessionService.EstablishFromSessionTokenAsync(data.SessionToken);
-                if (!ok)
-                {
-                    await Message.WarningAsync(sessionError ?? "Organization created, but session switch needs a refresh.");
-                }
+                _formError = "Organization was created, but the Organization session token was missing. Stay on this page and retry, or choose the organization profile manually.";
+                _validationBanner = _formError;
+                await Message.ErrorAsync(_formError);
+                return;
+            }
+
+            CircuitSession.SessionToken = data.SessionToken;
+            var (ok, sessionError) = await SessionService.EstablishFromSessionTokenAsync(data.SessionToken);
+            if (!ok)
+            {
+                _formError = sessionError ?? "Organization was created, but the Organization session could not be activated.";
+                _validationBanner = _formError;
+                await Message.ErrorAsync(_formError);
+                return;
             }
 
             await Permissions.RefreshAsync();
@@ -339,8 +451,8 @@ else
 
             _completed = true;
             _successDetail = startAsTrial
-                ? "Trial started. Open Current Subscription or choose the organization profile."
-                : "Subscription started. Open Current Subscription or choose the organization profile.";
+                ? "Trial started. Opening Current Plan in Organization Administration."
+                : "Subscription started. Opening Current Plan in Organization Administration.";
             await Message.SuccessAsync(startAsTrial ? "Business created with free trial." : "Business created and subscribed.");
 
             // Defer navigation so AntDesign DomEventListener finishes handler enumeration.
@@ -354,12 +466,14 @@ else
         catch (Exception ex)
         {
             _formError = "An unexpected error occurred while starting the business. Please retry.";
+            _validationBanner = _formError;
             await Message.ErrorAsync(_formError);
             Console.Error.WriteLine(ex);
         }
         finally
         {
             _busy = false;
+            await InvokeAsync(StateHasChanged);
         }
     }
 }

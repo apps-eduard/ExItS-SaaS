@@ -18,13 +18,13 @@ namespace ExItS.Platform.IntegrationTests;
 [Collection(PostgreSqlCollection.Name)]
 public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixture) : IAsyncLifetime
 {
-    private SessionApiFactory _factory = null!;
+    private Wp11LocalValidationApiFactory _factory = null!;
     private HttpClient _admin = null!;
     private HttpClient _client = null!;
 
     public Task InitializeAsync()
     {
-        _factory = new SessionApiFactory(fixture.ConnectionString);
+        _factory = new Wp11LocalValidationApiFactory(fixture.ConnectionString);
         _admin = _factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
         _client = _factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
         return Task.CompletedTask;
@@ -70,7 +70,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
             payNow = false,
             activatePosEntitlement = true,
             activateProductAccess = true,
-            assignPosOwnerRole = true
+            assignPosOwnerRole = false
         };
 
         using var start = Authed(HttpMethod.Post, "/api/v1/personal/start-business", token, startBody);
@@ -83,8 +83,8 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
         var started = await startResponse.Content.ReadFromJsonAsync<JsonElement>();
         var organizationId = started.GetProperty("organizationId").GetGuid();
         var subscriptionId = started.GetProperty("subscriptionId").GetGuid();
-        Assert.True(started.GetProperty("posOwnerRoleGranted").GetBoolean());
-        Assert.Equal("Owner", started.GetProperty("productLocalRoleCode").GetString());
+        Assert.False(started.GetProperty("posOwnerRoleGranted").GetBoolean());
+        Assert.True(started.GetProperty("organizationOwnerGranted").GetBoolean());
 
         var subscription = await _admin.GetAsync(
             $"/api/v1/platform/subscriptions/{subscriptionId}");
@@ -181,10 +181,11 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
     }
 
     [Fact]
-    public async Task Start_business_starter_trial_is_rejected()
+    public async Task Start_business_starter_trial_creates_trialing_subscription_without_payment()
     {
         await EnsureMvpCatalogAsync();
         var (token, _, _, _) = await SeedPersonalUserAsync("sbstr");
+        var slug = Unique("sbstr");
         using var request = Authed(
             HttpMethod.Post,
             "/api/v1/personal/start-business",
@@ -192,22 +193,83 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
             new
             {
                 displayName = "Starter Trial Store",
-                slug = Unique("sbstr"),
+                slug,
                 productCode = ProductCode.PinoyBusinessPos,
                 planKey = MvpPosPlanCodes.Starter,
+                billingCycle = "Monthly",
                 startAsTrial = true,
                 payNow = false,
-                activatePosEntitlement = true
+                activatePosEntitlement = true,
+                assignPosOwnerRole = false
             });
         var response = await _client.SendAsync(request);
-        var body = await response.Content.ReadAsStringAsync();
-        Assert.True(
-            response.StatusCode is HttpStatusCode.Conflict or HttpStatusCode.BadRequest,
-            $"Unexpected status {response.StatusCode}: {body}");
-        Assert.True(
-            body.Contains(ApplicationErrorCodes.TrialNotAllowed, StringComparison.Ordinal)
-            || body.Contains("trial", StringComparison.OrdinalIgnoreCase),
-            body);
+        if (response.StatusCode != HttpStatusCode.Created)
+        {
+            Assert.Fail($"Starter trial failed ({response.StatusCode}): {await response.Content.ReadAsStringAsync()}");
+        }
+
+        var started = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.False(started.GetProperty("posOwnerRoleGranted").GetBoolean());
+        Assert.True(started.GetProperty("organizationOwnerGranted").GetBoolean());
+        Assert.Equal("Organization", started.GetProperty("accountClass").GetString());
+        Assert.False(string.IsNullOrWhiteSpace(started.GetProperty("sessionToken").GetString()));
+
+        var subscriptionId = started.GetProperty("subscriptionId").GetGuid();
+        var subscription = await _admin.GetAsync($"/api/v1/platform/subscriptions/{subscriptionId}");
+        subscription.EnsureSuccessStatusCode();
+        var subBody = await subscription.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Trialing", subBody.GetProperty("status").GetString());
+        Assert.Equal("Starter", subBody.GetProperty("planDisplayName").GetString());
+
+        var payments = await _admin.GetAsync(
+            $"/api/v1/platform/organizations/{started.GetProperty("organizationId").GetGuid()}/payments?pageSize=20");
+        if (payments.IsSuccessStatusCode)
+        {
+            var payBody = await payments.Content.ReadFromJsonAsync<JsonElement>();
+            if (payBody.TryGetProperty("items", out var items))
+            {
+                Assert.Equal(0, items.GetArrayLength());
+            }
+        }
+    }
+
+    [Fact]
+    public async Task Start_business_starter_subscribe_paynow_activates_paid_subscription()
+    {
+        await EnsureMvpCatalogAsync();
+        var (token, _, _, _) = await SeedPersonalUserAsync("sbpay");
+        var slug = Unique("sbpay");
+        using var request = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/start-business",
+            token,
+            new
+            {
+                displayName = "Starter Paid Store",
+                slug,
+                productCode = ProductCode.PinoyBusinessPos,
+                planKey = MvpPosPlanCodes.Starter,
+                billingCycle = "Monthly",
+                startAsTrial = false,
+                payNow = true,
+                activatePosEntitlement = true,
+                assignPosOwnerRole = false
+            });
+        var response = await _client.SendAsync(request);
+        if (response.StatusCode != HttpStatusCode.Created)
+        {
+            Assert.Fail($"Starter subscribe failed ({response.StatusCode}): {await response.Content.ReadAsStringAsync()}");
+        }
+
+        var started = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(started.GetProperty("organizationOwnerGranted").GetBoolean());
+        Assert.False(started.GetProperty("posOwnerRoleGranted").GetBoolean());
+        var subscriptionId = started.GetProperty("subscriptionId").GetGuid();
+        var subscription = await _admin.GetAsync($"/api/v1/platform/subscriptions/{subscriptionId}");
+        subscription.EnsureSuccessStatusCode();
+        var subBody = await subscription.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Active", subBody.GetProperty("status").GetString());
+        Assert.Equal("Starter", subBody.GetProperty("planDisplayName").GetString());
     }
 
     [Fact]

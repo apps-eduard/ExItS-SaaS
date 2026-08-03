@@ -153,45 +153,10 @@ public sealed class StartOrganizationCommercialSubscription
                 "Plan was not found.");
         }
 
-        var newSubscriptionId = SubscriptionId.New();
-        var idempotencyKey = string.IsNullOrWhiteSpace(request.IdempotencyKey)
-            ? $"org-commercial-{organizationId.Value:N}-{newSubscriptionId.Value:N}"
-            : request.IdempotencyKey.Trim();
-
-        PaymentProviderResult paymentResult;
-        try
-        {
-            paymentResult = await _paymentProvider
-                .ChargeAsync(
-                    new PaymentChargeRequest(
-                        organizationId.Value,
-                        newSubscriptionId.Value,
-                        paidPlan.PriceForCycle(billingCycle),
-                        paidPlan.CurrencyCode,
-                        idempotencyKey,
-                        Purpose: "org-commercial-subscribe"),
-                    cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch (NotSupportedException ex)
-        {
-            return ApplicationResult<Subscription>.Failure(
-                ApplicationErrorCodes.PaymentNotConfigured,
-                ex.Message);
-        }
-
-        await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-        if (paymentResult.Status != PaymentProviderResultStatus.Succeeded)
-        {
-            return ApplicationResult<Subscription>.Failure(
-                ApplicationErrorCodes.PaymentNotConfirmed,
-                paymentResult.FailureMessage ?? "Initial payment was not successful.");
-        }
-
+        // provider_payments.subscription_id is required — activate, then charge the real id.
         var utcNow = _clock.UtcNow;
         var (periodStart, periodEnd) = SubscriptionBillingPeriods.ComputePaidPeriod(utcNow, billingCycle);
-        return await _activatePaid
+        var paid = await _activatePaid
             .ExecuteAsync(
                 organizationId,
                 catalog.Value.PlanId,
@@ -201,6 +166,54 @@ public sealed class StartOrganizationCommercialSubscription
                 billingCycle,
                 cancellationToken)
             .ConfigureAwait(false);
+        if (!paid.IsSuccess || paid.Value is null)
+        {
+            return paid;
+        }
+
+        var activated = paid.Value;
+        var idempotencyKey = string.IsNullOrWhiteSpace(request.IdempotencyKey)
+            ? $"org-commercial-{organizationId.Value:N}-{activated.Id.Value:N}"
+            : request.IdempotencyKey.Trim();
+
+        PaymentProviderResult paymentResult;
+        try
+        {
+            paymentResult = await _paymentProvider
+                .ChargeAsync(
+                    new PaymentChargeRequest(
+                        organizationId.Value,
+                        activated.Id.Value,
+                        paidPlan.PriceForCycle(billingCycle),
+                        paidPlan.CurrencyCode,
+                        idempotencyKey,
+                        Purpose: "org-commercial-subscribe"),
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (NotSupportedException ex)
+        {
+            activated.Cancel(_clock.UtcNow);
+            await _subscriptions.UpdateAsync(activated, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.PaymentNotConfigured,
+                ex.Message);
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        if (paymentResult.Status != PaymentProviderResultStatus.Succeeded)
+        {
+            activated.Cancel(_clock.UtcNow);
+            await _subscriptions.UpdateAsync(activated, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.PaymentNotConfirmed,
+                paymentResult.FailureMessage ?? "Initial payment was not successful.");
+        }
+
+        return ApplicationResult<Subscription>.Success(activated);
     }
 
     private sealed record CatalogSelection(PlanId PlanId, PlanVersionId PlanVersionId, TrialDefinitionId TrialDefinitionId);

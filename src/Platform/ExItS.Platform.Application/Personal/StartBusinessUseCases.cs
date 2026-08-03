@@ -32,7 +32,7 @@ public sealed record StartBusinessRequest(
     bool PayNow = false,
     bool ActivatePosEntitlement = true,
     bool ActivateProductAccess = true,
-    bool AssignPosOwnerRole = true);
+    bool AssignPosOwnerRole = false);
 
 public sealed record StartBusinessResultDto(
     Guid OrganizationId,
@@ -334,7 +334,6 @@ public sealed class StartBusinessForPersonalUser
 
             if (request.PayNow)
             {
-                var newSubscriptionId = SubscriptionId.New();
                 var plan = await _plans.GetByIdAsync(catalog.Value.PlanId, cancellationToken).ConfigureAwait(false);
                 if (plan is null)
                 {
@@ -343,36 +342,7 @@ public sealed class StartBusinessForPersonalUser
                         "Plan was not found.");
                 }
 
-                var idempotencyKey = $"start-business-{organization.Id.Value:N}-{newSubscriptionId.Value:N}";
-                Domain.Payments.PaymentProviderResult paymentResult;
-                try
-                {
-                    paymentResult = await _paymentProvider.ChargeAsync(
-                        new Domain.Payments.PaymentChargeRequest(
-                            organization.Id.Value,
-                            newSubscriptionId.Value,
-                            plan.PriceForCycle(billingCycle),
-                            plan.CurrencyCode,
-                            idempotencyKey,
-                            Purpose: "start-business"),
-                        cancellationToken).ConfigureAwait(false);
-                }
-                catch (NotSupportedException ex)
-                {
-                    return ApplicationResult<StartBusinessResultDto>.Failure(
-                        ApplicationErrorCodes.PaymentNotConfigured,
-                        ex.Message);
-                }
-
-                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-                if (paymentResult.Status != Domain.Payments.PaymentProviderResultStatus.Succeeded)
-                {
-                    return ApplicationResult<StartBusinessResultDto>.Failure(
-                        ApplicationErrorCodes.PaymentNotConfirmed,
-                        paymentResult.FailureMessage ?? "Initial payment was not successful.");
-                }
-
+                // Payment rows FK to subscriptions — activate first, then charge with the real id.
                 var utcNow = _clock.UtcNow;
                 var (periodStart, periodEnd) = SubscriptionBillingPeriods.ComputePaidPeriod(utcNow, billingCycle);
                 var paid = await _activatePaid
@@ -392,7 +362,44 @@ public sealed class StartBusinessForPersonalUser
                         paid.ErrorMessage ?? "Paid subscription failed.");
                 }
 
-                subscriptionId = paid.Value.Id.Value;
+                var activated = paid.Value;
+                var idempotencyKey = $"start-business-{organization.Id.Value:N}-{activated.Id.Value:N}";
+                Domain.Payments.PaymentProviderResult paymentResult;
+                try
+                {
+                    paymentResult = await _paymentProvider.ChargeAsync(
+                        new Domain.Payments.PaymentChargeRequest(
+                            organization.Id.Value,
+                            activated.Id.Value,
+                            plan.PriceForCycle(billingCycle),
+                            plan.CurrencyCode,
+                            idempotencyKey,
+                            Purpose: "start-business"),
+                        cancellationToken).ConfigureAwait(false);
+                }
+                catch (NotSupportedException ex)
+                {
+                    activated.Cancel(_clock.UtcNow);
+                    await _subscriptions.UpdateAsync(activated, cancellationToken).ConfigureAwait(false);
+                    await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                    return ApplicationResult<StartBusinessResultDto>.Failure(
+                        ApplicationErrorCodes.PaymentNotConfigured,
+                        ex.Message);
+                }
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+                if (paymentResult.Status != Domain.Payments.PaymentProviderResultStatus.Succeeded)
+                {
+                    activated.Cancel(_clock.UtcNow);
+                    await _subscriptions.UpdateAsync(activated, cancellationToken).ConfigureAwait(false);
+                    await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                    return ApplicationResult<StartBusinessResultDto>.Failure(
+                        ApplicationErrorCodes.PaymentNotConfirmed,
+                        paymentResult.FailureMessage ?? "Initial payment was not successful.");
+                }
+
+                subscriptionId = activated.Id.Value;
             }
             else if (startAsTrial)
             {

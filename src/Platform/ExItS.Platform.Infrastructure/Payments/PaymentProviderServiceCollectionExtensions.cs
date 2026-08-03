@@ -22,7 +22,9 @@ public static class PaymentProviderServiceCollectionExtensions
 
         if (string.IsNullOrWhiteSpace(provider) || string.Equals(provider, PaymentProviderNames.None, StringComparison.OrdinalIgnoreCase))
         {
-            if (localValidationEnabled && (environment.IsDevelopment() || environment.IsEnvironment("Testing")))
+            // Local Validation host uses Staging (not Development). Enable the simulated provider
+            // whenever LocalValidation is on and we are not in Production.
+            if (localValidationEnabled && !environment.IsProduction())
             {
                 provider = PaymentProviderNames.LocalValidation;
             }

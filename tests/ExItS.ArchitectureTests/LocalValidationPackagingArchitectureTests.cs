@@ -91,6 +91,27 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.DoesNotContain("PLATFORM_API_HOST_PORT=8081", text, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Payment_provider_auto_enables_LocalValidation_for_Staging_hosts()
+    {
+        // Local Validation API runs ASPNETCORE_ENVIRONMENT=Staging. Subscribe/PayNow must not
+        // fall through to NullPaymentProvider just because the host is not Development/Testing.
+        var root = FindRepoRoot();
+        var path = Path.Combine(
+            root,
+            "src",
+            "Platform",
+            "ExItS.Platform.Infrastructure",
+            "Payments",
+            "PaymentProviderServiceCollectionExtensions.cs");
+        Assert.True(File.Exists(path));
+        var source = File.ReadAllText(path);
+        Assert.Contains("LocalValidation:Enabled", source, StringComparison.Ordinal);
+        Assert.Contains("localValidationEnabled && !environment.IsProduction()", source, StringComparison.Ordinal);
+        Assert.Contains("PaymentProviderNames.LocalValidation", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("IsDevelopment()", source, StringComparison.Ordinal);
+    }
+
     private static string FindRepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
