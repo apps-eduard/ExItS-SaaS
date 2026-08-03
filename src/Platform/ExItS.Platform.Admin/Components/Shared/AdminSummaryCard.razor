@@ -1,0 +1,16 @@
+@* Elevated metric/summary card (§11). *@
+<Card Class="admin-elevated-card admin-summary-card" Size="@CardSize.Small" Style="@($"height:100%;{Style}")">
+    <div class="admin-summary-card__label">@Label</div>
+    <div class="admin-summary-card__value">@ChildContent</div>
+    @if (!string.IsNullOrWhiteSpace(Hint))
+    {
+        <div class="admin-summary-card__hint muted">@Hint</div>
+    }
+</Card>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter] public string? Hint { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

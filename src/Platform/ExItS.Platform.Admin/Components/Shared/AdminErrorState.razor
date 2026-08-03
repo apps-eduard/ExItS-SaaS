@@ -1,0 +1,23 @@
+@inject IStringLocalizer<AdminResources> L
+
+<div class="admin-error-state" role="alert">
+    <Alert Type="@AlertType.Error"
+           ShowIcon="true"
+           Message="@(Title ?? L["Common_Error"].Value)"
+           Description="@Detail" />
+    @if (OnRetry.HasDelegate)
+    {
+        <div style="margin-top:12px;">
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="OnRetry">
+                @(RetryText ?? L["Common_Retry"].Value)
+            </Button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Detail { get; set; }
+    [Parameter] public string? RetryText { get; set; }
+    [Parameter] public EventCallback OnRetry { get; set; }
+}

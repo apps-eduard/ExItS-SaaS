@@ -170,7 +170,7 @@ public sealed class AdminShellContext(
             && permissions.HasPermission(PlatformPermissionCodes.ManageManualPayments)
             && !permissions.HasPermission(PlatformPermissionCodes.ManagePlatformUsers))
         {
-            return "Billing Administrator";
+            return "Platform Billing Administrator";
         }
 
         if (permissions.HasPermission(PlatformPermissionCodes.ManageMemberships)
@@ -185,9 +185,9 @@ public sealed class AdminShellContext(
 
     private static string? FormatMembershipRole(string? role) => role switch
     {
-        "OrganizationOwner" => "Owner",
-        "OrganizationAdministrator" => "Administrator",
-        "OrganizationMember" => "Staff",
+        "OrganizationOwner" => "Organization Owner",
+        "OrganizationMember" => "Organization Staff",
+        "OrganizationAdministrator" => "Organization Staff",
         _ => null
     };
 }

@@ -1,0 +1,14 @@
+@inject IStringLocalizer<AdminResources> L
+
+<div class="admin-empty-state" role="status">
+    <Empty Description="@(Description ?? L["State_Empty"].Value)" />
+    @if (Action is not null)
+    {
+        <div style="margin-top:12px;text-align:center;">@Action</div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public RenderFragment? Action { get; set; }
+}

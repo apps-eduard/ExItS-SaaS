@@ -1,11 +1,19 @@
-@inject IStringLocalizer<AdminResources> L
-
-<span class="status-badge" data-status="@Value" data-tone="@Tone" aria-label="@($"{L["Common_Status"]}: {DisplayValue}")">
-    <span class="status-badge-text">@DisplayValue</span>
-</span>
+@* Standards alias for StatusBadge (§13). *@
+@if (UseAntTag)
+{
+    <Tag Color="@AntColor">@DisplayValue</Tag>
+}
+else
+{
+    <StatusBadge Value="@Value" />
+}
 
 @code {
     [Parameter, EditorRequired] public string Value { get; set; } = "";
+    /// <summary>When true, render Ant Design Tag colors from the shared status map.</summary>
+    [Parameter] public bool UseAntTag { get; set; } = true;
+
+    [Inject] private IStringLocalizer<AdminResources> L { get; set; } = default!;
 
     private string DisplayValue => Value switch
     {
@@ -27,16 +35,22 @@
         "Succeeded" => L["Status_Succeeded"],
         "Denied" => L["Status_Denied"],
         "Failed" => L["Status_Failed"],
+        "Inactive" => L["Status_Inactive"],
+        "Retired" => L["Status_Retired"],
+        "Draft" => L["Status_Draft"],
+        "Pending" => L["Status_Pending"],
         _ => Value
     };
 
-    private string Tone => Value switch
+    private string AntColor => Value switch
     {
-        "Suspended" or "PastDue" or "Rejected" or "Denied" or "Failed" => "danger",
-        "GracePeriod" or "PendingConfirmation" or "PendingVerification" => "warning",
-        "Cancelled" or "Expired" or "Voided" or "Removed" or "Deactivated" or "Revoked" => "neutral",
         "Active" or "Confirmed" or "Succeeded" => "success",
-        "Trialing" => "info",
-        _ => "info"
+        "Trialing" or "Pending" or "PendingConfirmation" or "PendingVerification" => "processing",
+        "GracePeriod" => "gold",
+        "PastDue" => "orange",
+        "Suspended" or "Rejected" or "Denied" or "Failed" => "error",
+        "Cancelled" or "Expired" or "Voided" or "Removed" or "Deactivated" or "Revoked" or "Inactive" or "Retired" => "default",
+        "Draft" => "default",
+        _ => "default"
     };
 }

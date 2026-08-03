@@ -262,8 +262,8 @@
   <data name="Common_Role" xml:space="preserve"><value>Role</value></data>
   <data name="Common_Code" xml:space="preserve"><value>Code</value></data>
   <data name="Common_DisplayName" xml:space="preserve"><value>Display name</value></data>
-  <data name="Common_UpdatedUtc" xml:space="preserve"><value>Updated (UTC)</value></data>
-  <data name="Common_CreatedUtc" xml:space="preserve"><value>Created (UTC)</value></data>
+  <data name="Common_UpdatedUtc" xml:space="preserve"><value>Updated</value></data>
+  <data name="Common_CreatedUtc" xml:space="preserve"><value>Created</value></data>
   <data name="Common_GeneratedUtc" xml:space="preserve"><value>Generated (UTC)</value></data>
   <data name="Common_GrantedUtc" xml:space="preserve"><value>Granted (UTC)</value></data>
   <data name="Common_RevokedUtc" xml:space="preserve"><value>Revoked (UTC)</value></data>
@@ -291,7 +291,7 @@
   <data name="Common_Membership" xml:space="preserve"><value>Membership</value></data>
   <data name="Common_Assignment" xml:space="preserve"><value>Assignment</value></data>
   <data name="Common_Snapshot" xml:space="preserve"><value>Snapshot</value></data>
-  <data name="Common_EvaluatedUtc" xml:space="preserve"><value>Evaluated (UTC)</value></data>
+  <data name="Common_EvaluatedUtc" xml:space="preserve"><value>Evaluated</value></data>
   <data name="Common_Related" xml:space="preserve"><value>Related</value></data>
   <data name="Common_Payments" xml:space="preserve"><value>Payments</value></data>
   <data name="Common_ProductAccess" xml:space="preserve"><value>Product access</value></data>
@@ -313,8 +313,10 @@
   <data name="Status_Rejected" xml:space="preserve"><value>Rejected</value></data>
   <data name="Status_Voided" xml:space="preserve"><value>Voided</value></data>
   <data name="Status_Trialing" xml:space="preserve"><value>Trialing</value></data>
-  <data name="Status_GracePeriod" xml:space="preserve"><value>GracePeriod</value></data>
-  <data name="Status_PastDue" xml:space="preserve"><value>PastDue</value></data>
+  <data name="Status_GracePeriod" xml:space="preserve"><value>Grace Period</value></data>
+  <data name="Status_PastDue" xml:space="preserve"><value>Past Due</value></data>
+  <data name="Status_Pending" xml:space="preserve"><value>Pending</value></data>
+  <data name="Common_Loading" xml:space="preserve"><value>Loading…</value></data>
   <data name="Status_Cancelled" xml:space="preserve"><value>Cancelled</value></data>
   <data name="Status_Expired" xml:space="preserve"><value>Expired</value></data>
   <data name="Status_Succeeded" xml:space="preserve"><value>Succeeded</value></data>
@@ -605,7 +607,7 @@
   <data name="Users_PlatformRolePlaceholder" xml:space="preserve"><value>Select a Platform role</value></data>
   <data name="Users_PlatformRoleRequired" xml:space="preserve"><value>Platform role is required.</value></data>
   <data name="Users_Role_PlatformAdministrator" xml:space="preserve"><value>Platform Administrator</value></data>
-  <data name="Users_Role_BillingAdministrator" xml:space="preserve"><value>Billing Administrator</value></data>
+  <data name="Users_Role_BillingAdministrator" xml:space="preserve"><value>Platform Billing Administrator</value></data>
   <data name="Users_Role_PlatformSupport" xml:space="preserve"><value>Platform Support</value></data>
   <data name="Users_SendEmailVerification" xml:space="preserve"><value>Require email verification</value></data>
   <data name="Users_RequireEmailVerification" xml:space="preserve"><value>Require email verification</value></data>

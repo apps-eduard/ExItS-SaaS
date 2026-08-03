@@ -1,0 +1,8 @@
+@* Standards alias for AmountDisplay (§12). *@
+<AmountDisplay Amount="@Amount" CurrencyCode="@CurrencyCode" Unavailable="@Unavailable" />
+
+@code {
+    [Parameter] public decimal? Amount { get; set; }
+    [Parameter] public string CurrencyCode { get; set; } = "PHP";
+    [Parameter] public bool Unavailable { get; set; }
+}

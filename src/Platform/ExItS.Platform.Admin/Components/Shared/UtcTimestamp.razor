@@ -1,11 +1,8 @@
-@if (Value is null)
-{
-    <span class="muted">—</span>
-}
-else
-{
-    <time datetime="@Value.Value.UtcDateTime.ToString("o")">@Value.Value.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss") UTC</time>
-}
+@*
+  Friendly local date/time for Admin surfaces (standards §12).
+  UTC remains in the tooltip for operators; primary text is never "… UTC".
+*@
+<LocalTimestamp Value="@Value" />
 
 @code {
     [Parameter] public DateTimeOffset? Value { get; set; }

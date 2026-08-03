@@ -260,8 +260,8 @@
   <data name="Common_Role" xml:space="preserve"><value>Role</value></data>
   <data name="Common_Code" xml:space="preserve"><value>Code</value></data>
   <data name="Common_DisplayName" xml:space="preserve"><value>Display name</value></data>
-  <data name="Common_UpdatedUtc" xml:space="preserve"><value>Na-update (UTC)</value></data>
-  <data name="Common_CreatedUtc" xml:space="preserve"><value>Ginawa (UTC)</value></data>
+  <data name="Common_UpdatedUtc" xml:space="preserve"><value>Na-update</value></data>
+  <data name="Common_CreatedUtc" xml:space="preserve"><value>Ginawa</value></data>
   <data name="Common_GeneratedUtc" xml:space="preserve"><value>Nagenerate (UTC)</value></data>
   <data name="Common_GrantedUtc" xml:space="preserve"><value>Na-grant (UTC)</value></data>
   <data name="Common_RevokedUtc" xml:space="preserve"><value>Na-revoke (UTC)</value></data>
@@ -289,7 +289,7 @@
   <data name="Common_Membership" xml:space="preserve"><value>Membership</value></data>
   <data name="Common_Assignment" xml:space="preserve"><value>Assignment</value></data>
   <data name="Common_Snapshot" xml:space="preserve"><value>Snapshot</value></data>
-  <data name="Common_EvaluatedUtc" xml:space="preserve"><value>Na-evaluate (UTC)</value></data>
+  <data name="Common_EvaluatedUtc" xml:space="preserve"><value>Na-evaluate</value></data>
   <data name="Common_Related" xml:space="preserve"><value>Kaugnay</value></data>
   <data name="Common_Payments" xml:space="preserve"><value>Mga Bayad</value></data>
   <data name="Common_ProductAccess" xml:space="preserve"><value>Product access</value></data>
@@ -311,8 +311,10 @@
   <data name="Status_Rejected" xml:space="preserve"><value>Rejected</value></data>
   <data name="Status_Voided" xml:space="preserve"><value>Voided</value></data>
   <data name="Status_Trialing" xml:space="preserve"><value>Trialing</value></data>
-  <data name="Status_GracePeriod" xml:space="preserve"><value>GracePeriod</value></data>
-  <data name="Status_PastDue" xml:space="preserve"><value>PastDue</value></data>
+  <data name="Status_GracePeriod" xml:space="preserve"><value>Grace Period</value></data>
+  <data name="Status_PastDue" xml:space="preserve"><value>Past Due</value></data>
+  <data name="Status_Pending" xml:space="preserve"><value>Pending</value></data>
+  <data name="Common_Loading" xml:space="preserve"><value>Naglo-load…</value></data>
   <data name="Status_Cancelled" xml:space="preserve"><value>Cancelled</value></data>
   <data name="Status_Expired" xml:space="preserve"><value>Expired</value></data>
   <data name="Status_Succeeded" xml:space="preserve"><value>Succeeded</value></data>
@@ -603,7 +605,7 @@
   <data name="Users_PlatformRolePlaceholder" xml:space="preserve"><value>Pumili ng Platform role</value></data>
   <data name="Users_PlatformRoleRequired" xml:space="preserve"><value>Kailangan ang Platform role.</value></data>
   <data name="Users_Role_PlatformAdministrator" xml:space="preserve"><value>Platform Administrator</value></data>
-  <data name="Users_Role_BillingAdministrator" xml:space="preserve"><value>Billing Administrator</value></data>
+  <data name="Users_Role_BillingAdministrator" xml:space="preserve"><value>Platform Billing Administrator</value></data>
   <data name="Users_Role_PlatformSupport" xml:space="preserve"><value>Platform Support</value></data>
   <data name="Users_SendEmailVerification" xml:space="preserve"><value>Kailangan ng email verification</value></data>
   <data name="Users_RequireEmailVerification" xml:space="preserve"><value>Kailangan ng email verification</value></data>

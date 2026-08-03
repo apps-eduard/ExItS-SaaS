@@ -1,0 +1,45 @@
+@* Standards alias — prefers Ant Design buttons when AntActions is provided. *@
+@if (AntActions)
+{
+    <div class="admin-form-actions" role="group" aria-label="@L["Form_ActionsAria"]">
+        @if (OnCancel.HasDelegate)
+        {
+            <Button Size="@ButtonSize.Small" Disabled="@(Busy || Disabled)" OnClick="OnCancel">
+                @(CancelText ?? L["Common_Cancel"].Value)
+            </Button>
+        }
+        <Button Type="@(Destructive ? ButtonType.Primary : ButtonType.Primary)"
+                Danger="@Destructive"
+                Size="@ButtonSize.Small"
+                Loading="@Busy"
+                Disabled="@(Busy || Disabled)"
+                OnClick="OnSave">
+            @(Busy ? (BusyText ?? L["Common_Saving"].Value) : (SaveText ?? L["Common_Save"].Value))
+        </Button>
+    </div>
+}
+else
+{
+    <FormActions PrimaryText="@SaveText"
+                SecondaryText="@(OnCancel.HasDelegate ? (CancelText ?? L["Common_Cancel"].Value) : null)"
+                BusyText="@BusyText"
+                Busy="@Busy"
+                Disabled="@Disabled"
+                DestructivePrimary="@Destructive"
+                OnPrimary="OnSave"
+                OnSecondary="OnCancel" />
+}
+
+@code {
+    [Inject] private IStringLocalizer<AdminResources> L { get; set; } = default!;
+
+    [Parameter] public bool AntActions { get; set; } = true;
+    [Parameter] public string? SaveText { get; set; }
+    [Parameter] public string? CancelText { get; set; }
+    [Parameter] public string? BusyText { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool Destructive { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+}

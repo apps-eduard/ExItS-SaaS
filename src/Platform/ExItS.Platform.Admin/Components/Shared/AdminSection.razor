@@ -1,0 +1,16 @@
+@* Elevated section card for Admin content groups (§4). *@
+<Card Class="@($"admin-elevated-card admin-section-card {CssClass}".Trim())"
+      Size="@CardSize.Small"
+      Title="@Title"
+      Extra="@Extra"
+      Style="@Style">
+    @ChildContent
+</Card>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public RenderFragment? Extra { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}
