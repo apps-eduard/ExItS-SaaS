@@ -5,6 +5,7 @@ using ExItS.Platform.Application.Authorization;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Application.LocalValidation;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Personal;
@@ -12,6 +13,7 @@ using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Infrastructure.Authorization;
 using ExItS.Platform.Infrastructure.Identity;
+using ExItS.Platform.Infrastructure.LocalValidation;
 using ExItS.Platform.Infrastructure.Persistence;
 using ExItS.Platform.Infrastructure.Payments;
 using ExItS.Platform.Infrastructure.Persistence.Repositories;
@@ -90,6 +92,7 @@ public static class DependencyInjection
         services.AddScoped<IPlatformActorAccessor, DevelopmentPlatformActorAccessor>();
         services.AddScoped<IPlatformAuthorizationService, PlatformAuthorizationService>();
         services.AddScoped<IAuditWriter, AuditWriter>();
+        services.AddScoped<ILocalValidationBaselinePurge, LocalValidationBaselinePurge>();
 
         services.AddScoped<MembershipStaffUsageReader>();
         services.AddScoped<UnresolvedProductBranchUsageReader>();

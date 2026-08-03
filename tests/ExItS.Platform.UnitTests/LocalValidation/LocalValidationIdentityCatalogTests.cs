@@ -19,14 +19,21 @@ public sealed class LocalValidationIdentityCatalogTests
     ];
 
     [Fact]
-    public void SeedScope_PlatformAdministratorsOnly_returns_only_Olivia_and_Rafael()
+    public void SeedScope_PlatformAdministratorsOnly_returns_two_platform_administrators()
     {
         var identities = LocalValidationOptions.IdentitiesForSeedScope(
             LocalValidationOptions.SeedScopePlatformAdministratorsOnly);
         Assert.Equal(2, identities.Count);
         Assert.Contains(identities, i => i.Key == "olivia-mendoza");
         Assert.Contains(identities, i => i.Key == "rafael-torres");
-        Assert.All(identities, i => Assert.Equal(AccountClass.Platform, i.PreferredAccountClass));
+        Assert.All(identities, i =>
+        {
+            Assert.Equal(AccountClass.Platform, i.PreferredAccountClass);
+            Assert.Equal(PlatformSystemRole.PlatformAdministrator, i.AssignPlatformRole);
+            Assert.False(i.HasOrganizationMembership);
+            Assert.False(i.GrantPosProductAccess);
+            Assert.Null(i.PosLocalRoleCode);
+        });
     }
 
     [Fact]
@@ -35,6 +42,16 @@ public sealed class LocalValidationIdentityCatalogTests
         var identities = LocalValidationOptions.IdentitiesForSeedScope(LocalValidationOptions.SeedScopeFull);
         Assert.Equal(8, identities.Count);
         Assert.Equal(LocalValidationIdentityCatalog.All.Count, identities.Count);
+    }
+
+    [Theory]
+    [InlineData("AbcXyz")]
+    [InlineData("abc-sari-sari")]
+    public void Unknown_seed_scope_throws(string bogusScope)
+    {
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(
+            () => LocalValidationOptions.IdentitiesForSeedScope(bogusScope));
+        Assert.Equal("seedScope", ex.ParamName);
     }
 
     [Fact]

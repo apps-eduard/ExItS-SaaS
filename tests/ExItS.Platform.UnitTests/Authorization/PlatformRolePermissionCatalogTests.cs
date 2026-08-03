@@ -12,7 +12,12 @@ public sealed class PlatformRolePermissionCatalogTests
             PlatformSystemRole.PlatformAdministrator,
             PlatformPermission.ManageCatalog));
 
-        foreach (var role in new[] { PlatformSystemRole.BillingAdministrator, PlatformSystemRole.PlatformSupport })
+        foreach (var role in new[]
+                 {
+                     PlatformSystemRole.BillingAdministrator,
+                     PlatformSystemRole.PlatformSupport,
+                     PlatformSystemRole.PlatformAuditor
+                 })
         {
             Assert.False(PlatformRolePermissionCatalog.RoleHasPermission(role, PlatformPermission.ManageCatalog));
         }

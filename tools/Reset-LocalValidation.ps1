@@ -17,7 +17,7 @@
   2. Remove Local Validation Docker volumes only
   3. Optionally clear Admin DataProtection keys for Local Validation
   4. Start Local Validation (migrate + seed exact dataset)
-  5. Verify seed-identities returns exactly Olivia + Rafael (PlatformAdministratorsOnly)
+  5. Verify seed-identities returns exactly Olivia + Rafael (both Platform Administrator)
 
 .EXAMPLE
   .\tools\Reset-LocalValidation.ps1 -ConfirmReset
@@ -137,6 +137,14 @@ if (-not (Test-Path -LiteralPath $composeFile)) {
 
 $envMap = Import-DotEnv $envFile
 
+# Start-LocalValidation injects LocalValidation__Enabled=true into app windows; dotenv may omit it.
+# Require the shared password secret as proof this is a Local Validation operator env file.
+if (-not $envMap.ContainsKey('LOCAL_VALIDATION_SHARED_PASSWORD') `
+    -or [string]::IsNullOrWhiteSpace([string]$envMap['LOCAL_VALIDATION_SHARED_PASSWORD']) `
+    -or [string]$envMap['LOCAL_VALIDATION_SHARED_PASSWORD'] -like 'REPLACE_*') {
+    throw 'deploy/docker/.env.local-validation must set LOCAL_VALIDATION_SHARED_PASSWORD (not REPLACE_*).'
+}
+
 $lvEnabled = $false
 foreach ($key in @('LocalValidation__Enabled', 'LOCAL_VALIDATION')) {
     if ($envMap.ContainsKey($key) -and [string]::Equals([string]$envMap[$key], 'true', [StringComparison]::OrdinalIgnoreCase)) {
@@ -145,15 +153,19 @@ foreach ($key in @('LocalValidation__Enabled', 'LOCAL_VALIDATION')) {
     }
 }
 if (-not $lvEnabled) {
-    throw 'Local Validation must be enabled in deploy/docker/.env.local-validation (LocalValidation__Enabled=true or LOCAL_VALIDATION=true).'
+    Write-Note 'Dotenv omits LocalValidation__Enabled; Start-LocalValidation will set LocalValidation__Enabled=true for app windows.'
 }
 
 Write-Note 'Catalog/plans/features/roles are recreated by Platform migrate+seed after volume wipe.'
 Write-Note 'POS product DB resets via volume wipe of exits_local_validation_pos_db_data (product-owned container migrate on start).'
 
 Write-Step 'Stopping Local Validation apps and database containers...'
+$previousEap = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
 & $stopScript -StopDatabases
-if ($LASTEXITCODE -ne 0) { throw "Stop-LocalValidation.ps1 failed ($LASTEXITCODE)." }
+$stopExit = $LASTEXITCODE
+$ErrorActionPreference = $previousEap
+if ($stopExit -ne 0) { throw "Stop-LocalValidation.ps1 failed ($stopExit)." }
 
 Write-Step 'Removing Local Validation DB containers so volumes can be deleted...'
 & docker compose -f $composeFile --env-file $envFile rm -f -s -v platform-db pos-db
@@ -235,6 +247,11 @@ if (-not $verified) {
 }
 
 Write-Ok 'Local Validation reset and reseed completed.'
-Write-Host 'Seed scope: PlatformAdministratorsOnly (Olivia Mendoza + Rafael Torres)'
-Write-Host 'Reference catalog/plans/features/roles: recreated by migrate+seed'
+Write-Host 'Seed scope: PlatformAdministratorsOnly'
+Write-Host 'Baseline: Olivia Mendoza + Rafael Torres (both Platform Administrator)'
+Write-Host 'Quick Login: exactly those 2 Platform accounts'
+Write-Host 'Transactional orgs/customers/subscriptions/payments: cleared'
+Write-Host 'Catalog/plans/features/built-in roles: retained via migrate+seed'
 Write-Host 'Admin: http://localhost:8090/'
+Write-Host 'Platform API: http://localhost:8091/'
+Write-Host 'POS API: http://localhost:8092/'

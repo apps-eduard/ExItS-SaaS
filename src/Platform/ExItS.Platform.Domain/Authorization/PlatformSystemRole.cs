@@ -9,5 +9,6 @@ public enum PlatformSystemRole
 {
     PlatformAdministrator = 1,
     BillingAdministrator = 2,
-    PlatformSupport = 3
+    PlatformSupport = 3,
+    PlatformAuditor = 4
 }

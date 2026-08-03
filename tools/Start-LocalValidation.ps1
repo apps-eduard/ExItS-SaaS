@@ -315,7 +315,19 @@ $adminProject = Join-Path $repoRoot 'src\Platform\ExItS.Platform.Admin\ExItS.Pla
 $windowPids = @()
 
 Write-Step 'Starting Platform API (dotnet watch)...'
-$seedScopeValue = if ([string]::IsNullOrWhiteSpace($env:LocalValidation__SeedScope)) { $SeedScope } else { [string]$env:LocalValidation__SeedScope }
+$knownSeedScopes = @('Full', 'PlatformAdministratorsOnly')
+$inheritedSeedScope = [string]$env:LocalValidation__SeedScope
+if (-not [string]::IsNullOrWhiteSpace($inheritedSeedScope) -and $knownSeedScopes -notcontains $inheritedSeedScope) {
+    Write-Note "Ignoring invalid LocalValidation__SeedScope='$inheritedSeedScope' from parent shell; using -SeedScope '$SeedScope'."
+    $seedScopeValue = $SeedScope
+}
+elseif (-not [string]::IsNullOrWhiteSpace($inheritedSeedScope)) {
+    $seedScopeValue = $inheritedSeedScope
+}
+else {
+    $seedScopeValue = $SeedScope
+}
+Write-Ok "LocalValidation SeedScope=$seedScopeValue"
 $windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Platform API' -RepoRoot $repoRoot -Project $platformProject -EnvMap @{
     ASPNETCORE_ENVIRONMENT = 'Staging'
     ASPNETCORE_URLS = $platformApiUrl

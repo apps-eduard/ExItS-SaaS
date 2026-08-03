@@ -49,8 +49,8 @@ public sealed class ListLocalValidationIdentities
             }
         }
 
-        var list = new List<LocalValidationIdentityDto>(LocalValidationIdentityCatalog.All.Count);
-        foreach (var identity in LocalValidationIdentityCatalog.All)
+        var list = new List<LocalValidationIdentityDto>();
+        foreach (var identity in LocalValidationOptions.IdentitiesForSeedScope(_options.SeedScope))
         {
             var (_, normalized) = PlatformUser.NormalizeUsername(identity.Username);
             var user = await _users.GetByNormalizedUsernameAsync(normalized, cancellationToken)

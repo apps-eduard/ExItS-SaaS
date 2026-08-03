@@ -33,7 +33,7 @@ public sealed class LocalValidationOptions
     public string SharedPassword { get; set; } = string.Empty;
 
     /// <summary>Deterministic Local Validation dataset version (logged on seed).</summary>
-    public const string DatasetVersion = "2026-08-02-abc-xyz-v1";
+    public const string DatasetVersion = "2026-08-03-platform-admins-baseline-v1";
 
     public const string ProductPlanCode = "local-validation-pos";
     public const string ProductPlanDisplayName = "Local Validation POS Plan";
@@ -47,10 +47,24 @@ public sealed class LocalValidationOptions
     /// <summary>Legacy single-org display name kept for callers that still expect the first store.</summary>
     public const string OrgDisplayName = LocalValidationOrganizationCatalog.AbcSariSariDisplayName;
 
-    public static IReadOnlyList<LocalValidationIdentityDefinition> IdentitiesForSeedScope(string? seedScope) =>
-        string.Equals(seedScope, SeedScopePlatformAdministratorsOnly, StringComparison.OrdinalIgnoreCase)
-            ? LocalValidationIdentityCatalog.PlatformAdministratorsOnly
-            : LocalValidationIdentityCatalog.All;
+    public static IReadOnlyList<LocalValidationIdentityDefinition> IdentitiesForSeedScope(string? seedScope)
+    {
+        if (string.IsNullOrWhiteSpace(seedScope)
+            || string.Equals(seedScope.Trim(), SeedScopeFull, StringComparison.OrdinalIgnoreCase))
+        {
+            return LocalValidationIdentityCatalog.All;
+        }
+
+        if (string.Equals(seedScope.Trim(), SeedScopePlatformAdministratorsOnly, StringComparison.OrdinalIgnoreCase))
+        {
+            return LocalValidationIdentityCatalog.PlatformAdministratorsOnly;
+        }
+
+        throw new ArgumentOutOfRangeException(
+            nameof(seedScope),
+            seedScope,
+            $"Unknown LocalValidation seed scope. Use '{SeedScopeFull}' or '{SeedScopePlatformAdministratorsOnly}'.");
+    }
 }
 
 public sealed record LocalValidationOrganizationDefinition(string Slug, string DisplayName);
@@ -134,7 +148,8 @@ public static class ObsoleteLocalValidationOrganizations
         ObsoletePhase16SeedIdentities.SeedOrgSlug,
         "sampaguita-store",
         "mabuhay-mini-mart",
-        "phase16-seed-org"
+        "phase16-seed-org",
+        "ks-store"
     ];
 }
 
@@ -147,7 +162,7 @@ public static class LocalValidationIdentityCatalog
             Username: "olivia.mendoza",
             DisplayName: "Olivia Mendoza",
             Email: "olivia.mendoza@exits.local",
-            Summary: "Platform account — Platform Administrator only.",
+            Summary: "Primary Platform Administrator — onboarding baseline.",
             PreferredAccountClass: AccountClass.Platform,
             AssignPlatformRole: PlatformSystemRole.PlatformAdministrator,
             HasOrganizationMembership: false,
@@ -160,9 +175,9 @@ public static class LocalValidationIdentityCatalog
             Username: "rafael.torres",
             DisplayName: "Rafael Torres",
             Email: "rafael.torres@exits.local",
-            Summary: "Platform account — Platform Support only.",
+            Summary: "Backup Platform Administrator — onboarding baseline.",
             PreferredAccountClass: AccountClass.Platform,
-            AssignPlatformRole: PlatformSystemRole.PlatformSupport,
+            AssignPlatformRole: PlatformSystemRole.PlatformAdministrator,
             HasOrganizationMembership: false,
             OrganizationSlug: null,
             OrganizationRole: null,

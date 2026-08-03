@@ -34,6 +34,13 @@ public static class PlatformRolePermissionCatalog
                     PlatformPermission.ManageProductAccess,
                     PlatformPermission.ViewAuditRecords
                 ],
+                StringComparer.Ordinal),
+
+            [PlatformSystemRole.PlatformAuditor] = new HashSet<string>(
+                [
+                    PlatformPermission.ViewPortfolio,
+                    PlatformPermission.ViewAuditRecords
+                ],
                 StringComparer.Ordinal)
         };
 

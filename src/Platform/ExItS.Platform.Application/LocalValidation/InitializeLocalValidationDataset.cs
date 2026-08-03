@@ -11,6 +11,7 @@ using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Catalog;
+using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Personal;
@@ -50,6 +51,8 @@ public sealed class InitializeLocalValidationDataset
     private readonly IPersonalContactRepository _contacts;
     private readonly IPersonalDebtRelationshipRepository _relationships;
     private readonly InitializeLocalValidationPersonalUtangSeed _personalUtangSeed;
+    private readonly ILocalValidationBaselinePurge _baselinePurge;
+    private readonly EnsureBuiltInPlatformRoleDefinitions _ensureBuiltInRoles;
     private readonly IPlanRepository _plans;
     private readonly ITrialDefinitionRepository _trials;
     private readonly ISubscriptionRepository _subscriptions;
@@ -86,6 +89,8 @@ public sealed class InitializeLocalValidationDataset
         IPersonalContactRepository contacts,
         IPersonalDebtRelationshipRepository relationships,
         InitializeLocalValidationPersonalUtangSeed personalUtangSeed,
+        ILocalValidationBaselinePurge baselinePurge,
+        EnsureBuiltInPlatformRoleDefinitions ensureBuiltInRoles,
         IPlanRepository plans,
         ITrialDefinitionRepository trials,
         ISubscriptionRepository subscriptions,
@@ -121,6 +126,8 @@ public sealed class InitializeLocalValidationDataset
         _contacts = contacts;
         _relationships = relationships;
         _personalUtangSeed = personalUtangSeed;
+        _baselinePurge = baselinePurge;
+        _ensureBuiltInRoles = ensureBuiltInRoles;
         _plans = plans;
         _trials = trials;
         _subscriptions = subscriptions;
@@ -153,6 +160,23 @@ public sealed class InitializeLocalValidationDataset
             ? LocalValidationOptions.SeedScopeFull
             : _options.SeedScope.Trim();
         var isFullSeed = string.Equals(seedScope, LocalValidationOptions.SeedScopeFull, StringComparison.OrdinalIgnoreCase);
+        var isPlatformAdministratorsOnly = string.Equals(
+            seedScope,
+            LocalValidationOptions.SeedScopePlatformAdministratorsOnly,
+            StringComparison.OrdinalIgnoreCase);
+        if (!isFullSeed && !isPlatformAdministratorsOnly)
+        {
+            throw new InvalidOperationException(
+                $"Unknown LocalValidation:SeedScope '{seedScope}'. Use '{LocalValidationOptions.SeedScopeFull}' or '{LocalValidationOptions.SeedScopePlatformAdministratorsOnly}'.");
+        }
+
+        if (isPlatformAdministratorsOnly)
+        {
+            await _baselinePurge.PurgeTransactionalDataAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        await _ensureBuiltInRoles.ExecuteAsync(cancellationToken).ConfigureAwait(false);
+
         var organizations = new Dictionary<string, PlatformOrganization>(StringComparer.OrdinalIgnoreCase);
 
         if (isFullSeed)
@@ -170,18 +194,40 @@ public sealed class InitializeLocalValidationDataset
         }
 
         var identities = LocalValidationOptions.IdentitiesForSeedScope(seedScope);
+        var usersByKey = new Dictionary<string, PlatformUser>(StringComparer.OrdinalIgnoreCase);
         foreach (var identity in identities)
         {
             var user = await EnsureUserAsync(identity, cancellationToken).ConfigureAwait(false);
+            usersByKey[identity.Key] = user;
             await EnsurePasswordAsync(user.Id.Value, cancellationToken).ConfigureAwait(false);
-
             await ReconcilePlatformRolesAsync(user.Id, identity, cancellationToken).ConfigureAwait(false);
-            await ReconcileOrganizationAccessAsync(user.Id, identity, organizations, productCode, cancellationToken)
+        }
+
+        // Ensure desired owners/members before any revokes so last-owner protection cannot block cleanup.
+        foreach (var identity in identities)
+        {
+            await EnsureDesiredOrganizationAccessAsync(
+                    usersByKey[identity.Key].Id,
+                    identity,
+                    organizations,
+                    productCode,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        foreach (var identity in identities)
+        {
+            await ReconcileOrganizationAccessAsync(
+                    usersByKey[identity.Key].Id,
+                    identity,
+                    organizations,
+                    productCode,
+                    cancellationToken)
                 .ConfigureAwait(false);
 
             await _ensureProfiles
                 .ExecuteAsync(
-                    user.Id,
+                    usersByKey[identity.Key].Id,
                     identity.PreferredAccountClass,
                     exclusivePreferredClass: true,
                     cancellationToken)
@@ -241,13 +287,31 @@ public sealed class InitializeLocalValidationDataset
                 .ConfigureAwait(false);
             foreach (var membership in memberships)
             {
-                await _revokeMembership
+                var revoked = await _revokeMembership
                     .ExecuteAsync(
                         membership.Id,
                         reason: "obsolete local-validation organization cleanup",
                         actorReference: LocalValidationOptions.Actor,
                         cancellationToken: ct)
                     .ConfigureAwait(false);
+                if (!revoked.IsSuccess
+                    && string.Equals(
+                        revoked.ErrorCode,
+                        DomainErrorCodes.LastGoverningAdminProtected,
+                        StringComparison.Ordinal))
+                {
+                    membership.Remove(
+                        _clock.UtcNow,
+                        reason: "obsolete local-validation organization cleanup",
+                        actorReference: LocalValidationOptions.Actor);
+                    await _memberships.UpdateAsync(membership, ct).ConfigureAwait(false);
+                    await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
+                }
+                else if (!revoked.IsSuccess)
+                {
+                    throw new InvalidOperationException(
+                        $"Obsolete organization membership revoke failed: {revoked.ErrorCode} {revoked.ErrorMessage}");
+                }
             }
 
             if (org.Status == OrganizationStatus.Active || org.Status == OrganizationStatus.Suspended)
@@ -391,6 +455,40 @@ public sealed class InitializeLocalValidationDataset
         }
     }
 
+    private async Task EnsureDesiredOrganizationAccessAsync(
+        PlatformUserId userId,
+        LocalValidationIdentityDefinition identity,
+        IReadOnlyDictionary<string, PlatformOrganization> organizations,
+        string productCode,
+        CancellationToken ct)
+    {
+        if (!identity.HasOrganizationMembership
+            || identity.OrganizationRole is null
+            || string.IsNullOrWhiteSpace(identity.OrganizationSlug))
+        {
+            return;
+        }
+
+        if (!organizations.TryGetValue(identity.OrganizationSlug, out var organization))
+        {
+            throw new InvalidOperationException(
+                $"Local validation identity '{identity.Key}' references unknown organization '{identity.OrganizationSlug}'.");
+        }
+
+        var desiredRole = identity.OrganizationRole.Value switch
+        {
+            OrganizationMembershipValidationRole.OrganizationOwner => OrganizationRole.OrganizationOwner,
+            OrganizationMembershipValidationRole.OrganizationAdministrator => OrganizationRole.OrganizationAdministrator,
+            _ => OrganizationRole.OrganizationMember
+        };
+
+        await EnsureMembershipAsync(organization.Id, userId, desiredRole, ct).ConfigureAwait(false);
+        if (identity.GrantPosProductAccess)
+        {
+            await EnsureProductAccessAsync(organization.Id, userId, productCode, ct).ConfigureAwait(false);
+        }
+    }
+
     private async Task ReconcileOrganizationAccessAsync(
         PlatformUserId userId,
         LocalValidationIdentityDefinition identity,
@@ -451,6 +549,15 @@ public sealed class InitializeLocalValidationDataset
                 .ConfigureAwait(false);
             if (!revoked.IsSuccess)
             {
+                if (string.Equals(
+                        revoked.ErrorCode,
+                        DomainErrorCodes.LastGoverningAdminProtected,
+                        StringComparison.Ordinal))
+                {
+                    await ForceReleaseNonCatalogLastOwnerAsync(membership, ct).ConfigureAwait(false);
+                    continue;
+                }
+
                 throw new InvalidOperationException(
                     $"Local validation membership revoke failed: {revoked.ErrorCode} {revoked.ErrorMessage}");
             }
@@ -755,6 +862,41 @@ public sealed class InitializeLocalValidationDataset
             throw new InvalidOperationException(
                 $"Local validation membership failed: {result.ErrorCode} {result.ErrorMessage}");
         }
+    }
+
+    private async Task ForceReleaseNonCatalogLastOwnerAsync(
+        OrganizationMembership membership,
+        CancellationToken ct)
+    {
+        var organization = await _organizations.GetByIdAsync(membership.OrganizationId, ct).ConfigureAwait(false);
+        if (organization is null)
+        {
+            throw new InvalidOperationException(
+                $"Local validation membership revoke failed: {DomainErrorCodes.LastGoverningAdminProtected} (organization missing).");
+        }
+
+        if (LocalValidationOrganizationCatalog.FindBySlug(organization.Slug) is not null)
+        {
+            throw new InvalidOperationException(
+                $"Local validation membership revoke failed: {DomainErrorCodes.LastGoverningAdminProtected} for catalog organization '{organization.Slug}'.");
+        }
+
+        membership.Remove(
+            _clock.UtcNow,
+            reason: "local-validation non-catalog last-owner cleanup",
+            actorReference: LocalValidationOptions.Actor);
+        await _memberships.UpdateAsync(membership, ct).ConfigureAwait(false);
+
+        if (organization.Status is OrganizationStatus.Active or OrganizationStatus.Suspended)
+        {
+            organization.Close(_clock.UtcNow);
+            await _organizations.UpdateAsync(organization, ct).ConfigureAwait(false);
+            _logger.LogWarning(
+                "Closed non-catalog organization '{Slug}' to release leftover last-owner membership during Local Validation seed.",
+                organization.Slug);
+        }
+
+        await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
     }
 
     private async Task EnsureProductAccessAsync(
