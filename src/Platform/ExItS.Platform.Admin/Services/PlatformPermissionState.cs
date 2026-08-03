@@ -20,6 +20,9 @@ public sealed class PlatformPermissionState(
     public bool LoadFailed { get; private set; }
     public string? ActorIdentifier { get; private set; }
 
+    /// <summary>Fired when <see cref="Loaded"/> becomes true or permissions are refreshed.</summary>
+    public event Action? Changed;
+
     public Task EnsureLoadedAsync()
     {
         _loadTask ??= LoadAsync(allowDevFallback: true);
@@ -45,6 +48,7 @@ public sealed class PlatformPermissionState(
         _permissions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         _loadTask = LoadAsync(allowDevFallback: true);
         await _loadTask;
+        Changed?.Invoke();
     }
 
     private async Task LoadAsync(bool allowDevFallback)
@@ -79,6 +83,7 @@ public sealed class PlatformPermissionState(
         }
 
         Loaded = true;
+        Changed?.Invoke();
     }
 
     private void ApplyFallbackPermissions()

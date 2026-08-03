@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ExItS.Platform.IntegrationTests.Support;
 using ExItS.Platform.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -35,17 +36,14 @@ public sealed class ApiCredentialLifecycleTests(PostgreSqlFixture fixture) : IAs
 
     private async Task<(Guid UserId, string Username, string Password)> SeedUserWithPasswordAsync(string password = "Correct-Horse-9!")
     {
-        var username = UniqueToken("life");
-        var create = await _client.PostAsJsonAsync(
-            "/api/v1/platform/users",
-            new { username, displayName = "Lifecycle User", email = $"{username}@example.com" });
-        Assert.Equal(HttpStatusCode.Created, create.StatusCode);
-        var userId = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        var (userId, username, _) = await PlatformIntegrationTestUsers.CreatePlatformStaffWithPasswordAsync(_client, "life");
+        if (!string.Equals(password, "Correct-Horse-9!", StringComparison.Ordinal))
+        {
+            (await _client.PutAsJsonAsync(
+                $"/api/v1/platform/users/{userId}/credentials/password",
+                new { password })).EnsureSuccessStatusCode();
+        }
 
-        var set = await _client.PutAsJsonAsync(
-            $"/api/v1/platform/users/{userId}/credentials/password",
-            new { password });
-        Assert.Equal(HttpStatusCode.OK, set.StatusCode);
         return (userId, username, password);
     }
 

@@ -84,8 +84,11 @@ public sealed class PlatformStaffIdentityFieldsTests
                 harness.UnitOfWork,
                 harness.Clock),
             harness.EnsureProfiles,
+            harness.Credentials,
             harness.SetPassword,
-            harness.IssueEmailVerification);
+            harness.IssueEmailVerification,
+            harness.UnitOfWork,
+            harness.Clock);
 
         var result = await createStaff.ExecuteAsync(
             "Olivia",
@@ -211,8 +214,11 @@ public sealed class PlatformStaffIdentityFieldsTests
             new InMemoryStaffNumberGenerator(),
             new AssignPlatformRole(roles, users, orgs, ensure, audit, uow, clock),
             ensure,
+            credentials,
             setPassword,
-            issueEmailVerification);
+            issueEmailVerification,
+            uow,
+            clock);
 
         return new StaffHarness(
             users,

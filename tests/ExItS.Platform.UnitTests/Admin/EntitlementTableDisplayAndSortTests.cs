@@ -80,6 +80,20 @@ public sealed class EntitlementTableDisplayAndSortTests
     }
 
     [Fact]
+    public void AdminTableSort_stays_on_blazor_sync_context()
+    {
+        var root = Directory.GetParent(AppContext.BaseDirectory)!;
+        while (root is not null && !File.Exists(Path.Combine(root.FullName, "ExItS.slnx")))
+        {
+            root = root.Parent;
+        }
+
+        Assert.NotNull(root);
+        var tableSort = File.ReadAllText(Path.Combine(root.FullName, "src", "Platform", "ExItS.Platform.Admin", "Services", "AdminTableSort.cs"));
+        Assert.DoesNotContain(".ConfigureAwait(false)", tableSort, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Default_sort_contract_is_generated_descending_then_organization_ascending()
     {
         Assert.Equal(EntitlementListSortBy.GeneratedAtUtc, default(EntitlementListSortBy));

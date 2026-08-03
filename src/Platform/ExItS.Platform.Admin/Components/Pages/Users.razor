@@ -41,9 +41,12 @@ else if (Id is null)
             </Breadcrumb>
         </PageHeaderBreadcrumb>
         <PageHeaderExtra>
-            <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ToggleCreate">
-                @(_showCreate ? L["Users_HideCreate"] : L["Users_CreateUser"])
-            </Button>
+            @if (CanCreatePlatformStaff)
+            {
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ToggleCreate">
+                    @(_showCreate ? L["Users_HideCreate"] : L["Users_CreateUser"])
+                </Button>
+            }
         </PageHeaderExtra>
     </PageHeader>
 
@@ -70,7 +73,7 @@ else if (Id is null)
         <Button Size="@ButtonSize.Small" OnClick="ClearUserFiltersAsync">@L["Common_Reset"]</Button>
     </Space>
 
-    @if (_showCreate)
+    @if (_showCreate && CanCreatePlatformStaff)
     {
         <Card Size="@CardSize.Small" Title="@L["Users_CreateSection"]" Style="margin-bottom:12px;">
             <FormValidationSummary Title="@L["Users_CreateFailed"]" Message="@_formError" IsConflict="_formConflict" />
@@ -100,12 +103,7 @@ else if (Id is null)
                 </div>
                 @if (_staffPerson.RequireEmailVerification)
                 {
-                    <div>
-                        <label class="ant-form-item-label" for="user-create-initial-password">@L["Users_InitialPassword"]</label>
-                        <InputPassword Id="user-create-initial-password" @bind-Value="_newInitialPassword" Size="@InputSize.Small" Disabled="_busy" />
-                        @if (_fieldInitialPassword is not null) { <span class="exits-field-error">@_fieldInitialPassword</span> }
-                        <div class="ant-form-item-explain" style="margin-top:4px;">@L["Users_SendEmailVerificationHint"]</div>
-                    </div>
+                    <div class="ant-form-item-explain" style="margin-top:4px;">@L["Users_SendEmailVerificationHint"]</div>
                 }
                 <Space>
                     <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">@L["Common_Create"]</Button>
@@ -484,7 +482,6 @@ else
     private readonly StaffPersonFieldsModel _staffPerson = new();
     private StaffPersonFieldErrors? _staffPersonErrors;
     private string _newPlatformRole = "";
-    private string _newInitialPassword = "";
     private string _editDisplayName = "";
     private string _editEmail = "";
     private string _editFirstName = "";
@@ -502,13 +499,15 @@ else
     private string? _fieldDisplayName;
     private string? _fieldEmail;
     private string? _fieldPlatformRole;
-    private string? _fieldInitialPassword;
     private bool _busy;
     private int _page = 1;
     private string? _sortBy;
     private bool _sortDesc;
     private Guid? _loadedId;
     private string? _loadedDirectory;
+
+    private bool CanManage => Permissions.HasPermission(PlatformPermissionCodes.ManagePlatformUsers);
+    private bool CanCreatePlatformStaff => DirectoryFilter == "PlatformStaff" && CanManage;
 
     protected override void OnInitialized()
     {
@@ -805,16 +804,7 @@ else
         await ReloadDetailAsync();
     }
 
-    private Task OnStaffPersonChanged()
-    {
-        if (!_staffPerson.RequireEmailVerification)
-        {
-            _newInitialPassword = "";
-            _fieldInitialPassword = null;
-        }
-
-        return Task.CompletedTask;
-    }
+    private Task OnStaffPersonChanged() => Task.CompletedTask;
 
     private async Task ToggleCreate()
     {
@@ -869,15 +859,13 @@ else
         || !string.IsNullOrWhiteSpace(_staffPerson.Phone)
         || !string.IsNullOrWhiteSpace(_staffPerson.EmployeeCode)
         || !string.IsNullOrWhiteSpace(_newPlatformRole)
-        || _staffPerson.RequireEmailVerification
-        || !string.IsNullOrWhiteSpace(_newInitialPassword);
+        || _staffPerson.RequireEmailVerification;
 
     private void ClearCreate()
     {
         _staffPerson.Clear();
         _staffPersonErrors = null;
         _newPlatformRole = "";
-        _newInitialPassword = "";
         ClearFieldErrors();
         _formError = null;
         _formConflict = false;
@@ -906,14 +894,8 @@ else
             _fieldPlatformRole = L["Users_PlatformRoleRequired"];
         }
 
-        if (_staffPerson.RequireEmailVerification && string.IsNullOrWhiteSpace(_newInitialPassword))
-        {
-            _fieldInitialPassword = L["Users_InitialPasswordRequired"];
-        }
-
         if (!personValidation.IsValid
-            || _fieldPlatformRole is not null
-            || _fieldInitialPassword is not null)
+            || _fieldPlatformRole is not null)
         {
             _busy = false;
             return;
@@ -928,8 +910,7 @@ else
             Phone: string.IsNullOrWhiteSpace(_staffPerson.Phone) ? null : _staffPerson.Phone.Trim(),
             EmployeeCode: string.IsNullOrWhiteSpace(_staffPerson.EmployeeCode) ? null : _staffPerson.EmployeeCode.Trim(),
             RequireEmailVerification: _staffPerson.RequireEmailVerification,
-            SendEmailVerification: _staffPerson.RequireEmailVerification,
-            InitialPassword: _staffPerson.RequireEmailVerification ? _newInitialPassword : null));
+            SendEmailVerification: _staffPerson.RequireEmailVerification));
         _busy = false;
         if (!result.IsSuccess)
         {
@@ -1153,6 +1134,6 @@ else
 
     private void ClearFieldErrors()
     {
-        _fieldDisplayName = _fieldEmail = _fieldPlatformRole = _fieldInitialPassword = null;
+        _fieldDisplayName = _fieldEmail = _fieldPlatformRole = null;
     }
 }

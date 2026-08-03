@@ -4,6 +4,7 @@ using System.Text.Json;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace ExItS.Platform.IntegrationTests;
@@ -37,17 +38,7 @@ public sealed class ApiOrganizationStaffCustomerSeparationTests(PostgreSqlFixtur
     private async Task<(Guid UserId, string Username, string Password, string Email, string Token)> SeedOrgOwnerAsync(
         string prefix)
     {
-        var username = Unique(prefix);
-        var password = "Correct-Horse-9!";
-        var email = $"{username}@example.com";
-        var create = await _admin.PostAsJsonAsync(
-            "/api/v1/platform/users",
-            new { username, displayName = "Org Owner", email });
-        create.EnsureSuccessStatusCode();
-        var userId = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-        (await _admin.PutAsJsonAsync(
-            $"/api/v1/platform/users/{userId}/credentials/password",
-            new { password })).EnsureSuccessStatusCode();
+        var (userId, email, password) = await PlatformIntegrationTestUsers.RegisterPersonalWithPasswordAsync(_client, prefix);
 
         var org = await _admin.PostAsJsonAsync(
             "/api/v1/platform/organizations",
@@ -60,28 +51,18 @@ public sealed class ApiOrganizationStaffCustomerSeparationTests(PostgreSqlFixtur
 
         var login = await _client.PostAsJsonAsync(
             "/api/v1/platform/auth/login",
-            new { usernameOrEmail = username, password });
+            new { usernameOrEmail = email, password });
         login.EnsureSuccessStatusCode();
         var token = (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("sessionToken").GetString()!;
-        return (userId, username, password, email, token);
+        return (userId, email, password, email, token);
     }
 
     private async Task<(Guid UserId, string Email, string Token)> SeedPersonalUserAsync(string prefix)
     {
-        var username = Unique(prefix);
-        var password = "Correct-Horse-9!";
-        var email = $"{username}@example.com";
-        var create = await _admin.PostAsJsonAsync(
-            "/api/v1/platform/users",
-            new { username, displayName = "Personal User", email });
-        create.EnsureSuccessStatusCode();
-        var userId = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-        (await _admin.PutAsJsonAsync(
-            $"/api/v1/platform/users/{userId}/credentials/password",
-            new { password })).EnsureSuccessStatusCode();
+        var (userId, email, password) = await PlatformIntegrationTestUsers.RegisterPersonalWithPasswordAsync(_client, prefix);
         var login = await _client.PostAsJsonAsync(
             "/api/v1/platform/auth/login",
-            new { usernameOrEmail = username, password });
+            new { usernameOrEmail = email, password });
         login.EnsureSuccessStatusCode();
         var token = (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("sessionToken").GetString()!;
         return (userId, email, token);

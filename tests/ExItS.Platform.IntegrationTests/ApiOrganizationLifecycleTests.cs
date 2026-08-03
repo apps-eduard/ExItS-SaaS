@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace ExItS.Platform.IntegrationTests;
@@ -42,17 +43,8 @@ public sealed class ApiOrganizationLifecycleTests(PostgreSqlFixture fixture) : I
 
     private async Task<(Guid UserId, string Username, string Password)> SeedUserWithPasswordAsync(string prefix)
     {
-        var username = UniqueToken(prefix);
-        var password = "Correct-Horse-9!";
-        var create = await _admin.PostAsJsonAsync(
-            "/api/v1/platform/users",
-            new { username, displayName = "Org Admin", email = $"{username}@example.com" });
-        create.EnsureSuccessStatusCode();
-        var userId = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-        (await _admin.PutAsJsonAsync(
-            $"/api/v1/platform/users/{userId}/credentials/password",
-            new { password })).EnsureSuccessStatusCode();
-        return (userId, username, password);
+        var (userId, email, password) = await PlatformIntegrationTestUsers.RegisterPersonalWithPasswordAsync(_client, prefix);
+        return (userId, email, password);
     }
 
     private async Task<string> LoginAsync(string username, string password)

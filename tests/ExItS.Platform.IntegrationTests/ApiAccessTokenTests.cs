@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.Platform.Infrastructure.Persistence;
+using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -37,20 +38,8 @@ public sealed class ApiAccessTokenTests(PostgreSqlFixture fixture) : IAsyncLifet
     private static string UniqueToken(string prefix) =>
         $"{prefix}{Guid.NewGuid():N}"[..Math.Min(24, prefix.Length + 32)].ToLowerInvariant();
 
-    private async Task<(Guid UserId, string Username, string Password)> SeedUserWithPasswordAsync()
-    {
-        var username = UniqueToken("atok");
-        var password = "Correct-Horse-9!";
-        var create = await _admin.PostAsJsonAsync(
-            "/api/v1/platform/users",
-            new { username, displayName = "Access Token User", email = $"{username}@example.com" });
-        Assert.Equal(HttpStatusCode.Created, create.StatusCode);
-        var userId = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-        Assert.Equal(HttpStatusCode.OK, (await _admin.PutAsJsonAsync(
-            $"/api/v1/platform/users/{userId}/credentials/password",
-            new { password })).StatusCode);
-        return (userId, username, password);
-    }
+    private Task<(Guid UserId, string Username, string Password)> SeedUserWithPasswordAsync() =>
+        PlatformIntegrationTestUsers.CreatePlatformStaffWithPasswordAsync(_admin, "atok");
 
     [Fact]
     public async Task Password_grant_issues_bearer_and_introspect_reports_active()

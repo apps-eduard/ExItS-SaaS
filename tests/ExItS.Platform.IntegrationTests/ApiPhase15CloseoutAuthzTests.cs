@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -54,12 +55,8 @@ public sealed class ApiPhase15CloseoutAuthzTests(PostgreSqlFixture fixture) : IA
 
     private async Task<Guid> CreatePlatformUserAsync(string prefix)
     {
-        var username = UniqueToken(prefix);
-        var response = await _client.PostAsJsonAsync(
-            "/api/v1/platform/users",
-            new { username, displayName = $"{prefix} User", email = $"{username}@example.com" });
-        response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        var (userId, _, _) = await PlatformIntegrationTestUsers.CreatePlatformStaffWithPasswordAsync(_client, prefix);
+        return userId;
     }
 
     private async Task AssignPlatformRoleAsync(Guid platformUserId, string role, Guid? organizationId = null)

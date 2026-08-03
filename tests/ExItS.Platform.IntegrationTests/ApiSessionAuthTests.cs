@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Infrastructure.Persistence;
+using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -34,22 +35,8 @@ public sealed class ApiSessionAuthTests(PostgreSqlFixture fixture) : IAsyncLifet
     private static string UniqueToken(string prefix) =>
         $"{prefix}{Guid.NewGuid():N}"[..Math.Min(24, prefix.Length + 32)].ToLowerInvariant();
 
-    private async Task<(Guid UserId, string Username, string Password)> SeedUserWithPasswordAsync()
-    {
-        var username = UniqueToken("sess");
-        var password = "Correct-Horse-9!";
-        var create = await _client.PostAsJsonAsync(
-            "/api/v1/platform/users",
-            new { username, displayName = "Session User", email = $"{username}@example.com" });
-        Assert.Equal(HttpStatusCode.Created, create.StatusCode);
-        var userId = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-
-        var set = await _client.PutAsJsonAsync(
-            $"/api/v1/platform/users/{userId}/credentials/password",
-            new { password });
-        Assert.Equal(HttpStatusCode.OK, set.StatusCode);
-        return (userId, username, password);
-    }
+    private Task<(Guid UserId, string Username, string Password)> SeedUserWithPasswordAsync() =>
+        PlatformIntegrationTestUsers.CreatePlatformStaffWithPasswordAsync(_client, "sess");
 
     [Fact]
     public async Task Login_me_and_logout_with_session_token_header()
@@ -200,7 +187,8 @@ internal sealed class SessionApiFactory(string connectionString) : WebApplicatio
             {
                 ["ConnectionStrings:PlatformDatabase"] = connectionString,
                 ["Security:EnforceHttps"] = "false",
-                ["PlatformAuthentication:External:TestingEndpointEnabled"] = "true"
+                ["PlatformAuthentication:External:TestingEndpointEnabled"] = "true",
+                ["PlatformAuthentication:Lifecycle:ExposeDebugTokens"] = "true"
             });
         });
     }

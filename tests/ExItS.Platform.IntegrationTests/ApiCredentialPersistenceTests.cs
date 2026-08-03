@@ -42,7 +42,15 @@ public sealed class ApiCredentialPersistenceTests(PostgreSqlFixture fixture) : I
         var username = UniqueToken("cred");
         var create = await _client.PostAsJsonAsync(
             "/api/v1/platform/users",
-            new { username, displayName = "Cred User", email = $"{username}@example.com" });
+            new
+            {
+                username,
+                firstName = "Cred",
+                lastName = "User",
+                displayName = "Cred User",
+                email = $"{username}@example.com",
+                platformRole = "PlatformSupport"
+            });
         Assert.Equal(HttpStatusCode.Created, create.StatusCode);
         var userId = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 

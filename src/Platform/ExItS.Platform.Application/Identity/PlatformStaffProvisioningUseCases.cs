@@ -27,23 +27,32 @@ public sealed class CreatePlatformStaffUser
     private readonly IStaffNumberGenerator _staffNumbers;
     private readonly AssignPlatformRole _assignPlatformRole;
     private readonly EnsureAccountProfilesForUser _ensureProfiles;
+    private readonly IPlatformUserCredentialRepository _credentials;
     private readonly SetPlatformUserPassword _setPassword;
     private readonly IssueEmailVerificationForUser _issueEmailVerification;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
 
     public CreatePlatformStaffUser(
         CreatePlatformUser createUser,
         IStaffNumberGenerator staffNumbers,
         AssignPlatformRole assignPlatformRole,
         EnsureAccountProfilesForUser ensureProfiles,
+        IPlatformUserCredentialRepository credentials,
         SetPlatformUserPassword setPassword,
-        IssueEmailVerificationForUser issueEmailVerification)
+        IssueEmailVerificationForUser issueEmailVerification,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
     {
         _createUser = createUser;
         _staffNumbers = staffNumbers;
         _assignPlatformRole = assignPlatformRole;
         _ensureProfiles = ensureProfiles;
+        _credentials = credentials;
         _setPassword = setPassword;
         _issueEmailVerification = issueEmailVerification;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
     }
 
     public async Task<ApplicationResult<CreatePlatformStaffUserResult>> ExecuteAsync(
@@ -62,13 +71,6 @@ public sealed class CreatePlatformStaffUser
         Guid? createdByUserId = null,
         CancellationToken cancellationToken = default)
     {
-        if (requireEmailVerification && string.IsNullOrWhiteSpace(initialPassword))
-        {
-            return ApplicationResult<CreatePlatformStaffUserResult>.Failure(
-                ApplicationErrorCodes.DomainViolation,
-                "Initial password is required when requireEmailVerification is true.");
-        }
-
         var staffNumber = await _staffNumbers.GenerateNextAsync(cancellationToken).ConfigureAwait(false);
         var created = await _createUser
             .ExecuteForStaffAsync(
@@ -122,14 +124,24 @@ public sealed class CreatePlatformStaffUser
         DateTimeOffset? expiresAt = null;
         if (requireEmailVerification)
         {
-            var passwordResult = await _setPassword
-                .ExecuteAsync(user.Id.Value, initialPassword!, cancellationToken)
-                .ConfigureAwait(false);
-            if (!passwordResult.IsSuccess)
+            if (!string.IsNullOrWhiteSpace(initialPassword))
             {
-                return ApplicationResult<CreatePlatformStaffUserResult>.Failure(
-                    passwordResult.ErrorCode ?? ApplicationErrorCodes.DomainViolation,
-                    passwordResult.ErrorMessage ?? "Initial password set failed.");
+                var passwordResult = await _setPassword
+                    .ExecuteAsync(user.Id.Value, initialPassword, cancellationToken)
+                    .ConfigureAwait(false);
+                if (!passwordResult.IsSuccess)
+                {
+                    return ApplicationResult<CreatePlatformStaffUserResult>.Failure(
+                        passwordResult.ErrorCode ?? ApplicationErrorCodes.DomainViolation,
+                        passwordResult.ErrorMessage ?? "Initial password set failed.");
+                }
+            }
+            else
+            {
+                var utcNow = _clock.UtcNow;
+                var credential = PlatformUserCredential.CreateForExternalLogin(user.Id, utcNow, emailVerified: false);
+                await _credentials.AddAsync(credential, cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             }
 
             var verification = await _issueEmailVerification

@@ -33,6 +33,24 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
         $"{prefix}{Guid.NewGuid():N}"[..Math.Min(24, prefix.Length + 32)].ToLowerInvariant();
 
     [Fact]
+    public async Task Platform_staff_create_without_platform_role_returns_400()
+    {
+        var response = await _client.PostAsJsonAsync(
+            "/api/v1/platform/users",
+            new
+            {
+                username = UniqueToken("norole"),
+                firstName = "No",
+                lastName = "Role",
+                displayName = "No Role",
+                email = $"{UniqueToken("norole")}@example.com"
+            });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains("PlatformRole is required", body.GetProperty("detail").GetString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Platform_staff_create_requires_role_and_assigns_platform_account_only()
     {
         var username = UniqueToken("staff");
@@ -168,7 +186,15 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
 
         var create = await _client.PostAsJsonAsync(
             "/api/v1/platform/users",
-            new { username, displayName = "Ada Lovelace", email });
+            new
+            {
+                username,
+                firstName = "Ada",
+                lastName = "Lovelace",
+                displayName = "Ada Lovelace",
+                email,
+                platformRole = "PlatformSupport"
+            });
         Assert.Equal(HttpStatusCode.Created, create.StatusCode);
         var user = await create.Content.ReadFromJsonAsync<JsonElement>();
         var userId = user.GetProperty("id").GetGuid();
@@ -176,12 +202,28 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
 
         var emailConflict = await _client.PostAsJsonAsync(
             "/api/v1/platform/users",
-            new { username = UniqueToken("user2"), displayName = "Ada Two", email = email.ToUpperInvariant() });
+            new
+            {
+                username = UniqueToken("user2"),
+                firstName = "Ada",
+                lastName = "Two",
+                displayName = "Ada Two",
+                email = email.ToUpperInvariant(),
+                platformRole = "PlatformSupport"
+            });
         Assert.Equal(HttpStatusCode.Conflict, emailConflict.StatusCode);
 
         var usernameConflict = await _client.PostAsJsonAsync(
             "/api/v1/platform/users",
-            new { username = username.ToUpperInvariant(), displayName = "Ada Three", email = $"{UniqueToken("u3")}@example.com" });
+            new
+            {
+                username = username.ToUpperInvariant(),
+                firstName = "Ada",
+                lastName = "Three",
+                displayName = "Ada Three",
+                email = $"{UniqueToken("u3")}@example.com",
+                platformRole = "PlatformSupport"
+            });
         Assert.Equal(HttpStatusCode.Conflict, usernameConflict.StatusCode);
 
         var list = await _client.GetAsync($"/api/v1/platform/users?search={username}&page=1&pageSize=10");
@@ -210,7 +252,15 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
         var username = UniqueToken("mem");
         var createUser = await _client.PostAsJsonAsync(
             "/api/v1/platform/users",
-            new { username, displayName = "Member User", email = $"{username}@example.com" });
+            new
+            {
+                username,
+                firstName = "Member",
+                lastName = "User",
+                displayName = "Member User",
+                email = $"{username}@example.com",
+                platformRole = "PlatformSupport"
+            });
         createUser.EnsureSuccessStatusCode();
         var userId = (await createUser.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 
@@ -291,11 +341,6 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
 
         var inviteeUsername = UniqueToken("invitee");
         var inviteeEmail = $"{inviteeUsername}@example.com";
-        var createInvitee = await _client.PostAsJsonAsync(
-            "/api/v1/platform/users",
-            new { username = inviteeUsername, displayName = "Invitee", email = inviteeEmail });
-        createInvitee.EnsureSuccessStatusCode();
-        var inviteeId = (await createInvitee.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 
         var createInvite = await _client.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/invitations",
@@ -306,6 +351,13 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
         var acceptToken = inviteBody.GetProperty("acceptToken").GetString();
         Assert.False(string.IsNullOrWhiteSpace(acceptToken));
         Assert.False(inviteBody.TryGetProperty("tokenHash", out _));
+
+        var userList = await _client.GetAsync($"/api/v1/platform/users?search={inviteeUsername}&pageSize=5");
+        userList.EnsureSuccessStatusCode();
+        var inviteeId = (await userList.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("items")[0]
+            .GetProperty("id")
+            .GetGuid();
 
         var list = await _client.GetAsync($"/api/v1/platform/organizations/{organizationId}/invitations");
         Assert.Equal(HttpStatusCode.OK, list.StatusCode);
@@ -327,10 +379,11 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
         (await _client.PutAsJsonAsync(
             $"/api/v1/platform/users/{inviteeId}/credentials/password",
             new { password })).EnsureSuccessStatusCode();
+        (await _client.PostAsync($"/api/v1/platform/users/{inviteeId}/reactivate", null)).EnsureSuccessStatusCode();
 
         var login = await _client.PostAsJsonAsync(
             "/api/v1/platform/auth/login",
-            new { usernameOrEmail = inviteeUsername, password });
+            new { usernameOrEmail = inviteeEmail, password });
         Assert.Equal(HttpStatusCode.OK, login.StatusCode);
         var sessionToken = (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("sessionToken").GetString();
         Assert.False(string.IsNullOrWhiteSpace(sessionToken));
@@ -376,7 +429,15 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
         var username = UniqueToken("owner");
         var createUser = await _client.PostAsJsonAsync(
             "/api/v1/platform/users",
-            new { username, displayName = "Solo Owner", email = $"{username}@example.com" });
+            new
+            {
+                username,
+                firstName = "Solo",
+                lastName = "Owner",
+                displayName = "Solo Owner",
+                email = $"{username}@example.com",
+                platformRole = "PlatformSupport"
+            });
         createUser.EnsureSuccessStatusCode();
         var userId = (await createUser.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace ExItS.Platform.IntegrationTests;
@@ -32,24 +33,15 @@ public sealed class ApiStartBusinessAndUtangMigrationTests(PostgreSqlFixture fix
     private static string Unique(string prefix) =>
         $"{prefix}{Guid.NewGuid():N}"[..Math.Min(20, prefix.Length + 32)].ToLowerInvariant();
 
-    private async Task<(string Token, Guid UserId, string Username, string Password)> SeedPersonalUserAsync(string prefix)
+    private async Task<(string Token, Guid UserId, string Email, string Password)> SeedPersonalUserAsync(string prefix)
     {
-        var username = Unique(prefix);
-        var password = "Correct-Horse-9!";
-        var create = await _admin.PostAsJsonAsync(
-            "/api/v1/platform/users",
-            new { username, displayName = "Start Biz User", email = $"{username}@example.com" });
-        create.EnsureSuccessStatusCode();
-        var userId = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-        (await _admin.PutAsJsonAsync(
-            $"/api/v1/platform/users/{userId}/credentials/password",
-            new { password })).EnsureSuccessStatusCode();
+        var (userId, email, password) = await PlatformIntegrationTestUsers.RegisterPersonalWithPasswordAsync(_client, prefix);
         var login = await _client.PostAsJsonAsync(
             "/api/v1/platform/auth/login",
-            new { usernameOrEmail = username, password });
+            new { usernameOrEmail = email, password });
         login.EnsureSuccessStatusCode();
         var token = (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("sessionToken").GetString()!;
-        return (token, userId, username, password);
+        return (token, userId, email, password);
     }
 
     private static HttpRequestMessage Authed(HttpMethod method, string url, string token, object? body = null)
@@ -345,13 +337,13 @@ public sealed class ApiStartBusinessAndUtangMigrationTests(PostgreSqlFixture fix
     public async Task Linked_participant_without_consent_is_blocked()
     {
         var (lenderToken, lenderId, _, _) = await SeedPersonalUserAsync("ll");
-        var (borrowerToken, borrowerId, borrowerUser, borrowerPassword) = await SeedPersonalUserAsync("lb");
+        var (borrowerToken, borrowerId, borrowerEmail, borrowerPassword) = await SeedPersonalUserAsync("lb");
 
         using var contactRequest = Authed(
             HttpMethod.Post,
             "/api/v1/personal/utang/contacts",
             lenderToken,
-            new { displayName = "Linked Friend", email = $"{borrowerUser}@example.com" });
+            new { displayName = "Linked Friend", email = borrowerEmail });
         var contactId = (await (await _client.SendAsync(contactRequest)).Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("id").GetGuid();
 

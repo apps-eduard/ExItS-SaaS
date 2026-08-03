@@ -596,7 +596,7 @@
   <data name="Users_Warning" xml:space="preserve"><value>Platform membership is not product operational authorization. Organization invitations and memberships never grant product-local roles.</value></data>
   <data name="Users_SearchPlaceholder" xml:space="preserve"><value>Username, email, or name</value></data>
   <data name="Users_HideCreate" xml:space="preserve"><value>Hide create</value></data>
-  <data name="Users_CreateUser" xml:space="preserve"><value>Create user</value></data>
+  <data name="Users_CreateUser" xml:space="preserve"><value>Create Platform Staff</value></data>
   <data name="Users_AriaCreate" xml:space="preserve"><value>Create Platform user</value></data>
   <data name="Users_CreateSection" xml:space="preserve"><value>Create Platform staff</value></data>
   <data name="Users_CreateFailed" xml:space="preserve"><value>Could not create user</value></data>

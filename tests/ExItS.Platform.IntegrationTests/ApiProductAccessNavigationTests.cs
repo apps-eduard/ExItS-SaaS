@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace ExItS.Platform.IntegrationTests;
@@ -46,20 +47,11 @@ public sealed class ApiProductAccessNavigationTests(PostgreSqlFixture fixture) :
 
     private async Task<(string Token, Guid UserId, Guid OrgId)> StartBusinessAsync()
     {
-        var username = Unique("nav");
-        var password = "Correct-Horse-9!";
-        var create = await _admin.PostAsJsonAsync(
-            "/api/v1/platform/users",
-            new { username, displayName = "Nav User", email = $"{username}@example.com" });
-        create.EnsureSuccessStatusCode();
-        var userId = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-        (await _admin.PutAsJsonAsync(
-            $"/api/v1/platform/users/{userId}/credentials/password",
-            new { password })).EnsureSuccessStatusCode();
+        var (userId, email, password) = await PlatformIntegrationTestUsers.RegisterPersonalWithPasswordAsync(_client, "nav");
 
         var login = await _client.PostAsJsonAsync(
             "/api/v1/platform/auth/login",
-            new { usernameOrEmail = username, password });
+            new { usernameOrEmail = email, password });
         login.EnsureSuccessStatusCode();
         var personalToken = (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("sessionToken").GetString()!;
 
@@ -114,15 +106,7 @@ public sealed class ApiProductAccessNavigationTests(PostgreSqlFixture fixture) :
         var (token, ownerId, orgId) = await StartBusinessAsync();
 
         // Create staff member with commercial access but no product-local role.
-        var staffUsername = Unique("staff");
-        var createStaff = await _admin.PostAsJsonAsync(
-            "/api/v1/platform/users",
-            new { username = staffUsername, displayName = "Staff", email = $"{staffUsername}@example.com" });
-        createStaff.EnsureSuccessStatusCode();
-        var staffId = (await createStaff.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-        (await _admin.PutAsJsonAsync(
-            $"/api/v1/platform/users/{staffId}/credentials/password",
-            new { password = "Correct-Horse-9!" })).EnsureSuccessStatusCode();
+        var (staffId, staffEmail, staffPassword) = await PlatformIntegrationTestUsers.RegisterPersonalWithPasswordAsync(_client, "staff");
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{orgId}/members",
             new { userId = staffId, role = "OrganizationMember" })).EnsureSuccessStatusCode();
@@ -133,7 +117,7 @@ public sealed class ApiProductAccessNavigationTests(PostgreSqlFixture fixture) :
 
         var staffLogin = await _client.PostAsJsonAsync(
             "/api/v1/platform/auth/login",
-            new { usernameOrEmail = staffUsername, password = "Correct-Horse-9!" });
+            new { usernameOrEmail = staffEmail, password = staffPassword });
         // Staff may still be Personal until profile selection; force org context via owner authorization check.
         _ = staffLogin;
 
@@ -173,19 +157,10 @@ public sealed class ApiProductAccessNavigationTests(PostgreSqlFixture fixture) :
     [Fact]
     public async Task Personal_session_cannot_discover_organization_products()
     {
-        var username = Unique("pers");
-        var password = "Correct-Horse-9!";
-        var create = await _admin.PostAsJsonAsync(
-            "/api/v1/platform/users",
-            new { username, displayName = "Personal", email = $"{username}@example.com" });
-        create.EnsureSuccessStatusCode();
-        var userId = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-        (await _admin.PutAsJsonAsync(
-            $"/api/v1/platform/users/{userId}/credentials/password",
-            new { password })).EnsureSuccessStatusCode();
+        var (_, email, password) = await PlatformIntegrationTestUsers.RegisterPersonalWithPasswordAsync(_client, "pers");
         var login = await _client.PostAsJsonAsync(
             "/api/v1/platform/auth/login",
-            new { usernameOrEmail = username, password });
+            new { usernameOrEmail = email, password });
         login.EnsureSuccessStatusCode();
         var token = (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("sessionToken").GetString()!;
 

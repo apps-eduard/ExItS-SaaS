@@ -594,7 +594,7 @@
   <data name="Users_Warning" xml:space="preserve"><value>Ang Platform membership ay hindi product operational authorization. Ang organization invitations at memberships ay hindi nagbibigay ng product-local roles.</value></data>
   <data name="Users_SearchPlaceholder" xml:space="preserve"><value>Username, email, o pangalan</value></data>
   <data name="Users_HideCreate" xml:space="preserve"><value>Itago ang create</value></data>
-  <data name="Users_CreateUser" xml:space="preserve"><value>Gumawa ng user</value></data>
+  <data name="Users_CreateUser" xml:space="preserve"><value>Gumawa ng Platform Staff</value></data>
   <data name="Users_AriaCreate" xml:space="preserve"><value>Gumawa ng Platform user</value></data>
   <data name="Users_CreateSection" xml:space="preserve"><value>Gumawa ng Platform staff</value></data>
   <data name="Users_CreateFailed" xml:space="preserve"><value>Hindi makagawa ng user</value></data>

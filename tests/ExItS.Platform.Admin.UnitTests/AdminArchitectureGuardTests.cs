@@ -380,8 +380,20 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("PlatformPermissionCodes", nav, StringComparison.Ordinal);
         Assert.Contains("<Menu", nav, StringComparison.Ordinal);
         Assert.Contains("<SubMenu", nav, StringComparison.Ordinal);
+        Assert.Contains("Permissions.Loaded", nav, StringComparison.Ordinal);
+
+        var tableSort = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Services", "AdminTableSort.cs"));
+        Assert.DoesNotContain(".ConfigureAwait(false)", tableSort, StringComparison.Ordinal);
+        Assert.Contains("sync context", tableSort, StringComparison.OrdinalIgnoreCase);
+
+        var entitlementsPage = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Entitlements.razor"));
+        Assert.Contains("AdminShellContext Shell", entitlementsPage, StringComparison.Ordinal);
+        Assert.Contains("_suppressInitialTableChange", entitlementsPage, StringComparison.Ordinal);
+        Assert.Contains("CanViewEntitlements", entitlementsPage, StringComparison.Ordinal);
 
         var usersPage = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Users.razor"));
+        Assert.Contains("CanCreatePlatformStaff", usersPage, StringComparison.Ordinal);
+        Assert.Contains("DirectoryFilter == \"PlatformStaff\"", usersPage, StringComparison.Ordinal);
         Assert.Contains("_loadedDirectory", usersPage, StringComparison.Ordinal);
         Assert.Contains("LocationChanged", usersPage, StringComparison.Ordinal);
         Assert.Contains("EnsureDirectoryListAsync", usersPage, StringComparison.Ordinal);

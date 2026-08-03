@@ -10,6 +10,11 @@
   Platform / Organization / Personal menus are mutually exclusive and follow AccountClass.
 *@
 
+@if (!_ready)
+{
+    <div class="exits-nav-loading" style="padding:12px;text-align:center;"><Spin Size="@SpinSize.Small" /></div>
+}
+
 <Menu Theme="MenuTheme.Dark"
       Mode="MenuMode.Inline"
       InlineCollapsed="Collapsed"
@@ -21,7 +26,7 @@
         @(_ready && Shell.IsPersonalShell ? L["Nav_Home"] : L["Nav_Dashboard"])
     </MenuItem>
 
-    @if (_ready && Shell.IsPlatformShell)
+    @if (_ready && Shell.IsPlatformShell && Permissions.Loaded)
     {
         @if (PlatformAccountItems.Count > 0)
         {
@@ -324,12 +329,28 @@
             // Keep Dashboard usable if shell APIs are briefly rate-limited after login.
         }
 
+        if (Shell.IsPlatformShell)
+        {
+            try
+            {
+                await Permissions.EnsureLoadedAsync();
+            }
+            catch
+            {
+                // Nav falls back to permission-safe empty Platform submenus.
+            }
+        }
+
+        Permissions.Changed += OnPermissionsChanged;
+
         // New circuit/session: reset selection so a prior account-class menu cannot linger.
         _selected = ["dashboard"];
         _ready = true;
         SyncSelection();
         Nav.LocationChanged += OnLocationChanged;
     }
+
+    private void OnPermissionsChanged() => _ = InvokeAsync(StateHasChanged);
 
     private async Task OnMenuItemClicked(MenuItem item)
     {
@@ -420,5 +441,9 @@
         _ => "team"
     };
 
-    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+    public void Dispose()
+    {
+        Permissions.Changed -= OnPermissionsChanged;
+        Nav.LocationChanged -= OnLocationChanged;
+    }
 }

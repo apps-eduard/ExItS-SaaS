@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace ExItS.Platform.IntegrationTests;
@@ -34,19 +35,10 @@ public sealed class ApiPersonalAccountTests(PostgreSqlFixture fixture) : IAsyncL
 
     private async Task<string> LoginPersonalAsync()
     {
-        var username = Unique("pacc");
-        var password = "Correct-Horse-9!";
-        var create = await _admin.PostAsJsonAsync(
-            "/api/v1/platform/users",
-            new { username, displayName = "Personal Account", email = $"{username}@example.com" });
-        create.EnsureSuccessStatusCode();
-        var userId = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-        (await _admin.PutAsJsonAsync(
-            $"/api/v1/platform/users/{userId}/credentials/password",
-            new { password })).EnsureSuccessStatusCode();
+        var (_, email, password) = await PlatformIntegrationTestUsers.RegisterPersonalWithPasswordAsync(_client, "pacc");
         var login = await _client.PostAsJsonAsync(
             "/api/v1/platform/auth/login",
-            new { usernameOrEmail = username, password });
+            new { usernameOrEmail = email, password });
         Assert.Equal(HttpStatusCode.OK, login.StatusCode);
         var body = await login.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("Personal", body.GetProperty("accountClass").GetString());
@@ -100,16 +92,7 @@ public sealed class ApiPersonalAccountTests(PostgreSqlFixture fixture) : IAsyncL
     [Fact]
     public async Task Platform_session_cannot_access_personal_dashboard()
     {
-        var username = Unique("pplat");
-        var password = "Correct-Horse-9!";
-        var create = await _admin.PostAsJsonAsync(
-            "/api/v1/platform/users",
-            new { username, displayName = "Platform User", email = $"{username}@example.com" });
-        create.EnsureSuccessStatusCode();
-        var userId = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-        (await _admin.PutAsJsonAsync(
-            $"/api/v1/platform/users/{userId}/credentials/password",
-            new { password })).EnsureSuccessStatusCode();
+        var (userId, username, password) = await PlatformIntegrationTestUsers.CreatePlatformStaffWithPasswordAsync(_admin, "pplat");
         (await _admin.PostAsJsonAsync(
             "/api/v1/platform/authorization/assignments",
             new { platformUserId = userId, role = "PlatformAdministrator" })).EnsureSuccessStatusCode();

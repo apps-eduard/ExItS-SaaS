@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Domain.Authorization;
+using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace ExItS.Platform.IntegrationTests;
@@ -33,20 +34,16 @@ public sealed class ApiAccountScopeIsolationTests(PostgreSqlFixture fixture) : I
     private static string Unique(string prefix) =>
         $"{prefix}{Guid.NewGuid():N}"[..Math.Min(20, prefix.Length + 32)].ToLowerInvariant();
 
-    private async Task<(Guid UserId, string Username, string Password)> SeedUserAsync(string prefix)
-    {
-        var username = Unique(prefix);
-        var password = "Correct-Horse-9!";
-        var create = await _admin.PostAsJsonAsync(
-            "/api/v1/platform/users",
-            new { username, displayName = "Scope User", email = $"{username}@example.com" });
-        create.EnsureSuccessStatusCode();
-        var userId = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-        (await _admin.PutAsJsonAsync(
-            $"/api/v1/platform/users/{userId}/credentials/password",
-            new { password })).EnsureSuccessStatusCode();
-        return (userId, username, password);
-    }
+    private async Task<(Guid UserId, string Username, string Password)> SeedUserAsync(string prefix) =>
+        await PlatformIntegrationTestUsers.CreatePlatformStaffWithPasswordAsync(_admin, prefix);
+
+    private async Task<(Guid UserId, string Email, string Password)> SeedPersonalUserAsync(string prefix) =>
+        await PlatformIntegrationTestUsers.RegisterPersonalWithPasswordAsync(_client, prefix);
+
+    private async Task<(Guid UserId, string Email, string Password, Guid OrganizationId)> SeedOrgMemberAsync(
+        string prefix,
+        string role = "OrganizationMember") =>
+        await PlatformIntegrationTestUsers.SeedOrgMemberViaInvitationAsync(_admin, _client, prefix, role);
 
     private async Task<JsonElement> LoginAsync(string username, string password)
     {
@@ -74,8 +71,8 @@ public sealed class ApiAccountScopeIsolationTests(PostgreSqlFixture fixture) : I
     [Fact]
     public async Task Personal_session_cannot_call_platform_admin_apis()
     {
-        var (_, username, password) = await SeedUserAsync("pers");
-        var login = await LoginAsync(username, password);
+        var (_, email, password) = await SeedPersonalUserAsync("pers");
+        var login = await LoginAsync(email, password);
         Assert.Equal("Personal", login.GetProperty("accountClass").GetString());
         var token = login.GetProperty("sessionToken").GetString()!;
 
@@ -115,17 +112,9 @@ public sealed class ApiAccountScopeIsolationTests(PostgreSqlFixture fixture) : I
     [Fact]
     public async Task Organization_session_cannot_call_platform_or_personal_apis()
     {
-        var (userId, username, password) = await SeedUserAsync("orgs");
-        var org = await _admin.PostAsJsonAsync(
-            "/api/v1/platform/organizations",
-            new { displayName = "Scope Org", slug = Unique("scorg") });
-        org.EnsureSuccessStatusCode();
-        var organizationId = (await org.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-        (await _admin.PostAsJsonAsync(
-            $"/api/v1/platform/organizations/{organizationId}/members",
-            new { userId, role = "OrganizationMember", reason = "integration-test-link" })).EnsureSuccessStatusCode();
-
-        var login = await LoginAsync(username, password);
+        var (userId, email, password, _) = await SeedOrgMemberAsync("orgs");
+        _ = userId;
+        var login = await LoginAsync(email, password);
         Assert.Equal("Organization", login.GetProperty("accountClass").GetString());
         var token = login.GetProperty("sessionToken").GetString()!;
 
@@ -139,16 +128,16 @@ public sealed class ApiAccountScopeIsolationTests(PostgreSqlFixture fixture) : I
     [Fact]
     public async Task Client_cannot_forge_account_class_via_profile_select_of_other_user()
     {
-        var (userAId, usernameA, passwordA) = await SeedUserAsync("fora");
-        var (userBId, usernameB, passwordB) = await SeedUserAsync("forb");
+        var (userAId, emailA, passwordA) = await SeedPersonalUserAsync("fora");
+        var (userBId, emailB, passwordB) = await SeedPersonalUserAsync("forb");
         _ = userAId;
         _ = userBId;
         _ = passwordB;
 
-        var loginB = await LoginAsync(usernameB, passwordB);
+        var loginB = await LoginAsync(emailB, passwordB);
         var foreignProfileId = loginB.GetProperty("accountProfileId").GetGuid();
 
-        var loginA = await LoginAsync(usernameA, passwordA);
+        var loginA = await LoginAsync(emailA, passwordA);
         var tokenA = loginA.GetProperty("sessionToken").GetString()!;
 
         using var select = Authed(HttpMethod.Post, "/api/v1/platform/auth/account-profiles/select", tokenA);
@@ -162,17 +151,9 @@ public sealed class ApiAccountScopeIsolationTests(PostgreSqlFixture fixture) : I
     [Fact]
     public async Task Organization_session_can_resolve_empty_authorization_me_but_not_platform_users()
     {
-        var (userId, username, password) = await SeedUserAsync("orgz");
-        var org = await _admin.PostAsJsonAsync(
-            "/api/v1/platform/organizations",
-            new { displayName = "Authz Org", slug = Unique("azorg") });
-        org.EnsureSuccessStatusCode();
-        var organizationId = (await org.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-        (await _admin.PostAsJsonAsync(
-            $"/api/v1/platform/organizations/{organizationId}/members",
-            new { userId, role = "OrganizationOwner", reason = "integration-test-link" })).EnsureSuccessStatusCode();
+        var (userId, email, password, organizationId) = await SeedOrgMemberAsync("orgz", "OrganizationOwner");
 
-        var login = await LoginAsync(username, password);
+        var login = await LoginAsync(email, password);
         Assert.Equal("Organization", login.GetProperty("accountClass").GetString());
         var token = login.GetProperty("sessionToken").GetString()!;
 

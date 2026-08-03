@@ -11,8 +11,23 @@
 @inject IStringLocalizer<AdminResources> L
 @inject NavigationManager Nav
 @inject PlatformPermissionState Permissions
+@inject AdminShellContext Shell
 
-@if (Id is not null)
+@if (!_pageReady)
+{
+    <div style="padding:2rem;text-align:center;"><Spin Tip="@L["Entitlements_Loading"]" /></div>
+}
+else if (!Shell.IsPlatformShell)
+{
+    <Result Status="@ResultStatus.Warning"
+            Title="@L["Scope_PlatformAccountsDenied"]"
+            SubTitle="@Shell.RoleLabel" />
+}
+else if (!CanViewEntitlements)
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ViewPortfolio" />
+}
+else if (Id is not null)
 {
     <PageHeader Class="exits-page-header" Title="@L["Entitlements_DetailTitle"]" SubTitle="@L["Entitlements_DetailDescription"]">
         <PageHeaderBreadcrumb>
@@ -257,7 +272,13 @@ else
 
     @if (_list is { IsSuccess: false })
     {
-        <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail" />
+        <Result Status="@ResultStatus.Error"
+                Title="@(_list.Error?.Title ?? L["Common_Error"])"
+                SubTitle="@_list.Error?.Detail">
+            <Extra>
+                <Button Type="@ButtonType.Primary" OnClick="RetryListAsync">@L["Common_Retry"]</Button>
+            </Extra>
+        </Result>
     }
     else if (_list is { IsSuccess: true, Data.Items.Count: 0 })
     {
@@ -275,7 +296,8 @@ else
                Size="@TableSize.Small"
                Bordered
                RemoteDataSource
-               OnChange="OnEntitlementsTableChangeAsync">
+               OnChange="OnEntitlementsTableChangeAsync"
+               @key="_tableReady">
             <PropertyColumn Property="c => c.ProductDisplayName" Title="@L["Common_Product"]" Sortable Ellipsis>
                 <Tooltip Title="@(string.IsNullOrWhiteSpace(context.ProductDisplayName) ? context.ProductCode : context.ProductDisplayName)">
                     <a href="/admin/entitlements/@context.Id">@(string.IsNullOrWhiteSpace(context.ProductDisplayName) ? "Product" : context.ProductDisplayName)</a>
@@ -323,6 +345,9 @@ else
     private string? _sortBy;
     private bool _sortDesc = true;
     private bool _busy;
+    private bool _pageReady;
+    private bool _tableReady;
+    private bool _suppressInitialTableChange = true;
 
     private string _overrideFeatureCode = "";
     private bool _overrideEnabled = true;
@@ -338,11 +363,28 @@ else
 
     private bool CanManageOverrides => Permissions.HasPermission(PlatformPermissionCodes.ManageEntitlementOverrides);
     private bool CanManageSnapshots => Permissions.HasPermission(PlatformPermissionCodes.ManageSubscriptions);
+    private bool CanViewEntitlements =>
+        Permissions.HasPermission(PlatformPermissionCodes.ViewPortfolio)
+        || Permissions.HasPermission(PlatformPermissionCodes.ManageSubscriptions)
+        || Permissions.HasPermission(PlatformPermissionCodes.ManageEntitlementOverrides);
 
     protected override async Task OnParametersSetAsync()
     {
+        _pageReady = false;
         _overrideFormError = null;
         _overrideFormConflict = false;
+
+        await Shell.EnsureLoadedAsync();
+        if (Shell.IsPlatformShell)
+        {
+            await Permissions.EnsureLoadedAsync();
+        }
+
+        if (!Shell.IsPlatformShell || !CanViewEntitlements)
+        {
+            _pageReady = true;
+            return;
+        }
 
         if (Id is not null)
         {
@@ -354,8 +396,16 @@ else
         }
         else
         {
+            _suppressInitialTableChange = true;
+            _tableReady = false;
+            _page = 1;
+            _list = null;
             await LoadListAsync();
+            _tableReady = true;
+            _suppressInitialTableChange = false;
         }
+
+        _pageReady = true;
     }
 
     private async Task LoadListAsync() =>
@@ -364,8 +414,19 @@ else
             sortBy: _sortBy ?? "generated",
             sortDesc: _sortBy is null ? true : _sortDesc);
 
+    private async Task RetryListAsync()
+    {
+        _list = null;
+        await LoadListAsync();
+    }
+
     private async Task OnEntitlementsTableChangeAsync(QueryModel<EntitlementLatestSummaryDto> queryModel)
     {
+        if (_suppressInitialTableChange || _list is null)
+        {
+            return;
+        }
+
         await AdminTableSort.ApplyChangeAsync(
             queryModel,
             MapSortField,

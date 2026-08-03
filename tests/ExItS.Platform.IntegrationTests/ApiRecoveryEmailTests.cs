@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.Platform.Infrastructure.Persistence;
+using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -104,17 +105,7 @@ public sealed class ApiRecoveryEmailTests(PostgreSqlFixture fixture) : IAsyncLif
     [Fact]
     public async Task Forgot_password_uses_verified_recovery_email_when_identifier_matches()
     {
-        var username = $"recpwd{Guid.NewGuid():N}"[..20];
-        var create = await _client.PostAsJsonAsync(
-            "/api/v1/platform/users",
-            new { username, displayName = "Recovery Pwd", email = $"{username}@example.com" });
-        Assert.Equal(HttpStatusCode.Created, create.StatusCode);
-        var userId = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-
-        var set = await _client.PutAsJsonAsync(
-            $"/api/v1/platform/users/{userId}/credentials/password",
-            new { password = "Correct-Horse-9!" });
-        Assert.Equal(HttpStatusCode.OK, set.StatusCode);
+        var (_, username, _) = await PlatformIntegrationTestUsers.CreatePlatformStaffWithPasswordAsync(_client, "recpwd");
 
         var login = await _client.PostAsJsonAsync(
             "/api/v1/platform/auth/login",

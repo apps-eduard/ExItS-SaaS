@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.Platform.Domain.Catalog;
+using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -57,12 +58,8 @@ public sealed class ApiAuthorizationAuditTests(PostgreSqlFixture fixture) : IAsy
 
     private async Task<Guid> CreatePlatformUserAsync(string prefix)
     {
-        var username = UniqueToken(prefix);
-        var response = await _client.PostAsJsonAsync(
-            "/api/v1/platform/users",
-            new { username, displayName = $"{prefix} User", email = $"{username}@example.com" });
-        response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        var (userId, _, _) = await PlatformIntegrationTestUsers.CreatePlatformStaffWithPasswordAsync(_client, prefix);
+        return userId;
     }
 
     private async Task AssignPlatformRoleAsync(Guid platformUserId, string role, Guid? organizationId = null)
@@ -154,10 +151,19 @@ public sealed class ApiAuthorizationAuditTests(PostgreSqlFixture fixture) : IAsy
         var userA = await CreatePlatformUserAsync("permA");
         await AssignPlatformRoleAsync(userA, "BillingAdministrator");
 
+        var blockedUsername = UniqueToken("blocked");
         var response = await SendAsync(
             HttpMethod.Post,
             "/api/v1/platform/users",
-            new { username = UniqueToken("blocked"), displayName = "Blocked User", email = $"{UniqueToken("blocked")}@example.com" },
+            new
+            {
+                username = blockedUsername,
+                firstName = "Blocked",
+                lastName = "User",
+                displayName = "Blocked User",
+                email = $"{blockedUsername}@example.com",
+                platformRole = "PlatformSupport"
+            },
             actingUserId: userA);
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace ExItS.Platform.IntegrationTests;
@@ -31,20 +32,8 @@ public sealed class ApiCatalogLifecycleTests(PostgreSqlFixture fixture) : IAsync
     private static string Unique(string prefix) =>
         $"{prefix}{Guid.NewGuid():N}"[..Math.Min(20, prefix.Length + 32)].ToLowerInvariant();
 
-    private async Task<(Guid UserId, string Username, string Password)> SeedUserAsync(string prefix)
-    {
-        var username = Unique(prefix);
-        var password = "Correct-Horse-9!";
-        var create = await _admin.PostAsJsonAsync(
-            "/api/v1/platform/users",
-            new { username, displayName = "Catalog User", email = $"{username}@example.com" });
-        create.EnsureSuccessStatusCode();
-        var userId = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-        (await _admin.PutAsJsonAsync(
-            $"/api/v1/platform/users/{userId}/credentials/password",
-            new { password })).EnsureSuccessStatusCode();
-        return (userId, username, password);
-    }
+    private Task<(Guid UserId, string Username, string Password)> SeedUserAsync(string prefix) =>
+        PlatformIntegrationTestUsers.CreatePlatformStaffWithPasswordAsync(_admin, prefix);
 
     private async Task<string> LoginAsync(string username, string password)
     {

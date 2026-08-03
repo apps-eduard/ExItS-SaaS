@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Infrastructure.Persistence;
+using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -39,19 +40,8 @@ public sealed class ApiOrganizationContextTests(PostgreSqlFixture fixture) : IAs
 
     private async Task<(Guid UserId, string Username, string Password)> SeedUserWithPasswordAsync()
     {
-        var username = UniqueToken("orgctx");
-        var password = "Correct-Horse-9!";
-        var create = await _admin.PostAsJsonAsync(
-            "/api/v1/platform/users",
-            new { username, displayName = "Org Ctx User", email = $"{username}@example.com" });
-        Assert.Equal(HttpStatusCode.Created, create.StatusCode);
-        var userId = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-
-        var set = await _admin.PutAsJsonAsync(
-            $"/api/v1/platform/users/{userId}/credentials/password",
-            new { password });
-        Assert.Equal(HttpStatusCode.OK, set.StatusCode);
-        return (userId, username, password);
+        var (userId, email, password) = await PlatformIntegrationTestUsers.RegisterPersonalWithPasswordAsync(_client, "orgctx");
+        return (userId, email, password);
     }
 
     private async Task<Guid> CreateOrganizationAsync(string prefix)

@@ -33,6 +33,7 @@ public sealed class StaffProvisioningUseCaseTests
             new InMemoryStaffNumberGenerator(),
             new AssignPlatformRole(roles, users, orgs, ensure, audit, uow, clock),
             ensure,
+            credentials,
             new SetPlatformUserPassword(
                 users,
                 credentials,
@@ -52,7 +53,9 @@ public sealed class StaffProvisioningUseCaseTests
                 audit,
                 uow,
                 clock,
-                Options.Create(new PlatformCredentialLifecycleOptions { ExposeDebugTokens = true })));
+                Options.Create(new PlatformCredentialLifecycleOptions { ExposeDebugTokens = true })),
+            uow,
+            clock);
 
         var result = await createStaff.ExecuteAsync(
             "Olivia",
@@ -103,6 +106,70 @@ public sealed class StaffProvisioningUseCaseTests
             .ToList();
         Assert.Equal([AccountClass.Organization], activeProfiles);
         Assert.DoesNotContain(activeProfiles, c => c is AccountClass.Personal or AccountClass.Platform);
+    }
+
+    [Fact]
+    public async Task CreatePlatformStaffUser_issues_email_verification_without_initial_password()
+    {
+        var users = new InMemoryPlatformUserRepository();
+        var roles = new InMemoryPlatformRoleAssignmentRepository();
+        var profiles = new InMemoryAccountProfileRepository();
+        var memberships = new InMemoryOrganizationMembershipRepository();
+        var orgs = new InMemoryPlatformOrganizationRepository();
+        var credentials = new InMemoryPlatformUserCredentialRepository();
+        var sessions = new InMemoryPlatformAuthSessionRepository();
+        var accessTokens = new InMemoryPlatformAccessTokenRepository();
+        var tokens = new InMemoryPlatformCredentialTokenRepository();
+        var uow = new NoOpUnitOfWork();
+        var clock = new FixedClock(T0);
+        var audit = new NoOpAuditWriter();
+        var ensure = new EnsureAccountProfilesForUser(profiles, roles, memberships, uow, clock);
+        var messages = new CapturingAuthOutboundMessageSink();
+
+        var createStaff = new CreatePlatformStaffUser(
+            new CreatePlatformUser(users, uow, clock),
+            new InMemoryStaffNumberGenerator(),
+            new AssignPlatformRole(roles, users, orgs, ensure, audit, uow, clock),
+            ensure,
+            credentials,
+            new SetPlatformUserPassword(
+                users,
+                credentials,
+                sessions,
+                accessTokens,
+                new StubPasswordHasher(),
+                audit,
+                uow,
+                clock,
+                Options.Create(new PlatformPasswordOptions())),
+            new IssueEmailVerificationForUser(
+                users,
+                credentials,
+                tokens,
+                new StubSessionTokenService(),
+                messages,
+                audit,
+                uow,
+                clock,
+                Options.Create(new PlatformCredentialLifecycleOptions { ExposeDebugTokens = true })),
+            uow,
+            clock);
+
+        var result = await createStaff.ExecuteAsync(
+            "Pending",
+            "Staff",
+            "Pending Staff",
+            "pending.staff@example.com",
+            PlatformSystemRole.PlatformSupport,
+            actorIdentifier: "test-admin",
+            requireEmailVerification: true);
+
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Value!.EmailVerificationIssued);
+        Assert.Equal(AccountStatus.PendingVerification, result.Value.User.Status);
+        var storedCredential = await credentials.GetByUserIdAsync(result.Value.User.Id);
+        Assert.NotNull(storedCredential);
+        Assert.False(storedCredential!.SupportsPasswordLogin);
     }
 
     private sealed class StubPasswordHasher : IPlatformPasswordHasher

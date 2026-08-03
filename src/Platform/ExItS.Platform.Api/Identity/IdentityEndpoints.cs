@@ -80,7 +80,6 @@ internal static class IdentityEndpoints
         users.MapPost("/", async (
             CreateUserRequest body,
             CreatePlatformStaffUser createStaff,
-            CreatePlatformUser createIdentity,
             PlatformAuthz authz,
             CancellationToken ct) =>
         {
@@ -95,99 +94,65 @@ internal static class IdentityEndpoints
                 return denied;
             }
 
-            // Platform Admin staff create: PlatformRole is required and assigns Platform Account only.
-            // Omitting PlatformRole remains identity-only (fixtures / provisional create) without an account profile.
-            if (!string.IsNullOrWhiteSpace(body.PlatformRole))
-            {
-                if (!Enum.TryParse<PlatformSystemRole>(body.PlatformRole, ignoreCase: true, out var platformRole))
-                {
-                    return PlatformApiResults.Problem(
-                        DomainErrorCodes.InvalidPlatformSystemRole,
-                        $"Unrecognized platform system role '{body.PlatformRole}'. Use PlatformAdministrator, BillingAdministrator, or PlatformSupport.",
-                        StatusCodes.Status400BadRequest);
-                }
-
-                if (body.RequireEmailVerification == true || body.SendEmailVerification == true)
-                {
-                    if (string.IsNullOrWhiteSpace(body.InitialPassword))
-                    {
-                        return PlatformApiResults.Problem(
-                            ApplicationErrorCodes.DomainViolation,
-                            "InitialPassword is required when RequireEmailVerification is true.",
-                            StatusCodes.Status400BadRequest);
-                    }
-                }
-
-                if (string.IsNullOrWhiteSpace(body.FirstName) || string.IsNullOrWhiteSpace(body.LastName))
-                {
-                    return PlatformApiResults.Problem(
-                        ApplicationErrorCodes.DomainViolation,
-                        "FirstName and LastName are required for Platform Staff create.",
-                        StatusCodes.Status400BadRequest);
-                }
-
-                var actor = authz.CurrentActor;
-                var requireEmailVerification = body.RequireEmailVerification == true || body.SendEmailVerification == true;
-                var staffResult = await createStaff
-                    .ExecuteAsync(
-                        body.FirstName,
-                        body.LastName,
-                        body.DisplayName,
-                        body.Email,
-                        platformRole,
-                        actorIdentifier: actor.ActorIdentifier,
-                        actorType: actor.ActorType,
-                        username: body.Username,
-                        phone: body.Phone,
-                        employeeCode: body.EmployeeCode,
-                        requireEmailVerification: requireEmailVerification,
-                        initialPassword: body.InitialPassword,
-                        createdByUserId: body.CreatedByUserId ?? actor.PlatformUserId?.Value,
-                        cancellationToken: ct)
-                    .ConfigureAwait(false);
-                if (staffResult.IsSuccess)
-                {
-                    await authz.AuditSucceededAsync(
-                        PlatformAuditActions.PlatformUserCreated,
-                        nameof(PlatformUser),
-                        staffResult.Value!.User.Id.Value.ToString("D"),
-                        summary: $"Created Platform staff {staffResult.Value.User.Username} with role {platformRole}.",
-                        cancellationToken: ct).ConfigureAwait(false);
-                }
-
-                return PlatformApiResults.FromResult(
-                    staffResult,
-                    staff => Results.Created(
-                        $"/api/v1/platform/users/{staff.User.Id.Value}",
-                        PlatformUserQueryService.Map(staff.User)));
-            }
-
-            if (string.IsNullOrWhiteSpace(body.Username))
+            // Platform Admin may create Platform Staff only — PlatformRole is required.
+            if (string.IsNullOrWhiteSpace(body.PlatformRole))
             {
                 return PlatformApiResults.Problem(
-                    DomainErrorCodes.InvalidUsername,
-                    "Username is required for identity-only Platform User create.",
+                    ApplicationErrorCodes.DomainViolation,
+                    "PlatformRole is required. Platform Admin may create Platform Staff only.",
                     StatusCodes.Status400BadRequest);
             }
 
-            var identityResult = await createIdentity
-                .ExecuteAsync(body.Username, body.DisplayName, body.Email, cancellationToken: ct)
+            if (!Enum.TryParse<PlatformSystemRole>(body.PlatformRole, ignoreCase: true, out var platformRole))
+            {
+                return PlatformApiResults.Problem(
+                    DomainErrorCodes.InvalidPlatformSystemRole,
+                    $"Unrecognized platform system role '{body.PlatformRole}'. Use PlatformAdministrator, BillingAdministrator, or PlatformSupport.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            if (string.IsNullOrWhiteSpace(body.FirstName) || string.IsNullOrWhiteSpace(body.LastName))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.DomainViolation,
+                    "FirstName and LastName are required for Platform Staff create.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            var actor = authz.CurrentActor;
+            var requireEmailVerification = body.RequireEmailVerification == true || body.SendEmailVerification == true;
+            var staffResult = await createStaff
+                .ExecuteAsync(
+                    body.FirstName,
+                    body.LastName,
+                    body.DisplayName,
+                    body.Email,
+                    platformRole,
+                    actorIdentifier: actor.ActorIdentifier,
+                    actorType: actor.ActorType,
+                    username: body.Username,
+                    phone: body.Phone,
+                    employeeCode: body.EmployeeCode,
+                    requireEmailVerification: requireEmailVerification,
+                    initialPassword: body.InitialPassword,
+                    createdByUserId: body.CreatedByUserId ?? actor.PlatformUserId?.Value,
+                    cancellationToken: ct)
                 .ConfigureAwait(false);
-            if (identityResult.IsSuccess)
+            if (staffResult.IsSuccess)
             {
                 await authz.AuditSucceededAsync(
                     PlatformAuditActions.PlatformUserCreated,
                     nameof(PlatformUser),
-                    identityResult.Value!.Id.Value.ToString("D"),
-                    summary: $"Created Platform User {identityResult.Value.Username}.",
+                    staffResult.Value!.User.Id.Value.ToString("D"),
+                    summary: $"Created Platform staff {staffResult.Value.User.Username} with role {platformRole}.",
                     cancellationToken: ct).ConfigureAwait(false);
             }
 
             return PlatformApiResults.FromResult(
-                identityResult,
-                u => Results.Created(
-                    $"/api/v1/platform/users/{u.Id.Value}",
-                    PlatformUserQueryService.Map(u)));
+                staffResult,
+                staff => Results.Created(
+                    $"/api/v1/platform/users/{staff.User.Id.Value}",
+                    PlatformUserQueryService.Map(staff.User)));
         });
 
         users.MapGet("/{userId:guid}", async (

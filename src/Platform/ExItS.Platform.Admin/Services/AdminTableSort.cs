@@ -59,6 +59,7 @@ public static class AdminTableSort
             setPage(newPage);
         }
 
-        await reloadAsync().ConfigureAwait(false);
+        // Stay on the Blazor sync context — ConfigureAwait(false) breaks circuit JS/state after hard refresh.
+        await reloadAsync();
     }
 }
