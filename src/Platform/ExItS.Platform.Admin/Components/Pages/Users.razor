@@ -76,42 +76,72 @@ else if (Id is null)
 
     @if (_showCreate && CanCreatePlatformStaff)
     {
-        <Card Size="@CardSize.Small" Title="@L["Users_CreateSection"]" Style="margin-bottom:12px;">
+        <AdminSection Title="@L["Users_CreateSection"]" Style="margin-bottom:16px;max-width:900px;">
             <FormValidationSummary Title="@L["Users_CreateFailed"]" Message="@_formError" IsConflict="_formConflict" />
-            <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+
+            <div style="margin-bottom:16px;">
+                <div class="admin-summary-card__label" style="margin-bottom:8px;">@L["Users_BasicInformation"]</div>
                 <StaffPersonFieldsForm Value="_staffPerson"
                                        Errors="_staffPersonErrors"
                                        IdPrefix="user-create"
                                        Disabled="_busy"
                                        ValueChanged="OnStaffPersonChanged" />
-                <div>
-                    <label class="ant-form-item-label" for="user-create-platform-role">@L["Users_PlatformRole"]</label>
-                    <Select Id="user-create-platform-role"
-                            TItemValue="string"
-                            TItem="string"
-                            @bind-Value="_newPlatformRole"
-                            Size="@InputSize.Small"
-                            Style="width:100%;"
-                            Disabled="_busy"
-                            Placeholder="@L["Users_PlatformRolePlaceholder"]">
-                        <SelectOptions>
-                            <SelectOption TItemValue="string" TItem="string" Value="@("PlatformAdministrator")" Label="@L["Users_Role_PlatformAdministrator"]" />
-                            <SelectOption TItemValue="string" TItem="string" Value="@("BillingAdministrator")" Label="@L["Users_Role_BillingAdministrator"]" />
-                            <SelectOption TItemValue="string" TItem="string" Value="@("PlatformSupport")" Label="@L["Users_Role_PlatformSupport"]" />
-                        </SelectOptions>
-                    </Select>
-                    @if (_fieldPlatformRole is not null) { <span class="exits-field-error">@_fieldPlatformRole</span> }
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <div class="admin-summary-card__label" style="margin-bottom:8px;">@L["Users_AccessSettings"]</div>
+                <div class="admin-form-field">
+                    <label class="ant-form-item-label" for="user-create-platform-role">
+                        <span class="ant-form-item-required">@L["Users_PlatformRole"]</span>
+                    </label>
+                    <div class="admin-form-field__control">
+                        <Select Id="user-create-platform-role"
+                                TItemValue="string"
+                                TItem="string"
+                                @bind-Value="_newPlatformRole"
+                                Size="@InputSize.Small"
+                                Style="width:100%;"
+                                Disabled="_busy"
+                                Placeholder="@L["Users_PlatformRolePlaceholder"]">
+                            <SelectOptions>
+                                <SelectOption TItemValue="string" TItem="string" Value="@("PlatformAdministrator")" Label="@L["Users_Role_PlatformAdministrator"]" />
+                                <SelectOption TItemValue="string" TItem="string" Value="@("BillingAdministrator")" Label="@L["Users_Role_BillingAdministrator"]" />
+                                <SelectOption TItemValue="string" TItem="string" Value="@("PlatformSupport")" Label="@L["Users_Role_PlatformSupport"]" />
+                            </SelectOptions>
+                        </Select>
+                        @if (_fieldPlatformRole is not null) { <span class="exits-field-error">@_fieldPlatformRole</span> }
+                    </div>
                 </div>
                 @if (_staffPerson.RequireEmailVerification)
                 {
-                    <div class="ant-form-item-explain" style="margin-top:4px;">@L["Users_SendEmailVerificationHint"]</div>
+                    <div class="admin-form-field">
+                        <label class="ant-form-item-label" for="user-create-initial-password">
+                            <span class="ant-form-item-required">@L["Users_InitialPassword"]</span>
+                        </label>
+                        <div class="admin-form-field__control">
+                            <InputPassword Id="user-create-initial-password"
+                                           @bind-Value="_newInitialPassword"
+                                           Size="@InputSize.Small"
+                                           Disabled="_busy"
+                                           Placeholder="@L["Users_InitialPassword"]" />
+                            @if (_fieldInitialPassword is not null) { <span class="exits-field-error">@_fieldInitialPassword</span> }
+                        </div>
+                    </div>
+                    <div class="admin-form-field admin-form-field--hint">
+                        <span class="ant-form-item-label" aria-hidden="true"></span>
+                        <div class="admin-form-field__control">
+                            <div class="ant-form-item-explain muted" style="font-size:12px;">@L["Users_SendEmailVerificationHint"]</div>
+                        </div>
+                    </div>
                 }
-                <Space>
-                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">@L["Common_Create"]</Button>
-                    <Button Size="@ButtonSize.Small" OnClick="HideCreate" Disabled="_busy">@L["Common_Cancel"]</Button>
-                </Space>
-            </Space>
-        </Card>
+            </div>
+
+            <AdminFormActions SaveText="@L["Common_Create"].Value"
+                             CancelText="@L["Common_Cancel"].Value"
+                             Busy="@_busy"
+                             OnSave="CreateAsync"
+                             OnCancel="HideCreate" />
+        </AdminSection>
     }
 
     @if (_list is { IsSuccess: false })
@@ -128,14 +158,19 @@ else if (Id is null)
                Loading="@(_list is null)"
                Size="@TableSize.Small"
                Bordered
+               ScrollX="1400"
                RemoteDataSource
                OnChange="OnUsersTableChangeAsync">
             <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_User"]" Sortable>
                 <a href="/admin/users/@context.Id">@context.DisplayName</a>
             </PropertyColumn>
-            <PropertyColumn Property="c => c.Username" Title="@L["Common_Username"]" Sortable />
-            <PropertyColumn Property="c => c.Email" Title="@L["Common_Email"]" Ellipsis Sortable />
-            <PropertyColumn Property="c => c.AccountClasses" Title="@L["Users_AccountType"]" Sortable>
+            <PropertyColumn Property="c => c.Username" Title="@L["Common_Username"]" Sortable Width="140" />
+            <PropertyColumn Property="c => c.Email" Title="@L["Common_Email"]" Ellipsis Sortable Width="200">
+                <Tooltip Title="@(context.Email ?? "")">
+                    <span>@(context.Email ?? "—")</span>
+                </Tooltip>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.AccountClasses" Title="@L["Users_AccountType"]" Sortable Width="140">
                 @foreach (var accountClass in (context.AccountClasses ?? Array.Empty<string>()))
                 {
                     <Tag Color="@AccountClassColor(accountClass)" Style="margin-right:4px;">@accountClass</Tag>
@@ -145,7 +180,7 @@ else if (Id is null)
                     <span>—</span>
                 }
             </PropertyColumn>
-            <PropertyColumn Property="c => c.OrganizationNames" Title="@L["Users_OrganizationName"]" Ellipsis Sortable>
+            <PropertyColumn Property="c => c.OrganizationNames" Title="@L["Users_OrganizationName"]" Ellipsis Sortable Width="220">
                 @{
                     var orgs = context.Organizations ?? Array.Empty<PlatformUserOrganizationDirectoryItem>();
                 }
@@ -167,10 +202,10 @@ else if (Id is null)
                     }
                 }
             </PropertyColumn>
-            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable>
+            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="110">
                 <AdminStatusTag Value="@context.Status" />
             </PropertyColumn>
-            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Sortable>
+            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Sortable Width="180">
                 <LocalTimestamp Value="@context.UpdatedAtUtc" />
             </PropertyColumn>
             <ActionColumn Title="@L["Common_Open"]" Width="88">
@@ -414,17 +449,17 @@ else
         else if (_memberships.Data!.Items.Count == 0) { <Empty Description="@L["Users_MembershipsEmpty"].Value" /> }
         else
         {
-            <Table TItem="OrganizationMembershipDto" DataSource="_memberships.Data.Items" Size="@TableSize.Small" HidePagination Bordered>
+            <Table TItem="OrganizationMembershipDto" DataSource="_memberships.Data.Items" Size="@TableSize.Small" HidePagination Bordered ScrollX="560">
                 <PropertyColumn Property="c => c.OrganizationId" Title="@L["Common_Organization"]">
                     <a href="/admin/organizations/@context.OrganizationId/members" title="@context.OrganizationId">@L["Common_Organization"]</a>
                 </PropertyColumn>
-                <PropertyColumn Property="c => c.Role" Title="@L["Common_Role"]">
+                <PropertyColumn Property="c => c.Role" Title="@L["Common_Role"]" Width="160">
                     <Tag Color="@(context.Role == "OrganizationOwner" ? "gold" : "default")"
                          Style="@(context.Role == "OrganizationOwner" ? "font-weight:600;" : null)">
                         @(context.RoleDisplay ?? FormatOrgRoleDisplay(context.Role))
                     </Tag>
                 </PropertyColumn>
-                <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="120">
                     <AdminStatusTag Value="@context.Status" />
                 </PropertyColumn>
             </Table>
@@ -437,12 +472,12 @@ else
         else if (_access.Data!.Items.Count == 0) { <Empty Description="@L["Users_ProductAccessEmpty"].Value" /> }
         else
         {
-            <Table TItem="ProductAccessAssignmentDto" DataSource="_access.Data.Items" Size="@TableSize.Small" HidePagination Bordered>
-                <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" />
+            <Table TItem="ProductAccessAssignmentDto" DataSource="_access.Data.Items" Size="@TableSize.Small" HidePagination Bordered ScrollX="560">
+                <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" Width="160" />
                 <PropertyColumn Property="c => c.OrganizationId" Title="@L["Common_Organization"]">
                     <a href="/admin/organizations/@context.OrganizationId" title="@context.OrganizationId">@L["Common_Organization"]</a>
                 </PropertyColumn>
-                <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]"><AdminStatusTag Value="@context.Status" /></PropertyColumn>
+                <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="120"><AdminStatusTag Value="@context.Status" /></PropertyColumn>
             </Table>
         }
     }
@@ -483,6 +518,8 @@ else
     private readonly StaffPersonFieldsModel _staffPerson = new();
     private StaffPersonFieldErrors? _staffPersonErrors;
     private string _newPlatformRole = "";
+    private string _newInitialPassword = "";
+    private string? _fieldInitialPassword;
     private string _editDisplayName = "";
     private string _editEmail = "";
     private string _editFirstName = "";
@@ -851,6 +888,7 @@ else
         || !string.IsNullOrWhiteSpace(_staffPerson.Phone)
         || !string.IsNullOrWhiteSpace(_staffPerson.EmployeeCode)
         || !string.IsNullOrWhiteSpace(_newPlatformRole)
+        || !string.IsNullOrWhiteSpace(_newInitialPassword)
         || _staffPerson.RequireEmailVerification;
 
     private void ClearCreate()
@@ -858,6 +896,7 @@ else
         _staffPerson.Clear();
         _staffPersonErrors = null;
         _newPlatformRole = "";
+        _newInitialPassword = "";
         ClearFieldErrors();
         _formError = null;
         _formConflict = false;
@@ -870,51 +909,63 @@ else
             return;
         }
 
-        ClearFieldErrors();
-        _staffPersonErrors = null;
-        _formError = null;
-        _formConflict = false;
-
-        var personValidation = _staffPerson.Validate();
-        if (!personValidation.IsValid)
+        try
         {
-            _staffPersonErrors = personValidation.Errors;
-        }
+            ClearFieldErrors();
+            _staffPersonErrors = null;
+            _formError = null;
+            _formConflict = false;
 
-        if (string.IsNullOrWhiteSpace(_newPlatformRole))
-        {
-            _fieldPlatformRole = L["Users_PlatformRoleRequired"];
-        }
+            var personValidation = _staffPerson.Validate();
+            if (!personValidation.IsValid)
+            {
+                _staffPersonErrors = personValidation.Errors;
+            }
 
-        if (!personValidation.IsValid
-            || _fieldPlatformRole is not null)
+            if (string.IsNullOrWhiteSpace(_newPlatformRole))
+            {
+                _fieldPlatformRole = L["Users_PlatformRoleRequired"];
+            }
+
+            if (_staffPerson.RequireEmailVerification && string.IsNullOrWhiteSpace(_newInitialPassword))
+            {
+                _fieldInitialPassword = L["Users_InitialPasswordRequired"];
+            }
+
+            if (!personValidation.IsValid
+                || _fieldPlatformRole is not null
+                || _fieldInitialPassword is not null)
+            {
+                return;
+            }
+
+            var result = await Api.CreateUserAsync(new CreatePlatformUserRequest(
+                _staffPerson.ResolvedDisplayName(),
+                _staffPerson.Email.Trim(),
+                _newPlatformRole,
+                FirstName: _staffPerson.FirstName.Trim(),
+                LastName: _staffPerson.LastName.Trim(),
+                Phone: string.IsNullOrWhiteSpace(_staffPerson.Phone) ? null : _staffPerson.Phone.Trim(),
+                EmployeeCode: string.IsNullOrWhiteSpace(_staffPerson.EmployeeCode) ? null : _staffPerson.EmployeeCode.Trim(),
+                RequireEmailVerification: _staffPerson.RequireEmailVerification,
+                SendEmailVerification: _staffPerson.RequireEmailVerification,
+                InitialPassword: _staffPerson.RequireEmailVerification ? _newInitialPassword : null));
+            if (!result.IsSuccess)
+            {
+                _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+                _formError = AdminFormErrorMapper.MapPageError(result);
+                return;
+            }
+
+            await Message.SuccessAsync(L["Users_ToastCreated"].Value);
+            _showCreate = false;
+            ClearCreate();
+            await ReloadListAsync();
+        }
+        finally
         {
             _busy = false;
-            return;
         }
-
-        var result = await Api.CreateUserAsync(new CreatePlatformUserRequest(
-            _staffPerson.ResolvedDisplayName(),
-            _staffPerson.Email.Trim(),
-            _newPlatformRole,
-            FirstName: _staffPerson.FirstName.Trim(),
-            LastName: _staffPerson.LastName.Trim(),
-            Phone: string.IsNullOrWhiteSpace(_staffPerson.Phone) ? null : _staffPerson.Phone.Trim(),
-            EmployeeCode: string.IsNullOrWhiteSpace(_staffPerson.EmployeeCode) ? null : _staffPerson.EmployeeCode.Trim(),
-            RequireEmailVerification: _staffPerson.RequireEmailVerification,
-            SendEmailVerification: _staffPerson.RequireEmailVerification));
-        _busy = false;
-        if (!result.IsSuccess)
-        {
-            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
-            _formError = AdminFormErrorMapper.MapPageError(result);
-            return;
-        }
-
-        await Message.SuccessAsync(L["Users_ToastCreated"].Value);
-        _showCreate = false;
-        ClearCreate();
-        await ReloadListAsync();
     }
 
     private async Task SaveProfileAsync()
@@ -1126,6 +1177,6 @@ else
 
     private void ClearFieldErrors()
     {
-        _fieldDisplayName = _fieldEmail = _fieldPlatformRole = null;
+        _fieldDisplayName = _fieldEmail = _fieldPlatformRole = _fieldInitialPassword = null;
     }
 }

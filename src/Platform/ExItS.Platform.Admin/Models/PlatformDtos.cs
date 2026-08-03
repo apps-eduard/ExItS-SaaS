@@ -656,6 +656,7 @@ public sealed record CreatePaidSubscriptionRequest(
     Guid PlanVersionId,
     DateTimeOffset PeriodStartUtc,
     DateTimeOffset PeriodEndUtc,
+    Guid PaymentId,
     string BillingCycle = "Monthly");
 public sealed record ActivateSubscriptionRequest(
     DateTimeOffset PeriodStartUtc,

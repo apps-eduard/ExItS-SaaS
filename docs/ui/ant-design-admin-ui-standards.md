@@ -189,6 +189,7 @@ Rules:
 - support meaningful sorting
 - show friendly display values and status tags
 - preserve server-side paging, filtering, and sorting
+- the main data table follows the table width, column, and scrolling rules in §12
 
 ## 8. Standard detail page
 
@@ -305,14 +306,50 @@ Use 2 to 4 cards per row, consistent height, concise labels, prominent values, a
 
 ## 12. Tables
 
-Tables must be compact, full width, readable, and professional.
+Tables must be compact, full width, readable, and professional. All Admin tables follow Ant Design Blazor native table behavior.
+
+### 12.1 Width, columns, and scrolling
+
+- tables use the full available content width
+- use Ant Design Blazor native table features
+- configure `ScrollX` using the practical combined minimum width of the columns
+- fixed-width columns should be used for:
+  - status
+  - dates
+  - numeric values
+  - compact actions
+- leave at least one important descriptive column flexible so it expands on wide screens
+- important content should wrap where appropriate
+- do not apply ellipsis to every column
+- use ellipsis only for optional long content and expose the full value with a tooltip
+- columns may shrink only until their practical minimum width is reached
+- once the viewport becomes narrower than the combined minimum widths, preserve column readability and enable horizontal scrolling
+- horizontal scrolling is preferred over unreadably narrow columns or excessive `...`
+- tables must remain usable on desktop, tablet, and mobile
+- avoid transforming normal data tables into unrelated card/list layouts unless specifically designed for that page
+
+Expected behavior:
+
+```text
+Wide screen
+→ table fills the available width
+→ flexible columns expand
+
+Medium screen
+→ flexible columns shrink or wrap
+→ important values remain readable
+
+Small screen
+→ minimum column widths are preserved
+→ horizontal scrolling appears
+```
+
+### 12.2 Content and density
 
 - use friendly display names instead of GUIDs
 - use friendly dates and money
 - use consistent status tags
-- group actions compactly
-- use ellipsis for long text
-- use horizontal scrolling only when necessary
+- group actions compactly in a fixed-width actions column
 - show explicit empty, loading, and error states
 
 Recommended date format:
@@ -364,6 +401,9 @@ Rules:
 - disabled buttons should have a clear reason when not obvious
 - no active-looking button without behavior
 - danger actions require confirmation
+- page-header and section actions follow the page patterns in §6–§10
+- table row actions stay compact in a fixed-width actions column; prefer icon buttons or a short overflow menu over wide multi-button clusters
+- filter and refresh controls belong in the list toolbar, not mixed into the table actions column
 
 ## 15. Loading, empty, error, and success states
 
@@ -404,7 +444,8 @@ Mobile:
 - stack cards vertically
 - actions may become full width
 - filters may stack or use a drawer
-- hide low-priority table columns or use controlled horizontal scroll
+- tables preserve practical minimum column widths and enable horizontal scrolling when needed (§12)
+- do not convert normal data tables into ad-hoc card/list layouts on small screens unless the page is specifically designed that way
 - maintain at least 16px page padding
 
 ## 17. Light and dark themes
@@ -516,7 +557,11 @@ Do not implement:
 
 ### Tables and forms
 
-- [ ] Tables are compact and use available width.
+- [ ] Tables are compact and use the full available content width.
+- [ ] `ScrollX` matches the practical combined minimum column width.
+- [ ] Status, dates, numbers, and compact actions use fixed-width columns.
+- [ ] At least one important descriptive column remains flexible.
+- [ ] Ellipsis is limited to optional long content and exposes a tooltip.
 - [ ] No raw GUIDs are used as primary content.
 - [ ] Dates and money are friendly.
 - [ ] Forms group related fields.
@@ -525,11 +570,11 @@ Do not implement:
 
 ### Responsive behavior
 
-- [ ] Desktop layout is balanced.
-- [ ] Tablet wrapping is clean.
+- [ ] Desktop layout is balanced; flexible table columns expand.
+- [ ] Tablet wrapping is clean; important values remain readable.
 - [ ] Mobile content stacks properly.
 - [ ] No overlap or clipping.
-- [ ] No unnecessary horizontal scroll.
+- [ ] Narrow viewports preserve table minimum widths and use horizontal scroll instead of unreadably narrow columns.
 
 ### Functional behavior
 

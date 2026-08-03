@@ -149,8 +149,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
     {
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);
         var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
-        var initial = new ProcessSubscriptionInitialPayment(
-            ctx.Subscriptions, ctx.Plans, ctx.PaymentProvider, ctx.GenerateSnapshot, ctx.UnitOfWork, ctx.Clock);
+        var initial = ctx.CreateInitialPayment();
         var key = Guid.NewGuid().ToString("N");
         var charge = new PaymentChargeRequest(
             ctx.Organization.Id.Value, sub.Id.Value, 499m, "PHP", key, "initial");
@@ -165,8 +164,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
     {
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);
         var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
-        var initial = new ProcessSubscriptionInitialPayment(
-            ctx.Subscriptions, ctx.Plans, ctx.PaymentProvider, ctx.GenerateSnapshot, ctx.UnitOfWork, ctx.Clock);
+        var initial = ctx.CreateInitialPayment();
         var key = Guid.NewGuid().ToString("N");
         var charge = new PaymentChargeRequest(
             ctx.Organization.Id.Value, sub.Id.Value, 499m, "PHP", key, "initial");
@@ -211,8 +209,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);
         var sub = await ctx.StartActivePaidSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion, BillingCycle.Monthly);
         var periodEnd = sub.PaidPeriodEndUtc!.Value;
-        var renewal = new ProcessSubscriptionRenewal(
-            ctx.Subscriptions, ctx.Plans, ctx.PaymentProvider, ctx.GenerateSnapshot, ctx.UnitOfWork, ctx.Clock);
+        var renewal = ctx.CreateRenewal();
         var key = Guid.NewGuid().ToString("N");
         await ctx.PaymentProvider.SimulateAsync("RenewalSucceeded", new PaymentChargeRequest(
             ctx.Organization.Id.Value, sub.Id.Value, sub.AgreedPrice!.Value, "PHP", key, "renewal"));
@@ -226,8 +223,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
     {
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);
         var sub = await ctx.StartActivePaidSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion, BillingCycle.Monthly);
-        var renewal = new ProcessSubscriptionRenewal(
-            ctx.Subscriptions, ctx.Plans, ctx.PaymentProvider, ctx.GenerateSnapshot, ctx.UnitOfWork, ctx.Clock);
+        var renewal = ctx.CreateRenewal();
         var key = Guid.NewGuid().ToString("N");
         await ctx.PaymentProvider.SimulateAsync("RenewalFailed", new PaymentChargeRequest(
             ctx.Organization.Id.Value, sub.Id.Value, sub.AgreedPrice!.Value, "PHP", key, "renewal"));
@@ -263,9 +259,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);
         var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
         await ctx.GenerateSnapshot.ExecuteAsync(sub.Id, expectedNextVersion: 1);
-        var upgrade = new UpgradeOrganizationSubscription(
-            ctx.Organizations, ctx.Products, ctx.Plans, ctx.Subscriptions,
-            ctx.PaymentProvider, ctx.GenerateSnapshot, ctx.UnitOfWork, ctx.Clock);
+        var upgrade = ctx.CreateUpgrade();
         var result = await upgrade.ExecuteAsync(
             ctx.Organization.Id,
             ProductCode.Create(ProductCode.PinoyBusinessPos),
@@ -567,10 +561,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
     {
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);
         var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
-        var convert = new ConvertTrialSubscription(
-            ctx.Organizations, ctx.Plans, ctx.Subscriptions,
-            new ProcessSubscriptionInitialPayment(
-                ctx.Subscriptions, ctx.Plans, ctx.PaymentProvider, ctx.GenerateSnapshot, ctx.UnitOfWork, ctx.Clock));
+        var convert = ctx.CreateConvertTrial();
         var key = Guid.NewGuid().ToString("N");
         var result = await convert.ExecuteAsync(
             ctx.Organization.Id, sub.Id, ctx.StarterPlan.Id, BillingCycle.Monthly, key);
@@ -585,10 +576,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
     {
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);
         var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
-        var convert = new ConvertTrialSubscription(
-            ctx.Organizations, ctx.Plans, ctx.Subscriptions,
-            new ProcessSubscriptionInitialPayment(
-                ctx.Subscriptions, ctx.Plans, ctx.PaymentProvider, ctx.GenerateSnapshot, ctx.UnitOfWork, ctx.Clock));
+        var convert = ctx.CreateConvertTrial();
         var key = Guid.NewGuid().ToString("N");
         var result = await convert.ExecuteAsync(
             ctx.Organization.Id, sub.Id, ctx.BusinessPlan.Id, BillingCycle.Monthly, key);
@@ -601,10 +589,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
     {
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);
         var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
-        var convert = new ConvertTrialSubscription(
-            ctx.Organizations, ctx.Plans, ctx.Subscriptions,
-            new ProcessSubscriptionInitialPayment(
-                ctx.Subscriptions, ctx.Plans, ctx.PaymentProvider, ctx.GenerateSnapshot, ctx.UnitOfWork, ctx.Clock));
+        var convert = ctx.CreateConvertTrial();
         var key = Guid.NewGuid().ToString("N");
         var result = await convert.ExecuteAsync(
             ctx.Organization.Id, sub.Id, ctx.ProPlan.Id, BillingCycle.Annual, key);
@@ -622,10 +607,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
         var charge = new PaymentChargeRequest(
             ctx.Organization.Id.Value, sub.Id.Value, ctx.StarterPlan.MonthlyPrice, "PHP", key, "convert-trial");
         await ctx.PaymentProvider.SimulateAsync("Declined", charge);
-        var convert = new ConvertTrialSubscription(
-            ctx.Organizations, ctx.Plans, ctx.Subscriptions,
-            new ProcessSubscriptionInitialPayment(
-                ctx.Subscriptions, ctx.Plans, ctx.PaymentProvider, ctx.GenerateSnapshot, ctx.UnitOfWork, ctx.Clock));
+        var convert = ctx.CreateConvertTrial();
         var result = await convert.ExecuteAsync(
             ctx.Organization.Id, sub.Id, ctx.StarterPlan.Id, BillingCycle.Monthly, key);
         Assert.False(result.IsSuccess);
@@ -641,10 +623,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
         var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
         sub.Expire(T0.AddDays(15));
         await ctx.Subscriptions.UpdateAsync(sub);
-        var convert = new ConvertTrialSubscription(
-            ctx.Organizations, ctx.Plans, ctx.Subscriptions,
-            new ProcessSubscriptionInitialPayment(
-                ctx.Subscriptions, ctx.Plans, ctx.PaymentProvider, ctx.GenerateSnapshot, ctx.UnitOfWork, ctx.Clock));
+        var convert = ctx.CreateConvertTrial();
         var key = Guid.NewGuid().ToString("N");
         var result = await convert.ExecuteAsync(
             ctx.Organization.Id, sub.Id, ctx.ProPlan.Id, BillingCycle.Monthly, key);
@@ -658,10 +637,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
     {
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);
         var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
-        var convert = new ConvertTrialSubscription(
-            ctx.Organizations, ctx.Plans, ctx.Subscriptions,
-            new ProcessSubscriptionInitialPayment(
-                ctx.Subscriptions, ctx.Plans, ctx.PaymentProvider, ctx.GenerateSnapshot, ctx.UnitOfWork, ctx.Clock));
+        var convert = ctx.CreateConvertTrial();
         var key = Guid.NewGuid().ToString("N");
         var first = await convert.ExecuteAsync(
             ctx.Organization.Id, sub.Id, ctx.StarterPlan.Id, BillingCycle.Monthly, key);
@@ -709,7 +685,9 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
         public InMemoryFeatureOverrideRepository Overrides { get; } = new();
         public InMemoryEntitlementSnapshotRepository Snapshots { get; } = new();
         public InMemoryProviderPaymentRepository ProviderPayments { get; } = new();
+        public InMemorySaaSPaymentRepository SaaSPayments { get; } = new();
         public FakeLocalValidationPaymentProvider PaymentProvider { get; }
+        public RecordLinkedSuccessfulProviderPayment RecordLinkedPayment { get; }
         public GenerateEntitlementSnapshot GenerateSnapshot { get; }
         public PlatformOrganization Organization { get; private set; } = null!;
         public Plan StarterPlan { get; private set; } = null!;
@@ -723,10 +701,24 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
         {
             Clock = new FixedClock(utcNow);
             PaymentProvider = new FakeLocalValidationPaymentProvider(ProviderPayments, Clock);
+            RecordLinkedPayment = new RecordLinkedSuccessfulProviderPayment(
+                SaaSPayments, new NoOpAuditWriter(), UnitOfWork, Clock);
             GenerateSnapshot = new GenerateEntitlementSnapshot(
                 Subscriptions, Plans, Trials, Overrides, Snapshots,
                 new ProvisionalEntitlementRefreshPolicy(), UnitOfWork, Clock);
         }
+
+        public ProcessSubscriptionInitialPayment CreateInitialPayment() =>
+            new(Subscriptions, Plans, PaymentProvider, RecordLinkedPayment, GenerateSnapshot, UnitOfWork, Clock);
+
+        public ProcessSubscriptionRenewal CreateRenewal() =>
+            new(Subscriptions, Plans, PaymentProvider, RecordLinkedPayment, GenerateSnapshot, UnitOfWork, Clock);
+
+        public UpgradeOrganizationSubscription CreateUpgrade() =>
+            new(Organizations, Products, Plans, Subscriptions, PaymentProvider, RecordLinkedPayment, GenerateSnapshot, UnitOfWork, Clock);
+
+        public ConvertTrialSubscription CreateConvertTrial() =>
+            new(Organizations, Plans, Subscriptions, CreateInitialPayment());
 
         public static async Task<Wp11CommercialHarness> CreateAsync(DateTimeOffset utcNow)
         {

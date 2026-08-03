@@ -232,23 +232,23 @@ else
         <FormSection Title="Subscription History">
             @if (HasSubscriptions)
             {
-                <Table TItem="SubscriptionDto" DataSource="@_summarySubscriptions" Size="@TableSize.Small" Bordered HidePagination ScrollX="800">
-                    <PropertyColumn Property="c => c.ProductCode" Title="Product" />
+                <Table TItem="SubscriptionDto" DataSource="@_summarySubscriptions" Size="@TableSize.Small" Bordered HidePagination ScrollX="1180">
+                    <PropertyColumn Property="c => c.ProductCode" Title="Product" Width="140" />
                     <PropertyColumn Property="c => c.PlanDisplayName" Title="Plan" />
-                    <PropertyColumn Property="c => c.BillingCycle" Title="Billing" />
-                    <PropertyColumn Property="c => c.AgreedPrice" Title="Price">
+                    <PropertyColumn Property="c => c.BillingCycle" Title="Billing" Width="100" />
+                    <PropertyColumn Property="c => c.AgreedPrice" Title="Price" Width="120">
                         <AdminMoneyDisplay Amount="@context.AgreedPrice" CurrencyCode="@(context.CurrencyCode ?? "PHP")" Unavailable="@(context.AgreedPrice is null)" />
                     </PropertyColumn>
-                    <PropertyColumn Property="c => c.Status" Title="Status">
+                    <PropertyColumn Property="c => c.Status" Title="Status" Width="120">
                         <AdminStatusTag Value="@context.Status" />
                     </PropertyColumn>
-                    <PropertyColumn Property="c => c.CreatedAtUtc" Title="Start">
+                    <PropertyColumn Property="c => c.CreatedAtUtc" Title="Start" Width="180">
                         <LocalTimestamp Value="@context.CreatedAtUtc" />
                     </PropertyColumn>
-                    <PropertyColumn Property="c => c.Status" Title="Trial / Renewal / End">
+                    <PropertyColumn Property="c => c.Status" Title="Trial / Renewal / End" Width="180">
                         <LocalTimestamp Value="@HistoryEndDate(context)" />
                     </PropertyColumn>
-                    <ActionColumn Title="Actions">
+                    <ActionColumn Title="Actions" Width="100">
                         <Button Type="@ButtonType.Link" Size="@ButtonSize.Small"
                                 OnClick="@(() => Nav.NavigateTo($"/admin/subscriptions/{context.Id:D}"))">
                             Details

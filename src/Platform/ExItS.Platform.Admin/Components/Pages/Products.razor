@@ -20,12 +20,6 @@
             </Breadcrumb>
         </PageHeaderBreadcrumb>
         <PageHeaderExtra>
-            @if (CanManage)
-            {
-                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ToggleCreate">
-                    @(_showCreate ? L["Products_HideCreate"] : L["Products_Create"])
-                </Button>
-            }
         </PageHeaderExtra>
     </PageHeader>
 
@@ -49,27 +43,6 @@
         <Button Size="@ButtonSize.Small" OnClick="ClearFiltersAsync">@L["Common_Reset"]</Button>
     </Space>
 
-    @if (_showCreate && CanManage)
-    {
-        <Card Size="@CardSize.Small" Title="@L["Products_CreateSection"]" Style="margin-bottom:12px;">
-            <FormValidationSummary Title="@L["Products_CreateFailed"]" Message="@_formError" IsConflict="_formConflict" />
-            <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
-                <div>
-                    <label class="ant-form-item-label" for="product-create-code">@L["Common_Code"]</label>
-                    <Input Id="product-create-code" @bind-Value="_newCode" Size="@InputSize.Small" Disabled="_busy" />
-                </div>
-                <div>
-                    <label class="ant-form-item-label" for="product-create-displayname">@L["Common_DisplayName"]</label>
-                    <Input Id="product-create-displayname" @bind-Value="_newDisplayName" Size="@InputSize.Small" Disabled="_busy" />
-                </div>
-                <Space>
-                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">@L["Common_Create"]</Button>
-                    <Button Size="@ButtonSize.Small" OnClick="HideCreate" Disabled="_busy">@L["Common_Cancel"]</Button>
-                </Space>
-            </Space>
-        </Card>
-    }
-
     @if (_list is { IsSuccess: false })
     {
         <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail" />
@@ -89,16 +62,17 @@
                Loading="@(_list is null)"
                Size="@TableSize.Small"
                Bordered
+               ScrollX="840"
                RemoteDataSource
                OnChange="OnProductsTableChangeAsync">
-            <PropertyColumn Property="c => c.Code" Title="@L["Common_Code"]" Sortable>
+            <PropertyColumn Property="c => c.Code" Title="@L["Common_Code"]" Sortable Width="180">
                 <a href="/admin/products/@context.Id">@context.Code</a>
             </PropertyColumn>
             <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_DisplayName"]" Sortable />
             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="110">
                 <AdminStatusTag Value="@context.Status" />
             </PropertyColumn>
-            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Sortable>
+            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Sortable Width="180">
                 <LocalTimestamp Value="@context.UpdatedAtUtc" />
             </PropertyColumn>
             <ActionColumn Title="@L["Common_Open"]" Width="80">
@@ -198,15 +172,15 @@ else
                 }
                 else
                 {
-                    <Table TItem="PlanDto" DataSource="o.Plans" Size="@TableSize.Small" HidePagination Bordered>
-                        <PropertyColumn Property="c => c.Code" Title="@L["Common_Code"]">
+                    <Table TItem="PlanDto" DataSource="o.Plans" Size="@TableSize.Small" HidePagination Bordered ScrollX="720">
+                        <PropertyColumn Property="c => c.Code" Title="@L["Common_Code"]" Width="160">
                             <a href="/admin/plans/@context.Id">@context.Code</a>
                         </PropertyColumn>
                         <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_DisplayName"]" />
-                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="120">
                             <AdminStatusTag Value="@context.Status" />
                         </PropertyColumn>
-                        <ActionColumn Title="@L["Common_Open"]">
+                        <ActionColumn Title="@L["Common_Open"]" Width="90">
                             <a href="/admin/plans/@context.Id">@L["Common_Open"]</a>
                         </ActionColumn>
                     </Table>
@@ -220,11 +194,11 @@ else
                 }
                 else
                 {
-                    <Table TItem="FeatureDefinitionDto" DataSource="o.Features" Size="@TableSize.Small" HidePagination Bordered>
-                        <PropertyColumn Property="c => c.FeatureCode" Title="@L["Common_Code"]" />
+                    <Table TItem="FeatureDefinitionDto" DataSource="o.Features" Size="@TableSize.Small" HidePagination Bordered ScrollX="720">
+                        <PropertyColumn Property="c => c.FeatureCode" Title="@L["Common_Code"]" Width="180" />
                         <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Name"]" />
-                        <PropertyColumn Property="c => c.ValueType" Title="@L["Common_Type"]" />
-                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                        <PropertyColumn Property="c => c.ValueType" Title="@L["Common_Type"]" Width="110" />
+                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="120">
                             <AdminStatusTag Value="@context.Status" />
                         </PropertyColumn>
                     </Table>
@@ -238,12 +212,12 @@ else
                 }
                 else
                 {
-                    <Table TItem="PlanVersionDto" DataSource="o.PublishedPlanVersions" Size="@TableSize.Small" HidePagination Bordered>
+                    <Table TItem="PlanVersionDto" DataSource="o.PublishedPlanVersions" Size="@TableSize.Small" HidePagination Bordered ScrollX="760">
                         <PropertyColumn Property="c => c.PlanId" Title="@L["Common_Plan"]" />
-                        <PropertyColumn Property="c => c.VersionNumber" Title="@L["Common_Version"]" />
-                        <PropertyColumn Property="c => c.BillingPeriod" Title="@L["Products_Column_Billing"]" />
-                        <PropertyColumn Property="c => c.TrialEligible" Title="@L["Products_Column_TrialEligible"]" />
-                        <PropertyColumn Property="c => c.Grants" Title="@L["Common_Grants"]">
+                        <PropertyColumn Property="c => c.VersionNumber" Title="@L["Common_Version"]" Width="100" />
+                        <PropertyColumn Property="c => c.BillingPeriod" Title="@L["Products_Column_Billing"]" Width="120" />
+                        <PropertyColumn Property="c => c.TrialEligible" Title="@L["Products_Column_TrialEligible"]" Width="120" />
+                        <PropertyColumn Property="c => c.Grants" Title="@L["Common_Grants"]" Width="90">
                             @context.Grants.Count
                         </PropertyColumn>
                     </Table>
@@ -257,13 +231,13 @@ else
                 }
                 else
                 {
-                    <Table TItem="TrialDefinitionDto" DataSource="o.Trials" Size="@TableSize.Small" HidePagination Bordered>
+                    <Table TItem="TrialDefinitionDto" DataSource="o.Trials" Size="@TableSize.Small" HidePagination Bordered ScrollX="720">
                         <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Name"]" />
-                        <PropertyColumn Property="c => c.DurationIso" Title="@L["Common_Duration"]" />
-                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                        <PropertyColumn Property="c => c.DurationIso" Title="@L["Common_Duration"]" Width="120" />
+                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="120">
                             <AdminStatusTag Value="@context.Status" />
                         </PropertyColumn>
-                        <PropertyColumn Property="c => c.FeatureGrants" Title="@L["Common_Grants"]">
+                        <PropertyColumn Property="c => c.FeatureGrants" Title="@L["Common_Grants"]" Width="90">
                             @context.FeatureGrants.Count
                         </PropertyColumn>
                     </Table>
@@ -289,9 +263,6 @@ else
     private bool _sortDesc;
     private string _search = "";
     private string _status = "";
-    private bool _showCreate;
-    private string _newCode = "";
-    private string _newDisplayName = "";
     private string _editDisplayName = "";
     private DateTimeOffset? _expectedUpdatedAt;
     private string? _formError;
@@ -381,33 +352,6 @@ else
     {
         _editDisplayName = product.DisplayName;
         _expectedUpdatedAt = product.UpdatedAtUtc;
-    }
-
-    private void ToggleCreate() => _showCreate = !_showCreate;
-
-    private void HideCreate()
-    {
-        _showCreate = false;
-        _formError = null;
-        _formConflict = false;
-    }
-
-    private async Task CreateAsync()
-    {
-        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
-        _formError = null;
-        _formConflict = false;
-        var result = await Api.CreateProductAsync(new CreateProductRequest(_newCode, _newDisplayName));
-        _busy = false;
-        if (!result.IsSuccess)
-        {
-            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
-            _formError = AdminFormErrorMapper.MapPageError(result);
-            return;
-        }
-
-        await Message.SuccessAsync(L["Products_Created"].Value);
-        Nav.NavigateTo($"/admin/products/{result.Data!.Id}");
     }
 
     private async Task SaveRenameAsync()

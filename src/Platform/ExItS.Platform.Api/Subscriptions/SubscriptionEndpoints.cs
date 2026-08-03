@@ -9,6 +9,8 @@ using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Common;
+using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Payments;
 using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Domain.Subscriptions;
 
@@ -395,7 +397,7 @@ internal static class SubscriptionEndpoints
         orgSubscriptions.MapPost("/", async (
             Guid organizationId,
             CreatePaidSubscriptionRequest body,
-            ActivatePaidSubscription useCase,
+            ActivatePaidSubscriptionFromConfirmedPayment useCase,
             PlatformOrganizationAuthz orgAuthz,
             PlatformAuthz authz,
             CancellationToken ct) =>
@@ -411,10 +413,19 @@ internal static class SubscriptionEndpoints
                 return denied;
             }
 
+            if (body.PaymentId == Guid.Empty)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.PaymentRequiredForPaidActivation,
+                    "Paid subscription creation requires a confirmed paymentId. Record and confirm a payment first, or use PayNow / from-catalog.",
+                    StatusCodes.Status400BadRequest);
+            }
+
             try
             {
                 var billingCycle = ParseBillingCycle(body.BillingCycle);
                 var result = await useCase.ExecuteAsync(
+                    SaaSPaymentId.From(body.PaymentId),
                     PlatformOrganizationIdFrom(organizationId),
                     PlanIdFrom(body.PlanId),
                     PlanVersionIdFrom(body.PlanVersionId),
@@ -427,15 +438,15 @@ internal static class SubscriptionEndpoints
                     await authz.AuditSucceededAsync(
                         PlatformAuditActions.SubscriptionPaidStarted,
                         nameof(Subscription),
-                        result.Value!.Id.Value.ToString("D"),
+                        result.Value!.Subscription.Id.Value.ToString("D"),
                         organizationId,
-                        result.Value.ProductCode.Value,
+                        result.Value.Subscription.ProductCode.Value,
                         cancellationToken: ct).ConfigureAwait(false);
                 }
 
-                return PlatformApiResults.FromResult(result, s => Results.Created(
-                    $"/api/v1/platform/subscriptions/{s.Id.Value}",
-                    MapSubscription(s)));
+                return PlatformApiResults.FromResult(result, activation => Results.Created(
+                    $"/api/v1/platform/subscriptions/{activation.Subscription.Id.Value}",
+                    MapSubscription(activation.Subscription)));
             }
             catch (DomainException ex)
             {
@@ -1013,6 +1024,7 @@ internal sealed record CreatePaidSubscriptionRequest(
     Guid PlanVersionId,
     DateTimeOffset PeriodStartUtc,
     DateTimeOffset PeriodEndUtc,
+    Guid PaymentId,
     string? BillingCycle = null);
 
 internal sealed record ActivateSubscriptionRequest(

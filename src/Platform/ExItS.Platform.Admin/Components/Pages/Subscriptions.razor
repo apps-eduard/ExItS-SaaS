@@ -112,12 +112,11 @@
                         </SelectOptions>
                     </Select>
                 </div>
-                <Checkbox @bind-Checked="_createAsTrial" Disabled="_busy">Start as trial</Checkbox>
-                @if (!_createAsTrial)
-                {
-                    <Input @bind-Value="_createPeriodStart" Size="@InputSize.Small" Placeholder="Paid period start UTC" Disabled="_busy" />
-                    <Input @bind-Value="_createPeriodEnd" Size="@InputSize.Small" Placeholder="Paid period / renewal end UTC" Disabled="_busy" />
-                }
+                <Alert Type="@AlertType.Info"
+                       ShowIcon="true"
+                       Message="Trial start only"
+                       Description="Paid activation requires a confirmed payment on Payments (or commercial PayNow). Direct paid create is disabled."
+                       Style="margin-bottom:8px;" />
                 <Space>
                     <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateSubscriptionAsync">@L["Common_Create"]</Button>
                     <Button Size="@ButtonSize.Small" OnClick="HideCreate" Disabled="_busy">@L["Common_Cancel"]</Button>
@@ -145,15 +144,16 @@
                Loading="@(_list is null)"
                Size="@TableSize.Small"
                Bordered
+               ScrollX="2200"
                RemoteDataSource
                OnChange="OnSubscriptionsTableChangeAsync">
             <PropertyColumn Property="c => c.OrganizationDisplayName" Title="@L["Common_Organization"]" Sortable>
                 <a href="/admin/organizations/@context.OrganizationId">@(string.IsNullOrWhiteSpace(context.OrganizationDisplayName) ? "Organization" : context.OrganizationDisplayName)</a>
             </PropertyColumn>
-            <PropertyColumn Property="c => c.ProductDisplayName" Title="@L["Common_Product"]" Sortable>
+            <PropertyColumn Property="c => c.ProductDisplayName" Title="@L["Common_Product"]" Sortable Width="140">
                 <a href="/admin/subscriptions/@context.Id">@(string.IsNullOrWhiteSpace(context.ProductDisplayName) ? "Product" : context.ProductDisplayName)</a>
             </PropertyColumn>
-            <PropertyColumn Property="c => c.PlanDisplayName" Title="@L["Common_Plan"]" Sortable>
+            <PropertyColumn Property="c => c.PlanDisplayName" Title="@L["Common_Plan"]" Sortable Width="120">
                 @(string.IsNullOrWhiteSpace(context.PlanDisplayName) ? "—" : context.PlanDisplayName)
             </PropertyColumn>
             <PropertyColumn Property="c => c.AgreedPrice" Title="Agreed price" Sortable Width="120">
@@ -331,12 +331,16 @@ else
             <TabPane Key="related" Tab="@L["Common_Related"]">
                 @if (_payments is { IsSuccess: true })
                 {
-                    <Table TItem="PaymentDto" DataSource="@_payments.Data!.Items" Size="@TableSize.Small" Bordered HidePagination="true">
-                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" />
-                        <PropertyColumn Property="c => c.Amount" Title="Amount" />
-                        <PropertyColumn Property="c => c.CurrencyCode" Title="Currency" />
-                        <PropertyColumn Property="c => c.Method" Title="Method" />
-                        <ActionColumn Title="@L["Common_Open"]">
+                    <Table TItem="PaymentDto" DataSource="@_payments.Data!.Items" Size="@TableSize.Small" Bordered HidePagination="true" ScrollX="720">
+                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="120">
+                            <AdminStatusTag Value="@context.Status" />
+                        </PropertyColumn>
+                        <PropertyColumn Property="c => c.Amount" Title="Amount" Width="120">
+                            <AdminMoneyDisplay Amount="@context.Amount" CurrencyCode="@context.CurrencyCode" />
+                        </PropertyColumn>
+                        <PropertyColumn Property="c => c.CurrencyCode" Title="Currency" Width="90" />
+                        <PropertyColumn Property="c => c.Method" Title="Method" Width="110" />
+                        <ActionColumn Title="@L["Common_Open"]" Width="90">
                             <a href="/admin/payments/@context.Id">@L["Common_Open"]</a>
                         </ActionColumn>
                     </Table>
@@ -382,9 +386,6 @@ else
     private string _createPlanId = "";
     private string _createPlanVersionId = "";
     private string _createTrialDefinitionId = "";
-    private bool _createAsTrial = true;
-    private string _createPeriodStart = "";
-    private string _createPeriodEnd = "";
     private string _periodStartText = "";
     private string _periodEndText = "";
     private string _graceEndText = "";
@@ -406,7 +407,6 @@ else
         _formConflict = false;
         if (Id is null)
         {
-            PrefillCreatePeriods();
             await LoadListAsync();
         }
         else
@@ -417,20 +417,6 @@ else
 
     private void ToggleCreate() => _showCreate = !_showCreate;
     private void HideCreate() => _showCreate = false;
-
-    private void PrefillCreatePeriods()
-    {
-        var now = DateTimeOffset.UtcNow;
-        if (string.IsNullOrWhiteSpace(_createPeriodStart))
-        {
-            _createPeriodStart = now.ToString("yyyy-MM-ddTHH:mm:ssZ");
-        }
-
-        if (string.IsNullOrWhiteSpace(_createPeriodEnd))
-        {
-            _createPeriodEnd = now.AddDays(30).ToString("yyyy-MM-ddTHH:mm:ssZ");
-        }
-    }
 
     private bool? ParseIsTrial() => _isTrialFilter switch
     {
@@ -567,17 +553,7 @@ else
         _createTrialDefinitionId = trial?.Id.ToString("D") ?? "";
     }
 
-    private async Task CreateSubscriptionAsync()
-    {
-        if (_createAsTrial)
-        {
-            await StartTrialAsync();
-        }
-        else
-        {
-            await CreatePaidAsync();
-        }
-    }
+    private async Task CreateSubscriptionAsync() => await StartTrialAsync();
 
     private async Task ApplyFiltersAsync()
     {
@@ -660,43 +636,6 @@ else
         Nav.NavigateTo($"/admin/subscriptions/{result.Data!.Id}");
     }
 
-    private async Task CreatePaidAsync()
-    {
-        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
-        _formError = null;
-        _formConflict = false;
-        if (string.IsNullOrWhiteSpace(_createPlanVersionId))
-        {
-            await ResolveCatalogIdsAsync();
-        }
-
-        if (!Guid.TryParse(_createOrgId, out var orgId)
-            || !Guid.TryParse(_createPlanId, out var planId)
-            || !Guid.TryParse(_createPlanVersionId, out var versionId)
-            || !DateTimeOffset.TryParse(_createPeriodStart, out var start)
-            || !DateTimeOffset.TryParse(_createPeriodEnd, out var end))
-        {
-            _busy = false;
-            _formError = "Select organization, product, and plan, and provide a valid paid period.";
-            return;
-        }
-
-        var result = await Api.CreatePaidSubscriptionAsync(
-            orgId,
-            new CreatePaidSubscriptionRequest(planId, versionId, start.ToUniversalTime(), end.ToUniversalTime()));
-        _busy = false;
-        if (!result.IsSuccess)
-        {
-            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
-            _formError = AdminFormErrorMapper.MapPageError(result);
-            await Message.ErrorAsync(_formError ?? L["Common_Error"].Value);
-            return;
-        }
-
-        await Message.SuccessAsync("Paid subscription created.");
-        Nav.NavigateTo($"/admin/subscriptions/{result.Data!.Id}");
-    }
-
     private bool TryParsePeriod(out DateTimeOffset start, out DateTimeOffset end)
     {
         start = default;
@@ -706,18 +645,9 @@ else
 
     private async Task ActivateAsync()
     {
-        if (Id is null || ExpectedVersion is not int version || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
-        if (!TryParsePeriod(out var start, out var end))
-        {
-            _busy = false;
-            _formError = "Paid period start/end must be valid UTC timestamps.";
-            return;
-        }
-
-        var result = await Api.ActivateSubscriptionAsync(
-            Id.Value,
-            new ActivateSubscriptionRequest(start.ToUniversalTime(), end.ToUniversalTime(), version));
-        await FinishLifecycleAsync(result, "Subscription activated.");
+        _formError =
+            "Paid activation requires a successful linked payment. Open Payments, confirm a payment, then use Confirm & Activate — or complete commercial PayNow / convert-trial.";
+        await Message.ErrorAsync(_formError);
     }
 
     private async Task EnterGraceAsync()

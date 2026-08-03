@@ -120,6 +120,30 @@ Against running LV stack (`localhost:8091`):
 
 Browser UI: Admin watch should pick up `PersonalStartBusiness` / `OrganizationCommercial` changes; confirm plan cards and Current Plan render without the prior empty/error states after hard refresh if needed.
 
+## Provider charge → Admin Payments visibility (2026-08-03)
+
+### Defect
+
+Successful Personal **Subscribe Now** / org commercial PayNow / renewals / upgrades wrote only `provider_payments`. Platform Admin → Payments lists **`saas_payments` only**, so the page looked empty even when subscriptions activated. Trials correctly create **no** payment (unchanged).
+
+### Fix
+
+- `RecordLinkedSuccessfulProviderPayment` — after a successful provider charge, persist a **Confirmed** `SaaSPayment` with method **Online**, linked to organization + subscription + provider reference (idempotent).
+- Wired from Start Business PayNow, initial/renewal provider flows, commercial start, and plan upgrade charge paths.
+- Paid activation without a confirmed linked payment is closed (`PaymentRequiredForPaidActivation`); Admin paid create and bare activate require confirmed `paymentId` / activate-from-payment.
+- Platform HTTP **POST** create organization / product returns **403** outside Testing (seed / Start Business / use-case DI may still create).
+
+### Admin Payments list UX
+
+- Summary cards are **global** counts; the table was default-filtered to **Pending Confirmation**, so Confirmed Online rows (PayNow) did not appear under the list.
+- Default Status filter is now **Confirmed**; summary cards are clickable filters; empty copy explains the Pending vs Confirmed mismatch.
+
+### Operator note
+
+- Trialing subscription → empty Payments is expected.
+- Active from PayNow → Confirmed Online row must appear after API runs with linking code.
+- Historical PayNow before linking are not backfilled automatically.
+
 ## Manual acceptance checklist (remaining)
 
 - [ ] LV reset → only Olivia + Rafael
@@ -130,6 +154,8 @@ Browser UI: Admin watch should pick up `PersonalStartBusiness` / `OrganizationCo
 - [ ] Expire trial without charge → Choose a Plan → subscribe
 - [ ] Upgrade/downgrade on Active; failed upgrade leaves plan unchanged
 - [ ] LV controls absent when LV disabled
+- [ ] Personal Subscribe Now → Platform Admin Payments shows Confirmed Online (Status=Confirmed)
+- [ ] Payments summary Confirmed count matches list when Status=Confirmed
 
 ## Status
 

@@ -513,9 +513,29 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
         var subscriptionId = (await start.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 
         var now = DateTimeOffset.UtcNow;
+        var payment = await _client.PostAsJsonAsync(
+            "/api/v1/platform/payments/manual",
+            new
+            {
+                organizationId,
+                productCode,
+                amount = 100m,
+                currencyCode = "PHP",
+                method = "GCash",
+                externalReference = $"id-act-{Guid.NewGuid():N}",
+                paidAtUtc = now
+            });
+        payment.EnsureSuccessStatusCode();
+        var paymentId = (await payment.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
         (await _client.PostAsJsonAsync(
-            $"/api/v1/platform/subscriptions/{subscriptionId}/activate",
-            new { periodStartUtc = now, periodEndUtc = now.AddDays(30) })).EnsureSuccessStatusCode();
+            $"/api/v1/platform/payments/{paymentId}/activate-subscription",
+            new
+            {
+                confirmedBy = "identity-operator",
+                subscriptionId,
+                periodStartUtc = now,
+                periodEndUtc = now.AddDays(30)
+            })).EnsureSuccessStatusCode();
 
         var snapshot = await _client.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/products/{productCode}/entitlements/snapshots",

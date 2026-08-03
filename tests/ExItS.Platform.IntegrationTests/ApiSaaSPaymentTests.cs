@@ -243,21 +243,12 @@ public sealed class ApiSaaSPaymentTests(PostgreSqlFixture fixture) : IAsyncLifet
         Assert.Equal("Confirmed", activated.GetProperty("payment").GetProperty("status").GetString());
         Assert.Equal("Active", activated.GetProperty("subscription").GetProperty("status").GetString());
 
-        // Cancel + start a new trial so a second subscription is available to attempt reuse against.
-        var cancel = await _client.PostAsync($"/api/v1/platform/subscriptions/{subscriptionId}/cancel", null);
-        cancel.EnsureSuccessStatusCode();
-        var restart = await _client.PostAsJsonAsync(
-            $"/api/v1/platform/organizations/{organizationId}/subscriptions/trials",
-            new { planId, planVersionId = versionId, trialDefinitionId = trialId });
-        restart.EnsureSuccessStatusCode();
-        var anotherSubscriptionId = (await restart.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-
         var reuse = await _client.PostAsJsonAsync(
             $"/api/v1/platform/payments/{paymentId}/activate-subscription",
             new
             {
                 confirmedBy = "staff-1",
-                subscriptionId = anotherSubscriptionId,
+                subscriptionId,
                 periodStartUtc = now,
                 periodEndUtc = now.AddDays(30)
             });

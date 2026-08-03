@@ -20,6 +20,7 @@ public sealed class UpgradeOrganizationSubscription
     private readonly IPlanRepository _plans;
     private readonly ISubscriptionRepository _subscriptions;
     private readonly IPaymentProvider _paymentProvider;
+    private readonly RecordLinkedSuccessfulProviderPayment _recordLinkedPayment;
     private readonly GenerateEntitlementSnapshot _generateSnapshot;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -30,6 +31,7 @@ public sealed class UpgradeOrganizationSubscription
         IPlanRepository plans,
         ISubscriptionRepository subscriptions,
         IPaymentProvider paymentProvider,
+        RecordLinkedSuccessfulProviderPayment recordLinkedPayment,
         GenerateEntitlementSnapshot generateSnapshot,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
@@ -39,6 +41,7 @@ public sealed class UpgradeOrganizationSubscription
         _plans = plans;
         _subscriptions = subscriptions;
         _paymentProvider = paymentProvider;
+        _recordLinkedPayment = recordLinkedPayment;
         _generateSnapshot = generateSnapshot;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -149,6 +152,22 @@ public sealed class UpgradeOrganizationSubscription
             return ApplicationResult<Subscription>.Failure(
                 ApplicationErrorCodes.PaymentNotConfirmed,
                 payment.FailureMessage ?? $"Upgrade payment was not successful ({payment.Status}).");
+        }
+
+        var linked = await _recordLinkedPayment
+            .ExecuteAsync(
+                organizationId,
+                productCode,
+                subscription.Id,
+                payment,
+                "upgrade",
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (!linked.IsSuccess)
+        {
+            return ApplicationResult<Subscription>.Failure(
+                linked.ErrorCode ?? ApplicationErrorCodes.PaymentNotConfirmed,
+                linked.ErrorMessage ?? "Successful upgrade payment could not be linked for administration.");
         }
 
         try

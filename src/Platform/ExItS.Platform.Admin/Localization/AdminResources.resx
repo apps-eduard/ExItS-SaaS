@@ -602,7 +602,12 @@
   <data name="Users_CreateUser" xml:space="preserve"><value>Create Platform Staff</value></data>
   <data name="Users_AriaCreate" xml:space="preserve"><value>Create Platform user</value></data>
   <data name="Users_CreateSection" xml:space="preserve"><value>Create Platform staff</value></data>
-  <data name="Users_CreateFailed" xml:space="preserve"><value>Could not create user</value></data>
+  <data name="Users_CreateFailed" xml:space="preserve"><value>Could not create Platform Staff</value></data>
+  <data name="Users_BasicInformation" xml:space="preserve"><value>Basic information</value></data>
+  <data name="Users_AccessSettings" xml:space="preserve"><value>Access settings</value></data>
+  <data name="Users_DisplayNamePlaceholder" xml:space="preserve"><value>Defaults to first + last name when blank</value></data>
+  <data name="Form_RequiredFieldsHint" xml:space="preserve"><value>Fields marked * are required.</value></data>
+  <data name="Common_Optional" xml:space="preserve"><value>optional</value></data>
   <data name="Users_PlatformRole" xml:space="preserve"><value>Platform role</value></data>
   <data name="Users_PlatformRolePlaceholder" xml:space="preserve"><value>Select a Platform role</value></data>
   <data name="Users_PlatformRoleRequired" xml:space="preserve"><value>Platform role is required.</value></data>

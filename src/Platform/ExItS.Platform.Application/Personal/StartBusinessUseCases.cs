@@ -91,6 +91,7 @@ public sealed class StartBusinessForPersonalUser
     private readonly ActivatePaidSubscription _activatePaid;
     private readonly EnsureMvpPosPlans _ensureMvpPosPlans;
     private readonly IPaymentProvider _paymentProvider;
+    private readonly RecordLinkedSuccessfulProviderPayment _recordLinkedPayment;
     private readonly GenerateEntitlementSnapshot _generateSnapshot;
     private readonly GrantProductAccess _grantProductAccess;
     private readonly IProductRepository _products;
@@ -124,6 +125,7 @@ public sealed class StartBusinessForPersonalUser
         ActivatePaidSubscription activatePaid,
         EnsureMvpPosPlans ensureMvpPosPlans,
         IPaymentProvider paymentProvider,
+        RecordLinkedSuccessfulProviderPayment recordLinkedPayment,
         GenerateEntitlementSnapshot generateSnapshot,
         GrantProductAccess grantProductAccess,
         IProductRepository products,
@@ -156,6 +158,7 @@ public sealed class StartBusinessForPersonalUser
         _activatePaid = activatePaid;
         _ensureMvpPosPlans = ensureMvpPosPlans;
         _paymentProvider = paymentProvider;
+        _recordLinkedPayment = recordLinkedPayment;
         _generateSnapshot = generateSnapshot;
         _grantProductAccess = grantProductAccess;
         _products = products;
@@ -413,6 +416,25 @@ public sealed class StartBusinessForPersonalUser
                         paymentResult.FailureMessage ?? "Initial payment was not successful.");
                 }
 
+                var linked = await _recordLinkedPayment
+                    .ExecuteAsync(
+                        organization.Id,
+                        ProductCode.Create(productCode),
+                        activated.Id,
+                        paymentResult,
+                        "start-business",
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (!linked.IsSuccess)
+                {
+                    activated.Cancel(_clock.UtcNow);
+                    await _subscriptions.UpdateAsync(activated, cancellationToken).ConfigureAwait(false);
+                    await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                    return ApplicationResult<StartBusinessResultDto>.Failure(
+                        linked.ErrorCode ?? ApplicationErrorCodes.PaymentNotConfirmed,
+                        linked.ErrorMessage ?? "Successful payment could not be linked for administration.");
+                }
+
                 subscriptionId = activated.Id.Value;
             }
             else if (startAsTrial)
@@ -445,26 +467,9 @@ public sealed class StartBusinessForPersonalUser
             }
             else
             {
-                var utcNow = _clock.UtcNow;
-                var (periodStart, periodEnd) = SubscriptionBillingPeriods.ComputePaidPeriod(utcNow, billingCycle);
-                var paid = await _activatePaid
-                    .ExecuteAsync(
-                        organization.Id,
-                        catalog.Value.PlanId,
-                        catalog.Value.PlanVersionId,
-                        periodStart,
-                        periodEnd,
-                        billingCycle,
-                        cancellationToken)
-                    .ConfigureAwait(false);
-                if (!paid.IsSuccess || paid.Value is null)
-                {
-                    return ApplicationResult<StartBusinessResultDto>.Failure(
-                        paid.ErrorCode ?? ApplicationErrorCodes.SubscriptionIneligible,
-                        paid.ErrorMessage ?? "Paid subscription failed.");
-                }
-
-                subscriptionId = paid.Value.Id.Value;
+                return ApplicationResult<StartBusinessResultDto>.Failure(
+                    ApplicationErrorCodes.PaymentRequiredForPaidActivation,
+                    "Paid Start a Business requires PayNow with a successful payment. Start a trial, or subscribe with payment.");
             }
 
             var snapshot = await _generateSnapshot

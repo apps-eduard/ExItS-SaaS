@@ -136,6 +136,7 @@ public static class PlatformAuditActions
     public const string ManualPaymentConfirmed = "platform.payment.confirmed";
     public const string ManualPaymentRejected = "platform.payment.rejected";
     public const string ManualPaymentVoided = "platform.payment.voided";
+    public const string ProviderPaymentLinked = "platform.payment.provider_linked";
 
     public const string FeatureOverrideCreated = "platform.feature_override.created";
     public const string FeatureOverrideRevoked = "platform.feature_override.revoked";

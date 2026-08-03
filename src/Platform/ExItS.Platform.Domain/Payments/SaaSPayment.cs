@@ -90,6 +90,13 @@ public sealed class SaaSPayment
             throw new DomainException(DomainErrorCodes.InvalidSaaSPaymentTransition, "Payment method is not defined.");
         }
 
+        if (method == SaaSPaymentMethod.Online)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidSaaSPaymentTransition,
+                "Online payments must be recorded from a successful provider charge.");
+        }
+
         if (amount <= 0)
         {
             throw new DomainException(DomainErrorCodes.PaymentAmountInvalid, "Payment amount must be positive.");
@@ -113,6 +120,59 @@ public sealed class SaaSPayment
             utcNow,
             utcNow,
             version: 1);
+    }
+
+    /// <summary>
+    /// Records a successful provider charge as a confirmed SaaS payment already linked to the
+    /// subscription it funded — visible in Platform Administration → Payments.
+    /// </summary>
+    public static SaaSPayment CreateConfirmedLinkedFromProvider(
+        PlatformOrganizationId organizationId,
+        ProductCode productCode,
+        SubscriptionId subscriptionId,
+        decimal amount,
+        CurrencyCode currencyCode,
+        string providerReference,
+        string confirmedBy,
+        DateTimeOffset paidAtUtc,
+        DateTimeOffset utcNow,
+        SaaSPaymentId? id = null)
+    {
+        ArgumentNullException.ThrowIfNull(organizationId);
+        ArgumentNullException.ThrowIfNull(productCode);
+        ArgumentNullException.ThrowIfNull(subscriptionId);
+        ArgumentNullException.ThrowIfNull(currencyCode);
+        ArgumentException.ThrowIfNullOrWhiteSpace(confirmedBy);
+        DomainTime.EnsureUtc(paidAtUtc);
+        DomainTime.EnsureUtc(utcNow);
+
+        if (amount <= 0)
+        {
+            throw new DomainException(DomainErrorCodes.PaymentAmountInvalid, "Payment amount must be positive.");
+        }
+
+        var normalizedReference = NormalizeReference(providerReference);
+        var trimmedReference = providerReference.Trim();
+
+        var payment = new SaaSPayment(
+            id ?? SaaSPaymentId.New(),
+            organizationId,
+            productCode,
+            subscriptionId,
+            amount,
+            currencyCode,
+            SaaSPaymentMethod.Online,
+            trimmedReference,
+            normalizedReference,
+            SaaSPaymentStatus.Confirmed,
+            paidAtUtc,
+            utcNow,
+            utcNow,
+            version: 1);
+
+        payment.ConfirmedAtUtc = utcNow;
+        payment.ConfirmedBy = confirmedBy.Trim();
+        return payment;
     }
 
     internal static SaaSPayment Rehydrate(

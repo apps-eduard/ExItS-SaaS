@@ -34,6 +34,44 @@ public sealed class SaaSPaymentTests
         Assert.Equal("REF-001", payment.ExternalReference);
     }
 
+    [Fact]
+    public void CreateConfirmedLinkedFromProvider_is_confirmed_and_linked()
+    {
+        var orgId = PlatformOrganizationId.New();
+        var subId = SubscriptionId.New();
+        var payment = SaaSPayment.CreateConfirmedLinkedFromProvider(
+            orgId,
+            ProductCode.Create(ProductCode.PinoyBusinessPos),
+            subId,
+            299m,
+            CurrencyCode.Create(CurrencyCode.PHP),
+            "lvp_pay_000001",
+            "provider:LocalValidation",
+            T0,
+            T0);
+
+        Assert.Equal(SaaSPaymentStatus.Confirmed, payment.Status);
+        Assert.Equal(SaaSPaymentMethod.Online, payment.Method);
+        Assert.Equal(subId, payment.SubscriptionId);
+        Assert.Equal("provider:LocalValidation", payment.ConfirmedBy);
+    }
+
+    [Fact]
+    public void CreateManual_rejects_Online_method()
+    {
+        var ex = Assert.Throws<DomainException>(() =>
+            SaaSPayment.CreateManual(
+                PlatformOrganizationId.New(),
+                ProductCode.Create(ProductCode.PinoyBusinessPos),
+                100m,
+                CurrencyCode.Create(CurrencyCode.PHP),
+                SaaSPaymentMethod.Online,
+                "REF-ONLINE",
+                T0,
+                T0));
+        Assert.Equal(DomainErrorCodes.InvalidSaaSPaymentTransition, ex.ErrorCode);
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(-10)]

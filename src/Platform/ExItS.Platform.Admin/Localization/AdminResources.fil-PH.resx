@@ -600,7 +600,12 @@
   <data name="Users_CreateUser" xml:space="preserve"><value>Gumawa ng Platform Staff</value></data>
   <data name="Users_AriaCreate" xml:space="preserve"><value>Gumawa ng Platform user</value></data>
   <data name="Users_CreateSection" xml:space="preserve"><value>Gumawa ng Platform staff</value></data>
-  <data name="Users_CreateFailed" xml:space="preserve"><value>Hindi makagawa ng user</value></data>
+  <data name="Users_CreateFailed" xml:space="preserve"><value>Hindi makagawa ng Platform Staff</value></data>
+  <data name="Users_BasicInformation" xml:space="preserve"><value>Pangunahing impormasyon</value></data>
+  <data name="Users_AccessSettings" xml:space="preserve"><value>Mga setting ng access</value></data>
+  <data name="Users_DisplayNamePlaceholder" xml:space="preserve"><value>Default: first + last name kung blank</value></data>
+  <data name="Form_RequiredFieldsHint" xml:space="preserve"><value>Ang mga field na may * ay required.</value></data>
+  <data name="Common_Optional" xml:space="preserve"><value>opsyonal</value></data>
   <data name="Users_PlatformRole" xml:space="preserve"><value>Platform role</value></data>
   <data name="Users_PlatformRolePlaceholder" xml:space="preserve"><value>Pumili ng Platform role</value></data>
   <data name="Users_PlatformRoleRequired" xml:space="preserve"><value>Kailangan ang Platform role.</value></data>

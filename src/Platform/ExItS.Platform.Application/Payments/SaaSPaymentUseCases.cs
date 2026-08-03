@@ -1,8 +1,10 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
+using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Payments;
@@ -327,6 +329,117 @@ public sealed class ConfirmPaymentAndActivateSubscription
 
             return ApplicationResult<ConfirmedPaymentActivation>.Success(
                 new ConfirmedPaymentActivation(payment, subscription));
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+/// <summary>
+/// Starts a paid subscription only when a confirmed, unused SaaS payment funds it, then links that payment.
+/// </summary>
+public sealed class ActivatePaidSubscriptionFromConfirmedPayment
+{
+    private readonly ISaaSPaymentRepository _payments;
+    private readonly ISubscriptionRepository _subscriptions;
+    private readonly ActivatePaidSubscription _activatePaid;
+    private readonly GenerateEntitlementSnapshot _generateSnapshot;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public ActivatePaidSubscriptionFromConfirmedPayment(
+        ISaaSPaymentRepository payments,
+        ISubscriptionRepository subscriptions,
+        ActivatePaidSubscription activatePaid,
+        GenerateEntitlementSnapshot generateSnapshot,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _payments = payments;
+        _subscriptions = subscriptions;
+        _activatePaid = activatePaid;
+        _generateSnapshot = generateSnapshot;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<ConfirmedPaymentActivation>> ExecuteAsync(
+        SaaSPaymentId paymentId,
+        PlatformOrganizationId organizationId,
+        PlanId planId,
+        PlanVersionId planVersionId,
+        DateTimeOffset periodStartUtc,
+        DateTimeOffset periodEndUtc,
+        BillingCycle billingCycle,
+        CancellationToken cancellationToken = default)
+    {
+        var payment = await _payments.GetByIdAsync(paymentId, cancellationToken).ConfigureAwait(false);
+        if (payment is null)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                ApplicationErrorCodes.PaymentNotFound,
+                "Payment was not found.");
+        }
+
+        if (payment.OrganizationId != organizationId)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                ApplicationErrorCodes.PaymentOrganizationMismatch,
+                "Payment and organization do not match.");
+        }
+
+        if (payment.Status != SaaSPaymentStatus.Confirmed)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                ApplicationErrorCodes.PaymentNotConfirmed,
+                "Payment must be confirmed before paid subscription activation.");
+        }
+
+        if (payment.SubscriptionId is not null)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                ApplicationErrorCodes.PaymentAlreadyUsed,
+                "Payment has already been used to activate a subscription.");
+        }
+
+        var activated = await _activatePaid
+            .ExecuteAsync(organizationId, planId, planVersionId, periodStartUtc, periodEndUtc, billingCycle, cancellationToken)
+            .ConfigureAwait(false);
+        if (!activated.IsSuccess || activated.Value is null)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                activated.ErrorCode ?? ApplicationErrorCodes.SubscriptionIneligible,
+                activated.ErrorMessage ?? "Paid subscription activation failed.");
+        }
+
+        if (payment.ProductCode != activated.Value.ProductCode)
+        {
+            activated.Value.Cancel(_clock.UtcNow);
+            await _subscriptions.UpdateAsync(activated.Value, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                ApplicationErrorCodes.PaymentProductMismatch,
+                "Payment and subscription are for different products.");
+        }
+
+        try
+        {
+            payment.LinkSubscription(activated.Value.Id, _clock.UtcNow);
+            await _payments.UpdateAsync(payment, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            await _generateSnapshot
+                .ExecuteAsync(organizationId, activated.Value.ProductCode, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+
+            return ApplicationResult<ConfirmedPaymentActivation>.Success(
+                new ConfirmedPaymentActivation(payment, activated.Value));
         }
         catch (DomainException ex)
         {

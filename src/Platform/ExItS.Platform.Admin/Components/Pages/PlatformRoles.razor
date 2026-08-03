@@ -91,19 +91,20 @@ else if (Id is null)
                Loading="@(_list is null)"
                Size="@TableSize.Small"
                Bordered
+               ScrollX="900"
                RemoteDataSource
                OnPageIndexChange="OnPageChangedAsync">
-            <PropertyColumn Property="c => c.Code" Title="Code">
+            <PropertyColumn Property="c => c.Code" Title="Code" Width="180">
                 <a href="/admin/platform-roles/@context.Id">@context.Code</a>
             </PropertyColumn>
             <PropertyColumn Property="c => c.Name" Title="Name" />
-            <PropertyColumn Property="c => c.Kind" Title="Kind">
+            <PropertyColumn Property="c => c.Kind" Title="Kind" Width="110">
                 <Tag Color="@(context.Kind == "BuiltIn" ? "blue" : "geekblue")">@context.Kind</Tag>
             </PropertyColumn>
-            <PropertyColumn Property="c => c.Status" Title="Status">
+            <PropertyColumn Property="c => c.Status" Title="Status" Width="110">
                 <AdminStatusTag Value="@context.Status" />
             </PropertyColumn>
-            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]">
+            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Width="180">
                 <LocalTimestamp Value="@context.UpdatedAtUtc" />
             </PropertyColumn>
         </Table>

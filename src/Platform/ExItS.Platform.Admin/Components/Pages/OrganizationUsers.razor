@@ -27,13 +27,14 @@ else
            Loading="@(_orgs is null)"
            Size="@TableSize.Small"
            Bordered
+           ScrollX="720"
            RemoteDataSource
            OnPageIndexChange="OnPageChangedAsync">
         <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_DisplayName"]">
             <a href="/admin/organizations/@context.Id/members">@context.DisplayName</a>
         </PropertyColumn>
-        <PropertyColumn Property="c => c.Slug" Title="@L["Common_Slug"]" />
-        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+        <PropertyColumn Property="c => c.Slug" Title="@L["Common_Slug"]" Width="160" />
+        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="120">
             <AdminStatusTag Value="@context.Status" />
         </PropertyColumn>
         <ActionColumn Title="@L["Common_Open"]" Width="140">

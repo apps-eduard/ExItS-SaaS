@@ -68,6 +68,9 @@ public static class ApplicationErrorCodes
     public const string PaymentProductMismatch = "application.payment.product_mismatch";
     public const string PaymentOrganizationMismatch = "application.payment.organization_mismatch";
     public const string PaymentSubscriptionConflict = "application.payment.subscription_conflict";
+    public const string PaymentRequiredForPaidActivation = "application.payment.required_for_paid_activation";
+    public const string RuntimeOrganizationCreationDisabled = "application.organization.runtime_creation_disabled";
+    public const string RuntimeProductCreationDisabled = "application.product.runtime_creation_disabled";
 
     public const string EntitlementSnapshotNotFound = "application.entitlement_snapshot.not_found";
     public const string EntitlementSnapshotInvalid = "application.entitlement_snapshot.invalid";

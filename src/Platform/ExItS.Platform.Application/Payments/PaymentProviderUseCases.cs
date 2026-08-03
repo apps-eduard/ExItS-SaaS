@@ -30,6 +30,7 @@ public sealed class ProcessSubscriptionInitialPayment
     private readonly ISubscriptionRepository _subscriptions;
     private readonly IPlanRepository _plans;
     private readonly IPaymentProvider _paymentProvider;
+    private readonly RecordLinkedSuccessfulProviderPayment _recordLinkedPayment;
     private readonly GenerateEntitlementSnapshot _generateSnapshot;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -38,6 +39,7 @@ public sealed class ProcessSubscriptionInitialPayment
         ISubscriptionRepository subscriptions,
         IPlanRepository plans,
         IPaymentProvider paymentProvider,
+        RecordLinkedSuccessfulProviderPayment recordLinkedPayment,
         GenerateEntitlementSnapshot generateSnapshot,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
@@ -45,6 +47,7 @@ public sealed class ProcessSubscriptionInitialPayment
         _subscriptions = subscriptions;
         _plans = plans;
         _paymentProvider = paymentProvider;
+        _recordLinkedPayment = recordLinkedPayment;
         _generateSnapshot = generateSnapshot;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -165,6 +168,22 @@ public sealed class ProcessSubscriptionInitialPayment
             await _subscriptions.UpdateAsync(subscription, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
+            var linked = await _recordLinkedPayment
+                .ExecuteAsync(
+                    subscription.OrganizationId,
+                    subscription.ProductCode,
+                    subscription.Id,
+                    paymentResult,
+                    chargeRequest.Purpose ?? "initial",
+                    cancellationToken)
+                .ConfigureAwait(false);
+            if (!linked.IsSuccess)
+            {
+                return ApplicationResult<(Subscription, PaymentProviderResult)>.Failure(
+                    linked.ErrorCode ?? ApplicationErrorCodes.PaymentNotConfirmed,
+                    linked.ErrorMessage ?? "Successful payment could not be linked for administration.");
+            }
+
             await _generateSnapshot
                 .ExecuteAsync(subscription.OrganizationId, subscription.ProductCode, cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
@@ -197,6 +216,7 @@ public sealed class ProcessSubscriptionRenewal
     private readonly ISubscriptionRepository _subscriptions;
     private readonly IPlanRepository _plans;
     private readonly IPaymentProvider _paymentProvider;
+    private readonly RecordLinkedSuccessfulProviderPayment _recordLinkedPayment;
     private readonly GenerateEntitlementSnapshot _generateSnapshot;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -205,6 +225,7 @@ public sealed class ProcessSubscriptionRenewal
         ISubscriptionRepository subscriptions,
         IPlanRepository plans,
         IPaymentProvider paymentProvider,
+        RecordLinkedSuccessfulProviderPayment recordLinkedPayment,
         GenerateEntitlementSnapshot generateSnapshot,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
@@ -212,6 +233,7 @@ public sealed class ProcessSubscriptionRenewal
         _subscriptions = subscriptions;
         _plans = plans;
         _paymentProvider = paymentProvider;
+        _recordLinkedPayment = recordLinkedPayment;
         _generateSnapshot = generateSnapshot;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -294,6 +316,26 @@ public sealed class ProcessSubscriptionRenewal
 
             await _subscriptions.UpdateAsync(subscription, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            if (paymentResult.Status == PaymentProviderResultStatus.RenewalSucceeded
+                || paymentResult.Status == PaymentProviderResultStatus.Succeeded)
+            {
+                var linked = await _recordLinkedPayment
+                    .ExecuteAsync(
+                        subscription.OrganizationId,
+                        subscription.ProductCode,
+                        subscription.Id,
+                        paymentResult,
+                        chargeRequest.Purpose ?? "renewal",
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (!linked.IsSuccess)
+                {
+                    return ApplicationResult<(Subscription, PaymentProviderResult)>.Failure(
+                        linked.ErrorCode ?? ApplicationErrorCodes.PaymentNotConfirmed,
+                        linked.ErrorMessage ?? "Successful renewal payment could not be linked for administration.");
+                }
+            }
 
             await _generateSnapshot
                 .ExecuteAsync(subscription.OrganizationId, subscription.ProductCode, cancellationToken: cancellationToken)

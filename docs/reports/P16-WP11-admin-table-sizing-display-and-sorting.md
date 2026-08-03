@@ -29,9 +29,17 @@ Platform Admin tables (starting with Entitlements) showed technical IDs as prima
 
 API/DB remain UTC. UI converts via browser IANA timezone (`UserTimeZoneState` + `LocalTimestamp`).
 
-### Table width
+### Table width (authoritative — 2026-08-03)
 
-Content-fit CSS: tables use `max-content` up to container width; removed forced `min-width: 36rem` and excessive `ScrollX`. Bounded widths only for Status (~110), Generated (~180), Revision (~90), Actions (~80).
+Earlier “content-fit / remove ScrollX” CSS **crushed** columns: `width: 100% !important` on `.ant-table table` overrode Ant Design `ScrollX` min-widths, so headers/cells overlapped (Organization Staff: “Organization role” over “Product role”, dates into Actions).
+
+**Fix:**
+
+1. `wwwroot/app.css` — use `min-width: 100%` (never force `width: 100% !important`); allow wrap by default; keep nowrap on ellipsis / fixed-width cells.
+2. All Admin Ant Design list and nested tables — set `ScrollX` ≈ sum of practical column mins; fixed `Width` on status / dates / money / actions; one flexible descriptive column; ellipsis + tooltip for optional long text.
+3. `docs/ui/ant-design-admin-ui-standards.md` §12 — ScrollX / fixed vs flexible / no hide-columns-for-width rules aligned.
+
+Horizontal scroll appears when the viewport is narrower than the combined minimum widths. Do not cardify Ant Design tables on mobile for this pass.
 
 ### Sorting
 
@@ -47,7 +55,8 @@ Unit + integration coverage for friendly names, Revision label contract, local d
 
 ## Implementation SHA
 
-`d8bacd4673c5e5eb75641714193b37b76f9a31e8`
+Prior sizing/sort pass: `d8bacd4673c5e5eb75641714193b37b76f9a31e8`  
+Overlap / ScrollX pass: `8855da8376e02129e2f415aaa318f117c0b8a1b2`
 
 ---
 

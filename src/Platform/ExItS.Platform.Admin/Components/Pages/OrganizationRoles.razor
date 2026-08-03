@@ -57,13 +57,14 @@ else if (RoleId is null)
                Loading="@(_list is null)"
                Size="@TableSize.Small"
                Bordered
+               ScrollX="640"
                RemoteDataSource
                OnPageIndexChange="OnPageChangedAsync">
-            <PropertyColumn Property="c => c.Code" Title="Code">
+            <PropertyColumn Property="c => c.Code" Title="Code" Width="180">
                 <a href="@($"/admin/organizations/{OrganizationId}/roles/{context.Id}")">@context.Code</a>
             </PropertyColumn>
             <PropertyColumn Property="c => c.Name" Title="Name" />
-            <PropertyColumn Property="c => c.Status" Title="Status">
+            <PropertyColumn Property="c => c.Status" Title="Status" Width="120">
                 <AdminStatusTag Value="@context.Status" />
             </PropertyColumn>
         </Table>

@@ -176,6 +176,7 @@ else
                Loading="@(_members is null)"
                Size="@TableSize.Small"
                Bordered
+               ScrollX="1480"
                RemoteDataSource
                OnPageIndexChange="OnMembersPageAsync">
             <PropertyColumn Property="c => c.DisplayName" Title="@L["OrgMembers_TabMembers"]">
@@ -188,11 +189,15 @@ else
                     @(context.DisplayName ?? context.Username ?? "—")
                 }
             </PropertyColumn>
-            <PropertyColumn Property="c => c.Email" Title="@L["Common_Email"]" Ellipsis />
-            <PropertyColumn Property="c => c.EmployeeCode" Title="@L["Users_EmployeeCode"]">
+            <PropertyColumn Property="c => c.Email" Title="@L["Common_Email"]" Ellipsis Width="200">
+                <Tooltip Title="@(context.Email ?? "")">
+                    <span>@(context.Email ?? "—")</span>
+                </Tooltip>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.EmployeeCode" Title="@L["Users_EmployeeCode"]" Width="120">
                 @(string.IsNullOrWhiteSpace(context.EmployeeCode) ? "—" : context.EmployeeCode)
             </PropertyColumn>
-            <PropertyColumn Property="c => c.Role" Title="@L["OrgMembers_OrgRole"]">
+            <PropertyColumn Property="c => c.Role" Title="@L["OrgMembers_OrgRole"]" Width="170">
                 <Space Size="@SpaceSize.Small">
                     <Tag Color="@(context.Role == "OrganizationOwner" ? "gold" : "default")"
                          Style="@(context.Role == "OrganizationOwner" ? "font-weight:600;" : null)">
@@ -211,7 +216,7 @@ else
                     }
                 </Space>
             </PropertyColumn>
-            <ActionColumn Title="Product role">
+            <ActionColumn Title="Product role" Width="120">
                 @if (context.ProductRoles is { Count: > 0 })
                 {
                     <Space Size="@SpaceSize.Small" Wrap>
@@ -226,10 +231,10 @@ else
                     <span>—</span>
                 }
             </ActionColumn>
-            <PropertyColumn Property="c => c.Branch" Title="Branch">
+            <PropertyColumn Property="c => c.Branch" Title="Branch" Width="100">
                 @(string.IsNullOrWhiteSpace(context.Branch) ? "—" : context.Branch)
             </PropertyColumn>
-            <PropertyColumn Property="c => c.AccountStatus" Title="Account status">
+            <PropertyColumn Property="c => c.AccountStatus" Title="Account status" Width="120">
                 @if (string.IsNullOrWhiteSpace(context.AccountStatus))
                 {
                     <span>—</span>
@@ -239,13 +244,13 @@ else
                     <AdminStatusTag Value="@context.AccountStatus" />
                 }
             </PropertyColumn>
-            <PropertyColumn Property="c => c.Status" Title="Membership status">
+            <PropertyColumn Property="c => c.Status" Title="Membership status" Width="140">
                 <AdminStatusTag Value="@(context.Status == "Removed" ? "Deactivated" : context.Status)" />
             </PropertyColumn>
-            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]">
+            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Width="180">
                 <LocalTimestamp Value="@context.UpdatedAtUtc" />
             </PropertyColumn>
-            <ActionColumn Title="@L["Common_Actions"]" Width="220">
+            <ActionColumn Title="@L["Common_Actions"]" Width="160">
                 <Space Size="@SpaceSize.Small" Wrap>
                     @if (Shell.IsPlatformShell)
                     {

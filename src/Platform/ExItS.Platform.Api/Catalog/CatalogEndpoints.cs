@@ -6,6 +6,7 @@ using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Products;
+using Microsoft.Extensions.Hosting;
 
 namespace ExItS.Platform.Api.Catalog;
 
@@ -95,8 +96,17 @@ internal static class CatalogEndpoints
             CreateProductRequest body,
             CreateProduct useCase,
             PlatformAuthz authz,
+            IHostEnvironment environment,
             CancellationToken ct) =>
         {
+            if (!environment.IsEnvironment("Testing"))
+            {
+                return CatalogResults.Problem(
+                    ApplicationErrorCodes.RuntimeProductCreationDisabled,
+                    "Platform runtime product creation is disabled. Catalog products are provisioned by seed or provisional Start a Business paths.",
+                    StatusCodes.Status403Forbidden);
+            }
+
             var denied = await authz.EnsureAsync(
                 PlatformPermission.ManageCatalog,
                 PlatformAuditActions.CatalogProductCreated,

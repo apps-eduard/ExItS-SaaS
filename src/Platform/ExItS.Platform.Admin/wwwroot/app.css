@@ -196,6 +196,66 @@ html, body {
     font-size: 12px;
 }
 
+/* Horizontal form fields: label on the left, control on the right (§9). */
+.admin-form-field {
+    display: grid;
+    grid-template-columns: minmax(140px, 200px) minmax(0, 1fr);
+    gap: 8px 12px;
+    align-items: start;
+    margin-bottom: 12px;
+}
+.admin-form-field > .ant-form-item-label,
+.admin-form-field > label.ant-form-item-label {
+    display: block;
+    margin: 0;
+    padding-top: 5px;
+    text-align: left !important;
+    line-height: 1.4;
+    white-space: normal;
+}
+.admin-form-field__control {
+    min-width: 0;
+}
+.admin-form-field__control .ant-input,
+.admin-form-field__control .ant-input-password,
+.admin-form-field__control .ant-select {
+    width: 100%;
+}
+.admin-form-field--checkbox {
+    align-items: center;
+}
+.admin-form-field--checkbox > .ant-form-item-label,
+.admin-form-field--hint > .ant-form-item-label {
+    padding-top: 0;
+}
+.admin-staff-person-form .ant-form-item-required::before {
+    display: inline-block;
+    margin-inline-end: 4px;
+    color: #ff4d4f;
+    font-size: 12px;
+    line-height: 1;
+    content: "*";
+}
+
+/* Prefer left-aligned labels across Admin content (Ant default is often right). */
+.exits-admin-content .ant-form-item-label,
+.exits-admin-content label.ant-form-item-label,
+.admin-section-card .ant-form-item-label,
+.admin-elevated-card .ant-form-item-label {
+    text-align: left !important;
+}
+
+@media (max-width: 576px) {
+    .admin-form-field {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+    .admin-form-field > .ant-form-item-label,
+    .admin-form-field > label.ant-form-item-label {
+        padding-top: 0;
+    }
+}
+
 .admin-form-actions {
     display: flex;
     flex-wrap: wrap;
@@ -433,7 +493,7 @@ html, body {
     box-sizing: border-box;
 }
 
-/* Ant Design tables: full available width; horizontal scroll only when needed (§12) */
+/* Ant Design tables: full available width; preserve column mins via ScrollX (§12) */
 .exits-admin-content .ant-table-wrapper {
     width: 100%;
     max-width: 100%;
@@ -449,22 +509,43 @@ html, body {
 .exits-admin-content .ant-table {
     width: 100%;
     max-width: 100%;
-    min-width: 0;
 }
 
+/*
+ * Never force table width to 100% with !important — that overrides Ant Design ScrollX
+ * min-widths and crushes columns so headers/cells overlap.
+ * min-width:100% keeps the table filling wide viewports; ScrollX grows it when needed.
+ */
 .exits-admin-content .ant-table table {
-    width: 100% !important;
+    min-width: 100%;
     table-layout: auto;
 }
 
 .exits-admin-content .ant-table-thead > tr > th,
 .exits-admin-content .ant-table-tbody > tr > td {
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    vertical-align: top;
 }
 
 .exits-admin-content .ant-table-cell-ellipsis,
 .exits-admin-content .ant-table-tbody > tr > td.ant-table-cell-ellipsis {
     max-width: 280px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    overflow-wrap: normal;
+    word-break: normal;
+}
+
+/* Compact fixed columns (status, dates, money, actions) stay single-line when Width is set */
+.exits-admin-content .ant-table-thead > tr > th[style*="width"],
+.exits-admin-content .ant-table-tbody > tr > td[style*="width"] {
+    white-space: nowrap;
+    overflow: hidden;
+    overflow-wrap: normal;
+    word-break: normal;
 }
 
 .exits-admin-content .ant-table-pagination {
@@ -583,7 +664,6 @@ html, body {
     .exits-identity-meta { display: none; }
 
     .exits-admin-content .ant-table {
-        min-width: 28rem;
         font-size: 12px;
     }
 
@@ -648,10 +728,6 @@ html, body {
 }
 
 @media (max-width: 480px) {
-    .exits-admin-content .ant-table {
-        min-width: 22rem;
-    }
-
     .exits-login-shell { padding: 1rem; }
     .exits-login-card { width: 100%; }
 }

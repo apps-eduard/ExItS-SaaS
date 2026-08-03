@@ -110,17 +110,17 @@ else if (Id is not null)
         }
         else
         {
-            <Table TItem="EntitlementGrantDto" DataSource="s.Grants" Size="@TableSize.Small" HidePagination Bordered ScrollX="720" Style="margin-bottom:16px;">
+            <Table TItem="EntitlementGrantDto" DataSource="s.Grants" Size="@TableSize.Small" HidePagination Bordered ScrollX="900" Style="margin-bottom:16px;">
                 <PropertyColumn Property="c => c.FeatureCode" Title="@L["Common_Feature"]" />
-                <PropertyColumn Property="c => c.Enabled" Title="@L["Common_Enabled"]" />
-                <PropertyColumn Property="c => c.NumericLimit" Title="@L["Common_Limit"]">
+                <PropertyColumn Property="c => c.Enabled" Title="@L["Common_Enabled"]" Width="100" />
+                <PropertyColumn Property="c => c.NumericLimit" Title="@L["Common_Limit"]" Width="100">
                     @(context.NumericLimit?.ToString() ?? "—")
                 </PropertyColumn>
-                <PropertyColumn Property="c => c.Source" Title="@L["Common_Source"]" />
-                <PropertyColumn Property="c => c.EffectiveAtUtc" Title="@L["Common_EffectiveUtc"]">
+                <PropertyColumn Property="c => c.Source" Title="@L["Common_Source"]" Width="120" />
+                <PropertyColumn Property="c => c.EffectiveAtUtc" Title="@L["Common_EffectiveUtc"]" Width="180">
                     <UtcTimestamp Value="@context.EffectiveAtUtc" />
                 </PropertyColumn>
-                <PropertyColumn Property="c => c.ExpiresAtUtc" Title="@L["Common_ExpiresUtc"]">
+                <PropertyColumn Property="c => c.ExpiresAtUtc" Title="@L["Common_ExpiresUtc"]" Width="180">
                     <UtcTimestamp Value="@context.ExpiresAtUtc" />
                 </PropertyColumn>
             </Table>
@@ -141,17 +141,17 @@ else if (Id is not null)
         }
         else
         {
-            <Table TItem="FeatureOverrideDto" DataSource="_overrides.Data.Items" Size="@TableSize.Small" HidePagination Bordered ScrollX="720" Style="margin-bottom:16px;">
-                <PropertyColumn Property="c => c.FeatureCode" Title="@L["Common_Feature"]" />
-                <PropertyColumn Property="c => c.Enabled" Title="@L["Common_Enabled"]" />
-                <PropertyColumn Property="c => c.NumericLimit" Title="@L["Common_Limit"]">
+            <Table TItem="FeatureOverrideDto" DataSource="_overrides.Data.Items" Size="@TableSize.Small" HidePagination Bordered ScrollX="980" Style="margin-bottom:16px;">
+                <PropertyColumn Property="c => c.FeatureCode" Title="@L["Common_Feature"]" Width="160" />
+                <PropertyColumn Property="c => c.Enabled" Title="@L["Common_Enabled"]" Width="100" />
+                <PropertyColumn Property="c => c.NumericLimit" Title="@L["Common_Limit"]" Width="100">
                     @(context.NumericLimit?.ToString() ?? "—")
                 </PropertyColumn>
-                <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="120">
                     <AdminStatusTag Value="@context.Status" />
                 </PropertyColumn>
-                <PropertyColumn Property="c => c.Reason" Title="@L["Common_Reason"]" />
-                <PropertyColumn Property="c => c.EffectiveFromUtc" Title="@L["Entitlements_Column_EffectiveFromUtc"]">
+                <PropertyColumn Property="c => c.Reason" Title="@L["Common_Reason"]" Ellipsis />
+                <PropertyColumn Property="c => c.EffectiveFromUtc" Title="@L["Entitlements_Column_EffectiveFromUtc"]" Width="180">
                     <UtcTimestamp Value="@context.EffectiveFromUtc" />
                 </PropertyColumn>
                 @if (CanManageOverrides)
@@ -241,12 +241,13 @@ else if (OrganizationId is not null && ProductCode is not null)
                DataSource="_history.Data.Items"
                Size="@TableSize.Small"
                HidePagination
-               Bordered>
-            <PropertyColumn Property="c => c.SnapshotVersion" Title="Revision">
+               Bordered
+               ScrollX="640">
+            <PropertyColumn Property="c => c.SnapshotVersion" Title="Revision" Width="100">
                 <a href="/admin/entitlements/@context.Id">@context.SnapshotVersion</a>
             </PropertyColumn>
             <PropertyColumn Property="c => c.SchemaVersion" Title="@L["Entitlements_SchemaVersion"]" Width="110" />
-            <PropertyColumn Property="c => c.SubscriptionStatus" Title="@L["Common_Status"]" Width="110">
+            <PropertyColumn Property="c => c.SubscriptionStatus" Title="@L["Common_Status"]" Width="120">
                 <AdminStatusTag Value="@context.SubscriptionStatus" />
             </PropertyColumn>
             <PropertyColumn Property="c => c.GeneratedAtUtc" Title="Generated" Width="180">
@@ -296,10 +297,11 @@ else
                Loading="@(_list is null)"
                Size="@TableSize.Small"
                Bordered
+               ScrollX="980"
                RemoteDataSource
                OnChange="OnEntitlementsTableChangeAsync"
                @key="_tableReady">
-            <PropertyColumn Property="c => c.ProductDisplayName" Title="@L["Common_Product"]" Sortable Ellipsis>
+            <PropertyColumn Property="c => c.ProductDisplayName" Title="@L["Common_Product"]" Sortable Ellipsis Width="180">
                 <Tooltip Title="@(string.IsNullOrWhiteSpace(context.ProductDisplayName) ? context.ProductCode : context.ProductDisplayName)">
                     <a href="/admin/entitlements/@context.Id">@(string.IsNullOrWhiteSpace(context.ProductDisplayName) ? "Product" : context.ProductDisplayName)</a>
                 </Tooltip>

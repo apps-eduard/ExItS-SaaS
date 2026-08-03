@@ -120,6 +120,29 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
         return (organizationId, productCode, planId, versionId, trialId);
     }
 
+    private async Task<Guid> CreateConfirmedPaymentAsync(Guid organizationId, string productCode, string prefix)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var create = await _admin.PostAsJsonAsync(
+            "/api/v1/platform/payments/manual",
+            new
+            {
+                organizationId,
+                productCode,
+                amount = 100m,
+                currencyCode = "PHP",
+                method = "GCash",
+                externalReference = $"{prefix}-{Guid.NewGuid():N}",
+                paidAtUtc = now
+            });
+        create.EnsureSuccessStatusCode();
+        var paymentId = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        (await _admin.PostAsJsonAsync(
+            $"/api/v1/platform/payments/{paymentId}/confirm",
+            new { confirmedBy = "test-operator" })).EnsureSuccessStatusCode();
+        return paymentId;
+    }
+
     [Fact]
     public async Task Paid_subscription_list_search_lifecycle_concurrency_and_entitlement_snapshot()
     {
@@ -127,6 +150,7 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
         _ = trialId;
 
         var now = DateTimeOffset.UtcNow;
+        var paymentId = await CreateConfirmedPaymentAsync(organizationId, productCode, "sea-pay");
         var createPaid = await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/subscriptions",
             new
@@ -134,7 +158,8 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
                 planId,
                 planVersionId = versionId,
                 periodStartUtc = now,
-                periodEndUtc = now.AddDays(30)
+                periodEndUtc = now.AddDays(30),
+                paymentId
             });
         Assert.Equal(HttpStatusCode.Created, createPaid.StatusCode);
         var subscription = await createPaid.Content.ReadFromJsonAsync<JsonElement>();
@@ -149,6 +174,7 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
             (await list.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("items").EnumerateArray(),
             i => i.GetProperty("id").GetGuid() == subscriptionId);
 
+        var conflictPaymentId = await CreateConfirmedPaymentAsync(organizationId, productCode, "sea-pay2");
         var conflictPaid = await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/subscriptions",
             new
@@ -156,7 +182,8 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
                 planId,
                 planVersionId = versionId,
                 periodStartUtc = now,
-                periodEndUtc = now.AddDays(30)
+                periodEndUtc = now.AddDays(30),
+                paymentId = conflictPaymentId
             });
         Assert.Equal(HttpStatusCode.Conflict, conflictPaid.StatusCode);
 
@@ -191,6 +218,7 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
             null)).EnsureSuccessStatusCode();
 
         var now = DateTimeOffset.UtcNow;
+        var retiredPaymentId = await CreateConfirmedPaymentAsync(organizationId, productCode, "blk-pay");
         var retiredPlan = await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/subscriptions",
             new
@@ -198,11 +226,13 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
                 planId,
                 planVersionId = versionId,
                 periodStartUtc = now,
-                periodEndUtc = now.AddDays(30)
+                periodEndUtc = now.AddDays(30),
+                paymentId = retiredPaymentId
             });
         Assert.Equal(HttpStatusCode.Conflict, retiredPlan.StatusCode);
 
         var (organizationId2, productCode2, planId2, versionId2, _) = await SeedCatalogAsync("clo");
+        var closedPaymentId = await CreateConfirmedPaymentAsync(organizationId2, productCode2, "clo-pay");
         (await _admin.PostAsync($"/api/v1/platform/organizations/{organizationId2}/close", null))
             .EnsureSuccessStatusCode();
         var closedOrg = await _admin.PostAsJsonAsync(
@@ -212,7 +242,8 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
                 planId = planId2,
                 planVersionId = versionId2,
                 periodStartUtc = now,
-                periodEndUtc = now.AddDays(30)
+                periodEndUtc = now.AddDays(30),
+                paymentId = closedPaymentId
             });
         Assert.Equal(HttpStatusCode.Conflict, closedOrg.StatusCode);
         _ = productCode2;

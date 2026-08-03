@@ -6,6 +6,7 @@ using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Organizations;
+using Microsoft.Extensions.Hosting;
 
 namespace ExItS.Platform.Api.Organizations;
 
@@ -75,8 +76,17 @@ internal static class OrganizationEndpoints
             CreateOrganizationRequest body,
             CreatePlatformOrganization useCase,
             PlatformAuthz authz,
+            IHostEnvironment environment,
             CancellationToken ct) =>
         {
+            if (!environment.IsEnvironment("Testing"))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.RuntimeOrganizationCreationDisabled,
+                    "Platform runtime organization creation is disabled. Organizations are created through Start a Business.",
+                    StatusCodes.Status403Forbidden);
+            }
+
             var denied = await authz.EnsureAsync(
                 PlatformPermission.ManageOrganizations,
                 PlatformAuditActions.OrganizationCreated,

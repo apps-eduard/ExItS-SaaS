@@ -161,7 +161,7 @@ public sealed class ApiSubscriptionLifecycleTests(PostgreSqlFixture fixture) : I
     [Fact]
     public async Task Subscription_lifecycle_endpoints_activate_grace_pastdue_suspend_reactivate_cancel()
     {
-        var (organizationId, _, planId, versionId, trialId) =
+        var (organizationId, productCode, planId, versionId, trialId) =
             await SeedOrganizationAndTrialEligibleCatalogAsync("api-lifecycle");
 
         var start = await _client.PostAsJsonAsync(
@@ -171,11 +171,32 @@ public sealed class ApiSubscriptionLifecycleTests(PostgreSqlFixture fixture) : I
         var subscriptionId = (await start.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 
         var now = DateTimeOffset.UtcNow;
+        var payment = await _client.PostAsJsonAsync(
+            "/api/v1/platform/payments/manual",
+            new
+            {
+                organizationId,
+                productCode,
+                amount = 100m,
+                currencyCode = "PHP",
+                method = "GCash",
+                externalReference = $"life-{Guid.NewGuid():N}",
+                paidAtUtc = now
+            });
+        payment.EnsureSuccessStatusCode();
+        var paymentId = (await payment.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
         var activate = await _client.PostAsJsonAsync(
-            $"/api/v1/platform/subscriptions/{subscriptionId}/activate",
-            new { periodStartUtc = now, periodEndUtc = now.AddDays(30) });
+            $"/api/v1/platform/payments/{paymentId}/activate-subscription",
+            new
+            {
+                confirmedBy = "lifecycle-operator",
+                subscriptionId,
+                periodStartUtc = now,
+                periodEndUtc = now.AddDays(30)
+            });
         Assert.Equal(HttpStatusCode.OK, activate.StatusCode);
-        var activated = await activate.Content.ReadFromJsonAsync<JsonElement>();
+        var activated = (await activate.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("subscription");
         Assert.Equal("Active", activated.GetProperty("status").GetString());
 
         var grace = await _client.PostAsJsonAsync(

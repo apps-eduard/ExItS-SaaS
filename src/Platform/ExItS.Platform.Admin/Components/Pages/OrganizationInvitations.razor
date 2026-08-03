@@ -107,19 +107,24 @@ else
                PageSize="@(_invitations.Data?.PageSize ?? 20)"
                Size="@TableSize.Small"
                Bordered
+               ScrollX="1280"
                RemoteDataSource
                OnPageIndexChange="OnInvitePageAsync">
             <PropertyColumn Property="c => c.InviteeDisplayName" Title="@L["Common_DisplayName"]">
                 @(context.InviteeDisplayName ?? "—")
             </PropertyColumn>
-            <PropertyColumn Property="c => c.Email" Title="@L["Common_Email"]" />
-            <PropertyColumn Property="c => c.Role" Title="@L["OrgMembers_OrgRole"]">
+            <PropertyColumn Property="c => c.Email" Title="@L["Common_Email"]" Ellipsis Width="200">
+                <Tooltip Title="@(context.Email ?? "")">
+                    <span>@(context.Email ?? "—")</span>
+                </Tooltip>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.Role" Title="@L["OrgMembers_OrgRole"]" Width="140">
                 <Tag Color="@(context.Role == "OrganizationOwner" ? "gold" : "default")"
                      Style="@(context.Role == "OrganizationOwner" ? "font-weight:600;" : null)">
                     @(context.RoleDisplay ?? FormatOrgRole(context.Role))
                 </Tag>
             </PropertyColumn>
-            <ActionColumn Title="Product role">
+            <ActionColumn Title="Product role" Width="120">
                 @if (!string.IsNullOrWhiteSpace(context.ProductRoleDisplay ?? context.ProductRole))
                 {
                     <Tag>@(context.ProductRoleDisplay ?? context.ProductRole)</Tag>
@@ -129,16 +134,16 @@ else
                     <span>—</span>
                 }
             </ActionColumn>
-            <PropertyColumn Property="c => c.Branch" Title="Branch">
+            <PropertyColumn Property="c => c.Branch" Title="Branch" Width="100">
                 @(string.IsNullOrWhiteSpace(context.Branch) ? "—" : context.Branch)
             </PropertyColumn>
-            <PropertyColumn Property="c => c.InvitationStatus" Title="Invitation status">
+            <PropertyColumn Property="c => c.InvitationStatus" Title="Invitation status" Width="140">
                 <AdminStatusTag Value="@(context.InvitationStatus ?? context.Status ?? "")" />
             </PropertyColumn>
-            <PropertyColumn Property="c => c.CreatedAtUtc" Title="Sent at">
+            <PropertyColumn Property="c => c.CreatedAtUtc" Title="Sent at" Width="180">
                 <LocalTimestamp Value="@context.CreatedAtUtc" />
             </PropertyColumn>
-            <PropertyColumn Property="c => c.ExpiresAtUtc" Title="@L["OrgMembers_ExpiresUtc"]">
+            <PropertyColumn Property="c => c.ExpiresAtUtc" Title="@L["OrgMembers_ExpiresUtc"]" Width="180">
                 <LocalTimestamp Value="@context.ExpiresAtUtc" />
             </PropertyColumn>
             <ActionColumn Title="@L["Common_Actions"]" Width="120">

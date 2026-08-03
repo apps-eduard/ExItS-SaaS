@@ -107,9 +107,29 @@ public sealed class ApiEntitlementTests(PostgreSqlFixture fixture) : IAsyncLifet
         var subscriptionId = (await start.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 
         var now = DateTimeOffset.UtcNow;
+        var payment = await _client.PostAsJsonAsync(
+            "/api/v1/platform/payments/manual",
+            new
+            {
+                organizationId,
+                productCode,
+                amount = 100m,
+                currencyCode = "PHP",
+                method = "GCash",
+                externalReference = $"ent-act-{Guid.NewGuid():N}",
+                paidAtUtc = now
+            });
+        payment.EnsureSuccessStatusCode();
+        var paymentId = (await payment.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
         var activate = await _client.PostAsJsonAsync(
-            $"/api/v1/platform/subscriptions/{subscriptionId}/activate",
-            new { periodStartUtc = now, periodEndUtc = now.AddDays(30) });
+            $"/api/v1/platform/payments/{paymentId}/activate-subscription",
+            new
+            {
+                confirmedBy = "entitlement-operator",
+                subscriptionId,
+                periodStartUtc = now,
+                periodEndUtc = now.AddDays(30)
+            });
         activate.EnsureSuccessStatusCode();
 
         return (organizationId, subscriptionId, productCode);

@@ -36,26 +36,47 @@ else if (Id is null)
            ShowIcon="true"
            Class="admin-payments-alert"
            Style="margin-bottom:24px;"
-           Message="Manual attestation only — not provider verification."
-           Description="This workspace never shows card numbers, CVV, PIN, OTP, gateway secrets, or GCash credentials. No payment gateway, webhook, QR, invoice engine, or POS payment integration." />
+           Message="Manual attestation and provider-linked Online payments."
+           Description="Successful PayNow / renewals / upgrades appear here as Confirmed Online payments linked to a subscription. Manual Cash / Bank Transfer / GCash rows still require staff confirmation. This workspace never shows card numbers, CVV, PIN, OTP, gateway secrets, or GCash credentials." />
 
     <Row Gutter="(16, 16)" Style="margin-bottom:24px;">
         <AntDesign.Col Xs="24" Sm="12" Lg="8">
-            <Card Class="admin-elevated-card" Size="@CardSize.Small">
-                <Statistic Title="Pending Confirmation" Value="@_summaryPending" />
-            </Card>
+            <div role="button"
+                 tabindex="0"
+                 style="@SummaryCardStyle("PendingConfirmation")"
+                 @onclick="@(() => FilterByStatusAsync("PendingConfirmation"))"
+                 @onkeydown="@(e => OnSummaryKeyAsync(e, "PendingConfirmation"))">
+                <Card Class="admin-elevated-card" Size="@CardSize.Small">
+                    <Statistic Title="Pending Confirmation" Value="@_summaryPending" />
+                </Card>
+            </div>
         </AntDesign.Col>
         <AntDesign.Col Xs="24" Sm="12" Lg="8">
-            <Card Class="admin-elevated-card" Size="@CardSize.Small">
-                <Statistic Title="Confirmed" Value="@_summaryConfirmed" />
-            </Card>
+            <div role="button"
+                 tabindex="0"
+                 style="@SummaryCardStyle("Confirmed")"
+                 @onclick="@(() => FilterByStatusAsync("Confirmed"))"
+                 @onkeydown="@(e => OnSummaryKeyAsync(e, "Confirmed"))">
+                <Card Class="admin-elevated-card" Size="@CardSize.Small">
+                    <Statistic Title="Confirmed" Value="@_summaryConfirmed" />
+                </Card>
+            </div>
         </AntDesign.Col>
         <AntDesign.Col Xs="24" Sm="12" Lg="8">
-            <Card Class="admin-elevated-card" Size="@CardSize.Small">
-                <Statistic Title="Rejected / Voided" Value="@_summaryRejectedOrVoided" />
-            </Card>
+            <div role="button"
+                 tabindex="0"
+                 style="@SummaryCardStyle("Rejected")"
+                 @onclick="@(() => FilterByStatusAsync("Rejected"))"
+                 @onkeydown="@(e => OnSummaryKeyAsync(e, "Rejected"))">
+                <Card Class="admin-elevated-card" Size="@CardSize.Small">
+                    <Statistic Title="Rejected / Voided" Value="@_summaryRejectedOrVoided" />
+                </Card>
+            </div>
         </AntDesign.Col>
     </Row>
+    <Paragraph Type="@TextElementType.Secondary" Style="margin:-8px 0 16px;">
+        Summary totals are unfiltered. Click a card to show that status in the list below.
+    </Paragraph>
 
     <Card Class="admin-elevated-card" Title="Payment records" Style="margin-bottom:24px;">
         <Space Wrap Style="width:100%;margin-bottom:12px;" Size="@("small")">
@@ -74,10 +95,17 @@ else if (Id is null)
                     Disabled="_listBusy" OnClick="@(() => OnQuickRangeAsync(ReportQuickRange.Last30Days))">30 days</Button>
             <Button Size="@ButtonSize.Small" Type="@(_quickRange == ReportQuickRange.ThisMonth ? ButtonType.Primary : ButtonType.Default)"
                     Disabled="_listBusy" OnClick="@(() => OnQuickRangeAsync(ReportQuickRange.ThisMonth))">This month</Button>
-            <Select TItemValue="string" TItem="string" @bind-Value="_status" Size="@InputSize.Small" Style="width:170px;" Disabled="_listBusy" Placeholder="Status">
+            <Select TItemValue="string"
+                    TItem="string"
+                    Value="@_status"
+                    ValueChanged="OnStatusChangedAsync"
+                    Size="@InputSize.Small"
+                    Style="width:170px;"
+                    Disabled="_listBusy"
+                    Placeholder="Status">
                 <SelectOptions>
-                    <SelectOption TItemValue="string" TItem="string" Value="@("PendingConfirmation")" Label="Pending Confirmation" />
                     <SelectOption TItemValue="string" TItem="string" Value="@("Confirmed")" Label="Confirmed" />
+                    <SelectOption TItemValue="string" TItem="string" Value="@("PendingConfirmation")" Label="Pending Confirmation" />
                     <SelectOption TItemValue="string" TItem="string" Value="@("Rejected")" Label="Rejected" />
                     <SelectOption TItemValue="string" TItem="string" Value="@("Voided")" Label="Voided" />
                 </SelectOptions>
@@ -126,7 +154,7 @@ else if (Id is null)
         }
         else if (VisiblePayments.Count is 0)
         {
-            <Empty Description="@L["Payments_Empty"].Value" />
+            <Empty Description="@EmptyFilterMessage" />
         }
         else
         {
@@ -141,30 +169,32 @@ else if (Id is null)
                    Bordered
                    RemoteDataSource
                    OnChange="OnPaymentsTableChangeAsync"
-                   ScrollX="1100">
+                   ScrollX="1280">
                 <PropertyColumn Property="c => c.OrganizationId" Title="@L["Common_Organization"]">
                     <a href="@($"/admin/organizations/{context.OrganizationId:D}")">@OrgLabel(context.OrganizationId)</a>
                 </PropertyColumn>
-                <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]">
+                <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" Width="140">
                     @ProductLabel(context.ProductCode)
                 </PropertyColumn>
-                <PropertyColumn Property="c => c.Amount" Title="@L["Common_Amount"]" Align="ColumnAlign.Right">
+                <PropertyColumn Property="c => c.Amount" Title="@L["Common_Amount"]" Align="ColumnAlign.Right" Width="120">
                     <AdminMoneyDisplay Amount="@context.Amount" CurrencyCode="@context.CurrencyCode" />
                 </PropertyColumn>
-                <PropertyColumn Property="c => c.Method" Title="@L["Common_Method"]" />
-                <PropertyColumn Property="c => c.ExternalReference" Title="@L["Common_Reference"]">
-                    <a href="@($"/admin/payments/{context.Id:D}")">@(string.IsNullOrWhiteSpace(context.ExternalReference) ? "View" : context.ExternalReference)</a>
+                <PropertyColumn Property="c => c.Method" Title="@L["Common_Method"]" Width="110" />
+                <PropertyColumn Property="c => c.ExternalReference" Title="@L["Common_Reference"]" Ellipsis Width="160">
+                    <Tooltip Title="@(context.ExternalReference ?? "")">
+                        <a href="@($"/admin/payments/{context.Id:D}")">@(string.IsNullOrWhiteSpace(context.ExternalReference) ? "View" : context.ExternalReference)</a>
+                    </Tooltip>
                 </PropertyColumn>
-                <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="140">
                     <AdminStatusTag Value="@context.Status" />
                 </PropertyColumn>
-                <PropertyColumn Property="c => c.PaidAtUtc" Title="Paid Date">
+                <PropertyColumn Property="c => c.PaidAtUtc" Title="Paid Date" Width="180">
                     <LocalTimestamp Value="@context.PaidAtUtc" />
                 </PropertyColumn>
-                <PropertyColumn Property="c => c.ConfirmedBy" Title="Recorded By">
+                <PropertyColumn Property="c => c.ConfirmedBy" Title="Recorded By" Width="140">
                     @DisplayOrDash(context.ConfirmedBy)
                 </PropertyColumn>
-                <ActionColumn Title="@L["Common_Actions"]">
+                <ActionColumn Title="@L["Common_Actions"]" Width="90">
                     <Button Type="@ButtonType.Link" Size="@ButtonSize.Small" OnClick="@(() => Nav.NavigateTo($"/admin/payments/{context.Id:D}"))">
                         Details
                     </Button>
@@ -353,7 +383,7 @@ else
 @code {
     [Parameter] public Guid? Id { get; set; }
 
-    private string _status = "PendingConfirmation";
+    private string _status = "Confirmed";
     private string _productCode = "";
     private string _organizationIdText = "";
     private string _search = "";
@@ -410,6 +440,20 @@ else
                 || (p.ProductCode?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false)
                 || (p.Method?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false)
                 || OrgLabel(p.OrganizationId).Contains(q, StringComparison.OrdinalIgnoreCase)).ToList());
+        }
+    }
+
+    private string EmptyFilterMessage
+    {
+        get
+        {
+            var statusLabel = FriendlyStatus(_status);
+            if (_status == "PendingConfirmation" && _summaryConfirmed > 0)
+            {
+                return $"No {statusLabel} payments in this date range. Confirmed summary is {_summaryConfirmed} — switch Status to Confirmed (or click that card).";
+            }
+
+            return $"No {statusLabel} payments match the current filters.";
         }
     }
 
@@ -505,7 +549,7 @@ else
         {
             Guid? orgId = Guid.TryParse(_organizationIdText, out var parsed) ? parsed : null;
             _list = await Api.GetPaymentsAsync(
-                string.IsNullOrWhiteSpace(_status) ? "PendingConfirmation" : _status,
+                string.IsNullOrWhiteSpace(_status) ? "Confirmed" : _status,
                 string.IsNullOrWhiteSpace(_productCode) ? null : _productCode,
                 orgId,
                 page: _page);
@@ -583,7 +627,7 @@ else
 
     private async Task ClearFiltersAsync()
     {
-        _status = "PendingConfirmation";
+        _status = "Confirmed";
         _productCode = "";
         _organizationIdText = "";
         _search = "";
@@ -597,6 +641,31 @@ else
         await LoadListAsync();
         await LoadSummaryAsync();
     }
+
+    private async Task FilterByStatusAsync(string status)
+    {
+        _status = status;
+        await ApplyFiltersAsync();
+    }
+
+    private async Task OnStatusChangedAsync(string status)
+    {
+        _status = string.IsNullOrWhiteSpace(status) ? "Confirmed" : status;
+        await ApplyFiltersAsync();
+    }
+
+    private async Task OnSummaryKeyAsync(KeyboardEventArgs e, string status)
+    {
+        if (e.Key is "Enter" or " ")
+        {
+            await FilterByStatusAsync(status);
+        }
+    }
+
+    private string SummaryCardStyle(string status) =>
+        string.Equals(_status, status, StringComparison.Ordinal)
+            ? "cursor:pointer;outline:2px solid var(--ant-primary-color,#1677ff);outline-offset:2px;border-radius:8px;"
+            : "cursor:pointer;";
 
     private void OpenCreateDrawer()
     {
@@ -885,6 +954,9 @@ else
     private static string FriendlyStatus(string status) => status switch
     {
         "PendingConfirmation" => "Pending Confirmation",
+        "Confirmed" => "Confirmed",
+        "Rejected" => "Rejected",
+        "Voided" => "Voided",
         _ => status
     };
 

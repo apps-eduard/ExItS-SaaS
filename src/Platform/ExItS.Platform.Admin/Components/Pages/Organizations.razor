@@ -22,12 +22,6 @@
             </Breadcrumb>
         </PageHeaderBreadcrumb>
         <PageHeaderExtra>
-            @if (CanManageLifecycle)
-            {
-                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ToggleCreate">
-                    @(_showCreate ? L["Organizations_HideCreate"] : L["Organizations_Create"])
-                </Button>
-            }
         </PageHeaderExtra>
     </PageHeader>
 
@@ -51,27 +45,6 @@
         <Button Size="@ButtonSize.Small" OnClick="ClearFiltersAsync">@L["Common_Reset"]</Button>
     </Space>
 
-    @if (_showCreate && CanManageLifecycle)
-    {
-        <Card Size="@CardSize.Small" Title="@L["Organizations_CreateSection"]" Style="margin-bottom:12px;">
-            <FormValidationSummary Title="@L["Organizations_CreateFailed"]" Message="@_formError" IsConflict="_formConflict" />
-            <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
-                <div>
-                    <label class="ant-form-item-label" for="org-create-name">@L["Common_DisplayName"]</label>
-                    <Input Id="org-create-name" @bind-Value="_newDisplayName" Size="@InputSize.Small" Disabled="_busy" />
-                </div>
-                <div>
-                    <label class="ant-form-item-label" for="org-create-slug">@L["Common_Slug"]</label>
-                    <Input Id="org-create-slug" @bind-Value="_newSlug" Size="@InputSize.Small" Disabled="_busy" />
-                </div>
-                <Space>
-                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">@L["Common_Create"]</Button>
-                    <Button Size="@ButtonSize.Small" OnClick="HideCreate" Disabled="_busy">@L["Common_Cancel"]</Button>
-                </Space>
-            </Space>
-        </Card>
-    }
-
     @if (_list is { IsSuccess: false })
     {
         <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail" />
@@ -91,22 +64,23 @@
                Loading="@(_list is null)"
                Size="@TableSize.Small"
                Bordered
+               ScrollX="980"
                RemoteDataSource
                OnChange="OnOrganizationsTableChangeAsync">
             <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_DisplayName"]" Sortable>
                 <a href="/admin/organizations/@context.Id">@context.DisplayName</a>
             </PropertyColumn>
-            <PropertyColumn Property="c => c.Slug" Title="@L["Common_Slug"]" Sortable />
+            <PropertyColumn Property="c => c.Slug" Title="@L["Common_Slug"]" Sortable Width="160" />
             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="110">
                 <AdminStatusTag Value="@context.Status" />
             </PropertyColumn>
-            <PropertyColumn Property="c => c.CreatedAtUtc" Title="@L["Common_CreatedUtc"]" Sortable>
+            <PropertyColumn Property="c => c.CreatedAtUtc" Title="@L["Common_CreatedUtc"]" Sortable Width="180">
                 <LocalTimestamp Value="@context.CreatedAtUtc" />
             </PropertyColumn>
-            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Sortable>
+            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Sortable Width="180">
                 <LocalTimestamp Value="@context.UpdatedAtUtc" />
             </PropertyColumn>
-            <ActionColumn Title="@L["Common_Open"]" Width="80">
+            <ActionColumn Title="@L["Common_Open"]" Width="160">
                 <Space>
                     <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/organizations/{context.Id}")">@L["Common_Open"]</a>
                     @if (CanManageLifecycle && context.Status == "Active")
@@ -295,17 +269,17 @@ else
                     }
                     else
                     {
-                        <Table TItem="SubscriptionDto" DataSource="_detail.Data.Subscriptions" Size="@TableSize.Small" HidePagination Bordered Style="margin-bottom:12px;">
-                            <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" />
+                        <Table TItem="SubscriptionDto" DataSource="_detail.Data.Subscriptions" Size="@TableSize.Small" HidePagination Bordered ScrollX="900" Style="margin-bottom:12px;">
+                            <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" Width="140" />
                             <PropertyColumn Property="c => c.PlanDisplayName" Title="@L["Common_Plan"]" />
-                            <PropertyColumn Property="c => c.AgreedPrice" Title="Agreed">
+                            <PropertyColumn Property="c => c.AgreedPrice" Title="Agreed" Width="120">
                                 <AdminMoneyDisplay Amount="@((decimal?)context.AgreedPrice)" CurrencyCode="@context.CurrencyCode" />
                             </PropertyColumn>
-                            <PropertyColumn Property="c => c.BillingCycle" Title="Billing" />
-                            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                            <PropertyColumn Property="c => c.BillingCycle" Title="Billing" Width="100" />
+                            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="120">
                                 <AdminStatusTag Value="@context.Status" />
                             </PropertyColumn>
-                            <ActionColumn Title="@L["Common_Detail"]">
+                            <ActionColumn Title="@L["Common_Detail"]" Width="140">
                                 <a href="/admin/subscriptions/@context.Id">@L["Organizations_OpenSubscription"]</a>
                             </ActionColumn>
                         </Table>
@@ -321,16 +295,20 @@ else
                     }
                     else
                     {
-                        <Table TItem="PaymentDto" DataSource="_detail.Data.Payments" Size="@TableSize.Small" HidePagination Bordered>
-                            <PropertyColumn Property="c => c.ExternalReference" Title="@L["Common_Reference"]" />
-                            <PropertyColumn Property="c => c.Amount" Title="@L["Common_Amount"]">
+                        <Table TItem="PaymentDto" DataSource="_detail.Data.Payments" Size="@TableSize.Small" HidePagination Bordered ScrollX="860">
+                            <PropertyColumn Property="c => c.ExternalReference" Title="@L["Common_Reference"]" Ellipsis>
+                                <Tooltip Title="@(context.ExternalReference ?? "")">
+                                    <span>@(string.IsNullOrWhiteSpace(context.ExternalReference) ? "—" : context.ExternalReference)</span>
+                                </Tooltip>
+                            </PropertyColumn>
+                            <PropertyColumn Property="c => c.Amount" Title="@L["Common_Amount"]" Width="120">
                                 <AdminMoneyDisplay Amount="@((decimal?)context.Amount)" CurrencyCode="@context.CurrencyCode" />
                             </PropertyColumn>
-                            <PropertyColumn Property="c => c.Method" Title="@L["Common_Method"]" />
-                            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                            <PropertyColumn Property="c => c.Method" Title="@L["Common_Method"]" Width="110" />
+                            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="120">
                                 <AdminStatusTag Value="@context.Status" />
                             </PropertyColumn>
-                            <ActionColumn Title="@L["Common_Detail"]">
+                            <ActionColumn Title="@L["Common_Detail"]" Width="120">
                                 <a href="/admin/payments/@context.Id">@L["Organizations_OpenPayment"]</a>
                             </ActionColumn>
                         </Table>
@@ -345,10 +323,10 @@ else
                 @if (_detail?.IsSuccess == true && _detail.Data!.LatestEntitlements.Count > 0)
                 {
                     <Title Level="5">@L["Organizations_LatestEntitlements"]</Title>
-                    <Table TItem="EntitlementLatestSummaryDto" DataSource="_detail.Data.LatestEntitlements" Size="@TableSize.Small" HidePagination Bordered>
+                    <Table TItem="EntitlementLatestSummaryDto" DataSource="_detail.Data.LatestEntitlements" Size="@TableSize.Small" HidePagination Bordered ScrollX="560">
                         <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" />
-                        <PropertyColumn Property="c => c.SnapshotVersion" Title="@L["Common_Version"]" />
-                        <PropertyColumn Property="c => c.SubscriptionStatus" Title="@L["Common_Status"]">
+                        <PropertyColumn Property="c => c.SnapshotVersion" Title="@L["Common_Version"]" Width="100" />
+                        <PropertyColumn Property="c => c.SubscriptionStatus" Title="@L["Common_Status"]" Width="120">
                             <AdminStatusTag Value="@context.SubscriptionStatus" />
                         </PropertyColumn>
                     </Table>
@@ -374,9 +352,6 @@ else
     private bool _sortDesc;
     private string _search = "";
     private string _status = "";
-    private bool _showCreate;
-    private string _newDisplayName = "";
-    private string _newSlug = "";
     private string _editDisplayName = "";
     private string _editSlug = "";
     private string _editLegalName = "";
@@ -492,32 +467,6 @@ else
         _editLocale = o.Profile?.Locale ?? "";
         _editCurrency = o.Profile?.CurrencyCode ?? "";
         _expectedUpdatedAt = o.UpdatedAtUtc;
-    }
-
-    private void ToggleCreate() => _showCreate = !_showCreate;
-    private void HideCreate()
-    {
-        _showCreate = false;
-        _formError = null;
-        _formConflict = false;
-    }
-
-    private async Task CreateAsync()
-    {
-        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
-        _formError = null;
-        _formConflict = false;
-        var result = await Api.CreateOrganizationAsync(new CreateOrganizationRequest(_newDisplayName, _newSlug));
-        _busy = false;
-        if (!result.IsSuccess)
-        {
-            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
-            _formError = AdminFormErrorMapper.MapPageError(result);
-            return;
-        }
-
-        await Message.SuccessAsync(L["Organizations_Created"].Value);
-        Nav.NavigateTo($"/admin/organizations/{result.Data!.Id}");
     }
 
     private async Task SaveProfileAsync()

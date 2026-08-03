@@ -34,6 +34,7 @@ public sealed class StartOrganizationCommercialSubscription
     private readonly StartTrialSubscription _startTrial;
     private readonly ActivatePaidSubscription _activatePaid;
     private readonly IPaymentProvider _paymentProvider;
+    private readonly RecordLinkedSuccessfulProviderPayment _recordLinkedPayment;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -45,6 +46,7 @@ public sealed class StartOrganizationCommercialSubscription
         StartTrialSubscription startTrial,
         ActivatePaidSubscription activatePaid,
         IPaymentProvider paymentProvider,
+        RecordLinkedSuccessfulProviderPayment recordLinkedPayment,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
@@ -55,6 +57,7 @@ public sealed class StartOrganizationCommercialSubscription
         _startTrial = startTrial;
         _activatePaid = activatePaid;
         _paymentProvider = paymentProvider;
+        _recordLinkedPayment = recordLinkedPayment;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -211,6 +214,25 @@ public sealed class StartOrganizationCommercialSubscription
             return ApplicationResult<Subscription>.Failure(
                 ApplicationErrorCodes.PaymentNotConfirmed,
                 paymentResult.FailureMessage ?? "Initial payment was not successful.");
+        }
+
+        var linked = await _recordLinkedPayment
+            .ExecuteAsync(
+                organizationId,
+                ProductCode.Create(productCode),
+                activated.Id,
+                paymentResult,
+                "org-commercial-subscribe",
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (!linked.IsSuccess)
+        {
+            activated.Cancel(_clock.UtcNow);
+            await _subscriptions.UpdateAsync(activated, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<Subscription>.Failure(
+                linked.ErrorCode ?? ApplicationErrorCodes.PaymentNotConfirmed,
+                linked.ErrorMessage ?? "Successful payment could not be linked for administration.");
         }
 
         return ApplicationResult<Subscription>.Success(activated);

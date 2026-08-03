@@ -284,6 +284,8 @@ builder.Services.AddScoped<ConfirmSaaSPayment>();
 builder.Services.AddScoped<RejectSaaSPayment>();
 builder.Services.AddScoped<VoidSaaSPayment>();
 builder.Services.AddScoped<ConfirmPaymentAndActivateSubscription>();
+builder.Services.AddScoped<ActivatePaidSubscriptionFromConfirmedPayment>();
+builder.Services.AddScoped<RecordLinkedSuccessfulProviderPayment>();
 
 builder.Services.AddScoped<ProcessSubscriptionInitialPayment>();
 builder.Services.AddScoped<ProcessSubscriptionRenewal>();

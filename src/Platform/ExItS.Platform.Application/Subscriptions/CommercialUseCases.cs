@@ -293,43 +293,25 @@ public sealed class ActivateSubscription
         CancellationToken cancellationToken = default) =>
         ExecuteAsync(subscriptionId, periodStartUtc, periodEndUtc, expectedVersion: null, cancellationToken);
 
-    public async Task<ApplicationResult<Subscription>> ExecuteAsync(
+    public Task<ApplicationResult<Subscription>> ExecuteAsync(
         SubscriptionId subscriptionId,
         DateTimeOffset periodStartUtc,
         DateTimeOffset periodEndUtc,
         int? expectedVersion,
         CancellationToken cancellationToken)
     {
-        var subscription = await _subscriptions.GetByIdAsync(subscriptionId, cancellationToken).ConfigureAwait(false);
-        if (subscription is null)
-        {
-            return ApplicationResult<Subscription>.Failure(
-                ApplicationErrorCodes.SubscriptionNotFound,
-                "Subscription was not found.");
-        }
+        _ = subscriptionId;
+        _ = periodStartUtc;
+        _ = periodEndUtc;
+        _ = expectedVersion;
+        _ = cancellationToken;
+        _ = _subscriptions;
+        _ = _unitOfWork;
+        _ = _clock;
 
-        if (SubscriptionConcurrency.IsMismatch(subscription.Version, expectedVersion))
-        {
-            return ApplicationResult<Subscription>.Failure(
-                ApplicationErrorCodes.ConcurrencyConflict,
-                "The subscription was modified by another request. Refresh and try again.");
-        }
-
-        try
-        {
-            subscription.ActivateFromTrial(periodStartUtc, periodEndUtc, _clock.UtcNow);
-            await _subscriptions.UpdateAsync(subscription, cancellationToken).ConfigureAwait(false);
-            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<Subscription>.Success(subscription);
-        }
-        catch (DomainException ex)
-        {
-            return ApplicationResult<Subscription>.Failure(ex.ErrorCode, ex.Message);
-        }
-        catch (PersistenceConflictException ex)
-        {
-            return ApplicationResult<Subscription>.Failure(ex.ErrorCode, ex.Message);
-        }
+        return Task.FromResult(ApplicationResult<Subscription>.Failure(
+            ApplicationErrorCodes.PaymentRequiredForPaidActivation,
+            "Paid activation requires a successful linked payment. Confirm a recorded payment via activate-subscription, or complete PayNow / convert-trial with a provider charge."));
     }
 }
 

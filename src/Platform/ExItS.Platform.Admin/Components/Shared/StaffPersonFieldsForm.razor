@@ -2,72 +2,100 @@
 @using ExItS.Platform.Admin.Models
 @inject IStringLocalizer<AdminResources> L
 
-<Space Direction="SpaceDirection.Vertical" Style="width:100%;">
-    <div>
-        <label class="ant-form-item-label" for="@($"{IdPrefix}-firstname")">@L["Users_FirstName"]</label>
-        <Input Id="@($"{IdPrefix}-firstname")"
-               @bind-Value="Value.FirstName"
-               @bind-Value:after="NotifyChangedAsync"
-               Size="@InputSize.Small"
-               Disabled="Disabled" />
-        @if (Errors?.FirstName is not null) { <span class="exits-field-error">@Errors.FirstName</span> }
+<div class="admin-staff-person-form">
+    <p class="muted" style="margin:0 0 12px;font-size:12px;">@L["Form_RequiredFieldsHint"]</p>
+    <div class="admin-form-field">
+        <label class="ant-form-item-label" for="@($"{IdPrefix}-firstname")">
+            <span class="ant-form-item-required">@L["Users_FirstName"]</span>
+        </label>
+        <div class="admin-form-field__control">
+            <Input Id="@($"{IdPrefix}-firstname")"
+                   @bind-Value="Value.FirstName"
+                   @bind-Value:after="NotifyChangedAsync"
+                   Size="@InputSize.Small"
+                   Disabled="Disabled" />
+            @if (Errors?.FirstName is not null) { <span class="exits-field-error">@Errors.FirstName</span> }
+        </div>
     </div>
-    <div>
-        <label class="ant-form-item-label" for="@($"{IdPrefix}-lastname")">@L["Users_LastName"]</label>
-        <Input Id="@($"{IdPrefix}-lastname")"
-               @bind-Value="Value.LastName"
-               @bind-Value:after="NotifyChangedAsync"
-               Size="@InputSize.Small"
-               Disabled="Disabled" />
-        @if (Errors?.LastName is not null) { <span class="exits-field-error">@Errors.LastName</span> }
+    <div class="admin-form-field">
+        <label class="ant-form-item-label" for="@($"{IdPrefix}-lastname")">
+            <span class="ant-form-item-required">@L["Users_LastName"]</span>
+        </label>
+        <div class="admin-form-field__control">
+            <Input Id="@($"{IdPrefix}-lastname")"
+                   @bind-Value="Value.LastName"
+                   @bind-Value:after="NotifyChangedAsync"
+                   Size="@InputSize.Small"
+                   Disabled="Disabled" />
+            @if (Errors?.LastName is not null) { <span class="exits-field-error">@Errors.LastName</span> }
+        </div>
     </div>
-    <div>
-        <label class="ant-form-item-label" for="@($"{IdPrefix}-displayname")">@L["Common_DisplayName"]</label>
-        <Input Id="@($"{IdPrefix}-displayname")"
-               @bind-Value="Value.DisplayName"
-               Size="@InputSize.Small"
-               Disabled="Disabled"
-               Placeholder="@DisplayNamePlaceholder" />
-        @if (Errors?.DisplayName is not null) { <span class="exits-field-error">@Errors.DisplayName</span> }
+    <div class="admin-form-field">
+        <label class="ant-form-item-label" for="@($"{IdPrefix}-displayname")">
+            <span class="ant-form-item-required">@L["Common_DisplayName"]</span>
+        </label>
+        <div class="admin-form-field__control">
+            <Input Id="@($"{IdPrefix}-displayname")"
+                   @bind-Value="Value.DisplayName"
+                   Size="@InputSize.Small"
+                   Disabled="Disabled"
+                   Placeholder="@DisplayNamePlaceholder" />
+            @if (Errors?.DisplayName is not null) { <span class="exits-field-error">@Errors.DisplayName</span> }
+        </div>
     </div>
     @if (ShowEmail)
     {
-        <div>
-            <label class="ant-form-item-label" for="@($"{IdPrefix}-email")">@L["Common_Email"]</label>
-            <Input Id="@($"{IdPrefix}-email")"
-                   @bind-Value="Value.Email"
-                   Size="@InputSize.Small"
-                   Disabled="Disabled || EmailReadOnly" />
-            @if (Errors?.Email is not null) { <span class="exits-field-error">@Errors.Email</span> }
+        <div class="admin-form-field">
+            <label class="ant-form-item-label" for="@($"{IdPrefix}-email")">
+                <span class="ant-form-item-required">@L["Common_Email"]</span>
+            </label>
+            <div class="admin-form-field__control">
+                <Input Id="@($"{IdPrefix}-email")"
+                       @bind-Value="Value.Email"
+                       Size="@InputSize.Small"
+                       Disabled="Disabled || EmailReadOnly" />
+                @if (Errors?.Email is not null) { <span class="exits-field-error">@Errors.Email</span> }
+            </div>
         </div>
     }
-    <div>
-        <label class="ant-form-item-label" for="@($"{IdPrefix}-phone")">@L["Users_Phone"] <span class="exits-optional-hint">(optional)</span></label>
-        <Input Id="@($"{IdPrefix}-phone")"
-               @bind-Value="Value.Phone"
-               Size="@InputSize.Small"
-               Disabled="Disabled" />
-        @if (Errors?.Phone is not null) { <span class="exits-field-error">@Errors.Phone</span> }
+    <div class="admin-form-field">
+        <label class="ant-form-item-label" for="@($"{IdPrefix}-phone")">
+            @L["Users_Phone"] <span class="exits-optional-hint">(@L["Common_Optional"])</span>
+        </label>
+        <div class="admin-form-field__control">
+            <Input Id="@($"{IdPrefix}-phone")"
+                   @bind-Value="Value.Phone"
+                   Size="@InputSize.Small"
+                   Disabled="Disabled" />
+            @if (Errors?.Phone is not null) { <span class="exits-field-error">@Errors.Phone</span> }
+        </div>
     </div>
-    <div>
-        <label class="ant-form-item-label" for="@($"{IdPrefix}-employee-code")">@L["Users_EmployeeCode"] <span class="exits-optional-hint">(optional)</span></label>
-        <Input Id="@($"{IdPrefix}-employee-code")"
-               @bind-Value="Value.EmployeeCode"
-               Size="@InputSize.Small"
-               Disabled="Disabled" />
-        @if (Errors?.EmployeeCode is not null) { <span class="exits-field-error">@Errors.EmployeeCode</span> }
+    <div class="admin-form-field">
+        <label class="ant-form-item-label" for="@($"{IdPrefix}-employee-code")">
+            @L["Users_EmployeeCode"] <span class="exits-optional-hint">(@L["Common_Optional"])</span>
+        </label>
+        <div class="admin-form-field__control">
+            <Input Id="@($"{IdPrefix}-employee-code")"
+                   @bind-Value="Value.EmployeeCode"
+                   Size="@InputSize.Small"
+                   Disabled="Disabled" />
+            @if (Errors?.EmployeeCode is not null) { <span class="exits-field-error">@Errors.EmployeeCode</span> }
+        </div>
     </div>
     @if (ShowRequireEmailVerification)
     {
-        <div>
-            <Checkbox @bind-Checked="Value.RequireEmailVerification"
-                      @bind-Checked:after="NotifyChangedAsync"
-                      Disabled="Disabled">
-                @L["Users_RequireEmailVerification"]
-            </Checkbox>
+        <div class="admin-form-field admin-form-field--checkbox">
+            <span class="ant-form-item-label" aria-hidden="true"></span>
+            <div class="admin-form-field__control">
+                <Checkbox @bind-Checked="Value.RequireEmailVerification"
+                          @bind-Checked:after="NotifyChangedAsync"
+                          Disabled="Disabled">
+                    @L["Users_RequireEmailVerification"]
+                </Checkbox>
+            </div>
         </div>
     }
-</Space>
+</div>
 
 @code {
     [Parameter, EditorRequired] public StaffPersonFieldsModel Value { get; set; } = new();
@@ -79,10 +107,7 @@
     [Parameter] public string IdPrefix { get; set; } = "staff-person";
     [Parameter] public EventCallback ValueChanged { get; set; }
 
-    private string DisplayNamePlaceholder =>
-        string.IsNullOrWhiteSpace(Value.ResolvedDisplayName())
-            ? "Auto from first + last name"
-            : Value.ResolvedDisplayName();
+    private string DisplayNamePlaceholder => L["Users_DisplayNamePlaceholder"].Value;
 
-    private Task NotifyChangedAsync() => ValueChanged.InvokeAsync();
+    private Task NotifyChangedAsync() => ValueChanged.InvokeAsync(Value);
 }

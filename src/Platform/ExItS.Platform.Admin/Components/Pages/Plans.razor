@@ -131,15 +131,16 @@
                Loading="@(_list is null)"
                Size="@TableSize.Small"
                Bordered
+               ScrollX="1480"
                RemoteDataSource
                OnChange="OnPlansTableChangeAsync">
-            <PropertyColumn Property="c => c.ProductDisplayName" Title="@L["Common_Product"]" Sortable>
+            <PropertyColumn Property="c => c.ProductDisplayName" Title="@L["Common_Product"]" Sortable Width="160">
                 @(string.IsNullOrWhiteSpace(context.ProductDisplayName) ? context.ProductCode : context.ProductDisplayName)
             </PropertyColumn>
             <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_DisplayName"]" Sortable>
                 <a href="/admin/plans/@context.Id">@context.DisplayName</a>
             </PropertyColumn>
-            <PropertyColumn Property="c => c.PlanKey" Title="Plan Key" Sortable>
+            <PropertyColumn Property="c => c.PlanKey" Title="Plan Key" Sortable Width="120">
                 <span class="muted">@(context.PlanKey ?? context.Code)</span>
             </PropertyColumn>
             <PropertyColumn Property="c => c.MonthlyPrice" Title="Monthly" Sortable Width="110">
@@ -152,13 +153,13 @@
             <PropertyColumn Property="c => c.TrialAllowed" Title="Trial" Width="90">
                 @(context.TrialAllowed ? $"{context.DefaultTrialDays}d" : "—")
             </PropertyColumn>
-            <PropertyColumn Property="c => c.MaxBranches" Title="Limits" Width="120">
+            <PropertyColumn Property="c => c.MaxBranches" Title="Limits" Width="140">
                 @context.MaxBranches branches · @context.MaxActiveStaff staff
             </PropertyColumn>
             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="110">
                 <AdminStatusTag Value="@context.Status" />
             </PropertyColumn>
-            <PropertyColumn Property="c => c.SortOrder" Title="Display Order" Sortable />
+            <PropertyColumn Property="c => c.SortOrder" Title="Display Order" Sortable Width="110" />
             <ActionColumn Title="@L["Common_Actions"]" Width="80">
                 <Tooltip Title="@L["Common_Open"].Value">
                     <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" Icon="eye" AriaLabel="@L["Common_Open"].Value"
@@ -313,17 +314,17 @@ else
                 }
                 else
                 {
-                    <Table TItem="PlanVersionDto" DataSource="_versions.Data" Size="@TableSize.Small" HidePagination Bordered>
-                        <PropertyColumn Property="c => c.VersionNumber" Title="@L["Common_Version"]" />
-                        <PropertyColumn Property="c => c.BillingPeriod" Title="@L["Products_Column_Billing"]" />
-                        <PropertyColumn Property="c => c.TrialEligible" Title="@L["Products_Column_TrialEligible"]" />
-                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                    <Table TItem="PlanVersionDto" DataSource="_versions.Data" Size="@TableSize.Small" HidePagination Bordered ScrollX="860">
+                        <PropertyColumn Property="c => c.VersionNumber" Title="@L["Common_Version"]" Width="100" />
+                        <PropertyColumn Property="c => c.BillingPeriod" Title="@L["Products_Column_Billing"]" Width="120" />
+                        <PropertyColumn Property="c => c.TrialEligible" Title="@L["Products_Column_TrialEligible"]" Width="120" />
+                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="120">
                             <AdminStatusTag Value="@context.Status" />
                         </PropertyColumn>
-                        <PropertyColumn Property="c => c.EffectiveFromUtc" Title="@L["Common_CreatedUtc"]">
+                        <PropertyColumn Property="c => c.EffectiveFromUtc" Title="@L["Common_CreatedUtc"]" Width="180">
                             <UtcTimestamp Value="@context.EffectiveFromUtc" />
                         </PropertyColumn>
-                        <PropertyColumn Property="c => c.Grants" Title="@L["Common_Grants"]">
+                        <PropertyColumn Property="c => c.Grants" Title="@L["Common_Grants"]" Width="90">
                             @context.Grants.Count
                         </PropertyColumn>
                     </Table>
