@@ -227,20 +227,75 @@ app.MapGet("/admin/login/as/{key}", async (
     return Results.Redirect("/admin");
 }).AllowAnonymous();
 
-app.MapPost("/admin/logout", async (PlatformBrowserSessionService sessions) =>
+app.MapPost("/admin/logout", async (HttpContext http, PlatformBrowserSessionService sessions) =>
 {
     await sessions.LogoutAsync().ConfigureAwait(false);
-    return Results.Redirect("/admin/login");
+    return Results.Redirect(LoginRedirectWithOptionalNotice(http.Request.Query["notice"]));
 }).DisableAntiforgery();
 
-app.MapGet("/admin/logout", async (PlatformBrowserSessionService sessions) =>
+app.MapGet("/admin/logout", async (HttpContext http, PlatformBrowserSessionService sessions) =>
 {
     await sessions.LogoutAsync().ConfigureAwait(false);
-    return Results.Redirect("/admin/login");
+    return Results.Redirect(LoginRedirectWithOptionalNotice(http.Request.Query["notice"]));
 });
+
+// Full HTTP round-trip so auth cookies are set after Interactive Server flows that mint a new
+// Platform session (e.g. Start a Business). Circuit events cannot SignIn.
+app.MapGet("/admin/session/establish", async (
+    string sessionToken,
+    string? returnUrl,
+    PlatformBrowserSessionService sessions) =>
+{
+    if (string.IsNullOrWhiteSpace(sessionToken))
+    {
+        return Results.Redirect(
+            "/admin/login?error=" + Uri.EscapeDataString("Session token is missing."));
+    }
+
+    var (ok, error) = await sessions.EstablishFromSessionTokenAsync(sessionToken).ConfigureAwait(false);
+    if (!ok)
+    {
+        return Results.Redirect(
+            "/admin/login?error=" + Uri.EscapeDataString(error ?? "Could not establish the browser session."));
+    }
+
+    return Results.Redirect(SanitizeAdminReturnUrl(returnUrl));
+}).AllowAnonymous();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+static string LoginRedirectWithOptionalNotice(string? notice)
+{
+    if (string.IsNullOrWhiteSpace(notice))
+    {
+        return "/admin/login";
+    }
+
+    var trimmed = notice.Trim();
+    if (trimmed.Length > 280)
+    {
+        trimmed = trimmed[..280];
+    }
+
+    return "/admin/login?notice=" + Uri.EscapeDataString(trimmed);
+}
+
+static string SanitizeAdminReturnUrl(string? returnUrl)
+{
+    if (string.IsNullOrWhiteSpace(returnUrl)
+        || !returnUrl.StartsWith('/')
+        || returnUrl.StartsWith("//", StringComparison.Ordinal)
+        || returnUrl.Contains('\\', StringComparison.Ordinal)
+        || returnUrl.Contains('\n')
+        || returnUrl.Contains('\r')
+        || !returnUrl.StartsWith("/admin", StringComparison.OrdinalIgnoreCase))
+    {
+        return "/admin";
+    }
+
+    return returnUrl;
+}
 
 app.Run();
 

@@ -21,6 +21,11 @@
         <Body>
             <Paragraph Type="@TextElementType.Secondary">@L["Login_CredentialsHint"]</Paragraph>
 
+            @if (!string.IsNullOrWhiteSpace(_notice))
+            {
+                <Alert Type="@AlertType.Success" Message="@_notice" ShowIcon="true" Closable="true" OnClose="() => _notice = null" Style="margin-bottom: 1rem;" />
+            }
+
             @if (!string.IsNullOrWhiteSpace(_error))
             {
                 <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" Closable="true" OnClose="() => _error = null" Style="margin-bottom: 1rem;" />
@@ -77,11 +82,15 @@
 
 @code {
     private string? _error;
+    private string? _notice;
 
     [Inject] private IOptions<PlatformApiOptions> PlatformApi { get; set; } = default!;
 
     [SupplyParameterFromQuery(Name = "error")]
     public string? ErrorQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "notice")]
+    public string? NoticeQuery { get; set; }
 
     private string GoogleChallengeUrl => BuildChallengeUrl("google");
     private string FacebookChallengeUrl => BuildChallengeUrl("facebook");
@@ -89,6 +98,7 @@
     protected override void OnInitialized()
     {
         _error = string.IsNullOrWhiteSpace(ErrorQuery) ? null : ErrorQuery;
+        _notice = string.IsNullOrWhiteSpace(NoticeQuery) ? null : NoticeQuery;
     }
 
     private string BuildChallengeUrl(string provider)

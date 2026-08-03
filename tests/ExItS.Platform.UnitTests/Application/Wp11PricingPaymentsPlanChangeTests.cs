@@ -426,7 +426,8 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
         Assert.Contains("GetCommercialPlansAsync", startBusiness, StringComparison.Ordinal);
         Assert.DoesNotContain("GetPlansAsync", startBusiness, StringComparison.Ordinal);
         Assert.Contains("StartBusinessAsync", startBusiness, StringComparison.Ordinal);
-        Assert.Contains("EstablishFromSessionTokenAsync", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("Sign in again", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("/admin/logout", startBusiness, StringComparison.Ordinal);
         Assert.Contains("try", startBusiness, StringComparison.Ordinal);
         Assert.Contains("finally", startBusiness, StringComparison.Ordinal);
         Assert.Contains("GetCommercialPlansAsync", commercial, StringComparison.Ordinal);

@@ -588,7 +588,8 @@
   <data name="Common_BackToSummary" xml:space="preserve"><value>Bumalik sa commercial summary</value></data>
 
   <data name="Users_Title" xml:space="preserve"><value>Mga Platform user</value></data>
-  <data name="Users_AccountType" xml:space="preserve"><value>Uri ng account</value></data>
+  <data name="Users_AccountType" xml:space="preserve"><value>Mga account profile</value></data>
+  <data name="Users_AccountProfilesHint" xml:space="preserve"><value>Isang Platform user ay maaaring magkaroon ng Personal at Organization profile nang sabay. Hindi ito isang uri na nagiging isa.</value></data>
   <data name="Users_OrganizationName" xml:space="preserve"><value>Organisasyon</value></data>
   <data name="Users_Description" xml:space="preserve"><value>Pamamahala ng Platform user.</value></data>
   <data name="Users_Warning" xml:space="preserve"><value>Ang Platform membership ay hindi product operational authorization. Ang organization invitations at memberships ay hindi nagbibigay ng product-local roles.</value></data>

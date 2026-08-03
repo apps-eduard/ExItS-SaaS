@@ -590,7 +590,8 @@
   <data name="Common_BackToSummary" xml:space="preserve"><value>Back to commercial summary</value></data>
 
   <data name="Users_Title" xml:space="preserve"><value>Platform users</value></data>
-  <data name="Users_AccountType" xml:space="preserve"><value>Account type</value></data>
+  <data name="Users_AccountType" xml:space="preserve"><value>Account profiles</value></data>
+  <data name="Users_AccountProfilesHint" xml:space="preserve"><value>One Platform user can hold Personal and Organization profiles at the same time. Tags are profiles, not a single converted type.</value></data>
   <data name="Users_OrganizationName" xml:space="preserve"><value>Organization</value></data>
   <data name="Users_Description" xml:space="preserve"><value>Platform user administration.</value></data>
   <data name="Users_Warning" xml:space="preserve"><value>Platform membership is not product operational authorization. Organization invitations and memberships never grant product-local roles.</value></data>

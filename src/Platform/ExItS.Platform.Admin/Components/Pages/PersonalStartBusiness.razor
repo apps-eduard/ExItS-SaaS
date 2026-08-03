@@ -6,10 +6,8 @@
 @inject IMessageService Message
 @inject IStringLocalizer<AdminResources> L
 @inject NavigationManager Nav
+@inject IJSRuntime Js
 @inject AdminShellContext Shell
-@inject PlatformPermissionState Permissions
-@inject PlatformCircuitSession CircuitSession
-@inject PlatformBrowserSessionService SessionService
 @inject LocalValidationSignInService LocalValidation
 @inject IHostEnvironment HostEnvironment
 
@@ -30,20 +28,16 @@ else if (_completed)
     <Result Status="@ResultStatus.Success" Title="Business created" SubTitle="@_successDetail">
         <Extra>
             <Space>
-                @if (_createdOrganizationId is Guid orgId)
-                {
-                    <Button Type="@ButtonType.Primary" OnClick="@(() => Nav.NavigateTo($"/admin/organizations/{orgId}/commercial"))">
-                        Open Current Plan
-                    </Button>
-                }
-                <Button OnClick='() => Nav.NavigateTo("/admin/account-profiles")'>Choose organization profile</Button>
+                <Button Type="@ButtonType.Primary" OnClick="SignInAgainAsync">
+                    Sign in again
+                </Button>
             </Space>
         </Extra>
     </Result>
 }
 else
 {
-    <PageHeader Class="exits-page-header" Title="Start a Business" SubTitle="Choose a plan and create an organization. Your personal account stays separate.">
+    <PageHeader Class="exits-page-header" Title="Start a Business" SubTitle="Choose a plan and create an organization. Your personal account stays available as a separate profile — sign in again afterward and choose Organization.">
         <PageHeaderBreadcrumb>
             <Breadcrumb>
                 <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
@@ -345,6 +339,18 @@ else
         return ok;
     }
 
+    private async Task SignInAgainAsync()
+    {
+        // Full HTTP logout so cookies clear; login again and pick Organization profile.
+        await Task.Yield();
+        await Task.Delay(1);
+        var notice = Uri.EscapeDataString(
+            "Business ready. Sign in and choose your Organization profile to continue.");
+        await Js.InvokeVoidAsync(
+            "location.assign",
+            Nav.ToAbsoluteUri($"/admin/logout?notice={notice}").AbsoluteUri);
+    }
+
     private async Task SetProgressAsync(string title, string detail)
     {
         _progressTitle = title;
@@ -424,64 +430,33 @@ else
                 return;
             }
 
-            await SetProgressAsync("Preparing your organization…", "Switching into Organization Administration.");
+            await SetProgressAsync("Finishing…", "Subscription succeeded. Preparing sign-in instructions.");
 
             var data = result.Data!;
             _createdOrganizationId = data.OrganizationId;
-            if (string.IsNullOrWhiteSpace(data.SessionToken))
-            {
-                _formError = "Organization was created, but the Organization session token was missing. Stay on this page and retry, or choose the organization profile manually.";
-                _validationBanner = _formError;
-                await Message.ErrorAsync(_formError);
-                return;
-            }
-
-            CircuitSession.SessionToken = data.SessionToken;
-            var (ok, sessionError) = await SessionService.EstablishFromSessionTokenAsync(data.SessionToken);
-            if (!ok)
-            {
-                _formError = sessionError ?? "Organization was created, but the Organization session could not be activated.";
-                _validationBanner = _formError;
-                await Message.ErrorAsync(_formError);
-                return;
-            }
-
-            if (data.SelectedOrganizationId is Guid selectedOrgId && selectedOrgId != Guid.Empty)
-            {
-                await Api.SetOrganizationContextAsync(new SetOrganizationContextRequest(selectedOrgId));
-            }
-            else
-            {
-                await Api.SetOrganizationContextAsync(new SetOrganizationContextRequest(data.OrganizationId));
-            }
-
-            await Permissions.RefreshAsync();
-            await Shell.RefreshAsync();
-
+            // Prefer a clean re-login into the Organization profile over mid-circuit cookie SignIn.
+            // Personal and Organization remain separate account profiles on the same Platform user.
             _completed = true;
             _successDetail = startAsTrial
-                ? "Trial started. Opening Current Plan in Organization Administration."
-                : "Subscription started. Opening Current Plan in Organization Administration.";
-            await Message.SuccessAsync(startAsTrial ? "Business created with free trial." : "Business created and subscribed.");
-
-            // Defer navigation so AntDesign DomEventListener finishes handler enumeration.
-            if (_createdOrganizationId is Guid orgId)
-            {
-                await Task.Yield();
-                await Task.Delay(1);
-                Nav.NavigateTo($"/admin/organizations/{orgId}/commercial");
-            }
+                ? "Trial started. Your Organization profile is ready. Sign in again and choose Organization (Personal stays available separately)."
+                : "Payment succeeded. Your Organization profile is ready. Sign in again and choose Organization (Personal stays available separately).";
+            await InvokeAsync(StateHasChanged);
+            await Message.SuccessAsync(startAsTrial
+                ? "Business created with free trial. Sign in again to open Organization Administration."
+                : "Business created and subscribed. Sign in again to open Organization Administration.");
         }
         catch (Exception ex)
         {
-            if (_completed)
+            if (_completed || _createdOrganizationId is not null)
             {
                 // Business already created; avoid masking success with a post-navigation circuit error.
                 Console.Error.WriteLine(ex);
                 return;
             }
 
-            _formError = "An unexpected error occurred while starting the business. Please retry.";
+            _formError = HostEnvironment.IsDevelopment() || HostEnvironment.IsEnvironment("Testing")
+                ? $"An unexpected error occurred while starting the business: {ex.Message}"
+                : "An unexpected error occurred while starting the business. Please retry.";
             _validationBanner = _formError;
             await Message.ErrorAsync(_formError);
             Console.Error.WriteLine(ex);

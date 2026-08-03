@@ -59,8 +59,13 @@ public sealed class PlatformBrowserSessionService(
             return (false, "Session token is missing.");
         }
 
-        var http = httpContextAccessor.HttpContext
-            ?? throw new InvalidOperationException("HTTP context is required for external login.");
+        // Interactive Server circuit events have no HttpContext — callers must use a full
+        // HTTP round-trip (see /admin/session/establish) to SignIn cookies.
+        var http = httpContextAccessor.HttpContext;
+        if (http is null)
+        {
+            return (false, "HTTP context is required to establish the browser session.");
+        }
 
         var client = httpClientFactory.CreateClient("PlatformApiUnauthenticated");
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/platform/auth/me");

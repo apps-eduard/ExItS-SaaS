@@ -51,6 +51,7 @@ else if (Id is null)
     </PageHeader>
 
     <Alert Type="@AlertType.Warning" ShowIcon="true" Message="@L["Users_Warning"]" Style="margin-bottom:12px;" />
+    <Alert Type="@AlertType.Info" ShowIcon="true" Message="@L["Users_AccountProfilesHint"]" Style="margin-bottom:12px;" />
 
     <Space Style="margin-bottom:12px; width:100%;" Wrap>
         <Input @bind-Value="_search" Size="@InputSize.Small" Placeholder="@L["Users_SearchPlaceholder"]" Style="width:220px;" OnPressEnter="ApplyUserFiltersAsync" />

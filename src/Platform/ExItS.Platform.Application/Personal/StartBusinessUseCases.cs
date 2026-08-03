@@ -417,12 +417,21 @@ public sealed class StartBusinessForPersonalUser
             }
             else if (startAsTrial)
             {
+                if (catalog.Value.TrialDefinitionId is null)
+                {
+                    return ApplicationResult<StartBusinessResultDto>.Failure(
+                        ApplicationErrorCodes.TrialNotFound,
+                        "This plan does not have a trial definition. Subscribe now instead.");
+                }
+
+                var trialDefinitionId = catalog.Value.TrialDefinitionId
+                    ?? throw new InvalidOperationException("Trial definition id was null after guard.");
                 var trial = await _startTrial
                     .ExecuteAsync(
                         organization.Id,
                         catalog.Value.PlanId,
                         catalog.Value.PlanVersionId,
-                        catalog.Value.TrialDefinitionId,
+                        trialDefinitionId,
                         cancellationToken)
                     .ConfigureAwait(false);
                 if (!trial.IsSuccess || trial.Value is null)
@@ -676,7 +685,7 @@ public sealed class StartBusinessForPersonalUser
             ProductCode: productCode));
     }
 
-    private sealed record CatalogSelection(PlanId PlanId, PlanVersionId PlanVersionId, TrialDefinitionId TrialDefinitionId);
+    private sealed record CatalogSelection(PlanId PlanId, PlanVersionId PlanVersionId, TrialDefinitionId? TrialDefinitionId);
 
     private async Task<ApplicationResult<CatalogSelection>> ResolveCatalogAsync(
         string productCode,
@@ -686,10 +695,11 @@ public sealed class StartBusinessForPersonalUser
         Guid? trialDefinitionId,
         CancellationToken cancellationToken)
     {
-        if (planId is Guid p && planVersionId is Guid v && trialDefinitionId is Guid t)
+        if (planId is Guid p && planVersionId is Guid v)
         {
+            TrialDefinitionId? trialId = trialDefinitionId is Guid t ? TrialDefinitionId.From(t) : null;
             return ApplicationResult<CatalogSelection>.Success(
-                new CatalogSelection(PlanId.From(p), PlanVersionId.From(v), TrialDefinitionId.From(t)));
+                new CatalogSelection(PlanId.From(p), PlanVersionId.From(v), trialId));
         }
 
         if (!string.IsNullOrWhiteSpace(planKey))
@@ -723,6 +733,14 @@ public sealed class StartBusinessForPersonalUser
             return ApplicationResult<CatalogSelection>.Failure(
                 ApplicationErrorCodes.PlanVersionNotFound,
                 $"Published plan version for '{planKey}' was not found.");
+        }
+
+        // Paid-only plans (e.g. Pro) have TrialAllowed=false / DefaultTrialDays=0 — do not mint a
+        // TrialDefinition; Subscribe/PayNow only needs plan + published version.
+        if (!plan.TrialAllowed || plan.DefaultTrialDays <= 0)
+        {
+            return ApplicationResult<CatalogSelection>.Success(
+                new CatalogSelection(plan.Id, version.Id, TrialDefinitionId: null));
         }
 
         var trials = await _trials.ListByProductAsync(pc, cancellationToken).ConfigureAwait(false);
@@ -778,10 +796,11 @@ public sealed class StartBusinessForPersonalUser
         Guid? trialDefinitionId,
         CancellationToken cancellationToken)
     {
-        if (planId is Guid p && planVersionId is Guid v && trialDefinitionId is Guid t)
+        if (planId is Guid p && planVersionId is Guid v)
         {
+            TrialDefinitionId? trialId = trialDefinitionId is Guid t ? TrialDefinitionId.From(t) : null;
             return ApplicationResult<CatalogSelection>.Success(
-                new CatalogSelection(PlanId.From(p), PlanVersionId.From(v), TrialDefinitionId.From(t)));
+                new CatalogSelection(PlanId.From(p), PlanVersionId.From(v), trialId));
         }
 
         var code = ProductCode.Create(productCode);
