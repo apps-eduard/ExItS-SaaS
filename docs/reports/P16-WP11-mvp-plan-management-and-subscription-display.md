@@ -65,6 +65,10 @@ Subscriptions: ABC/XYZ names; Product `Pinoy Business POS`; Plan display names; 
 
 `1a06026d71dd65032fc6cfbfab4d524899514066`
 
+## Documentation SHA
+
+`bc030cea32fc587275c92482f611754cf01d0b12`
+
 ---
 
 ## Status
