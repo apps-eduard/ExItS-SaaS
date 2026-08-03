@@ -214,9 +214,14 @@ while ([DateTime]::UtcNow -lt $deadline) {
         $response = Invoke-WebRequest -Uri 'http://localhost:8091/api/v1/platform/local-validation/seed-identities' -UseBasicParsing -TimeoutSec 5
         if ($response.StatusCode -eq 200) {
             $json = $response.Content | ConvertFrom-Json
-            $items = @($json)
-            if ($json.items) { $items = @($json.items) }
-            if ($json.Count -and -not $json.items) { $items = @($json) }
+            # Endpoint returns a JSON array (not { items: [...] }). Avoid $json.items —
+            # with $ErrorActionPreference Stop that throws on arrays.
+            $items = @(
+                if ($json -is [System.Array]) { $json }
+                elseif ($null -ne $json -and ($json.PSObject.Properties.Name -contains 'items')) { @($json.items) }
+                elseif ($null -ne $json) { @($json) }
+                else { @() }
+            )
             $count = @($items).Count
             if ($count -eq 2) {
                 Write-Ok "Seed identities available: $count"

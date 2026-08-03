@@ -36,6 +36,9 @@ public sealed class LocalValidationOnboardingBaselineTests
         Assert.Contains("exits_local_validation_pos_db_data", reset, StringComparison.Ordinal);
         Assert.Contains("both Platform Administrator", reset, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("docker compose down -v", reset, StringComparison.Ordinal);
+        // seed-identities returns a JSON array; bare $json.items under Stop throws PropertyNotFoundException.
+        Assert.Contains("PSObject.Properties.Name -contains 'items'", reset, StringComparison.Ordinal);
+        Assert.Contains("$json -is [System.Array]", reset, StringComparison.Ordinal);
     }
 
     [Fact]

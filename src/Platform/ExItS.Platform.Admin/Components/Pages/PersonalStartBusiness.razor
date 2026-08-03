@@ -446,6 +446,15 @@ else
                 return;
             }
 
+            if (data.SelectedOrganizationId is Guid selectedOrgId && selectedOrgId != Guid.Empty)
+            {
+                await Api.SetOrganizationContextAsync(new SetOrganizationContextRequest(selectedOrgId));
+            }
+            else
+            {
+                await Api.SetOrganizationContextAsync(new SetOrganizationContextRequest(data.OrganizationId));
+            }
+
             await Permissions.RefreshAsync();
             await Shell.RefreshAsync();
 
@@ -465,6 +474,13 @@ else
         }
         catch (Exception ex)
         {
+            if (_completed)
+            {
+                // Business already created; avoid masking success with a post-navigation circuit error.
+                Console.Error.WriteLine(ex);
+                return;
+            }
+
             _formError = "An unexpected error occurred while starting the business. Please retry.";
             _validationBanner = _formError;
             await Message.ErrorAsync(_formError);
@@ -473,7 +489,10 @@ else
         finally
         {
             _busy = false;
-            await InvokeAsync(StateHasChanged);
+            if (!_completed)
+            {
+                await InvokeAsync(StateHasChanged);
+            }
         }
     }
 }

@@ -78,6 +78,7 @@ public sealed class StartBusinessForPersonalUser
     private readonly AddOrganizationMembership _addMembership;
     private readonly EnsureAccountProfilesForUser _ensureProfiles;
     private readonly SelectAccountProfileSession _selectProfile;
+    private readonly SetSessionOrganizationContext _setOrganizationContext;
     private readonly CreateProduct _createProduct;
     private readonly ActivateProduct _activateProduct;
     private readonly CreateFeatureDefinition _createFeature;
@@ -110,6 +111,7 @@ public sealed class StartBusinessForPersonalUser
         AddOrganizationMembership addMembership,
         EnsureAccountProfilesForUser ensureProfiles,
         SelectAccountProfileSession selectProfile,
+        SetSessionOrganizationContext setOrganizationContext,
         CreateProduct createProduct,
         ActivateProduct activateProduct,
         CreateFeatureDefinition createFeature,
@@ -141,6 +143,7 @@ public sealed class StartBusinessForPersonalUser
         _addMembership = addMembership;
         _ensureProfiles = ensureProfiles;
         _selectProfile = selectProfile;
+        _setOrganizationContext = setOrganizationContext;
         _createProduct = createProduct;
         _activateProduct = activateProduct;
         _createFeature = createFeature;
@@ -279,6 +282,17 @@ public sealed class StartBusinessForPersonalUser
             return ApplicationResult<StartBusinessResultDto>.Failure(
                 sessionResult.ErrorCode ?? ApplicationErrorCodes.SessionInvalid,
                 sessionResult.ErrorMessage ?? "Organization session switch failed.");
+        }
+
+        // Prefer the newly created organization when the user already has other memberships.
+        var contextResult = await _setOrganizationContext
+            .ExecuteAsync(sessionResult.Value.SessionToken, organization.Id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (!contextResult.IsSuccess)
+        {
+            return ApplicationResult<StartBusinessResultDto>.Failure(
+                contextResult.ErrorCode ?? ApplicationErrorCodes.OrganizationContextNotEligible,
+                contextResult.ErrorMessage ?? "Could not select the new organization context.");
         }
 
         Guid? subscriptionId = null;
@@ -540,7 +554,7 @@ public sealed class StartBusinessForPersonalUser
             login.SessionId,
             login.AccountClass ?? AccountClass.Organization.ToString(),
             login.AllowedScope ?? "Organization",
-            login.SelectedOrganizationId ?? organization.Id.Value,
+            contextResult.Value?.SelectedOrganizationId ?? organization.Id.Value,
             subscriptionId,
             snapshotVersion,
             accessAssignmentId,
@@ -583,6 +597,16 @@ public sealed class StartBusinessForPersonalUser
             return ApplicationResult<StartBusinessResultDto>.Failure(
                 sessionResult.ErrorCode ?? ApplicationErrorCodes.SessionInvalid,
                 sessionResult.ErrorMessage ?? "Organization session switch failed.");
+        }
+
+        var contextResult = await _setOrganizationContext
+            .ExecuteAsync(sessionResult.Value.SessionToken, organization.Id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (!contextResult.IsSuccess)
+        {
+            return ApplicationResult<StartBusinessResultDto>.Failure(
+                contextResult.ErrorCode ?? ApplicationErrorCodes.OrganizationContextNotEligible,
+                contextResult.ErrorMessage ?? "Could not select the organization context.");
         }
 
         Guid? subscriptionId = null;
@@ -640,7 +664,7 @@ public sealed class StartBusinessForPersonalUser
             login.SessionId,
             login.AccountClass ?? AccountClass.Organization.ToString(),
             login.AllowedScope ?? "Organization",
-            login.SelectedOrganizationId ?? organization.Id.Value,
+            contextResult.Value?.SelectedOrganizationId ?? organization.Id.Value,
             subscriptionId,
             snapshotVersion,
             accessAssignmentId,
