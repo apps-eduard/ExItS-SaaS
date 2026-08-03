@@ -85,6 +85,27 @@ else
                     <div class="pos-value-md">@sale.StoreDisplayName</div>
                 </div>
             }
+            @if (!string.IsNullOrWhiteSpace(sale.ReceiptHeader))
+            {
+                <div>
+                    <span class="pos-muted">@L["Sales_Field_ReceiptHeader"]</span>
+                    <div class="pos-value-md pos-wrap">@sale.ReceiptHeader</div>
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(sale.BusinessAddress))
+            {
+                <div>
+                    <span class="pos-muted">@L["Sales_Field_BusinessAddress"]</span>
+                    <div class="pos-value-md pos-wrap">@sale.BusinessAddress</div>
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(sale.ContactPhone))
+            {
+                <div>
+                    <span class="pos-muted">@L["Sales_Field_ContactPhone"]</span>
+                    <div class="pos-value-md">@sale.ContactPhone</div>
+                </div>
+            }
             @if (!string.IsNullOrWhiteSpace(sale.RegisterName) || !string.IsNullOrWhiteSpace(sale.RegisterCode))
             {
                 <div>

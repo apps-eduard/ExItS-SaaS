@@ -32,7 +32,7 @@ public sealed record StartBusinessRequest(
     bool PayNow = false,
     bool ActivatePosEntitlement = true,
     bool ActivateProductAccess = true,
-    bool AssignPosOwnerRole = false);
+    bool AssignPosOwnerRole = true);
 
 public sealed record StartBusinessResultDto(
     Guid OrganizationId,
@@ -507,7 +507,11 @@ public sealed class StartBusinessForPersonalUser
             accessAssignmentId = access.Value.Id.Value;
         }
 
-        if (request.AssignPosOwnerRole)
+        // Approved MVP provisioning: when POS entitlement activates for the business creator,
+        // grant the first POS Owner role (Organization Owner alone is not POS access).
+        var assignFirstPosOwner = request.AssignPosOwnerRole
+            || (request.ActivatePosEntitlement && entitlementActivated);
+        if (assignFirstPosOwner)
         {
             var existing = await _roleGrants
                 .FindActiveByUserOrganizationProductAsync(organization.Id, userId, productCode, cancellationToken)
@@ -556,7 +560,7 @@ public sealed class StartBusinessForPersonalUser
             AuditOutcome.Succeeded,
             organizationId: organization.Id,
             productCode: ProductCode.Create(productCode),
-            summary: "Start a Business completed: Organization Owner, optional POS entitlement, and optional POS Owner role are separate grants.",
+            summary: "Start a Business completed: Organization Owner plus first POS Owner when POS entitlement is active.",
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
         var login = sessionResult.Value;
@@ -656,7 +660,8 @@ public sealed class StartBusinessForPersonalUser
             accessAssignmentId = access?.Id.Value;
         }
 
-        if (request.AssignPosOwnerRole)
+        if (request.AssignPosOwnerRole
+            || (request.ActivatePosEntitlement && entitlementActivated))
         {
             var existingRole = await _roleGrants
                 .FindActiveByUserOrganizationProductAsync(organization.Id, userId, productCode, cancellationToken)

@@ -1,0 +1,646 @@
+# Client Experience Boundaries
+
+## Status
+
+Approved for MVP.
+
+## Purpose
+
+This document defines which client application owns each ExItS SaaS experience.
+
+The goal is to provide a smooth mobile-first journey while keeping the Web application available for full administration, larger screens, detailed tables, and advanced controls.
+
+The MVP client boundaries are:
+
+| Experience | Primary Client | Additional Client |
+|---|---|---|
+| Platform Administration | Web only | None |
+| Personal Account | Mobile | None for MVP |
+| Organization Owner Essentials | Mobile | Web for full control |
+| Full Organization Administration | Web | Mobile provides the practical MVP subset |
+| POS Product Operations | Mobile | None for MVP |
+
+These boundaries define where features are presented. They do not replace server-side authorization.
+
+---
+
+## 1. Platform Administration
+
+Platform Administration is available only through the Web application.
+
+It is used by authorized Platform Administrators to manage the SaaS platform.
+
+Platform Administration owns:
+
+- platform users;
+- platform administrator access;
+- organizations;
+- product catalog;
+- plans;
+- subscriptions;
+- SaaS payments;
+- entitlements;
+- platform audit activity;
+- controlled support and administrative actions.
+
+Platform Administration must not expose POS operational workflows such as sales, shifts, receipts, inventory transactions, or operational cash.
+
+The Mobile application must not contain Platform Administration screens.
+
+---
+
+## 2. Personal Account
+
+The Personal Account experience is available through the Mobile application for MVP.
+
+Personal Account owns:
+
+- user registration;
+- sign-in;
+- personal profile;
+- account security;
+- organization selection;
+- Start a Business;
+- viewing businesses associated with the user;
+- launching entitled products.
+
+A personal user may exist without belonging to an organization.
+
+Starting a business creates an organization and makes the initiating user its Organization Owner.
+
+After the business is created, the user must continue inside Mobile without being forced to leave the application.
+
+The expected journey is:
+
+```text
+Register
+→ Start a Business
+→ Organization created
+→ Trial or subscription activated
+→ Organization Owner essentials
+→ POS setup
+→ Start using POS
+```
+
+The Web application must not duplicate Personal Account onboarding during MVP.
+
+---
+
+## 3. Organization Owner Experience
+
+Organization management follows a mobile-first, Web-complete model.
+
+The Mobile application should provide every Organization Owner function that can be handled safely and clearly on a mobile device.
+
+The Web application provides full control, detailed administration, larger tables, advanced filters, audit views, and complex management workflows.
+
+### Mobile Organization Owner Essentials
+
+For MVP, Mobile should support:
+
+- viewing and editing basic organization profile information;
+- viewing organization status;
+- viewing trial or subscription status;
+- viewing active product entitlements;
+- creating or inviting staff;
+- viewing organization members;
+- assigning POS Owner, POS Manager, or POS Cashier roles;
+- revoking POS product access;
+- suspending or removing staff where safely supported;
+- launching POS onboarding;
+- **Start Selling** (POS selling interface mode without changing the POS role);
+- switching between organizations;
+- receiving clear reminders that Web provides full organization control.
+
+Mobile should not block a newly subscribed Organization Owner from continuing the setup journey.
+
+Where a function is not practical on Mobile, show a message such as:
+
+> For complete organization administration, advanced settings, detailed audit history, and larger management views, open ExItS in a Web browser.
+
+### Full Organization Administration on Web
+
+The Web application owns the complete Organization Administration experience, including:
+
+- complete organization profile and settings;
+- detailed staff and membership management;
+- invitation history and status;
+- staff suspension and removal;
+- organization role management;
+- POS product-role assignment and revocation;
+- subscription details;
+- entitlement details;
+- organization-level audit information;
+- detailed tables, filters, exports, and advanced administrative actions.
+
+The Mobile and Web experiences must use the same APIs, authorization rules, organization context, and data source.
+
+Mobile is not a separate simplified data model. It is a smaller presentation of the same authorized organization capabilities.
+
+Organization Administration must not own operational POS data such as sales, shifts, receipts, inventory transactions, refunds, or operational cash.
+
+---
+
+## 4. POS Product Operations
+
+POS Product Operations are available through the Mobile application for MVP.
+
+The POS product owns its operational workflows and data.
+
+POS Mobile owns:
+
+- POS operational onboarding;
+- store operational settings;
+- register setup;
+- product and category management;
+- inventory;
+- customer management;
+- shifts;
+- sales;
+- receipts;
+- refunds and voids;
+- operational reports;
+- POS product-local roles and permissions enforcement.
+
+Organization-level membership and entitlement data remain owned by the Platform.
+
+The POS product must not directly manage:
+
+- SaaS plans;
+- SaaS payments;
+- Platform users;
+- Platform Administrators;
+- organization ownership;
+- the authoritative organization membership lifecycle.
+
+Mobile may call Platform APIs to display or update authorized organization information, but POS operational data must remain inside the POS product boundary.
+
+---
+
+## 5. User Experience by Role
+
+### Platform Administrator
+
+Uses the Web application.
+
+Available experience:
+
+- Platform Administration.
+
+Platform Administrators do not automatically receive access to an organization's POS operational data.
+
+### Personal User
+
+Uses the Mobile application.
+
+Available experience:
+
+- registration;
+- sign-in;
+- profile;
+- Start a Business;
+- organization selection;
+- entitled product launch.
+
+A Personal User without an active organization membership cannot access Organization Administration or POS.
+
+### Organization Owner
+
+Uses Mobile for the normal business journey and practical Organization Owner tasks.
+
+Uses Web when full organization control, detailed administration, advanced settings, large tables, or audit history is required.
+
+The same user may use Mobile POS only when assigned an active POS product-local role.
+
+Organization ownership alone does not automatically grant POS access.
+
+Example:
+
+```text
+Organization Owner
++ no POS role
+= Organization Owner administration access
++ no POS operational access
+```
+
+```text
+Organization Owner
++ POS Owner role
+= Organization Owner administration access
++ Mobile POS Owner access
+```
+
+### Organization Staff
+
+Organization Staff membership alone does not grant POS access.
+
+A Staff member must also have an active POS product-local role.
+
+Example:
+
+```text
+Organization Staff
++ no POS role
+= no POS access
+```
+
+```text
+Organization Staff
++ POS Cashier role
+= Mobile POS Cashier access
+```
+
+---
+
+## 6. POS Product Roles
+
+The MVP POS roles are:
+
+- POS Owner;
+- POS Manager;
+- POS Cashier.
+
+These roles are product-local roles and are separate from Organization roles.
+
+### Hierarchy
+
+```text
+POS Owner ⊇ POS Manager ⊇ POS Cashier
+```
+
+- POS Owner includes Manager and Cashier capabilities.
+- POS Manager includes Cashier capabilities.
+- POS Cashier has selling and own-shift capabilities only (no void/return of completed sales, no operational setup management).
+
+Selecting **Start Selling** does not change the user's POS role. The application switches into a selling interface mode while preserving Owner or Manager identity and capabilities.
+
+### POS Owner
+
+May manage POS operational configuration and product access allowed by the POS product.
+
+Typical access:
+
+- POS setup;
+- products;
+- inventory;
+- registers;
+- shifts;
+- sales;
+- receipts;
+- refunds;
+- operational reports;
+- Start Selling mode without role change.
+
+### POS Manager
+
+May manage daily POS operations.
+
+Typical access:
+
+- products;
+- inventory;
+- shifts;
+- sales;
+- approved refunds or voids;
+- operational reports;
+- Start Selling mode without role change.
+
+### POS Cashier
+
+May perform front-line POS operations.
+
+Typical access:
+
+- start and close own shift;
+- use the assigned register;
+- create sales;
+- accept supported payments;
+- issue receipts;
+- view permitted sales information.
+
+POS Cashier must not receive Organization Administration access merely because of the POS role.
+
+---
+
+## 6.1 Business creator provisioning
+
+When a user Starts a Business and the POS entitlement becomes active:
+
+```text
+Business creator
+→ Organization Owner (exactly one for MVP)
+→ first POS Owner product-local role
+```
+
+Organization Owner status alone never grants POS access. Other organization members receive no POS access until an explicit POS role is assigned.
+
+MVP allows only one Organization Owner per organization. Ownership transfer is deferred.
+---
+
+## 7. Access Rules
+
+POS access requires all of the following:
+
+```text
+Active user
++ active organization membership
++ active POS entitlement
++ active POS product-local role
+= POS access
+```
+
+Access must be denied when any requirement is missing.
+
+Examples:
+
+```text
+Active organization membership
++ active POS entitlement
++ no POS role
+= POS access denied
+```
+
+```text
+Suspended organization membership
++ active POS entitlement
++ POS Cashier role
+= POS access denied
+```
+
+```text
+Active organization membership
++ expired POS entitlement
++ POS Owner role
+= POS access denied
+```
+
+Organization Owner status must not bypass this rule.
+
+---
+
+## 8. Shared Identity
+
+Web and Mobile use the same user identity.
+
+The same account may access different experiences based on:
+
+- account status;
+- platform role;
+- organization membership;
+- organization role;
+- product entitlement;
+- product-local role.
+
+The client applications must not create a separate identity for the same person.
+
+Authentication may be shared, but authorization must be evaluated independently for every protected operation.
+
+---
+
+## 9. Authorization Enforcement
+
+The API is the authoritative enforcement point.
+
+Client-side navigation and hidden controls are usability features only.
+
+The Web and Mobile applications must not be trusted to enforce permissions by themselves.
+
+Every protected API operation must validate:
+
+- authenticated user;
+- account status;
+- organization context;
+- organization membership;
+- entitlement where required;
+- relevant platform, organization, or product-local role;
+- organization isolation;
+- resource ownership or scope.
+
+Unauthorized requests must remain denied even when a client attempts to call the API directly.
+
+Web and Mobile must produce the same authorization outcome for the same user, organization, and operation.
+
+---
+
+## 10. Data and Service Boundaries
+
+Platform data and POS operational data must remain separated.
+
+The Platform owns:
+
+- identity;
+- accounts;
+- organizations;
+- memberships;
+- subscriptions;
+- SaaS payments;
+- entitlements;
+- Platform Administration;
+- organization administration data;
+- platform and organization audit records.
+
+The POS product owns:
+
+- products;
+- inventory;
+- stores;
+- registers;
+- shifts;
+- sales;
+- receipts;
+- refunds;
+- operational cash;
+- POS reports;
+- POS product-local permissions.
+
+POS operational money must not be stored as SaaS billing money.
+
+There must be:
+
+- no cross-product database access;
+- no cross-database foreign keys;
+- no direct POS access to Platform tables;
+- no Platform ownership of POS operational transactions.
+
+Integration between Platform and POS must use approved API contracts or controlled synchronization mechanisms.
+
+---
+
+## 11. MVP Navigation
+
+### Web
+
+```text
+Web Application
+├── Platform Administration
+│   └── Platform Administrator
+│
+└── Full Organization Administration
+    └── Organization Owner
+        ├── Organization Profile and Settings
+        ├── Staff and Invitations
+        ├── POS Role Assignments
+        ├── Subscription
+        ├── Entitlements
+        ├── Organization Audit
+        └── Advanced Administration
+```
+
+### Mobile
+
+```text
+Mobile Application
+├── Personal Account
+│   ├── Register
+│   ├── Sign In
+│   ├── Profile
+│   ├── Start a Business
+│   └── Select Organization
+│
+├── Organization Owner Essentials
+│   ├── Basic Organization Profile
+│   ├── Subscription Status
+│   ├── Entitlement Status
+│   ├── Staff
+│   ├── POS Role Assignment
+│   └── Open Web for Full Control
+│
+└── POS Product
+    ├── POS Owner (may enter Start Selling mode)
+    ├── POS Manager (may enter Start Selling mode)
+    └── POS Cashier
+```
+---
+
+## 12. MVP User Journey
+
+```text
+User registers in Mobile
+→ user signs in
+→ user starts a business
+→ organization is created
+→ user becomes Organization Owner
+→ subscription or trial becomes active
+→ POS entitlement is granted
+→ creator receives first POS Owner role
+→ owner continues in Mobile
+→ owner completes basic organization setup
+→ owner creates or invites staff
+→ owner assigns POS product roles
+→ owner launches POS onboarding or Start Selling
+→ staff signs in through Mobile
+→ Mobile displays the functions allowed by each assigned role
+```
+At any point where the owner needs advanced organization control, Mobile should provide a clear action or reminder to open the Web application.
+
+The reminder must not interrupt ordinary MVP onboarding or POS operation.
+
+---
+
+## 13. Phase Boundary
+
+### Phase 16
+
+Phase 16 is responsible for:
+
+- Personal registration;
+- Start a Business;
+- organization creation;
+- Organization Owner assignment;
+- mobile Organization Owner essentials;
+- Web full Organization Administration;
+- organization staff management;
+- subscription and entitlement activation;
+- POS product-role assignment;
+- Platform-to-POS access handoff.
+
+Phase 16 ends when an eligible user can launch the POS product without being forced to leave Mobile for ordinary setup tasks.
+
+### Phase 17
+
+Phase 17 is responsible for actual POS operation through Mobile:
+
+- initial POS operational setup;
+- default store and register;
+- products and inventory;
+- cashier shifts;
+- cash sale;
+- receipt;
+- refund or void controls;
+- operational reporting.
+
+Phase 17 may use Mobile organization context and role-assignment capabilities delivered by Phase 16, but it must preserve the boundary between organization administration and POS operational data.
+
+---
+
+## 14. Mobile and Web Capability Rule
+
+The approved rule is:
+
+> Put every safe and practical Organization Owner capability in Mobile. Use Web for full control, advanced administration, detailed views, and complex workflows.
+
+A feature should remain Web-only for MVP when it requires one or more of the following:
+
+- large or highly detailed tables;
+- complex multi-step administration;
+- advanced filters or bulk actions;
+- detailed audit investigation;
+- exports or print-oriented layouts;
+- settings that are risky or difficult to manage safely on a small screen;
+- Platform Administrator authority.
+
+When a capability is Web-only, Mobile must:
+
+- explain that the feature is available on Web;
+- provide a clear Open Web or Learn More action where practical;
+- preserve the user's organization context where technically possible;
+- avoid presenting the limitation as an error.
+
+---
+
+## 15. Deferred After MVP
+
+The following are deferred unless separately approved:
+
+- Platform Administration on Mobile;
+- full Personal Account experience on Web;
+- complete feature parity between Mobile and Web Organization Administration;
+- POS Web client;
+- advanced bulk organization administration on Mobile;
+- large audit investigation views on Mobile;
+- multiple branches;
+- advanced branch-specific administration;
+- custom product roles;
+- offline synchronization;
+- advanced cross-client notifications;
+- delegated Organization Administrators beyond the approved MVP role model.
+
+---
+
+## 16. Architectural Decision Summary
+
+The approved MVP direction is:
+
+```text
+Platform Administration = Web only
+Personal Account = Mobile
+Organization Owner Essentials = Mobile
+Full Organization Administration = Web
+POS Product Operations = Mobile
+```
+
+The Organization is a business and authorization boundary, not a separate application.
+
+The Mobile application must support the complete normal onboarding and operational journey without forcing the user to leave immediately after subscribing.
+
+An Organization Owner may use both clients:
+
+```text
+Mobile
+= normal business journey, practical organization management, and POS operation
+
+Web
+= full organization control, advanced administration, and detailed management
+```
+
+All authorization remains enforced by the APIs.

@@ -45,6 +45,27 @@ public static class OrganizationMembershipGuard
         return null;
     }
 
+    /// <summary>
+    /// MVP: exactly one Organization Owner. Blocks adding or promoting a second Owner.
+    /// </summary>
+    public static async Task<ApplicationResult?> EnsureSingleOrganizationOwnerSeatAsync(
+        IOrganizationMembershipRepository memberships,
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var count = await memberships
+            .CountActiveGoverningAdminsAsync(organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        if (count >= 1)
+        {
+            return ApplicationResult.Failure(
+                DomainErrorCodes.OrganizationOwnerUniqueViolation,
+                "MVP allows only one Organization Owner per organization.");
+        }
+
+        return null;
+    }
+
     public static async Task<ApplicationResult?> EnsureCanChangeRoleAsync(
         IOrganizationMembershipRepository memberships,
         OrganizationMembership membership,
@@ -54,20 +75,33 @@ public static class OrganizationMembershipGuard
         CancellationToken cancellationToken = default)
     {
         if (!OrganizationRoleDisplay.IsAssignableOrganizationStaffRole(newRole)
-            && !actorHasPlatformManageMemberships)
+            && !actorHasPlatformManageMemberships
+            && newRole != OrganizationRole.OrganizationOwner)
         {
             return ApplicationResult.Failure(
                 DomainErrorCodes.InvalidOrganizationRole,
-                "Organization staff roles are Owner and Staff only.");
+                "Organization staff role is Staff only. MVP supports a single Organization Owner.");
         }
 
-        if (!actorHasPlatformManageMemberships
-            && actorMembershipRole != OrganizationRole.OrganizationOwner
-            && newRole == OrganizationRole.OrganizationOwner)
+        if (newRole == OrganizationRole.OrganizationOwner
+            && membership.Role != OrganizationRole.OrganizationOwner)
         {
-            return ApplicationResult.Failure(
-                DomainErrorCodes.OrganizationOwnerAssignmentDenied,
-                "Only Organization Owners can assign the Owner role.");
+            if (!actorHasPlatformManageMemberships)
+            {
+                return ApplicationResult.Failure(
+                    DomainErrorCodes.OrganizationOwnerAssignmentDenied,
+                    "MVP does not allow assigning an additional Organization Owner.");
+            }
+
+            var unique = await EnsureSingleOrganizationOwnerSeatAsync(
+                    memberships,
+                    membership.OrganizationId,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            if (unique is not null)
+            {
+                return unique;
+            }
         }
 
         if (membership.Role == newRole)

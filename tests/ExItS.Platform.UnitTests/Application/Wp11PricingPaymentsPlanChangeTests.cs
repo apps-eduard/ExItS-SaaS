@@ -495,7 +495,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
             root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "PersonalStartBusiness.razor"));
         Assert.Contains("Start Free Trial", startBusiness, StringComparison.Ordinal);
         Assert.Contains("Subscribe Now", startBusiness, StringComparison.Ordinal);
-        Assert.Contains("AssignPosOwnerRole: false", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("AssignPosOwnerRole: true", startBusiness, StringComparison.Ordinal);
         Assert.Contains("Processing test payment", startBusiness, StringComparison.Ordinal);
         Assert.Contains("AllowSubscribeUxDelay", startBusiness, StringComparison.Ordinal);
         Assert.DoesNotContain("Try Business Free First", startBusiness, StringComparison.Ordinal);

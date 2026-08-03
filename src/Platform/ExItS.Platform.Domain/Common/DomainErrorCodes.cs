@@ -15,6 +15,7 @@ public static class DomainErrorCodes
     public const string InvalidInvitationToken = "platform.invitation.token.invalid";
     public const string LastGoverningAdminProtected = "platform.membership.last_governing_admin";
     public const string OrganizationOwnerAssignmentDenied = "platform.membership.owner_assignment_denied";
+    public const string OrganizationOwnerUniqueViolation = "platform.membership.owner_unique_violation";
 
     public const string InvalidDisplayName = "platform.display_name.invalid";
     public const string InvalidEmail = "platform.email.invalid";

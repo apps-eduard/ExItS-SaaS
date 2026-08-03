@@ -28,6 +28,8 @@
 ## Engineering
 
 - [Approved architecture summary](engineering/approved-architecture-summary.md)
+- [Architecture notes (client boundaries, scopes, entitlements)](architecture/README.md)
+- [Client experience boundaries (MVP Mobile/Web)](architecture/client-experience-boundaries.md)
 - [Phase 2 readiness checklist](engineering/phase-02-readiness-checklist.md)
 - [Target architecture](engineering/architecture.md)
 - [Platform–product capability boundary](engineering/platform-product-capability-boundary.md)

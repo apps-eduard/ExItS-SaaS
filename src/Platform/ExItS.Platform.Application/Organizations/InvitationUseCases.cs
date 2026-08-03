@@ -200,16 +200,14 @@ public sealed class CreateOrganizationInvitation
         {
             return ApplicationResult<OrganizationInvitationDto>.Failure(
                 DomainErrorCodes.InvalidOrganizationRole,
-                "Organization staff roles are Owner and Staff only.");
+                "Organization staff role is Staff only. MVP supports a single Organization Owner created at Start a Business.");
         }
 
-        if (!actorHasPlatformManageMemberships
-            && actorMembershipRole != OrganizationRole.OrganizationOwner
-            && role == OrganizationRole.OrganizationOwner)
+        if (role == OrganizationRole.OrganizationOwner)
         {
             return ApplicationResult<OrganizationInvitationDto>.Failure(
-                DomainErrorCodes.OrganizationOwnerAssignmentDenied,
-                "Only Organization Owners can invite an Owner.");
+                DomainErrorCodes.OrganizationOwnerUniqueViolation,
+                "MVP allows only one Organization Owner per organization.");
         }
 
         var organization = await _organizations.GetByIdAsync(organizationId, cancellationToken).ConfigureAwait(false);

@@ -93,6 +93,19 @@ public sealed class AddOrganizationMembership
                 "A current membership already exists for this user and organization.");
         }
 
+        if (OrganizationMembershipGuard.IsProtectedGoverningSeat(role))
+        {
+            var uniqueOwner = await OrganizationMembershipGuard
+                .EnsureSingleOrganizationOwnerSeatAsync(_memberships, organizationId, cancellationToken)
+                .ConfigureAwait(false);
+            if (uniqueOwner is not null)
+            {
+                return ApplicationResult<OrganizationMembership>.Failure(
+                    uniqueOwner.ErrorCode!,
+                    uniqueOwner.ErrorMessage!);
+            }
+        }
+
         try
         {
             var membership = OrganizationMembership.Create(organizationId, userId, role, _clock.UtcNow);

@@ -32,6 +32,10 @@ public static class OrganizationRoleDisplay
     }
 
     /// <summary>Roles offered for Organization staff invite/add/change in WP11 scope.</summary>
+    /// <summary>
+    /// MVP staff invitation/assignment roles. Organization Owner is unique and created at Start a Business;
+    /// it is not an assignable staff role.
+    /// </summary>
     public static bool IsAssignableOrganizationStaffRole(OrganizationRole role) =>
-        role is OrganizationRole.OrganizationOwner or OrganizationRole.OrganizationMember;
+        role is OrganizationRole.OrganizationMember;
 }

@@ -43,7 +43,11 @@ public sealed record PosSaleDto(
     string? RegisterName = null,
     string? StoreDisplayName = null,
     string? CurrencyCode = null,
-    string? TaxPricingMode = null);
+    string? TaxPricingMode = null,
+    string? ReceiptHeader = null,
+    string? ReceiptFooter = null,
+    string? BusinessAddress = null,
+    string? ContactPhone = null);
 
 /// <summary>
 /// One requested checkout line. Only the product identity and quantity are accepted — name, unit of

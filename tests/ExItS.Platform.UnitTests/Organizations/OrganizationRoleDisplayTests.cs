@@ -19,9 +19,9 @@ public sealed class OrganizationRoleDisplayTests
         Assert.Equal(expected, OrganizationRoleDisplay.ToDisplayLabel(code));
 
     [Fact]
-    public void Assignable_staff_roles_are_owner_and_staff_only()
+    public void Assignable_staff_role_is_staff_only_for_mvp_single_owner()
     {
-        Assert.True(OrganizationRoleDisplay.IsAssignableOrganizationStaffRole(OrganizationRole.OrganizationOwner));
+        Assert.False(OrganizationRoleDisplay.IsAssignableOrganizationStaffRole(OrganizationRole.OrganizationOwner));
         Assert.True(OrganizationRoleDisplay.IsAssignableOrganizationStaffRole(OrganizationRole.OrganizationMember));
         Assert.False(OrganizationRoleDisplay.IsAssignableOrganizationStaffRole(OrganizationRole.OrganizationAdministrator));
     }

@@ -1,14 +1,47 @@
 # Phase 17 — POS MVP Operational Onboarding and First Sale
 
-[Architecture](../architecture/product-catalog-entitlement-and-role-model.md) | [Portfolio](../portfolio-progress.md) | [UI standards](../ui/ant-design-admin-ui-standards.md)
+[Architecture](../architecture/product-catalog-entitlement-and-role-model.md) | [Client experience boundaries](../architecture/client-experience-boundaries.md) | [Portfolio](../portfolio-progress.md) | [UI standards](../ui/ant-design-admin-ui-standards.md)
 
 ## Status
 
-**Complete** (with documented residuals; closed 2026-07-29).
+**Complete** (with documented residuals; closed 2026-07-29; post-implementation validation alignment 2026-07-29).
 
 Phase 17 delivered POS operational onboarding and the first cash-sale journey on top of existing Phases 5–10 / P16 handoff capabilities. Phase 14 Production Deployment remains separate and unfinished.
 
 The application remains **not production-ready**.
+
+### Validation status (post-implementation)
+
+| Layer | Status |
+|---|---|
+| Backend / domain / API workflow | **Validated** (unit + integration suites; provisioning aligned) |
+| MAUI implementation | **Partial** — setup, sales, shifts exist; Organization Owner essentials and Start Selling mode remain incomplete vs [client-experience-boundaries](../architecture/client-experience-boundaries.md) |
+| Device / Android SDK validation | **Not run** (Android SDK unavailable on validation host) |
+
+### Client experience (authoritative)
+
+Per [client-experience-boundaries](../architecture/client-experience-boundaries.md):
+
+- Platform Administration = Web only
+- Personal Account = Mobile
+- Organization Owner essentials = Mobile (profile, subscription/entitlement status, staff invite, POS role assign/revoke, launch POS setup, Start Selling)
+- Full Organization Administration = Web
+- POS operations = Mobile
+
+Organization Administration is **not** Web-only: Mobile owns the practical Owner essentials; Web owns full control.
+
+Business creator provisioning:
+
+```text
+Start a Business
+→ single Organization Owner
+→ POS entitlement active
+→ first POS Owner role granted
+```
+
+Organization Owner alone never grants POS access. Other members need an explicit POS role.
+
+POS hierarchy: Owner ⊇ Manager ⊇ Cashier. Start Selling changes interface mode only; it does not change the POS role.
 
 | Work Package | Status | Report |
 |---|---|---|
@@ -237,4 +270,4 @@ WP08 closeout must record:
 
 ## 12. UI notes
 
-Follow `docs/ui/ant-design-admin-ui-standards.md` for any Admin surfaces. POS MAUI keeps existing shell patterns. Concise primary actions (e.g. `+ Product`). Filter-on-change without unnecessary Apply. Do not redesign unrelated Platform or Organization Administration pages.
+Follow `docs/ui/ant-design-admin-ui-standards.md` for any Admin surfaces. POS MAUI keeps existing shell patterns. Concise primary actions (e.g. `+ Product`). Filter-on-change without unnecessary Apply. Do not redesign unrelated Platform or full Organization Administration Web pages. Mobile Organization Owner essentials remain in scope for the product journey per [client-experience-boundaries](../architecture/client-experience-boundaries.md); Phase 17 does not claim device validation of those Mobile Org screens.

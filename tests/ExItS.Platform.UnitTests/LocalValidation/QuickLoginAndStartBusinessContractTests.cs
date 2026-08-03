@@ -14,14 +14,14 @@ public sealed class QuickLoginAndStartBusinessContractTests
     }
 
     [Fact]
-    public void Start_business_defaults_do_not_assign_pos_owner_role()
+    public void Start_business_defaults_assign_first_pos_owner_role()
     {
         var requestType = typeof(ExItS.Platform.Application.Personal.StartBusinessRequest);
         var prop = requestType.GetProperty("AssignPosOwnerRole");
         Assert.NotNull(prop);
         var ctor = requestType.GetConstructors().Single();
         var param = ctor.GetParameters().Single(p => p.Name == "AssignPosOwnerRole");
-        Assert.False((bool)param.DefaultValue!);
+        Assert.True((bool)param.DefaultValue!);
     }
 
     [Fact]

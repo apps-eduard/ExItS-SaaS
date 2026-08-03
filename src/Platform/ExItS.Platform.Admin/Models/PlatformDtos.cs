@@ -750,7 +750,7 @@ public sealed record StartBusinessRequest(
     bool PayNow = false,
     bool ActivatePosEntitlement = true,
     bool ActivateProductAccess = true,
-    bool AssignPosOwnerRole = false);
+    bool AssignPosOwnerRole = true);
 
 public sealed record StartBusinessResultDto(
     Guid OrganizationId,

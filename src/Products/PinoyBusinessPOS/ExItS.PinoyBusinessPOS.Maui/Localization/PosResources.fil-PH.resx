@@ -755,6 +755,9 @@
   <data name="Sales_Field_PaymentMethod" xml:space="preserve"><value>Paraan ng bayad</value></data>
   <data name="Sales_Field_Subtotal" xml:space="preserve"><value>Subtotal</value></data>
   <data name="Sales_Field_Tax" xml:space="preserve"><value>Buwis</value></data>
+  <data name="Sales_Field_ReceiptHeader" xml:space="preserve"><value>Header ng resibo</value></data>
+  <data name="Sales_Field_BusinessAddress" xml:space="preserve"><value>Address</value></data>
+  <data name="Sales_Field_ContactPhone" xml:space="preserve"><value>Telepono</value></data>
   <data name="Sales_Field_Store" xml:space="preserve"><value>Tindahan</value></data>
   <data name="Sales_Field_Register" xml:space="preserve"><value>Rehistro</value></data>
   <data name="Sales_Field_Cashier" xml:space="preserve"><value>Cashier</value></data>

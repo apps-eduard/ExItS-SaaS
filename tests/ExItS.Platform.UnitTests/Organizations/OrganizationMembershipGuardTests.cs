@@ -80,16 +80,30 @@ public sealed class OrganizationMembershipGuardTests
     }
 
     [Fact]
-    public async Task Legacy_administrator_alone_does_not_satisfy_last_owner_protection()
+    public async Task Platform_cannot_promote_second_owner_when_one_exists()
     {
         var repo = new InMemoryOrganizationMembershipRepository();
         var orgId = PlatformOrganizationId.New();
-        var soleOwner = OrganizationMembership.Create(orgId, PlatformUserId.New(), OrganizationRole.OrganizationOwner, T0);
-        await repo.AddAsync(soleOwner);
-        await repo.AddAsync(OrganizationMembership.Create(orgId, PlatformUserId.New(), OrganizationRole.OrganizationAdministrator, T0));
+        var staff = OrganizationMembership.Create(orgId, PlatformUserId.New(), OrganizationRole.OrganizationMember, T0);
+        await repo.AddAsync(staff);
+        await repo.AddAsync(OrganizationMembership.Create(orgId, PlatformUserId.New(), OrganizationRole.OrganizationOwner, T0));
 
-        var blocked = await OrganizationMembershipGuard.EnsureCanRemoveGoverningSeatAsync(repo, soleOwner);
+        var blocked = await OrganizationMembershipGuard.EnsureCanChangeRoleAsync(
+            repo,
+            staff,
+            OrganizationRole.OrganizationOwner,
+            actorMembershipRole: null,
+            actorHasPlatformManageMemberships: true);
         Assert.NotNull(blocked);
-        Assert.Equal(DomainErrorCodes.LastGoverningAdminProtected, blocked!.ErrorCode);
+        Assert.Equal(DomainErrorCodes.OrganizationOwnerUniqueViolation, blocked!.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Ensure_single_owner_seat_allows_first_owner()
+    {
+        var repo = new InMemoryOrganizationMembershipRepository();
+        var orgId = PlatformOrganizationId.New();
+        var allowed = await OrganizationMembershipGuard.EnsureSingleOrganizationOwnerSeatAsync(repo, orgId);
+        Assert.Null(allowed);
     }
 }

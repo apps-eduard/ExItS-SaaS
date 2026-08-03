@@ -5,9 +5,9 @@
 | Status | **Complete** |
 | Phase | [Phase 17](../phases/phase-17-pos-mvp-operational-onboarding-and-first-sale.md) |
 | Starting commit | `14b71e1` |
-| Final Phase 17 commit | `0f00afe198a417c9e1b533d5183ad37268a167bc` |
-| Push status | **Pushed to origin/main** |
-| Working tree | Dirty only for unrelated untracked `docs/architecture/client-experience-boundaries.md` (excluded from Phase 17) |
+| Final Phase 17 feature commit | `0f00afe198a417c9e1b533d5183ad37268a167bc` |
+| Push status | **Pushed to origin/main** (feature + docs tip + post-validation alignment) |
+| Working tree | See post-validation alignment commit |
 | Date | 2026-07-29 |
 
 ## Objective
@@ -25,6 +25,7 @@ MVP reporting, hardening, documentation closeout, and Definition of Done for Pha
 - Hardened Cashier void/return: Cashier no longer has `ProcessReturn` (void already denied).
 - Operational setup + access handoff + tax/receipt enrichment from WP01–WP07.
 - Documentation: phase plan, eight WP reports, portfolio + phases index.
+- **Post-validation alignment:** [client-experience-boundaries](../architecture/client-experience-boundaries.md); first POS Owner provisioning on Start a Business; single Organization Owner enforcement; receipt header/address enrichment; backend vs MAUI vs device validation status separated.
 
 ## All eight WP statuses
 
@@ -55,11 +56,11 @@ POS Owner launches POS (membership + entitlement + POS role)
 
 | Suite | Result |
 |---|---|
-| POS UnitTests (full) | **339 passed**, 0 failed |
-| POS IntegrationTests (full) | **135 passed**, 0 failed |
+| POS UnitTests (full) | **339 passed**, 0 failed (Phase 17 closeout) |
+| POS IntegrationTests (full) | **135 passed**, 0 failed (Phase 17 closeout) |
 | Platform UnitTests `ProductAuthorization*` | **11 passed** |
 | Platform IntegrationTests `ApiProductAccess*` | **4 passed** |
-| **Combined Phase 17 evidence** | **489 passed**, 0 failed |
+| Post-validation targeted Platform + POS suites | See alignment commit report |
 
 Maui project not built (Android SDK absent on agent host) — residual.
 
@@ -69,26 +70,17 @@ Maui project not built (Android SDK absent on agent host) — residual.
 - Cashier display name on receipt uses actor GUID (no staff directory name lookup).
 - Tax engine is rate + inclusive/exclusive mode only (not a full VAT regime).
 - Phase 14 production blockers unchanged.
+- **MAUI Organization Owner essentials and Start Selling mode** not device-validated (Android SDK unavailable; Mobile Org essentials incomplete vs client-experience-boundaries).
+- Device/Android validation not claimed.
 
 ## Deferred post-MVP scope
 
 Multi-branch, warehouses, gateway payments, split tender, advanced analytics, complex refund approvals, custom roles, offline sync as a productization gate.
 
-## Files / components changed (closeout-focused)
-
-- `OperationalReportService` + `ReportingEndpoints` (`sales-by-cashier`)
-- `PosRoleMatrix` Cashier `ProcessReturn` removal
-- Phase 17 docs + portfolio/phases index
-- WP01–WP07 deliverables as listed in those reports
-
 ## Authorization and isolation behavior
 
 Reports remain role-gated (`PosOperationalReportKind`); queries organization-scoped; commercial + role middleware fail closed.
 
-## Deferred items
-
-See Known limitations.
-
 ## Commit reference
 
-Final Phase 17 feature commit: `0f00afe198a417c9e1b533d5183ad37268a167bc`. Pushed to `origin/main`. Unrelated untracked `docs/architecture/client-experience-boundaries.md` excluded from Phase 17.
+Feature: `0f00afe198a417c9e1b533d5183ad37268a167bc`. Docs tip: `90ddda3`. Post-validation alignment: latest `main` tip after this refresh.

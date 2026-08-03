@@ -171,6 +171,10 @@ public sealed class SaleQueryService
         string? storeDisplayName = null;
         string? currencyCode = null;
         string? taxPricingMode = null;
+        string? receiptHeader = null;
+        string? receiptFooter = null;
+        string? businessAddress = null;
+        string? contactPhone = null;
         var setup = await _operationalSetups
             .GetByOrganizationIdAsync(sale.OrganizationId, cancellationToken)
             .ConfigureAwait(false);
@@ -179,6 +183,10 @@ public sealed class SaleQueryService
             storeDisplayName = setup.StoreDisplayName;
             currencyCode = setup.CurrencyCode;
             taxPricingMode = setup.TaxPricingMode.ToString();
+            receiptHeader = setup.ReceiptHeader;
+            receiptFooter = setup.ReceiptFooter;
+            businessAddress = setup.BusinessAddress;
+            contactPhone = setup.ContactPhone;
         }
 
         if (sale.CustomerId is null
@@ -200,7 +208,11 @@ public sealed class SaleQueryService
             RegisterName = registerName,
             StoreDisplayName = storeDisplayName,
             CurrencyCode = currencyCode,
-            TaxPricingMode = taxPricingMode
+            TaxPricingMode = taxPricingMode,
+            ReceiptHeader = receiptHeader,
+            ReceiptFooter = receiptFooter,
+            BusinessAddress = businessAddress,
+            ContactPhone = contactPhone
         };
     }
 }

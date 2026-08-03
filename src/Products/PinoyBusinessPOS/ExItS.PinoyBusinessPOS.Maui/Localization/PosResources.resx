@@ -755,6 +755,9 @@
   <data name="Sales_Field_PaymentMethod" xml:space="preserve"><value>Payment method</value></data>
   <data name="Sales_Field_Subtotal" xml:space="preserve"><value>Subtotal</value></data>
   <data name="Sales_Field_Tax" xml:space="preserve"><value>Tax</value></data>
+  <data name="Sales_Field_ReceiptHeader" xml:space="preserve"><value>Receipt header</value></data>
+  <data name="Sales_Field_BusinessAddress" xml:space="preserve"><value>Address</value></data>
+  <data name="Sales_Field_ContactPhone" xml:space="preserve"><value>Phone</value></data>
   <data name="Sales_Field_Store" xml:space="preserve"><value>Store</value></data>
   <data name="Sales_Field_Register" xml:space="preserve"><value>Register</value></data>
   <data name="Sales_Field_Cashier" xml:space="preserve"><value>Cashier</value></data>
