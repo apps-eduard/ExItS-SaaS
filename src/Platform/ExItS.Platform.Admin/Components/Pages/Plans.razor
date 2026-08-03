@@ -143,10 +143,10 @@
                 <span class="muted">@(context.PlanKey ?? context.Code)</span>
             </PropertyColumn>
             <PropertyColumn Property="c => c.MonthlyPrice" Title="Monthly" Sortable Width="110">
-                <AmountDisplay Amount="@context.MonthlyPrice" CurrencyCode="@context.CurrencyCode" />
+                <AdminMoneyDisplay Amount="@context.MonthlyPrice" CurrencyCode="@context.CurrencyCode" />
             </PropertyColumn>
             <PropertyColumn Property="c => c.AnnualPrice" Title="Annual" Sortable Width="110">
-                <AmountDisplay Amount="@context.AnnualPrice" CurrencyCode="@context.CurrencyCode" />
+                <AdminMoneyDisplay Amount="@context.AnnualPrice" CurrencyCode="@context.CurrencyCode" />
             </PropertyColumn>
             <PropertyColumn Property="c => c.CurrencyCode" Title="Currency" Sortable Width="90" />
             <PropertyColumn Property="c => c.TrialAllowed" Title="Trial" Width="90">
@@ -156,7 +156,7 @@
                 @context.MaxBranches branches · @context.MaxActiveStaff staff
             </PropertyColumn>
             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="110">
-                <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                <AdminStatusTag Value="@context.Status" />
             </PropertyColumn>
             <PropertyColumn Property="c => c.SortOrder" Title="Display Order" Sortable />
             <ActionColumn Title="@L["Common_Actions"]" Width="80">
@@ -238,11 +238,11 @@ else
                     <DescriptionsItem Title="@L["Common_Product"]">@(string.IsNullOrWhiteSpace(pl.ProductDisplayName) ? pl.ProductCode : pl.ProductDisplayName)</DescriptionsItem>
                     <DescriptionsItem Title="Plan Key"><span class="muted">@(pl.PlanKey ?? pl.Code)</span></DescriptionsItem>
                     <DescriptionsItem Title="@L["Common_Status"]">
-                        <Tag Color="@StatusColor(pl.Status)">@pl.Status</Tag>
+                        <AdminStatusTag Value="@pl.Status" />
                     </DescriptionsItem>
                     <DescriptionsItem Title="Sort order">@pl.SortOrder</DescriptionsItem>
-                    <DescriptionsItem Title="Monthly price"><AmountDisplay Amount="@pl.MonthlyPrice" CurrencyCode="@pl.CurrencyCode" /></DescriptionsItem>
-                    <DescriptionsItem Title="Annual price"><AmountDisplay Amount="@pl.AnnualPrice" CurrencyCode="@pl.CurrencyCode" /></DescriptionsItem>
+                    <DescriptionsItem Title="Monthly price"><AdminMoneyDisplay Amount="@pl.MonthlyPrice" CurrencyCode="@pl.CurrencyCode" /></DescriptionsItem>
+                    <DescriptionsItem Title="Annual price"><AdminMoneyDisplay Amount="@pl.AnnualPrice" CurrencyCode="@pl.CurrencyCode" /></DescriptionsItem>
                     <DescriptionsItem Title="Currency">@pl.CurrencyCode</DescriptionsItem>
                     <DescriptionsItem Title="Max branches">@pl.MaxBranches</DescriptionsItem>
                     <DescriptionsItem Title="Max active staff">@pl.MaxActiveStaff</DescriptionsItem>
@@ -318,7 +318,7 @@ else
                         <PropertyColumn Property="c => c.BillingPeriod" Title="@L["Products_Column_Billing"]" />
                         <PropertyColumn Property="c => c.TrialEligible" Title="@L["Products_Column_TrialEligible"]" />
                         <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
-                            <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                            <AdminStatusTag Value="@context.Status" />
                         </PropertyColumn>
                         <PropertyColumn Property="c => c.EffectiveFromUtc" Title="@L["Common_CreatedUtc"]">
                             <UtcTimestamp Value="@context.EffectiveFromUtc" />
@@ -625,13 +625,4 @@ else
         await Message.SuccessAsync(L["Plans_Retired"].Value);
         await LoadDetailAsync();
     }
-
-    private static string StatusColor(string status) => status switch
-    {
-        "Active" => "success",
-        "Draft" or "Inactive" => "default",
-        "Retired" => "default",
-        "Published" => "success",
-        _ => "processing"
-    };
 }

@@ -149,17 +149,17 @@ else if (Id is null)
                     @ProductLabel(context.ProductCode)
                 </PropertyColumn>
                 <PropertyColumn Property="c => c.Amount" Title="@L["Common_Amount"]" Align="ColumnAlign.Right">
-                    @FormatMoney(context.Amount, context.CurrencyCode)
+                    <AdminMoneyDisplay Amount="@context.Amount" CurrencyCode="@context.CurrencyCode" />
                 </PropertyColumn>
                 <PropertyColumn Property="c => c.Method" Title="@L["Common_Method"]" />
                 <PropertyColumn Property="c => c.ExternalReference" Title="@L["Common_Reference"]">
                     <a href="@($"/admin/payments/{context.Id:D}")">@(string.IsNullOrWhiteSpace(context.ExternalReference) ? "View" : context.ExternalReference)</a>
                 </PropertyColumn>
                 <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
-                    <Tag Color="@PaymentStatusColor(context.Status)">@FriendlyStatus(context.Status)</Tag>
+                    <AdminStatusTag Value="@context.Status" />
                 </PropertyColumn>
                 <PropertyColumn Property="c => c.PaidAtUtc" Title="Paid Date">
-                    @FriendlyDate(context.PaidAtUtc)
+                    <LocalTimestamp Value="@context.PaidAtUtc" />
                 </PropertyColumn>
                 <PropertyColumn Property="c => c.ConfirmedBy" Title="Recorded By">
                     @DisplayOrDash(context.ConfirmedBy)
@@ -276,9 +276,9 @@ else
         <Card Class="admin-elevated-card" Style="margin-bottom:24px;">
             <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1">
                 <DescriptionsItem Title="@L["Common_Reference"]">@DisplayOrDash(p.ExternalReference)</DescriptionsItem>
-                <DescriptionsItem Title="@L["Common_Amount"]">@FormatMoney(p.Amount, p.CurrencyCode)</DescriptionsItem>
+                <DescriptionsItem Title="@L["Common_Amount"]"><AdminMoneyDisplay Amount="@p.Amount" CurrencyCode="@p.CurrencyCode" /></DescriptionsItem>
                 <DescriptionsItem Title="@L["Common_Method"]">@p.Method</DescriptionsItem>
-                <DescriptionsItem Title="@L["Common_Status"]"><Tag Color="@PaymentStatusColor(p.Status)">@FriendlyStatus(p.Status)</Tag></DescriptionsItem>
+                <DescriptionsItem Title="@L["Common_Status"]"><AdminStatusTag Value="@p.Status" /></DescriptionsItem>
                 <DescriptionsItem Title="@L["Common_Organization"]">
                     <a href="@($"/admin/organizations/{p.OrganizationId:D}")">@OrgLabel(p.OrganizationId)</a>
                 </DescriptionsItem>
@@ -287,13 +287,14 @@ else
                     @if (p.SubscriptionId is Guid sid) { <a href="@($"/admin/subscriptions/{sid:D}")">Details</a> }
                     else { <span>—</span> }
                 </DescriptionsItem>
-                <DescriptionsItem Title="Paid">@FriendlyDate(p.PaidAtUtc)</DescriptionsItem>
-                <DescriptionsItem Title="Confirmed">@FriendlyDate(p.ConfirmedAtUtc) · @DisplayOrDash(p.ConfirmedBy)</DescriptionsItem>
-                <DescriptionsItem Title="Rejected">@FriendlyDate(p.RejectedAtUtc) · @DisplayOrDash(p.RejectedBy)</DescriptionsItem>
+                <DescriptionsItem Title="Paid"><LocalTimestamp Value="@p.PaidAtUtc" /></DescriptionsItem>
+                <DescriptionsItem Title="Confirmed"><LocalTimestamp Value="@p.ConfirmedAtUtc" /> · @DisplayOrDash(p.ConfirmedBy)</DescriptionsItem>
+                <DescriptionsItem Title="Rejected"><LocalTimestamp Value="@p.RejectedAtUtc" /> · @DisplayOrDash(p.RejectedBy)</DescriptionsItem>
                 <DescriptionsItem Title="@L["Common_Reason"]">@DisplayOrDash(p.RejectionReason)</DescriptionsItem>
-                <DescriptionsItem Title="Voided">@FriendlyDate(p.VoidedAtUtc) · @DisplayOrDash(p.VoidedBy)</DescriptionsItem>
+                <DescriptionsItem Title="Voided"><LocalTimestamp Value="@p.VoidedAtUtc" /> · @DisplayOrDash(p.VoidedBy)</DescriptionsItem>
                 <DescriptionsItem Title="Void reason">@DisplayOrDash(p.VoidReason)</DescriptionsItem>
                 <DescriptionsItem Title="@L["Common_Version"]">@p.Version</DescriptionsItem>
+                <DescriptionsItem Title="Record ID">@p.Id</DescriptionsItem>
             </Descriptions>
         </Card>
 
@@ -881,25 +882,10 @@ else
 
     private static string DisplayOrDash(string? value) => string.IsNullOrWhiteSpace(value) ? "—" : value;
 
-    private static string FormatMoney(decimal amount, string? currency) =>
-        string.IsNullOrWhiteSpace(currency) ? amount.ToString("N2") : $"{currency} {amount:N2}";
-
-    private static string FriendlyDate(DateTimeOffset? value) =>
-        value is null ? "—" : value.Value.ToLocalTime().ToString("dd MMM yyyy, h:mm tt");
-
     private static string FriendlyStatus(string status) => status switch
     {
         "PendingConfirmation" => "Pending Confirmation",
         _ => status
-    };
-
-    private static string PaymentStatusColor(string status) => status switch
-    {
-        "PendingConfirmation" => "processing",
-        "Confirmed" => "success",
-        "Rejected" => "error",
-        "Voided" => "default",
-        _ => "default"
     };
 
     private sealed record ConfirmState(string Title, string Message, Func<Task> Action, AdminDialogKind Kind);

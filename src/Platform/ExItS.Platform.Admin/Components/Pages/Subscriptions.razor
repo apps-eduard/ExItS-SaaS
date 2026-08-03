@@ -157,7 +157,7 @@
                 @(string.IsNullOrWhiteSpace(context.PlanDisplayName) ? "—" : context.PlanDisplayName)
             </PropertyColumn>
             <PropertyColumn Property="c => c.AgreedPrice" Title="Agreed price" Sortable Width="120">
-                <AmountDisplay Amount="@context.AgreedPrice" CurrencyCode="@context.CurrencyCode" />
+                <AdminMoneyDisplay Amount="@context.AgreedPrice" CurrencyCode="@context.CurrencyCode" />
             </PropertyColumn>
             <PropertyColumn Property="c => c.BillingCycle" Title="Billing" Sortable Width="100">
                 @(context.BillingCycle ?? "—")
@@ -166,7 +166,7 @@
                 @(context.CurrencyCode ?? "—")
             </PropertyColumn>
             <PropertyColumn Property="c => c.Status" Title="Subscription Status" Sortable Width="110">
-                <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                <AdminStatusTag Value="@context.Status" />
             </PropertyColumn>
             <PropertyColumn Property="c => c.CurrentPeriodEndUtc" Title="Period end" Sortable Width="180">
                 <LocalTimestamp Value="@(context.CurrentPeriodEndUtc ?? context.PaidPeriodEndUtc)" />
@@ -282,14 +282,14 @@ else
         </p>
 
         <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
-            <DescriptionsItem Title="@L["Common_Status"]"><Tag Color="@StatusColor(s.Status)">@s.Status</Tag></DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_Status"]"><AdminStatusTag Value="@s.Status" /></DescriptionsItem>
             <DescriptionsItem Title="@L["Common_Version"]">@s.Version</DescriptionsItem>
             <DescriptionsItem Title="@L["Common_Organization"]">
                 <a href="/admin/organizations/@s.OrganizationId">@(string.IsNullOrWhiteSpace(s.OrganizationDisplayName) ? "Organization" : s.OrganizationDisplayName)</a>
             </DescriptionsItem>
             <DescriptionsItem Title="@L["Common_Product"]">@(string.IsNullOrWhiteSpace(s.ProductDisplayName) ? "Product" : s.ProductDisplayName)</DescriptionsItem>
             <DescriptionsItem Title="@L["Common_Plan"]">@(string.IsNullOrWhiteSpace(s.PlanDisplayName) ? "—" : s.PlanDisplayName)</DescriptionsItem>
-            <DescriptionsItem Title="Agreed price"><AmountDisplay Amount="@s.AgreedPrice" CurrencyCode="@s.CurrencyCode" /></DescriptionsItem>
+            <DescriptionsItem Title="Agreed price"><AdminMoneyDisplay Amount="@s.AgreedPrice" CurrencyCode="@s.CurrencyCode" /></DescriptionsItem>
             <DescriptionsItem Title="Billing cycle">@(s.BillingCycle ?? "—")</DescriptionsItem>
             <DescriptionsItem Title="Currency">@(s.CurrencyCode ?? "—")</DescriptionsItem>
             <DescriptionsItem Title="Current period start"><UtcTimestamp Value="@(s.CurrentPeriodStartUtc ?? s.PaidPeriodStartUtc)" /></DescriptionsItem>
@@ -306,7 +306,7 @@ else
 
         <Card Size="@CardSize.Small" Title="Advanced technical IDs" Style="margin-bottom:12px;">
             <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1">
-                <DescriptionsItem Title="Subscription ID">@s.Id</DescriptionsItem>
+                <DescriptionsItem Title="Record ID">@s.Id</DescriptionsItem>
                 <DescriptionsItem Title="Organization ID">@s.OrganizationId</DescriptionsItem>
                 <DescriptionsItem Title="Product key">@s.ProductCode</DescriptionsItem>
                 <DescriptionsItem Title="Plan ID">@s.PlanId</DescriptionsItem>
@@ -792,14 +792,4 @@ else
         await Message.SuccessAsync(success);
         await LoadDetailAsync();
     }
-
-    private static string StatusColor(string status) => status switch
-    {
-        "Active" => "success",
-        "Inactive" or "Draft" => "default",
-        "Retired" or "Closed" or "Cancelled" or "Expired" or "Deactivated" => "default",
-        "Trialing" => "processing",
-        "Suspended" or "PastDue" or "GracePeriod" => "warning",
-        _ => "processing"
-    };
 }

@@ -29,7 +29,7 @@ else
 
     <Alert Type="@AlertType.Warning" ShowIcon="true" Message="Test payment simulation only. Do not use in Production." Style="margin-bottom:12px;" />
 
-    <Card Size="@CardSize.Small" Title="Simulate provider payment" Style="max-width:720px;">
+    <Card Class="admin-elevated-card" Size="@CardSize.Small" Title="Simulate provider payment" Style="max-width:720px;">
         <FormValidationSummary Title="Simulation failed" Message="@_formError" />
         <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
             <Input @bind-Value="_organizationId" Size="@InputSize.Small" Placeholder="Organization ID (GUID)" Disabled="_busy" />

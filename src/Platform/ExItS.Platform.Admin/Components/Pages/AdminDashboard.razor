@@ -37,16 +37,16 @@ else if (Shell.IsPersonalShell)
         var data = _personal.Data!;
         <Row Gutter="(12,12)" Style="margin-bottom:1rem;">
             <AntDesign.Col Xs="24" Sm="12" Md="6">
-                <Statistic Title="@L["Nav_UtangPeople"]" Value="@data.ContactCount" />
+                <AdminSummaryCard Label="@L["Nav_UtangPeople"]">@data.ContactCount</AdminSummaryCard>
             </AntDesign.Col>
             <AntDesign.Col Xs="24" Sm="12" Md="6">
-                <Statistic Title="Active relationships" Value="@data.ActiveRelationshipCount" />
+                <AdminSummaryCard Label="Active relationships">@data.ActiveRelationshipCount</AdminSummaryCard>
             </AntDesign.Col>
             <AntDesign.Col Xs="24" Sm="12" Md="6">
-                <Statistic Title="@L["Nav_UtangLent"]" Value="@data.TotalLentBalance" />
+                <AdminSummaryCard Label="@L["Nav_UtangLent"]">@data.TotalLentBalance</AdminSummaryCard>
             </AntDesign.Col>
             <AntDesign.Col Xs="24" Sm="12" Md="6">
-                <Statistic Title="@L["Nav_UtangBorrowed"]" Value="@data.TotalBorrowedBalance" />
+                <AdminSummaryCard Label="@L["Nav_UtangBorrowed"]">@data.TotalBorrowedBalance</AdminSummaryCard>
             </AntDesign.Col>
         </Row>
         <Space Wrap>
@@ -114,16 +114,16 @@ else if (Shell.IsPlatformShell)
         <Paragraph Type="@TextElementType.Secondary">@L["Dashboard_Section_PrimaryDetail"]</Paragraph>
         <Row Gutter="(12,12)" Style="margin-bottom:1rem;">
             <AntDesign.Col Xs="24" Sm="12" Md="6">
-                <Statistic Title="@L["Dashboard_Card_ActiveProducts"]" Value="@StatInt(data.ActiveProductCount, "activeProducts")" />
+                <AdminSummaryCard Label="@L["Dashboard_Card_ActiveProducts"]">@StatInt(data.ActiveProductCount, "activeProducts")</AdminSummaryCard>
             </AntDesign.Col>
             <AntDesign.Col Xs="24" Sm="12" Md="6">
-                <Statistic Title="@L["Dashboard_Card_Organizations"]" Value="@StatInt(data.OrganizationCount, "organizations")" />
+                <AdminSummaryCard Label="@L["Dashboard_Card_Organizations"]">@StatInt(data.OrganizationCount, "organizations")</AdminSummaryCard>
             </AntDesign.Col>
             <AntDesign.Col Xs="24" Sm="12" Md="6">
-                <Statistic Title="@L["Dashboard_Card_ActiveSubscriptions"]" Value="@StatInt(data.ActiveSubscriptionCount, "activeSubscriptions")" />
+                <AdminSummaryCard Label="@L["Dashboard_Card_ActiveSubscriptions"]">@StatInt(data.ActiveSubscriptionCount, "activeSubscriptions")</AdminSummaryCard>
             </AntDesign.Col>
             <AntDesign.Col Xs="24" Sm="12" Md="6">
-                <Statistic Title="@L["Dashboard_Card_PendingManualPayments"]" Value="@StatInt(data.PendingManualPaymentCount, "pendingManualPayments")" />
+                <AdminSummaryCard Label="@L["Dashboard_Card_PendingManualPayments"]">@StatInt(data.PendingManualPaymentCount, "pendingManualPayments")</AdminSummaryCard>
             </AntDesign.Col>
         </Row>
 
@@ -131,16 +131,16 @@ else if (Shell.IsPlatformShell)
         <Paragraph Type="@TextElementType.Secondary">@L["Dashboard_Section_LifecycleDetail"]</Paragraph>
         <Row Gutter="(12,12)" Style="margin-bottom:1rem;">
             <AntDesign.Col Xs="24" Sm="12" Md="6">
-                <Statistic Title="@L["Dashboard_Card_TrialingSubscriptions"]" Value="@StatInt(data.TrialingSubscriptionCount, "trialingSubscriptions")" />
+                <AdminSummaryCard Label="@L["Dashboard_Card_TrialingSubscriptions"]">@StatInt(data.TrialingSubscriptionCount, "trialingSubscriptions")</AdminSummaryCard>
             </AntDesign.Col>
             <AntDesign.Col Xs="24" Sm="12" Md="6">
-                <Statistic TValue="string" Title="@L["Dashboard_Card_GracePastDueSuspended"]" Value="@GraceCombo(data)" />
+                <AdminSummaryCard Label="@L["Dashboard_Card_GracePastDueSuspended"]">@GraceCombo(data)</AdminSummaryCard>
             </AntDesign.Col>
             <AntDesign.Col Xs="24" Sm="12" Md="6">
-                <Statistic Title="@L["Dashboard_Card_PublishedPlanVersions"]" Value="@StatInt(data.PublishedPlanVersionCount, "publishedPlanVersions")" />
+                <AdminSummaryCard Label="@L["Dashboard_Card_PublishedPlanVersions"]">@StatInt(data.PublishedPlanVersionCount, "publishedPlanVersions")</AdminSummaryCard>
             </AntDesign.Col>
             <AntDesign.Col Xs="24" Sm="12" Md="6">
-                <Statistic Title="@L["Dashboard_Card_LatestEntitlementSnapshots"]" Value="@StatInt(data.LatestEntitlementSnapshotCount, "latestEntitlementSnapshots")" />
+                <AdminSummaryCard Label="@L["Dashboard_Card_LatestEntitlementSnapshots"]">@StatInt(data.LatestEntitlementSnapshotCount, "latestEntitlementSnapshots")</AdminSummaryCard>
             </AntDesign.Col>
         </Row>
 

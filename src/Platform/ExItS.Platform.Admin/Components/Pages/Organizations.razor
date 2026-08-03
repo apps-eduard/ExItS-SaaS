@@ -98,7 +98,7 @@
             </PropertyColumn>
             <PropertyColumn Property="c => c.Slug" Title="@L["Common_Slug"]" Sortable />
             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="110">
-                <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                <AdminStatusTag Value="@context.Status" />
             </PropertyColumn>
             <PropertyColumn Property="c => c.CreatedAtUtc" Title="@L["Common_CreatedUtc"]" Sortable>
                 <LocalTimestamp Value="@context.CreatedAtUtc" />
@@ -189,7 +189,7 @@ else
                     <DescriptionsItem Title="@L["Common_DisplayName"]">@o.DisplayName</DescriptionsItem>
                     <DescriptionsItem Title="@L["Common_Slug"]">@o.Slug</DescriptionsItem>
                     <DescriptionsItem Title="@L["Common_Status"]">
-                        <Tag Color="@StatusColor(o.Status)">@o.Status</Tag>
+                        <AdminStatusTag Value="@o.Status" />
                     </DescriptionsItem>
                     <DescriptionsItem Title="@L["Organizations_LegalName"]">@(o.Profile?.LegalName ?? "â€”")</DescriptionsItem>
                     <DescriptionsItem Title="@L["Common_Email"]">@(o.Profile?.ContactEmail ?? "â€”")</DescriptionsItem>
@@ -299,11 +299,11 @@ else
                             <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" />
                             <PropertyColumn Property="c => c.PlanDisplayName" Title="@L["Common_Plan"]" />
                             <PropertyColumn Property="c => c.AgreedPrice" Title="Agreed">
-                                <AmountDisplay Amount="@((decimal?)context.AgreedPrice)" CurrencyCode="@context.CurrencyCode" />
+                                <AdminMoneyDisplay Amount="@((decimal?)context.AgreedPrice)" CurrencyCode="@context.CurrencyCode" />
                             </PropertyColumn>
                             <PropertyColumn Property="c => c.BillingCycle" Title="Billing" />
                             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
-                                <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                                <AdminStatusTag Value="@context.Status" />
                             </PropertyColumn>
                             <ActionColumn Title="@L["Common_Detail"]">
                                 <a href="/admin/subscriptions/@context.Id">@L["Organizations_OpenSubscription"]</a>
@@ -324,11 +324,11 @@ else
                         <Table TItem="PaymentDto" DataSource="_detail.Data.Payments" Size="@TableSize.Small" HidePagination Bordered>
                             <PropertyColumn Property="c => c.ExternalReference" Title="@L["Common_Reference"]" />
                             <PropertyColumn Property="c => c.Amount" Title="@L["Common_Amount"]">
-                                <AmountDisplay Amount="@((decimal?)context.Amount)" CurrencyCode="@context.CurrencyCode" />
+                                <AdminMoneyDisplay Amount="@((decimal?)context.Amount)" CurrencyCode="@context.CurrencyCode" />
                             </PropertyColumn>
                             <PropertyColumn Property="c => c.Method" Title="@L["Common_Method"]" />
                             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
-                                <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                                <AdminStatusTag Value="@context.Status" />
                             </PropertyColumn>
                             <ActionColumn Title="@L["Common_Detail"]">
                                 <a href="/admin/payments/@context.Id">@L["Organizations_OpenPayment"]</a>
@@ -349,7 +349,7 @@ else
                         <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" />
                         <PropertyColumn Property="c => c.SnapshotVersion" Title="@L["Common_Version"]" />
                         <PropertyColumn Property="c => c.SubscriptionStatus" Title="@L["Common_Status"]">
-                            <Tag Color="@StatusColor(context.SubscriptionStatus)">@context.SubscriptionStatus</Tag>
+                            <AdminStatusTag Value="@context.SubscriptionStatus" />
                         </PropertyColumn>
                     </Table>
                 }
@@ -618,13 +618,4 @@ else
 
     private static string? NullIfBlank(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-
-    private static string StatusColor(string status) => status switch
-    {
-        "Active" => "success",
-        "Trialing" => "processing",
-        "Suspended" or "PastDue" or "GracePeriod" => "warning",
-        "Closed" or "Cancelled" or "Expired" or "Deactivated" => "default",
-        _ => "processing"
-    };
 }

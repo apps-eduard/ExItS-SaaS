@@ -78,8 +78,8 @@
                             <button type="button" class="btn-primary" @onclick="CopyTokenAsync">Copy token</button>
                         </div>
                         <dl class="key-value-list">
-                            <dt>Expires (UTC)</dt>
-                            <dd>@_issued.ExpiresAtUtc.ToString("u")</dd>
+                            <dt>Expires</dt>
+                            <dd><LocalTimestamp Value="@_issued.ExpiresAtUtc" /></dd>
                             <dt>Product access allowed</dt>
                             <dd>@(_issued.ProductAccessAllowed?.ToString() ?? "n/a")</dd>
                             <dt>Product code</dt>

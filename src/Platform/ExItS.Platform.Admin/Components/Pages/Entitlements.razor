@@ -76,23 +76,24 @@ else if (Id is not null)
 
         <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
             <DescriptionsItem Title="@L["Common_Organization"]">
-                <a href="/admin/organizations/@s.OrganizationId">@s.OrganizationId</a>
+                <a href="/admin/organizations/@s.OrganizationId">@L["Common_Organization"]</a>
             </DescriptionsItem>
             <DescriptionsItem Title="@L["Common_Product"]">@s.ProductCode</DescriptionsItem>
             <DescriptionsItem Title="@L["Common_Subscription"]">
-                <a href="/admin/subscriptions/@s.SubscriptionId">@s.SubscriptionId</a>
+                <a href="/admin/subscriptions/@s.SubscriptionId">@L["Common_Subscription"]</a>
             </DescriptionsItem>
             <DescriptionsItem Title="@L["Common_Plan"]">@($"{s.PlanCode} v{s.PlanVersionNumber}")</DescriptionsItem>
             <DescriptionsItem Title="Revision">@s.SnapshotVersion</DescriptionsItem>
             <DescriptionsItem Title="@L["Entitlements_SchemaVersion"]">@s.SchemaVersion</DescriptionsItem>
             <DescriptionsItem Title="@L["Entitlements_SubscriptionStatus"]">
-                <Tag Color="@StatusColor(s.SubscriptionStatus)">@s.SubscriptionStatus</Tag>
+                <AdminStatusTag Value="@s.SubscriptionStatus" />
             </DescriptionsItem>
             <DescriptionsItem Title="@L["Entitlements_InGracePeriod"]">@s.InGracePeriod</DescriptionsItem>
             <DescriptionsItem Title="Generated"><LocalTimestamp Value="@s.GeneratedAtUtc" /></DescriptionsItem>
             <DescriptionsItem Title="@L["Common_EffectiveUtc"]"><LocalTimestamp Value="@s.EffectiveAtUtc" /></DescriptionsItem>
             <DescriptionsItem Title="@L["Entitlements_RefreshByUtc"]"><LocalTimestamp Value="@s.RefreshByUtc" /></DescriptionsItem>
             <DescriptionsItem Title="@L["Common_ExpiresUtc"]"><LocalTimestamp Value="@s.ExpiresAtUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="Record ID">@s.Id</DescriptionsItem>
         </Descriptions>
 
         @if (CanManageSnapshots)
@@ -147,7 +148,7 @@ else if (Id is not null)
                     @(context.NumericLimit?.ToString() ?? "—")
                 </PropertyColumn>
                 <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
-                    <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                    <AdminStatusTag Value="@context.Status" />
                 </PropertyColumn>
                 <PropertyColumn Property="c => c.Reason" Title="@L["Common_Reason"]" />
                 <PropertyColumn Property="c => c.EffectiveFromUtc" Title="@L["Entitlements_Column_EffectiveFromUtc"]">
@@ -246,7 +247,7 @@ else if (OrganizationId is not null && ProductCode is not null)
             </PropertyColumn>
             <PropertyColumn Property="c => c.SchemaVersion" Title="@L["Entitlements_SchemaVersion"]" Width="110" />
             <PropertyColumn Property="c => c.SubscriptionStatus" Title="@L["Common_Status"]" Width="110">
-                <Tag Color="@StatusColor(context.SubscriptionStatus)">@context.SubscriptionStatus</Tag>
+                <AdminStatusTag Value="@context.SubscriptionStatus" />
             </PropertyColumn>
             <PropertyColumn Property="c => c.GeneratedAtUtc" Title="Generated" Width="180">
                 <LocalTimestamp Value="@context.GeneratedAtUtc" />
@@ -309,7 +310,7 @@ else
                 </Tooltip>
             </PropertyColumn>
             <PropertyColumn Property="c => c.SubscriptionStatus" Title="@L["Common_Status"]" Sortable Width="110">
-                <Tag Color="@StatusColor(context.SubscriptionStatus)">@context.SubscriptionStatus</Tag>
+                <AdminStatusTag Value="@context.SubscriptionStatus" />
             </PropertyColumn>
             <PropertyColumn Property="c => c.GeneratedAtUtc" Title="Generated" Sortable Width="180">
                 <LocalTimestamp Value="@context.GeneratedAtUtc" />
@@ -588,14 +589,4 @@ else
         await Message.SuccessAsync("Entitlement snapshot reconciled.");
         Nav.NavigateTo($"/admin/entitlements/{result.Data!.Id}");
     }
-
-    private static string StatusColor(string status) => status switch
-    {
-        "Active" => "success",
-        "Inactive" or "Draft" or "Revoked" => "default",
-        "Retired" or "Closed" or "Cancelled" or "Expired" or "Deactivated" => "default",
-        "Trialing" => "processing",
-        "Suspended" or "PastDue" or "GracePeriod" => "warning",
-        _ => "processing"
-    };
 }

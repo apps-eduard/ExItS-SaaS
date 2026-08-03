@@ -91,16 +91,27 @@ else
     {
         var r = _detail.Data!;
         <dl>
-            <dt>@L["Audit_ColumnOccurred"]</dt><dd><UtcTimestamp Value="@r.OccurredAtUtc" /></dd>
+            <dt>@L["Audit_ColumnOccurred"]</dt><dd><LocalTimestamp Value="@r.OccurredAtUtc" /></dd>
             <dt>@L["Audit_FilterActor"]</dt><dd>@r.ActorIdentifier (@r.ActorType)</dd>
             <dt>@L["Audit_ColumnAction"]</dt><dd>@r.ActionCode</dd>
             <dt>@L["Audit_ColumnTarget"]</dt><dd>@r.TargetType — @r.TargetId</dd>
-            <dt>@L["Common_Organization"]</dt><dd>@(r.OrganizationId?.ToString() ?? "—")</dd>
+            <dt>@L["Common_Organization"]</dt>
+            <dd>
+                @if (r.OrganizationId is Guid oid)
+                {
+                    <a href="/admin/organizations/@oid">@L["Common_Organization"]</a>
+                }
+                else
+                {
+                    <text>—</text>
+                }
+            </dd>
             <dt>@L["Audit_FilterProduct"]</dt><dd>@(r.ProductCode ?? "—")</dd>
-            <dt>@L["Audit_ColumnOutcome"]</dt><dd><StatusBadge Value="@r.Outcome" /></dd>
+            <dt>@L["Audit_ColumnOutcome"]</dt><dd><AdminStatusTag Value="@r.Outcome" /></dd>
             <dt>@L["Common_Reason"]</dt><dd>@(r.Reason ?? "—")</dd>
             <dt>@L["Common_Summary"]</dt><dd>@(r.Summary ?? "—")</dd>
             <dt>@L["Common_CorrelationId"]</dt><dd>@(r.CorrelationId ?? "—")</dd>
+            <dt>Record ID</dt><dd>@r.Id</dd>
         </dl>
 
         <AuditTimeline Records="@(new[] { r })" ShowLink="false" />
@@ -192,8 +203,8 @@ else
             case "occurred":
                 b.OpenElement(0, "a");
                 b.AddAttribute(1, "href", $"/admin/audit/{ctx.Item.Id}");
-                b.OpenComponent<UtcTimestamp>(2);
-                b.AddAttribute(3, nameof(UtcTimestamp.Value), ctx.Item.OccurredAtUtc);
+                b.OpenComponent<LocalTimestamp>(2);
+                b.AddAttribute(3, nameof(LocalTimestamp.Value), ctx.Item.OccurredAtUtc);
                 b.CloseComponent();
                 b.CloseElement();
                 break;
@@ -207,8 +218,8 @@ else
                 b.AddContent(0, $"{ctx.Item.TargetType} {ctx.Item.TargetId}");
                 break;
             case "outcome":
-                b.OpenComponent<ReportStatusBadge>(0);
-                b.AddAttribute(1, nameof(ReportStatusBadge.Value), ctx.Item.Outcome);
+                b.OpenComponent<AdminStatusTag>(0);
+                b.AddAttribute(1, nameof(AdminStatusTag.Value), ctx.Item.Outcome);
                 b.CloseComponent();
                 break;
         }

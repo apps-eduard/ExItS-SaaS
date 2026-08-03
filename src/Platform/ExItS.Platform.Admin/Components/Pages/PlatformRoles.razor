@@ -101,9 +101,11 @@ else if (Id is null)
                 <Tag Color="@(context.Kind == "BuiltIn" ? "blue" : "geekblue")">@context.Kind</Tag>
             </PropertyColumn>
             <PropertyColumn Property="c => c.Status" Title="Status">
-                <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                <AdminStatusTag Value="@context.Status" />
             </PropertyColumn>
-            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Format="u" />
+            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]">
+                <LocalTimestamp Value="@context.UpdatedAtUtc" />
+            </PropertyColumn>
         </Table>
     }
 }
@@ -133,7 +135,7 @@ else
         <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
             <DescriptionsItem Title="Code">@role.Code</DescriptionsItem>
             <DescriptionsItem Title="Kind"><Tag>@role.Kind</Tag></DescriptionsItem>
-            <DescriptionsItem Title="Status"><Tag Color="@StatusColor(role.Status)">@role.Status</Tag></DescriptionsItem>
+            <DescriptionsItem Title="Status"><AdminStatusTag Value="@role.Status" /></DescriptionsItem>
             <DescriptionsItem Title="Version">@role.Version</DescriptionsItem>
             <DescriptionsItem Title="Description" Span="2">@(role.Description ?? "—")</DescriptionsItem>
             <DescriptionsItem Title="Permissions" Span="2">
@@ -305,12 +307,4 @@ else
         }
         finally { _busy = false; }
     }
-
-    private static string StatusColor(string status) => status switch
-    {
-        "Active" => "success",
-        "Inactive" => "warning",
-        "Retired" => "default",
-        _ => "processing"
-    };
 }

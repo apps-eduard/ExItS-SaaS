@@ -96,7 +96,7 @@
             </PropertyColumn>
             <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_DisplayName"]" Sortable />
             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="110">
-                <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                <AdminStatusTag Value="@context.Status" />
             </PropertyColumn>
             <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Sortable>
                 <LocalTimestamp Value="@context.UpdatedAtUtc" />
@@ -162,7 +162,7 @@ else
                 <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
                     <DescriptionsItem Title="@L["Common_Code"]">@p.Code</DescriptionsItem>
                     <DescriptionsItem Title="@L["Common_Status"]">
-                        <Tag Color="@StatusColor(p.Status)">@p.Status</Tag>
+                        <AdminStatusTag Value="@p.Status" />
                     </DescriptionsItem>
                     <DescriptionsItem Title="@L["Products_FeatureCount"]">@o.Features.Count</DescriptionsItem>
                     <DescriptionsItem Title="@L["Products_PlanCount"]">@o.Plans.Count</DescriptionsItem>
@@ -204,7 +204,7 @@ else
                         </PropertyColumn>
                         <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_DisplayName"]" />
                         <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
-                            <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                            <AdminStatusTag Value="@context.Status" />
                         </PropertyColumn>
                         <ActionColumn Title="@L["Common_Open"]">
                             <a href="/admin/plans/@context.Id">@L["Common_Open"]</a>
@@ -225,7 +225,7 @@ else
                         <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Name"]" />
                         <PropertyColumn Property="c => c.ValueType" Title="@L["Common_Type"]" />
                         <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
-                            <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                            <AdminStatusTag Value="@context.Status" />
                         </PropertyColumn>
                     </Table>
                 }
@@ -261,7 +261,7 @@ else
                         <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Name"]" />
                         <PropertyColumn Property="c => c.DurationIso" Title="@L["Common_Duration"]" />
                         <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
-                            <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                            <AdminStatusTag Value="@context.Status" />
                         </PropertyColumn>
                         <PropertyColumn Property="c => c.FeatureGrants" Title="@L["Common_Grants"]">
                             @context.FeatureGrants.Count
@@ -479,14 +479,4 @@ else
         await Message.SuccessAsync(L["Products_Retired"].Value);
         await LoadDetailAsync();
     }
-
-    private static string StatusColor(string status) => status switch
-    {
-        "Active" => "success",
-        "Inactive" or "Draft" => "default",
-        "Retired" or "Closed" or "Cancelled" or "Expired" or "Deactivated" => "default",
-        "Trialing" => "processing",
-        "Suspended" or "PastDue" or "GracePeriod" => "warning",
-        _ => "processing"
-    };
 }
