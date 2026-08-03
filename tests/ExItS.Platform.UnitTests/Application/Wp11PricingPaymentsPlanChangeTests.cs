@@ -425,10 +425,18 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
 
         Assert.Contains("GetCommercialPlansAsync", startBusiness, StringComparison.Ordinal);
         Assert.DoesNotContain("GetPlansAsync", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("StartBusinessAsync", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("EstablishFromSessionTokenAsync", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("try", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("finally", startBusiness, StringComparison.Ordinal);
         Assert.Contains("GetCommercialPlansAsync", commercial, StringComparison.Ordinal);
         Assert.Contains("GetOrganizationCurrentPlanAsync", commercial, StringComparison.Ordinal);
+        Assert.Contains("StartOrganizationCommercialSubscriptionAsync", commercial, StringComparison.Ordinal);
+        Assert.Contains("ConvertTrialSubscriptionAsync", commercial, StringComparison.Ordinal);
+        Assert.Contains("UpgradeSubscriptionAsync", commercial, StringComparison.Ordinal);
         Assert.Contains("/api/v1/commercial/plans", client, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("/current-plan", client, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("/from-catalog", client, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -447,8 +455,11 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
         Assert.Contains("UsageConflicts", commercial, StringComparison.Ordinal);
         Assert.Contains("SimulateLocalValidationPaymentAsync", commercial, StringComparison.Ordinal);
         Assert.Contains("ConvertTrialSubscriptionAsync", commercial, StringComparison.Ordinal);
-        Assert.Contains("Choose a Plan", commercial, StringComparison.Ordinal);
+        Assert.Contains("StartOrganizationCommercialSubscriptionAsync", commercial, StringComparison.Ordinal);
+        Assert.Contains("Available Plans", commercial, StringComparison.Ordinal);
+        Assert.Contains("Subscription Summary", commercial, StringComparison.Ordinal);
         Assert.Contains("Existing data is not deleted", commercial, StringComparison.Ordinal);
+        Assert.Contains("Confirm upgrade", commercial, StringComparison.Ordinal);
 
         var lvPayments = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "LocalValidationTestPayments.razor"));

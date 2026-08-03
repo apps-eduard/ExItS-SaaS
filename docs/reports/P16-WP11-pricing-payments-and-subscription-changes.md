@@ -77,6 +77,35 @@
 
 Covers: Starter/Pro trial rejected; Business 14-day trial; one trial/org/product; convert to Starter/Business/Pro; failed conversion preserves Trialing; expired subscribe; idempotent conversion; no payment on trial start; agreed-price snapshot; Production LV guard; UI source guards; personal commercial plans 200; EnsureMvpPosPlans idempotent; org empty current-plan/commercial-summary 200; Admin DTO deserialize; cross-org denial.
 
+## Commercial action wiring fix (2026-08-03)
+
+### Root cause — Personal Trial/Subscribe “does nothing”
+
+- Admin UI posts `billingCycle: "Monthly"` (string).
+- API `StartBusinessRequest.BillingCycle` is `BillingCycle?` enum with **no** `JsonStringEnumConverter` → HTTP **400** model binding failure.
+- UI often showed only a weak validation title; `_busy` could stick without `try/finally`.
+- Success path did not apply the returned Organization session token.
+
+**Fix:** `ConfigureHttpJsonOptions` + `JsonStringEnumConverter`; Personal UI validates inline, toasts errors, `try/finally` for `_busy`, applies `SessionToken` via `EstablishFromSessionTokenAsync`, refreshes shell, navigates to Current Subscription.
+
+### Root cause — Organization Subscribe/Upgrade “does nothing”
+
+- Subscribe buttons were gated on `_currentSubscription is not null` → empty org showed plans with **no actions**.
+- `SubscribeFromTrialAsync` left `_busy=true` when Local Validation was unavailable.
+- Empty-org trial/paid create was Platform-`ManageSubscriptions`-only and unwired from Current Plan UI.
+
+**Fix:** `POST .../subscriptions/from-catalog` (`StartOrganizationCommercialSubscription`) with org commercial authz; trial/paid create authz aligned to `EnsureCanManageOrganizationCommercialAsync`; UI card grid with Start Trial / Subscribe / Upgrade / Downgrade; upgrade uses existing immediate upgrade API with confirmation; `_busy` always cleared.
+
+### Endpoints
+
+| Endpoint | Notes |
+|---|---|
+| `POST /api/v1/personal/start-business` | String enum billing cycle binds |
+| `POST /api/v1/platform/organizations/{id}/subscriptions/from-catalog` | New org self-service |
+| `POST .../subscriptions/trials` | Org commercial authz |
+| `POST .../subscriptions` | Org commercial authz + string billing cycle |
+| `POST .../subscriptions/{id}/upgrade` | Payment NotSupported → typed failure |
+
 ## Manual Local Validation evidence (2026-08-03)
 
 Against running LV stack (`localhost:8091`):

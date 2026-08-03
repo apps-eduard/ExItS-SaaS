@@ -205,6 +205,59 @@ public sealed class ApiWp11CommercialCatalogAndCurrentPlanTests(PostgreSqlFixtur
         Assert.NotEmpty(currentPlan.AvailablePlans);
     }
 
+    [Fact]
+    public async Task From_catalog_starts_business_trial_for_empty_organization()
+    {
+        await EnsureMvpCatalogAsync();
+        var orgId = await CreateOrganizationAsync("fctl");
+
+        var response = await _admin.PostAsJsonAsync(
+            $"/api/v1/platform/organizations/{orgId}/subscriptions/from-catalog",
+            new
+            {
+                productCode = ProductCode.PinoyBusinessPos,
+                planKey = MvpPosPlanCodes.Business,
+                billingCycle = "Monthly",
+                startAsTrial = true,
+                payNow = false,
+                idempotencyKey = Guid.NewGuid().ToString("N")
+            });
+        if (!response.IsSuccessStatusCode)
+        {
+            Assert.Fail($"from-catalog failed ({response.StatusCode}): {await response.Content.ReadAsStringAsync()}");
+        }
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Trialing", body.GetProperty("status").GetString());
+        Assert.Equal(orgId, body.GetProperty("organizationId").GetGuid());
+    }
+
+    [Fact]
+    public async Task From_catalog_cross_org_is_denied_for_unrelated_user()
+    {
+        await EnsureMvpCatalogAsync();
+        var orgId = await CreateOrganizationAsync("fcxo");
+        var (_, _, email, password) = await SeedPersonalUserAsync("fcxo");
+        var token = await EnsurePersonalSessionTokenAsync(email, password);
+
+        using var request = Authed(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{orgId}/subscriptions/from-catalog",
+            token,
+            new
+            {
+                productCode = ProductCode.PinoyBusinessPos,
+                planKey = MvpPosPlanCodes.Business,
+                billingCycle = "Monthly",
+                startAsTrial = true,
+                payNow = false
+            });
+        var response = await _client.SendAsync(request);
+        Assert.True(
+            response.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.NotFound or HttpStatusCode.Unauthorized,
+            $"Expected denial, got {response.StatusCode}");
+    }
+
     private sealed record TestOrganizationDto(Guid Id, string DisplayName, string Slug, string Status);
 
     private sealed record TestSubscriptionDto(Guid Id, string Status);

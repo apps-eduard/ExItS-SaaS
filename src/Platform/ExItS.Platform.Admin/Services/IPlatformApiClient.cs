@@ -145,6 +145,7 @@ public interface IPlatformApiClient
     Task<ApiCallResult<SubscriptionDto>> UpgradeSubscriptionAsync(Guid organizationId, Guid subscriptionId, UpgradeSubscriptionRequest request, CancellationToken ct = default);
     Task<ApiCallResult<SubscriptionDto>> DowngradeSubscriptionAsync(Guid organizationId, Guid subscriptionId, DowngradeSubscriptionRequest request, CancellationToken ct = default);
     Task<ApiCallResult<SubscriptionDto>> ConvertTrialSubscriptionAsync(Guid organizationId, Guid subscriptionId, ConvertTrialSubscriptionRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<SubscriptionDto>> StartOrganizationCommercialSubscriptionAsync(Guid organizationId, StartOrganizationCommercialRequest request, CancellationToken ct = default);
     Task<ApiCallResult<PlanChangeImpactPreviewDto>> PreviewPlanChangeAsync(Guid organizationId, Guid subscriptionId, Guid? planId = null, string? planKey = null, int? activeBranchCount = null, CancellationToken ct = default);
     Task<ApiCallResult<SubscriptionDto>> ApplyPendingPlanChangeAsync(Guid organizationId, Guid subscriptionId, CancellationToken ct = default);
 

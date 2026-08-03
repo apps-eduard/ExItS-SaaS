@@ -1,5 +1,6 @@
 using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Catalog;
+using ExItS.Platform.Application.Commercial;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
@@ -395,16 +396,16 @@ internal static class SubscriptionEndpoints
             Guid organizationId,
             CreatePaidSubscriptionRequest body,
             ActivatePaidSubscription useCase,
+            PlatformOrganizationAuthz orgAuthz,
             PlatformAuthz authz,
             CancellationToken ct) =>
         {
-            var denied = await authz.EnsureAsync(
-                PlatformPermission.ManageSubscriptions,
-                PlatformAuditActions.SubscriptionPaidStarted,
-                nameof(Subscription),
-                organizationId.ToString("D"),
-                organizationId,
-                cancellationToken: ct).ConfigureAwait(false);
+            var denied = await orgAuthz
+                .EnsureCanManageOrganizationCommercialAsync(
+                    organizationId,
+                    PlatformAuditActions.SubscriptionPaidStarted,
+                    ct)
+                .ConfigureAwait(false);
             if (denied is not null)
             {
                 return denied;
@@ -412,13 +413,14 @@ internal static class SubscriptionEndpoints
 
             try
             {
+                var billingCycle = ParseBillingCycle(body.BillingCycle);
                 var result = await useCase.ExecuteAsync(
                     PlatformOrganizationIdFrom(organizationId),
                     PlanIdFrom(body.PlanId),
                     PlanVersionIdFrom(body.PlanVersionId),
                     body.PeriodStartUtc,
                     body.PeriodEndUtc,
-                    body.BillingCycle,
+                    billingCycle,
                     ct).ConfigureAwait(false);
                 if (result.IsSuccess)
                 {
@@ -445,16 +447,16 @@ internal static class SubscriptionEndpoints
             Guid organizationId,
             StartTrialSubscriptionRequest body,
             StartTrialSubscription useCase,
+            PlatformOrganizationAuthz orgAuthz,
             PlatformAuthz authz,
             CancellationToken ct) =>
         {
-            var denied = await authz.EnsureAsync(
-                PlatformPermission.ManageSubscriptions,
-                PlatformAuditActions.SubscriptionTrialStarted,
-                nameof(Subscription),
-                organizationId.ToString("D"),
-                organizationId,
-                cancellationToken: ct).ConfigureAwait(false);
+            var denied = await orgAuthz
+                .EnsureCanManageOrganizationCommercialAsync(
+                    organizationId,
+                    PlatformAuditActions.SubscriptionTrialStarted,
+                    ct)
+                .ConfigureAwait(false);
             if (denied is not null)
             {
                 return denied;
@@ -487,6 +489,48 @@ internal static class SubscriptionEndpoints
             {
                 return PlatformApiResults.Problem(ex.ErrorCode, ex.Message, StatusCodes.Status400BadRequest);
             }
+        });
+
+        orgSubscriptions.MapPost("/from-catalog", async (
+            Guid organizationId,
+            StartOrganizationCommercialRequest body,
+            StartOrganizationCommercialSubscription useCase,
+            PlatformOrganizationAuthz orgAuthz,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await orgAuthz
+                .EnsureCanManageOrganizationCommercialAsync(
+                    organizationId,
+                    body.StartAsTrial
+                        ? PlatformAuditActions.SubscriptionTrialStarted
+                        : PlatformAuditActions.SubscriptionPaidStarted,
+                    ct)
+                .ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(PlatformOrganizationIdFrom(organizationId), body, ct)
+                .ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    body.StartAsTrial
+                        ? PlatformAuditActions.SubscriptionTrialStarted
+                        : PlatformAuditActions.SubscriptionPaidStarted,
+                    nameof(Subscription),
+                    result.Value!.Id.Value.ToString("D"),
+                    organizationId,
+                    result.Value.ProductCode.Value,
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, s => Results.Created(
+                $"/api/v1/platform/subscriptions/{s.Id.Value}",
+                MapSubscription(s)));
         });
 
         orgSubscriptions.MapPost("/{subscriptionId:guid}/upgrade", async (
@@ -969,7 +1013,7 @@ internal sealed record CreatePaidSubscriptionRequest(
     Guid PlanVersionId,
     DateTimeOffset PeriodStartUtc,
     DateTimeOffset PeriodEndUtc,
-    BillingCycle BillingCycle = BillingCycle.Monthly);
+    string? BillingCycle = null);
 
 internal sealed record ActivateSubscriptionRequest(
     DateTimeOffset PeriodStartUtc,

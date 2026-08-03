@@ -11,7 +11,7 @@
 @inject ConfirmService Confirm
 @inject LocalValidationSignInService LocalValidation
 
-<AdminPageHeader Title="@PageTitle" Breadcrumb="@PageBreadcrumb" Description="@L["Organizations_CommercialAdmin"]" />
+<AdminPageHeader Title="Current Subscription" Breadcrumb="@PageBreadcrumb" Description="Manage your plan, billing, and subscription status." />
 
 @if (_loading)
 {
@@ -24,137 +24,215 @@ else if (!string.IsNullOrWhiteSpace(_error))
 }
 else
 {
-    <FormSection Title="Current plan">
-        @if (_currentSubscription is null)
-        {
-            <Empty Description="@("No current plan")" />
-        }
-        else
-        {
-            <dl class="detail-list">
-                <dt>@L["Common_Plan"]</dt><dd>@DisplayOrDash(_currentSubscription.PlanDisplayName ?? _currentPlan?.DisplayName)</dd>
-                <dt>@L["Common_Status"]</dt><dd><Tag Color="@StatusColor(_currentSubscription.Status)">@_currentSubscription.Status</Tag></dd>
-                <dt>Billing</dt><dd>@DisplayOrDash(_currentSubscription.BillingCycle)</dd>
-                <dt>Agreed price</dt><dd>@AmountDisplay(_currentSubscription.AgreedPrice, _currentSubscription.CurrencyCode ?? _currentPlan?.CurrencyCode)</dd>
-                <dt>Period</dt><dd>@PeriodLabel(_currentSubscription)</dd>
-                @if (_currentSubscription.TrialEndUtc is not null
-                     && (string.Equals(_currentSubscription.Status, "Trialing", StringComparison.OrdinalIgnoreCase)
-                         || string.Equals(_currentSubscription.Status, "Expired", StringComparison.OrdinalIgnoreCase)))
-                {
-                    <dt>Trial ends</dt><dd>@_currentSubscription.TrialEndUtc.Value.ToLocalTime().ToString("g")</dd>
-                }
-                @if (_pendingPlanChange is not null)
-                {
-                    <dt>Pending plan</dt><dd>@DisplayOrDash(_pendingPlanChange.DisplayName)</dd>
-                }
-                else if (!string.IsNullOrWhiteSpace(_currentSubscription.PendingPlanDisplayName))
-                {
-                    <dt>Pending plan</dt><dd>@_currentSubscription.PendingPlanDisplayName</dd>
-                }
-            </dl>
-            @if (SubscriptionDetailHref is not null)
-            {
-                <Button Type="@ButtonType.Link" OnClick="GoToSubscriptionDetail">@L["Common_ViewDetails"]</Button>
-            }
-        }
-    </FormSection>
-
-    @if (ShowChoosePlan)
+    @if (!string.IsNullOrWhiteSpace(_actionError))
     {
-        <FormSection Title="Choose a Plan">
-            <Alert Type="@AlertType.Info" ShowIcon="true" Style="margin-bottom:12px;"
-                   Message="@ChoosePlanMessage" />
-            <Space Style="margin-bottom:12px;">
-                <span>Billing cycle:</span>
-                <Select TItemValue="string" TItem="string" @bind-Value="_subscribeBillingCycle" Style="width:140px;" Disabled="_busy">
-                    <SelectOptions>
-                        <SelectOption TItemValue="string" TItem="string" Value="@("Monthly")" Label="Monthly" />
-                        <SelectOption TItemValue="string" TItem="string" Value="@("Annual")" Label="Annual" />
-                    </SelectOptions>
-                </Select>
-            </Space>
-            @if (_plans.Count is 0)
-            {
-                <Empty Description="@L["Plans_Empty"].Value" />
-            }
-            else
-            {
-                <Table TItem="PlanDto" DataSource="@_plans" Size="@TableSize.Small" Bordered HidePagination>
-                    <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Plan"]" />
-                    <PropertyColumn Property="c => c.MonthlyPrice" Title="Monthly (PHP)" />
-                    <PropertyColumn Property="c => c.AnnualPrice" Title="Annual (PHP)" />
-                    <PropertyColumn Property="c => c.DisplayName" Title="Trial">
-                        @{
-                            var trialLabel = context.TrialAllowed && context.DefaultTrialDays > 0
-                                ? $"{context.DefaultTrialDays}-day trial"
-                                : "Subscribe only";
-                        }
-                        @trialLabel
-                    </PropertyColumn>
-                    <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Actions"]">
-                        @if (CanManageCommercial && _currentSubscription is not null)
+        <Alert Type="@AlertType.Error" ShowIcon="true" Closable Message="@_actionError" Style="margin-bottom:16px;" />
+    }
+
+    <Row Gutter="(16, 16)" Style="margin-bottom:24px;">
+        <AntDesign.Col Xs="24" Lg="14">
+            <Card Size="@CardSize.Small" Title="Subscription Summary">
+                @if (_statusAlert is not null)
+                {
+                    <Alert Type="@_statusAlert.Value.Type" ShowIcon="true" Message="@_statusAlert.Value.Message" Style="margin-bottom:12px;" />
+                }
+                <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1">
+                    <DescriptionsItem Title="Product">@DisplayOrDash(_currentSubscription?.ProductCode ?? DefaultProductCode)</DescriptionsItem>
+                    <DescriptionsItem Title="Organization">@DisplayOrDash(_org?.DisplayName)</DescriptionsItem>
+                    <DescriptionsItem Title="Current plan">@DisplayOrDash(_currentSubscription?.PlanDisplayName ?? _currentPlan?.DisplayName)</DescriptionsItem>
+                    <DescriptionsItem Title="Status">
+                        @if (_currentSubscription is null)
                         {
-                            <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy"
-                                    OnClick="@(() => SubscribeFromTrialAsync(context))">
-                                Subscribe Now
+                            <Tag>No current plan</Tag>
+                        }
+                        else
+                        {
+                            <Tag Color="@StatusColor(_currentSubscription.Status)">@_currentSubscription.Status</Tag>
+                        }
+                    </DescriptionsItem>
+                    <DescriptionsItem Title="Billing cycle">@DisplayOrDash(_currentSubscription?.BillingCycle ?? _subscribeBillingCycle)</DescriptionsItem>
+                    <DescriptionsItem Title="Current price">@AmountDisplay(_currentSubscription?.AgreedPrice, _currentSubscription?.CurrencyCode ?? _currentPlan?.CurrencyCode)</DescriptionsItem>
+                    <DescriptionsItem Title="Trial / renewal">@PeriodLabel(_currentSubscription)</DescriptionsItem>
+                    @if (_pendingPlanChange is not null)
+                    {
+                        <DescriptionsItem Title="Pending plan">
+                            @DisplayOrDash(_pendingPlanChange.DisplayName)
+                            @if (_pendingPlanChange.EffectiveAtUtc is not null)
+                            {
+                                <span> · @_pendingPlanChange.EffectiveAtUtc.Value.ToLocalTime().ToString("g")</span>
+                            }
+                        </DescriptionsItem>
+                    }
+                </Descriptions>
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Xs="24" Lg="10">
+            <Card Size="@CardSize.Small" Title="Subscription Actions">
+                @if (!CanManageCommercial)
+                {
+                    <Alert Type="@AlertType.Warning" ShowIcon="true"
+                           Message="You can view this subscription, but commercial changes require Organization Owner or Platform Manage Subscriptions." />
+                }
+                else
+                {
+                    <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                        @if (_currentSubscription is null)
+                        {
+                            <Alert Type="@AlertType.Info" ShowIcon="true" Message="No subscription yet. Choose a plan below to start a trial or subscribe." />
+                        }
+                        else if (IsTrialing || IsExpired)
+                        {
+                            <Button Type="@ButtonType.Primary" Block Loading="_busy" OnClick="ScrollToPlans">
+                                @(IsTrialing ? "Convert trial — choose a plan" : "Subscribe — choose a plan")
                             </Button>
                         }
-                    </PropertyColumn>
-                </Table>
-            }
-        </FormSection>
-    }
+                        else if (ShowActivePlanManagement)
+                        {
+                            <Button Type="@ButtonType.Primary" Block Loading="_busy" OnClick="ScrollToPlans">View upgrade options</Button>
+                        }
+                        <Button Block Disabled="_busy" OnClick="ScrollToPlans">View Plans</Button>
+                        <Button Block Disabled="_busy" OnClick="ScrollToHistory">View History</Button>
+                        @if (SubscriptionDetailHref is not null)
+                        {
+                            <Button Type="@ButtonType.Link" Block OnClick="GoToSubscriptionDetail">@L["Common_ViewDetails"]</Button>
+                        }
+                    </Space>
+                }
+                <div style="margin-top:16px;">
+                    <span style="margin-right:8px;">Billing cycle for new actions:</span>
+                    <Select TItemValue="string" TItem="string" @bind-Value="_subscribeBillingCycle" Style="width:140px;" Disabled="_busy || !CanManageCommercial">
+                        <SelectOptions>
+                            <SelectOption TItemValue="string" TItem="string" Value="@("Monthly")" Label="Monthly" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("Annual")" Label="Annual" />
+                        </SelectOptions>
+                    </Select>
+                </div>
+            </Card>
+        </AntDesign.Col>
+    </Row>
 
-    @if (ShowActivePlanManagement)
-    {
-        <FormSection Title="Available plans">
+    <div id="available-plans" style="margin-bottom:24px;">
+        <FormSection Title="Available Plans">
             @if (_plans.Count is 0)
             {
                 <Empty Description="@L["Plans_Empty"].Value" />
             }
             else
             {
-                <Table TItem="PlanDto" DataSource="@_plans" Size="@TableSize.Small" Bordered HidePagination>
-                    <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Plan"]" />
-                    <PropertyColumn Property="c => c.MonthlyPrice" Title="Monthly" />
-                    <PropertyColumn Property="c => c.AnnualPrice" Title="Annual" />
-                    <PropertyColumn Property="c => c.CurrencyCode" Title="Currency" />
-                    <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Actions"]">
-                        @{
-                            var designation = PlanDesignation(context);
-                        }
-                        <Tag Color="@DesignationColor(designation)">@designation</Tag>
-                        @if (CanManageCommercial && designation is "upgrade")
-                        {
-                            <Button Size="@ButtonSize.Small" Loading="_busy" OnClick="@(() => UpgradeAsync(context))">Upgrade</Button>
-                        }
-                        @if (CanManageCommercial && designation is "downgrade")
-                        {
-                            <Button Size="@ButtonSize.Small" Loading="_busy" OnClick="@(() => DowngradeAsync(context))">Downgrade</Button>
-                        }
-                    </PropertyColumn>
-                </Table>
+                <Row Gutter="(16, 16)">
+                    @foreach (var plan in _plans.OrderBy(p => p.SortOrder))
+                    {
+                        var designation = PlanDesignation(plan);
+                        var isCurrent = designation == "current";
+                        <AntDesign.Col Xs="24" Sm="24" Md="8">
+                            <Card Size="@CardSize.Small"
+                                  Title="@plan.DisplayName"
+                                  Style="@(isCurrent ? "border:2px solid #1890ff;height:100%;" : "height:100%;")"
+                                  BodyStyle="display:flex;flex-direction:column;min-height:260px;">
+                                @if (isCurrent)
+                                {
+                                    <Tag Color="@("blue")" Style="margin-bottom:8px;align-self:flex-start;">Current plan</Tag>
+                                }
+                                else
+                                {
+                                    <Tag Color="@DesignationColor(designation)" Style="margin-bottom:8px;align-self:flex-start;">@designation</Tag>
+                                }
+                                <div style="margin-bottom:8px;">
+                                    <div style="font-weight:600;">@($"{plan.MonthlyPrice:0} {plan.CurrencyCode}") / month</div>
+                                    <div style="color:#8c8c8c;">@($"{plan.AnnualPrice:0} {plan.CurrencyCode}") / year</div>
+                                </div>
+                                <p style="margin-bottom:8px;">
+                                    @(plan.TrialAllowed && plan.DefaultTrialDays > 0
+                                        ? $"{plan.DefaultTrialDays}-day trial available"
+                                        : "Subscribe only")
+                                </p>
+                                <ul style="margin:0 0 16px;padding-left:1.1rem;flex:1;">
+                                    @foreach (var line in FeatureSummary(plan))
+                                    {
+                                        <li>@line</li>
+                                    }
+                                </ul>
+                                <Space Direction="SpaceDirection.Vertical" Style="width:100%;margin-top:auto;">
+                                    @if (CanManageCommercial && _currentSubscription is null)
+                                    {
+                                        @if (plan.TrialAllowed && plan.DefaultTrialDays > 0)
+                                        {
+                                            <Button Type="@ButtonType.Primary" Block Loading="_busy"
+                                                    OnClick="@(async () => await StartFromCatalogAsync(plan, startAsTrial: true))">
+                                                Start Free Trial
+                                            </Button>
+                                        }
+                                        <Button Type="@(plan.TrialAllowed ? ButtonType.Default : ButtonType.Primary)" Block Loading="_busy"
+                                                OnClick="@(async () => await StartFromCatalogAsync(plan, startAsTrial: false))">
+                                            Subscribe Now
+                                        </Button>
+                                    }
+                                    else if (CanManageCommercial && (IsTrialing || IsExpired))
+                                    {
+                                        <Button Type="@ButtonType.Primary" Block Loading="_busy"
+                                                OnClick="@(async () => await SubscribeFromTrialAsync(plan))">
+                                            Subscribe Now
+                                        </Button>
+                                    }
+                                    else if (CanManageCommercial && ShowActivePlanManagement && designation == "upgrade")
+                                    {
+                                        <Button Type="@ButtonType.Primary" Block Loading="_busy"
+                                                OnClick="@(async () => await UpgradeAsync(plan))">
+                                            Upgrade
+                                        </Button>
+                                    }
+                                    else if (CanManageCommercial && ShowActivePlanManagement && designation == "downgrade")
+                                    {
+                                        <Button Block Loading="_busy"
+                                                OnClick="@(async () => await DowngradeAsync(plan))">
+                                            Downgrade
+                                        </Button>
+                                    }
+                                    else if (isCurrent)
+                                    {
+                                        <Button Block Disabled>Current plan</Button>
+                                    }
+                                </Space>
+                            </Card>
+                        </AntDesign.Col>
+                    }
+                </Row>
             }
         </FormSection>
-    }
+    </div>
 
-    <FormSection Title="@L["Nav_Subscriptions"]">
-        @if (HasSubscriptions)
-        {
-            <Table TItem="SubscriptionDto" DataSource="@_summarySubscriptions" Size="@TableSize.Small" Bordered HidePagination>
-                <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" />
-                <PropertyColumn Property="c => c.PlanDisplayName" Title="@L["Common_Plan"]" />
-                <PropertyColumn Property="c => c.BillingCycle" Title="Billing" />
-                <PropertyColumn Property="c => c.AgreedPrice" Title="Agreed" />
-                <PropertyColumn Property="c => c.CurrencyCode" Title="Currency" />
-                <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" />
-            </Table>
-        }
-        else
-        {
-            <Empty Description="@L["Organizations_SubscriptionsEmpty"].Value" />
-        }
-    </FormSection>
+    <div id="subscription-history" style="margin-bottom:24px;">
+        <FormSection Title="Subscription History">
+            @if (HasSubscriptions)
+            {
+                <Table TItem="SubscriptionDto" DataSource="@_summarySubscriptions" Size="@TableSize.Small" Bordered HidePagination ScrollX="800">
+                    <PropertyColumn Property="c => c.ProductCode" Title="Product" />
+                    <PropertyColumn Property="c => c.PlanDisplayName" Title="Plan" />
+                    <PropertyColumn Property="c => c.BillingCycle" Title="Billing" />
+                    <PropertyColumn Property="c => c.AgreedPrice" Title="Price" />
+                    <PropertyColumn Property="c => c.Status" Title="Status">
+                        <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                    </PropertyColumn>
+                    <PropertyColumn Property="c => c.CreatedAtUtc" Title="Start">
+                        @FriendlyDate(context.CreatedAtUtc)
+                    </PropertyColumn>
+                    <PropertyColumn Property="c => c.Status" Title="Trial / Renewal / End">
+                        @HistoryEndLabel(context)
+                    </PropertyColumn>
+                    <ActionColumn Title="Actions">
+                        <Button Type="@ButtonType.Link" Size="@ButtonSize.Small"
+                                OnClick="@(() => Nav.NavigateTo($"/admin/subscriptions/{context.Id:D}"))">
+                            Details
+                        </Button>
+                    </ActionColumn>
+                </Table>
+            }
+            else
+            {
+                <Empty Description="@L["Organizations_SubscriptionsEmpty"].Value" />
+            }
+        </FormSection>
+    </div>
 
     @if (_showLvPayments && ShowActivePlanManagement)
     {
@@ -169,7 +247,7 @@ else
                 <Space Wrap>
                     @foreach (var sim in _simulationPresets)
                     {
-                        <Button Size="@ButtonSize.Small" Loading="_busy" OnClick="@(() => SimulateAsync(sim))">@sim</Button>
+                        <Button Size="@ButtonSize.Small" Loading="_busy" OnClick="@(async () => await SimulateAsync(sim))">@sim</Button>
                     }
                 </Space>
                 @if (!string.IsNullOrWhiteSpace(_simResult))
@@ -187,6 +265,7 @@ else
     private bool _loading = true;
     private bool _busy;
     private string? _error;
+    private string? _actionError;
     private string? _simResult;
     private string _subscribeBillingCycle = "Monthly";
     private OrganizationDto? _org;
@@ -207,11 +286,11 @@ else
 
     private bool HasSubscriptions => _summarySubscriptions.Count > 0;
 
-    private bool ShowChoosePlan =>
-        CanManageCommercial
-        && (_currentSubscription is null
-            || string.Equals(_currentSubscription.Status, "Trialing", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(_currentSubscription.Status, "Expired", StringComparison.OrdinalIgnoreCase));
+    private bool IsTrialing =>
+        string.Equals(_currentSubscription?.Status, "Trialing", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsExpired =>
+        string.Equals(_currentSubscription?.Status, "Expired", StringComparison.OrdinalIgnoreCase);
 
     private bool ShowActivePlanManagement =>
         _currentSubscription is not null
@@ -220,16 +299,18 @@ else
             || string.Equals(_currentSubscription.Status, "PastDue", StringComparison.OrdinalIgnoreCase)
             || string.Equals(_currentSubscription.Status, "Suspended", StringComparison.OrdinalIgnoreCase));
 
-    private string ChoosePlanMessage => _currentSubscription?.Status switch
+    private (AlertType Type, string Message)? _statusAlert => _currentSubscription?.Status switch
     {
-        "Trialing" => "Your trial is active. Choose a plan and complete payment to continue after the trial.",
-        "Expired" => "Your trial has ended. Choose a plan to subscribe. Product data is retained.",
-        null => "No subscription yet. Choose a plan to get started.",
-        _ => "Choose a plan to subscribe."
+        "Trialing" => (AlertType.Info, "Trial is active. Convert to a paid plan before the trial ends — there is no automatic charge."),
+        "PastDue" => (AlertType.Warning, "Payment is past due. Recover billing to restore full access."),
+        "Suspended" => (AlertType.Error, "Subscription is suspended. Reactivate after resolving billing."),
+        "Cancelled" => (AlertType.Warning, "Subscription is cancelled."),
+        "Expired" => (AlertType.Warning, "Trial or subscription expired. Choose a plan to continue. Product data is retained."),
+        "GracePeriod" => (AlertType.Warning, "Grace period is active. Resolve payment before access is reduced."),
+        _ => null
     };
 
-    private string PageTitle => _org?.DisplayName ?? L["Organizations_CommercialAdmin"].Value;
-    private string PageBreadcrumb => $"{L["Brand_Name"].Value} · {L["Nav_Organizations"].Value} · {L["Organizations_CommercialAdmin"].Value}";
+    private string PageBreadcrumb => $"{L["Brand_Name"].Value} · {L["Nav_Organizations"].Value} · Current Subscription";
     private string? SubscriptionDetailHref => _currentSubscription is null ? null : $"/admin/subscriptions/{_currentSubscription.Id:D}";
 
     private bool CanManageCommercial =>
@@ -238,25 +319,54 @@ else
 
     protected override async Task OnParametersSetAsync() => await LoadAsync();
 
-    private static string DisplayOrDash(string? value) => string.IsNullOrWhiteSpace(value) ? "-" : value;
+    private static string DisplayOrDash(string? value) => string.IsNullOrWhiteSpace(value) ? "—" : value;
 
     private static string AmountDisplay(decimal? amount, string? currency) =>
-        amount is null ? "-" : $"{amount:0.00} {currency ?? ""}".Trim();
+        amount is null ? "—" : $"{amount:0.00} {currency ?? ""}".Trim();
 
-    private static string PeriodLabel(SubscriptionDto sub)
+    private static string FriendlyDate(DateTimeOffset? value) =>
+        value is null ? "—" : value.Value.ToLocalTime().ToString("g");
+
+    private static string PeriodLabel(SubscriptionDto? sub)
     {
-        if (string.Equals(sub.Status, "Trialing", StringComparison.OrdinalIgnoreCase)
-            && sub.TrialEndUtc is not null)
+        if (sub is null) return "—";
+        if (string.Equals(sub.Status, "Trialing", StringComparison.OrdinalIgnoreCase) && sub.TrialEndUtc is not null)
         {
-            return $"Trial ends {sub.TrialEndUtc.Value:d}";
+            return $"Trial ends {sub.TrialEndUtc.Value.ToLocalTime():g}";
         }
 
-        if (sub.CurrentPeriodStartUtc is null && sub.CurrentPeriodEndUtc is null)
+        if (sub.CurrentPeriodEndUtc is not null)
         {
-            return "-";
+            return $"Renews / ends {sub.CurrentPeriodEndUtc.Value.ToLocalTime():g}";
         }
 
-        return $"{sub.CurrentPeriodStartUtc:d} – {sub.CurrentPeriodEndUtc:d}";
+        if (sub.PaidPeriodEndUtc is not null)
+        {
+            return $"Period ends {sub.PaidPeriodEndUtc.Value.ToLocalTime():g}";
+        }
+
+        return "—";
+    }
+
+    private static string HistoryEndLabel(SubscriptionDto sub)
+    {
+        if (sub.TrialEndUtc is not null
+            && (string.Equals(sub.Status, "Trialing", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(sub.Status, "Expired", StringComparison.OrdinalIgnoreCase)))
+        {
+            return FriendlyDate(sub.TrialEndUtc);
+        }
+
+        return FriendlyDate(sub.CurrentPeriodEndUtc ?? sub.PaidPeriodEndUtc);
+    }
+
+    private static IEnumerable<string> FeatureSummary(PlanDto plan)
+    {
+        yield return $"{plan.MaxBranches} branch{(plan.MaxBranches == 1 ? "" : "es")}";
+        yield return $"{plan.MaxActiveStaff} active staff";
+        if (plan.CustomerCreditEnabled) yield return "Customer credit";
+        if (plan.AdvancedReportsEnabled) yield return "Advanced reports";
+        if (plan.ExportEnabled) yield return "Export";
     }
 
     private void GoToSubscriptionDetail()
@@ -267,17 +377,23 @@ else
         }
     }
 
+    private void ScrollToPlans() => Nav.NavigateTo(Nav.Uri.Split('#')[0] + "#available-plans", forceLoad: false);
+
+    private void ScrollToHistory() => Nav.NavigateTo(Nav.Uri.Split('#')[0] + "#subscription-history", forceLoad: false);
+
     private async Task LoadAsync()
     {
         _loading = true;
         _error = null;
+        _actionError = null;
         try
         {
+            await Shell.EnsureLoadedAsync();
             _showLvPayments = LocalValidation.IsAvailable;
             var orgResult = await Api.GetOrganizationAsync(OrganizationId);
             if (!orgResult.IsSuccess)
             {
-                _error = orgResult.Error?.Detail ?? orgResult.Error?.Title;
+                _error = orgResult.Error?.Detail ?? orgResult.Error?.Title ?? "Organization could not be loaded.";
                 return;
             }
 
@@ -286,7 +402,7 @@ else
             var currentPlan = await Api.GetOrganizationCurrentPlanAsync(OrganizationId, DefaultProductCode);
             if (!currentPlan.IsSuccess)
             {
-                _error = currentPlan.Error?.Detail ?? currentPlan.Error?.Title;
+                _error = currentPlan.Error?.Detail ?? currentPlan.Error?.Title ?? "Current plan could not be loaded.";
                 return;
             }
 
@@ -321,6 +437,11 @@ else
                 _subscribeBillingCycle = _currentSubscription.BillingCycle;
             }
         }
+        catch (Exception ex)
+        {
+            _error = "An unexpected error occurred while loading commercial data.";
+            Console.Error.WriteLine(ex);
+        }
         finally
         {
             _loading = false;
@@ -329,9 +450,14 @@ else
 
     private string PlanDesignation(PlanDto plan)
     {
-        if (_currentSubscription is null || plan.Id == _currentSubscription.PlanId)
+        if (_currentSubscription is null)
         {
-            return _currentSubscription is null ? "available" : "current";
+            return "available";
+        }
+
+        if (plan.Id == _currentSubscription.PlanId)
+        {
+            return "current";
         }
 
         var current = _plans.FirstOrDefault(p => p.Id == _currentSubscription.PlanId) ?? _currentPlan;
@@ -346,23 +472,97 @@ else
         _ => "default"
     };
 
-    private async Task SubscribeFromTrialAsync(PlanDto plan)
+    private async Task StartFromCatalogAsync(PlanDto plan, bool startAsTrial)
     {
-        if (_currentSubscription is null || !CanManageCommercial || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        if (!CanManageCommercial)
         {
+            await Message.ErrorAsync("You are not authorized to change this organization's subscription.");
             return;
         }
 
-        if (!LocalValidation.IsAvailable)
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
         {
-            await Message.ErrorAsync("Subscribe actions require Local Validation payment simulation.");
+            await Message.WarningAsync("Please wait — a request is already in progress.");
             return;
         }
 
+        _actionError = null;
         try
         {
+            if (!startAsTrial && !LocalValidation.IsAvailable)
+            {
+                _actionError = "Paid subscribe requires Local Validation payment simulation in this environment.";
+                await Message.ErrorAsync(_actionError);
+                return;
+            }
+
+            var planKey = plan.PlanKey ?? plan.Code;
+            var result = await Api.StartOrganizationCommercialSubscriptionAsync(
+                OrganizationId,
+                new StartOrganizationCommercialRequest(
+                    ProductCode: DefaultProductCode,
+                    PlanKey: planKey,
+                    PlanId: plan.Id,
+                    BillingCycle: _subscribeBillingCycle,
+                    StartAsTrial: startAsTrial,
+                    PayNow: !startAsTrial,
+                    IdempotencyKey: Guid.NewGuid().ToString("N")));
+
+            if (!result.IsSuccess)
+            {
+                _actionError = FriendlyApiError(result);
+                await Message.ErrorAsync(_actionError);
+                return;
+            }
+
+            await Message.SuccessAsync(startAsTrial
+                ? $"Started {plan.DisplayName} trial."
+                : $"Subscribed to {plan.DisplayName}.");
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _actionError = "Could not start the subscription. Please retry.";
+            await Message.ErrorAsync(_actionError);
+            Console.Error.WriteLine(ex);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SubscribeFromTrialAsync(PlanDto plan)
+    {
+        if (_currentSubscription is null)
+        {
+            await Message.ErrorAsync("No trial or expired subscription to convert.");
+            return;
+        }
+
+        if (!CanManageCommercial)
+        {
+            await Message.ErrorAsync("You are not authorized to change this organization's subscription.");
+            return;
+        }
+
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            await Message.WarningAsync("Please wait — a request is already in progress.");
+            return;
+        }
+
+        _actionError = null;
+        try
+        {
+            if (!LocalValidation.IsAvailable)
+            {
+                _actionError = "Subscribe requires Local Validation payment simulation in this environment.";
+                await Message.ErrorAsync(_actionError);
+                return;
+            }
+
             var price = _subscribeBillingCycle == "Annual" ? plan.AnnualPrice : plan.MonthlyPrice;
-            var idempotencyKey = Guid.NewGuid().ToString("N");
             var result = await Api.ConvertTrialSubscriptionAsync(
                 OrganizationId,
                 _currentSubscription.Id,
@@ -370,17 +570,24 @@ else
                     plan.Id,
                     plan.PlanKey,
                     _subscribeBillingCycle,
-                    idempotencyKey,
+                    Guid.NewGuid().ToString("N"),
                     _currentSubscription.Version));
 
             if (!result.IsSuccess)
             {
-                await Message.ErrorAsync(result.Error?.Detail ?? "Subscription failed.");
+                _actionError = FriendlyApiError(result);
+                await Message.ErrorAsync(_actionError);
                 return;
             }
 
             await Message.SuccessAsync($"Subscribed to {plan.DisplayName} ({price:0} {plan.CurrencyCode}).");
             await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _actionError = "Subscription failed unexpectedly. Please retry.";
+            await Message.ErrorAsync(_actionError);
+            Console.Error.WriteLine(ex);
         }
         finally
         {
@@ -390,33 +597,87 @@ else
 
     private async Task UpgradeAsync(PlanDto plan)
     {
-        if (_currentSubscription is null || !CanManageCommercial || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        if (_currentSubscription is null || !CanManageCommercial)
         {
+            await Message.ErrorAsync("Upgrade is not available for this subscription.");
             return;
         }
 
-        var result = await Api.UpgradeSubscriptionAsync(
-            OrganizationId,
-            _currentSubscription.Id,
-            new UpgradeSubscriptionRequest(plan.Id, plan.PlanKey, _currentSubscription.BillingCycle ?? "Monthly", Guid.NewGuid().ToString("N")));
-        _busy = false;
-        if (!result.IsSuccess)
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
         {
-            await Message.ErrorAsync(result.Error?.Detail ?? "Upgrade failed.");
+            await Message.WarningAsync("Please wait — a request is already in progress.");
             return;
         }
 
-        await Message.SuccessAsync("Plan upgraded.");
-        await LoadAsync();
+        _actionError = null;
+        try
+        {
+            if (!LocalValidation.IsAvailable)
+            {
+                _actionError = "Paid upgrades require Local Validation payment simulation in this environment.";
+                await Message.ErrorAsync(_actionError);
+                return;
+            }
+
+            var confirmed = await Confirm.Show(
+                $"Upgrade to {plan.DisplayName} now?\n\n"
+                + "This uses the supported immediate plan upgrade on your current subscription (not a silent plan rewrite). "
+                + "Payment is collected first; on success the plan, price, and entitlement update immediately. "
+                + "Subscription history is preserved on the same subscription record.",
+                "Confirm upgrade",
+                ConfirmButtons.OKCancel,
+                ConfirmIcon.Warning);
+            if (confirmed != ConfirmResult.OK)
+            {
+                return;
+            }
+
+            var result = await Api.UpgradeSubscriptionAsync(
+                OrganizationId,
+                _currentSubscription.Id,
+                new UpgradeSubscriptionRequest(
+                    plan.Id,
+                    plan.PlanKey,
+                    _currentSubscription.BillingCycle ?? _subscribeBillingCycle,
+                    Guid.NewGuid().ToString("N")));
+
+            if (!result.IsSuccess)
+            {
+                _actionError = FriendlyApiError(result);
+                await Message.ErrorAsync(_actionError);
+                return;
+            }
+
+            await Message.SuccessAsync($"Upgraded to {plan.DisplayName}.");
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _actionError = "Upgrade failed unexpectedly. Please retry.";
+            await Message.ErrorAsync(_actionError);
+            Console.Error.WriteLine(ex);
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private async Task DowngradeAsync(PlanDto plan)
     {
-        if (_currentSubscription is null || !CanManageCommercial || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        if (_currentSubscription is null || !CanManageCommercial)
         {
+            await Message.ErrorAsync("Downgrade is not available for this subscription.");
             return;
         }
 
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            await Message.WarningAsync("Please wait — a request is already in progress.");
+            return;
+        }
+
+        _actionError = null;
         try
         {
             var preview = await Api.PreviewPlanChangeAsync(
@@ -467,12 +728,19 @@ else
                 new DowngradeSubscriptionRequest(plan.Id, plan.PlanKey, effective, Guid.NewGuid().ToString("N")));
             if (!result.IsSuccess)
             {
-                await Message.ErrorAsync(result.Error?.Detail ?? "Downgrade failed.");
+                _actionError = FriendlyApiError(result);
+                await Message.ErrorAsync(_actionError);
                 return;
             }
 
             await Message.SuccessAsync("Downgrade scheduled.");
             await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _actionError = "Downgrade failed unexpectedly. Please retry.";
+            await Message.ErrorAsync(_actionError);
+            Console.Error.WriteLine(ex);
         }
         finally
         {
@@ -482,34 +750,66 @@ else
 
     private async Task SimulateAsync(string simulation)
     {
-        if (_currentSubscription is null || !LocalValidation.IsAvailable || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        if (_currentSubscription is null || !LocalValidation.IsAvailable)
         {
+            await Message.ErrorAsync("Local Validation test payments are not available.");
             return;
         }
 
-        var plan = _plans.FirstOrDefault(p => p.Id == _currentSubscription.PlanId) ?? _currentPlan;
-        var result = await Api.SimulateLocalValidationPaymentAsync(new SimulateLocalValidationPaymentRequest(
-            simulation,
-            OrganizationId,
-            _currentSubscription.Id,
-            plan?.MonthlyPrice ?? _currentSubscription.AgreedPrice ?? 0m,
-            _currentSubscription.CurrencyCode ?? plan?.CurrencyCode ?? "PHP",
-            Guid.NewGuid().ToString("N"),
-            Purpose: "test",
-            BillingCycle: _currentSubscription.BillingCycle ?? "Monthly"));
-        _busy = false;
-        _simResult = result.IsSuccess
-            ? $"{simulation}: {result.Data?.Status}"
-            : result.Error?.Detail ?? "Simulation failed.";
-        await LoadAsync();
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            await Message.WarningAsync("Please wait — a request is already in progress.");
+            return;
+        }
+
+        try
+        {
+            var plan = _plans.FirstOrDefault(p => p.Id == _currentSubscription.PlanId) ?? _currentPlan;
+            var result = await Api.SimulateLocalValidationPaymentAsync(new SimulateLocalValidationPaymentRequest(
+                simulation,
+                OrganizationId,
+                _currentSubscription.Id,
+                plan?.MonthlyPrice ?? _currentSubscription.AgreedPrice ?? 0m,
+                _currentSubscription.CurrencyCode ?? plan?.CurrencyCode ?? "PHP",
+                Guid.NewGuid().ToString("N"),
+                Purpose: "test",
+                BillingCycle: _currentSubscription.BillingCycle ?? "Monthly"));
+            _simResult = result.IsSuccess
+                ? $"{simulation}: {result.Data?.Status}"
+                : FriendlyApiError(result);
+            if (!result.IsSuccess)
+            {
+                await Message.ErrorAsync(_simResult);
+            }
+
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static string FriendlyApiError<T>(ApiCallResult<T> result)
+    {
+        var detail = result.Error?.Detail ?? result.Error?.Title;
+        if (string.IsNullOrWhiteSpace(detail))
+        {
+            return "The request could not be completed.";
+        }
+
+        // Keep browser message business-friendly; strip raw stack-like noise.
+        return detail.Length > 280 ? detail[..280] + "…" : detail;
     }
 
     private static string StatusColor(string status) => status switch
     {
-        "Active" or "Trialing" => "green",
+        "Trialing" => "blue",
+        "Active" => "green",
         "GracePeriod" => "gold",
-        "PastDue" or "Suspended" => "orange",
-        "Cancelled" or "Expired" => "red",
+        "PastDue" => "orange",
+        "Suspended" => "red",
+        "Cancelled" or "Expired" => "default",
         _ => "default"
     };
 }

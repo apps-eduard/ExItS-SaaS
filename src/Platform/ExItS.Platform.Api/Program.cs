@@ -42,6 +42,13 @@ if (builder.Configuration.GetValue<bool>("LocalValidation:Enabled") && builder.E
 }
 
 builder.Services.AddProblemDetails();
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(
+        new System.Text.Json.Serialization.JsonStringEnumConverter(
+            namingPolicy: null,
+            allowIntegerValues: true));
+});
 builder.Services.AddPlatformHealthChecks();
 builder.AddPlatformSecurity();
 builder.AddPlatformForwardedHeaders();
@@ -136,6 +143,7 @@ builder.Services.AddScoped<RetireTrialDefinition>();
 builder.Services.AddScoped<EnsureMvpPosPlans>();
 builder.Services.AddScoped<CommercialCatalogQueryService>();
 builder.Services.AddScoped<OrganizationCurrentPlanQueryService>();
+builder.Services.AddScoped<StartOrganizationCommercialSubscription>();
 
 builder.Services.AddScoped<OrganizationQueryService>();
 builder.Services.AddScoped<CreatePlatformOrganization>();

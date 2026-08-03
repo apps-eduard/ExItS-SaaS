@@ -289,6 +289,8 @@ public sealed class PlatformApiClient(
         SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/subscriptions/{subscriptionId}/downgrade", request, ct);
     public Task<ApiCallResult<SubscriptionDto>> ConvertTrialSubscriptionAsync(Guid organizationId, Guid subscriptionId, ConvertTrialSubscriptionRequest request, CancellationToken ct = default) =>
         SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/subscriptions/{subscriptionId}/convert-trial", request, ct);
+    public Task<ApiCallResult<SubscriptionDto>> StartOrganizationCommercialSubscriptionAsync(Guid organizationId, StartOrganizationCommercialRequest request, CancellationToken ct = default) =>
+        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/subscriptions/from-catalog", request, ct);
     public Task<ApiCallResult<PlanChangeImpactPreviewDto>> PreviewPlanChangeAsync(
         Guid organizationId,
         Guid subscriptionId,
@@ -555,6 +557,23 @@ public sealed class PlatformApiClient(
             using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
             title = document.RootElement.TryGetProperty("title", out var titleElement) ? titleElement.GetString() : null;
             detail = document.RootElement.TryGetProperty("detail", out var detailElement) ? detailElement.GetString() : null;
+            if (string.IsNullOrWhiteSpace(detail)
+                && document.RootElement.TryGetProperty("errors", out var errors)
+                && errors.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var property in errors.EnumerateObject())
+                {
+                    if (property.Value.ValueKind == JsonValueKind.Array && property.Value.GetArrayLength() > 0)
+                    {
+                        var first = property.Value[0].GetString();
+                        if (!string.IsNullOrWhiteSpace(first))
+                        {
+                            detail = $"{property.Name}: {first}";
+                            break;
+                        }
+                    }
+                }
+            }
         }
         catch (JsonException) { }
         response.Headers.TryGetValues("X-Correlation-ID", out var ids);

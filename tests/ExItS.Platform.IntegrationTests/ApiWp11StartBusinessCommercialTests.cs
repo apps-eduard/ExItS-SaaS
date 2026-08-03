@@ -126,6 +126,37 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
     }
 
     [Fact]
+    public async Task Start_business_accepts_string_billing_cycle_monthly_from_admin_ui()
+    {
+        await EnsureMvpCatalogAsync();
+        var (token, _, _, _) = await SeedPersonalUserAsync("sbstr");
+        var slug = Unique("sbstr");
+        using var start = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/start-business",
+            token,
+            new
+            {
+                displayName = "String Cycle Store",
+                slug,
+                productCode = ProductCode.PinoyBusinessPos,
+                planKey = MvpPosPlanCodes.Business,
+                billingCycle = "Monthly",
+                startAsTrial = true,
+                payNow = false
+            });
+        var response = await _client.SendAsync(start);
+        if (response.StatusCode != HttpStatusCode.Created)
+        {
+            Assert.Fail($"Start business string billingCycle failed ({response.StatusCode}): {await response.Content.ReadAsStringAsync()}");
+        }
+
+        var started = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.NotEqual(Guid.Empty, started.GetProperty("organizationId").GetGuid());
+        Assert.NotEqual(Guid.Empty, started.GetProperty("subscriptionId").GetGuid());
+    }
+
+    [Fact]
     public async Task Start_business_rejects_invalid_plan_key()
     {
         await EnsureMvpCatalogAsync();

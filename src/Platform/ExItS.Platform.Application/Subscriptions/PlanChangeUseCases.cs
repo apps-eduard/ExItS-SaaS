@@ -121,17 +121,27 @@ public sealed class UpgradeOrganizationSubscription
                 "IdempotencyKey is required for paid plan upgrades.");
         }
 
-        var payment = await _paymentProvider
-            .ChargeAsync(
-                new PaymentChargeRequest(
-                    organizationId.Value,
-                    subscription.Id.Value,
-                    targetPlan.PriceForCycle(billingCycle),
-                    targetPlan.CurrencyCode,
-                    idempotencyKey,
-                    Purpose: "upgrade"),
-                cancellationToken)
-            .ConfigureAwait(false);
+        PaymentProviderResult payment;
+        try
+        {
+            payment = await _paymentProvider
+                .ChargeAsync(
+                    new PaymentChargeRequest(
+                        organizationId.Value,
+                        subscription.Id.Value,
+                        targetPlan.PriceForCycle(billingCycle),
+                        targetPlan.CurrencyCode,
+                        idempotencyKey,
+                        Purpose: "upgrade"),
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (NotSupportedException ex)
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.PaymentNotConfigured,
+                ex.Message);
+        }
         await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         if (payment.Status != PaymentProviderResultStatus.Succeeded)

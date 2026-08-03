@@ -687,6 +687,15 @@ public sealed record ConvertTrialSubscriptionRequest(
     string? IdempotencyKey = null,
     int? ExpectedVersion = null);
 
+public sealed record StartOrganizationCommercialRequest(
+    string? ProductCode = null,
+    string? PlanKey = null,
+    Guid? PlanId = null,
+    string? BillingCycle = null,
+    bool StartAsTrial = false,
+    bool PayNow = false,
+    string? IdempotencyKey = null);
+
 public sealed record PlanUsageConflictDto(
     string Resource,
     int CurrentUsage,
