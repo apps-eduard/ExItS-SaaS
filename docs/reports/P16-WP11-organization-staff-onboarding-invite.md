@@ -4,7 +4,7 @@
 **Phase:** Phase 16 — Implementation Complete, Under Validation  
 **Work package:** P16-WP11 — Validation, Stabilization, and User Acceptance  
 **Date:** 2026-08-03  
-**Commit:** `65a1f3b486506c7af2a9ef0ced4b69b9bbb41785`  
+**Commit:** `020561af4f6b5280232ad101ac0212f3f4a288e4`  
 **Commit message:** `fix(validation): implement proper organization staff onboarding`
 
 ## Title
