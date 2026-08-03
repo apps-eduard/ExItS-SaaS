@@ -409,6 +409,56 @@ public sealed class AuthenticationService(
         await ClearLocalAsync(ct).ConfigureAwait(false);
     }
 
+    public async Task<AuthResult> SwitchToPersonalAsync(CancellationToken ct = default)
+    {
+        var session = currentUser.Session;
+        if (session is null)
+        {
+            return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
+        }
+
+        try
+        {
+            await accessClient
+                .SetOrganizationContextAsync(new SetOrganizationContextRequest(null), ct)
+                .ConfigureAwait(false);
+        }
+        catch
+        {
+            // Best-effort Platform context clear; local Personal switch still proceeds.
+        }
+
+        await CloseLocalContextAsync(ct).ConfigureAwait(false);
+        _accessPolicy?.ClearProcessValidation();
+        await preferences.ClearOrganizationPreferenceAsync(ct).ConfigureAwait(false);
+
+        var updated = session with
+        {
+            OrganizationId = null,
+            OrganizationDisplayName = null,
+            HasPosAccess = false,
+            AccessReasonCode = null,
+            SubscriptionStatus = null,
+            EnabledFeatureCodes = null
+        };
+
+        try
+        {
+            var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
+            marker ??= Guid.NewGuid().ToString("N");
+            await sessionStore.SaveAsync(updated, marker, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            events.Record("secure_storage_failure", Dict(("operation", "switch_personal_save")));
+            return new AuthResult(false, AuthFailureReason.SecureStorageFailure, SafeMessageKey: "Auth_SecureStorageFailure");
+        }
+
+        currentUser.Set(updated);
+        events.Record("switched_to_personal", Dict(("userId", session.UserId.ToString("D"))));
+        return new AuthResult(true, AuthFailureReason.None, updated);
+    }
+
     public async Task<AuthResult> SelectOrganizationAsync(Guid organizationId, CancellationToken ct = default)
     {
         var session = currentUser.Session;
@@ -416,6 +466,10 @@ public sealed class AuthenticationService(
         {
             return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
         }
+
+        // Drop prior org/POS process cache before binding a different organization.
+        _accessPolicy?.ClearProcessValidation();
+        await CloseLocalContextAsync(ct).ConfigureAwait(false);
 
         if (!string.IsNullOrWhiteSpace(session.AccessToken))
         {
@@ -822,7 +876,8 @@ public sealed class AuthenticationService(
             events.Record("secure_storage_failure", Dict(("operation", "clear")));
         }
 
-        await preferences.ClearOrganizationPreferenceAsync(ct).ConfigureAwait(false);
+        // Keep SelectedOrganizationId so the next successful sign-in can safely restore
+        // the last valid organization context (or fall through to Personal / chooser).
         currentUser.Clear();
     }
 

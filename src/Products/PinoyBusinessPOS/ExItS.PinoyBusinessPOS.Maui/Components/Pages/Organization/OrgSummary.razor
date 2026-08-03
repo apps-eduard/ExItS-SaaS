@@ -42,15 +42,24 @@ else
 
         <Section Title="@L["Org_EssentialsSection"]">
             <Stack Gap="2">
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoProfile">@L["Org_ProfileLink"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoStaff">@L["Org_StaffLink"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoSubscription">@L["Org_SubscriptionLink"]</Button>
+                @if (_isOrganizationOwner)
+                {
+                    <Button Variant="ButtonVariant.Secondary" OnClick="GoProfile">@L["Org_ProfileLink"]</Button>
+                    <Button Variant="ButtonVariant.Secondary" OnClick="GoStaff">@L["Org_StaffLink"]</Button>
+                    <Button Variant="ButtonVariant.Secondary" OnClick="GoSubscription">@L["Org_SubscriptionLink"]</Button>
+                }
+                else
+                {
+                    <InlineMessage Tone="InlineMessageTone.Info">@L["Org_EssentialsOwnerOnly"]</InlineMessage>
+                }
                 @if (CurrentUser.HasPosAccess)
                 {
                     <Button Variant="ButtonVariant.Primary" OnClick="EnterPosAsync">@L["Org_EnterPos"]</Button>
                 }
             </Stack>
         </Section>
+
+        <AccountContextSwitcher />
 
         <InlineMessage Tone="InlineMessageTone.Info">@L["Org_WebAdminReminder"]</InlineMessage>
     </Page>
@@ -62,6 +71,7 @@ else
     private PlatformOrganizationDto? _org;
     private PlatformSubscriptionDto? _subscription;
     private PlatformEntitlementSnapshotDto? _entitlement;
+    private bool _isOrganizationOwner;
 
     protected override async Task OnInitializedAsync()
     {
@@ -104,14 +114,36 @@ else
             _entitlement = ent.Data;
         }
 
+        _isOrganizationOwner = await ResolveIsOrganizationOwnerAsync(orgId.Value);
+
         _ready = true;
+    }
+
+    private async Task<bool> ResolveIsOrganizationOwnerAsync(Guid organizationId)
+    {
+        var userId = CurrentUser.Session?.UserId;
+        if (userId is null)
+        {
+            return false;
+        }
+
+        var memberships = await Platform.GetUserMembershipsAsync(userId.Value);
+        if (!memberships.IsSuccess || memberships.Data is null)
+        {
+            return false;
+        }
+
+        return memberships.Data.Items.Any(m =>
+            m.OrganizationId == organizationId
+            && string.Equals(m.Status, "Active", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(m.Role, "OrganizationOwner", StringComparison.OrdinalIgnoreCase));
     }
 
     private async Task EnterPosAsync()
     {
-        if (CurrentUser.Session?.OrganizationId is Guid orgId && !CurrentUser.HasPosAccess)
+        if (CurrentUser.Session?.OrganizationId is Guid oid && !CurrentUser.HasPosAccess)
         {
-            var selected = await Auth.SelectOrganizationAsync(orgId);
+            var selected = await Auth.SelectOrganizationAsync(oid);
             if (!selected.Succeeded)
             {
                 _error = L[selected.SafeMessageKey ?? "Access_Denied"];
@@ -126,5 +158,13 @@ else
     private void GoStaff() => Nav.NavigateTo("/org/staff");
     private void GoSubscription() => Nav.NavigateTo("/org/subscription");
     private void GoSelect() => Nav.NavigateTo("/organization-select");
-    private void GoPersonal() => Nav.NavigateTo("/personal");
+
+    private async Task GoPersonal()
+    {
+        var result = await Auth.SwitchToPersonalAsync();
+        if (result.Succeeded)
+        {
+            Nav.NavigateTo("/personal", replace: true);
+        }
+    }
 }

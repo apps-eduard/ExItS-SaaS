@@ -47,10 +47,16 @@ public sealed class PlatformSessionHeaderHandler(ICurrentUserContext currentUser
 
         // POS bearer-token endpoints must keep Authorization: Bearer.
         if (path.StartsWith("/api/v1/platform/auth/token", StringComparison.OrdinalIgnoreCase)
-            || path.Equals("/api/v1/platform/auth/introspect", StringComparison.OrdinalIgnoreCase)
-            || path.Equals("/api/v1/platform/auth/organizations", StringComparison.OrdinalIgnoreCase))
+            || path.Equals("/api/v1/platform/auth/introspect", StringComparison.OrdinalIgnoreCase))
         {
             return false;
+        }
+
+        // Session-scoped auth helpers (eligible orgs + org context) require Platform session.
+        if (path.Equals("/api/v1/platform/auth/organizations", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/api/v1/platform/auth/organization-context", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
         }
 
         // Anonymous credential bootstrap endpoints — never attach a stale session.

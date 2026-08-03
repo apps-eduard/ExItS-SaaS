@@ -53,9 +53,33 @@ API-authoritative: Platform session for Personal/Org essentials; POS bearer + or
 
 ## 10. Emulator / device / user validation result
 
-**Pending User Validation.**
+**Pending User Validation.** Phase 18 remains **Open**.
 
-Do not mark passed, device verified, or Phase 18 Complete until the user confirms the checklist outcome below.
+Agent-driven Android emulator evidence (AVD `HealthCare_Pixel_API34`, Local Validation Platform `:8091` / POS `:8092`, Mailpit `:8025`, CDP driver `tools/p18-android-context-validate.mjs`, artifacts under `artifacts/p18-wp08-context/`):
+
+| # | Scenario | Result |
+|---:|---|---|
+| 1 | Personal-only login → Personal home | **Pass** |
+| 2 | Personal Start a Business CTA + no POS chrome | **Pass** |
+| 3 | Account context switcher visible (Personal) | **Pass** |
+| 4 | One-org login → org/POS bind | **Partial** (succeeded in earlier run with POS chrome; later run hung on BindToken until timeout fallback) |
+| 5 | Context switcher on More hub | **Pass** (when POS shell reached) |
+| 6 | Switch to Personal without logout | **Partial** (API/service shipped; CDP automation flaky) |
+| 7 | Multi-org selector lists ABC + XYZ with roles | **Pass** |
+| 8 | Multi-org enter / role home | **Partial** (selector works; enter path needs user confirm after `/boot`→`/` fix) |
+| 9 | Sign out | **Partial** (works from Personal; org-select path needs Sign out affordance) |
+| 10 | Sign-in again / restore | **Partial** (preference retained; full restore matrix pending user) |
+
+**Not Device Verified** for the full Phase 18 journey. Do not mark passed or Phase 18 Complete until the user confirms the checklist.
+
+Fixes recorded during this validation pass:
+
+- `AllowedHosts` includes `10.0.2.2`; MAUI Local Validation URLs use `127.0.0.1` + `adb reverse`
+- `PlatformSessionHeaderHandler` attaches Platform session for `/api/v1/platform/auth/organizations`
+- `SwitchToPersonalAsync`; logout keeps last-org preference; org switch clears process validation
+- Account context switcher; Org Owner essentials gated to OrganizationOwner
+- Post-login navigations no longer target missing `/boot` (use `/`)
+- Mailpit-based registration activation path for Local Validation (`ExposeDebugTokens` off)
 
 ## 11. Known limitations
 

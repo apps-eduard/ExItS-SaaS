@@ -5,7 +5,7 @@
 | Status | **Code Complete and Build Verified** |
 | Phase | [Phase 18](../phases/phase-18-mobile-personal-organization-and-pos-experience.md) |
 | Implementation commit | `4b8b727` |
-| Device validation | **Pending User Validation (phase-level; see P18-WP08)** |
+| Device validation | **Agent emulator evidence recorded (not Device Verified)** — Pending User Validation (see P18-WP08) |
 | Date | 2026-08-03 |
 
 ## 1. Objective
@@ -56,7 +56,17 @@ Org essentials calls use Platform session scoped to the authenticated user and s
 
 ## 10. Emulator / device validation result
 
-**Pending User Validation (phase-level; see P18-WP08)**.
+**Agent emulator evidence (2026-08-03) — not Device Verified.**
+
+| Scenario | Result |
+|---|---|
+| Multi-org user sees organization selector with org names | Pass (`P18 ABC` + `P18 XYZ` listed) |
+| Membership role shown on selector cards | Pass (OrganizationOwner / OrganizationMember) |
+| Account context switcher on More / Personal / Org | Pass (visible) |
+| Org Owner essentials gated to OrganizationOwner | Pass (code: `OrgSummary` hides staff/profile/subscription for non-owners) |
+| Switch Personal without logout | Partial — `SwitchToPersonalAsync` shipped; CDP click flaky |
+
+Pending User Validation (P18-WP08).
 
 ## 11. Known limitations
 

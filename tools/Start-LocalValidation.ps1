@@ -309,7 +309,8 @@ function Resolve-EffectivePublicHost {
 
 function Get-LocalValidationAllowedHosts([string]$PublicHostValue, $EnvMap) {
     $hosts = New-Object 'System.Collections.Generic.List[string]'
-    foreach ($h in @('localhost', '127.0.0.1')) { $hosts.Add($h) }
+    # 10.0.2.2 = Android emulator host-loopback alias used by MAUI Local Validation clients.
+    foreach ($h in @('localhost', '127.0.0.1', '10.0.2.2')) { $hosts.Add($h) }
     if (-not [string]::IsNullOrWhiteSpace($PublicHostValue) -and -not $hosts.Contains($PublicHostValue)) {
         $hosts.Add($PublicHostValue)
     }

@@ -123,7 +123,7 @@
   <data name="Settings_AboutSectionTitle" xml:space="preserve"><value>Tungkol dito</value></data>
   <data name="Settings_AppVersionLabel" xml:space="preserve"><value>Bersyon ng app</value></data>
   <data name="Settings_DevNoticeTitle" xml:space="preserve"><value>Development-stage build</value></data>
-  <data name="Settings_DevNoticeMessage" xml:space="preserve"><value>Wala pang authentication, pag-record ng benta/imbentaryo, o synchronization ang app na ito. Foundation build ito para sa susunod na work package.</value></data>
+  <data name="Settings_DevNoticeMessage" xml:space="preserve"><value>Ang build na ito ay naka-target sa Local Validation APIs. Ang production HTTPS-only networking at production authentication (JWT/MFA/SSO) ay nananatiling open release gates.</value></data>
 
   <data name="Deferred_Title" xml:space="preserve"><value>Darating sa susunod na work package</value></data>
   <data name="Deferred_Message" xml:space="preserve"><value>Ang {0} ay wala pa sa foundation build na ito. Idadagdag ito sa susunod na work package.</value></data>
@@ -199,8 +199,8 @@
   <data name="Common_Back" xml:space="preserve"><value>Bumalik</value></data>
   <data name="Welcome_Title" xml:space="preserve"><value>Maligayang pagdating</value></data>
   <data name="Welcome_Subtitle" xml:space="preserve"><value>I-set up ang PinoyBusinessPOS para sa device na ito.</value></data>
-  <data name="Welcome_NoticeTitle" xml:space="preserve"><value>Foundation build</value></data>
-  <data name="Welcome_NoticeMessage" xml:space="preserve"><value>Hindi pa kasama ang sales, inventory, customers, at Utang. Saklaw ng flow na ito ang preferences, sign-in, at commercial access lang.</value></data>
+  <data name="Welcome_NoticeTitle" xml:space="preserve"><value>Mobile journey</value></data>
+  <data name="Welcome_NoticeMessage" xml:space="preserve"><value>I-set ang preferences, mag-register o mag-sign in, magsimula ng negosyo, pamahalaan ang organization essentials, at magpatakbo ng POS sa device na ito. Ang buong organization administration ay nananatili sa Web app.</value></data>
   <data name="Welcome_Continue" xml:space="preserve"><value>Magsimula</value></data>
   <data name="Onboarding_LanguageTitle" xml:space="preserve"><value>Wika</value></data>
   <data name="Onboarding_LanguageSubtitle" xml:space="preserve"><value>Pumili ng English o Tagalog.</value></data>
@@ -1361,6 +1361,11 @@
   <data name="StartBusiness_SessionRequired" xml:space="preserve"><value>Sign in again so a Platform session is available.</value></data>
   <data name="StartBusiness_Failed" xml:space="preserve"><value>Could not start the business. Try again.</value></data>
   <data name="OrgSelect_NoneTitle" xml:space="preserve"><value>No organizations</value></data>
+  <data name="Context_SwitcherTitle" xml:space="preserve"><value>Account context</value></data>
+  <data name="Context_SwitcherHint" xml:space="preserve"><value>Lumipat sa Personal o sa iyong mga organisasyon nang hindi nag-sign out. Mulíng sine-check ang access sa bawat paglipat.</value></data>
+  <data name="Context_Personal" xml:space="preserve"><value>Personal</value></data>
+  <data name="Context_Active" xml:space="preserve"><value>aktibo</value></data>
+  <data name="Org_EssentialsOwnerOnly" xml:space="preserve"><value>Ang Organization Owner essentials ay para sa Organization Owners lamang. Kailangan pa rin ng aktibong POS role at entitlement para sa POS.</value></data>
   <data name="Org_SummaryTitle" xml:space="preserve"><value>Organization</value></data>
   <data name="Org_MissingTitle" xml:space="preserve"><value>Organization required</value></data>
   <data name="Org_MissingMessage" xml:space="preserve"><value>Select or create an organization to continue.</value></data>

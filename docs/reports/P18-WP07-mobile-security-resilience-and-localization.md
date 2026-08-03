@@ -5,7 +5,7 @@
 | Status | **Code Complete and Build Verified** |
 | Phase | [Phase 18](../phases/phase-18-mobile-personal-organization-and-pos-experience.md) |
 | Implementation commit | `4b8b727` |
-| Device validation | **Pending User Validation (phase-level; see P18-WP08)** |
+| Device validation | **Agent emulator evidence recorded (not Device Verified)** — Pending User Validation (see P18-WP08) |
 | Date | 2026-08-03 |
 
 ## 1. Objective
@@ -57,7 +57,7 @@ API-authoritative. Organization context validated on bind/select and subsequent 
 
 ## 10. Emulator / device validation result
 
-**Pending User Validation (phase-level; see P18-WP08)**.
+**Agent emulator evidence (2026-08-03) — not Device Verified.** Logout preserves last-org preference for safe restore and clears secure session + process validation; `SelectOrganization` clears process validation and closes prior local DB context; `SwitchToPersonalAsync` clears org-scoped state. Platform session correctly attached for `/api/v1/platform/auth/organizations`. Pending User Validation (P18-WP08).
 
 ## 11. Known limitations
 

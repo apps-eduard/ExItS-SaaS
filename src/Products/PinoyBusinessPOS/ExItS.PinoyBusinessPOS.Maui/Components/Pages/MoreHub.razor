@@ -14,10 +14,10 @@
         <Stack Gap="2">
             <Button Variant="ButtonVariant.Secondary" OnClick="GoRoleHome">@L["More_RoleHome"]</Button>
             <Button Variant="ButtonVariant.Secondary" OnClick="GoOrg">@L["Org_SummaryTitle"]</Button>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoPersonal">@L["Personal_HomeTitle"]</Button>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoOrgSelect">@L["OrgSelect_Title"]</Button>
         </Stack>
     </Section>
+
+    <AccountContextSwitcher />
 
     <Section Title="@L["Overdue_Title"]">
         <Button Variant="ButtonVariant.Primary" OnClick="GoOverdue">@L["Overdue_OpenOrg"]</Button>
@@ -69,8 +69,6 @@
 
     private async Task GoRoleHome() => Nav.NavigateTo(await RoleHome.ResolvePosHomeAsync());
     private void GoOrg() => Nav.NavigateTo("/org");
-    private void GoPersonal() => Nav.NavigateTo("/personal");
-    private void GoOrgSelect() => Nav.NavigateTo("/organization-select");
     private void GoOverdue() => Nav.NavigateTo("/overdue");
     private void GoInventory() => Nav.NavigateTo("/inventory");
     private void GoExpenses() => Nav.NavigateTo("/expenses");

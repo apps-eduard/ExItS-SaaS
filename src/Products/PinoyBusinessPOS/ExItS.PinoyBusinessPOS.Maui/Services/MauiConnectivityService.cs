@@ -18,12 +18,25 @@ public sealed class MauiConnectivityService : IConnectivityService, IDisposable
         Connectivity.Current.ConnectivityChanged += OnPlatformConnectivityChanged;
     }
 
-    public Task<bool> IsConnectedAsync(CancellationToken ct = default) =>
-        Task.FromResult(Connectivity.Current.NetworkAccess == NetworkAccess.Internet);
+    public Task<bool> IsConnectedAsync(CancellationToken ct = default)
+    {
+        // Emulator / Local Validation often reports ConstrainedInternet or Local rather than
+        // Internet even when 10.0.2.2 / adb-reverse loopback is reachable. Treat those as
+        // connected so ApiClient does not short-circuit to Offline before attempting the call.
+        var access = Connectivity.Current.NetworkAccess;
+        var connected = access is NetworkAccess.Internet
+            or NetworkAccess.ConstrainedInternet
+            or NetworkAccess.Local;
+        return Task.FromResult(connected);
+    }
 
     private void OnPlatformConnectivityChanged(object? sender, ConnectivityChangedEventArgs e)
     {
-        var status = e.NetworkAccess == NetworkAccess.Internet ? ConnectivityStatus.Online : ConnectivityStatus.Offline;
+        var status = e.NetworkAccess is NetworkAccess.Internet
+            or NetworkAccess.ConstrainedInternet
+            or NetworkAccess.Local
+            ? ConnectivityStatus.Online
+            : ConnectivityStatus.Offline;
         ConnectivityChanged?.Invoke(this, status);
     }
 

@@ -29,6 +29,12 @@
     <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <!-- Sideloaded Debug APKs (adb install without Fast Deployment) need assemblies embedded;
+         otherwise monodroid aborts with "No assemblies found ... Assuming this is part of Fast Deployment". -->
+    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <!-- The Android workload's default-properties targets only default AndroidLinkMode to "None"
          for Debug; for Release it is left empty, which makes PublishTrimmed default to true even

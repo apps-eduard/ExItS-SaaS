@@ -5,7 +5,7 @@
 | Status | **Code Complete and Build Verified** |
 | Phase | [Phase 18](../phases/phase-18-mobile-personal-organization-and-pos-experience.md) |
 | Implementation commit | `4b8b727` |
-| Device validation | **Pending User Validation (phase-level; see P18-WP08)** |
+| Device validation | **Agent emulator evidence recorded (not Device Verified)** — Pending User Validation (see P18-WP08) |
 | Date | 2026-08-03 |
 
 ## 1. Objective
@@ -58,7 +58,7 @@ Start Business requires authenticated Platform session. Created organization is 
 
 ## 10. Emulator / device validation result
 
-**Pending User Validation (phase-level; see P18-WP08)**.
+**Agent emulator evidence (2026-08-03) — not Device Verified.** Personal-only user lands on Personal home with Start a Business and Account context switcher; empty organization list is EmptyState (not an error). Start Business host provisioning + Mobile continuation previously exercised via CDP (`artifacts/p18-wp08`). Pending User Validation (P18-WP08).
 
 ## 11. Known limitations
 

@@ -56,7 +56,8 @@
             if (!result.IsSuccess || result.Data is null)
             {
                 _invalid = true;
-                _errors.Add(L["Register_Failed"]);
+                var detail = result.Error?.Detail ?? result.Error?.Title;
+                _errors.Add(string.IsNullOrWhiteSpace(detail) ? L["Register_Failed"] : detail);
                 return;
             }
 

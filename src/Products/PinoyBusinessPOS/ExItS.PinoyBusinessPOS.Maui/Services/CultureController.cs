@@ -79,7 +79,7 @@ public sealed class CultureController(ICulturePreferenceStore store, IJSRuntime 
         {
             await js.InvokeVoidAsync("exitsPosTheme.applyCulture", culture);
         }
-        catch (JSException)
+        catch (Exception)
         {
             // WebView not yet ready for interop; safe to ignore, lang attribute is cosmetic.
         }

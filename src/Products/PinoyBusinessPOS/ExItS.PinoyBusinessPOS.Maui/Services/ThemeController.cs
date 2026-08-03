@@ -57,10 +57,11 @@ public sealed class ThemeController(IThemePreferenceStore store, IJSRuntime js)
         {
             await js.InvokeVoidAsync("exitsPosTheme.applyTheme", preference.ToString());
         }
-        catch (JSException)
+        catch (Exception)
         {
-            // WebView not yet ready for interop; theme-boot.js already applied a best-effort
-            // default and the next render will retry.
+            // WebView not yet ready for interop (JSException / InvalidOperationException /
+            // AggregateException: "Cannot invoke JavaScript outside of a WebView context").
+            // theme-boot.js already applied a best-effort default; a later render will retry.
         }
     }
 }

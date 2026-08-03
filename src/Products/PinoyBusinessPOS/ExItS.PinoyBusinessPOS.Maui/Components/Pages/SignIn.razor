@@ -1,6 +1,7 @@
 @page "/signin"
 @layout Layout.AuthShell
 @inject IAuthenticationService Auth
+@inject IProductAccessResolver Access
 @inject IOnboardingPreferenceStore Prefs
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
@@ -66,7 +67,7 @@
         try
         {
             var result = await Auth.SignInAsync(new SignInRequest(_username.Trim(), _password));
-            if (!result.Succeeded)
+            if (!result.Succeeded || result.Session is null)
             {
                 _invalid = true;
                 _errors.Add(L[result.SafeMessageKey ?? "Auth_InvalidCredentials"]);
@@ -74,7 +75,15 @@
             }
 
             await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.OrganizationSelect));
-            Nav.NavigateTo(result.Session?.OrganizationId is null ? "/personal" : "/organization-select");
+            await Prefs.SetOnboardingCompletedAsync(true);
+            try
+            {
+                await NavigateAfterSignInAsync(result.Session);
+            }
+            catch
+            {
+                Nav.NavigateTo("/personal", replace: true);
+            }
         }
         finally
         {
@@ -97,7 +106,7 @@
         try
         {
             var result = await Auth.SignInAsync(new SignInRequest(null, null, userId));
-            if (!result.Succeeded)
+            if (!result.Succeeded || result.Session is null)
             {
                 _invalid = true;
                 _errors.Add(L[result.SafeMessageKey ?? "Auth_InvalidCredentials"]);
@@ -105,12 +114,66 @@
             }
 
             await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.OrganizationSelect));
-            Nav.NavigateTo("/organization-select");
+            await Prefs.SetOnboardingCompletedAsync(true);
+            try
+            {
+                await NavigateAfterSignInAsync(result.Session);
+            }
+            catch
+            {
+                Nav.NavigateTo("/personal", replace: true);
+            }
         }
         finally
         {
             _busy = false;
         }
+    }
+
+    /// <summary>
+    /// Preferred post-login routing: restore last valid org when safe; otherwise Personal (0),
+    /// auto-bind single org, or multi-org chooser. Never blocks with Personal-vs-Org every time.
+    /// </summary>
+    private async Task NavigateAfterSignInAsync(AuthSession session)
+    {
+        var orgs = await Access.ListEligibleOrganizationsAsync(session.UserId);
+        var last = await Prefs.GetSelectedOrganizationIdAsync();
+
+        if (last is Guid lastId && orgs.Any(o => o.OrganizationId == lastId))
+        {
+            var restored = await Auth.SelectOrganizationAsync(lastId);
+            if (restored.Succeeded)
+            {
+                Nav.NavigateTo("/", replace: true);
+                return;
+            }
+        }
+
+        if (orgs.Count == 0)
+        {
+            Nav.NavigateTo("/personal", replace: true);
+            return;
+        }
+
+        if (orgs.Count == 1)
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            try
+            {
+                var selected = await Auth.SelectOrganizationAsync(orgs[0].OrganizationId, cts.Token);
+                if (selected.Succeeded)
+                {
+                    Nav.NavigateTo("/", replace: true);
+                    return;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Fall through to organization chooser rather than leaving Sign in stuck Loading.
+            }
+        }
+
+        Nav.NavigateTo("/organization-select", replace: true);
     }
 
     private void GoRegister() => Nav.NavigateTo("/register");

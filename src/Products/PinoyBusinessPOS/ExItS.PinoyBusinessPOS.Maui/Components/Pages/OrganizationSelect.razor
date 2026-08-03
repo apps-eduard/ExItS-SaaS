@@ -26,7 +26,7 @@
         <EmptyState Title="@L["OrgSelect_NoneTitle"]" Message="@L["OrgSelect_NoneEligible"]" />
         <FormActions>
             <Button Variant="ButtonVariant.Primary" OnClick="GoStartBusiness">@L["Personal_StartBusiness"]</Button>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoPersonal">@L["Personal_HomeTitle"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoPersonalAsync">@L["Personal_HomeTitle"]</Button>
             <Button Variant="ButtonVariant.Ghost" OnClick="LogoutAsync">@L["Auth_Logout"]</Button>
         </FormActions>
     }
@@ -45,9 +45,10 @@
                 </Card>
             }
         </Stack>
+        <AccountContextSwitcher />
         <FormActions>
             <Button Variant="ButtonVariant.Secondary" OnClick="GoStartBusiness">@L["Personal_StartBusiness"]</Button>
-            <Button Variant="ButtonVariant.Ghost" OnClick="GoPersonal">@L["Personal_HomeTitle"]</Button>
+            <Button Variant="ButtonVariant.Ghost" OnClick="GoPersonalAsync">@L["Personal_HomeTitle"]</Button>
         </FormActions>
         @if (!string.IsNullOrEmpty(_error))
         {
@@ -88,7 +89,9 @@
             }
 
             _organizations = await Access.ListEligibleOrganizationsAsync(CurrentUser.Session.UserId);
-            if (_organizations.Count == 1)
+            // Auto-bind only when already unbound (fresh chooser) and exactly one eligible org.
+            // Skip auto-bind when Personal is active so the user can stay / choose deliberately via switcher.
+            if (_organizations.Count == 1 && CurrentUser.Session.OrganizationId is null)
             {
                 await SelectAsync(_organizations[0].OrganizationId);
             }
@@ -114,7 +117,7 @@
 
             await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.AccessConfirm));
             await Prefs.SetOnboardingCompletedAsync(true);
-            Nav.NavigateTo("/boot", replace: true);
+            Nav.NavigateTo("/", replace: true);
         }
         finally
         {
@@ -124,7 +127,15 @@
 
     private void GoSignIn() => Nav.NavigateTo("/signin");
     private void GoStartBusiness() => Nav.NavigateTo("/start-business");
-    private void GoPersonal() => Nav.NavigateTo("/personal");
+
+    private async Task GoPersonalAsync()
+    {
+        var result = await Auth.SwitchToPersonalAsync();
+        if (result.Succeeded)
+        {
+            Nav.NavigateTo("/personal", replace: true);
+        }
+    }
 
     private async Task LogoutAsync()
     {

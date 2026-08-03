@@ -5,7 +5,7 @@
 | Status | **Code Complete and Build Verified** |
 | Phase | [Phase 18](../phases/phase-18-mobile-personal-organization-and-pos-experience.md) |
 | Implementation commit | `4b8b727` |
-| Device validation | **Pending User Validation (phase-level; see P18-WP08)** |
+| Device validation | **Agent emulator evidence recorded (not Device Verified)** — Pending User Validation (see P18-WP08) |
 | Date | 2026-08-03 |
 
 ## 1. Objective
@@ -59,13 +59,22 @@ Auth establishes identity and optional organization context; POS org isolation r
 
 ## 10. Emulator / device validation result
 
-**Pending User Validation (phase-level; see P18-WP08)** — no emulator or physical device session.
+**Agent emulator evidence (2026-08-03) — not Device Verified.**
+
+| Scenario | Result |
+|---|---|
+| Personal-only login → Personal home | Pass |
+| Start a Business CTA + Account context switcher on Personal | Pass |
+| Password sign-in with Platform session + POS bearer | Pass |
+| Logout clears secure session | Pass (unit + emulator sign-out observed) |
+
+Physical/user confirmation still required (P18-WP08). Local Validation API BaseUrl for emulator uses `127.0.0.1` + `adb reverse` (AllowedHosts also includes `10.0.2.2`).
 
 ## 11. Known limitations
 
 - Token “refresh” is restore/introspect/rebuild oriented; no separate refresh-token grant invented
 - Dev GUID sign-in remains Development/Testing only
-- API BaseUrl still configuration-driven (local `10.0.2.2` defaults in MauiProgram)
+- API BaseUrl still configuration-driven (local `127.0.0.1` / `10.0.2.2` for emulator)
 
 ## 12. Deferred items
 
@@ -73,8 +82,8 @@ Interactive device auth E2E; production MFA enforcement (platform residual); MAU
 
 ## 13. Current status
 
-Implemented · Tested · Build Verified · Pending User Validation (phase-level; see P18-WP08)
+Implemented · Tested · Build Verified · Agent emulator evidence recorded · Pending User Validation (phase-level; see P18-WP08)
 
 ## 14. Commit reference
 
-Implementation: `4b8b727`. Documentation reconciliation: Phase 18 docs tip on `main`.
+Implementation: `4b8b727`. Context-switcher / session-org fixes: tip of `main` after this update.

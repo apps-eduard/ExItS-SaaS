@@ -123,7 +123,7 @@
   <data name="Settings_AboutSectionTitle" xml:space="preserve"><value>About</value></data>
   <data name="Settings_AppVersionLabel" xml:space="preserve"><value>App version</value></data>
   <data name="Settings_DevNoticeTitle" xml:space="preserve"><value>Development-stage build</value></data>
-  <data name="Settings_DevNoticeMessage" xml:space="preserve"><value>This app has no authentication, no sales/inventory data entry, and no synchronization yet. It is a foundation build for later work packages.</value></data>
+  <data name="Settings_DevNoticeMessage" xml:space="preserve"><value>This build targets the Local Validation APIs. Production HTTPS-only networking and production authentication (JWT/MFA/SSO) remain open release gates.</value></data>
 
   <data name="Deferred_Title" xml:space="preserve"><value>Coming in a later work package</value></data>
   <data name="Deferred_Message" xml:space="preserve"><value>{0} is not part of this foundation build. It will be delivered in a future work package.</value></data>
@@ -199,8 +199,8 @@
   <data name="Common_Back" xml:space="preserve"><value>Back</value></data>
   <data name="Welcome_Title" xml:space="preserve"><value>Welcome</value></data>
   <data name="Welcome_Subtitle" xml:space="preserve"><value>Set up PinoyBusinessPOS for this device.</value></data>
-  <data name="Welcome_NoticeTitle" xml:space="preserve"><value>Foundation build</value></data>
-  <data name="Welcome_NoticeMessage" xml:space="preserve"><value>Sales, inventory, customers, and Utang are not included yet. This flow covers preferences, sign-in, and commercial access only.</value></data>
+  <data name="Welcome_NoticeTitle" xml:space="preserve"><value>Mobile journey</value></data>
+  <data name="Welcome_NoticeMessage" xml:space="preserve"><value>Set preferences, register or sign in, start a business, manage organization essentials, and run POS operations on this device. Full organization administration remains on the Web app.</value></data>
   <data name="Welcome_Continue" xml:space="preserve"><value>Get started</value></data>
   <data name="Onboarding_LanguageTitle" xml:space="preserve"><value>Language</value></data>
   <data name="Onboarding_LanguageSubtitle" xml:space="preserve"><value>Choose English or Tagalog.</value></data>
@@ -1361,6 +1361,11 @@
   <data name="StartBusiness_SessionRequired" xml:space="preserve"><value>Sign in again so a Platform session is available.</value></data>
   <data name="StartBusiness_Failed" xml:space="preserve"><value>Could not start the business. Try again.</value></data>
   <data name="OrgSelect_NoneTitle" xml:space="preserve"><value>No organizations</value></data>
+  <data name="Context_SwitcherTitle" xml:space="preserve"><value>Account context</value></data>
+  <data name="Context_SwitcherHint" xml:space="preserve"><value>Switch between Personal and your organizations without signing out. Access is revalidated on each switch.</value></data>
+  <data name="Context_Personal" xml:space="preserve"><value>Personal</value></data>
+  <data name="Context_Active" xml:space="preserve"><value>active</value></data>
+  <data name="Org_EssentialsOwnerOnly" xml:space="preserve"><value>Organization Owner essentials are available only to Organization Owners. POS entry still requires an active POS role and entitlement.</value></data>
   <data name="Org_SummaryTitle" xml:space="preserve"><value>Organization</value></data>
   <data name="Org_MissingTitle" xml:space="preserve"><value>Organization required</value></data>
   <data name="Org_MissingMessage" xml:space="preserve"><value>Select or create an organization to continue.</value></data>

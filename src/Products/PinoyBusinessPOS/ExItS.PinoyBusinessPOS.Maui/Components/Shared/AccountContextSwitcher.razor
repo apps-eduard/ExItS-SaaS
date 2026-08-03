@@ -1,0 +1,148 @@
+@namespace ExItS.PinoyBusinessPOS.Maui.Components.Shared
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IProductAccessResolver Access
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+@if (_ready && _authenticated)
+{
+    <Section Title="@L["Context_SwitcherTitle"]">
+        <InlineMessage Tone="InlineMessageTone.Info">@L["Context_SwitcherHint"]</InlineMessage>
+        <Stack Gap="2">
+            <Button Variant="@PersonalVariant" Disabled="_busy" OnClick="SwitchPersonalAsync">
+                @L["Context_Personal"]
+                @if (IsPersonalActive)
+                {
+                    <span class="pos-muted"> — @L["Context_Active"]</span>
+                }
+            </Button>
+            @foreach (var org in _organizations)
+            {
+                var active = CurrentUser.Session?.OrganizationId == org.OrganizationId;
+                <Button Variant="@(active ? ButtonVariant.Primary : ButtonVariant.Secondary)"
+                        Disabled="_busy"
+                        OnClick="() => SwitchOrgAsync(org.OrganizationId)">
+                    @org.DisplayName — @RoleLabel(org.MembershipRole)
+                    @if (active)
+                    {
+                        <span class="pos-muted"> — @L["Context_Active"]</span>
+                    }
+                </Button>
+            }
+        </Stack>
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
+        }
+    </Section>
+}
+
+@code {
+    private bool _ready;
+    private bool _authenticated;
+    private bool _busy;
+    private string? _error;
+    private IReadOnlyList<EligibleOrganization> _organizations = [];
+
+    private bool IsPersonalActive => CurrentUser.Session?.OrganizationId is null;
+    private ButtonVariant PersonalVariant => IsPersonalActive ? ButtonVariant.Primary : ButtonVariant.Secondary;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        _authenticated = CurrentUser.IsAuthenticated;
+        if (!_authenticated || CurrentUser.Session is null)
+        {
+            _ready = true;
+            return;
+        }
+
+        _organizations = await Access.ListEligibleOrganizationsAsync(CurrentUser.Session.UserId);
+        if (_organizations.Count == 0 && !string.IsNullOrWhiteSpace(CurrentUser.Session.PlatformSessionToken))
+        {
+            var memberships = await Platform.GetUserMembershipsAsync(CurrentUser.Session.UserId);
+            if (memberships.IsSuccess && memberships.Data is not null)
+            {
+                var list = new List<EligibleOrganization>();
+                foreach (var m in memberships.Data.Items.Where(x =>
+                             string.Equals(x.Status, "Active", StringComparison.OrdinalIgnoreCase)))
+                {
+                    var org = await Platform.GetOrganizationAsync(m.OrganizationId);
+                    list.Add(new EligibleOrganization(
+                        m.OrganizationId,
+                        org.Data?.DisplayName ?? m.OrganizationId.ToString("D"),
+                        m.Id,
+                        m.Status,
+                        AccessAllowed: false,
+                        AccessReasonCode: "pending",
+                        MembershipRole: m.Role));
+                }
+
+                _organizations = list;
+            }
+        }
+
+        _ready = true;
+    }
+
+    private static string RoleLabel(string? role) =>
+        string.IsNullOrWhiteSpace(role) ? "Member" : role;
+
+    private async Task SwitchPersonalAsync()
+    {
+        if (IsPersonalActive)
+        {
+            Nav.NavigateTo("/personal");
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = await Auth.SwitchToPersonalAsync();
+            if (!result.Succeeded)
+            {
+                _error = L[result.SafeMessageKey ?? "Access_Denied"];
+                return;
+            }
+
+            Nav.NavigateTo("/personal", replace: true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SwitchOrgAsync(Guid organizationId)
+    {
+        if (CurrentUser.Session?.OrganizationId == organizationId)
+        {
+            Nav.NavigateTo(CurrentUser.HasPosAccess ? "/" : "/org");
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = await Auth.SelectOrganizationAsync(organizationId);
+            if (!result.Succeeded)
+            {
+                _error = L[result.SafeMessageKey ?? "Access_Denied"];
+                return;
+            }
+
+            Nav.NavigateTo("/", replace: true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

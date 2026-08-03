@@ -54,7 +54,7 @@ public sealed class DensityController(IDensityPreferenceStore store, IJSRuntime 
         {
             await js.InvokeVoidAsync("exitsPosTheme.applyDensity", density.ToString());
         }
-        catch (JSException)
+        catch (Exception)
         {
             // WebView not yet ready; theme-boot.js already applied a best-effort default.
         }

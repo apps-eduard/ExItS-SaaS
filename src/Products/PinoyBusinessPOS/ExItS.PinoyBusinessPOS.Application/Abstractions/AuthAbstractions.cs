@@ -64,6 +64,12 @@ public interface IAuthenticationService
     Task<AuthResult> SelectOrganizationAsync(Guid organizationId, CancellationToken ct = default);
 
     /// <summary>
+    /// Leaves organization/POS context and returns to Personal without signing out.
+    /// Clears organization-scoped local state and process validation; keeps the Platform session.
+    /// </summary>
+    Task<AuthResult> SwitchToPersonalAsync(CancellationToken ct = default);
+
+    /// <summary>
     /// Applies a rotated Platform session after Start a Business and binds the new organization for POS when entitled.
     /// </summary>
     Task<AuthResult> ContinueAfterStartBusinessAsync(

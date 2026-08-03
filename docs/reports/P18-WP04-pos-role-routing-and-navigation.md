@@ -5,7 +5,7 @@
 | Status | **Code Complete and Build Verified** |
 | Phase | [Phase 18](../phases/phase-18-mobile-personal-organization-and-pos-experience.md) |
 | Implementation commit | `4b8b727` |
-| Device validation | **Pending User Validation (phase-level; see P18-WP08)** |
+| Device validation | **Agent emulator evidence recorded (not Device Verified)** — Pending User Validation (see P18-WP08) |
 | Date | 2026-08-03 |
 
 ## 1. Objective
@@ -60,7 +60,7 @@ Effective POS role is API-authoritative. Membership inactive, entitlement denied
 
 ## 10. Emulator / device validation result
 
-**Pending User Validation (phase-level; see P18-WP08)**.
+**Agent emulator evidence (2026-08-03) — not Device Verified.** Fixed post-login navigation that targeted missing `/boot` (now `/` → `Boot.razor` → `NavigationGate`). One-org auto-bind can be slow on first BindToken/local context open; Sign-in falls back to organization-select after 20s rather than hanging. POS chrome (Products/Sales/Customers/More) observed after org bind. Pending User Validation (P18-WP08).
 
 ## 11. Known limitations
 

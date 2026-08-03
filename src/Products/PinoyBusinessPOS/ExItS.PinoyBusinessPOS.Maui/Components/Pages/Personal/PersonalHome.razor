@@ -57,9 +57,10 @@
             }
             <FormActions>
                 <Button Variant="ButtonVariant.Primary" OnClick="GoStartBusiness">@L["Personal_StartBusiness"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoOrgSelect">@L["OrgSelect_Title"]</Button>
             </FormActions>
         </Section>
+
+        <AccountContextSwitcher />
 
         @if (!string.IsNullOrEmpty(_error))
         {
@@ -151,7 +152,7 @@
             var result = await Auth.SelectOrganizationAsync(organizationId);
             if (result.Succeeded && CurrentUser.HasPosAccess)
             {
-                Nav.NavigateTo("/boot", replace: true);
+                Nav.NavigateTo("/", replace: true);
                 return;
             }
 
@@ -170,7 +171,6 @@
     }
 
     private void GoStartBusiness() => Nav.NavigateTo("/start-business");
-    private void GoOrgSelect() => Nav.NavigateTo("/organization-select");
     private void GoProfile() => Nav.NavigateTo("/personal/profile");
     private void GoSignIn() => Nav.NavigateTo("/signin");
 

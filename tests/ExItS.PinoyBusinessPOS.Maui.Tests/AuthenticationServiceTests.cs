@@ -198,6 +198,56 @@ public sealed class AuthenticationServiceTests
     }
 
     [Fact]
+    public async Task Logout_preserves_selected_organization_preference()
+    {
+        var userId = Guid.NewGuid();
+        var orgId = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var prefs = new MemoryOnboardingStore();
+        await prefs.SetSelectedOrganizationIdAsync(orgId);
+        var access = new FakeAccessClient
+        {
+            UserResult = ApiResult<PlatformUserDto>.Success(User(userId, "Active"))
+        };
+        var sut = CreateSut("Development", access, tokens, prefs);
+        await sut.SignInAsync(new SignInRequest(null, null, userId));
+        await sut.LogoutAsync();
+        Assert.Equal(orgId, await prefs.GetSelectedOrganizationIdAsync());
+        Assert.Null(await tokens.GetAsync(SecureTokenKeys.UserId));
+    }
+
+    [Fact]
+    public async Task SwitchToPersonal_clears_organization_from_session()
+    {
+        var userId = Guid.NewGuid();
+        var orgId = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var prefs = new MemoryOnboardingStore();
+        var current = new CurrentUserContext();
+        var access = new FakeAccessClient
+        {
+            UserResult = ApiResult<PlatformUserDto>.Success(User(userId, "Active")),
+            OrganizationResult = ApiResult<PlatformOrganizationDto>.Success(Org(orgId)),
+            EvaluateResult = ApiResult<EffectiveAccessDto>.Success(new EffectiveAccessDto(
+                true, "allowed", userId, orgId, PosProductCodes.PinoyBusinessPos,
+                Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow,
+                SubscriptionStatus: "Active",
+                EnabledFeatureCodes: ["customer-credit-view"]))
+        };
+        var sut = CreateSut("Development", access, tokens, prefs, current);
+        await sut.SignInAsync(new SignInRequest(null, null, userId));
+        var select = await sut.SelectOrganizationAsync(orgId);
+        Assert.True(select.Succeeded);
+        Assert.Equal(orgId, current.Session?.OrganizationId);
+
+        var personal = await sut.SwitchToPersonalAsync();
+        Assert.True(personal.Succeeded);
+        Assert.Null(current.Session?.OrganizationId);
+        Assert.False(current.HasPosAccess);
+        Assert.Null(await prefs.GetSelectedOrganizationIdAsync());
+    }
+
+    [Fact]
     public void ProductAccessResolver_maps_subscription_ineligible_reason()
     {
         Assert.Equal("Access_SubscriptionIneligible", ProductAccessResolver.MapReasonKey("subscription_ineligible"));
