@@ -31,6 +31,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'LocalValidation.stack.ps1')
 
 function Write-Step([string]$Message) { Write-Host "[local-validation-reset] $Message" -ForegroundColor Cyan }
 function Write-Ok([string]$Message) { Write-Host "[local-validation-reset] OK  $Message" -ForegroundColor Green }
@@ -117,16 +118,16 @@ Assert-NotProductionEnvironment
 
 $repoRoot = Get-RepoRoot
 $dockerDir = Join-Path $repoRoot 'deploy\docker'
-$envFile = Join-Path $dockerDir '.env.local-validation'
-$composeFile = Join-Path $dockerDir 'compose.local-validation.yaml'
+$envFile = Join-Path $dockerDir $LocalValidationStack.EnvFileName
+$composeFile = Join-Path $dockerDir $LocalValidationStack.ComposeFileName
 $stopScript = Join-Path $repoRoot 'tools\Stop-LocalValidation.ps1'
 $startScript = Join-Path $repoRoot 'tools\Start-LocalValidation.ps1'
-$volumePlatform = 'exits_local_validation_platform_db_data'
-$volumePos = 'exits_local_validation_pos_db_data'
+$volumePlatform = $LocalValidationStack.PlatformDbVolume
+$volumePos = $LocalValidationStack.PosDbVolume
 
 Write-Step "Repository: $repoRoot"
 Write-Step 'Destructive Local Validation reset confirmed by operator (-ConfirmReset).'
-Write-Step 'Target volumes: exits_local_validation_platform_db_data, exits_local_validation_pos_db_data'
+Write-Step ("Compose project={0}; volumes={1}, {2}" -f $LocalValidationStack.ComposeProjectName, $volumePlatform, $volumePos)
 
 if (-not (Test-Path -LiteralPath $envFile)) {
     throw "Missing $envFile - copy from .env.local-validation.example first."
@@ -157,7 +158,7 @@ if (-not $lvEnabled) {
 }
 
 Write-Note 'Catalog/plans/features/roles are recreated by Platform migrate+seed after volume wipe.'
-Write-Note 'POS product DB resets via volume wipe of exits_local_validation_pos_db_data (product-owned container migrate on start).'
+Write-Note ("POS product DB resets via volume wipe of {0} (product-owned container migrate on start)." -f $volumePos)
 
 Write-Step 'Stopping Local Validation apps and database containers...'
 $previousEap = $ErrorActionPreference
@@ -168,21 +169,25 @@ $ErrorActionPreference = $previousEap
 if ($stopExit -ne 0) { throw "Stop-LocalValidation.ps1 failed ($stopExit)." }
 
 Write-Step 'Removing Local Validation DB containers so volumes can be deleted...'
-& docker compose -f $composeFile --env-file $envFile rm -f -s -v platform-db pos-db
+$rmExit = Invoke-LocalValidationDocker -DockerArgs @(
+    'compose', '-p', $LocalValidationStack.ComposeProjectName,
+    '-f', $composeFile, '--env-file', $envFile,
+    'rm', '-f', '-s', '-v', 'platform-db', 'pos-db'
+)
 # Note: compose rm -v removes anonymous volumes only; named volumes are removed explicitly below.
-if ($LASTEXITCODE -ne 0) {
-    Write-Note "compose rm returned $LASTEXITCODE - continuing with explicit container/volume cleanup."
+if ($rmExit -ne 0) {
+    Write-Note "compose rm returned $rmExit - continuing with explicit container/volume cleanup."
 }
-foreach ($name in @('exits-local-validation-platform-db', 'exits-local-validation-pos-db')) {
-    cmd /c "docker rm -f $name >NUL 2>&1" | Out-Null
+foreach ($name in @($LocalValidationStack.PlatformDbContainer, $LocalValidationStack.PosDbContainer)) {
+    Invoke-LocalValidationDocker -DockerArgs @('rm', '-f', $name) | Out-Null
 }
 
 Write-Step 'Removing Local Validation Docker volumes only (explicit volume rm; not compose down -v)...'
 foreach ($volume in @($volumePlatform, $volumePos)) {
-    $exists = & docker volume inspect $volume 2>$null
-    if ($LASTEXITCODE -eq 0) {
-        & docker volume rm $volume
-        if ($LASTEXITCODE -ne 0) { throw "Failed to remove volume $volume ($LASTEXITCODE)." }
+    $inspectExit = Invoke-LocalValidationDocker -DockerArgs @('volume', 'inspect', $volume)
+    if ($inspectExit -eq 0) {
+        $volRm = Invoke-LocalValidationDocker -DockerArgs @('volume', 'rm', $volume)
+        if ($volRm -ne 0) { throw "Failed to remove volume $volume ($volRm)." }
         Write-Ok "Removed volume $volume"
     }
     else {
@@ -201,9 +206,9 @@ if ($SkipStart) {
     exit 0
 }
 
-Write-Step 'Starting Local Validation (migrate + seed PlatformAdministratorsOnly)...'
-$env:LocalValidation__SeedScope = 'PlatformAdministratorsOnly'
-& $startScript -SeedScope PlatformAdministratorsOnly
+Write-Step 'Starting Local Validation (migrate + seed PlatformAdministratorsOnly + PurgeTransactional)...'
+Remove-Item Env:LocalValidation__SeedScope -ErrorAction SilentlyContinue
+& $startScript -SeedScope PlatformAdministratorsOnly -PurgeTransactional
 if ($LASTEXITCODE -ne 0) { throw "Start-LocalValidation.ps1 failed ($LASTEXITCODE)." }
 
 Write-Step "Verifying seed identities at http://localhost:8091 (up to $VerifySeconds s)..."

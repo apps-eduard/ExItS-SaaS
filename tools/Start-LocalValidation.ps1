@@ -16,6 +16,14 @@
     (never commit the secret; never exposed to the browser).
   - Not Production. Does not start P14-WP03.
 
+.PARAMETER SeedScope
+  Local Validation seed scope. Default PlatformAdministratorsOnly (Olivia + Rafael only).
+  Pass Full only when you explicitly want the legacy eight-identity catalog.
+
+.PARAMETER PurgeTransactional
+  When set with PlatformAdministratorsOnly, purge transactional rows before seed.
+  Reset enables this; ordinary Start does not (preserves app-created users/orgs).
+
 .PARAMETER PublicHost
   Optional LAN/Tailscale host (IP or DNS name, no scheme/port). Binds remain 0.0.0.0;
   printed browser URLs, CORS, AllowedHosts, and Admin PlatformApi base URL use this host.
@@ -25,18 +33,23 @@
 
 .EXAMPLE
   .\tools\Start-LocalValidation.ps1 -PublicHost 100.120.79.81
+
+.EXAMPLE
+  .\tools\Start-LocalValidation.ps1 -SeedScope Full
 #>
 [CmdletBinding()]
 param(
     [int]$PortWaitSeconds = 120,
     [int]$DbHealthySeconds = 90,
     [ValidateSet('Full', 'PlatformAdministratorsOnly')]
-    [string]$SeedScope = 'Full',
+    [string]$SeedScope = 'PlatformAdministratorsOnly',
+    [switch]$PurgeTransactional,
     [string]$PublicHost = ''
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'LocalValidation.stack.ps1')
 
 function Write-Step([string]$Message) { Write-Host "[local-validation] $Message" -ForegroundColor Cyan }
 function Write-Ok([string]$Message) { Write-Host "[local-validation] OK  $Message" -ForegroundColor Green }
@@ -296,13 +309,14 @@ dotnet watch --project '$Project' run --no-launch-profile --non-interactive
 # --- main ---
 $repoRoot = Get-RepoRoot
 $dockerDir = Join-Path $repoRoot 'deploy\docker'
-$envFile = Join-Path $dockerDir '.env.local-validation'
-$composeFile = Join-Path $dockerDir 'compose.local-validation.yaml'
+$envFile = Join-Path $dockerDir $LocalValidationStack.EnvFileName
+$composeFile = Join-Path $dockerDir $LocalValidationStack.ComposeFileName
 $stateDir = Join-Path $env:LOCALAPPDATA 'ExItS\LocalValidation'
 $dpKeys = Join-Path $stateDir 'DataProtectionKeys'
 $stateFile = Join-Path $stateDir 'launcher-state.json'
 
 Write-Step "Repository: $repoRoot"
+Write-Ok ("Compose project={0} file={1}" -f $LocalValidationStack.ComposeProjectName, $LocalValidationStack.ComposeFileName)
 Test-DockerAvailable
 Write-Ok 'Docker Desktop is available'
 
@@ -320,11 +334,11 @@ Require-EnvKey $envMap 'LOCAL_VALIDATION_POS_DB_USER'
 Require-EnvKey $envMap 'LOCAL_VALIDATION_POS_DB_PASSWORD'
 Require-EnvKey $envMap 'LOCAL_VALIDATION_SHARED_PASSWORD'
 
-$platformDbPort = if ($envMap['LOCAL_VALIDATION_PLATFORM_DB_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_PLATFORM_DB_HOST_PORT'] } else { 15533 }
-$posDbPort = if ($envMap['LOCAL_VALIDATION_POS_DB_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_POS_DB_HOST_PORT'] } else { 15534 }
-$adminPort = if ($envMap['LOCAL_VALIDATION_ADMIN_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_ADMIN_HOST_PORT'] } else { 8090 }
-$platformApiPort = if ($envMap['LOCAL_VALIDATION_PLATFORM_API_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_PLATFORM_API_HOST_PORT'] } else { 8091 }
-$posApiPort = if ($envMap['LOCAL_VALIDATION_POS_API_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_POS_API_HOST_PORT'] } else { 8092 }
+$platformDbPort = if ($envMap['LOCAL_VALIDATION_PLATFORM_DB_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_PLATFORM_DB_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultPlatformDbPort }
+$posDbPort = if ($envMap['LOCAL_VALIDATION_POS_DB_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_POS_DB_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultPosDbPort }
+$adminPort = if ($envMap['LOCAL_VALIDATION_ADMIN_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_ADMIN_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultAdminPort }
+$platformApiPort = if ($envMap['LOCAL_VALIDATION_PLATFORM_API_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_PLATFORM_API_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultPlatformApiPort }
+$posApiPort = if ($envMap['LOCAL_VALIDATION_POS_API_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_POS_API_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultPosApiPort }
 $mailpitUiPort = if ($envMap['LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT'] } else { 8025 }
 $mailpitSmtpPort = if ($envMap['LOCAL_VALIDATION_MAILPIT_SMTP_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_MAILPIT_SMTP_HOST_PORT'] } else { 1025 }
 
@@ -341,18 +355,24 @@ if ($conflicts.Count -gt 0) {
 Write-Ok 'App ports 8090/8091/8092 are free'
 
 Write-Step 'Starting local-validation PostgreSQL + Mailpit (volumes preserved; never compose down with -v)...'
-& docker compose -f $composeFile --env-file $envFile up -d platform-db pos-db mailpit
-if ($LASTEXITCODE -ne 0) { throw "docker compose up platform-db pos-db mailpit failed ($LASTEXITCODE)." }
+$composeExit = Invoke-LocalValidationDocker -DockerArgs @(
+    'compose', '-p', $LocalValidationStack.ComposeProjectName,
+    '-f', $composeFile, '--env-file', $envFile,
+    'up', '-d', 'platform-db', 'pos-db', 'mailpit'
+)
+if ($composeExit -ne 0) { throw "docker compose up platform-db pos-db mailpit failed ($composeExit)." }
 
-Wait-ContainerHealthy -Name 'exits-local-validation-platform-db' -TimeoutSeconds $DbHealthySeconds
-Wait-ContainerHealthy -Name 'exits-local-validation-pos-db' -TimeoutSeconds $DbHealthySeconds
+Wait-ContainerHealthy -Name $LocalValidationStack.PlatformDbContainer -TimeoutSeconds $DbHealthySeconds
+Wait-ContainerHealthy -Name $LocalValidationStack.PosDbContainer -TimeoutSeconds $DbHealthySeconds
 Wait-TcpPort -Label 'Platform DB' -HostName '127.0.0.1' -Port $platformDbPort -TimeoutSeconds 30
 Wait-TcpPort -Label 'POS DB' -HostName '127.0.0.1' -Port $posDbPort -TimeoutSeconds 30
 Wait-TcpPort -Label 'Mailpit SMTP' -HostName '127.0.0.1' -Port $mailpitSmtpPort -TimeoutSeconds 30
 Wait-TcpPort -Label 'Mailpit UI' -HostName '127.0.0.1' -Port $mailpitUiPort -TimeoutSeconds 30
 Write-Ok "Mailpit UI: http://localhost:$mailpitUiPort"
-$platformCs = "Host=127.0.0.1;Port=$platformDbPort;Database=exits_platform;Username=$($envMap['LOCAL_VALIDATION_PLATFORM_DB_USER']);Password=$($envMap['LOCAL_VALIDATION_PLATFORM_DB_PASSWORD'])"
-$posCs = "Host=127.0.0.1;Port=$posDbPort;Database=exits_pos;Username=$($envMap['LOCAL_VALIDATION_POS_DB_USER']);Password=$($envMap['LOCAL_VALIDATION_POS_DB_PASSWORD'])"
+$platformCs = "Host=127.0.0.1;Port=$platformDbPort;Database=$($LocalValidationStack.PlatformDbName);Username=$($envMap['LOCAL_VALIDATION_PLATFORM_DB_USER']);Password=$($envMap['LOCAL_VALIDATION_PLATFORM_DB_PASSWORD'])"
+$posCs = "Host=127.0.0.1;Port=$posDbPort;Database=$($LocalValidationStack.PosDbName);Username=$($envMap['LOCAL_VALIDATION_POS_DB_USER']);Password=$($envMap['LOCAL_VALIDATION_POS_DB_PASSWORD'])"
+$platformCsSummary = Get-LocalValidationConnectionSummary -ConnectionString $platformCs -Label 'Platform'
+$posCsSummary = Get-LocalValidationConnectionSummary -ConnectionString $posCs -Label 'POS'
 
 # Bind all interfaces so Tailscale/LAN can reach apps; localhost/127.0.0.1 still work.
 $resolvedPublicHost = Resolve-PublicHost -Value $PublicHost
@@ -406,19 +426,26 @@ foreach ($proj in @($platformProject, $posProject, $adminProject)) {
 $windowPids = @()
 
 Write-Step 'Starting Platform API (dotnet watch)...'
-$knownSeedScopes = @('Full', 'PlatformAdministratorsOnly')
+# -SeedScope parameter is authoritative. Do not let a polluted parent shell (e.g. leftover Full)
+# override the default PlatformAdministratorsOnly baseline after Reset.
+$seedScopeValue = $SeedScope
 $inheritedSeedScope = [string]$env:LocalValidation__SeedScope
-if (-not [string]::IsNullOrWhiteSpace($inheritedSeedScope) -and $knownSeedScopes -notcontains $inheritedSeedScope) {
-    Write-Note "Ignoring invalid LocalValidation__SeedScope='$inheritedSeedScope' from parent shell; using -SeedScope '$SeedScope'."
-    $seedScopeValue = $SeedScope
+if (-not [string]::IsNullOrWhiteSpace($inheritedSeedScope) -and $inheritedSeedScope -ne $seedScopeValue) {
+    Write-Note "Ignoring parent LocalValidation__SeedScope='$inheritedSeedScope'; using -SeedScope '$seedScopeValue'."
 }
-elseif (-not [string]::IsNullOrWhiteSpace($inheritedSeedScope)) {
-    $seedScopeValue = $inheritedSeedScope
-}
-else {
-    $seedScopeValue = $SeedScope
-}
-Write-Ok "LocalValidation SeedScope=$seedScopeValue"
+$purgeTransactional = [bool]$PurgeTransactional
+Write-Ok "LocalValidation SeedScope=$seedScopeValue PurgeTransactionalOnSeed=$purgeTransactional"
+Write-LocalValidationStartupDiagnostics `
+    -AspNetCoreEnvironment 'Staging' `
+    -SeedScope $seedScopeValue `
+    -PlatformCsSummary $platformCsSummary `
+    -PosCsSummary $posCsSummary `
+    -ComposeProjectName $LocalValidationStack.ComposeProjectName `
+    -PlatformDbContainer $LocalValidationStack.PlatformDbContainer `
+    -PosDbContainer $LocalValidationStack.PosDbContainer `
+    -PlatformDbVolume $LocalValidationStack.PlatformDbVolume `
+    -PosDbVolume $LocalValidationStack.PosDbVolume `
+    -WindowPids @()
 $platformEnv = @{
     ASPNETCORE_ENVIRONMENT = 'Staging'
     ASPNETCORE_URLS = $bindPlatformApiUrl
@@ -427,6 +454,7 @@ $platformEnv = @{
     Security__EnforceHttps = 'false'
     LocalValidation__Enabled = 'true'
     LocalValidation__SeedScope = $seedScopeValue
+    LocalValidation__PurgeTransactionalOnSeed = $(if ($purgeTransactional) { 'true' } else { 'false' })
     LocalValidation__SharedPassword = [string]$envMap['LOCAL_VALIDATION_SHARED_PASSWORD']
     PlatformEmail__SmtpHost = '127.0.0.1'
     PlatformEmail__SmtpPort = "$mailpitSmtpPort"
@@ -488,9 +516,39 @@ $state = @{
     WindowPids = $windowPids
     StartedAtUtc = (Get-Date).ToUniversalTime().ToString('o')
     PublicHost = $resolvedPublicHost
-    Ports = @{ Admin = $adminPort; PlatformApi = $platformApiPort; PosApi = $posApiPort }
+    SeedScope = $seedScopeValue
+    PurgeTransactionalOnSeed = $purgeTransactional
+    ComposeProjectName = $LocalValidationStack.ComposeProjectName
+    ComposeFile = $composeFile
+    PlatformDbContainer = $LocalValidationStack.PlatformDbContainer
+    PosDbContainer = $LocalValidationStack.PosDbContainer
+    PlatformDbVolume = $LocalValidationStack.PlatformDbVolume
+    PosDbVolume = $LocalValidationStack.PosDbVolume
+    Ports = @{
+        Admin = $adminPort
+        PlatformApi = $platformApiPort
+        PosApi = $posApiPort
+        PlatformDb = $platformDbPort
+        PosDb = $posDbPort
+    }
+    Databases = @{
+        Platform = @{ Host = '127.0.0.1'; Port = $platformDbPort; Name = $LocalValidationStack.PlatformDbName }
+        Pos = @{ Host = '127.0.0.1'; Port = $posDbPort; Name = $LocalValidationStack.PosDbName }
+    }
 }
 $state | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $stateFile -Encoding UTF8
+
+Write-LocalValidationStartupDiagnostics `
+    -AspNetCoreEnvironment 'Staging/Development(Admin)' `
+    -SeedScope $seedScopeValue `
+    -PlatformCsSummary $platformCsSummary `
+    -PosCsSummary $posCsSummary `
+    -ComposeProjectName $LocalValidationStack.ComposeProjectName `
+    -PlatformDbContainer $LocalValidationStack.PlatformDbContainer `
+    -PosDbContainer $LocalValidationStack.PosDbContainer `
+    -PlatformDbVolume $LocalValidationStack.PlatformDbVolume `
+    -PosDbVolume $LocalValidationStack.PosDbVolume `
+    -WindowPids $windowPids
 
 $healthOk = $true
 $healthOk = (Invoke-HttpCheck -Label 'Platform API /health' -Url "$loopbackPlatformApiUrl/health") -and $healthOk

@@ -160,7 +160,7 @@ public sealed class InitializeLocalValidationDataset
 
         var productCode = ProductCode.PinoyBusinessPos;
         var seedScope = string.IsNullOrWhiteSpace(_options.SeedScope)
-            ? LocalValidationOptions.SeedScopeFull
+            ? LocalValidationOptions.SeedScopePlatformAdministratorsOnly
             : _options.SeedScope.Trim();
         var isFullSeed = string.Equals(seedScope, LocalValidationOptions.SeedScopeFull, StringComparison.OrdinalIgnoreCase);
         var isPlatformAdministratorsOnly = string.Equals(
@@ -173,7 +173,7 @@ public sealed class InitializeLocalValidationDataset
                 $"Unknown LocalValidation:SeedScope '{seedScope}'. Use '{LocalValidationOptions.SeedScopeFull}' or '{LocalValidationOptions.SeedScopePlatformAdministratorsOnly}'.");
         }
 
-        if (isPlatformAdministratorsOnly)
+        if (isPlatformAdministratorsOnly && _options.PurgeTransactionalOnSeed)
         {
             await _baselinePurge.PurgeTransactionalDataAsync(cancellationToken).ConfigureAwait(false);
         }

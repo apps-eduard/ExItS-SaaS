@@ -54,7 +54,13 @@ public sealed class LocalValidationOnboardingBaselineTests
             root, "src", "Platform", "ExItS.Platform.Application", "LocalValidation", "InitializeLocalValidationDataset.cs"));
         Assert.Contains("ILocalValidationBaselinePurge", initializer, StringComparison.Ordinal);
         Assert.Contains("PurgeTransactionalDataAsync", initializer, StringComparison.Ordinal);
+        Assert.Contains("PurgeTransactionalOnSeed", initializer, StringComparison.Ordinal);
         Assert.Contains("EnsureBuiltInPlatformRoleDefinitions", initializer, StringComparison.Ordinal);
+
+        var options = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Application", "LocalValidation", "LocalValidationOptions.cs"));
+        Assert.Contains("SeedScopePlatformAdministratorsOnly", options, StringComparison.Ordinal);
+        Assert.Contains("= SeedScopePlatformAdministratorsOnly", options, StringComparison.Ordinal);
     }
 
     private static string FindRepoRoot()

@@ -41,10 +41,21 @@ public sealed class LocalValidationHostedService(
             return;
         }
 
-        logger.LogInformation("LocalValidation hosted initialization beginning (non-Production).");
+        logger.LogInformation(
+            "LocalValidation hosted initialization beginning (Environment={Environment}, SeedScope={SeedScope}, PurgeTransactionalOnSeed={Purge}, ProcessId={ProcessId}).",
+            environment.EnvironmentName,
+            options.Value.SeedScope,
+            options.Value.PurgeTransactionalOnSeed,
+            Environment.ProcessId);
 
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<PlatformDbContext>();
+        var connection = db.Database.GetDbConnection();
+        logger.LogInformation(
+            "LocalValidation database target (no password): DataSource={DataSource}, Database={Database}.",
+            connection.DataSource,
+            connection.Database);
+
         await db.Database.MigrateAsync(cancellationToken).ConfigureAwait(false);
 
         var initializer = scope.ServiceProvider.GetRequiredService<InitializeLocalValidationDataset>();

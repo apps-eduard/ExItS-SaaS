@@ -23,8 +23,14 @@ public sealed class LocalValidationOptions
     /// </summary>
     public bool RunHostedSeed { get; set; } = true;
 
-    /// <summary><see cref="SeedScopeFull"/> (default) or <see cref="SeedScopePlatformAdministratorsOnly"/>.</summary>
-    public string SeedScope { get; set; } = SeedScopeFull;
+    /// <summary>
+    /// When true with <see cref="SeedScopePlatformAdministratorsOnly"/>, purge transactional rows before seed.
+    /// Used by Reset after volume wipe; ordinary Start leaves app-created data intact.
+    /// </summary>
+    public bool PurgeTransactionalOnSeed { get; set; }
+
+    /// <summary><see cref="SeedScopePlatformAdministratorsOnly"/> (default) or <see cref="SeedScopeFull"/>.</summary>
+    public string SeedScope { get; set; } = SeedScopePlatformAdministratorsOnly;
 
     /// <summary>
     /// Password applied to approved Local Validation identities for normal /auth/login.
@@ -50,14 +56,14 @@ public sealed class LocalValidationOptions
     public static IReadOnlyList<LocalValidationIdentityDefinition> IdentitiesForSeedScope(string? seedScope)
     {
         if (string.IsNullOrWhiteSpace(seedScope)
-            || string.Equals(seedScope.Trim(), SeedScopeFull, StringComparison.OrdinalIgnoreCase))
-        {
-            return LocalValidationIdentityCatalog.All;
-        }
-
-        if (string.Equals(seedScope.Trim(), SeedScopePlatformAdministratorsOnly, StringComparison.OrdinalIgnoreCase))
+            || string.Equals(seedScope.Trim(), SeedScopePlatformAdministratorsOnly, StringComparison.OrdinalIgnoreCase))
         {
             return LocalValidationIdentityCatalog.PlatformAdministratorsOnly;
+        }
+
+        if (string.Equals(seedScope.Trim(), SeedScopeFull, StringComparison.OrdinalIgnoreCase))
+        {
+            return LocalValidationIdentityCatalog.All;
         }
 
         throw new ArgumentOutOfRangeException(

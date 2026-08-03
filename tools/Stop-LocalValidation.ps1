@@ -23,6 +23,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'LocalValidation.stack.ps1')
 
 function Write-Step([string]$Message) { Write-Host "[local-validation] $Message" -ForegroundColor Cyan }
 function Write-Ok([string]$Message) { Write-Host "[local-validation] OK  $Message" -ForegroundColor Green }
@@ -65,8 +66,8 @@ $repoRoot = Get-RepoRoot
 $stateDir = Join-Path $env:LOCALAPPDATA 'ExItS\LocalValidation'
 $stateFile = Join-Path $stateDir 'launcher-state.json'
 $dockerDir = Join-Path $repoRoot 'deploy\docker'
-$envFile = Join-Path $dockerDir '.env.local-validation'
-$composeFile = Join-Path $dockerDir 'compose.local-validation.yaml'
+$envFile = Join-Path $dockerDir $LocalValidationStack.EnvFileName
+$composeFile = Join-Path $dockerDir $LocalValidationStack.ComposeFileName
 
 Write-Step "Repository: $repoRoot"
 
@@ -101,9 +102,13 @@ if ($StopDatabases) {
         throw "Missing $envFile"
     }
     Write-Step 'Stopping local-validation database containers (volumes preserved; never compose down with -v)...'
-    & docker compose -f $composeFile --env-file $envFile stop platform-db pos-db
-    if ($LASTEXITCODE -ne 0) { throw "docker compose stop failed ($LASTEXITCODE)." }
-    Write-Ok 'Database containers stopped. Volumes exits_local_validation_*_db_data remain.'
+    $stopExit = Invoke-LocalValidationDocker -DockerArgs @(
+        'compose', '-p', $LocalValidationStack.ComposeProjectName,
+        '-f', $composeFile, '--env-file', $envFile,
+        'stop', 'platform-db', 'pos-db'
+    )
+    if ($stopExit -ne 0) { throw "docker compose stop failed ($stopExit)." }
+    Write-Ok ("Database containers stopped. Volumes {0}, {1} remain." -f $LocalValidationStack.PlatformDbVolume, $LocalValidationStack.PosDbVolume)
 }
 
 Write-Host 'Restart: .\tools\Start-LocalValidation.ps1'

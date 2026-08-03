@@ -19,6 +19,14 @@ public sealed class LocalValidationIdentityCatalogTests
     ];
 
     [Fact]
+    public void SeedScope_empty_defaults_to_platform_administrators_only()
+    {
+        var identities = LocalValidationOptions.IdentitiesForSeedScope(null);
+        Assert.Equal(2, identities.Count);
+        Assert.All(identities, i => Assert.Equal(PlatformSystemRole.PlatformAdministrator, i.AssignPlatformRole));
+    }
+
+    [Fact]
     public void SeedScope_PlatformAdministratorsOnly_returns_two_platform_administrators()
     {
         var identities = LocalValidationOptions.IdentitiesForSeedScope(

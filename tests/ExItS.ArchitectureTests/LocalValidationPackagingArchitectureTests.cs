@@ -44,14 +44,20 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Reset-LocalValidation.ps1")));
 
         var startScript = File.ReadAllText(Path.Combine(root, "tools", "Start-LocalValidation.ps1"));
+        var stackScript = File.ReadAllText(Path.Combine(root, "tools", "LocalValidation.stack.ps1"));
         Assert.Contains("Mailpit", startScript, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("PlatformEmail__SmtpHost", startScript, StringComparison.Ordinal);
         Assert.Contains("dotnet watch", startScript, StringComparison.Ordinal);
         Assert.Contains("DataProtectionKeys", startScript, StringComparison.Ordinal);
-        Assert.Contains("exits-local-validation-platform-db", startScript, StringComparison.Ordinal);
+        Assert.Contains("exits-local-validation-platform-db", stackScript, StringComparison.Ordinal);
+        Assert.Contains("exits_local_validation_platform_db_data", stackScript, StringComparison.Ordinal);
         Assert.Contains("volumes preserved", startScript, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("http://0.0.0.0:", startScript, StringComparison.Ordinal);
         Assert.Contains("PublicHost", startScript, StringComparison.Ordinal);
+        Assert.Contains("PlatformAdministratorsOnly", startScript, StringComparison.Ordinal);
+        Assert.Contains("PurgeTransactional", startScript, StringComparison.Ordinal);
+        Assert.Contains("LocalValidation.stack.ps1", startScript, StringComparison.Ordinal);
+        Assert.Contains("exits-local-validation", startScript, StringComparison.Ordinal);
         Assert.Contains("Cors__AllowedOrigins__", startScript, StringComparison.Ordinal);
         Assert.Contains("New-NetFirewallRule", startScript, StringComparison.Ordinal);
         Assert.Contains("LocalPort 8090", startScript, StringComparison.Ordinal);
@@ -74,11 +80,15 @@ public sealed class LocalValidationPackagingArchitectureTests
 
         var resetScript = File.ReadAllText(Path.Combine(root, "tools", "Reset-LocalValidation.ps1"));
         Assert.Contains("ConfirmReset", resetScript, StringComparison.Ordinal);
-        Assert.Contains("exits_local_validation_platform_db_data", resetScript, StringComparison.Ordinal);
-        Assert.Contains("exits_local_validation_pos_db_data", resetScript, StringComparison.Ordinal);
+        Assert.Contains("PlatformDbVolume", resetScript, StringComparison.Ordinal);
+        Assert.Contains("PosDbVolume", resetScript, StringComparison.Ordinal);
+        Assert.Contains("PurgeTransactional", resetScript, StringComparison.Ordinal);
+        Assert.Contains("LocalValidation.stack.ps1", resetScript, StringComparison.Ordinal);
         Assert.Contains("Production", resetScript, StringComparison.Ordinal);
         Assert.DoesNotContain("docker compose down -v", resetScript, StringComparison.Ordinal);
-        Assert.Contains("docker volume rm", resetScript, StringComparison.Ordinal);
+        Assert.Contains("'volume', 'rm'", resetScript, StringComparison.Ordinal);
+        Assert.Contains("exits_local_validation_platform_db_data", stackScript, StringComparison.Ordinal);
+        Assert.Contains("exits_local_validation_pos_db_data", stackScript, StringComparison.Ordinal);
 
         Assert.Contains("${LOCAL_VALIDATION_ADMIN_HOST_PORT:-8090}:8080", live, StringComparison.Ordinal);
         Assert.Contains("${LOCAL_VALIDATION_PLATFORM_API_HOST_PORT:-8091}:8080", live, StringComparison.Ordinal);
