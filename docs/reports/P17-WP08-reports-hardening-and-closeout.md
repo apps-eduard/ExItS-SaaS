@@ -5,9 +5,9 @@
 | Status | **Complete** |
 | Phase | [Phase 17](../phases/phase-17-pos-mvp-operational-onboarding-and-first-sale.md) |
 | Starting commit | `14b71e1` |
-| Final Phase 17 commit | _pending stamp after commit_ |
-| Push status | _pending_ |
-| Working tree | _pending_ |
+| Final Phase 17 commit | `0f00afe198a417c9e1b533d5183ad37268a167bc` |
+| Push status | **Pushed to origin/main** |
+| Working tree | Dirty only for unrelated untracked `docs/architecture/client-experience-boundaries.md` (excluded from Phase 17) |
 | Date | 2026-07-29 |
 
 ## Objective
@@ -59,7 +59,7 @@ POS Owner launches POS (membership + entitlement + POS role)
 | POS IntegrationTests (full) | **135 passed**, 0 failed |
 | Platform UnitTests `ProductAuthorization*` | **11 passed** |
 | Platform IntegrationTests `ApiProductAccess*` | **4 passed** |
-| **Combined targeted Phase 17 evidence** | **489 passed**, 0 failed |
+| **Combined Phase 17 evidence** | **489 passed**, 0 failed |
 
 Maui project not built (Android SDK absent on agent host) — residual.
 
@@ -91,4 +91,4 @@ See Known limitations.
 
 ## Commit reference
 
-Final SHA and push status stamped below after git commit/push.
+Final Phase 17 feature commit: `0f00afe198a417c9e1b533d5183ad37268a167bc`. Pushed to `origin/main`. Unrelated untracked `docs/architecture/client-experience-boundaries.md` excluded from Phase 17.

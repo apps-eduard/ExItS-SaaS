@@ -14,7 +14,7 @@
 | Current phase | Phase 17  -  **Complete** (POS MVP operational onboarding and first sale); Phase 16 validation residuals remain; Phase 14 still open |
 | Current work package | **P17-WP08** closeout complete; **P16-WP11** validation residuals may continue separately; P14-WP04 remains next Production WP after authorization |
 | Overall status | **Phase 17 complete** ([phase](phases/phase-17-pos-mvp-operational-onboarding-and-first-sale.md); [closeout](reports/P17-WP08-reports-hardening-and-closeout.md)). Phase 15 complete. Phase 16 feature WPs complete with validation residuals. **Phase 14 remains in progress**. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | See P17-WP08 final commit SHA after push |
+| Latest verified commit | `0f00afe198a417c9e1b533d5183ad37268a167bc` |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; advanced tax/accounting deferred; formal WCAG cert not claimed |
 | Last updated | 2026-07-29 |
 
