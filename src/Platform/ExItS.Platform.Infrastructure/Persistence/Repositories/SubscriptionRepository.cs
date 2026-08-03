@@ -190,9 +190,22 @@ internal sealed class SubscriptionRepository : ISubscriptionRepository
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim().ToLowerInvariant();
+            var matchingOrgIds = _db.Organizations.AsNoTracking()
+                .Where(o => o.DisplayName.ToLower().Contains(term))
+                .Select(o => o.Id);
+            var matchingPlanIds = _db.Plans.AsNoTracking()
+                .Where(p => p.DisplayName.ToLower().Contains(term) || p.Code.ToLower().Contains(term))
+                .Select(p => p.Id);
+            var matchingProductCodes = _db.Products.AsNoTracking()
+                .Where(p => p.DisplayName.ToLower().Contains(term))
+                .Select(p => p.Code);
+
             query = query.Where(s =>
                 s.ProductCode.ToLower().Contains(term)
                 || s.Status.ToLower().Contains(term)
+                || matchingOrgIds.Contains(s.OrganizationId)
+                || matchingPlanIds.Contains(s.PlanId)
+                || matchingProductCodes.Contains(s.ProductCode)
                 || s.OrganizationId.ToString().ToLower().Contains(term)
                 || s.PlanId.ToString().ToLower().Contains(term)
                 || s.Id.ToString().ToLower().Contains(term));
@@ -204,6 +217,24 @@ internal sealed class SubscriptionRepository : ISubscriptionRepository
             (SubscriptionListSortBy.Status, true) => query.OrderByDescending(s => s.Status).ThenByDescending(s => s.UpdatedAtUtc),
             (SubscriptionListSortBy.ProductCode, false) => query.OrderBy(s => s.ProductCode).ThenByDescending(s => s.UpdatedAtUtc),
             (SubscriptionListSortBy.ProductCode, true) => query.OrderByDescending(s => s.ProductCode).ThenByDescending(s => s.UpdatedAtUtc),
+            (SubscriptionListSortBy.ProductDisplayName, false) =>
+                query.OrderBy(s => _db.Products.Where(p => p.Code == s.ProductCode).Select(p => p.DisplayName).FirstOrDefault())
+                    .ThenByDescending(s => s.UpdatedAtUtc),
+            (SubscriptionListSortBy.ProductDisplayName, true) =>
+                query.OrderByDescending(s => _db.Products.Where(p => p.Code == s.ProductCode).Select(p => p.DisplayName).FirstOrDefault())
+                    .ThenByDescending(s => s.UpdatedAtUtc),
+            (SubscriptionListSortBy.OrganizationName, false) =>
+                query.OrderBy(s => _db.Organizations.Where(o => o.Id == s.OrganizationId).Select(o => o.DisplayName).FirstOrDefault())
+                    .ThenByDescending(s => s.UpdatedAtUtc),
+            (SubscriptionListSortBy.OrganizationName, true) =>
+                query.OrderByDescending(s => _db.Organizations.Where(o => o.Id == s.OrganizationId).Select(o => o.DisplayName).FirstOrDefault())
+                    .ThenByDescending(s => s.UpdatedAtUtc),
+            (SubscriptionListSortBy.PlanDisplayName, false) =>
+                query.OrderBy(s => _db.Plans.Where(p => p.Id == s.PlanId).Select(p => p.DisplayName).FirstOrDefault())
+                    .ThenByDescending(s => s.UpdatedAtUtc),
+            (SubscriptionListSortBy.PlanDisplayName, true) =>
+                query.OrderByDescending(s => _db.Plans.Where(p => p.Id == s.PlanId).Select(p => p.DisplayName).FirstOrDefault())
+                    .ThenByDescending(s => s.UpdatedAtUtc),
             (SubscriptionListSortBy.TrialEndUtc, false) => query.OrderBy(s => s.TrialEndUtc).ThenByDescending(s => s.UpdatedAtUtc),
             (SubscriptionListSortBy.TrialEndUtc, true) => query.OrderByDescending(s => s.TrialEndUtc).ThenByDescending(s => s.UpdatedAtUtc),
             (SubscriptionListSortBy.PaidPeriodEndUtc, false) => query.OrderBy(s => s.PaidPeriodEndUtc).ThenByDescending(s => s.UpdatedAtUtc),

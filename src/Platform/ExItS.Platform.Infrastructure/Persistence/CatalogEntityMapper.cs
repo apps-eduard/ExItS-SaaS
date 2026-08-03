@@ -70,7 +70,16 @@ internal static class CatalogEntityMapper
             record.DisplayName,
             Enum.Parse<PlanStatus>(record.Status),
             record.CreatedAtUtc,
-            record.UpdatedAtUtc);
+            record.UpdatedAtUtc,
+            record.Description,
+            record.MaxBranches <= 0 ? 1 : record.MaxBranches,
+            record.MaxActiveStaff <= 0 ? 3 : record.MaxActiveStaff,
+            record.CustomerCreditEnabled,
+            record.AdvancedReportsEnabled,
+            record.ExportEnabled,
+            record.TrialAllowed,
+            record.DefaultTrialDays < 0 ? 14 : record.DefaultTrialDays,
+            record.SortOrder);
 
     public static PlanRecord ToRecord(Plan plan) =>
         new()
@@ -79,7 +88,16 @@ internal static class CatalogEntityMapper
             ProductCode = plan.ProductCode.Value,
             Code = plan.Code.Value,
             DisplayName = plan.DisplayName,
+            Description = plan.Description,
             Status = plan.Status.ToString(),
+            MaxBranches = plan.MaxBranches,
+            MaxActiveStaff = plan.MaxActiveStaff,
+            CustomerCreditEnabled = plan.CustomerCreditEnabled,
+            AdvancedReportsEnabled = plan.AdvancedReportsEnabled,
+            ExportEnabled = plan.ExportEnabled,
+            TrialAllowed = plan.TrialAllowed,
+            DefaultTrialDays = plan.DefaultTrialDays,
+            SortOrder = plan.SortOrder,
             CreatedAtUtc = plan.CreatedAtUtc,
             UpdatedAtUtc = plan.UpdatedAtUtc
         };
@@ -87,7 +105,16 @@ internal static class CatalogEntityMapper
     public static void ApplyToRecord(Plan plan, PlanRecord record)
     {
         record.DisplayName = plan.DisplayName;
+        record.Description = plan.Description;
         record.Status = plan.Status.ToString();
+        record.MaxBranches = plan.MaxBranches;
+        record.MaxActiveStaff = plan.MaxActiveStaff;
+        record.CustomerCreditEnabled = plan.CustomerCreditEnabled;
+        record.AdvancedReportsEnabled = plan.AdvancedReportsEnabled;
+        record.ExportEnabled = plan.ExportEnabled;
+        record.TrialAllowed = plan.TrialAllowed;
+        record.DefaultTrialDays = plan.DefaultTrialDays;
+        record.SortOrder = plan.SortOrder;
         record.UpdatedAtUtc = plan.UpdatedAtUtc;
     }
 

@@ -119,6 +119,8 @@ builder.Services.AddScoped<RetireFeatureDefinition>();
 builder.Services.AddScoped<CreatePlan>();
 builder.Services.AddScoped<RenamePlan>();
 builder.Services.AddScoped<ActivatePlan>();
+builder.Services.AddScoped<DeactivatePlan>();
+builder.Services.AddScoped<UpdatePlanCommercialPackage>();
 builder.Services.AddScoped<RetirePlan>();
 builder.Services.AddScoped<CreateDraftPlanVersion>();
 builder.Services.AddScoped<ReplaceDraftPlanVersionGrants>();
@@ -127,6 +129,7 @@ builder.Services.AddScoped<PublishExistingPlanVersion>();
 builder.Services.AddScoped<PublishPlanVersion>();
 builder.Services.AddScoped<CreateTrialDefinition>();
 builder.Services.AddScoped<RetireTrialDefinition>();
+builder.Services.AddScoped<EnsureMvpPosPlans>();
 
 builder.Services.AddScoped<OrganizationQueryService>();
 builder.Services.AddScoped<CreatePlatformOrganization>();

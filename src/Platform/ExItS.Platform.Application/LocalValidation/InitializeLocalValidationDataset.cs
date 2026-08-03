@@ -22,31 +22,12 @@ namespace ExItS.Platform.Application.LocalValidation;
 
 public sealed class InitializeLocalValidationDataset
 {
-    private static readonly string[] LocalValidationFeatureCodes =
-    [
-        FeatureCode.CustomerCreditView,
-        FeatureCode.CustomerCreditRepay,
-        FeatureCode.CustomerCreditCreate,
-        FeatureCode.StoreCatalogView,
-        FeatureCode.StoreCatalogManage,
-        FeatureCode.StoreSalesView,
-        FeatureCode.StoreSalesCreate,
-        FeatureCode.StoreDashboardView,
-        FeatureCode.StoreReportsView,
-        FeatureCode.StorePermissionsView,
-        FeatureCode.StorePermissionsManage
-    ];
-
     private readonly LocalValidationOptions _options;
     private readonly CreatePlatformOrganization _createOrg;
     private readonly IPlatformOrganizationRepository _organizations;
     private readonly CreateProduct _createProduct;
     private readonly IProductRepository _products;
-    private readonly CreateFeatureDefinition _createFeature;
-    private readonly CreatePlan _createPlan;
-    private readonly ActivatePlan _activatePlan;
-    private readonly CreateDraftPlanVersion _createDraftVersion;
-    private readonly PublishExistingPlanVersion _publishVersion;
+    private readonly EnsureMvpPosPlans _ensureMvpPosPlans;
     private readonly CreateTrialDefinition _createTrial;
     private readonly StartTrialSubscription _startTrial;
     private readonly GenerateEntitlementSnapshot _generateSnapshot;
@@ -82,11 +63,7 @@ public sealed class InitializeLocalValidationDataset
         IPlatformOrganizationRepository organizations,
         CreateProduct createProduct,
         IProductRepository products,
-        CreateFeatureDefinition createFeature,
-        CreatePlan createPlan,
-        ActivatePlan activatePlan,
-        CreateDraftPlanVersion createDraftVersion,
-        PublishExistingPlanVersion publishVersion,
+        EnsureMvpPosPlans ensureMvpPosPlans,
         CreateTrialDefinition createTrial,
         StartTrialSubscription startTrial,
         GenerateEntitlementSnapshot generateSnapshot,
@@ -121,11 +98,7 @@ public sealed class InitializeLocalValidationDataset
         _organizations = organizations;
         _createProduct = createProduct;
         _products = products;
-        _createFeature = createFeature;
-        _createPlan = createPlan;
-        _activatePlan = activatePlan;
-        _createDraftVersion = createDraftVersion;
-        _publishVersion = publishVersion;
+        _ensureMvpPosPlans = ensureMvpPosPlans;
         _createTrial = createTrial;
         _startTrial = startTrial;
         _generateSnapshot = generateSnapshot;
@@ -564,109 +537,34 @@ public sealed class InitializeLocalValidationDataset
             await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
         }
 
-        foreach (var featureCode in LocalValidationFeatureCodes)
-        {
-            var featureResult = await _createFeature
-                .ExecuteAsync(productCode, featureCode, featureCode, FeatureValueType.Boolean, ct)
-                .ConfigureAwait(false);
-            if (!featureResult.IsSuccess
-                && featureResult.ErrorCode != ApplicationErrorCodes.DuplicateFeatureCode)
-            {
-                throw new InvalidOperationException(
-                    $"Local validation feature '{featureCode}' failed: {featureResult.ErrorCode} {featureResult.ErrorMessage}");
-            }
-        }
+        await _ensureMvpPosPlans.ExecuteAsync(ct).ConfigureAwait(false);
 
-        var planCode = PlanCode.Create(LocalValidationOptions.ProductPlanCode);
+        var businessSpec = MvpPosPlanCatalog.Plans.First(p =>
+            string.Equals(p.PlanKey, MvpPosPlanCodes.Business, StringComparison.Ordinal));
+        var planCode = PlanCode.Create(MvpPosPlanCodes.Business);
         var plan = await _plans
             .GetByProductAndCodeAsync(ProductCode.Create(productCode), planCode, ct)
             .ConfigureAwait(false);
-        if (plan is null)
+        if (plan is null || plan.Status != PlanStatus.Active)
         {
-            var createdPlan = await _createPlan
-                .ExecuteAsync(productCode, LocalValidationOptions.ProductPlanCode, LocalValidationOptions.ProductPlanDisplayName, ct)
-                .ConfigureAwait(false);
-            if (!createdPlan.IsSuccess || createdPlan.Value is null)
-            {
-                plan = await _plans
-                    .GetByProductAndCodeAsync(ProductCode.Create(productCode), planCode, ct)
-                    .ConfigureAwait(false);
-                if (plan is null)
-                {
-                    throw new InvalidOperationException(
-                        $"Local validation plan create failed: {createdPlan.ErrorCode} {createdPlan.ErrorMessage}");
-                }
-            }
-            else
-            {
-                plan = createdPlan.Value;
-            }
-        }
-
-        if (plan.Status != PlanStatus.Active)
-        {
-            var activate = await _activatePlan.ExecuteAsync(plan.Id, ct).ConfigureAwait(false);
-            if (!activate.IsSuccess)
-            {
-                var reloaded = await _plans.GetByIdAsync(plan.Id, ct).ConfigureAwait(false);
-                if (reloaded?.Status != PlanStatus.Active)
-                {
-                    throw new InvalidOperationException(
-                        $"Local validation plan activate failed: {activate.ErrorCode} {activate.ErrorMessage}");
-                }
-
-                plan = reloaded;
-            }
-            else if (activate.Value is not null)
-            {
-                plan = activate.Value;
-            }
+            throw new InvalidOperationException(
+                $"MVP Business plan '{MvpPosPlanCodes.Business}' was not available after EnsureMvpPosPlans.");
         }
 
         var versions = await _plans.ListVersionsAsync(plan.Id, ct).ConfigureAwait(false);
-        var version = versions.FirstOrDefault(v => v.VersionNumber == 1);
+        var version = versions.FirstOrDefault(v =>
+            v.VersionNumber == 1 && v.Status == PlanVersionStatus.Published);
         if (version is null)
         {
-            var grants = LocalValidationFeatureCodes
-                .Select(c => FeatureGrantSpec.Boolean(FeatureCode.Create(c), true))
-                .ToArray();
-            var draft = await _createDraftVersion
-                .ExecuteAsync(plan.Id, 1, BillingPeriod.Monthly, trialEligible: true, grants, cancellationToken: ct)
-                .ConfigureAwait(false);
-            if (!draft.IsSuccess || draft.Value is null)
-            {
-                throw new InvalidOperationException(
-                    $"Local validation plan version draft failed: {draft.ErrorCode} {draft.ErrorMessage}");
-            }
-
-            var published = await _publishVersion.ExecuteAsync(plan.Id, 1, ct).ConfigureAwait(false);
-            if (!published.IsSuccess || published.Value is null)
-            {
-                throw new InvalidOperationException(
-                    $"Local validation plan version publish failed: {published.ErrorCode} {published.ErrorMessage}");
-            }
-
-            version = published.Value;
-        }
-        else if (version.Status != PlanVersionStatus.Published)
-        {
-            var published = await _publishVersion.ExecuteAsync(plan.Id, 1, ct).ConfigureAwait(false);
-            if (!published.IsSuccess || published.Value is null)
-            {
-                throw new InvalidOperationException(
-                    $"Local validation plan version publish failed: {published.ErrorCode} {published.ErrorMessage}");
-            }
-
-            version = published.Value;
+            throw new InvalidOperationException(
+                $"Published Business plan version 1 was not available after EnsureMvpPosPlans.");
         }
 
         var trials = await _trials.ListByProductAsync(ProductCode.Create(productCode), ct).ConfigureAwait(false);
         var trial = trials.FirstOrDefault(t => string.Equals(t.DisplayName, LocalValidationOptions.TrialDisplayName, StringComparison.Ordinal));
         if (trial is null)
         {
-            var grants = LocalValidationFeatureCodes
-                .Select(c => FeatureGrantSpec.Boolean(FeatureCode.Create(c), true))
-                .ToArray();
+            var grants = EnsureMvpPosPlans.BuildGrants(businessSpec);
             var createdTrial = await _createTrial
                 .ExecuteAsync(
                     productCode,

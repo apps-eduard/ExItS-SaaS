@@ -43,7 +43,19 @@ public sealed record PlanDto(
     string DisplayName,
     string Status,
     DateTimeOffset CreatedAtUtc,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    Guid? ProductId = null,
+    string? ProductDisplayName = null,
+    string? PlanKey = null,
+    string? Description = null,
+    int MaxBranches = 1,
+    int MaxActiveStaff = 3,
+    bool CustomerCreditEnabled = false,
+    bool AdvancedReportsEnabled = false,
+    bool ExportEnabled = false,
+    bool TrialAllowed = true,
+    int DefaultTrialDays = 14,
+    int SortOrder = 100);
 
 public sealed record FeatureGrantDto(
     string FeatureCode,
@@ -161,8 +173,28 @@ public sealed class CatalogQueryService
                 take,
                 cancellationToken)
             .ConfigureAwait(false);
+
+        var productCache = new Dictionary<string, Product?>(StringComparer.OrdinalIgnoreCase);
+        async Task<Product?> ResolveProductAsync(string code)
+        {
+            if (productCache.TryGetValue(code, out var cached))
+            {
+                return cached;
+            }
+
+            var product = await _products.GetByCodeAsync(ProductCode.Create(code), cancellationToken).ConfigureAwait(false);
+            productCache[code] = product;
+            return product;
+        }
+
+        var mapped = new List<PlanDto>(items.Count);
+        foreach (var plan in items)
+        {
+            mapped.Add(MapPlan(plan, await ResolveProductAsync(plan.ProductCode.Value).ConfigureAwait(false)));
+        }
+
         return new PagedResult<PlanDto>(
-            items.Select(MapPlan).ToList(),
+            mapped,
             totalCount,
             Math.Max(page ?? 1, 1),
             take);
@@ -197,13 +229,19 @@ public sealed class CatalogQueryService
     {
         var pc = ProductCode.Create(productCode);
         var plans = await _plans.ListByProductAsync(pc, cancellationToken).ConfigureAwait(false);
-        return plans.Select(MapPlan).ToList();
+        return plans.Select(p => MapPlan(p)).ToList();
     }
 
     public async Task<PlanDto?> GetPlanByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var plan = await _plans.GetByIdAsync(PlanId.From(id), cancellationToken).ConfigureAwait(false);
-        return plan is null ? null : MapPlan(plan);
+        if (plan is null)
+        {
+            return null;
+        }
+
+        var product = await _products.GetByCodeAsync(plan.ProductCode, cancellationToken).ConfigureAwait(false);
+        return MapPlan(plan, product);
     }
 
     public async Task<IReadOnlyList<PlanVersionDto>> ListPlanVersionsAsync(
@@ -254,7 +292,7 @@ public sealed class CatalogQueryService
             feature.CreatedAtUtc,
             feature.UpdatedAtUtc);
 
-    private static PlanDto MapPlan(Plan plan) =>
+    private static PlanDto MapPlan(Plan plan, Product? product = null) =>
         new(
             plan.Id.Value,
             plan.ProductCode.Value,
@@ -262,7 +300,19 @@ public sealed class CatalogQueryService
             plan.DisplayName,
             plan.Status.ToString(),
             plan.CreatedAtUtc,
-            plan.UpdatedAtUtc);
+            plan.UpdatedAtUtc,
+            ProductId: product?.Id.Value,
+            ProductDisplayName: product?.DisplayName,
+            PlanKey: plan.PlanKey,
+            Description: plan.Description,
+            MaxBranches: plan.MaxBranches,
+            MaxActiveStaff: plan.MaxActiveStaff,
+            CustomerCreditEnabled: plan.CustomerCreditEnabled,
+            AdvancedReportsEnabled: plan.AdvancedReportsEnabled,
+            ExportEnabled: plan.ExportEnabled,
+            TrialAllowed: plan.TrialAllowed,
+            DefaultTrialDays: plan.DefaultTrialDays,
+            SortOrder: plan.SortOrder);
 
     private static PlanVersionDto MapPlanVersion(PlanVersion version) =>
         new(

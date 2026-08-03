@@ -11,7 +11,31 @@ public sealed record ProductDto(
     DateTimeOffset UpdatedAtUtc);
 
 public sealed record CreateProductRequest(string Code, string DisplayName);
-public sealed record CreatePlanRequest(string Code, string DisplayName);
+public sealed record CreatePlanRequest(
+    string Code,
+    string DisplayName,
+    string? Description = null,
+    int MaxBranches = 1,
+    int MaxActiveStaff = 3,
+    bool CustomerCreditEnabled = false,
+    bool AdvancedReportsEnabled = false,
+    bool ExportEnabled = false,
+    bool TrialAllowed = true,
+    int DefaultTrialDays = 14,
+    int SortOrder = 100);
+
+public sealed record UpdatePlanCommercialRequest(
+    string DisplayName,
+    string? Description,
+    int MaxBranches,
+    int MaxActiveStaff,
+    bool CustomerCreditEnabled,
+    bool AdvancedReportsEnabled,
+    bool ExportEnabled,
+    bool TrialAllowed,
+    int DefaultTrialDays,
+    int SortOrder,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
 public sealed record RenameCatalogRequest(string DisplayName, DateTimeOffset? ExpectedUpdatedAtUtc);
 
 public sealed record FeatureDefinitionDto(
@@ -32,7 +56,19 @@ public sealed record PlanDto(
     string DisplayName,
     string Status,
     DateTimeOffset CreatedAtUtc,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    Guid? ProductId = null,
+    string? ProductDisplayName = null,
+    string? PlanKey = null,
+    string? Description = null,
+    int MaxBranches = 1,
+    int MaxActiveStaff = 3,
+    bool CustomerCreditEnabled = false,
+    bool AdvancedReportsEnabled = false,
+    bool ExportEnabled = false,
+    bool TrialAllowed = true,
+    int DefaultTrialDays = 14,
+    int SortOrder = 100);
 
 public sealed record PlanVersionDto(
     Guid Id,
@@ -143,7 +179,12 @@ public sealed record SubscriptionDto(
     DateTimeOffset? ExpiredAtUtc,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc,
-    int Version);
+    int Version,
+    string? OrganizationDisplayName = null,
+    string? ProductDisplayName = null,
+    string? PlanDisplayName = null,
+    string? PlanKey = null,
+    DateTimeOffset? RenewalDateUtc = null);
 
 public sealed record PaymentDto(
     Guid Id,

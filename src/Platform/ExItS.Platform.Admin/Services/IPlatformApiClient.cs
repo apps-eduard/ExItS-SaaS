@@ -32,7 +32,9 @@ public interface IPlatformApiClient
     Task<ApiCallResult<PlanDto>> GetPlanAsync(Guid id, CancellationToken ct = default);
     Task<ApiCallResult<PlanDto>> CreatePlanAsync(string productCode, CreatePlanRequest request, CancellationToken ct = default);
     Task<ApiCallResult<PlanDto>> RenamePlanAsync(string productCode, Guid planId, RenameCatalogRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<PlanDto>> UpdatePlanCommercialAsync(string productCode, Guid planId, UpdatePlanCommercialRequest request, CancellationToken ct = default);
     Task<ApiCallResult<PlanDto>> ActivatePlanAsync(string productCode, Guid planId, CancellationToken ct = default);
+    Task<ApiCallResult<PlanDto>> DeactivatePlanAsync(string productCode, Guid planId, CancellationToken ct = default);
     Task<ApiCallResult<PlanDto>> RetirePlanAsync(string productCode, Guid planId, CancellationToken ct = default);
     Task<ApiCallResult<IReadOnlyList<PlanVersionDto>>> GetPlanVersionsAsync(string productCode, Guid planId, CancellationToken ct = default);
     Task<ApiCallResult<PagedResult<OrganizationDto>>> GetOrganizationsAsync(

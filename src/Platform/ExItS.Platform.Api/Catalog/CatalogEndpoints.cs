@@ -518,7 +518,20 @@ internal static class CatalogEndpoints
                 return denied;
             }
 
-            var result = await useCase.ExecuteAsync(productCode, body.Code, body.DisplayName, ct).ConfigureAwait(false);
+            var result = await useCase.ExecuteAsync(
+                productCode,
+                body.Code,
+                body.DisplayName,
+                body.Description,
+                body.MaxBranches,
+                body.MaxActiveStaff,
+                body.CustomerCreditEnabled,
+                body.AdvancedReportsEnabled,
+                body.ExportEnabled,
+                body.TrialAllowed,
+                body.DefaultTrialDays,
+                body.SortOrder,
+                ct).ConfigureAwait(false);
             if (result.IsSuccess)
             {
                 await authz.AuditSucceededAsync(
@@ -570,6 +583,52 @@ internal static class CatalogEndpoints
             return CatalogResults.FromResult(result, p => Results.Ok(MapPlan(p)));
         });
 
+        plans.MapPatch("/{planId:guid}/commercial", async (
+            Guid planId,
+            UpdatePlanCommercialRequest body,
+            UpdatePlanCommercialPackage useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalog,
+                PlatformAuditActions.CatalogPlanUpdated,
+                nameof(Plan),
+                planId.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(
+                PlanId.From(planId),
+                body.DisplayName,
+                body.Description,
+                body.MaxBranches,
+                body.MaxActiveStaff,
+                body.CustomerCreditEnabled,
+                body.AdvancedReportsEnabled,
+                body.ExportEnabled,
+                body.TrialAllowed,
+                body.DefaultTrialDays,
+                body.SortOrder,
+                body.ExpectedUpdatedAtUtc,
+                ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogPlanUpdated,
+                    nameof(Plan),
+                    planId.ToString("D"),
+                    productCode: result.Value!.ProductCode.Value,
+                    summary: $"Updated commercial package for plan {result.Value.Code.Value}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return CatalogResults.FromResult(result, p => Results.Ok(MapPlan(p)));
+        });
+
         plans.MapPost("/{planId:guid}/activate", async (
             Guid planId,
             ActivatePlan useCase,
@@ -596,6 +655,38 @@ internal static class CatalogEndpoints
                     planId.ToString("D"),
                     productCode: result.Value!.ProductCode.Value,
                     summary: $"Activated plan {result.Value.Code.Value}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return CatalogResults.FromResult(result, p => Results.Ok(MapPlan(p)));
+        });
+
+        plans.MapPost("/{planId:guid}/deactivate", async (
+            Guid planId,
+            DeactivatePlan useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalog,
+                PlatformAuditActions.CatalogPlanUpdated,
+                nameof(Plan),
+                planId.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(PlanId.From(planId), ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogPlanUpdated,
+                    nameof(Plan),
+                    planId.ToString("D"),
+                    productCode: result.Value!.ProductCode.Value,
+                    summary: $"Deactivated plan {result.Value.Code.Value}.",
                     cancellationToken: ct).ConfigureAwait(false);
             }
 
@@ -1008,7 +1099,17 @@ internal static class CatalogEndpoints
         displayName = plan.DisplayName,
         status = plan.Status.ToString(),
         createdAtUtc = plan.CreatedAtUtc,
-        updatedAtUtc = plan.UpdatedAtUtc
+        updatedAtUtc = plan.UpdatedAtUtc,
+        planKey = plan.PlanKey,
+        description = plan.Description,
+        maxBranches = plan.MaxBranches,
+        maxActiveStaff = plan.MaxActiveStaff,
+        customerCreditEnabled = plan.CustomerCreditEnabled,
+        advancedReportsEnabled = plan.AdvancedReportsEnabled,
+        exportEnabled = plan.ExportEnabled,
+        trialAllowed = plan.TrialAllowed,
+        defaultTrialDays = plan.DefaultTrialDays,
+        sortOrder = plan.SortOrder
     };
 
     private static object MapPlanVersion(PlanVersion version) => new
@@ -1061,7 +1162,30 @@ internal static class CatalogEndpoints
 internal sealed record CreateProductRequest(string Code, string DisplayName);
 internal sealed record RenameRequest(string DisplayName, DateTimeOffset? ExpectedUpdatedAtUtc);
 internal sealed record CreateFeatureRequest(string FeatureCode, string DisplayName, string ValueType);
-internal sealed record CreatePlanRequest(string Code, string DisplayName);
+internal sealed record CreatePlanRequest(
+    string Code,
+    string DisplayName,
+    string? Description = null,
+    int MaxBranches = 1,
+    int MaxActiveStaff = 3,
+    bool CustomerCreditEnabled = false,
+    bool AdvancedReportsEnabled = false,
+    bool ExportEnabled = false,
+    bool TrialAllowed = true,
+    int DefaultTrialDays = 14,
+    int SortOrder = 100);
+internal sealed record UpdatePlanCommercialRequest(
+    string DisplayName,
+    string? Description,
+    int MaxBranches,
+    int MaxActiveStaff,
+    bool CustomerCreditEnabled,
+    bool AdvancedReportsEnabled,
+    bool ExportEnabled,
+    bool TrialAllowed,
+    int DefaultTrialDays,
+    int SortOrder,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
 internal sealed record FeatureGrantRequest(string FeatureCode, bool Enabled, int? NumericLimit = null);
 
 internal sealed record CreateDraftPlanVersionRequest(

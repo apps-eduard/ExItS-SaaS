@@ -41,10 +41,19 @@
                 <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
                 <SelectOption TItemValue="string" TItem="string" Value="@("Draft")" Label="@L["Status_Draft"]" />
                 <SelectOption TItemValue="string" TItem="string" Value="@("Active")" Label="@L["Status_Active"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Inactive")" Label="Inactive" />
                 <SelectOption TItemValue="string" TItem="string" Value="@("Retired")" Label="@L["Status_Retired"]" />
             </SelectOptions>
         </Select>
-        <Input @bind-Value="_productCode" Size="@InputSize.Small" Placeholder="@L["Plans_ProductCode"]" Style="width:160px;" OnPressEnter="ApplyFiltersAsync" />
+        <Select TItemValue="string" TItem="string" @bind-Value="_productCode" Size="@InputSize.Small" Placeholder="@L["Common_Product"]" Style="width:220px;" AllowClear>
+            <SelectOptions>
+                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
+                @foreach (var product in _productOptions)
+                {
+                    <SelectOption TItemValue="string" TItem="string" Value="@product.Code" Label="@(string.IsNullOrWhiteSpace(product.DisplayName) ? product.Code : product.DisplayName)" />
+                }
+            </SelectOptions>
+        </Select>
         <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ApplyFiltersAsync">@L["Common_Apply"]</Button>
         <Button Size="@ButtonSize.Small" OnClick="ClearFiltersAsync">@L["Common_Reset"]</Button>
     </Space>
@@ -55,17 +64,40 @@
             <FormValidationSummary Title="@L["Plans_CreateFailed"]" Message="@_formError" IsConflict="_formConflict" />
             <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
                 <div>
-                    <label class="ant-form-item-label" for="plan-create-productcode">@L["Plans_ProductCode"]</label>
-                    <Input Id="plan-create-productcode" @bind-Value="_newProductCode" Size="@InputSize.Small" Disabled="_busy" />
+                    <label class="ant-form-item-label">@L["Common_Product"]</label>
+                    <Select TItemValue="string" TItem="string" @bind-Value="_newProductCode" Style="width:100%;" Disabled="_busy" Placeholder="Select product">
+                        <SelectOptions>
+                            @foreach (var product in _productOptions)
+                            {
+                                <SelectOption TItemValue="string" TItem="string" Value="@product.Code" Label="@(string.IsNullOrWhiteSpace(product.DisplayName) ? product.Code : product.DisplayName)" />
+                            }
+                        </SelectOptions>
+                    </Select>
                 </div>
                 <div>
-                    <label class="ant-form-item-label" for="plan-create-code">@L["Common_Code"]</label>
-                    <Input Id="plan-create-code" @bind-Value="_newCode" Size="@InputSize.Small" Disabled="_busy" />
+                    <label class="ant-form-item-label" for="plan-create-code">Plan Key</label>
+                    <Input Id="plan-create-code" @bind-Value="_newCode" Size="@InputSize.Small" Disabled="_busy" Placeholder="starter" />
                 </div>
                 <div>
                     <label class="ant-form-item-label" for="plan-create-displayname">@L["Common_DisplayName"]</label>
                     <Input Id="plan-create-displayname" @bind-Value="_newDisplayName" Size="@InputSize.Small" Disabled="_busy" />
                 </div>
+                <div>
+                    <label class="ant-form-item-label" for="plan-create-description">Description</label>
+                    <TextArea Id="plan-create-description" @bind-Value="_newDescription" Rows="2" Disabled="_busy" />
+                </div>
+                <Space Wrap>
+                    <AntDesign.InputNumber TValue="int" @bind-Value="_newMaxBranches" Min="1" Placeholder="Max branches" Disabled="_busy" Style="width:140px;" />
+                    <AntDesign.InputNumber TValue="int" @bind-Value="_newMaxStaff" Min="1" Placeholder="Max active staff" Disabled="_busy" Style="width:140px;" />
+                    <AntDesign.InputNumber TValue="int" @bind-Value="_newTrialDays" Min="0" Placeholder="Default trial days" Disabled="_busy" Style="width:140px;" />
+                    <AntDesign.InputNumber TValue="int" @bind-Value="_newSortOrder" Min="0" Placeholder="Sort order" Disabled="_busy" Style="width:120px;" />
+                </Space>
+                <Space Wrap>
+                    <Checkbox @bind-Checked="_newCustomerCredit" Disabled="_busy">Customer credit</Checkbox>
+                    <Checkbox @bind-Checked="_newAdvancedReports" Disabled="_busy">Advanced reports</Checkbox>
+                    <Checkbox @bind-Checked="_newExport" Disabled="_busy">Export</Checkbox>
+                    <Checkbox @bind-Checked="_newTrialAllowed" Disabled="_busy">Trial allowed</Checkbox>
+                </Space>
                 <Space>
                     <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">@L["Common_Create"]</Button>
                     <Button Size="@ButtonSize.Small" OnClick="HideCreate" Disabled="_busy">@L["Common_Cancel"]</Button>
@@ -95,16 +127,24 @@
                RemoteDataSource
                OnPageIndexChange="OnPageChangedAsync"
                ScrollX="960">
-            <PropertyColumn Property="c => c.ProductCode" Title="@L["Plans_ProductCode"]" Sortable />
-            <PropertyColumn Property="c => c.Code" Title="@L["Common_Code"]" Sortable>
-                <a href="/admin/plans/@context.Id">@context.Code</a>
+            <PropertyColumn Property="c => c.ProductDisplayName" Title="@L["Common_Product"]" Sortable>
+                @(string.IsNullOrWhiteSpace(context.ProductDisplayName) ? context.ProductCode : context.ProductDisplayName)
             </PropertyColumn>
-            <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_DisplayName"]" Sortable />
+            <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_DisplayName"]" Sortable>
+                <a href="/admin/plans/@context.Id">@context.DisplayName</a>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.PlanKey" Title="Plan Key" Sortable>
+                <span class="muted">@(context.PlanKey ?? context.Code)</span>
+            </PropertyColumn>
             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable>
                 <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
             </PropertyColumn>
-            <ActionColumn Title="@L["Common_Open"]" Width="88">
-                <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/plans/{context.Id}")">@L["Common_Open"]</a>
+            <PropertyColumn Property="c => c.SortOrder" Title="Sort" Sortable />
+            <ActionColumn Title="@L["Common_Actions"]" Width="120">
+                <Tooltip Title="@L["Common_Open"].Value">
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" Icon="eye" AriaLabel="@L["Common_Open"].Value"
+                            OnClick="@(() => Nav.NavigateTo($"/admin/plans/{context.Id}"))" />
+                </Tooltip>
             </ActionColumn>
         </Table>
     }
@@ -123,16 +163,22 @@ else
             {
                 var pl = _plan.Data!;
                 <Space>
-                    @if (pl.Status == "Draft")
+                    @if (pl.Status == "Draft" || pl.Status == "Inactive")
                     {
                         <Popconfirm Title="@L["Plans_ConfirmActivate"]" OnConfirm="ActivateAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
-                            <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy">@L["Plans_Activate"]</Button>
+                            <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" Icon="play-circle" AriaLabel="@L["Plans_Activate"].Value">@L["Plans_Activate"]</Button>
                         </Popconfirm>
                     }
-                    @if (pl.Status is "Draft" or "Active")
+                    @if (pl.Status == "Active")
+                    {
+                        <Popconfirm Title="Deactivate this plan? It will not accept new subscriptions." OnConfirm="DeactivateAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                            <Button Size="@ButtonSize.Small" Loading="_busy" Icon="pause" AriaLabel="Deactivate">Deactivate</Button>
+                        </Popconfirm>
+                    }
+                    @if (pl.Status is "Draft" or "Active" or "Inactive")
                     {
                         <Popconfirm Title="@L["Plans_ConfirmRetire"]" OnConfirm="RetireAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
-                            <Button Size="@ButtonSize.Small" Danger Loading="_busy">@L["Plans_Retire"]</Button>
+                            <Button Size="@ButtonSize.Small" Danger Loading="_busy" Icon="stop" AriaLabel="@L["Plans_Retire"].Value">@L["Plans_Retire"]</Button>
                         </Popconfirm>
                     }
                 </Space>
@@ -170,25 +216,50 @@ else
         <Tabs>
             <TabPane Key="overview" Tab="@L["Plans_TabOverview"]">
                 <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
-                    <DescriptionsItem Title="@L["Plans_ProductCode"]">@pl.ProductCode</DescriptionsItem>
-                    <DescriptionsItem Title="@L["Common_Code"]">@pl.Code</DescriptionsItem>
+                    <DescriptionsItem Title="@L["Common_Product"]">@(string.IsNullOrWhiteSpace(pl.ProductDisplayName) ? pl.ProductCode : pl.ProductDisplayName)</DescriptionsItem>
+                    <DescriptionsItem Title="Plan Key"><span class="muted">@(pl.PlanKey ?? pl.Code)</span></DescriptionsItem>
                     <DescriptionsItem Title="@L["Common_Status"]">
                         <Tag Color="@StatusColor(pl.Status)">@pl.Status</Tag>
                     </DescriptionsItem>
+                    <DescriptionsItem Title="Sort order">@pl.SortOrder</DescriptionsItem>
+                    <DescriptionsItem Title="Max branches">@pl.MaxBranches</DescriptionsItem>
+                    <DescriptionsItem Title="Max active staff">@pl.MaxActiveStaff</DescriptionsItem>
+                    <DescriptionsItem Title="Customer credit">@(pl.CustomerCreditEnabled ? "Enabled" : "Disabled")</DescriptionsItem>
+                    <DescriptionsItem Title="Advanced reports">@(pl.AdvancedReportsEnabled ? "Enabled" : "Disabled")</DescriptionsItem>
+                    <DescriptionsItem Title="Export">@(pl.ExportEnabled ? "Enabled" : "Disabled")</DescriptionsItem>
+                    <DescriptionsItem Title="Trial">@(pl.TrialAllowed ? $"{pl.DefaultTrialDays} days" : "Not allowed")</DescriptionsItem>
                     <DescriptionsItem Title="@L["Common_CreatedUtc"]"><UtcTimestamp Value="@pl.CreatedAtUtc" /></DescriptionsItem>
                     <DescriptionsItem Title="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@pl.UpdatedAtUtc" /></DescriptionsItem>
+                    <DescriptionsItem Title="Description">@(pl.Description ?? "—")</DescriptionsItem>
                 </Descriptions>
 
                 @if (CanManage && pl.Status != "Retired")
                 {
-                    <Card Size="@CardSize.Small" Title="@L["Common_DisplayName"]">
+                    <Card Size="@CardSize.Small" Title="Edit commercial package">
                         <FormValidationSummary Title="@L["Plans_SaveFailed"]" Message="@_formError" IsConflict="_formConflict" />
-                        <Space Direction="SpaceDirection.Vertical" Style="width:100%; max-width:480px;">
+                        <Space Direction="SpaceDirection.Vertical" Style="width:100%; max-width:560px;">
                             <div>
                                 <label class="ant-form-item-label" for="plan-edit-displayname">@L["Common_DisplayName"]</label>
                                 <Input Id="plan-edit-displayname" @bind-Value="_editDisplayName" Size="@InputSize.Small" Disabled="_busy" />
                             </div>
-                            <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveRenameAsync">@L["Common_Save"]</Button>
+                            <div>
+                                <label class="ant-form-item-label" for="plan-edit-description">Description</label>
+                                <TextArea Id="plan-edit-description" @bind-Value="_editDescription" Rows="2" Disabled="_busy" />
+                            </div>
+                            <Alert Type="@AlertType.Info" Message="Plan Key is immutable after creation." ShowIcon="true" />
+                            <Space Wrap>
+                                <AntDesign.InputNumber TValue="int" @bind-Value="_editMaxBranches" Min="1" Placeholder="Max branches" Disabled="_busy" Style="width:140px;" />
+                                <AntDesign.InputNumber TValue="int" @bind-Value="_editMaxStaff" Min="1" Placeholder="Max active staff" Disabled="_busy" Style="width:140px;" />
+                                <AntDesign.InputNumber TValue="int" @bind-Value="_editTrialDays" Min="0" Placeholder="Default trial days" Disabled="_busy" Style="width:140px;" />
+                                <AntDesign.InputNumber TValue="int" @bind-Value="_editSortOrder" Min="0" Placeholder="Sort order" Disabled="_busy" Style="width:120px;" />
+                            </Space>
+                            <Space Wrap>
+                                <Checkbox @bind-Checked="_editCustomerCredit" Disabled="_busy">Customer credit</Checkbox>
+                                <Checkbox @bind-Checked="_editAdvancedReports" Disabled="_busy">Advanced reports</Checkbox>
+                                <Checkbox @bind-Checked="_editExport" Disabled="_busy">Export</Checkbox>
+                                <Checkbox @bind-Checked="_editTrialAllowed" Disabled="_busy">Trial allowed</Checkbox>
+                            </Space>
+                            <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveCommercialAsync">@L["Common_Save"]</Button>
                         </Space>
                     </Card>
                 }
@@ -246,11 +317,30 @@ else
     private string _search = "";
     private string _status = "";
     private string _productCode = "";
+    private List<ProductDto> _productOptions = [];
     private bool _showCreate;
     private string _newProductCode = "";
     private string _newCode = "";
     private string _newDisplayName = "";
+    private string _newDescription = "";
+    private int _newMaxBranches = 1;
+    private int _newMaxStaff = 3;
+    private int _newTrialDays = 14;
+    private int _newSortOrder = 100;
+    private bool _newCustomerCredit;
+    private bool _newAdvancedReports;
+    private bool _newExport;
+    private bool _newTrialAllowed = true;
     private string _editDisplayName = "";
+    private string _editDescription = "";
+    private int _editMaxBranches = 1;
+    private int _editMaxStaff = 3;
+    private int _editTrialDays = 14;
+    private int _editSortOrder = 100;
+    private bool _editCustomerCredit;
+    private bool _editAdvancedReports;
+    private bool _editExport;
+    private bool _editTrialAllowed = true;
     private DateTimeOffset? _expectedUpdatedAt;
     private string? _formError;
     private bool _formConflict;
@@ -262,6 +352,15 @@ else
     {
         _formError = null;
         _formConflict = false;
+        if (_productOptions.Count == 0)
+        {
+            var products = await Api.GetProductsAsync(page: 1, pageSize: 100);
+            if (products is { IsSuccess: true, Data: not null })
+            {
+                _productOptions = products.Data.Items.ToList();
+            }
+        }
+
         if (Id is null)
         {
             await LoadPlansAsync();
@@ -327,6 +426,15 @@ else
     private void BindEditFields(PlanDto plan)
     {
         _editDisplayName = plan.DisplayName;
+        _editDescription = plan.Description ?? "";
+        _editMaxBranches = plan.MaxBranches;
+        _editMaxStaff = plan.MaxActiveStaff;
+        _editTrialDays = plan.DefaultTrialDays;
+        _editSortOrder = plan.SortOrder;
+        _editCustomerCredit = plan.CustomerCreditEnabled;
+        _editAdvancedReports = plan.AdvancedReportsEnabled;
+        _editExport = plan.ExportEnabled;
+        _editTrialAllowed = plan.TrialAllowed;
         _expectedUpdatedAt = plan.UpdatedAtUtc;
     }
 
@@ -346,7 +454,18 @@ else
         _formConflict = false;
         var result = await Api.CreatePlanAsync(
             _newProductCode.Trim(),
-            new CreatePlanRequest(_newCode, _newDisplayName));
+            new CreatePlanRequest(
+                _newCode,
+                _newDisplayName,
+                _newDescription,
+                _newMaxBranches,
+                _newMaxStaff,
+                _newCustomerCredit,
+                _newAdvancedReports,
+                _newExport,
+                _newTrialAllowed,
+                _newTrialDays,
+                _newSortOrder));
         _busy = false;
         if (!result.IsSuccess)
         {
@@ -359,16 +478,27 @@ else
         Nav.NavigateTo($"/admin/plans/{result.Data!.Id}");
     }
 
-    private async Task SaveRenameAsync()
+    private async Task SaveCommercialAsync()
     {
         if (Id is null || _plan?.Data is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
         _formError = null;
         _formConflict = false;
         var productCode = _plan.Data.ProductCode;
-        var result = await Api.RenamePlanAsync(
+        var result = await Api.UpdatePlanCommercialAsync(
             productCode,
             Id.Value,
-            new RenameCatalogRequest(_editDisplayName, _expectedUpdatedAt));
+            new UpdatePlanCommercialRequest(
+                _editDisplayName,
+                _editDescription,
+                _editMaxBranches,
+                _editMaxStaff,
+                _editCustomerCredit,
+                _editAdvancedReports,
+                _editExport,
+                _editTrialAllowed,
+                _editTrialDays,
+                _editSortOrder,
+                _expectedUpdatedAt));
         _busy = false;
         if (!result.IsSuccess)
         {
@@ -394,6 +524,21 @@ else
         }
 
         await Message.SuccessAsync(L["Plans_Activated"].Value);
+        await LoadDetailAsync();
+    }
+
+    private async Task DeactivateAsync()
+    {
+        if (Id is null || _plan?.Data is null || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.DeactivatePlanAsync(_plan.Data.ProductCode, Id.Value);
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            await Message.ErrorAsync(AdminFormErrorMapper.MapPageError(result) ?? L["Common_Error"].Value);
+            return;
+        }
+
+        await Message.SuccessAsync("Plan deactivated.");
         await LoadDetailAsync();
     }
 

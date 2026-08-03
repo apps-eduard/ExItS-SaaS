@@ -6,6 +6,19 @@ namespace ExItS.Platform.UnitTests.Authorization;
 public sealed class PlatformRolePermissionCatalogTests
 {
     [Fact]
+    public void ManageCatalog_is_platform_administrator_only()
+    {
+        Assert.True(PlatformRolePermissionCatalog.RoleHasPermission(
+            PlatformSystemRole.PlatformAdministrator,
+            PlatformPermission.ManageCatalog));
+
+        foreach (var role in new[] { PlatformSystemRole.BillingAdministrator, PlatformSystemRole.PlatformSupport })
+        {
+            Assert.False(PlatformRolePermissionCatalog.RoleHasPermission(role, PlatformPermission.ManageCatalog));
+        }
+    }
+
+    [Fact]
     public void PlatformAdministrator_holds_every_defined_permission()
     {
         var permissions = PlatformRolePermissionCatalog.GetPermissions(PlatformSystemRole.PlatformAdministrator);

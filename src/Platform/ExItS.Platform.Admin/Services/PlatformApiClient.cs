@@ -63,8 +63,12 @@ public sealed class PlatformApiClient(
         SendAsync<PlanDto>(HttpMethod.Post, $"/api/v1/platform/catalog/products/{Escape(productCode)}/plans", request, ct);
     public Task<ApiCallResult<PlanDto>> RenamePlanAsync(string productCode, Guid planId, RenameCatalogRequest request, CancellationToken ct = default) =>
         SendAsync<PlanDto>(HttpMethod.Patch, $"/api/v1/platform/catalog/products/{Escape(productCode)}/plans/{planId}/rename", request, ct);
+    public Task<ApiCallResult<PlanDto>> UpdatePlanCommercialAsync(string productCode, Guid planId, UpdatePlanCommercialRequest request, CancellationToken ct = default) =>
+        SendAsync<PlanDto>(HttpMethod.Patch, $"/api/v1/platform/catalog/products/{Escape(productCode)}/plans/{planId}/commercial", request, ct);
     public Task<ApiCallResult<PlanDto>> ActivatePlanAsync(string productCode, Guid planId, CancellationToken ct = default) =>
         SendAsync<PlanDto>(HttpMethod.Post, $"/api/v1/platform/catalog/products/{Escape(productCode)}/plans/{planId}/activate", null, ct);
+    public Task<ApiCallResult<PlanDto>> DeactivatePlanAsync(string productCode, Guid planId, CancellationToken ct = default) =>
+        SendAsync<PlanDto>(HttpMethod.Post, $"/api/v1/platform/catalog/products/{Escape(productCode)}/plans/{planId}/deactivate", null, ct);
     public Task<ApiCallResult<PlanDto>> RetirePlanAsync(string productCode, Guid planId, CancellationToken ct = default) =>
         SendAsync<PlanDto>(HttpMethod.Post, $"/api/v1/platform/catalog/products/{Escape(productCode)}/plans/{planId}/retire", null, ct);
     public Task<ApiCallResult<IReadOnlyList<PlanVersionDto>>> GetPlanVersionsAsync(string productCode, Guid planId, CancellationToken ct = default) =>

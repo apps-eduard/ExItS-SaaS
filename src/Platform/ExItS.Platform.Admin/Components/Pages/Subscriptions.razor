@@ -31,7 +31,7 @@
     <Alert Type="@AlertType.Warning" Message="@L["Subscriptions_Warning"]" ShowIcon="true" Style="margin-bottom:12px;" />
 
     <Space Style="margin-bottom:12px; width:100%;" Wrap>
-        <Input @bind-Value="_search" Size="@InputSize.Small" Placeholder="@L["Common_Search"]" Style="width:200px;" OnPressEnter="ApplyFiltersAsync" />
+        <Input @bind-Value="_search" Size="@InputSize.Small" Placeholder="Search organization or plan" Style="width:220px;" OnPressEnter="ApplyFiltersAsync" />
         <Select TItemValue="string" TItem="string" @bind-Value="_status" Size="@InputSize.Small" Placeholder="@L["Common_Status"]" Style="width:140px;" AllowClear>
             <SelectOptions>
                 <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
@@ -44,12 +44,28 @@
                 <SelectOption TItemValue="string" TItem="string" Value="@("Expired")" Label="@L["Status_Expired"]" />
             </SelectOptions>
         </Select>
-        <Input @bind-Value="_productCode" Size="@InputSize.Small" Placeholder="@L["OrgProductAccess_ProductCode"]" Style="width:160px;" OnPressEnter="ApplyFiltersAsync" />
-        <Input @bind-Value="_organizationIdText" Size="@InputSize.Small" Placeholder="Organization ID" Style="width:200px;" OnPressEnter="ApplyFiltersAsync" />
+        <Select TItemValue="string" TItem="string" @bind-Value="_productCode" Size="@InputSize.Small" Placeholder="@L["Common_Product"]" Style="width:200px;" AllowClear>
+            <SelectOptions>
+                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
+                @foreach (var product in _productOptions)
+                {
+                    <SelectOption TItemValue="string" TItem="string" Value="@product.Code" Label="@(string.IsNullOrWhiteSpace(product.DisplayName) ? product.Code : product.DisplayName)" />
+                }
+            </SelectOptions>
+        </Select>
+        <Select TItemValue="string" TItem="string" @bind-Value="_planIdText" Size="@InputSize.Small" Placeholder="@L["Common_Plan"]" Style="width:160px;" AllowClear>
+            <SelectOptions>
+                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
+                @foreach (var plan in _planOptions)
+                {
+                    <SelectOption TItemValue="string" TItem="string" Value="@plan.Id.ToString("D")" Label="@plan.DisplayName" />
+                }
+            </SelectOptions>
+        </Select>
         <Select TItemValue="string" TItem="string" @bind-Value="_isTrialFilter" Size="@InputSize.Small" Placeholder="Trial" Style="width:120px;" AllowClear>
             <SelectOptions>
                 <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
-                <SelectOption TItemValue="string" TItem="string" Value="@("true")" Label="Trial" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("true")" Label="Trialing only" />
                 <SelectOption TItemValue="string" TItem="string" Value="@("false")" Label="Paid" />
             </SelectOptions>
         </Select>
@@ -62,17 +78,47 @@
         <Card Size="@CardSize.Small" Title="@L["Subscriptions_StartTrial"]" Style="margin-bottom:12px;">
             <FormValidationSummary Title="@L["Subscriptions_StartTrialFailed"]" Message="@_formError" IsConflict="_formConflict" />
             <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
-                <Input @bind-Value="_createOrgId" Size="@InputSize.Small" Placeholder="Organization GUID" Disabled="_busy" />
-                <Input @bind-Value="_createProductCode" Size="@InputSize.Small" Placeholder="@L["OrgProductAccess_ProductCode"]" Disabled="_busy" />
-                <Input @bind-Value="_createPlanId" Size="@InputSize.Small" Placeholder="Plan GUID" Disabled="_busy" />
-                <Input @bind-Value="_createPlanVersionId" Size="@InputSize.Small" Placeholder="Plan version GUID" Disabled="_busy" />
-                <Input @bind-Value="_createTrialDefinitionId" Size="@InputSize.Small" Placeholder="Trial definition GUID (trial only)" Disabled="_busy" />
-                <Input @bind-Value="_createPeriodStart" Size="@InputSize.Small" Placeholder="Paid period start UTC" Disabled="_busy" />
-                <Input @bind-Value="_createPeriodEnd" Size="@InputSize.Small" Placeholder="Paid period end UTC" Disabled="_busy" />
+                <div>
+                    <label class="ant-form-item-label">Organization</label>
+                    <Select TItemValue="string" TItem="string" @bind-Value="_createOrgId" Style="width:100%;" Disabled="_busy" Placeholder="Select organization" AllowClear>
+                        <SelectOptions>
+                            @foreach (var org in _organizationOptions)
+                            {
+                                <SelectOption TItemValue="string" TItem="string" Value="@org.Id.ToString("D")" Label="@org.DisplayName" />
+                            }
+                        </SelectOptions>
+                    </Select>
+                </div>
+                <div>
+                    <label class="ant-form-item-label">Product</label>
+                    <Select TItemValue="string" TItem="string" Value="@_createProductCode" ValueChanged="OnCreateProductChangedAsync" Style="width:100%;" Disabled="_busy" Placeholder="Select product" AllowClear>
+                        <SelectOptions>
+                            @foreach (var product in _productOptions)
+                            {
+                                <SelectOption TItemValue="string" TItem="string" Value="@product.Code" Label="@(string.IsNullOrWhiteSpace(product.DisplayName) ? product.Code : product.DisplayName)" />
+                            }
+                        </SelectOptions>
+                    </Select>
+                </div>
+                <div>
+                    <label class="ant-form-item-label">Plan</label>
+                    <Select TItemValue="string" TItem="string" Value="@_createPlanId" ValueChanged="OnCreatePlanChangedAsync" Style="width:100%;" Disabled="_busy" Placeholder="Select plan" AllowClear>
+                        <SelectOptions>
+                            @foreach (var plan in CreatePlanChoices)
+                            {
+                                <SelectOption TItemValue="string" TItem="string" Value="@plan.Id.ToString("D")" Label="@plan.DisplayName" />
+                            }
+                        </SelectOptions>
+                    </Select>
+                </div>
+                <Checkbox @bind-Checked="_createAsTrial" Disabled="_busy">Start as trial</Checkbox>
+                @if (!_createAsTrial)
+                {
+                    <Input @bind-Value="_createPeriodStart" Size="@InputSize.Small" Placeholder="Paid period start UTC" Disabled="_busy" />
+                    <Input @bind-Value="_createPeriodEnd" Size="@InputSize.Small" Placeholder="Paid period / renewal end UTC" Disabled="_busy" />
+                }
                 <Space>
-                    <Button Size="@ButtonSize.Small" OnClick="LoadCatalogAsync" Disabled="_busy">@L["Subscriptions_LoadCatalog"]</Button>
-                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="StartTrialAsync">@L["Subscriptions_StartTrialButton"]</Button>
-                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreatePaidAsync">Create paid</Button>
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateSubscriptionAsync">@L["Common_Create"]</Button>
                     <Button Size="@ButtonSize.Small" OnClick="HideCreate" Disabled="_busy">@L["Common_Cancel"]</Button>
                 </Space>
             </Space>
@@ -99,29 +145,36 @@
                Bordered
                RemoteDataSource
                OnPageIndexChange="OnPageChangedAsync"
-               ScrollX="1100">
-            <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" Sortable>
-                <a href="/admin/subscriptions/@context.Id">@context.ProductCode</a>
+               ScrollX="1200">
+            <PropertyColumn Property="c => c.OrganizationDisplayName" Title="@L["Common_Organization"]" Sortable>
+                <a href="/admin/organizations/@context.OrganizationId">@(string.IsNullOrWhiteSpace(context.OrganizationDisplayName) ? "Organization" : context.OrganizationDisplayName)</a>
             </PropertyColumn>
-            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable>
+            <PropertyColumn Property="c => c.ProductDisplayName" Title="@L["Common_Product"]" Sortable>
+                <a href="/admin/subscriptions/@context.Id">@(string.IsNullOrWhiteSpace(context.ProductDisplayName) ? "Product" : context.ProductDisplayName)</a>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.PlanDisplayName" Title="@L["Common_Plan"]" Sortable>
+                @(string.IsNullOrWhiteSpace(context.PlanDisplayName) ? "—" : context.PlanDisplayName)
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.Status" Title="Subscription Status" Sortable>
                 <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
             </PropertyColumn>
-            <PropertyColumn Property="c => c.OrganizationId" Title="@L["Common_Organization"]">
-                <a href="/admin/organizations/@context.OrganizationId">@context.OrganizationId</a>
-            </PropertyColumn>
-            <PropertyColumn Property="c => c.PlanId" Title="@L["Common_Plan"]" />
-            <PropertyColumn Property="c => c.TrialEndUtc" Title="@L["Subscriptions_Column_TrialEndUtc"]" Format="u" Sortable />
-            <PropertyColumn Property="c => c.PaidPeriodEndUtc" Title="Paid end UTC" Format="u" Sortable />
+            <PropertyColumn Property="c => c.TrialStartUtc" Title="Trial Start" Format="u" />
+            <PropertyColumn Property="c => c.TrialEndUtc" Title="Trial End" Format="u" Sortable />
+            <PropertyColumn Property="c => c.PaidPeriodEndUtc" Title="Paid Through" Format="u" Sortable />
+            <PropertyColumn Property="c => c.RenewalDateUtc" Title="Renewal Date" Format="u" />
             <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Format="u" Sortable />
-            <ActionColumn Title="@L["Common_Open"]" Width="88">
-                <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/subscriptions/{context.Id}")">@L["Common_Open"]</a>
+            <ActionColumn Title="@L["Common_Actions"]" Width="88">
+                <Tooltip Title="@L["Common_Open"].Value">
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" Icon="eye" AriaLabel="@L["Common_Open"].Value"
+                            OnClick="@(() => Nav.NavigateTo($"/admin/subscriptions/{context.Id}"))" />
+                </Tooltip>
             </ActionColumn>
         </Table>
     }
 }
 else
 {
-    <PageHeader Class="exits-page-header" Title="@(_detail?.Data?.ProductCode ?? L["Subscriptions_DetailTitle"])" SubTitle="@L["Subscriptions_DetailDescription"]">
+    <PageHeader Class="exits-page-header" Title="@(_detail?.Data?.OrganizationDisplayName ?? L["Subscriptions_DetailTitle"])" SubTitle="@(_detail?.Data is { } d ? $"{(string.IsNullOrWhiteSpace(d.ProductDisplayName) ? "Product" : d.ProductDisplayName)} · {(string.IsNullOrWhiteSpace(d.PlanDisplayName) ? "Plan" : d.PlanDisplayName)}" : L["Subscriptions_DetailDescription"])">
         <PageHeaderBreadcrumb>
             <Breadcrumb>
                 <BreadcrumbItem Href="/admin/subscriptions">@L["Nav_Subscriptions"]</BreadcrumbItem>
@@ -205,17 +258,30 @@ else
         <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
             <DescriptionsItem Title="@L["Common_Status"]"><Tag Color="@StatusColor(s.Status)">@s.Status</Tag></DescriptionsItem>
             <DescriptionsItem Title="@L["Common_Version"]">@s.Version</DescriptionsItem>
-            <DescriptionsItem Title="@L["Common_Organization"]"><a href="/admin/organizations/@s.OrganizationId">@s.OrganizationId</a></DescriptionsItem>
-            <DescriptionsItem Title="@L["Common_Product"]">@s.ProductCode</DescriptionsItem>
-            <DescriptionsItem Title="@L["Common_Plan"]">@s.PlanId</DescriptionsItem>
-            <DescriptionsItem Title="Plan version">@s.PlanVersionId</DescriptionsItem>
-            <DescriptionsItem Title="Trial definition">@(s.TrialDefinitionId?.ToString() ?? "—")</DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_Organization"]">
+                <a href="/admin/organizations/@s.OrganizationId">@(string.IsNullOrWhiteSpace(s.OrganizationDisplayName) ? "Organization" : s.OrganizationDisplayName)</a>
+            </DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_Product"]">@(string.IsNullOrWhiteSpace(s.ProductDisplayName) ? "Product" : s.ProductDisplayName)</DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_Plan"]">@(string.IsNullOrWhiteSpace(s.PlanDisplayName) ? "—" : s.PlanDisplayName)</DescriptionsItem>
+            <DescriptionsItem Title="Trial start"><UtcTimestamp Value="@s.TrialStartUtc" /></DescriptionsItem>
             <DescriptionsItem Title="@L["Subscriptions_Column_TrialEndUtc"]"><UtcTimestamp Value="@s.TrialEndUtc" /></DescriptionsItem>
-            <DescriptionsItem Title="Paid period start"><UtcTimestamp Value="@s.PaidPeriodStartUtc" /></DescriptionsItem>
-            <DescriptionsItem Title="Paid period end"><UtcTimestamp Value="@s.PaidPeriodEndUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="Paid through"><UtcTimestamp Value="@s.PaidPeriodEndUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="Renewal date"><UtcTimestamp Value="@s.RenewalDateUtc" /></DescriptionsItem>
             <DescriptionsItem Title="Grace end"><UtcTimestamp Value="@s.GracePeriodEndUtc" /></DescriptionsItem>
             <DescriptionsItem Title="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@s.UpdatedAtUtc" /></DescriptionsItem>
         </Descriptions>
+
+        <Card Size="@CardSize.Small" Title="Advanced technical IDs" Style="margin-bottom:12px;">
+            <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1">
+                <DescriptionsItem Title="Subscription ID">@s.Id</DescriptionsItem>
+                <DescriptionsItem Title="Organization ID">@s.OrganizationId</DescriptionsItem>
+                <DescriptionsItem Title="Product key">@s.ProductCode</DescriptionsItem>
+                <DescriptionsItem Title="Plan ID">@s.PlanId</DescriptionsItem>
+                <DescriptionsItem Title="Plan key">@(s.PlanKey ?? "—")</DescriptionsItem>
+                <DescriptionsItem Title="Plan version ID">@s.PlanVersionId</DescriptionsItem>
+                <DescriptionsItem Title="Trial definition ID">@(s.TrialDefinitionId?.ToString() ?? "—")</DescriptionsItem>
+            </Descriptions>
+        </Card>
 
         @if (CanManage && s.Status is not ("Cancelled" or "Expired"))
         {
@@ -266,8 +332,11 @@ else
     private string _search = "";
     private string _status = "";
     private string _productCode = "";
-    private string _organizationIdText = "";
+    private string _planIdText = "";
     private string _isTrialFilter = "";
+    private List<ProductDto> _productOptions = [];
+    private List<PlanDto> _planOptions = [];
+    private List<OrganizationDto> _organizationOptions = [];
     private bool _showCreate;
     private bool _busy;
     private string? _formError;
@@ -278,6 +347,7 @@ else
     private string _createPlanId = "";
     private string _createPlanVersionId = "";
     private string _createTrialDefinitionId = "";
+    private bool _createAsTrial = true;
     private string _createPeriodStart = "";
     private string _createPeriodEnd = "";
     private string _periodStartText = "";
@@ -286,6 +356,14 @@ else
 
     private bool CanManage => Permissions.HasPermission(PlatformPermissionCodes.ManageSubscriptions);
     private int? ExpectedVersion => _detail?.Data?.Version;
+
+    private IEnumerable<PlanDto> CreatePlanChoices =>
+        _planOptions
+            .Where(p => string.IsNullOrWhiteSpace(_createProductCode)
+                        || string.Equals(p.ProductCode, _createProductCode, StringComparison.OrdinalIgnoreCase))
+            .Where(p => p.Status == "Active")
+            .OrderBy(p => p.SortOrder)
+            .ThenBy(p => p.DisplayName, StringComparer.OrdinalIgnoreCase);
 
     protected override async Task OnParametersSetAsync()
     {
@@ -326,20 +404,117 @@ else
         _ => null
     };
 
-    private Guid? ParseOrgFilter() =>
-        Guid.TryParse(_organizationIdText.Trim(), out var id) ? id : null;
+    private Guid? ParsePlanFilter() =>
+        Guid.TryParse(_planIdText.Trim(), out var id) ? id : null;
 
     private async Task LoadListAsync()
     {
+        if (_productOptions.Count == 0 || _planOptions.Count == 0)
+        {
+            await LoadFilterCatalogAsync();
+        }
+
         _list = await Api.GetSubscriptionsAsync(
             status: string.IsNullOrWhiteSpace(_status) ? null : _status,
             productCode: string.IsNullOrWhiteSpace(_productCode) ? null : _productCode.Trim(),
-            organizationId: string.IsNullOrWhiteSpace(_organizationIdText) ? null : ParseOrgFilter(),
+            organizationId: null,
             search: string.IsNullOrWhiteSpace(_search) ? null : _search.Trim(),
             isTrial: ParseIsTrial(),
+            planId: string.IsNullOrWhiteSpace(_planIdText) ? null : ParsePlanFilter(),
             sortBy: "UpdatedAtUtc",
             sortDesc: true,
             page: _page);
+    }
+
+    private async Task LoadFilterCatalogAsync()
+    {
+        var products = await Api.GetProductsAsync(page: 1, pageSize: 100);
+        if (products is { IsSuccess: true, Data: not null })
+        {
+            _productOptions = products.Data.Items.ToList();
+        }
+
+        var plans = await Api.GetPlansAsync(page: 1, pageSize: 100);
+        if (plans is { IsSuccess: true, Data: not null })
+        {
+            _planOptions = plans.Data.Items
+                .OrderBy(p => p.SortOrder)
+                .ThenBy(p => p.DisplayName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        var orgs = await Api.GetOrganizationsAsync(page: 1, pageSize: 100, status: "Active");
+        if (orgs is { IsSuccess: true, Data: not null })
+        {
+            _organizationOptions = orgs.Data.Items
+                .OrderBy(o => o.DisplayName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+    }
+
+    private async Task OnCreateProductChangedAsync(string value)
+    {
+        _createProductCode = value ?? "";
+        _createPlanId = "";
+        _createPlanVersionId = "";
+        _createTrialDefinitionId = "";
+        await Task.CompletedTask;
+    }
+
+    private async Task OnCreatePlanChangedAsync(string value)
+    {
+        _createPlanId = value ?? "";
+        _createPlanVersionId = "";
+        _createTrialDefinitionId = "";
+        if (string.IsNullOrWhiteSpace(_createPlanId) || string.IsNullOrWhiteSpace(_createProductCode))
+        {
+            return;
+        }
+
+        await ResolveCatalogIdsAsync();
+    }
+
+    private async Task ResolveCatalogIdsAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_createProductCode) || !Guid.TryParse(_createPlanId, out var planId))
+        {
+            return;
+        }
+
+        var overview = await Api.GetProductOverviewAsync(_createProductCode.Trim());
+        if (!overview.IsSuccess || overview.Data is null)
+        {
+            return;
+        }
+
+        var versions = await Api.GetPlanVersionsAsync(_createProductCode.Trim(), planId);
+        var published = versions.IsSuccess
+            ? versions.Data?
+                .Where(v => v.Status == "Published")
+                .OrderByDescending(v => v.VersionNumber)
+                .FirstOrDefault()
+            : null;
+        if (published is not null)
+        {
+            _createPlanVersionId = published.Id.ToString("D");
+        }
+
+        var trial = overview.Data.Trials.FirstOrDefault(t =>
+            t.Status == "Active" && (t.PlanId is null || t.PlanId == planId));
+        trial ??= overview.Data.Trials.FirstOrDefault(t => t.Status == "Active");
+        _createTrialDefinitionId = trial?.Id.ToString("D") ?? "";
+    }
+
+    private async Task CreateSubscriptionAsync()
+    {
+        if (_createAsTrial)
+        {
+            await StartTrialAsync();
+        }
+        else
+        {
+            await CreatePaidAsync();
+        }
     }
 
     private async Task ApplyFiltersAsync()
@@ -353,7 +528,7 @@ else
         _search = "";
         _status = "";
         _productCode = "";
-        _organizationIdText = "";
+        _planIdText = "";
         _isTrialFilter = "";
         _page = 1;
         await LoadListAsync();
@@ -383,32 +558,14 @@ else
 
     private async Task LoadCatalogAsync()
     {
-        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
-        _formError = null;
-        if (string.IsNullOrWhiteSpace(_createProductCode))
+        await ResolveCatalogIdsAsync();
+        if (string.IsNullOrWhiteSpace(_createPlanVersionId))
         {
-            _busy = false;
-            _formError = "Product code is required.";
+            await Message.ErrorAsync("Could not resolve a published plan version for the selected plan.");
             return;
         }
 
-        var overview = await Api.GetProductOverviewAsync(_createProductCode.Trim());
-        _busy = false;
-        if (!overview.IsSuccess || overview.Data is null)
-        {
-            _formConflict = AdminFormErrorMapper.IsConflict(overview.Error);
-            _formError = AdminFormErrorMapper.MapPageError(overview);
-            await Message.ErrorAsync(_formError ?? L["Common_Error"].Value);
-            return;
-        }
-
-        var plan = overview.Data.Plans.FirstOrDefault(p => p.Status == "Active");
-        var version = overview.Data.PublishedPlanVersions.OrderByDescending(v => v.VersionNumber).FirstOrDefault();
-        var trial = overview.Data.Trials.FirstOrDefault(t => t.Status == "Active");
-        if (plan is not null) _createPlanId = plan.Id.ToString("D");
-        if (version is not null) _createPlanVersionId = version.Id.ToString("D");
-        if (trial is not null) _createTrialDefinitionId = trial.Id.ToString("D");
-        await Message.SuccessAsync("Catalog loaded.");
+        await Message.SuccessAsync("Catalog resolved for selected plan.");
     }
 
     private async Task StartTrialAsync()
@@ -416,13 +573,18 @@ else
         if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
         _formError = null;
         _formConflict = false;
+        if (string.IsNullOrWhiteSpace(_createPlanVersionId) || string.IsNullOrWhiteSpace(_createTrialDefinitionId))
+        {
+            await ResolveCatalogIdsAsync();
+        }
+
         if (!Guid.TryParse(_createOrgId, out var orgId)
             || !Guid.TryParse(_createPlanId, out var planId)
             || !Guid.TryParse(_createPlanVersionId, out var versionId)
             || !Guid.TryParse(_createTrialDefinitionId, out var trialId))
         {
             _busy = false;
-            _formError = "Organization, plan, plan version, and trial definition IDs must be valid GUIDs.";
+            _formError = "Select an organization, product, and plan that supports trials (published version + trial definition required).";
             return;
         }
 
@@ -445,6 +607,11 @@ else
         if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
         _formError = null;
         _formConflict = false;
+        if (string.IsNullOrWhiteSpace(_createPlanVersionId))
+        {
+            await ResolveCatalogIdsAsync();
+        }
+
         if (!Guid.TryParse(_createOrgId, out var orgId)
             || !Guid.TryParse(_createPlanId, out var planId)
             || !Guid.TryParse(_createPlanVersionId, out var versionId)
@@ -452,7 +619,7 @@ else
             || !DateTimeOffset.TryParse(_createPeriodEnd, out var end))
         {
             _busy = false;
-            _formError = "Organization, plan, plan version, and paid period timestamps are required.";
+            _formError = "Select organization, product, and plan, and provide a valid paid period.";
             return;
         }
 

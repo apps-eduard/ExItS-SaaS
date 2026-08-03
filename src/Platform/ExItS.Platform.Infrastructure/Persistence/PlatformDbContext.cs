@@ -122,7 +122,16 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(64).IsRequired();
             entity.HasIndex(e => new { e.ProductCode, e.Code }).IsUnique();
             entity.Property(e => e.DisplayName).HasColumnName("display_name").HasMaxLength(256).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(2000);
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.MaxBranches).HasColumnName("max_branches").HasDefaultValue(1);
+            entity.Property(e => e.MaxActiveStaff).HasColumnName("max_active_staff").HasDefaultValue(3);
+            entity.Property(e => e.CustomerCreditEnabled).HasColumnName("customer_credit_enabled").HasDefaultValue(false);
+            entity.Property(e => e.AdvancedReportsEnabled).HasColumnName("advanced_reports_enabled").HasDefaultValue(false);
+            entity.Property(e => e.ExportEnabled).HasColumnName("export_enabled").HasDefaultValue(false);
+            entity.Property(e => e.TrialAllowed).HasColumnName("trial_allowed").HasDefaultValue(true);
+            entity.Property(e => e.DefaultTrialDays).HasColumnName("default_trial_days").HasDefaultValue(14);
+            entity.Property(e => e.SortOrder).HasColumnName("sort_order").HasDefaultValue(100);
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
         });

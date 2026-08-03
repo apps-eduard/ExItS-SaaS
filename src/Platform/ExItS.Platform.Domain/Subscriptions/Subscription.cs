@@ -13,8 +13,8 @@ public sealed class Subscription
     public SubscriptionId Id { get; }
     public PlatformOrganizationId OrganizationId { get; }
     public ProductCode ProductCode { get; }
-    public PlanId PlanId { get; }
-    public PlanVersionId PlanVersionId { get; }
+    public PlanId PlanId { get; private set; }
+    public PlanVersionId PlanVersionId { get; private set; }
     public TrialDefinitionId? TrialDefinitionId { get; private set; }
     public SubscriptionStatus Status { get; private set; }
     public DateTimeOffset? TrialStartUtc { get; private set; }
@@ -356,6 +356,36 @@ public sealed class Subscription
         }
 
         Status = target;
+        UpdatedAtUtc = utcNow;
+        Version++;
+    }
+
+    /// <summary>
+    /// Platform catalog migration only: rebinds Plan/PlanVersion without changing lifecycle status.
+    /// Does not assign Product roles or change Account Class.
+    /// </summary>
+    public void RebindCommercialPackage(Plan plan, PlanVersion planVersion, DateTimeOffset utcNow)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        ArgumentNullException.ThrowIfNull(planVersion);
+        DomainTime.EnsureUtc(utcNow);
+        EnsureSameProduct(ProductCode, plan.ProductCode, planVersion.ProductCode);
+        if (planVersion.PlanId != plan.Id)
+        {
+            throw new DomainException(
+                DomainErrorCodes.ProductMismatch,
+                "Plan version does not belong to the target Plan.");
+        }
+
+        if (planVersion.Status != PlanVersionStatus.Published)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPlanVersionTransition,
+                "Only a published Plan version may be bound to a Subscription.");
+        }
+
+        PlanId = plan.Id;
+        PlanVersionId = planVersion.Id;
         UpdatedAtUtc = utcNow;
         Version++;
     }

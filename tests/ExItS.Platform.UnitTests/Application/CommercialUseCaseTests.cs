@@ -18,6 +18,85 @@ public sealed class CommercialUseCaseTests
     private static readonly DateTimeOffset T0 = new(2026, 7, 29, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
+    public async Task StartTrial_rejects_inactive_plan()
+    {
+        var clock = new FixedClock(T0);
+        var uow = new NoOpUnitOfWork();
+        var orgs = new InMemoryPlatformOrganizationRepository();
+        var products = new InMemoryProductRepository();
+        var plans = new InMemoryPlanRepository();
+        var trials = new InMemoryTrialDefinitionRepository();
+        var subscriptions = new InMemorySubscriptionRepository();
+
+        var org = (await new CreatePlatformOrganization(orgs, uow, clock)
+            .ExecuteAsync("Acme Group", "acme-inactive-plan")).Value!;
+        var product = (await new CreateProduct(products, uow, clock)
+            .ExecuteAsync(ProductCode.PinoyBusinessPos, "Pinoy Business POS")).Value!;
+        var plan = (await new CreatePlan(products, plans, uow, clock)
+            .ExecuteAsync(product.Code.Value, MvpPosPlanCodes.Business, "Business")).Value!;
+        plan.Activate(T0);
+        plan.Deactivate(T0.AddMinutes(1));
+        await plans.UpdateAsync(plan);
+
+        var version = PlanVersion.CreateDraft(plan, 1, T0, BillingPeriod.Monthly, true, [], T0);
+        version.Publish(T0);
+        await plans.AddVersionAsync(version);
+
+        var trial = UtangTrialTestFactory.CreateConfigured(T0, TimeSpan.FromDays(7), plan.Id);
+        await trials.AddAsync(trial);
+
+        var start = await new StartTrialSubscription(orgs, products, plans, trials, subscriptions, uow, clock)
+            .ExecuteAsync(org.Id, plan.Id, version.Id, trial.Id);
+        Assert.False(start.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.SubscriptionIneligible, start.ErrorCode);
+        Assert.Contains("active plan", start.ErrorMessage!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ActivatePaidSubscription_rejects_retired_and_inactive_plans()
+    {
+        var clock = new FixedClock(T0);
+        var uow = new NoOpUnitOfWork();
+        var orgs = new InMemoryPlatformOrganizationRepository();
+        var products = new InMemoryProductRepository();
+        var plans = new InMemoryPlanRepository();
+        var subscriptions = new InMemorySubscriptionRepository();
+
+        var org = (await new CreatePlatformOrganization(orgs, uow, clock)
+            .ExecuteAsync("Acme Group", "acme-paid-plan")).Value!;
+        await new CreateProduct(products, uow, clock).ExecuteAsync(ProductCode.PinoyBusinessPos, "POS");
+
+        var inactivePlan = (await new CreatePlan(products, plans, uow, clock)
+            .ExecuteAsync(ProductCode.PinoyBusinessPos, "inactive-paid", "Inactive Paid")).Value!;
+        inactivePlan.Activate(T0);
+        inactivePlan.Deactivate(T0.AddMinutes(1));
+        await plans.UpdateAsync(inactivePlan);
+        var inactiveVersion = PlanVersion.CreateDraft(inactivePlan, 1, T0, BillingPeriod.Monthly, false, [], T0);
+        inactiveVersion.Publish(T0);
+        await plans.AddVersionAsync(inactiveVersion);
+
+        var inactivePaid = await new ActivatePaidSubscription(orgs, products, plans, subscriptions, uow, clock)
+            .ExecuteAsync(org.Id, inactivePlan.Id, inactiveVersion.Id, T0, T0.AddDays(30));
+        Assert.False(inactivePaid.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.SubscriptionIneligible, inactivePaid.ErrorCode);
+
+        var retiredPlan = (await new CreatePlan(products, plans, uow, clock)
+            .ExecuteAsync(ProductCode.PinoyBusinessPos, "retired-paid", "Retired Paid")).Value!;
+        retiredPlan.Activate(T0);
+        retiredPlan.Retire(T0.AddMinutes(2));
+        await plans.UpdateAsync(retiredPlan);
+        var retiredVersion = PlanVersion.CreateDraft(retiredPlan, 1, T0, BillingPeriod.Monthly, false, [], T0);
+        retiredVersion.Publish(T0);
+        await plans.AddVersionAsync(retiredVersion);
+
+        var retiredPaid = await new ActivatePaidSubscription(orgs, products, plans, subscriptions, uow, clock)
+            .ExecuteAsync(org.Id, retiredPlan.Id, retiredVersion.Id, T0, T0.AddDays(30));
+        Assert.False(retiredPaid.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.SubscriptionIneligible, retiredPaid.ErrorCode);
+        Assert.Contains("Retired", retiredPaid.ErrorMessage!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task StartTrial_rejects_retired_plan()
     {
         var clock = new FixedClock(T0);

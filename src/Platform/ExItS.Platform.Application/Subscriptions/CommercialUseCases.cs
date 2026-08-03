@@ -81,11 +81,20 @@ public sealed class StartTrialSubscription
                 "Trials can only be started for an active product.");
         }
 
-        if (plan.Status != PlanStatus.Active)
+        if (!plan.AcceptsNewSubscriptions)
         {
             return ApplicationResult<Subscription>.Failure(
                 ApplicationErrorCodes.SubscriptionIneligible,
-                "Trials can only be started for an active plan.");
+                plan.Status == PlanStatus.Retired
+                    ? "Retired plans cannot accept new subscriptions."
+                    : "Trials can only be started for an active plan.");
+        }
+
+        if (!plan.TrialAllowed)
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.SubscriptionIneligible,
+                "This plan does not allow trials.");
         }
 
         var version = await _plans.GetVersionByIdAsync(planVersionId, cancellationToken).ConfigureAwait(false);
@@ -201,11 +210,13 @@ public sealed class ActivatePaidSubscription
                 "Paid subscriptions can only be started for an active product.");
         }
 
-        if (plan.Status != PlanStatus.Active)
+        if (!plan.AcceptsNewSubscriptions)
         {
             return ApplicationResult<Subscription>.Failure(
                 ApplicationErrorCodes.SubscriptionIneligible,
-                "Paid subscriptions can only be started for an active plan.");
+                plan.Status == PlanStatus.Retired
+                    ? "Retired plans cannot accept new subscriptions."
+                    : "Paid subscriptions can only be started for an active plan.");
         }
 
         var version = await _plans.GetVersionByIdAsync(planVersionId, cancellationToken).ConfigureAwait(false);

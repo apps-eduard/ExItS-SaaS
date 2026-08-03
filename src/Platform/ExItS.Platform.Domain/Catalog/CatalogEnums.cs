@@ -24,7 +24,8 @@ public enum PlanStatus
 {
     Draft = 1,
     Active = 2,
-    Retired = 3
+    Retired = 3,
+    Inactive = 4
 }
 
 public enum PlanVersionStatus

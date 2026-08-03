@@ -1,4 +1,5 @@
 using ExItS.Platform.Application.Catalog;
+using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Domain.Subscriptions;
@@ -24,15 +25,30 @@ public sealed record SubscriptionDto(
     DateTimeOffset? ExpiredAtUtc,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc,
-    int Version);
+    int Version,
+    string? OrganizationDisplayName = null,
+    string? ProductDisplayName = null,
+    string? PlanDisplayName = null,
+    string? PlanKey = null,
+    DateTimeOffset? RenewalDateUtc = null);
 
 public sealed class SubscriptionQueryService
 {
     private readonly ISubscriptionRepository _subscriptions;
+    private readonly IPlatformOrganizationRepository _organizations;
+    private readonly IProductRepository _products;
+    private readonly IPlanRepository _plans;
 
-    public SubscriptionQueryService(ISubscriptionRepository subscriptions)
+    public SubscriptionQueryService(
+        ISubscriptionRepository subscriptions,
+        IPlatformOrganizationRepository organizations,
+        IProductRepository products,
+        IPlanRepository plans)
     {
         _subscriptions = subscriptions;
+        _organizations = organizations;
+        _products = products;
+        _plans = plans;
     }
 
     public async Task<SubscriptionDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -41,7 +57,7 @@ public sealed class SubscriptionQueryService
             .GetByIdAsync(SubscriptionId.From(id), cancellationToken)
             .ConfigureAwait(false);
 
-        return subscription is null ? null : Map(subscription);
+        return subscription is null ? null : await MapAsync(subscription, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<SubscriptionDto?> GetCurrentAsync(
@@ -56,7 +72,7 @@ public sealed class SubscriptionQueryService
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return subscription is null ? null : Map(subscription);
+        return subscription is null ? null : await MapAsync(subscription, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<PagedResult<SubscriptionDto>> ListByOrganizationAsync(
@@ -71,7 +87,7 @@ public sealed class SubscriptionQueryService
             .ListByOrganizationAsync(PlatformOrganizationId.From(organizationId), status, skip, take, cancellationToken)
             .ConfigureAwait(false);
 
-        return ToPagedResult(items, totalCount, page, take);
+        return await ToPagedResultAsync(items, totalCount, page, take, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<PagedResult<SubscriptionDto>> ListByProductAsync(
@@ -86,7 +102,7 @@ public sealed class SubscriptionQueryService
             .ListByProductAsync(ProductCode.Create(productCode), status, skip, take, cancellationToken)
             .ConfigureAwait(false);
 
-        return ToPagedResult(items, totalCount, page, take);
+        return await ToPagedResultAsync(items, totalCount, page, take, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<PagedResult<SubscriptionDto>> ListExpiringTrialsAsync(
@@ -101,7 +117,7 @@ public sealed class SubscriptionQueryService
             .ListExpiringTrialsAsync(asOfUtc, throughUtc, skip, take, cancellationToken)
             .ConfigureAwait(false);
 
-        return ToPagedResult(items, totalCount, page, take);
+        return await ToPagedResultAsync(items, totalCount, page, take, cancellationToken).ConfigureAwait(false);
     }
 
     public Task<PagedResult<SubscriptionDto>> ListGracePeriodAsync(
@@ -127,7 +143,7 @@ public sealed class SubscriptionQueryService
             .ListByStatusAsync(status, skip, take, cancellationToken)
             .ConfigureAwait(false);
 
-        return ToPagedResult(items, totalCount, page, take);
+        return await ToPagedResultAsync(items, totalCount, page, take, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<PagedResult<SubscriptionDto>> ListAsync(
@@ -166,21 +182,32 @@ public sealed class SubscriptionQueryService
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return ToPagedResult(items, totalCount, page, take);
+        return await ToPagedResultAsync(items, totalCount, page, take, cancellationToken).ConfigureAwait(false);
     }
 
-    private static PagedResult<SubscriptionDto> ToPagedResult(
+    private async Task<PagedResult<SubscriptionDto>> ToPagedResultAsync(
         IReadOnlyList<Subscription> items,
         int totalCount,
         int? page,
-        int take)
+        int take,
+        CancellationToken cancellationToken)
     {
         var pageNumber = Math.Max(page ?? 1, 1);
-        return new PagedResult<SubscriptionDto>(items.Select(Map).ToList(), totalCount, pageNumber, take);
+        var mapped = new List<SubscriptionDto>(items.Count);
+        foreach (var item in items)
+        {
+            mapped.Add(await MapAsync(item, cancellationToken).ConfigureAwait(false));
+        }
+
+        return new PagedResult<SubscriptionDto>(mapped, totalCount, pageNumber, take);
     }
 
-    private static SubscriptionDto Map(Subscription subscription) =>
-        new(
+    private async Task<SubscriptionDto> MapAsync(Subscription subscription, CancellationToken cancellationToken)
+    {
+        var org = await _organizations.GetByIdAsync(subscription.OrganizationId, cancellationToken).ConfigureAwait(false);
+        var product = await _products.GetByCodeAsync(subscription.ProductCode, cancellationToken).ConfigureAwait(false);
+        var plan = await _plans.GetByIdAsync(subscription.PlanId, cancellationToken).ConfigureAwait(false);
+        return new SubscriptionDto(
             subscription.Id.Value,
             subscription.OrganizationId.Value,
             subscription.ProductCode.Value,
@@ -199,5 +226,11 @@ public sealed class SubscriptionQueryService
             subscription.ExpiredAtUtc,
             subscription.CreatedAtUtc,
             subscription.UpdatedAtUtc,
-            subscription.Version);
+            subscription.Version,
+            OrganizationDisplayName: org?.DisplayName,
+            ProductDisplayName: product?.DisplayName,
+            PlanDisplayName: plan?.DisplayName,
+            PlanKey: plan?.PlanKey,
+            RenewalDateUtc: subscription.PaidPeriodEndUtc);
+    }
 }

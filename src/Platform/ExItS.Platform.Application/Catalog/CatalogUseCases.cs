@@ -339,10 +339,39 @@ public sealed class CreatePlan
         _clock = clock;
     }
 
+    public Task<ApplicationResult<Plan>> ExecuteAsync(
+        string productCode,
+        string planCode,
+        string displayName,
+        CancellationToken cancellationToken = default) =>
+        ExecuteAsync(
+            productCode,
+            planCode,
+            displayName,
+            description: null,
+            maxBranches: 1,
+            maxActiveStaff: 3,
+            customerCreditEnabled: false,
+            advancedReportsEnabled: false,
+            exportEnabled: false,
+            trialAllowed: true,
+            defaultTrialDays: 14,
+            sortOrder: 100,
+            cancellationToken);
+
     public async Task<ApplicationResult<Plan>> ExecuteAsync(
         string productCode,
         string planCode,
         string displayName,
+        string? description,
+        int maxBranches,
+        int maxActiveStaff,
+        bool customerCreditEnabled,
+        bool advancedReportsEnabled,
+        bool exportEnabled,
+        bool trialAllowed,
+        int defaultTrialDays,
+        int sortOrder,
         CancellationToken cancellationToken = default)
     {
         try
@@ -363,7 +392,20 @@ public sealed class CreatePlan
                     "A plan with this code already exists for the product.");
             }
 
-            var plan = Plan.CreateDraft(pc, code, displayName, _clock.UtcNow);
+            var plan = Plan.CreateDraft(
+                pc,
+                code,
+                displayName,
+                _clock.UtcNow,
+                description: description,
+                maxBranches: maxBranches,
+                maxActiveStaff: maxActiveStaff,
+                customerCreditEnabled: customerCreditEnabled,
+                advancedReportsEnabled: advancedReportsEnabled,
+                exportEnabled: exportEnabled,
+                trialAllowed: trialAllowed,
+                defaultTrialDays: defaultTrialDays,
+                sortOrder: sortOrder);
             await _plans.AddAsync(plan, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<Plan>.Success(plan);
@@ -459,6 +501,107 @@ public sealed class ActivatePlan
         try
         {
             plan.Activate(_clock.UtcNow);
+            await _plans.UpdateAsync(plan, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<Plan>.Success(plan);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<Plan>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class DeactivatePlan
+{
+    private readonly IPlanRepository _plans;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public DeactivatePlan(IPlanRepository plans, IPlatformUnitOfWork unitOfWork, IClock clock)
+    {
+        _plans = plans;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<Plan>> ExecuteAsync(PlanId id, CancellationToken cancellationToken = default)
+    {
+        var plan = await _plans.GetByIdAsync(id, cancellationToken).ConfigureAwait(false);
+        if (plan is null)
+        {
+            return ApplicationResult<Plan>.Failure(ApplicationErrorCodes.PlanNotFound, "Plan was not found.");
+        }
+
+        try
+        {
+            plan.Deactivate(_clock.UtcNow);
+            await _plans.UpdateAsync(plan, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<Plan>.Success(plan);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<Plan>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class UpdatePlanCommercialPackage
+{
+    private readonly IPlanRepository _plans;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public UpdatePlanCommercialPackage(IPlanRepository plans, IPlatformUnitOfWork unitOfWork, IClock clock)
+    {
+        _plans = plans;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<Plan>> ExecuteAsync(
+        PlanId id,
+        string displayName,
+        string? description,
+        int maxBranches,
+        int maxActiveStaff,
+        bool customerCreditEnabled,
+        bool advancedReportsEnabled,
+        bool exportEnabled,
+        bool trialAllowed,
+        int defaultTrialDays,
+        int sortOrder,
+        DateTimeOffset? expectedUpdatedAtUtc = null,
+        CancellationToken cancellationToken = default)
+    {
+        var plan = await _plans.GetByIdAsync(id, cancellationToken).ConfigureAwait(false);
+        if (plan is null)
+        {
+            return ApplicationResult<Plan>.Failure(ApplicationErrorCodes.PlanNotFound, "Plan was not found.");
+        }
+
+        if (RenameProduct.IsConcurrencyMismatch(plan.UpdatedAtUtc, expectedUpdatedAtUtc))
+        {
+            return ApplicationResult<Plan>.Failure(
+                ApplicationErrorCodes.ConcurrencyConflict,
+                "The plan was modified by another request. Refresh and try again.");
+        }
+
+        try
+        {
+            plan.Rename(displayName, _clock.UtcNow);
+            plan.UpdateCommercialPackage(
+                description,
+                maxBranches,
+                maxActiveStaff,
+                customerCreditEnabled,
+                advancedReportsEnabled,
+                exportEnabled,
+                trialAllowed,
+                defaultTrialDays,
+                sortOrder,
+                _clock.UtcNow);
             await _plans.UpdateAsync(plan, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<Plan>.Success(plan);

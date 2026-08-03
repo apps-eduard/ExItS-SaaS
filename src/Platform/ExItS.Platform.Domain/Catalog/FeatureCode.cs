@@ -75,8 +75,17 @@ public sealed partial class FeatureCode : IEquatable<FeatureCode>
     /// <summary>POS Full POS: view organization registers (logical sales stations).</summary>
     public const string StoreRegistersView = "store-registers-view";
 
-    /// <summary>POS Full POS: create, edit, activate, and deactivate registers.</summary>
-    public const string StoreRegistersManage = "store-registers-manage";
+    /// <summary>POS plan commercial limit: maximum branches (QuantityLimit).</summary>
+    public const string PlanMaxBranches = "plan-max-branches";
+
+    /// <summary>POS plan commercial limit: maximum active staff (QuantityLimit).</summary>
+    public const string PlanMaxActiveStaff = "plan-max-active-staff";
+
+    /// <summary>POS advanced reporting beyond basic operational reports.</summary>
+    public const string StoreAdvancedReports = "store-advanced-reports";
+
+    /// <summary>POS data export capability.</summary>
+    public const string StoreExport = "store-export";
 
     private static readonly Regex ValidPattern = CreateValidPattern();
 
