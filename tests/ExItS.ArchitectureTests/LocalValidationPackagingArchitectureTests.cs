@@ -61,6 +61,8 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("LocalValidation.stack.ps1", startScript, StringComparison.Ordinal);
         Assert.Contains("exits-local-validation", startScript, StringComparison.Ordinal);
         Assert.Contains("Cors__AllowedOrigins__", startScript, StringComparison.Ordinal);
+        Assert.Contains("PlatformAuthentication__Password__MinimumLength", startScript, StringComparison.Ordinal);
+        Assert.Contains("PlatformAuthentication__Password__RequireUppercase", startScript, StringComparison.Ordinal);
         Assert.Contains("New-NetFirewallRule", startScript, StringComparison.Ordinal);
         Assert.Contains("LocalPort 8090", startScript, StringComparison.Ordinal);
         Assert.Contains("LocalPort 8091", startScript, StringComparison.Ordinal);

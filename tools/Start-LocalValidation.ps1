@@ -516,6 +516,12 @@ $platformEnv = @{
     LocalValidation__SeedScope = $seedScopeValue
     LocalValidation__PurgeTransactionalOnSeed = $(if ($purgeTransactional) { 'true' } else { 'false' })
     LocalValidation__SharedPassword = [string]$envMap['LOCAL_VALIDATION_SHARED_PASSWORD']
+    # Local Validation only: allow weak passwords (e.g. 123) for registration/activation testing.
+    PlatformAuthentication__Password__MinimumLength = '1'
+    PlatformAuthentication__Password__RequireUppercase = 'false'
+    PlatformAuthentication__Password__RequireLowercase = 'false'
+    PlatformAuthentication__Password__RequireDigit = 'false'
+    PlatformAuthentication__Password__RequireNonAlphanumeric = 'false'
     PlatformEmail__SmtpHost = '127.0.0.1'
     PlatformEmail__SmtpPort = "$mailpitSmtpPort"
     PlatformEmail__UseSsl = 'false'

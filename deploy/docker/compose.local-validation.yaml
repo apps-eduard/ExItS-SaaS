@@ -92,6 +92,11 @@ services:
       Security__EnforceHttps: "false"
       LocalValidation__Enabled: "true"
       LocalValidation__SharedPassword: ${LOCAL_VALIDATION_SHARED_PASSWORD}
+      PlatformAuthentication__Password__MinimumLength: "1"
+      PlatformAuthentication__Password__RequireUppercase: "false"
+      PlatformAuthentication__Password__RequireLowercase: "false"
+      PlatformAuthentication__Password__RequireDigit: "false"
+      PlatformAuthentication__Password__RequireNonAlphanumeric: "false"
       PlatformEmail__SmtpHost: mailpit
       PlatformEmail__SmtpPort: "1025"
       PlatformEmail__UseSsl: "false"
