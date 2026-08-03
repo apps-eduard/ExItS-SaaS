@@ -54,6 +54,8 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("volumes preserved", startScript, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("http://0.0.0.0:", startScript, StringComparison.Ordinal);
         Assert.Contains("PublicHost", startScript, StringComparison.Ordinal);
+        Assert.Contains("Resolve-EffectivePublicHost", startScript, StringComparison.Ordinal);
+        Assert.Contains("LOCAL_VALIDATION_PUBLIC_HOST", startScript, StringComparison.Ordinal);
         Assert.Contains("PlatformAdministratorsOnly", startScript, StringComparison.Ordinal);
         Assert.Contains("PurgeTransactional", startScript, StringComparison.Ordinal);
         Assert.Contains("LocalValidation.stack.ps1", startScript, StringComparison.Ordinal);

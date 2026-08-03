@@ -27,6 +27,8 @@
 .PARAMETER PublicHost
   Optional LAN/Tailscale host (IP or DNS name, no scheme/port). Binds remain 0.0.0.0;
   printed browser URLs, CORS, AllowedHosts, and Admin PlatformApi base URL use this host.
+  If omitted, resolves in order: LOCAL_VALIDATION_PUBLIC_HOST from .env.local-validation,
+  last PublicHost from launcher-state.json, then an active Tailscale 100.x address when present.
 
 .EXAMPLE
   .\tools\Start-LocalValidation.ps1
@@ -247,6 +249,64 @@ function Resolve-PublicHost([string]$Value) {
     return $hostName
 }
 
+function Get-PersistedPublicHost([string]$StateFilePath) {
+    if (-not (Test-Path -LiteralPath $StateFilePath)) { return '' }
+    try {
+        $state = Get-Content -LiteralPath $StateFilePath -Raw | ConvertFrom-Json
+        return Resolve-PublicHost -Value ([string]$state.PublicHost)
+    } catch {
+        return ''
+    }
+}
+
+function Get-TailscalePublicHost {
+    try {
+        $addr = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+            Where-Object {
+                $_.IPAddress -like '100.*' -and
+                (
+                    $_.InterfaceAlias -match '(?i)tailscale' -or
+                    $_.PrefixOrigin -eq 'Manual'
+                )
+            } |
+            Select-Object -First 1 -ExpandProperty IPAddress
+        if (-not [string]::IsNullOrWhiteSpace($addr)) {
+            return Resolve-PublicHost -Value $addr
+        }
+    } catch { }
+    return ''
+}
+
+function Resolve-EffectivePublicHost {
+    param(
+        [string]$ParamValue,
+        $EnvMap,
+        [string]$StateFilePath
+    )
+    $fromParam = Resolve-PublicHost -Value $ParamValue
+    if ($fromParam) {
+        Write-Ok "PublicHost from -PublicHost: $fromParam"
+        return $fromParam
+    }
+    $fromEnv = Resolve-PublicHost -Value ([string]$EnvMap['LOCAL_VALIDATION_PUBLIC_HOST'])
+    if ($fromEnv) {
+        Write-Ok "PublicHost from LOCAL_VALIDATION_PUBLIC_HOST: $fromEnv"
+        return $fromEnv
+    }
+    $fromState = Get-PersistedPublicHost -StateFilePath $StateFilePath
+    if ($fromState) {
+        Write-Ok "PublicHost from previous launcher-state: $fromState"
+        return $fromState
+    }
+    $fromTailscale = Get-TailscalePublicHost
+    if ($fromTailscale) {
+        Write-Ok "PublicHost auto-detected Tailscale address: $fromTailscale"
+        return $fromTailscale
+    }
+    Write-Note 'No PublicHost resolved (localhost-only AllowedHosts). For Tailscale use -PublicHost or set LOCAL_VALIDATION_PUBLIC_HOST.'
+    return ''
+}
+
 function Get-LocalValidationAllowedHosts([string]$PublicHostValue, $EnvMap) {
     $hosts = New-Object 'System.Collections.Generic.List[string]'
     foreach ($h in @('localhost', '127.0.0.1')) { $hosts.Add($h) }
@@ -375,7 +435,7 @@ $platformCsSummary = Get-LocalValidationConnectionSummary -ConnectionString $pla
 $posCsSummary = Get-LocalValidationConnectionSummary -ConnectionString $posCs -Label 'POS'
 
 # Bind all interfaces so Tailscale/LAN can reach apps; localhost/127.0.0.1 still work.
-$resolvedPublicHost = Resolve-PublicHost -Value $PublicHost
+$resolvedPublicHost = Resolve-EffectivePublicHost -ParamValue $PublicHost -EnvMap $envMap -StateFilePath $stateFile
 $bindAdminUrl = "http://0.0.0.0:$adminPort"
 $bindPlatformApiUrl = "http://0.0.0.0:$platformApiPort"
 $bindPosApiUrl = "http://0.0.0.0:$posApiPort"

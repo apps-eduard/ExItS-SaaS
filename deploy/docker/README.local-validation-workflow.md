@@ -26,6 +26,8 @@ Printed when `-PublicHost` is set:
 
 Kestrel always binds `http://0.0.0.0:8090|8091|8092` (localhost still works). Database connection strings stay `127.0.0.1:15533` / `127.0.0.1:15534`.
 
+If you omit `-PublicHost`, Start still tries (in order): `LOCAL_VALIDATION_PUBLIC_HOST` in `.env.local-validation`, the last saved PublicHost, then an active Tailscale `100.x` address. Plain `.\tools\Start-LocalValidation.ps1` should keep Tailscale AllowedHosts working once that value is known.
+
 ### Windows Firewall (apps only)
 
 Allow inbound TCP **8090 / 8091 / 8092**. Do **not** open **15533 / 15534** (PostgreSQL stays local-only).
