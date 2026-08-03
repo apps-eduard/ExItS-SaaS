@@ -2,10 +2,10 @@
 
 | Field | Value |
 |---|---|
-| Status | **Code Complete and Build Verified; Device Validation Pending** |
+| Status | **Code Complete and Build Verified** |
 | Phase | [Phase 18](../phases/phase-18-mobile-personal-organization-and-pos-experience.md) |
 | Implementation commit | `4b8b727` |
-| Device validation | **Device Validation Blocked** |
+| Device validation | **Pending User Validation (phase-level; see P18-WP08)** |
 | Date | 2026-08-03 |
 
 ## 1. Objective
@@ -56,7 +56,7 @@ Cashier lacks capabilities denied by POS role matrix (e.g. returns/process retur
 
 ## 10. Emulator / device validation result
 
-**Device Validation Blocked**.
+**Pending User Validation (phase-level; see P18-WP08)**.
 
 ## 11. Known limitations
 
@@ -70,7 +70,7 @@ Device E2E Cashier journey; gateway payments; split tender.
 
 ## 13. Current status
 
-Implemented · Tested · Build Verified · Device Validation Blocked
+Implemented · Tested · Build Verified · Pending User Validation (phase-level; see P18-WP08)
 
 ## 14. Commit reference
 

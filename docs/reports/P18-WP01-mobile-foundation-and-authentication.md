@@ -2,10 +2,10 @@
 
 | Field | Value |
 |---|---|
-| Status | **Code Complete and Build Verified; Device Validation Pending** |
+| Status | **Code Complete and Build Verified** |
 | Phase | [Phase 18](../phases/phase-18-mobile-personal-organization-and-pos-experience.md) |
 | Implementation commit | `4b8b727` |
-| Device validation | **Device Validation Blocked** |
+| Device validation | **Pending User Validation (phase-level; see P18-WP08)** |
 | Date | 2026-08-03 |
 
 ## 1. Objective
@@ -59,7 +59,7 @@ Auth establishes identity and optional organization context; POS org isolation r
 
 ## 10. Emulator / device validation result
 
-**Device Validation Blocked** — no emulator or physical device session.
+**Pending User Validation (phase-level; see P18-WP08)** — no emulator or physical device session.
 
 ## 11. Known limitations
 
@@ -73,7 +73,7 @@ Interactive device auth E2E; production MFA enforcement (platform residual); MAU
 
 ## 13. Current status
 
-Implemented · Tested · Build Verified · Device Validation Blocked
+Implemented · Tested · Build Verified · Pending User Validation (phase-level; see P18-WP08)
 
 ## 14. Commit reference
 

@@ -70,7 +70,7 @@ Maui project not built (Android SDK absent on agent host) — residual.
 - Cashier display name on receipt uses actor GUID (no staff directory name lookup).
 - Tax engine is rate + inclusive/exclusive mode only (not a full VAT regime).
 - Phase 14 production blockers unchanged.
-- **MAUI Organization Owner essentials and Start Selling mode** were incomplete at Phase 17 closeout; Phase 18 delivered those Mobile screens as **Code Complete and Build Verified; Device Validation Pending** ([Phase 18](../phases/phase-18-mobile-personal-organization-and-pos-experience.md)). Device validation remains **Blocked** (R-109).
+- **MAUI Organization Owner essentials and Start Selling mode** were incomplete at Phase 17 closeout; Phase 18 delivered those Mobile screens and remains **Open** (**Code Complete and Build Verified; User Mobile Validation Pending**) — [Phase 18](../phases/phase-18-mobile-personal-organization-and-pos-experience.md); [P18-WP08 checklist](P18-WP08-end-to-end-validation-and-closeout.md).
 - Device/Android validation not claimed.
 
 ## Deferred post-MVP scope

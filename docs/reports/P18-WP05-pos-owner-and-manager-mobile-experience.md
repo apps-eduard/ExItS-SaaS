@@ -2,10 +2,10 @@
 
 | Field | Value |
 |---|---|
-| Status | **Code Complete and Build Verified; Device Validation Pending** |
+| Status | **Code Complete and Build Verified** |
 | Phase | [Phase 18](../phases/phase-18-mobile-personal-organization-and-pos-experience.md) |
 | Implementation commit | `4b8b727` |
-| Device validation | **Device Validation Blocked** |
+| Device validation | **Pending User Validation (phase-level; see P18-WP08)** |
 | Date | 2026-08-03 |
 
 ## 1. Objective
@@ -56,7 +56,7 @@ Dashboards authorize via effective POS role. Destination screens still enforce c
 
 ## 10. Emulator / device validation result
 
-**Device Validation Blocked**.
+**Pending User Validation (phase-level; see P18-WP08)**.
 
 ## 11. Known limitations
 
@@ -69,7 +69,7 @@ Device UX polish; advanced analytics exports; Web-only admin features on Mobile.
 
 ## 13. Current status
 
-Implemented · Tested · Build Verified · Device Validation Blocked
+Implemented · Tested · Build Verified · Pending User Validation (phase-level; see P18-WP08)
 
 ## 14. Commit reference
 

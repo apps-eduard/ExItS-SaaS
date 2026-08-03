@@ -4,28 +4,30 @@
 
 ## Status
 
-**Code Complete and Build Verified; Device Validation Pending**
+**Open** — **Code Complete and Build Verified; User Mobile Validation Pending**
+
+Phase 18 must **not** be marked Complete until the user personally validates the MAUI mobile application and explicitly confirms the outcome. See the checklist in [P18-WP08](../reports/P18-WP08-end-to-end-validation-and-closeout.md).
 
 | Field | Value |
 |---|---|
-| Phase | 18 |
+| Phase | 18 — **Open** |
 | Implementation commit | `4b8b7270417d0f9e612855ed746d7fd80819adee` |
-| Documentation closeout | This phase file and P18-WP01–WP08 (tip of `main` after docs reconciliation push) |
 | Production-ready | **No** |
-| Device / emulator validation | **Device Validation Blocked** (R-109) — no emulator or physical-device run recorded |
+| User mobile validation | **Pending User Validation** |
+| P18-WP08 | **In Progress** |
 
 ## Work packages
 
 | WP | Focus | Documented status |
 |---|---|---|
-| [P18-WP01](../reports/P18-WP01-mobile-foundation-and-authentication.md) | Mobile foundation and authentication | Code Complete and Build Verified; Device Validation Pending |
-| [P18-WP02](../reports/P18-WP02-personal-account-and-start-business.md) | Personal account and Start a Business | Code Complete and Build Verified; Device Validation Pending |
-| [P18-WP03](../reports/P18-WP03-organization-selection-and-owner-essentials.md) | Organization selection and Owner essentials | Code Complete and Build Verified; Device Validation Pending |
-| [P18-WP04](../reports/P18-WP04-pos-role-routing-and-navigation.md) | POS role routing and navigation | Code Complete and Build Verified; Device Validation Pending |
-| [P18-WP05](../reports/P18-WP05-pos-owner-and-manager-mobile-experience.md) | POS Owner and Manager Mobile experience | Code Complete and Build Verified; Device Validation Pending |
-| [P18-WP06](../reports/P18-WP06-cashier-selling-experience.md) | Cashier selling experience | Code Complete and Build Verified; Device Validation Pending |
-| [P18-WP07](../reports/P18-WP07-mobile-security-resilience-and-localization.md) | Security, resilience, localization | Code Complete and Build Verified; Device Validation Pending |
-| [P18-WP08](../reports/P18-WP08-end-to-end-validation-and-closeout.md) | End-to-end validation and closeout | Code Complete and Build Verified; Device Validation Pending |
+| [P18-WP01](../reports/P18-WP01-mobile-foundation-and-authentication.md) | Mobile foundation and authentication | Code Complete and Build Verified |
+| [P18-WP02](../reports/P18-WP02-personal-account-and-start-business.md) | Personal account and Start a Business | Code Complete and Build Verified |
+| [P18-WP03](../reports/P18-WP03-organization-selection-and-owner-essentials.md) | Organization selection and Owner essentials | Code Complete and Build Verified |
+| [P18-WP04](../reports/P18-WP04-pos-role-routing-and-navigation.md) | POS role routing and navigation | Code Complete and Build Verified |
+| [P18-WP05](../reports/P18-WP05-pos-owner-and-manager-mobile-experience.md) | POS Owner and Manager Mobile experience | Code Complete and Build Verified |
+| [P18-WP06](../reports/P18-WP06-cashier-selling-experience.md) | Cashier selling experience | Code Complete and Build Verified |
+| [P18-WP07](../reports/P18-WP07-mobile-security-resilience-and-localization.md) | Security, resilience, localization | Code Complete and Build Verified |
+| [P18-WP08](../reports/P18-WP08-end-to-end-validation-and-closeout.md) | End-to-end validation and closeout | **In Progress** |
 
 ## Approved client boundaries (authoritative)
 
@@ -60,10 +62,10 @@ Organization Owner essentials include organization summary, basic profile, subsc
 | Backend / API | **Implemented** — reuse of existing Platform + POS contracts; Maui client expansion |
 | MAUI frontend | **Implemented** — screens and flows in source (not ViewModels-only) |
 | Automated tests | **Tested** — MAUI.Tests 73; POS Unit 339; POS Integration 135; Platform Unit (Auth/StartBusiness/ProductLocal filter) 60 |
-| MAUI Android build | **Build Verified** — succeeded with Android SDK directory and user NuGet cache |
-| Emulator / device | **Device Validation Blocked** |
+| MAUI Android build | **Build Verified** |
+| User mobile validation | **Pending User Validation** |
 
-## End-to-end journey (evidence classes)
+## End-to-end journey (awaiting user confirmation)
 
 ```text
 User registers in Mobile
@@ -88,11 +90,11 @@ User registers in Mobile
 
 | Evidence class | Scope |
 |---|---|
-| Implemented in code | Full journey paths exist across Platform APIs, POS APIs, and MAUI screens linked above |
-| Covered by automated tests | Auth dual-token, role routing, selling-mode return, POS unit/integration suites, Platform Start Business / product-local coverage |
+| Implemented in code | Journey paths exist across Platform APIs, POS APIs, and MAUI screens |
+| Covered by automated tests | Auth dual-token, role routing, selling-mode return, POS unit/integration, Platform Start Business / product-local coverage |
 | Build verified | Application, ApiClient, MAUI Android host compile |
-| Not device validated | Interactive Android emulator/physical device E2E |
+| User validated | **Pending** — see P18-WP08 checklist |
 
-## Superseded filenames
+## Closure rule
 
-Earlier provisional docs under `phase-18-mobile-client-experience-completion.md` and P18-WP01–WP06 short-name reports are superseded by this file and P18-WP01–WP08 below.
+Do **not** mark Phase 18 Complete, close P18-WP08, mark device/user validation passed, or claim production readiness without the user’s explicit confirmation after mobile validation.
