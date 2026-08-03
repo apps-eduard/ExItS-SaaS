@@ -162,28 +162,22 @@
         }
 
         <SubMenu Key="org-products" TitleTemplate="@OrgProductsTitle">
-            @if (Shell.SelectedOrganizationId is Guid accessOrg && IsOrgAdminMembership)
+            @if (Shell.SelectedOrganizationId is Guid productsOrg)
             {
-                <MenuItem Key="my-products" RouterLink="@($"/admin/organizations/{accessOrg}/product-access")" Icon="appstore">
+                <MenuItem Key="my-products" RouterLink="@($"/admin/organizations/{productsOrg}/enabled-products")" Icon="appstore">
                     @L["Nav_MyProducts"]
                 </MenuItem>
+                @if (IsOrgAdminMembership)
+                {
+                    <MenuItem Key="enabled-products" RouterLink="@($"/admin/organizations/{productsOrg}/enabled-products")" Icon="rocket">
+                        @L["OrgEnabledProducts_Title"]
+                    </MenuItem>
+                }
             }
             else
             {
                 <MenuItem Key="my-products" Disabled="true">
-                    @L["Nav_MyProducts"] <span class="exits-phase15-tag">@(IsOrgAdminMembership ? L["Nav_SelectOrganization"] : L["Unauthorized_Title"])</span>
-                </MenuItem>
-            }
-            @if (Shell.SelectedOrganizationId is Guid launchOrg)
-            {
-                <MenuItem Key="launch-product" RouterLink="@($"/admin/organizations/{launchOrg}/enabled-products")" Icon="rocket">
-                    @L["Nav_LaunchProduct"]
-                </MenuItem>
-            }
-            else
-            {
-                <MenuItem Key="launch-product" Disabled="true">
-                    @L["Nav_LaunchProduct"] <span class="exits-phase15-tag">@L["Nav_SelectOrganization"]</span>
+                    @L["Nav_MyProducts"] <span class="exits-phase15-tag">@L["Nav_SelectOrganization"]</span>
                 </MenuItem>
             }
         </SubMenu>
@@ -370,8 +364,9 @@
                 Shell.IsOrganizationShell ? ["org-invitations"] : ["org-users"],
             var p when p.Contains("/members", StringComparison.Ordinal) =>
                 Shell.IsOrganizationShell ? ["org-staff"] : ["org-users"],
-            var p when p.Contains("/enabled-products", StringComparison.Ordinal) => ["launch-product"],
-            var p when p.Contains("/product-access", StringComparison.Ordinal) => Shell.IsOrganizationShell ? ["my-products"] : ["organizations"],
+            var p when p.Contains("/enabled-products", StringComparison.Ordinal) =>
+                IsOrgAdminMembership ? ["enabled-products", "my-products"] : ["my-products"],
+            var p when p.Contains("/product-access", StringComparison.Ordinal) => ["organizations"],
             var p when p.EndsWith("/branding", StringComparison.Ordinal) => ["branding"],
             var p when p.StartsWith("/admin/organizations", StringComparison.Ordinal) =>
                 Shell.IsOrganizationShell ? ["org-settings"] : ["organizations"],

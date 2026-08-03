@@ -78,7 +78,7 @@ else if (Shell.IsOrganizationShell)
         {
             <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick="@(() => Nav.NavigateTo($"/admin/organizations/{orgId}"))">@L["Nav_OrganizationProfile"]</Button>
             <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick="@(() => Nav.NavigateTo($"/admin/organizations/{orgId}/members"))">@L["Nav_Members"]</Button>
-            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick="@(() => Nav.NavigateTo($"/admin/organizations/{orgId}/enabled-products"))">@L["Nav_LaunchProduct"]</Button>
+            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick="@(() => Nav.NavigateTo($"/admin/organizations/{orgId}/enabled-products"))">@L["Nav_MyProducts"]</Button>
         }
     </Space>
 }

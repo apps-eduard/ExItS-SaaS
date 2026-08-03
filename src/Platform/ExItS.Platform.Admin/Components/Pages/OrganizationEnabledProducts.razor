@@ -19,15 +19,18 @@ else if (!CanAccessPage)
 }
 else
 {
-    <AdminPageHeader Title="@L["OrgEnabledProducts_Title"]"
-                     Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_SectionProducts"]} / {L["Nav_LaunchProduct"]}")"
+    <AdminPageHeader Title="@(CanManageRoles ? L["OrgEnabledProducts_Title"] : L["Nav_MyProducts"])"
+                     Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_SectionProducts"]} / {(CanManageRoles ? L["OrgEnabledProducts_Title"] : L["Nav_MyProducts"])}")"
                      Description="@L["OrgEnabledProducts_Description"]" />
-    <Alert Type="@AlertType.Warning" ShowIcon="true" Message="@L["OrgEnabledProducts_Warning"]" Style="margin-bottom:1rem;" />
+    <Alert Type="@AlertType.Info" ShowIcon="true" Message="@L["OrgEnabledProducts_Warning"]" Style="margin-bottom:1rem;" />
 
     <p>
         <a href="/admin/organizations/@OrganizationId">← @L["Common_BackToSummary"]</a>
-        ·
-        <a href="/admin/organizations/@OrganizationId/product-access">@L["Nav_MyProducts"]</a>
+        @if (CanManageRoles)
+        {
+            <text> · </text>
+            <a href="#manage-staff-access">@L["OrgEnabledProducts_ManageStaffAccess"]</a>
+        }
     </p>
 
     @if (!string.IsNullOrWhiteSpace(_formError))
@@ -42,46 +45,119 @@ else
                     EmptyMessage="@L["OrgEnabledProducts_Empty"]"
                     ErrorTitle="@L["OrgEnabledProducts_Unavailable"]"
                     ErrorDetail="@_products?.Error?.Detail">
-        <AdminDataTable TItem="EnabledProductDto"
-                        Items="_products!.Data!"
-                        Columns="_productColumns"
-                        Caption="@L["OrgEnabledProducts_Title"]"
-                        ItemKey="p => p.ProductCode"
-                        CellTemplate="ProductCell"
-                        RowActions="ProductActions"
-                        ActionsHeader="@L["Common_Actions"]" />
+        <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;">
+            @foreach (var product in DeduplicatedProducts)
+            {
+                var title = ProductTitle(product);
+                <Card Size="@CardSize.Small" Title="@title" Style="margin-bottom:0;">
+                    <ChildContent>
+                        <dl style="margin:0;">
+                            <dt>@L["OrgEnabledProducts_Entitlement"]</dt>
+                            <dd>@(product.EntitlementStatus ?? (product.EntitlementActive ? L["OrgEnabledProducts_EntitlementEnabled"] : L["OrgEnabledProducts_EntitlementDisabled"]))</dd>
+                            <dt>@L["OrgEnabledProducts_Provisioning"]</dt>
+                            <dd>@(product.ProvisioningStatus ?? L["Common_EmDash"])</dd>
+                            <dt>@L["OrgEnabledProducts_YourRole"]</dt>
+                            <dd>@YourRoleLabel(product)</dd>
+                            @if (!product.CanLaunch && !string.IsNullOrWhiteSpace(FriendlyDenial(product)))
+                            {
+                                <dt>@L["Common_Reason"]</dt>
+                                <dd>@FriendlyDenial(product)</dd>
+                            }
+                        </dl>
+                        <Space Wrap Style="margin-top:12px;">
+                            @if (product.CanLaunch)
+                            {
+                                <Button Type="@ButtonType.Primary"
+                                        Size="@ButtonSize.Small"
+                                        Disabled="_busy"
+                                        OnClick="@(() => LaunchAsync(product))">
+                                    @L["OrgEnabledProducts_OpenProduct"]
+                                </Button>
+                            }
+                            else
+                            {
+                                <Button Type="@ButtonType.Default" Size="@ButtonSize.Small" Disabled="true">
+                                    @L["OrgEnabledProducts_LaunchDenied"]
+                                </Button>
+                            }
+                            @if (CanManageRoles)
+                            {
+                                <Button Size="@ButtonSize.Small"
+                                        OnClick="@(() => FocusManageAccess(product))">
+                                    @L["OrgEnabledProducts_ManageStaffAccess"]
+                                </Button>
+                            }
+                        </Space>
+                    </ChildContent>
+                </Card>
+            }
+        </div>
     </AdminDataPanel>
 
     @if (CanManageRoles)
     {
-        <FormSection Title="@L["OrgEnabledProducts_AssignRoleSection"]">
-            <div class="form-grid">
-                <FormField Label="@L["OrgMembers_UserId"]" FieldId="role-user" Required="true">
-                    <AdminInput @bind-Value="_roleUserId" Disabled="_busy" />
-                </FormField>
-                <FormField Label="@L["OrgProductAccess_ProductCode"]" FieldId="role-product" Required="true">
-                    <AdminInput @bind-Value="_roleProductCode" Placeholder="pinoy-business-pos" Disabled="_busy" />
-                </FormField>
-                <FormField Label="@L["OrgEnabledProducts_RoleCode"]" FieldId="role-code" Required="true">
-                    <Select TItemValue="string"
-                            TItem="string"
-                            Style="width:100%"
-                            Disabled="_busy"
-                            @bind-Value="_roleCode">
-                        <SelectOptions>
-                            <SelectOption TItemValue="string" TItem="string" Value="@("Owner")" Label="Owner" />
-                            <SelectOption TItemValue="string" TItem="string" Value="@("Manager")" Label="Manager" />
-                            <SelectOption TItemValue="string" TItem="string" Value="@("Cashier")" Label="Cashier" />
-                            <SelectOption TItemValue="string" TItem="string" Value="@("Viewer")" Label="Viewer" />
-                        </SelectOptions>
-                    </Select>
-                </FormField>
-                <FormField Label="@L["Common_Reason"]" FieldId="role-reason">
-                    <AdminInput @bind-Value="_roleReason" Disabled="_busy" />
-                </FormField>
-            </div>
-            <FormActions PrimaryText="@L["OrgEnabledProducts_AssignRole"]" Busy="_busy" OnPrimary="AssignRoleAsync" />
-        </FormSection>
+        <div id="manage-staff-access">
+            <Card Size="@CardSize.Small" Title="@L["OrgEnabledProducts_ManageStaffAccess"]" Style="margin-top:1rem;margin-bottom:12px;">
+                <ChildContent>
+                    <div class="form-grid">
+                        <FormField Label="@L["OrgEnabledProducts_SelectStaff"]" FieldId="role-staff" Required="true">
+                            <Select TItemValue="string"
+                                    TItem="string"
+                                    Style="width:100%"
+                                    Disabled="_busy || _staffOptions.Count == 0"
+                                    @bind-Value="_selectedStaffUserId"
+                                    Placeholder="@L["OrgEnabledProducts_SelectStaff"]">
+                                <SelectOptions>
+                                    @foreach (var member in _staffOptions)
+                                    {
+                                        <SelectOption TItemValue="string"
+                                                      TItem="string"
+                                                      Value="@member.UserId.ToString("D")"
+                                                      Label="@StaffLabel(member)" />
+                                    }
+                                </SelectOptions>
+                            </Select>
+                        </FormField>
+                        <FormField Label="@L["OrgEnabledProducts_SelectProduct"]" FieldId="role-product" Required="true">
+                            <Select TItemValue="string"
+                                    TItem="string"
+                                    Style="width:100%"
+                                    Disabled="_busy || DeduplicatedProducts.Count == 0"
+                                    @bind-Value="_selectedProductKey"
+                                    Placeholder="@L["OrgEnabledProducts_SelectProduct"]">
+                                <SelectOptions>
+                                    @foreach (var product in DeduplicatedProducts)
+                                    {
+                                        <SelectOption TItemValue="string"
+                                                      TItem="string"
+                                                      Value="@(product.ProductKey ?? product.ProductCode)"
+                                                      Label="@ProductTitle(product)" />
+                                    }
+                                </SelectOptions>
+                            </Select>
+                        </FormField>
+                        <FormField Label="@L["OrgEnabledProducts_SelectProductRole"]" FieldId="role-code" Required="true">
+                            <Select TItemValue="string"
+                                    TItem="string"
+                                    Style="width:100%"
+                                    Disabled="_busy"
+                                    @bind-Value="_roleCode">
+                                <SelectOptions>
+                                    <SelectOption TItemValue="string" TItem="string" Value="@("Owner")" Label="POS Owner" />
+                                    <SelectOption TItemValue="string" TItem="string" Value="@("Manager")" Label="Store Manager" />
+                                    <SelectOption TItemValue="string" TItem="string" Value="@("Cashier")" Label="Cashier" />
+                                    <SelectOption TItemValue="string" TItem="string" Value="@("Viewer")" Label="Reporting User" />
+                                </SelectOptions>
+                            </Select>
+                        </FormField>
+                        <FormField Label="@L["Common_Reason"]" FieldId="role-reason">
+                            <AdminInput @bind-Value="_roleReason" Disabled="_busy" />
+                        </FormField>
+                    </div>
+                    <FormActions PrimaryText="@L["OrgEnabledProducts_AssignRole"]" Busy="_busy" OnPrimary="AssignRoleAsync" />
+                </ChildContent>
+            </Card>
+        </div>
 
         <AdminDataPanel IsLoading="@(_roles is null)"
                         HasError="@(_roles is { IsSuccess: false })"
@@ -118,10 +194,10 @@ else
 
     private ApiCallResult<IReadOnlyList<EnabledProductDto>>? _products;
     private ApiCallResult<IReadOnlyList<ProductLocalRoleGrantDto>>? _roles;
-    private List<AdminColumnDefinition> _productColumns = new();
+    private List<OrganizationMembershipDto> _staffOptions = [];
     private List<AdminColumnDefinition> _roleColumns = new();
-    private string _roleUserId = "";
-    private string _roleProductCode = "pinoy-business-pos";
+    private string _selectedStaffUserId = "";
+    private string _selectedProductKey = "";
     private string _roleCode = "Cashier";
     private string _roleReason = "";
     private string? _formError;
@@ -132,7 +208,7 @@ else
         Permissions.HasPermission(PlatformPermissionCodes.ManageProductAccess)
         || (Shell.IsOrganizationShell
             && Shell.SelectedOrganizationId == OrganizationId
-            && (IsOrgAdminMembership || Shell.SelectedOrganizationId is not null));
+            && Shell.SelectedOrganizationId is not null);
 
     private bool CanManageRoles =>
         Permissions.HasPermission(PlatformPermissionCodes.ManageMemberships)
@@ -142,23 +218,46 @@ else
         string.Equals(Shell.MembershipRole, "OrganizationOwner", StringComparison.OrdinalIgnoreCase)
         || string.Equals(Shell.MembershipRole, "OrganizationAdministrator", StringComparison.OrdinalIgnoreCase);
 
+    private IReadOnlyList<EnabledProductDto> DeduplicatedProducts
+    {
+        get
+        {
+            if (_products?.Data is null)
+            {
+                return Array.Empty<EnabledProductDto>();
+            }
+
+            // Prefer ProductId; fall back to ProductKey so multiple grants never duplicate cards.
+            var byId = new List<EnabledProductDto>();
+            var seenIds = new HashSet<Guid>();
+            var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var product in _products.Data)
+            {
+                if (product.ProductId is Guid id && !seenIds.Add(id))
+                {
+                    continue;
+                }
+
+                var key = (product.ProductKey ?? product.ProductCode).Trim();
+                if (!seenKeys.Add(key))
+                {
+                    continue;
+                }
+
+                byId.Add(product);
+            }
+
+            return byId;
+        }
+    }
+
     protected override void OnInitialized()
     {
-        _productColumns =
-        [
-            new("product", L["Common_Product"], Primary: true),
-            new("entitlement", L["OrgEnabledProducts_Entitlement"]),
-            new("assignment", L["OrgEnabledProducts_Assignment"]),
-            new("role", L["OrgEnabledProducts_Role"]),
-            new("launch", L["OrgEnabledProducts_CanLaunch"]),
-            new("reason", L["Common_Reason"])
-        ];
         _roleColumns =
         [
             new("user", L["Common_User"], Primary: true),
             new("product", L["Common_Product"]),
             new("role", L["OrgEnabledProducts_Role"]),
-            new("mapped", L["OrgEnabledProducts_MappedPosRole"]),
             new("status", L["Common_Status"]),
             new("granted", L["Common_GrantedUtc"])
         ];
@@ -179,74 +278,113 @@ else
     private async Task ReloadAsync()
     {
         _products = await Api.GetEnabledProductsAsync(OrganizationId);
+        if (_products is { IsSuccess: true, Data.Count: > 0 }
+            && string.IsNullOrWhiteSpace(_selectedProductKey))
+        {
+            var first = DeduplicatedProducts.FirstOrDefault();
+            if (first is not null)
+            {
+                _selectedProductKey = first.ProductKey ?? first.ProductCode;
+            }
+        }
+
         if (CanManageRoles)
         {
             _roles = await Api.GetProductLocalRolesAsync(OrganizationId, status: "Active");
+            var members = await Api.GetOrganizationMembersAsync(OrganizationId, page: 1, pageSize: 100, status: "Active");
+            _staffOptions = members is { IsSuccess: true, Data: not null }
+                ? members.Data.Items.ToList()
+                : [];
+            if (string.IsNullOrWhiteSpace(_selectedStaffUserId) && _staffOptions.Count > 0)
+            {
+                _selectedStaffUserId = _staffOptions[0].UserId.ToString("D");
+            }
         }
     }
 
-    private RenderFragment<(EnabledProductDto Item, AdminColumnDefinition Column)> ProductCell => ctx => b =>
+    private string YourRoleLabel(EnabledProductDto product)
     {
-        switch (ctx.Column.Key)
+        if (!string.IsNullOrWhiteSpace(product.ProductRole))
         {
-            case "product":
-                // Display friendly name only; keep ProductCode for launch/routing via row actions.
-                b.AddContent(0, string.IsNullOrWhiteSpace(ctx.Item.DisplayName) ? ctx.Item.ProductCode : ctx.Item.DisplayName);
-                break;
-            case "entitlement":
-                b.AddContent(0, ctx.Item.EntitlementActive ? L["Common_Yes"] : L["Common_No"]);
-                break;
-            case "assignment":
-                b.AddContent(0, ctx.Item.ProductAccessAssigned ? L["Common_Yes"] : L["Common_No"]);
-                break;
-            case "role":
-                b.AddContent(0, ctx.Item.ProductLocalRoleCode ?? L["Common_EmDash"]);
-                break;
-            case "launch":
-                b.AddContent(0, ctx.Item.CanLaunch ? L["Common_Yes"] : L["Common_No"]);
-                break;
-            case "reason":
-                b.AddContent(0, ctx.Item.ReasonCode);
-                break;
+            return product.ProductRole!;
         }
+
+        var mapped = FormatProductRole(product.ProductLocalRoleCode);
+        return string.IsNullOrWhiteSpace(mapped) ? L["Common_EmDash"] : mapped;
+    }
+
+    private string ProductTitle(EnabledProductDto product) =>
+        !string.IsNullOrWhiteSpace(product.ProductDisplayName)
+            ? product.ProductDisplayName!
+            : !string.IsNullOrWhiteSpace(product.DisplayName)
+                ? product.DisplayName
+                : L["Common_Product"];
+
+    private static string FriendlyDenial(EnabledProductDto product) =>
+        !string.IsNullOrWhiteSpace(product.DenialReasonDisplay)
+            ? product.DenialReasonDisplay!
+            : MapDenial(product.DenialReasonCode ?? product.ReasonCode);
+
+    private static string MapDenial(string? reasonCode) => reasonCode switch
+    {
+        "product_local_role_missing" => "You do not have a role assigned for this Product.",
+        "product_assignment_missing" => "Product access has not been granted for your account in this Organization.",
+        "entitlement_missing" or "entitlement_denied" => "This Organization is not entitled to use this Product.",
+        "membership_missing" or "membership_inactive" => "Your Organization membership is not active.",
+        "user_inactive" => "Your account is not active.",
+        "organization_inactive" => "This Organization is not active.",
+        "allowed" or null or "" => string.Empty,
+        _ => "You cannot open this Product right now."
     };
 
-    private RenderFragment<EnabledProductDto> ProductActions => item => b =>
+    private static string FormatProductRole(string? roleCode) => roleCode?.Trim() switch
     {
-        if (item.CanLaunch)
-        {
-            b.OpenElement(0, "button");
-            b.AddAttribute(1, "type", "button");
-            b.AddAttribute(2, "class", "ant-btn ant-btn-primary ant-btn-sm");
-            b.AddAttribute(3, "disabled", _busy);
-            b.AddAttribute(4, "onclick", EventCallback.Factory.Create(this, () => LaunchAsync(item.ProductCode)));
-            b.AddContent(5, L["Nav_LaunchProduct"]);
-            b.CloseElement();
-        }
-        else
-        {
-            b.OpenElement(0, "span");
-            b.AddAttribute(1, "class", "muted");
-            b.AddContent(2, L["OrgEnabledProducts_LaunchDenied"]);
-            b.CloseElement();
-        }
+        "Owner" or "POS Owner" or "PosOwner" => "POS Owner",
+        "Manager" or "StoreManager" or "Store Manager" => "Store Manager",
+        "Cashier" => "Cashier",
+        "Viewer" or "ReportingUser" or "Reporting User" => "Reporting User",
+        _ => roleCode ?? string.Empty
     };
+
+    private static string FormatOrgRole(string? role) => role switch
+    {
+        "OrganizationOwner" => "Owner",
+        "OrganizationAdministrator" => "Administrator",
+        "OrganizationMember" => "Staff",
+        _ => role ?? string.Empty
+    };
+
+    private static string StaffLabel(OrganizationMembershipDto member)
+    {
+        var name = string.IsNullOrWhiteSpace(member.DisplayName) ? member.Email ?? member.Username : member.DisplayName;
+        var orgRole = member.RoleDisplay ?? FormatOrgRole(member.Role);
+        return string.IsNullOrWhiteSpace(orgRole) ? name ?? "Staff" : $"{name} ({orgRole})";
+    }
+
+    private void FocusManageAccess(EnabledProductDto product)
+    {
+        _selectedProductKey = product.ProductKey ?? product.ProductCode;
+        Nav.NavigateTo($"/admin/organizations/{OrganizationId}/enabled-products#manage-staff-access", forceLoad: false);
+    }
 
     private RenderFragment<(ProductLocalRoleGrantDto Item, AdminColumnDefinition Column)> RoleCell => ctx => b =>
     {
         switch (ctx.Column.Key)
         {
             case "user":
-                b.AddContent(0, ctx.Item.UserIdentityId.ToString("D"));
+                b.AddContent(0, string.IsNullOrWhiteSpace(ctx.Item.UserDisplayName)
+                    ? ctx.Item.UserIdentityId.ToString("D")
+                    : ctx.Item.UserDisplayName);
                 break;
             case "product":
-                b.AddContent(0, ctx.Item.ProductCode);
+                b.AddContent(0, string.IsNullOrWhiteSpace(ctx.Item.ProductDisplayName)
+                    ? ctx.Item.ProductCode
+                    : ctx.Item.ProductDisplayName);
                 break;
             case "role":
-                b.AddContent(0, ctx.Item.RoleCode);
-                break;
-            case "mapped":
-                b.AddContent(0, ctx.Item.MappedPosRoleCode);
+                b.AddContent(0, string.IsNullOrWhiteSpace(ctx.Item.RoleDisplay)
+                    ? FormatProductRole(ctx.Item.RoleCode)
+                    : ctx.Item.RoleDisplay);
                 break;
             case "status":
                 b.OpenComponent<StatusBadge>(0);
@@ -278,16 +416,19 @@ else
         b.CloseElement();
     };
 
-    private async Task LaunchAsync(string productCode)
+    private async Task LaunchAsync(EnabledProductDto product)
     {
         _formError = null;
         _busy = true;
         try
         {
-            var result = await Api.LaunchProductAsync(OrganizationId, productCode);
+            var productKey = product.ProductKey ?? product.ProductCode;
+            var result = await Api.LaunchProductAsync(OrganizationId, productKey);
             if (!result.IsSuccess || result.Data is null)
             {
-                _formError = result.Error?.Detail ?? L["OrgEnabledProducts_LaunchDenied"];
+                _formError = result.Error?.Detail
+                    ?? FriendlyDenial(product)
+                    ?? L["OrgEnabledProducts_LaunchDenied"];
                 return;
             }
 
@@ -307,16 +448,30 @@ else
         }
 
         _formError = null;
-        if (!Guid.TryParse(_roleUserId, out var userId))
+        if (!Guid.TryParse(_selectedStaffUserId, out var userId) || userId == Guid.Empty)
         {
-            _formError = L["OrgEnabledProducts_InvalidUserId"];
+            _formError = L["OrgEnabledProducts_SelectStaffRequired"];
+            _busy = false;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_selectedProductKey))
+        {
+            _formError = L["OrgEnabledProducts_SelectProductRequired"];
+            _busy = false;
+            return;
+        }
+
+        if (_staffOptions.All(m => m.UserId != userId))
+        {
+            _formError = L["OrgEnabledProducts_StaffNotInOrganization"];
             _busy = false;
             return;
         }
 
         var result = await Api.AssignProductLocalRoleAsync(
             OrganizationId,
-            new AssignProductLocalRoleRequest(userId, _roleProductCode.Trim(), _roleCode, _roleReason));
+            new AssignProductLocalRoleRequest(userId, _selectedProductKey.Trim(), _roleCode, _roleReason));
         _busy = false;
         if (!result.IsSuccess)
         {

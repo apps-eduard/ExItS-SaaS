@@ -779,31 +779,43 @@
   <data name="Organization_HomeDescription" xml:space="preserve"><value>Organization Administration for the active membership. Platform accounts and global portfolio are not available in this session.</value></data>
   <data name="Scope_PlatformAccountsDenied" xml:space="preserve"><value>Platform account directory requires a Platform Administration session.</value></data>
   <data name="OrgProductAccess_ReadOnlyHint" xml:space="preserve"><value>Product-access grants require ManageProductAccess. Organization admins can view and evaluate only.</value></data>
-  <data name="OrgEnabledProducts_Title" xml:space="preserve"><value>Enabled products</value></data>
-  <data name="OrgEnabledProducts_Description" xml:space="preserve"><value>Discover Organization-enabled products and launch only when entitlement and a product-local role are both present.</value></data>
-  <data name="OrgEnabledProducts_Warning" xml:space="preserve"><value>Entitlement enables the product for the Organization. A product-local role authorizes individual operations. Commercial product access alone does not grant POS Owner, Manager, Cashier, or Viewer. Operational POS navigation stays inside the product — not Organization Administration.</value></data>
+  <data name="OrgEnabledProducts_Title" xml:space="preserve"><value>Enabled Products</value></data>
+  <data name="OrgEnabledProducts_Description" xml:space="preserve"><value>Products enabled for this Organization. Entitlement enables the Product for the Organization; a Product role authorizes a person inside that Product.</value></data>
+  <data name="OrgEnabledProducts_Warning" xml:space="preserve"><value>Entitlement enables the Product for the Organization. Product Role authorizes a person inside that Product. Organization Owner alone does not grant Product access without a Product Role Assignment.</value></data>
   <data name="OrgEnabledProducts_Loading" xml:space="preserve"><value>Loading enabled products…</value></data>
   <data name="OrgEnabledProducts_Empty" xml:space="preserve"><value>No enabled products for this organization.</value></data>
   <data name="OrgEnabledProducts_Unavailable" xml:space="preserve"><value>Enabled products unavailable</value></data>
   <data name="OrgEnabledProducts_Entitlement" xml:space="preserve"><value>Entitlement</value></data>
+  <data name="OrgEnabledProducts_EntitlementEnabled" xml:space="preserve"><value>Enabled</value></data>
+  <data name="OrgEnabledProducts_EntitlementDisabled" xml:space="preserve"><value>Disabled</value></data>
+  <data name="OrgEnabledProducts_Provisioning" xml:space="preserve"><value>Provisioning</value></data>
+  <data name="OrgEnabledProducts_YourRole" xml:space="preserve"><value>Your role</value></data>
+  <data name="OrgEnabledProducts_OpenProduct" xml:space="preserve"><value>Open Product</value></data>
+  <data name="OrgEnabledProducts_ManageStaffAccess" xml:space="preserve"><value>Manage Staff Access</value></data>
+  <data name="OrgEnabledProducts_SelectStaff" xml:space="preserve"><value>Select Staff Member</value></data>
+  <data name="OrgEnabledProducts_SelectProduct" xml:space="preserve"><value>Select Product</value></data>
+  <data name="OrgEnabledProducts_SelectProductRole" xml:space="preserve"><value>Select Product Role</value></data>
+  <data name="OrgEnabledProducts_SelectStaffRequired" xml:space="preserve"><value>Select a staff member.</value></data>
+  <data name="OrgEnabledProducts_SelectProductRequired" xml:space="preserve"><value>Select a product.</value></data>
+  <data name="OrgEnabledProducts_StaffNotInOrganization" xml:space="preserve"><value>That person is not an active member of this Organization.</value></data>
   <data name="OrgEnabledProducts_Assignment" xml:space="preserve"><value>Product access</value></data>
   <data name="OrgEnabledProducts_Role" xml:space="preserve"><value>Product role</value></data>
   <data name="OrgEnabledProducts_CanLaunch" xml:space="preserve"><value>Can launch</value></data>
-  <data name="OrgEnabledProducts_LaunchDenied" xml:space="preserve"><value>Launch denied</value></data>
-  <data name="OrgEnabledProducts_AssignRoleSection" xml:space="preserve"><value>Assign product-local role</value></data>
-  <data name="OrgEnabledProducts_RoleCode" xml:space="preserve"><value>Role</value></data>
-  <data name="OrgEnabledProducts_AssignRole" xml:space="preserve"><value>Assign role</value></data>
-  <data name="OrgEnabledProducts_LoadingRoles" xml:space="preserve"><value>Loading product-local roles…</value></data>
-  <data name="OrgEnabledProducts_RolesEmpty" xml:space="preserve"><value>No active product-local role grants.</value></data>
-  <data name="OrgEnabledProducts_RolesUnavailable" xml:space="preserve"><value>Product-local roles unavailable</value></data>
-  <data name="OrgEnabledProducts_RolesTitle" xml:space="preserve"><value>Product-local roles</value></data>
+  <data name="OrgEnabledProducts_LaunchDenied" xml:space="preserve"><value>Cannot open</value></data>
+  <data name="OrgEnabledProducts_AssignRoleSection" xml:space="preserve"><value>Manage Staff Access</value></data>
+  <data name="OrgEnabledProducts_RoleCode" xml:space="preserve"><value>Product role</value></data>
+  <data name="OrgEnabledProducts_AssignRole" xml:space="preserve"><value>Assign Role</value></data>
+  <data name="OrgEnabledProducts_LoadingRoles" xml:space="preserve"><value>Loading staff Product roles…</value></data>
+  <data name="OrgEnabledProducts_RolesEmpty" xml:space="preserve"><value>No active Product role assignments.</value></data>
+  <data name="OrgEnabledProducts_RolesUnavailable" xml:space="preserve"><value>Product roles unavailable</value></data>
+  <data name="OrgEnabledProducts_RolesTitle" xml:space="preserve"><value>Staff Product roles</value></data>
   <data name="OrgEnabledProducts_MappedPosRole" xml:space="preserve"><value>Mapped POS role</value></data>
   <data name="OrgEnabledProducts_RevokeRole" xml:space="preserve"><value>Revoke role</value></data>
-  <data name="OrgEnabledProducts_RevokeConfirm" xml:space="preserve"><value>Revoke this product-local role? The person will lose product operation access even if entitlement remains.</value></data>
-  <data name="OrgEnabledProducts_RevokeAuditReason" xml:space="preserve"><value>Revoked from Admin</value></data>
-  <data name="OrgEnabledProducts_ToastRoleAssigned" xml:space="preserve"><value>Product-local role assigned.</value></data>
-  <data name="OrgEnabledProducts_ToastRoleRevoked" xml:space="preserve"><value>Product-local role revoked.</value></data>
-  <data name="OrgEnabledProducts_InvalidUserId" xml:space="preserve"><value>Enter a valid user id (GUID).</value></data>
+  <data name="OrgEnabledProducts_RevokeConfirm" xml:space="preserve"><value>Revoke this Product role? The person will lose Product access even if the Organization entitlement remains.</value></data>
+  <data name="OrgEnabledProducts_RevokeAuditReason" xml:space="preserve"><value>Revoked from Organization Admin</value></data>
+  <data name="OrgEnabledProducts_ToastRoleAssigned" xml:space="preserve"><value>Product role assigned.</value></data>
+  <data name="OrgEnabledProducts_ToastRoleRevoked" xml:space="preserve"><value>Product role revoked.</value></data>
+  <data name="OrgEnabledProducts_InvalidUserId" xml:space="preserve"><value>Select a staff member from the list.</value></data>
   <data name="Login_CredentialsHint" xml:space="preserve"><value>Sign in with your email and password.</value></data>
   <data name="Login_UsernameOrEmail" xml:space="preserve"><value>Email</value></data>
   <data name="Login_Email" xml:space="preserve"><value>Email</value></data>

@@ -183,6 +183,7 @@ internal static class ProductNavigationEndpoints
             Guid organizationId,
             AssignProductLocalRoleRequest body,
             AssignProductLocalRole useCase,
+            ProductLocalRoleGrantQueryService queries,
             PlatformMembershipAuthz membershipAuthz,
             PlatformAuthz authz,
             CancellationToken ct) =>
@@ -233,11 +234,15 @@ internal static class ProductNavigationEndpoints
                         cancellationToken: ct).ConfigureAwait(false);
                 }
 
-                return PlatformApiResults.FromResult(
-                    result,
-                    g => Results.Created(
-                        $"/api/v1/organizations/{organizationId:D}/product-local-roles/{g.Id.Value:D}",
-                        ProductLocalRoleGrantQueryService.Map(g)));
+                if (!result.IsSuccess)
+                {
+                    return PlatformApiResults.FromResult(result, _ => Results.Ok());
+                }
+
+                var dto = await queries.MapAsync(result.Value!, ct).ConfigureAwait(false);
+                return Results.Created(
+                    $"/api/v1/organizations/{organizationId:D}/product-local-roles/{result.Value!.Id.Value:D}",
+                    dto);
             }
             catch (DomainException ex)
             {
@@ -308,7 +313,12 @@ internal static class ProductNavigationEndpoints
                         cancellationToken: ct).ConfigureAwait(false);
                 }
 
-                return PlatformApiResults.FromResult(result, g => Results.Ok(ProductLocalRoleGrantQueryService.Map(g)));
+                if (!result.IsSuccess)
+                {
+                    return PlatformApiResults.FromResult(result, _ => Results.Ok());
+                }
+
+                return Results.Ok(await queries.MapAsync(result.Value!, ct).ConfigureAwait(false));
             }
             catch (DomainException ex)
             {
@@ -356,13 +366,12 @@ internal static class ProductNavigationEndpoints
                     .ConfigureAwait(false);
                 if (!result.CanOperate)
                 {
+                    var denial = ProductAccessDenialDisplay.ToDisplay(result.ReasonCode);
                     return PlatformApiResults.Problem(
                         result.ReasonCode == EffectiveAccessReasonCodes.ProductLocalRoleMissing
                             ? ApplicationErrorCodes.ProductLocalRoleMissing
                             : ApplicationErrorCodes.ProductEntryDenied,
-                        result.ReasonCode == EffectiveAccessReasonCodes.ProductLocalRoleMissing
-                            ? "Product-local role is required to launch this product."
-                            : "Product launch denied.",
+                        string.IsNullOrWhiteSpace(denial) ? "Product launch denied." : denial,
                         StatusCodes.Status403Forbidden);
                 }
 

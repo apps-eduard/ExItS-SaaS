@@ -115,7 +115,162 @@ public sealed class ProductAuthorizationAndDiscoveryTests
         var item = Assert.Single(discovered.Value!);
         Assert.Equal(ProductCode.PinoyBusinessPos, item.ProductCode);
         Assert.Equal("Pinoy Business POS", item.DisplayName);
+        Assert.Equal("Pinoy Business POS", item.ProductDisplayName);
+        Assert.Equal(ProductCode.PinoyBusinessPos, item.ProductKey);
+        Assert.Equal(harness.Product.Id.Value, item.ProductId);
+        Assert.Equal("Enabled", item.EntitlementStatus);
+        Assert.Equal("Ready", item.ProvisioningStatus);
+        Assert.Equal("Cashier", item.ProductRole);
+        Assert.Equal("Owner", item.OrganizationRole);
         Assert.DoesNotContain("pinoy-business-pos", item.DisplayName, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("pinoy-business-pos", item.ProductDisplayName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Friendly_denial_replaces_technical_product_local_role_code()
+    {
+        Assert.Equal(
+            "You do not have a role assigned for this Product.",
+            ProductAccessDenialDisplay.ToDisplay(EffectiveAccessReasonCodes.ProductLocalRoleMissing));
+        Assert.Equal(string.Empty, ProductAccessDenialDisplay.ToDisplay(EffectiveAccessReasonCodes.Allowed));
+    }
+
+    [Fact]
+    public async Task Role_assignment_does_not_create_entitlement_or_commercial_assignment()
+    {
+        var harness = await AuthHarness.CreateAsync();
+        Assert.True((await harness.AssignRole.ExecuteAsync(
+            harness.Organization.Id,
+            harness.User.Id,
+            harness.Product.Code.Value,
+            ProductLocalRoleCodes.Cashier,
+            harness.User.Id)).IsSuccess);
+
+        var auth = await harness.Authorize.ExecuteAsync(
+            harness.User.Id,
+            harness.Organization.Id,
+            harness.Product.Code.Value);
+        Assert.True(auth.ProductLocalRoleGranted);
+        Assert.False(auth.ProductAccessAssigned);
+        Assert.False(auth.EntitlementAllowed);
+        Assert.False(auth.CanOperate);
+    }
+
+    [Fact]
+    public async Task Entitlement_does_not_grant_all_staff_product_access()
+    {
+        var harness = await AuthHarness.CreateAsync();
+        var staff = (await new CreatePlatformUser(harness.Users, harness.UnitOfWork, harness.Clock)
+            .ExecuteAsync("carlo", "Carlo Reyes", "carlo@example.com")).Value!;
+        _ = (await new AddOrganizationMembership(
+                harness.Users,
+                harness.Organizations,
+                harness.Memberships,
+                new EnsureAccountProfilesForUser(
+                    new InMemoryAccountProfileRepository(),
+                    new InMemoryPlatformRoleAssignmentRepository(),
+                    harness.Memberships,
+                    harness.UnitOfWork,
+                    harness.Clock),
+                harness.UnitOfWork,
+                harness.Clock)
+            .ExecuteAsync(harness.Organization.Id, staff.Id, OrganizationRole.OrganizationMember)).Value!;
+
+        // Org entitlement path for both people (commercial grants), but only Owner receives a Product role.
+        Assert.True((await harness.GrantAccess.ExecuteAsync(
+            harness.Organization.Id,
+            harness.User.Id,
+            harness.Product.Code.Value,
+            "dev-admin")).IsSuccess);
+        Assert.True((await harness.GrantAccess.ExecuteAsync(
+            harness.Organization.Id,
+            staff.Id,
+            harness.Product.Code.Value,
+            "dev-admin")).IsSuccess);
+        Assert.True((await harness.AssignRole.ExecuteAsync(
+            harness.Organization.Id,
+            harness.User.Id,
+            harness.Product.Code.Value,
+            ProductLocalRoleCodes.Owner,
+            harness.User.Id)).IsSuccess);
+
+        var ownerAuth = await harness.Authorize.ExecuteAsync(
+            harness.User.Id,
+            harness.Organization.Id,
+            harness.Product.Code.Value);
+        Assert.True(ownerAuth.EntitlementAllowed);
+        Assert.True(ownerAuth.CanOperate);
+
+        var staffAuth = await harness.Authorize.ExecuteAsync(
+            staff.Id,
+            harness.Organization.Id,
+            harness.Product.Code.Value);
+        Assert.True(staffAuth.EntitlementAllowed);
+        Assert.False(staffAuth.ProductLocalRoleGranted);
+        Assert.False(staffAuth.CanOperate);
+        Assert.Equal(EffectiveAccessReasonCodes.ProductLocalRoleMissing, staffAuth.ReasonCode);
+        Assert.Equal(
+            "You do not have a role assigned for this Product.",
+            ProductAccessDenialDisplay.ToDisplay(staffAuth.ReasonCode));
+    }
+
+    [Fact]
+    public async Task Cross_organization_product_role_assignment_is_blocked()
+    {
+        var harness = await AuthHarness.CreateAsync();
+        var otherOrg = (await new CreatePlatformOrganization(harness.Organizations, harness.UnitOfWork, harness.Clock)
+            .ExecuteAsync("XYZ Store", "xyz-store")).Value!;
+
+        var assigned = await harness.AssignRole.ExecuteAsync(
+            otherOrg.Id,
+            harness.User.Id,
+            harness.Product.Code.Value,
+            ProductLocalRoleCodes.Cashier,
+            harness.User.Id);
+        Assert.False(assigned.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.MembershipNotFound, assigned.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Launch_requires_entitlement_provisioning_membership_and_product_role()
+    {
+        var harness = await AuthHarness.CreateAsync();
+        var withoutGrant = await harness.Authorize.ExecuteAsync(
+            harness.User.Id,
+            harness.Organization.Id,
+            harness.Product.Code.Value);
+        Assert.False(withoutGrant.CanOperate);
+
+        Assert.True((await harness.GrantAccess.ExecuteAsync(
+            harness.Organization.Id,
+            harness.User.Id,
+            harness.Product.Code.Value,
+            "dev-admin")).IsSuccess);
+        var withEntitlementOnly = await harness.Authorize.ExecuteAsync(
+            harness.User.Id,
+            harness.Organization.Id,
+            harness.Product.Code.Value);
+        Assert.True(withEntitlementOnly.EntitlementAllowed);
+        Assert.False(withEntitlementOnly.CanOperate);
+
+        Assert.True((await harness.AssignRole.ExecuteAsync(
+            harness.Organization.Id,
+            harness.User.Id,
+            harness.Product.Code.Value,
+            ProductLocalRoleCodes.Cashier,
+            harness.User.Id)).IsSuccess);
+        var ready = await harness.Authorize.ExecuteAsync(
+            harness.User.Id,
+            harness.Organization.Id,
+            harness.Product.Code.Value);
+        Assert.True(ready.CanOperate);
+        Assert.Equal(EffectiveAccessReasonCodes.Allowed, ready.ReasonCode);
+
+        var discovered = await harness.Discover.ExecuteAsync(harness.User.Id, harness.Organization.Id);
+        var item = Assert.Single(discovered.Value!);
+        Assert.True(item.CanLaunch);
+        Assert.Null(item.DenialReasonCode);
+        Assert.True(string.IsNullOrEmpty(item.DenialReasonDisplay));
     }
 
     [Fact]
@@ -192,6 +347,10 @@ public sealed class ProductAuthorizationAndDiscoveryTests
         public required AssignProductLocalRole AssignRole { get; init; }
         public required RevokeProductLocalRole RevokeRole { get; init; }
         public required InMemorySubscriptionRepository Subscriptions { get; init; }
+        public required InMemoryPlatformUserRepository Users { get; init; }
+        public required InMemoryPlatformOrganizationRepository Organizations { get; init; }
+        public required InMemoryOrganizationMembershipRepository Memberships { get; init; }
+        public required NoOpUnitOfWork UnitOfWork { get; init; }
         public required Plan Plan { get; init; }
         public required PlanVersion PlanVersion { get; init; }
         public required TrialDefinition Trial { get; init; }
@@ -271,6 +430,10 @@ public sealed class ProductAuthorizationAndDiscoveryTests
                 AssignRole = assignRole,
                 RevokeRole = revokeRole,
                 Subscriptions = subscriptions,
+                Users = users,
+                Organizations = orgs,
+                Memberships = memberships,
+                UnitOfWork = uow,
                 Plan = plan,
                 PlanVersion = version,
                 Trial = trial,

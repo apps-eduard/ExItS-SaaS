@@ -626,7 +626,16 @@ public sealed record EnabledProductDto(
     string? ProductLocalRoleCode,
     string? MappedPosRoleCode,
     string? SubscriptionStatus,
-    string ReasonCode);
+    string ReasonCode,
+    Guid? ProductId = null,
+    string? ProductKey = null,
+    string? ProductDisplayName = null,
+    string? EntitlementStatus = null,
+    string? ProvisioningStatus = null,
+    string? OrganizationRole = null,
+    string? ProductRole = null,
+    string? DenialReasonCode = null,
+    string? DenialReasonDisplay = null);
 
 public sealed record ProductLocalRoleGrantDto(
     Guid Id,
@@ -641,7 +650,11 @@ public sealed record ProductLocalRoleGrantDto(
     string Source,
     DateTimeOffset? RevokedAtUtc,
     Guid? RevokedByUserIdentityId,
-    string? Reason);
+    string? Reason,
+    string? UserDisplayName = null,
+    string? ProductDisplayName = null,
+    string? RoleDisplay = null,
+    string? ProductKey = null);
 
 public sealed class EvaluateProductAuthorization
 {
@@ -780,6 +793,18 @@ public sealed class DiscoverEnabledProducts
                 || auth.ReasonCode is EffectiveAccessReasonCodes.ProductAssignmentMissing
                     or EffectiveAccessReasonCodes.ProductLocalRoleMissing;
 
+            var entitlementStatus = entitlementActive ? "Enabled" : "Disabled";
+            var provisioningStatus = entitlementActive
+                ? "Ready"
+                : auth.ReasonCode is EffectiveAccessReasonCodes.EntitlementStale
+                    or EffectiveAccessReasonCodes.SubscriptionIneligible
+                    ? "Pending"
+                    : "Not Ready";
+            var denialCode = auth.CanOperate ? null : auth.ReasonCode;
+            var productRoleDisplay = string.IsNullOrWhiteSpace(auth.ProductLocalRoleCode)
+                ? null
+                : ProductRoleDisplay.ToDisplayLabel(auth.ProductLocalRoleCode);
+
             results.Add(new EnabledProductDto(
                 auth.ProductCode,
                 product.DisplayName,
@@ -790,7 +815,16 @@ public sealed class DiscoverEnabledProducts
                 ProductLocalRoleCode: auth.ProductLocalRoleCode,
                 MappedPosRoleCode: auth.MappedPosRoleCode,
                 SubscriptionStatus: auth.SubscriptionStatus,
-                ReasonCode: auth.ReasonCode));
+                ReasonCode: auth.ReasonCode,
+                ProductId: product.Id.Value,
+                ProductKey: auth.ProductCode,
+                ProductDisplayName: product.DisplayName,
+                EntitlementStatus: entitlementStatus,
+                ProvisioningStatus: provisioningStatus,
+                OrganizationRole: OrganizationRoleDisplay.ToDisplayLabel(membership.Role),
+                ProductRole: productRoleDisplay,
+                DenialReasonCode: denialCode,
+                DenialReasonDisplay: ProductAccessDenialDisplay.ToDisplay(denialCode)));
         }
 
         return ApplicationResult<IReadOnlyList<EnabledProductDto>>.Success(results);
@@ -970,8 +1004,18 @@ public sealed class RevokeProductLocalRole
 public sealed class ProductLocalRoleGrantQueryService
 {
     private readonly IProductLocalRoleGrantRepository _grants;
+    private readonly IPlatformUserRepository _users;
+    private readonly IProductRepository _products;
 
-    public ProductLocalRoleGrantQueryService(IProductLocalRoleGrantRepository grants) => _grants = grants;
+    public ProductLocalRoleGrantQueryService(
+        IProductLocalRoleGrantRepository grants,
+        IPlatformUserRepository users,
+        IProductRepository products)
+    {
+        _grants = grants;
+        _users = users;
+        _products = products;
+    }
 
     public async Task<IReadOnlyList<ProductLocalRoleGrantDto>> ListByOrganizationAsync(
         Guid organizationId,
@@ -981,10 +1025,46 @@ public sealed class ProductLocalRoleGrantQueryService
         var items = await _grants
             .ListByOrganizationAsync(PlatformOrganizationId.From(organizationId), status, cancellationToken)
             .ConfigureAwait(false);
-        return items.Select(Map).ToList();
+
+        var results = new List<ProductLocalRoleGrantDto>(items.Count);
+        foreach (var grant in items)
+        {
+            results.Add(await MapAsync(grant, cancellationToken).ConfigureAwait(false));
+        }
+
+        return results;
+    }
+
+    public async Task<ProductLocalRoleGrantDto> MapAsync(
+        ProductLocalRoleGrant grant,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await _users.GetByIdAsync(grant.UserIdentityId, cancellationToken).ConfigureAwait(false);
+        Product? product = null;
+        try
+        {
+            product = await _products
+                .GetByCodeAsync(ProductCode.Create(grant.ProductCode), cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (DomainException)
+        {
+            // Keep grant list readable even if a legacy product code cannot be parsed.
+        }
+
+        return Map(
+            grant,
+            user?.DisplayName,
+            product?.DisplayName ?? grant.ProductCode);
     }
 
     public static ProductLocalRoleGrantDto Map(ProductLocalRoleGrant grant) =>
+        Map(grant, userDisplayName: null, productDisplayName: null);
+
+    public static ProductLocalRoleGrantDto Map(
+        ProductLocalRoleGrant grant,
+        string? userDisplayName,
+        string? productDisplayName) =>
         new(
             grant.Id.Value,
             grant.OrganizationId.Value,
@@ -998,5 +1078,9 @@ public sealed class ProductLocalRoleGrantQueryService
             grant.Source,
             grant.RevokedAtUtc,
             grant.RevokedByUserIdentityId?.Value,
-            grant.Reason);
+            grant.Reason,
+            UserDisplayName: userDisplayName,
+            ProductDisplayName: productDisplayName,
+            RoleDisplay: ProductRoleDisplay.ToDisplayLabel(grant.RoleCode),
+            ProductKey: grant.ProductCode);
 }

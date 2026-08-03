@@ -470,7 +470,16 @@ public sealed record EnabledProductDto(
     string? ProductLocalRoleCode,
     string? MappedPosRoleCode,
     string? SubscriptionStatus,
-    string ReasonCode);
+    string ReasonCode,
+    Guid? ProductId = null,
+    string? ProductKey = null,
+    string? ProductDisplayName = null,
+    string? EntitlementStatus = null,
+    string? ProvisioningStatus = null,
+    string? OrganizationRole = null,
+    string? ProductRole = null,
+    string? DenialReasonCode = null,
+    string? DenialReasonDisplay = null);
 
 public sealed record ProductAuthorizationResultDto(
     bool EntitlementAllowed,
@@ -505,7 +514,11 @@ public sealed record ProductLocalRoleGrantDto(
     string Source,
     DateTimeOffset? RevokedAtUtc,
     Guid? RevokedByUserIdentityId,
-    string? Reason);
+    string? Reason,
+    string? UserDisplayName = null,
+    string? ProductDisplayName = null,
+    string? RoleDisplay = null,
+    string? ProductKey = null);
 
 public sealed record AssignProductLocalRoleRequest(
     Guid UserIdentityId,

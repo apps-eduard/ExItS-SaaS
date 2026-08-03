@@ -1,4 +1,5 @@
 @page "/admin/organizations/{OrganizationId:guid}/product-access"
+@using AntDesign
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject IPlatformApiClient Api
@@ -18,7 +19,8 @@ else if (!CanAccessPage)
 else
 {
 <AdminPageHeader Title="@L["OrgProductAccess_Title"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Organizations"]} / {L["Common_ProductAccess"]}")" Description="@L["OrgProductAccess_Description"]" />
-<div class="warning" role="note">@L["OrgProductAccess_Warning"]</div>
+<Alert Type="@AlertType.Warning" ShowIcon="true" Message="@L["OrgProductAccess_Warning"]" Style="margin-bottom:12px;" />
+<div class="warning" role="note">Platform support tool: commercial entitlement grants. Organization Owners assign Product roles from Enabled Products → Manage Staff Access.</div>
 
 @if (_org is null) { <LoadingState Message="@L["OrgProductAccess_Loading"]" /> }
 else if (!_org.IsSuccess) { <ErrorState Title="@(_org.Error?.Title ?? L["Common_Error"])" Detail="@_org.Error?.Detail" Unavailable="@(_org.Status == ApiCallStatus.Unavailable)" /> }
@@ -140,12 +142,11 @@ else
     private ConfirmState? _confirm;
     private List<AdminColumnDefinition> _columns = new();
 
+    /// <summary>
+    /// Platform support tool for commercial entitlement grants — not Organization Owner staff Product-role UI.
+    /// </summary>
     private bool CanAccessPage =>
-        Permissions.HasPermission(PlatformPermissionCodes.ManageProductAccess)
-        || (Shell.IsOrganizationShell
-            && Shell.SelectedOrganizationId == OrganizationId
-            && (string.Equals(Shell.MembershipRole, "OrganizationOwner", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(Shell.MembershipRole, "OrganizationAdministrator", StringComparison.OrdinalIgnoreCase)));
+        Permissions.HasPermission(PlatformPermissionCodes.ManageProductAccess);
 
     private bool CanGrant => Permissions.HasPermission(PlatformPermissionCodes.ManageProductAccess);
 

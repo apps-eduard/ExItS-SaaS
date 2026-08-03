@@ -2,10 +2,29 @@
 
 <div class="access-state @(Allowed ? "allowed" : "denied")" role="status">
     <strong>@(Allowed ? L["Access_Allowed"] : L["Access_Denied"])</strong>
-    <span>@L["Access_Reason"] @ReasonCode</span>
+    @if (!string.IsNullOrWhiteSpace(FriendlyReason))
+    {
+        <span>@L["Access_Reason"] @FriendlyReason</span>
+    }
+    else if (!string.IsNullOrWhiteSpace(ReasonCode) && !string.Equals(ReasonCode, "allowed", StringComparison.OrdinalIgnoreCase))
+    {
+        <span>@L["Access_Reason"] @MapDenial(ReasonCode)</span>
+    }
 </div>
 
 @code {
     [Parameter] public bool Allowed { get; set; }
     [Parameter] public string ReasonCode { get; set; } = "";
+    [Parameter] public string? FriendlyReason { get; set; }
+
+    private static string MapDenial(string? reasonCode) => reasonCode switch
+    {
+        "product_local_role_missing" => "You do not have a role assigned for this Product.",
+        "product_assignment_missing" => "Product access has not been granted for your account in this Organization.",
+        "entitlement_missing" or "entitlement_denied" => "This Organization is not entitled to use this Product.",
+        "membership_missing" or "membership_inactive" => "Your Organization membership is not active.",
+        "user_inactive" => "Your account is not active.",
+        "organization_inactive" => "This Organization is not active.",
+        _ => "You cannot open this Product right now."
+    };
 }

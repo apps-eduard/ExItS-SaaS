@@ -66,6 +66,9 @@ public sealed class Wp11StaffUiAndTerminologyTests
             "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "OrganizationEnabledProducts.razor");
         var text = File.ReadAllText(path);
         Assert.DoesNotContain("DisplayName} ({ctx.Item.ProductCode})", text, StringComparison.Ordinal);
+        Assert.Contains("ProductDisplayName", text, StringComparison.Ordinal);
+        Assert.Contains("ProductTitle", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("Placeholder=\"pinoy-business-pos\"", text, StringComparison.Ordinal);
         Assert.Contains("Pinoy Business POS", File.ReadAllText(Path.Combine(
             FindRepositoryRoot(),
             "src", "Platform", "ExItS.Platform.Application", "LocalValidation", "InitializeLocalValidationDataset.cs")), StringComparison.Ordinal);

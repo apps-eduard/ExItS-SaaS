@@ -779,31 +779,43 @@
   <data name="OrgProductAccess_ReadOnlyHint" xml:space="preserve"><value>Product-access grants require ManageProductAccess. Organization admins can view and evaluate only.</value></data>
   <data name="Common_Yes" xml:space="preserve"><value>Oo</value></data>
   <data name="Common_No" xml:space="preserve"><value>Hindi</value></data>
-  <data name="OrgEnabledProducts_Title" xml:space="preserve"><value>Mga naka-enable na produkto</value></data>
-  <data name="OrgEnabledProducts_Description" xml:space="preserve"><value>Tuklasin ang mga produkto ng Organisasyon at maglunsad kapag may entitlement at product-local role.</value></data>
-  <data name="OrgEnabledProducts_Warning" xml:space="preserve"><value>Ang entitlement ay nagbibigay-daan sa produkto para sa Organisasyon. Ang product-local role ang nagbibigay ng pahintulot sa indibidwal na operasyon.</value></data>
+  <data name="OrgEnabledProducts_Title" xml:space="preserve"><value>Mga Enabled na Produkto</value></data>
+  <data name="OrgEnabledProducts_Description" xml:space="preserve"><value>Mga produktong naka-enable para sa Organisasyon. Ang entitlement ang nagbibigay-daan sa Produkto; ang Product role ang nagbibigay-pahintulot sa tao sa loob ng Produkto.</value></data>
+  <data name="OrgEnabledProducts_Warning" xml:space="preserve"><value>Ang entitlement ay nagbibigay-daan sa Produkto para sa Organisasyon. Ang Product Role ang nagbibigay-pahintulot sa tao sa loob ng Produkto.</value></data>
   <data name="OrgEnabledProducts_Loading" xml:space="preserve"><value>Naglo-load ng mga produkto…</value></data>
   <data name="OrgEnabledProducts_Empty" xml:space="preserve"><value>Walang naka-enable na produkto para sa organisasyong ito.</value></data>
   <data name="OrgEnabledProducts_Unavailable" xml:space="preserve"><value>Hindi available ang mga produkto</value></data>
   <data name="OrgEnabledProducts_Entitlement" xml:space="preserve"><value>Entitlement</value></data>
+  <data name="OrgEnabledProducts_EntitlementEnabled" xml:space="preserve"><value>Enabled</value></data>
+  <data name="OrgEnabledProducts_EntitlementDisabled" xml:space="preserve"><value>Disabled</value></data>
+  <data name="OrgEnabledProducts_Provisioning" xml:space="preserve"><value>Provisioning</value></data>
+  <data name="OrgEnabledProducts_YourRole" xml:space="preserve"><value>Iyong role</value></data>
+  <data name="OrgEnabledProducts_OpenProduct" xml:space="preserve"><value>Buksan ang Produkto</value></data>
+  <data name="OrgEnabledProducts_ManageStaffAccess" xml:space="preserve"><value>Pamahalaan ang Staff Access</value></data>
+  <data name="OrgEnabledProducts_SelectStaff" xml:space="preserve"><value>Pumili ng Staff</value></data>
+  <data name="OrgEnabledProducts_SelectProduct" xml:space="preserve"><value>Pumili ng Produkto</value></data>
+  <data name="OrgEnabledProducts_SelectProductRole" xml:space="preserve"><value>Pumili ng Product Role</value></data>
+  <data name="OrgEnabledProducts_SelectStaffRequired" xml:space="preserve"><value>Pumili ng staff member.</value></data>
+  <data name="OrgEnabledProducts_SelectProductRequired" xml:space="preserve"><value>Pumili ng produkto.</value></data>
+  <data name="OrgEnabledProducts_StaffNotInOrganization" xml:space="preserve"><value>Hindi aktibong miyembro ng Organisasyong ito ang taong iyon.</value></data>
   <data name="OrgEnabledProducts_Assignment" xml:space="preserve"><value>Product access</value></data>
   <data name="OrgEnabledProducts_Role" xml:space="preserve"><value>Product role</value></data>
   <data name="OrgEnabledProducts_CanLaunch" xml:space="preserve"><value>Maaaring ilunsad</value></data>
-  <data name="OrgEnabledProducts_LaunchDenied" xml:space="preserve"><value>Tinanggihan ang paglunsad</value></data>
-  <data name="OrgEnabledProducts_AssignRoleSection" xml:space="preserve"><value>Magtalaga ng product-local role</value></data>
-  <data name="OrgEnabledProducts_RoleCode" xml:space="preserve"><value>Role</value></data>
-  <data name="OrgEnabledProducts_AssignRole" xml:space="preserve"><value>Italaga ang role</value></data>
-  <data name="OrgEnabledProducts_LoadingRoles" xml:space="preserve"><value>Naglo-load ng mga role…</value></data>
-  <data name="OrgEnabledProducts_RolesEmpty" xml:space="preserve"><value>Walang aktibong product-local role.</value></data>
-  <data name="OrgEnabledProducts_RolesUnavailable" xml:space="preserve"><value>Hindi available ang mga role</value></data>
-  <data name="OrgEnabledProducts_RolesTitle" xml:space="preserve"><value>Mga product-local role</value></data>
+  <data name="OrgEnabledProducts_LaunchDenied" xml:space="preserve"><value>Hindi mabuksan</value></data>
+  <data name="OrgEnabledProducts_AssignRoleSection" xml:space="preserve"><value>Pamahalaan ang Staff Access</value></data>
+  <data name="OrgEnabledProducts_RoleCode" xml:space="preserve"><value>Product role</value></data>
+  <data name="OrgEnabledProducts_AssignRole" xml:space="preserve"><value>Italaga ang Role</value></data>
+  <data name="OrgEnabledProducts_LoadingRoles" xml:space="preserve"><value>Naglo-load ng mga Product role…</value></data>
+  <data name="OrgEnabledProducts_RolesEmpty" xml:space="preserve"><value>Walang aktibong Product role assignment.</value></data>
+  <data name="OrgEnabledProducts_RolesUnavailable" xml:space="preserve"><value>Hindi available ang mga Product role</value></data>
+  <data name="OrgEnabledProducts_RolesTitle" xml:space="preserve"><value>Mga Product role ng staff</value></data>
   <data name="OrgEnabledProducts_MappedPosRole" xml:space="preserve"><value>Mapped POS role</value></data>
   <data name="OrgEnabledProducts_RevokeRole" xml:space="preserve"><value>Bawiin ang role</value></data>
-  <data name="OrgEnabledProducts_RevokeConfirm" xml:space="preserve"><value>Bawiin ang product-local role na ito?</value></data>
-  <data name="OrgEnabledProducts_RevokeAuditReason" xml:space="preserve"><value>Revoked from Admin</value></data>
-  <data name="OrgEnabledProducts_ToastRoleAssigned" xml:space="preserve"><value>Naitalaga ang product-local role.</value></data>
-  <data name="OrgEnabledProducts_ToastRoleRevoked" xml:space="preserve"><value>Nabawi ang product-local role.</value></data>
-  <data name="OrgEnabledProducts_InvalidUserId" xml:space="preserve"><value>Maglagay ng wastong user id (GUID).</value></data>
+  <data name="OrgEnabledProducts_RevokeConfirm" xml:space="preserve"><value>Bawiin ang Product role na ito? Mawawalan ng access ang tao kahit manatili ang entitlement ng Organisasyon.</value></data>
+  <data name="OrgEnabledProducts_RevokeAuditReason" xml:space="preserve"><value>Revoked from Organization Admin</value></data>
+  <data name="OrgEnabledProducts_ToastRoleAssigned" xml:space="preserve"><value>Naitalaga ang Product role.</value></data>
+  <data name="OrgEnabledProducts_ToastRoleRevoked" xml:space="preserve"><value>Nabawi ang Product role.</value></data>
+  <data name="OrgEnabledProducts_InvalidUserId" xml:space="preserve"><value>Pumili ng staff mula sa listahan.</value></data>
   <data name="Login_CredentialsHint" xml:space="preserve"><value>Mag-sign in gamit ang iyong email at password.</value></data>
   <data name="Login_UsernameOrEmail" xml:space="preserve"><value>Email</value></data>
   <data name="Login_Email" xml:space="preserve"><value>Email</value></data>

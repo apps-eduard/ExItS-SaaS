@@ -400,6 +400,26 @@ POS role: POS Owner
 
 The POS role does not replace the Organization role.
 
+Permanent separation (also see `product-catalog-entitlement-and-role-model.md`):
+
+```text
+Entitlement enables the Product for the Organization.
+Product Role authorizes a person inside that Product.
+```
+
+Example:
+
+```text
+Carlo Reyes
+Account Class: Organization
+Organization Role: Staff
+Product Role: Cashier
+```
+
+Do not show Cashier as Organization Role. Do not show POS Owner as Account Class.
+
+Organization Owners manage staff Product roles from **Enabled Products → Manage Staff Access** using staff/product/role dropdowns. They must not type User ID GUIDs or Product codes for routine assignment. Platform Admin commercial Product Access tools remain support-only and permission protected.
+
 ---
 
 ## 8. Organization Staff Creation and Invitation Flow
