@@ -34,13 +34,25 @@ Never place broad deletion in ordinary application startup.
 ```text
 Docker
 ├── Platform PostgreSQL  (host port 15533)
-└── POS PostgreSQL       (host port 15534)
+├── POS PostgreSQL       (host port 15534)
+└── Mailpit              UI http://localhost:8025 · SMTP 1025
 
 Local .NET (dotnet watch)
-├── Platform API         http://localhost:8091
+├── Platform API         http://localhost:8091  (PlatformEmail → Mailpit)
 ├── POS API              http://localhost:8092
 └── Platform Admin Web   http://localhost:8090
 ```
+
+Tailscale/LAN: `.\tools\Start-LocalValidation.ps1 -PublicHost <tailscale-ip>` binds `0.0.0.0:8090-8092`. Firewall and CORS details: [`README.local-validation-workflow.md`](README.local-validation-workflow.md).
+
+### Personal Account registration (Local Validation email)
+
+1. Open Admin login → **Register**.
+2. Submit identity + email → creates **Pending Verification** Personal Account and sends verification email via Mailpit.
+3. Open [http://localhost:8025](http://localhost:8025), open the message, click **Activate your account**.
+4. Set password → account becomes **Active** → sign in normally.
+
+Mailpit is only the Local Validation catcher; tokens, activation, and authorization are real application behavior.
 
 ## One-time setup
 

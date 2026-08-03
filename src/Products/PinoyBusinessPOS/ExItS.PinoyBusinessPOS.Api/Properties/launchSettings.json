@@ -14,15 +14,16 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": false,
-      "applicationUrl": "http://localhost:8092",
+      "applicationUrl": "http://0.0.0.0:8092",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Staging",
         "LocalValidation__Enabled": "true",
         "Security__EnforceHttps": "false",
         "AllowedHosts": "localhost;127.0.0.1",
         "Cors__AllowedOrigins__0": "http://localhost:8090",
-        "LocalValidation__PlatformApiBaseUrl": "http://localhost:8091",
-        "PlatformAuth__BaseUrl": "http://localhost:8091"
+        "Cors__AllowedOrigins__1": "http://127.0.0.1:8090",
+        "LocalValidation__PlatformApiBaseUrl": "http://127.0.0.1:8091",
+        "PlatformAuth__BaseUrl": "http://127.0.0.1:8091"
       }
     }
   }

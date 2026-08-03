@@ -50,7 +50,27 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("DataProtectionKeys", startScript, StringComparison.Ordinal);
         Assert.Contains("exits-local-validation-platform-db", startScript, StringComparison.Ordinal);
         Assert.Contains("volumes preserved", startScript, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("http://0.0.0.0:", startScript, StringComparison.Ordinal);
+        Assert.Contains("PublicHost", startScript, StringComparison.Ordinal);
+        Assert.Contains("Cors__AllowedOrigins__", startScript, StringComparison.Ordinal);
+        Assert.Contains("New-NetFirewallRule", startScript, StringComparison.Ordinal);
+        Assert.Contains("LocalPort 8090", startScript, StringComparison.Ordinal);
+        Assert.Contains("LocalPort 8091", startScript, StringComparison.Ordinal);
+        Assert.Contains("LocalPort 8092", startScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("LocalPort 15533", startScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("LocalPort 15534", startScript, StringComparison.Ordinal);
         Assert.DoesNotContain("docker compose down -v", startScript, StringComparison.Ordinal);
+
+        var platformLaunch = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Api", "Properties", "launchSettings.json"));
+        Assert.Contains("http://0.0.0.0:8091", platformLaunch, StringComparison.Ordinal);
+        var posLaunch = File.ReadAllText(Path.Combine(
+            root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Api", "Properties", "launchSettings.json"));
+        Assert.Contains("http://0.0.0.0:8092", posLaunch, StringComparison.Ordinal);
+        // Admin LV bind comes from Start-LocalValidation.ps1 ASPNETCORE_URLS (no LocalValidation launch profile).
+        var adminLaunch = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Properties", "launchSettings.json"));
+        Assert.DoesNotContain("LocalValidation", adminLaunch, StringComparison.OrdinalIgnoreCase);
 
         var resetScript = File.ReadAllText(Path.Combine(root, "tools", "Reset-LocalValidation.ps1"));
         Assert.Contains("ConfirmReset", resetScript, StringComparison.Ordinal);

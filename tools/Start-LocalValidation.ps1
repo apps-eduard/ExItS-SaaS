@@ -16,15 +16,23 @@
     (never commit the secret; never exposed to the browser).
   - Not Production. Does not start P14-WP03.
 
+.PARAMETER PublicHost
+  Optional LAN/Tailscale host (IP or DNS name, no scheme/port). Binds remain 0.0.0.0;
+  printed browser URLs, CORS, AllowedHosts, and Admin PlatformApi base URL use this host.
+
 .EXAMPLE
   .\tools\Start-LocalValidation.ps1
+
+.EXAMPLE
+  .\tools\Start-LocalValidation.ps1 -PublicHost 100.120.79.81
 #>
 [CmdletBinding()]
 param(
     [int]$PortWaitSeconds = 120,
     [int]$DbHealthySeconds = 90,
     [ValidateSet('Full', 'PlatformAdministratorsOnly')]
-    [string]$SeedScope = 'Full'
+    [string]$SeedScope = 'Full',
+    [string]$PublicHost = ''
 )
 
 Set-StrictMode -Version Latest
@@ -211,6 +219,48 @@ function ConvertTo-EnvAssignments($EnvMap) {
     }) -join ''
 }
 
+function Resolve-PublicHost([string]$Value) {
+    if ([string]::IsNullOrWhiteSpace($Value)) { return '' }
+    $hostName = $Value.Trim()
+    if ($hostName -match '://') {
+        throw "PublicHost must be a host or IP only (no scheme). Example: -PublicHost 100.120.79.81"
+    }
+    if ($hostName.Contains('/') -or $hostName.Contains('\') -or $hostName.Contains(' ')) {
+        throw "PublicHost must be a host or IP only (no path/spaces). Example: -PublicHost 100.120.79.81"
+    }
+    if ($hostName -match ':\d+$') {
+        throw "PublicHost must not include a port; ports come from LOCAL_VALIDATION_*_HOST_PORT."
+    }
+    return $hostName
+}
+
+function Get-LocalValidationAllowedHosts([string]$PublicHostValue, $EnvMap) {
+    $hosts = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($h in @('localhost', '127.0.0.1')) { $hosts.Add($h) }
+    if (-not [string]::IsNullOrWhiteSpace($PublicHostValue) -and -not $hosts.Contains($PublicHostValue)) {
+        $hosts.Add($PublicHostValue)
+    }
+    $fromEnv = [string]$EnvMap['LOCAL_VALIDATION_ALLOWED_HOSTS']
+    if (-not [string]::IsNullOrWhiteSpace($fromEnv)) {
+        foreach ($part in ($fromEnv -split ';')) {
+            $trimmed = $part.Trim()
+            if ($trimmed.Length -gt 0 -and -not $hosts.Contains($trimmed)) {
+                $hosts.Add($trimmed)
+            }
+        }
+    }
+    return ($hosts -join ';')
+}
+
+function Show-LocalValidationFirewallGuidance {
+    Write-Note 'Windows Firewall: allow inbound TCP 8090/8091/8092 for Tailscale/LAN Admin+APIs. Do not open 15533/15534 (DB).'
+    Write-Host @'
+  New-NetFirewallRule -DisplayName "ExItS Local Validation Admin 8090" -Direction Inbound -Protocol TCP -LocalPort 8090 -Action Allow -Profile Any
+  New-NetFirewallRule -DisplayName "ExItS Local Validation Platform API 8091" -Direction Inbound -Protocol TCP -LocalPort 8091 -Action Allow -Profile Any
+  New-NetFirewallRule -DisplayName "ExItS Local Validation POS API 8092" -Direction Inbound -Protocol TCP -LocalPort 8092 -Action Allow -Profile Any
+'@
+}
+
 function Start-AppWindow {
     param(
         [string]$Title,
@@ -277,7 +327,6 @@ $platformApiPort = if ($envMap['LOCAL_VALIDATION_PLATFORM_API_HOST_PORT']) { [in
 $posApiPort = if ($envMap['LOCAL_VALIDATION_POS_API_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_POS_API_HOST_PORT'] } else { 8092 }
 $mailpitUiPort = if ($envMap['LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT'] } else { 8025 }
 $mailpitSmtpPort = if ($envMap['LOCAL_VALIDATION_MAILPIT_SMTP_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_MAILPIT_SMTP_HOST_PORT'] } else { 1025 }
-$adminOrigin = if ($envMap['LOCAL_VALIDATION_ADMIN_ORIGIN']) { [string]$envMap['LOCAL_VALIDATION_ADMIN_ORIGIN'] } else { "http://localhost:$adminPort" }
 
 New-Item -ItemType Directory -Force -Path $dpKeys | Out-Null
 Write-Ok "DataProtection keys directory: $dpKeys"
@@ -304,13 +353,55 @@ Wait-TcpPort -Label 'Mailpit UI' -HostName '127.0.0.1' -Port $mailpitUiPort -Tim
 Write-Ok "Mailpit UI: http://localhost:$mailpitUiPort"
 $platformCs = "Host=127.0.0.1;Port=$platformDbPort;Database=exits_platform;Username=$($envMap['LOCAL_VALIDATION_PLATFORM_DB_USER']);Password=$($envMap['LOCAL_VALIDATION_PLATFORM_DB_PASSWORD'])"
 $posCs = "Host=127.0.0.1;Port=$posDbPort;Database=exits_pos;Username=$($envMap['LOCAL_VALIDATION_POS_DB_USER']);Password=$($envMap['LOCAL_VALIDATION_POS_DB_PASSWORD'])"
-$platformApiUrl = "http://localhost:$platformApiPort"
-$posApiUrl = "http://localhost:$posApiPort"
-$adminUrl = "http://localhost:$adminPort"
+
+# Bind all interfaces so Tailscale/LAN can reach apps; localhost/127.0.0.1 still work.
+$resolvedPublicHost = Resolve-PublicHost -Value $PublicHost
+$bindAdminUrl = "http://0.0.0.0:$adminPort"
+$bindPlatformApiUrl = "http://0.0.0.0:$platformApiPort"
+$bindPosApiUrl = "http://0.0.0.0:$posApiPort"
+$loopbackAdminUrl = "http://127.0.0.1:$adminPort"
+$loopbackPlatformApiUrl = "http://127.0.0.1:$platformApiPort"
+$loopbackPosApiUrl = "http://127.0.0.1:$posApiPort"
+if ($resolvedPublicHost) {
+    $publicAdminUrl = "http://${resolvedPublicHost}:$adminPort"
+    $publicPlatformApiUrl = "http://${resolvedPublicHost}:$platformApiPort"
+    $publicPosApiUrl = "http://${resolvedPublicHost}:$posApiPort"
+}
+else {
+    $publicAdminUrl = "http://localhost:$adminPort"
+    $publicPlatformApiUrl = "http://localhost:$platformApiPort"
+    $publicPosApiUrl = "http://localhost:$posApiPort"
+}
+
+$allowedHosts = Get-LocalValidationAllowedHosts -PublicHostValue $resolvedPublicHost -EnvMap $envMap
+$corsOrigins = @(
+    "http://localhost:$adminPort",
+    "http://127.0.0.1:$adminPort"
+)
+if ($resolvedPublicHost) {
+    $corsOrigins += "http://${resolvedPublicHost}:$adminPort"
+}
+$envAdminOrigin = if ($envMap['LOCAL_VALIDATION_ADMIN_ORIGIN']) { [string]$envMap['LOCAL_VALIDATION_ADMIN_ORIGIN'] } else { $null }
+if (-not [string]::IsNullOrWhiteSpace($envAdminOrigin) -and ($corsOrigins -notcontains $envAdminOrigin)) {
+    $corsOrigins += $envAdminOrigin
+}
+
+Write-Ok "Kestrel bind URLs: $bindAdminUrl | $bindPlatformApiUrl | $bindPosApiUrl"
+Write-Ok "AllowedHosts: $allowedHosts"
+Write-Ok ("CORS origins: {0}" -f ($corsOrigins -join ', '))
+if ($resolvedPublicHost) {
+    Write-Ok "PublicHost browser URLs use $resolvedPublicHost"
+}
 
 $platformProject = Join-Path $repoRoot 'src\Platform\ExItS.Platform.Api\ExItS.Platform.Api.csproj'
 $posProject = Join-Path $repoRoot 'src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.Api\ExItS.PinoyBusinessPOS.Api.csproj'
 $adminProject = Join-Path $repoRoot 'src\Platform\ExItS.Platform.Admin\ExItS.Platform.Admin.csproj'
+
+foreach ($proj in @($platformProject, $posProject, $adminProject)) {
+    if (-not (Test-Path -LiteralPath $proj)) {
+        throw "Missing project file: $proj"
+    }
+}
 
 $windowPids = @()
 
@@ -328,12 +419,11 @@ else {
     $seedScopeValue = $SeedScope
 }
 Write-Ok "LocalValidation SeedScope=$seedScopeValue"
-$windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Platform API' -RepoRoot $repoRoot -Project $platformProject -EnvMap @{
+$platformEnv = @{
     ASPNETCORE_ENVIRONMENT = 'Staging'
-    ASPNETCORE_URLS = $platformApiUrl
+    ASPNETCORE_URLS = $bindPlatformApiUrl
     ConnectionStrings__PlatformDatabase = $platformCs
-    AllowedHosts = 'localhost;127.0.0.1'
-    Cors__AllowedOrigins__0 = $adminOrigin
+    AllowedHosts = $allowedHosts
     Security__EnforceHttps = 'false'
     LocalValidation__Enabled = 'true'
     LocalValidation__SeedScope = $seedScopeValue
@@ -343,63 +433,83 @@ $windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Platform API' -Re
     PlatformEmail__UseSsl = 'false'
     PlatformEmail__FromAddress = 'noreply@exits.local'
     PlatformEmail__FromDisplayName = 'ExItS Local Validation'
-    PlatformEmail__AdminPublicBaseUrl = $adminOrigin
+    PlatformEmail__AdminPublicBaseUrl = $publicAdminUrl
 }
+for ($i = 0; $i -lt $corsOrigins.Count; $i++) {
+    $platformEnv["Cors__AllowedOrigins__$i"] = $corsOrigins[$i]
+}
+$windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Platform API' -RepoRoot $repoRoot -Project $platformProject -EnvMap $platformEnv
 Wait-TcpPort -Label 'Platform API' -HostName '127.0.0.1' -Port $platformApiPort -TimeoutSeconds $PortWaitSeconds
 
 Write-Step 'Starting POS API (dotnet watch)...'
-$windowPids += Start-AppWindow -Title 'ExItS LocalValidation - POS API' -RepoRoot $repoRoot -Project $posProject -EnvMap @{
+$posEnv = @{
     ASPNETCORE_ENVIRONMENT = 'Staging'
-    ASPNETCORE_URLS = $posApiUrl
+    ASPNETCORE_URLS = $bindPosApiUrl
     ConnectionStrings__PosDatabase = $posCs
-    AllowedHosts = 'localhost;127.0.0.1'
-    Cors__AllowedOrigins__0 = $adminOrigin
+    AllowedHosts = $allowedHosts
     Security__EnforceHttps = 'false'
     LocalValidation__Enabled = 'true'
-    LocalValidation__PlatformApiBaseUrl = $platformApiUrl
-    PlatformAuth__BaseUrl = $platformApiUrl
+    # Server-to-server on the same host: keep loopback (DB also stays on localhost).
+    LocalValidation__PlatformApiBaseUrl = $loopbackPlatformApiUrl
+    PlatformAuth__BaseUrl = $loopbackPlatformApiUrl
 }
-Wait-TcpPort -Label 'POS API' -HostName '127.0.0.1' -Port $posApiPort -TimeoutSeconds $PortWaitSeconds
+for ($i = 0; $i -lt $corsOrigins.Count; $i++) {
+    $posEnv["Cors__AllowedOrigins__$i"] = $corsOrigins[$i]
+}
+$windowPids += Start-AppWindow -Title 'ExItS LocalValidation - POS API' -RepoRoot $repoRoot -Project $posProject -EnvMap $posEnv
+try {
+    Wait-TcpPort -Label 'POS API' -HostName '127.0.0.1' -Port $posApiPort -TimeoutSeconds $PortWaitSeconds
+}
+catch {
+    Write-Fail 'POS API did not listen. Check the "ExItS LocalValidation - POS API" window for migrate/startup errors (DB localhost:15534).'
+    Write-Fail "Project: $posProject"
+    throw
+}
 
 Write-Step 'Starting Platform Admin (dotnet watch)...'
 # Admin runs Development so Ant Design / Blazor static assets load without Staging SWA hacks.
 # Local Validation identity dropdown uses normal Platform /auth/login server-side
 # (SharedPassword stays in Admin process env — never sent to the browser).
-$windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Admin' -RepoRoot $repoRoot -Project $adminProject -EnvMap @{
+# PlatformApi__BaseUrl is browser-visible (OAuth challenge links) and server HttpClient base.
+$adminEnv = @{
     ASPNETCORE_ENVIRONMENT = 'Development'
-    ASPNETCORE_URLS = $adminUrl
-    AllowedHosts = 'localhost;127.0.0.1'
-    PlatformApi__BaseUrl = $platformApiUrl
+    ASPNETCORE_URLS = $bindAdminUrl
+    AllowedHosts = $allowedHosts
+    PlatformApi__BaseUrl = $publicPlatformApiUrl
     PlatformApi__TimeoutSeconds = '30'
     LocalValidation__Enabled = 'true'
     LocalValidation__SharedPassword = [string]$envMap['LOCAL_VALIDATION_SHARED_PASSWORD']
 }
+$windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Admin' -RepoRoot $repoRoot -Project $adminProject -EnvMap $adminEnv
 Wait-TcpPort -Label 'Platform Admin' -HostName '127.0.0.1' -Port $adminPort -TimeoutSeconds $PortWaitSeconds
 
 $state = @{
     RepoRoot = $repoRoot
     WindowPids = $windowPids
     StartedAtUtc = (Get-Date).ToUniversalTime().ToString('o')
+    PublicHost = $resolvedPublicHost
     Ports = @{ Admin = $adminPort; PlatformApi = $platformApiPort; PosApi = $posApiPort }
 }
 $state | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $stateFile -Encoding UTF8
 
 $healthOk = $true
-$healthOk = (Invoke-HttpCheck -Label 'Platform API /health' -Url "$platformApiUrl/health") -and $healthOk
-$healthOk = (Invoke-HttpCheck -Label 'POS API /health' -Url "$posApiUrl/health") -and $healthOk
-$healthOk = (Invoke-HttpCheck -Label 'Admin /admin/login' -Url "$adminUrl/admin/login") -and $healthOk
+$healthOk = (Invoke-HttpCheck -Label 'Platform API /health' -Url "$loopbackPlatformApiUrl/health") -and $healthOk
+$healthOk = (Invoke-HttpCheck -Label 'POS API /health' -Url "$loopbackPosApiUrl/health") -and $healthOk
+$healthOk = (Invoke-HttpCheck -Label 'Admin /admin/login' -Url "$loopbackAdminUrl/admin/login") -and $healthOk
 
 Write-Host ''
 Write-Host '======== Local Validation local ready ========' -ForegroundColor Green
-Write-Host "  Admin:        $adminUrl"
-Write-Host "  Platform API: $platformApiUrl"
-Write-Host "  POS API:      $posApiUrl"
+Write-Host "  Admin:        $publicAdminUrl"
+Write-Host "  Platform API: $publicPlatformApiUrl"
+Write-Host "  POS API:      $publicPosApiUrl"
+Write-Host "  Bind:         0.0.0.0:$adminPort / 0.0.0.0:$platformApiPort / 0.0.0.0:$posApiPort"
 Write-Host "  Platform DB:  127.0.0.1:$platformDbPort"
 Write-Host "  POS DB:       127.0.0.1:$posDbPort"
 Write-Host "  Mailpit UI:   http://localhost:$mailpitUiPort"
 Write-Host "  Mailpit SMTP: 127.0.0.1:$mailpitSmtpPort"
 Write-Host "  DP keys:      $dpKeys"
 Write-Host '=========================================' -ForegroundColor Green
+Show-LocalValidationFirewallGuidance
 Write-Note 'If the browser still has an old localhost antiforgery cookie, open an Incognito window or clear localhost site data once.'
 Write-Host 'Stop apps:  .\tools\Stop-LocalValidation.ps1'
 Write-Host 'Stop DBs:   .\tools\Stop-LocalValidation.ps1 -StopDatabases   (volumes preserved)'

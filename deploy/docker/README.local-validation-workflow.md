@@ -10,16 +10,43 @@ From the repository root:
 .\tools\Start-LocalValidation.ps1
 ```
 
+Tailscale / LAN (bind `0.0.0.0`, print public URLs, CORS + AllowedHosts for the host):
+
+```powershell
+.\tools\Start-LocalValidation.ps1 -PublicHost 100.120.79.81
+```
+
+Printed when `-PublicHost` is set:
+
+- Admin: `http://100.120.79.81:8090`
+- Platform API: `http://100.120.79.81:8091`
+- POS API: `http://100.120.79.81:8092`
+
+Kestrel always binds `http://0.0.0.0:8090|8091|8092` (localhost still works). Database connection strings stay `127.0.0.1:15533` / `127.0.0.1:15534`.
+
+### Windows Firewall (apps only)
+
+Allow inbound TCP **8090 / 8091 / 8092**. Do **not** open **15533 / 15534** (PostgreSQL stays local-only).
+
+```powershell
+New-NetFirewallRule -DisplayName "ExItS Local Validation Admin 8090" -Direction Inbound -Protocol TCP -LocalPort 8090 -Action Allow -Profile Any
+New-NetFirewallRule -DisplayName "ExItS Local Validation Platform API 8091" -Direction Inbound -Protocol TCP -LocalPort 8091 -Action Allow -Profile Any
+New-NetFirewallRule -DisplayName "ExItS Local Validation POS API 8092" -Direction Inbound -Protocol TCP -LocalPort 8092 -Action Allow -Profile Any
+```
+
+Requires an elevated PowerShell. The start script prints the same guidance after a successful launch.
+
 This script:
 
 1. Checks Docker Desktop
 2. Starts **only** Platform + POS PostgreSQL (ports **15533** / **15534**); preserves volumes; never `down -v`
 3. Stops stale repo-scoped `ExItS.Platform.Api` / `ExItS.PinoyBusinessPOS.Api` / `ExItS.Platform.Admin` processes
-4. Starts, in order, with `dotnet watch`:
-   - Platform API → http://localhost:8091
-   - POS API → http://localhost:8092
-   - Platform Admin → http://localhost:8090
+4. Starts, in order, with `dotnet watch` bound to **0.0.0.0**:
+   - Platform API → http://localhost:8091 (or `http://<PublicHost>:8091`)
+   - POS API → http://localhost:8092 (or `http://<PublicHost>:8092`)
+   - Platform Admin → http://localhost:8090 (or `http://<PublicHost>:8090`)
 5. Waits for ports, runs health checks, prints URLs
+6. Configures CORS for `http://localhost:8090`, `http://127.0.0.1:8090`, and `http://<PublicHost>:8090` when `-PublicHost` is set
 
 Stop local apps (DBs keep running):
 

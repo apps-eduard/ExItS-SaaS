@@ -61,6 +61,15 @@ services:
     networks:
       - exits-local-validation
 
+  mailpit:
+    container_name: exits-local-validation-mailpit
+    image: axllent/mailpit:v1.21
+    ports:
+      - "${LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT:-8025}:8025"
+      - "${LOCAL_VALIDATION_MAILPIT_SMTP_HOST_PORT:-1025}:1025"
+    networks:
+      - exits-local-validation
+
   platform-api:
     profiles: ["apps"]
     container_name: exits-local-validation-platform-api
@@ -73,6 +82,8 @@ services:
     depends_on:
       platform-db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__PlatformDatabase: Host=platform-db;Port=5432;Database=exits_platform;Username=${LOCAL_VALIDATION_PLATFORM_DB_USER};Password=${LOCAL_VALIDATION_PLATFORM_DB_PASSWORD}
@@ -81,6 +92,12 @@ services:
       Security__EnforceHttps: "false"
       LocalValidation__Enabled: "true"
       LocalValidation__SharedPassword: ${LOCAL_VALIDATION_SHARED_PASSWORD}
+      PlatformEmail__SmtpHost: mailpit
+      PlatformEmail__SmtpPort: "1025"
+      PlatformEmail__UseSsl: "false"
+      PlatformEmail__FromAddress: noreply@exits.local
+      PlatformEmail__FromDisplayName: ExItS Local Validation
+      PlatformEmail__AdminPublicBaseUrl: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
     ports:
       - "${LOCAL_VALIDATION_PLATFORM_API_HOST_PORT:-8091}:8080"
     networks:
