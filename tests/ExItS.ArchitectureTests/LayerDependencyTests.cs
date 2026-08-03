@@ -516,7 +516,7 @@ public sealed class LayerDependencyTests
         version.Publish(utc);
 
         var subscription = Subscription.ActivatePaid(
-            PlatformOrganizationId.New(), plan, version, utc, utc.AddDays(30), utc);
+            PlatformOrganizationId.New(), plan, version, utc, utc.AddDays(30), BillingCycle.Monthly, utc);
 
         if (terminalStatus == SubscriptionStatus.Cancelled)
         {

@@ -40,6 +40,7 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PlatformOrganizationRecord> Organizations => Set<PlatformOrganizationRecord>();
     internal DbSet<SubscriptionRecord> Subscriptions => Set<SubscriptionRecord>();
     internal DbSet<SaaSPaymentRecord> SaaSPayments => Set<SaaSPaymentRecord>();
+    internal DbSet<ProviderPaymentRecord> ProviderPayments => Set<ProviderPaymentRecord>();
     internal DbSet<FeatureOverrideRecord> FeatureOverrides => Set<FeatureOverrideRecord>();
     internal DbSet<EntitlementSnapshotRecord> EntitlementSnapshots => Set<EntitlementSnapshotRecord>();
     internal DbSet<EntitlementSnapshotGrantRecord> EntitlementSnapshotGrants => Set<EntitlementSnapshotGrantRecord>();
@@ -132,6 +133,9 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.TrialAllowed).HasColumnName("trial_allowed").HasDefaultValue(true);
             entity.Property(e => e.DefaultTrialDays).HasColumnName("default_trial_days").HasDefaultValue(14);
             entity.Property(e => e.SortOrder).HasColumnName("sort_order").HasDefaultValue(100);
+            entity.Property(e => e.MonthlyPrice).HasColumnName("monthly_price").HasColumnType("numeric(18,2)").HasDefaultValue(0m);
+            entity.Property(e => e.AnnualPrice).HasColumnName("annual_price").HasColumnType("numeric(18,2)").HasDefaultValue(0m);
+            entity.Property(e => e.CurrencyCode).HasColumnName("currency_code").HasMaxLength(3).HasDefaultValue("PHP");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
         });
@@ -264,6 +268,12 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.CancelledAtUtc).HasColumnName("cancelled_at_utc");
             entity.Property(e => e.PastDueAtUtc).HasColumnName("past_due_at_utc");
             entity.Property(e => e.ExpiredAtUtc).HasColumnName("expired_at_utc");
+            entity.Property(e => e.BillingCycle).HasColumnName("billing_cycle").HasMaxLength(16);
+            entity.Property(e => e.AgreedPrice).HasColumnName("agreed_price").HasColumnType("numeric(18,2)");
+            entity.Property(e => e.CurrencyCode).HasColumnName("currency_code").HasMaxLength(3);
+            entity.Property(e => e.PriceEffectiveFromUtc).HasColumnName("price_effective_from_utc");
+            entity.Property(e => e.PendingPlanId).HasColumnName("pending_plan_id");
+            entity.Property(e => e.PendingPlanEffectiveAtUtc).HasColumnName("pending_plan_effective_at_utc");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.AggregateVersion).HasColumnName("aggregate_version");
@@ -343,6 +353,32 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.OrganizationId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<Subscriptions.SubscriptionRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SubscriptionId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ProviderPaymentRecord>(entity =>
+        {
+            entity.ToTable("provider_payments");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.SubscriptionId).HasColumnName("subscription_id");
+            entity.Property(e => e.Amount).HasColumnName("amount").HasColumnType("numeric(18,2)");
+            entity.Property(e => e.CurrencyCode).HasColumnName("currency_code").HasMaxLength(3).IsRequired();
+            entity.Property(e => e.Provider).HasColumnName("provider").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.ProviderReference).HasColumnName("provider_reference").HasMaxLength(128).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.IsTest).HasColumnName("is_test");
+            entity.Property(e => e.FailureCode).HasColumnName("failure_code").HasMaxLength(64);
+            entity.Property(e => e.FailureMessage).HasColumnName("failure_message").HasMaxLength(512);
+            entity.Property(e => e.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(128).IsRequired();
+            entity.HasIndex(e => e.IdempotencyKey).IsUnique();
+            entity.Property(e => e.Purpose).HasColumnName("purpose").HasMaxLength(128);
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
 
             entity.HasOne<Subscriptions.SubscriptionRecord>()
                 .WithMany()

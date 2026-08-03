@@ -172,6 +172,7 @@ public sealed class ActivatePaidSubscription
         PlanVersionId planVersionId,
         DateTimeOffset periodStartUtc,
         DateTimeOffset periodEndUtc,
+        BillingCycle billingCycle,
         CancellationToken cancellationToken = default)
     {
         var organization = await _organizations.GetByIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
@@ -245,6 +246,7 @@ public sealed class ActivatePaidSubscription
                 version,
                 periodStartUtc,
                 periodEndUtc,
+                billingCycle,
                 _clock.UtcNow);
             await _subscriptions.AddAsync(subscription, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

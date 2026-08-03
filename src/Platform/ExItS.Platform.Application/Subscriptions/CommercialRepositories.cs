@@ -58,6 +58,10 @@ public interface ISubscriptionRepository
         ProductCode productCode,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Subscription>> ListDuePendingPlanChangesAsync(
+        DateTimeOffset asOfUtc,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(Subscription subscription, CancellationToken cancellationToken = default);
     Task UpdateAsync(Subscription subscription, CancellationToken cancellationToken = default);
 }

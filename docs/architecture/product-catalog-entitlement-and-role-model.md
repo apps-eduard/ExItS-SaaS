@@ -158,9 +158,14 @@ ExportEnabled
 TrialAllowed
 DefaultTrialDays
 SortOrder
+MonthlyPrice
+AnnualPrice
+CurrencyCode
 CreatedAt
 UpdatedAt
 ```
+
+`SortOrder` controls display/presentation order only. `MonthlyPrice`, `AnnualPrice`, and `CurrencyCode` are catalog defaults for new commercial actions; they do not retroactively rewrite existing subscription snapshots.
 
 Statuses:
 
@@ -188,6 +193,38 @@ Rules:
 | `pro` | Pro | 10 | 50 | Enabled | Enabled | Enabled | 30 |
 
 Business default trial: **14 days** when `TrialAllowed` is enabled.
+
+Catalog pricing (MVP POS, PHP):
+
+| PlanKey | Monthly | Annual | Currency |
+|---|---|---|---|
+| `starter` | catalog default | catalog default | PHP |
+| `business` | catalog default | catalog default | PHP |
+| `pro` | catalog default | catalog default | PHP |
+
+### Subscription commercial snapshot
+
+Each subscription stores the commercial terms agreed at enrollment or plan change:
+
+```text
+BillingCycle (Monthly | Annual)
+AgreedPrice
+CurrencyCode
+PriceEffectiveFromUtc
+CurrentPeriodStartUtc / CurrentPeriodEndUtc
+PendingPlanId / PendingPlanEffectiveAtUtc (scheduled downgrades)
+```
+
+Rules:
+
+- `AgreedPrice` is a snapshot; editing Plan catalog prices does not change existing subscriptions.
+- Upgrades apply immediately (trial upgrades skip payment; paid upgrades require provider confirmation).
+- Downgrades schedule `PendingPlan*` for period end; no Product Instance data is deleted.
+- `ApplyDuePendingPlanChanges` applies scheduled downgrades when effective.
+
+### Local Validation test payments
+
+Local Validation exposes **Test payment** simulation only when `LocalValidation:Enabled` is true and the host is not Production. Simulations (`Succeeded`, `Declined`, `Pending`, `Failed`, `RenewalSucceeded`, `RenewalFailed`, `Refunded`) drive `IPaymentProvider` without card data. Production uses `Payments:Provider=None` (or a real provider later); `LocalValidation` is fail-closed in Production.
 
 ### Subscription
 
@@ -230,8 +267,10 @@ Product Instance data and Product role assignments remain stored; launch is deni
 
 ### Platform Admin UX
 
-- **Commercial → Plans**: Plan list/create/view/edit/activate/deactivate/retire with human-readable Product selection (`Pinoy Business POS`)
-- **Commercial → Subscriptions**: list columns use Organization name, Product display name, Plan display name (not GUIDs or Product keys as primary values); technical IDs remain in advanced details
+- **Commercial → Plans**: Plan list/create/view/edit/activate/deactivate/retire with human-readable Product selection (`Pinoy Business POS`); columns include Monthly Price, Annual Price, Currency, Trial, Limits, Sort Order
+- **Commercial → Subscriptions**: list columns use Organization name, Product display name, Plan display name, Agreed Price, Billing Cycle, Currency, pending plan (not GUIDs or Product keys as primary values); technical IDs remain in advanced details
+- **Organization → Commercial**: current plan, available plans (upgrade/downgrade designation), subscription summary, Test Payments (Local Validation only)
+- **Personal → Start a Business**: organization details + plan/billing/trial/pay-now; does not assign a Plan to the Personal account
 
 ---
 

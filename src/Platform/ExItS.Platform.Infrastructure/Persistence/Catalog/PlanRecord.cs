@@ -16,6 +16,9 @@ internal sealed class PlanRecord
     public bool TrialAllowed { get; set; } = true;
     public int DefaultTrialDays { get; set; } = 14;
     public int SortOrder { get; set; } = 100;
+    public decimal MonthlyPrice { get; set; }
+    public decimal AnnualPrice { get; set; }
+    public string CurrencyCode { get; set; } = "PHP";
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
 }

@@ -156,8 +156,23 @@
             <PropertyColumn Property="c => c.PlanDisplayName" Title="@L["Common_Plan"]" Sortable>
                 @(string.IsNullOrWhiteSpace(context.PlanDisplayName) ? "—" : context.PlanDisplayName)
             </PropertyColumn>
+            <PropertyColumn Property="c => c.AgreedPrice" Title="Agreed price" Sortable Width="120">
+                <AmountDisplay Amount="@context.AgreedPrice" CurrencyCode="@context.CurrencyCode" />
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.BillingCycle" Title="Billing" Sortable Width="100">
+                @(context.BillingCycle ?? "—")
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.CurrencyCode" Title="Currency" Width="90">
+                @(context.CurrencyCode ?? "—")
+            </PropertyColumn>
             <PropertyColumn Property="c => c.Status" Title="Subscription Status" Sortable Width="110">
                 <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.CurrentPeriodEndUtc" Title="Period end" Sortable Width="180">
+                <LocalTimestamp Value="@(context.CurrentPeriodEndUtc ?? context.PaidPeriodEndUtc)" />
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.PendingPlanDisplayName" Title="Pending plan" Width="140">
+                @(string.IsNullOrWhiteSpace(context.PendingPlanDisplayName) ? "—" : context.PendingPlanDisplayName)
             </PropertyColumn>
             <PropertyColumn Property="c => c.TrialStartUtc" Title="Trial Start" Width="180">
                 <LocalTimestamp Value="@context.TrialStartUtc" />
@@ -274,6 +289,13 @@ else
             </DescriptionsItem>
             <DescriptionsItem Title="@L["Common_Product"]">@(string.IsNullOrWhiteSpace(s.ProductDisplayName) ? "Product" : s.ProductDisplayName)</DescriptionsItem>
             <DescriptionsItem Title="@L["Common_Plan"]">@(string.IsNullOrWhiteSpace(s.PlanDisplayName) ? "—" : s.PlanDisplayName)</DescriptionsItem>
+            <DescriptionsItem Title="Agreed price"><AmountDisplay Amount="@s.AgreedPrice" CurrencyCode="@s.CurrencyCode" /></DescriptionsItem>
+            <DescriptionsItem Title="Billing cycle">@(s.BillingCycle ?? "—")</DescriptionsItem>
+            <DescriptionsItem Title="Currency">@(s.CurrencyCode ?? "—")</DescriptionsItem>
+            <DescriptionsItem Title="Current period start"><UtcTimestamp Value="@(s.CurrentPeriodStartUtc ?? s.PaidPeriodStartUtc)" /></DescriptionsItem>
+            <DescriptionsItem Title="Current period end"><UtcTimestamp Value="@(s.CurrentPeriodEndUtc ?? s.PaidPeriodEndUtc)" /></DescriptionsItem>
+            <DescriptionsItem Title="Pending plan">@(string.IsNullOrWhiteSpace(s.PendingPlanDisplayName) ? "—" : $"{s.PendingPlanDisplayName} ({s.PendingPlanKey})")</DescriptionsItem>
+            <DescriptionsItem Title="Pending effective"><UtcTimestamp Value="@s.PendingPlanEffectiveAtUtc" /></DescriptionsItem>
             <DescriptionsItem Title="Trial start"><UtcTimestamp Value="@s.TrialStartUtc" /></DescriptionsItem>
             <DescriptionsItem Title="@L["Subscriptions_Column_TrialEndUtc"]"><UtcTimestamp Value="@s.TrialEndUtc" /></DescriptionsItem>
             <DescriptionsItem Title="Paid through"><UtcTimestamp Value="@s.PaidPeriodEndUtc" /></DescriptionsItem>

@@ -140,6 +140,14 @@ public interface IPlatformApiClient
     Task<ApiCallResult<SubscriptionDto>> ReactivateSubscriptionAsync(Guid subscriptionId, ReactivateSubscriptionRequest request, CancellationToken ct = default);
     Task<ApiCallResult<SubscriptionDto>> CancelSubscriptionAsync(Guid subscriptionId, int? expectedVersion = null, CancellationToken ct = default);
     Task<ApiCallResult<SubscriptionDto>> ExpireSubscriptionAsync(Guid subscriptionId, int? expectedVersion = null, CancellationToken ct = default);
+    Task<ApiCallResult<SubscriptionDto>> UpgradeSubscriptionAsync(Guid organizationId, Guid subscriptionId, UpgradeSubscriptionRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<SubscriptionDto>> DowngradeSubscriptionAsync(Guid organizationId, Guid subscriptionId, DowngradeSubscriptionRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<PlanChangeImpactPreviewDto>> PreviewPlanChangeAsync(Guid organizationId, Guid subscriptionId, Guid? planId = null, string? planKey = null, int? activeBranchCount = null, CancellationToken ct = default);
+    Task<ApiCallResult<SubscriptionDto>> ApplyPendingPlanChangeAsync(Guid organizationId, Guid subscriptionId, CancellationToken ct = default);
+
+    Task<ApiCallResult<SimulateLocalValidationPaymentResultDto>> SimulateLocalValidationPaymentAsync(SimulateLocalValidationPaymentRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<StartBusinessResultDto>> StartBusinessAsync(StartBusinessRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<bool>> GetLocalValidationEnabledAsync(CancellationToken ct = default);
 
     Task<ApiCallResult<PaymentDto>> CreateManualPaymentAsync(CreateManualPaymentRequest request, CancellationToken ct = default);
     Task<ApiCallResult<PaymentDto>> ConfirmPaymentAsync(Guid paymentId, ConfirmPaymentRequest request, CancellationToken ct = default);

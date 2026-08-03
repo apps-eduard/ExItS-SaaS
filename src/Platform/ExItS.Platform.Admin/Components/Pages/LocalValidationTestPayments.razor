@@ -1,0 +1,113 @@
+@page "/admin/local-validation/test-payments"
+@using AntDesign
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IPlatformApiClient Api
+@inject IMessageService Message
+@inject IStringLocalizer<AdminResources> L
+@inject PlatformPermissionState Permissions
+@inject LocalValidationSignInService LocalValidation
+
+@if (!LocalValidation.IsAvailable)
+{
+    <Result Status="@ResultStatus.Warning" Title="Not available" SubTitle="Test payments are only available when Local Validation is enabled (non-Production)." />
+}
+else if (!Permissions.HasPermission(PlatformPermissionCodes.ManageSubscriptions))
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ManageSubscriptions" />
+}
+else
+{
+    <PageHeader Class="exits-page-header" Title="Test Payments" SubTitle="Local Validation fake payment controls — never shown outside Local Validation.">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem>Test Payments</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+    </PageHeader>
+
+    <Alert Type="@AlertType.Warning" ShowIcon="true" Message="Test payment simulation only. Do not use in Production." Style="margin-bottom:12px;" />
+
+    <Card Size="@CardSize.Small" Title="Simulate provider payment" Style="max-width:720px;">
+        <FormValidationSummary Title="Simulation failed" Message="@_formError" />
+        <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+            <Input @bind-Value="_organizationId" Size="@InputSize.Small" Placeholder="Organization ID (GUID)" Disabled="_busy" />
+            <Input @bind-Value="_subscriptionId" Size="@InputSize.Small" Placeholder="Subscription ID (GUID)" Disabled="_busy" />
+            <Space Wrap>
+                <AntDesign.InputNumber TValue="decimal" @bind-Value="_amount" Min="0" Placeholder="Amount" Disabled="_busy" Style="width:140px;" />
+                <Input @bind-Value="_currencyCode" Size="@InputSize.Small" Placeholder="Currency" Disabled="_busy" Style="width:100px;" />
+                <Select TItemValue="string" TItem="string" @bind-Value="_billingCycle" Style="width:140px;" Disabled="_busy">
+                    <SelectOptions>
+                        <SelectOption TItemValue="string" TItem="string" Value="@("Monthly")" Label="Monthly" />
+                        <SelectOption TItemValue="string" TItem="string" Value="@("Annual")" Label="Annual" />
+                    </SelectOptions>
+                </Select>
+            </Space>
+            <Space Wrap>
+                @foreach (var sim in _presets)
+                {
+                    <Button Size="@ButtonSize.Small" Type="@(_simulation == sim ? ButtonType.Primary : ButtonType.Default)" OnClick="@(() => _simulation = sim)" Disabled="_busy">@sim</Button>
+                }
+            </Space>
+            <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="SimulateAsync">Run test payment</Button>
+            @if (!string.IsNullOrWhiteSpace(_result))
+            {
+                <Alert Type="@AlertType.Info" Message="@_result" ShowIcon="true" />
+            }
+        </Space>
+    </Card>
+}
+
+@code {
+    private bool _busy;
+    private string? _formError;
+    private string? _result;
+    private string _organizationId = "";
+    private string _subscriptionId = "";
+    private decimal _amount = 999m;
+    private string _currencyCode = "PHP";
+    private string _billingCycle = "Monthly";
+    private string _simulation = "Succeeded";
+
+    private static readonly string[] _presets =
+    [
+        "Succeeded", "Declined", "Pending", "Failed", "RenewalSucceeded", "RenewalFailed", "Refunded"
+    ];
+
+    private async Task SimulateAsync()
+    {
+        if (!LocalValidation.IsAvailable || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        _result = null;
+        if (!Guid.TryParse(_organizationId, out var orgId) || !Guid.TryParse(_subscriptionId, out var subId))
+        {
+            _formError = "Organization ID and Subscription ID must be valid GUIDs.";
+            _busy = false;
+            return;
+        }
+
+        var result = await Api.SimulateLocalValidationPaymentAsync(new SimulateLocalValidationPaymentRequest(
+            _simulation,
+            orgId,
+            subId,
+            _amount,
+            _currencyCode,
+            Guid.NewGuid().ToString("N"),
+            Purpose: "admin-test",
+            BillingCycle: _billingCycle));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formError = result.Error?.Detail ?? result.Error?.Title;
+            return;
+        }
+
+        _result = $"{result.Data?.Status} — ref {result.Data?.ProviderReference}";
+        await Message.SuccessAsync("Test payment simulated.");
+    }
+}

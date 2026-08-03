@@ -194,6 +194,8 @@ internal sealed class InMemoryPlanRepository : IPlanRepository
             (CatalogListSortBy.DisplayName, true) => query.OrderByDescending(p => p.DisplayName).ThenBy(p => p.Code.Value),
             (CatalogListSortBy.ProductCode, false) => query.OrderBy(p => p.ProductCode.Value).ThenBy(p => p.Code.Value),
             (CatalogListSortBy.ProductCode, true) => query.OrderByDescending(p => p.ProductCode.Value).ThenBy(p => p.Code.Value),
+            (CatalogListSortBy.SortOrder, false) => query.OrderBy(p => p.SortOrder).ThenBy(p => p.Code.Value),
+            (CatalogListSortBy.SortOrder, true) => query.OrderByDescending(p => p.SortOrder).ThenBy(p => p.Code.Value),
             (_, true) => query.OrderByDescending(p => p.Code.Value),
             _ => query.OrderBy(p => p.Code.Value)
         };
@@ -376,6 +378,19 @@ internal sealed class InMemorySubscriptionRepository : ISubscriptionRepository
             .ToList();
         IReadOnlyList<Subscription> page = ordered.Skip(skip).Take(take).ToList();
         return Task.FromResult((page, ordered.Count));
+    }
+
+    public Task<IReadOnlyList<Subscription>> ListDuePendingPlanChangesAsync(
+        DateTimeOffset asOfUtc,
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<Subscription> due = _items.Values
+            .Where(s => s.PendingPlanId is not null
+                        && s.PendingPlanEffectiveAtUtc is not null
+                        && s.PendingPlanEffectiveAtUtc.Value <= asOfUtc)
+            .OrderBy(s => s.PendingPlanEffectiveAtUtc)
+            .ToList();
+        return Task.FromResult(due);
     }
 
     public Task<(IReadOnlyList<Subscription> Items, int TotalCount)> ListByStatusAsync(
@@ -728,4 +743,25 @@ internal sealed class InMemoryEntitlementSnapshotRepository : IEntitlementSnapsh
         AddCount++;
         return Task.CompletedTask;
     }
+}
+
+internal sealed class InMemoryProviderPaymentRepository : IProviderPaymentRepository
+{
+    private readonly Dictionary<string, ProviderPayment> _byIdempotency = new(StringComparer.Ordinal);
+    private int _sequence;
+
+    public Task<ProviderPayment?> GetByIdempotencyKeyAsync(string idempotencyKey, CancellationToken cancellationToken = default)
+    {
+        _byIdempotency.TryGetValue(idempotencyKey, out var payment);
+        return Task.FromResult(payment);
+    }
+
+    public Task AddAsync(ProviderPayment payment, CancellationToken cancellationToken = default)
+    {
+        _byIdempotency[payment.IdempotencyKey] = payment;
+        return Task.CompletedTask;
+    }
+
+    public Task<int> GetNextSequenceAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(Interlocked.Increment(ref _sequence));
 }

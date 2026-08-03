@@ -55,7 +55,10 @@ public sealed record PlanDto(
     bool ExportEnabled = false,
     bool TrialAllowed = true,
     int DefaultTrialDays = 14,
-    int SortOrder = 100);
+    int SortOrder = 100,
+    decimal MonthlyPrice = 0m,
+    decimal AnnualPrice = 0m,
+    string CurrencyCode = "PHP");
 
 public sealed record FeatureGrantDto(
     string FeatureCode,
@@ -312,7 +315,10 @@ public sealed class CatalogQueryService
             ExportEnabled: plan.ExportEnabled,
             TrialAllowed: plan.TrialAllowed,
             DefaultTrialDays: plan.DefaultTrialDays,
-            SortOrder: plan.SortOrder);
+            SortOrder: plan.SortOrder,
+            MonthlyPrice: plan.MonthlyPrice,
+            AnnualPrice: plan.AnnualPrice,
+            CurrencyCode: plan.CurrencyCode);
 
     private static PlanVersionDto MapPlanVersion(PlanVersion version) =>
         new(

@@ -18,6 +18,12 @@ internal sealed class SubscriptionRecord
     public DateTimeOffset? CancelledAtUtc { get; set; }
     public DateTimeOffset? PastDueAtUtc { get; set; }
     public DateTimeOffset? ExpiredAtUtc { get; set; }
+    public string? BillingCycle { get; set; }
+    public decimal? AgreedPrice { get; set; }
+    public string? CurrencyCode { get; set; }
+    public DateTimeOffset? PriceEffectiveFromUtc { get; set; }
+    public Guid? PendingPlanId { get; set; }
+    public DateTimeOffset? PendingPlanEffectiveAtUtc { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public int AggregateVersion { get; set; }

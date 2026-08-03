@@ -76,7 +76,7 @@ public sealed class CommercialUseCaseTests
         await plans.AddVersionAsync(inactiveVersion);
 
         var inactivePaid = await new ActivatePaidSubscription(orgs, products, plans, subscriptions, uow, clock)
-            .ExecuteAsync(org.Id, inactivePlan.Id, inactiveVersion.Id, T0, T0.AddDays(30));
+            .ExecuteAsync(org.Id, inactivePlan.Id, inactiveVersion.Id, T0, T0.AddDays(30), BillingCycle.Monthly);
         Assert.False(inactivePaid.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.SubscriptionIneligible, inactivePaid.ErrorCode);
 
@@ -90,7 +90,7 @@ public sealed class CommercialUseCaseTests
         await plans.AddVersionAsync(retiredVersion);
 
         var retiredPaid = await new ActivatePaidSubscription(orgs, products, plans, subscriptions, uow, clock)
-            .ExecuteAsync(org.Id, retiredPlan.Id, retiredVersion.Id, T0, T0.AddDays(30));
+            .ExecuteAsync(org.Id, retiredPlan.Id, retiredVersion.Id, T0, T0.AddDays(30), BillingCycle.Monthly);
         Assert.False(retiredPaid.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.SubscriptionIneligible, retiredPaid.ErrorCode);
         Assert.Contains("Retired", retiredPaid.ErrorMessage!, StringComparison.OrdinalIgnoreCase);

@@ -279,6 +279,47 @@ public sealed class PlatformApiClient(
         SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/subscriptions/{subscriptionId}/cancel", new SubscriptionLifecycleRequest(expectedVersion), ct);
     public Task<ApiCallResult<SubscriptionDto>> ExpireSubscriptionAsync(Guid subscriptionId, int? expectedVersion = null, CancellationToken ct = default) =>
         SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/subscriptions/{subscriptionId}/expire", new SubscriptionLifecycleRequest(expectedVersion), ct);
+    public Task<ApiCallResult<SubscriptionDto>> UpgradeSubscriptionAsync(Guid organizationId, Guid subscriptionId, UpgradeSubscriptionRequest request, CancellationToken ct = default) =>
+        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/subscriptions/{subscriptionId}/upgrade", request, ct);
+    public Task<ApiCallResult<SubscriptionDto>> DowngradeSubscriptionAsync(Guid organizationId, Guid subscriptionId, DowngradeSubscriptionRequest request, CancellationToken ct = default) =>
+        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/subscriptions/{subscriptionId}/downgrade", request, ct);
+    public Task<ApiCallResult<PlanChangeImpactPreviewDto>> PreviewPlanChangeAsync(
+        Guid organizationId,
+        Guid subscriptionId,
+        Guid? planId = null,
+        string? planKey = null,
+        int? activeBranchCount = null,
+        CancellationToken ct = default)
+    {
+        var qs = new List<string>();
+        if (planId is Guid id)
+        {
+            qs.Add($"planId={id:D}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(planKey))
+        {
+            qs.Add($"planKey={Uri.EscapeDataString(planKey)}");
+        }
+
+        if (activeBranchCount is int branches)
+        {
+            qs.Add($"activeBranchCount={branches}");
+        }
+
+        var suffix = qs.Count == 0 ? string.Empty : "?" + string.Join("&", qs);
+        return GetAsync<PlanChangeImpactPreviewDto>(
+            $"/api/v1/platform/organizations/{organizationId}/subscriptions/{subscriptionId}/plan-change-preview{suffix}",
+            ct);
+    }
+    public Task<ApiCallResult<SubscriptionDto>> ApplyPendingPlanChangeAsync(Guid organizationId, Guid subscriptionId, CancellationToken ct = default) =>
+        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/subscriptions/{subscriptionId}/apply-pending-plan", null, ct);
+    public Task<ApiCallResult<SimulateLocalValidationPaymentResultDto>> SimulateLocalValidationPaymentAsync(SimulateLocalValidationPaymentRequest request, CancellationToken ct = default) =>
+        SendAsync<SimulateLocalValidationPaymentResultDto>(HttpMethod.Post, "/api/v1/platform/local-validation/payments/simulate", request, ct);
+    public Task<ApiCallResult<StartBusinessResultDto>> StartBusinessAsync(StartBusinessRequest request, CancellationToken ct = default) =>
+        SendAsync<StartBusinessResultDto>(HttpMethod.Post, "/api/v1/personal/start-business", request, ct);
+    public Task<ApiCallResult<bool>> GetLocalValidationEnabledAsync(CancellationToken ct = default) =>
+        GetAsync<bool>("/api/v1/platform/local-validation/enabled", ct);
 
     public Task<ApiCallResult<PaymentDto>> CreateManualPaymentAsync(CreateManualPaymentRequest request, CancellationToken ct = default) =>
         SendAsync<PaymentDto>(HttpMethod.Post, "/api/v1/platform/payments/manual", request, ct);

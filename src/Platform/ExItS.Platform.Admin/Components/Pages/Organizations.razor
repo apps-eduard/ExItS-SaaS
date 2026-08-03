@@ -297,6 +297,11 @@ else
                     {
                         <Table TItem="SubscriptionDto" DataSource="_detail.Data.Subscriptions" Size="@TableSize.Small" HidePagination Bordered Style="margin-bottom:12px;">
                             <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" />
+                            <PropertyColumn Property="c => c.PlanDisplayName" Title="@L["Common_Plan"]" />
+                            <PropertyColumn Property="c => c.AgreedPrice" Title="Agreed">
+                                <AmountDisplay Amount="@((decimal?)context.AgreedPrice)" CurrencyCode="@context.CurrencyCode" />
+                            </PropertyColumn>
+                            <PropertyColumn Property="c => c.BillingCycle" Title="Billing" />
                             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
                                 <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
                             </PropertyColumn>
@@ -304,6 +309,9 @@ else
                                 <a href="/admin/subscriptions/@context.Id">@L["Organizations_OpenSubscription"]</a>
                             </ActionColumn>
                         </Table>
+                        <Paragraph>
+                            <a href="@($"/admin/organizations/{Id}/commercial")">@L["Organizations_CommercialAdmin"]</a>
+                        </Paragraph>
                     }
 
                     <Title Level="5">@L["Organizations_PaymentHistory"]</Title>

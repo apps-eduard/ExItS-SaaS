@@ -183,6 +183,9 @@ public sealed class EnsureMvpPosPlans
                     spec.TrialAllowed,
                     spec.DefaultTrialDays,
                     spec.SortOrder,
+                    spec.MonthlyPrice,
+                    spec.AnnualPrice,
+                    spec.CurrencyCode,
                     cancellationToken)
                 .ConfigureAwait(false);
 
@@ -215,6 +218,9 @@ public sealed class EnsureMvpPosPlans
                     spec.TrialAllowed,
                     spec.DefaultTrialDays,
                     spec.SortOrder,
+                    spec.MonthlyPrice,
+                    spec.AnnualPrice,
+                    spec.CurrencyCode,
                     expectedUpdatedAtUtc: null,
                     cancellationToken)
                 .ConfigureAwait(false);
@@ -423,7 +429,10 @@ public sealed class EnsureMvpPosPlans
         || plan.ExportEnabled != spec.ExportEnabled
         || plan.TrialAllowed != spec.TrialAllowed
         || plan.DefaultTrialDays != spec.DefaultTrialDays
-        || plan.SortOrder != spec.SortOrder;
+        || plan.SortOrder != spec.SortOrder
+        || plan.MonthlyPrice != spec.MonthlyPrice
+        || plan.AnnualPrice != spec.AnnualPrice
+        || !string.Equals(plan.CurrencyCode, spec.CurrencyCode, StringComparison.Ordinal);
 
     internal static FeatureGrantSpec[] BuildGrants(MvpPosPlanCatalog.Spec spec)
     {

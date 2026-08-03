@@ -1,5 +1,6 @@
 @inject PlatformPermissionState Permissions
 @inject AdminShellContext Shell
+@inject LocalValidationSignInService LocalValidation
 @inject IStringLocalizer<AdminResources> L
 @inject NavigationManager Nav
 @using AntDesign
@@ -82,6 +83,12 @@
                 {
                     <MenuItem Key="payments" RouterLink="/admin/payments" Icon="dollar">
                         @L["Nav_Payments"]
+                    </MenuItem>
+                }
+                @if (LocalValidationAvailable && CanView(PlatformPermissionCodes.ManageSubscriptions))
+                {
+                    <MenuItem Key="lv-test-payments" RouterLink="/admin/local-validation/test-payments" Icon="experiment">
+                        Test Payments
                     </MenuItem>
                 }
             </SubMenu>
@@ -190,8 +197,11 @@
         <SubMenu Key="subscription" TitleTemplate="@SubscriptionTitle">
             @if (Shell.SelectedOrganizationId is Guid planOrg && IsOrgAdminMembership)
             {
-                <MenuItem Key="current-plan" RouterLink="@($"/admin/organizations/{planOrg}")" Icon="profile">
+                <MenuItem Key="current-plan" RouterLink="@($"/admin/organizations/{planOrg}/commercial")" Icon="profile">
                     @L["Nav_CurrentPlan"]
+                </MenuItem>
+                <MenuItem Key="billing" RouterLink="@($"/admin/organizations/{planOrg}/commercial")" Icon="credit-card">
+                    @L["Nav_BillingRenewal"]
                 </MenuItem>
             }
             else
@@ -202,9 +212,6 @@
             }
             <MenuItem Key="usage" Disabled="true">
                 @L["Nav_Usage"] <span class="exits-phase15-tag">@L["Nav_ComingSoon"]</span>
-            </MenuItem>
-            <MenuItem Key="billing" Disabled="true">
-                @L["Nav_BillingRenewal"] <span class="exits-phase15-tag">@L["Nav_ComingSoon"]</span>
             </MenuItem>
         </SubMenu>
 
@@ -273,6 +280,9 @@
                 @L["Nav_UtangHistory"] <span class="exits-phase15-tag">@L["Nav_ComingSoon"]</span>
             </MenuItem>
         </SubMenu>
+        <MenuItem Key="personal-start-business" RouterLink="/admin/personal/start-business" Icon="shop">
+            Start a Business
+        </MenuItem>
         <MenuItem Key="personal-notifications" RouterLink="/admin/personal/notifications" Icon="bell">
             @L["Nav_Notifications"]
         </MenuItem>
@@ -317,6 +327,8 @@
         || CanView(PlatformPermissionCodes.ManageSubscriptions)
         || CanView(PlatformPermissionCodes.ManageEntitlementOverrides)
         || CanView(PlatformPermissionCodes.ManageManualPayments);
+
+    private bool LocalValidationAvailable => LocalValidation.IsAvailable;
 
     protected override async Task OnInitializedAsync()
     {

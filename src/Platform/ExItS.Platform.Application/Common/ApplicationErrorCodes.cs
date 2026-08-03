@@ -15,6 +15,7 @@ public static class ApplicationErrorCodes
     public const string ProductAccessNotFound = "application.product_access.not_found";
     public const string CrossOrganizationMismatch = "application.access.cross_organization";
     public const string SubscriptionIneligible = "application.subscription.ineligible";
+    public const string InvalidBillingCycle = "application.subscription.invalid_billing_cycle";
     public const string EntitlementMissing = "application.entitlement.missing";
     public const string EntitlementStale = "application.entitlement.stale";
     public const string EntitlementDenied = "application.entitlement.denied";
@@ -57,6 +58,7 @@ public static class ApplicationErrorCodes
     public const string PaymentReferenceConflict = "application.payment.reference_conflict";
     public const string PaymentAlreadyConfirmed = "application.payment.already_confirmed";
     public const string PaymentNotConfirmed = "application.payment.not_confirmed";
+    public const string PaymentNotConfigured = "application.payment.not_configured";
     public const string PaymentAlreadyUsed = "application.payment.already_used";
     public const string PaymentInvalidTransition = "application.payment.invalid_transition";
     public const string PaymentAmountInvalid = "application.payment.amount_invalid";

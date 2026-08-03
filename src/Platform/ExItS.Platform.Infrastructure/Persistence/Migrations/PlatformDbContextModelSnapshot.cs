@@ -589,6 +589,12 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("advanced_reports_enabled");
 
+                    b.Property<decimal>("AnnualPrice")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("annual_price");
+
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -604,6 +610,14 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("customer_credit_enabled");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasDefaultValue("PHP")
+                        .HasColumnName("currency_code");
 
                     b.Property<int>("DefaultTrialDays")
                         .ValueGeneratedOnAdd()
@@ -639,6 +653,12 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(1)
                         .HasColumnName("max_branches");
+
+                    b.Property<decimal>("MonthlyPrice")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("monthly_price");
 
                     b.Property<string>("ProductCode")
                         .IsRequired()
@@ -2490,6 +2510,88 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Payments.ProviderPaymentRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency_code");
+
+                    b.Property<string>("FailureCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("failure_code");
+
+                    b.Property<string>("FailureMessage")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("failure_message");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<bool>("IsTest")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_test");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("provider");
+
+                    b.Property<string>("ProviderReference")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("provider_reference");
+
+                    b.Property<string>("Purpose")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("purpose");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SubscriptionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscription_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("SubscriptionId");
+
+                    b.ToTable("provider_payments", "platform");
+                });
+
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Personal.PersonalAccountSettingsRecord", b =>
                 {
                     b.Property<Guid>("UserIdentityId")
@@ -3193,6 +3295,15 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("aggregate_version");
 
+                    b.Property<decimal?>("AgreedPrice")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("agreed_price");
+
+                    b.Property<string>("BillingCycle")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("billing_cycle");
+
                     b.Property<DateTimeOffset?>("CancelledAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("cancelled_at_utc");
@@ -3200,6 +3311,11 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
+
+                    b.Property<string>("CurrencyCode")
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency_code");
 
                     b.Property<DateTimeOffset?>("ExpiredAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -3232,6 +3348,18 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("PlanVersionId")
                         .HasColumnType("uuid")
                         .HasColumnName("plan_version_id");
+
+                    b.Property<DateTimeOffset?>("PendingPlanEffectiveAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("pending_plan_effective_at_utc");
+
+                    b.Property<Guid?>("PendingPlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("pending_plan_id");
+
+                    b.Property<DateTimeOffset?>("PriceEffectiveFromUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("price_effective_from_utc");
 
                     b.Property<string>("ProductCode")
                         .IsRequired()
@@ -3669,6 +3797,15 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("SubscriptionId")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Payments.ProviderPaymentRecord", b =>
+                {
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Subscriptions.SubscriptionRecord", null)
+                        .WithMany()
+                        .HasForeignKey("SubscriptionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Personal.PersonalAccountSettingsRecord", b =>

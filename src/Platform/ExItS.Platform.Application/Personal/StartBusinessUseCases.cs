@@ -5,6 +5,7 @@ using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
@@ -12,7 +13,9 @@ using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Payments;
 using ExItS.Platform.Domain.Products;
+using ExItS.Platform.Domain.Subscriptions;
 
 namespace ExItS.Platform.Application.Personal;
 
@@ -23,6 +26,10 @@ public sealed record StartBusinessRequest(
     Guid? PlanId = null,
     Guid? PlanVersionId = null,
     Guid? TrialDefinitionId = null,
+    string? PlanKey = null,
+    BillingCycle? BillingCycle = null,
+    bool StartAsTrial = true,
+    bool PayNow = false,
     bool ActivatePosEntitlement = true,
     bool ActivateProductAccess = true,
     bool AssignPosOwnerRole = true);
@@ -80,6 +87,9 @@ public sealed class StartBusinessForPersonalUser
     private readonly PublishExistingPlanVersion _publishVersion;
     private readonly CreateTrialDefinition _createTrial;
     private readonly StartTrialSubscription _startTrial;
+    private readonly ActivatePaidSubscription _activatePaid;
+    private readonly EnsureMvpPosPlans _ensureMvpPosPlans;
+    private readonly IPaymentProvider _paymentProvider;
     private readonly GenerateEntitlementSnapshot _generateSnapshot;
     private readonly GrantProductAccess _grantProductAccess;
     private readonly IProductRepository _products;
@@ -104,6 +114,9 @@ public sealed class StartBusinessForPersonalUser
         PublishExistingPlanVersion publishVersion,
         CreateTrialDefinition createTrial,
         StartTrialSubscription startTrial,
+        ActivatePaidSubscription activatePaid,
+        EnsureMvpPosPlans ensureMvpPosPlans,
+        IPaymentProvider paymentProvider,
         GenerateEntitlementSnapshot generateSnapshot,
         GrantProductAccess grantProductAccess,
         IProductRepository products,
@@ -127,6 +140,9 @@ public sealed class StartBusinessForPersonalUser
         _publishVersion = publishVersion;
         _createTrial = createTrial;
         _startTrial = startTrial;
+        _activatePaid = activatePaid;
+        _ensureMvpPosPlans = ensureMvpPosPlans;
+        _paymentProvider = paymentProvider;
         _generateSnapshot = generateSnapshot;
         _grantProductAccess = grantProductAccess;
         _products = products;
@@ -221,8 +237,14 @@ public sealed class StartBusinessForPersonalUser
 
         if (request.ActivatePosEntitlement)
         {
-            var catalog = await EnsureProvisionalCatalogAsync(
+            if (!string.IsNullOrWhiteSpace(request.PlanKey))
+            {
+                await _ensureMvpPosPlans.ExecuteAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            var catalog = await ResolveCatalogAsync(
                     productCode,
+                    request.PlanKey,
                     request.PlanId,
                     request.PlanVersionId,
                     request.TrialDefinitionId,
@@ -235,22 +257,114 @@ public sealed class StartBusinessForPersonalUser
                     catalog.ErrorMessage ?? "POS catalog is not available.");
             }
 
-            var trial = await _startTrial
-                .ExecuteAsync(
-                    organization.Id,
-                    catalog.Value.PlanId,
-                    catalog.Value.PlanVersionId,
-                    catalog.Value.TrialDefinitionId,
-                    cancellationToken)
-                .ConfigureAwait(false);
-            if (!trial.IsSuccess || trial.Value is null)
+            var billingCycle = request.BillingCycle ?? BillingCycle.Monthly;
+            var startAsTrial = request.StartAsTrial && !request.PayNow;
+
+            if (request.PayNow)
             {
-                return ApplicationResult<StartBusinessResultDto>.Failure(
-                    trial.ErrorCode ?? ApplicationErrorCodes.SubscriptionIneligible,
-                    trial.ErrorMessage ?? "Trial subscription failed.");
+                var newSubscriptionId = SubscriptionId.New();
+                var plan = await _plans.GetByIdAsync(catalog.Value.PlanId, cancellationToken).ConfigureAwait(false);
+                if (plan is null)
+                {
+                    return ApplicationResult<StartBusinessResultDto>.Failure(
+                        ApplicationErrorCodes.PlanNotFound,
+                        "Plan was not found.");
+                }
+
+                var idempotencyKey = $"start-business-{organization.Id.Value:N}-{newSubscriptionId.Value:N}";
+                Domain.Payments.PaymentProviderResult paymentResult;
+                try
+                {
+                    paymentResult = await _paymentProvider.ChargeAsync(
+                        new Domain.Payments.PaymentChargeRequest(
+                            organization.Id.Value,
+                            newSubscriptionId.Value,
+                            plan.PriceForCycle(billingCycle),
+                            plan.CurrencyCode,
+                            idempotencyKey,
+                            Purpose: "start-business"),
+                        cancellationToken).ConfigureAwait(false);
+                }
+                catch (NotSupportedException ex)
+                {
+                    return ApplicationResult<StartBusinessResultDto>.Failure(
+                        ApplicationErrorCodes.PaymentNotConfigured,
+                        ex.Message);
+                }
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+                if (paymentResult.Status != Domain.Payments.PaymentProviderResultStatus.Succeeded)
+                {
+                    return ApplicationResult<StartBusinessResultDto>.Failure(
+                        ApplicationErrorCodes.PaymentNotConfirmed,
+                        paymentResult.FailureMessage ?? "Initial payment was not successful.");
+                }
+
+                var utcNow = _clock.UtcNow;
+                var (periodStart, periodEnd) = SubscriptionBillingPeriods.ComputePaidPeriod(utcNow, billingCycle);
+                var paid = await _activatePaid
+                    .ExecuteAsync(
+                        organization.Id,
+                        catalog.Value.PlanId,
+                        catalog.Value.PlanVersionId,
+                        periodStart,
+                        periodEnd,
+                        billingCycle,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (!paid.IsSuccess || paid.Value is null)
+                {
+                    return ApplicationResult<StartBusinessResultDto>.Failure(
+                        paid.ErrorCode ?? ApplicationErrorCodes.SubscriptionIneligible,
+                        paid.ErrorMessage ?? "Paid subscription failed.");
+                }
+
+                subscriptionId = paid.Value.Id.Value;
+            }
+            else if (startAsTrial)
+            {
+                var trial = await _startTrial
+                    .ExecuteAsync(
+                        organization.Id,
+                        catalog.Value.PlanId,
+                        catalog.Value.PlanVersionId,
+                        catalog.Value.TrialDefinitionId,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (!trial.IsSuccess || trial.Value is null)
+                {
+                    return ApplicationResult<StartBusinessResultDto>.Failure(
+                        trial.ErrorCode ?? ApplicationErrorCodes.SubscriptionIneligible,
+                        trial.ErrorMessage ?? "Trial subscription failed.");
+                }
+
+                subscriptionId = trial.Value.Id.Value;
+            }
+            else
+            {
+                var utcNow = _clock.UtcNow;
+                var (periodStart, periodEnd) = SubscriptionBillingPeriods.ComputePaidPeriod(utcNow, billingCycle);
+                var paid = await _activatePaid
+                    .ExecuteAsync(
+                        organization.Id,
+                        catalog.Value.PlanId,
+                        catalog.Value.PlanVersionId,
+                        periodStart,
+                        periodEnd,
+                        billingCycle,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (!paid.IsSuccess || paid.Value is null)
+                {
+                    return ApplicationResult<StartBusinessResultDto>.Failure(
+                        paid.ErrorCode ?? ApplicationErrorCodes.SubscriptionIneligible,
+                        paid.ErrorMessage ?? "Paid subscription failed.");
+                }
+
+                subscriptionId = paid.Value.Id.Value;
             }
 
-            subscriptionId = trial.Value.Id.Value;
             var snapshot = await _generateSnapshot
                 .ExecuteAsync(organization.Id, ProductCode.Create(productCode), cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
@@ -360,6 +474,66 @@ public sealed class StartBusinessForPersonalUser
     }
 
     private sealed record CatalogSelection(PlanId PlanId, PlanVersionId PlanVersionId, TrialDefinitionId TrialDefinitionId);
+
+    private async Task<ApplicationResult<CatalogSelection>> ResolveCatalogAsync(
+        string productCode,
+        string? planKey,
+        Guid? planId,
+        Guid? planVersionId,
+        Guid? trialDefinitionId,
+        CancellationToken cancellationToken)
+    {
+        if (planId is Guid p && planVersionId is Guid v && trialDefinitionId is Guid t)
+        {
+            return ApplicationResult<CatalogSelection>.Success(
+                new CatalogSelection(PlanId.From(p), PlanVersionId.From(v), TrialDefinitionId.From(t)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(planKey))
+        {
+            return await ResolveMvpPlanCatalogAsync(productCode, planKey.Trim(), cancellationToken).ConfigureAwait(false);
+        }
+
+        return await EnsureProvisionalCatalogAsync(productCode, null, null, null, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<ApplicationResult<CatalogSelection>> ResolveMvpPlanCatalogAsync(
+        string productCode,
+        string planKey,
+        CancellationToken cancellationToken)
+    {
+        var pc = ProductCode.Create(productCode);
+        var plan = await _plans
+            .GetByProductAndCodeAsync(pc, PlanCode.Create(planKey), cancellationToken)
+            .ConfigureAwait(false);
+        if (plan is null || plan.Status != PlanStatus.Active)
+        {
+            return ApplicationResult<CatalogSelection>.Failure(
+                ApplicationErrorCodes.PlanNotFound,
+                $"MVP plan '{planKey}' was not found or is not active.");
+        }
+
+        var versions = await _plans.ListVersionsAsync(plan.Id, cancellationToken).ConfigureAwait(false);
+        var version = versions.FirstOrDefault(v => v.Status == PlanVersionStatus.Published);
+        if (version is null)
+        {
+            return ApplicationResult<CatalogSelection>.Failure(
+                ApplicationErrorCodes.PlanVersionNotFound,
+                $"Published plan version for '{planKey}' was not found.");
+        }
+
+        var trials = await _trials.ListByProductAsync(pc, cancellationToken).ConfigureAwait(false);
+        var trial = trials.FirstOrDefault(t => t.Status == TrialDefinitionStatus.Active);
+        if (trial is null)
+        {
+            return ApplicationResult<CatalogSelection>.Failure(
+                ApplicationErrorCodes.TrialNotFound,
+                "No active trial definition is available for the product.");
+        }
+
+        return ApplicationResult<CatalogSelection>.Success(
+            new CatalogSelection(plan.Id, version.Id, trial.Id));
+    }
 
     private async Task<ApplicationResult<CatalogSelection>> EnsureProvisionalCatalogAsync(
         string productCode,

@@ -923,6 +923,9 @@ These are separate operations:
 Create Organization
 → Organization Owner
 
+Select commercial plan + billing cycle (Monthly / Annual) + trial or pay-now
+→ Organization subscription (AgreedPrice snapshot on the org, not the Personal account)
+
 Activate POS
 → Organization entitlement
 

@@ -126,6 +126,10 @@ public static class PlatformAuditActions
     public const string SubscriptionReactivated = "platform.subscription.reactivated";
     public const string SubscriptionCancelled = "platform.subscription.cancelled";
     public const string SubscriptionExpired = "platform.subscription.expired";
+    public const string SubscriptionUpgraded = "platform.subscription.upgraded";
+    public const string SubscriptionDowngradeScheduled = "platform.subscription.downgrade_scheduled";
+    public const string SubscriptionPendingPlanApplied = "platform.subscription.pending_plan_applied";
+    public const string SubscriptionPlanChangePreviewed = "platform.subscription.plan_change_previewed";
 
     public const string ManualPaymentCreated = "platform.payment.created";
     public const string ManualPaymentConfirmed = "platform.payment.confirmed";

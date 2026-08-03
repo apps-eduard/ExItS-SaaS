@@ -91,7 +91,12 @@
                     <AntDesign.InputNumber TValue="int" @bind-Value="_newMaxBranches" Min="1" Placeholder="Max branches" Disabled="_busy" Style="width:140px;" />
                     <AntDesign.InputNumber TValue="int" @bind-Value="_newMaxStaff" Min="1" Placeholder="Max active staff" Disabled="_busy" Style="width:140px;" />
                     <AntDesign.InputNumber TValue="int" @bind-Value="_newTrialDays" Min="0" Placeholder="Default trial days" Disabled="_busy" Style="width:140px;" />
-                    <AntDesign.InputNumber TValue="int" @bind-Value="_newSortOrder" Min="0" Placeholder="Sort order" Disabled="_busy" Style="width:120px;" />
+                    <AntDesign.InputNumber TValue="int" @bind-Value="_newSortOrder" Min="0" Placeholder="Display order" Disabled="_busy" Style="width:120px;" />
+                </Space>
+                <Space Wrap>
+                    <AntDesign.InputNumber TValue="decimal" @bind-Value="_newMonthlyPrice" Min="0" Placeholder="Monthly price" Disabled="_busy" Style="width:140px;" />
+                    <AntDesign.InputNumber TValue="decimal" @bind-Value="_newAnnualPrice" Min="0" Placeholder="Annual price" Disabled="_busy" Style="width:140px;" />
+                    <Input @bind-Value="_newCurrencyCode" Size="@InputSize.Small" Placeholder="Currency" Disabled="_busy" Style="width:100px;" />
                 </Space>
                 <Space Wrap>
                     <Checkbox @bind-Checked="_newCustomerCredit" Disabled="_busy">Customer credit</Checkbox>
@@ -136,6 +141,19 @@
             </PropertyColumn>
             <PropertyColumn Property="c => c.PlanKey" Title="Plan Key" Sortable>
                 <span class="muted">@(context.PlanKey ?? context.Code)</span>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.MonthlyPrice" Title="Monthly" Sortable Width="110">
+                <AmountDisplay Amount="@context.MonthlyPrice" CurrencyCode="@context.CurrencyCode" />
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.AnnualPrice" Title="Annual" Sortable Width="110">
+                <AmountDisplay Amount="@context.AnnualPrice" CurrencyCode="@context.CurrencyCode" />
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.CurrencyCode" Title="Currency" Sortable Width="90" />
+            <PropertyColumn Property="c => c.TrialAllowed" Title="Trial" Width="90">
+                @(context.TrialAllowed ? $"{context.DefaultTrialDays}d" : "—")
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.MaxBranches" Title="Limits" Width="120">
+                @context.MaxBranches branches · @context.MaxActiveStaff staff
             </PropertyColumn>
             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="110">
                 <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
@@ -223,6 +241,9 @@ else
                         <Tag Color="@StatusColor(pl.Status)">@pl.Status</Tag>
                     </DescriptionsItem>
                     <DescriptionsItem Title="Sort order">@pl.SortOrder</DescriptionsItem>
+                    <DescriptionsItem Title="Monthly price"><AmountDisplay Amount="@pl.MonthlyPrice" CurrencyCode="@pl.CurrencyCode" /></DescriptionsItem>
+                    <DescriptionsItem Title="Annual price"><AmountDisplay Amount="@pl.AnnualPrice" CurrencyCode="@pl.CurrencyCode" /></DescriptionsItem>
+                    <DescriptionsItem Title="Currency">@pl.CurrencyCode</DescriptionsItem>
                     <DescriptionsItem Title="Max branches">@pl.MaxBranches</DescriptionsItem>
                     <DescriptionsItem Title="Max active staff">@pl.MaxActiveStaff</DescriptionsItem>
                     <DescriptionsItem Title="Customer credit">@(pl.CustomerCreditEnabled ? "Enabled" : "Disabled")</DescriptionsItem>
@@ -252,7 +273,12 @@ else
                                 <AntDesign.InputNumber TValue="int" @bind-Value="_editMaxBranches" Min="1" Placeholder="Max branches" Disabled="_busy" Style="width:140px;" />
                                 <AntDesign.InputNumber TValue="int" @bind-Value="_editMaxStaff" Min="1" Placeholder="Max active staff" Disabled="_busy" Style="width:140px;" />
                                 <AntDesign.InputNumber TValue="int" @bind-Value="_editTrialDays" Min="0" Placeholder="Default trial days" Disabled="_busy" Style="width:140px;" />
-                                <AntDesign.InputNumber TValue="int" @bind-Value="_editSortOrder" Min="0" Placeholder="Sort order" Disabled="_busy" Style="width:120px;" />
+                                <AntDesign.InputNumber TValue="int" @bind-Value="_editSortOrder" Min="0" Placeholder="Display order" Disabled="_busy" Style="width:120px;" />
+                            </Space>
+                            <Space Wrap>
+                                <AntDesign.InputNumber TValue="decimal" @bind-Value="_editMonthlyPrice" Min="0" Placeholder="Monthly price" Disabled="_busy" Style="width:140px;" />
+                                <AntDesign.InputNumber TValue="decimal" @bind-Value="_editAnnualPrice" Min="0" Placeholder="Annual price" Disabled="_busy" Style="width:140px;" />
+                                <Input @bind-Value="_editCurrencyCode" Size="@InputSize.Small" Placeholder="Currency" Disabled="_busy" Style="width:100px;" />
                             </Space>
                             <Space Wrap>
                                 <Checkbox @bind-Checked="_editCustomerCredit" Disabled="_busy">Customer credit</Checkbox>
@@ -330,6 +356,9 @@ else
     private int _newMaxStaff = 3;
     private int _newTrialDays = 14;
     private int _newSortOrder = 100;
+    private decimal _newMonthlyPrice;
+    private decimal _newAnnualPrice = 0m;
+    private string _newCurrencyCode = "PHP";
     private bool _newCustomerCredit;
     private bool _newAdvancedReports;
     private bool _newExport;
@@ -340,6 +369,9 @@ else
     private int _editMaxStaff = 3;
     private int _editTrialDays = 14;
     private int _editSortOrder = 100;
+    private decimal _editMonthlyPrice;
+    private decimal _editAnnualPrice;
+    private string _editCurrencyCode = "PHP";
     private bool _editCustomerCredit;
     private bool _editAdvancedReports;
     private bool _editExport;
@@ -404,6 +436,9 @@ else
         "PlanKey" => "Code",
         "Status" => "Status",
         "SortOrder" => "SortOrder",
+        "MonthlyPrice" => "MonthlyPrice",
+        "AnnualPrice" => "AnnualPrice",
+        "CurrencyCode" => "CurrencyCode",
         _ => null
     };
 
@@ -456,6 +491,9 @@ else
         _editMaxStaff = plan.MaxActiveStaff;
         _editTrialDays = plan.DefaultTrialDays;
         _editSortOrder = plan.SortOrder;
+        _editMonthlyPrice = plan.MonthlyPrice;
+        _editAnnualPrice = plan.AnnualPrice;
+        _editCurrencyCode = plan.CurrencyCode;
         _editCustomerCredit = plan.CustomerCreditEnabled;
         _editAdvancedReports = plan.AdvancedReportsEnabled;
         _editExport = plan.ExportEnabled;
@@ -490,7 +528,10 @@ else
                 _newExport,
                 _newTrialAllowed,
                 _newTrialDays,
-                _newSortOrder));
+                _newSortOrder,
+                _newMonthlyPrice,
+                _newAnnualPrice,
+                _newCurrencyCode));
         _busy = false;
         if (!result.IsSuccess)
         {
@@ -523,6 +564,9 @@ else
                 _editTrialAllowed,
                 _editTrialDays,
                 _editSortOrder,
+                _editMonthlyPrice,
+                _editAnnualPrice,
+                string.IsNullOrWhiteSpace(_editCurrencyCode) ? "PHP" : _editCurrencyCode.Trim().ToUpperInvariant(),
                 _expectedUpdatedAt));
         _busy = false;
         if (!result.IsSuccess)

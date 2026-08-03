@@ -1,5 +1,7 @@
 using ExItS.Platform.Domain.Common;
+using ExItS.Platform.Domain.Payments;
 using ExItS.Platform.Domain.Products;
+using ExItS.Platform.Domain.Subscriptions;
 
 namespace ExItS.Platform.Domain.Catalog;
 
@@ -23,6 +25,9 @@ public sealed class Plan
     public bool TrialAllowed { get; private set; }
     public int DefaultTrialDays { get; private set; }
     public int SortOrder { get; private set; }
+    public decimal MonthlyPrice { get; private set; }
+    public decimal AnnualPrice { get; private set; }
+    public string CurrencyCode { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -44,6 +49,9 @@ public sealed class Plan
         bool trialAllowed,
         int defaultTrialDays,
         int sortOrder,
+        decimal monthlyPrice,
+        decimal annualPrice,
+        string currencyCode,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc)
     {
@@ -61,6 +69,9 @@ public sealed class Plan
         TrialAllowed = trialAllowed;
         DefaultTrialDays = defaultTrialDays;
         SortOrder = sortOrder;
+        MonthlyPrice = monthlyPrice;
+        AnnualPrice = annualPrice;
+        CurrencyCode = currencyCode;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
     }
@@ -79,12 +90,16 @@ public sealed class Plan
         bool exportEnabled = false,
         bool trialAllowed = true,
         int defaultTrialDays = 14,
-        int sortOrder = 100)
+        int sortOrder = 100,
+        decimal monthlyPrice = 0m,
+        decimal annualPrice = 0m,
+        string currencyCode = Payments.CurrencyCode.PHP)
     {
         ArgumentNullException.ThrowIfNull(productCode);
         ArgumentNullException.ThrowIfNull(code);
         DomainTime.EnsureUtc(utcNow);
         ValidateCommercialLimits(maxBranches, maxActiveStaff, defaultTrialDays, sortOrder);
+        ValidatePricing(monthlyPrice, annualPrice, currencyCode);
         return new Plan(
             id ?? PlanId.New(),
             productCode,
@@ -100,6 +115,9 @@ public sealed class Plan
             trialAllowed,
             defaultTrialDays,
             sortOrder,
+            monthlyPrice,
+            annualPrice,
+            Payments.CurrencyCode.Create(currencyCode).Value,
             utcNow,
             utcNow);
     }
@@ -120,7 +138,10 @@ public sealed class Plan
         bool exportEnabled = false,
         bool trialAllowed = true,
         int defaultTrialDays = 14,
-        int sortOrder = 100) =>
+        int sortOrder = 100,
+        decimal monthlyPrice = 0m,
+        decimal annualPrice = 0m,
+        string currencyCode = Payments.CurrencyCode.PHP) =>
         new(
             id,
             productCode,
@@ -136,6 +157,9 @@ public sealed class Plan
             trialAllowed,
             defaultTrialDays,
             sortOrder,
+            monthlyPrice,
+            annualPrice,
+            currencyCode,
             createdAtUtc,
             updatedAtUtc);
 
@@ -163,6 +187,9 @@ public sealed class Plan
         bool trialAllowed,
         int defaultTrialDays,
         int sortOrder,
+        decimal monthlyPrice,
+        decimal annualPrice,
+        string currencyCode,
         DateTimeOffset utcNow)
     {
         DomainTime.EnsureUtc(utcNow);
@@ -174,6 +201,7 @@ public sealed class Plan
         }
 
         ValidateCommercialLimits(maxBranches, maxActiveStaff, defaultTrialDays, sortOrder);
+        ValidatePricing(monthlyPrice, annualPrice, currencyCode);
         Description = NormalizeDescription(description);
         MaxBranches = maxBranches;
         MaxActiveStaff = maxActiveStaff;
@@ -183,8 +211,19 @@ public sealed class Plan
         TrialAllowed = trialAllowed;
         DefaultTrialDays = defaultTrialDays;
         SortOrder = sortOrder;
+        MonthlyPrice = monthlyPrice;
+        AnnualPrice = annualPrice;
+        CurrencyCode = Payments.CurrencyCode.Create(currencyCode).Value;
         UpdatedAtUtc = utcNow;
     }
+
+    public decimal PriceForCycle(BillingCycle cycle) =>
+        cycle switch
+        {
+            BillingCycle.Monthly => MonthlyPrice,
+            BillingCycle.Annual => AnnualPrice,
+            _ => throw new ArgumentOutOfRangeException(nameof(cycle))
+        };
 
     public void Activate(DateTimeOffset utcNow) => TransitionTo(PlanStatus.Active, utcNow);
 
@@ -252,6 +291,18 @@ public sealed class Plan
                 DomainErrorCodes.InvalidPlanStatusTransition,
                 "SortOrder must be between 0 and 1000000.");
         }
+    }
+
+    private static void ValidatePricing(decimal monthlyPrice, decimal annualPrice, string currencyCode)
+    {
+        if (monthlyPrice < 0 || annualPrice < 0)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PaymentAmountInvalid,
+                "Plan prices must be greater than or equal to zero.");
+        }
+
+        Payments.CurrencyCode.Create(currencyCode);
     }
 
     private static string? NormalizeDescription(string? description)

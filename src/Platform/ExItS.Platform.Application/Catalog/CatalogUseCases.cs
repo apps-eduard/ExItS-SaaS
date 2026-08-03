@@ -357,6 +357,9 @@ public sealed class CreatePlan
             trialAllowed: true,
             defaultTrialDays: 14,
             sortOrder: 100,
+            monthlyPrice: 0m,
+            annualPrice: 0m,
+            currencyCode: "PHP",
             cancellationToken);
 
     public async Task<ApplicationResult<Plan>> ExecuteAsync(
@@ -372,6 +375,9 @@ public sealed class CreatePlan
         bool trialAllowed,
         int defaultTrialDays,
         int sortOrder,
+        decimal monthlyPrice,
+        decimal annualPrice,
+        string currencyCode,
         CancellationToken cancellationToken = default)
     {
         try
@@ -405,7 +411,10 @@ public sealed class CreatePlan
                 exportEnabled: exportEnabled,
                 trialAllowed: trialAllowed,
                 defaultTrialDays: defaultTrialDays,
-                sortOrder: sortOrder);
+                sortOrder: sortOrder,
+                monthlyPrice: monthlyPrice,
+                annualPrice: annualPrice,
+                currencyCode: currencyCode);
             await _plans.AddAsync(plan, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<Plan>.Success(plan);
@@ -572,6 +581,9 @@ public sealed class UpdatePlanCommercialPackage
         bool trialAllowed,
         int defaultTrialDays,
         int sortOrder,
+        decimal monthlyPrice,
+        decimal annualPrice,
+        string currencyCode,
         DateTimeOffset? expectedUpdatedAtUtc = null,
         CancellationToken cancellationToken = default)
     {
@@ -601,6 +613,9 @@ public sealed class UpdatePlanCommercialPackage
                 trialAllowed,
                 defaultTrialDays,
                 sortOrder,
+                monthlyPrice,
+                annualPrice,
+                currencyCode,
                 _clock.UtcNow);
             await _plans.UpdateAsync(plan, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

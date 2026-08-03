@@ -1,9 +1,13 @@
 using ExItS.Platform.Api.Common;
+using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Subscriptions;
+using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Authorization;
+using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Common;
+using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Domain.Subscriptions;
 
 namespace ExItS.Platform.Api.Subscriptions;
@@ -413,6 +417,7 @@ internal static class SubscriptionEndpoints
                     PlanVersionIdFrom(body.PlanVersionId),
                     body.PeriodStartUtc,
                     body.PeriodEndUtc,
+                    body.BillingCycle,
                     ct).ConfigureAwait(false);
                 if (result.IsSuccess)
                 {
@@ -482,6 +487,343 @@ internal static class SubscriptionEndpoints
                 return PlatformApiResults.Problem(ex.ErrorCode, ex.Message, StatusCodes.Status400BadRequest);
             }
         });
+
+        orgSubscriptions.MapPost("/{subscriptionId:guid}/upgrade", async (
+            Guid organizationId,
+            Guid subscriptionId,
+            UpgradeSubscriptionRequest body,
+            UpgradeOrganizationSubscription useCase,
+            SubscriptionQueryService queries,
+            IPlanRepository plans,
+            PlatformOrganizationAuthz orgAuthz,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await orgAuthz
+                .EnsureCanManageOrganizationCommercialAsync(
+                    organizationId,
+                    PlatformAuditActions.SubscriptionUpgraded,
+                    ct)
+                .ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var existing = await queries.GetByIdAsync(subscriptionId, ct).ConfigureAwait(false);
+            if (existing is null || existing.OrganizationId != organizationId)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SubscriptionNotFound,
+                    "Subscription was not found for this organization.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            if (!TryResolvePlanId(body.PlanId, body.PlanKey, out var targetPlanId, out var planError))
+            {
+                return planError!;
+            }
+
+            if (targetPlanId is null)
+            {
+                var plan = await plans
+                    .GetByProductAndCodeAsync(
+                        ProductCode.Create(existing.ProductCode),
+                        PlanCode.Create(body.PlanKey!),
+                        ct)
+                    .ConfigureAwait(false);
+                if (plan is null)
+                {
+                    return PlatformApiResults.Problem(
+                        ApplicationErrorCodes.PlanNotFound,
+                        "Target plan was not found.",
+                        StatusCodes.Status404NotFound);
+                }
+
+                targetPlanId = plan.Id;
+            }
+
+            BillingCycle billingCycle;
+            try
+            {
+                billingCycle = ParseBillingCycle(body.BillingCycle);
+            }
+            catch (DomainException ex)
+            {
+                return PlatformApiResults.Problem(ex.ErrorCode, ex.Message, StatusCodes.Status400BadRequest);
+            }
+
+            var result = await useCase.ExecuteAsync(
+                PlatformOrganizationIdFrom(organizationId),
+                ProductCode.Create(existing.ProductCode),
+                targetPlanId,
+                billingCycle,
+                body.IdempotencyKey,
+                cancellationToken: ct).ConfigureAwait(false);
+
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.SubscriptionUpgraded,
+                    nameof(Subscription),
+                    subscriptionId.ToString("D"),
+                    organizationId,
+                    existing.ProductCode,
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, s => Results.Ok(MapSubscription(s)));
+        });
+
+        orgSubscriptions.MapGet("/{subscriptionId:guid}/plan-change-preview", async (
+            Guid organizationId,
+            Guid subscriptionId,
+            Guid? planId,
+            string? planKey,
+            int? activeBranchCount,
+            PreviewOrganizationPlanChange useCase,
+            SubscriptionQueryService queries,
+            IPlanRepository plans,
+            PlatformOrganizationAuthz orgAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await orgAuthz
+                .EnsureCanManageOrganizationCommercialAsync(
+                    organizationId,
+                    PlatformAuditActions.SubscriptionPlanChangePreviewed,
+                    ct)
+                .ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var existing = await queries.GetByIdAsync(subscriptionId, ct).ConfigureAwait(false);
+            if (existing is null || existing.OrganizationId != organizationId)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SubscriptionNotFound,
+                    "Subscription was not found for this organization.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            if (!TryResolvePlanId(bodyPlanId: planId, planKey, out var targetPlanId, out var planError))
+            {
+                return planError!;
+            }
+
+            if (targetPlanId is null)
+            {
+                var plan = await plans
+                    .GetByProductAndCodeAsync(
+                        ProductCode.Create(existing.ProductCode),
+                        PlanCode.Create(planKey!),
+                        ct)
+                    .ConfigureAwait(false);
+                if (plan is null)
+                {
+                    return PlatformApiResults.Problem(
+                        ApplicationErrorCodes.PlanNotFound,
+                        "Target plan was not found.",
+                        StatusCodes.Status404NotFound);
+                }
+
+                targetPlanId = plan.Id;
+            }
+
+            var result = await useCase.ExecuteAsync(
+                PlatformOrganizationIdFrom(organizationId),
+                ProductCode.Create(existing.ProductCode),
+                targetPlanId,
+                activeBranchCount,
+                ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, preview => Results.Ok(preview));
+        });
+
+        orgSubscriptions.MapPost("/{subscriptionId:guid}/downgrade", async (
+            Guid organizationId,
+            Guid subscriptionId,
+            DowngradeSubscriptionRequest body,
+            ScheduleOrganizationSubscriptionDowngrade useCase,
+            SubscriptionQueryService queries,
+            IPlanRepository plans,
+            PlatformOrganizationAuthz orgAuthz,
+            PlatformAuthz authz,
+            IClock clock,
+            CancellationToken ct) =>
+        {
+            var denied = await orgAuthz
+                .EnsureCanManageOrganizationCommercialAsync(
+                    organizationId,
+                    PlatformAuditActions.SubscriptionDowngradeScheduled,
+                    ct)
+                .ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var existing = await queries.GetByIdAsync(subscriptionId, ct).ConfigureAwait(false);
+            if (existing is null || existing.OrganizationId != organizationId)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SubscriptionNotFound,
+                    "Subscription was not found for this organization.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            if (!TryResolvePlanId(body.PlanId, body.PlanKey, out var targetPlanId, out var planError))
+            {
+                return planError!;
+            }
+
+            if (targetPlanId is null)
+            {
+                var plan = await plans
+                    .GetByProductAndCodeAsync(
+                        ProductCode.Create(existing.ProductCode),
+                        PlanCode.Create(body.PlanKey!),
+                        ct)
+                    .ConfigureAwait(false);
+                if (plan is null)
+                {
+                    return PlatformApiResults.Problem(
+                        ApplicationErrorCodes.PlanNotFound,
+                        "Target plan was not found.",
+                        StatusCodes.Status404NotFound);
+                }
+
+                targetPlanId = plan.Id;
+            }
+
+            var effectiveAt = body.EffectiveAtUtc ?? clock.UtcNow;
+            var result = await useCase.ExecuteAsync(
+                PlatformOrganizationIdFrom(organizationId),
+                ProductCode.Create(existing.ProductCode),
+                targetPlanId,
+                effectiveAt,
+                ct).ConfigureAwait(false);
+
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.SubscriptionDowngradeScheduled,
+                    nameof(Subscription),
+                    subscriptionId.ToString("D"),
+                    organizationId,
+                    existing.ProductCode,
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, s => Results.Ok(MapSubscription(s)));
+        });
+
+        orgSubscriptions.MapPost("/{subscriptionId:guid}/apply-pending-plan", async (
+            Guid organizationId,
+            Guid subscriptionId,
+            ApplyDuePendingPlanChanges useCase,
+            SubscriptionQueryService queries,
+            PlatformOrganizationAuthz orgAuthz,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await orgAuthz
+                .EnsureCanManageOrganizationCommercialAsync(
+                    organizationId,
+                    PlatformAuditActions.SubscriptionPendingPlanApplied,
+                    ct)
+                .ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var existing = await queries.GetByIdAsync(subscriptionId, ct).ConfigureAwait(false);
+            if (existing is null || existing.OrganizationId != organizationId)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SubscriptionNotFound,
+                    "Subscription was not found for this organization.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            if (existing.PendingPlanId is null)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SubscriptionIneligible,
+                    "Subscription has no pending plan change.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            var result = await useCase.ExecuteAsync(ct).ConfigureAwait(false);
+            if (!result.IsSuccess)
+            {
+                return PlatformApiResults.FromResult(result, count => Results.Ok(new { appliedCount = count }));
+            }
+
+            var refreshed = await queries.GetByIdAsync(subscriptionId, ct).ConfigureAwait(false);
+            if (refreshed?.PendingPlanId is null && result.Value > 0)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.SubscriptionPendingPlanApplied,
+                    nameof(Subscription),
+                    subscriptionId.ToString("D"),
+                    organizationId,
+                    existing.ProductCode,
+                    cancellationToken: ct).ConfigureAwait(false);
+                return Results.Ok(refreshed);
+            }
+
+            return PlatformApiResults.Problem(
+                ApplicationErrorCodes.SubscriptionIneligible,
+                "Pending plan change is not yet due or could not be applied.",
+                StatusCodes.Status400BadRequest);
+        });
+    }
+
+    private static bool TryResolvePlanId(
+        Guid? bodyPlanId,
+        string? planKey,
+        out PlanId? targetPlanId,
+        out IResult? error)
+    {
+        if (bodyPlanId is Guid id && id != Guid.Empty)
+        {
+            targetPlanId = PlanIdFrom(id);
+            error = null;
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(planKey))
+        {
+            targetPlanId = null;
+            error = null;
+            return true;
+        }
+
+        targetPlanId = null;
+        error = PlatformApiResults.Problem(
+            ApplicationErrorCodes.PlanNotFound,
+            "PlanId or PlanKey is required.",
+            StatusCodes.Status400BadRequest);
+        return false;
+    }
+
+    private static BillingCycle ParseBillingCycle(string? billingCycle)
+    {
+        if (string.IsNullOrWhiteSpace(billingCycle))
+        {
+            return BillingCycle.Monthly;
+        }
+
+        if (Enum.TryParse<BillingCycle>(billingCycle, ignoreCase: true, out var parsed))
+        {
+            return parsed;
+        }
+
+        throw new DomainException(
+            ApplicationErrorCodes.InvalidBillingCycle,
+            $"Unrecognized billing cycle '{billingCycle}'.");
     }
 
     private static SubscriptionListSortBy ParseSort(string? sortBy) =>
@@ -508,6 +850,14 @@ internal static class SubscriptionEndpoints
         planVersionId = subscription.PlanVersionId.Value,
         trialDefinitionId = subscription.TrialDefinitionId?.Value,
         status = subscription.Status.ToString(),
+        billingCycle = subscription.BillingCycle?.ToString(),
+        agreedPrice = subscription.AgreedPrice,
+        currencyCode = subscription.CurrencyCode,
+        priceEffectiveFromUtc = subscription.PriceEffectiveFromUtc,
+        pendingPlanId = subscription.PendingPlanId?.Value,
+        pendingPlanEffectiveAtUtc = subscription.PendingPlanEffectiveAtUtc,
+        currentPeriodStartUtc = subscription.PaidPeriodStartUtc,
+        currentPeriodEndUtc = subscription.PaidPeriodEndUtc,
         trialStartUtc = subscription.TrialStartUtc,
         trialEndUtc = subscription.TrialEndUtc,
         paidPeriodStartUtc = subscription.PaidPeriodStartUtc,
@@ -529,7 +879,8 @@ internal sealed record CreatePaidSubscriptionRequest(
     Guid PlanId,
     Guid PlanVersionId,
     DateTimeOffset PeriodStartUtc,
-    DateTimeOffset PeriodEndUtc);
+    DateTimeOffset PeriodEndUtc,
+    BillingCycle BillingCycle = BillingCycle.Monthly);
 
 internal sealed record ActivateSubscriptionRequest(
     DateTimeOffset PeriodStartUtc,
@@ -544,3 +895,15 @@ internal sealed record ReactivateSubscriptionRequest(
     int? ExpectedVersion = null);
 
 internal sealed record SubscriptionLifecycleRequest(int? ExpectedVersion = null);
+
+internal sealed record UpgradeSubscriptionRequest(
+    Guid? PlanId = null,
+    string? PlanKey = null,
+    string? BillingCycle = null,
+    string? IdempotencyKey = null);
+
+internal sealed record DowngradeSubscriptionRequest(
+    Guid? PlanId = null,
+    string? PlanKey = null,
+    DateTimeOffset? EffectiveAtUtc = null,
+    string? IdempotencyKey = null);

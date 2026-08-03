@@ -25,6 +25,7 @@ using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Personal;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Infrastructure;
+using ExItS.Platform.Infrastructure.Payments;
 using ExItS.Platform.Infrastructure.LocalValidation;
 using ExItS.Platform.Infrastructure.Health;
 using Microsoft.AspNetCore.Authentication.Facebook;
@@ -43,6 +44,7 @@ builder.Services.AddPlatformHealthChecks();
 builder.AddPlatformSecurity();
 builder.AddPlatformForwardedHeaders();
 builder.Services.AddPlatformPersistence(builder.Configuration);
+builder.Services.AddPlatformPaymentProvider(builder.Configuration, builder.Environment);
 
 var externalAuthOptions = builder.Configuration
     .GetSection(PlatformExternalAuthOptions.SectionName)
@@ -270,6 +272,14 @@ builder.Services.AddScoped<ConfirmSaaSPayment>();
 builder.Services.AddScoped<RejectSaaSPayment>();
 builder.Services.AddScoped<VoidSaaSPayment>();
 builder.Services.AddScoped<ConfirmPaymentAndActivateSubscription>();
+
+builder.Services.AddScoped<ProcessSubscriptionInitialPayment>();
+builder.Services.AddScoped<ProcessSubscriptionRenewal>();
+builder.Services.AddScoped<SimulateLocalValidationPayment>();
+builder.Services.AddScoped<UpgradeOrganizationSubscription>();
+builder.Services.AddScoped<ScheduleOrganizationSubscriptionDowngrade>();
+builder.Services.AddScoped<PreviewOrganizationPlanChange>();
+builder.Services.AddScoped<ApplyDuePendingPlanChanges>();
 
 builder.Services.AddScoped<EntitlementQueryService>();
 builder.Services.AddScoped<FeatureOverrideQueryService>();

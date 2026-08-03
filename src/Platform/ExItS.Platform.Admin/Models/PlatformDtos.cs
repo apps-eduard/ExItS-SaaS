@@ -22,7 +22,10 @@ public sealed record CreatePlanRequest(
     bool ExportEnabled = false,
     bool TrialAllowed = true,
     int DefaultTrialDays = 14,
-    int SortOrder = 100);
+    int SortOrder = 100,
+    decimal MonthlyPrice = 0m,
+    decimal AnnualPrice = 0m,
+    string CurrencyCode = "PHP");
 
 public sealed record UpdatePlanCommercialRequest(
     string DisplayName,
@@ -35,6 +38,9 @@ public sealed record UpdatePlanCommercialRequest(
     bool TrialAllowed,
     int DefaultTrialDays,
     int SortOrder,
+    decimal MonthlyPrice,
+    decimal AnnualPrice,
+    string CurrencyCode,
     DateTimeOffset? ExpectedUpdatedAtUtc = null);
 public sealed record RenameCatalogRequest(string DisplayName, DateTimeOffset? ExpectedUpdatedAtUtc);
 
@@ -68,7 +74,10 @@ public sealed record PlanDto(
     bool ExportEnabled = false,
     bool TrialAllowed = true,
     int DefaultTrialDays = 14,
-    int SortOrder = 100);
+    int SortOrder = 100,
+    decimal MonthlyPrice = 0m,
+    decimal AnnualPrice = 0m,
+    string CurrencyCode = "PHP");
 
 public sealed record PlanVersionDto(
     Guid Id,
@@ -180,6 +189,16 @@ public sealed record SubscriptionDto(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc,
     int Version,
+    string? BillingCycle = null,
+    decimal? AgreedPrice = null,
+    string? CurrencyCode = null,
+    DateTimeOffset? PriceEffectiveFromUtc = null,
+    Guid? PendingPlanId = null,
+    string? PendingPlanKey = null,
+    string? PendingPlanDisplayName = null,
+    DateTimeOffset? PendingPlanEffectiveAtUtc = null,
+    DateTimeOffset? CurrentPeriodStartUtc = null,
+    DateTimeOffset? CurrentPeriodEndUtc = null,
     string? OrganizationDisplayName = null,
     string? ProductDisplayName = null,
     string? PlanDisplayName = null,
@@ -620,7 +639,8 @@ public sealed record CreatePaidSubscriptionRequest(
     Guid PlanId,
     Guid PlanVersionId,
     DateTimeOffset PeriodStartUtc,
-    DateTimeOffset PeriodEndUtc);
+    DateTimeOffset PeriodEndUtc,
+    string BillingCycle = "Monthly");
 public sealed record ActivateSubscriptionRequest(
     DateTimeOffset PeriodStartUtc,
     DateTimeOffset PeriodEndUtc,
@@ -631,6 +651,91 @@ public sealed record ReactivateSubscriptionRequest(
     DateTimeOffset? PeriodEndUtc = null,
     int? ExpectedVersion = null);
 public sealed record SubscriptionLifecycleRequest(int? ExpectedVersion = null);
+
+public sealed record UpgradeSubscriptionRequest(
+    Guid? PlanId = null,
+    string? PlanKey = null,
+    string BillingCycle = "Monthly",
+    string? IdempotencyKey = null);
+
+public sealed record DowngradeSubscriptionRequest(
+    Guid? PlanId = null,
+    string? PlanKey = null,
+    DateTimeOffset? EffectiveAtUtc = null,
+    string? IdempotencyKey = null);
+
+public sealed record PlanUsageConflictDto(
+    string Resource,
+    int CurrentUsage,
+    int TargetLimit,
+    string Message);
+
+public sealed record PlanChangeImpactPreviewDto(
+    Guid CurrentPlanId,
+    string CurrentPlanDisplayName,
+    Guid TargetPlanId,
+    string TargetPlanDisplayName,
+    IReadOnlyList<PlanUsageConflictDto> UsageConflicts,
+    IReadOnlyList<string> LostFeatures,
+    bool HasBlockingUsageConflicts);
+
+public sealed record SimulateLocalValidationPaymentRequest(
+    string Simulation,
+    Guid OrganizationId,
+    Guid SubscriptionId,
+    decimal Amount,
+    string CurrencyCode,
+    string IdempotencyKey,
+    string? Purpose = null,
+    string? BillingCycle = null);
+
+public sealed record SimulateLocalValidationPaymentResultDto(
+    string Status,
+    string Provider,
+    string ProviderReference,
+    decimal Amount,
+    string CurrencyCode,
+    bool IsTest,
+    string? FailureCode,
+    string? FailureMessage,
+    string? IdempotencyKey);
+
+public sealed record StartBusinessRequest(
+    string DisplayName,
+    string Slug,
+    string? ProductCode = null,
+    Guid? PlanId = null,
+    Guid? PlanVersionId = null,
+    Guid? TrialDefinitionId = null,
+    string? PlanKey = null,
+    string? BillingCycle = null,
+    bool StartAsTrial = true,
+    bool PayNow = false,
+    bool ActivatePosEntitlement = true,
+    bool ActivateProductAccess = true,
+    bool AssignPosOwnerRole = true);
+
+public sealed record StartBusinessResultDto(
+    Guid OrganizationId,
+    Guid MembershipId,
+    Guid OrganizationAccountProfileId,
+    string SessionToken,
+    Guid SessionId,
+    string AccountClass,
+    string AllowedScope,
+    Guid? SelectedOrganizationId,
+    Guid? SubscriptionId,
+    int? EntitlementSnapshotVersion,
+    Guid? ProductAccessAssignmentId,
+    Guid? ProductLocalRoleGrantId,
+    string? ProductLocalRoleCode,
+    bool OrganizationOwnerGranted,
+    bool PosEntitlementActivated,
+    bool PosOwnerRoleGranted,
+    string ProductCode);
+
+public sealed record ApplyPendingPlanChangesResultDto(int AppliedCount);
+
 public sealed record CreateFeatureOverrideRequest(
     string FeatureCode,
     bool Enabled,

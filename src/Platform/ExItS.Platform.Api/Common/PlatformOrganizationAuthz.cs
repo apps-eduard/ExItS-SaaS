@@ -3,6 +3,7 @@ using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Subscriptions;
 
 namespace ExItS.Platform.Api.Common;
 
@@ -95,6 +96,36 @@ internal sealed class PlatformOrganizationAuthz(
             organizationId.ToString("D"),
             organizationId,
             cancellationToken: cancellationToken);
+
+    /// <summary>
+    /// Platform <see cref="PlatformPermission.ManageSubscriptions"/> or trusted organization Owner
+    /// (commercial self-service for the selected organization context).
+    /// </summary>
+    public async Task<IResult?> EnsureCanManageOrganizationCommercialAsync(
+        Guid organizationId,
+        string actionCode,
+        CancellationToken cancellationToken = default)
+    {
+        var denied = await authz.EnsureAsync(
+            PlatformPermission.ManageSubscriptions,
+            actionCode,
+            nameof(Subscription),
+            organizationId.ToString("D"),
+            organizationId,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+        if (denied is null)
+        {
+            return null;
+        }
+
+        if (await HasTrustedActiveMembershipAsync(organizationId, governingAdminOnly: true, cancellationToken)
+                .ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        return denied;
+    }
 
     private async Task<bool> HasTrustedActiveMembershipAsync(
         Guid organizationId,

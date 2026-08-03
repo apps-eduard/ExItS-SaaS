@@ -1,6 +1,7 @@
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Payments;
 using ExItS.Platform.Domain.Products;
 
 namespace ExItS.Platform.Domain.Subscriptions;
@@ -26,6 +27,12 @@ public sealed class Subscription
     public DateTimeOffset? CancelledAtUtc { get; private set; }
     public DateTimeOffset? PastDueAtUtc { get; private set; }
     public DateTimeOffset? ExpiredAtUtc { get; private set; }
+    public BillingCycle? BillingCycle { get; private set; }
+    public decimal? AgreedPrice { get; private set; }
+    public string? CurrencyCode { get; private set; }
+    public DateTimeOffset? PriceEffectiveFromUtc { get; private set; }
+    public PlanId? PendingPlanId { get; private set; }
+    public DateTimeOffset? PendingPlanEffectiveAtUtc { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
     public int Version { get; private set; }
@@ -42,6 +49,12 @@ public sealed class Subscription
         DateTimeOffset? trialEndUtc,
         DateTimeOffset? paidPeriodStartUtc,
         DateTimeOffset? paidPeriodEndUtc,
+        BillingCycle? billingCycle,
+        decimal? agreedPrice,
+        string? currencyCode,
+        DateTimeOffset? priceEffectiveFromUtc,
+        PlanId? pendingPlanId,
+        DateTimeOffset? pendingPlanEffectiveAtUtc,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         int version)
@@ -57,6 +70,12 @@ public sealed class Subscription
         TrialEndUtc = trialEndUtc;
         PaidPeriodStartUtc = paidPeriodStartUtc;
         PaidPeriodEndUtc = paidPeriodEndUtc;
+        BillingCycle = billingCycle;
+        AgreedPrice = agreedPrice;
+        CurrencyCode = currencyCode;
+        PriceEffectiveFromUtc = priceEffectiveFromUtc;
+        PendingPlanId = pendingPlanId;
+        PendingPlanEffectiveAtUtc = pendingPlanEffectiveAtUtc;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
         Version = version;
@@ -97,7 +116,7 @@ public sealed class Subscription
         }
 
         var trialEnd = utcNow.Add(trialDefinition.Duration);
-        return new Subscription(
+        var subscription = new Subscription(
             id ?? SubscriptionId.New(),
             organizationId,
             plan.ProductCode,
@@ -109,9 +128,16 @@ public sealed class Subscription
             trialEnd,
             paidPeriodStartUtc: null,
             paidPeriodEndUtc: null,
+            billingCycle: Subscriptions.BillingCycle.Monthly,
+            agreedPrice: plan.MonthlyPrice,
+            currencyCode: plan.CurrencyCode,
+            priceEffectiveFromUtc: utcNow,
+            pendingPlanId: null,
+            pendingPlanEffectiveAtUtc: null,
             utcNow,
             utcNow,
             version: 1);
+        return subscription;
     }
 
     public static Subscription ActivatePaid(
@@ -120,6 +146,7 @@ public sealed class Subscription
         PlanVersion planVersion,
         DateTimeOffset periodStartUtc,
         DateTimeOffset periodEndUtc,
+        BillingCycle billingCycle,
         DateTimeOffset utcNow,
         SubscriptionId? id = null)
     {
@@ -157,6 +184,12 @@ public sealed class Subscription
             trialEndUtc: null,
             periodStartUtc,
             periodEndUtc,
+            billingCycle,
+            plan.PriceForCycle(billingCycle),
+            plan.CurrencyCode,
+            utcNow,
+            pendingPlanId: null,
+            pendingPlanEffectiveAtUtc: null,
             utcNow,
             utcNow,
             version: 1);
@@ -179,6 +212,12 @@ public sealed class Subscription
         DateTimeOffset? cancelledAtUtc,
         DateTimeOffset? pastDueAtUtc,
         DateTimeOffset? expiredAtUtc,
+        BillingCycle? billingCycle,
+        decimal? agreedPrice,
+        string? currencyCode,
+        DateTimeOffset? priceEffectiveFromUtc,
+        PlanId? pendingPlanId,
+        DateTimeOffset? pendingPlanEffectiveAtUtc,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         int version)
@@ -195,6 +234,12 @@ public sealed class Subscription
             trialEndUtc,
             paidPeriodStartUtc,
             paidPeriodEndUtc,
+            billingCycle,
+            agreedPrice,
+            currencyCode,
+            priceEffectiveFromUtc,
+            pendingPlanId,
+            pendingPlanEffectiveAtUtc,
             createdAtUtc,
             updatedAtUtc,
             version);
@@ -214,6 +259,33 @@ public sealed class Subscription
             or SubscriptionStatus.GracePeriod
             or SubscriptionStatus.PastDue
             or SubscriptionStatus.Suspended;
+
+    public void ActivateFromTrial(
+        DateTimeOffset periodStartUtc,
+        DateTimeOffset periodEndUtc,
+        BillingCycle billingCycle,
+        Plan plan,
+        DateTimeOffset utcNow)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        DomainTime.EnsureUtc(utcNow);
+        DomainTime.EnsureUtc(periodStartUtc);
+        DomainTime.EnsureUtc(periodEndUtc);
+        if (periodEndUtc <= periodStartUtc)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidEffectiveRange,
+                "Paid period end must be after start.");
+        }
+
+        TransitionTo(SubscriptionStatus.Active, utcNow);
+        PaidPeriodStartUtc = periodStartUtc;
+        PaidPeriodEndUtc = periodEndUtc;
+        BillingCycle = billingCycle;
+        AgreedPrice = plan.PriceForCycle(billingCycle);
+        CurrencyCode = plan.CurrencyCode;
+        PriceEffectiveFromUtc = utcNow;
+    }
 
     public void ActivateFromTrial(DateTimeOffset periodStartUtc, DateTimeOffset periodEndUtc, DateTimeOffset utcNow)
     {
@@ -386,6 +458,83 @@ public sealed class Subscription
 
         PlanId = plan.Id;
         PlanVersionId = planVersion.Id;
+        UpdatedAtUtc = utcNow;
+        Version++;
+    }
+
+    public void ApplyImmediatePlanUpgrade(
+        Plan newPlan,
+        PlanVersion version,
+        BillingCycle cycle,
+        DateTimeOffset utcNow)
+    {
+        ArgumentNullException.ThrowIfNull(newPlan);
+        ArgumentNullException.ThrowIfNull(version);
+        DomainTime.EnsureUtc(utcNow);
+        EnsureSameProduct(ProductCode, newPlan.ProductCode, version.ProductCode);
+        if (version.PlanId != newPlan.Id || version.Status != PlanVersionStatus.Published)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPlanVersionTransition,
+                "Plan upgrade requires a published plan version.");
+        }
+
+        PlanId = newPlan.Id;
+        PlanVersionId = version.Id;
+        BillingCycle = cycle;
+        AgreedPrice = newPlan.PriceForCycle(cycle);
+        CurrencyCode = newPlan.CurrencyCode;
+        PriceEffectiveFromUtc = utcNow;
+        PendingPlanId = null;
+        PendingPlanEffectiveAtUtc = null;
+        UpdatedAtUtc = utcNow;
+        Version++;
+    }
+
+    public void SchedulePlanDowngrade(PlanId pendingPlanId, DateTimeOffset effectiveAt, DateTimeOffset utcNow)
+    {
+        ArgumentNullException.ThrowIfNull(pendingPlanId);
+        DomainTime.EnsureUtc(utcNow);
+        DomainTime.EnsureUtc(effectiveAt);
+
+        PendingPlanId = pendingPlanId;
+        PendingPlanEffectiveAtUtc = effectiveAt;
+        UpdatedAtUtc = utcNow;
+        Version++;
+    }
+
+    public void ApplyPendingPlanChange(
+        Plan newPlan,
+        PlanVersion version,
+        BillingCycle cycle,
+        DateTimeOffset utcNow)
+    {
+        ArgumentNullException.ThrowIfNull(newPlan);
+        ArgumentNullException.ThrowIfNull(version);
+        DomainTime.EnsureUtc(utcNow);
+        EnsureSameProduct(ProductCode, newPlan.ProductCode, version.ProductCode);
+        if (version.PlanId != newPlan.Id || version.Status != PlanVersionStatus.Published)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPlanVersionTransition,
+                "Pending plan change requires a published plan version.");
+        }
+
+        if (PendingPlanId is null || PendingPlanId != newPlan.Id)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidSubscriptionTransition,
+                "No matching pending plan change for the requested plan.");
+        }
+
+        PlanId = newPlan.Id;
+        PlanVersionId = version.Id;
+        BillingCycle = cycle;
+        AgreedPrice = newPlan.PriceForCycle(cycle);
+        CurrencyCode = newPlan.CurrencyCode;
+        PriceEffectiveFromUtc = utcNow;
+        PendingPlanId = null;
+        PendingPlanEffectiveAtUtc = null;
         UpdatedAtUtc = utcNow;
         Version++;
     }

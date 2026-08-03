@@ -267,6 +267,22 @@ internal sealed class SubscriptionRepository : ISubscriptionRepository
                      && ActiveLikeStatuses.Contains(s.Status),
                 cancellationToken);
 
+    public async Task<IReadOnlyList<Subscription>> ListDuePendingPlanChangesAsync(
+        DateTimeOffset asOfUtc,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await _db.Subscriptions
+            .AsNoTracking()
+            .Where(s => s.PendingPlanId != null
+                        && s.PendingPlanEffectiveAtUtc != null
+                        && s.PendingPlanEffectiveAtUtc <= asOfUtc
+                        && ActiveLikeStatuses.Contains(s.Status))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return records.Select(SubscriptionEntityMapper.ToDomain).ToList();
+    }
+
     public Task AddAsync(Subscription subscription, CancellationToken cancellationToken = default)
     {
         _db.Subscriptions.Add(SubscriptionEntityMapper.ToRecord(subscription));

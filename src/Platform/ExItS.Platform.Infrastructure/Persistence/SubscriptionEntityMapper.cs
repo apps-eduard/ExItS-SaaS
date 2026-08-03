@@ -26,6 +26,12 @@ internal static class SubscriptionEntityMapper
             record.CancelledAtUtc,
             record.PastDueAtUtc,
             record.ExpiredAtUtc,
+            ParseBillingCycle(record.BillingCycle),
+            record.AgreedPrice,
+            record.CurrencyCode,
+            record.PriceEffectiveFromUtc,
+            record.PendingPlanId is null ? null : PlanId.From(record.PendingPlanId.Value),
+            record.PendingPlanEffectiveAtUtc,
             record.CreatedAtUtc,
             record.UpdatedAtUtc,
             record.AggregateVersion);
@@ -49,6 +55,12 @@ internal static class SubscriptionEntityMapper
             CancelledAtUtc = subscription.CancelledAtUtc,
             PastDueAtUtc = subscription.PastDueAtUtc,
             ExpiredAtUtc = subscription.ExpiredAtUtc,
+            BillingCycle = subscription.BillingCycle?.ToString(),
+            AgreedPrice = subscription.AgreedPrice,
+            CurrencyCode = subscription.CurrencyCode,
+            PriceEffectiveFromUtc = subscription.PriceEffectiveFromUtc,
+            PendingPlanId = subscription.PendingPlanId?.Value,
+            PendingPlanEffectiveAtUtc = subscription.PendingPlanEffectiveAtUtc,
             CreatedAtUtc = subscription.CreatedAtUtc,
             UpdatedAtUtc = subscription.UpdatedAtUtc,
             AggregateVersion = subscription.Version
@@ -56,6 +68,8 @@ internal static class SubscriptionEntityMapper
 
     public static void ApplyToRecord(Subscription subscription, SubscriptionRecord record)
     {
+        record.PlanId = subscription.PlanId.Value;
+        record.PlanVersionId = subscription.PlanVersionId.Value;
         record.Status = subscription.Status.ToString();
         record.TrialStartUtc = subscription.TrialStartUtc;
         record.TrialEndUtc = subscription.TrialEndUtc;
@@ -66,7 +80,16 @@ internal static class SubscriptionEntityMapper
         record.CancelledAtUtc = subscription.CancelledAtUtc;
         record.PastDueAtUtc = subscription.PastDueAtUtc;
         record.ExpiredAtUtc = subscription.ExpiredAtUtc;
+        record.BillingCycle = subscription.BillingCycle?.ToString();
+        record.AgreedPrice = subscription.AgreedPrice;
+        record.CurrencyCode = subscription.CurrencyCode;
+        record.PriceEffectiveFromUtc = subscription.PriceEffectiveFromUtc;
+        record.PendingPlanId = subscription.PendingPlanId?.Value;
+        record.PendingPlanEffectiveAtUtc = subscription.PendingPlanEffectiveAtUtc;
         record.UpdatedAtUtc = subscription.UpdatedAtUtc;
         record.AggregateVersion = subscription.Version;
     }
+
+    private static BillingCycle? ParseBillingCycle(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : Enum.Parse<BillingCycle>(value);
 }

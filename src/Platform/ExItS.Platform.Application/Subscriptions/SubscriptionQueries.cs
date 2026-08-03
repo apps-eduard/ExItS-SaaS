@@ -1,5 +1,6 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Domain.Subscriptions;
@@ -26,6 +27,16 @@ public sealed record SubscriptionDto(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc,
     int Version,
+    string? BillingCycle = null,
+    decimal? AgreedPrice = null,
+    string? CurrencyCode = null,
+    DateTimeOffset? PriceEffectiveFromUtc = null,
+    Guid? PendingPlanId = null,
+    string? PendingPlanKey = null,
+    string? PendingPlanDisplayName = null,
+    DateTimeOffset? PendingPlanEffectiveAtUtc = null,
+    DateTimeOffset? CurrentPeriodStartUtc = null,
+    DateTimeOffset? CurrentPeriodEndUtc = null,
     string? OrganizationDisplayName = null,
     string? ProductDisplayName = null,
     string? PlanDisplayName = null,
@@ -207,6 +218,12 @@ public sealed class SubscriptionQueryService
         var org = await _organizations.GetByIdAsync(subscription.OrganizationId, cancellationToken).ConfigureAwait(false);
         var product = await _products.GetByCodeAsync(subscription.ProductCode, cancellationToken).ConfigureAwait(false);
         var plan = await _plans.GetByIdAsync(subscription.PlanId, cancellationToken).ConfigureAwait(false);
+        Plan? pendingPlan = null;
+        if (subscription.PendingPlanId is not null)
+        {
+            pendingPlan = await _plans.GetByIdAsync(subscription.PendingPlanId, cancellationToken).ConfigureAwait(false);
+        }
+
         return new SubscriptionDto(
             subscription.Id.Value,
             subscription.OrganizationId.Value,
@@ -227,6 +244,16 @@ public sealed class SubscriptionQueryService
             subscription.CreatedAtUtc,
             subscription.UpdatedAtUtc,
             subscription.Version,
+            BillingCycle: subscription.BillingCycle?.ToString(),
+            AgreedPrice: subscription.AgreedPrice,
+            CurrencyCode: subscription.CurrencyCode,
+            PriceEffectiveFromUtc: subscription.PriceEffectiveFromUtc,
+            PendingPlanId: subscription.PendingPlanId?.Value,
+            PendingPlanKey: pendingPlan?.PlanKey,
+            PendingPlanDisplayName: pendingPlan?.DisplayName,
+            PendingPlanEffectiveAtUtc: subscription.PendingPlanEffectiveAtUtc,
+            CurrentPeriodStartUtc: subscription.PaidPeriodStartUtc,
+            CurrentPeriodEndUtc: subscription.PaidPeriodEndUtc,
             OrganizationDisplayName: org?.DisplayName,
             ProductDisplayName: product?.DisplayName,
             PlanDisplayName: plan?.DisplayName,

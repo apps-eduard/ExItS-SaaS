@@ -79,7 +79,10 @@ internal static class CatalogEntityMapper
             record.ExportEnabled,
             record.TrialAllowed,
             record.DefaultTrialDays < 0 ? 14 : record.DefaultTrialDays,
-            record.SortOrder);
+            record.SortOrder,
+            record.MonthlyPrice,
+            record.AnnualPrice,
+            string.IsNullOrWhiteSpace(record.CurrencyCode) ? "PHP" : record.CurrencyCode);
 
     public static PlanRecord ToRecord(Plan plan) =>
         new()
@@ -98,6 +101,9 @@ internal static class CatalogEntityMapper
             TrialAllowed = plan.TrialAllowed,
             DefaultTrialDays = plan.DefaultTrialDays,
             SortOrder = plan.SortOrder,
+            MonthlyPrice = plan.MonthlyPrice,
+            AnnualPrice = plan.AnnualPrice,
+            CurrencyCode = plan.CurrencyCode,
             CreatedAtUtc = plan.CreatedAtUtc,
             UpdatedAtUtc = plan.UpdatedAtUtc
         };
@@ -115,6 +121,9 @@ internal static class CatalogEntityMapper
         record.TrialAllowed = plan.TrialAllowed;
         record.DefaultTrialDays = plan.DefaultTrialDays;
         record.SortOrder = plan.SortOrder;
+        record.MonthlyPrice = plan.MonthlyPrice;
+        record.AnnualPrice = plan.AnnualPrice;
+        record.CurrencyCode = plan.CurrencyCode;
         record.UpdatedAtUtc = plan.UpdatedAtUtc;
     }
 

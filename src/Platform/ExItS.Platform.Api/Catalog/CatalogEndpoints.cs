@@ -531,6 +531,9 @@ internal static class CatalogEndpoints
                 body.TrialAllowed,
                 body.DefaultTrialDays,
                 body.SortOrder,
+                body.MonthlyPrice,
+                body.AnnualPrice,
+                body.CurrencyCode,
                 ct).ConfigureAwait(false);
             if (result.IsSuccess)
             {
@@ -613,6 +616,9 @@ internal static class CatalogEndpoints
                 body.TrialAllowed,
                 body.DefaultTrialDays,
                 body.SortOrder,
+                body.MonthlyPrice,
+                body.AnnualPrice,
+                body.CurrencyCode,
                 body.ExpectedUpdatedAtUtc,
                 ct).ConfigureAwait(false);
             if (result.IsSuccess)
@@ -1109,7 +1115,10 @@ internal static class CatalogEndpoints
         exportEnabled = plan.ExportEnabled,
         trialAllowed = plan.TrialAllowed,
         defaultTrialDays = plan.DefaultTrialDays,
-        sortOrder = plan.SortOrder
+        sortOrder = plan.SortOrder,
+        monthlyPrice = plan.MonthlyPrice,
+        annualPrice = plan.AnnualPrice,
+        currencyCode = plan.CurrencyCode
     };
 
     private static object MapPlanVersion(PlanVersion version) => new
@@ -1173,7 +1182,10 @@ internal sealed record CreatePlanRequest(
     bool ExportEnabled = false,
     bool TrialAllowed = true,
     int DefaultTrialDays = 14,
-    int SortOrder = 100);
+    int SortOrder = 100,
+    decimal MonthlyPrice = 0m,
+    decimal AnnualPrice = 0m,
+    string CurrencyCode = "PHP");
 internal sealed record UpdatePlanCommercialRequest(
     string DisplayName,
     string? Description,
@@ -1185,6 +1197,9 @@ internal sealed record UpdatePlanCommercialRequest(
     bool TrialAllowed,
     int DefaultTrialDays,
     int SortOrder,
+    decimal MonthlyPrice,
+    decimal AnnualPrice,
+    string CurrencyCode,
     DateTimeOffset? ExpectedUpdatedAtUtc = null);
 internal sealed record FeatureGrantRequest(string FeatureCode, bool Enabled, int? NumericLimit = null);
 

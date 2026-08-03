@@ -1,0 +1,168 @@
+@page "/admin/personal/start-business"
+@using AntDesign
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IPlatformApiClient Api
+@inject IMessageService Message
+@inject IStringLocalizer<AdminResources> L
+@inject NavigationManager Nav
+@inject AdminShellContext Shell
+
+@if (!_ready)
+{
+    <div style="padding:2rem;text-align:center;"><Spin /></div>
+}
+else if (!Shell.IsPersonalShell)
+{
+    <Result Status="@ResultStatus.Warning" Title="@L["Personal_ShellRequired"]">
+        <Extra>
+            <Button Type="@ButtonType.Primary" OnClick='() => Nav.NavigateTo("/admin")'>@L["Nav_Dashboard"]</Button>
+        </Extra>
+    </Result>
+}
+else
+{
+    <PageHeader Class="exits-page-header" Title="Start a Business" SubTitle="Create an organization and choose a commercial plan. Your personal account stays separate.">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem Href="/admin">@L["Nav_Home"]</BreadcrumbItem>
+                <BreadcrumbItem>Start a Business</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+    </PageHeader>
+
+    @if (_completed)
+    {
+        <Result Status="@ResultStatus.Success" Title="Business created" SubTitle="Select your organization profile to continue operating in Organization scope.">
+            <Extra>
+                <Space>
+                    <Button Type="@ButtonType.Primary" OnClick='() => Nav.NavigateTo("/admin/account-profiles")'>Choose organization profile</Button>
+                    <Button OnClick='() => Nav.NavigateTo("/admin")'>@L["Nav_Dashboard"]</Button>
+                </Space>
+            </Extra>
+        </Result>
+    }
+    else
+    {
+        <FormValidationSummary Title="Start business failed" Message="@_formError" IsConflict="_formConflict" />
+        <Card Size="@CardSize.Small" Style="max-width:720px;">
+            <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                <div>
+                    <label class="ant-form-item-label">Organization name</label>
+                    <Input @bind-Value="_displayName" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label">Slug</label>
+                    <Input @bind-Value="_slug" Size="@InputSize.Small" Disabled="_busy" Placeholder="my-store" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label">Plan</label>
+                    <Select TItemValue="string" TItem="string" Value="@_planKey" ValueChanged="OnPlanChangedAsync" Style="width:100%;" Disabled="_busy">
+                        <SelectOptions>
+                            @foreach (var plan in _plans)
+                            {
+                                <SelectOption TItemValue="string" TItem="string" Value="@(plan.PlanKey ?? plan.Code)" Label="@plan.DisplayName" />
+                            }
+                        </SelectOptions>
+                    </Select>
+                </div>
+                <Space Wrap>
+                    <Select TItemValue="string" TItem="string" @bind-Value="_billingCycle" Style="width:160px;" Disabled="_busy">
+                        <SelectOptions>
+                            <SelectOption TItemValue="string" TItem="string" Value="@("Monthly")" Label="Monthly" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("Annual")" Label="Annual" />
+                        </SelectOptions>
+                    </Select>
+                    <Checkbox @bind-Checked="_startAsTrial" Disabled="_busy">Start as trial</Checkbox>
+                    <Checkbox @bind-Checked="_payNow" Disabled="_busy || _startAsTrial">Pay now</Checkbox>
+                </Space>
+                @if (_selectedPlan is not null)
+                {
+                    <Alert Type="@AlertType.Info" ShowIcon="true"
+                           Message="@($"Selected: {_selectedPlan.DisplayName} — {(_billingCycle == "Annual" ? _selectedPlan.AnnualPrice : _selectedPlan.MonthlyPrice)} {_selectedPlan.CurrencyCode} / {_billingCycle.ToLowerInvariant()}")" />
+                }
+                <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="SubmitAsync">Create business</Button>
+            </Space>
+        </Card>
+    }
+}
+
+@code {
+    private bool _ready;
+    private bool _busy;
+    private bool _completed;
+    private string? _formError;
+    private bool _formConflict;
+    private string _displayName = "";
+    private string _slug = "";
+    private string _planKey = "starter";
+    private string _billingCycle = "Monthly";
+    private bool _startAsTrial = true;
+    private bool _payNow;
+    private List<PlanDto> _plans = [];
+    private PlanDto? _selectedPlan;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Shell.EnsureLoadedAsync();
+        _ready = true;
+        if (!Shell.IsPersonalShell)
+        {
+            return;
+        }
+
+        var plans = await Api.GetPlansAsync(productCode: "pinoy-business-pos", status: "Active", pageSize: 20, sortBy: "SortOrder", sortDesc: false);
+        if (plans is { IsSuccess: true, Data: not null })
+        {
+            _plans = plans.Data.Items.OrderBy(p => p.SortOrder).ToList();
+            _selectedPlan = _plans.FirstOrDefault(p => string.Equals(p.PlanKey ?? p.Code, _planKey, StringComparison.OrdinalIgnoreCase))
+                ?? _plans.FirstOrDefault();
+            if (_selectedPlan is not null)
+            {
+                _planKey = _selectedPlan.PlanKey ?? _selectedPlan.Code;
+            }
+        }
+    }
+
+    private Task OnPlanChangedAsync(string planKey)
+    {
+        _planKey = planKey;
+        _selectedPlan = _plans.FirstOrDefault(p => string.Equals(p.PlanKey ?? p.Code, planKey, StringComparison.OrdinalIgnoreCase));
+        return Task.CompletedTask;
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        _formError = null;
+        _formConflict = false;
+        if (_startAsTrial)
+        {
+            _payNow = false;
+        }
+
+        var result = await Api.StartBusinessAsync(new StartBusinessRequest(
+            _displayName.Trim(),
+            _slug.Trim().ToLowerInvariant(),
+            ProductCode: "pinoy-business-pos",
+            PlanKey: _planKey,
+            BillingCycle: _billingCycle,
+            StartAsTrial: _startAsTrial,
+            PayNow: _payNow));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        _completed = true;
+        await Message.SuccessAsync("Organization created. Choose your organization profile to continue.");
+    }
+}

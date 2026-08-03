@@ -372,11 +372,14 @@ Platform staff should not know or set the user’s permanent password.
 Verified user
 → selects Start a Business
 → enters organization details
+→ selects Plan (starter / business / pro), Monthly or Annual billing, Trial or Pay Now
 → confirms ownership
 → organization is created
 → Organization Account profile is created
 → Owner membership is created
+→ organization-scoped subscription is created (not on the Personal account)
 → product entitlement is provisioned where approved
+→ user must explicitly select the Organization account profile before operating in Organization scope
 ```
 
 ### 7.2 Ownership Rule

@@ -13,6 +13,7 @@ using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Infrastructure.Authorization;
 using ExItS.Platform.Infrastructure.Identity;
 using ExItS.Platform.Infrastructure.Persistence;
+using ExItS.Platform.Infrastructure.Payments;
 using ExItS.Platform.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -40,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<IPlatformOrganizationRepository, PlatformOrganizationRepository>();
         services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
         services.AddScoped<ISaaSPaymentRepository, SaaSPaymentRepository>();
+        services.AddScoped<IProviderPaymentRepository, ProviderPaymentRepository>();
         services.AddScoped<IFeatureOverrideRepository, FeatureOverrideRepository>();
         services.AddScoped<IEntitlementSnapshotRepository, EntitlementSnapshotRepository>();
         services.AddScoped<IAdminPortfolioReadStore, AdminPortfolioReadStore>();

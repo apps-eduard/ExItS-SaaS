@@ -24,7 +24,10 @@ public static class MvpPosPlanCatalog
         bool ExportEnabled,
         bool TrialAllowed,
         int DefaultTrialDays,
-        int SortOrder);
+        int SortOrder,
+        decimal MonthlyPrice,
+        decimal AnnualPrice,
+        string CurrencyCode = "PHP");
 
     public static readonly IReadOnlyList<Spec> Plans =
     [
@@ -39,7 +42,9 @@ public static class MvpPosPlanCatalog
             ExportEnabled: false,
             TrialAllowed: true,
             DefaultTrialDays: 14,
-            SortOrder: 10),
+            SortOrder: 10,
+            MonthlyPrice: 299m,
+            AnnualPrice: 2990m),
         new(
             MvpPosPlanCodes.Business,
             "Business",
@@ -51,7 +56,9 @@ public static class MvpPosPlanCatalog
             ExportEnabled: true,
             TrialAllowed: true,
             DefaultTrialDays: 14,
-            SortOrder: 20),
+            SortOrder: 20,
+            MonthlyPrice: 699m,
+            AnnualPrice: 6990m),
         new(
             MvpPosPlanCodes.Pro,
             "Pro",
@@ -63,6 +70,8 @@ public static class MvpPosPlanCatalog
             ExportEnabled: true,
             TrialAllowed: true,
             DefaultTrialDays: 14,
-            SortOrder: 30)
+            SortOrder: 30,
+            MonthlyPrice: 1499m,
+            AnnualPrice: 14990m)
     ];
 }
