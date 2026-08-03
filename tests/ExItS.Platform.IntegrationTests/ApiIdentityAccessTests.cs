@@ -216,13 +216,13 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
 
         var add = await _client.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{seeded.OrganizationId}/members",
-            new { userId, role = "OrganizationMember" });
+            new { userId, role = "OrganizationMember", reason = "integration-test-link" });
         Assert.Equal(HttpStatusCode.Created, add.StatusCode);
         var membershipId = (await add.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 
         var duplicateMembership = await _client.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{seeded.OrganizationId}/members",
-            new { userId, role = "OrganizationOwner" });
+            new { userId, role = "OrganizationOwner", reason = "integration-test-link" });
         Assert.Equal(HttpStatusCode.Conflict, duplicateMembership.StatusCode);
 
         var grant = await _client.PostAsJsonAsync(
@@ -382,7 +382,7 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
 
         var add = await _client.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/members",
-            new { userId, role = "OrganizationOwner" });
+            new { userId, role = "OrganizationOwner", reason = "integration-test-link" });
         Assert.Equal(HttpStatusCode.Created, add.StatusCode);
         var membershipId = (await add.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 

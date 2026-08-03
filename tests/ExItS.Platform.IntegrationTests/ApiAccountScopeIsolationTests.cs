@@ -123,7 +123,7 @@ public sealed class ApiAccountScopeIsolationTests(PostgreSqlFixture fixture) : I
         var organizationId = (await org.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/members",
-            new { userId, role = "OrganizationMember" })).EnsureSuccessStatusCode();
+            new { userId, role = "OrganizationMember", reason = "integration-test-link" })).EnsureSuccessStatusCode();
 
         var login = await LoginAsync(username, password);
         Assert.Equal("Organization", login.GetProperty("accountClass").GetString());
@@ -170,7 +170,7 @@ public sealed class ApiAccountScopeIsolationTests(PostgreSqlFixture fixture) : I
         var organizationId = (await org.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/members",
-            new { userId, role = "OrganizationOwner" })).EnsureSuccessStatusCode();
+            new { userId, role = "OrganizationOwner", reason = "integration-test-link" })).EnsureSuccessStatusCode();
 
         var login = await LoginAsync(username, password);
         Assert.Equal("Organization", login.GetProperty("accountClass").GetString());

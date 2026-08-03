@@ -56,7 +56,7 @@ public sealed class ApiOrganizationStaffCustomerSeparationTests(PostgreSqlFixtur
         var organizationId = (await org.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/members",
-            new { userId, role = "OrganizationOwner" })).EnsureSuccessStatusCode();
+            new { userId, role = "OrganizationOwner", reason = "integration-test-link" })).EnsureSuccessStatusCode();
 
         var login = await _client.PostAsJsonAsync(
             "/api/v1/platform/auth/login",

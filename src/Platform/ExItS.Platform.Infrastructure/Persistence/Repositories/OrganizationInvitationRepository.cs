@@ -51,6 +51,19 @@ internal sealed class OrganizationInvitationRepository : IOrganizationInvitation
         return record is null ? null : ToDomain(record);
     }
 
+    public async Task<IReadOnlyList<OrganizationInvitation>> ListPendingByNormalizedEmailAsync(
+        string normalizedEmail,
+        CancellationToken cancellationToken = default)
+    {
+        var pending = nameof(InvitationStatus.Pending);
+        var records = await _db.OrganizationInvitations.AsNoTracking()
+            .Where(i => i.NormalizedEmail == normalizedEmail && i.Status == pending)
+            .OrderByDescending(i => i.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
+    }
+
     public async Task<(IReadOnlyList<OrganizationInvitation> Items, int TotalCount)> ListByOrganizationAsync(
         PlatformOrganizationId organizationId,
         InvitationStatus? status,

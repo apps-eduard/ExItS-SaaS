@@ -17,6 +17,10 @@ public interface IOrganizationInvitationRepository
         string normalizedEmail,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<OrganizationInvitation>> ListPendingByNormalizedEmailAsync(
+        string normalizedEmail,
+        CancellationToken cancellationToken = default);
+
     Task<(IReadOnlyList<OrganizationInvitation> Items, int TotalCount)> ListByOrganizationAsync(
         PlatformOrganizationId organizationId,
         InvitationStatus? status,

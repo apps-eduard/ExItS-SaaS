@@ -81,10 +81,18 @@ internal sealed class SmtpPlatformAuthOutboundMessageSink(
                 "Verify your ExItS account",
                 $"""
                  <p>Welcome to ExItS.</p>
-                 <p>Confirm your email and create your password to activate your Personal Account.</p>
+                 <p>Confirm your email and create your password to activate your account.</p>
                  <p><a href="{baseUrl}/admin/activate-account?token={encodedToken}">Activate your account</a></p>
                  <p>This link expires at {message.ExpiresAtUtc:u} (UTC).</p>
-                 <p>If you did not register, you can ignore this message.</p>
+                 <p>If you did not expect this message, you can ignore it.</p>
+                 """),
+            PlatformAuthOutboundMessageKinds.OrganizationStaffInvitation => (
+                "You are invited to join an organization on ExItS",
+                $"""
+                 <p>You have been invited to join an organization as staff on ExItS.</p>
+                 <p><a href="{baseUrl}/admin/accept-organization-invitation?token={encodedToken}">Accept invitation</a></p>
+                 <p>Sign in with the invited email address if prompted.</p>
+                 <p>This link expires at {message.ExpiresAtUtc:u} (UTC).</p>
                  """),
             PlatformAuthOutboundMessageKinds.PasswordReset => (
                 "Reset your ExItS password",

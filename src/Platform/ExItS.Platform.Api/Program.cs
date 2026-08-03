@@ -219,6 +219,7 @@ builder.Services.AddScoped<CreateOrganizationInvitation>();
 builder.Services.AddScoped<ResendOrganizationInvitation>();
 builder.Services.AddScoped<RevokeOrganizationInvitation>();
 builder.Services.AddScoped<AcceptOrganizationInvitation>();
+builder.Services.AddScoped<AcceptPendingOrganizationInvitationsForUser>();
 builder.Services.AddScoped<BusinessCustomerQueryService>();
 builder.Services.AddScoped<CreateBusinessCustomer>();
 builder.Services.AddScoped<UpdateBusinessCustomer>();

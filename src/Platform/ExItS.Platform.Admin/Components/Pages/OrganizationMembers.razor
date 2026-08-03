@@ -1,5 +1,6 @@
 @page "/admin/organizations/{OrganizationId:guid}/members"
 @using AntDesign
+@using ExItS.Platform.Admin.Models
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject IPlatformApiClient Api
@@ -76,23 +77,72 @@ else
         <Button Size="@ButtonSize.Small" OnClick="@(() => Nav.NavigateTo($"/admin/organizations/{OrganizationId}/invitations"))">
             @L["OrgMembers_TabInvitations"]
         </Button>
-        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="() => _showAdd = !_showAdd">
-            @(_showAdd ? L["Common_Cancel"] : L["OrgMembers_AddMember"])
+        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ToggleInvite">
+            @(_showInvite ? L["Common_Cancel"] : L["OrgMembers_InviteStaff"])
         </Button>
+        @if (CanUseAdvancedIdentityLink)
+        {
+            <Button Size="@ButtonSize.Small" Type="@ButtonType.Default" OnClick="ToggleAdvancedLink">
+                @(_showAdvancedLink ? L["Common_Cancel"] : L["OrgMembers_LinkExistingIdentity"])
+            </Button>
+        }
     </Space>
 
-    @if (_showAdd)
+    @if (_showInvite)
     {
-        <Card Size="@CardSize.Small" Title="@L["OrgMembers_AddSection"]" Style="margin-bottom:12px;">
+        <Card Size="@CardSize.Small" Title="@L["OrgMembers_InviteSection"]" Style="margin-bottom:12px;">
+            <Alert Type="@AlertType.Info"
+                   ShowIcon="true"
+                   Message="@L["OrgMembers_InviteOwnerAuthority"]"
+                   Style="margin-bottom:12px;" />
+            <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                <StaffPersonFieldsForm Value="_invitePerson" Errors="_invitePersonErrors" IdPrefix="org-staff-invite" Disabled="_busy" />
+                <div>
+                    <label class="ant-form-item-label">@L["OrgMembers_OrgRole"]</label>
+                    <Select TItemValue="string" TItem="string" @bind-Value="_inviteRole" Size="@InputSize.Small" Style="width:100%;" Disabled="_busy">
+                        <SelectOptions>
+                            <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationMember")" Label="@L["OrgMembers_Role_Staff"]" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationOwner")" Label="@L["OrgMembers_Role_Owner"]" />
+                        </SelectOptions>
+                    </Select>
+                    @if (_fieldInviteRole is not null) { <span class="exits-field-error">@_fieldInviteRole</span> }
+                </div>
+                <div>
+                    <label class="ant-form-item-label">Branch <span class="exits-optional-hint">(optional)</span></label>
+                    <Input @bind-Value="_inviteBranch" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label">POS / product role <span class="exits-optional-hint">(optional)</span></label>
+                    <Select TItemValue="string" TItem="string" @bind-Value="_inviteProductRole" Size="@InputSize.Small" Style="width:100%;" AllowClear Disabled="_busy" Placeholder="Select product role">
+                        <SelectOptions>
+                            <SelectOption TItemValue="string" TItem="string" Value="@("Owner")" Label="POS Owner" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("Manager")" Label="Store Manager" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("Cashier")" Label="Cashier" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("Viewer")" Label="Reporting User" />
+                        </SelectOptions>
+                    </Select>
+                </div>
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="InviteStaffAsync">@L["OrgMembers_InviteStaff"]</Button>
+            </Space>
+        </Card>
+    }
+
+    @if (_showAdvancedLink && CanUseAdvancedIdentityLink)
+    {
+        <Card Size="@CardSize.Small" Title="@L["OrgMembers_LinkExistingIdentity"]" Style="margin-bottom:12px;">
+            <Alert Type="@AlertType.Warning"
+                   ShowIcon="true"
+                   Message="@L["OrgMembers_LinkExistingIdentityWarning"]"
+                   Style="margin-bottom:12px;" />
             <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
                 <div>
                     <label class="ant-form-item-label">@L["OrgMembers_UserId"]</label>
-                    <Input @bind-Value="_addUserId" Size="@InputSize.Small" Disabled="_busy" Placeholder="GUID" />
+                    <Input @bind-Value="_linkUserId" Size="@InputSize.Small" Disabled="_busy" Placeholder="GUID" />
                     @if (_fieldUserId is not null) { <span class="exits-field-error">@_fieldUserId</span> }
                 </div>
                 <div>
                     <label class="ant-form-item-label">@L["OrgMembers_OrgRole"]</label>
-                    <Select TItemValue="string" TItem="string" @bind-Value="_addRole" Size="@InputSize.Small" Style="width:100%;" Disabled="_busy">
+                    <Select TItemValue="string" TItem="string" @bind-Value="_linkRole" Size="@InputSize.Small" Style="width:100%;" Disabled="_busy">
                         <SelectOptions>
                             <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationMember")" Label="@L["OrgMembers_Role_Staff"]" />
                             <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationOwner")" Label="@L["OrgMembers_Role_Owner"]" />
@@ -100,7 +150,14 @@ else
                     </Select>
                     @if (_fieldAddRole is not null) { <span class="exits-field-error">@_fieldAddRole</span> }
                 </div>
-                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="AddMemberAsync">@L["OrgMembers_AddMember"]</Button>
+                <div>
+                    <label class="ant-form-item-label">@L["Common_Reason"]</label>
+                    <TextArea @bind-Value="_linkReason" Rows="3" Disabled="_busy" />
+                    @if (_fieldLinkReason is not null) { <span class="exits-field-error">@_fieldLinkReason</span> }
+                </div>
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Danger Loading="_busy" OnClick="LinkExistingIdentityAsync">
+                    @L["OrgMembers_LinkExistingIdentity"]
+                </Button>
             </Space>
         </Card>
     }
@@ -122,14 +179,14 @@ else
                RemoteDataSource
                OnPageIndexChange="OnMembersPageAsync"
                ScrollX="1200">
-            <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_User"]">
+            <PropertyColumn Property="c => c.DisplayName" Title="@L["OrgMembers_TabMembers"]">
                 @if (Shell.IsPlatformShell)
                 {
-                    <a href="/admin/users/@context.UserId">@(context.DisplayName ?? context.Username ?? context.UserId.ToString("D"))</a>
+                    <a href="/admin/users/@context.UserId">@(context.DisplayName ?? context.Username ?? "—")</a>
                 }
                 else
                 {
-                    @(context.DisplayName ?? context.Username ?? context.UserId.ToString("D"))
+                    @(context.DisplayName ?? context.Username ?? "—")
                 }
             </PropertyColumn>
             <PropertyColumn Property="c => c.Email" Title="@L["Common_Email"]" Ellipsis />
@@ -318,13 +375,22 @@ else
     private ApiCallResult<OrganizationDto>? _org;
     private ApiCallResult<PagedResult<OrganizationMembershipDto>>? _members;
     private string _status = "";
-    private string _addUserId = "";
-    private string _addRole = "OrganizationMember";
-    private bool _showAdd;
+    private readonly StaffPersonFieldsModel _invitePerson = new() { RequireEmailVerification = true };
+    private StaffPersonFieldErrors? _invitePersonErrors;
+    private string _inviteRole = "OrganizationMember";
+    private string _inviteBranch = "";
+    private string? _inviteProductRole;
+    private bool _showInvite;
+    private string _linkUserId = "";
+    private string _linkRole = "OrganizationMember";
+    private string _linkReason = "";
+    private bool _showAdvancedLink;
     private string? _formError;
     private bool _formConflict;
     private string? _fieldUserId;
     private string? _fieldAddRole;
+    private string? _fieldInviteRole;
+    private string? _fieldLinkReason;
     private bool _busy;
     private int _page = 1;
     private Guid? _loadedOrganizationId;
@@ -360,6 +426,11 @@ else
         || (Shell.IsOrganizationShell
             && Shell.SelectedOrganizationId == OrganizationId
             && IsOrgAdminMembership);
+
+    /// <summary>Raw GUID membership linking is Platform support only — never the Owner onboarding path.</summary>
+    private bool CanUseAdvancedIdentityLink =>
+        Shell.IsPlatformShell
+        && Permissions.HasPermission(PlatformPermissionCodes.ManageMemberships);
 
     private static string FormatOrgRole(string? role) => role switch
     {
@@ -436,28 +507,65 @@ else
         await ReloadMembersAsync();
     }
 
-    private async Task AddMemberAsync()
+    private void ToggleInvite()
+    {
+        _showInvite = !_showInvite;
+        if (_showInvite)
+        {
+            _showAdvancedLink = false;
+        }
+    }
+
+    private void ToggleAdvancedLink()
+    {
+        if (!CanUseAdvancedIdentityLink)
+        {
+            return;
+        }
+
+        _showAdvancedLink = !_showAdvancedLink;
+        if (_showAdvancedLink)
+        {
+            _showInvite = false;
+        }
+    }
+
+    private async Task InviteStaffAsync()
     {
         if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
         _formError = null;
         _formConflict = false;
-        _fieldUserId = null;
-        _fieldAddRole = null;
-        if (!Guid.TryParse(_addUserId, out var userId))
+        _fieldInviteRole = null;
+        _invitePersonErrors = null;
+
+        var validation = _invitePerson.Validate();
+        if (!validation.IsValid)
         {
-            _fieldUserId = L["OrgMembers_UserIdInvalid"];
+            _invitePersonErrors = validation.Errors;
             _busy = false;
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(_addRole))
+        if (string.IsNullOrWhiteSpace(_inviteRole))
         {
-            _fieldAddRole = L["OrgMembers_OrgRoleRequired"];
+            _fieldInviteRole = L["OrgMembers_OrgRoleRequired"];
             _busy = false;
             return;
         }
 
-        var result = await Api.AddOrganizationMemberAsync(OrganizationId, new AddMemberRequest(userId, _addRole));
+        var result = await Api.CreateOrganizationInvitationAsync(
+            OrganizationId,
+            new CreateInvitationRequest(
+                _invitePerson.Email.Trim(),
+                _inviteRole,
+                FirstName: _invitePerson.FirstName.Trim(),
+                LastName: _invitePerson.LastName.Trim(),
+                DisplayName: _invitePerson.ResolvedDisplayName(),
+                Phone: string.IsNullOrWhiteSpace(_invitePerson.Phone) ? null : _invitePerson.Phone.Trim(),
+                EmployeeCode: string.IsNullOrWhiteSpace(_invitePerson.EmployeeCode) ? null : _invitePerson.EmployeeCode.Trim(),
+                Branch: string.IsNullOrWhiteSpace(_inviteBranch) ? null : _inviteBranch.Trim(),
+                ProductRole: string.IsNullOrWhiteSpace(_inviteProductRole) ? null : _inviteProductRole,
+                RequireEmailVerification: _invitePerson.RequireEmailVerification));
         _busy = false;
         if (!result.IsSuccess)
         {
@@ -466,9 +574,62 @@ else
             return;
         }
 
-        await Message.SuccessAsync(L["OrgMembers_ToastAdded"].Value);
-        _addUserId = "";
-        _showAdd = false;
+        await Message.SuccessAsync(L["OrgMembers_ToastInvited"].Value);
+        _invitePerson.Clear();
+        _invitePerson.RequireEmailVerification = true;
+        _inviteBranch = "";
+        _inviteProductRole = null;
+        _inviteRole = "OrganizationMember";
+        _showInvite = false;
+        Nav.NavigateTo($"/admin/organizations/{OrganizationId}/invitations");
+    }
+
+    private async Task LinkExistingIdentityAsync()
+    {
+        if (!CanUseAdvancedIdentityLink || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        _formError = null;
+        _formConflict = false;
+        _fieldUserId = null;
+        _fieldAddRole = null;
+        _fieldLinkReason = null;
+
+        if (!Guid.TryParse(_linkUserId, out var userId))
+        {
+            _fieldUserId = L["OrgMembers_UserIdInvalid"];
+            _busy = false;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_linkRole))
+        {
+            _fieldAddRole = L["OrgMembers_OrgRoleRequired"];
+            _busy = false;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_linkReason) || _linkReason.Trim().Length < 8)
+        {
+            _fieldLinkReason = L["OrgMembers_LinkReasonRequired"];
+            _busy = false;
+            return;
+        }
+
+        var result = await Api.AddOrganizationMemberAsync(
+            OrganizationId,
+            new AddMemberRequest(userId, _linkRole, Reason: _linkReason.Trim()));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        await Message.SuccessAsync(L["OrgMembers_ToastLinked"].Value);
+        _linkUserId = "";
+        _linkReason = "";
+        _linkRole = "OrganizationMember";
+        _showAdvancedLink = false;
         await ReloadMembersAsync();
     }
 

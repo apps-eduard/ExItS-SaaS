@@ -526,7 +526,7 @@
   <data name="OrgMembers_Description" xml:space="preserve"><value>Organization Owner and Staff membership for this organization.</value></data>
   <data name="OrgMembers_Warning" xml:space="preserve"><value>Organization roles (Owner, Staff) are not product-local roles. Removing membership revokes product-access assignments for this organization.</value></data>
   <data name="OrgMembers_Loading" xml:space="preserve"><value>Loading organization…</value></data>
-  <data name="OrgMembers_AddSection" xml:space="preserve"><value>Add existing user</value></data>
+  <data name="OrgMembers_AddSection" xml:space="preserve"><value>Link existing identity (advanced)</value></data>
   <data name="OrgMembers_UserId" xml:space="preserve"><value>User ID</value></data>
   <data name="OrgMembers_OrgRole" xml:space="preserve"><value>Organization role</value></data>
   <data name="OrgMembers_OrgRoleRequired" xml:space="preserve"><value>Organization role is required (Owner or Staff).</value></data>
@@ -536,6 +536,12 @@
   <data name="OrgMembers_Role_Staff" xml:space="preserve"><value>Staff</value></data>
   <data name="OrgMembers_TargetStatus" xml:space="preserve"><value>Target status</value></data>
   <data name="OrgMembers_AddMember" xml:space="preserve"><value>Add staff</value></data>
+  <data name="OrgMembers_InviteStaff" xml:space="preserve"><value>Invite Staff</value></data>
+  <data name="OrgMembers_InviteOwnerAuthority" xml:space="preserve"><value>Organization Owners invite staff by person details. No User ID or GUID is required.</value></data>
+  <data name="OrgMembers_LinkExistingIdentity" xml:space="preserve"><value>Link Existing Identity</value></data>
+  <data name="OrgMembers_LinkExistingIdentityWarning" xml:space="preserve"><value>Platform support override. Requires a reason and is fully audited. Prefer Invite Staff for normal onboarding.</value></data>
+  <data name="OrgMembers_LinkReasonRequired" xml:space="preserve"><value>Enter a support reason (at least 8 characters).</value></data>
+  <data name="OrgMembers_ToastLinked" xml:space="preserve"><value>Existing identity linked to this organization (audited).</value></data>
   <data name="OrgMembers_LoadingMembers" xml:space="preserve"><value>Loading staff…</value></data>
   <data name="OrgMembers_Unavailable" xml:space="preserve"><value>Staff unavailable</value></data>
   <data name="OrgMembers_Empty" xml:space="preserve"><value>No staff memberships for this organization.</value></data>
@@ -545,13 +551,13 @@
   <data name="OrgMembers_TabMembers" xml:space="preserve"><value>Staff</value></data>
   <data name="OrgMembers_TabInvitations" xml:space="preserve"><value>Invitations</value></data>
   <data name="OrgMembers_TabProductAccess" xml:space="preserve"><value>Product access</value></data>
-  <data name="OrgMembers_Invite" xml:space="preserve"><value>Invite by email</value></data>
-  <data name="OrgMembers_InviteSection" xml:space="preserve"><value>Invite staff</value></data>
+  <data name="OrgMembers_Invite" xml:space="preserve"><value>Invite Staff</value></data>
+  <data name="OrgMembers_InviteSection" xml:space="preserve"><value>Invite Organization Staff</value></data>
   <data name="OrgMembers_InvitationsUnavailable" xml:space="preserve"><value>Invitations unavailable</value></data>
   <data name="OrgMembers_ExpiresUtc" xml:space="preserve"><value>Expires (UTC)</value></data>
   <data name="OrgMembers_Resend" xml:space="preserve"><value>Resend</value></data>
   <data name="OrgMembers_RevokeInviteConfirm" xml:space="preserve"><value>Revoke this pending invitation?</value></data>
-  <data name="OrgMembers_ToastInvited" xml:space="preserve"><value>Invitation created. Accept token is not shown in Admin — deliver out of band.</value></data>
+  <data name="OrgMembers_ToastInvited" xml:space="preserve"><value>Invitation sent. Open Invitations to track delivery and status.</value></data>
   <data name="OrgMembers_ToastInviteResent" xml:space="preserve"><value>Invitation resent (token rotated).</value></data>
   <data name="OrgMembers_ToastInviteRevoked" xml:space="preserve"><value>Invitation revoked.</value></data>
   <data name="OrgMembers_ProductAccessReadOnly" xml:space="preserve"><value>Product-access assignments are shown read-only here. Grant/revoke remains on the product-access surface. Access never assigns product-local roles.</value></data>

@@ -922,7 +922,20 @@ Organization Staff and Invitations are separate routes and separate page compone
 
 Organization Staff and Business Customers are different concepts.
 
-### 12.2.1 Shared MVP staff person fields
+### 12.2.1 Organization Staff onboarding (Owner path)
+
+Primary Organization Staff action is **Invite Staff** (person + employment fields), not GUID membership linking.
+
+```text
+People → Organization Staff → Invite Staff
+→ invitation appears under Invitations
+→ activation / accept
+→ membership appears under Organization Staff
+```
+
+Raw **Link Existing Identity** (User ID GUID) is a Platform support override only: hidden from Organization Owners, requires reason, audited.
+
+### 12.2.2 Shared MVP staff person fields
 
 Platform Staff and Organization Staff (including invite forms) share the same person fields:
 

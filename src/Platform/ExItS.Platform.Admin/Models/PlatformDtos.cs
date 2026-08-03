@@ -553,7 +553,7 @@ public sealed record UpdatePlatformUserRequest(
     string? LastName = null,
     string? Phone = null,
     string? EmployeeCode = null);
-public sealed record AddMemberRequest(Guid UserId, string Role);
+public sealed record AddMemberRequest(Guid UserId, string Role, string? Reason = null);
 public sealed record ChangeRoleRequest(string Role, string? ActorReference);
 public sealed record MembershipLifecycleRequest(string? Reason, string? ActorReference);
 public sealed record GrantProductAccessRequest(Guid UserId, string ProductCode, string GrantedByActor, string? Reason);

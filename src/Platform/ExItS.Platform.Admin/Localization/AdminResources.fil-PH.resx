@@ -524,7 +524,7 @@
   <data name="OrgMembers_Description" xml:space="preserve"><value>Organization Owner at Staff membership para sa organisasyong ito.</value></data>
   <data name="OrgMembers_Warning" xml:space="preserve"><value>Ang mga Organization role (Owner, Staff) ay hindi product-local role. Ang pag-alis ng membership ay nagre-revoke ng product-access assignment para sa organisasyong ito.</value></data>
   <data name="OrgMembers_Loading" xml:space="preserve"><value>Naglo-load ng organisasyon…</value></data>
-  <data name="OrgMembers_AddSection" xml:space="preserve"><value>Magdagdag ng umiiral na user</value></data>
+  <data name="OrgMembers_AddSection" xml:space="preserve"><value>I-link ang umiiral na identity (advanced)</value></data>
   <data name="OrgMembers_UserId" xml:space="preserve"><value>User ID</value></data>
   <data name="OrgMembers_OrgRole" xml:space="preserve"><value>Organization role</value></data>
   <data name="OrgMembers_OrgRoleRequired" xml:space="preserve"><value>Kailangan ang Organization role (Owner o Staff).</value></data>
@@ -534,6 +534,12 @@
   <data name="OrgMembers_Role_Staff" xml:space="preserve"><value>Staff</value></data>
   <data name="OrgMembers_TargetStatus" xml:space="preserve"><value>Target status</value></data>
   <data name="OrgMembers_AddMember" xml:space="preserve"><value>Magdagdag ng staff</value></data>
+  <data name="OrgMembers_InviteStaff" xml:space="preserve"><value>Mag-imbita ng Staff</value></data>
+  <data name="OrgMembers_InviteOwnerAuthority" xml:space="preserve"><value>Ang Organization Owners ay nag-iimbita gamit ang detalye ng tao. Hindi kailangan ang User ID o GUID.</value></data>
+  <data name="OrgMembers_LinkExistingIdentity" xml:space="preserve"><value>I-link ang Umiiral na Identity</value></data>
+  <data name="OrgMembers_LinkExistingIdentityWarning" xml:space="preserve"><value>Platform support override. Kailangan ang dahilan at may audit. Prefer Invite Staff para sa normal onboarding.</value></data>
+  <data name="OrgMembers_LinkReasonRequired" xml:space="preserve"><value>Maglagay ng support reason (hindi bababa sa 8 characters).</value></data>
+  <data name="OrgMembers_ToastLinked" xml:space="preserve"><value>Na-link ang umiiral na identity sa organisasyong ito (may audit).</value></data>
   <data name="OrgMembers_LoadingMembers" xml:space="preserve"><value>Naglo-load ng staff…</value></data>
   <data name="OrgMembers_Unavailable" xml:space="preserve"><value>Hindi available ang staff</value></data>
   <data name="OrgMembers_Empty" xml:space="preserve"><value>Walang staff membership para sa organisasyong ito.</value></data>
@@ -543,13 +549,13 @@
   <data name="OrgMembers_TabMembers" xml:space="preserve"><value>Staff</value></data>
   <data name="OrgMembers_TabInvitations" xml:space="preserve"><value>Mga imbitasyon</value></data>
   <data name="OrgMembers_TabProductAccess" xml:space="preserve"><value>Product access</value></data>
-  <data name="OrgMembers_Invite" xml:space="preserve"><value>Mag-imbita sa email</value></data>
-  <data name="OrgMembers_InviteSection" xml:space="preserve"><value>Mag-imbita ng staff</value></data>
+  <data name="OrgMembers_Invite" xml:space="preserve"><value>Mag-imbita ng Staff</value></data>
+  <data name="OrgMembers_InviteSection" xml:space="preserve"><value>Mag-imbita ng Organization Staff</value></data>
   <data name="OrgMembers_InvitationsUnavailable" xml:space="preserve"><value>Hindi available ang mga imbitasyon</value></data>
   <data name="OrgMembers_ExpiresUtc" xml:space="preserve"><value>Mag-e-expire (UTC)</value></data>
   <data name="OrgMembers_Resend" xml:space="preserve"><value>Ipadala muli</value></data>
   <data name="OrgMembers_RevokeInviteConfirm" xml:space="preserve"><value>I-revoke ang pending invitation na ito?</value></data>
-  <data name="OrgMembers_ToastInvited" xml:space="preserve"><value>Nagawa ang invitation. Hindi ipinapakita ang accept token sa Admin — i-deliver nang out of band.</value></data>
+  <data name="OrgMembers_ToastInvited" xml:space="preserve"><value>Naipadala ang invitation. Buksan ang Invitations para subaybayan ang status.</value></data>
   <data name="OrgMembers_ToastInviteResent" xml:space="preserve"><value>Na-resend ang invitation (na-rotate ang token).</value></data>
   <data name="OrgMembers_ToastInviteRevoked" xml:space="preserve"><value>Na-revoke ang invitation.</value></data>
   <data name="OrgMembers_ProductAccessReadOnly" xml:space="preserve"><value>Read-only ang product-access assignments dito. Ang grant/revoke ay nasa product-access surface. Hindi nag-a-assign ng product-local roles ang access.</value></data>

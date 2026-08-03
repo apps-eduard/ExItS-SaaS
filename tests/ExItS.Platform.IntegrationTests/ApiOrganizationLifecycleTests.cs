@@ -210,7 +210,7 @@ public sealed class ApiOrganizationLifecycleTests(PostgreSqlFixture fixture) : I
 
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/members",
-            new { userId, role = "OrganizationAdministrator" })).EnsureSuccessStatusCode();
+            new { userId, role = "OrganizationMember", reason = "integration-test-link" })).EnsureSuccessStatusCode();
 
         var token = await LoginAsync(username, password);
         using (var select = Authed(

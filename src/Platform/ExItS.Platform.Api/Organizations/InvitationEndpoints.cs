@@ -95,6 +95,7 @@ internal static class InvitationEndpoints
                     body.EmployeeCode,
                     body.Branch,
                     body.ProductRole,
+                    body.RequireEmailVerification ?? true,
                     ct)
                 .ConfigureAwait(false);
             if (result.IsSuccess)

@@ -106,7 +106,7 @@ public sealed class ApiOrganizationContextTests(PostgreSqlFixture fixture) : IAs
         var organizationId = await CreateOrganizationAsync("one");
         var add = await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/members",
-            new { userId, role = "OrganizationMember" });
+            new { userId, role = "OrganizationMember", reason = "integration-test-link" });
         Assert.Equal(HttpStatusCode.Created, add.StatusCode);
 
         var login = await _client.PostAsJsonAsync(
@@ -127,10 +127,10 @@ public sealed class ApiOrganizationContextTests(PostgreSqlFixture fixture) : IAs
         var orgB = await CreateOrganizationAsync("b");
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{orgA}/members",
-            new { userId, role = "OrganizationMember" })).EnsureSuccessStatusCode();
+            new { userId, role = "OrganizationMember", reason = "integration-test-link" })).EnsureSuccessStatusCode();
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{orgB}/members",
-            new { userId, role = "OrganizationOwner" })).EnsureSuccessStatusCode();
+            new { userId, role = "OrganizationOwner", reason = "integration-test-link" })).EnsureSuccessStatusCode();
 
         var login = await _client.PostAsJsonAsync(
             "/api/v1/platform/auth/login",
@@ -188,10 +188,10 @@ public sealed class ApiOrganizationContextTests(PostgreSqlFixture fixture) : IAs
         var orgB = await CreateOrganizationAsync("lb");
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{orgA}/members",
-            new { userId, role = "OrganizationMember" })).EnsureSuccessStatusCode();
+            new { userId, role = "OrganizationMember", reason = "integration-test-link" })).EnsureSuccessStatusCode();
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{orgB}/members",
-            new { userId, role = "OrganizationMember" })).EnsureSuccessStatusCode();
+            new { userId, role = "OrganizationMember", reason = "integration-test-link" })).EnsureSuccessStatusCode();
 
         var token = await LoginAsync(username, password);
         using (var selectB = Authed(
@@ -223,10 +223,10 @@ public sealed class ApiOrganizationContextTests(PostgreSqlFixture fixture) : IAs
         var orgB = await CreateOrganizationAsync("xb");
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{orgA}/members",
-            new { userId, role = "OrganizationAdministrator" })).EnsureSuccessStatusCode();
+            new { userId, role = "OrganizationMember", reason = "integration-test-link" })).EnsureSuccessStatusCode();
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{orgB}/members",
-            new { userId, role = "OrganizationAdministrator" })).EnsureSuccessStatusCode();
+            new { userId, role = "OrganizationMember", reason = "integration-test-link" })).EnsureSuccessStatusCode();
 
         var token = await LoginAsync(username, password);
         using (var selectA = Authed(
@@ -262,7 +262,7 @@ public sealed class ApiOrganizationContextTests(PostgreSqlFixture fixture) : IAs
         var organizationId = await CreateOrganizationAsync("sus");
         var add = await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/members",
-            new { userId, role = "OrganizationMember" });
+            new { userId, role = "OrganizationMember", reason = "integration-test-link" });
         add.EnsureSuccessStatusCode();
         var membershipId = (await add.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 

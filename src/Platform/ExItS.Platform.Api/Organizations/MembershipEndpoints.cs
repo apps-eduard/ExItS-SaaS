@@ -62,6 +62,30 @@ internal static class MembershipEndpoints
                 return error!;
             }
 
+            var authority = await membershipAuthz
+                .ResolveActorMembershipAuthorityAsync(organizationId, ct)
+                .ConfigureAwait(false);
+            // Raw GUID membership linking is a Platform support override — not Owner onboarding.
+            if (!authority.HasPlatformManageMemberships)
+            {
+                return PlatformApiResults.Problem(
+                    DomainErrorCodes.AuthorizationDenied,
+                    "Linking an existing identity by User ID is restricted to Platform support. Use Invite Staff instead.",
+                    StatusCodes.Status403Forbidden);
+            }
+
+            if (!string.IsNullOrWhiteSpace(body.Reason) && body.Reason.Trim().Length < 8)
+            {
+                return PlatformApiResults.Problem(
+                    DomainErrorCodes.InvalidAuditReason,
+                    "A support reason must be at least 8 characters when provided.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            var linkReason = string.IsNullOrWhiteSpace(body.Reason)
+                ? "Platform support identity link"
+                : body.Reason.Trim();
+
             var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
                 PlatformAuditActions.MembershipAdded,
                 nameof(OrganizationMembership),
@@ -73,21 +97,9 @@ internal static class MembershipEndpoints
                 return denied;
             }
 
-            var authority = await membershipAuthz
-                .ResolveActorMembershipAuthorityAsync(organizationId, ct)
-                .ConfigureAwait(false);
-            if (!authority.HasPlatformManageMemberships
-                && authority.ActorMembershipRole != OrganizationRole.OrganizationOwner
-                && role == OrganizationRole.OrganizationOwner)
-            {
-                return PlatformApiResults.Problem(
-                    DomainErrorCodes.OrganizationOwnerAssignmentDenied,
-                    "Only Organization Owners can assign the Owner role.",
-                    StatusCodes.Status403Forbidden);
-            }
-
+            // Platform support may still seed legacy Administrator in tests; Owner UI assigns Owner/Staff only.
             if (!OrganizationRoleDisplay.IsAssignableOrganizationStaffRole(role)
-                && !authority.HasPlatformManageMemberships)
+                && role is not OrganizationRole.OrganizationAdministrator)
             {
                 return PlatformApiResults.Problem(
                     DomainErrorCodes.InvalidOrganizationRole,
@@ -111,6 +123,7 @@ internal static class MembershipEndpoints
                         nameof(OrganizationMembership),
                         result.Value!.Id.Value.ToString("D"),
                         organizationId,
+                        summary: $"Advanced identity link. Reason: {linkReason}",
                         cancellationToken: ct).ConfigureAwait(false);
                 }
 
@@ -464,6 +477,6 @@ internal static class MembershipEndpoints
     }
 }
 
-internal sealed record AddMemberRequest(Guid UserId, string Role);
+internal sealed record AddMemberRequest(Guid UserId, string Role, string? Reason = null);
 internal sealed record ChangeRoleRequest(string Role, string? ActorReference);
 internal sealed record MembershipLifecycleRequest(string? Reason, string? ActorReference);

@@ -109,7 +109,7 @@ public sealed class ApiAccessTokenTests(PostgreSqlFixture fixture) : IAsyncLifet
 
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/members",
-            new { userId, role = "OrganizationMember" })).EnsureSuccessStatusCode();
+            new { userId, role = "OrganizationMember", reason = "integration-test-link" })).EnsureSuccessStatusCode();
 
         var login = await _client.PostAsJsonAsync(
             "/api/v1/platform/auth/login",

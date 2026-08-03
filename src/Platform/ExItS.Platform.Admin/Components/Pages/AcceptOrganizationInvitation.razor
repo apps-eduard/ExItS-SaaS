@@ -1,0 +1,82 @@
+@page "/admin/accept-organization-invitation"
+@layout EmptyLayout
+@using AntDesign
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.WebUtilities
+@attribute [Authorize]
+@inject IPlatformApiClient Api
+@inject IStringLocalizer<AdminResources> L
+@inject NavigationManager Nav
+@inject IMessageService Message
+
+<PageTitle>@L["Brand_Name"] — Accept invitation</PageTitle>
+
+<div class="exits-login-shell">
+    <Card Class="exits-login-card" Bordered>
+        <TitleTemplate>
+            <div class="exits-login-brand">
+                <span class="exits-brand-mark">EA</span>
+                <span>Accept organization invitation</span>
+            </div>
+        </TitleTemplate>
+        <Body>
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" Style="margin-bottom: 1rem;" />
+            }
+
+            @if (_done)
+            {
+                <Alert Type="@AlertType.Success" Message="Invitation accepted. You can open Organization Staff for your organization." ShowIcon="true" Style="margin-bottom: 1rem;" />
+                <Button Type="@ButtonType.Primary" Block Size="@ButtonSize.Small" OnClick="@(() => Nav.NavigateTo("/admin"))">
+                    Continue
+                </Button>
+            }
+            else
+            {
+                <Paragraph Type="@TextElementType.Secondary">
+                    Accept the organization staff invitation for the signed-in account.
+                </Paragraph>
+                <Button Type="@ButtonType.Primary" Block Size="@ButtonSize.Small" Loading="_busy" Disabled="_busy || string.IsNullOrWhiteSpace(_token)" OnClick="AcceptAsync">
+                    Accept invitation
+                </Button>
+            }
+        </Body>
+    </Card>
+</div>
+
+@code {
+    private string _token = "";
+    private string? _error;
+    private bool _busy;
+    private bool _done;
+
+    protected override void OnInitialized()
+    {
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("token", out var tokenValues))
+        {
+            _token = tokenValues.ToString();
+        }
+    }
+
+    private async Task AcceptAsync()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_token) || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        var result = await Api.AcceptOrganizationInvitationAsync(_token);
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _error = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        _done = true;
+        await Message.SuccessAsync("Invitation accepted.");
+    }
+}
