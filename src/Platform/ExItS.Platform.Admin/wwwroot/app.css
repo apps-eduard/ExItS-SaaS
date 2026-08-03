@@ -329,8 +329,9 @@ html, body {
     box-sizing: border-box;
 }
 
-/* Ant Design tables: contain overflow and scroll horizontally on narrow viewports */
+/* Ant Design tables: content-sized width, scroll only when needed */
 .exits-admin-content .ant-table-wrapper {
+    width: max-content;
     max-width: 100%;
 }
 
@@ -342,7 +343,24 @@ html, body {
 }
 
 .exits-admin-content .ant-table {
-    min-width: 36rem;
+    width: max-content;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.exits-admin-content .ant-table table {
+    width: max-content !important;
+    table-layout: auto;
+}
+
+.exits-admin-content .ant-table-thead > tr > th,
+.exits-admin-content .ant-table-tbody > tr > td {
+    white-space: nowrap;
+}
+
+.exits-admin-content .ant-table-cell-ellipsis,
+.exits-admin-content .ant-table-tbody > tr > td.ant-table-cell-ellipsis {
+    max-width: 280px;
 }
 
 .exits-admin-content .ant-table-pagination {

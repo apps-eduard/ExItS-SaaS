@@ -1,6 +1,7 @@
 @page "/admin/plans"
 @page "/admin/plans/{Id:guid}"
 @using AntDesign
+@using AntDesign.TableModels
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject IPlatformApiClient Api
@@ -117,6 +118,7 @@
     else
     {
         <Table TItem="PlanDto"
+               Class="exits-table-fit"
                DataSource="@(_list?.Data?.Items ?? Array.Empty<PlanDto>())"
                Total="@(_list?.Data?.TotalCount ?? 0)"
                @bind-PageIndex="_page"
@@ -125,8 +127,7 @@
                Size="@TableSize.Small"
                Bordered
                RemoteDataSource
-               OnPageIndexChange="OnPageChangedAsync"
-               ScrollX="960">
+               OnChange="OnPlansTableChangeAsync">
             <PropertyColumn Property="c => c.ProductDisplayName" Title="@L["Common_Product"]" Sortable>
                 @(string.IsNullOrWhiteSpace(context.ProductDisplayName) ? context.ProductCode : context.ProductDisplayName)
             </PropertyColumn>
@@ -136,11 +137,11 @@
             <PropertyColumn Property="c => c.PlanKey" Title="Plan Key" Sortable>
                 <span class="muted">@(context.PlanKey ?? context.Code)</span>
             </PropertyColumn>
-            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable>
+            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="110">
                 <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
             </PropertyColumn>
-            <PropertyColumn Property="c => c.SortOrder" Title="Sort" Sortable />
-            <ActionColumn Title="@L["Common_Actions"]" Width="120">
+            <PropertyColumn Property="c => c.SortOrder" Title="Display Order" Sortable />
+            <ActionColumn Title="@L["Common_Actions"]" Width="80">
                 <Tooltip Title="@L["Common_Open"].Value">
                     <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" Icon="eye" AriaLabel="@L["Common_Open"].Value"
                             OnClick="@(() => Nav.NavigateTo($"/admin/plans/{context.Id}"))" />
@@ -286,7 +287,7 @@ else
                 }
                 else
                 {
-                    <Table TItem="PlanVersionDto" DataSource="_versions.Data" Size="@TableSize.Small" HidePagination Bordered ScrollX="720">
+                    <Table TItem="PlanVersionDto" DataSource="_versions.Data" Size="@TableSize.Small" HidePagination Bordered>
                         <PropertyColumn Property="c => c.VersionNumber" Title="@L["Common_Version"]" />
                         <PropertyColumn Property="c => c.BillingPeriod" Title="@L["Products_Column_Billing"]" />
                         <PropertyColumn Property="c => c.TrialEligible" Title="@L["Products_Column_TrialEligible"]" />
@@ -314,6 +315,8 @@ else
     private ApiCallResult<IReadOnlyList<PlanVersionDto>>? _versions;
     private Guid? _productId;
     private int _page = 1;
+    private string? _sortBy;
+    private bool _sortDesc;
     private string _search = "";
     private string _status = "";
     private string _productCode = "";
@@ -376,7 +379,33 @@ else
             page: _page,
             productCode: string.IsNullOrWhiteSpace(_productCode) ? null : _productCode.Trim(),
             status: string.IsNullOrWhiteSpace(_status) ? null : _status,
-            search: string.IsNullOrWhiteSpace(_search) ? null : _search);
+            search: string.IsNullOrWhiteSpace(_search) ? null : _search,
+            sortBy: _sortBy,
+            sortDesc: _sortBy is null ? null : _sortDesc);
+
+    private async Task OnPlansTableChangeAsync(QueryModel<PlanDto> queryModel)
+    {
+        await AdminTableSort.ApplyChangeAsync(
+            queryModel,
+            MapSortField,
+            () => _sortBy,
+            v => _sortBy = v,
+            () => _sortDesc,
+            v => _sortDesc = v,
+            () => _page,
+            v => _page = v,
+            LoadPlansAsync);
+    }
+
+    private static string? MapSortField(string? fieldName) => fieldName switch
+    {
+        "ProductDisplayName" => "ProductDisplayName",
+        "DisplayName" => "DisplayName",
+        "PlanKey" => "Code",
+        "Status" => "Status",
+        "SortOrder" => "SortOrder",
+        _ => null
+    };
 
     private async Task ApplyFiltersAsync()
     {
@@ -389,13 +418,9 @@ else
         _search = "";
         _status = "";
         _productCode = "";
+        _sortBy = null;
+        _sortDesc = false;
         _page = 1;
-        await LoadPlansAsync();
-    }
-
-    private async Task OnPageChangedAsync(PaginationEventArgs args)
-    {
-        _page = args.Page;
         await LoadPlansAsync();
     }
 

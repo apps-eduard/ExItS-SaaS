@@ -100,6 +100,8 @@ internal static class AdminEndpoints
         admin.MapGet("/entitlements/latest", async (
             int? page,
             int? pageSize,
+            string? sortBy,
+            bool? sortDesc,
             AdminPortfolioQueryService queries,
             PlatformAuthz authz,
             CancellationToken ct) =>
@@ -115,10 +117,27 @@ internal static class AdminEndpoints
                 return denied;
             }
 
-            var result = await queries.ListLatestEntitlementsAsync(page, pageSize, ct).ConfigureAwait(false);
+            var result = await queries.ListLatestEntitlementsAsync(
+                page,
+                pageSize,
+                ParseEntitlementSortBy(sortBy),
+                sortDesc,
+                ct).ConfigureAwait(false);
             return Results.Ok(result);
         });
 
         return app;
     }
+
+    private static EntitlementListSortBy? ParseEntitlementSortBy(string? sortBy) =>
+        sortBy?.Trim().ToLowerInvariant() switch
+        {
+            "product" or "productdisplayname" => EntitlementListSortBy.ProductDisplayName,
+            "organization" or "organizationdisplayname" => EntitlementListSortBy.OrganizationDisplayName,
+            "status" or "subscriptionstatus" => EntitlementListSortBy.Status,
+            "generated" or "generatedatutc" => EntitlementListSortBy.GeneratedAtUtc,
+            "revision" or "snapshotversion" or "version" => EntitlementListSortBy.Revision,
+            null or "" => null,
+            _ => null
+        };
 }

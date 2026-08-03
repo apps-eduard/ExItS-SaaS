@@ -1,0 +1,14 @@
+@inject UserTimeZoneState TimeZones
+
+@if (Value is null)
+{
+    <span class="muted">—</span>
+}
+else
+{
+    <time datetime="@Value.Value.UtcDateTime.ToString("o")" title="@TimeZones.FormatUtcTooltip(Value)">@TimeZones.FormatLocal(Value)</time>
+}
+
+@code {
+    [Parameter] public DateTimeOffset? Value { get; set; }
+}

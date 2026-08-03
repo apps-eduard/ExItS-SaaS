@@ -25,6 +25,8 @@ public interface IAdminPortfolioReadStore
     Task<(IReadOnlyList<EntitlementLatestSummaryDto> Items, int TotalCount)> ListLatestEntitlementSummariesAsync(
         int skip,
         int take,
+        EntitlementListSortBy sortBy = EntitlementListSortBy.GeneratedAtUtc,
+        bool sortDescending = true,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<EntitlementLatestSummaryDto>> ListLatestEntitlementsForOrganizationAsync(

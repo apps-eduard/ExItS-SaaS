@@ -130,8 +130,7 @@ else if (Id is null)
                Size="@TableSize.Small"
                Bordered
                RemoteDataSource
-               OnChange="OnUsersTableChangeAsync"
-               ScrollX="1200">
+               OnChange="OnUsersTableChangeAsync">
             <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_User"]" Sortable>
                 <a href="/admin/users/@context.Id">@context.DisplayName</a>
             </PropertyColumn>
@@ -418,7 +417,7 @@ else
         else if (_memberships.Data!.Items.Count == 0) { <Empty Description="@L["Users_MembershipsEmpty"].Value" /> }
         else
         {
-            <Table TItem="OrganizationMembershipDto" DataSource="_memberships.Data.Items" Size="@TableSize.Small" HidePagination Bordered ScrollX="720">
+            <Table TItem="OrganizationMembershipDto" DataSource="_memberships.Data.Items" Size="@TableSize.Small" HidePagination Bordered>
                 <PropertyColumn Property="c => c.OrganizationId" Title="@L["Common_Organization"]">
                     <a href="/admin/organizations/@context.OrganizationId/members">@context.OrganizationId</a>
                 </PropertyColumn>
@@ -441,7 +440,7 @@ else
         else if (_access.Data!.Items.Count == 0) { <Empty Description="@L["Users_ProductAccessEmpty"].Value" /> }
         else
         {
-            <Table TItem="ProductAccessAssignmentDto" DataSource="_access.Data.Items" Size="@TableSize.Small" HidePagination Bordered ScrollX="720">
+            <Table TItem="ProductAccessAssignmentDto" DataSource="_access.Data.Items" Size="@TableSize.Small" HidePagination Bordered>
                 <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" />
                 <PropertyColumn Property="c => c.OrganizationId" Title="@L["Common_Organization"]" />
                 <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]"><Tag>@context.Status</Tag></PropertyColumn>

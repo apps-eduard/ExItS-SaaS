@@ -1,3 +1,4 @@
+using ExItS.Platform.Application.Admin;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.Organizations;
@@ -61,13 +62,22 @@ internal static class CommercialTestServices
         services.AddScoped<EntitlementQueryService>();
         services.AddScoped<FeatureOverrideQueryService>();
 
-        services.AddSingleton<IClock>(new FixedUtcClock(utcNow ?? new DateTimeOffset(2026, 7, 29, 12, 0, 0, TimeSpan.Zero)));
+        services.AddScoped<CatalogQueryService>();
+        services.AddScoped<AdminPortfolioQueryService>();
+
+        var clock = new TestUtcClock(utcNow ?? new DateTimeOffset(2026, 7, 29, 12, 0, 0, TimeSpan.Zero));
+        services.AddSingleton<IClock>(clock);
+        services.AddSingleton(clock);
 
         return services.BuildServiceProvider();
     }
 
-    private sealed class FixedUtcClock(DateTimeOffset utcNow) : IClock
+    public sealed class TestUtcClock : IClock
     {
-        public DateTimeOffset UtcNow { get; } = utcNow;
+        public TestUtcClock(DateTimeOffset utcNow) => UtcNow = utcNow;
+
+        public DateTimeOffset UtcNow { get; set; }
+
+        public void Advance(TimeSpan delta) => UtcNow = UtcNow.Add(delta);
     }
 }

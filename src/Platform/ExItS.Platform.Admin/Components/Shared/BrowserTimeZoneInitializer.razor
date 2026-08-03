@@ -1,0 +1,27 @@
+@inject UserTimeZoneState TimeZones
+@inject IJSRuntime Js
+
+@* Resolves browser IANA timezone once per circuit for LocalTimestamp. *@
+
+@code {
+    private bool _initialized;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _initialized || TimeZones.IsResolved)
+        {
+            return;
+        }
+
+        _initialized = true;
+        try
+        {
+            var tz = await Js.InvokeAsync<string>("eval", "Intl.DateTimeFormat().resolvedOptions().timeZone");
+            TimeZones.SetBrowserTimeZone(tz);
+        }
+        catch
+        {
+            // Fallback remains UTC until resolved.
+        }
+    }
+}

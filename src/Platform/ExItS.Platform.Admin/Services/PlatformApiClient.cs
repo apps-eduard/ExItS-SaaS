@@ -131,8 +131,15 @@ public sealed class PlatformApiClient(
         GetAsync<PagedResult<PaymentDto>>($"/api/v1/platform/payments?{Query(("status", status), ("productCode", productCode), ("organizationId", organizationId), ("method", method), ("page", page), ("pageSize", pageSize))}", ct);
     public Task<ApiCallResult<PaymentDto>> GetPaymentAsync(Guid id, CancellationToken ct = default) =>
         GetAsync<PaymentDto>($"/api/v1/platform/payments/{id}", ct);
-    public Task<ApiCallResult<PagedResult<EntitlementLatestSummaryDto>>> GetLatestEntitlementsAsync(int page = 1, int pageSize = 20, CancellationToken ct = default) =>
-        GetAsync<PagedResult<EntitlementLatestSummaryDto>>($"/api/v1/platform/admin/entitlements/latest?{Query(("page", page), ("pageSize", pageSize))}", ct);
+    public Task<ApiCallResult<PagedResult<EntitlementLatestSummaryDto>>> GetLatestEntitlementsAsync(
+        int page = 1,
+        int pageSize = 20,
+        string? sortBy = null,
+        bool? sortDesc = null,
+        CancellationToken ct = default) =>
+        GetAsync<PagedResult<EntitlementLatestSummaryDto>>(
+            $"/api/v1/platform/admin/entitlements/latest?{Query(("page", page), ("pageSize", pageSize), ("sortBy", sortBy), ("sortDesc", sortDesc))}",
+            ct);
     public Task<ApiCallResult<PagedResult<EntitlementSnapshotDto>>> GetEntitlementHistoryAsync(Guid organizationId, string productCode, CancellationToken ct = default) =>
         GetAsync<PagedResult<EntitlementSnapshotDto>>($"/api/v1/platform/organizations/{organizationId}/products/{Escape(productCode)}/entitlements/snapshots", ct);
     public Task<ApiCallResult<EntitlementSnapshotDto>> GetLatestEntitlementAsync(Guid organizationId, string productCode, CancellationToken ct = default) =>

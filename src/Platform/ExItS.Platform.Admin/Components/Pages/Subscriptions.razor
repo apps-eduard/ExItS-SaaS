@@ -1,6 +1,7 @@
 @page "/admin/subscriptions"
 @page "/admin/subscriptions/{Id:guid}"
 @using AntDesign
+@using AntDesign.TableModels
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject IPlatformApiClient Api
@@ -136,6 +137,7 @@
     else
     {
         <Table TItem="SubscriptionDto"
+               Class="exits-table-fit"
                DataSource="@(_list?.Data?.Items ?? Array.Empty<SubscriptionDto>())"
                Total="@(_list?.Data?.TotalCount ?? 0)"
                @bind-PageIndex="_page"
@@ -144,8 +146,7 @@
                Size="@TableSize.Small"
                Bordered
                RemoteDataSource
-               OnPageIndexChange="OnPageChangedAsync"
-               ScrollX="1200">
+               OnChange="OnSubscriptionsTableChangeAsync">
             <PropertyColumn Property="c => c.OrganizationDisplayName" Title="@L["Common_Organization"]" Sortable>
                 <a href="/admin/organizations/@context.OrganizationId">@(string.IsNullOrWhiteSpace(context.OrganizationDisplayName) ? "Organization" : context.OrganizationDisplayName)</a>
             </PropertyColumn>
@@ -155,15 +156,25 @@
             <PropertyColumn Property="c => c.PlanDisplayName" Title="@L["Common_Plan"]" Sortable>
                 @(string.IsNullOrWhiteSpace(context.PlanDisplayName) ? "—" : context.PlanDisplayName)
             </PropertyColumn>
-            <PropertyColumn Property="c => c.Status" Title="Subscription Status" Sortable>
+            <PropertyColumn Property="c => c.Status" Title="Subscription Status" Sortable Width="110">
                 <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
             </PropertyColumn>
-            <PropertyColumn Property="c => c.TrialStartUtc" Title="Trial Start" Format="u" />
-            <PropertyColumn Property="c => c.TrialEndUtc" Title="Trial End" Format="u" Sortable />
-            <PropertyColumn Property="c => c.PaidPeriodEndUtc" Title="Paid Through" Format="u" Sortable />
-            <PropertyColumn Property="c => c.RenewalDateUtc" Title="Renewal Date" Format="u" />
-            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Format="u" Sortable />
-            <ActionColumn Title="@L["Common_Actions"]" Width="88">
+            <PropertyColumn Property="c => c.TrialStartUtc" Title="Trial Start" Width="180">
+                <LocalTimestamp Value="@context.TrialStartUtc" />
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.TrialEndUtc" Title="Trial End" Sortable Width="180">
+                <LocalTimestamp Value="@context.TrialEndUtc" />
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.PaidPeriodEndUtc" Title="Paid Through" Sortable Width="180">
+                <LocalTimestamp Value="@context.PaidPeriodEndUtc" />
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.RenewalDateUtc" Title="Renewal Date" Sortable Width="180">
+                <LocalTimestamp Value="@context.RenewalDateUtc" />
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Sortable Width="180">
+                <LocalTimestamp Value="@context.UpdatedAtUtc" />
+            </PropertyColumn>
+            <ActionColumn Title="@L["Common_Actions"]" Width="80">
                 <Tooltip Title="@L["Common_Open"].Value">
                     <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" Icon="eye" AriaLabel="@L["Common_Open"].Value"
                             OnClick="@(() => Nav.NavigateTo($"/admin/subscriptions/{context.Id}"))" />
@@ -298,7 +309,7 @@ else
             <TabPane Key="related" Tab="@L["Common_Related"]">
                 @if (_payments is { IsSuccess: true })
                 {
-                    <Table TItem="PaymentDto" DataSource="@_payments.Data!.Items" Size="@TableSize.Small" Bordered HidePagination="true" ScrollX="720">
+                    <Table TItem="PaymentDto" DataSource="@_payments.Data!.Items" Size="@TableSize.Small" Bordered HidePagination="true">
                         <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" />
                         <PropertyColumn Property="c => c.Amount" Title="Amount" />
                         <PropertyColumn Property="c => c.CurrencyCode" Title="Currency" />
@@ -329,6 +340,8 @@ else
     private ApiCallResult<EntitlementSnapshotDto>? _entitlement;
 
     private int _page = 1;
+    private string? _sortBy;
+    private bool _sortDesc = true;
     private string _search = "";
     private string _status = "";
     private string _productCode = "";
@@ -421,10 +434,37 @@ else
             search: string.IsNullOrWhiteSpace(_search) ? null : _search.Trim(),
             isTrial: ParseIsTrial(),
             planId: string.IsNullOrWhiteSpace(_planIdText) ? null : ParsePlanFilter(),
-            sortBy: "UpdatedAtUtc",
-            sortDesc: true,
+            sortBy: _sortBy ?? "UpdatedAtUtc",
+            sortDesc: _sortBy is null ? true : _sortDesc,
             page: _page);
     }
+
+    private async Task OnSubscriptionsTableChangeAsync(QueryModel<SubscriptionDto> queryModel)
+    {
+        await AdminTableSort.ApplyChangeAsync(
+            queryModel,
+            MapSortField,
+            () => _sortBy,
+            v => _sortBy = v,
+            () => _sortDesc,
+            v => _sortDesc = v,
+            () => _page,
+            v => _page = v,
+            LoadListAsync);
+    }
+
+    private static string? MapSortField(string? fieldName) => fieldName switch
+    {
+        "OrganizationDisplayName" => "OrganizationName",
+        "ProductDisplayName" => "ProductDisplayName",
+        "PlanDisplayName" => "PlanDisplayName",
+        "Status" => "Status",
+        "TrialEndUtc" => "TrialEndUtc",
+        "PaidPeriodEndUtc" => "PaidPeriodEndUtc",
+        "RenewalDateUtc" => "PaidPeriodEndUtc",
+        "UpdatedAtUtc" => "UpdatedAtUtc",
+        _ => null
+    };
 
     private async Task LoadFilterCatalogAsync()
     {
@@ -530,13 +570,9 @@ else
         _productCode = "";
         _planIdText = "";
         _isTrialFilter = "";
+        _sortBy = null;
+        _sortDesc = true;
         _page = 1;
-        await LoadListAsync();
-    }
-
-    private async Task OnPageChangedAsync(PaginationEventArgs args)
-    {
-        _page = args.Page;
         await LoadListAsync();
     }
 

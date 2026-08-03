@@ -7,5 +7,7 @@ public enum CatalogListSortBy
     Status = 2,
     CreatedAtUtc = 3,
     UpdatedAtUtc = 4,
-    ProductCode = 5
+    ProductCode = 5,
+    ProductDisplayName = 6,
+    SortOrder = 7
 }

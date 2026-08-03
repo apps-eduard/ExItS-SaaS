@@ -156,12 +156,19 @@ public sealed class AdminPortfolioQueryService
     public async Task<PagedResult<EntitlementLatestSummaryDto>> ListLatestEntitlementsAsync(
         int? page,
         int? pageSize,
+        EntitlementListSortBy? sortBy = null,
+        bool? sortDescending = null,
         CancellationToken cancellationToken = default)
     {
         var (skip, take) = CatalogPagination.Normalize(page, pageSize);
         var pageNumber = Math.Max(page ?? 1, 1);
         var (items, totalCount) = await _store
-            .ListLatestEntitlementSummariesAsync(skip, take, cancellationToken)
+            .ListLatestEntitlementSummariesAsync(
+                skip,
+                take,
+                sortBy ?? EntitlementListSortBy.GeneratedAtUtc,
+                sortDescending ?? true,
+                cancellationToken)
             .ConfigureAwait(false);
         return new PagedResult<EntitlementLatestSummaryDto>(items, totalCount, pageNumber, take);
     }

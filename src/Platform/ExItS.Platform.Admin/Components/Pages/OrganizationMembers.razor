@@ -177,8 +177,7 @@ else
                Size="@TableSize.Small"
                Bordered
                RemoteDataSource
-               OnPageIndexChange="OnMembersPageAsync"
-               ScrollX="1200">
+               OnPageIndexChange="OnMembersPageAsync">
             <PropertyColumn Property="c => c.DisplayName" Title="@L["OrgMembers_TabMembers"]">
                 @if (Shell.IsPlatformShell)
                 {

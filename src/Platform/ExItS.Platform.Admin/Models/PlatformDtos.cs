@@ -247,7 +247,9 @@ public sealed record EntitlementLatestSummaryDto(
     DateTimeOffset EffectiveAtUtc,
     DateTimeOffset RefreshByUtc,
     DateTimeOffset? ExpiresAtUtc,
-    bool InGracePeriod);
+    bool InGracePeriod,
+    string? OrganizationDisplayName = null,
+    string? ProductDisplayName = null);
 
 public sealed record FeatureOverrideDto(
     Guid Id,

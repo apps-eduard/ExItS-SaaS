@@ -88,6 +88,14 @@ internal sealed class PlanRepository : IPlanRepository
             (CatalogListSortBy.Status, true) => query.OrderByDescending(p => p.Status).ThenBy(p => p.Code),
             (CatalogListSortBy.ProductCode, false) => query.OrderBy(p => p.ProductCode).ThenBy(p => p.Code),
             (CatalogListSortBy.ProductCode, true) => query.OrderByDescending(p => p.ProductCode).ThenBy(p => p.Code),
+            (CatalogListSortBy.ProductDisplayName, false) =>
+                query.OrderBy(p => _db.Products.Where(pr => pr.Code == p.ProductCode).Select(pr => pr.DisplayName).FirstOrDefault())
+                    .ThenBy(p => p.Code),
+            (CatalogListSortBy.ProductDisplayName, true) =>
+                query.OrderByDescending(p => _db.Products.Where(pr => pr.Code == p.ProductCode).Select(pr => pr.DisplayName).FirstOrDefault())
+                    .ThenBy(p => p.Code),
+            (CatalogListSortBy.SortOrder, false) => query.OrderBy(p => p.SortOrder).ThenBy(p => p.Code),
+            (CatalogListSortBy.SortOrder, true) => query.OrderByDescending(p => p.SortOrder).ThenBy(p => p.Code),
             (CatalogListSortBy.CreatedAtUtc, false) => query.OrderBy(p => p.CreatedAtUtc).ThenBy(p => p.Code),
             (CatalogListSortBy.CreatedAtUtc, true) => query.OrderByDescending(p => p.CreatedAtUtc).ThenBy(p => p.Code),
             (CatalogListSortBy.UpdatedAtUtc, false) => query.OrderBy(p => p.UpdatedAtUtc).ThenBy(p => p.Code),

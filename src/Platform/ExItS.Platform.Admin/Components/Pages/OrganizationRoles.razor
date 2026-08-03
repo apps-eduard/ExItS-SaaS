@@ -63,8 +63,7 @@ else if (RoleId is null)
                Size="@TableSize.Small"
                Bordered
                RemoteDataSource
-               OnPageIndexChange="OnPageChangedAsync"
-               ScrollX="720">
+               OnPageIndexChange="OnPageChangedAsync">
             <PropertyColumn Property="c => c.Code" Title="Code">
                 <a href="@($"/admin/organizations/{OrganizationId}/roles/{context.Id}")">@context.Code</a>
             </PropertyColumn>

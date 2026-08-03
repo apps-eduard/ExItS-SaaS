@@ -92,8 +92,7 @@ else if (Id is null)
                Size="@TableSize.Small"
                Bordered
                RemoteDataSource
-               OnPageIndexChange="OnPageChangedAsync"
-               ScrollX="960">
+               OnPageIndexChange="OnPageChangedAsync">
             <PropertyColumn Property="c => c.Code" Title="Code">
                 <a href="/admin/platform-roles/@context.Id">@context.Code</a>
             </PropertyColumn>

@@ -2,7 +2,9 @@
 @page "/admin/entitlements/{Id:guid}"
 @page "/admin/entitlements/history/{OrganizationId:guid}/{ProductCode}"
 @using AntDesign
+@using AntDesign.TableModels
 @using Microsoft.AspNetCore.Authorization
+@using ExItS.Platform.Admin.Services
 @attribute [Authorize]
 @inject IPlatformApiClient Api
 @inject IMessageService Message
@@ -66,16 +68,16 @@
                 <a href="/admin/subscriptions/@s.SubscriptionId">@s.SubscriptionId</a>
             </DescriptionsItem>
             <DescriptionsItem Title="@L["Common_Plan"]">@($"{s.PlanCode} v{s.PlanVersionNumber}")</DescriptionsItem>
-            <DescriptionsItem Title="@L["Entitlements_SnapshotVersion"]">@s.SnapshotVersion</DescriptionsItem>
+            <DescriptionsItem Title="Revision">@s.SnapshotVersion</DescriptionsItem>
             <DescriptionsItem Title="@L["Entitlements_SchemaVersion"]">@s.SchemaVersion</DescriptionsItem>
             <DescriptionsItem Title="@L["Entitlements_SubscriptionStatus"]">
                 <Tag Color="@StatusColor(s.SubscriptionStatus)">@s.SubscriptionStatus</Tag>
             </DescriptionsItem>
             <DescriptionsItem Title="@L["Entitlements_InGracePeriod"]">@s.InGracePeriod</DescriptionsItem>
-            <DescriptionsItem Title="@L["Common_GeneratedUtc"]"><UtcTimestamp Value="@s.GeneratedAtUtc" /></DescriptionsItem>
-            <DescriptionsItem Title="@L["Common_EffectiveUtc"]"><UtcTimestamp Value="@s.EffectiveAtUtc" /></DescriptionsItem>
-            <DescriptionsItem Title="@L["Entitlements_RefreshByUtc"]"><UtcTimestamp Value="@s.RefreshByUtc" /></DescriptionsItem>
-            <DescriptionsItem Title="@L["Common_ExpiresUtc"]"><UtcTimestamp Value="@s.ExpiresAtUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="Generated"><LocalTimestamp Value="@s.GeneratedAtUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_EffectiveUtc"]"><LocalTimestamp Value="@s.EffectiveAtUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="@L["Entitlements_RefreshByUtc"]"><LocalTimestamp Value="@s.RefreshByUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_ExpiresUtc"]"><LocalTimestamp Value="@s.ExpiresAtUtc" /></DescriptionsItem>
         </Descriptions>
 
         @if (CanManageSnapshots)
@@ -219,22 +221,22 @@ else if (OrganizationId is not null && ProductCode is not null)
     else
     {
         <Table TItem="EntitlementSnapshotDto"
+               Class="exits-table-fit"
                DataSource="_history.Data.Items"
                Size="@TableSize.Small"
                HidePagination
-               Bordered
-               ScrollX="960">
-            <PropertyColumn Property="c => c.SnapshotVersion" Title="@L["Common_Version"]">
+               Bordered>
+            <PropertyColumn Property="c => c.SnapshotVersion" Title="Revision">
                 <a href="/admin/entitlements/@context.Id">@context.SnapshotVersion</a>
             </PropertyColumn>
-            <PropertyColumn Property="c => c.SchemaVersion" Title="@L["Entitlements_SchemaVersion"]" />
-            <PropertyColumn Property="c => c.SubscriptionStatus" Title="@L["Common_Status"]">
+            <PropertyColumn Property="c => c.SchemaVersion" Title="@L["Entitlements_SchemaVersion"]" Width="110" />
+            <PropertyColumn Property="c => c.SubscriptionStatus" Title="@L["Common_Status"]" Width="110">
                 <Tag Color="@StatusColor(context.SubscriptionStatus)">@context.SubscriptionStatus</Tag>
             </PropertyColumn>
-            <PropertyColumn Property="c => c.GeneratedAtUtc" Title="@L["Common_GeneratedUtc"]">
-                <UtcTimestamp Value="@context.GeneratedAtUtc" />
+            <PropertyColumn Property="c => c.GeneratedAtUtc" Title="Generated" Width="180">
+                <LocalTimestamp Value="@context.GeneratedAtUtc" />
             </PropertyColumn>
-            <ActionColumn Title="@L["Common_Open"]" Width="88">
+            <ActionColumn Title="@L["Common_Actions"]" Width="80">
                 <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/entitlements/{context.Id}")">@L["Common_Open"]</a>
             </ActionColumn>
         </Table>
@@ -264,6 +266,7 @@ else
     else
     {
         <Table TItem="EntitlementLatestSummaryDto"
+               Class="exits-table-fit"
                DataSource="@(_list?.Data?.Items ?? Array.Empty<EntitlementLatestSummaryDto>())"
                Total="@(_list?.Data?.TotalCount ?? 0)"
                @bind-PageIndex="_page"
@@ -272,26 +275,35 @@ else
                Size="@TableSize.Small"
                Bordered
                RemoteDataSource
-               OnPageIndexChange="OnPageChangedAsync"
-               ScrollX="1100">
-            <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" Sortable />
-            <PropertyColumn Property="c => c.OrganizationId" Title="@L["Common_Organization"]" Sortable>
-                <a href="/admin/organizations/@context.OrganizationId">@context.OrganizationId</a>
+               OnChange="OnEntitlementsTableChangeAsync">
+            <PropertyColumn Property="c => c.ProductDisplayName" Title="@L["Common_Product"]" Sortable Ellipsis>
+                <Tooltip Title="@(string.IsNullOrWhiteSpace(context.ProductDisplayName) ? context.ProductCode : context.ProductDisplayName)">
+                    <a href="/admin/entitlements/@context.Id">@(string.IsNullOrWhiteSpace(context.ProductDisplayName) ? "Product" : context.ProductDisplayName)</a>
+                </Tooltip>
             </PropertyColumn>
-            <PropertyColumn Property="c => c.SnapshotVersion" Title="@L["Common_Version"]" Sortable>
-                <a href="/admin/entitlements/@context.Id">@context.SnapshotVersion</a>
+            <PropertyColumn Property="c => c.OrganizationDisplayName" Title="@L["Common_Organization"]" Sortable Ellipsis>
+                <Tooltip Title="@(string.IsNullOrWhiteSpace(context.OrganizationDisplayName) ? context.OrganizationId.ToString("D") : context.OrganizationDisplayName)">
+                    <a href="/admin/organizations/@context.OrganizationId">@(string.IsNullOrWhiteSpace(context.OrganizationDisplayName) ? "Organization" : context.OrganizationDisplayName)</a>
+                </Tooltip>
             </PropertyColumn>
-            <PropertyColumn Property="c => c.SubscriptionStatus" Title="@L["Common_Status"]" Sortable>
+            <PropertyColumn Property="c => c.SubscriptionStatus" Title="@L["Common_Status"]" Sortable Width="110">
                 <Tag Color="@StatusColor(context.SubscriptionStatus)">@context.SubscriptionStatus</Tag>
             </PropertyColumn>
-            <PropertyColumn Property="c => c.GeneratedAtUtc" Title="@L["Common_GeneratedUtc"]" Sortable>
-                <UtcTimestamp Value="@context.GeneratedAtUtc" />
+            <PropertyColumn Property="c => c.GeneratedAtUtc" Title="Generated" Sortable Width="180">
+                <LocalTimestamp Value="@context.GeneratedAtUtc" />
             </PropertyColumn>
-            <PropertyColumn Property="c => c.OrganizationId" Title="@L["Common_History"]">
-                <a href="/admin/entitlements/history/@context.OrganizationId/@context.ProductCode">@L["Common_History"]</a>
+            <PropertyColumn Property="c => c.SnapshotVersion" Title="Revision" Sortable Width="90">
+                <a href="/admin/entitlements/@context.Id">@context.SnapshotVersion</a>
             </PropertyColumn>
-            <ActionColumn Title="@L["Common_Open"]" Width="88">
-                <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/entitlements/{context.Id}")">@L["Common_Open"]</a>
+            <ActionColumn Title="@L["Common_History"]" Width="88">
+                <a class="ant-btn ant-btn-link ant-btn-sm"
+                   href="@($"/admin/entitlements/history/{context.OrganizationId}/{Uri.EscapeDataString(context.ProductCode)}")">@L["Common_History"]</a>
+            </ActionColumn>
+            <ActionColumn Title="@L["Common_Actions"]" Width="80">
+                <Tooltip Title="@L["Common_Open"].Value">
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" Icon="eye" AriaLabel="@L["Common_Open"].Value"
+                            OnClick="@(() => Nav.NavigateTo($"/admin/entitlements/{context.Id}"))" />
+                </Tooltip>
             </ActionColumn>
         </Table>
     }
@@ -308,6 +320,8 @@ else
     private ApiCallResult<PagedResult<FeatureOverrideDto>>? _overrides;
 
     private int _page = 1;
+    private string? _sortBy;
+    private bool _sortDesc = true;
     private bool _busy;
 
     private string _overrideFeatureCode = "";
@@ -345,13 +359,34 @@ else
     }
 
     private async Task LoadListAsync() =>
-        _list = await Api.GetLatestEntitlementsAsync(page: _page);
+        _list = await Api.GetLatestEntitlementsAsync(
+            page: _page,
+            sortBy: _sortBy ?? "generated",
+            sortDesc: _sortBy is null ? true : _sortDesc);
 
-    private async Task OnPageChangedAsync(PaginationEventArgs args)
+    private async Task OnEntitlementsTableChangeAsync(QueryModel<EntitlementLatestSummaryDto> queryModel)
     {
-        _page = args.Page;
-        await LoadListAsync();
+        await AdminTableSort.ApplyChangeAsync(
+            queryModel,
+            MapSortField,
+            () => _sortBy,
+            v => _sortBy = v,
+            () => _sortDesc,
+            v => _sortDesc = v,
+            () => _page,
+            v => _page = v,
+            LoadListAsync);
     }
+
+    private static string? MapSortField(string? fieldName) => fieldName switch
+    {
+        "ProductDisplayName" => "product",
+        "OrganizationDisplayName" => "organization",
+        "SubscriptionStatus" => "status",
+        "GeneratedAtUtc" => "generated",
+        "SnapshotVersion" => "revision",
+        _ => null
+    };
 
     private async Task LoadDetailAsync()
     {

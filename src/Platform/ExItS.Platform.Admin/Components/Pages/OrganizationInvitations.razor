@@ -108,8 +108,7 @@ else
                Size="@TableSize.Small"
                Bordered
                RemoteDataSource
-               OnPageIndexChange="OnInvitePageAsync"
-               ScrollX="1100">
+               OnPageIndexChange="OnInvitePageAsync">
             <PropertyColumn Property="c => c.InviteeDisplayName" Title="@L["Common_DisplayName"]">
                 @(context.InviteeDisplayName ?? "—")
             </PropertyColumn>
