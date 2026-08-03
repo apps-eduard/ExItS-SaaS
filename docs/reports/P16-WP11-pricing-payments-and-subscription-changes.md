@@ -3,7 +3,7 @@
 > **Status:** In Progress (validation underway)  
 > **Phase:** 16 — Implementation Complete, Under Validation  
 > **Next:** P16-WP12 — Not Started  
-> **Commit SHA:** `20a8396cc1d95fff40ce0fb81e8c00eb01b9a60e`
+> **Commit SHA:** `58a3185253348dafd74f95c5e92dee6ab3d180ad` (payment linking + Admin Payments visibility)
 
 ---
 

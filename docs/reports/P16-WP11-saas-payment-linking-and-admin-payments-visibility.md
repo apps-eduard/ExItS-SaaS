@@ -4,7 +4,7 @@
 **Phase:** Phase 16 — Implementation Complete, Under Validation  
 **Work package:** P16-WP11 — Validation, Stabilization, and User Acceptance  
 **Date:** 2026-08-03
-**Commit SHA:** `8855da8376e02129e2f415aaa318f117c0b8a1b2`  
+**Commit SHA:** `58a3185253348dafd74f95c5e92dee6ab3d180ad`  
 **Related:** [P16-WP11-pricing-payments-and-subscription-changes.md](P16-WP11-pricing-payments-and-subscription-changes.md), [P16-WP11-admin-table-sizing-display-and-sorting.md](P16-WP11-admin-table-sizing-display-and-sorting.md)
 
 ## Title

@@ -56,7 +56,7 @@ Unit + integration coverage for friendly names, Revision label contract, local d
 ## Implementation SHA
 
 Prior sizing/sort pass: `d8bacd4673c5e5eb75641714193b37b76f9a31e8`  
-Overlap / ScrollX pass: `8855da8376e02129e2f415aaa318f117c0b8a1b2`
+Overlap / ScrollX pass: `58a3185253348dafd74f95c5e92dee6ab3d180ad`
 
 ---
 
