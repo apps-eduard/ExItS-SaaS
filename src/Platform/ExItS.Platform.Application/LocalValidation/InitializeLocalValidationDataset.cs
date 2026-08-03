@@ -149,15 +149,28 @@ public sealed class InitializeLocalValidationDataset
         await CleanupObsoleteSeedAsync(cancellationToken).ConfigureAwait(false);
 
         var productCode = ProductCode.PinoyBusinessPos;
+        var seedScope = string.IsNullOrWhiteSpace(_options.SeedScope)
+            ? LocalValidationOptions.SeedScopeFull
+            : _options.SeedScope.Trim();
+        var isFullSeed = string.Equals(seedScope, LocalValidationOptions.SeedScopeFull, StringComparison.OrdinalIgnoreCase);
         var organizations = new Dictionary<string, PlatformOrganization>(StringComparer.OrdinalIgnoreCase);
-        foreach (var orgDef in LocalValidationOrganizationCatalog.All)
+
+        if (isFullSeed)
         {
-            var organization = await EnsureOrganizationAsync(orgDef, cancellationToken).ConfigureAwait(false);
-            organizations[orgDef.Slug] = organization;
-            await EnsureCatalogAndCommercialAsync(organization.Id, productCode, cancellationToken).ConfigureAwait(false);
+            foreach (var orgDef in LocalValidationOrganizationCatalog.All)
+            {
+                var organization = await EnsureOrganizationAsync(orgDef, cancellationToken).ConfigureAwait(false);
+                organizations[orgDef.Slug] = organization;
+                await EnsureCatalogAndCommercialAsync(organization.Id, productCode, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        else
+        {
+            await EnsureReferenceCatalogAsync(productCode, cancellationToken).ConfigureAwait(false);
         }
 
-        foreach (var identity in LocalValidationIdentityCatalog.All)
+        var identities = LocalValidationOptions.IdentitiesForSeedScope(seedScope);
+        foreach (var identity in identities)
         {
             var user = await EnsureUserAsync(identity, cancellationToken).ConfigureAwait(false);
             await EnsurePasswordAsync(user.Id.Value, cancellationToken).ConfigureAwait(false);
@@ -176,7 +189,10 @@ public sealed class InitializeLocalValidationDataset
         }
 
         await CloseObsoleteOrganizationsAsync(cancellationToken).ConfigureAwait(false);
-        await _personalUtangSeed.ExecuteAsync(cancellationToken).ConfigureAwait(false);
+        if (isFullSeed)
+        {
+            await _personalUtangSeed.ExecuteAsync(cancellationToken).ConfigureAwait(false);
+        }
 
         _logger.LogInformation(
             "Local validation dataset initialization completed (version {DatasetVersion}).",
@@ -502,6 +518,39 @@ public sealed class InitializeLocalValidationDataset
         }
 
         return created.Value;
+    }
+
+    private async Task EnsureReferenceCatalogAsync(string productCode, CancellationToken ct)
+    {
+        const string productDisplayName = "Pinoy Business POS";
+        var product = await _products.GetByCodeAsync(ProductCode.Create(productCode), ct).ConfigureAwait(false);
+        if (product is null)
+        {
+            var created = await _createProduct.ExecuteAsync(productCode, productDisplayName, ct).ConfigureAwait(false);
+            if (!created.IsSuccess)
+            {
+                product = await _products.GetByCodeAsync(ProductCode.Create(productCode), ct).ConfigureAwait(false);
+                if (product is null)
+                {
+                    throw new InvalidOperationException(
+                        $"Local validation product create failed: {created.ErrorCode} {created.ErrorMessage}");
+                }
+            }
+            else
+            {
+                product = created.Value;
+            }
+        }
+
+        if (product is not null
+            && !string.Equals(product.DisplayName, productDisplayName, StringComparison.Ordinal))
+        {
+            product.Rename(productDisplayName, _clock.UtcNow);
+            await _products.UpdateAsync(product, ct).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
+        }
+
+        await _ensureMvpPosPlans.ExecuteAsync(ct).ConfigureAwait(false);
     }
 
     private async Task EnsureCatalogAndCommercialAsync(

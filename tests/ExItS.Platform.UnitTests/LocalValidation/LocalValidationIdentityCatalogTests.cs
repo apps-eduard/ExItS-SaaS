@@ -19,6 +19,25 @@ public sealed class LocalValidationIdentityCatalogTests
     ];
 
     [Fact]
+    public void SeedScope_PlatformAdministratorsOnly_returns_only_Olivia_and_Rafael()
+    {
+        var identities = LocalValidationOptions.IdentitiesForSeedScope(
+            LocalValidationOptions.SeedScopePlatformAdministratorsOnly);
+        Assert.Equal(2, identities.Count);
+        Assert.Contains(identities, i => i.Key == "olivia-mendoza");
+        Assert.Contains(identities, i => i.Key == "rafael-torres");
+        Assert.All(identities, i => Assert.Equal(AccountClass.Platform, i.PreferredAccountClass));
+    }
+
+    [Fact]
+    public void SeedScope_Full_returns_eight_identities()
+    {
+        var identities = LocalValidationOptions.IdentitiesForSeedScope(LocalValidationOptions.SeedScopeFull);
+        Assert.Equal(8, identities.Count);
+        Assert.Equal(LocalValidationIdentityCatalog.All.Count, identities.Count);
+    }
+
+    [Fact]
     public void Catalog_includes_eight_approved_identities_with_abc_and_xyz_organizations()
     {
         var catalog = LocalValidationIdentityCatalog.All;

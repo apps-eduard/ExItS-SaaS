@@ -335,7 +335,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
             monthlyPrice: 299m,
             annualPrice: 2990m,
             currencyCode: "PHP");
-        var preview = PlanChangeImpact.Evaluate(current, target, activeBranchCount: 2, activeStaffCount: 8);
+        var preview = PlanChangeImpact.Evaluate(current, target, activeStaffCount: 8, activeBranchCount: 2, branchCountAvailable: true);
         Assert.True(preview.HasBlockingUsageConflicts);
         Assert.Contains(preview.UsageConflicts, c => c.Resource == "Branches");
         Assert.Contains(preview.UsageConflicts, c => c.Resource == "ActiveStaff");
@@ -359,6 +359,84 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
         Assert.Equal(3, total);
         Assert.Equal(2, items.Count);
         Assert.True(items[0].SortOrder <= items[1].SortOrder);
+    }
+
+    [Fact]
+    public void Downgrade_preview_omits_branch_conflict_when_branch_count_unavailable()
+    {
+        var utc = T0;
+        var current = Plan.CreateDraft(
+            ProductCode.Create(ProductCode.PinoyBusinessPos),
+            PlanCode.Create("biz-unavail"),
+            "Business Unavail",
+            utc,
+            description: "d",
+            maxBranches: 3,
+            maxActiveStaff: 15,
+            customerCreditEnabled: true,
+            advancedReportsEnabled: true,
+            exportEnabled: true,
+            trialAllowed: true,
+            defaultTrialDays: 14,
+            sortOrder: 20,
+            monthlyPrice: 699m,
+            annualPrice: 6990m,
+            currencyCode: "PHP");
+        var target = Plan.CreateDraft(
+            ProductCode.Create(ProductCode.PinoyBusinessPos),
+            PlanCode.Create("starter-unavail"),
+            "Starter Unavail",
+            utc,
+            description: "d",
+            maxBranches: 1,
+            maxActiveStaff: 3,
+            customerCreditEnabled: false,
+            advancedReportsEnabled: false,
+            exportEnabled: false,
+            trialAllowed: true,
+            defaultTrialDays: 14,
+            sortOrder: 10,
+            monthlyPrice: 299m,
+            annualPrice: 2990m,
+            currencyCode: "PHP");
+        const string reason = "branch counts unavailable across product boundary";
+        var preview = PlanChangeImpact.Evaluate(
+            current,
+            target,
+            activeStaffCount: 2,
+            activeBranchCount: null,
+            branchCountAvailable: false,
+            branchCountUnavailableReason: reason);
+        Assert.False(preview.HasBlockingUsageConflicts);
+        Assert.DoesNotContain(preview.UsageConflicts, c => c.Resource == "Branches");
+        Assert.Equal(reason, preview.BranchCountUnavailableReason);
+    }
+
+    [Fact]
+    public void Admin_commercial_ui_exposes_pricing_preview_and_test_payments()
+    {
+        var root = FindRepoRoot();
+        var plans = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Plans.razor"));
+        Assert.Contains("MonthlyPrice", plans, StringComparison.Ordinal);
+        Assert.Contains("AnnualPrice", plans, StringComparison.Ordinal);
+        Assert.Contains("Currency", plans, StringComparison.Ordinal);
+
+        var commercial = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "OrganizationCommercial.razor"));
+        Assert.Contains("PreviewPlanChangeAsync", commercial, StringComparison.Ordinal);
+        Assert.Contains("UsageConflicts", commercial, StringComparison.Ordinal);
+        Assert.Contains("SimulateLocalValidationPaymentAsync", commercial, StringComparison.Ordinal);
+        Assert.Contains("Existing data is not deleted", commercial, StringComparison.Ordinal);
+
+        var lvPayments = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "LocalValidationTestPayments.razor"));
+        Assert.Contains("IsAvailable", lvPayments, StringComparison.Ordinal);
+
+        var nav = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "AdminNav.razor"));
+        Assert.Contains("LocalValidationAvailable", nav, StringComparison.Ordinal);
+        Assert.Contains("local-validation/test-payments", nav, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

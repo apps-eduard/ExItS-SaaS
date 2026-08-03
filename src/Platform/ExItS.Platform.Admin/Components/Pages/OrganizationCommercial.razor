@@ -273,6 +273,12 @@ else
             var impactLines = new List<string>();
             if (preview.IsSuccess && preview.Data is not null)
             {
+                if (!preview.Data.BranchCountAvailable
+                    && !string.IsNullOrWhiteSpace(preview.Data.BranchCountUnavailableReason))
+                {
+                    impactLines.Add(preview.Data.BranchCountUnavailableReason);
+                }
+
                 foreach (var conflict in preview.Data.UsageConflicts)
                 {
                     impactLines.Add(conflict.Message);
@@ -284,9 +290,11 @@ else
                 }
             }
 
+            var retentionNote =
+                "Existing data is not deleted. After the downgrade takes effect, new over-limit creation is blocked.";
             var content = impactLines.Count == 0
-                ? $"Schedule downgrade to {plan.DisplayName} at period end? Product data is retained."
-                : $"Schedule downgrade to {plan.DisplayName}?\n\n" + string.Join("\n", impactLines) + "\n\nExisting data is retained; new over-limit activity is blocked.";
+                ? $"Schedule downgrade to {plan.DisplayName} at period end? {retentionNote}"
+                : $"Schedule downgrade to {plan.DisplayName}?\n\n" + string.Join("\n", impactLines) + $"\n\n{retentionNote}";
 
             var confirmed = await Confirm.Show(
                 content,

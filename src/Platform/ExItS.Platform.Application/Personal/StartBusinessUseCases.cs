@@ -95,6 +95,11 @@ public sealed class StartBusinessForPersonalUser
     private readonly IProductRepository _products;
     private readonly IPlanRepository _plans;
     private readonly ITrialDefinitionRepository _trials;
+    private readonly IPlatformOrganizationRepository _organizations;
+    private readonly IOrganizationMembershipRepository _memberships;
+    private readonly ISubscriptionRepository _subscriptions;
+    private readonly IEntitlementSnapshotRepository _entitlementSnapshots;
+    private readonly IProductAccessAssignmentRepository _accessAssignments;
     private readonly IProductLocalRoleGrantRepository _roleGrants;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
@@ -122,6 +127,11 @@ public sealed class StartBusinessForPersonalUser
         IProductRepository products,
         IPlanRepository plans,
         ITrialDefinitionRepository trials,
+        IPlatformOrganizationRepository organizations,
+        IOrganizationMembershipRepository memberships,
+        ISubscriptionRepository subscriptions,
+        IEntitlementSnapshotRepository entitlementSnapshots,
+        IProductAccessAssignmentRepository accessAssignments,
         IProductLocalRoleGrantRepository roleGrants,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
@@ -148,6 +158,11 @@ public sealed class StartBusinessForPersonalUser
         _products = products;
         _plans = plans;
         _trials = trials;
+        _organizations = organizations;
+        _memberships = memberships;
+        _subscriptions = subscriptions;
+        _entitlementSnapshots = entitlementSnapshots;
+        _accessAssignments = accessAssignments;
         _roleGrants = roleGrants;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
@@ -178,6 +193,45 @@ public sealed class StartBusinessForPersonalUser
             AuditOutcome.Succeeded,
             summary: "Start a Business flow initiated from Personal session.",
             cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        PlatformOrganization? existingOrganization = null;
+        try
+        {
+            var normalizedSlug = PlatformOrganization.NormalizeSlug(request.Slug);
+            existingOrganization = await _organizations
+                .GetBySlugAsync(normalizedSlug, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (DomainException)
+        {
+            // Invalid slug — CreatePlatformOrganization will return the domain error.
+        }
+
+        if (existingOrganization is not null)
+        {
+            var existingMembership = await _memberships
+                .FindActiveByUserAndOrganizationAsync(userId, existingOrganization.Id, cancellationToken)
+                .ConfigureAwait(false);
+            if (existingMembership is not null
+                && existingMembership.Role == OrganizationRole.OrganizationOwner)
+            {
+                return await ResumeExistingStartBusinessAsync(
+                        userId,
+                        currentSessionId,
+                        existingOrganization,
+                        existingMembership,
+                        request,
+                        productCode,
+                        ipAddress,
+                        userAgent,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            return ApplicationResult<StartBusinessResultDto>.Failure(
+                ApplicationErrorCodes.SlugConflict,
+                "A Platform Organization with this slug already exists.");
+        }
 
         var orgResult = await _createOrganization
             .ExecuteAsync(request.DisplayName, request.Slug, cancellationToken)
@@ -473,6 +527,106 @@ public sealed class StartBusinessForPersonalUser
             ProductCode: productCode));
     }
 
+    private async Task<ApplicationResult<StartBusinessResultDto>> ResumeExistingStartBusinessAsync(
+        PlatformUserId userId,
+        PlatformAuthSessionId currentSessionId,
+        PlatformOrganization organization,
+        OrganizationMembership membership,
+        StartBusinessRequest request,
+        string productCode,
+        string? ipAddress,
+        string? userAgent,
+        CancellationToken cancellationToken)
+    {
+        AccountProfile orgProfile;
+        try
+        {
+            orgProfile = await _ensureProfiles
+                .ExecuteAsync(userId, AccountClass.Organization, exclusivePreferredClass: false, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<StartBusinessResultDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+
+        var sessionResult = await _selectProfile
+            .ExecuteAsync(userId, currentSessionId, orgProfile.Id.Value, ipAddress, userAgent, cancellationToken)
+            .ConfigureAwait(false);
+        if (!sessionResult.IsSuccess || sessionResult.Value is null)
+        {
+            return ApplicationResult<StartBusinessResultDto>.Failure(
+                sessionResult.ErrorCode ?? ApplicationErrorCodes.SessionInvalid,
+                sessionResult.ErrorMessage ?? "Organization session switch failed.");
+        }
+
+        Guid? subscriptionId = null;
+        int? snapshotVersion = null;
+        Guid? accessAssignmentId = null;
+        Guid? roleGrantId = null;
+        string? roleCode = null;
+        var entitlementActivated = false;
+        var ownerRoleGranted = false;
+        var pc = ProductCode.Create(productCode);
+
+        var subscription = await _subscriptions
+            .GetCurrentForOrganizationProductAsync(organization.Id, pc, cancellationToken)
+            .ConfigureAwait(false);
+        if (subscription is not null)
+        {
+            subscriptionId = subscription.Id.Value;
+            entitlementActivated = request.ActivatePosEntitlement;
+        }
+
+        if (entitlementActivated)
+        {
+            snapshotVersion = await _entitlementSnapshots
+                .GetLatestSnapshotVersionAsync(organization.Id, pc, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        if (request.ActivateProductAccess && entitlementActivated)
+        {
+            var access = await _accessAssignments
+                .FindActiveByUserOrganizationProductAsync(userId, organization.Id, pc, cancellationToken)
+                .ConfigureAwait(false);
+            accessAssignmentId = access?.Id.Value;
+        }
+
+        if (request.AssignPosOwnerRole)
+        {
+            var existingRole = await _roleGrants
+                .FindActiveByUserOrganizationProductAsync(organization.Id, userId, productCode, cancellationToken)
+                .ConfigureAwait(false);
+            if (existingRole is not null)
+            {
+                roleGrantId = existingRole.Id.Value;
+                roleCode = existingRole.RoleCode;
+                ownerRoleGranted = true;
+            }
+        }
+
+        var login = sessionResult.Value;
+        return ApplicationResult<StartBusinessResultDto>.Success(new StartBusinessResultDto(
+            organization.Id.Value,
+            membership.Id.Value,
+            orgProfile.Id.Value,
+            login.SessionToken,
+            login.SessionId,
+            login.AccountClass ?? AccountClass.Organization.ToString(),
+            login.AllowedScope ?? "Organization",
+            login.SelectedOrganizationId ?? organization.Id.Value,
+            subscriptionId,
+            snapshotVersion,
+            accessAssignmentId,
+            roleGrantId,
+            roleCode,
+            OrganizationOwnerGranted: true,
+            PosEntitlementActivated: entitlementActivated,
+            PosOwnerRoleGranted: ownerRoleGranted,
+            ProductCode: productCode));
+    }
+
     private sealed record CatalogSelection(PlanId PlanId, PlanVersionId PlanVersionId, TrialDefinitionId TrialDefinitionId);
 
     private async Task<ApplicationResult<CatalogSelection>> ResolveCatalogAsync(
@@ -523,12 +677,45 @@ public sealed class StartBusinessForPersonalUser
         }
 
         var trials = await _trials.ListByProductAsync(pc, cancellationToken).ConfigureAwait(false);
-        var trial = trials.FirstOrDefault(t => t.Status == TrialDefinitionStatus.Active);
+        var activeTrials = trials.Where(t => t.Status == TrialDefinitionStatus.Active).ToList();
+        var expectedDuration = TimeSpan.FromDays(plan.DefaultTrialDays);
+        var trial = activeTrials.FirstOrDefault(t => t.PlanId == plan.Id)
+            ?? activeTrials.FirstOrDefault(t => t.Duration == expectedDuration);
+
         if (trial is null)
         {
-            return ApplicationResult<CatalogSelection>.Failure(
-                ApplicationErrorCodes.TrialNotFound,
-                "No active trial definition is available for the product.");
+            var spec = MvpPosPlanCatalog.Plans.FirstOrDefault(p =>
+                string.Equals(p.PlanKey, planKey, StringComparison.Ordinal));
+            FeatureGrantSpec[] grants;
+            if (spec is not null)
+            {
+                grants = EnsureMvpPosPlans.BuildGrants(spec);
+            }
+            else
+            {
+                grants = ProvisionalFeatureCodes
+                    .Select(c => FeatureGrantSpec.Boolean(FeatureCode.Create(c), true))
+                    .ToArray();
+            }
+
+            var createdTrial = await _createTrial
+                .ExecuteAsync(
+                    productCode,
+                    $"{plan.DisplayName} Trial",
+                    expectedDuration,
+                    grants,
+                    Array.Empty<FeatureGrantSpec>(),
+                    planId: plan.Id.Value,
+                    cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+            if (!createdTrial.IsSuccess || createdTrial.Value is null)
+            {
+                return ApplicationResult<CatalogSelection>.Failure(
+                    createdTrial.ErrorCode ?? ApplicationErrorCodes.TrialNotFound,
+                    createdTrial.ErrorMessage ?? "Trial create failed.");
+            }
+
+            trial = createdTrial.Value;
         }
 
         return ApplicationResult<CatalogSelection>.Success(

@@ -177,6 +177,10 @@ public sealed record PlanChangeImpactPreview(
     string CurrentPlanDisplayName,
     Guid TargetPlanId,
     string TargetPlanDisplayName,
+    int ActiveStaffCount,
+    int? ActiveBranchCount,
+    bool BranchCountAvailable,
+    string? BranchCountUnavailableReason,
     IReadOnlyList<PlanUsageConflict> UsageConflicts,
     IReadOnlyList<string> LostFeatures,
     bool HasBlockingUsageConflicts);
@@ -187,17 +191,19 @@ public static class PlanChangeImpact
     public static PlanChangeImpactPreview Evaluate(
         Plan currentPlan,
         Plan targetPlan,
-        int activeBranchCount,
-        int activeStaffCount)
+        int activeStaffCount,
+        int? activeBranchCount,
+        bool branchCountAvailable,
+        string? branchCountUnavailableReason = null)
     {
         var conflicts = new List<PlanUsageConflict>();
-        if (activeBranchCount > targetPlan.MaxBranches)
+        if (branchCountAvailable && activeBranchCount.HasValue && activeBranchCount.Value > targetPlan.MaxBranches)
         {
             conflicts.Add(new PlanUsageConflict(
                 "Branches",
-                activeBranchCount,
+                activeBranchCount.Value,
                 targetPlan.MaxBranches,
-                $"Current branches ({activeBranchCount}) exceed the target limit ({targetPlan.MaxBranches}). Existing branches are retained; new branches that would further exceed the limit are blocked."));
+                $"Current branches ({activeBranchCount.Value}) exceed the target limit ({targetPlan.MaxBranches}). Existing branches are retained; new branches that would further exceed the limit are blocked."));
         }
 
         if (activeStaffCount > targetPlan.MaxActiveStaff)
@@ -230,6 +236,10 @@ public static class PlanChangeImpact
             currentPlan.DisplayName,
             targetPlan.Id.Value,
             targetPlan.DisplayName,
+            activeStaffCount,
+            activeBranchCount,
+            branchCountAvailable,
+            branchCountUnavailableReason,
             conflicts,
             lost,
             conflicts.Count > 0);
@@ -240,16 +250,16 @@ public sealed class PreviewOrganizationPlanChange
 {
     private readonly ISubscriptionRepository _subscriptions;
     private readonly IPlanRepository _plans;
-    private readonly IOrganizationMembershipRepository _memberships;
+    private readonly IOrganizationProductUsageReader _usageReader;
 
     public PreviewOrganizationPlanChange(
         ISubscriptionRepository subscriptions,
         IPlanRepository plans,
-        IOrganizationMembershipRepository memberships)
+        IOrganizationProductUsageReader usageReader)
     {
         _subscriptions = subscriptions;
         _plans = plans;
-        _memberships = memberships;
+        _usageReader = usageReader;
     }
 
     public async Task<ApplicationResult<PlanChangeImpactPreview>> ExecuteAsync(
@@ -285,12 +295,20 @@ public sealed class PreviewOrganizationPlanChange
                 "Current plan was not found.");
         }
 
-        var (_, staffTotal) = await _memberships
-            .ListByOrganizationAsync(organizationId, MembershipStatus.Active, skip: 0, take: 1, cancellationToken)
+        var usage = await _usageReader
+            .GetUsageAsync(organizationId, productCode, cancellationToken)
             .ConfigureAwait(false);
-        var branches = activeBranchCount ?? 1;
+        var branchCountAvailable = usage.BranchCountAvailable || activeBranchCount.HasValue;
+        var branchCount = activeBranchCount ?? usage.ActiveBranchCount;
+        var unavailableReason = branchCountAvailable ? null : usage.BranchCountUnavailableReason;
         return ApplicationResult<PlanChangeImpactPreview>.Success(
-            PlanChangeImpact.Evaluate(currentPlan, targetPlan, branches, staffTotal));
+            PlanChangeImpact.Evaluate(
+                currentPlan,
+                targetPlan,
+                usage.ActiveStaffCount,
+                branchCount,
+                branchCountAvailable,
+                unavailableReason));
     }
 }
 

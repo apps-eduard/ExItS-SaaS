@@ -35,6 +35,12 @@ public sealed class LocalValidationHostedService(
             return;
         }
 
+        if (!options.Value.RunHostedSeed)
+        {
+            logger.LogInformation("LocalValidation RunHostedSeed=false; skipping hosted migrate/seed.");
+            return;
+        }
+
         logger.LogInformation("LocalValidation hosted initialization beginning (non-Production).");
 
         await using var scope = scopeFactory.CreateAsyncScope();

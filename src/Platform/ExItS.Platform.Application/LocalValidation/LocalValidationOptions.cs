@@ -11,8 +11,20 @@ public sealed class LocalValidationOptions
 {
     public const string SectionName = "LocalValidation";
 
+    public const string SeedScopeFull = "Full";
+    public const string SeedScopePlatformAdministratorsOnly = "PlatformAdministratorsOnly";
+
     /// <summary>Must be true for dataset seed and seed-identity discovery (non-Production only).</summary>
     public bool Enabled { get; set; }
+
+    /// <summary>
+    /// When false, <see cref="LocalValidationHostedService"/> skips migrate/seed (integration tests).
+    /// Default true when Local Validation is enabled.
+    /// </summary>
+    public bool RunHostedSeed { get; set; } = true;
+
+    /// <summary><see cref="SeedScopeFull"/> (default) or <see cref="SeedScopePlatformAdministratorsOnly"/>.</summary>
+    public string SeedScope { get; set; } = SeedScopeFull;
 
     /// <summary>
     /// Password applied to approved Local Validation identities for normal /auth/login.
@@ -34,6 +46,11 @@ public sealed class LocalValidationOptions
 
     /// <summary>Legacy single-org display name kept for callers that still expect the first store.</summary>
     public const string OrgDisplayName = LocalValidationOrganizationCatalog.AbcSariSariDisplayName;
+
+    public static IReadOnlyList<LocalValidationIdentityDefinition> IdentitiesForSeedScope(string? seedScope) =>
+        string.Equals(seedScope, SeedScopePlatformAdministratorsOnly, StringComparison.OrdinalIgnoreCase)
+            ? LocalValidationIdentityCatalog.PlatformAdministratorsOnly
+            : LocalValidationIdentityCatalog.All;
 }
 
 public sealed record LocalValidationOrganizationDefinition(string Slug, string DisplayName);
@@ -123,6 +140,36 @@ public static class ObsoleteLocalValidationOrganizations
 
 public static class LocalValidationIdentityCatalog
 {
+    public static IReadOnlyList<LocalValidationIdentityDefinition> PlatformAdministratorsOnly { get; } =
+    [
+        new(
+            Key: "olivia-mendoza",
+            Username: "olivia.mendoza",
+            DisplayName: "Olivia Mendoza",
+            Email: "olivia.mendoza@exits.local",
+            Summary: "Platform account — Platform Administrator only.",
+            PreferredAccountClass: AccountClass.Platform,
+            AssignPlatformRole: PlatformSystemRole.PlatformAdministrator,
+            HasOrganizationMembership: false,
+            OrganizationSlug: null,
+            OrganizationRole: null,
+            GrantPosProductAccess: false,
+            PosLocalRoleCode: null),
+        new(
+            Key: "rafael-torres",
+            Username: "rafael.torres",
+            DisplayName: "Rafael Torres",
+            Email: "rafael.torres@exits.local",
+            Summary: "Platform account — Platform Support only.",
+            PreferredAccountClass: AccountClass.Platform,
+            AssignPlatformRole: PlatformSystemRole.PlatformSupport,
+            HasOrganizationMembership: false,
+            OrganizationSlug: null,
+            OrganizationRole: null,
+            GrantPosProductAccess: false,
+            PosLocalRoleCode: null)
+    ];
+
     public static IReadOnlyList<LocalValidationIdentityDefinition> All { get; } =
     [
         new(

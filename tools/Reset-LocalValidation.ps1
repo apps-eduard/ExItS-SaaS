@@ -17,7 +17,7 @@
   2. Remove Local Validation Docker volumes only
   3. Optionally clear Admin DataProtection keys for Local Validation
   4. Start Local Validation (migrate + seed exact dataset)
-  5. Verify seed-identities returns 8 approved identities
+  5. Verify seed-identities returns exactly Olivia + Rafael (PlatformAdministratorsOnly)
 
 .EXAMPLE
   .\tools\Reset-LocalValidation.ps1 -ConfirmReset
@@ -81,6 +81,23 @@ function Assert-NotProductionEnvironment {
     }
 }
 
+function Import-DotEnv([string]$Path) {
+    $map = @{}
+    Get-Content -LiteralPath $Path | ForEach-Object {
+        $line = $_.Trim()
+        if ($line.Length -eq 0 -or $line.StartsWith('#')) { return }
+        $idx = $line.IndexOf('=')
+        if ($idx -lt 1) { return }
+        $key = $line.Substring(0, $idx).Trim()
+        $value = $line.Substring($idx + 1).Trim()
+        if (($value.StartsWith('"') -and $value.EndsWith('"')) -or ($value.StartsWith("'") -and $value.EndsWith("'"))) {
+            $value = $value.Substring(1, $value.Length - 2)
+        }
+        $map[$key] = $value
+    }
+    return $map
+}
+
 if (-not $ConfirmReset) {
     Write-Fail 'Refusing to run: pass -ConfirmReset to intentionally wipe Local Validation databases.'
     Write-Host @'
@@ -117,6 +134,22 @@ if (-not (Test-Path -LiteralPath $envFile)) {
 if (-not (Test-Path -LiteralPath $composeFile)) {
     throw "Missing $composeFile"
 }
+
+$envMap = Import-DotEnv $envFile
+
+$lvEnabled = $false
+foreach ($key in @('LocalValidation__Enabled', 'LOCAL_VALIDATION')) {
+    if ($envMap.ContainsKey($key) -and [string]::Equals([string]$envMap[$key], 'true', [StringComparison]::OrdinalIgnoreCase)) {
+        $lvEnabled = $true
+        break
+    }
+}
+if (-not $lvEnabled) {
+    throw 'Local Validation must be enabled in deploy/docker/.env.local-validation (LocalValidation__Enabled=true or LOCAL_VALIDATION=true).'
+}
+
+Write-Note 'Catalog/plans/features/roles are recreated by Platform migrate+seed after volume wipe.'
+Write-Note 'POS product DB resets via volume wipe of exits_local_validation_pos_db_data (product-owned container migrate on start).'
 
 Write-Step 'Stopping Local Validation apps and database containers...'
 & $stopScript -StopDatabases
@@ -156,8 +189,9 @@ if ($SkipStart) {
     exit 0
 }
 
-Write-Step 'Starting Local Validation (migrate + seed exact dataset)...'
-& $startScript
+Write-Step 'Starting Local Validation (migrate + seed PlatformAdministratorsOnly)...'
+$env:LocalValidation__SeedScope = 'PlatformAdministratorsOnly'
+& $startScript -SeedScope PlatformAdministratorsOnly
 if ($LASTEXITCODE -ne 0) { throw "Start-LocalValidation.ps1 failed ($LASTEXITCODE)." }
 
 Write-Step "Verifying seed identities at http://localhost:8091 (up to $VerifySeconds s)..."
@@ -172,18 +206,12 @@ while ([DateTime]::UtcNow -lt $deadline) {
             if ($json.items) { $items = @($json.items) }
             if ($json.Count -and -not $json.items) { $items = @($json) }
             $count = @($items).Count
-            if ($count -ge 8) {
+            if ($count -eq 2) {
                 Write-Ok "Seed identities available: $count"
                 $emails = @($items | ForEach-Object { $_.email })
                 foreach ($required in @(
                         'olivia.mendoza@exits.local',
-                        'rafael.torres@exits.local',
-                        'maria.santos@exits.local',
-                        'carlo.reyes@exits.local',
-                        'ana.cruz@exits.local',
-                        'daniel.garcia@exits.local',
-                        'luis.navarro@exits.local',
-                        'sofia.ramos@exits.local'
+                        'rafael.torres@exits.local'
                     )) {
                     if (-not ($emails | Where-Object { $_ -eq $required })) {
                         throw "Missing required seed identity email: $required"
@@ -192,7 +220,7 @@ while ([DateTime]::UtcNow -lt $deadline) {
                 $verified = $true
                 break
             }
-            Write-Note "Seed identities not ready yet (count=$count)."
+            Write-Note "Seed identities not ready yet (count=$count; expected 2 for PlatformAdministratorsOnly)."
         }
     }
     catch {
@@ -207,6 +235,6 @@ if (-not $verified) {
 }
 
 Write-Ok 'Local Validation reset and reseed completed.'
-Write-Host 'Organizations: ABC Sari-Sari Store (abc-sari-sari), XYZ Mini Grocery (xyz-mini-grocery)'
-Write-Host 'Identities: 2 Platform + 4 Organization + 2 Personal'
+Write-Host 'Seed scope: PlatformAdministratorsOnly (Olivia Mendoza + Rafael Torres)'
+Write-Host 'Reference catalog/plans/features/roles: recreated by migrate+seed'
 Write-Host 'Admin: http://localhost:8090/'

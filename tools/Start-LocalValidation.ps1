@@ -22,7 +22,9 @@
 [CmdletBinding()]
 param(
     [int]$PortWaitSeconds = 120,
-    [int]$DbHealthySeconds = 90
+    [int]$DbHealthySeconds = 90,
+    [ValidateSet('Full', 'PlatformAdministratorsOnly')]
+    [string]$SeedScope = 'Full'
 )
 
 Set-StrictMode -Version Latest
@@ -313,6 +315,7 @@ $adminProject = Join-Path $repoRoot 'src\Platform\ExItS.Platform.Admin\ExItS.Pla
 $windowPids = @()
 
 Write-Step 'Starting Platform API (dotnet watch)...'
+$seedScopeValue = if ([string]::IsNullOrWhiteSpace($env:LocalValidation__SeedScope)) { $SeedScope } else { [string]$env:LocalValidation__SeedScope }
 $windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Platform API' -RepoRoot $repoRoot -Project $platformProject -EnvMap @{
     ASPNETCORE_ENVIRONMENT = 'Staging'
     ASPNETCORE_URLS = $platformApiUrl
@@ -321,6 +324,7 @@ $windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Platform API' -Re
     Cors__AllowedOrigins__0 = $adminOrigin
     Security__EnforceHttps = 'false'
     LocalValidation__Enabled = 'true'
+    LocalValidation__SeedScope = $seedScopeValue
     LocalValidation__SharedPassword = [string]$envMap['LOCAL_VALIDATION_SHARED_PASSWORD']
     PlatformEmail__SmtpHost = '127.0.0.1'
     PlatformEmail__SmtpPort = "$mailpitSmtpPort"

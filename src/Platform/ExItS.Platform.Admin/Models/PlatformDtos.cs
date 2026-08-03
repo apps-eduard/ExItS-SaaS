@@ -675,6 +675,10 @@ public sealed record PlanChangeImpactPreviewDto(
     string CurrentPlanDisplayName,
     Guid TargetPlanId,
     string TargetPlanDisplayName,
+    int ActiveStaffCount,
+    int? ActiveBranchCount,
+    bool BranchCountAvailable,
+    string? BranchCountUnavailableReason,
     IReadOnlyList<PlanUsageConflictDto> UsageConflicts,
     IReadOnlyList<string> LostFeatures,
     bool HasBlockingUsageConflicts);

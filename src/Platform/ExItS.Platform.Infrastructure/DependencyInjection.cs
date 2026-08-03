@@ -15,6 +15,7 @@ using ExItS.Platform.Infrastructure.Identity;
 using ExItS.Platform.Infrastructure.Persistence;
 using ExItS.Platform.Infrastructure.Payments;
 using ExItS.Platform.Infrastructure.Persistence.Repositories;
+using ExItS.Platform.Infrastructure.Subscriptions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -89,6 +90,10 @@ public static class DependencyInjection
         services.AddScoped<IPlatformActorAccessor, DevelopmentPlatformActorAccessor>();
         services.AddScoped<IPlatformAuthorizationService, PlatformAuthorizationService>();
         services.AddScoped<IAuditWriter, AuditWriter>();
+
+        services.AddScoped<MembershipStaffUsageReader>();
+        services.AddScoped<UnresolvedProductBranchUsageReader>();
+        services.AddScoped<IOrganizationProductUsageReader, CompositeOrganizationProductUsageReader>();
 
         services.Configure<PlatformPasswordOptions>(config.GetSection(PlatformPasswordOptions.SectionName));
         services.Configure<PlatformLockoutOptions>(config.GetSection(PlatformLockoutOptions.SectionName));
