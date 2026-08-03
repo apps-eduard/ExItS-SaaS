@@ -118,6 +118,7 @@ public static class PlatformAuditActions
     public const string ProductAccessRevoked = "platform.product_access.revoked";
 
     public const string SubscriptionTrialStarted = "platform.subscription.trial_started";
+    public const string SubscriptionTrialConverted = "platform.subscription.trial_converted";
     public const string SubscriptionPaidStarted = "platform.subscription.paid_started";
     public const string SubscriptionActivated = "platform.subscription.activated";
     public const string SubscriptionEnteredGracePeriod = "platform.subscription.grace_period_entered";

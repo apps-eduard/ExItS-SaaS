@@ -58,6 +58,11 @@ public interface ISubscriptionRepository
         ProductCode productCode,
         CancellationToken cancellationToken = default);
 
+    Task<bool> HasConsumedTrialAsync(
+        PlatformOrganizationId organizationId,
+        ProductCode productCode,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Subscription>> ListDuePendingPlanChangesAsync(
         DateTimeOffset asOfUtc,
         CancellationToken cancellationToken = default);

@@ -87,6 +87,8 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.EntitlementStale
             or ApplicationErrorCodes.EntitlementDenied
             or ApplicationErrorCodes.ActiveSubscriptionConflict
+            or ApplicationErrorCodes.TrialNotAllowed
+            or ApplicationErrorCodes.TrialAlreadyConsumed
             or ApplicationErrorCodes.ConcurrencyConflict
             or ApplicationErrorCodes.OrganizationNotEligible
             or ApplicationErrorCodes.ProductNotActive

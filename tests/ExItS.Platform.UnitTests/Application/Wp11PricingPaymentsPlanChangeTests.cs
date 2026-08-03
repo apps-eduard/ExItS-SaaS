@@ -73,7 +73,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
     public async Task Subscription_retains_agreed_price_when_plan_catalog_price_changes()
     {
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);
-        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.StarterPlan, ctx.StarterVersion);
+        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
         var originalPrice = sub.AgreedPrice;
 
         var update = new UpdatePlanCommercialPackage(ctx.Plans, ctx.UnitOfWork, ctx.Clock);
@@ -148,7 +148,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
     public async Task Simulated_payment_success_activates_trialing_subscription()
     {
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);
-        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.StarterPlan, ctx.StarterVersion);
+        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
         var initial = new ProcessSubscriptionInitialPayment(
             ctx.Subscriptions, ctx.Plans, ctx.PaymentProvider, ctx.GenerateSnapshot, ctx.UnitOfWork, ctx.Clock);
         var key = Guid.NewGuid().ToString("N");
@@ -164,7 +164,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
     public async Task Simulated_decline_does_not_activate_paid_subscription()
     {
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);
-        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.StarterPlan, ctx.StarterVersion);
+        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
         var initial = new ProcessSubscriptionInitialPayment(
             ctx.Subscriptions, ctx.Plans, ctx.PaymentProvider, ctx.GenerateSnapshot, ctx.UnitOfWork, ctx.Clock);
         var key = Guid.NewGuid().ToString("N");
@@ -183,7 +183,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
     public async Task Simulated_pending_and_failed_statuses_are_represented(string simulation, PaymentProviderResultStatus expected)
     {
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);
-        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.StarterPlan, ctx.StarterVersion);
+        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
         var key = Guid.NewGuid().ToString("N");
         var charge = new PaymentChargeRequest(
             ctx.Organization.Id.Value, sub.Id.Value, 499m, "PHP", key, "test");
@@ -195,7 +195,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
     public async Task Duplicate_payment_event_is_idempotent()
     {
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);
-        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.StarterPlan, ctx.StarterVersion);
+        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
         var key = Guid.NewGuid().ToString("N");
         var charge = new PaymentChargeRequest(
             ctx.Organization.Id.Value, sub.Id.Value, 499m, "PHP", key, "test");
@@ -240,7 +240,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
     public async Task Trialing_subscription_generates_entitlement_snapshot()
     {
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);
-        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.StarterPlan, ctx.StarterVersion);
+        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
         var snapshot = await ctx.GenerateSnapshot.ExecuteAsync(sub.Id, expectedNextVersion: 1);
         Assert.True(snapshot.IsSuccess);
         Assert.Equal(SubscriptionStatus.Trialing, snapshot.Value!.SubscriptionStatus);
@@ -250,7 +250,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
     public async Task Expired_trial_subscription_is_not_active_like()
     {
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);
-        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.StarterPlan, ctx.StarterVersion);
+        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
         sub.Expire(T0.AddDays(15));
         await ctx.Subscriptions.UpdateAsync(sub);
         Assert.False(Subscription.IsActiveLike(sub.Status));
@@ -261,7 +261,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
     public async Task Upgrade_applies_plan_price_and_entitlement_revision()
     {
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);
-        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.StarterPlan, ctx.StarterVersion);
+        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
         await ctx.GenerateSnapshot.ExecuteAsync(sub.Id, expectedNextVersion: 1);
         var upgrade = new UpgradeOrganizationSubscription(
             ctx.Organizations, ctx.Products, ctx.Plans, ctx.Subscriptions,
@@ -269,13 +269,13 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
         var result = await upgrade.ExecuteAsync(
             ctx.Organization.Id,
             ProductCode.Create(ProductCode.PinoyBusinessPos),
-            ctx.BusinessPlan.Id,
+            ctx.ProPlan.Id,
             BillingCycle.Monthly,
             idempotencyKey: null,
             skipPaymentWhenTrialing: true);
         Assert.True(result.IsSuccess);
-        Assert.Equal(ctx.BusinessPlan.Id, result.Value!.PlanId);
-        Assert.Equal(ctx.BusinessPlan.MonthlyPrice, result.Value.AgreedPrice);
+        Assert.Equal(ctx.ProPlan.Id, result.Value!.PlanId);
+        Assert.Equal(ctx.ProPlan.MonthlyPrice, result.Value.AgreedPrice);
     }
 
     [Fact]
@@ -427,6 +427,8 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
         Assert.Contains("PreviewPlanChangeAsync", commercial, StringComparison.Ordinal);
         Assert.Contains("UsageConflicts", commercial, StringComparison.Ordinal);
         Assert.Contains("SimulateLocalValidationPaymentAsync", commercial, StringComparison.Ordinal);
+        Assert.Contains("ConvertTrialSubscriptionAsync", commercial, StringComparison.Ordinal);
+        Assert.Contains("Choose a Plan", commercial, StringComparison.Ordinal);
         Assert.Contains("Existing data is not deleted", commercial, StringComparison.Ordinal);
 
         var lvPayments = File.ReadAllText(Path.Combine(
@@ -461,6 +463,183 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
         Assert.Contains("CanManageLifecycle", orgs, StringComparison.Ordinal);
         Assert.DoesNotContain("assign Plan to Personal", File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "PersonalStartBusiness.razor")), StringComparison.OrdinalIgnoreCase);
+        var startBusiness = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "PersonalStartBusiness.razor"));
+        Assert.Contains("Start Free Trial", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("Subscribe Now", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("Try Business Free First", startBusiness, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Starter_trial_is_rejected()
+    {
+        var ctx = await Wp11CommercialHarness.CreateAsync(T0);
+        var start = new StartTrialSubscription(
+            ctx.Organizations, ctx.Products, ctx.Plans, ctx.Trials, ctx.Subscriptions, ctx.UnitOfWork, ctx.Clock);
+        var result = await start.ExecuteAsync(
+            ctx.Organization.Id, ctx.StarterPlan.Id, ctx.StarterVersion.Id, ctx.Trial.Id);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.TrialNotAllowed, result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Pro_trial_is_rejected()
+    {
+        var ctx = await Wp11CommercialHarness.CreateAsync(T0);
+        var proVersions = await ctx.Plans.ListVersionsAsync(ctx.ProPlan.Id);
+        var proVersion = proVersions.First(v => v.Status == PlanVersionStatus.Published);
+        var start = new StartTrialSubscription(
+            ctx.Organizations, ctx.Products, ctx.Plans, ctx.Trials, ctx.Subscriptions, ctx.UnitOfWork, ctx.Clock);
+        var result = await start.ExecuteAsync(
+            ctx.Organization.Id, ctx.ProPlan.Id, proVersion.Id, ctx.Trial.Id);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.TrialNotAllowed, result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Business_trial_is_accepted_with_14_day_duration()
+    {
+        var ctx = await Wp11CommercialHarness.CreateAsync(T0);
+        var start = new StartTrialSubscription(
+            ctx.Organizations, ctx.Products, ctx.Plans, ctx.Trials, ctx.Subscriptions, ctx.UnitOfWork, ctx.Clock);
+        var result = await start.ExecuteAsync(
+            ctx.Organization.Id, ctx.BusinessPlan.Id, ctx.BusinessVersion.Id, ctx.Trial.Id);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(SubscriptionStatus.Trialing, result.Value!.Status);
+        Assert.InRange((result.Value.TrialEndUtc!.Value - result.Value.TrialStartUtc!.Value).TotalDays, 13.9, 14.1);
+    }
+
+    [Fact]
+    public async Task Second_trial_for_same_org_product_is_rejected()
+    {
+        var ctx = await Wp11CommercialHarness.CreateAsync(T0);
+        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
+        sub.Expire(T0.AddDays(15));
+        await ctx.Subscriptions.UpdateAsync(sub);
+        var start = new StartTrialSubscription(
+            ctx.Organizations, ctx.Products, ctx.Plans, ctx.Trials, ctx.Subscriptions, ctx.UnitOfWork, ctx.Clock);
+        var result = await start.ExecuteAsync(
+            ctx.Organization.Id, ctx.BusinessPlan.Id, ctx.BusinessVersion.Id, ctx.Trial.Id);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.TrialAlreadyConsumed, result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Business_trial_converts_to_starter_on_successful_payment()
+    {
+        var ctx = await Wp11CommercialHarness.CreateAsync(T0);
+        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
+        var convert = new ConvertTrialSubscription(
+            ctx.Organizations, ctx.Plans, ctx.Subscriptions,
+            new ProcessSubscriptionInitialPayment(
+                ctx.Subscriptions, ctx.Plans, ctx.PaymentProvider, ctx.GenerateSnapshot, ctx.UnitOfWork, ctx.Clock));
+        var key = Guid.NewGuid().ToString("N");
+        var result = await convert.ExecuteAsync(
+            ctx.Organization.Id, sub.Id, ctx.StarterPlan.Id, BillingCycle.Monthly, key);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(SubscriptionStatus.Active, result.Value.Subscription.Status);
+        Assert.Equal(ctx.StarterPlan.Id, result.Value.Subscription.PlanId);
+        Assert.Equal(ctx.StarterPlan.MonthlyPrice, result.Value.Subscription.AgreedPrice);
+    }
+
+    [Fact]
+    public async Task Business_trial_converts_to_business_on_successful_payment()
+    {
+        var ctx = await Wp11CommercialHarness.CreateAsync(T0);
+        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
+        var convert = new ConvertTrialSubscription(
+            ctx.Organizations, ctx.Plans, ctx.Subscriptions,
+            new ProcessSubscriptionInitialPayment(
+                ctx.Subscriptions, ctx.Plans, ctx.PaymentProvider, ctx.GenerateSnapshot, ctx.UnitOfWork, ctx.Clock));
+        var key = Guid.NewGuid().ToString("N");
+        var result = await convert.ExecuteAsync(
+            ctx.Organization.Id, sub.Id, ctx.BusinessPlan.Id, BillingCycle.Monthly, key);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(ctx.BusinessPlan.MonthlyPrice, result.Value.Subscription.AgreedPrice);
+    }
+
+    [Fact]
+    public async Task Business_trial_converts_to_pro_on_successful_payment()
+    {
+        var ctx = await Wp11CommercialHarness.CreateAsync(T0);
+        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
+        var convert = new ConvertTrialSubscription(
+            ctx.Organizations, ctx.Plans, ctx.Subscriptions,
+            new ProcessSubscriptionInitialPayment(
+                ctx.Subscriptions, ctx.Plans, ctx.PaymentProvider, ctx.GenerateSnapshot, ctx.UnitOfWork, ctx.Clock));
+        var key = Guid.NewGuid().ToString("N");
+        var result = await convert.ExecuteAsync(
+            ctx.Organization.Id, sub.Id, ctx.ProPlan.Id, BillingCycle.Annual, key);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(ctx.ProPlan.Id, result.Value.Subscription.PlanId);
+        Assert.Equal(ctx.ProPlan.AnnualPrice, result.Value.Subscription.AgreedPrice);
+    }
+
+    [Fact]
+    public async Task Failed_trial_conversion_preserves_trialing_status()
+    {
+        var ctx = await Wp11CommercialHarness.CreateAsync(T0);
+        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
+        var key = Guid.NewGuid().ToString("N");
+        var charge = new PaymentChargeRequest(
+            ctx.Organization.Id.Value, sub.Id.Value, ctx.StarterPlan.MonthlyPrice, "PHP", key, "convert-trial");
+        await ctx.PaymentProvider.SimulateAsync("Declined", charge);
+        var convert = new ConvertTrialSubscription(
+            ctx.Organizations, ctx.Plans, ctx.Subscriptions,
+            new ProcessSubscriptionInitialPayment(
+                ctx.Subscriptions, ctx.Plans, ctx.PaymentProvider, ctx.GenerateSnapshot, ctx.UnitOfWork, ctx.Clock));
+        var result = await convert.ExecuteAsync(
+            ctx.Organization.Id, sub.Id, ctx.StarterPlan.Id, BillingCycle.Monthly, key);
+        Assert.False(result.IsSuccess);
+        var reloaded = (await ctx.Subscriptions.GetByIdAsync(sub.Id))!;
+        Assert.Equal(SubscriptionStatus.Trialing, reloaded.Status);
+        Assert.Equal(ctx.BusinessPlan.Id, reloaded.PlanId);
+    }
+
+    [Fact]
+    public async Task Expired_trial_can_subscribe_to_any_active_plan()
+    {
+        var ctx = await Wp11CommercialHarness.CreateAsync(T0);
+        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
+        sub.Expire(T0.AddDays(15));
+        await ctx.Subscriptions.UpdateAsync(sub);
+        var convert = new ConvertTrialSubscription(
+            ctx.Organizations, ctx.Plans, ctx.Subscriptions,
+            new ProcessSubscriptionInitialPayment(
+                ctx.Subscriptions, ctx.Plans, ctx.PaymentProvider, ctx.GenerateSnapshot, ctx.UnitOfWork, ctx.Clock));
+        var key = Guid.NewGuid().ToString("N");
+        var result = await convert.ExecuteAsync(
+            ctx.Organization.Id, sub.Id, ctx.ProPlan.Id, BillingCycle.Monthly, key);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(SubscriptionStatus.Active, result.Value.Subscription.Status);
+        Assert.Equal(ctx.ProPlan.Id, result.Value.Subscription.PlanId);
+    }
+
+    [Fact]
+    public async Task Duplicate_trial_conversion_is_idempotent()
+    {
+        var ctx = await Wp11CommercialHarness.CreateAsync(T0);
+        var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
+        var convert = new ConvertTrialSubscription(
+            ctx.Organizations, ctx.Plans, ctx.Subscriptions,
+            new ProcessSubscriptionInitialPayment(
+                ctx.Subscriptions, ctx.Plans, ctx.PaymentProvider, ctx.GenerateSnapshot, ctx.UnitOfWork, ctx.Clock));
+        var key = Guid.NewGuid().ToString("N");
+        var first = await convert.ExecuteAsync(
+            ctx.Organization.Id, sub.Id, ctx.StarterPlan.Id, BillingCycle.Monthly, key);
+        var second = await convert.ExecuteAsync(
+            ctx.Organization.Id, sub.Id, ctx.StarterPlan.Id, BillingCycle.Monthly, key);
+        Assert.True(first.IsSuccess);
+        Assert.True(second.IsSuccess);
+        Assert.Equal(first.Value.Subscription.Status, second.Value.Subscription.Status);
+    }
+
+    [Fact]
+    public async Task Trial_start_creates_no_provider_payment_record()
+    {
+        var ctx = await Wp11CommercialHarness.CreateAsync(T0);
+        await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
+        Assert.Equal(0, ctx.ProviderPayments.Count);
     }
 
     private static string FindRepoRoot()
@@ -528,13 +707,20 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
             ctx.StarterVersion = await ctx.PublishVersionAsync(ctx.StarterPlan);
             ctx.BusinessVersion = await ctx.PublishVersionAsync(ctx.BusinessPlan);
             await ctx.PublishVersionAsync(ctx.ProPlan);
-            ctx.Trial = UtangTrialTestFactory.CreateConfigured(utcNow, TimeSpan.FromDays(14), ctx.StarterPlan.Id);
+            ctx.Trial = UtangTrialTestFactory.CreateConfigured(utcNow, TimeSpan.FromDays(14), ctx.BusinessPlan.Id);
             await ctx.Trials.AddAsync(ctx.Trial);
             return ctx;
         }
 
         private async Task<Plan> CreatePricedPlanAsync(string code, string name, int sortOrder, decimal monthly, decimal annual)
         {
+            var (trialAllowed, trialDays) = code switch
+            {
+                MvpPosPlanCodes.Starter => (false, 0),
+                MvpPosPlanCodes.Business => (true, 14),
+                MvpPosPlanCodes.Pro => (false, 0),
+                _ => (true, 14)
+            };
             var plan = (await new CreatePlan(Products, Plans, UnitOfWork, Clock)
                 .ExecuteAsync(
                     ProductCode.PinoyBusinessPos,
@@ -546,8 +732,8 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
                     customerCreditEnabled: false,
                     advancedReportsEnabled: false,
                     exportEnabled: false,
-                    trialAllowed: true,
-                    defaultTrialDays: 14,
+                    trialAllowed: trialAllowed,
+                    defaultTrialDays: trialDays,
                     sortOrder: sortOrder,
                     monthlyPrice: monthly,
                     annualPrice: annual,

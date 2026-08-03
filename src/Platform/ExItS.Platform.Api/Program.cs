@@ -276,6 +276,7 @@ builder.Services.AddScoped<ConfirmPaymentAndActivateSubscription>();
 builder.Services.AddScoped<ProcessSubscriptionInitialPayment>();
 builder.Services.AddScoped<ProcessSubscriptionRenewal>();
 builder.Services.AddScoped<SimulateLocalValidationPayment>();
+builder.Services.AddScoped<ConvertTrialSubscription>();
 builder.Services.AddScoped<UpgradeOrganizationSubscription>();
 builder.Services.AddScoped<ScheduleOrganizationSubscriptionDowngrade>();
 builder.Services.AddScoped<PreviewOrganizationPlanChange>();

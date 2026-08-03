@@ -267,6 +267,18 @@ internal sealed class SubscriptionRepository : ISubscriptionRepository
                      && ActiveLikeStatuses.Contains(s.Status),
                 cancellationToken);
 
+    public Task<bool> HasConsumedTrialAsync(
+        PlatformOrganizationId organizationId,
+        ProductCode productCode,
+        CancellationToken cancellationToken = default) =>
+        _db.Subscriptions
+            .AsNoTracking()
+            .AnyAsync(
+                s => s.OrganizationId == organizationId.Value
+                     && s.ProductCode == productCode.Value
+                     && (s.TrialStartUtc != null || s.TrialDefinitionId != null),
+                cancellationToken);
+
     public async Task<IReadOnlyList<Subscription>> ListDuePendingPlanChangesAsync(
         DateTimeOffset asOfUtc,
         CancellationToken cancellationToken = default)

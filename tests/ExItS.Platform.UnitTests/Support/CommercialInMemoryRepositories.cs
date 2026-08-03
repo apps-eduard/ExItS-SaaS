@@ -489,6 +489,18 @@ internal sealed class InMemorySubscriptionRepository : ISubscriptionRepository
         return Task.FromResult(exists);
     }
 
+    public Task<bool> HasConsumedTrialAsync(
+        PlatformOrganizationId organizationId,
+        ProductCode productCode,
+        CancellationToken cancellationToken = default)
+    {
+        var consumed = _items.Values.Any(s =>
+            s.OrganizationId == organizationId
+            && s.ProductCode == productCode
+            && (s.TrialStartUtc is not null || s.TrialDefinitionId is not null));
+        return Task.FromResult(consumed);
+    }
+
     public Task AddAsync(Subscription subscription, CancellationToken cancellationToken = default)
     {
         _items[subscription.Id.Value] = subscription;
@@ -749,6 +761,8 @@ internal sealed class InMemoryProviderPaymentRepository : IProviderPaymentReposi
 {
     private readonly Dictionary<string, ProviderPayment> _byIdempotency = new(StringComparer.Ordinal);
     private int _sequence;
+
+    public int Count => _byIdempotency.Count;
 
     public Task<ProviderPayment?> GetByIdempotencyKeyAsync(string idempotencyKey, CancellationToken cancellationToken = default)
     {

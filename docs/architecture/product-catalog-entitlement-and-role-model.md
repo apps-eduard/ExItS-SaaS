@@ -186,13 +186,18 @@ Rules:
 
 ### MVP Pinoy Business POS plans
 
-| PlanKey | Display name | Max branches | Max active staff | Customer credit | Advanced reports | Export | Sort |
-|---|---|---|---|---|---|---|---|
-| `starter` | Starter | 1 | 3 | Disabled | Disabled | Disabled | 10 |
-| `business` | Business | 3 | 15 | Enabled | Enabled | Enabled | 20 |
-| `pro` | Pro | 10 | 50 | Enabled | Enabled | Enabled | 30 |
+| PlanKey | Display name | Max branches | Max active staff | Customer credit | Advanced reports | Export | Sort | Trial |
+|---|---|---|---|---|---|---|---|---|
+| `starter` | Starter | 1 | 3 | Disabled | Disabled | Disabled | 10 | No free trial — Subscribe Now only |
+| `business` | Business | 3 | 15 | Enabled | Enabled | Enabled | 20 | **14-day free trial** (no card); then convert to Starter, Business, or Pro |
+| `pro` | Pro | 10 | 50 | Enabled | Enabled | Enabled | 30 | No separate trial — Subscribe Now; user may try Business first |
 
-Business default trial: **14 days** when `TrialAllowed` is enabled.
+Rules:
+
+- Only plans with `TrialAllowed` may start a free trial.
+- One trial per Organization per Product; expired or converted trials cannot be restarted.
+- No automatic charge at trial expiry; Owner chooses a Plan and pays to activate.
+- Trial conversion may select Starter, Business, or Pro.
 
 Catalog pricing (MVP POS, PHP):
 

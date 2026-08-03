@@ -150,6 +150,66 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
     }
 
     [Fact]
+    public async Task Start_business_starter_trial_is_rejected()
+    {
+        await EnsureMvpCatalogAsync();
+        var (token, _, _, _) = await SeedPersonalUserAsync("sbstr");
+        using var request = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/start-business",
+            token,
+            new
+            {
+                displayName = "Starter Trial Store",
+                slug = Unique("sbstr"),
+                productCode = ProductCode.PinoyBusinessPos,
+                planKey = MvpPosPlanCodes.Starter,
+                startAsTrial = true,
+                payNow = false,
+                activatePosEntitlement = true
+            });
+        var response = await _client.SendAsync(request);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.True(
+            response.StatusCode is HttpStatusCode.Conflict or HttpStatusCode.BadRequest,
+            $"Unexpected status {response.StatusCode}: {body}");
+        Assert.True(
+            body.Contains(ApplicationErrorCodes.TrialNotAllowed, StringComparison.Ordinal)
+            || body.Contains("trial", StringComparison.OrdinalIgnoreCase),
+            body);
+    }
+
+    [Fact]
+    public async Task Start_business_pro_trial_is_rejected()
+    {
+        await EnsureMvpCatalogAsync();
+        var (token, _, _, _) = await SeedPersonalUserAsync("sbpro");
+        using var request = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/start-business",
+            token,
+            new
+            {
+                displayName = "Pro Trial Store",
+                slug = Unique("sbpro"),
+                productCode = ProductCode.PinoyBusinessPos,
+                planKey = MvpPosPlanCodes.Pro,
+                startAsTrial = true,
+                payNow = false,
+                activatePosEntitlement = true
+            });
+        var response = await _client.SendAsync(request);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.True(
+            response.StatusCode is HttpStatusCode.Conflict or HttpStatusCode.BadRequest,
+            $"Unexpected status {response.StatusCode}: {body}");
+        Assert.True(
+            body.Contains(ApplicationErrorCodes.TrialNotAllowed, StringComparison.Ordinal)
+            || body.Contains("trial", StringComparison.OrdinalIgnoreCase),
+            body);
+    }
+
+    [Fact]
     public async Task Start_business_same_slug_is_idempotent_for_owner()
     {
         await EnsureMvpCatalogAsync();
@@ -208,12 +268,12 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
         var plans = await _admin.GetAsync(
             $"/api/v1/platform/catalog/plans?productCode={ProductCode.PinoyBusinessPos}&status=Active&page=1&pageSize=10");
         plans.EnsureSuccessStatusCode();
-        var starterPlan = (await plans.Content.ReadFromJsonAsync<JsonElement>())
+        var businessPlan = (await plans.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("items")
             .EnumerateArray()
-            .First(p => p.GetProperty("code").GetString() == MvpPosPlanCodes.Starter);
+            .First(p => p.GetProperty("code").GetString() == MvpPosPlanCodes.Business);
 
-        var planId = starterPlan.GetProperty("id").GetGuid();
+        var planId = businessPlan.GetProperty("id").GetGuid();
         var versionResponse = await _admin.GetAsync(
             $"/api/v1/platform/catalog/products/{ProductCode.PinoyBusinessPos}/plans/{planId}/versions");
         versionResponse.EnsureSuccessStatusCode();
@@ -236,6 +296,11 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
             $"/api/v1/platform/organizations/{organizationId}/subscriptions/trials",
             new { planId, planVersionId = versionId, trialDefinitionId = trialId });
         Assert.Equal(HttpStatusCode.Conflict, retry.StatusCode);
+        var retryBody = await retry.Content.ReadAsStringAsync();
+        Assert.True(
+            retryBody.Contains(ApplicationErrorCodes.ActiveSubscriptionConflict, StringComparison.Ordinal)
+            || retryBody.Contains(ApplicationErrorCodes.TrialAlreadyConsumed, StringComparison.Ordinal),
+            retryBody);
     }
 
     [Fact]

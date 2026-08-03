@@ -15,6 +15,8 @@ public static class ApplicationErrorCodes
     public const string ProductAccessNotFound = "application.product_access.not_found";
     public const string CrossOrganizationMismatch = "application.access.cross_organization";
     public const string SubscriptionIneligible = "application.subscription.ineligible";
+    public const string TrialNotAllowed = "application.subscription.trial_not_allowed";
+    public const string TrialAlreadyConsumed = "application.subscription.trial_already_consumed";
     public const string InvalidBillingCycle = "application.subscription.invalid_billing_cycle";
     public const string EntitlementMissing = "application.entitlement.missing";
     public const string EntitlementStale = "application.entitlement.stale";

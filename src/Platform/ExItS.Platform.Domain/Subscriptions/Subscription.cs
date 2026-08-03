@@ -304,6 +304,76 @@ public sealed class Subscription
         PaidPeriodEndUtc = periodEndUtc;
     }
 
+    /// <summary>
+    /// Converts a Trialing or Expired trial subscription to a paid subscription, optionally on a different plan.
+    /// </summary>
+    public void ConvertTrialToPaid(
+        Plan targetPlan,
+        PlanVersion version,
+        BillingCycle billingCycle,
+        DateTimeOffset periodStartUtc,
+        DateTimeOffset periodEndUtc,
+        DateTimeOffset utcNow)
+    {
+        ArgumentNullException.ThrowIfNull(targetPlan);
+        ArgumentNullException.ThrowIfNull(version);
+        DomainTime.EnsureUtc(utcNow);
+        DomainTime.EnsureUtc(periodStartUtc);
+        DomainTime.EnsureUtc(periodEndUtc);
+
+        if (TrialStartUtc is null && TrialDefinitionId is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidSubscriptionTransition,
+                "Trial conversion requires a subscription that used a trial.");
+        }
+
+        if (Status is not SubscriptionStatus.Trialing and not SubscriptionStatus.Expired)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidSubscriptionTransition,
+                "Trial conversion requires Trialing or Expired status.");
+        }
+
+        if (periodEndUtc <= periodStartUtc)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidEffectiveRange,
+                "Paid period end must be after start.");
+        }
+
+        EnsureSameProduct(ProductCode, targetPlan.ProductCode, version.ProductCode);
+        if (version.PlanId != targetPlan.Id || version.Status != PlanVersionStatus.Published)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPlanVersionTransition,
+                "Trial conversion requires a published plan version for the target plan.");
+        }
+
+        PlanId = targetPlan.Id;
+        PlanVersionId = version.Id;
+        BillingCycle = billingCycle;
+        AgreedPrice = targetPlan.PriceForCycle(billingCycle);
+        CurrencyCode = targetPlan.CurrencyCode;
+        PriceEffectiveFromUtc = utcNow;
+        PaidPeriodStartUtc = periodStartUtc;
+        PaidPeriodEndUtc = periodEndUtc;
+        PendingPlanId = null;
+        PendingPlanEffectiveAtUtc = null;
+
+        if (Status == SubscriptionStatus.Expired)
+        {
+            Status = SubscriptionStatus.Active;
+            ExpiredAtUtc = null;
+            UpdatedAtUtc = utcNow;
+            Version++;
+        }
+        else
+        {
+            TransitionTo(SubscriptionStatus.Active, utcNow);
+        }
+    }
+
     public void EnterGracePeriod(DateTimeOffset gracePeriodEndUtc, DateTimeOffset utcNow)
     {
         DomainTime.EnsureUtc(utcNow);

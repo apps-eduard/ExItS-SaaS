@@ -46,7 +46,7 @@ else
     else
     {
         <FormValidationSummary Title="Start business failed" Message="@_formError" IsConflict="_formConflict" />
-        <Card Size="@CardSize.Small" Style="max-width:720px;">
+        <Card Size="@CardSize.Small" Style="max-width:960px;margin-bottom:16px;">
             <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
                 <div>
                     <label class="ant-form-item-label">Organization name</label>
@@ -57,34 +57,72 @@ else
                     <Input @bind-Value="_slug" Size="@InputSize.Small" Disabled="_busy" Placeholder="my-store" />
                 </div>
                 <div>
-                    <label class="ant-form-item-label">Plan</label>
-                    <Select TItemValue="string" TItem="string" Value="@_planKey" ValueChanged="OnPlanChangedAsync" Style="width:100%;" Disabled="_busy">
-                        <SelectOptions>
-                            @foreach (var plan in _plans)
-                            {
-                                <SelectOption TItemValue="string" TItem="string" Value="@(plan.PlanKey ?? plan.Code)" Label="@plan.DisplayName" />
-                            }
-                        </SelectOptions>
-                    </Select>
-                </div>
-                <Space Wrap>
+                    <label class="ant-form-item-label">Billing cycle</label>
                     <Select TItemValue="string" TItem="string" @bind-Value="_billingCycle" Style="width:160px;" Disabled="_busy">
                         <SelectOptions>
                             <SelectOption TItemValue="string" TItem="string" Value="@("Monthly")" Label="Monthly" />
                             <SelectOption TItemValue="string" TItem="string" Value="@("Annual")" Label="Annual" />
                         </SelectOptions>
                     </Select>
-                    <Checkbox @bind-Checked="_startAsTrial" Disabled="_busy">Start as trial</Checkbox>
-                    <Checkbox @bind-Checked="_payNow" Disabled="_busy || _startAsTrial">Pay now</Checkbox>
-                </Space>
-                @if (_selectedPlan is not null)
-                {
-                    <Alert Type="@AlertType.Info" ShowIcon="true"
-                           Message="@($"Selected: {_selectedPlan.DisplayName} — {(_billingCycle == "Annual" ? _selectedPlan.AnnualPrice : _selectedPlan.MonthlyPrice)} {_selectedPlan.CurrencyCode} / {_billingCycle.ToLowerInvariant()}")" />
-                }
-                <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="SubmitAsync">Create business</Button>
+                </div>
             </Space>
         </Card>
+
+        @if (_plans.Count is 0)
+        {
+            <Empty Description="@("No plans available.")" />
+        }
+        else
+        {
+            <Row Gutter="16">
+                @foreach (var plan in _plans.OrderBy(p => p.SortOrder))
+                {
+                    var planKey = plan.PlanKey ?? plan.Code;
+                    var isBusiness = string.Equals(planKey, "business", StringComparison.OrdinalIgnoreCase);
+                    var isHighlighted = isBusiness && _highlightBusiness;
+                    var price = _billingCycle == "Annual" ? plan.AnnualPrice : plan.MonthlyPrice;
+                    var cycleLabel = _billingCycle == "Annual" ? "year" : "month";
+                    <AntDesign.Col Xs="24" Sm="24" Md="8">
+                        <Card Size="@CardSize.Small"
+                              Title="@plan.DisplayName"
+                              Style="@((isBusiness || isHighlighted) ? "border:2px solid #1890ff;" : null)">
+                            @if (isBusiness)
+                            {
+                                <Tag Color="@("blue")" Style="margin-bottom:8px;">Recommended</Tag>
+                            }
+                            <p style="font-size:1.25rem;font-weight:600;margin:0 0 8px;">
+                                @($"{price:0} {plan.CurrencyCode}")<span style="font-size:0.875rem;font-weight:400;"> / {cycleLabel}</span>
+                            </p>
+                            @if (plan.TrialAllowed && plan.DefaultTrialDays > 0)
+                            {
+                                <p style="color:#52c41a;margin-bottom:12px;">@($"{plan.DefaultTrialDays}-day free trial · No card required")</p>
+                            }
+                            else if (!plan.TrialAllowed)
+                            {
+                                <p style="color:#8c8c8c;margin-bottom:12px;">No free trial</p>
+                            }
+                            <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                                @if (plan.TrialAllowed && plan.DefaultTrialDays > 0)
+                                {
+                                    <Button Type="@ButtonType.Primary" Block Loading="_busy" OnClick="@(() => SubmitAsync(planKey, startAsTrial: true))">
+                                        Start Free Trial
+                                    </Button>
+                                }
+                                <Button Type="@(plan.TrialAllowed ? ButtonType.Default : ButtonType.Primary)" Block Loading="_busy" OnClick="@(() => SubmitAsync(planKey, startAsTrial: false, payNow: true))">
+                                    Subscribe Now
+                                </Button>
+                                @if (!plan.TrialAllowed && !isBusiness)
+                                {
+                                    <Button Type="@ButtonType.Link" Block Disabled="_busy" OnClick="@(() => SelectBusinessPlan())">
+                                        Try Business Free First
+                                    </Button>
+                                }
+                            </Space>
+                        </Card>
+                    </AntDesign.Col>
+                }
+            </Row>
+        }
     }
 }
 
@@ -96,12 +134,9 @@ else
     private bool _formConflict;
     private string _displayName = "";
     private string _slug = "";
-    private string _planKey = "starter";
     private string _billingCycle = "Monthly";
-    private bool _startAsTrial = true;
-    private bool _payNow;
+    private bool _highlightBusiness;
     private List<PlanDto> _plans = [];
-    private PlanDto? _selectedPlan;
 
     protected override async Task OnInitializedAsync()
     {
@@ -116,23 +151,16 @@ else
         if (plans is { IsSuccess: true, Data: not null })
         {
             _plans = plans.Data.Items.OrderBy(p => p.SortOrder).ToList();
-            _selectedPlan = _plans.FirstOrDefault(p => string.Equals(p.PlanKey ?? p.Code, _planKey, StringComparison.OrdinalIgnoreCase))
-                ?? _plans.FirstOrDefault();
-            if (_selectedPlan is not null)
-            {
-                _planKey = _selectedPlan.PlanKey ?? _selectedPlan.Code;
-            }
         }
     }
 
-    private Task OnPlanChangedAsync(string planKey)
+    private void SelectBusinessPlan()
     {
-        _planKey = planKey;
-        _selectedPlan = _plans.FirstOrDefault(p => string.Equals(p.PlanKey ?? p.Code, planKey, StringComparison.OrdinalIgnoreCase));
-        return Task.CompletedTask;
+        _highlightBusiness = true;
+        Message.Info("Business is the recommended free-trial option. Choose Start Free Trial on the Business card.");
     }
 
-    private async Task SubmitAsync()
+    private async Task SubmitAsync(string planKey, bool startAsTrial, bool payNow = false)
     {
         if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
         {
@@ -141,19 +169,15 @@ else
 
         _formError = null;
         _formConflict = false;
-        if (_startAsTrial)
-        {
-            _payNow = false;
-        }
 
         var result = await Api.StartBusinessAsync(new StartBusinessRequest(
             _displayName.Trim(),
             _slug.Trim().ToLowerInvariant(),
             ProductCode: "pinoy-business-pos",
-            PlanKey: _planKey,
+            PlanKey: planKey,
             BillingCycle: _billingCycle,
-            StartAsTrial: _startAsTrial,
-            PayNow: _payNow));
+            StartAsTrial: startAsTrial,
+            PayNow: payNow));
         _busy = false;
         if (!result.IsSuccess)
         {

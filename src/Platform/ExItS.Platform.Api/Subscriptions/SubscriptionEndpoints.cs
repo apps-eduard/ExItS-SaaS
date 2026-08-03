@@ -1,6 +1,7 @@
 using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
@@ -718,6 +719,94 @@ internal static class SubscriptionEndpoints
             return PlatformApiResults.FromResult(result, s => Results.Ok(MapSubscription(s)));
         });
 
+        orgSubscriptions.MapPost("/{subscriptionId:guid}/convert-trial", async (
+            Guid organizationId,
+            Guid subscriptionId,
+            ConvertTrialSubscriptionRequest body,
+            ConvertTrialSubscription useCase,
+            SubscriptionQueryService queries,
+            IPlanRepository plans,
+            PlatformOrganizationAuthz orgAuthz,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await orgAuthz
+                .EnsureCanManageOrganizationCommercialAsync(
+                    organizationId,
+                    PlatformAuditActions.SubscriptionTrialConverted,
+                    ct)
+                .ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var existing = await queries.GetByIdAsync(subscriptionId, ct).ConfigureAwait(false);
+            if (existing is null || existing.OrganizationId != organizationId)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SubscriptionNotFound,
+                    "Subscription was not found for this organization.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            if (!TryResolvePlanId(body.PlanId, body.PlanKey, out var targetPlanId, out var planError))
+            {
+                return planError!;
+            }
+
+            if (targetPlanId is null)
+            {
+                var plan = await plans
+                    .GetByProductAndCodeAsync(
+                        ProductCode.Create(existing.ProductCode),
+                        PlanCode.Create(body.PlanKey!),
+                        ct)
+                    .ConfigureAwait(false);
+                if (plan is null)
+                {
+                    return PlatformApiResults.Problem(
+                        ApplicationErrorCodes.PlanNotFound,
+                        "Target plan was not found.",
+                        StatusCodes.Status404NotFound);
+                }
+
+                targetPlanId = plan.Id;
+            }
+
+            BillingCycle billingCycle;
+            try
+            {
+                billingCycle = ParseBillingCycle(body.BillingCycle);
+            }
+            catch (DomainException ex)
+            {
+                return PlatformApiResults.Problem(ex.ErrorCode, ex.Message, StatusCodes.Status400BadRequest);
+            }
+
+            var result = await useCase.ExecuteAsync(
+                PlatformOrganizationIdFrom(organizationId),
+                SubscriptionId.From(subscriptionId),
+                targetPlanId,
+                billingCycle,
+                body.IdempotencyKey ?? string.Empty,
+                body.ExpectedVersion,
+                ct).ConfigureAwait(false);
+
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.SubscriptionTrialConverted,
+                    nameof(Subscription),
+                    subscriptionId.ToString("D"),
+                    organizationId,
+                    existing.ProductCode,
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, tuple => Results.Ok(MapSubscription(tuple.Subscription)));
+        });
+
         orgSubscriptions.MapPost("/{subscriptionId:guid}/apply-pending-plan", async (
             Guid organizationId,
             Guid subscriptionId,
@@ -907,3 +996,10 @@ internal sealed record DowngradeSubscriptionRequest(
     string? PlanKey = null,
     DateTimeOffset? EffectiveAtUtc = null,
     string? IdempotencyKey = null);
+
+internal sealed record ConvertTrialSubscriptionRequest(
+    Guid? PlanId = null,
+    string? PlanKey = null,
+    string? BillingCycle = null,
+    string? IdempotencyKey = null,
+    int? ExpectedVersion = null);

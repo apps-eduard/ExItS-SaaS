@@ -1,6 +1,7 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Entitlements;
+using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Catalog;
@@ -53,6 +54,7 @@ public sealed class ProcessSubscriptionInitialPayment
         SubscriptionId subscriptionId,
         BillingCycle billingCycle,
         string idempotencyKey,
+        PlanId? targetPlanId = null,
         CancellationToken cancellationToken = default)
     {
         var subscription = await _subscriptions.GetByIdAsync(subscriptionId, cancellationToken).ConfigureAwait(false);
@@ -63,7 +65,9 @@ public sealed class ProcessSubscriptionInitialPayment
                 "Subscription was not found.");
         }
 
-        var plan = await _plans.GetByIdAsync(subscription.PlanId, cancellationToken).ConfigureAwait(false);
+        var plan = targetPlanId is not null
+            ? await _plans.GetByIdAsync(targetPlanId, cancellationToken).ConfigureAwait(false)
+            : await _plans.GetByIdAsync(subscription.PlanId, cancellationToken).ConfigureAwait(false);
         if (plan is null)
         {
             return ApplicationResult<(Subscription, PaymentProviderResult)>.Failure(
@@ -71,14 +75,44 @@ public sealed class ProcessSubscriptionInitialPayment
                 "Plan was not found.");
         }
 
+        if (!plan.AcceptsNewSubscriptions)
+        {
+            return ApplicationResult<(Subscription, PaymentProviderResult)>.Failure(
+                ApplicationErrorCodes.SubscriptionIneligible,
+                "Target plan is not active for new subscriptions.");
+        }
+
         var amount = plan.PriceForCycle(billingCycle);
+
+        if (subscription.Status == SubscriptionStatus.Active
+            && subscription.PlanId == plan.Id
+            && subscription.BillingCycle == billingCycle)
+        {
+            return ApplicationResult<(Subscription, PaymentProviderResult)>.Success((
+                subscription,
+                new PaymentProviderResult(
+                    PaymentProviderResultStatus.Succeeded,
+                    Provider: "idempotent",
+                    ProviderReference: idempotencyKey,
+                    Amount: subscription.AgreedPrice ?? amount,
+                    CurrencyCode: plan.CurrencyCode,
+                    IsTest: false,
+                    FailureCode: null,
+                    FailureMessage: null,
+                    IdempotencyKey: idempotencyKey)));
+        }
+
+        var isTrialConversion = subscription.Status == SubscriptionStatus.Trialing
+            || (subscription.Status == SubscriptionStatus.Expired
+                && (subscription.TrialStartUtc is not null || subscription.TrialDefinitionId is not null));
+
         var chargeRequest = new PaymentChargeRequest(
             subscription.OrganizationId.Value,
             subscription.Id.Value,
             amount,
             plan.CurrencyCode,
             idempotencyKey,
-            Purpose: "initial");
+            Purpose: isTrialConversion ? "convert-trial" : "initial");
 
         PaymentProviderResult paymentResult;
         try
@@ -106,7 +140,12 @@ public sealed class ProcessSubscriptionInitialPayment
             var utcNow = _clock.UtcNow;
             var (periodStart, periodEnd) = SubscriptionBillingPeriods.ComputePaidPeriod(utcNow, billingCycle);
 
-            if (subscription.Status == SubscriptionStatus.Trialing)
+            if (isTrialConversion)
+            {
+                var version = await RequirePublishedVersionAsync(plan, cancellationToken).ConfigureAwait(false);
+                subscription.ConvertTrialToPaid(plan, version, billingCycle, periodStart, periodEnd, utcNow);
+            }
+            else if (subscription.Status == SubscriptionStatus.Trialing)
             {
                 subscription.ActivateFromTrial(periodStart, periodEnd, billingCycle, plan, utcNow);
             }
@@ -115,6 +154,12 @@ public sealed class ProcessSubscriptionInitialPayment
             {
                 subscription.Reactivate(utcNow, periodStart, periodEnd);
                 subscription.ApplyImmediatePlanUpgrade(plan, await RequirePublishedVersionAsync(plan, cancellationToken), billingCycle, utcNow);
+            }
+            else
+            {
+                return ApplicationResult<(Subscription, PaymentProviderResult)>.Failure(
+                    ApplicationErrorCodes.SubscriptionIneligible,
+                    "Subscription is not eligible for initial payment activation.");
             }
 
             await _subscriptions.UpdateAsync(subscription, cancellationToken).ConfigureAwait(false);
@@ -315,7 +360,7 @@ public sealed class SimulateLocalValidationPayment
         if (result.Status == PaymentProviderResultStatus.Succeeded && billingCycle is not null)
         {
             var activation = await _initialPayment
-                .ExecuteAsync(subscriptionId, billingCycle.Value, request.IdempotencyKey, cancellationToken)
+                .ExecuteAsync(subscriptionId, billingCycle.Value, request.IdempotencyKey, targetPlanId: null, cancellationToken)
                 .ConfigureAwait(false);
             if (!activation.IsSuccess)
             {
@@ -348,5 +393,99 @@ public sealed class SimulateLocalValidationPayment
         }
 
         return ApplicationResult<PaymentProviderResult>.Success(result);
+    }
+}
+
+public sealed class ConvertTrialSubscription
+{
+    private readonly IPlatformOrganizationRepository _organizations;
+    private readonly IPlanRepository _plans;
+    private readonly ISubscriptionRepository _subscriptions;
+    private readonly ProcessSubscriptionInitialPayment _initialPayment;
+
+    public ConvertTrialSubscription(
+        IPlatformOrganizationRepository organizations,
+        IPlanRepository plans,
+        ISubscriptionRepository subscriptions,
+        ProcessSubscriptionInitialPayment initialPayment)
+    {
+        _organizations = organizations;
+        _plans = plans;
+        _subscriptions = subscriptions;
+        _initialPayment = initialPayment;
+    }
+
+    public Task<ApplicationResult<(Subscription Subscription, PaymentProviderResult Payment)>> ExecuteAsync(
+        PlatformOrganizationId organizationId,
+        SubscriptionId subscriptionId,
+        PlanId targetPlanId,
+        BillingCycle billingCycle,
+        string idempotencyKey,
+        CancellationToken cancellationToken = default) =>
+        ExecuteAsync(organizationId, subscriptionId, targetPlanId, billingCycle, idempotencyKey, expectedVersion: null, cancellationToken);
+
+    public async Task<ApplicationResult<(Subscription Subscription, PaymentProviderResult Payment)>> ExecuteAsync(
+        PlatformOrganizationId organizationId,
+        SubscriptionId subscriptionId,
+        PlanId targetPlanId,
+        BillingCycle billingCycle,
+        string idempotencyKey,
+        int? expectedVersion,
+        CancellationToken cancellationToken)
+    {
+        var organization = await _organizations.GetByIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        if (organization is null || organization.Status != OrganizationStatus.Active)
+        {
+            return ApplicationResult<(Subscription, PaymentProviderResult)>.Failure(
+                ApplicationErrorCodes.OrganizationNotEligible,
+                "Organization must be active.");
+        }
+
+        var subscription = await _subscriptions.GetByIdAsync(subscriptionId, cancellationToken).ConfigureAwait(false);
+        if (subscription is null || subscription.OrganizationId != organizationId)
+        {
+            return ApplicationResult<(Subscription, PaymentProviderResult)>.Failure(
+                ApplicationErrorCodes.SubscriptionNotFound,
+                "Subscription was not found for this organization.");
+        }
+
+        if (SubscriptionConcurrency.IsMismatch(subscription.Version, expectedVersion))
+        {
+            return ApplicationResult<(Subscription, PaymentProviderResult)>.Failure(
+                ApplicationErrorCodes.ConcurrencyConflict,
+                "The subscription was modified by another request. Refresh and try again.");
+        }
+
+        var targetPlan = await _plans.GetByIdAsync(targetPlanId, cancellationToken).ConfigureAwait(false);
+        if (targetPlan is null
+            || targetPlan.ProductCode != subscription.ProductCode
+            || !targetPlan.AcceptsNewSubscriptions)
+        {
+            return ApplicationResult<(Subscription, PaymentProviderResult)>.Failure(
+                ApplicationErrorCodes.PlanNotFound,
+                "Target plan was not found or is not active for this product.");
+        }
+
+        var isTrialEligible = subscription.Status == SubscriptionStatus.Trialing
+            || (subscription.Status == SubscriptionStatus.Expired
+                && (subscription.TrialStartUtc is not null || subscription.TrialDefinitionId is not null));
+
+        if (!isTrialEligible && subscription.Status != SubscriptionStatus.Active)
+        {
+            return ApplicationResult<(Subscription, PaymentProviderResult)>.Failure(
+                ApplicationErrorCodes.SubscriptionIneligible,
+                "Only trialing or expired trial subscriptions can be converted.");
+        }
+
+        if (string.IsNullOrWhiteSpace(idempotencyKey))
+        {
+            return ApplicationResult<(Subscription, PaymentProviderResult)>.Failure(
+                ApplicationErrorCodes.PaymentReferenceConflict,
+                "IdempotencyKey is required for trial conversion.");
+        }
+
+        return await _initialPayment
+            .ExecuteAsync(subscriptionId, billingCycle, idempotencyKey, targetPlanId, cancellationToken)
+            .ConfigureAwait(false);
     }
 }

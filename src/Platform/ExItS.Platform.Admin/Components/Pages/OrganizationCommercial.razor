@@ -36,6 +36,10 @@ else
                 <dt>Billing</dt><dd>@DisplayOrDash(_currentSubscription.BillingCycle)</dd>
                 <dt>Agreed price</dt><dd>@AmountDisplay(_currentSubscription.AgreedPrice, _currentSubscription.CurrencyCode)</dd>
                 <dt>Period</dt><dd>@PeriodLabel(_currentSubscription)</dd>
+                @if (_currentSubscription.TrialEndUtc is not null && _currentSubscription.Status is "Trialing" or "Expired")
+                {
+                    <dt>Trial ends</dt><dd>@_currentSubscription.TrialEndUtc.Value.ToLocalTime().ToString("g")</dd>
+                }
                 @if (!string.IsNullOrWhiteSpace(_currentSubscription.PendingPlanDisplayName))
                 {
                     <dt>Pending plan</dt><dd>@_currentSubscription.PendingPlanDisplayName</dd>
@@ -48,36 +52,77 @@ else
         }
     </FormSection>
 
-    <FormSection Title="Available plans">
-        @if (_plans.Count is 0)
-        {
-            <Empty Description="@L["Plans_Empty"].Value" />
-        }
-        else
-        {
+    @if (ShowChoosePlan)
+    {
+        <FormSection Title="Choose a Plan">
+            <Alert Type="@AlertType.Info" ShowIcon="true" Style="margin-bottom:12px;"
+                   Message="@ChoosePlanMessage" />
+            <Space Style="margin-bottom:12px;">
+                <span>Billing cycle:</span>
+                <Select TItemValue="string" TItem="string" @bind-Value="_subscribeBillingCycle" Style="width:140px;" Disabled="_busy">
+                    <SelectOptions>
+                        <SelectOption TItemValue="string" TItem="string" Value="@("Monthly")" Label="Monthly" />
+                        <SelectOption TItemValue="string" TItem="string" Value="@("Annual")" Label="Annual" />
+                    </SelectOptions>
+                </Select>
+            </Space>
             <Table TItem="PlanDto" DataSource="@_plans" Size="@TableSize.Small" Bordered HidePagination>
                 <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Plan"]" />
-                <PropertyColumn Property="c => c.PlanKey" Title="Key" />
-                <PropertyColumn Property="c => c.MonthlyPrice" Title="Monthly" />
-                <PropertyColumn Property="c => c.AnnualPrice" Title="Annual" />
-                <PropertyColumn Property="c => c.CurrencyCode" Title="Currency" />
-                <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Actions"]">
+                <PropertyColumn Property="c => c.MonthlyPrice" Title="Monthly (PHP)" />
+                <PropertyColumn Property="c => c.AnnualPrice" Title="Annual (PHP)" />
+                <PropertyColumn Property="c => c.DisplayName" Title="Trial">
                     @{
-                        var designation = PlanDesignation(context);
+                        var trialLabel = context.TrialAllowed && context.DefaultTrialDays > 0
+                            ? $"{context.DefaultTrialDays}-day trial"
+                            : "Subscribe only";
                     }
-                    <Tag Color="@DesignationColor(designation)">@designation</Tag>
-                    @if (CanManageCommercial && designation is "upgrade")
+                    @trialLabel
+                </PropertyColumn>
+                <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Actions"]">
+                    @if (CanManageCommercial)
                     {
-                        <Button Size="@ButtonSize.Small" Loading="_busy" OnClick="@(() => UpgradeAsync(context))">Upgrade</Button>
-                    }
-                    @if (CanManageCommercial && designation is "downgrade")
-                    {
-                        <Button Size="@ButtonSize.Small" Loading="_busy" OnClick="@(() => DowngradeAsync(context))">Downgrade</Button>
+                        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy"
+                                OnClick="@(() => SubscribeFromTrialAsync(context))">
+                            Subscribe Now
+                        </Button>
                     }
                 </PropertyColumn>
             </Table>
-        }
-    </FormSection>
+        </FormSection>
+    }
+
+    @if (ShowActivePlanManagement)
+    {
+        <FormSection Title="Available plans">
+            @if (_plans.Count is 0)
+            {
+                <Empty Description="@L["Plans_Empty"].Value" />
+            }
+            else
+            {
+                <Table TItem="PlanDto" DataSource="@_plans" Size="@TableSize.Small" Bordered HidePagination>
+                    <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Plan"]" />
+                    <PropertyColumn Property="c => c.MonthlyPrice" Title="Monthly" />
+                    <PropertyColumn Property="c => c.AnnualPrice" Title="Annual" />
+                    <PropertyColumn Property="c => c.CurrencyCode" Title="Currency" />
+                    <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Actions"]">
+                        @{
+                            var designation = PlanDesignation(context);
+                        }
+                        <Tag Color="@DesignationColor(designation)">@designation</Tag>
+                        @if (CanManageCommercial && designation is "upgrade")
+                        {
+                            <Button Size="@ButtonSize.Small" Loading="_busy" OnClick="@(() => UpgradeAsync(context))">Upgrade</Button>
+                        }
+                        @if (CanManageCommercial && designation is "downgrade")
+                        {
+                            <Button Size="@ButtonSize.Small" Loading="_busy" OnClick="@(() => DowngradeAsync(context))">Downgrade</Button>
+                        }
+                    </PropertyColumn>
+                </Table>
+            }
+        </FormSection>
+    }
 
     <FormSection Title="@L["Nav_Subscriptions"]">
         @if (HasSubscriptions)
@@ -97,7 +142,7 @@ else
         }
     </FormSection>
 
-    @if (_showLvPayments)
+    @if (_showLvPayments && ShowActivePlanManagement)
     {
         <FormSection Title="TestPayments">
             <Alert Type="@AlertType.Warning" ShowIcon="true" Message="Test payment (Local Validation only)" Style="margin-bottom:12px;" />
@@ -129,6 +174,7 @@ else
     private bool _busy;
     private string? _error;
     private string? _simResult;
+    private string _subscribeBillingCycle = "Monthly";
     private OrganizationDto? _org;
     private OrganizationCommercialSummaryDto? _summary;
     private SubscriptionDto? _currentSubscription;
@@ -142,6 +188,21 @@ else
     private static readonly string RequiresSubscriptionText = "Requires an active subscription";
 
     private bool HasSubscriptions => _summary is not null && _summary.Subscriptions.Count > 0;
+
+    private bool ShowChoosePlan =>
+        _currentSubscription is not null
+        && CanManageCommercial
+        && (_currentSubscription.Status is "Trialing" or "Expired");
+
+    private bool ShowActivePlanManagement =>
+        _currentSubscription is not null && _currentSubscription.Status is "Active" or "GracePeriod" or "PastDue" or "Suspended";
+
+    private string ChoosePlanMessage => _currentSubscription?.Status switch
+    {
+        "Trialing" => "Your trial is active. Choose a plan and complete payment to continue after the trial.",
+        "Expired" => "Your trial has ended. Choose a plan to subscribe. Product data is retained.",
+        _ => "Choose a plan to subscribe."
+    };
 
     private string PageTitle => _org?.DisplayName ?? L["Organizations_CommercialAdmin"].Value;
     private string PageBreadcrumb => $"{L["Brand_Name"].Value} · {L["Nav_Organizations"].Value} · {L["Organizations_CommercialAdmin"].Value}";
@@ -160,6 +221,12 @@ else
 
     private static string PeriodLabel(SubscriptionDto sub)
     {
+        if (string.Equals(sub.Status, "Trialing", StringComparison.OrdinalIgnoreCase)
+            && sub.TrialEndUtc is not null)
+        {
+            return $"Trial ends {sub.TrialEndUtc.Value:d}";
+        }
+
         if (sub.CurrentPeriodStartUtc is null && sub.CurrentPeriodEndUtc is null)
         {
             return "-";
@@ -208,6 +275,11 @@ else
             {
                 _plans = plans.Data.Items.OrderBy(p => p.SortOrder).ToList();
             }
+
+            if (_currentSubscription?.BillingCycle is not null)
+            {
+                _subscribeBillingCycle = _currentSubscription.BillingCycle;
+            }
         }
         finally
         {
@@ -233,6 +305,48 @@ else
         "downgrade" => "orange",
         _ => "default"
     };
+
+    private async Task SubscribeFromTrialAsync(PlanDto plan)
+    {
+        if (_currentSubscription is null || !CanManageCommercial || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        if (!LocalValidation.IsAvailable)
+        {
+            await Message.ErrorAsync("Subscribe actions require Local Validation payment simulation.");
+            return;
+        }
+
+        try
+        {
+            var price = _subscribeBillingCycle == "Annual" ? plan.AnnualPrice : plan.MonthlyPrice;
+            var idempotencyKey = Guid.NewGuid().ToString("N");
+            var result = await Api.ConvertTrialSubscriptionAsync(
+                OrganizationId,
+                _currentSubscription.Id,
+                new ConvertTrialSubscriptionRequest(
+                    plan.Id,
+                    plan.PlanKey,
+                    _subscribeBillingCycle,
+                    idempotencyKey,
+                    _currentSubscription.Version));
+
+            if (!result.IsSuccess)
+            {
+                await Message.ErrorAsync(result.Error?.Detail ?? "Subscription failed.");
+                return;
+            }
+
+            await Message.SuccessAsync($"Subscribed to {plan.DisplayName} ({price:0} {plan.CurrencyCode}).");
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
 
     private async Task UpgradeAsync(PlanDto plan)
     {

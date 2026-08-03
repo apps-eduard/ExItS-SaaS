@@ -664,6 +664,13 @@ public sealed record DowngradeSubscriptionRequest(
     DateTimeOffset? EffectiveAtUtc = null,
     string? IdempotencyKey = null);
 
+public sealed record ConvertTrialSubscriptionRequest(
+    Guid? PlanId = null,
+    string? PlanKey = null,
+    string BillingCycle = "Monthly",
+    string? IdempotencyKey = null,
+    int? ExpectedVersion = null);
+
 public sealed record PlanUsageConflictDto(
     string Resource,
     int CurrentUsage,

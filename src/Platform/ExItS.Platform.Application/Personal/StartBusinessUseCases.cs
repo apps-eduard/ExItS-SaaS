@@ -314,6 +314,24 @@ public sealed class StartBusinessForPersonalUser
             var billingCycle = request.BillingCycle ?? BillingCycle.Monthly;
             var startAsTrial = request.StartAsTrial && !request.PayNow;
 
+            if (startAsTrial)
+            {
+                var selectedPlan = await _plans.GetByIdAsync(catalog.Value.PlanId, cancellationToken).ConfigureAwait(false);
+                if (selectedPlan is null)
+                {
+                    return ApplicationResult<StartBusinessResultDto>.Failure(
+                        ApplicationErrorCodes.PlanNotFound,
+                        "Plan was not found.");
+                }
+
+                if (!selectedPlan.TrialAllowed)
+                {
+                    return ApplicationResult<StartBusinessResultDto>.Failure(
+                        ApplicationErrorCodes.TrialNotAllowed,
+                        "This plan does not allow trials. Subscribe now or try Business first.");
+                }
+            }
+
             if (request.PayNow)
             {
                 var newSubscriptionId = SubscriptionId.New();

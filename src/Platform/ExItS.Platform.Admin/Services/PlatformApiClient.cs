@@ -283,6 +283,8 @@ public sealed class PlatformApiClient(
         SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/subscriptions/{subscriptionId}/upgrade", request, ct);
     public Task<ApiCallResult<SubscriptionDto>> DowngradeSubscriptionAsync(Guid organizationId, Guid subscriptionId, DowngradeSubscriptionRequest request, CancellationToken ct = default) =>
         SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/subscriptions/{subscriptionId}/downgrade", request, ct);
+    public Task<ApiCallResult<SubscriptionDto>> ConvertTrialSubscriptionAsync(Guid organizationId, Guid subscriptionId, ConvertTrialSubscriptionRequest request, CancellationToken ct = default) =>
+        SendAsync<SubscriptionDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/subscriptions/{subscriptionId}/convert-trial", request, ct);
     public Task<ApiCallResult<PlanChangeImpactPreviewDto>> PreviewPlanChangeAsync(
         Guid organizationId,
         Guid subscriptionId,

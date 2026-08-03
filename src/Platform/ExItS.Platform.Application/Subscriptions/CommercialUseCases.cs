@@ -93,8 +93,18 @@ public sealed class StartTrialSubscription
         if (!plan.TrialAllowed)
         {
             return ApplicationResult<Subscription>.Failure(
-                ApplicationErrorCodes.SubscriptionIneligible,
+                ApplicationErrorCodes.TrialNotAllowed,
                 "This plan does not allow trials.");
+        }
+
+        var hasConsumedTrial = await _subscriptions
+            .HasConsumedTrialAsync(organizationId, plan.ProductCode, cancellationToken)
+            .ConfigureAwait(false);
+        if (hasConsumedTrial)
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.TrialAlreadyConsumed,
+                "A trial has already been used for this organization and product.");
         }
 
         var version = await _plans.GetVersionByIdAsync(planVersionId, cancellationToken).ConfigureAwait(false);
