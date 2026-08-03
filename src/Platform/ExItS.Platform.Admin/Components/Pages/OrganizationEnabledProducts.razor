@@ -49,13 +49,31 @@ else
             @foreach (var product in DeduplicatedProducts)
             {
                 var title = ProductTitle(product);
-                <Card Size="@CardSize.Small" Title="@title" Style="margin-bottom:0;">
+                <Card Class="admin-elevated-card" Size="@CardSize.Small" Title="@title" Style="margin-bottom:0;">
                     <ChildContent>
                         <dl style="margin:0;">
                             <dt>@L["OrgEnabledProducts_Entitlement"]</dt>
-                            <dd>@(product.EntitlementStatus ?? (product.EntitlementActive ? L["OrgEnabledProducts_EntitlementEnabled"] : L["OrgEnabledProducts_EntitlementDisabled"]))</dd>
+                            <dd>
+                                @if (!string.IsNullOrWhiteSpace(product.EntitlementStatus))
+                                {
+                                    <AdminStatusTag Value="@product.EntitlementStatus" />
+                                }
+                                else
+                                {
+                                    @(product.EntitlementActive ? L["OrgEnabledProducts_EntitlementEnabled"] : L["OrgEnabledProducts_EntitlementDisabled"])
+                                }
+                            </dd>
                             <dt>@L["OrgEnabledProducts_Provisioning"]</dt>
-                            <dd>@(product.ProvisioningStatus ?? L["Common_EmDash"])</dd>
+                            <dd>
+                                @if (!string.IsNullOrWhiteSpace(product.ProvisioningStatus))
+                                {
+                                    <AdminStatusTag Value="@product.ProvisioningStatus" />
+                                }
+                                else
+                                {
+                                    @L["Common_EmDash"]
+                                }
+                            </dd>
                             <dt>@L["OrgEnabledProducts_YourRole"]</dt>
                             <dd>@YourRoleLabel(product)</dd>
                             @if (!product.CanLaunch && !string.IsNullOrWhiteSpace(FriendlyDenial(product)))
@@ -97,7 +115,7 @@ else
     @if (CanManageRoles)
     {
         <div id="manage-staff-access">
-            <Card Size="@CardSize.Small" Title="@L["OrgEnabledProducts_ManageStaffAccess"]" Style="margin-top:1rem;margin-bottom:12px;">
+            <Card Class="admin-elevated-card" Size="@CardSize.Small" Title="@L["OrgEnabledProducts_ManageStaffAccess"]" Style="margin-top:1rem;margin-bottom:12px;">
                 <ChildContent>
                     <div class="form-grid">
                         <FormField Label="@L["OrgEnabledProducts_SelectStaff"]" FieldId="role-staff" Required="true">
@@ -348,9 +366,9 @@ else
 
     private static string FormatOrgRole(string? role) => role switch
     {
-        "OrganizationOwner" => "Owner",
-        "OrganizationAdministrator" => "Administrator",
-        "OrganizationMember" => "Staff",
+        "OrganizationOwner" => "Organization Owner",
+        "OrganizationAdministrator" => "Organization Administrator",
+        "OrganizationMember" => "Organization Staff",
         _ => role ?? string.Empty
     };
 
@@ -387,13 +405,13 @@ else
                     : ctx.Item.RoleDisplay);
                 break;
             case "status":
-                b.OpenComponent<StatusBadge>(0);
-                b.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
+                b.OpenComponent<AdminStatusTag>(0);
+                b.AddAttribute(1, nameof(AdminStatusTag.Value), ctx.Item.Status);
                 b.CloseComponent();
                 break;
             case "granted":
-                b.OpenComponent<UtcTimestamp>(0);
-                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.GrantedAtUtc);
+                b.OpenComponent<LocalTimestamp>(0);
+                b.AddAttribute(1, nameof(LocalTimestamp.Value), ctx.Item.GrantedAtUtc);
                 b.CloseComponent();
                 break;
         }

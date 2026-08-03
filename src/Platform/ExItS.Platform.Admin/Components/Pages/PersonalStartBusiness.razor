@@ -37,15 +37,9 @@ else if (_completed)
 }
 else
 {
-    <PageHeader Class="exits-page-header" Title="Start a Business" SubTitle="Choose a plan and create an organization. Your personal account stays available as a separate profile — sign in again afterward and choose Organization.">
-        <PageHeaderBreadcrumb>
-            <Breadcrumb>
-                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
-                <BreadcrumbItem Href="/admin">@L["Nav_Home"]</BreadcrumbItem>
-                <BreadcrumbItem>Start a Business</BreadcrumbItem>
-            </Breadcrumb>
-        </PageHeaderBreadcrumb>
-    </PageHeader>
+    <AdminPageHeader Title="Start a Business"
+                     Breadcrumb="@($"{L["Brand_Name"]} · {L["Nav_Home"]} · Start a Business")"
+                     Description="Choose a plan and create an organization. Your personal account stays available as a separate profile — sign in again afterward and choose Organization." />
 
     <FormValidationSummary Title="Start business failed" Message="@_formError" IsConflict="_formConflict" />
     @if (!string.IsNullOrWhiteSpace(_validationBanner))
@@ -72,7 +66,7 @@ else
 
     <Row Gutter="(16, 16)" Style="margin-bottom:24px;">
         <AntDesign.Col Xs="24" Md="12">
-            <Card Size="@CardSize.Small" Title="Organization details" Id="start-business-org-fields">
+            <Card Class="admin-elevated-card" Size="@CardSize.Small" Title="Organization details" Id="start-business-org-fields">
                 <div style="margin-bottom:12px;">
                     <label class="ant-form-item-label"><span class="ant-form-item-required">Organization name</span></label>
                     <Input @bind-Value="_displayName"
@@ -109,7 +103,7 @@ else
             </Card>
         </AntDesign.Col>
         <AntDesign.Col Xs="24" Md="12">
-            <Card Size="@CardSize.Small" Title="What happens next">
+            <Card Class="admin-elevated-card" Size="@CardSize.Small" Title="What happens next">
                 <Alert Type="@AlertType.Info" ShowIcon="true"
                        Message="Pick a plan below. We create your organization, start the trial or paid subscription, then switch you into Organization Administration." />
                 <ul style="margin:12px 0 0;padding-left:1.25rem;">
@@ -144,7 +138,8 @@ else
                     var planKey = plan.PlanKey ?? plan.Code;
                     var isStarter = string.Equals(planKey, "starter", StringComparison.OrdinalIgnoreCase);
                     <AntDesign.Col Xs="24" Sm="24" Md="8">
-                        <Card Size="@CardSize.Small"
+                        <Card Class="admin-elevated-card"
+                              Size="@CardSize.Small"
                               Title="@plan.DisplayName"
                               Style="@CardStyle(isStarter)"
                               BodyStyle="display:flex;flex-direction:column;min-height:280px;">
@@ -153,8 +148,8 @@ else
                                 <Tag Color="@("blue")" Style="margin-bottom:8px;align-self:flex-start;">Starter</Tag>
                             }
                             <div style="margin-bottom:8px;">
-                                <div style="font-size:1.25rem;font-weight:600;">@($"{plan.MonthlyPrice:0} {plan.CurrencyCode}")<span style="font-size:0.875rem;font-weight:400;"> / month</span></div>
-                                <div style="color:var(--ant-color-text-secondary,#8c8c8c);">@($"{plan.AnnualPrice:0} {plan.CurrencyCode} / year")</div>
+                                <div style="font-size:1.25rem;font-weight:600;"><AdminMoneyDisplay Amount="@plan.MonthlyPrice" CurrencyCode="@plan.CurrencyCode" /><span style="font-size:0.875rem;font-weight:400;"> / month</span></div>
+                                <div style="color:var(--ant-color-text-secondary,#8c8c8c);"><AdminMoneyDisplay Amount="@plan.AnnualPrice" CurrencyCode="@plan.CurrencyCode" /> / year</div>
                             </div>
                             @if (plan.TrialAllowed && plan.DefaultTrialDays > 0)
                             {

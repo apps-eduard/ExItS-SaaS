@@ -8,18 +8,13 @@
 @inject PlatformPermissionState Permissions
 @inject AdminShellContext Shell
 
-<PageHeader Class="exits-page-header" Title="@L["Branding_Title"]" SubTitle="@L["Branding_Description"]">
-    <PageHeaderBreadcrumb>
-        <Breadcrumb>
-            <BreadcrumbItem Href="@($"/admin/organizations/{OrganizationId}")">@(_org?.Data?.DisplayName ?? L["Nav_Organizations"])</BreadcrumbItem>
-            <BreadcrumbItem>@L["Nav_Branding"]</BreadcrumbItem>
-        </Breadcrumb>
-    </PageHeaderBreadcrumb>
-</PageHeader>
+<AdminPageHeader Title="@L["Branding_Title"]"
+                 Breadcrumb="@($"{_org?.Data?.DisplayName ?? L["Nav_Organizations"].Value} · {L["Nav_Branding"]}")"
+                 Description="@L["Branding_Description"]" />
 
 @if (_org is null)
 {
-    <div style="padding:2rem;text-align:center;"><Spin Tip="@L["Organizations_DetailLoading"]" /></div>
+    <AdminLoadingState Message="@L["Organizations_DetailLoading"]" />
 }
 else if (!_org.IsSuccess)
 {
@@ -39,35 +34,37 @@ else
 
     <Row Gutter="16">
         <AntDesign.Col Xs="24" Md="14">
-            <FormValidationSummary Title="@L["Branding_SaveFailed"]" Message="@_formError" IsConflict="_formConflict" />
-            <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
-                <div>
-                    <label class="ant-form-item-label">@L["Branding_DisplayName"]</label>
-                    <Input @bind-Value="_brandDisplayName" Size="@InputSize.Small" Disabled="@(!CanEdit || _busy)" Placeholder="@o.DisplayName" />
-                </div>
-                <div>
-                    <label class="ant-form-item-label">@L["Branding_LogoUrl"]</label>
-                    <Input @bind-Value="_logoUrl" Size="@InputSize.Small" Disabled="@(!CanEdit || _busy)" Placeholder="https://â€¦" />
-                    <Paragraph Type="@TextElementType.Secondary" Style="margin:4px 0 0;">@L["Branding_LogoHint"]</Paragraph>
-                </div>
-                <Space Wrap>
+            <Card Class="admin-elevated-card" Size="@CardSize.Small" Style="margin-bottom:16px;">
+                <FormValidationSummary Title="@L["Branding_SaveFailed"]" Message="@_formError" IsConflict="_formConflict" />
+                <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
                     <div>
-                        <label class="ant-form-item-label">@L["Branding_PrimaryColor"]</label>
-                        <Input @bind-Value="_primaryColor" Size="@InputSize.Small" Style="width:120px;" Disabled="@(!CanEdit || _busy)" Placeholder="#1677FF" />
+                        <label class="ant-form-item-label">@L["Branding_DisplayName"]</label>
+                        <Input @bind-Value="_brandDisplayName" Size="@InputSize.Small" Disabled="@(!CanEdit || _busy)" Placeholder="@o.DisplayName" />
                     </div>
                     <div>
-                        <label class="ant-form-item-label">@L["Branding_AccentColor"]</label>
-                        <Input @bind-Value="_accentColor" Size="@InputSize.Small" Style="width:120px;" Disabled="@(!CanEdit || _busy)" Placeholder="#08979C" />
+                        <label class="ant-form-item-label">@L["Branding_LogoUrl"]</label>
+                        <Input @bind-Value="_logoUrl" Size="@InputSize.Small" Disabled="@(!CanEdit || _busy)" Placeholder="https://â€¦" />
+                        <Paragraph Type="@TextElementType.Secondary" Style="margin:4px 0 0;">@L["Branding_LogoHint"]</Paragraph>
                     </div>
+                    <Space Wrap>
+                        <div>
+                            <label class="ant-form-item-label">@L["Branding_PrimaryColor"]</label>
+                            <Input @bind-Value="_primaryColor" Size="@InputSize.Small" Style="width:120px;" Disabled="@(!CanEdit || _busy)" Placeholder="#1677FF" />
+                        </div>
+                        <div>
+                            <label class="ant-form-item-label">@L["Branding_AccentColor"]</label>
+                            <Input @bind-Value="_accentColor" Size="@InputSize.Small" Style="width:120px;" Disabled="@(!CanEdit || _busy)" Placeholder="#08979C" />
+                        </div>
+                    </Space>
+                    @if (CanEdit)
+                    {
+                        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveAsync">@L["Common_Save"]</Button>
+                    }
                 </Space>
-                @if (CanEdit)
-                {
-                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveAsync">@L["Common_Save"]</Button>
-                }
-            </Space>
+            </Card>
         </AntDesign.Col>
         <AntDesign.Col Xs="24" Md="10">
-            <Card Size="@CardSize.Small" Title="@L["Branding_Preview"]">
+            <Card Class="admin-elevated-card" Size="@CardSize.Small" Title="@L["Branding_Preview"]">
                 <div style="@($"border:1px solid #f0f0f0;border-radius:4px;overflow:hidden;")">
                     <div style="@($"background:{primary};color:#fff;padding:12px 16px;display:flex;align-items:center;gap:12px;")">
                         @if (!string.IsNullOrWhiteSpace(_logoUrl) && Uri.TryCreate(_logoUrl, UriKind.Absolute, out var logoUri) && logoUri.Scheme == Uri.UriSchemeHttps)

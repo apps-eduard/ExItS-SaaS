@@ -10,21 +10,16 @@
 @inject AdminShellContext Shell
 @inject PlatformPermissionState Permissions
 
-<PageHeader Class="exits-page-header" Title="@L["OrgRoles_Title"]" SubTitle="@L["OrgRoles_Description"]">
-    <PageHeaderBreadcrumb>
-        <Breadcrumb>
-            <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
-            <BreadcrumbItem>@L["Nav_People"]</BreadcrumbItem>
-            <BreadcrumbItem>@L["Nav_RolesPermissions"]</BreadcrumbItem>
-        </Breadcrumb>
-    </PageHeaderBreadcrumb>
-    <PageHeaderExtra>
+<AdminPageHeader Title="@L["OrgRoles_Title"]"
+                 Breadcrumb="@($"{L["Brand_Name"]} · {L["Nav_People"]} · {L["Nav_RolesPermissions"]}")"
+                 Description="@L["OrgRoles_Description"]">
+    <Actions>
         @if (CanManage && RoleId is null)
         {
             <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="() => _showCreate = !_showCreate">@L["OrgRoles_Create"]</Button>
         }
-    </PageHeaderExtra>
-</PageHeader>
+    </Actions>
+</AdminPageHeader>
 
 @if (!CanAccessOrg)
 {
@@ -34,7 +29,7 @@ else if (RoleId is null)
 {
     @if (_showCreate && CanManage)
     {
-        <Card Size="@CardSize.Small" Title="Create organization role" Style="margin-bottom:12px;">
+        <Card Class="admin-elevated-card" Size="@CardSize.Small" Title="Create organization role" Style="margin-bottom:12px;">
             <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
                 <Input @bind-Value="_newCode" Size="@InputSize.Small" Placeholder="Code" Disabled="_busy" />
                 <Input @bind-Value="_newName" Size="@InputSize.Small" Placeholder="Name" Disabled="_busy" />
@@ -69,7 +64,7 @@ else if (RoleId is null)
             </PropertyColumn>
             <PropertyColumn Property="c => c.Name" Title="Name" />
             <PropertyColumn Property="c => c.Status" Title="Status">
-                <Tag>@context.Status</Tag>
+                <AdminStatusTag Value="@context.Status" />
             </PropertyColumn>
         </Table>
     }
@@ -86,7 +81,7 @@ else if (_detail.Data is { } role)
 {
     <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
         <DescriptionsItem Title="Code">@role.Code</DescriptionsItem>
-        <DescriptionsItem Title="Status"><Tag>@role.Status</Tag></DescriptionsItem>
+        <DescriptionsItem Title="Status"><AdminStatusTag Value="@role.Status" /></DescriptionsItem>
         <DescriptionsItem Title="Permissions" Span="2">
             @foreach (var p in role.Permissions) { <Tag>@p</Tag> }
         </DescriptionsItem>

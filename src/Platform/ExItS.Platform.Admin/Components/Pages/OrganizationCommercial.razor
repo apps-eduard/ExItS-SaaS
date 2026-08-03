@@ -32,7 +32,7 @@ else
 
     <Row Gutter="(16, 16)" Style="margin-bottom:24px;">
         <AntDesign.Col Xs="24" Lg="14">
-            <Card Size="@CardSize.Small" Title="Subscription Summary">
+            <Card Class="admin-elevated-card" Size="@CardSize.Small" Title="Subscription Summary">
                 @if (_statusAlert is not null)
                 {
                     <Alert Type="@_statusAlert.Value.Type" ShowIcon="true" Message="@_statusAlert.Value.Message" Style="margin-bottom:12px;" />
@@ -50,19 +50,42 @@ else
                         }
                         else
                         {
-                            <Tag Color="@StatusColor(_currentSubscription.Status)">@_currentSubscription.Status</Tag>
+                            <AdminStatusTag Value="@_currentSubscription.Status" />
                         }
                     </DescriptionsItem>
                     <DescriptionsItem Title="Billing cycle">@DisplayOrDash(_currentSubscription?.BillingCycle ?? _subscribeBillingCycle)</DescriptionsItem>
-                    <DescriptionsItem Title="Current price">@AmountDisplay(_currentSubscription?.AgreedPrice, _currentSubscription?.CurrencyCode ?? _currentPlan?.CurrencyCode)</DescriptionsItem>
-                    <DescriptionsItem Title="Trial / renewal">@PeriodLabel(_currentSubscription)</DescriptionsItem>
+                    <DescriptionsItem Title="Current price">
+                        <AdminMoneyDisplay Amount="@_currentSubscription?.AgreedPrice" CurrencyCode="@(_currentSubscription?.CurrencyCode ?? _currentPlan?.CurrencyCode ?? "PHP")" Unavailable="@(_currentSubscription?.AgreedPrice is null)" />
+                    </DescriptionsItem>
+                    <DescriptionsItem Title="Trial / renewal">
+                        @if (_currentSubscription is null)
+                        {
+                            <span>—</span>
+                        }
+                        else if (IsTrialing && _currentSubscription.TrialEndUtc is not null)
+                        {
+                            <span>Trial ends <LocalTimestamp Value="@_currentSubscription.TrialEndUtc" /></span>
+                        }
+                        else if (_currentSubscription.CurrentPeriodEndUtc is not null)
+                        {
+                            <span>Renews / ends <LocalTimestamp Value="@_currentSubscription.CurrentPeriodEndUtc" /></span>
+                        }
+                        else if (_currentSubscription.PaidPeriodEndUtc is not null)
+                        {
+                            <span>Period ends <LocalTimestamp Value="@_currentSubscription.PaidPeriodEndUtc" /></span>
+                        }
+                        else
+                        {
+                            <span>—</span>
+                        }
+                    </DescriptionsItem>
                     @if (_pendingPlanChange is not null)
                     {
                         <DescriptionsItem Title="Pending plan">
                             @DisplayOrDash(_pendingPlanChange.DisplayName)
                             @if (_pendingPlanChange.EffectiveAtUtc is not null)
                             {
-                                <span> · @_pendingPlanChange.EffectiveAtUtc.Value.ToLocalTime().ToString("g")</span>
+                                <span> · <LocalTimestamp Value="@_pendingPlanChange.EffectiveAtUtc" /></span>
                             }
                         </DescriptionsItem>
                     }
@@ -70,7 +93,7 @@ else
             </Card>
         </AntDesign.Col>
         <AntDesign.Col Xs="24" Lg="10">
-            <Card Size="@CardSize.Small" Title="Subscription Actions">
+            <Card Class="admin-elevated-card" Size="@CardSize.Small" Title="Subscription Actions">
                 @if (!CanManageCommercial)
                 {
                     <Alert Type="@AlertType.Warning" ShowIcon="true"
@@ -128,7 +151,8 @@ else
                         var designation = PlanDesignation(plan);
                         var isCurrent = designation == "current";
                         <AntDesign.Col Xs="24" Sm="24" Md="8">
-                            <Card Size="@CardSize.Small"
+                            <Card Class="admin-elevated-card"
+                                  Size="@CardSize.Small"
                                   Title="@plan.DisplayName"
                                   Style="@(isCurrent ? "border:2px solid #1890ff;height:100%;" : "height:100%;")"
                                   BodyStyle="display:flex;flex-direction:column;min-height:260px;">
@@ -141,8 +165,8 @@ else
                                     <Tag Color="@DesignationColor(designation)" Style="margin-bottom:8px;align-self:flex-start;">@designation</Tag>
                                 }
                                 <div style="margin-bottom:8px;">
-                                    <div style="font-weight:600;">@($"{plan.MonthlyPrice:0} {plan.CurrencyCode}") / month</div>
-                                    <div style="color:#8c8c8c;">@($"{plan.AnnualPrice:0} {plan.CurrencyCode}") / year</div>
+                                    <div style="font-weight:600;"><AdminMoneyDisplay Amount="@plan.MonthlyPrice" CurrencyCode="@plan.CurrencyCode" /> / month</div>
+                                    <div style="color:var(--ant-color-text-secondary,#8c8c8c);"><AdminMoneyDisplay Amount="@plan.AnnualPrice" CurrencyCode="@plan.CurrencyCode" /> / year</div>
                                 </div>
                                 <p style="margin-bottom:8px;">
                                     @(plan.TrialAllowed && plan.DefaultTrialDays > 0
@@ -212,15 +236,17 @@ else
                     <PropertyColumn Property="c => c.ProductCode" Title="Product" />
                     <PropertyColumn Property="c => c.PlanDisplayName" Title="Plan" />
                     <PropertyColumn Property="c => c.BillingCycle" Title="Billing" />
-                    <PropertyColumn Property="c => c.AgreedPrice" Title="Price" />
+                    <PropertyColumn Property="c => c.AgreedPrice" Title="Price">
+                        <AdminMoneyDisplay Amount="@context.AgreedPrice" CurrencyCode="@(context.CurrencyCode ?? "PHP")" Unavailable="@(context.AgreedPrice is null)" />
+                    </PropertyColumn>
                     <PropertyColumn Property="c => c.Status" Title="Status">
-                        <Tag Color="@StatusColor(context.Status)">@context.Status</Tag>
+                        <AdminStatusTag Value="@context.Status" />
                     </PropertyColumn>
                     <PropertyColumn Property="c => c.CreatedAtUtc" Title="Start">
-                        @FriendlyDate(context.CreatedAtUtc)
+                        <LocalTimestamp Value="@context.CreatedAtUtc" />
                     </PropertyColumn>
                     <PropertyColumn Property="c => c.Status" Title="Trial / Renewal / End">
-                        @HistoryEndLabel(context)
+                        <LocalTimestamp Value="@HistoryEndDate(context)" />
                     </PropertyColumn>
                     <ActionColumn Title="Actions">
                         <Button Type="@ButtonType.Link" Size="@ButtonSize.Small"
@@ -339,49 +365,22 @@ else
 
     private static string? FormatOrgRole(string? role) => role switch
     {
-        "OrganizationOwner" => "Owner",
-        "OrganizationAdministrator" => "Administrator",
-        "OrganizationMember" => "Staff",
+        "OrganizationOwner" => "Organization Owner",
+        "OrganizationAdministrator" => "Organization Administrator",
+        "OrganizationMember" => "Organization Staff",
         _ => string.IsNullOrWhiteSpace(role) ? null : role
     };
 
-    private static string AmountDisplay(decimal? amount, string? currency) =>
-        amount is null ? "—" : $"{amount:0.00} {currency ?? ""}".Trim();
-
-    private static string FriendlyDate(DateTimeOffset? value) =>
-        value is null ? "—" : value.Value.ToLocalTime().ToString("g");
-
-    private static string PeriodLabel(SubscriptionDto? sub)
-    {
-        if (sub is null) return "—";
-        if (string.Equals(sub.Status, "Trialing", StringComparison.OrdinalIgnoreCase) && sub.TrialEndUtc is not null)
-        {
-            return $"Trial ends {sub.TrialEndUtc.Value.ToLocalTime():g}";
-        }
-
-        if (sub.CurrentPeriodEndUtc is not null)
-        {
-            return $"Renews / ends {sub.CurrentPeriodEndUtc.Value.ToLocalTime():g}";
-        }
-
-        if (sub.PaidPeriodEndUtc is not null)
-        {
-            return $"Period ends {sub.PaidPeriodEndUtc.Value.ToLocalTime():g}";
-        }
-
-        return "—";
-    }
-
-    private static string HistoryEndLabel(SubscriptionDto sub)
+    private static DateTimeOffset? HistoryEndDate(SubscriptionDto sub)
     {
         if (sub.TrialEndUtc is not null
             && (string.Equals(sub.Status, "Trialing", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(sub.Status, "Expired", StringComparison.OrdinalIgnoreCase)))
         {
-            return FriendlyDate(sub.TrialEndUtc);
+            return sub.TrialEndUtc;
         }
 
-        return FriendlyDate(sub.CurrentPeriodEndUtc ?? sub.PaidPeriodEndUtc);
+        return sub.CurrentPeriodEndUtc ?? sub.PaidPeriodEndUtc;
     }
 
     private static IEnumerable<string> FeatureSummary(PlanDto plan)
@@ -895,15 +894,4 @@ else
         // Keep browser message business-friendly; strip raw stack-like noise.
         return detail.Length > 280 ? detail[..280] + "…" : detail;
     }
-
-    private static string StatusColor(string status) => status switch
-    {
-        "Trialing" => "blue",
-        "Active" => "green",
-        "GracePeriod" => "gold",
-        "PastDue" => "orange",
-        "Suspended" => "red",
-        "Cancelled" or "Expired" => "default",
-        _ => "default"
-    };
 }

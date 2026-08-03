@@ -27,23 +27,17 @@ else if (!Shell.IsPersonalShell)
 }
 else
 {
-    <PageHeader Class="exits-page-header" Title="@_title" SubTitle="@L["Personal_HomeDescription"]">
-        <PageHeaderBreadcrumb>
-            <Breadcrumb>
-                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
-                <BreadcrumbItem Href="/admin">@L["Nav_Home"]</BreadcrumbItem>
-                <BreadcrumbItem>@_title</BreadcrumbItem>
-            </Breadcrumb>
-        </PageHeaderBreadcrumb>
-    </PageHeader>
+    <AdminPageHeader Title="@_title"
+                     Breadcrumb="@($"{L["Brand_Name"]} · {L["Nav_Home"]} · {_title}")"
+                     Description="@L["Personal_HomeDescription"]" />
 
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Type="@AlertType.Error" ShowIcon="true" Message="@_error" Style="margin-bottom:12px;" />
+        <AdminErrorState Title="@L["Common_Error"].Value" Detail="@_error" />
     }
     else if (_loading)
     {
-        <div style="padding:2rem;text-align:center;"><Spin /></div>
+        <AdminLoadingState />
     }
     else if (_mode == "people")
     {
@@ -51,26 +45,40 @@ else
             <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_User"]" Ellipsis />
             <PropertyColumn Property="c => c.Email" Title="@L["Common_Email"]" Ellipsis />
             <PropertyColumn Property="c => c.Phone" Title="Phone" />
-            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" />
+            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                <AdminStatusTag Value="@context.Status" />
+            </PropertyColumn>
         </Table>
     }
     else if (_mode is "lent" or "borrowed")
     {
         <Table TItem="PersonalDebtRelationshipSummaryDto" DataSource="_relationships" Size="@TableSize.Small" Bordered>
             <PropertyColumn Property="c => c.Perspective" Title="Perspective" />
-            <PropertyColumn Property="c => c.CurrentBalance" Title="Balance" />
+            <PropertyColumn Property="c => c.CurrentBalance" Title="Balance">
+                <AdminMoneyDisplay Amount="@context.CurrentBalance" CurrencyCode="@context.CurrencyCode" />
+            </PropertyColumn>
             <PropertyColumn Property="c => c.CurrencyCode" Title="Currency" />
-            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" />
-            <PropertyColumn Property="c => c.DueDateUtc" Title="Due" />
+            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                <AdminStatusTag Value="@context.Status" />
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.DueDateUtc" Title="Due">
+                <LocalTimestamp Value="@context.DueDateUtc" />
+            </PropertyColumn>
         </Table>
     }
     else if (_mode == "invitations")
     {
         <Table TItem="PersonalUtangInvitationDto" DataSource="_invitations" Size="@TableSize.Small" Bordered>
             <PropertyColumn Property="c => c.InviteTargetEmailMasked" Title="@L["Common_Email"]" Ellipsis />
-            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" />
-            <PropertyColumn Property="c => c.CreatedAtUtc" Title="@L["Common_CreatedUtc"]" />
-            <PropertyColumn Property="c => c.ExpiresAtUtc" Title="Expires" />
+            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                <AdminStatusTag Value="@context.Status" />
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.CreatedAtUtc" Title="@L["Common_CreatedUtc"]">
+                <LocalTimestamp Value="@context.CreatedAtUtc" />
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.ExpiresAtUtc" Title="Expires">
+                <LocalTimestamp Value="@context.ExpiresAtUtc" />
+            </PropertyColumn>
         </Table>
     }
     else if (_mode == "notifications")
@@ -79,7 +87,9 @@ else
             <PropertyColumn Property="c => c.Title" Title="Title" Ellipsis />
             <PropertyColumn Property="c => c.Preview" Title="Preview" Ellipsis />
             <PropertyColumn Property="c => c.IsRead" Title="Read" />
-            <PropertyColumn Property="c => c.CreatedAtUtc" Title="@L["Common_CreatedUtc"]" />
+            <PropertyColumn Property="c => c.CreatedAtUtc" Title="@L["Common_CreatedUtc"]">
+                <LocalTimestamp Value="@context.CreatedAtUtc" />
+            </PropertyColumn>
         </Table>
     }
     else if (_mode == "profile" && _profile is not null)
@@ -89,7 +99,7 @@ else
             <DescriptionsItem Title="Username">@_profile.Username</DescriptionsItem>
             <DescriptionsItem Title="@L["Common_Email"]">@_profile.Email</DescriptionsItem>
             <DescriptionsItem Title="Account class">@_profile.AccountClass</DescriptionsItem>
-            <DescriptionsItem Title="@L["Common_Status"]">@_profile.Status</DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_Status"]"><AdminStatusTag Value="@_profile.Status" /></DescriptionsItem>
         </Descriptions>
     }
     else if (_mode == "settings" && _settings is not null)

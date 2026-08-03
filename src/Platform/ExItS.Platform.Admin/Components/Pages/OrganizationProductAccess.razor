@@ -79,7 +79,7 @@ else
                     <dt>@L["Common_Assignment"]</dt><dd>@(e.AssignmentId?.ToString() ?? L["Common_EmDash"])</dd>
                     <dt>@L["Common_Subscription"]</dt><dd>@(e.SubscriptionId?.ToString() ?? L["Common_EmDash"])</dd>
                     <dt>@L["Common_Snapshot"]</dt><dd>@(e.SnapshotId?.ToString() ?? L["Common_EmDash"])</dd>
-                    <dt>@L["Common_EvaluatedUtc"]</dt><dd><UtcTimestamp Value="@e.EvaluatedAtUtc" /></dd>
+                    <dt>@L["Common_EvaluatedUtc"]</dt><dd><LocalTimestamp Value="@e.EvaluatedAtUtc" /></dd>
                 </dl>
             }
         }
@@ -286,18 +286,18 @@ else
                 b.AddContent(0, ctx.Item.ProductCode);
                 break;
             case "status":
-                b.OpenComponent<StatusBadge>(0);
-                b.AddAttribute(1, nameof(StatusBadge.Value), ctx.Item.Status);
+                b.OpenComponent<AdminStatusTag>(0);
+                b.AddAttribute(1, nameof(AdminStatusTag.Value), ctx.Item.Status);
                 b.CloseComponent();
                 break;
             case "granted":
-                b.OpenComponent<UtcTimestamp>(0);
-                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.GrantedAtUtc);
+                b.OpenComponent<LocalTimestamp>(0);
+                b.AddAttribute(1, nameof(LocalTimestamp.Value), ctx.Item.GrantedAtUtc);
                 b.CloseComponent();
                 break;
             case "revoked":
-                b.OpenComponent<UtcTimestamp>(0);
-                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.RevokedAtUtc);
+                b.OpenComponent<LocalTimestamp>(0);
+                b.AddAttribute(1, nameof(LocalTimestamp.Value), ctx.Item.RevokedAtUtc);
                 b.CloseComponent();
                 break;
         }

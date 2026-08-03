@@ -7,14 +7,9 @@
 @inject NavigationManager Nav
 @inject AdminShellContext Shell
 
-<PageHeader Class="exits-page-header" Title="@L["OrgUsers_Title"]" SubTitle="@L["OrgUsers_Description"]">
-    <PageHeaderBreadcrumb>
-        <Breadcrumb>
-            <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
-            <BreadcrumbItem>@L["Nav_OrganizationUsers"]</BreadcrumbItem>
-        </Breadcrumb>
-    </PageHeaderBreadcrumb>
-</PageHeader>
+<AdminPageHeader Title="@L["OrgUsers_Title"]"
+                 Breadcrumb="@($"{L["Brand_Name"]} · {L["Nav_OrganizationUsers"]}")"
+                 Description="@L["OrgUsers_Description"]" />
 
 <Alert Type="@AlertType.Info" ShowIcon="true" Message="@L["OrgUsers_Hint"]" Style="margin-bottom:12px;" />
 
@@ -39,7 +34,7 @@ else
         </PropertyColumn>
         <PropertyColumn Property="c => c.Slug" Title="@L["Common_Slug"]" />
         <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
-            <Tag>@context.Status</Tag>
+            <AdminStatusTag Value="@context.Status" />
         </PropertyColumn>
         <ActionColumn Title="@L["Common_Open"]" Width="140">
             <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/organizations/{context.Id}/members")">@L["Common_Members"]</a>

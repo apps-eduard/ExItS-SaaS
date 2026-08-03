@@ -64,8 +64,8 @@ else
                     <label class="ant-form-item-label">@L["OrgMembers_OrgRole"]</label>
                     <Select TItemValue="string" TItem="string" @bind-Value="_inviteRole" Size="@InputSize.Small" Style="width:100%;" Disabled="_busy">
                         <SelectOptions>
-                            <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationMember")" Label="@L["OrgMembers_Role_Staff"]" />
-                            <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationOwner")" Label="@L["OrgMembers_Role_Owner"]" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationMember")" Label="Organization Staff" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationOwner")" Label="Organization Owner" />
                         </SelectOptions>
                     </Select>
                     @if (_fieldInviteRole is not null) { <span class="exits-field-error">@_fieldInviteRole</span> }
@@ -133,10 +133,14 @@ else
                 @(string.IsNullOrWhiteSpace(context.Branch) ? "—" : context.Branch)
             </PropertyColumn>
             <PropertyColumn Property="c => c.InvitationStatus" Title="Invitation status">
-                <Tag>@FormatInvitationStatus(context.InvitationStatus ?? context.Status)</Tag>
+                <AdminStatusTag Value="@(context.InvitationStatus ?? context.Status ?? "")" />
             </PropertyColumn>
-            <PropertyColumn Property="c => c.CreatedAtUtc" Title="Sent at" Format="u" />
-            <PropertyColumn Property="c => c.ExpiresAtUtc" Title="@L["OrgMembers_ExpiresUtc"]" Format="u" />
+            <PropertyColumn Property="c => c.CreatedAtUtc" Title="Sent at">
+                <LocalTimestamp Value="@context.CreatedAtUtc" />
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.ExpiresAtUtc" Title="@L["OrgMembers_ExpiresUtc"]">
+                <LocalTimestamp Value="@context.ExpiresAtUtc" />
+            </PropertyColumn>
             <ActionColumn Title="@L["Common_Actions"]" Width="120">
                 @if ((context.InvitationStatus ?? context.Status) is "Pending" or "Sent")
                 {
@@ -235,21 +239,10 @@ else
 
     private static string FormatOrgRole(string? role) => role switch
     {
-        "OrganizationOwner" => "Owner",
-        "OrganizationMember" => "Staff",
-        "OrganizationAdministrator" => "Administrator",
+        "OrganizationOwner" => "Organization Owner",
+        "OrganizationMember" => "Organization Staff",
+        "OrganizationAdministrator" => "Organization Administrator",
         _ => role ?? "—"
-    };
-
-    private static string FormatInvitationStatus(string? status) => status switch
-    {
-        "Pending" => "Pending",
-        "Sent" => "Sent",
-        "Accepted" => "Accepted",
-        "Expired" => "Expired",
-        "Revoked" => "Revoked",
-        "DeliveryFailed" => "Delivery Failed",
-        _ => status ?? "—"
     };
 
     private async Task InviteAsync()

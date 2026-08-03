@@ -101,8 +101,8 @@ else
                     <label class="ant-form-item-label">@L["OrgMembers_OrgRole"]</label>
                     <Select TItemValue="string" TItem="string" @bind-Value="_inviteRole" Size="@InputSize.Small" Style="width:100%;" Disabled="_busy">
                         <SelectOptions>
-                            <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationMember")" Label="@L["OrgMembers_Role_Staff"]" />
-                            <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationOwner")" Label="@L["OrgMembers_Role_Owner"]" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationMember")" Label="Organization Staff" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationOwner")" Label="Organization Owner" />
                         </SelectOptions>
                     </Select>
                     @if (_fieldInviteRole is not null) { <span class="exits-field-error">@_fieldInviteRole</span> }
@@ -144,8 +144,8 @@ else
                     <label class="ant-form-item-label">@L["OrgMembers_OrgRole"]</label>
                     <Select TItemValue="string" TItem="string" @bind-Value="_linkRole" Size="@InputSize.Small" Style="width:100%;" Disabled="_busy">
                         <SelectOptions>
-                            <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationMember")" Label="@L["OrgMembers_Role_Staff"]" />
-                            <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationOwner")" Label="@L["OrgMembers_Role_Owner"]" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationMember")" Label="Organization Staff" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationOwner")" Label="Organization Owner" />
                         </SelectOptions>
                     </Select>
                     @if (_fieldAddRole is not null) { <span class="exits-field-error">@_fieldAddRole</span> }
@@ -230,14 +230,21 @@ else
                 @(string.IsNullOrWhiteSpace(context.Branch) ? "—" : context.Branch)
             </PropertyColumn>
             <PropertyColumn Property="c => c.AccountStatus" Title="Account status">
-                @(FormatAccountStatus(context.AccountStatus))
+                @if (string.IsNullOrWhiteSpace(context.AccountStatus))
+                {
+                    <span>—</span>
+                }
+                else
+                {
+                    <AdminStatusTag Value="@context.AccountStatus" />
+                }
             </PropertyColumn>
             <PropertyColumn Property="c => c.Status" Title="Membership status">
-                <Tag Color="@(context.Status == "Active" ? "success" : context.Status == "Suspended" ? "error" : "default")">
-                    @FormatMembershipStatusLabel(context.Status)
-                </Tag>
+                <AdminStatusTag Value="@(context.Status == "Removed" ? "Deactivated" : context.Status)" />
             </PropertyColumn>
-            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Format="u" />
+            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]">
+                <LocalTimestamp Value="@context.UpdatedAtUtc" />
+            </PropertyColumn>
             <ActionColumn Title="@L["Common_Actions"]" Width="220">
                 <Space Size="@SpaceSize.Small" Wrap>
                     @if (Shell.IsPlatformShell)
@@ -331,11 +338,11 @@ else
         </p>
         <Select TItemValue="string" TItem="string" @bind-Value="_roleChangeNewRole" Size="@InputSize.Small" Style="width:100%;" Disabled="_busy">
             <SelectOptions>
-                <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationOwner")" Label="@L["OrgMembers_Role_Owner"]" />
-                <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationMember")" Label="@L["OrgMembers_Role_Staff"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationOwner")" Label="Organization Owner" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationMember")" Label="Organization Staff" />
                 @if (_roleChangeTarget.Role == "OrganizationAdministrator")
                 {
-                    <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationAdministrator")" Label="@L["OrgMembers_Role_Administrator"]" />
+                    <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationAdministrator")" Label="Organization Administrator" />
                 }
             </SelectOptions>
         </Select>
@@ -433,9 +440,9 @@ else
 
     private static string FormatOrgRole(string? role) => role switch
     {
-        "OrganizationOwner" => "Owner",
-        "OrganizationMember" => "Staff",
-        "OrganizationAdministrator" => "Administrator",
+        "OrganizationOwner" => "Organization Owner",
+        "OrganizationMember" => "Organization Staff",
+        "OrganizationAdministrator" => "Organization Administrator",
         _ => role ?? "—"
     };
 
@@ -445,15 +452,6 @@ else
         "Active" => L["Status_Active"].Value,
         "Suspended" => L["Status_Suspended"].Value,
         _ => status ?? "—"
-    };
-
-    private static string FormatAccountStatus(string? status) => status switch
-    {
-        "PendingVerification" => "Pending Verification",
-        "Active" => "Active",
-        "Suspended" => "Suspended",
-        "Deactivated" => "Deactivated",
-        _ => string.IsNullOrWhiteSpace(status) ? "—" : status
     };
 
     protected override async Task OnParametersSetAsync()
