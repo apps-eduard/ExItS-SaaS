@@ -681,12 +681,12 @@
   <data name="Subscriptions_LifecycleHint" xml:space="preserve"><value>Ang mga aksyon na valid para sa kasalukuyang status lamang ang ipinapakita. Ang mga nakatago o disabled na control ay hindi security.</value></data>
   <data name="Subscriptions_Column_TrialEndUtc" xml:space="preserve"><value>Katapusan ng trial (UTC)</value></data>
 
-  <data name="Payments_Title" xml:space="preserve"><value>Mga manual SaaS payment</value></data>
-  <data name="Payments_Description" xml:space="preserve"><value>Mga record ng cash, bank transfer, at manual GCash reference lamang.</value></data>
-  <data name="Payments_Warning" xml:space="preserve"><value>Ang manual SaaS payment confirmation ay operator attestation lamang — hindi automatic provider verification. Hindi kailanman ipinapakita ng UI na ito ang mga card number, CVV, PIN, OTP, gateway secret, o GCash credential. Walang payment gateway, webhook, QR, invoice engine, o POS/Utang payment integration dito.</value></data>
+  <data name="Payments_Title" xml:space="preserve"><value>Mga Bayad</value></data>
+  <data name="Payments_Description" xml:space="preserve"><value>Suriin at pamahalaan ang mga manual SaaS subscription payment.</value></data>
+  <data name="Payments_Warning" xml:space="preserve"><value>Manual attestation lamang — hindi provider verification. Hindi kailanman nagpapakita ng card number, CVV, PIN, OTP, gateway secret, o GCash credential. Walang payment gateway, webhook, QR, invoice engine, o POS payment integration.</value></data>
   <data name="Payments_CreateSection" xml:space="preserve"><value>Gumawa ng manual SaaS payment</value></data>
   <data name="Payments_CreateFailed" xml:space="preserve"><value>Hindi makagawa ng payment</value></data>
-  <data name="Payments_CreateButton" xml:space="preserve"><value>Gumawa ng manual payment</value></data>
+  <data name="Payments_CreateButton" xml:space="preserve"><value>I-record ang Bayad</value></data>
   <data name="Payments_Loading" xml:space="preserve"><value>Naglo-load ng mga bayad…</value></data>
   <data name="Payments_Empty" xml:space="preserve"><value>Walang bayad na tumugma sa kasalukuyang filter.</value></data>
   <data name="Payments_DetailTitle" xml:space="preserve"><value>Detalye ng bayad</value></data>

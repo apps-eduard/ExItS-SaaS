@@ -683,12 +683,12 @@
   <data name="Subscriptions_LifecycleHint" xml:space="preserve"><value>Only actions valid for the current status are shown. Hidden or disabled controls are not security.</value></data>
   <data name="Subscriptions_Column_TrialEndUtc" xml:space="preserve"><value>Trial end (UTC)</value></data>
 
-  <data name="Payments_Title" xml:space="preserve"><value>Manual SaaS payments</value></data>
-  <data name="Payments_Description" xml:space="preserve"><value>Cash, bank transfer, and manual GCash reference records only.</value></data>
-  <data name="Payments_Warning" xml:space="preserve"><value>Manual SaaS payment confirmation is operator attestation only — not automatic provider verification. This UI never displays card numbers, CVV, PIN, OTP, gateway secrets, or GCash credentials. There is no payment gateway, webhook, QR, invoice engine, or POS/Utang payment integration here.</value></data>
+  <data name="Payments_Title" xml:space="preserve"><value>Payments</value></data>
+  <data name="Payments_Description" xml:space="preserve"><value>Review and manage manual SaaS subscription payments.</value></data>
+  <data name="Payments_Warning" xml:space="preserve"><value>Manual attestation only — not provider verification. Never displays card numbers, CVV, PIN, OTP, gateway secrets, or GCash credentials. No payment gateway, webhook, QR, invoice engine, or POS payment integration.</value></data>
   <data name="Payments_CreateSection" xml:space="preserve"><value>Create manual SaaS payment</value></data>
   <data name="Payments_CreateFailed" xml:space="preserve"><value>Could not create payment</value></data>
-  <data name="Payments_CreateButton" xml:space="preserve"><value>Create manual payment</value></data>
+  <data name="Payments_CreateButton" xml:space="preserve"><value>Record Payment</value></data>
   <data name="Payments_Loading" xml:space="preserve"><value>Loading payments…</value></data>
   <data name="Payments_Empty" xml:space="preserve"><value>No payments match the current filters.</value></data>
   <data name="Payments_DetailTitle" xml:space="preserve"><value>Payment detail</value></data>

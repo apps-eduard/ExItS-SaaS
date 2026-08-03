@@ -60,10 +60,12 @@ public sealed class AdminDataDisplayTests
         Assert.DoesNotContain("ReportTable", orgs, StringComparison.Ordinal);
 
         var payments = File.ReadAllText(Path.Combine(pages, "Payments.razor"));
-        Assert.Contains("ReportTable", payments, StringComparison.Ordinal);
-        Assert.Contains("AdminFilterSummary", payments, StringComparison.Ordinal);
-        Assert.Contains("AmountDisplay", payments, StringComparison.Ordinal);
-        Assert.Contains("AdminPagination", payments, StringComparison.Ordinal);
+        Assert.Contains("<Table", payments, StringComparison.Ordinal);
+        Assert.Contains("FormatMoney", payments, StringComparison.Ordinal);
+        Assert.Contains("Drawer", payments, StringComparison.Ordinal);
+        Assert.Contains("OrgLabel", payments, StringComparison.Ordinal);
+        Assert.DoesNotContain("ReportTable", payments, StringComparison.Ordinal);
+        Assert.DoesNotContain("Placeholder=\"GUID\"", payments, StringComparison.Ordinal);
 
         var users = File.ReadAllText(Path.Combine(pages, "Users.razor"));
         Assert.Contains("<Table", users, StringComparison.Ordinal);
@@ -80,7 +82,7 @@ public sealed class AdminDataDisplayTests
         Assert.Contains("RemoteDataSource", members, StringComparison.Ordinal);
         Assert.Contains("OnPageIndexChange", members, StringComparison.Ordinal);
         Assert.Contains("GetOrganizationMembersAsync", members, StringComparison.Ordinal);
-        Assert.Contains("GetOrganizationInvitationsAsync", members, StringComparison.Ordinal);
+        Assert.Contains("CreateOrganizationInvitationAsync", members, StringComparison.Ordinal);
     }
 
     [Fact]

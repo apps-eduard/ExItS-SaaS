@@ -64,12 +64,20 @@ public sealed class AdminFormErrorMapperTests
         var members = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "OrganizationMembers.razor"));
         Assert.Contains("<Table", members, StringComparison.Ordinal);
         Assert.Contains("FormValidationSummary", members, StringComparison.Ordinal);
-        Assert.Contains("Popconfirm", members, StringComparison.Ordinal);
         Assert.Contains("AdminFormErrorMapper.TryBeginSubmit", members, StringComparison.Ordinal);
+        Assert.True(
+            members.Contains("Popconfirm", StringComparison.Ordinal)
+            || members.Contains("ConfirmService", StringComparison.Ordinal)
+            || members.Contains("<Modal", StringComparison.Ordinal)
+            || members.Contains("IMessageService", StringComparison.Ordinal),
+            "OrganizationMembers must use an Ant Design confirm or message surface.");
 
         var payments = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Payments.razor"));
-        Assert.Contains("FormSection", payments, StringComparison.Ordinal);
-        Assert.Contains("Type=\"number\"", payments, StringComparison.Ordinal);
+        Assert.Contains("Drawer", payments, StringComparison.Ordinal);
+        Assert.Contains("InputNumber", payments, StringComparison.Ordinal);
+        Assert.Contains("try", payments, StringComparison.Ordinal);
+        Assert.Contains("finally", payments, StringComparison.Ordinal);
+        Assert.Contains("AdminFormErrorMapper.TryBeginSubmit", payments, StringComparison.Ordinal);
     }
 
     private static string FindRepositoryRoot()

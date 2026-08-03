@@ -34,12 +34,12 @@ public sealed class AdminDashboardRefactoringTests
         foreach (var (file, markers) in new (string, string[])[]
                  {
                      ("Users.razor", ["<Table", "RemoteDataSource", "GetUsersAsync", "OnChange"]),
-                     ("Organizations.razor", ["<Table", "RemoteDataSource", "GetOrganizationsAsync", "OnPageIndexChange"]),
-                     ("Subscriptions.razor", ["<Table", "RemoteDataSource", "GetSubscriptionsAsync", "OnPageIndexChange"]),
-                     ("Entitlements.razor", ["<Table", "RemoteDataSource", "GetLatestEntitlementsAsync", "OnPageIndexChange"]),
+                     ("Organizations.razor", ["<Table", "RemoteDataSource", "GetOrganizationsAsync", "OnChange"]),
+                     ("Subscriptions.razor", ["<Table", "RemoteDataSource", "GetSubscriptionsAsync", "OnChange"]),
+                     ("Entitlements.razor", ["<Table", "RemoteDataSource", "GetLatestEntitlementsAsync", "OnChange"]),
                      ("Audit.razor", ["ReportPageShell", "ReportFilterBar", "ReportTable", "GetAuditRecordsAsync"]),
-                     ("Products.razor", ["<Table", "RemoteDataSource", "GetProductsAsync", "OnPageIndexChange"]),
-                     ("Payments.razor", ["ReportPageShell", "ReportTable"]),
+                     ("Products.razor", ["<Table", "RemoteDataSource", "GetProductsAsync", "OnChange"]),
+                     ("Payments.razor", ["admin-elevated-card", "Drawer", "GetPaymentsAsync", "<Table"]),
                  })
         {
             var text = File.ReadAllText(Path.Combine(pages, file));

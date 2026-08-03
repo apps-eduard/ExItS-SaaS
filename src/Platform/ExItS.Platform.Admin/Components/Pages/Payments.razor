@@ -1,10 +1,12 @@
 @page "/admin/payments"
 @page "/admin/payments/{Id:guid}"
+@using AntDesign
+@using AntDesign.TableModels
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject IPlatformApiClient Api
 @inject NavigationManager Nav
-@inject ToastService Toasts
+@inject IMessageService Message
 @inject IStringLocalizer<AdminResources> L
 @inject PlatformPermissionState Permissions
 
@@ -18,182 +20,321 @@ else if (!Permissions.HasPermission(PlatformPermissionCodes.ManageManualPayments
 }
 else if (Id is null)
 {
-    <ReportPageShell>
-        <ReportHeader Title="@L["Payments_Title"]"
-                      Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Payments"]}")"
-                      Description="@L["Payments_Description"]" />
-        <section class="warning" role="note">@L["Payments_Warning"]</section>
+    <PageHeader Class="exits-page-header" Title="Payments" SubTitle="Review and manage manual SaaS subscription payments.">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_Payments"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+        <PageHeaderExtra>
+            <Button Type="@ButtonType.Primary" Icon="plus" OnClick="OpenCreateDrawer">Record Payment</Button>
+        </PageHeaderExtra>
+    </PageHeader>
 
-        <FormSection Title="@L["Payments_CreateSection"]">
-            <FormValidationSummary Title="@L["Payments_CreateFailed"]" Message="@(_showCreate ? _formError : null)" IsConflict="_formConflict" />
-            <div class="form-grid">
-                <FormField Label="@($"{L["Common_Organization"]} ID")" FieldId="pay-org" Required="true" Error="@_fieldOrg">
-                    <AdminInput @bind-Value="_createOrgId" Placeholder="GUID" Disabled="_busy" />
-                </FormField>
-                <FormField Label="@L["OrgProductAccess_ProductCode"]" FieldId="pay-product" Required="true">
-                    <AdminInput @bind-Value="_createProductCode" Disabled="_busy" />
-                </FormField>
-                <FormField Label="@L["Common_Amount"]" FieldId="pay-amount" Required="true" Error="@_fieldAmount" Help="Decimal amount; server remains authoritative.">
-                    <AdminInput @bind-Value="_createAmount" Type="number" InputMode="decimal" Step="0.01" Disabled="_busy" />
-                </FormField>
-                <FormField Label="Currency" FieldId="pay-currency">
-                    <AdminInput @bind-Value="_createCurrency" Placeholder="PHP" Disabled="_busy" />
-                </FormField>
-                <FormField Label="@L["Common_Method"]" FieldId="pay-method" Required="true">
-                    <AdminSelect @bind-Value="_createMethod" Disabled="_busy">
-                        <option>Cash</option>
-                        <option>BankTransfer</option>
-                        <option>GCash</option>
-                    </AdminSelect>
-                </FormField>
-                <FormField Label="@L["Common_Reference"]" FieldId="pay-ref">
-                    <AdminInput @bind-Value="_createReference" Autocomplete="off" Disabled="_busy" />
-                </FormField>
-                <FormField Label="@L["Common_PaidUtc"]" FieldId="pay-paid" Required="true" Error="@_fieldPaidAt" Help="UTC timestamp (yyyy-MM-ddTHH:mm:ssZ)">
-                    <AdminInput @bind-Value="_createPaidAt" Placeholder="yyyy-MM-ddTHH:mm:ssZ" Disabled="_busy" />
-                </FormField>
+    <Alert Type="@AlertType.Warning"
+           ShowIcon="true"
+           Class="admin-payments-alert"
+           Style="margin-bottom:24px;"
+           Message="Manual attestation only — not provider verification."
+           Description="This workspace never shows card numbers, CVV, PIN, OTP, gateway secrets, or GCash credentials. No payment gateway, webhook, QR, invoice engine, or POS payment integration." />
+
+    <Row Gutter="(16, 16)" Style="margin-bottom:24px;">
+        <AntDesign.Col Xs="24" Sm="12" Lg="8">
+            <Card Class="admin-elevated-card" Size="@CardSize.Small">
+                <Statistic Title="Pending Confirmation" Value="@_summaryPending" />
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Xs="24" Sm="12" Lg="8">
+            <Card Class="admin-elevated-card" Size="@CardSize.Small">
+                <Statistic Title="Confirmed" Value="@_summaryConfirmed" />
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Xs="24" Sm="12" Lg="8">
+            <Card Class="admin-elevated-card" Size="@CardSize.Small">
+                <Statistic Title="Rejected / Voided" Value="@_summaryRejectedOrVoided" />
+            </Card>
+        </AntDesign.Col>
+    </Row>
+
+    <Card Class="admin-elevated-card" Title="Payment records" Style="margin-bottom:24px;">
+        <Space Wrap Style="width:100%;margin-bottom:12px;" Size="@("small")">
+            <Input @bind-Value="_search"
+                   Size="@InputSize.Small"
+                   Placeholder="Search reference or product"
+                   Style="width:220px;"
+                   AllowClear
+                   OnPressEnter="ApplyFiltersAsync"
+                   Disabled="_listBusy" />
+            <Button Size="@ButtonSize.Small" Type="@(_quickRange == ReportQuickRange.Today ? ButtonType.Primary : ButtonType.Default)"
+                    Disabled="_listBusy" OnClick="@(() => OnQuickRangeAsync(ReportQuickRange.Today))">Today</Button>
+            <Button Size="@ButtonSize.Small" Type="@(_quickRange == ReportQuickRange.Last7Days ? ButtonType.Primary : ButtonType.Default)"
+                    Disabled="_listBusy" OnClick="@(() => OnQuickRangeAsync(ReportQuickRange.Last7Days))">7 days</Button>
+            <Button Size="@ButtonSize.Small" Type="@(_quickRange == ReportQuickRange.Last30Days ? ButtonType.Primary : ButtonType.Default)"
+                    Disabled="_listBusy" OnClick="@(() => OnQuickRangeAsync(ReportQuickRange.Last30Days))">30 days</Button>
+            <Button Size="@ButtonSize.Small" Type="@(_quickRange == ReportQuickRange.ThisMonth ? ButtonType.Primary : ButtonType.Default)"
+                    Disabled="_listBusy" OnClick="@(() => OnQuickRangeAsync(ReportQuickRange.ThisMonth))">This month</Button>
+            <Select TItemValue="string" TItem="string" @bind-Value="_status" Size="@InputSize.Small" Style="width:170px;" Disabled="_listBusy" Placeholder="Status">
+                <SelectOptions>
+                    <SelectOption TItemValue="string" TItem="string" Value="@("PendingConfirmation")" Label="Pending Confirmation" />
+                    <SelectOption TItemValue="string" TItem="string" Value="@("Confirmed")" Label="Confirmed" />
+                    <SelectOption TItemValue="string" TItem="string" Value="@("Rejected")" Label="Rejected" />
+                    <SelectOption TItemValue="string" TItem="string" Value="@("Voided")" Label="Voided" />
+                </SelectOptions>
+            </Select>
+            <Select TItemValue="string" TItem="string" @bind-Value="_productCode" Size="@InputSize.Small" Style="width:180px;" Disabled="_listBusy" Placeholder="Product" AllowClear>
+                <SelectOptions>
+                    <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="All products" />
+                    @foreach (var product in _productOptions)
+                    {
+                        <SelectOption TItemValue="string" TItem="string" Value="@product.Code"
+                                      Label="@(string.IsNullOrWhiteSpace(product.DisplayName) ? product.Code : product.DisplayName)" />
+                    }
+                </SelectOptions>
+            </Select>
+            <Select TItemValue="string" TItem="string" @bind-Value="_organizationIdText" Size="@InputSize.Small" Style="width:200px;" Disabled="_listBusy" Placeholder="Organization" AllowClear>
+                <SelectOptions>
+                    <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="All organizations" />
+                    @foreach (var org in _organizationOptions)
+                    {
+                        <SelectOption TItemValue="string" TItem="string" Value="@org.Id.ToString("D")" Label="@org.DisplayName" />
+                    }
+                </SelectOptions>
+            </Select>
+            <Button Size="@ButtonSize.Small" OnClick="ClearFiltersAsync" Disabled="_listBusy">Reset</Button>
+            <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ApplyFiltersAsync" Loading="_listBusy">Refresh</Button>
+        </Space>
+
+        <Space Wrap Style="width:100%;margin-bottom:16px;" Size="@("small")">
+            <span class="muted">From</span>
+            <DatePicker TValue="DateTime?" @bind-Value="_fromDateTime" Size="@InputSize.Small" Disabled="_listBusy" Style="width:140px;" />
+            <span class="muted">To</span>
+            <DatePicker TValue="DateTime?" @bind-Value="_toDateTime" Size="@InputSize.Small" Disabled="_listBusy" Style="width:140px;" />
+            @if (!string.IsNullOrWhiteSpace(_fromError) || !string.IsNullOrWhiteSpace(_toError))
+            {
+                <span style="color:#ff4d4f;font-size:12px;">@(_toError ?? _fromError)</span>
+            }
+        </Space>
+
+        @if (_list is { IsSuccess: false })
+        {
+            <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail" />
+        }
+        else if (_list is null || _listBusy)
+        {
+            <div style="padding:2rem;text-align:center;"><Spin Tip="@L["Payments_Loading"]" /></div>
+        }
+        else if (VisiblePayments.Count is 0)
+        {
+            <Empty Description="@L["Payments_Empty"].Value" />
+        }
+        else
+        {
+            <Table TItem="PaymentDto"
+                   Class="exits-table-fit"
+                   DataSource="@VisiblePayments"
+                   Total="@(_list?.Data?.TotalCount ?? 0)"
+                   @bind-PageIndex="_page"
+                   PageSize="@(_list?.Data?.PageSize ?? 20)"
+                   Loading="_listBusy"
+                   Size="@TableSize.Small"
+                   Bordered
+                   RemoteDataSource
+                   OnChange="OnPaymentsTableChangeAsync"
+                   ScrollX="1100">
+                <PropertyColumn Property="c => c.OrganizationId" Title="@L["Common_Organization"]">
+                    <a href="@($"/admin/organizations/{context.OrganizationId:D}")">@OrgLabel(context.OrganizationId)</a>
+                </PropertyColumn>
+                <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]">
+                    @ProductLabel(context.ProductCode)
+                </PropertyColumn>
+                <PropertyColumn Property="c => c.Amount" Title="@L["Common_Amount"]" Align="ColumnAlign.Right">
+                    @FormatMoney(context.Amount, context.CurrencyCode)
+                </PropertyColumn>
+                <PropertyColumn Property="c => c.Method" Title="@L["Common_Method"]" />
+                <PropertyColumn Property="c => c.ExternalReference" Title="@L["Common_Reference"]">
+                    <a href="@($"/admin/payments/{context.Id:D}")">@(string.IsNullOrWhiteSpace(context.ExternalReference) ? "View" : context.ExternalReference)</a>
+                </PropertyColumn>
+                <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+                    <Tag Color="@PaymentStatusColor(context.Status)">@FriendlyStatus(context.Status)</Tag>
+                </PropertyColumn>
+                <PropertyColumn Property="c => c.PaidAtUtc" Title="Paid Date">
+                    @FriendlyDate(context.PaidAtUtc)
+                </PropertyColumn>
+                <PropertyColumn Property="c => c.ConfirmedBy" Title="Recorded By">
+                    @DisplayOrDash(context.ConfirmedBy)
+                </PropertyColumn>
+                <ActionColumn Title="@L["Common_Actions"]">
+                    <Button Type="@ButtonType.Link" Size="@ButtonSize.Small" OnClick="@(() => Nav.NavigateTo($"/admin/payments/{context.Id:D}"))">
+                        Details
+                    </Button>
+                </ActionColumn>
+            </Table>
+        }
+    </Card>
+
+    <Drawer Visible="@_createOpen"
+            Title="@("Record Payment")"
+            Width="520"
+            Closable
+            MaskClosable="@(!_busy)"
+            OnClose="CloseCreateDrawer">
+        <FormValidationSummary Title="@L["Payments_CreateFailed"]" Message="@_formError" IsConflict="_formConflict" />
+        <div style="display:flex;flex-direction:column;gap:16px;max-width:480px;">
+            <div>
+                <label class="ant-form-item-label"><span class="ant-form-item-required">Organization</span></label>
+                <Select TItemValue="string" TItem="string" @bind-Value="_createOrgId" Style="width:100%;" Disabled="_busy" Placeholder="Select organization" AllowClear>
+                    <SelectOptions>
+                        @foreach (var org in _organizationOptions)
+                        {
+                            <SelectOption TItemValue="string" TItem="string" Value="@org.Id.ToString("D")" Label="@org.DisplayName" />
+                        }
+                    </SelectOptions>
+                </Select>
+                @if (!string.IsNullOrWhiteSpace(_fieldOrg))
+                {
+                    <div style="color:#ff4d4f;font-size:12px;margin-top:4px;">@_fieldOrg</div>
+                }
             </div>
-            <FormActions PrimaryText="@L["Payments_CreateButton"]" Busy="_busy" OnPrimary="CreatePaymentAsync" />
-        </FormSection>
-
-        <ResponsiveReportLayout>
-            <Filters>
-                <ReportFilterBar Busy="_listBusy" OnApply="ApplyFiltersAsync" OnReset="ClearFiltersAsync">
-                    <ReportQuickRangeSelector Active="_quickRange" RangeSelected="OnQuickRangeAsync" Disabled="_listBusy" />
-                    <ReportDateRangeFilter @bind-FromDate="_fromDate"
-                                          @bind-ToDate="_toDate"
-                                          FromError="@_fromError"
-                                          ToError="@_toError"
-                                          Help="@L["Report_PaidRangeHelp"]"
-                                          Disabled="_listBusy" />
-                    <FormField Label="@L["Common_Status"]" FieldId="pay-filter-status">
-                        <AdminSelect @bind-Value="_status" Disabled="_listBusy">
-                            <option value="PendingConfirmation">PendingConfirmation</option>
-                            <option value="Confirmed">Confirmed</option>
-                            <option value="Rejected">Rejected</option>
-                            <option value="Voided">Voided</option>
-                        </AdminSelect>
-                    </FormField>
-                    <FormField Label="@L["OrgProductAccess_ProductCode"]" FieldId="pay-filter-product">
-                        <AdminInput @bind-Value="_productCode" Placeholder="optional" Disabled="_listBusy" />
-                    </FormField>
-                    <FormField Label="@($"{L["Common_Organization"]} id")" FieldId="pay-filter-org">
-                        <AdminInput @bind-Value="_organizationIdText" Placeholder="optional GUID" Disabled="_listBusy" />
-                    </FormField>
-                </ReportFilterBar>
-                <AdminFilterSummary Items="_filterChips" OnClear="ClearFiltersAsync" />
-            </Filters>
-            <ChildContent>
-                <ReportSection Title="@L["Report_PaymentsSection"]">
-                    <ReportDataPanel IsLoading="@(_list is null || _listBusy)"
-                                    HasError="@(_list is { IsSuccess: false })"
-                                    IsEmpty="@(_list is { IsSuccess: true, Data.Items.Count: 0 })"
-                                    LoadingMessage="@L["Payments_Loading"]"
-                                    EmptyMessage="@L["Payments_Empty"]"
-                                    ErrorTitle="@(_list?.Error?.Title ?? L["Common_Error"])"
-                                    ErrorDetail="@_list?.Error?.Detail"
-                                    ErrorCorrelationId="@_list?.Error?.CorrelationId"
-                                    ErrorUnavailable="@(_list?.Status == ApiCallStatus.Unavailable)">
-                        <ReportGroupHeader Title="@L["Report_PageResults"]"
-                                           Meta="@L["Report_PaidRangeHelp"]" />
-                        <ReportTable TItem="PaymentDto"
-                                     Items="_list!.Data!.Items"
-                                     Columns="_paymentColumns"
-                                     Caption="@L["Payments_Title"]"
-                                     ItemKey="p => p.Id"
-                                     CellTemplate="PaymentCell" />
-                        <ReportTotalsRow Label="@L["Report_PaymentsTotals"]"
-                                         Value="@($"{_list.Data.Items.Count}")"
-                                         AriaLabel="@L["Report_PaymentsTotals"]" />
-                        <AdminPagination Page="_list!.Data!.Page"
-                                         PageSize="_list.Data.PageSize"
-                                         TotalCount="_list.Data.TotalCount"
-                                         PageChanged="OnPaymentPageAsync"
-                                         Disabled="_listBusy" />
-                    </ReportDataPanel>
-                </ReportSection>
-            </ChildContent>
-        </ResponsiveReportLayout>
-    </ReportPageShell>
+            <div>
+                <label class="ant-form-item-label"><span class="ant-form-item-required">Product</span></label>
+                <Select TItemValue="string" TItem="string" @bind-Value="_createProductCode" Style="width:100%;" Disabled="_busy" Placeholder="Select product" AllowClear>
+                    <SelectOptions>
+                        @foreach (var product in _productOptions)
+                        {
+                            <SelectOption TItemValue="string" TItem="string" Value="@product.Code"
+                                          Label="@(string.IsNullOrWhiteSpace(product.DisplayName) ? product.Code : product.DisplayName)" />
+                        }
+                    </SelectOptions>
+                </Select>
+            </div>
+            <Row Gutter="12">
+                <AntDesign.Col Span="14">
+                    <label class="ant-form-item-label"><span class="ant-form-item-required">Amount</span></label>
+                    <AntDesign.InputNumber TValue="decimal" @bind-Value="_createAmountValue" Style="width:100%;" Disabled="_busy" Min="0" />
+                    @if (!string.IsNullOrWhiteSpace(_fieldAmount))
+                    {
+                        <div style="color:#ff4d4f;font-size:12px;margin-top:4px;">@_fieldAmount</div>
+                    }
+                </AntDesign.Col>
+                <AntDesign.Col Span="10">
+                    <label class="ant-form-item-label"><span class="ant-form-item-required">Currency</span></label>
+                    <Select TItemValue="string" TItem="string" @bind-Value="_createCurrency" Style="width:100%;" Disabled="_busy">
+                        <SelectOptions>
+                            <SelectOption TItemValue="string" TItem="string" Value="@("PHP")" Label="PHP" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("USD")" Label="USD" />
+                        </SelectOptions>
+                    </Select>
+                </AntDesign.Col>
+            </Row>
+            <div>
+                <label class="ant-form-item-label"><span class="ant-form-item-required">Method</span></label>
+                <Select TItemValue="string" TItem="string" @bind-Value="_createMethod" Style="width:100%;" Disabled="_busy">
+                    <SelectOptions>
+                        <SelectOption TItemValue="string" TItem="string" Value="@("Cash")" Label="Cash" />
+                        <SelectOption TItemValue="string" TItem="string" Value="@("BankTransfer")" Label="Bank transfer" />
+                        <SelectOption TItemValue="string" TItem="string" Value="@("GCash")" Label="GCash" />
+                    </SelectOptions>
+                </Select>
+            </div>
+            <div>
+                <label class="ant-form-item-label">Reference</label>
+                <Input @bind-Value="_createReference" Disabled="_busy" Placeholder="External reference" />
+            </div>
+            <div>
+                <label class="ant-form-item-label"><span class="ant-form-item-required">Paid date and time</span></label>
+                <DatePicker TValue="DateTime?" @bind-Value="_createPaidLocal" ShowTime="@true" Style="width:100%;" Disabled="_busy" />
+                @if (!string.IsNullOrWhiteSpace(_fieldPaidAt))
+                {
+                    <div style="color:#ff4d4f;font-size:12px;margin-top:4px;">@_fieldPaidAt</div>
+                }
+                <div class="muted" style="font-size:12px;margin-top:4px;">Local time is converted to UTC when saved.</div>
+            </div>
+            <Space Style="margin-top:8px;">
+                <Button OnClick="CloseCreateDrawer" Disabled="_busy">Cancel</Button>
+                <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="CreatePaymentAsync">Save Payment</Button>
+            </Space>
+        </div>
+    </Drawer>
 }
 else
 {
-    <AdminPageHeader Title="@L["Payments_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Payments"]} / {L["Common_Detail"]}")" Description="@L["Payments_DetailDescription"]" />
-    <section class="warning" role="note">@L["Payments_DetailWarning"]</section>
+    <AdminPageHeader Title="@L["Payments_DetailTitle"]" Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_Payments"]} / {L["Common_Detail"]}")" Description="@L["Payments_DetailDescription"]">
+        <Actions>
+            <Button OnClick='() => Nav.NavigateTo("/admin/payments")'>Back to payments</Button>
+        </Actions>
+    </AdminPageHeader>
+    <Alert Type="@AlertType.Warning" ShowIcon="true" Style="margin-bottom:16px;" Message="@L["Payments_DetailWarning"]" />
 
     @if (_detail is null) { <LoadingState Message="@L["Payments_DetailLoading"]" /> }
     else if (!_detail.IsSuccess) { <ErrorState Title="@(_detail.Error?.Title ?? L["Common_Error"])" Detail="@_detail.Error?.Detail" CorrelationId="@_detail.Error?.CorrelationId" Unavailable="@(_detail.Status == ApiCallStatus.Unavailable)" /> }
     else
     {
         var p = _detail.Data!;
-        @if (!string.IsNullOrWhiteSpace(_toast)) { <p class="toast" role="status">@_toast</p> }
         @if (!string.IsNullOrWhiteSpace(_formError)) { <ErrorState Title="@L["Common_ActionFailed"]" Detail="@_formError" /> }
 
-        <dl>
-            <dt>@L["Common_Reference"]</dt><dd>@p.ExternalReference</dd>
-            <dt>@L["Common_Amount"]</dt><dd>@p.Amount @p.CurrencyCode</dd>
-            <dt>@L["Common_Method"]</dt><dd>@p.Method</dd>
-            <dt>@L["Common_Status"]</dt><dd><StatusBadge Value="@p.Status" /></dd>
-            <dt>@L["Common_Organization"]</dt><dd><a href="/admin/organizations/@p.OrganizationId">@p.OrganizationId</a></dd>
-            <dt>@L["Common_Product"]</dt><dd>@p.ProductCode</dd>
-            <dt>Linked subscription</dt>
-            <dd>
-                @if (p.SubscriptionId is Guid sid) { <a href="/admin/subscriptions/@sid">@sid</a> }
-                else { <span>—</span> }
-            </dd>
-            <dt>@L["Common_PaidUtc"]</dt><dd><UtcTimestamp Value="@p.PaidAtUtc" /></dd>
-            <dt>Confirmed at (UTC)</dt><dd><UtcTimestamp Value="@p.ConfirmedAtUtc" /></dd>
-            <dt>Confirmed by</dt><dd>@(p.ConfirmedBy ?? "—")</dd>
-            <dt>Rejected at (UTC)</dt><dd><UtcTimestamp Value="@p.RejectedAtUtc" /></dd>
-            <dt>Rejected by</dt><dd>@(p.RejectedBy ?? "—")</dd>
-            <dt>@L["Common_Reason"]</dt><dd>@(p.RejectionReason ?? "—")</dd>
-            <dt>Voided at (UTC)</dt><dd><UtcTimestamp Value="@p.VoidedAtUtc" /></dd>
-            <dt>Voided by</dt><dd>@(p.VoidedBy ?? "—")</dd>
-            <dt>Void reason</dt><dd>@(p.VoidReason ?? "—")</dd>
-            <dt>@L["Common_Version"]</dt><dd>@p.Version</dd>
-        </dl>
+        <Card Class="admin-elevated-card" Style="margin-bottom:24px;">
+            <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1">
+                <DescriptionsItem Title="@L["Common_Reference"]">@DisplayOrDash(p.ExternalReference)</DescriptionsItem>
+                <DescriptionsItem Title="@L["Common_Amount"]">@FormatMoney(p.Amount, p.CurrencyCode)</DescriptionsItem>
+                <DescriptionsItem Title="@L["Common_Method"]">@p.Method</DescriptionsItem>
+                <DescriptionsItem Title="@L["Common_Status"]"><Tag Color="@PaymentStatusColor(p.Status)">@FriendlyStatus(p.Status)</Tag></DescriptionsItem>
+                <DescriptionsItem Title="@L["Common_Organization"]">
+                    <a href="@($"/admin/organizations/{p.OrganizationId:D}")">@OrgLabel(p.OrganizationId)</a>
+                </DescriptionsItem>
+                <DescriptionsItem Title="@L["Common_Product"]">@ProductLabel(p.ProductCode)</DescriptionsItem>
+                <DescriptionsItem Title="Linked subscription">
+                    @if (p.SubscriptionId is Guid sid) { <a href="@($"/admin/subscriptions/{sid:D}")">Details</a> }
+                    else { <span>—</span> }
+                </DescriptionsItem>
+                <DescriptionsItem Title="Paid">@FriendlyDate(p.PaidAtUtc)</DescriptionsItem>
+                <DescriptionsItem Title="Confirmed">@FriendlyDate(p.ConfirmedAtUtc) · @DisplayOrDash(p.ConfirmedBy)</DescriptionsItem>
+                <DescriptionsItem Title="Rejected">@FriendlyDate(p.RejectedAtUtc) · @DisplayOrDash(p.RejectedBy)</DescriptionsItem>
+                <DescriptionsItem Title="@L["Common_Reason"]">@DisplayOrDash(p.RejectionReason)</DescriptionsItem>
+                <DescriptionsItem Title="Voided">@FriendlyDate(p.VoidedAtUtc) · @DisplayOrDash(p.VoidedBy)</DescriptionsItem>
+                <DescriptionsItem Title="Void reason">@DisplayOrDash(p.VoidReason)</DescriptionsItem>
+                <DescriptionsItem Title="@L["Common_Version"]">@p.Version</DescriptionsItem>
+            </Descriptions>
+        </Card>
 
-        <section class="panel" aria-label="@L["Payments_PaymentActions"]">
-            <h2>@L["Payments_PaymentActions"]</h2>
+        <Card Class="admin-elevated-card" Title="@L["Payments_PaymentActions"]">
             @if (p.Status == "PendingConfirmation")
             {
-                <div class="form-grid">
-                    <label>Subscription ID (for confirm-and-activate) <input @bind="_activateSubscriptionId" placeholder="GUID of eligible subscription" /></label>
-                    <label>Period start (UTC) <input @bind="_periodStartText" /></label>
-                    <label>Period end (UTC) <input @bind="_periodEndText" /></label>
-                    <label>Reject / void reason <input @bind="_actionReason" /></label>
-                </div>
-                <div class="actions">
-                    <button type="button" @onclick='() => Ask(L["Common_Confirm"], L["Payments_ConfirmPaymentMessage"], ConfirmAsync, AdminDialogKind.Confirm)' disabled="@_busy">Confirm payment</button>
-                    <button type="button" @onclick="ConfirmAndActivateAsync" disabled="@_busy">Confirm and activate subscription</button>
-                    <button type="button" class="danger" @onclick='() => Ask(L["Common_Confirm"], L["Payments_RejectConfirmMessage"], RejectAsync, AdminDialogKind.Destructive)' disabled="@_busy">Reject payment</button>
-                </div>
+                <Space Direction="SpaceDirection.Vertical" Style="width:100%;max-width:520px;">
+                    <Input @bind-Value="_activateSubscriptionId" Placeholder="Subscription ID for confirm-and-activate" Disabled="_busy" />
+                    <Input @bind-Value="_periodStartText" Placeholder="Period start UTC" Disabled="_busy" />
+                    <Input @bind-Value="_periodEndText" Placeholder="Period end UTC" Disabled="_busy" />
+                    <Input @bind-Value="_actionReason" Placeholder="Reject / void reason" Disabled="_busy" />
+                    <Space Wrap>
+                        <Button Type="@ButtonType.Primary" Loading="_busy" OnClick='() => Ask(L["Common_Confirm"], L["Payments_ConfirmPaymentMessage"], ConfirmAsync, AdminDialogKind.Confirm)'>Confirm payment</Button>
+                        <Button Loading="_busy" OnClick="ConfirmAndActivateAsync">Confirm and activate</Button>
+                        <Button Danger Loading="_busy" OnClick='() => Ask(L["Common_Confirm"], L["Payments_RejectConfirmMessage"], RejectAsync, AdminDialogKind.Destructive)'>Reject</Button>
+                    </Space>
+                </Space>
             }
             else if (p.Status == "Confirmed")
             {
-                <div class="form-grid">
-                    <label>Void reason <input @bind="_actionReason" /></label>
-                    <label>Subscription ID (activate if not linked) <input @bind="_activateSubscriptionId" /></label>
-                    <label>Period start (UTC) <input @bind="_periodStartText" /></label>
-                    <label>Period end (UTC) <input @bind="_periodEndText" /></label>
-                </div>
-                <div class="actions">
+                <Space Direction="SpaceDirection.Vertical" Style="width:100%;max-width:520px;">
+                    <Input @bind-Value="_actionReason" Placeholder="Void reason" Disabled="_busy" />
                     @if (p.SubscriptionId is null)
                     {
-                        <button type="button" @onclick="ConfirmAndActivateAsync" disabled="@_busy">Activate subscription with this payment</button>
+                        <Input @bind-Value="_activateSubscriptionId" Placeholder="Subscription ID" Disabled="_busy" />
+                        <Input @bind-Value="_periodStartText" Placeholder="Period start UTC" Disabled="_busy" />
+                        <Input @bind-Value="_periodEndText" Placeholder="Period end UTC" Disabled="_busy" />
+                        <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="ConfirmAndActivateAsync">Activate subscription</Button>
                     }
-                    <button type="button" class="danger" @onclick='() => Ask(L["Common_Confirm"], L["Payments_VoidConfirmMessage"], VoidAsync, AdminDialogKind.Destructive)' disabled="@_busy">Void payment</button>
-                </div>
-                @if (p.SubscriptionId is not null)
-                {
-                    <p class="muted">Payment is already linked to a subscription and cannot be reused for another activation.</p>
-                }
+                    else
+                    {
+                        <p class="muted">Payment is already linked to a subscription and cannot be reused for another activation.</p>
+                    }
+                    <Button Danger Loading="_busy" OnClick='() => Ask(L["Common_Confirm"], L["Payments_VoidConfirmMessage"], VoidAsync, AdminDialogKind.Destructive)'>Void payment</Button>
+                </Space>
             }
             else
             {
-                <p class="muted">No further payment actions for status @p.Status.</p>
+                <p class="muted">No further payment actions for status @FriendlyStatus(p.Status).</p>
             }
-        </section>
+        </Card>
     }
 }
 
@@ -210,24 +351,25 @@ else
 
 @code {
     [Parameter] public Guid? Id { get; set; }
+
     private string _status = "PendingConfirmation";
-    private string? _productCode;
-    private string? _organizationIdText;
+    private string _productCode = "";
+    private string _organizationIdText = "";
+    private string _search = "";
     private ApiCallResult<PagedResult<PaymentDto>>? _list;
     private ApiCallResult<PaymentDto>? _detail;
-    private bool _showCreate = true;
+    private bool _createOpen;
     private string _createOrgId = "";
     private string _createProductCode = "";
-    private string _createAmount = "1000";
+    private decimal _createAmountValue = 1000m;
     private string _createCurrency = "PHP";
     private string _createMethod = "GCash";
     private string _createReference = "";
-    private string _createPaidAt = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
+    private DateTime? _createPaidLocal = DateTime.Now;
     private string _activateSubscriptionId = "";
     private string _periodStartText = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
     private string _periodEndText = DateTimeOffset.UtcNow.AddDays(30).ToString("yyyy-MM-ddTHH:mm:ssZ");
     private string _actionReason = "";
-    private string? _toast;
     private string? _formError;
     private bool _formConflict;
     private string? _fieldOrg;
@@ -237,56 +379,45 @@ else
     private bool _listBusy;
     private ConfirmState? _confirm;
     private int _page = 1;
-    private List<AdminColumnDefinition> _paymentColumns = new();
-    private DateOnly? _fromDate;
-    private DateOnly? _toDate;
-    private ReportQuickRange? _quickRange;
+    private DateTime? _fromDateTime;
+    private DateTime? _toDateTime;
+    private ReportQuickRange? _quickRange = ReportQuickRange.Last30Days;
     private string? _fromError;
     private string? _toError;
     private const int MaxInclusiveReportDays = 366;
+    private List<OrganizationDto> _organizationOptions = [];
+    private List<ProductDto> _productOptions = [];
+    private Dictionary<Guid, string> _orgNames = new();
+    private Dictionary<string, string> _productNames = new(StringComparer.OrdinalIgnoreCase);
+    private int _summaryPending;
+    private int _summaryConfirmed;
+    private int _summaryRejectedOrVoided;
+
+    private IReadOnlyList<PaymentDto> VisiblePayments
+    {
+        get
+        {
+            var items = _list?.Data?.Items ?? Array.Empty<PaymentDto>();
+            if (string.IsNullOrWhiteSpace(_search))
+            {
+                return FilterByPaidDate(items);
+            }
+
+            var q = _search.Trim();
+            return FilterByPaidDate(items.Where(p =>
+                (p.ExternalReference?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (p.ProductCode?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (p.Method?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false)
+                || OrgLabel(p.OrganizationId).Contains(q, StringComparison.OrdinalIgnoreCase)).ToList());
+        }
+    }
 
     protected override void OnInitialized()
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        (_fromDate, _toDate) = ReportQuickRangeHelper.Resolve(ReportQuickRange.Last30Days, today);
-        _quickRange = ReportQuickRange.Last30Days;
-        _paymentColumns =
-        [
-            new("ref", L["Common_Reference"], Primary: true),
-            new("amount", L["Common_Amount"], Numeric: true),
-            new("method", L["Common_Method"]),
-            new("status", L["Common_Status"]),
-            new("org", L["Common_Organization"]),
-            new("paid", L["Common_PaidUtc"])
-        ];
-    }
-
-    private IReadOnlyList<AdminFilterChip> _filterChips
-    {
-        get
-        {
-            var chips = new List<AdminFilterChip>
-            {
-                new(L["Common_Status"], string.IsNullOrWhiteSpace(_status) ? "PendingConfirmation" : _status)
-            };
-            if (!string.IsNullOrWhiteSpace(_productCode))
-            {
-                chips.Add(new(L["OrgProductAccess_ProductCode"], _productCode));
-            }
-
-            if (!string.IsNullOrWhiteSpace(_organizationIdText))
-            {
-                chips.Add(new(L["Common_Organization"], _organizationIdText));
-            }
-
-            if (_fromDate is not null && _toDate is not null)
-            {
-                chips.Add(new(L["Report_FromDate"], _fromDate.Value.ToString("yyyy-MM-dd")));
-                chips.Add(new(L["Report_ToDate"], _toDate.Value.ToString("yyyy-MM-dd")));
-            }
-
-            return chips;
-        }
+        var (from, to) = ReportQuickRangeHelper.Resolve(ReportQuickRange.Last30Days, today);
+        _fromDateTime = from.ToDateTime(TimeOnly.MinValue);
+        _toDateTime = to.ToDateTime(TimeOnly.MaxValue);
     }
 
     protected override async Task OnParametersSetAsync()
@@ -297,23 +428,72 @@ else
             return;
         }
 
-        _toast = null;
         _formError = null;
         _formConflict = false;
+        await EnsureLookupsAsync();
+
         if (Id is null)
         {
             var uri = Nav.ToAbsoluteUri(Nav.Uri);
             var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
             if (query.TryGetValue("organizationId", out var org) && Guid.TryParse(org, out var orgId))
             {
-                _organizationIdText = orgId.ToString();
-                _createOrgId = orgId.ToString();
+                _organizationIdText = orgId.ToString("D");
+                _createOrgId = orgId.ToString("D");
             }
+
             await LoadListAsync();
+            await LoadSummaryAsync();
         }
         else
         {
             _detail = await Api.GetPaymentAsync(Id.Value);
+        }
+    }
+
+    private async Task EnsureLookupsAsync()
+    {
+        if (_organizationOptions.Count is 0)
+        {
+            var orgs = await Api.GetOrganizationsAsync(page: 1, pageSize: 100, status: "Active");
+            if (orgs.IsSuccess && orgs.Data is not null)
+            {
+                _organizationOptions = orgs.Data.Items.OrderBy(o => o.DisplayName).ToList();
+                _orgNames = _organizationOptions.ToDictionary(o => o.Id, o => o.DisplayName);
+            }
+        }
+
+        if (_productOptions.Count is 0)
+        {
+            var products = await Api.GetProductsAsync(page: 1, pageSize: 100);
+            if (products.IsSuccess && products.Data is not null)
+            {
+                _productOptions = products.Data.Items.OrderBy(p => p.DisplayName).ToList();
+                _productNames = _productOptions.ToDictionary(
+                    p => p.Code,
+                    p => string.IsNullOrWhiteSpace(p.DisplayName) ? p.Code : p.DisplayName,
+                    StringComparer.OrdinalIgnoreCase);
+            }
+        }
+    }
+
+    private async Task LoadSummaryAsync()
+    {
+        try
+        {
+            var pending = await Api.GetPaymentsAsync(status: "PendingConfirmation", page: 1, pageSize: 1);
+            var confirmed = await Api.GetPaymentsAsync(status: "Confirmed", page: 1, pageSize: 1);
+            var rejected = await Api.GetPaymentsAsync(status: "Rejected", page: 1, pageSize: 1);
+            var voided = await Api.GetPaymentsAsync(status: "Voided", page: 1, pageSize: 1);
+            _summaryPending = pending.IsSuccess ? pending.Data?.TotalCount ?? 0 : 0;
+            _summaryConfirmed = confirmed.IsSuccess ? confirmed.Data?.TotalCount ?? 0 : 0;
+            _summaryRejectedOrVoided =
+                (rejected.IsSuccess ? rejected.Data?.TotalCount ?? 0 : 0)
+                + (voided.IsSuccess ? voided.Data?.TotalCount ?? 0 : 0);
+        }
+        catch
+        {
+            // Summary is best-effort; list remains authoritative.
         }
     }
 
@@ -335,21 +515,35 @@ else
         }
     }
 
+    private IReadOnlyList<PaymentDto> FilterByPaidDate(IReadOnlyList<PaymentDto> items)
+    {
+        if (_fromDateTime is null || _toDateTime is null)
+        {
+            return items;
+        }
+
+        var fromUtc = DateTime.SpecifyKind(_fromDateTime.Value, DateTimeKind.Local).ToUniversalTime();
+        var toUtc = DateTime.SpecifyKind(_toDateTime.Value, DateTimeKind.Local).ToUniversalTime();
+        return items.Where(p => p.PaidAtUtc >= fromUtc && p.PaidAtUtc <= toUtc).ToList();
+    }
+
     private bool ValidateDateRange()
     {
         _fromError = _toError = null;
-        if (_fromDate is null || _toDate is null)
+        if (_fromDateTime is null || _toDateTime is null)
         {
             return true;
         }
 
-        if (_toDate < _fromDate)
+        var from = DateOnly.FromDateTime(_fromDateTime.Value);
+        var to = DateOnly.FromDateTime(_toDateTime.Value);
+        if (to < from)
         {
             _toError = L["Report_DateRangeInvalid"];
             return false;
         }
 
-        if (!ReportQuickRangeHelper.IsWithinMaxSpan(_fromDate.Value, _toDate.Value, MaxInclusiveReportDays))
+        if (!ReportQuickRangeHelper.IsWithinMaxSpan(from, to, MaxInclusiveReportDays))
         {
             _toError = string.Format(L["Report_DateRangeTooLarge"], MaxInclusiveReportDays);
             return false;
@@ -362,6 +556,7 @@ else
     {
         if (!ValidateDateRange())
         {
+            await Message.WarningAsync(_toError ?? _fromError ?? "Invalid date range.");
             return;
         }
 
@@ -373,113 +568,130 @@ else
     {
         _quickRange = range;
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        (_fromDate, _toDate) = ReportQuickRangeHelper.Resolve(range, today);
+        var (from, to) = ReportQuickRangeHelper.Resolve(range, today);
+        _fromDateTime = from.ToDateTime(TimeOnly.MinValue);
+        _toDateTime = to.ToDateTime(TimeOnly.MaxValue);
         _fromError = _toError = null;
         await ApplyFiltersAsync();
     }
 
-    private async Task OnPaymentPageAsync(int page)
+    private async Task OnPaymentsTableChangeAsync(QueryModel<PaymentDto> _)
     {
-        _page = page;
         await LoadListAsync();
     }
 
     private async Task ClearFiltersAsync()
     {
         _status = "PendingConfirmation";
-        _productCode = null;
-        _organizationIdText = null;
+        _productCode = "";
+        _organizationIdText = "";
+        _search = "";
         _page = 1;
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         _quickRange = ReportQuickRange.Last30Days;
-        (_fromDate, _toDate) = ReportQuickRangeHelper.Resolve(ReportQuickRange.Last30Days, today);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var (from, to) = ReportQuickRangeHelper.Resolve(ReportQuickRange.Last30Days, today);
+        _fromDateTime = from.ToDateTime(TimeOnly.MinValue);
+        _toDateTime = to.ToDateTime(TimeOnly.MaxValue);
         _fromError = _toError = null;
         await LoadListAsync();
+        await LoadSummaryAsync();
     }
 
-    private RenderFragment<(PaymentDto Item, AdminColumnDefinition Column)> PaymentCell => ctx => b =>
+    private void OpenCreateDrawer()
     {
-        switch (ctx.Column.Key)
+        _formError = null;
+        _formConflict = false;
+        _fieldOrg = _fieldAmount = _fieldPaidAt = null;
+        _createPaidLocal ??= DateTime.Now;
+        _createOpen = true;
+    }
+
+    private void CloseCreateDrawer()
+    {
+        if (_busy)
         {
-            case "ref":
-                b.OpenElement(0, "a");
-                b.AddAttribute(1, "href", $"/admin/payments/{ctx.Item.Id}");
-                b.AddContent(2, ctx.Item.ExternalReference);
-                b.CloseElement();
-                break;
-            case "amount":
-                b.OpenComponent<AmountDisplay>(0);
-                b.AddAttribute(1, nameof(AmountDisplay.Amount), (decimal?)ctx.Item.Amount);
-                b.AddAttribute(2, nameof(AmountDisplay.CurrencyCode), ctx.Item.CurrencyCode);
-                b.CloseComponent();
-                break;
-            case "method":
-                b.AddContent(0, ctx.Item.Method);
-                break;
-            case "status":
-                b.OpenComponent<ReportStatusBadge>(0);
-                b.AddAttribute(1, nameof(ReportStatusBadge.Value), ctx.Item.Status);
-                b.CloseComponent();
-                break;
-            case "org":
-                b.OpenElement(0, "a");
-                b.AddAttribute(1, "href", $"/admin/organizations/{ctx.Item.OrganizationId}");
-                b.AddContent(2, ctx.Item.OrganizationId);
-                b.CloseElement();
-                break;
-            case "paid":
-                b.OpenComponent<UtcTimestamp>(0);
-                b.AddAttribute(1, nameof(UtcTimestamp.Value), ctx.Item.PaidAtUtc);
-                b.CloseComponent();
-                break;
+            return;
         }
-    };
+
+        _createOpen = false;
+    }
 
     private async Task CreatePaymentAsync()
     {
         if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy))
         {
+            await Message.WarningAsync("Please wait — a request is already in progress.");
             return;
         }
 
         _formError = null;
         _formConflict = false;
         _fieldOrg = _fieldAmount = _fieldPaidAt = null;
-        _showCreate = true;
 
-        if (!Guid.TryParse(_createOrgId, out var orgId))
+        try
         {
-            _fieldOrg = L["Payments_OrgIdInvalid"];
+            if (!Guid.TryParse(_createOrgId, out var orgId))
+            {
+                _fieldOrg = "Select an organization.";
+                await Message.WarningAsync(_fieldOrg);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_createProductCode))
+            {
+                _formError = "Select a product.";
+                await Message.WarningAsync(_formError);
+                return;
+            }
+
+            if (_createAmountValue <= 0)
+            {
+                _fieldAmount = L["Payments_AmountInvalid"];
+                await Message.WarningAsync(_fieldAmount);
+                return;
+            }
+
+            if (_createPaidLocal is null)
+            {
+                _fieldPaidAt = "Paid date and time are required.";
+                await Message.WarningAsync(_fieldPaidAt);
+                return;
+            }
+
+            var paidAt = DateTime.SpecifyKind(_createPaidLocal.Value, DateTimeKind.Local).ToUniversalTime();
+            var result = await Api.CreateManualPaymentAsync(new CreateManualPaymentRequest(
+                orgId,
+                _createProductCode.Trim(),
+                _createAmountValue,
+                _createCurrency.Trim(),
+                _createMethod,
+                _createReference.Trim(),
+                new DateTimeOffset(paidAt)));
+
+            if (!result.IsSuccess)
+            {
+                _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+                _formError = AdminFormErrorMapper.MapPageError(result) ?? "Payment could not be recorded.";
+                await Message.ErrorAsync(_formError);
+                return;
+            }
+
+            await Message.SuccessAsync(L["Payments_ToastCreated"].Value);
+            _createOpen = false;
+            await LoadListAsync();
+            await LoadSummaryAsync();
+            Nav.NavigateTo($"/admin/payments/{result.Data!.Id}");
+        }
+        catch (Exception ex)
+        {
+            _formError = "An unexpected error occurred while recording the payment.";
+            await Message.ErrorAsync(_formError);
+            Console.Error.WriteLine(ex);
+        }
+        finally
+        {
             _busy = false;
-            return;
         }
-
-        if (!decimal.TryParse(_createAmount, out var amount))
-        {
-            _fieldAmount = L["Payments_AmountInvalid"];
-            _busy = false;
-            return;
-        }
-
-        if (!DateTimeOffset.TryParse(_createPaidAt, out var paidAt))
-        {
-            _fieldPaidAt = L["Payments_PaidAtInvalid"];
-            _busy = false;
-            return;
-        }
-
-        var result = await Api.CreateManualPaymentAsync(new CreateManualPaymentRequest(
-            orgId, _createProductCode.Trim(), amount, _createCurrency.Trim(), _createMethod, _createReference.Trim(), paidAt.ToUniversalTime()));
-        _busy = false;
-        if (!result.IsSuccess)
-        {
-            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
-            _formError = AdminFormErrorMapper.MapPageError(result);
-            return;
-        }
-
-        Toasts.Show(L["Payments_ToastCreated"], ToastKind.Success);
-        Nav.NavigateTo($"/admin/payments/{result.Data!.Id}");
     }
 
     private void Ask(string title, string message, Func<Task> action, AdminDialogKind kind) =>
@@ -504,20 +716,27 @@ else
             return;
         }
 
-        _formError = null;
-        _formConflict = false;
-        var result = await Api.ConfirmPaymentAsync(Id.Value, new ConfirmPaymentRequest("dev-admin"));
-        _busy = false;
-        await ClearConfirm();
-        if (!result.IsSuccess)
+        try
         {
-            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
-            _formError = AdminFormErrorMapper.MapPageError(result);
-            return;
-        }
+            _formError = null;
+            _formConflict = false;
+            var result = await Api.ConfirmPaymentAsync(Id.Value, new ConfirmPaymentRequest("dev-admin"));
+            await ClearConfirm();
+            if (!result.IsSuccess)
+            {
+                _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+                _formError = AdminFormErrorMapper.MapPageError(result);
+                await Message.ErrorAsync(_formError ?? L["Common_ActionFailed"]);
+                return;
+            }
 
-        Toasts.Show("Payment confirmed (manual attestation only).", ToastKind.Success);
-        _detail = ApiCallResult<PaymentDto>.Success(result.Data!);
+            await Message.SuccessAsync("Payment confirmed (manual attestation only).");
+            _detail = ApiCallResult<PaymentDto>.Success(result.Data!);
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private async Task ConfirmAndActivateAsync()
@@ -527,34 +746,41 @@ else
             return;
         }
 
-        _formError = null;
-        _formConflict = false;
-        if (!Guid.TryParse(_activateSubscriptionId, out var subscriptionId))
+        try
         {
-            _formError = "Subscription ID is required for activation.";
+            _formError = null;
+            _formConflict = false;
+            if (!Guid.TryParse(_activateSubscriptionId, out var subscriptionId))
+            {
+                _formError = "Subscription ID is required for activation.";
+                await Message.WarningAsync(_formError);
+                return;
+            }
+
+            if (!DateTimeOffset.TryParse(_periodStartText, out var start) || !DateTimeOffset.TryParse(_periodEndText, out var end))
+            {
+                _formError = "Paid period start/end must be valid UTC timestamps.";
+                await Message.WarningAsync(_formError);
+                return;
+            }
+
+            var result = await Api.ConfirmPaymentAndActivateAsync(Id.Value, new ActivateSubscriptionForPaymentRequest(
+                "dev-admin", subscriptionId, start.ToUniversalTime(), end.ToUniversalTime()));
+            if (!result.IsSuccess)
+            {
+                _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+                _formError = AdminFormErrorMapper.MapPageError(result);
+                await Message.ErrorAsync(_formError ?? L["Common_ActionFailed"]);
+                return;
+            }
+
+            await Message.SuccessAsync($"Payment linked and subscription {result.Data!.Subscription.Status}.");
+            _detail = ApiCallResult<PaymentDto>.Success(result.Data.Payment);
+        }
+        finally
+        {
             _busy = false;
-            return;
         }
-
-        if (!DateTimeOffset.TryParse(_periodStartText, out var start) || !DateTimeOffset.TryParse(_periodEndText, out var end))
-        {
-            _formError = "Paid period start/end must be valid UTC timestamps.";
-            _busy = false;
-            return;
-        }
-
-        var result = await Api.ConfirmPaymentAndActivateAsync(Id.Value, new ActivateSubscriptionForPaymentRequest(
-            "dev-admin", subscriptionId, start.ToUniversalTime(), end.ToUniversalTime()));
-        _busy = false;
-        if (!result.IsSuccess)
-        {
-            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
-            _formError = AdminFormErrorMapper.MapPageError(result);
-            return;
-        }
-
-        Toasts.Show($"Payment linked and subscription {result.Data!.Subscription.Status}.", ToastKind.Success);
-        _detail = ApiCallResult<PaymentDto>.Success(result.Data.Payment);
     }
 
     private async Task RejectAsync()
@@ -567,6 +793,7 @@ else
         if (string.IsNullOrWhiteSpace(_actionReason))
         {
             _formError = "Rejection reason is required.";
+            await Message.WarningAsync(_formError);
             await ClearConfirm();
             return;
         }
@@ -576,20 +803,27 @@ else
             return;
         }
 
-        _formError = null;
-        _formConflict = false;
-        var result = await Api.RejectPaymentAsync(Id.Value, new RejectPaymentRequest("dev-admin", _actionReason));
-        _busy = false;
-        await ClearConfirm();
-        if (!result.IsSuccess)
+        try
         {
-            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
-            _formError = AdminFormErrorMapper.MapPageError(result);
-            return;
-        }
+            _formError = null;
+            _formConflict = false;
+            var result = await Api.RejectPaymentAsync(Id.Value, new RejectPaymentRequest("dev-admin", _actionReason));
+            await ClearConfirm();
+            if (!result.IsSuccess)
+            {
+                _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+                _formError = AdminFormErrorMapper.MapPageError(result);
+                await Message.ErrorAsync(_formError ?? L["Common_ActionFailed"]);
+                return;
+            }
 
-        Toasts.Show("Payment rejected.", ToastKind.Success);
-        _detail = ApiCallResult<PaymentDto>.Success(result.Data!);
+            await Message.SuccessAsync("Payment rejected.");
+            _detail = ApiCallResult<PaymentDto>.Success(result.Data!);
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private async Task VoidAsync()
@@ -602,6 +836,7 @@ else
         if (string.IsNullOrWhiteSpace(_actionReason))
         {
             _formError = "Void reason is required.";
+            await Message.WarningAsync(_formError);
             await ClearConfirm();
             return;
         }
@@ -611,21 +846,61 @@ else
             return;
         }
 
-        _formError = null;
-        _formConflict = false;
-        var result = await Api.VoidPaymentAsync(Id.Value, new VoidPaymentRequest("dev-admin", _actionReason));
-        _busy = false;
-        await ClearConfirm();
-        if (!result.IsSuccess)
+        try
         {
-            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
-            _formError = AdminFormErrorMapper.MapPageError(result);
-            return;
-        }
+            _formError = null;
+            _formConflict = false;
+            var result = await Api.VoidPaymentAsync(Id.Value, new VoidPaymentRequest("dev-admin", _actionReason));
+            await ClearConfirm();
+            if (!result.IsSuccess)
+            {
+                _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+                _formError = AdminFormErrorMapper.MapPageError(result);
+                await Message.ErrorAsync(_formError ?? L["Common_ActionFailed"]);
+                return;
+            }
 
-        Toasts.Show("Payment voided.", ToastKind.Success);
-        _detail = ApiCallResult<PaymentDto>.Success(result.Data!);
+            await Message.SuccessAsync("Payment voided.");
+            _detail = ApiCallResult<PaymentDto>.Success(result.Data!);
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
+
+    private string OrgLabel(Guid organizationId) =>
+        _orgNames.TryGetValue(organizationId, out var name) && !string.IsNullOrWhiteSpace(name)
+            ? name
+            : "Organization";
+
+    private string ProductLabel(string? productCode) =>
+        !string.IsNullOrWhiteSpace(productCode) && _productNames.TryGetValue(productCode, out var name)
+            ? name
+            : (productCode ?? "—");
+
+    private static string DisplayOrDash(string? value) => string.IsNullOrWhiteSpace(value) ? "—" : value;
+
+    private static string FormatMoney(decimal amount, string? currency) =>
+        string.IsNullOrWhiteSpace(currency) ? amount.ToString("N2") : $"{currency} {amount:N2}";
+
+    private static string FriendlyDate(DateTimeOffset? value) =>
+        value is null ? "—" : value.Value.ToLocalTime().ToString("dd MMM yyyy, h:mm tt");
+
+    private static string FriendlyStatus(string status) => status switch
+    {
+        "PendingConfirmation" => "Pending Confirmation",
+        _ => status
+    };
+
+    private static string PaymentStatusColor(string status) => status switch
+    {
+        "PendingConfirmation" => "processing",
+        "Confirmed" => "success",
+        "Rejected" => "error",
+        "Voided" => "default",
+        _ => "default"
+    };
 
     private sealed record ConfirmState(string Title, string Message, Func<Task> Action, AdminDialogKind Kind);
 }

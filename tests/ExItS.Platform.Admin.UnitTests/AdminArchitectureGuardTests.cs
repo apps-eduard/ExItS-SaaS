@@ -56,7 +56,7 @@ public sealed class AdminArchitectureGuardTests
         var subscriptions = File.ReadAllText(Path.Combine(pagesDir, "Subscriptions.razor"));
         var payments = File.ReadAllText(Path.Combine(pagesDir, "Payments.razor"));
 
-        Assert.Contains("Subscriptions_StartTrialButton", subscriptions, StringComparison.Ordinal);
+        Assert.Contains("Subscriptions_StartTrial", subscriptions, StringComparison.Ordinal);
         Assert.Contains("Subscriptions_Warning", subscriptions, StringComparison.Ordinal);
         Assert.Contains("Start trial", resx, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("grace", resx, StringComparison.OrdinalIgnoreCase);
@@ -549,7 +549,7 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("@using AntDesign", page, StringComparison.Ordinal);
         Assert.Contains("<Select", page, StringComparison.Ordinal);
         Assert.Contains("<Alert", page, StringComparison.Ordinal);
-        Assert.Contains("ant-btn ant-btn-primary", page, StringComparison.Ordinal);
+        Assert.Contains("ButtonType.Primary", page, StringComparison.Ordinal);
         Assert.DoesNotContain("<select", page, StringComparison.Ordinal);
         Assert.DoesNotContain("FluentUI", page, StringComparison.OrdinalIgnoreCase);
     }

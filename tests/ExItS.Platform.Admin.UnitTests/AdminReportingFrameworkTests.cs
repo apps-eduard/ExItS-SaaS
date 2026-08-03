@@ -55,19 +55,16 @@ public sealed class AdminReportingFrameworkTests
         Assert.DoesNotContain("COGS", dashboard, StringComparison.OrdinalIgnoreCase);
 
         var payments = File.ReadAllText(Path.Combine(pages, "Payments.razor"));
-        Assert.Contains("ReportPageShell", payments, StringComparison.Ordinal);
-        Assert.Contains("ReportFilterBar", payments, StringComparison.Ordinal);
-        Assert.Contains("ReportDateRangeFilter", payments, StringComparison.Ordinal);
-        Assert.Contains("ReportQuickRangeSelector", payments, StringComparison.Ordinal);
-        Assert.Contains("ReportTable", payments, StringComparison.Ordinal);
-        Assert.Contains("ReportTotalsRow", payments, StringComparison.Ordinal);
-        Assert.Contains("ReportGroupHeader", payments, StringComparison.Ordinal);
-        Assert.Contains("ReportDataPanel", payments, StringComparison.Ordinal);
-        Assert.Contains("AdminPagination", payments, StringComparison.Ordinal);
-        Assert.Contains("ReportQuickRangeHelper.IsWithinMaxSpan", payments, StringComparison.Ordinal);
+        Assert.Contains("admin-elevated-card", payments, StringComparison.Ordinal);
+        Assert.Contains("Drawer", payments, StringComparison.Ordinal);
+        Assert.Contains("Record Payment", payments, StringComparison.Ordinal);
         Assert.Contains("GetPaymentsAsync", payments, StringComparison.Ordinal);
+        Assert.Contains("ReportQuickRangeHelper.IsWithinMaxSpan", payments, StringComparison.Ordinal);
+        Assert.Contains("<Table", payments, StringComparison.Ordinal);
         Assert.DoesNotContain("Sum(", payments, StringComparison.Ordinal);
         Assert.DoesNotContain("PaidAtUtc.UtcDateTime", payments, StringComparison.Ordinal);
+        Assert.DoesNotContain("ReportPageShell", payments, StringComparison.Ordinal);
+        Assert.DoesNotContain("ReportTable", payments, StringComparison.Ordinal);
     }
 
     [Theory]
