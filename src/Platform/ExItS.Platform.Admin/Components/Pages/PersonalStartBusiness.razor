@@ -342,6 +342,14 @@ else
                 ? "Trial started. Open Current Subscription or choose the organization profile."
                 : "Subscription started. Open Current Subscription or choose the organization profile.";
             await Message.SuccessAsync(startAsTrial ? "Business created with free trial." : "Business created and subscribed.");
+
+            // Defer navigation so AntDesign DomEventListener finishes handler enumeration.
+            if (_createdOrganizationId is Guid orgId)
+            {
+                await Task.Yield();
+                await Task.Delay(1);
+                Nav.NavigateTo($"/admin/organizations/{orgId}/commercial");
+            }
         }
         catch (Exception ex)
         {

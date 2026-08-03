@@ -10,6 +10,7 @@
 @inject AdminShellContext Shell
 @inject ConfirmService Confirm
 @inject LocalValidationSignInService LocalValidation
+@inject IJSRuntime Js
 
 <AdminPageHeader Title="Current Subscription" Breadcrumb="@PageBreadcrumb" Description="Manage your plan, billing, and subscription status." />
 
@@ -20,7 +21,7 @@
 else if (!string.IsNullOrWhiteSpace(_error))
 {
     <ErrorState Title="@L["Common_Error"].Value" Detail="@_error" />
-    <Button Type="@ButtonType.Primary" OnClick="LoadAsync" Style="margin-top:12px;">Retry</Button>
+    <Button Type="@ButtonType.Primary" OnClick="@(() => LoadAsync())" Style="margin-top:12px;">Retry</Button>
 }
 else
 {
@@ -82,19 +83,19 @@ else
                         }
                         else if (IsTrialing || IsExpired)
                         {
-                            <Button Type="@ButtonType.Primary" Block Loading="_busy" OnClick="ScrollToPlans">
+                            <Button Type="@ButtonType.Primary" Block Loading="_busy" OnClick="ScrollToPlansAsync">
                                 @(IsTrialing ? "Convert trial — choose a plan" : "Subscribe — choose a plan")
                             </Button>
                         }
                         else if (ShowActivePlanManagement)
                         {
-                            <Button Type="@ButtonType.Primary" Block Loading="_busy" OnClick="ScrollToPlans">View upgrade options</Button>
+                            <Button Type="@ButtonType.Primary" Block Loading="_busy" OnClick="ScrollToPlansAsync">View upgrade options</Button>
                         }
-                        <Button Block Disabled="_busy" OnClick="ScrollToPlans">View Plans</Button>
-                        <Button Block Disabled="_busy" OnClick="ScrollToHistory">View History</Button>
+                        <Button Block Disabled="_busy" OnClick="ScrollToPlansAsync">View Plans</Button>
+                        <Button Block Disabled="_busy" OnClick="ScrollToHistoryAsync">View History</Button>
                         @if (SubscriptionDetailHref is not null)
                         {
-                            <Button Type="@ButtonType.Link" Block OnClick="GoToSubscriptionDetail">@L["Common_ViewDetails"]</Button>
+                            <Button Type="@ButtonType.Link" Block OnClick="GoToSubscriptionDetailAsync">@L["Common_ViewDetails"]</Button>
                         }
                     </Space>
                 }
@@ -264,6 +265,9 @@ else
 
     private bool _loading = true;
     private bool _busy;
+    private bool _loadInFlight;
+    private int _loadGeneration;
+    private Guid? _loadedOrganizationId;
     private string? _error;
     private string? _actionError;
     private string? _simResult;
@@ -317,7 +321,17 @@ else
         Permissions.HasPermission(PlatformPermissionCodes.ManageSubscriptions)
         || (Shell.IsOrganizationShell && Shell.SelectedOrganizationId == OrganizationId);
 
-    protected override async Task OnParametersSetAsync() => await LoadAsync();
+    protected override async Task OnParametersSetAsync()
+    {
+        // Only reload when the organization route changes. Parent re-renders must not
+        // tear down AntDesign listeners (DomEventListener "Collection was modified").
+        if (_loadedOrganizationId == OrganizationId)
+        {
+            return;
+        }
+
+        await LoadAsync(showFullPageLoading: true);
+    }
 
     private static string DisplayOrDash(string? value) => string.IsNullOrWhiteSpace(value) ? "—" : value;
 
@@ -369,28 +383,74 @@ else
         if (plan.ExportEnabled) yield return "Export";
     }
 
-    private void GoToSubscriptionDetail()
+    private async Task GoToSubscriptionDetailAsync()
     {
-        if (SubscriptionDetailHref is not null)
+        if (SubscriptionDetailHref is null)
         {
-            Nav.NavigateTo(SubscriptionDetailHref);
+            return;
+        }
+
+        // Defer navigation so AntDesign DomEventListener finishes enumerating handlers.
+        await Task.Yield();
+        await Task.Delay(1);
+        Nav.NavigateTo(SubscriptionDetailHref);
+    }
+
+    private Task ScrollToPlansAsync() => ScrollToElementAsync("available-plans");
+
+    private Task ScrollToHistoryAsync() => ScrollToElementAsync("subscription-history");
+
+    private async Task ScrollToElementAsync(string elementId)
+    {
+        // Do not use NavigationManager hash navigation — it remounts and races DomEventListener.
+        await Task.Yield();
+        try
+        {
+            await Js.InvokeVoidAsync(
+                "eval",
+                $"document.getElementById('{elementId}')?.scrollIntoView({{behavior:'smooth',block:'start'}})");
+        }
+        catch (JSDisconnectedException)
+        {
+            // Circuit disposed.
+        }
+        catch (JSException)
+        {
+            // Element missing or JS unavailable — ignore.
         }
     }
 
-    private void ScrollToPlans() => Nav.NavigateTo(Nav.Uri.Split('#')[0] + "#available-plans", forceLoad: false);
-
-    private void ScrollToHistory() => Nav.NavigateTo(Nav.Uri.Split('#')[0] + "#subscription-history", forceLoad: false);
-
-    private async Task LoadAsync()
+    private async Task LoadAsync(bool showFullPageLoading = true)
     {
-        _loading = true;
+        if (_loadInFlight && !showFullPageLoading)
+        {
+            return;
+        }
+
+        var generation = ++_loadGeneration;
+        _loadInFlight = true;
+        if (showFullPageLoading)
+        {
+            _loading = true;
+        }
+
         _error = null;
         _actionError = null;
         try
         {
             await Shell.EnsureLoadedAsync();
+            if (generation != _loadGeneration)
+            {
+                return;
+            }
+
             _showLvPayments = LocalValidation.IsAvailable;
             var orgResult = await Api.GetOrganizationAsync(OrganizationId);
+            if (generation != _loadGeneration)
+            {
+                return;
+            }
+
             if (!orgResult.IsSuccess)
             {
                 _error = orgResult.Error?.Detail ?? orgResult.Error?.Title ?? "Organization could not be loaded.";
@@ -400,6 +460,11 @@ else
             _org = orgResult.Data;
 
             var currentPlan = await Api.GetOrganizationCurrentPlanAsync(OrganizationId, DefaultProductCode);
+            if (generation != _loadGeneration)
+            {
+                return;
+            }
+
             if (!currentPlan.IsSuccess)
             {
                 _error = currentPlan.Error?.Detail ?? currentPlan.Error?.Title ?? "Current plan could not be loaded.";
@@ -415,6 +480,11 @@ else
             if (_plans.Count is 0)
             {
                 var commercialPlans = await Api.GetCommercialPlansAsync(DefaultProductCode);
+                if (generation != _loadGeneration)
+                {
+                    return;
+                }
+
                 if (commercialPlans.IsSuccess && commercialPlans.Data is not null)
                 {
                     _plans = commercialPlans.Data.OrderBy(p => p.SortOrder).ToList();
@@ -422,6 +492,11 @@ else
             }
 
             var summary = await Api.GetOrganizationCommercialSummaryAsync(OrganizationId);
+            if (generation != _loadGeneration)
+            {
+                return;
+            }
+
             if (summary.IsSuccess && summary.Data is not null)
             {
                 _summary = summary.Data;
@@ -436,15 +511,24 @@ else
             {
                 _subscribeBillingCycle = _currentSubscription.BillingCycle;
             }
+
+            _loadedOrganizationId = OrganizationId;
         }
         catch (Exception ex)
         {
-            _error = "An unexpected error occurred while loading commercial data.";
-            Console.Error.WriteLine(ex);
+            if (generation == _loadGeneration)
+            {
+                _error = "An unexpected error occurred while loading commercial data.";
+                Console.Error.WriteLine(ex);
+            }
         }
         finally
         {
-            _loading = false;
+            if (generation == _loadGeneration)
+            {
+                _loading = false;
+                _loadInFlight = false;
+            }
         }
     }
 
@@ -518,7 +602,7 @@ else
             await Message.SuccessAsync(startAsTrial
                 ? $"Started {plan.DisplayName} trial."
                 : $"Subscribed to {plan.DisplayName}.");
-            await LoadAsync();
+            await LoadAsync(showFullPageLoading: false);
         }
         catch (Exception ex)
         {
@@ -581,7 +665,7 @@ else
             }
 
             await Message.SuccessAsync($"Subscribed to {plan.DisplayName} ({price:0} {plan.CurrencyCode}).");
-            await LoadAsync();
+            await LoadAsync(showFullPageLoading: false);
         }
         catch (Exception ex)
         {
@@ -649,7 +733,7 @@ else
             }
 
             await Message.SuccessAsync($"Upgraded to {plan.DisplayName}.");
-            await LoadAsync();
+            await LoadAsync(showFullPageLoading: false);
         }
         catch (Exception ex)
         {
@@ -734,7 +818,7 @@ else
             }
 
             await Message.SuccessAsync("Downgrade scheduled.");
-            await LoadAsync();
+            await LoadAsync(showFullPageLoading: false);
         }
         catch (Exception ex)
         {
@@ -782,7 +866,7 @@ else
                 await Message.ErrorAsync(_simResult);
             }
 
-            await LoadAsync();
+            await LoadAsync(showFullPageLoading: false);
         }
         finally
         {

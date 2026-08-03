@@ -460,6 +460,9 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
         Assert.Contains("Subscription Summary", commercial, StringComparison.Ordinal);
         Assert.Contains("Existing data is not deleted", commercial, StringComparison.Ordinal);
         Assert.Contains("Confirm upgrade", commercial, StringComparison.Ordinal);
+        Assert.Contains("scrollIntoView", commercial, StringComparison.Ordinal);
+        Assert.Contains("ScrollToElementAsync", commercial, StringComparison.Ordinal);
+        Assert.DoesNotContain("Nav.Uri.Split('#')", commercial, StringComparison.Ordinal);
 
         var lvPayments = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "LocalValidationTestPayments.razor"));
