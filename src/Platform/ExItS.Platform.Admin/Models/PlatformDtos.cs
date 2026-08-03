@@ -294,6 +294,22 @@ public sealed record OrganizationCommercialSummaryDto(
     IReadOnlyList<PaymentDto> Payments,
     IReadOnlyList<EntitlementLatestSummaryDto> LatestEntitlements);
 
+public sealed record PendingPlanChangeDto(
+    Guid PlanId,
+    string? PlanKey,
+    string? DisplayName,
+    DateTimeOffset? EffectiveAtUtc);
+
+public sealed record OrganizationCurrentPlanDto(
+    Guid OrganizationId,
+    string ProductCode,
+    SubscriptionDto? CurrentSubscription,
+    PlanDto? CurrentPlan,
+    PendingPlanChangeDto? PendingPlanChange,
+    IReadOnlyList<PlanDto> AvailablePlans,
+    EntitlementLatestSummaryDto? Entitlement,
+    bool? ProductInstancePresent);
+
 public sealed record PortfolioSummaryDto(
     int ActiveProductCount,
     int PublishedPlanVersionCount,

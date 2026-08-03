@@ -57,6 +57,8 @@ public sealed class PlatformApiClient(
         GetAsync<PagedResult<PlanDto>>(
             $"/api/v1/platform/catalog/plans?{Query(("page", page), ("pageSize", pageSize), ("productCode", productCode), ("status", status), ("search", search), ("sortBy", sortBy), ("sortDesc", sortDesc))}",
             ct);
+    public Task<ApiCallResult<IReadOnlyList<PlanDto>>> GetCommercialPlansAsync(string? productCode = null, CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<PlanDto>>($"/api/v1/commercial/plans?{Query(("productCode", productCode))}", ct);
     public Task<ApiCallResult<PlanDto>> GetPlanAsync(Guid id, CancellationToken ct = default) =>
         GetAsync<PlanDto>($"/api/v1/platform/catalog/plans/{id}", ct);
     public Task<ApiCallResult<PlanDto>> CreatePlanAsync(string productCode, CreatePlanRequest request, CancellationToken ct = default) =>
@@ -100,6 +102,8 @@ public sealed class PlatformApiClient(
         SendAsync<OrganizationDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{id}/close", null, ct);
     public Task<ApiCallResult<OrganizationCommercialSummaryDto>> GetOrganizationCommercialSummaryAsync(Guid id, CancellationToken ct = default) =>
         GetAsync<OrganizationCommercialSummaryDto>($"/api/v1/platform/admin/organizations/{id}/commercial-summary", ct);
+    public Task<ApiCallResult<OrganizationCurrentPlanDto>> GetOrganizationCurrentPlanAsync(Guid organizationId, string? productCode = null, CancellationToken ct = default) =>
+        GetAsync<OrganizationCurrentPlanDto>($"/api/v1/platform/organizations/{organizationId}/current-plan?{Query(("productCode", productCode))}", ct);
     public Task<ApiCallResult<PagedResult<SubscriptionDto>>> GetSubscriptionsAsync(
         string? status = null,
         string? productCode = null,

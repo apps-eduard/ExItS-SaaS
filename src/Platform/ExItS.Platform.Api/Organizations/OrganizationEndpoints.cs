@@ -1,4 +1,5 @@
 using ExItS.Platform.Api.Common;
+using ExItS.Platform.Application.Commercial;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Audit;
@@ -359,6 +360,35 @@ internal static class OrganizationEndpoints
             }
 
             return PlatformApiResults.FromResult(result, o => Results.Ok(OrganizationQueryService.Map(o)));
+        });
+
+        organizations.MapGet("/{organizationId:guid}/current-plan", async (
+            Guid organizationId,
+            string? productCode,
+            OrganizationCurrentPlanQueryService queries,
+            PlatformOrganizationAuthz orgAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await orgAuthz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            try
+            {
+                var plan = await queries.GetCurrentPlanAsync(organizationId, productCode, ct).ConfigureAwait(false);
+                return plan is null
+                    ? PlatformApiResults.Problem(
+                        ApplicationErrorCodes.OrganizationNotFound,
+                        "Platform Organization was not found.",
+                        StatusCodes.Status404NotFound)
+                    : Results.Ok(plan);
+            }
+            catch (DomainException ex)
+            {
+                return PlatformApiResults.Problem(ex.ErrorCode, ex.Message, StatusCodes.Status400BadRequest);
+            }
         });
 
         return app;

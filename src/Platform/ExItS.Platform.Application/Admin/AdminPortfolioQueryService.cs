@@ -136,21 +136,75 @@ public sealed class AdminPortfolioQueryService
             return null;
         }
 
-        var subscriptions = await _subscriptions
-            .ListByOrganizationAsync(organizationId, status: null, page: 1, pageSize: CatalogPagination.MaxPageSize, cancellationToken)
-            .ConfigureAwait(false);
-        var payments = await _payments
-            .ListByOrganizationAsync(organizationId, status: null, page: 1, pageSize: CatalogPagination.MaxPageSize, cancellationToken)
-            .ConfigureAwait(false);
-        var latest = await _store
-            .ListLatestEntitlementsForOrganizationAsync(organizationId, cancellationToken)
-            .ConfigureAwait(false);
+        var subscriptions = await TryLoadSubscriptionsAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        var payments = await TryLoadPaymentsAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        var latest = await TryLoadLatestEntitlementsAsync(organizationId, cancellationToken).ConfigureAwait(false);
 
         return new OrganizationCommercialSummaryDto(
             organization,
-            subscriptions.Items,
-            payments.Items,
+            subscriptions,
+            payments,
             latest);
+    }
+
+    private async Task<IReadOnlyList<SubscriptionDto>> TryLoadSubscriptionsAsync(
+        Guid organizationId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _subscriptions
+                .ListByOrganizationAsync(
+                    organizationId,
+                    status: null,
+                    page: 1,
+                    pageSize: CatalogPagination.MaxPageSize,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            return result.Items;
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    private async Task<IReadOnlyList<SaaSPaymentDto>> TryLoadPaymentsAsync(
+        Guid organizationId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _payments
+                .ListByOrganizationAsync(
+                    organizationId,
+                    status: null,
+                    page: 1,
+                    pageSize: CatalogPagination.MaxPageSize,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            return result.Items;
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    private async Task<IReadOnlyList<EntitlementLatestSummaryDto>> TryLoadLatestEntitlementsAsync(
+        Guid organizationId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _store
+                .ListLatestEntitlementsForOrganizationAsync(organizationId, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch
+        {
+            return [];
+        }
     }
 
     public async Task<PagedResult<EntitlementLatestSummaryDto>> ListLatestEntitlementsAsync(

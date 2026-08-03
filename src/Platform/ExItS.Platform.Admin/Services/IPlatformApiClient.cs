@@ -29,6 +29,7 @@ public interface IPlatformApiClient
         string? sortBy = null,
         bool? sortDesc = null,
         CancellationToken ct = default);
+    Task<ApiCallResult<IReadOnlyList<PlanDto>>> GetCommercialPlansAsync(string? productCode = null, CancellationToken ct = default);
     Task<ApiCallResult<PlanDto>> GetPlanAsync(Guid id, CancellationToken ct = default);
     Task<ApiCallResult<PlanDto>> CreatePlanAsync(string productCode, CreatePlanRequest request, CancellationToken ct = default);
     Task<ApiCallResult<PlanDto>> RenamePlanAsync(string productCode, Guid planId, RenameCatalogRequest request, CancellationToken ct = default);
@@ -53,6 +54,7 @@ public interface IPlatformApiClient
     Task<ApiCallResult<OrganizationDto>> ReactivateOrganizationAsync(Guid id, CancellationToken ct = default);
     Task<ApiCallResult<OrganizationDto>> CloseOrganizationAsync(Guid id, CancellationToken ct = default);
     Task<ApiCallResult<OrganizationCommercialSummaryDto>> GetOrganizationCommercialSummaryAsync(Guid id, CancellationToken ct = default);
+    Task<ApiCallResult<OrganizationCurrentPlanDto>> GetOrganizationCurrentPlanAsync(Guid organizationId, string? productCode = null, CancellationToken ct = default);
     Task<ApiCallResult<PagedResult<SubscriptionDto>>> GetSubscriptionsAsync(
         string? status = null,
         string? productCode = null,

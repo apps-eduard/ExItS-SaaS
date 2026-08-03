@@ -167,6 +167,10 @@ UpdatedAt
 
 `SortOrder` controls display/presentation order only. `MonthlyPrice`, `AnnualPrice`, and `CurrencyCode` are catalog defaults for new commercial actions; they do not retroactively rewrite existing subscription snapshots.
 
+**Commercial read access:** Authenticated Personal and Organization users retrieve Active MVP POS plans via `GET /api/v1/commercial/plans` without `ViewPortfolio`, organization membership, subscription, entitlement, or product-local role. Platform Admin catalog CRUD remains on `/api/v1/platform/catalog/*` and continues to require portfolio/catalog permissions.
+
+Organization Current Plan uses `GET /api/v1/platform/organizations/{organizationId}/current-plan` (org view membership or platform portfolio). Null subscription, entitlement, or pending plan change returns HTTP 200 with empty/nullable fields — never 500.
+
 Statuses:
 
 ```text

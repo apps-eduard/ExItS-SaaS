@@ -3,7 +3,25 @@
 > **Status:** In Progress (validation underway)  
 > **Phase:** 16 — Implementation Complete, Under Validation  
 > **Next:** P16-WP12 — Not Started  
-> **Commit SHA:** `b70f807b883d4b44d6910bc310b00bbd755f7b5a`
+> **Commit SHA:** `4faf99fc4bed61ab46f43b0587cf41c6b5124de6`
+
+---
+
+## Commercial catalog defects fixed (2026-08-03)
+
+### Root cause A — Personal Start a Business “No plans available”
+
+- `PersonalStartBusiness.razor` called `GetPlansAsync` → `GET /api/v1/platform/catalog/plans`, which requires `PlatformPermission.ViewPortfolio`.
+- Personal account profiles lack `ViewPortfolio` → API returned **403**; UI treated any non-success as an empty plan list.
+
+**Fix:** Authenticated commercial catalog `GET /api/v1/commercial/plans?productCode=pinoy-business-pos` (any authenticated account class; no portfolio/org/subscription gate). Calls `EnsureMvpPosPlans` before listing Active MVP plans. Admin UI uses `GetCommercialPlansAsync` with loading / retryable error / true empty states; form validates org name, slug, and billing cycle before submit.
+
+### Root cause B — Organization Current Plan “An unexpected error occurred”
+
+- Route `/admin/organizations/{id}/commercial` loaded `GetOrganizationCommercialSummaryAsync` → `GET /api/v1/platform/admin/organizations/{id}/commercial-summary`.
+- Application DTO used `PlatformOrganizationDto` + `SaaSPaymentDto`; Admin expected `OrganizationDto` + `PaymentDto`. Section loads (subscriptions / payments / entitlements) could throw and surface as **500** via the global exception handler (“An unexpected error occurred.”).
+
+**Fix:** Null-safe section loads in `GetOrganizationCommercialSummaryAsync`; subscription mapping skips enrichment failures; API maps commercial-summary JSON to Admin-compatible shape; dedicated `GET /api/v1/platform/organizations/{organizationId}/current-plan?productCode=pinoy-business-pos` for Current Plan UI; `OrganizationCommercial.razor` uses current-plan + commercial plans, null-safe subscription rendering, Choose a Plan when no subscription / Trialing / Expired, and retry on load errors.
 
 ---
 
@@ -53,11 +71,25 @@
 
 | Suite | Result |
 |---|---|
-| `Wp11PricingPaymentsPlanChangeTests` | **33 passed** |
-| `ApiWp11*` integration | **11 passed** |
+| `Wp11PricingPaymentsPlanChangeTests` | **34 passed** (incl. commercial endpoint source guard) |
+| `ApiWp11*` integration | **19 passed** (incl. `ApiWp11CommercialCatalogAndCurrentPlanTests`) |
 | Admin `~Wp11` | **25 passed** |
 
-Covers: Starter/Pro trial rejected; Business 14-day trial; one trial/org/product; convert to Starter/Business/Pro; failed conversion preserves Trialing; expired subscribe; idempotent conversion; no payment on trial start; agreed-price snapshot; Production LV guard; UI source guards.
+Covers: Starter/Pro trial rejected; Business 14-day trial; one trial/org/product; convert to Starter/Business/Pro; failed conversion preserves Trialing; expired subscribe; idempotent conversion; no payment on trial start; agreed-price snapshot; Production LV guard; UI source guards; personal commercial plans 200; EnsureMvpPosPlans idempotent; org empty current-plan/commercial-summary 200; Admin DTO deserialize; cross-org denial.
+
+## Manual Local Validation evidence (2026-08-03)
+
+Against running LV stack (`localhost:8091`):
+
+| Check | Result |
+|---|---|
+| `GET /api/v1/commercial/plans` (Olivia / Maria) | **200** — Starter 299/2990 trial=false; Business 699/6990 trial=true/14; Pro 1499/14990 trial=false |
+| `GET /api/v1/platform/catalog/plans` (Maria org owner) | **403** (expected — ViewPortfolio required) |
+| `GET .../organizations/{abc}/current-plan` (Olivia + Maria) | **200** — Trialing subscription mapped; no 500 |
+| `GET .../commercial-summary` (Olivia) | **200** |
+| Empty org `current-plan` | **200** — `currentSubscription=null`, `availablePlans=3` |
+
+Browser UI: Admin watch should pick up `PersonalStartBusiness` / `OrganizationCommercial` changes; confirm plan cards and Current Plan render without the prior empty/error states after hard refresh if needed.
 
 ## Manual acceptance checklist (remaining)
 

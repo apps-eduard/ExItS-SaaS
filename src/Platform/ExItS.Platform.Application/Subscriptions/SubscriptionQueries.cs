@@ -207,11 +207,49 @@ public sealed class SubscriptionQueryService
         var mapped = new List<SubscriptionDto>(items.Count);
         foreach (var item in items)
         {
-            mapped.Add(await MapAsync(item, cancellationToken).ConfigureAwait(false));
+            try
+            {
+                mapped.Add(await MapAsync(item, cancellationToken).ConfigureAwait(false));
+            }
+            catch
+            {
+                mapped.Add(MapMinimal(item));
+            }
         }
 
         return new PagedResult<SubscriptionDto>(mapped, totalCount, pageNumber, take);
     }
+
+    private static SubscriptionDto MapMinimal(Subscription subscription) =>
+        new(
+            subscription.Id.Value,
+            subscription.OrganizationId.Value,
+            subscription.ProductCode.Value,
+            subscription.PlanId.Value,
+            subscription.PlanVersionId.Value,
+            subscription.TrialDefinitionId?.Value,
+            subscription.Status.ToString(),
+            subscription.TrialStartUtc,
+            subscription.TrialEndUtc,
+            subscription.PaidPeriodStartUtc,
+            subscription.PaidPeriodEndUtc,
+            subscription.GracePeriodEndUtc,
+            subscription.SuspendedAtUtc,
+            subscription.PastDueAtUtc,
+            subscription.CancelledAtUtc,
+            subscription.ExpiredAtUtc,
+            subscription.CreatedAtUtc,
+            subscription.UpdatedAtUtc,
+            subscription.Version,
+            BillingCycle: subscription.BillingCycle?.ToString(),
+            AgreedPrice: subscription.AgreedPrice,
+            CurrencyCode: subscription.CurrencyCode,
+            PriceEffectiveFromUtc: subscription.PriceEffectiveFromUtc,
+            PendingPlanId: subscription.PendingPlanId?.Value,
+            PendingPlanEffectiveAtUtc: subscription.PendingPlanEffectiveAtUtc,
+            CurrentPeriodStartUtc: subscription.PaidPeriodStartUtc,
+            CurrentPeriodEndUtc: subscription.PaidPeriodEndUtc,
+            RenewalDateUtc: subscription.PaidPeriodEndUtc);
 
     private async Task<SubscriptionDto> MapAsync(Subscription subscription, CancellationToken cancellationToken)
     {

@@ -68,9 +68,18 @@ else
             </Space>
         </Card>
 
-        @if (_plans.Count is 0)
+        @if (_plansLoading)
         {
-            <Empty Description="@("No plans available.")" />
+            <LoadingState Message="@("Loading plans...")" />
+        }
+        else if (!string.IsNullOrWhiteSpace(_plansError))
+        {
+            <ErrorState Title="@L["Common_Error"].Value" Detail="@_plansError" />
+            <Button Type="@ButtonType.Primary" OnClick="LoadPlansAsync" Style="margin-top:12px;">Retry</Button>
+        }
+        else if (_plans.Count is 0)
+        {
+            <Empty Description="@("No plans are currently available for this product.")" />
         }
         else
         {
@@ -130,7 +139,9 @@ else
     private bool _ready;
     private bool _busy;
     private bool _completed;
+    private bool _plansLoading = true;
     private string? _formError;
+    private string? _plansError;
     private bool _formConflict;
     private string _displayName = "";
     private string _slug = "";
@@ -147,10 +158,28 @@ else
             return;
         }
 
-        var plans = await Api.GetPlansAsync(productCode: "pinoy-business-pos", status: "Active", pageSize: 20, sortBy: "SortOrder", sortDesc: false);
-        if (plans is { IsSuccess: true, Data: not null })
+        await LoadPlansAsync();
+    }
+
+    private async Task LoadPlansAsync()
+    {
+        _plansLoading = true;
+        _plansError = null;
+        try
         {
-            _plans = plans.Data.Items.OrderBy(p => p.SortOrder).ToList();
+            var plans = await Api.GetCommercialPlansAsync(productCode: "pinoy-business-pos");
+            if (!plans.IsSuccess)
+            {
+                _plansError = plans.Error?.Detail ?? plans.Error?.Title ?? "Failed to load plans.";
+                _plans = [];
+                return;
+            }
+
+            _plans = plans.Data?.OrderBy(p => p.SortOrder).ToList() ?? [];
+        }
+        finally
+        {
+            _plansLoading = false;
         }
     }
 
@@ -169,6 +198,27 @@ else
 
         _formError = null;
         _formConflict = false;
+
+        if (string.IsNullOrWhiteSpace(_displayName))
+        {
+            _busy = false;
+            _formError = "Organization name is required.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_slug))
+        {
+            _busy = false;
+            _formError = "Organization slug is required.";
+            return;
+        }
+
+        if (_billingCycle is not ("Monthly" or "Annual"))
+        {
+            _busy = false;
+            _formError = "Billing cycle must be Monthly or Annual.";
+            return;
+        }
 
         var result = await Api.StartBusinessAsync(new StartBusinessRequest(
             _displayName.Trim(),

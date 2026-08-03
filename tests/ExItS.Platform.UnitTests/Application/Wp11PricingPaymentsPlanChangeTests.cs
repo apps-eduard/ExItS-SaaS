@@ -413,6 +413,25 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
     }
 
     [Fact]
+    public void Personal_start_business_uses_commercial_plans_endpoint_not_view_portfolio_catalog()
+    {
+        var root = FindRepoRoot();
+        var startBusiness = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "PersonalStartBusiness.razor"));
+        var commercial = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "OrganizationCommercial.razor"));
+        var client = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Services", "PlatformApiClient.cs"));
+
+        Assert.Contains("GetCommercialPlansAsync", startBusiness, StringComparison.Ordinal);
+        Assert.DoesNotContain("GetPlansAsync", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("GetCommercialPlansAsync", commercial, StringComparison.Ordinal);
+        Assert.Contains("GetOrganizationCurrentPlanAsync", commercial, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/commercial/plans", client, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("/current-plan", client, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Admin_commercial_ui_exposes_pricing_preview_and_test_payments()
     {
         var root = FindRepoRoot();

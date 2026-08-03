@@ -80,6 +80,12 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
             return true;
         }
 
+        // Authenticated commercial catalog (any account class); endpoint enforces session auth.
+        if (path.StartsWith("/api/v1/commercial", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
         if (path.StartsWith("/health", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/", StringComparison.OrdinalIgnoreCase))
         {

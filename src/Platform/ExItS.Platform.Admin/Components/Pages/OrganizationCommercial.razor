@@ -20,27 +20,34 @@
 else if (!string.IsNullOrWhiteSpace(_error))
 {
     <ErrorState Title="@L["Common_Error"].Value" Detail="@_error" />
+    <Button Type="@ButtonType.Primary" OnClick="LoadAsync" Style="margin-top:12px;">Retry</Button>
 }
 else
 {
     <FormSection Title="Current plan">
         @if (_currentSubscription is null)
         {
-            <Empty Description="@L["Organizations_SubscriptionsEmpty"].Value" />
+            <Empty Description="@("No current plan")" />
         }
         else
         {
             <dl class="detail-list">
-                <dt>@L["Common_Plan"]</dt><dd>@DisplayOrDash(_currentSubscription.PlanDisplayName)</dd>
+                <dt>@L["Common_Plan"]</dt><dd>@DisplayOrDash(_currentSubscription.PlanDisplayName ?? _currentPlan?.DisplayName)</dd>
                 <dt>@L["Common_Status"]</dt><dd><Tag Color="@StatusColor(_currentSubscription.Status)">@_currentSubscription.Status</Tag></dd>
                 <dt>Billing</dt><dd>@DisplayOrDash(_currentSubscription.BillingCycle)</dd>
-                <dt>Agreed price</dt><dd>@AmountDisplay(_currentSubscription.AgreedPrice, _currentSubscription.CurrencyCode)</dd>
+                <dt>Agreed price</dt><dd>@AmountDisplay(_currentSubscription.AgreedPrice, _currentSubscription.CurrencyCode ?? _currentPlan?.CurrencyCode)</dd>
                 <dt>Period</dt><dd>@PeriodLabel(_currentSubscription)</dd>
-                @if (_currentSubscription.TrialEndUtc is not null && _currentSubscription.Status is "Trialing" or "Expired")
+                @if (_currentSubscription.TrialEndUtc is not null
+                     && (string.Equals(_currentSubscription.Status, "Trialing", StringComparison.OrdinalIgnoreCase)
+                         || string.Equals(_currentSubscription.Status, "Expired", StringComparison.OrdinalIgnoreCase)))
                 {
                     <dt>Trial ends</dt><dd>@_currentSubscription.TrialEndUtc.Value.ToLocalTime().ToString("g")</dd>
                 }
-                @if (!string.IsNullOrWhiteSpace(_currentSubscription.PendingPlanDisplayName))
+                @if (_pendingPlanChange is not null)
+                {
+                    <dt>Pending plan</dt><dd>@DisplayOrDash(_pendingPlanChange.DisplayName)</dd>
+                }
+                else if (!string.IsNullOrWhiteSpace(_currentSubscription.PendingPlanDisplayName))
                 {
                     <dt>Pending plan</dt><dd>@_currentSubscription.PendingPlanDisplayName</dd>
                 }
@@ -66,28 +73,35 @@ else
                     </SelectOptions>
                 </Select>
             </Space>
-            <Table TItem="PlanDto" DataSource="@_plans" Size="@TableSize.Small" Bordered HidePagination>
-                <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Plan"]" />
-                <PropertyColumn Property="c => c.MonthlyPrice" Title="Monthly (PHP)" />
-                <PropertyColumn Property="c => c.AnnualPrice" Title="Annual (PHP)" />
-                <PropertyColumn Property="c => c.DisplayName" Title="Trial">
-                    @{
-                        var trialLabel = context.TrialAllowed && context.DefaultTrialDays > 0
-                            ? $"{context.DefaultTrialDays}-day trial"
-                            : "Subscribe only";
-                    }
-                    @trialLabel
-                </PropertyColumn>
-                <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Actions"]">
-                    @if (CanManageCommercial)
-                    {
-                        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy"
-                                OnClick="@(() => SubscribeFromTrialAsync(context))">
-                            Subscribe Now
-                        </Button>
-                    }
-                </PropertyColumn>
-            </Table>
+            @if (_plans.Count is 0)
+            {
+                <Empty Description="@L["Plans_Empty"].Value" />
+            }
+            else
+            {
+                <Table TItem="PlanDto" DataSource="@_plans" Size="@TableSize.Small" Bordered HidePagination>
+                    <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Plan"]" />
+                    <PropertyColumn Property="c => c.MonthlyPrice" Title="Monthly (PHP)" />
+                    <PropertyColumn Property="c => c.AnnualPrice" Title="Annual (PHP)" />
+                    <PropertyColumn Property="c => c.DisplayName" Title="Trial">
+                        @{
+                            var trialLabel = context.TrialAllowed && context.DefaultTrialDays > 0
+                                ? $"{context.DefaultTrialDays}-day trial"
+                                : "Subscribe only";
+                        }
+                        @trialLabel
+                    </PropertyColumn>
+                    <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_Actions"]">
+                        @if (CanManageCommercial && _currentSubscription is not null)
+                        {
+                            <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy"
+                                    OnClick="@(() => SubscribeFromTrialAsync(context))">
+                                Subscribe Now
+                            </Button>
+                        }
+                    </PropertyColumn>
+                </Table>
+            }
         </FormSection>
     }
 
@@ -127,7 +141,7 @@ else
     <FormSection Title="@L["Nav_Subscriptions"]">
         @if (HasSubscriptions)
         {
-            <Table TItem="SubscriptionDto" DataSource="@_summary!.Subscriptions" Size="@TableSize.Small" Bordered HidePagination>
+            <Table TItem="SubscriptionDto" DataSource="@_summarySubscriptions" Size="@TableSize.Small" Bordered HidePagination>
                 <PropertyColumn Property="c => c.ProductCode" Title="@L["Common_Product"]" />
                 <PropertyColumn Property="c => c.PlanDisplayName" Title="@L["Common_Plan"]" />
                 <PropertyColumn Property="c => c.BillingCycle" Title="Billing" />
@@ -176,9 +190,13 @@ else
     private string? _simResult;
     private string _subscribeBillingCycle = "Monthly";
     private OrganizationDto? _org;
+    private OrganizationCurrentPlanDto? _currentPlanView;
     private OrganizationCommercialSummaryDto? _summary;
     private SubscriptionDto? _currentSubscription;
+    private PlanDto? _currentPlan;
+    private PendingPlanChangeDto? _pendingPlanChange;
     private List<PlanDto> _plans = [];
+    private List<SubscriptionDto> _summarySubscriptions = [];
     private bool _showLvPayments;
     private const string DefaultProductCode = "pinoy-business-pos";
 
@@ -187,20 +205,26 @@ else
 
     private static readonly string RequiresSubscriptionText = "Requires an active subscription";
 
-    private bool HasSubscriptions => _summary is not null && _summary.Subscriptions.Count > 0;
+    private bool HasSubscriptions => _summarySubscriptions.Count > 0;
 
     private bool ShowChoosePlan =>
-        _currentSubscription is not null
-        && CanManageCommercial
-        && (_currentSubscription.Status is "Trialing" or "Expired");
+        CanManageCommercial
+        && (_currentSubscription is null
+            || string.Equals(_currentSubscription.Status, "Trialing", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(_currentSubscription.Status, "Expired", StringComparison.OrdinalIgnoreCase));
 
     private bool ShowActivePlanManagement =>
-        _currentSubscription is not null && _currentSubscription.Status is "Active" or "GracePeriod" or "PastDue" or "Suspended";
+        _currentSubscription is not null
+        && (string.Equals(_currentSubscription.Status, "Active", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(_currentSubscription.Status, "GracePeriod", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(_currentSubscription.Status, "PastDue", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(_currentSubscription.Status, "Suspended", StringComparison.OrdinalIgnoreCase));
 
     private string ChoosePlanMessage => _currentSubscription?.Status switch
     {
         "Trialing" => "Your trial is active. Choose a plan and complete payment to continue after the trial.",
         "Expired" => "Your trial has ended. Choose a plan to subscribe. Product data is retained.",
+        null => "No subscription yet. Choose a plan to get started.",
         _ => "Choose a plan to subscribe."
     };
 
@@ -258,22 +282,38 @@ else
             }
 
             _org = orgResult.Data;
-            var summary = await Api.GetOrganizationCommercialSummaryAsync(OrganizationId);
-            if (!summary.IsSuccess)
+
+            var currentPlan = await Api.GetOrganizationCurrentPlanAsync(OrganizationId, DefaultProductCode);
+            if (!currentPlan.IsSuccess)
             {
-                _error = summary.Error?.Detail ?? summary.Error?.Title;
+                _error = currentPlan.Error?.Detail ?? currentPlan.Error?.Title;
                 return;
             }
 
-            _summary = summary.Data;
-            _currentSubscription = _summary?.Subscriptions
-                .FirstOrDefault(s => string.Equals(s.ProductCode, DefaultProductCode, StringComparison.OrdinalIgnoreCase))
-                ?? _summary?.Subscriptions.FirstOrDefault();
+            _currentPlanView = currentPlan.Data;
+            _currentSubscription = _currentPlanView?.CurrentSubscription;
+            _currentPlan = _currentPlanView?.CurrentPlan;
+            _pendingPlanChange = _currentPlanView?.PendingPlanChange;
+            _plans = _currentPlanView?.AvailablePlans.OrderBy(p => p.SortOrder).ToList() ?? [];
 
-            var plans = await Api.GetPlansAsync(productCode: DefaultProductCode, status: "Active", pageSize: 50, sortBy: "SortOrder", sortDesc: false);
-            if (plans.IsSuccess && plans.Data is not null)
+            if (_plans.Count is 0)
             {
-                _plans = plans.Data.Items.OrderBy(p => p.SortOrder).ToList();
+                var commercialPlans = await Api.GetCommercialPlansAsync(DefaultProductCode);
+                if (commercialPlans.IsSuccess && commercialPlans.Data is not null)
+                {
+                    _plans = commercialPlans.Data.OrderBy(p => p.SortOrder).ToList();
+                }
+            }
+
+            var summary = await Api.GetOrganizationCommercialSummaryAsync(OrganizationId);
+            if (summary.IsSuccess && summary.Data is not null)
+            {
+                _summary = summary.Data;
+                _summarySubscriptions = _summary.Subscriptions?.ToList() ?? [];
+            }
+            else if (_currentSubscription is not null)
+            {
+                _summarySubscriptions = [_currentSubscription];
             }
 
             if (_currentSubscription?.BillingCycle is not null)
@@ -294,7 +334,7 @@ else
             return _currentSubscription is null ? "available" : "current";
         }
 
-        var current = _plans.FirstOrDefault(p => p.Id == _currentSubscription.PlanId);
+        var current = _plans.FirstOrDefault(p => p.Id == _currentSubscription.PlanId) ?? _currentPlan;
         return current is null ? "available" : plan.SortOrder > current.SortOrder ? "upgrade" : "downgrade";
     }
 
@@ -447,12 +487,12 @@ else
             return;
         }
 
-        var plan = _plans.FirstOrDefault(p => p.Id == _currentSubscription.PlanId);
+        var plan = _plans.FirstOrDefault(p => p.Id == _currentSubscription.PlanId) ?? _currentPlan;
         var result = await Api.SimulateLocalValidationPaymentAsync(new SimulateLocalValidationPaymentRequest(
             simulation,
             OrganizationId,
             _currentSubscription.Id,
-            plan?.MonthlyPrice ?? 0m,
+            plan?.MonthlyPrice ?? _currentSubscription.AgreedPrice ?? 0m,
             _currentSubscription.CurrencyCode ?? plan?.CurrencyCode ?? "PHP",
             Guid.NewGuid().ToString("N"),
             Purpose: "test",

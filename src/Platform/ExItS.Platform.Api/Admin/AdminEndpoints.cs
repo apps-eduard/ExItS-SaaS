@@ -1,6 +1,7 @@
 using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Admin;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Common;
@@ -94,7 +95,7 @@ internal static class AdminEndpoints
                     ApplicationErrorCodes.OrganizationNotFound,
                     "Platform Organization was not found.",
                     StatusCodes.Status404NotFound)
-                : Results.Ok(summary);
+                : Results.Ok(MapCommercialSummary(summary));
         });
 
         admin.MapGet("/entitlements/latest", async (
@@ -127,6 +128,28 @@ internal static class AdminEndpoints
         });
 
         return app;
+    }
+
+    private static object MapCommercialSummary(OrganizationCommercialSummaryDto summary)
+    {
+        var org = summary.Organization;
+        return new
+        {
+            organization = new
+            {
+                id = org.Id,
+                displayName = org.DisplayName,
+                slug = org.Slug,
+                status = org.Status,
+                profile = org.Profile,
+                branding = org.Branding,
+                createdAtUtc = org.CreatedAtUtc,
+                updatedAtUtc = org.UpdatedAtUtc
+            },
+            subscriptions = summary.Subscriptions,
+            payments = summary.Payments,
+            latestEntitlements = summary.LatestEntitlements
+        };
     }
 
     private static EntitlementListSortBy? ParseEntitlementSortBy(string? sortBy) =>
