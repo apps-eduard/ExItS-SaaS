@@ -18,17 +18,22 @@ public sealed class Wp11StaffUiAndTerminologyTests
     }
 
     [Fact]
-    public void OrganizationMembers_page_declares_invitations_route()
+    public void Organization_staff_and_invitations_use_separate_page_routes()
     {
-        var path = Path.Combine(
-            FindRepositoryRoot(),
-            "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "OrganizationMembers.razor");
-        var text = File.ReadAllText(path);
-        Assert.Contains("@page \"/admin/organizations/{OrganizationId:guid}/invitations\"", text, StringComparison.Ordinal);
-        Assert.Contains("@page \"/admin/organizations/{OrganizationId:guid}/members\"", text, StringComparison.Ordinal);
-        Assert.Contains("ProductRoles", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("<Tabs", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("Member Member", text, StringComparison.Ordinal);
+        var root = FindRepositoryRoot();
+        var members = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "OrganizationMembers.razor"));
+        var invitations = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "OrganizationInvitations.razor"));
+
+        Assert.Contains("@page \"/admin/organizations/{OrganizationId:guid}/members\"", members, StringComparison.Ordinal);
+        Assert.DoesNotContain("@page \"/admin/organizations/{OrganizationId:guid}/invitations\"", members, StringComparison.Ordinal);
+        Assert.Contains("@page \"/admin/organizations/{OrganizationId:guid}/invitations\"", invitations, StringComparison.Ordinal);
+        Assert.Contains("ProductRoles", members, StringComparison.Ordinal);
+        Assert.Contains("Invitation status", invitations, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Tabs", members, StringComparison.Ordinal);
+        Assert.DoesNotContain("Member Member", members, StringComparison.Ordinal);
+        Assert.DoesNotContain("Member Member", invitations, StringComparison.Ordinal);
     }
 
     [Fact]

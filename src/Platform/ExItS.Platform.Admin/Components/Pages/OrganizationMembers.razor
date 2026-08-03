@@ -1,5 +1,4 @@
 @page "/admin/organizations/{OrganizationId:guid}/members"
-@page "/admin/organizations/{OrganizationId:guid}/invitations"
 @using AntDesign
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
@@ -11,7 +10,7 @@
 @inject PlatformPermissionState Permissions
 @inject OrganizationDeepLinkGuard DeepLinkGuard
 
-@if (!Permissions.Loaded)
+@if (!Permissions.Loaded || !Shell.Loaded)
 {
     <div style="padding:2rem;text-align:center;"><Spin /></div>
 }
@@ -33,7 +32,7 @@ else if (!CanAccessMembers)
 }
 else
 {
-<PageHeader Class="exits-page-header" Title="@PageTitle" SubTitle="@PageSubtitle">
+<PageHeader Class="exits-page-header" Title="@L["OrgMembers_Title"]" SubTitle="@L["OrgMembers_Description"]">
     <PageHeaderBreadcrumb>
         <Breadcrumb>
             <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
@@ -46,15 +45,12 @@ else
                 <BreadcrumbItem>@L["Nav_People"]</BreadcrumbItem>
             }
             <BreadcrumbItem Href="@($"/admin/organizations/{OrganizationId}")">@(_org?.Data?.DisplayName ?? L["Nav_Organizations"])</BreadcrumbItem>
-            <BreadcrumbItem>@BreadcrumbLastCrumb</BreadcrumbItem>
+            <BreadcrumbItem>@L["OrgMembers_Title"]</BreadcrumbItem>
         </Breadcrumb>
     </PageHeaderBreadcrumb>
 </PageHeader>
 
-@if (IsMembersSection)
-{
-    <Alert Type="@AlertType.Warning" ShowIcon="true" Message="@L["OrgMembers_Warning"]" Style="margin-bottom:12px;" />
-}
+<Alert Type="@AlertType.Warning" ShowIcon="true" Message="@L["OrgMembers_Warning"]" Style="margin-bottom:12px;" />
 <FormValidationSummary Title="@L["Common_ActionFailed"]" Message="@_formError" IsConflict="_formConflict" />
 
 @if (_org is null)
@@ -65,7 +61,7 @@ else if (!_org.IsSuccess)
 {
     <Result Status="@ResultStatus.Error" Title="@(_org.Error?.Title ?? L["Common_Error"])" SubTitle="@_org.Error?.Detail" />
 }
-else if (IsMembersSection)
+else
 {
     <Space Style="margin-bottom:12px; width:100%;" Wrap>
         <Select TItemValue="string" TItem="string" @bind-Value="_status" Size="@InputSize.Small" Style="width:140px;" AllowClear Placeholder="@L["Common_Status"]">
@@ -77,6 +73,9 @@ else if (IsMembersSection)
             </SelectOptions>
         </Select>
         <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ApplyMemberFiltersAsync">@L["Common_Apply"]</Button>
+        <Button Size="@ButtonSize.Small" OnClick="@(() => Nav.NavigateTo($"/admin/organizations/{OrganizationId}/invitations"))">
+            @L["OrgMembers_TabInvitations"]
+        </Button>
         <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="() => _showAdd = !_showAdd">
             @(_showAdd ? L["Common_Cancel"] : L["OrgMembers_AddMember"])
         </Button>
@@ -134,6 +133,9 @@ else if (IsMembersSection)
                 }
             </PropertyColumn>
             <PropertyColumn Property="c => c.Email" Title="@L["Common_Email"]" Ellipsis />
+            <PropertyColumn Property="c => c.EmployeeCode" Title="@L["Users_EmployeeCode"]">
+                @(string.IsNullOrWhiteSpace(context.EmployeeCode) ? "—" : context.EmployeeCode)
+            </PropertyColumn>
             <PropertyColumn Property="c => c.Role" Title="@L["OrgMembers_OrgRole"]">
                 <Space Size="@SpaceSize.Small">
                     <Tag Color="@(context.Role == "OrganizationOwner" ? "gold" : "default")"
@@ -142,18 +144,18 @@ else if (IsMembersSection)
                     </Tag>
                     @if (CanAccessMembers && context.Status == "Active")
                     {
-                        <Tooltip Title="Change role">
+                        <Tooltip Title="@("Change role")">
                             <Button Icon="edit"
                                     Size="@ButtonSize.Small"
                                     Type="@ButtonType.Text"
                                     Disabled="_busy"
-                                    aria-label="Change role"
+                                    AriaLabel="Change role"
                                     OnClick="() => OpenRoleChange(context)" />
                         </Tooltip>
                     }
                 </Space>
             </PropertyColumn>
-            <PropertyColumn Property="c => c.ProductRoles" Title="Product role">
+            <ActionColumn Title="Product role">
                 @if (context.ProductRoles is { Count: > 0 })
                 {
                     <Space Size="@SpaceSize.Small" Wrap>
@@ -167,8 +169,14 @@ else if (IsMembersSection)
                 {
                     <span>—</span>
                 }
+            </ActionColumn>
+            <PropertyColumn Property="c => c.Branch" Title="Branch">
+                @(string.IsNullOrWhiteSpace(context.Branch) ? "—" : context.Branch)
             </PropertyColumn>
-            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
+            <PropertyColumn Property="c => c.AccountStatus" Title="Account status">
+                @(FormatAccountStatus(context.AccountStatus))
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.Status" Title="Membership status">
                 <Tag Color="@(context.Status == "Active" ? "success" : context.Status == "Suspended" ? "error" : "default")">
                     @FormatMembershipStatusLabel(context.Status)
                 </Tag>
@@ -178,204 +186,76 @@ else if (IsMembersSection)
                 <Space Size="@SpaceSize.Small" Wrap>
                     @if (Shell.IsPlatformShell)
                     {
-                        <Tooltip Title="@L["Common_ViewDetails"]">
+                        <Tooltip Title="@L["Common_ViewDetails"].Value">
                             <Button Icon="eye"
                                     Size="@ButtonSize.Small"
                                     Type="@ButtonType.Text"
-                                    aria-label="@L["Common_ViewDetails"]"
+                                    AriaLabel="@L["Common_ViewDetails"].Value"
                                     OnClick="@(() => Nav.NavigateTo($"/admin/users/{context.UserId}"))" />
                         </Tooltip>
                     }
                     @if (context.Status == "Active")
                     {
-                        <Tooltip Title="@L["OrgMembers_SuspendMembership"]">
+                        <Tooltip Title="@L["OrgMembers_SuspendMembership"].Value">
                             <Button Icon="pause"
                                     Size="@ButtonSize.Small"
                                     Type="@ButtonType.Text"
                                     Danger
                                     Disabled="_busy"
-                                    aria-label="@L["OrgMembers_SuspendMembership"]"
+                                    AriaLabel="@L["OrgMembers_SuspendMembership"].Value"
                                     OnClick="() => OpenMembershipLifecycle(context, MembershipLifecycleAction.Suspend)" />
                         </Tooltip>
-                        <Tooltip Title="@L["OrgMembers_DeactivateMembership"]">
+                        <Tooltip Title="@L["OrgMembers_DeactivateMembership"].Value">
                             <Button Icon="stop"
                                     Size="@ButtonSize.Small"
                                     Type="@ButtonType.Text"
                                     Danger
                                     Disabled="_busy"
-                                    aria-label="@L["OrgMembers_DeactivateMembership"]"
+                                    AriaLabel="@L["OrgMembers_DeactivateMembership"].Value"
                                     OnClick="() => OpenMembershipLifecycle(context, MembershipLifecycleAction.Deactivate)" />
                         </Tooltip>
                     }
                     else if (context.Status == "Suspended")
                     {
-                        <Tooltip Title="@L["OrgMembers_ReactivateMembership"]">
+                        <Tooltip Title="@L["OrgMembers_ReactivateMembership"].Value">
                             <Button Icon="play-circle"
                                     Size="@ButtonSize.Small"
                                     Type="@ButtonType.Text"
                                     Disabled="_busy"
-                                    aria-label="@L["OrgMembers_ReactivateMembership"]"
+                                    AriaLabel="@L["OrgMembers_ReactivateMembership"].Value"
                                     OnClick="() => OpenMembershipLifecycle(context, MembershipLifecycleAction.Reactivate)" />
                         </Tooltip>
-                        <Tooltip Title="@L["OrgMembers_DeactivateMembership"]">
+                        <Tooltip Title="@L["OrgMembers_DeactivateMembership"].Value">
                             <Button Icon="stop"
                                     Size="@ButtonSize.Small"
                                     Type="@ButtonType.Text"
                                     Danger
                                     Disabled="_busy"
-                                    aria-label="@L["OrgMembers_DeactivateMembership"]"
+                                    AriaLabel="@L["OrgMembers_DeactivateMembership"].Value"
                                     OnClick="() => OpenMembershipLifecycle(context, MembershipLifecycleAction.Deactivate)" />
                         </Tooltip>
                     }
                     else if (context.Status == "Removed")
                     {
-                        <Tooltip Title="@L["OrgMembers_ReactivateMembership"]">
+                        <Tooltip Title="@L["OrgMembers_ReactivateMembership"].Value">
                             <Button Icon="play-circle"
                                     Size="@ButtonSize.Small"
                                     Type="@ButtonType.Text"
                                     Disabled="_busy"
-                                    aria-label="@L["OrgMembers_ReactivateMembership"]"
+                                    AriaLabel="@L["OrgMembers_ReactivateMembership"].Value"
                                     OnClick="() => OpenMembershipLifecycle(context, MembershipLifecycleAction.Reactivate)" />
                         </Tooltip>
-                        <Tooltip Title="@L["OrgMembers_MoveToSuspended"]">
+                        <Tooltip Title="@L["OrgMembers_MoveToSuspended"].Value">
                             <Button Icon="pause"
                                     Size="@ButtonSize.Small"
                                     Type="@ButtonType.Text"
                                     Danger
                                     Disabled="_busy"
-                                    aria-label="@L["OrgMembers_MoveToSuspended"]"
+                                    AriaLabel="@L["OrgMembers_MoveToSuspended"].Value"
                                     OnClick="() => OpenMembershipLifecycle(context, MembershipLifecycleAction.MoveToSuspended)" />
                         </Tooltip>
                     }
                 </Space>
-            </ActionColumn>
-        </Table>
-    }
-}
-else
-{
-    <Space Style="margin-bottom:12px; width:100%;" Wrap>
-        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="() => _showInvite = !_showInvite">
-            @(_showInvite ? L["Common_Cancel"] : L["OrgMembers_Invite"])
-        </Button>
-    </Space>
-
-    @if (_showInvite)
-    {
-        <Card Size="@CardSize.Small" Title="@L["OrgMembers_InviteSection"]" Style="margin-bottom:12px;">
-            <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
-                <div>
-                    <label class="ant-form-item-label">First name</label>
-                    <Input @bind-Value="_inviteFirstName" Size="@InputSize.Small" Disabled="_busy" />
-                </div>
-                <div>
-                    <label class="ant-form-item-label">Last name</label>
-                    <Input @bind-Value="_inviteLastName" Size="@InputSize.Small" Disabled="_busy" />
-                </div>
-                <div>
-                    <label class="ant-form-item-label">@L["Common_DisplayName"]</label>
-                    <Input @bind-Value="_inviteDisplayName" Size="@InputSize.Small" Disabled="_busy" Placeholder="@ResolveInviteDisplayNamePlaceholder()" />
-                </div>
-                <div>
-                    <label class="ant-form-item-label">@L["Common_Email"]</label>
-                    <Input @bind-Value="_inviteEmail" Size="@InputSize.Small" Disabled="_busy" />
-                    @if (_fieldInviteEmail is not null) { <span class="exits-field-error">@_fieldInviteEmail</span> }
-                </div>
-                <div>
-                    <label class="ant-form-item-label">@L["OrgMembers_OrgRole"]</label>
-                    <Select TItemValue="string" TItem="string" @bind-Value="_inviteRole" Size="@InputSize.Small" Style="width:100%;" Disabled="_busy">
-                        <SelectOptions>
-                            <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationMember")" Label="@L["OrgMembers_Role_Staff"]" />
-                            <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationOwner")" Label="@L["OrgMembers_Role_Owner"]" />
-                        </SelectOptions>
-                    </Select>
-                    @if (_fieldInviteRole is not null) { <span class="exits-field-error">@_fieldInviteRole</span> }
-                </div>
-                <div>
-                    <Checkbox @bind-Checked="_inviteRequireEmailVerification" Disabled="_busy">
-                        @L["Users_SendEmailVerification"]
-                    </Checkbox>
-                </div>
-                <div>
-                    <label class="ant-form-item-label">@L["Organizations_Phone"] <span class="exits-optional-hint">(optional)</span></label>
-                    <Input @bind-Value="_invitePhone" Size="@InputSize.Small" Disabled="_busy" />
-                </div>
-                <div>
-                    <label class="ant-form-item-label">Employee code <span class="exits-optional-hint">(optional)</span></label>
-                    <Input @bind-Value="_inviteEmployeeCode" Size="@InputSize.Small" Disabled="_busy" />
-                </div>
-                <div>
-                    <label class="ant-form-item-label">Branch <span class="exits-optional-hint">(optional)</span></label>
-                    <Input @bind-Value="_inviteBranch" Size="@InputSize.Small" Disabled="_busy" />
-                </div>
-                <div>
-                    <label class="ant-form-item-label">POS / product role <span class="exits-optional-hint">(optional)</span></label>
-                    <Select TItemValue="string" TItem="string" @bind-Value="_inviteProductRole" Size="@InputSize.Small" Style="width:100%;" AllowClear Disabled="_busy" Placeholder="Select product role">
-                        <SelectOptions>
-                            <SelectOption TItemValue="string" TItem="string" Value="@("Owner")" Label="POS Owner" />
-                            <SelectOption TItemValue="string" TItem="string" Value="@("Manager")" Label="Store Manager" />
-                            <SelectOption TItemValue="string" TItem="string" Value="@("Cashier")" Label="Cashier" />
-                            <SelectOption TItemValue="string" TItem="string" Value="@("Viewer")" Label="Reporting User" />
-                        </SelectOptions>
-                    </Select>
-                </div>
-                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="InviteAsync">@L["OrgMembers_Invite"]</Button>
-            </Space>
-        </Card>
-    }
-
-    @if (_invitations is { IsSuccess: false })
-    {
-        <Result Status="@ResultStatus.Error" Title="@L["OrgMembers_InvitationsUnavailable"]" SubTitle="@_invitations.Error?.Detail" />
-    }
-    else
-    {
-        <Table TItem="OrganizationInvitationDto"
-               DataSource="@(_invitations?.Data?.Items ?? Array.Empty<OrganizationInvitationDto>())"
-               Total="@(_invitations?.Data?.TotalCount ?? 0)"
-               @bind-PageIndex="_invitePage"
-               PageSize="@(_invitations?.Data?.PageSize ?? 20)"
-               Loading="@(_invitations is null)"
-               Size="@TableSize.Small"
-               Bordered
-               RemoteDataSource
-               OnPageIndexChange="OnInvitePageAsync"
-               ScrollX="900">
-            <PropertyColumn Property="c => c.Email" Title="@L["Common_Email"]" />
-            <PropertyColumn Property="c => c.Role" Title="@L["OrgMembers_OrgRole"]">
-                <Tag Color="@(context.Role == "OrganizationOwner" ? "gold" : "default")"
-                     Style="@(context.Role == "OrganizationOwner" ? "font-weight:600;" : null)">
-                    @(context.RoleDisplay ?? FormatOrgRole(context.Role))
-                </Tag>
-            </PropertyColumn>
-            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]">
-                <Tag>@context.Status</Tag>
-            </PropertyColumn>
-            <PropertyColumn Property="c => c.ExpiresAtUtc" Title="@L["OrgMembers_ExpiresUtc"]" Format="u" />
-            <ActionColumn Title="@L["Common_Actions"]" Width="120">
-                @if (context.Status == "Pending")
-                {
-                    <Space Size="@SpaceSize.Small" Wrap>
-                        <Tooltip Title="@L["OrgMembers_Resend"]">
-                            <Button Icon="reload"
-                                    Size="@ButtonSize.Small"
-                                    Type="@ButtonType.Text"
-                                    Disabled="_busy"
-                                    aria-label="@L["OrgMembers_Resend"]"
-                                    OnClick="() => ResendInviteAsync(context.Id)" />
-                        </Tooltip>
-                        <Popconfirm Title="@L["OrgMembers_RevokeInviteConfirm"]" OnConfirm="() => RevokeInviteAsync(context.Id)" Disabled="_busy">
-                            <Tooltip Title="@L["Common_Revoke"]">
-                                <Button Icon="delete"
-                                        Size="@ButtonSize.Small"
-                                        Type="@ButtonType.Text"
-                                        Danger
-                                        Disabled="_busy"
-                                        aria-label="@L["Common_Revoke"]" />
-                            </Tooltip>
-                        </Popconfirm>
-                    </Space>
-                }
             </ActionColumn>
         </Table>
     }
@@ -437,32 +317,17 @@ else
 
     private ApiCallResult<OrganizationDto>? _org;
     private ApiCallResult<PagedResult<OrganizationMembershipDto>>? _members;
-    private ApiCallResult<PagedResult<OrganizationInvitationDto>>? _invitations;
-    private string _section = "members";
     private string _status = "";
     private string _addUserId = "";
     private string _addRole = "OrganizationMember";
-    private string _inviteFirstName = "";
-    private string _inviteLastName = "";
-    private string _inviteDisplayName = "";
-    private string _inviteEmail = "";
-    private string _inviteRole = "OrganizationMember";
-    private bool _inviteRequireEmailVerification;
-    private string _invitePhone = "";
-    private string _inviteEmployeeCode = "";
-    private string _inviteBranch = "";
-    private string? _inviteProductRole;
     private bool _showAdd;
-    private bool _showInvite;
     private string? _formError;
     private bool _formConflict;
     private string? _fieldUserId;
     private string? _fieldAddRole;
-    private string? _fieldInviteEmail;
-    private string? _fieldInviteRole;
     private bool _busy;
     private int _page = 1;
-    private int _invitePage = 1;
+    private Guid? _loadedOrganizationId;
 
     private bool _roleChangeVisible;
     private OrganizationMembershipDto? _roleChangeTarget;
@@ -486,16 +351,15 @@ else
     private bool _membershipLifecycleRequiresReason;
     private string? _fieldMembershipReason;
 
-    private bool IsMembersSection => _section == "members";
-    private string PageTitle => IsMembersSection ? L["OrgMembers_Title"].Value : L["OrgMembers_TabInvitations"].Value;
-    private string PageSubtitle => IsMembersSection ? L["OrgMembers_Description"].Value : L["OrgMembers_InviteSection"].Value;
-    private string BreadcrumbLastCrumb => IsMembersSection ? L["OrgMembers_Title"].Value : L["OrgMembers_TabInvitations"].Value;
+    private bool IsOrgAdminMembership =>
+        string.Equals(Shell.MembershipRole, "OrganizationOwner", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(Shell.MembershipRole, "OrganizationAdministrator", StringComparison.OrdinalIgnoreCase);
 
     private bool CanAccessMembers =>
         Permissions.HasPermission(PlatformPermissionCodes.ManageMemberships)
         || (Shell.IsOrganizationShell
             && Shell.SelectedOrganizationId == OrganizationId
-            && string.Equals(Shell.MembershipRole, "OrganizationOwner", StringComparison.OrdinalIgnoreCase));
+            && IsOrgAdminMembership);
 
     private static string FormatOrgRole(string? role) => role switch
     {
@@ -513,49 +377,45 @@ else
         _ => status ?? "—"
     };
 
+    private static string FormatAccountStatus(string? status) => status switch
+    {
+        "PendingVerification" => "Pending Verification",
+        "Active" => "Active",
+        "Suspended" => "Suspended",
+        "Deactivated" => "Deactivated",
+        _ => string.IsNullOrWhiteSpace(status) ? "—" : status
+    };
+
     protected override async Task OnParametersSetAsync()
     {
-        await Permissions.EnsureLoadedAsync();
+        // Load shell first so Organization sessions mark permissions via EnsureLoadedForNonPlatformAsync
+        // (empty set). Calling Permissions.EnsureLoadedAsync first can race and show a false deny.
         await Shell.EnsureLoadedAsync();
-        SyncSectionFromPath();
+        if (!Permissions.Loaded)
+        {
+            await Permissions.EnsureLoadedAsync();
+        }
+
         if (!CanAccessMembers)
         {
             return;
         }
 
+        if (_loadedOrganizationId != OrganizationId)
+        {
+            _page = 1;
+            _members = null;
+            _org = null;
+            _loadedOrganizationId = OrganizationId;
+        }
+
         await ReloadAsync();
-    }
-
-    private void SyncSectionFromPath()
-    {
-        var uri = Nav.ToAbsoluteUri(Nav.Uri);
-        var path = uri.AbsolutePath.TrimEnd('/');
-        if (path.EndsWith("/invitations", StringComparison.OrdinalIgnoreCase))
-        {
-            _section = "invitations";
-            return;
-        }
-
-        _section = "members";
-        if (Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query)
-                .TryGetValue("tab", out var tab)
-            && string.Equals(tab.ToString(), "invitations", StringComparison.OrdinalIgnoreCase))
-        {
-            _section = "invitations";
-        }
     }
 
     private async Task ReloadAsync()
     {
         _org = await Api.GetOrganizationAsync(OrganizationId);
-        if (IsMembersSection)
-        {
-            await ReloadMembersAsync();
-        }
-        else
-        {
-            await ReloadInvitationsAsync();
-        }
+        await ReloadMembersAsync();
     }
 
     private async Task ReloadMembersAsync() =>
@@ -563,9 +423,6 @@ else
             OrganizationId,
             page: _page,
             status: string.IsNullOrWhiteSpace(_status) ? null : _status);
-
-    private async Task ReloadInvitationsAsync() =>
-        _invitations = await Api.GetOrganizationInvitationsAsync(OrganizationId, page: _invitePage);
 
     private async Task ApplyMemberFiltersAsync()
     {
@@ -577,12 +434,6 @@ else
     {
         _page = args.Page;
         await ReloadMembersAsync();
-    }
-
-    private async Task OnInvitePageAsync(PaginationEventArgs args)
-    {
-        _invitePage = args.Page;
-        await ReloadInvitationsAsync();
     }
 
     private async Task AddMemberAsync()
@@ -755,128 +606,4 @@ else
         await ReloadMembersAsync();
     }
 
-    private string ResolveInviteDisplayNamePlaceholder()
-    {
-        var resolved = ResolveInviteDisplayName();
-        return string.IsNullOrWhiteSpace(resolved) ? "Auto from first + last name" : resolved;
-    }
-
-    private string ResolveInviteDisplayName()
-    {
-        if (!string.IsNullOrWhiteSpace(_inviteDisplayName))
-        {
-            return _inviteDisplayName.Trim();
-        }
-
-        var parts = new[] { _inviteFirstName.Trim(), _inviteLastName.Trim() }
-            .Where(p => !string.IsNullOrWhiteSpace(p));
-        return string.Join(' ', parts);
-    }
-
-    private void ClearInviteForm()
-    {
-        _inviteFirstName = "";
-        _inviteLastName = "";
-        _inviteDisplayName = "";
-        _inviteEmail = "";
-        _inviteRole = "OrganizationMember";
-        _inviteRequireEmailVerification = false;
-        _invitePhone = "";
-        _inviteEmployeeCode = "";
-        _inviteBranch = "";
-        _inviteProductRole = null;
-    }
-
-    private async Task InviteAsync()
-    {
-        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
-        _fieldInviteEmail = null;
-        _fieldInviteRole = null;
-        _formError = null;
-        if (string.IsNullOrWhiteSpace(_inviteFirstName)
-            || string.IsNullOrWhiteSpace(_inviteLastName))
-        {
-            _formError = "First name and last name are required.";
-            _busy = false;
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(_inviteEmail))
-        {
-            _fieldInviteEmail = L["Users_EmailRequired"];
-            _busy = false;
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(_inviteRole))
-        {
-            _fieldInviteRole = L["OrgMembers_OrgRoleRequired"];
-            _busy = false;
-            return;
-        }
-
-        var displayName = ResolveInviteDisplayName();
-        if (string.IsNullOrWhiteSpace(displayName))
-        {
-            _formError = "Display name is required.";
-            _busy = false;
-            return;
-        }
-
-        var result = await Api.CreateOrganizationInvitationAsync(
-            OrganizationId,
-            new CreateInvitationRequest(
-                _inviteEmail.Trim(),
-                _inviteRole,
-                FirstName: _inviteFirstName.Trim(),
-                LastName: _inviteLastName.Trim(),
-                DisplayName: displayName,
-                Phone: string.IsNullOrWhiteSpace(_invitePhone) ? null : _invitePhone.Trim(),
-                EmployeeCode: string.IsNullOrWhiteSpace(_inviteEmployeeCode) ? null : _inviteEmployeeCode.Trim(),
-                Branch: string.IsNullOrWhiteSpace(_inviteBranch) ? null : _inviteBranch.Trim(),
-                ProductRole: string.IsNullOrWhiteSpace(_inviteProductRole) ? null : _inviteProductRole,
-                RequireEmailVerification: _inviteRequireEmailVerification));
-        _busy = false;
-        if (!result.IsSuccess)
-        {
-            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
-            _formError = AdminFormErrorMapper.MapPageError(result);
-            return;
-        }
-
-        await Message.SuccessAsync(L["OrgMembers_ToastInvited"].Value);
-        ClearInviteForm();
-        _showInvite = false;
-        await ReloadInvitationsAsync();
-    }
-
-    private async Task ResendInviteAsync(Guid id)
-    {
-        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
-        var result = await Api.ResendOrganizationInvitationAsync(id);
-        _busy = false;
-        if (!result.IsSuccess)
-        {
-            _formError = AdminFormErrorMapper.MapPageError(result);
-            return;
-        }
-
-        await Message.SuccessAsync(L["OrgMembers_ToastInviteResent"].Value);
-        await ReloadInvitationsAsync();
-    }
-
-    private async Task RevokeInviteAsync(Guid id)
-    {
-        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
-        var result = await Api.RevokeOrganizationInvitationAsync(id);
-        _busy = false;
-        if (!result.IsSuccess)
-        {
-            _formError = AdminFormErrorMapper.MapPageError(result);
-            return;
-        }
-
-        await Message.SuccessAsync(L["OrgMembers_ToastInviteRevoked"].Value);
-        await ReloadInvitationsAsync();
-    }
 }

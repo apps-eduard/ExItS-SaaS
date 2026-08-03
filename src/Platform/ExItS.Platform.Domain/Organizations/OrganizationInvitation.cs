@@ -28,6 +28,11 @@ public sealed class OrganizationInvitation
     public DateTimeOffset? AcceptedAtUtc { get; private set; }
     public DateTimeOffset? RevokedAtUtc { get; private set; }
     public PlatformUserId? AcceptedByUserId { get; private set; }
+    public string? InviteeDisplayName { get; private set; }
+    public string? FirstName { get; private set; }
+    public string? LastName { get; private set; }
+    public string? Branch { get; private set; }
+    public string? ProductRole { get; private set; }
 
     private OrganizationInvitation(
         OrganizationInvitationId id,
@@ -42,7 +47,12 @@ public sealed class OrganizationInvitation
         DateTimeOffset expiresAtUtc,
         DateTimeOffset? acceptedAtUtc,
         DateTimeOffset? revokedAtUtc,
-        PlatformUserId? acceptedByUserId)
+        PlatformUserId? acceptedByUserId,
+        string? inviteeDisplayName,
+        string? firstName,
+        string? lastName,
+        string? branch,
+        string? productRole)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -57,6 +67,11 @@ public sealed class OrganizationInvitation
         AcceptedAtUtc = acceptedAtUtc;
         RevokedAtUtc = revokedAtUtc;
         AcceptedByUserId = acceptedByUserId;
+        InviteeDisplayName = inviteeDisplayName;
+        FirstName = firstName;
+        LastName = lastName;
+        Branch = branch;
+        ProductRole = productRole;
     }
 
     /// <summary>Creates a pending invitation and returns the plaintext accept token (show once).</summary>
@@ -67,7 +82,12 @@ public sealed class OrganizationInvitation
         DateTimeOffset utcNow,
         PlatformUserId? invitedByUserId = null,
         TimeSpan? lifetime = null,
-        OrganizationInvitationId? id = null)
+        OrganizationInvitationId? id = null,
+        string? inviteeDisplayName = null,
+        string? firstName = null,
+        string? lastName = null,
+        string? branch = null,
+        string? productRole = null)
     {
         ArgumentNullException.ThrowIfNull(organizationId);
         EnsureUtc(utcNow);
@@ -87,7 +107,12 @@ public sealed class OrganizationInvitation
             utcNow.Add(lifetime ?? TimeSpan.FromHours(DefaultLifetimeHours)),
             null,
             null,
-            null);
+            null,
+            NormalizeOptional(inviteeDisplayName, 256),
+            NormalizeOptional(firstName, 100),
+            NormalizeOptional(lastName, 100),
+            NormalizeOptional(branch, 128),
+            NormalizeOptional(productRole, 64));
         return (invitation, acceptToken);
     }
 
@@ -104,7 +129,12 @@ public sealed class OrganizationInvitation
         DateTimeOffset expiresAtUtc,
         DateTimeOffset? acceptedAtUtc,
         DateTimeOffset? revokedAtUtc,
-        PlatformUserId? acceptedByUserId) =>
+        PlatformUserId? acceptedByUserId,
+        string? inviteeDisplayName = null,
+        string? firstName = null,
+        string? lastName = null,
+        string? branch = null,
+        string? productRole = null) =>
         new(
             id,
             organizationId,
@@ -118,7 +148,12 @@ public sealed class OrganizationInvitation
             expiresAtUtc,
             acceptedAtUtc,
             revokedAtUtc,
-            acceptedByUserId);
+            acceptedByUserId,
+            inviteeDisplayName,
+            firstName,
+            lastName,
+            branch,
+            productRole);
 
     /// <summary>Rotates the accept token and extends expiry for a still-pending invitation.</summary>
     public string Resend(DateTimeOffset utcNow, TimeSpan? lifetime = null)
@@ -245,5 +280,16 @@ public sealed class OrganizationInvitation
                 DomainErrorCodes.InvalidUtcTimestamp,
                 "Timestamps must be UTC (offset zero).");
         }
+    }
+
+    private static string? NormalizeOptional(string? value, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var trimmed = value.Trim();
+        return trimmed.Length <= maxLength ? trimmed : trimmed[..maxLength];
     }
 }

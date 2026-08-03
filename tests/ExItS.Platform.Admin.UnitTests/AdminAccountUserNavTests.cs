@@ -38,7 +38,8 @@ public sealed class AdminAccountUserNavTests
             ["org-staff", "org-invitations", "org-customers", "org-customer-linking"],
             items.Select(i => i.Key).ToArray());
         Assert.Contains("/members", items.Single(i => i.Key == "org-staff").Route);
-        Assert.Contains("tab=invitations", items.Single(i => i.Key == "org-invitations").Route);
+        Assert.Contains("/invitations", items.Single(i => i.Key == "org-invitations").Route);
+        Assert.DoesNotContain("tab=invitations", items.Single(i => i.Key == "org-invitations").Route);
         Assert.Null(items.Single(i => i.Key == "org-customers").Route);
         Assert.False(items.Single(i => i.Key == "org-customers").Implemented);
         Assert.Null(items.Single(i => i.Key == "org-customer-linking").Route);

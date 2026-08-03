@@ -913,12 +913,35 @@ People
 
 Definitions:
 
-- **Organization Staff** — staff memberships in the active organization
-- **Invitations** — staff invitation lifecycle
+- **Organization Staff** — staff memberships in the active organization (`/admin/organizations/{id}/members`)
+- **Invitations** — staff invitation lifecycle (`/admin/organizations/{id}/invitations`)
 - **Customers** — Business Customers
 - **Customer Linking** — links a Business Customer to an app identity
 
+Organization Staff and Invitations are separate routes and separate page components. Navigating to Invitations must replace Staff content (not query-tab reuse of the Staff page).
+
 Organization Staff and Business Customers are different concepts.
+
+### 12.2.1 Shared MVP staff person fields
+
+Platform Staff and Organization Staff (including invite forms) share the same person fields:
+
+| Field | Required | Notes |
+|---|---|---|
+| First Name | Yes | |
+| Last Name | Yes | |
+| Display Name | Yes | May default from First + Last |
+| Email | Yes | Normalized; uniqueness via identity rules |
+| Phone | No | Validated when provided |
+| Employee Code | No | |
+| Require Email Verification | Yes (choice) | |
+| Account Status | System | Pending Verification / Active / Suspended / Deactivated |
+
+**Platform-only:** Platform Role (required); Staff Number (`STF-000001`, unique, immutable, server-generated, not from email).
+
+**Organization-only:** Organization Role (Owner / Staff); Branch (optional); Product Role (optional: POS Owner, Store Manager, Cashier, Reporting User).
+
+Organization Role and Product Role must stay separate. Internal enum `OrganizationMember` may remain in persistence; user-facing label is always **Staff**.
 
 ### 12.3 Personal Menu
 

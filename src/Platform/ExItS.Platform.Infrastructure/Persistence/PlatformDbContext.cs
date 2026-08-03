@@ -741,6 +741,11 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.AcceptedAtUtc).HasColumnName("accepted_at_utc");
             entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
             entity.Property(e => e.AcceptedByUserId).HasColumnName("accepted_by_user_id");
+            entity.Property(e => e.InviteeDisplayName).HasColumnName("invitee_display_name").HasMaxLength(256);
+            entity.Property(e => e.FirstName).HasColumnName("first_name").HasMaxLength(100);
+            entity.Property(e => e.LastName).HasColumnName("last_name").HasMaxLength(100);
+            entity.Property(e => e.Branch).HasColumnName("branch").HasMaxLength(128);
+            entity.Property(e => e.ProductRole).HasColumnName("product_role").HasMaxLength(64);
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")

@@ -91,6 +91,10 @@ internal static class InvitationEndpoints
                     body.DisplayName,
                     body.FirstName,
                     body.LastName,
+                    body.Phone,
+                    body.EmployeeCode,
+                    body.Branch,
+                    body.ProductRole,
                     ct)
                 .ConfigureAwait(false);
             if (result.IsSuccess)

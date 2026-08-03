@@ -23,16 +23,28 @@ public sealed record OrganizationInvitationDto(
     DateTimeOffset? RevokedAtUtc,
     Guid? AcceptedByUserId,
     string? AcceptToken = null,
-    string? RoleDisplay = null);
+    string? RoleDisplay = null,
+    string? InviteeDisplayName = null,
+    string? FirstName = null,
+    string? LastName = null,
+    string? Branch = null,
+    string? ProductRole = null,
+    string? ProductRoleDisplay = null,
+    string? InvitationStatus = null);
 
 public sealed class OrganizationInvitationQueryService
 {
     private readonly IOrganizationInvitationRepository _invitations;
+    private readonly IPlatformUserRepository _users;
     private readonly IClock _clock;
 
-    public OrganizationInvitationQueryService(IOrganizationInvitationRepository invitations, IClock clock)
+    public OrganizationInvitationQueryService(
+        IOrganizationInvitationRepository invitations,
+        IPlatformUserRepository users,
+        IClock clock)
     {
         _invitations = invitations;
+        _users = users;
         _clock = clock;
     }
 
@@ -40,7 +52,14 @@ public sealed class OrganizationInvitationQueryService
     {
         var invitation = await _invitations.GetByIdAsync(OrganizationInvitationId.From(id), cancellationToken)
             .ConfigureAwait(false);
-        return invitation is null ? null : Map(invitation, effectiveNow: _clock.UtcNow);
+        if (invitation is null)
+        {
+            return null;
+        }
+
+        var user = await _users.GetByNormalizedEmailAsync(invitation.NormalizedEmail, cancellationToken)
+            .ConfigureAwait(false);
+        return Map(invitation, acceptToken: null, effectiveNow: _clock.UtcNow, user);
     }
 
     public async Task<PagedResult<OrganizationInvitationDto>> ListByOrganizationAsync(
@@ -56,10 +75,13 @@ public sealed class OrganizationInvitationQueryService
             .ConfigureAwait(false);
 
         var now = _clock.UtcNow;
-        var mapped = items
-            .Select(i => Map(i, effectiveNow: now))
-            .Where(i => status is null || string.Equals(i.Status, status.Value.ToString(), StringComparison.Ordinal))
-            .ToList();
+        var mapped = new List<OrganizationInvitationDto>(items.Count);
+        foreach (var invitation in items)
+        {
+            var user = await _users.GetByNormalizedEmailAsync(invitation.NormalizedEmail, cancellationToken)
+                .ConfigureAwait(false);
+            mapped.Add(Map(invitation, acceptToken: null, effectiveNow: now, user));
+        }
 
         return new PagedResult<OrganizationInvitationDto>(
             mapped,
@@ -71,16 +93,27 @@ public sealed class OrganizationInvitationQueryService
     public static OrganizationInvitationDto Map(
         OrganizationInvitation invitation,
         string? acceptToken = null,
-        DateTimeOffset? effectiveNow = null) =>
-        new(
+        DateTimeOffset? effectiveNow = null,
+        PlatformUser? invitee = null)
+    {
+        var status = effectiveNow is not null && invitation.IsExpired(effectiveNow.Value)
+            ? nameof(InvitationStatus.Expired)
+            : invitation.Status.ToString();
+        // Pending invitations are shown as Sent once created (email/token issued).
+        // Status keeps the domain value for API filters; InvitationStatus is user-facing.
+        var invitationStatus = status == nameof(InvitationStatus.Pending) ? "Sent" : status;
+        var inviteeDisplayName = invitation.InviteeDisplayName
+            ?? invitee?.DisplayName;
+        var firstName = invitation.FirstName ?? invitee?.FirstName;
+        var lastName = invitation.LastName ?? invitee?.LastName;
+        var productRole = invitation.ProductRole;
+        return new(
             invitation.Id.Value,
             invitation.OrganizationId.Value,
             OrganizationInvitation.InvitationType,
             invitation.NormalizedEmail,
             invitation.Role.ToString(),
-            effectiveNow is not null && invitation.IsExpired(effectiveNow.Value)
-                ? nameof(InvitationStatus.Expired)
-                : invitation.Status.ToString(),
+            status,
             invitation.InvitedByUserId?.Value,
             invitation.CreatedAtUtc,
             invitation.UpdatedAtUtc,
@@ -89,7 +122,15 @@ public sealed class OrganizationInvitationQueryService
             invitation.RevokedAtUtc,
             invitation.AcceptedByUserId?.Value,
             acceptToken,
-            OrganizationRoleDisplay.ToDisplayLabel(invitation.Role));
+            OrganizationRoleDisplay.ToDisplayLabel(invitation.Role),
+            inviteeDisplayName,
+            firstName,
+            lastName,
+            invitation.Branch,
+            productRole,
+            string.IsNullOrWhiteSpace(productRole) ? null : ProductRoleDisplay.ToDisplayLabel(productRole),
+            invitationStatus);
+    }
 }
 
 public sealed class CreateOrganizationInvitation
@@ -97,6 +138,7 @@ public sealed class CreateOrganizationInvitation
     private readonly IPlatformOrganizationRepository _organizations;
     private readonly IOrganizationInvitationRepository _invitations;
     private readonly IOrganizationMembershipRepository _memberships;
+    private readonly IPlatformUserRepository _users;
     private readonly EnsureOrganizationStaffIdentity _ensureStaffIdentity;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -105,6 +147,7 @@ public sealed class CreateOrganizationInvitation
         IPlatformOrganizationRepository organizations,
         IOrganizationInvitationRepository invitations,
         IOrganizationMembershipRepository memberships,
+        IPlatformUserRepository users,
         EnsureOrganizationStaffIdentity ensureStaffIdentity,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
@@ -112,6 +155,7 @@ public sealed class CreateOrganizationInvitation
         _organizations = organizations;
         _invitations = invitations;
         _memberships = memberships;
+        _users = users;
         _ensureStaffIdentity = ensureStaffIdentity;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -127,6 +171,10 @@ public sealed class CreateOrganizationInvitation
         string? displayName = null,
         string? firstName = null,
         string? lastName = null,
+        string? phone = null,
+        string? employeeCode = null,
+        string? branch = null,
+        string? productRole = null,
         CancellationToken cancellationToken = default)
     {
         if (!OrganizationRoleDisplay.IsAssignableOrganizationStaffRole(role))
@@ -201,16 +249,35 @@ public sealed class CreateOrganizationInvitation
                 await _invitations.UpdateAsync(pending, cancellationToken).ConfigureAwait(false);
             }
 
+            existingUser.UpdateStaffProfile(
+                firstName,
+                lastName,
+                resolvedDisplayName,
+                normalizedEmail,
+                _clock.UtcNow,
+                phone,
+                employeeCode);
+            await _users.UpdateAsync(existingUser, cancellationToken).ConfigureAwait(false);
+
             var (invitation, acceptToken) = OrganizationInvitation.Create(
                 organizationId,
                 normalizedEmail,
                 role,
                 _clock.UtcNow,
-                invitedByUserId);
+                invitedByUserId,
+                inviteeDisplayName: resolvedDisplayName,
+                firstName: firstName,
+                lastName: lastName,
+                branch: branch,
+                productRole: productRole);
             await _invitations.AddAsync(invitation, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<OrganizationInvitationDto>.Success(
-                OrganizationInvitationQueryService.Map(invitation, acceptToken));
+                OrganizationInvitationQueryService.Map(
+                    invitation,
+                    acceptToken,
+                    effectiveNow: _clock.UtcNow,
+                    invitee: existingUser));
         }
         catch (DomainException ex)
         {

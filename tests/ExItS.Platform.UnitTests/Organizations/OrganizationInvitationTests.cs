@@ -66,4 +66,28 @@ public sealed class OrganizationInvitationTests
         var ex = Assert.Throws<DomainException>(() => invitation.Resend(T0.AddMinutes(6)));
         Assert.Equal(DomainErrorCodes.InvalidInvitationStatusTransition, ex.ErrorCode);
     }
+
+    [Fact]
+    public void Create_stores_invitee_snapshot_and_keeps_org_role_separate_from_product_role()
+    {
+        var (invitation, _) = OrganizationInvitation.Create(
+            PlatformOrganizationId.New(),
+            "cashier@example.com",
+            OrganizationRole.OrganizationMember,
+            T0,
+            inviteeDisplayName: "Ana Reyes",
+            firstName: "Ana",
+            lastName: "Reyes",
+            branch: "Makati",
+            productRole: "Cashier");
+
+        Assert.Equal(OrganizationRole.OrganizationMember, invitation.Role);
+        Assert.Equal("Staff", OrganizationRoleDisplay.ToDisplayLabel(invitation.Role));
+        Assert.Equal("Ana Reyes", invitation.InviteeDisplayName);
+        Assert.Equal("Ana", invitation.FirstName);
+        Assert.Equal("Reyes", invitation.LastName);
+        Assert.Equal("Makati", invitation.Branch);
+        Assert.Equal("Cashier", invitation.ProductRole);
+        Assert.NotEqual(invitation.Role.ToString(), invitation.ProductRole);
+    }
 }

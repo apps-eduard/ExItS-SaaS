@@ -15,5 +15,10 @@ internal sealed class OrganizationInvitationRecord
     public DateTimeOffset? AcceptedAtUtc { get; set; }
     public DateTimeOffset? RevokedAtUtc { get; set; }
     public Guid? AcceptedByUserId { get; set; }
+    public string? InviteeDisplayName { get; set; }
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public string? Branch { get; set; }
+    public string? ProductRole { get; set; }
     public uint Xmin { get; set; }
 }

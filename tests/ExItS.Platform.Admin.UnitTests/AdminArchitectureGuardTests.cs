@@ -432,6 +432,7 @@ public sealed class AdminArchitectureGuardTests
                      ("Payments.razor", "ManageManualPayments"),
                      ("Audit.razor", "ViewAuditRecords"),
                      ("OrganizationMembers.razor", "ManageMemberships"),
+                     ("OrganizationInvitations.razor", "ManageMemberships"),
                      ("OrganizationProductAccess.razor", "ManageProductAccess"),
                  })
         {

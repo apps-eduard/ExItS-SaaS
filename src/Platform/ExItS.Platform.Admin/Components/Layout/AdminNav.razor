@@ -355,8 +355,6 @@
     {
         var uri = new Uri(Nav.Uri);
         var path = uri.AbsolutePath.TrimEnd('/');
-        var tab = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query)
-            .TryGetValue("tab", out var tabValues) ? tabValues.ToString() : null;
         string[] next = path switch
         {
             "/admin" => ["dashboard"],
@@ -371,9 +369,7 @@
             var p when p.Contains("/invitations", StringComparison.Ordinal) =>
                 Shell.IsOrganizationShell ? ["org-invitations"] : ["org-users"],
             var p when p.Contains("/members", StringComparison.Ordinal) =>
-                Shell.IsOrganizationShell
-                    ? (string.Equals(tab, "invitations", StringComparison.OrdinalIgnoreCase) ? ["org-invitations"] : ["org-staff"])
-                    : ["org-users"],
+                Shell.IsOrganizationShell ? ["org-staff"] : ["org-users"],
             var p when p.Contains("/enabled-products", StringComparison.Ordinal) => ["launch-product"],
             var p when p.Contains("/product-access", StringComparison.Ordinal) => Shell.IsOrganizationShell ? ["my-products"] : ["organizations"],
             var p when p.EndsWith("/branding", StringComparison.Ordinal) => ["branding"],

@@ -410,7 +410,14 @@ public sealed record OrganizationInvitationDto(
     Guid? AcceptedByUserId,
     string? AcceptToken = null,
     string? InvitationType = null,
-    string? RoleDisplay = null);
+    string? RoleDisplay = null,
+    string? InviteeDisplayName = null,
+    string? FirstName = null,
+    string? LastName = null,
+    string? Branch = null,
+    string? ProductRole = null,
+    string? ProductRoleDisplay = null,
+    string? InvitationStatus = null);
 
 public sealed record CreateInvitationRequest(
     string Email,

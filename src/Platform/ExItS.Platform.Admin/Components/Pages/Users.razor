@@ -75,34 +75,11 @@ else if (Id is null)
         <Card Size="@CardSize.Small" Title="@L["Users_CreateSection"]" Style="margin-bottom:12px;">
             <FormValidationSummary Title="@L["Users_CreateFailed"]" Message="@_formError" IsConflict="_formConflict" />
             <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
-                <div>
-                    <label class="ant-form-item-label" for="user-create-firstname">@L["Users_FirstName"]</label>
-                    <Input Id="user-create-firstname" @bind-Value="_newFirstName" Size="@InputSize.Small" Disabled="_busy" />
-                    @if (_fieldFirstName is not null) { <span class="exits-field-error">@_fieldFirstName</span> }
-                </div>
-                <div>
-                    <label class="ant-form-item-label" for="user-create-lastname">@L["Users_LastName"]</label>
-                    <Input Id="user-create-lastname" @bind-Value="_newLastName" Size="@InputSize.Small" Disabled="_busy" />
-                    @if (_fieldLastName is not null) { <span class="exits-field-error">@_fieldLastName</span> }
-                </div>
-                <div>
-                    <label class="ant-form-item-label" for="user-create-displayname">@L["Common_DisplayName"]</label>
-                    <Input Id="user-create-displayname" @bind-Value="_newDisplayName" Size="@InputSize.Small" Disabled="_busy" />
-                    @if (_fieldDisplayName is not null) { <span class="exits-field-error">@_fieldDisplayName</span> }
-                </div>
-                <div>
-                    <label class="ant-form-item-label" for="user-create-email">@L["Common_Email"]</label>
-                    <Input Id="user-create-email" @bind-Value="_newEmail" Size="@InputSize.Small" Disabled="_busy" />
-                    @if (_fieldEmail is not null) { <span class="exits-field-error">@_fieldEmail</span> }
-                </div>
-                <div>
-                    <label class="ant-form-item-label" for="user-create-phone">@L["Users_Phone"]</label>
-                    <Input Id="user-create-phone" @bind-Value="_newPhone" Size="@InputSize.Small" Disabled="_busy" />
-                </div>
-                <div>
-                    <label class="ant-form-item-label" for="user-create-employee-code">@L["Users_EmployeeCode"]</label>
-                    <Input Id="user-create-employee-code" @bind-Value="_newEmployeeCode" Size="@InputSize.Small" Disabled="_busy" />
-                </div>
+                <StaffPersonFieldsForm Value="_staffPerson"
+                                       Errors="_staffPersonErrors"
+                                       IdPrefix="user-create"
+                                       Disabled="_busy"
+                                       ValueChanged="OnStaffPersonChanged" />
                 <div>
                     <label class="ant-form-item-label" for="user-create-platform-role">@L["Users_PlatformRole"]</label>
                     <Select Id="user-create-platform-role"
@@ -121,12 +98,7 @@ else if (Id is null)
                     </Select>
                     @if (_fieldPlatformRole is not null) { <span class="exits-field-error">@_fieldPlatformRole</span> }
                 </div>
-                <div>
-                    <Checkbox Checked="_sendEmailVerification"
-                              CheckedChanged="OnSendEmailVerificationChanged"
-                              Disabled="_busy">@L["Users_RequireEmailVerification"]</Checkbox>
-                </div>
-                @if (_sendEmailVerification)
+                @if (_staffPerson.RequireEmailVerification)
                 {
                     <div>
                         <label class="ant-form-item-label" for="user-create-initial-password">@L["Users_InitialPassword"]</label>
@@ -510,14 +482,9 @@ else
     private string _lifecycleMfaCode = "";
     private string? _fieldLifecycleReason;
     private string? _fieldLifecyclePassword;
-    private string _newFirstName = "";
-    private string _newLastName = "";
-    private string _newDisplayName = "";
-    private string _newEmail = "";
-    private string _newPhone = "";
-    private string _newEmployeeCode = "";
+    private readonly StaffPersonFieldsModel _staffPerson = new();
+    private StaffPersonFieldErrors? _staffPersonErrors;
     private string _newPlatformRole = "";
-    private bool _sendEmailVerification;
     private string _newInitialPassword = "";
     private string _editDisplayName = "";
     private string _editEmail = "";
@@ -533,8 +500,6 @@ else
     private string _savedEmployeeCode = "";
     private string? _formError;
     private bool _formConflict;
-    private string? _fieldFirstName;
-    private string? _fieldLastName;
     private string? _fieldDisplayName;
     private string? _fieldEmail;
     private string? _fieldPlatformRole;
@@ -841,14 +806,15 @@ else
         await ReloadDetailAsync();
     }
 
-    private void OnSendEmailVerificationChanged(bool value)
+    private Task OnStaffPersonChanged()
     {
-        _sendEmailVerification = value;
-        if (!value)
+        if (!_staffPerson.RequireEmailVerification)
         {
             _newInitialPassword = "";
             _fieldInitialPassword = null;
         }
+
+        return Task.CompletedTask;
     }
 
     private async Task ToggleCreate()
@@ -897,21 +863,21 @@ else
     }
 
     private bool HasCreateDraft() =>
-        !string.IsNullOrWhiteSpace(_newFirstName)
-        || !string.IsNullOrWhiteSpace(_newLastName)
-        || !string.IsNullOrWhiteSpace(_newDisplayName)
-        || !string.IsNullOrWhiteSpace(_newEmail)
-        || !string.IsNullOrWhiteSpace(_newPhone)
-        || !string.IsNullOrWhiteSpace(_newEmployeeCode)
+        !string.IsNullOrWhiteSpace(_staffPerson.FirstName)
+        || !string.IsNullOrWhiteSpace(_staffPerson.LastName)
+        || !string.IsNullOrWhiteSpace(_staffPerson.DisplayName)
+        || !string.IsNullOrWhiteSpace(_staffPerson.Email)
+        || !string.IsNullOrWhiteSpace(_staffPerson.Phone)
+        || !string.IsNullOrWhiteSpace(_staffPerson.EmployeeCode)
         || !string.IsNullOrWhiteSpace(_newPlatformRole)
-        || _sendEmailVerification
+        || _staffPerson.RequireEmailVerification
         || !string.IsNullOrWhiteSpace(_newInitialPassword);
 
     private void ClearCreate()
     {
-        _newFirstName = _newLastName = _newDisplayName = _newEmail = _newPhone = _newEmployeeCode = "";
+        _staffPerson.Clear();
+        _staffPersonErrors = null;
         _newPlatformRole = "";
-        _sendEmailVerification = false;
         _newInitialPassword = "";
         ClearFieldErrors();
         _formError = null;
@@ -926,27 +892,14 @@ else
         }
 
         ClearFieldErrors();
+        _staffPersonErrors = null;
         _formError = null;
         _formConflict = false;
 
-        if (string.IsNullOrWhiteSpace(_newFirstName))
+        var personValidation = _staffPerson.Validate();
+        if (!personValidation.IsValid)
         {
-            _fieldFirstName = L["Users_FirstNameRequired"];
-        }
-
-        if (string.IsNullOrWhiteSpace(_newLastName))
-        {
-            _fieldLastName = L["Users_LastNameRequired"];
-        }
-
-        if (string.IsNullOrWhiteSpace(_newDisplayName))
-        {
-            _fieldDisplayName = L["Users_DisplayNameRequired"];
-        }
-
-        if (string.IsNullOrWhiteSpace(_newEmail))
-        {
-            _fieldEmail = L["Users_EmailRequired"];
+            _staffPersonErrors = personValidation.Errors;
         }
 
         if (string.IsNullOrWhiteSpace(_newPlatformRole))
@@ -954,15 +907,12 @@ else
             _fieldPlatformRole = L["Users_PlatformRoleRequired"];
         }
 
-        if (_sendEmailVerification && string.IsNullOrWhiteSpace(_newInitialPassword))
+        if (_staffPerson.RequireEmailVerification && string.IsNullOrWhiteSpace(_newInitialPassword))
         {
             _fieldInitialPassword = L["Users_InitialPasswordRequired"];
         }
 
-        if (_fieldFirstName is not null
-            || _fieldLastName is not null
-            || _fieldDisplayName is not null
-            || _fieldEmail is not null
+        if (!personValidation.IsValid
             || _fieldPlatformRole is not null
             || _fieldInitialPassword is not null)
         {
@@ -971,16 +921,16 @@ else
         }
 
         var result = await Api.CreateUserAsync(new CreatePlatformUserRequest(
-            _newDisplayName,
-            _newEmail,
+            _staffPerson.ResolvedDisplayName(),
+            _staffPerson.Email.Trim(),
             _newPlatformRole,
-            FirstName: _newFirstName,
-            LastName: _newLastName,
-            Phone: string.IsNullOrWhiteSpace(_newPhone) ? null : _newPhone,
-            EmployeeCode: string.IsNullOrWhiteSpace(_newEmployeeCode) ? null : _newEmployeeCode,
-            RequireEmailVerification: _sendEmailVerification,
-            SendEmailVerification: _sendEmailVerification,
-            InitialPassword: _sendEmailVerification ? _newInitialPassword : null));
+            FirstName: _staffPerson.FirstName.Trim(),
+            LastName: _staffPerson.LastName.Trim(),
+            Phone: string.IsNullOrWhiteSpace(_staffPerson.Phone) ? null : _staffPerson.Phone.Trim(),
+            EmployeeCode: string.IsNullOrWhiteSpace(_staffPerson.EmployeeCode) ? null : _staffPerson.EmployeeCode.Trim(),
+            RequireEmailVerification: _staffPerson.RequireEmailVerification,
+            SendEmailVerification: _staffPerson.RequireEmailVerification,
+            InitialPassword: _staffPerson.RequireEmailVerification ? _newInitialPassword : null));
         _busy = false;
         if (!result.IsSuccess)
         {
@@ -1204,6 +1154,6 @@ else
 
     private void ClearFieldErrors()
     {
-        _fieldFirstName = _fieldLastName = _fieldDisplayName = _fieldEmail = _fieldPlatformRole = _fieldInitialPassword = null;
+        _fieldDisplayName = _fieldEmail = _fieldPlatformRole = _fieldInitialPassword = null;
     }
 }

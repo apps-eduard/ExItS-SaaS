@@ -1,0 +1,88 @@
+@using AntDesign
+@using ExItS.Platform.Admin.Models
+@inject IStringLocalizer<AdminResources> L
+
+<Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+    <div>
+        <label class="ant-form-item-label" for="@($"{IdPrefix}-firstname")">@L["Users_FirstName"]</label>
+        <Input Id="@($"{IdPrefix}-firstname")"
+               @bind-Value="Value.FirstName"
+               @bind-Value:after="NotifyChangedAsync"
+               Size="@InputSize.Small"
+               Disabled="Disabled" />
+        @if (Errors?.FirstName is not null) { <span class="exits-field-error">@Errors.FirstName</span> }
+    </div>
+    <div>
+        <label class="ant-form-item-label" for="@($"{IdPrefix}-lastname")">@L["Users_LastName"]</label>
+        <Input Id="@($"{IdPrefix}-lastname")"
+               @bind-Value="Value.LastName"
+               @bind-Value:after="NotifyChangedAsync"
+               Size="@InputSize.Small"
+               Disabled="Disabled" />
+        @if (Errors?.LastName is not null) { <span class="exits-field-error">@Errors.LastName</span> }
+    </div>
+    <div>
+        <label class="ant-form-item-label" for="@($"{IdPrefix}-displayname")">@L["Common_DisplayName"]</label>
+        <Input Id="@($"{IdPrefix}-displayname")"
+               @bind-Value="Value.DisplayName"
+               Size="@InputSize.Small"
+               Disabled="Disabled"
+               Placeholder="@DisplayNamePlaceholder" />
+        @if (Errors?.DisplayName is not null) { <span class="exits-field-error">@Errors.DisplayName</span> }
+    </div>
+    @if (ShowEmail)
+    {
+        <div>
+            <label class="ant-form-item-label" for="@($"{IdPrefix}-email")">@L["Common_Email"]</label>
+            <Input Id="@($"{IdPrefix}-email")"
+                   @bind-Value="Value.Email"
+                   Size="@InputSize.Small"
+                   Disabled="Disabled || EmailReadOnly" />
+            @if (Errors?.Email is not null) { <span class="exits-field-error">@Errors.Email</span> }
+        </div>
+    }
+    <div>
+        <label class="ant-form-item-label" for="@($"{IdPrefix}-phone")">@L["Users_Phone"] <span class="exits-optional-hint">(optional)</span></label>
+        <Input Id="@($"{IdPrefix}-phone")"
+               @bind-Value="Value.Phone"
+               Size="@InputSize.Small"
+               Disabled="Disabled" />
+        @if (Errors?.Phone is not null) { <span class="exits-field-error">@Errors.Phone</span> }
+    </div>
+    <div>
+        <label class="ant-form-item-label" for="@($"{IdPrefix}-employee-code")">@L["Users_EmployeeCode"] <span class="exits-optional-hint">(optional)</span></label>
+        <Input Id="@($"{IdPrefix}-employee-code")"
+               @bind-Value="Value.EmployeeCode"
+               Size="@InputSize.Small"
+               Disabled="Disabled" />
+        @if (Errors?.EmployeeCode is not null) { <span class="exits-field-error">@Errors.EmployeeCode</span> }
+    </div>
+    @if (ShowRequireEmailVerification)
+    {
+        <div>
+            <Checkbox @bind-Checked="Value.RequireEmailVerification"
+                      @bind-Checked:after="NotifyChangedAsync"
+                      Disabled="Disabled">
+                @L["Users_RequireEmailVerification"]
+            </Checkbox>
+        </div>
+    }
+</Space>
+
+@code {
+    [Parameter, EditorRequired] public StaffPersonFieldsModel Value { get; set; } = new();
+    [Parameter] public StaffPersonFieldErrors? Errors { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ShowEmail { get; set; } = true;
+    [Parameter] public bool EmailReadOnly { get; set; }
+    [Parameter] public bool ShowRequireEmailVerification { get; set; } = true;
+    [Parameter] public string IdPrefix { get; set; } = "staff-person";
+    [Parameter] public EventCallback ValueChanged { get; set; }
+
+    private string DisplayNamePlaceholder =>
+        string.IsNullOrWhiteSpace(Value.ResolvedDisplayName())
+            ? "Auto from first + last name"
+            : Value.ResolvedDisplayName();
+
+    private Task NotifyChangedAsync() => ValueChanged.InvokeAsync();
+}

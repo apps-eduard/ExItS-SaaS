@@ -1,0 +1,337 @@
+@page "/admin/organizations/{OrganizationId:guid}/invitations"
+@using AntDesign
+@using ExItS.Platform.Admin.Models
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IPlatformApiClient Api
+@inject IMessageService Message
+@inject IStringLocalizer<AdminResources> L
+@inject AdminShellContext Shell
+@inject NavigationManager Nav
+@inject PlatformPermissionState Permissions
+@inject OrganizationDeepLinkGuard DeepLinkGuard
+
+@if (!Permissions.Loaded || !Shell.Loaded)
+{
+    <div style="padding:2rem;text-align:center;"><Spin /></div>
+}
+else if (Shell.IsOrganizationShell && !DeepLinkGuard.CanOpenOrganization(OrganizationId))
+{
+    <Result Status="@ResultStatus.Warning"
+            Title="Organization context required"
+            SubTitle="This organization is not the active organization context.">
+        <Extra>
+            <Button Type="@ButtonType.Primary" OnClick="@(() => Nav.NavigateTo(DeepLinkGuard.DeniedRedirectUrl(OrganizationId)))">
+                Back
+            </Button>
+        </Extra>
+    </Result>
+}
+else if (!CanAccessInvitations)
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ManageMemberships" />
+}
+else
+{
+    <PageHeader Class="exits-page-header" Title="@L["OrgMembers_TabInvitations"]" SubTitle="@L["OrgMembers_InviteSection"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_People"]</BreadcrumbItem>
+                <BreadcrumbItem Href="@($"/admin/organizations/{OrganizationId}")">@(_org?.Data?.DisplayName ?? L["Nav_Organizations"])</BreadcrumbItem>
+                <BreadcrumbItem>@L["OrgMembers_TabInvitations"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+    </PageHeader>
+
+    <FormValidationSummary Title="@L["Common_ActionFailed"]" Message="@_formError" IsConflict="_formConflict" />
+
+    <Space Style="margin-bottom:12px; width:100%;" Wrap>
+        <Button Size="@ButtonSize.Small" OnClick="@(() => Nav.NavigateTo($"/admin/organizations/{OrganizationId}/members"))">
+            @L["OrgMembers_Title"]
+        </Button>
+        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="() => _showInvite = !_showInvite">
+            @(_showInvite ? L["Common_Cancel"] : L["OrgMembers_Invite"])
+        </Button>
+    </Space>
+
+    @if (_showInvite)
+    {
+        <Card Size="@CardSize.Small" Title="@L["OrgMembers_InviteSection"]" Style="margin-bottom:12px;">
+            <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                <StaffPersonFieldsForm Value="_person" Errors="_personErrors" IdPrefix="org-invite" Disabled="_busy" />
+                <div>
+                    <label class="ant-form-item-label">@L["OrgMembers_OrgRole"]</label>
+                    <Select TItemValue="string" TItem="string" @bind-Value="_inviteRole" Size="@InputSize.Small" Style="width:100%;" Disabled="_busy">
+                        <SelectOptions>
+                            <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationMember")" Label="@L["OrgMembers_Role_Staff"]" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("OrganizationOwner")" Label="@L["OrgMembers_Role_Owner"]" />
+                        </SelectOptions>
+                    </Select>
+                    @if (_fieldInviteRole is not null) { <span class="exits-field-error">@_fieldInviteRole</span> }
+                </div>
+                <div>
+                    <label class="ant-form-item-label">Branch <span class="exits-optional-hint">(optional)</span></label>
+                    <Input @bind-Value="_inviteBranch" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label">POS / product role <span class="exits-optional-hint">(optional)</span></label>
+                    <Select TItemValue="string" TItem="string" @bind-Value="_inviteProductRole" Size="@InputSize.Small" Style="width:100%;" AllowClear Disabled="_busy" Placeholder="Select product role">
+                        <SelectOptions>
+                            <SelectOption TItemValue="string" TItem="string" Value="@("Owner")" Label="POS Owner" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("Manager")" Label="Store Manager" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("Cashier")" Label="Cashier" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("Viewer")" Label="Reporting User" />
+                        </SelectOptions>
+                    </Select>
+                </div>
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="InviteAsync">@L["OrgMembers_Invite"]</Button>
+            </Space>
+        </Card>
+    }
+
+    @if (_org is null || _invitations is null)
+    {
+        <div style="padding:2rem;text-align:center;"><Spin Tip="@L["OrgMembers_Loading"]" /></div>
+    }
+    else if (_invitations is { IsSuccess: false })
+    {
+        <Result Status="@ResultStatus.Error" Title="@L["OrgMembers_InvitationsUnavailable"]" SubTitle="@_invitations.Error?.Detail" />
+    }
+    else
+    {
+        <Table TItem="OrganizationInvitationDto"
+               DataSource="@(_invitations.Data?.Items ?? Array.Empty<OrganizationInvitationDto>())"
+               Total="@(_invitations.Data?.TotalCount ?? 0)"
+               @bind-PageIndex="_invitePage"
+               PageSize="@(_invitations.Data?.PageSize ?? 20)"
+               Size="@TableSize.Small"
+               Bordered
+               RemoteDataSource
+               OnPageIndexChange="OnInvitePageAsync"
+               ScrollX="1100">
+            <PropertyColumn Property="c => c.InviteeDisplayName" Title="@L["Common_DisplayName"]">
+                @(context.InviteeDisplayName ?? "—")
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.Email" Title="@L["Common_Email"]" />
+            <PropertyColumn Property="c => c.Role" Title="@L["OrgMembers_OrgRole"]">
+                <Tag Color="@(context.Role == "OrganizationOwner" ? "gold" : "default")"
+                     Style="@(context.Role == "OrganizationOwner" ? "font-weight:600;" : null)">
+                    @(context.RoleDisplay ?? FormatOrgRole(context.Role))
+                </Tag>
+            </PropertyColumn>
+            <ActionColumn Title="Product role">
+                @if (!string.IsNullOrWhiteSpace(context.ProductRoleDisplay ?? context.ProductRole))
+                {
+                    <Tag>@(context.ProductRoleDisplay ?? context.ProductRole)</Tag>
+                }
+                else
+                {
+                    <span>—</span>
+                }
+            </ActionColumn>
+            <PropertyColumn Property="c => c.Branch" Title="Branch">
+                @(string.IsNullOrWhiteSpace(context.Branch) ? "—" : context.Branch)
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.InvitationStatus" Title="Invitation status">
+                <Tag>@FormatInvitationStatus(context.InvitationStatus ?? context.Status)</Tag>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.CreatedAtUtc" Title="Sent at" Format="u" />
+            <PropertyColumn Property="c => c.ExpiresAtUtc" Title="@L["OrgMembers_ExpiresUtc"]" Format="u" />
+            <ActionColumn Title="@L["Common_Actions"]" Width="120">
+                @if ((context.InvitationStatus ?? context.Status) is "Pending" or "Sent")
+                {
+                    <Space Size="@SpaceSize.Small" Wrap>
+                        <Tooltip Title="@L["OrgMembers_Resend"].Value">
+                            <Button Icon="reload"
+                                    Size="@ButtonSize.Small"
+                                    Type="@ButtonType.Text"
+                                    Disabled="_busy"
+                                    AriaLabel="@L["OrgMembers_Resend"].Value"
+                                    OnClick="() => ResendInviteAsync(context.Id)" />
+                        </Tooltip>
+                        <Popconfirm Title="@L["OrgMembers_RevokeInviteConfirm"].Value" OnConfirm="() => RevokeInviteAsync(context.Id)" Disabled="_busy">
+                            <Tooltip Title="@L["Common_Revoke"].Value">
+                                <Button Icon="delete"
+                                        Size="@ButtonSize.Small"
+                                        Type="@ButtonType.Text"
+                                        Danger
+                                        Disabled="_busy"
+                                        AriaLabel="@L["Common_Revoke"].Value" />
+                            </Tooltip>
+                        </Popconfirm>
+                    </Space>
+                }
+            </ActionColumn>
+        </Table>
+    }
+}
+
+@code {
+    [Parameter] public Guid OrganizationId { get; set; }
+
+    private ApiCallResult<OrganizationDto>? _org;
+    private ApiCallResult<PagedResult<OrganizationInvitationDto>>? _invitations;
+    private readonly StaffPersonFieldsModel _person = new();
+    private StaffPersonFieldErrors? _personErrors;
+    private string _inviteRole = "OrganizationMember";
+    private string _inviteBranch = "";
+    private string? _inviteProductRole;
+    private bool _showInvite;
+    private string? _formError;
+    private bool _formConflict;
+    private string? _fieldInviteRole;
+    private bool _busy;
+    private int _invitePage = 1;
+    private Guid? _loadedOrganizationId;
+
+    private bool IsOrgAdminMembership =>
+        string.Equals(Shell.MembershipRole, "OrganizationOwner", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(Shell.MembershipRole, "OrganizationAdministrator", StringComparison.OrdinalIgnoreCase);
+
+    private bool CanAccessInvitations =>
+        Permissions.HasPermission(PlatformPermissionCodes.ManageMemberships)
+        || (Shell.IsOrganizationShell
+            && Shell.SelectedOrganizationId == OrganizationId
+            && IsOrgAdminMembership);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await Shell.EnsureLoadedAsync();
+        if (!Permissions.Loaded)
+        {
+            await Permissions.EnsureLoadedAsync();
+        }
+
+        if (!CanAccessInvitations)
+        {
+            return;
+        }
+
+        if (_loadedOrganizationId != OrganizationId)
+        {
+            _invitePage = 1;
+            _invitations = null;
+            _org = null;
+            _loadedOrganizationId = OrganizationId;
+        }
+
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _org = await Api.GetOrganizationAsync(OrganizationId);
+        await ReloadInvitationsAsync();
+    }
+
+    private async Task ReloadInvitationsAsync() =>
+        _invitations = await Api.GetOrganizationInvitationsAsync(OrganizationId, page: _invitePage);
+
+    private async Task OnInvitePageAsync(PaginationEventArgs args)
+    {
+        _invitePage = args.Page;
+        await ReloadInvitationsAsync();
+    }
+
+    private static string FormatOrgRole(string? role) => role switch
+    {
+        "OrganizationOwner" => "Owner",
+        "OrganizationMember" => "Staff",
+        "OrganizationAdministrator" => "Administrator",
+        _ => role ?? "—"
+    };
+
+    private static string FormatInvitationStatus(string? status) => status switch
+    {
+        "Pending" => "Pending",
+        "Sent" => "Sent",
+        "Accepted" => "Accepted",
+        "Expired" => "Expired",
+        "Revoked" => "Revoked",
+        "DeliveryFailed" => "Delivery Failed",
+        _ => status ?? "—"
+    };
+
+    private async Task InviteAsync()
+    {
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        _fieldInviteRole = null;
+        _formError = null;
+        _personErrors = null;
+
+        var validation = _person.Validate();
+        if (!validation.IsValid)
+        {
+            _personErrors = validation.Errors;
+            _busy = false;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_inviteRole))
+        {
+            _fieldInviteRole = L["OrgMembers_OrgRoleRequired"];
+            _busy = false;
+            return;
+        }
+
+        var result = await Api.CreateOrganizationInvitationAsync(
+            OrganizationId,
+            new CreateInvitationRequest(
+                _person.Email.Trim(),
+                _inviteRole,
+                FirstName: _person.FirstName.Trim(),
+                LastName: _person.LastName.Trim(),
+                DisplayName: _person.ResolvedDisplayName(),
+                Phone: string.IsNullOrWhiteSpace(_person.Phone) ? null : _person.Phone.Trim(),
+                EmployeeCode: string.IsNullOrWhiteSpace(_person.EmployeeCode) ? null : _person.EmployeeCode.Trim(),
+                Branch: string.IsNullOrWhiteSpace(_inviteBranch) ? null : _inviteBranch.Trim(),
+                ProductRole: string.IsNullOrWhiteSpace(_inviteProductRole) ? null : _inviteProductRole,
+                RequireEmailVerification: _person.RequireEmailVerification));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        await Message.SuccessAsync(L["OrgMembers_ToastInvited"].Value);
+        _person.Clear();
+        _inviteBranch = "";
+        _inviteProductRole = null;
+        _inviteRole = "OrganizationMember";
+        _showInvite = false;
+        await ReloadInvitationsAsync();
+    }
+
+    private async Task ResendInviteAsync(Guid id)
+    {
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.ResendOrganizationInvitationAsync(id);
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        await Message.SuccessAsync(L["OrgMembers_ToastInviteResent"].Value);
+        await ReloadInvitationsAsync();
+    }
+
+    private async Task RevokeInviteAsync(Guid id)
+    {
+        if (!AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.RevokeOrganizationInvitationAsync(id);
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        await Message.SuccessAsync(L["OrgMembers_ToastInviteRevoked"].Value);
+        await ReloadInvitationsAsync();
+    }
+}

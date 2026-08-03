@@ -109,7 +109,12 @@ internal sealed class OrganizationInvitationRepository : IOrganizationInvitation
             record.ExpiresAtUtc,
             record.AcceptedAtUtc,
             record.RevokedAtUtc,
-            record.AcceptedByUserId is Guid acceptedBy ? PlatformUserId.From(acceptedBy) : null);
+            record.AcceptedByUserId is Guid acceptedBy ? PlatformUserId.From(acceptedBy) : null,
+            record.InviteeDisplayName,
+            record.FirstName,
+            record.LastName,
+            record.Branch,
+            record.ProductRole);
 
     private static OrganizationInvitationRecord ToRecord(OrganizationInvitation invitation) =>
         new()
@@ -126,7 +131,12 @@ internal sealed class OrganizationInvitationRepository : IOrganizationInvitation
             ExpiresAtUtc = invitation.ExpiresAtUtc,
             AcceptedAtUtc = invitation.AcceptedAtUtc,
             RevokedAtUtc = invitation.RevokedAtUtc,
-            AcceptedByUserId = invitation.AcceptedByUserId?.Value
+            AcceptedByUserId = invitation.AcceptedByUserId?.Value,
+            InviteeDisplayName = invitation.InviteeDisplayName,
+            FirstName = invitation.FirstName,
+            LastName = invitation.LastName,
+            Branch = invitation.Branch,
+            ProductRole = invitation.ProductRole
         };
 
     private static void Apply(OrganizationInvitation invitation, OrganizationInvitationRecord record)
@@ -140,5 +150,10 @@ internal sealed class OrganizationInvitationRepository : IOrganizationInvitation
         record.AcceptedAtUtc = invitation.AcceptedAtUtc;
         record.RevokedAtUtc = invitation.RevokedAtUtc;
         record.AcceptedByUserId = invitation.AcceptedByUserId?.Value;
+        record.InviteeDisplayName = invitation.InviteeDisplayName;
+        record.FirstName = invitation.FirstName;
+        record.LastName = invitation.LastName;
+        record.Branch = invitation.Branch;
+        record.ProductRole = invitation.ProductRole;
     }
 }
