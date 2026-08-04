@@ -9,7 +9,7 @@
 | Field | Value |
 |---|---|
 | Portfolio | ExITS SaaS |
-| Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
+| Existing product | Historical HealthCare SaaS MVP (separate product; **not** in this workspace ? do not restore) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 19 — **Open** — Mobile POS Operations and Cashier Experience; Phase 14 still open |
 | Current work package | **P19-WP08** Retest (awaiting user phone confirmation); WP01–WP07 Code Complete; Phase 18 Complete (implementation/scope); Phase 17 remains complete; **P16-WP11** validation residuals may continue separately; P14-WP04 remains next Production WP after authorization; **do not start P14-WP03** under Phase 19 |

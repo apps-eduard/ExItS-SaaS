@@ -45,9 +45,29 @@ Provide the end-to-end Mobile POS ops validation checklist for physical-phone co
 - Production readiness **unchanged** / **not production-ready**
 - Do **not** start P14-WP03 under this phase
 
-## 5. PhysicalDevice / Tailscale
+## 5. PhysicalDevice / Tailscale (preferred)
 
-Preserve existing PhysicalDevice Local Validation Tailscale APK process for phone retest. Untracked `tools/p18-*.mjs` remain local.
+Physical-device Local Validation is preferred over the Android emulator for Phase 19 retest.
+
+| Item | Value |
+|---|---|
+| Package | `com.exits.pinoybusinesspos` |
+| Profile | `-p:PosLocalValidationTarget=PhysicalDevice` |
+| Default Tailscale host | `100.120.79.81` |
+| APIs | Platform `:8091`, POS `:8092` |
+
+```powershell
+$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
+$env:PATH = "$env:ANDROID_HOME\platform-tools;$env:PATH"
+
+dotnet build "src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ExItS.PinoyBusinessPOS.Maui.csproj" `
+  -c Debug -f net10.0-android `
+  -p:PosLocalValidationTarget=PhysicalDevice `
+  -p:AndroidSdkDirectory="$env:ANDROID_HOME" `
+  -t:Install
+```
+
+Do **not** use historical HealthCare AVD names. Untracked `tools/p18-*.mjs` remain local.
 
 ## 6. Status
 

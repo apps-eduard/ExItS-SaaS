@@ -1,59 +1,52 @@
 # Development Environment Baseline
 
-[Home](../index.md) | [Runtime baseline](../reuse/healthcare-runtime-baseline.md) | [Repository boundaries](repository-boundaries.md) | [P2-WP01 report](../reports/P2-WP01-extraction-baseline-and-safety.md)
+[Home](../index.md) | [Repository boundaries](repository-boundaries.md) | [Local Validation workflow](../../deploy/docker/README.local-validation-workflow.md) | [P2-WP01 report](../reports/P2-WP01-extraction-baseline-and-safety.md)
 
-Verified on the P0-WP02 assessment machine (2026-07-29) and extended for root Platform foundation in **P2-WP01**.
+ExItS-SaaS is an independent multi-product portfolio. The historical HealthCare product tree is **not** in this workspace and must **not** be restored. Use ExItS Platform + PinoyBusinessPOS Local Validation only.
 
-## ExItS root Platform (P2-WP01+)
+## ExItS root Platform
 
 | Component | Value |
 |---|---|
 | SDK pin | `global.json` → **10.0.302** (`rollForward`: `latestFeature`) |
-| Solution | `ExItS.slnx` (SDK 10 solution format; preferred over `.sln`) |
+| Solution | `ExItS.slnx` |
 | Target framework | `net10.0` via `Directory.Build.props` |
 | Central packages | `Directory.Packages.props` (CPM) |
-| API HTTP | `http://localhost:5288` (launch profile `http`) |
 
 ```powershell
 # From ExItS-SaaS root
 dotnet restore ExItS.slnx
 dotnet build ExItS.slnx -c Release
 dotnet test ExItS.slnx -c Release --no-build
-dotnet run --project src/Platform/ExItS.Platform.Api/ExItS.Platform.Api.csproj -c Release --urls http://127.0.0.1:5288
 ```
 
-Health checks: `GET /` and `GET /health`. Catalog, organization, and subscription APIs under `/api/v1/platform/*` require PostgreSQL (P3-WP01/02). Development-stage routes are unauthenticated.
+## Local Validation (preferred for POS + Platform together)
 
-## Platform PostgreSQL (P3-WP01 / P3-WP02)
+Use the Local Validation stack (not a nested product tree):
+
+| Port | Service |
+|---|---|
+| **8091** | Platform API |
+| **8092** | POS API |
+| **15533** | Platform PostgreSQL (Docker) |
+| **15534** | POS PostgreSQL (Docker) |
+| **8025** | Mailpit UI |
+
+```powershell
+# From ExItS-SaaS root (see deploy/docker/README.local-validation-workflow.md)
+.\tools\Start-LocalValidation.ps1
+```
+
+Health checks: `GET http://127.0.0.1:8091/health` and `GET http://127.0.0.1:8092/health`.
+
+## Platform / POS PostgreSQL (Local Validation)
 
 | Item | Value |
 |---|---|
-| Database | `ExItS_Platform` |
-| Schema | `platform` |
-| Local Docker | `postgres:18` on host port **5434** |
-| Config key | `ConnectionStrings:PlatformDatabase` |
-| Migration | `InitialPlatformCatalog` |
-| Auto-migrate at startup | **Disabled** |
-
-```powershell
-docker run -d --name exits-platform-pg-test `
-  -e POSTGRES_PASSWORD=exits_platform_dev_only `
-  -e POSTGRES_DB=ExItS_Platform `
-  -p 5434:5432 postgres:18
-
-dotnet ef database update `
-  --project src/Platform/ExItS.Platform.Infrastructure `
-  --startup-project src/Platform/ExItS.Platform.Api
-
-# Rollback (dev only)
-dotnet ef database update 0 `
-  --project src/Platform/ExItS.Platform.Infrastructure `
-  --startup-project src/Platform/ExItS.Platform.Api
-
-dotnet ef database update InitialPlatformCatalog `
-  --project src/Platform/ExItS.Platform.Infrastructure `
-  --startup-project src/Platform/ExItS.Platform.Api
-```
+| Platform DB container | `exits-local-validation-platform-db` (host **15533**) |
+| POS DB container | `exits-local-validation-pos-db` (host **15534**) |
+| Image | `postgres:16` (Local Validation compose) |
+| Auto-migrate at API startup | Follow Local Validation / product docs — do not invent Production migrate-at-start |
 
 Prefer `dotnet user-secrets` for non-local credentials. Integration tests use Testcontainers (Docker required).
 
@@ -61,59 +54,64 @@ Prefer `dotnet user-secrets` for non-local credentials. Integration tests use Te
 
 | Component | Required for | Notes |
 |---|---|---|
-| .NET SDK **10.x** | API + Web | Verified `10.0.302` |
-| `Microsoft.AspNetCore.App` 10.x | API + Web | Verified `10.0.10` |
-| `Microsoft.NETCore.App` 10.x | All managed hosts | Verified `10.0.10` |
-| Docker Desktop + Compose | Local PostgreSQL, Integration, E2E | Verified Docker `29.6.2`, Compose `v5.3.1` |
-| Git 2.x | All work | Verified `2.55.0.windows.3` |
+| .NET SDK **10.x** | Platform + POS | Verified `10.0.302` |
+| Docker Desktop + Compose | Local Validation DBs / packaging | Required for Local Validation |
+| Git 2.x | All work | |
+| Android SDK + workloads | POS MAUI Android | Required only for MAUI Android builds |
 
-No HealthCare `global.json`. Target framework `net10.0` (Mobile host `net10.0-android`).
+Target frameworks: managed `net10.0`; POS MAUI host `net10.0-android`.
 
-## PostgreSQL
+## PinoyBusinessPOS MAUI — PhysicalDevice (preferred)
 
-- Preferred: `HealthCare/deploy/docker/dev` → database `healthcare_db_dev`, container `healthcare-db-dev`, Postgres **18**.
-- Start: from `HealthCare/`, run `.\scripts\dev\start-local-dev.ps1`.
-- Connection password lives in ignored Compose `.env` and API user secrets — **not** in documentation.
+Physical-device Local Validation is **preferred** over the Android emulator (emulator is slow/unreliable in this environment). Preserve the existing PhysicalDevice / Tailscale Debug profile.
 
-## MAUI / Android / Windows
-
-| Item | Status on assessment machine | Classification |
-|---|---|---|
-| Workload `maui-android` | Installed | Required only for MAUI Android |
-| Workload `maui-windows` | Missing | Required only for Windows MAUI (current project is Android TFM) |
-| Android SDK folder | Present under `%LOCALAPPDATA%\Android\Sdk` | Required only for MAUI Android |
-| `ANDROID_HOME` / `ANDROID_SDK_ROOT` | Unset | Missing wiring → `XA5300` on full solution build |
-| JDK | Microsoft JDK 17 via `JAVA_HOME` | Required only for MAUI Android |
-
-Do not install large workloads during portfolio WPs unless explicitly approved.
-
-## Node / npm
-
-Installed on the assessment machine but **not required** by HealthCare (no npm frontend toolchain).
-
-## Restore / build / test (HealthCare cwd)
+| Item | Value |
+|---|---|
+| Package id | `com.exits.pinoybusinesspos` |
+| Profile | `-p:PosLocalValidationTarget=PhysicalDevice` |
+| Default Tailscale host | `100.120.79.81` (override with `-p:PosLocalValidationPublicHost=...`) |
+| Embedded settings | `appsettings.LocalValidation.PhysicalDevice.json` |
 
 ```powershell
-dotnet restore HealthCare.sln
-dotnet build src/HealthCare.Api/HealthCare.Api.csproj -c Release
-dotnet build src/HealthCare.Web/HealthCare.Web.csproj -c Release
-dotnet build src/HealthCare.PatientWeb/HealthCare.PatientWeb.csproj -c Release
-dotnet test tests/HealthCare.UnitTests/HealthCare.UnitTests.csproj -c Release
-dotnet test tests/HealthCare.ArchitectureTests/HealthCare.ArchitectureTests.csproj -c Release
-dotnet test tests/HealthCare.Web.Tests/HealthCare.Web.Tests.csproj -c Release
-dotnet test tests/HealthCare.PatientWeb.Tests/HealthCare.PatientWeb.Tests.csproj -c Release
-dotnet test tests/HealthCare.Mobile.Tests/HealthCare.Mobile.Tests.csproj -c Release
+$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
+$env:PATH = "$env:ANDROID_HOME\platform-tools;$env:PATH"
+
+dotnet build "src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ExItS.PinoyBusinessPOS.Maui.csproj" `
+  -c Debug -f net10.0-android `
+  -p:PosLocalValidationTarget=PhysicalDevice `
+  -p:AndroidSdkDirectory="$env:ANDROID_HOME" `
+  -t:Install
 ```
 
-## Known unsupported / deferred commands in this environment
+Phone must reach Platform/POS on the Tailscale/LAN host ports **8091** / **8092**. Keep `AllowedHosts` / cleartext domains aligned with that public host.
 
-| Command / suite | Why deferred |
+## PinoyBusinessPOS MAUI — Emulator (optional / secondary)
+
+Use only when a physical device is unavailable. Do **not** use any historical HealthCare AVD name.
+
+| Item | Value |
 |---|---|
-| `dotnet build HealthCare.sln` (includes Mobile) | Fails `XA5300` without Android SDK env wiring |
-| `HealthCare.IntegrationTests` | Needs Docker Testcontainers; HealthCare README: not the Windows baseline |
-| `HealthCare.EndToEndTests` | Needs Playwright + `deploy/docker/e2e` Compose |
-| First `git push -u origin main` for ExITS root | Remote repo exists but is empty; requires explicit user authorization to publish |
+| Package id | `com.exits.pinoybusinesspos` |
+| Profile | `-p:PosLocalValidationTarget=Emulator` (default Debug) |
+| API base URLs | `http://10.0.2.2:8091` / `http://10.0.2.2:8092` (emulator → host loopback) |
+| AVD | Create/use an ExItS-named AVD (for example `ExItS_Pixel_API34`) — never `HealthCare_*` |
+
+```powershell
+$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
+$env:PATH = "$env:ANDROID_HOME\platform-tools;$env:ANDROID_HOME\emulator;$env:PATH"
+
+# Optional: start an ExItS-named AVD (rename/create — do not use HealthCare_* AVDs)
+emulator -avd ExItS_Pixel_API34
+
+dotnet build "src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ExItS.PinoyBusinessPOS.Maui.csproj" `
+  -c Debug -f net10.0-android `
+  -p:PosLocalValidationTarget=Emulator `
+  -p:AndroidSdkDirectory="$env:ANDROID_HOME" `
+  -t:Install
+```
+
+Ensure Platform/POS `AllowedHosts` includes `10.0.2.2` for Debug Local Validation. `adb reverse` to `127.0.0.1` is optional and may be unreliable on some Windows/ADB setups.
 
 ## Secrets
 
-Never place real connection passwords, JWT signing keys, or Compose `.env` values in docs, commits, or chat logs. Use configuration **names** only (for example `ConnectionStrings__DefaultConnection`, `Jwt__SigningKey`).
+Never place real connection passwords, JWT signing keys, or Compose `.env` values in docs, commits, or chat logs. Use configuration **names** only.

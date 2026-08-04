@@ -1,10 +1,12 @@
-# HealthCare SaaS Reuse Assessment
+# HealthCare SaaS Reuse Assessment (historical)
+
+> **Historical P0-WP01 record only.** The HealthCare product tree is **not** in this ExItS-SaaS workspace and must **not** be restored. Do not treat paths like `HealthCare/` or `HealthCare.sln` as present. Current engineering baseline: [development-environment.md](../engineering/development-environment.md).
 
 [Home](../index.md) | [Dashboard](../portfolio-progress.md) | [Reuse Matrix](reuse-classification-matrix.md) | [Completion Report](../reports/P0-WP01-completion.md)
 
 **Work package:** P0-WP01 — Repository and Reuse Inventory  
 **Assessment date:** 2026-07-29  
-**Status:** Ready for Review  
+**Status:** Historical (assessment complete; HealthCare later removed from ExItS workspace)  
 **Verdict:** Suitable for **controlled platform extraction** of identity, organization, permission, audit, and BFF patterns — **not** a wholesale lift of the HealthCare solution into ExITS Platform.
 
 ---

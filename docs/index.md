@@ -13,12 +13,12 @@
 - [Products, plans, trials and billing](product/subscriptions-and-billing.md)
 - [Release plan](release-plan.md)
 
-## Reuse
+## Reuse (historical assessments — HealthCare not in this workspace)
 
-- [HealthCare reuse assessment](reuse/healthcare-reuse-assessment.md)
+- [HealthCare reuse assessment (historical)](reuse/healthcare-reuse-assessment.md)
 - [Reuse classification matrix](reuse/reuse-classification-matrix.md)
-- [HealthCare runtime baseline](reuse/healthcare-runtime-baseline.md)
-- [HealthCare UI reuse assessment](reuse/healthcare-ui-reuse-assessment.md)
+- [HealthCare runtime baseline (historical)](reuse/healthcare-runtime-baseline.md)
+- [HealthCare UI reuse assessment (historical)](reuse/healthcare-ui-reuse-assessment.md)
 - [Extraction and migration rules](reuse/extraction-rules.md)
 - [Extraction sequence](reuse/extraction-sequence.md)
 - [Extraction rollback plan](engineering/extraction-rollback-plan.md)

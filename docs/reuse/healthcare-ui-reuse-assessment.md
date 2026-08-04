@@ -1,10 +1,12 @@
-# HealthCare UI Reuse Assessment
+# HealthCare UI Reuse Assessment (historical)
+
+> **Historical P0-WP03 record only.** The HealthCare product tree is **not** in this ExItS-SaaS workspace and must **not** be restored. Platform Admin Ant Design adoption is governed by ADR-015; POS remains native DesignSystem. Current UI standards: [ui-design-system.md](../engineering/ui-design-system.md).
 
 [Dashboard](../portfolio-progress.md) | [UI design system](../engineering/ui-design-system.md) | [Component catalog](../engineering/reusable-component-catalog.md) | [ADR-010](../decisions/ADR-010-separate-ui-implementations-platform-and-pos.md)
 
 **Work package:** P0-WP03  
 **Date:** 2026-07-29  
-**HealthCare freeze:** Read-only inspection only; no UI code modified.
+**Status:** Historical (read-only assessment; HealthCare later removed from ExItS workspace).
 
 ---
 

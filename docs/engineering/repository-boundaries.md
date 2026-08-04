@@ -1,33 +1,37 @@
 # Repository Boundaries
 
-[Home](../index.md) | [Runtime baseline](../reuse/healthcare-runtime-baseline.md) | [Dashboard](../portfolio-progress.md)
+[Home](../index.md) | [Development environment](development-environment.md) | [Dashboard](../portfolio-progress.md)
 
-## Current model (Phase 2 closed)
+## Current model
 
 ```text
 ExItS-SaaS root repository
 ├── ExItS.slnx, global.json, Directory.Build.props, Directory.Packages.props
-├── src/Platform/* — Platform foundation through P2-WP05 (contracts + migration validation)
-├── tests/* — Platform unit + architecture/safety tests
-├── Portfolio documentation — tracked by root Git (Phase 2 closeout complete)
-└── HealthCare/ — nested independent repository, ignored by root Git (/HealthCare/)
+├── src/Platform/* — Platform foundation (including versioned Integration contracts)
+├── src/Products/PinoyBusinessPOS/* — PinoyBusinessPOS product
+├── src/Shared/* — shared DesignSystem and contracts as applicable
+├── tests/* — Platform / POS / architecture safety tests
+├── deploy/docker/* — Local Validation, packaging, production compose
+└── Portfolio documentation — tracked by root Git
 ```
 
-HealthCare remains temporary-ignored until an approved import WP. **Phase 2 did not import, move, or retire HealthCare.**
+The historical HealthCare product source tree is **not** part of this workspace. Do **not** recreate, clone, import, or nest a `HealthCare/` product tree without explicit authorization.
+
+Root `.gitignore` still ignores `/HealthCare/` as a guard against accidental reintroduction. That ignore is not permission to restore the product.
 
 ## Root Git responsibility
 
-- Owns ExITS portfolio docs, phase tracking, reuse assessments, engineering standards, and **new Platform foundation projects**.
-- Must never accidentally track nested HealthCare application sources, secrets, or build outputs.
-- Root remote: `https://github.com/apps-eduard/ExItS-SaaS.git` (still empty / `origin/main` gone as of P2-WP01).
-- Baseline tag: `phase-1-approved` → `01ab65b` (local; not pushed).
+- Owns ExITS portfolio docs, phase tracking, engineering standards, Platform, and PinoyBusinessPOS.
+- Must never track a nested HealthCare application tree, secrets, or build outputs.
+- Root remote: `https://github.com/apps-eduard/ExItS-SaaS.git`.
 
-## Nested HealthCare Git responsibility
+## Platform Integration contracts (not a product tree)
 
-- Owns the completed HealthCare MVP history and product remotes (`https://github.com/apps-eduard/HealthCare.git`).
-- Remains the authoritative product repository until an approved import/extraction plan.
-- Nested `.git` must **not** be deleted without an approved work package.
-- Pre-existing dirty nested working-tree files must not be cleaned or overwritten by ExITS portfolio WPs.
+Platform versioned contracts under:
+
+`src/Platform/ExItS.Platform.Application/Integration/HealthCare/`
+
+are **tracked Platform files** (contract boundaries for a possible future product reconnection). They are **not** the HealthCare product source tree and must not be confused with restoring HealthCare into this repo.
 
 ## Current ignore policy
 
@@ -38,41 +42,24 @@ Root `.gitignore` excludes at least:
 - `**/bin/`, `**/obj/`, TestResults, coverage, IDE folders
 - Local DB and certificate patterns
 
-## Prohibition against accidental parent tracking
+## Prohibitions
 
 Do not:
 
-- `git add HealthCare`
-- Convert HealthCare to a submodule/subtree without an approved WP
+- `git add HealthCare` / restore a nested HealthCare product tree
+- Convert HealthCare into a submodule/subtree without an approved WP
 - Commit nested `.env`, `bin/`, `obj/`, or certificates into the root repo
-
-## Future options (no import during Phase 0)
-
-| Option | Notes |
-|---|---|
-| Controlled monorepo import | Remove nested `.git` only after baseline tag + approved plan; import sources with root ignore exceptions |
-| Git submodule | Keeps separate history; more ops overhead |
-| Separate repository | Continue current model longer; Platform/POS live elsewhere |
-| Git subtree | Single tree with vendor history; harder reverse sync |
-
-## Phase 0 closeout recommendation (P0-WP04)
-
-**Recommended immediate direction:** keep the temporary topology. Begin Phase 1 by approving Platform/product boundaries and, when code is authorized, create **new Platform foundations in the root repository without importing HealthCare**. Defer controlled HealthCare monorepo import until after Platform contracts and extraction sequencing are approved (typically Phase 1–2).
-
-Do **not** in Phase 1 start: delete nested `.git`, track `HealthCare/` in root, or create submodules without a dedicated approved work package.
-
-**P1-WP03 confirms:** sequence and rollback are documented in [extraction-sequence.md](../reuse/extraction-sequence.md) and [extraction-rollback-plan.md](extraction-rollback-plan.md) (ADR-013). **P1-WP04 / ADR-014** approve controlled implementation starting at **P2-WP01** (narrow foundation). **No HealthCare import is executed in Phase 1.**
+- Point Local Validation or POS MAUI docs at HealthCare AVDs, APKs, DBs, or scripts
 
 ## Safety commands
 
 ```powershell
 # From ExItS-SaaS root
 git status --short --branch
+Test-Path HealthCare
+git ls-files -- HealthCare/
 git check-ignore -v HealthCare/
-git ls-files HealthCare
-git diff -- HealthCare/
-git submodule status
-Get-ChildItem -Recurse -Force -Directory -Filter .git | Select-Object FullName
+dotnet sln ExItS.slnx list
 ```
 
-Expected Phase 0/early Phase 1 result: nested `/HealthCare/` ignored; `git ls-files -- HealthCare/` empty; no HealthCare product diff in the root index. Platform contract paths under `Integration/HealthCare/` may be tracked.
+Expected result: no `HealthCare/` directory; `git ls-files -- HealthCare/` empty; `ExItS.slnx` lists no HealthCare projects. Platform contract paths under `Integration/HealthCare/` may be tracked.
