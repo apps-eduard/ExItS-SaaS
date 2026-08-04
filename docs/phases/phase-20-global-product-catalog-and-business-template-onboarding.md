@@ -40,3 +40,10 @@ Commercial SaaS catalog already owns `/api/v1/platform/catalog/products` and `/p
 ```
 
 Merchant discovery remains `/api/v1/catalog/...`. POS imports remain `/api/v1/pos/catalog-imports/...`.
+
+## Progress
+
+| WP | Report | Notes |
+|---|---|---|
+| P20-WP01 | [P20-WP01](../reports/P20-WP01-architecture-and-contracts.md) | Route prefix reconciliation; commercial catalog untouched |
+| P20-WP02 | [P20-WP02](../reports/P20-WP02-global-categories-and-products-domain.md) | Domain + API + `catalog` schema migration `AddGlobalProductCatalog` |

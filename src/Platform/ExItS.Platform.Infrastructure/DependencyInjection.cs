@@ -4,6 +4,7 @@ using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Authorization;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Entitlements;
+using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.LocalValidation;
 using ExItS.Platform.Application.Organizations;
@@ -41,6 +42,8 @@ public static class DependencyInjection
         services.AddScoped<IFeatureDefinitionRepository, FeatureDefinitionRepository>();
         services.AddScoped<IPlanRepository, PlanRepository>();
         services.AddScoped<ITrialDefinitionRepository, TrialDefinitionRepository>();
+        services.AddScoped<IGlobalCategoryRepository, GlobalCategoryRepository>();
+        services.AddScoped<IGlobalProductRepository, GlobalProductRepository>();
         services.AddScoped<IPlatformOrganizationRepository, PlatformOrganizationRepository>();
         services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
         services.AddScoped<ISaaSPaymentRepository, SaaSPaymentRepository>();

@@ -3,6 +3,7 @@ using ExItS.Platform.Infrastructure.Persistence.Audit;
 using ExItS.Platform.Infrastructure.Persistence.Authorization;
 using ExItS.Platform.Infrastructure.Persistence.Catalog;
 using ExItS.Platform.Infrastructure.Persistence.Entitlements;
+using ExItS.Platform.Infrastructure.Persistence.GlobalCatalog;
 using ExItS.Platform.Infrastructure.Persistence.Identity;
 using ExItS.Platform.Infrastructure.Persistence.Organizations;
 using ExItS.Platform.Infrastructure.Persistence.Payments;
@@ -15,6 +16,7 @@ namespace ExItS.Platform.Infrastructure.Persistence;
 public sealed class PlatformDbContext : DbContext
 {
     public const string SchemaName = "platform";
+    public const string CatalogSchemaName = "catalog";
 
     private static readonly string[] ActiveLikeStatuses =
     [
@@ -37,6 +39,10 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PlanVersionFeatureGrantRecord> PlanVersionFeatureGrants => Set<PlanVersionFeatureGrantRecord>();
     internal DbSet<TrialDefinitionRecord> TrialDefinitions => Set<TrialDefinitionRecord>();
     internal DbSet<TrialDefinitionFeatureGrantRecord> TrialDefinitionFeatureGrants => Set<TrialDefinitionFeatureGrantRecord>();
+    internal DbSet<GlobalCategoryRecord> GlobalCategories => Set<GlobalCategoryRecord>();
+    internal DbSet<GlobalCategoryBusinessTypeRecord> GlobalCategoryBusinessTypes => Set<GlobalCategoryBusinessTypeRecord>();
+    internal DbSet<GlobalProductRecord> GlobalProducts => Set<GlobalProductRecord>();
+    internal DbSet<GlobalProductBusinessTypeRecord> GlobalProductBusinessTypes => Set<GlobalProductBusinessTypeRecord>();
     internal DbSet<PlatformOrganizationRecord> Organizations => Set<PlatformOrganizationRecord>();
     internal DbSet<SubscriptionRecord> Subscriptions => Set<SubscriptionRecord>();
     internal DbSet<SaaSPaymentRecord> SaaSPayments => Set<SaaSPaymentRecord>();
@@ -1588,6 +1594,112 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.BatchId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<GlobalCategoryRecord>(entity =>
+        {
+            entity.ToTable("global_categories", CatalogSchemaName);
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(200).IsRequired();
+            entity.Property(e => e.NormalizedName).HasColumnName("normalized_name").HasMaxLength(200).IsRequired();
+            entity.Property(e => e.ParentId).HasColumnName("parent_id");
+            entity.Property(e => e.IconReference).HasColumnName("icon_reference").HasMaxLength(512);
+            entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => e.NormalizedName)
+                .IsUnique()
+                .HasFilter("parent_id IS NULL")
+                .HasDatabaseName("ux_global_categories_normalized_name_root");
+            entity.HasIndex(e => new { e.NormalizedName, e.ParentId })
+                .IsUnique()
+                .HasFilter("parent_id IS NOT NULL")
+                .HasDatabaseName("ux_global_categories_normalized_name_parent");
+            entity.HasIndex(e => e.ParentId).HasDatabaseName("ix_global_categories_parent_id");
+            entity.HasIndex(e => e.Status).HasDatabaseName("ix_global_categories_status");
+
+            entity.HasOne<GlobalCategoryRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(e => e.BusinessTypes)
+                .WithOne()
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<GlobalCategoryBusinessTypeRecord>(entity =>
+        {
+            entity.ToTable("global_category_business_types", CatalogSchemaName);
+            entity.HasKey(e => new { e.CategoryId, e.BusinessType });
+            entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.BusinessType).HasColumnName("business_type").HasMaxLength(64).IsRequired();
+            entity.HasIndex(e => e.BusinessType).HasDatabaseName("ix_global_category_business_types_type");
+        });
+
+        modelBuilder.Entity<GlobalProductRecord>(entity =>
+        {
+            entity.ToTable("global_products", CatalogSchemaName);
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(2000);
+            entity.Property(e => e.Sku).HasColumnName("sku").HasMaxLength(64);
+            entity.Property(e => e.Barcode).HasColumnName("barcode").HasMaxLength(64);
+            entity.Property(e => e.GlobalCategoryId).HasColumnName("global_category_id");
+            entity.Property(e => e.Unit).HasColumnName("unit").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.SuggestedPrice).HasColumnName("suggested_price").HasColumnType("decimal(18,2)");
+            entity.Property(e => e.SuggestedCost).HasColumnName("suggested_cost").HasColumnType("decimal(18,2)");
+            entity.Property(e => e.ImageReference).HasColumnName("image_reference").HasMaxLength(512);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.SearchTags).HasColumnName("search_tags").HasColumnType("text[]");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => e.Barcode)
+                .IsUnique()
+                .HasFilter("barcode IS NOT NULL")
+                .HasDatabaseName("ux_global_products_barcode");
+            entity.HasIndex(e => e.Sku)
+                .IsUnique()
+                .HasFilter("sku IS NOT NULL")
+                .HasDatabaseName("ux_global_products_sku");
+            entity.HasIndex(e => e.GlobalCategoryId).HasDatabaseName("ix_global_products_category_id");
+            entity.HasIndex(e => e.Status).HasDatabaseName("ix_global_products_status");
+            entity.HasIndex(e => e.Name).HasDatabaseName("ix_global_products_name");
+
+            entity.HasOne<GlobalCategoryRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.GlobalCategoryId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasMany(e => e.BusinessTypes)
+                .WithOne()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<GlobalProductBusinessTypeRecord>(entity =>
+        {
+            entity.ToTable("global_product_business_types", CatalogSchemaName);
+            entity.HasKey(e => new { e.ProductId, e.BusinessType });
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.BusinessType).HasColumnName("business_type").HasMaxLength(64).IsRequired();
+            entity.HasIndex(e => e.BusinessType).HasDatabaseName("ix_global_product_business_types_type");
         });
     }
 }

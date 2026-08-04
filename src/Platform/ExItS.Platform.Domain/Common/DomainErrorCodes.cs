@@ -181,4 +181,27 @@ public static class DomainErrorCodes
         "platform.product_local_role.code.invalid";
     public const string InvalidProductLocalRoleStatusTransition =
         "platform.product_local_role.status.invalid_transition";
+
+    public const string InvalidGlobalCategoryId = "platform.global_catalog.category.id.invalid";
+    public const string InvalidGlobalProductId = "platform.global_catalog.product.id.invalid";
+    public const string InvalidGlobalCatalogName = "platform.global_catalog.name.invalid";
+    public const string InvalidGlobalCategoryIcon = "platform.global_catalog.category.icon.invalid";
+    public const string InvalidGlobalCategoryParent = "platform.global_catalog.category.parent.invalid";
+    public const string InvalidGlobalCategoryStatusTransition =
+        "platform.global_catalog.category.status.invalid_transition";
+    public const string InvalidGlobalProductStatusTransition =
+        "platform.global_catalog.product.status.invalid_transition";
+    public const string InvalidGlobalProductBarcode = "platform.global_catalog.product.barcode.invalid";
+    public const string InvalidGlobalProductSku = "platform.global_catalog.product.sku.invalid";
+    public const string InvalidGlobalProductDescription =
+        "platform.global_catalog.product.description.invalid";
+    public const string InvalidGlobalProductImage = "platform.global_catalog.product.image.invalid";
+    public const string InvalidGlobalProductMoney = "platform.global_catalog.product.money.invalid";
+    public const string InvalidGlobalProductSearchTag =
+        "platform.global_catalog.product.search_tag.invalid";
+    public const string InvalidGlobalProductUnit = "platform.global_catalog.product.unit.invalid";
+    public const string InvalidGlobalCatalogBusinessType =
+        "platform.global_catalog.business_type.invalid";
+    public const string GlobalCatalogConcurrencyConflict =
+        "platform.global_catalog.concurrency_conflict";
 }

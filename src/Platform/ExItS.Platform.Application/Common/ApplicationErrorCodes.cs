@@ -155,4 +155,10 @@ public static class ApplicationErrorCodes
     public const string ProductLocalRoleGrantNotFound = "application.product_local_role.not_found";
     public const string ProductLocalRoleMissing = "application.product_local_role.missing";
     public const string StartBusinessOwnerRequired = "application.start_business.owner_required";
+
+    public const string GlobalCategoryNotFound = "application.global_catalog.category.not_found";
+    public const string GlobalProductNotFound = "application.global_catalog.product.not_found";
+    public const string DuplicateGlobalCategoryName = "application.global_catalog.category.name_conflict";
+    public const string DuplicateGlobalProductBarcode = "application.global_catalog.product.barcode_conflict";
+    public const string DuplicateGlobalProductSku = "application.global_catalog.product.sku_conflict";
 }
