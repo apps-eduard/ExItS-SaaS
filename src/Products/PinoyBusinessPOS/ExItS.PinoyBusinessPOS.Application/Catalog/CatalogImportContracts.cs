@@ -80,6 +80,22 @@ public sealed record PlatformMerchantCatalogTemplateProductDto(
     bool IsFeatured,
     bool IsFirstBatch);
 
+public sealed record PlatformMerchantCatalogTemplateSummaryDto(
+    Guid Id,
+    string Name,
+    string Slug,
+    string? Description,
+    string? IconReference,
+    string PrimaryBusinessType,
+    string Status,
+    int DefaultBatchSize,
+    string SelectionMode,
+    DateTimeOffset? PublishedAtUtc,
+    int ProductCount,
+    int FirstBatchCount,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc);
+
 public sealed record PlatformMerchantCatalogTemplateDto(
     Guid Id,
     string Name,

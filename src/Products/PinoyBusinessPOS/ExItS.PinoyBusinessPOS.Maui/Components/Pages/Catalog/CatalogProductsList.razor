@@ -22,7 +22,8 @@ else
             <Button Variant="ButtonVariant.Secondary" OnClick="GoBarcodeLookup">@L["Catalog_BarcodeLookup"]</Button>
             @if (canManage)
             {
-                <Button Variant="ButtonVariant.Secondary" Disabled="@_isOffline" OnClick="GoImport">Import</Button>
+                <Button Variant="ButtonVariant.Secondary" Disabled="@_isOffline" OnClick="GoGlobal">@L["Catalog_Global_Browse"]</Button>
+                <Button Variant="ButtonVariant.Secondary" Disabled="@_isOffline" OnClick="GoImport">@L["Catalog_Import_UseTemplate"]</Button>
             }
             <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="GoNew">@L["Catalog_Product_Add"]</Button>
         </Actions>
@@ -256,4 +257,5 @@ else
     private void GoCategories() => Nav.NavigateTo("/catalog/categories");
     private void GoBarcodeLookup() => Nav.NavigateTo("/catalog/barcode-lookup");
     private void GoImport() => Nav.NavigateTo("/catalog/import");
+    private void GoGlobal() => Nav.NavigateTo("/catalog/global");
 }

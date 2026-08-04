@@ -50,6 +50,7 @@ public static class DependencyInjection
 
         AddBusinessClient<IPosCustomerClient, PosCustomerClient>(services);
         AddBusinessClient<IPosCatalogClient, PosCatalogClient>(services);
+        AddBusinessClient<IPosCatalogImportClient, PosCatalogImportClient>(services);
         AddBusinessClient<IPosSaleClient, PosSaleClient>(services);
         AddBusinessClient<IPosInventoryClient, PosInventoryClient>(services);
         AddBusinessClient<IPosExpenseClient, PosExpenseClient>(services);
@@ -64,6 +65,7 @@ public static class DependencyInjection
         AddBusinessClient<IPosOfflineProbeClient, PosOfflineProbeClient>(services);
 
         services.AddSingleton<IPlatformAccessClient, PlatformAccessClient>();
+        services.AddSingleton<IMerchantCatalogDiscoveryClient, MerchantCatalogDiscoveryClient>();
 
         return services;
     }

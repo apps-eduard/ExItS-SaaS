@@ -559,3 +559,37 @@ html.pos-keyboard-open .pos-content {
 .blazor-error-boundary::after {
     content: "An error has occurred.";
 }
+
+/* Cashier / catalog product tiles — stable placeholder, no image required to sell. */
+.pos-product-tile-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+}
+
+.pos-product-tile {
+    background: var(--exits-surface, #fff);
+    border: 1px solid var(--exits-border, #e5e7eb);
+    border-radius: var(--exits-radius-md, 0.5rem);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.65rem;
+}
+
+.pos-product-tile__placeholder {
+    aspect-ratio: 1 / 1;
+    background: linear-gradient(135deg, var(--exits-surface-muted, #f3f4f6), var(--exits-border, #e5e7eb));
+    border-radius: var(--exits-radius-sm, 0.35rem);
+    flex-shrink: 0;
+    min-height: 3.5rem;
+    width: 3.5rem;
+}
+
+.pos-row .pos-product-tile__placeholder {
+    aspect-ratio: 1 / 1;
+    height: 2.75rem;
+    min-height: 2.75rem;
+    width: 2.75rem;
+}

@@ -1,0 +1,239 @@
+@page "/catalog/import/jobs/{JobId:guid}"
+@implements IDisposable
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCatalogImportClient Imports
+@inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (!_canManage)
+{
+    <Page>
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Catalog_Title"]</Button>
+    </Page>
+}
+else
+{
+    <Page>
+        <PageHeader Title="@L["Catalog_Import_ProgressTitle"]" Subtitle="@L["Catalog_Import_ProgressSubtitle"]">
+            <Actions>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Catalog_Title"]</Button>
+            </Actions>
+        </PageHeader>
+
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Catalog_OfflineTitle"]" Message="@L["Catalog_Import_OfflineMessage"]" />
+        }
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Catalog_ErrorTitle"])" Message="@_errorMessage" />
+        }
+
+        @if (_job is null && !_loading)
+        {
+            <ErrorState Title="@L["Catalog_Import_JobNotFoundTitle"]"
+                        Message="@L["Catalog_Import_JobNotFoundMessage"]"
+                        RetryLabel="@L["Api_Retry"]"
+                        OnRetry="LoadAsync" />
+        }
+        else if (_job is not null)
+        {
+            var terminal = IsTerminal(_job.Status);
+            <Section Title="@L["Catalog_Import_StatusSection"]">
+                <Stack Gap="3">
+                    <Badge Tone="@StatusTone(_job.Status)">@StatusLabel(_job.Status)</Badge>
+                    @if (!string.IsNullOrWhiteSpace(_job.CurrentStage))
+                    {
+                        <div class="pos-muted">@_job.CurrentStage</div>
+                    }
+                    <div>
+                        <span class="pos-muted">@L["Catalog_Import_Processed"]</span>
+                        <div class="pos-value-md">@_job.ProcessedCount / @_job.TotalCount</div>
+                    </div>
+                    <div>
+                        <span class="pos-muted">@L["Catalog_Import_Imported"]</span>
+                        <div class="pos-value-md">@_job.ImportedCount</div>
+                    </div>
+                    <div>
+                        <span class="pos-muted">@L["Catalog_Import_Skipped"]</span>
+                        <div class="pos-value-md">@_job.SkippedCount</div>
+                    </div>
+                    <div>
+                        <span class="pos-muted">@L["Catalog_Import_Failed"]</span>
+                        <div class="pos-value-md">@_job.FailedCount</div>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(_job.ErrorSummary))
+                    {
+                        <Alert Tone="AlertTone.Warning" Title="@L["Catalog_Import_WarningsTitle"]" Message="@_job.ErrorSummary" />
+                    }
+                    @if (!terminal)
+                    {
+                        <Spinner />
+                        <div class="pos-muted">@L["Catalog_Import_Polling"]</div>
+                    }
+                    <FormActions>
+                        <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="LoadAsync">@L["Catalog_Refresh"]</Button>
+                        @if (terminal)
+                        {
+                            <Button Variant="ButtonVariant.Primary" OnClick="GoReview">@L["Catalog_Import_Review"]</Button>
+                        }
+                    </FormActions>
+                </Stack>
+            </Section>
+        }
+        else
+        {
+            <Spinner />
+        }
+    </Page>
+}
+
+@code {
+    [Parameter] public Guid JobId { get; set; }
+
+    private bool _ready;
+    private bool _canManage;
+    private bool _loading;
+    private bool _isOffline;
+    private PosCatalogImportJobDto? _job;
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private CancellationTokenSource? _pollCts;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync().ConfigureAwait(false), replace: true);
+            return;
+        }
+
+        _canManage = Capabilities.IsAllowed(UtangCapability.ManageCatalog);
+        _ready = true;
+        if (!_canManage)
+        {
+            return;
+        }
+
+        await LoadAsync().ConfigureAwait(false);
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        _isOffline = !await Connectivity.IsConnectedAsync().ConfigureAwait(false);
+        if (_isOffline)
+        {
+            _loading = false;
+            return;
+        }
+
+        var result = await Imports.GetJobAsync(JobId).ConfigureAwait(false);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _job = result.Data;
+            SchedulePollIfNeeded();
+        }
+        else
+        {
+            _job = null;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = described.Message;
+            StopPolling();
+        }
+
+        _loading = false;
+    }
+
+    private void SchedulePollIfNeeded()
+    {
+        if (_job is null || IsTerminal(_job.Status))
+        {
+            StopPolling();
+            return;
+        }
+
+        StopPolling();
+        _pollCts = new CancellationTokenSource();
+        var token = _pollCts.Token;
+        _ = PollLoopAsync(token);
+    }
+
+    private async Task PollLoopAsync(CancellationToken token)
+    {
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await Task.Delay(2000, token).ConfigureAwait(false);
+                var result = await Imports.GetJobAsync(JobId, token).ConfigureAwait(false);
+                if (!result.IsSuccess || result.Data is null)
+                {
+                    continue;
+                }
+
+                await InvokeAsync(() =>
+                {
+                    _job = result.Data;
+                    StateHasChanged();
+                }).ConfigureAwait(false);
+
+                if (IsTerminal(result.Data.Status))
+                {
+                    break;
+                }
+            }
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
+
+    private static bool IsTerminal(string status) =>
+        status is "Completed" or "CompletedWithWarnings" or "Failed" or "Cancelled";
+
+    private string StatusLabel(string status) => status switch
+    {
+        "Queued" => L["Catalog_Import_Status_Queued"],
+        "Processing" => L["Catalog_Import_Status_Processing"],
+        "Completed" => L["Catalog_Import_Status_Completed"],
+        "CompletedWithWarnings" => L["Catalog_Import_Status_CompletedWithWarnings"],
+        "Failed" => L["Catalog_Import_Status_Failed"],
+        "Cancelled" => L["Catalog_Import_Status_Cancelled"],
+        _ => status
+    };
+
+    private static BadgeTone StatusTone(string status) => status switch
+    {
+        "Completed" => BadgeTone.Success,
+        "CompletedWithWarnings" => BadgeTone.Warning,
+        "Failed" or "Cancelled" => BadgeTone.Danger,
+        "Processing" => BadgeTone.Info,
+        _ => BadgeTone.Neutral
+    };
+
+    private void StopPolling()
+    {
+        _pollCts?.Cancel();
+        _pollCts?.Dispose();
+        _pollCts = null;
+    }
+
+    private void GoCatalog() => Nav.NavigateTo("/catalog");
+    private void GoReview() => Nav.NavigateTo($"/catalog/import/jobs/{JobId:D}/review");
+
+    public void Dispose() => StopPolling();
+}

@@ -1,0 +1,199 @@
+@page "/catalog/import/jobs/{JobId:guid}/review"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCatalogImportClient Imports
+@inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (!_canManage)
+{
+    <Page>
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Catalog_Title"]</Button>
+    </Page>
+}
+else
+{
+    <Page>
+        <PageHeader Title="@L["Catalog_Import_ReviewTitle"]" Subtitle="@L["Catalog_Import_ReviewSubtitle"]">
+            <Actions>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoProgress">@L["Catalog_Import_ProgressTitle"]</Button>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Catalog_Title"]</Button>
+            </Actions>
+        </PageHeader>
+
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Catalog_OfflineTitle"]" Message="@L["Catalog_Import_OfflineMessage"]" />
+        }
+
+        <Alert Tone="AlertTone.Info" Title="@L["Catalog_Import_OpeningStockTitle"]" Message="@L["Catalog_Import_OpeningStockMessage"]" />
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Catalog_ErrorTitle"])" Message="@_errorMessage" />
+        }
+
+        <Section Title="@L["Catalog_FiltersTitle"]">
+            <Select Label="@L["Catalog_Filter_Status"]"
+                    Value="@_statusFilter"
+                    ValueChanged="OnStatusFilterChanged"
+                    Options="@StatusOptions" />
+        </Section>
+
+        @if (_loading)
+        {
+            <Spinner />
+        }
+        else if (_items.Count == 0)
+        {
+            <EmptyState IconName="inbox" Title="@L["Catalog_Import_ReviewEmptyTitle"]" Message="@L["Catalog_Import_ReviewEmptyMessage"]" />
+        }
+        else
+        {
+            <Stack Gap="2">
+                @foreach (var item in _items)
+                {
+                    <div class="pos-row">
+                        <div class="pos-product-tile__placeholder" aria-hidden="true"></div>
+                        <div>
+                            <div class="pos-value-md">@item.Name</div>
+                            <div class="pos-muted">
+                                @(string.IsNullOrWhiteSpace(item.Sku) ? L["Catalog_NoValue"] : item.Sku)
+                                ·
+                                @(string.IsNullOrWhiteSpace(item.Barcode) ? L["Catalog_NoValue"] : item.Barcode)
+                            </div>
+                            <MoneyDisplay Amount="@item.SuggestedPrice" CurrencyCode="PHP" />
+                            <Badge Tone="@ItemTone(item.Status)">@item.Status</Badge>
+                            @if (!string.IsNullOrWhiteSpace(item.ErrorMessage))
+                            {
+                                <div class="pos-muted pos-wrap">@item.ErrorMessage</div>
+                            }
+                        </div>
+                        @if (item.LocalProductId is Guid localId)
+                        {
+                            <Button Variant="ButtonVariant.Secondary" OnClick="() => GoEdit(localId)">@L["Catalog_Product_Edit"]</Button>
+                            <Button Variant="ButtonVariant.Primary" OnClick="() => GoOpeningStock(localId)">@L["Catalog_Import_OpeningStockAction"]</Button>
+                        }
+                    </div>
+                }
+            </Stack>
+
+            @if (_totalCount > 0)
+            {
+                <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
+            }
+        }
+    </Page>
+}
+
+@code {
+    [Parameter] public Guid JobId { get; set; }
+
+    private bool _ready;
+    private bool _canManage;
+    private bool _loading;
+    private bool _isOffline;
+    private string? _statusFilter = "Imported";
+    private int _page = 1;
+    private const int _pageSize = 50;
+    private int _totalCount;
+    private IReadOnlyList<PosCatalogImportItemDto> _items = Array.Empty<PosCatalogImportItemDto>();
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    private IReadOnlyList<SelectOption> StatusOptions =>
+    [
+        new(string.Empty, L["Catalog_Filter_AllStatuses"]),
+        new("Imported", L["Catalog_Import_Item_Imported"]),
+        new("Skipped", L["Catalog_Import_Item_Skipped"]),
+        new("Failed", L["Catalog_Import_Item_Failed"]),
+        new("Pending", L["Catalog_Import_Item_Pending"])
+    ];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync().ConfigureAwait(false), replace: true);
+            return;
+        }
+
+        _canManage = Capabilities.IsAllowed(UtangCapability.ManageCatalog);
+        _ready = true;
+        if (!_canManage)
+        {
+            return;
+        }
+
+        await ReloadAsync().ConfigureAwait(false);
+    }
+
+    private async Task OnStatusFilterChanged(string? value)
+    {
+        _statusFilter = value;
+        _page = 1;
+        await ReloadAsync().ConfigureAwait(false);
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _page = page;
+        await ReloadAsync().ConfigureAwait(false);
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        _isOffline = !await Connectivity.IsConnectedAsync().ConfigureAwait(false);
+        if (_isOffline)
+        {
+            _loading = false;
+            return;
+        }
+
+        var result = await Imports.GetJobItemsAsync(
+            JobId,
+            status: string.IsNullOrWhiteSpace(_statusFilter) ? null : _statusFilter,
+            page: _page,
+            pageSize: _pageSize).ConfigureAwait(false);
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _items = result.Data.Items;
+            _totalCount = result.Data.TotalCount;
+        }
+        else
+        {
+            _items = Array.Empty<PosCatalogImportItemDto>();
+            _totalCount = 0;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private static BadgeTone ItemTone(string status) => status switch
+    {
+        "Imported" => BadgeTone.Success,
+        "Skipped" => BadgeTone.Warning,
+        "Failed" => BadgeTone.Danger,
+        _ => BadgeTone.Neutral
+    };
+
+    private void GoCatalog() => Nav.NavigateTo("/catalog");
+    private void GoProgress() => Nav.NavigateTo($"/catalog/import/jobs/{JobId:D}");
+    private void GoEdit(Guid productId) => Nav.NavigateTo($"/catalog/products/{productId:D}/edit");
+    private void GoOpeningStock(Guid productId) => Nav.NavigateTo($"/inventory/{productId:D}/adjust");
+}

@@ -11,6 +11,10 @@ public sealed class CatalogPageGuardTests
         Assert.Contains("@page \"/catalog\"", list, StringComparison.Ordinal);
         Assert.Contains("ResponsiveDataList", list, StringComparison.Ordinal);
         Assert.Contains("IPosCatalogClient", list, StringComparison.Ordinal);
+        Assert.Contains("/catalog/global", list, StringComparison.Ordinal);
+        Assert.Contains("/catalog/import", list, StringComparison.Ordinal);
+        Assert.Contains("Catalog_Global_Browse", list, StringComparison.Ordinal);
+        Assert.Contains("Catalog_Import_UseTemplate", list, StringComparison.Ordinal);
 
         var create = File.ReadAllText(Path.Combine(catalog, "CatalogProductCreate.razor"));
         Assert.Contains("@page \"/catalog/products/new\"", create, StringComparison.Ordinal);
@@ -37,6 +41,37 @@ public sealed class CatalogPageGuardTests
     }
 
     [Fact]
+    public void Catalog_import_and_global_browse_routes_are_manage_catalog_gated()
+    {
+        var catalog = CatalogPagesDirectory();
+
+        var import = File.ReadAllText(Path.Combine(catalog, "CatalogImport.razor"));
+        Assert.Contains("@page \"/catalog/import\"", import, StringComparison.Ordinal);
+        Assert.Contains("IMerchantCatalogDiscoveryClient", import, StringComparison.Ordinal);
+        Assert.Contains("IPosCatalogImportClient", import, StringComparison.Ordinal);
+        Assert.Contains("UtangCapability.ManageCatalog", import, StringComparison.Ordinal);
+        Assert.Contains("ImportTemplateBatchAsync", import, StringComparison.Ordinal);
+
+        var global = File.ReadAllText(Path.Combine(catalog, "CatalogGlobalBrowse.razor"));
+        Assert.Contains("@page \"/catalog/global\"", global, StringComparison.Ordinal);
+        Assert.Contains("SearchActiveProductsAsync", global, StringComparison.Ordinal);
+        Assert.Contains("ImportSelectedProductsAsync", global, StringComparison.Ordinal);
+        Assert.Contains("UtangCapability.ManageCatalog", global, StringComparison.Ordinal);
+        Assert.Contains("Catalog_Field_Barcode", global, StringComparison.Ordinal);
+
+        var job = File.ReadAllText(Path.Combine(catalog, "CatalogImportJob.razor"));
+        Assert.Contains("@page \"/catalog/import/jobs/{JobId:guid}\"", job, StringComparison.Ordinal);
+        Assert.Contains("GetJobAsync", job, StringComparison.Ordinal);
+        Assert.Contains("UtangCapability.ManageCatalog", job, StringComparison.Ordinal);
+
+        var review = File.ReadAllText(Path.Combine(catalog, "CatalogImportReview.razor"));
+        Assert.Contains("@page \"/catalog/import/jobs/{JobId:guid}/review\"", review, StringComparison.Ordinal);
+        Assert.Contains("GetJobItemsAsync", review, StringComparison.Ordinal);
+        Assert.Contains("/inventory/", review, StringComparison.Ordinal);
+        Assert.Contains("UtangCapability.ManageCatalog", review, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Catalog_pages_guard_entry_and_gate_management_on_capability()
     {
         foreach (var file in Directory.EnumerateFiles(CatalogPagesDirectory(), "*.razor"))
@@ -58,7 +93,11 @@ public sealed class CatalogPageGuardTests
                      "CatalogProductCreate.razor",
                      "CatalogProductDetail.razor",
                      "CatalogProductEdit.razor",
-                     "CatalogCategories.razor"
+                     "CatalogCategories.razor",
+                     "CatalogImport.razor",
+                     "CatalogGlobalBrowse.razor",
+                     "CatalogImportJob.razor",
+                     "CatalogImportReview.razor"
                  })
         {
             var text = File.ReadAllText(Path.Combine(CatalogPagesDirectory(), page));
@@ -82,7 +121,11 @@ public sealed class CatalogPageGuardTests
                      "CatalogProductsList.razor",
                      "CatalogProductDetail.razor",
                      "CatalogCategories.razor",
-                     "CatalogBarcodeLookup.razor"
+                     "CatalogBarcodeLookup.razor",
+                     "CatalogImport.razor",
+                     "CatalogGlobalBrowse.razor",
+                     "CatalogImportJob.razor",
+                     "CatalogImportReview.razor"
                  })
         {
             var text = File.ReadAllText(Path.Combine(CatalogPagesDirectory(), page));
@@ -155,7 +198,14 @@ public sealed class CatalogPageGuardTests
                      "Catalog_Status_Inactive",
                      "Catalog_Uom_Piece",
                      "Catalog_Uom_Kilogram",
-                     "Catalog_Uom_Meter"
+                     "Catalog_Uom_Meter",
+                     "Catalog_Import_Title",
+                     "Catalog_Import_Start",
+                     "Catalog_Import_Review",
+                     "Catalog_Import_OpeningStockAction",
+                     "Catalog_Global_Browse",
+                     "Catalog_Global_ImportSelected",
+                     "Catalog_Global_SearchPlaceholder"
                  })
         {
             Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);

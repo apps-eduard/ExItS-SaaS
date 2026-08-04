@@ -20,6 +20,8 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("replace: true", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("/sales", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("/catalog", shell, StringComparison.Ordinal);
+        Assert.DoesNotContain("/catalog/global", shell, StringComparison.Ordinal);
+        Assert.DoesNotContain("/catalog/import", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("SyncStatus", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("SellingMode", shell, StringComparison.Ordinal);
     }

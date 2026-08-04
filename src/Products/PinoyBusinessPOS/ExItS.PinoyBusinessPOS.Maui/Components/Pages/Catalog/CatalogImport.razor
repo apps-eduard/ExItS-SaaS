@@ -1,8 +1,12 @@
 @page "/catalog/import"
 @inject NavigationManager Nav
 @inject NavigationGate Gate
+@inject IMerchantCatalogDiscoveryClient Discovery
+@inject IPosCatalogImportClient Imports
 @inject ICurrentUserContext CurrentUser
 @inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
 @if (!_ready)
@@ -19,36 +23,310 @@ else if (!_canManage)
 else
 {
     <Page>
-        <PageHeader Title="Import from template" Subtitle="Queue a Platform business-template catalog import. Full onboarding polish is Phase 20 WP07.">
+        <PageHeader Title="@L["Catalog_Import_Title"]" Subtitle="@L["Catalog_Import_Subtitle"]">
             <Actions>
                 <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Catalog_Title"]</Button>
+                <Button Variant="ButtonVariant.Secondary" Disabled="@_isOffline" OnClick="GoGlobal">@L["Catalog_Global_Browse"]</Button>
             </Actions>
         </PageHeader>
 
-        <Alert Tone="AlertTone.Info"
-               Title="API-ready import"
-               Message="Use POST /api/v1/pos/catalog-imports/template with ManageCatalog. Imported products are editable local snapshots with stock 0; opening stock uses the existing inventory workflow. Cashiers cannot start imports." />
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Catalog_OfflineTitle"]" Message="@L["Catalog_Import_OfflineMessage"]" />
+        }
 
-        <Section Title="Next steps">
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Catalog_ErrorTitle"])" Message="@_errorMessage" />
+        }
+
+        <Section Title="@L["Catalog_Import_StepsTitle"]">
             <Stack Gap="2">
-                <p>1. Confirm a published Platform template.</p>
-                <p>2. Call the POS catalog-imports API (or wait for WP07 MAUI wizard).</p>
-                <p>3. Review prices, then enter opening stock via Inventory.</p>
+                <Badge Tone="@(_step == WizardStep.Choose ? BadgeTone.Success : BadgeTone.Neutral)">1. @L["Catalog_Import_Step_Choose"]</Badge>
+                <Badge Tone="@(_step == WizardStep.Preview ? BadgeTone.Success : BadgeTone.Neutral)">2. @L["Catalog_Import_Step_Preview"]</Badge>
+                <Badge Tone="@(_step == WizardStep.Confirm ? BadgeTone.Success : BadgeTone.Neutral)">3. @L["Catalog_Import_Step_Confirm"]</Badge>
             </Stack>
         </Section>
+
+        @if (_step == WizardStep.Choose)
+        {
+            <Section Title="@L["Catalog_Import_ChooseTitle"]">
+                <Stack Gap="3">
+                    <SearchToolbar SearchText="@_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Catalog_Import_SearchTemplates"]">
+                        <Actions>
+                            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" Disabled="@_isOffline" OnClick="ReloadTemplatesAsync">@L["Catalog_Refresh"]</Button>
+                        </Actions>
+                    </SearchToolbar>
+
+                    @if (_loading)
+                    {
+                        <Spinner />
+                    }
+                    else if (_templates.Count == 0)
+                    {
+                        <EmptyState IconName="inbox" Title="@L["Catalog_Import_EmptyTitle"]" Message="@L["Catalog_Import_EmptyMessage"]" />
+                    }
+                    else
+                    {
+                        <Stack Gap="2">
+                            @foreach (var template in _templates)
+                            {
+                                <div class="pos-row">
+                                    <div class="pos-product-tile__placeholder" aria-hidden="true"></div>
+                                    <div>
+                                        <div class="pos-value-md">@template.Name</div>
+                                        <div class="pos-muted">@template.PrimaryBusinessType · @string.Format(L["Catalog_Import_FirstBatchCount"].Value, template.FirstBatchCount)</div>
+                                        @if (!string.IsNullOrWhiteSpace(template.Description))
+                                        {
+                                            <div class="pos-muted pos-wrap">@template.Description</div>
+                                        }
+                                    </div>
+                                    <Button Variant="ButtonVariant.Primary"
+                                            Disabled="@_isOffline"
+                                            OnClick="() => SelectTemplateAsync(template.Id)">@L["Catalog_Import_Select"]</Button>
+                                </div>
+                            }
+                        </Stack>
+                    }
+                </Stack>
+            </Section>
+        }
+        else if (_step == WizardStep.Preview && _selected is not null)
+        {
+            <Section Title="@L["Catalog_Import_PreviewTitle"]">
+                <Stack Gap="3">
+                    <Alert Tone="AlertTone.Info" Title="@L["Catalog_Import_OwnershipTitle"]" Message="@L["Catalog_Import_OwnershipMessage"]" />
+                    <div>
+                        <span class="pos-muted">@L["Catalog_Import_TemplateName"]</span>
+                        <div class="pos-value-md">@_selected.Name</div>
+                    </div>
+                    <div>
+                        <span class="pos-muted">@L["Catalog_Import_BusinessType"]</span>
+                        <div class="pos-value-md">@_selected.PrimaryBusinessType</div>
+                    </div>
+                    <div>
+                        <span class="pos-muted">@L["Catalog_Import_FirstBatchLabel"]</span>
+                        <div class="pos-value-md">@_selected.FirstBatchCount</div>
+                    </div>
+                    <div>
+                        <span class="pos-muted">@L["Catalog_Import_TotalProducts"]</span>
+                        <div class="pos-value-md">@_selected.ProductCount</div>
+                    </div>
+
+                    <Section Title="@L["Catalog_Import_SampleProducts"]">
+                        @if (_samples.Count == 0)
+                        {
+                            <EmptyState IconName="inbox" Title="@L["Catalog_Import_NoSamplesTitle"]" Message="@L["Catalog_Import_NoSamplesMessage"]" />
+                        }
+                        else
+                        {
+                            <Stack Gap="2">
+                                @foreach (var sample in _samples)
+                                {
+                                    <div class="pos-row">
+                                        <div class="pos-product-tile__placeholder" aria-hidden="true"></div>
+                                        <div>
+                                            <div class="pos-value-md">@sample.Name</div>
+                                            <div class="pos-muted">@(string.IsNullOrWhiteSpace(sample.Sku) ? L["Catalog_NoValue"] : sample.Sku)</div>
+                                        </div>
+                                        @if (sample.SuggestedPrice is decimal price)
+                                        {
+                                            <MoneyDisplay Amount="@price" CurrencyCode="PHP" />
+                                        }
+                                    </div>
+                                }
+                            </Stack>
+                        }
+                    </Section>
+
+                    <FormActions>
+                        <Button Variant="ButtonVariant.Secondary" OnClick="BackToChoose">@L["Catalog_Import_Back"]</Button>
+                        <Button Variant="ButtonVariant.Primary" OnClick="GoConfirm">@L["Catalog_Import_Continue"]</Button>
+                    </FormActions>
+                </Stack>
+            </Section>
+        }
+        else if (_step == WizardStep.Confirm && _selected is not null)
+        {
+            <Section Title="@L["Catalog_Import_ConfirmTitle"]">
+                <Stack Gap="3">
+                    <Alert Tone="AlertTone.Info" Title="@L["Catalog_Import_ConfirmDefaultsTitle"]" Message="@L["Catalog_Import_ConfirmDefaultsMessage"]" />
+                    <div>
+                        <span class="pos-muted">@L["Catalog_Import_TemplateName"]</span>
+                        <div class="pos-value-md">@_selected.Name</div>
+                    </div>
+                    <div>
+                        <span class="pos-muted">@L["Catalog_Import_FirstBatchLabel"]</span>
+                        <div class="pos-value-md">@_selected.FirstBatchCount</div>
+                    </div>
+                    <FormActions>
+                        <Button Variant="ButtonVariant.Secondary" Disabled="@_busy" OnClick="() => _step = WizardStep.Preview">@L["Catalog_Import_Back"]</Button>
+                        <Button Variant="ButtonVariant.Primary"
+                                IsLoading="@_busy"
+                                Disabled="@(_isOffline || _busy)"
+                                OnClick="ConfirmImportAsync">@L["Catalog_Import_Start"]</Button>
+                    </FormActions>
+                </Stack>
+            </Section>
+        }
     </Page>
 }
 
 @code {
+    private enum WizardStep { Choose, Preview, Confirm }
+
     private bool _ready;
     private bool _canManage;
+    private bool _loading;
+    private bool _busy;
+    private bool _isOffline;
+    private WizardStep _step = WizardStep.Choose;
+    private string? _search;
+    private IReadOnlyList<PlatformMerchantCatalogTemplateSummaryDto> _templates = Array.Empty<PlatformMerchantCatalogTemplateSummaryDto>();
+    private PlatformMerchantCatalogTemplateDto? _selected;
+    private IReadOnlyList<PlatformMerchantGlobalProductDto> _samples = Array.Empty<PlatformMerchantGlobalProductDto>();
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private CancellationTokenSource? _searchCts;
 
     protected override async Task OnInitializedAsync()
     {
-        await Gate.EnsureSignedInAsync().ConfigureAwait(false);
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync().ConfigureAwait(false), replace: true);
+            return;
+        }
+
         _canManage = Capabilities.IsAllowed(UtangCapability.ManageCatalog);
         _ready = true;
+        if (!_canManage)
+        {
+            return;
+        }
+
+        _isOffline = !await Connectivity.IsConnectedAsync().ConfigureAwait(false);
+        if (!_isOffline)
+        {
+            await ReloadTemplatesAsync().ConfigureAwait(false);
+        }
+    }
+
+    private async Task OnSearchChanged(string? value)
+    {
+        _search = value;
+        _searchCts?.Cancel();
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+        try
+        {
+            await Task.Delay(300, token).ConfigureAwait(false);
+            await ReloadTemplatesAsync().ConfigureAwait(false);
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
+
+    private async Task ReloadTemplatesAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        _isOffline = !await Connectivity.IsConnectedAsync().ConfigureAwait(false);
+        if (_isOffline)
+        {
+            _loading = false;
+            return;
+        }
+
+        var result = await Discovery.ListPublishedTemplatesAsync(search: _search, page: 1, pageSize: 50).ConfigureAwait(false);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _templates = result.Data.Items;
+        }
+        else
+        {
+            _templates = Array.Empty<PlatformMerchantCatalogTemplateSummaryDto>();
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private async Task SelectTemplateAsync(Guid templateId)
+    {
+        _busy = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        var result = await Discovery.GetPublishedTemplateAsync(templateId).ConfigureAwait(false);
+        if (!result.IsSuccess || result.Data is null)
+        {
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = described.Message;
+            _busy = false;
+            return;
+        }
+
+        _selected = result.Data;
+        var links = result.Data.Products
+            .Where(p => p.IsFirstBatch)
+            .OrderBy(p => p.SortOrder)
+            .Take(12)
+            .ToList();
+        var samples = new List<PlatformMerchantGlobalProductDto>();
+        foreach (var link in links)
+        {
+            var product = await Discovery.GetActiveProductAsync(link.GlobalProductId).ConfigureAwait(false);
+            if (product.IsSuccess && product.Data is not null)
+            {
+                samples.Add(product.Data);
+            }
+        }
+
+        _samples = samples;
+        _step = WizardStep.Preview;
+        _busy = false;
+    }
+
+    private void BackToChoose()
+    {
+        _selected = null;
+        _samples = Array.Empty<PlatformMerchantGlobalProductDto>();
+        _step = WizardStep.Choose;
+    }
+
+    private void GoConfirm() => _step = WizardStep.Confirm;
+
+    private async Task ConfirmImportAsync()
+    {
+        if (_selected is null || _busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        var request = new ImportTemplateBatchRequest(
+            _selected.Id,
+            BatchNumber: 1,
+            IdempotencyKey: Guid.NewGuid().ToString("N"));
+        var result = await Imports.ImportTemplateBatchAsync(request).ConfigureAwait(false);
+        if (!result.IsSuccess || result.Data is null)
+        {
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = described.Message;
+            _busy = false;
+            return;
+        }
+
+        Nav.NavigateTo($"/catalog/import/jobs/{result.Data.JobId:D}");
     }
 
     private void GoCatalog() => Nav.NavigateTo("/catalog");
+    private void GoGlobal() => Nav.NavigateTo("/catalog/global");
 }

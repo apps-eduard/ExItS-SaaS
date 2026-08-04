@@ -12,10 +12,21 @@ public sealed class SalesCashierPageGuardTests
         Assert.Contains("Sales_Checkout_CategoryFilter", checkout, StringComparison.Ordinal);
         Assert.Contains("Sales_Checkout_BrowseSection", checkout, StringComparison.Ordinal);
         Assert.Contains("ListProductsAsync", checkout, StringComparison.Ordinal);
+        Assert.Contains("LookupByBarcodeAsync", checkout, StringComparison.Ordinal);
+        Assert.Contains("LookupBySkuAsync", checkout, StringComparison.Ordinal);
+        Assert.Contains("OnBrowseProductTap", checkout, StringComparison.Ordinal);
+        Assert.Contains("pos-product-tile", checkout, StringComparison.Ordinal);
+        Assert.Contains("pos-product-tile__placeholder", checkout, StringComparison.Ordinal);
         Assert.Contains("ParseCategoryFilter", checkout, StringComparison.Ordinal);
         Assert.Contains("Sales_Field_AmountTendered", checkout, StringComparison.Ordinal);
         Assert.Contains("ChangePreview", checkout, StringComparison.Ordinal);
         Assert.Contains("/receipt", checkout, StringComparison.Ordinal);
+        Assert.Contains("IPosCatalogClient", checkout, StringComparison.Ordinal);
+        Assert.DoesNotContain("IMerchantCatalogDiscoveryClient", checkout, StringComparison.Ordinal);
+        Assert.DoesNotContain("IPosCatalogImportClient", checkout, StringComparison.Ordinal);
+        Assert.DoesNotContain("/catalog/global", checkout, StringComparison.Ordinal);
+        Assert.DoesNotContain("/catalog/import", checkout, StringComparison.Ordinal);
+        Assert.DoesNotContain("UtangCapability.ManageCatalog", checkout, StringComparison.Ordinal);
     }
 
     [Fact]

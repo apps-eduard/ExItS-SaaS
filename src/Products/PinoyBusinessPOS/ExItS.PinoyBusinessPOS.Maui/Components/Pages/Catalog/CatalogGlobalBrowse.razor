@@ -1,0 +1,307 @@
+@page "/catalog/global"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IMerchantCatalogDiscoveryClient Discovery
+@inject IPosCatalogImportClient Imports
+@inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (!_canManage)
+{
+    <Page>
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Catalog_Title"]</Button>
+    </Page>
+}
+else
+{
+    <Page>
+        <PageHeader Title="@L["Catalog_Global_Title"]" Subtitle="@L["Catalog_Global_Subtitle"]">
+            <Actions>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Catalog_Title"]</Button>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoImport">@L["Catalog_Import_UseTemplate"]</Button>
+            </Actions>
+        </PageHeader>
+
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Catalog_OfflineTitle"]" Message="@L["Catalog_Import_OfflineMessage"]" />
+        }
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Catalog_ErrorTitle"])" Message="@_errorMessage" />
+        }
+
+        <SearchToolbar SearchText="@_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Catalog_Global_SearchPlaceholder"]">
+            <Actions>
+                <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" Disabled="@_isOffline" OnClick="ReloadAsync">@L["Catalog_Refresh"]</Button>
+            </Actions>
+        </SearchToolbar>
+
+        <Section Title="@L["Catalog_FiltersTitle"]">
+            <Stack Gap="3">
+                <TextInput Label="@L["Catalog_Field_Barcode"]"
+                           Value="@_barcode"
+                           ValueChanged="OnBarcodeChanged"
+                           Hint="@L["Catalog_Global_BarcodeHint"]"
+                           Disabled="@_isOffline" />
+                <Select Label="@L["Catalog_Filter_Category"]"
+                        Value="@_categoryFilter"
+                        ValueChanged="OnCategoryFilterChanged"
+                        Options="@CategoryOptions"
+                        Disabled="@_isOffline" />
+            </Stack>
+        </Section>
+
+        <Section Title="@string.Format(L["Catalog_Global_SelectedCount"].Value, _selectedIds.Count)">
+            <FormActions>
+                <Button Variant="ButtonVariant.Primary"
+                        IsLoading="@_busy"
+                        Disabled="@(_isOffline || _busy || _selectedIds.Count == 0)"
+                        OnClick="ImportSelectedAsync">@L["Catalog_Global_ImportSelected"]</Button>
+                <Button Variant="ButtonVariant.Secondary"
+                        Disabled="@(_selectedIds.Count == 0 || _busy)"
+                        OnClick="ClearSelection">@L["Catalog_Global_ClearSelection"]</Button>
+            </FormActions>
+        </Section>
+
+        @if (_loading)
+        {
+            <Spinner />
+        }
+        else if (_items.Count == 0)
+        {
+            <EmptyState IconName="inbox" Title="@L["Catalog_Global_EmptyTitle"]" Message="@L["Catalog_Global_EmptyMessage"]" />
+        }
+        else
+        {
+            <Stack Gap="2">
+                @foreach (var product in _items)
+                {
+                    var selected = _selectedIds.Contains(product.Id);
+                    <div class="pos-row">
+                        <div class="pos-product-tile__placeholder" aria-hidden="true"></div>
+                        <div>
+                            <div class="pos-value-md">@product.Name</div>
+                            <div class="pos-muted">
+                                @(string.IsNullOrWhiteSpace(product.Sku) ? L["Catalog_NoValue"] : product.Sku)
+                                ·
+                                @(string.IsNullOrWhiteSpace(product.Barcode) ? L["Catalog_NoValue"] : product.Barcode)
+                            </div>
+                            @if (product.SuggestedPrice is decimal price)
+                            {
+                                <MoneyDisplay Amount="@price" CurrencyCode="PHP" />
+                            }
+                        </div>
+                        <Button Variant="@(selected ? ButtonVariant.Primary : ButtonVariant.Secondary)"
+                                Disabled="@_busy"
+                                OnClick="() => ToggleSelect(product.Id)">
+                            @(selected ? L["Catalog_Global_Selected"] : L["Catalog_Global_Select"])
+                        </Button>
+                    </div>
+                }
+            </Stack>
+
+            @if (_totalCount > 0)
+            {
+                <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
+            }
+        }
+    </Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _canManage;
+    private bool _loading;
+    private bool _busy;
+    private bool _isOffline;
+    private string? _search;
+    private string? _barcode;
+    private string? _categoryFilter;
+    private int _page = 1;
+    private const int _pageSize = 20;
+    private int _totalCount;
+    private IReadOnlyList<PlatformMerchantGlobalProductDto> _items = Array.Empty<PlatformMerchantGlobalProductDto>();
+    private IReadOnlyList<PlatformMerchantGlobalCategoryDto> _categories = Array.Empty<PlatformMerchantGlobalCategoryDto>();
+    private readonly HashSet<Guid> _selectedIds = [];
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private CancellationTokenSource? _searchCts;
+
+    private IReadOnlyList<SelectOption> CategoryOptions
+    {
+        get
+        {
+            var options = new List<SelectOption> { new(string.Empty, L["Catalog_Filter_AllCategories"]) };
+            foreach (var category in _categories.OrderBy(c => c.SortOrder).ThenBy(c => c.Name))
+            {
+                options.Add(new(category.Id.ToString("D"), category.Name));
+            }
+
+            return options;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync().ConfigureAwait(false), replace: true);
+            return;
+        }
+
+        _canManage = Capabilities.IsAllowed(UtangCapability.ManageCatalog);
+        _ready = true;
+        if (!_canManage)
+        {
+            return;
+        }
+
+        _isOffline = !await Connectivity.IsConnectedAsync().ConfigureAwait(false);
+        if (!_isOffline)
+        {
+            await LoadCategoriesAsync().ConfigureAwait(false);
+            await ReloadAsync().ConfigureAwait(false);
+        }
+    }
+
+    private async Task OnSearchChanged(string? value)
+    {
+        _search = value;
+        _page = 1;
+        await DebouncedReloadAsync().ConfigureAwait(false);
+    }
+
+    private async Task OnBarcodeChanged(string? value)
+    {
+        _barcode = value;
+        _page = 1;
+        await DebouncedReloadAsync().ConfigureAwait(false);
+    }
+
+    private async Task DebouncedReloadAsync()
+    {
+        _searchCts?.Cancel();
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+        try
+        {
+            await Task.Delay(300, token).ConfigureAwait(false);
+            await ReloadAsync().ConfigureAwait(false);
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
+
+    private async Task OnCategoryFilterChanged(string? value)
+    {
+        _categoryFilter = value;
+        _page = 1;
+        await ReloadAsync().ConfigureAwait(false);
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _page = page;
+        await ReloadAsync().ConfigureAwait(false);
+    }
+
+    private async Task LoadCategoriesAsync()
+    {
+        var result = await Discovery.ListActiveCategoriesAsync(page: 1, pageSize: 100).ConfigureAwait(false);
+        _categories = result.IsSuccess && result.Data is not null
+            ? result.Data.Items
+            : Array.Empty<PlatformMerchantGlobalCategoryDto>();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        _isOffline = !await Connectivity.IsConnectedAsync().ConfigureAwait(false);
+        if (_isOffline)
+        {
+            _loading = false;
+            return;
+        }
+
+        Guid? categoryId = null;
+        if (Guid.TryParse(_categoryFilter, out var parsed) && parsed != Guid.Empty)
+        {
+            categoryId = parsed;
+        }
+
+        var result = await Discovery.SearchActiveProductsAsync(
+            search: _search,
+            categoryId: categoryId,
+            barcode: _barcode,
+            page: _page,
+            pageSize: _pageSize).ConfigureAwait(false);
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _items = result.Data.Items;
+            _totalCount = result.Data.TotalCount;
+        }
+        else
+        {
+            _items = Array.Empty<PlatformMerchantGlobalProductDto>();
+            _totalCount = 0;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = described.Message;
+        }
+
+        _loading = false;
+    }
+
+    private void ToggleSelect(Guid productId)
+    {
+        if (!_selectedIds.Add(productId))
+        {
+            _selectedIds.Remove(productId);
+        }
+    }
+
+    private void ClearSelection() => _selectedIds.Clear();
+
+    private async Task ImportSelectedAsync()
+    {
+        if (_selectedIds.Count == 0 || _busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        var request = new ImportSelectedProductsRequest(
+            _selectedIds.ToList(),
+            IdempotencyKey: Guid.NewGuid().ToString("N"));
+        var result = await Imports.ImportSelectedProductsAsync(request).ConfigureAwait(false);
+        if (!result.IsSuccess || result.Data is null)
+        {
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = described.Message;
+            _busy = false;
+            return;
+        }
+
+        Nav.NavigateTo($"/catalog/import/jobs/{result.Data.JobId:D}");
+    }
+
+    private void GoCatalog() => Nav.NavigateTo("/catalog");
+    private void GoImport() => Nav.NavigateTo("/catalog/import");
+}

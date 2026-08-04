@@ -726,6 +726,78 @@
   <data name="Catalog_Lookup_NoMatchMessage" xml:space="preserve"><value>Walang produktong tugma sa barcode o SKU na iyon.</value></data>
   <data name="Catalog_Lookup_ResultTitle" xml:space="preserve"><value>Tugma</value></data>
   <data name="Catalog_Lookup_OpenProduct" xml:space="preserve"><value>Buksan ang produkto</value></data>
+  <data name="Catalog_Import_Title" xml:space="preserve"><value>Gamitin ang business template</value></data>
+  <data name="Catalog_Import_Subtitle" xml:space="preserve"><value>Mag-import ng unang batch ng karaniwang produkto bilang editable na local catalog.</value></data>
+  <data name="Catalog_Import_UseTemplate" xml:space="preserve"><value>Gamitin ang business template</value></data>
+  <data name="Catalog_Import_OfflineMessage" xml:space="preserve"><value>Kailangan ng koneksyon sa Platform at POS para mag-import. Mananatiling available ang lokal na pagbebenta kapag nakakonekta muli.</value></data>
+  <data name="Catalog_Import_StepsTitle" xml:space="preserve"><value>Mga hakbang sa onboarding</value></data>
+  <data name="Catalog_Import_Step_Choose" xml:space="preserve"><value>Pumili ng template</value></data>
+  <data name="Catalog_Import_Step_Preview" xml:space="preserve"><value>I-preview</value></data>
+  <data name="Catalog_Import_Step_Confirm" xml:space="preserve"><value>Kumpirmahin</value></data>
+  <data name="Catalog_Import_ChooseTitle" xml:space="preserve"><value>Mga published na template</value></data>
+  <data name="Catalog_Import_SearchTemplates" xml:space="preserve"><value>Maghanap ng template</value></data>
+  <data name="Catalog_Import_EmptyTitle" xml:space="preserve"><value>Walang published na template</value></data>
+  <data name="Catalog_Import_EmptyMessage" xml:space="preserve"><value>Wala pang published na business template. Maaari mong i-browse ang global catalog o magdagdag nang manual.</value></data>
+  <data name="Catalog_Import_Select" xml:space="preserve"><value>Piliin</value></data>
+  <data name="Catalog_Import_FirstBatchCount" xml:space="preserve"><value>{0} produkto sa unang batch</value></data>
+  <data name="Catalog_Import_PreviewTitle" xml:space="preserve"><value>Preview ng template</value></data>
+  <data name="Catalog_Import_OwnershipTitle" xml:space="preserve"><value>Lokal na pagmamay-ari</value></data>
+  <data name="Catalog_Import_OwnershipMessage" xml:space="preserve"><value>Idaragdag ang karaniwang produkto bilang editable na lokal na POS produkto. Ikaw pa rin ang may kontrol sa presyo, stock, tax, at active status.</value></data>
+  <data name="Catalog_Import_TemplateName" xml:space="preserve"><value>Template</value></data>
+  <data name="Catalog_Import_BusinessType" xml:space="preserve"><value>Uri ng negosyo</value></data>
+  <data name="Catalog_Import_FirstBatchLabel" xml:space="preserve"><value>Bilang sa unang batch</value></data>
+  <data name="Catalog_Import_TotalProducts" xml:space="preserve"><value>Kabuuang produkto sa template</value></data>
+  <data name="Catalog_Import_SampleProducts" xml:space="preserve"><value>Mga sample na produkto</value></data>
+  <data name="Catalog_Import_NoSamplesTitle" xml:space="preserve"><value>Walang sample</value></data>
+  <data name="Catalog_Import_NoSamplesMessage" xml:space="preserve"><value>Walang first-batch na produkto ang template na ito para i-preview.</value></data>
+  <data name="Catalog_Import_Featured" xml:space="preserve"><value>Featured</value></data>
+  <data name="Catalog_Import_Back" xml:space="preserve"><value>Bumalik</value></data>
+  <data name="Catalog_Import_Continue" xml:space="preserve"><value>Magpatuloy</value></data>
+  <data name="Catalog_Import_ConfirmTitle" xml:space="preserve"><value>Kumpirmahin ang unang batch</value></data>
+  <data name="Catalog_Import_ConfirmDefaultsTitle" xml:space="preserve"><value>Default ng import</value></data>
+  <data name="Catalog_Import_ConfirmDefaultsMessage" xml:space="preserve"><value>Nagsisimula sa stock 0. Kinokopya ang suggested price bilang editable na panimula. Nilalaktawan ang mga duplicate. Gamitin ang inventory adjust para sa opening stock.</value></data>
+  <data name="Catalog_Import_Start" xml:space="preserve"><value>Simulan ang import</value></data>
+  <data name="Catalog_Import_ProgressTitle" xml:space="preserve"><value>Progreso ng import</value></data>
+  <data name="Catalog_Import_ProgressSubtitle" xml:space="preserve"><value>Maaari kang umalis sa screen na ito; magpapatuloy ang job sa background.</value></data>
+  <data name="Catalog_Import_StatusSection" xml:space="preserve"><value>Status</value></data>
+  <data name="Catalog_Import_Processed" xml:space="preserve"><value>Naproseso</value></data>
+  <data name="Catalog_Import_Imported" xml:space="preserve"><value>Na-import</value></data>
+  <data name="Catalog_Import_Skipped" xml:space="preserve"><value>Nilaktawan</value></data>
+  <data name="Catalog_Import_Failed" xml:space="preserve"><value>Nabigo</value></data>
+  <data name="Catalog_Import_WarningsTitle" xml:space="preserve"><value>Mga tala sa import</value></data>
+  <data name="Catalog_Import_Polling" xml:space="preserve"><value>Tumatakbo pa ang import…</value></data>
+  <data name="Catalog_Import_Review" xml:space="preserve"><value>Suriin ang lokal na produkto</value></data>
+  <data name="Catalog_Import_JobNotFoundTitle" xml:space="preserve"><value>Hindi nahanap ang import job</value></data>
+  <data name="Catalog_Import_JobNotFoundMessage" xml:space="preserve"><value>Hindi available ang import job na ito para sa iyong organisasyon.</value></data>
+  <data name="Catalog_Import_Status_Queued" xml:space="preserve"><value>Naka-queue</value></data>
+  <data name="Catalog_Import_Status_Processing" xml:space="preserve"><value>Ini-import</value></data>
+  <data name="Catalog_Import_Status_Completed" xml:space="preserve"><value>Tapos na</value></data>
+  <data name="Catalog_Import_Status_CompletedWithWarnings" xml:space="preserve"><value>Tapos na may babala</value></data>
+  <data name="Catalog_Import_Status_Failed" xml:space="preserve"><value>Nabigo</value></data>
+  <data name="Catalog_Import_Status_Cancelled" xml:space="preserve"><value>Kinansela</value></data>
+  <data name="Catalog_Import_ReviewTitle" xml:space="preserve"><value>Suriin ang na-import na produkto</value></data>
+  <data name="Catalog_Import_ReviewSubtitle" xml:space="preserve"><value>I-edit ang presyo at maglagay ng opening stock sa inventory.</value></data>
+  <data name="Catalog_Import_ReviewEmptyTitle" xml:space="preserve"><value>Walang item na susuriin</value></data>
+  <data name="Catalog_Import_ReviewEmptyMessage" xml:space="preserve"><value>Walang import item na tumutugma sa filter na ito.</value></data>
+  <data name="Catalog_Import_OpeningStockTitle" xml:space="preserve"><value>Opening stock</value></data>
+  <data name="Catalog_Import_OpeningStockMessage" xml:space="preserve"><value>Nagsisimula sa stock 0 ang na-import na produkto. Gamitin ang inventory adjust para sa opening stock.</value></data>
+  <data name="Catalog_Import_OpeningStockAction" xml:space="preserve"><value>Opening stock</value></data>
+  <data name="Catalog_Import_Item_Imported" xml:space="preserve"><value>Na-import</value></data>
+  <data name="Catalog_Import_Item_Skipped" xml:space="preserve"><value>Nilaktawan</value></data>
+  <data name="Catalog_Import_Item_Failed" xml:space="preserve"><value>Nabigo</value></data>
+  <data name="Catalog_Import_Item_Pending" xml:space="preserve"><value>Nakabinbin</value></data>
+  <data name="Catalog_Global_Browse" xml:space="preserve"><value>I-browse ang global catalog</value></data>
+  <data name="Catalog_Global_Title" xml:space="preserve"><value>I-browse ang global catalog</value></data>
+  <data name="Catalog_Global_Subtitle" xml:space="preserve"><value>Maghanap sa Platform products at i-import ang napili sa lokal na catalog.</value></data>
+  <data name="Catalog_Global_SearchPlaceholder" xml:space="preserve"><value>Maghanap ayon sa pangalan, SKU, o barcode</value></data>
+  <data name="Catalog_Global_BarcodeHint" xml:space="preserve"><value>Opsyonal na barcode filter.</value></data>
+  <data name="Catalog_Global_SelectedCount" xml:space="preserve"><value>{0} ang napili</value></data>
+  <data name="Catalog_Global_ImportSelected" xml:space="preserve"><value>I-import ang napili</value></data>
+  <data name="Catalog_Global_ClearSelection" xml:space="preserve"><value>Burahin ang pagpili</value></data>
+  <data name="Catalog_Global_EmptyTitle" xml:space="preserve"><value>Walang global na produkto</value></data>
+  <data name="Catalog_Global_EmptyMessage" xml:space="preserve"><value>Subukan ang ibang search, barcode, o kategorya. Maaaring hindi available ang Platform habang patuloy ang lokal na pagbebenta.</value></data>
+  <data name="Catalog_Global_Select" xml:space="preserve"><value>Piliin</value></data>
+  <data name="Catalog_Global_Selected" xml:space="preserve"><value>Napili</value></data>
   <data name="Sales_Title" xml:space="preserve"><value>Benta</value></data>
   <data name="Sales_Subtitle" xml:space="preserve"><value>Mga naitalang benta ng tindahan.</value></data>
   <data name="Sales_New" xml:space="preserve"><value>Bagong benta</value></data>

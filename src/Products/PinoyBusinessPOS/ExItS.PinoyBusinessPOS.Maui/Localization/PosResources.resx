@@ -726,6 +726,78 @@
   <data name="Catalog_Lookup_NoMatchMessage" xml:space="preserve"><value>No product matches that barcode or SKU.</value></data>
   <data name="Catalog_Lookup_ResultTitle" xml:space="preserve"><value>Match</value></data>
   <data name="Catalog_Lookup_OpenProduct" xml:space="preserve"><value>Open product</value></data>
+  <data name="Catalog_Import_Title" xml:space="preserve"><value>Use business template</value></data>
+  <data name="Catalog_Import_Subtitle" xml:space="preserve"><value>Import a first batch of common products as editable local catalog items.</value></data>
+  <data name="Catalog_Import_UseTemplate" xml:space="preserve"><value>Use business template</value></data>
+  <data name="Catalog_Import_OfflineMessage" xml:space="preserve"><value>Catalog import needs a connection to Platform and POS. Local selling stays available when reconnecting.</value></data>
+  <data name="Catalog_Import_StepsTitle" xml:space="preserve"><value>Onboarding steps</value></data>
+  <data name="Catalog_Import_Step_Choose" xml:space="preserve"><value>Choose template</value></data>
+  <data name="Catalog_Import_Step_Preview" xml:space="preserve"><value>Preview</value></data>
+  <data name="Catalog_Import_Step_Confirm" xml:space="preserve"><value>Confirm</value></data>
+  <data name="Catalog_Import_ChooseTitle" xml:space="preserve"><value>Published templates</value></data>
+  <data name="Catalog_Import_SearchTemplates" xml:space="preserve"><value>Search templates</value></data>
+  <data name="Catalog_Import_EmptyTitle" xml:space="preserve"><value>No published templates</value></data>
+  <data name="Catalog_Import_EmptyMessage" xml:space="preserve"><value>No published business templates are available yet. You can still browse the global catalog or add products manually.</value></data>
+  <data name="Catalog_Import_Select" xml:space="preserve"><value>Select</value></data>
+  <data name="Catalog_Import_FirstBatchCount" xml:space="preserve"><value>{0} first-batch products</value></data>
+  <data name="Catalog_Import_PreviewTitle" xml:space="preserve"><value>Template preview</value></data>
+  <data name="Catalog_Import_OwnershipTitle" xml:space="preserve"><value>Local ownership</value></data>
+  <data name="Catalog_Import_OwnershipMessage" xml:space="preserve"><value>Common products will be added as editable local POS products. You remain in control of prices, stock, tax, and active status.</value></data>
+  <data name="Catalog_Import_TemplateName" xml:space="preserve"><value>Template</value></data>
+  <data name="Catalog_Import_BusinessType" xml:space="preserve"><value>Business type</value></data>
+  <data name="Catalog_Import_FirstBatchLabel" xml:space="preserve"><value>First-batch count</value></data>
+  <data name="Catalog_Import_TotalProducts" xml:space="preserve"><value>Total products in template</value></data>
+  <data name="Catalog_Import_SampleProducts" xml:space="preserve"><value>Sample products</value></data>
+  <data name="Catalog_Import_NoSamplesTitle" xml:space="preserve"><value>No sample products</value></data>
+  <data name="Catalog_Import_NoSamplesMessage" xml:space="preserve"><value>This template has no first-batch products to preview.</value></data>
+  <data name="Catalog_Import_Featured" xml:space="preserve"><value>Featured</value></data>
+  <data name="Catalog_Import_Back" xml:space="preserve"><value>Back</value></data>
+  <data name="Catalog_Import_Continue" xml:space="preserve"><value>Continue</value></data>
+  <data name="Catalog_Import_ConfirmTitle" xml:space="preserve"><value>Confirm first-batch import</value></data>
+  <data name="Catalog_Import_ConfirmDefaultsTitle" xml:space="preserve"><value>Import defaults</value></data>
+  <data name="Catalog_Import_ConfirmDefaultsMessage" xml:space="preserve"><value>Initial stock starts at 0. Suggested prices copy as editable starting values. Duplicates are skipped. Opening stock uses the existing inventory adjust flow.</value></data>
+  <data name="Catalog_Import_Start" xml:space="preserve"><value>Start import</value></data>
+  <data name="Catalog_Import_ProgressTitle" xml:space="preserve"><value>Import progress</value></data>
+  <data name="Catalog_Import_ProgressSubtitle" xml:space="preserve"><value>You can leave this screen; the job continues in the background.</value></data>
+  <data name="Catalog_Import_StatusSection" xml:space="preserve"><value>Status</value></data>
+  <data name="Catalog_Import_Processed" xml:space="preserve"><value>Processed</value></data>
+  <data name="Catalog_Import_Imported" xml:space="preserve"><value>Imported</value></data>
+  <data name="Catalog_Import_Skipped" xml:space="preserve"><value>Skipped</value></data>
+  <data name="Catalog_Import_Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Catalog_Import_WarningsTitle" xml:space="preserve"><value>Import notes</value></data>
+  <data name="Catalog_Import_Polling" xml:space="preserve"><value>Import is still running…</value></data>
+  <data name="Catalog_Import_Review" xml:space="preserve"><value>Review local products</value></data>
+  <data name="Catalog_Import_JobNotFoundTitle" xml:space="preserve"><value>Import job not found</value></data>
+  <data name="Catalog_Import_JobNotFoundMessage" xml:space="preserve"><value>This import job is not available for your organization.</value></data>
+  <data name="Catalog_Import_Status_Queued" xml:space="preserve"><value>Queued</value></data>
+  <data name="Catalog_Import_Status_Processing" xml:space="preserve"><value>Importing</value></data>
+  <data name="Catalog_Import_Status_Completed" xml:space="preserve"><value>Completed</value></data>
+  <data name="Catalog_Import_Status_CompletedWithWarnings" xml:space="preserve"><value>Completed with warnings</value></data>
+  <data name="Catalog_Import_Status_Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Catalog_Import_Status_Cancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="Catalog_Import_ReviewTitle" xml:space="preserve"><value>Review imported products</value></data>
+  <data name="Catalog_Import_ReviewSubtitle" xml:space="preserve"><value>Edit prices and set opening stock through inventory.</value></data>
+  <data name="Catalog_Import_ReviewEmptyTitle" xml:space="preserve"><value>No items to review</value></data>
+  <data name="Catalog_Import_ReviewEmptyMessage" xml:space="preserve"><value>No import items match this filter.</value></data>
+  <data name="Catalog_Import_OpeningStockTitle" xml:space="preserve"><value>Opening stock</value></data>
+  <data name="Catalog_Import_OpeningStockMessage" xml:space="preserve"><value>Imported products start at stock 0. Use inventory adjust for opening stock — do not invent a separate stock form here.</value></data>
+  <data name="Catalog_Import_OpeningStockAction" xml:space="preserve"><value>Opening stock</value></data>
+  <data name="Catalog_Import_Item_Imported" xml:space="preserve"><value>Imported</value></data>
+  <data name="Catalog_Import_Item_Skipped" xml:space="preserve"><value>Skipped</value></data>
+  <data name="Catalog_Import_Item_Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Catalog_Import_Item_Pending" xml:space="preserve"><value>Pending</value></data>
+  <data name="Catalog_Global_Browse" xml:space="preserve"><value>Browse global catalog</value></data>
+  <data name="Catalog_Global_Title" xml:space="preserve"><value>Browse global catalog</value></data>
+  <data name="Catalog_Global_Subtitle" xml:space="preserve"><value>Search Platform products and import selected items into your local catalog.</value></data>
+  <data name="Catalog_Global_SearchPlaceholder" xml:space="preserve"><value>Search by name, SKU, or barcode</value></data>
+  <data name="Catalog_Global_BarcodeHint" xml:space="preserve"><value>Optional barcode filter for exact or partial match.</value></data>
+  <data name="Catalog_Global_SelectedCount" xml:space="preserve"><value>{0} selected</value></data>
+  <data name="Catalog_Global_ImportSelected" xml:space="preserve"><value>Import selected</value></data>
+  <data name="Catalog_Global_ClearSelection" xml:space="preserve"><value>Clear selection</value></data>
+  <data name="Catalog_Global_EmptyTitle" xml:space="preserve"><value>No global products</value></data>
+  <data name="Catalog_Global_EmptyMessage" xml:space="preserve"><value>Try another search, barcode, or category. Platform may be unavailable while local selling continues.</value></data>
+  <data name="Catalog_Global_Select" xml:space="preserve"><value>Select</value></data>
+  <data name="Catalog_Global_Selected" xml:space="preserve"><value>Selected</value></data>
   <data name="Sales_Title" xml:space="preserve"><value>Sales</value></data>
   <data name="Sales_Subtitle" xml:space="preserve"><value>Recorded sales for this store.</value></data>
   <data name="Sales_New" xml:space="preserve"><value>New sale</value></data>

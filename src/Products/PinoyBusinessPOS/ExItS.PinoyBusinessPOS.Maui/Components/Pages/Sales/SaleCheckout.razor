@@ -109,10 +109,11 @@ else
         }
         else
         {
-            <Stack Gap="2">
+            <Stack Gap="2" class="pos-product-tile-grid">
                 @foreach (var product in _browseProducts)
                 {
-                    <div class="pos-row" @onclick="() => OnBrowseProductTap(product)">
+                    <div class="pos-product-tile" @onclick="() => OnBrowseProductTap(product)">
+                        <div class="pos-product-tile__placeholder" aria-hidden="true"></div>
                         <span class="pos-value-md">@product.Name</span>
                         <span class="pos-muted">@SalesUiOptions.UnitOfMeasureLabel(L, product.UnitOfMeasure)</span>
                         <MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" />
