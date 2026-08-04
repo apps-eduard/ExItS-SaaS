@@ -79,6 +79,29 @@ public sealed class ProtectedShellAccessPolicy : IProtectedShellAccessPolicy, ID
         _validatedOrganizationId = null;
     }
 
+    /// <summary>
+    /// Called after a successful online org bind / POS access grant. Marks this process as validated
+    /// even when connectivity Initialize has not run yet (common right after Quick Login → Owner).
+    /// </summary>
+    public void NotifySessionAccessChanged()
+    {
+        if (!HasValidatedSessionAccess)
+        {
+            return;
+        }
+
+        // Bind just completed over the network — treat as online for this process lifetime.
+        if (!_statusKnown || _status == ConnectivityStatus.Unknown)
+        {
+            _status = ConnectivityStatus.Online;
+            _statusKnown = true;
+        }
+
+        _validatedOnlineThisProcess = true;
+        _validatedUserId = _currentUser.Session!.UserId;
+        _validatedOrganizationId = _currentUser.Session.OrganizationId;
+    }
+
     private void OnConnectivityChanged(object? sender, ConnectivityStatus status)
     {
         _status = status;

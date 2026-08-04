@@ -105,7 +105,7 @@ public sealed class RoleHomeResolver(IPosPermissionClient permissions, SellingMo
 
         if (!PosRoleCodes.TryParse(data.Role, out var role))
         {
-            return AccessDenied;
+            return !string.IsNullOrWhiteSpace(preferred) ? preferred! : AccessDenied;
         }
 
         // Organization Owners may work as Owner, Manager, or Cashier UI without changing the POS grant.
@@ -120,7 +120,8 @@ public sealed class RoleHomeResolver(IPosPermissionClient permissions, SellingMo
             PosRole.Owner or PosRole.Admin => OwnerHome,
             PosRole.StoreManager => ManagerHome,
             PosRole.Cashier => CashierHome,
-            _ => AccessDenied
+            // Unknown POS roles (InventoryStaff, etc.): keep Owner working-as when already chosen.
+            _ => !string.IsNullOrWhiteSpace(preferred) ? preferred! : AccessDenied
         };
     }
 }

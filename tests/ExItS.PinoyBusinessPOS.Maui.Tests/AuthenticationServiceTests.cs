@@ -183,6 +183,96 @@ public sealed class AuthenticationServiceTests
     }
 
     [Fact]
+    public async Task SelectOrganization_with_token_bind_fills_dev_grants_when_features_missing()
+    {
+        var userId = Guid.NewGuid();
+        var orgId = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var prefs = new MemoryOnboardingStore();
+        var current = new CurrentUserContext();
+        var access = new FakeAccessClient
+        {
+            LoginResult = ApiResult<PlatformLoginResultDto>.Success(new PlatformLoginResultDto(
+                "platform-session",
+                Guid.NewGuid(),
+                userId,
+                "owner",
+                "Owner",
+                "o@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                DateTimeOffset.UtcNow.AddHours(24),
+                null,
+                null,
+                "none",
+                1,
+                AccountProfileId: Guid.NewGuid(),
+                AccountClass: "Personal",
+                AllowedScope: "personal")),
+            IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
+                "opaque-token",
+                "Bearer",
+                Guid.NewGuid(),
+                userId,
+                "owner",
+                "Owner",
+                "o@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                null,
+                null,
+                null,
+                "none",
+                1,
+                null,
+                null)),
+            BindTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
+                "bound-token",
+                "Bearer",
+                Guid.NewGuid(),
+                userId,
+                "owner",
+                "Owner",
+                "o@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                orgId,
+                "Store One",
+                PosProductCodes.PinoyBusinessPos,
+                "bound",
+                1,
+                true,
+                "allowed")),
+            // Active status but empty feature list previously short-circuited and denied ManageCatalog.
+            IntrospectResult = ApiResult<PlatformAccessTokenIntrospectionDto>.Success(
+                new PlatformAccessTokenIntrospectionDto(
+                    Active: true,
+                    TokenId: Guid.NewGuid(),
+                    UserId: userId,
+                    Username: "owner",
+                    DisplayName: "Owner",
+                    OrganizationId: orgId,
+                    OrganizationDisplayName: "Store One",
+                    ProductCode: PosProductCodes.PinoyBusinessPos,
+                    ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(8),
+                    ProductAccessAllowed: true,
+                    ProductAccessReasonCode: "allowed",
+                    SubscriptionStatus: "Active",
+                    EnabledFeatureCodes: [])),
+            EvaluateResult = ApiResult<EffectiveAccessDto>.Success(new EffectiveAccessDto(
+                true, "allowed", userId, orgId, PosProductCodes.PinoyBusinessPos,
+                Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow,
+                SubscriptionStatus: "Active",
+                EnabledFeatureCodes: null))
+        };
+        var sut = CreateSut("Development", access, tokens, prefs, current);
+        Assert.True((await sut.SignInAsync(new SignInRequest("owner", "password"))).Succeeded);
+
+        var select = await sut.SelectOrganizationAsync(orgId);
+        Assert.True(select.Succeeded);
+        Assert.True(select.Session!.HasPosAccess);
+        Assert.Equal("Active", select.Session.SubscriptionStatus);
+        Assert.Contains("store-catalog-manage", select.Session.EnabledFeatureCodes!);
+    }
+
+    [Fact]
     public async Task SelectOrganization_with_token_falls_back_to_org_essentials_when_bind_forbidden()
     {
         var userId = Guid.NewGuid();

@@ -229,7 +229,7 @@
   <data name="SignIn_DevSubmit" xml:space="preserve"><value>Sign in with User Id</value></data>
   <data name="SignIn_QuickLoginTitle" xml:space="preserve"><value>Quick sign-in</value></data>
   <data name="SignIn_QuickLoginLabel" xml:space="preserve"><value>Local Validation identity</value></data>
-  <data name="SignIn_QuickLoginHint" xml:space="preserve"><value>Select a user to sign in with the Local Validation shared password</value></data>
+  <data name="SignIn_QuickLoginHint" xml:space="preserve"><value>One entry per user. Uses Local Validation shared password (same as Admin Quick Login).</value></data>
   <data name="SignIn_QuickLoginPlaceholder" xml:space="preserve"><value>Choose a user…</value></data>
   <data name="SignIn_QuickLoginUnavailable" xml:space="preserve"><value>No Quick Login identities available</value></data>
   <data name="OrgSelect_Title" xml:space="preserve"><value>Select organization</value></data>

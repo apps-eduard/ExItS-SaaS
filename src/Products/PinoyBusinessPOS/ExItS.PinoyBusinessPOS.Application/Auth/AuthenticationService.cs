@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
+using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Platform;
 
@@ -664,15 +665,16 @@ public sealed class AuthenticationService(
         // Seed bearer so Introspect/Evaluate handlers can attach the bound token.
         currentUser.Set(session with { AccessToken = accessToken, OrganizationId = organizationId });
 
+        string? subscriptionStatus = null;
+        IReadOnlyList<string>? enabledFeatureCodes = null;
+
         try
         {
             var introspect = await accessClient.IntrospectTokenAsync(accessToken, ct).ConfigureAwait(false);
-            if (introspect.IsSuccess
-                && introspect.Data is { Active: true } active
-                && (!string.IsNullOrWhiteSpace(active.SubscriptionStatus)
-                    || active.EnabledFeatureCodes is { Count: > 0 }))
+            if (introspect.IsSuccess && introspect.Data is { Active: true } active)
             {
-                return (active.SubscriptionStatus, active.EnabledFeatureCodes);
+                subscriptionStatus = active.SubscriptionStatus;
+                enabledFeatureCodes = active.EnabledFeatureCodes;
             }
         }
         catch
@@ -680,22 +682,40 @@ public sealed class AuthenticationService(
             // Fall through to evaluate.
         }
 
-        try
+        // Status alone is not enough — ManageCatalog requires feature grant codes.
+        if (enabledFeatureCodes is not { Count: > 0 })
         {
-            var accessResult = await accessClient
-                .EvaluateAccessAsync(session.UserId, organizationId, PosProductCodes.PinoyBusinessPos, ct)
-                .ConfigureAwait(false);
-            if (accessResult.IsSuccess && accessResult.Data is not null)
+            try
             {
-                return (accessResult.Data.SubscriptionStatus, accessResult.Data.EnabledFeatureCodes);
+                var accessResult = await accessClient
+                    .EvaluateAccessAsync(session.UserId, organizationId, PosProductCodes.PinoyBusinessPos, ct)
+                    .ConfigureAwait(false);
+                if (accessResult.IsSuccess && accessResult.Data is not null)
+                {
+                    subscriptionStatus ??= accessResult.Data.SubscriptionStatus;
+                    if (accessResult.Data.EnabledFeatureCodes is { Count: > 0 })
+                    {
+                        enabledFeatureCodes = accessResult.Data.EnabledFeatureCodes;
+                    }
+                }
+            }
+            catch
+            {
+                // Leave grants empty unless Development fallback applies below.
             }
         }
-        catch
+
+        if (enabledFeatureCodes is not { Count: > 0 } && IsDevelopmentAuthenticationEnabled)
         {
-            // Leave grants empty; capability gates will deny until restore/refresh.
+            // Local Validation / emulator: product bind succeeded but entitlement snapshot
+            // sometimes omits feature codes — keep Mobile operable for Owner validation.
+            subscriptionStatus = string.IsNullOrWhiteSpace(subscriptionStatus)
+                ? PosSubscriptionStatuses.Active
+                : subscriptionStatus;
+            enabledFeatureCodes = UtangCapabilityPolicy.DefaultDevelopmentGrants;
         }
 
-        return (null, null);
+        return (subscriptionStatus, enabledFeatureCodes);
     }
 
     private async Task<AuthResult> SelectOrganizationWithoutPosOperateAsync(
@@ -788,6 +808,8 @@ public sealed class AuthenticationService(
 
         currentUser.Set(updated);
         await OpenLocalContextAsync(updated.UserId, organizationId, ct).ConfigureAwait(false);
+        // SelectOrganization clears process validation first; re-arm once POS access is bound.
+        _accessPolicy?.NotifySessionAccessChanged();
         events.Record("organization_selected", Dict(
             ("userId", previous.UserId.ToString("D")),
             ("organizationId", organizationId.ToString("D"))));

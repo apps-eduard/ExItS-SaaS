@@ -71,6 +71,30 @@ public sealed class PosSyncStatusAndAccessPolicyTests
     }
 
     [Fact]
+    public void NotifySessionAccessChanged_rearms_shell_after_clear_without_initialize()
+    {
+        // Quick Login → Owner: SelectOrganization clears process validation, then bind succeeds
+        // before NavigationGate/Initialize has run — Notify must re-arm CanEnterProtectedShell.
+        var connectivity = new FakeConnectivity(online: true);
+        var current = new CurrentUserContext();
+        var policy = new ProtectedShellAccessPolicy(current, connectivity);
+        policy.ClearProcessValidation();
+
+        current.Set(new AuthSession(
+            Guid.NewGuid(), "User", "user", "u@example.com",
+            Guid.NewGuid(), "Org",
+            DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddHours(1),
+            HasPosAccess: true, AccessReasonCode: "allowed"));
+
+        Assert.False(policy.CanEnterProtectedShell);
+
+        policy.NotifySessionAccessChanged();
+
+        Assert.True(policy.CanEnterProtectedShell);
+        Assert.False(policy.RequiresReconnectToVerifyAccess);
+    }
+
+    [Fact]
     public async Task Continuous_session_allows_offline_shell_after_online_validation()
     {
         var connectivity = new FakeConnectivity(online: true);

@@ -19,14 +19,16 @@
 
     @if (_quickLoginAvailable)
     {
-        <FormGroup Title="@L["SignIn_QuickLoginTitle"]">
-            <Select Label="@L["SignIn_QuickLoginLabel"]"
-                    Hint="@(_quickLoginHint ?? L["SignIn_QuickLoginHint"].Value)"
-                    Value="@_selectedQuickKey"
-                    ValueChanged="OnQuickLoginSelectedAsync"
-                    Options="_quickLoginOptions"
-                    Disabled="_busy || _quickLoginLoading || _quickLoginOptions.Count == 0" />
-        </FormGroup>
+        <div class="pos-quick-login">
+            <FormGroup Title="@L["SignIn_QuickLoginTitle"]">
+                <Select Label="@L["SignIn_QuickLoginLabel"]"
+                        Hint="@(_quickLoginHint ?? L["SignIn_QuickLoginHint"].Value)"
+                        Value="@_selectedQuickKey"
+                        ValueChanged="OnQuickLoginSelectedAsync"
+                        Options="_quickLoginOptions"
+                        Disabled="_busy || _quickLoginLoading || _quickLoginOptions.Count == 0" />
+            </FormGroup>
+        </div>
     }
 
     <FormGroup Title="@L["SignIn_PasswordFormTitle"]">
@@ -90,23 +92,23 @@
                 return;
             }
 
-            // Exclude platform administration identities; keep Personal + Organization.
+            // One entry per user: Organization when they have an org, otherwise Personal.
+            // Exclude Platform administration identities.
             var identities = result.Data
                 .Where(i => !string.Equals(i.AccountClass, "Platform", StringComparison.OrdinalIgnoreCase))
                 .Where(i => !string.IsNullOrWhiteSpace(i.Key)
                             && (!string.IsNullOrWhiteSpace(i.Email) || !string.IsNullOrWhiteSpace(i.Username)))
-                .GroupBy(i => i.Key, StringComparer.OrdinalIgnoreCase)
-                .Select(g => g.First())
-                .OrderBy(i => i.ListLabel, StringComparer.OrdinalIgnoreCase)
+                .GroupBy(i => i.UserId)
+                .Select(ChoosePreferredIdentity)
+                .OrderBy(i => i.DisplayName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(i => i.Email, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
             _quickLoginByKey = identities.ToDictionary(i => i.Key, StringComparer.OrdinalIgnoreCase);
             _quickLoginOptions =
             [
                 new SelectOption(string.Empty, L["SignIn_QuickLoginPlaceholder"]),
-                .. identities.Select(i => new SelectOption(
-                    i.Key,
-                    string.IsNullOrWhiteSpace(i.ListLabel) ? i.DisplayName : i.ListLabel))
+                .. identities.Select(i => new SelectOption(i.Key, FormatQuickLoginLabel(i)))
             ];
 
             if (identities.Count == 0)
@@ -118,6 +120,37 @@
         {
             _quickLoginLoading = false;
         }
+    }
+
+    private static LocalValidationQuickLoginIdentityDto ChoosePreferredIdentity(
+        IGrouping<Guid, LocalValidationQuickLoginIdentityDto> group)
+    {
+        var org = group
+            .Where(i => string.Equals(i.AccountClass, "Organization", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(i => i.OrganizationName, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault();
+        if (org is not null)
+        {
+            return org;
+        }
+
+        return group
+            .OrderBy(i => i.AccountClass, StringComparer.OrdinalIgnoreCase)
+            .First();
+    }
+
+    private static string FormatQuickLoginLabel(LocalValidationQuickLoginIdentityDto identity)
+    {
+        var name = string.IsNullOrWhiteSpace(identity.DisplayName)
+            ? identity.Username
+            : identity.DisplayName;
+        if (string.Equals(identity.AccountClass, "Organization", StringComparison.OrdinalIgnoreCase)
+            && !string.IsNullOrWhiteSpace(identity.OrganizationName))
+        {
+            return $"{name} · {identity.OrganizationName}";
+        }
+
+        return name;
     }
 
     private async Task OnQuickLoginSelectedAsync(string? key)
@@ -140,23 +173,20 @@
 
         _username = loginId;
         _password = sharedPassword;
-        await SignInWithCredentialsAsync(
-            loginId,
-            sharedPassword,
-            identity.AccountProfileId == Guid.Empty ? null : identity.AccountProfileId,
-            identity.OrganizationId);
+        // Prefer the listed Org/Personal profile so Platform session matches the Quick Login row.
+        Guid? profileId = identity.AccountProfileId == Guid.Empty ? null : identity.AccountProfileId;
+        await SignInWithCredentialsAsync(loginId, sharedPassword, accountProfileId: profileId);
     }
 
     private async Task SignInPasswordAsync()
     {
-        await SignInWithCredentialsAsync(_username, _password, accountProfileId: null, organizationId: null);
+        await SignInWithCredentialsAsync(_username, _password, accountProfileId: null);
     }
 
     private async Task SignInWithCredentialsAsync(
         string? username,
         string? password,
-        Guid? accountProfileId,
-        Guid? organizationId)
+        Guid? accountProfileId)
     {
         _errors = [];
         _invalid = false;
@@ -181,13 +211,12 @@
                 return;
             }
 
-            // Match Admin Quick Login: Organization identities establish Platform org context.
-            if (organizationId is Guid orgId
-                && orgId != Guid.Empty
-                && string.Equals(result.Session.AccountClass, "Organization", StringComparison.OrdinalIgnoreCase))
+            // POS Owner/Manager/Cashier entry requires a bearer access token (Quick Login SharedPassword).
+            if (string.IsNullOrWhiteSpace(result.Session.AccessToken))
             {
-                _ = await Platform.SetOrganizationContextAsync(new SetOrganizationContextRequest(orgId));
-                await Prefs.SetSelectedOrganizationIdAsync(orgId);
+                _invalid = true;
+                _errors.Add(L["Auth_ApiUnavailable"]);
+                return;
             }
 
             await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.OrganizationSelect));

@@ -131,9 +131,20 @@
         _error = null;
         try
         {
+            // Set working-as before bind so RoleHome never resolves Access Denied during navigation.
+            if (!string.IsNullOrWhiteSpace(preferredHome))
+            {
+                SellingMode.EnterWorkingAs(preferredHome);
+            }
+            else
+            {
+                SellingMode.Clear();
+            }
+
             var result = await Auth.SelectOrganizationAsync(organizationId);
             if (!result.Succeeded)
             {
+                SellingMode.Clear();
                 _error = L[result.SafeMessageKey ?? "Access_Denied"];
                 return;
             }
@@ -146,15 +157,6 @@
                 await Prefs.SetOnboardingCompletedAsync(true);
                 Nav.NavigateTo(RoleHomeResolver.OrgEssentials, replace: true);
                 return;
-            }
-
-            if (!string.IsNullOrWhiteSpace(preferredHome))
-            {
-                SellingMode.EnterWorkingAs(preferredHome);
-            }
-            else
-            {
-                SellingMode.Clear();
             }
 
             await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.AccessConfirm));

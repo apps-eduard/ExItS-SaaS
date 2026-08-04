@@ -65,6 +65,24 @@ public sealed class RoleHomeResolverTests
     }
 
     [Fact]
+    public async Task ResolvePosHome_uses_preferred_home_when_effective_role_unparseable()
+    {
+        var mode = new SellingModeService();
+        mode.EnterWorkingAs(RoleHomeResolver.OwnerHome);
+        var sut = new RoleHomeResolver(new FakePermissions("NotARealRole", status: "Active"), mode);
+        Assert.Equal(RoleHomeResolver.OwnerHome, await sut.ResolvePosHomeAsync());
+    }
+
+    [Fact]
+    public async Task ResolvePosHome_uses_preferred_home_for_unknown_pos_role_codes()
+    {
+        var mode = new SellingModeService();
+        mode.EnterWorkingAs(RoleHomeResolver.ManagerHome);
+        var sut = new RoleHomeResolver(new FakePermissions("InventoryStaff", status: "Active"), mode);
+        Assert.Equal(RoleHomeResolver.ManagerHome, await sut.ResolvePosHomeAsync());
+    }
+
+    [Fact]
     public async Task ResolvePosHome_staff_cannot_override_with_working_as()
     {
         var mode = new SellingModeService();

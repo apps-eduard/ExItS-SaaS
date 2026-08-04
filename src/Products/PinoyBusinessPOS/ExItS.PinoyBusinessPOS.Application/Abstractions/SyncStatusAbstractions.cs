@@ -63,4 +63,9 @@ public interface IProtectedShellAccessPolicy
 
     /// <summary>Clears process-lifetime online validation (logout / context switch).</summary>
     void ClearProcessValidation();
+
+    /// <summary>
+    /// Re-evaluates process validation after org bind / session update while online.
+    /// </summary>
+    void NotifySessionAccessChanged();
 }

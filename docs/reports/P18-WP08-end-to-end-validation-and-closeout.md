@@ -5,7 +5,9 @@
 | Status | **In Progress** |
 | Phase | [Phase 18](../phases/phase-18-mobile-personal-organization-and-pos-experience.md) — **Open** |
 | Implementation commit | `4b8b7270417d0f9e612855ed746d7fd80819adee` |
-| Validation-fix commit | `3e4314cc35a4428cdaf258df54ed005cbd7080c0` |
+| Validation-fix commit (commercial grants / preferred home) | `3e4314cc35a4428cdaf258df54ed005cbd7080c0` |
+| Validation-fix commit (Quick Login / Access Denied follow-up) | *(see §14 — filled after push)* |
+| PhysicalDevice Tailscale profile | `9022d95` |
 | Production-ready | **No** |
 | User mobile validation | **Pending User Validation** — Phase 18 must not be marked Complete until the user explicitly confirms |
 | Date | 2026-08-04 |
@@ -32,7 +34,7 @@ Phases 13–17 Platform auth/personal/start-business/product-local roles and POS
 
 ## 6. Files / components changed
 
-Implementation: `4b8b727`. Validation-pass fixes: auth bind commercial grants, Local Validation Quick Login, Owner/Manager home routing, org-entry HasPosAccess gate, Organization Owner bind bootstrap, catalog/expense category reload hardening, soft-input/keyboard inset. This WP remains open for user checklist results.
+Implementation: `4b8b727`. Validation-pass fixes: auth bind commercial grants (reject Active+empty features; Development grant fallback), Local Validation Quick Login (dedupe per user; profile select; AccessToken required; denser fonts), Owner/Manager/Cashier preferred-home before bind, `NotifySessionAccessChanged` after org persist, dashboard preferred-home trust, PhysicalDevice Tailscale Debug profile. This WP remains open for user checklist results.
 
 ## 7. Authorization and organization-isolation behavior
 
@@ -42,40 +44,53 @@ API-authoritative: Platform session for Personal/Org essentials; POS bearer + or
 
 | Suite | Result |
 |---|---|
-| MAUI.Tests | **83 passed**, 0 failed |
-| Focused Auth + RoleHomeResolver | **27 passed**, 0 failed (subset) |
+| MAUI.Tests | **86 passed**, 0 failed |
+| Focused Auth + RoleHomeResolver | **30 passed**, 0 failed (subset) |
+| PosSyncStatusAndAccessPolicyTests | **14 passed**, 0 failed |
 
 Regression added/updated in this validation pass:
 
-- `SelectOrganization_with_token_bind_loads_commercial_grants` — bind path persists `SubscriptionStatus` / feature grants
+- `SelectOrganization_with_token_bind_loads_commercial_grants`
+- `SelectOrganization_with_token_bind_fills_dev_grants_when_features_missing`
 - `ResolvePosHome_uses_preferred_home_when_effective_role_unavailable`
 - `ResolvePosHome_uses_preferred_home_when_effective_status_none`
+- `ResolvePosHome_uses_preferred_home_when_effective_role_unparseable`
+- `ResolvePosHome_uses_preferred_home_for_unknown_pos_role_codes`
 - `ResolvePosHome_without_preferred_still_denies_when_effective_missing`
+- `NotifySessionAccessChanged_rearms_shell_after_clear_without_initialize`
 
 ## 9. MAUI build result
 
-**Build Verified** — Android Debug APK built and installed on emulator `HealthCare_Pixel_API34` during the validation pass. Not a claim of Device Verified for the Phase 18 journey.
+**Build Verified** (emulator + PhysicalDevice Debug APKs). Not a claim of Device Verified for the Phase 18 journey.
+
+| Build | Path / notes |
+|---|---|
+| Emulator Debug | `…\bin\Debug\net10.0-android\com.exits.pinoybusinesspos-Signed.apk` (`127.0.0.1` + `adb reverse`) |
+| PhysicalDevice Debug (arm64) | `…\bin\Debug\net10.0-android\android-arm64\com.exits.pinoybusinesspos-Signed.apk` — also copied as `C:\Users\speed\Desktop\ExItS-POS-APK\ExItS-POS-PhysicalDevice-Debug.apk` (`PosLocalValidationTarget=PhysicalDevice`, Tailscale `100.120.79.81`) |
 
 ## 10. Emulator / device / user validation result
 
-**Pending User Validation.** Phase 18 remains **Open**.
+**Pending User Validation.** Phase 18 remains **Open**. **Not Device Verified.**
 
 Agent-assisted Local Validation evidence (AVD `HealthCare_Pixel_API34`, Platform `:8091` / POS `:8092`, Mailpit `:8025`):
 
 | # | Scenario | Result |
 |---:|---|---|
-| 1 | Personal-only login → Personal home | **Pass** (earlier pass) |
-| 2 | Personal Start a Business CTA + no POS chrome | **Pass** (earlier pass) |
-| 3 | Account context switcher visible (Personal) | **Pass** (earlier pass) |
-| 4 | One-org login → org/POS bind | **Partial** (succeeded in earlier run; later BindToken timing flaky) |
-| 5 | Context switcher on More hub | **Pass** (when POS shell reached) |
-| 6 | Switch to Personal without logout | **Partial** (API/service shipped; automation flaky) |
-| 7 | Multi-org selector lists ABC + XYZ with roles | **Pass** |
-| 8 | Multi-org enter / role home | **Partial** — see §10a |
-| 9 | Sign out | **Partial** |
-| 10 | Sign-in again / restore | **Partial** |
-| 11 | Clear session → login → add category/product | **Issue found** — Access Restricted; fix shipped; **retest pending user** |
-| 12 | Quick Login Org identity → Owner / Manager | **Issue found** — Access Denied; fix shipped; **retest pending user** |
+| 1 | Personal-only login → Personal home | **Pass** (emulator, earlier) |
+| 2 | Personal Start a Business CTA + no POS chrome | **Pass** (emulator, earlier) |
+| 3 | Account context switcher visible (Personal) | **Pass** (emulator, earlier) |
+| 4 | One-org login → org/POS bind | **Retest** (earlier Partial / flaky BindToken) |
+| 5 | Context switcher on More hub | **Pass** (emulator, when POS shell reached) |
+| 6 | Switch to Personal without logout | **Retest** (API shipped; automation flaky) |
+| 7 | Multi-org selector lists ABC + XYZ with roles | **Pass** (emulator) |
+| 8 | Multi-org enter / role home | **Retest** |
+| 9 | Sign out | **Retest** |
+| 10 | Sign-in again / restore | **Retest** |
+| 11 | Clear session → login → add category/product | **Retest** (fix shipped; user confirmation pending) |
+| 12 | Quick Login → Owner / Manager / Cashier (no Access Denied) | **Retest** (fix shipped; user confirmation pending) |
+| 13 | Physical phone Tailscale install + health reachability | **Retest** (APK prepared; user phone results not confirmed) |
+| 14 | Physical phone Quick Login → Owner/Manager/Cashier | **Retest** |
+| 15 | Physical phone add category/product after org entry | **Retest** |
 
 **Not Device Verified** for the full Phase 18 journey. Do not mark passed or Phase 18 Complete until the user confirms the checklist.
 
@@ -85,22 +100,22 @@ Agent-assisted Local Validation evidence (AVD `HealthCare_Pixel_API34`, Platform
 
 | Field | Detail |
 |---|---|
-| Tested scenario | `adb shell pm clear` → sign in (e.g. kissy) → select organization as Owner → add category/product |
+| Tested scenario | `adb shell pm clear` → sign in → select organization as Owner → add category/product |
 | Observed | UI showed Access Restricted for Manage Catalog |
-| Root cause | `SelectOrganizationWithBindAsync` bound the POS token but did not populate session `SubscriptionStatus` / `EnabledFeatureCodes`. Client `UtangCapabilityEvaluator` gates `ManageCatalog` on those commercial fields |
-| Fix | After successful bind with product access, resolve commercial grants via introspect (fallback evaluate) and persist on the session; Platform also bootstraps POS Owner product-local role for Organization Owner on bind when entitlement exists but role is missing |
-| Validation result | Automated regression: `SelectOrganization_with_token_bind_loads_commercial_grants` **Pass**. User retest of add category/product **Pending** |
+| Root cause | Bind omitted commercial feature codes; Active+empty status was treated as sufficient |
+| Fix | Require non-empty feature codes; Development fallback to `DefaultDevelopmentGrants` when bind succeeded |
+| Validation result | Automated: `SelectOrganization_with_token_bind_fills_dev_grants_when_features_missing` **Pass**. User/phone **Retest** |
 | Commit | See §14 |
 
-#### Issue B — Quick Login Organization → Owner / Manager Access Denied
+#### Issue B — Quick Login → Owner / Manager / Cashier Access Denied
 
 | Field | Detail |
 |---|---|
-| Tested scenario | Local Validation Quick Login → Kissy Organization identity → choose Owner or Manager |
-| Observed | Access Denied on Owner/Manager home |
-| Root cause | `/permissions/effective` returned Status `None` when Dev role resolution set only an in-memory Owner (no DB row yet). `RoleHomeResolver` treated that as Access Denied even after Owner working-as was chosen |
-| Fix | POS effective endpoint applies request-role fallback from `PosRoleRequestContext`; `RoleHomeResolver` keeps PreferredHomeRoute when effective role is unavailable/None; Organization entry navigates to Org essentials when `HasPosAccess` is false; Quick Login sets Platform org context for Organization identities |
-| Validation result | Automated: preferred-home fallback tests **Pass**. User retest of Org Quick Login → Owner/Manager **Pending** |
+| Tested scenario | Quick Login → org Owner buttons → Owner/Manager/Cashier homes |
+| Observed | Access Denied after Quick Login (normal password login worked) |
+| Root cause | Process shell validation not re-armed after bind; preferred home applied after bind; effective-role lag |
+| Fix | `NotifySessionAccessChanged` after org persist; `EnterWorkingAs` before bind; RoleHome/dashboard preferred-home trust; Quick Login dedupe + AccessToken gate + denser fonts |
+| Validation result | Automated preferred-home + NotifySessionAccessChanged tests **Pass**. User/phone **Retest** |
 | Commit | See §14 |
 
 Fixes also recorded earlier / adjacent in this pass:
@@ -109,6 +124,7 @@ Fixes also recorded earlier / adjacent in this pass:
 - Catalog/expense category add: loading stuck after save (try/finally + quiet reload)
 - Owner org entry shows Owner / Manager / Cashier working-as buttons
 - Local Validation Quick Login dropdown on MAUI Sign-in (excludes Platform identities; uses SharedPassword)
+- PhysicalDevice Local Validation profile for Tailscale (`9022d95`)
 
 ## 11. Known limitations
 
@@ -131,16 +147,21 @@ Multi-branch; gateway payments; split tender; advanced analytics; custom roles; 
 | Item | Value |
 |---|---|
 | Implementation commit | `4b8b727` |
-| Validation-fix commit | `3e4314cc35a4428cdaf258df54ed005cbd7080c0` |
+| Validation-fix commit (grants / preferred home baseline) | `3e4314c` |
+| PhysicalDevice Tailscale profile | `9022d95` |
+| Validation-fix commit (Quick Login / Access Denied follow-up) | *(filled after push)* |
 | Phase 18 Complete closeout commit | **Not created** — blocked until user confirmation |
 
 ### Remaining user retest items (after this fix commit)
 
-1. Clear app → sign in → org Owner → add category and product (no Access Restricted)
-2. Quick Login → Kissy **Organization** → Owner home loads
-3. Quick Login → Kissy **Organization** → Manager home loads
-4. Quick Login → Kissy **Personal** → Personal / org chooser still correct
-5. Continue full checklist in § User mobile validation checklist
+1. Clear app → sign in → org Owner → add category and product (no Access Restricted) — **Retest**
+2. Quick Login → Owner home — **Retest**
+3. Quick Login → Manager home — **Retest**
+4. Quick Login → Cashier home — **Retest**
+5. Physical phone (Tailscale APK) — install + same flows — **Retest**
+6. Continue full checklist in § User mobile validation checklist
+
+Mark Pass / Fail / Retest only from your results. Do not treat agent automation as Device Verified.
 
 ---
 
@@ -167,31 +188,31 @@ Instructions: mark each item Pass / Fail / Blocked / Skipped with notes. Do not 
 
 | # | Validation item | Result (user) | Notes |
 |---:|---|---|---|
-| 1 | Registration | Pending | |
-| 2 | Activation | Pending | |
-| 3 | Sign-in | Pending | Includes Quick Login retest |
-| 4 | Session restore | Pending | |
-| 5 | Start a Business | Pending | |
-| 6 | Organization creation | Pending | |
-| 7 | Organization selection | Pending | Owner/Manager/Cashier entry |
-| 8 | Organization Owner essentials | Pending | |
-| 9 | Staff creation / invitation | Pending | |
-| 10 | POS role assignment | Pending | |
-| 11 | POS setup | Pending | |
-| 12 | Product creation | Pending | Retest after Access Restricted fix |
-| 13 | Register and shift | Pending | |
-| 14 | Owner Start Selling | Pending | |
-| 15 | Manager Start Selling | Pending | |
-| 16 | Cashier selling | Pending | |
-| 17 | Cash checkout | Pending | |
-| 18 | Receipt | Pending | |
-| 19 | Stock reduction | Pending | |
-| 20 | Shift close | Pending | |
-| 21 | Reports | Pending | |
-| 22 | Entitlement denial | Pending | |
-| 23 | Membership suspension | Pending | |
-| 24 | Role revocation | Pending | |
-| 25 | Logout | Pending | |
+| 1 | Registration | Retest | |
+| 2 | Activation | Retest | |
+| 3 | Sign-in | Retest | Includes Quick Login |
+| 4 | Session restore | Retest | |
+| 5 | Start a Business | Retest | |
+| 6 | Organization creation | Retest | |
+| 7 | Organization selection | Retest | Owner/Manager/Cashier entry |
+| 8 | Organization Owner essentials | Retest | |
+| 9 | Staff creation / invitation | Retest | |
+| 10 | POS role assignment | Retest | |
+| 11 | POS setup | Retest | |
+| 12 | Product creation | Retest | After Access Restricted fix |
+| 13 | Register and shift | Retest | |
+| 14 | Owner Start Selling | Retest | |
+| 15 | Manager Start Selling | Retest | |
+| 16 | Cashier selling | Retest | |
+| 17 | Cash checkout | Retest | |
+| 18 | Receipt | Retest | |
+| 19 | Stock reduction | Retest | |
+| 20 | Shift close | Retest | |
+| 21 | Reports | Retest | |
+| 22 | Entitlement denial | Retest | |
+| 23 | Membership suspension | Retest | |
+| 24 | Role revocation | Retest | |
+| 25 | Logout | Retest | |
 
 ### User confirmation block (fill only after validation)
 

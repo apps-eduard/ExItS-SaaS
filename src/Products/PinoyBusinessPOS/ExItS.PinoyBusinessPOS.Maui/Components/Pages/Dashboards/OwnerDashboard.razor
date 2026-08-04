@@ -63,17 +63,31 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        // Owner working-as from org select — trust preferred home even if effective-role API lags.
+        if (string.Equals(SellingMode.PreferredHomeRoute, RoleHomeResolver.OwnerHome, StringComparison.Ordinal))
+        {
+            _authorized = true;
+        }
+        else
+        {
+            if (!Gate.CanEnterProtectedShell)
+            {
+                Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+                return;
+            }
+
+            var home = await RoleHome.ResolvePosHomeAsync();
+            _authorized = home == RoleHomeResolver.OwnerHome;
+            if (!_authorized)
+            {
+                Nav.NavigateTo(home, replace: true);
+                return;
+            }
+        }
+
         if (!Gate.CanEnterProtectedShell)
         {
             Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
-            return;
-        }
-
-        var home = await RoleHome.ResolvePosHomeAsync();
-        _authorized = home == RoleHomeResolver.OwnerHome;
-        if (!_authorized)
-        {
-            Nav.NavigateTo(home, replace: true);
             return;
         }
 
