@@ -515,6 +515,11 @@ public sealed class PlatformDbContext : DbContext
                 .IsUnique()
                 .HasFilter("staff_number IS NOT NULL")
                 .HasDatabaseName("ux_platform_users_staff_number");
+            entity.Property(e => e.PublicUserId).HasColumnName("public_user_id").HasMaxLength(16);
+            entity.HasIndex(e => e.PublicUserId)
+                .IsUnique()
+                .HasFilter("public_user_id IS NOT NULL")
+                .HasDatabaseName("ux_platform_users_public_user_id");
             entity.Property(e => e.CreatedByUserId).HasColumnName("created_by_user_id");
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")

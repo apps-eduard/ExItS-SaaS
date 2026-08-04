@@ -32,6 +32,7 @@ public sealed class PlatformUser
     public string? Phone { get; private set; }
     public string? EmployeeCode { get; private set; }
     public string? StaffNumber { get; private set; }
+    public string? PublicUserId { get; private set; }
     public PlatformUserId? CreatedByUserId { get; private set; }
     public AccountStatus Status { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
@@ -50,6 +51,7 @@ public sealed class PlatformUser
         string? phone,
         string? employeeCode,
         string? staffNumber,
+        string? publicUserId,
         PlatformUserId? createdByUserId,
         AccountStatus status,
         DateTimeOffset createdAtUtc,
@@ -67,6 +69,7 @@ public sealed class PlatformUser
         Phone = phone;
         EmployeeCode = employeeCode;
         StaffNumber = staffNumber;
+        PublicUserId = publicUserId;
         CreatedByUserId = createdByUserId;
         Status = status;
         CreatedAtUtc = createdAtUtc;
@@ -98,6 +101,7 @@ public sealed class PlatformUser
             phone: null,
             employeeCode: null,
             staffNumber: null,
+            publicUserId: null,
             createdByUserId: null,
             AccountStatus.Active,
             utcNow,
@@ -130,6 +134,7 @@ public sealed class PlatformUser
             phone: null,
             employeeCode: null,
             staffNumber: null,
+            publicUserId: null,
             createdByUserId: null,
             AccountStatus.PendingVerification,
             utcNow,
@@ -174,6 +179,7 @@ public sealed class PlatformUser
             normalizedPhone,
             normalizedEmployeeCode,
             normalizedStaffNumber,
+            publicUserId: null,
             createdByUserId,
             requireEmailVerification ? AccountStatus.PendingVerification : AccountStatus.Active,
             utcNow,
@@ -194,6 +200,7 @@ public sealed class PlatformUser
         string? phone,
         string? employeeCode,
         string? staffNumber,
+        string? publicUserId,
         PlatformUserId? createdByUserId,
         AccountStatus status,
         DateTimeOffset createdAtUtc,
@@ -211,12 +218,34 @@ public sealed class PlatformUser
             phone,
             employeeCode,
             staffNumber,
+            publicUserId,
             createdByUserId,
             status,
             createdAtUtc,
             updatedAtUtc,
             suspendedAtUtc,
             suspensionReason);
+
+    /// <summary>Assigns the immutable public ExItS ID once. Never changes after assignment.</summary>
+    public void AssignPublicUserId(string publicUserId, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        var normalized = PublicUserIdRules.Normalize(publicUserId);
+        if (PublicUserId is not null)
+        {
+            if (!string.Equals(PublicUserId, normalized, StringComparison.Ordinal))
+            {
+                throw new DomainException(
+                    DomainErrorCodes.PublicUserIdImmutable,
+                    "ExItS ID cannot be changed once assigned.");
+            }
+
+            return;
+        }
+
+        PublicUserId = normalized;
+        UpdatedAtUtc = utcNow;
+    }
 
     public void UpdateProfile(string displayName, string email, DateTimeOffset utcNow)
     {

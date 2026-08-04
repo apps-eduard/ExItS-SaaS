@@ -7,6 +7,8 @@ public interface IPlatformUserRepository
 {
     Task<PlatformUser?> GetByIdAsync(PlatformUserId id, CancellationToken cancellationToken = default);
 
+    Task<PlatformUser?> GetByPublicUserIdAsync(string publicUserId, CancellationToken cancellationToken = default);
+
     Task<PlatformUser?> GetByNormalizedEmailAsync(string normalizedEmail, CancellationToken cancellationToken = default);
 
     Task<PlatformUser?> GetByNormalizedUsernameAsync(string normalizedUsername, CancellationToken cancellationToken = default);

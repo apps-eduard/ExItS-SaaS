@@ -369,7 +369,7 @@ public sealed class ProductAccessUseCaseTests
             var snapshots = new InMemoryEntitlementSnapshotRepository();
             var assignments = new InMemoryProductAccessAssignmentRepository();
 
-            var user = (await new CreatePlatformUser(users, uow, clock)
+            var user = (await new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator())
                 .ExecuteAsync("ada", "Ada Lovelace", "ada@example.com")).Value!;
             var org = (await new CreatePlatformOrganization(orgs, uow, clock)
                 .ExecuteAsync("Acme Group", "acme-access")).Value!;

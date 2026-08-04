@@ -22,6 +22,15 @@ internal sealed class PlatformUserRepository : IPlatformUserRepository
         return record is null ? null : IdentityAccessEntityMapper.ToDomain(record);
     }
 
+    public async Task<PlatformUser?> GetByPublicUserIdAsync(string publicUserId, CancellationToken cancellationToken = default)
+    {
+        var normalized = PublicUserIdRules.Normalize(publicUserId);
+        var record = await _db.PlatformUsers.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.PublicUserId == normalized, cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : IdentityAccessEntityMapper.ToDomain(record);
+    }
+
     public async Task<PlatformUser?> GetByNormalizedEmailAsync(string normalizedEmail, CancellationToken cancellationToken = default)
     {
         var record = await _db.PlatformUsers.AsNoTracking()

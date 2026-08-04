@@ -74,7 +74,7 @@ public sealed class PlatformStaffIdentityFieldsTests
         var harness = CreateStaffHarness();
         var roles = new InMemoryPlatformRoleAssignmentRepository();
         var createStaff = new CreatePlatformStaffUser(
-            new CreatePlatformUser(harness.Users, harness.UnitOfWork, harness.Clock),
+            new CreatePlatformUser(harness.Users, harness.UnitOfWork, harness.Clock, new SequentialPublicUserIdGenerator()),
             new InMemoryStaffNumberGenerator(),
             new AssignPlatformRole(
                 roles,
@@ -212,7 +212,7 @@ public sealed class PlatformStaffIdentityFieldsTests
             Options.Create(new PlatformCredentialLifecycleOptions { ExposeDebugTokens = true }));
 
         var createStaff = new CreatePlatformStaffUser(
-            new CreatePlatformUser(users, uow, clock),
+            new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator()),
             new InMemoryStaffNumberGenerator(),
             new AssignPlatformRole(roles, users, orgs, ensure, audit, uow, clock),
             ensure,

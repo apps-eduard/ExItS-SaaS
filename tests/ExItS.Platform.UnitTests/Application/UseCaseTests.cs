@@ -18,7 +18,7 @@ public sealed class UseCaseTests
         var users = new InMemoryPlatformUserRepository();
         var uow = new NoOpUnitOfWork();
         var clock = new FixedClock(T0);
-        var create = new CreatePlatformUser(users, uow, clock);
+        var create = new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator());
 
         var first = await create.ExecuteAsync("ada", "Ada Lovelace", "ada@example.com");
         Assert.True(first.IsSuccess);
@@ -36,7 +36,7 @@ public sealed class UseCaseTests
     public async Task CreatePlatformUser_rejects_invalid_domain_input_without_persisting()
     {
         var users = new InMemoryPlatformUserRepository();
-        var create = new CreatePlatformUser(users, new NoOpUnitOfWork(), new FixedClock(T0));
+        var create = new CreatePlatformUser(users, new NoOpUnitOfWork(), new FixedClock(T0), new SequentialPublicUserIdGenerator());
         var result = await create.ExecuteAsync("ada", "A", "ada@example.com");
         Assert.False(result.IsSuccess);
         Assert.Equal(DomainErrorCodes.InvalidDisplayName, result.ErrorCode);
@@ -52,7 +52,7 @@ public sealed class UseCaseTests
         var audit = new NoOpAuditWriter();
         var uow = new NoOpUnitOfWork();
         var clock = new FixedClock(T0);
-        var create = new CreatePlatformUser(users, uow, clock);
+        var create = new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator());
         var roles = new InMemoryPlatformRoleAssignmentRepository();
         var suspend = new SuspendPlatformUser(users, roles, sessions, accessTokens, audit, uow, clock);
 
@@ -76,7 +76,7 @@ public sealed class UseCaseTests
         var audit = new NoOpAuditWriter();
         var uow = new NoOpUnitOfWork();
         var clock = new FixedClock(T0);
-        var create = new CreatePlatformUser(users, uow, clock);
+        var create = new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator());
         var user = (await create.ExecuteAsync("ada", "Ada Lovelace", "ada@example.com")).Value!;
 
         var session = PlatformAuthSession.Create(
@@ -126,7 +126,7 @@ public sealed class UseCaseTests
         var uow = new NoOpUnitOfWork();
         var clock = new FixedClock(T0);
 
-        var user = (await new CreatePlatformUser(users, uow, clock).ExecuteAsync("ada", "Ada Lovelace", "ada@example.com")).Value!;
+        var user = (await new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator()).ExecuteAsync("ada", "Ada Lovelace", "ada@example.com")).Value!;
         var org = (await new CreatePlatformOrganization(orgs, uow, clock).ExecuteAsync("Acme Group", "acme-group")).Value!;
         var add = new AddOrganizationMembership(users, orgs, memberships, new EnsureAccountProfilesForUser(new InMemoryAccountProfileRepository(), new InMemoryPlatformRoleAssignmentRepository(), memberships, uow, clock), uow, clock);
 
@@ -165,8 +165,8 @@ public sealed class UseCaseTests
         var uow = new NoOpUnitOfWork();
         var clock = new FixedClock(T0);
 
-        var user = (await new CreatePlatformUser(users, uow, clock).ExecuteAsync("ada", "Ada Lovelace", "ada@example.com")).Value!;
-        var owner = (await new CreatePlatformUser(users, uow, clock).ExecuteAsync("owner", "Org Owner", "owner@example.com")).Value!;
+        var user = (await new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator()).ExecuteAsync("ada", "Ada Lovelace", "ada@example.com")).Value!;
+        var owner = (await new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator()).ExecuteAsync("owner", "Org Owner", "owner@example.com")).Value!;
         var org = (await new CreatePlatformOrganization(orgs, uow, clock).ExecuteAsync("Acme Group", "acme-group")).Value!;
         var ownerMembership = await new AddOrganizationMembership(users, orgs, memberships, new EnsureAccountProfilesForUser(new InMemoryAccountProfileRepository(), new InMemoryPlatformRoleAssignmentRepository(), memberships, uow, clock), uow, clock)
             .ExecuteAsync(org.Id, owner.Id, OrganizationRole.OrganizationOwner);

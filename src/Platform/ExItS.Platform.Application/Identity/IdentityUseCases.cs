@@ -121,12 +121,18 @@ public sealed class CreatePlatformUser
     private readonly IPlatformUserRepository _users;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IPublicUserIdGenerator _publicUserIds;
 
-    public CreatePlatformUser(IPlatformUserRepository users, IPlatformUnitOfWork unitOfWork, IClock clock)
+    public CreatePlatformUser(
+        IPlatformUserRepository users,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock,
+        IPublicUserIdGenerator publicUserIds)
     {
         _users = users;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _publicUserIds = publicUserIds;
     }
 
     public async Task<ApplicationResult<PlatformUser>> ExecuteAsync(
@@ -156,6 +162,8 @@ public sealed class CreatePlatformUser
                     "A Platform User with this email already exists.");
             }
 
+            var publicId = await _publicUserIds.GenerateUniqueAsync(cancellationToken).ConfigureAwait(false);
+            user.AssignPublicUserId(publicId, _clock.UtcNow);
             await _users.AddAsync(user, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<PlatformUser>.Success(user);
@@ -209,6 +217,8 @@ public sealed class CreatePlatformUser
                     "A Platform User with this email already exists.");
             }
 
+            var publicId = await _publicUserIds.GenerateUniqueAsync(cancellationToken).ConfigureAwait(false);
+            user.AssignPublicUserId(publicId, _clock.UtcNow);
             await _users.AddAsync(user, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<PlatformUser>.Success(user);

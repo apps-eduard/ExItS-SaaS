@@ -160,7 +160,7 @@ public sealed class ProductAuthorizationAndDiscoveryTests
     public async Task Entitlement_does_not_grant_all_staff_product_access()
     {
         var harness = await AuthHarness.CreateAsync();
-        var staff = (await new CreatePlatformUser(harness.Users, harness.UnitOfWork, harness.Clock)
+        var staff = (await new CreatePlatformUser(harness.Users, harness.UnitOfWork, harness.Clock, new SequentialPublicUserIdGenerator())
             .ExecuteAsync("carlo", "Carlo Reyes", "carlo@example.com")).Value!;
         _ = (await new AddOrganizationMembership(
                 harness.Users,
@@ -369,7 +369,7 @@ public sealed class ProductAuthorizationAndDiscoveryTests
             var assignments = new InMemoryProductAccessAssignmentRepository();
             var roleGrants = new InMemoryProductLocalRoleGrantRepository();
 
-            var user = (await new CreatePlatformUser(users, uow, clock)
+            var user = (await new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator())
                 .ExecuteAsync("owner", "Org Owner", "owner@example.com")).Value!;
             var org = (await new CreatePlatformOrganization(orgs, uow, clock)
                 .ExecuteAsync("Launch Co", "launch-co")).Value!;

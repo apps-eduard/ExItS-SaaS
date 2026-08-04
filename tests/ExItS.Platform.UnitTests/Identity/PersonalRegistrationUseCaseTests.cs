@@ -35,7 +35,8 @@ public sealed class PersonalRegistrationUseCaseTests
             audit,
             unitOfWork,
             clock,
-            Options.Create(new PlatformCredentialLifecycleOptions { EmailVerificationTokenLifetimeHours = 24, ExposeDebugTokens = true }));
+            Options.Create(new PlatformCredentialLifecycleOptions { EmailVerificationTokenLifetimeHours = 24, ExposeDebugTokens = true }),
+            new SequentialPublicUserIdGenerator());
 
         var result = await register.ExecuteAsync("New User", "new.user@example.com");
         Assert.True(result.IsSuccess);
@@ -85,7 +86,8 @@ public sealed class PersonalRegistrationUseCaseTests
             audit,
             unitOfWork,
             clock,
-            Options.Create(new PlatformCredentialLifecycleOptions { EmailVerificationTokenLifetimeHours = 24, ExposeDebugTokens = true }));
+            Options.Create(new PlatformCredentialLifecycleOptions { EmailVerificationTokenLifetimeHours = 24, ExposeDebugTokens = true }),
+            new SequentialPublicUserIdGenerator());
 
         var registered = await register.ExecuteAsync("Activate Me", "activate.me@example.com");
         var opaque = registered.Value!.DebugToken!;

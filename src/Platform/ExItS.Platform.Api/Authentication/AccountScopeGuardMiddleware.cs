@@ -86,6 +86,13 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
             return true;
         }
 
+        // Public ExItS ID — any authenticated account class (Personal/Organization/Platform).
+        if (path.Equals("/api/v1/me/public-identity", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/api/v1/users/resolve-public-id", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
         if (path.StartsWith("/health", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/", StringComparison.OrdinalIgnoreCase))
         {
@@ -117,6 +124,12 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
 
     private static bool IsPathAllowed(string path, AccountClass accountClass)
     {
+        if (path.Equals("/api/v1/me/public-identity", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/api/v1/users/resolve-public-id", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
         if (path.StartsWith("/api/v1/personal", StringComparison.OrdinalIgnoreCase))
         {
             return accountClass is AccountClass.Personal;

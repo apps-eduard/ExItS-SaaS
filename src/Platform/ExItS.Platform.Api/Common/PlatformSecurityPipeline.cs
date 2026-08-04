@@ -11,6 +11,7 @@ internal static class PlatformSecurityPipeline
     public const string AuthLoginRateLimitPolicy = "auth-login";
     public const string AuthPasswordResetRateLimitPolicy = "auth-password-reset";
     public const string AuthTokenOpsRateLimitPolicy = "auth-token-ops";
+    public const string PublicIdResolveRateLimitPolicy = "public-id-resolve";
     public const string KnownDevelopmentPasswordMarker = "exits_platform_dev_only";
 
     public static void ValidateProductionConfigurationOrThrow(WebApplicationBuilder builder)
@@ -190,6 +191,21 @@ internal static class PlatformSecurityPipeline
                     {
                         AutoReplenishment = true,
                         PermitLimit = 60,
+                        Window = TimeSpan.FromMinutes(15),
+                        QueueLimit = 0
+                    });
+            });
+
+            options.AddPolicy(PublicIdResolveRateLimitPolicy, httpContext =>
+            {
+                var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                var user = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "anon";
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    "public-id:" + user + ":" + ip,
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        AutoReplenishment = true,
+                        PermitLimit = 30,
                         Window = TimeSpan.FromMinutes(15),
                         QueueLimit = 0
                     });

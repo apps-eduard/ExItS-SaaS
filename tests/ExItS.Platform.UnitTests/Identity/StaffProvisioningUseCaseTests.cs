@@ -29,7 +29,7 @@ public sealed class StaffProvisioningUseCaseTests
         var ensure = new EnsureAccountProfilesForUser(profiles, roles, memberships, uow, clock);
 
         var createStaff = new CreatePlatformStaffUser(
-            new CreatePlatformUser(users, uow, clock),
+            new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator()),
             new InMemoryStaffNumberGenerator(),
             new AssignPlatformRole(roles, users, orgs, ensure, audit, uow, clock),
             ensure,
@@ -93,7 +93,7 @@ public sealed class StaffProvisioningUseCaseTests
         var clock = new FixedClock(T0);
         var ensure = new EnsureAccountProfilesForUser(profiles, roles, memberships, uow, clock);
         var provision = new EnsureOrganizationStaffIdentity(
-            new CreatePlatformUser(users, uow, clock),
+            new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator()),
             users,
             ensure);
 
@@ -127,7 +127,7 @@ public sealed class StaffProvisioningUseCaseTests
         var messages = new CapturingAuthOutboundMessageSink();
 
         var createStaff = new CreatePlatformStaffUser(
-            new CreatePlatformUser(users, uow, clock),
+            new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator()),
             new InMemoryStaffNumberGenerator(),
             new AssignPlatformRole(roles, users, orgs, ensure, audit, uow, clock),
             ensure,

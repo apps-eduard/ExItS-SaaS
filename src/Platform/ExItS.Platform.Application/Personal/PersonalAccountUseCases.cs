@@ -27,7 +27,9 @@ public sealed record PersonalProfileDto(
     string DisplayName,
     string Email,
     string AccountClass,
-    string Status);
+    string Status,
+    string? PublicUserId = null,
+    string? QrPayload = null);
 
 public sealed record PersonalAccountSettingsDto(
     Guid UserIdentityId,
@@ -127,11 +129,16 @@ public sealed class GetPersonalProfile
 {
     private readonly IPlatformUserRepository _users;
     private readonly IAccountProfileRepository _profiles;
+    private readonly GetOrAssignPublicIdentity _publicIdentity;
 
-    public GetPersonalProfile(IPlatformUserRepository users, IAccountProfileRepository profiles)
+    public GetPersonalProfile(
+        IPlatformUserRepository users,
+        IAccountProfileRepository profiles,
+        GetOrAssignPublicIdentity publicIdentity)
     {
         _users = users;
         _profiles = profiles;
+        _publicIdentity = publicIdentity;
     }
 
     public async Task<ApplicationResult<PersonalProfileDto>> ExecuteAsync(
@@ -155,6 +162,15 @@ public sealed class GetPersonalProfile
                 "Personal account profile is not available.");
         }
 
+        string? publicUserId = user.PublicUserId;
+        string? qrPayload = null;
+        var identity = await _publicIdentity.ExecuteAsync(userIdentityId, cancellationToken).ConfigureAwait(false);
+        if (identity.IsSuccess && identity.Value is not null)
+        {
+            publicUserId = identity.Value.PublicUserId;
+            qrPayload = identity.Value.QrPayload;
+        }
+
         return ApplicationResult<PersonalProfileDto>.Success(new PersonalProfileDto(
             user.Id.Value,
             profile.Id.Value,
@@ -162,7 +178,9 @@ public sealed class GetPersonalProfile
             user.DisplayName,
             user.NormalizedEmail,
             profile.AccountClass.ToString(),
-            profile.Status));
+            profile.Status,
+            publicUserId,
+            qrPayload));
     }
 }
 

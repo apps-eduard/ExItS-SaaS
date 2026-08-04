@@ -50,6 +50,7 @@ public static class DependencyInjection
         services.AddScoped<IAdminPortfolioReadStore, AdminPortfolioReadStore>();
         services.AddScoped<IPlatformUserRepository, PlatformUserRepository>();
         services.AddScoped<IStaffNumberGenerator, EfStaffNumberGenerator>();
+        services.AddScoped<IPublicUserIdGenerator, EfPublicUserIdGenerator>();
         services.AddScoped<IPlatformUserCredentialRepository, PlatformUserCredentialRepository>();
         services.AddScoped<IPlatformAuthSessionRepository, PlatformAuthSessionRepository>();
         services.AddScoped<IAccountProfileRepository, AccountProfileRepository>();

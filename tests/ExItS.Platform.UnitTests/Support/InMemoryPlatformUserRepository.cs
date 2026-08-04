@@ -19,6 +19,18 @@ internal sealed class InMemoryPlatformUserRepository : IPlatformUserRepository
         return Task.FromResult(user);
     }
 
+    public Task<PlatformUser?> GetByPublicUserIdAsync(string publicUserId, CancellationToken cancellationToken = default)
+    {
+        if (!PublicUserIdRules.TryNormalize(publicUserId, out var normalized))
+        {
+            return Task.FromResult<PlatformUser?>(null);
+        }
+
+        var match = _byId.Values.FirstOrDefault(u =>
+            string.Equals(u.PublicUserId, normalized, StringComparison.Ordinal));
+        return Task.FromResult(match);
+    }
+
     public Task<PlatformUser?> GetByNormalizedEmailAsync(string normalizedEmail, CancellationToken cancellationToken = default)
     {
         if (_emailIndex.TryGetValue(normalizedEmail, out var id) && _byId.TryGetValue(id, out var user))

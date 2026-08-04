@@ -33,6 +33,8 @@ public static class PlatformAuditActions
 
     public const string PlatformUserCreated = "platform.user.created";
     public const string PlatformUserProfileUpdated = "platform.user.profile_updated";
+    public const string PlatformUserPublicIdAssigned = "platform.user.public_id_assigned";
+    public const string PlatformUserPublicIdResolved = "platform.user.public_id_resolved";
     public const string PlatformUserSuspended = "platform.user.suspended";
     public const string PlatformUserReactivated = "platform.user.reactivated";
     public const string PlatformUserDeactivated = "platform.user.deactivated";

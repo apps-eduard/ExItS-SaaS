@@ -30,6 +30,7 @@ public sealed class RegisterPersonalAccount
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly PlatformCredentialLifecycleOptions _lifecycle;
+    private readonly IPublicUserIdGenerator _publicUserIds;
 
     public RegisterPersonalAccount(
         IPlatformUserRepository users,
@@ -41,7 +42,8 @@ public sealed class RegisterPersonalAccount
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
-        IOptions<PlatformCredentialLifecycleOptions> lifecycle)
+        IOptions<PlatformCredentialLifecycleOptions> lifecycle,
+        IPublicUserIdGenerator publicUserIds)
     {
         _users = users;
         _credentials = credentials;
@@ -53,6 +55,7 @@ public sealed class RegisterPersonalAccount
         _unitOfWork = unitOfWork;
         _clock = clock;
         _lifecycle = lifecycle.Value;
+        _publicUserIds = publicUserIds;
     }
 
     public async Task<ApplicationResult<PersonalRegistrationAckDto>> ExecuteAsync(
@@ -77,6 +80,8 @@ public sealed class RegisterPersonalAccount
 
             var username = await AllocateUsernameFromEmailAsync(normalizedEmail, cancellationToken).ConfigureAwait(false);
             var user = PlatformUser.CreatePendingVerification(username, displayName, email, utcNow);
+            var publicId = await _publicUserIds.GenerateUniqueAsync(cancellationToken).ConfigureAwait(false);
+            user.AssignPublicUserId(publicId, utcNow);
             await _users.AddAsync(user, cancellationToken).ConfigureAwait(false);
 
             var credential = PlatformUserCredential.CreateForExternalLogin(user.Id, utcNow, emailVerified: false);

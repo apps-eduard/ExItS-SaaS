@@ -21,6 +21,7 @@ internal static class IdentityAccessEntityMapper
             record.Phone,
             record.EmployeeCode,
             record.StaffNumber,
+            record.PublicUserId,
             record.CreatedByUserId is null ? null : PlatformUserId.From(record.CreatedByUserId.Value),
             Enum.Parse<AccountStatus>(record.Status),
             record.CreatedAtUtc,
@@ -41,6 +42,7 @@ internal static class IdentityAccessEntityMapper
             Phone = user.Phone,
             EmployeeCode = user.EmployeeCode,
             StaffNumber = user.StaffNumber,
+            PublicUserId = user.PublicUserId,
             CreatedByUserId = user.CreatedByUserId?.Value,
             Status = user.Status.ToString(),
             CreatedAtUtc = user.CreatedAtUtc,
@@ -60,6 +62,7 @@ internal static class IdentityAccessEntityMapper
         record.Phone = user.Phone;
         record.EmployeeCode = user.EmployeeCode;
         record.StaffNumber = user.StaffNumber;
+        record.PublicUserId = user.PublicUserId;
         record.CreatedByUserId = user.CreatedByUserId?.Value;
         record.Status = user.Status.ToString();
         record.UpdatedAtUtc = user.UpdatedAtUtc;
