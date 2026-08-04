@@ -45,6 +45,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<GlobalProductBusinessTypeRecord> GlobalProductBusinessTypes => Set<GlobalProductBusinessTypeRecord>();
     internal DbSet<CatalogTemplateRecord> CatalogTemplates => Set<CatalogTemplateRecord>();
     internal DbSet<CatalogTemplateProductRecord> CatalogTemplateProducts => Set<CatalogTemplateProductRecord>();
+    internal DbSet<CatalogImportJobRecord> CatalogImportJobs => Set<CatalogImportJobRecord>();
+    internal DbSet<CatalogImportItemRecord> CatalogImportItems => Set<CatalogImportItemRecord>();
     internal DbSet<PlatformOrganizationRecord> Organizations => Set<PlatformOrganizationRecord>();
     internal DbSet<SubscriptionRecord> Subscriptions => Set<SubscriptionRecord>();
     internal DbSet<SaaSPaymentRecord> SaaSPayments => Set<SaaSPaymentRecord>();
@@ -1758,6 +1760,82 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.GlobalProductId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<CatalogImportJobRecord>(entity =>
+        {
+            entity.ToTable("catalog_import_jobs", CatalogSchemaName);
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.FileName).HasColumnName("file_name").HasMaxLength(260).IsRequired();
+            entity.Property(e => e.FileFormat).HasColumnName("file_format").HasMaxLength(16).IsRequired();
+            entity.Property(e => e.ContentType).HasColumnName("content_type").HasMaxLength(128);
+            entity.Property(e => e.FileSizeBytes).HasColumnName("file_size_bytes");
+            entity.Property(e => e.FileSha256).HasColumnName("file_sha256").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(128);
+            entity.Property(e => e.RequestedBy).HasColumnName("requested_by").HasMaxLength(128).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.TotalCount).HasColumnName("total_count");
+            entity.Property(e => e.ProcessedCount).HasColumnName("processed_count");
+            entity.Property(e => e.ImportedCount).HasColumnName("imported_count");
+            entity.Property(e => e.SkippedCount).HasColumnName("skipped_count");
+            entity.Property(e => e.FailedCount).HasColumnName("failed_count");
+            entity.Property(e => e.CurrentStage).HasColumnName("current_stage").HasMaxLength(64);
+            entity.Property(e => e.ErrorSummary).HasColumnName("error_summary").HasMaxLength(1000);
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.StartedAtUtc).HasColumnName("started_at_utc");
+            entity.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
+            entity.Property(e => e.LastHeartbeatAtUtc).HasColumnName("last_heartbeat_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => e.Status).HasDatabaseName("ix_catalog_import_jobs_status");
+            entity.HasIndex(e => e.CreatedAtUtc).HasDatabaseName("ix_catalog_import_jobs_created_at");
+            entity.HasIndex(e => e.IdempotencyKey)
+                .IsUnique()
+                .HasFilter("idempotency_key IS NOT NULL")
+                .HasDatabaseName("ux_catalog_import_jobs_idempotency_key");
+
+            entity.HasMany(e => e.Items)
+                .WithOne()
+                .HasForeignKey(e => e.CatalogImportJobId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CatalogImportItemRecord>(entity =>
+        {
+            entity.ToTable("catalog_import_items", CatalogSchemaName);
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CatalogImportJobId).HasColumnName("catalog_import_job_id");
+            entity.Property(e => e.RowNumber).HasColumnName("row_number");
+            entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(2000);
+            entity.Property(e => e.Sku).HasColumnName("sku").HasMaxLength(64);
+            entity.Property(e => e.Barcode).HasColumnName("barcode").HasMaxLength(64);
+            entity.Property(e => e.GlobalCategoryId).HasColumnName("global_category_id");
+            entity.Property(e => e.CategoryName).HasColumnName("category_name").HasMaxLength(200);
+            entity.Property(e => e.Unit).HasColumnName("unit").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.SuggestedPrice).HasColumnName("suggested_price").HasColumnType("decimal(18,2)");
+            entity.Property(e => e.SuggestedCost).HasColumnName("suggested_cost").HasColumnType("decimal(18,2)");
+            entity.Property(e => e.ImageReference).HasColumnName("image_reference").HasMaxLength(512);
+            entity.Property(e => e.SearchTagsRaw).HasColumnName("search_tags_raw").HasMaxLength(1000);
+            entity.Property(e => e.BusinessTypesRaw).HasColumnName("business_types_raw").HasMaxLength(512);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.ErrorCode).HasColumnName("error_code").HasMaxLength(128);
+            entity.Property(e => e.ErrorMessage).HasColumnName("error_message").HasMaxLength(1000);
+            entity.Property(e => e.CreatedGlobalProductId).HasColumnName("created_global_product_id");
+            entity.Property(e => e.AttemptCount).HasColumnName("attempt_count");
+            entity.Property(e => e.ProcessedAtUtc).HasColumnName("processed_at_utc");
+
+            entity.HasIndex(e => new { e.CatalogImportJobId, e.RowNumber })
+                .HasDatabaseName("ix_catalog_import_items_job_row");
+            entity.HasIndex(e => new { e.CatalogImportJobId, e.Status })
+                .HasDatabaseName("ix_catalog_import_items_job_status");
         });
     }
 }

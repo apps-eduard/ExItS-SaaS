@@ -13,6 +13,7 @@ using ExItS.Platform.Application.Personal;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Infrastructure.Authorization;
+using ExItS.Platform.Infrastructure.GlobalCatalog;
 using ExItS.Platform.Infrastructure.Identity;
 using ExItS.Platform.Infrastructure.LocalValidation;
 using ExItS.Platform.Infrastructure.Persistence;
@@ -45,6 +46,8 @@ public static class DependencyInjection
         services.AddScoped<IGlobalCategoryRepository, GlobalCategoryRepository>();
         services.AddScoped<IGlobalProductRepository, GlobalProductRepository>();
         services.AddScoped<ICatalogTemplateRepository, CatalogTemplateRepository>();
+        services.AddScoped<ICatalogImportJobRepository, CatalogImportJobRepository>();
+        services.AddScoped<ICatalogImportFileParser, CatalogImportFileParser>();
         services.AddScoped<IPlatformOrganizationRepository, PlatformOrganizationRepository>();
         services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
         services.AddScoped<ISaaSPaymentRepository, SaaSPaymentRepository>();

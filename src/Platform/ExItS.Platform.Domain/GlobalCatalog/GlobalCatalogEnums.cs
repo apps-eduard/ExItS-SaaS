@@ -51,3 +51,27 @@ public enum SelectionMode
     Auto = 1,
     Hybrid = 2
 }
+
+public enum CatalogImportJobStatus
+{
+    Validated = 0,
+    Queued = 1,
+    Processing = 2,
+    Completed = 3,
+    CompletedWithWarnings = 4,
+    Failed = 5
+}
+
+public enum CatalogImportItemStatus
+{
+    Pending = 0,
+    Imported = 1,
+    Skipped = 2,
+    Failed = 3
+}
+
+public enum CatalogImportFileFormat
+{
+    Csv = 0,
+    Xlsx = 1
+}

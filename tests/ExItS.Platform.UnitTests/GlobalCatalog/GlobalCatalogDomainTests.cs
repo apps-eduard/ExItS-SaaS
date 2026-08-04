@@ -235,6 +235,16 @@ file sealed class InMemoryGlobalCategoryRepository : IGlobalCategoryRepository
         return Task.FromResult(exists);
     }
 
+    public Task<IReadOnlyList<GlobalCategory>> FindByNormalizedNameAsync(
+        string normalizedName,
+        CancellationToken cancellationToken = default)
+    {
+        var matches = _store.Values
+            .Where(c => c.Name.ToUpperInvariant() == normalizedName)
+            .ToList();
+        return Task.FromResult<IReadOnlyList<GlobalCategory>>(matches);
+    }
+
     public Task<(IReadOnlyList<GlobalCategory> Items, int TotalCount)> ListAsync(
         GlobalCategoryStatus? status,
         GlobalCategoryId? parentId,

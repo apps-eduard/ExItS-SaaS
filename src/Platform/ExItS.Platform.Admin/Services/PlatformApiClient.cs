@@ -584,6 +584,95 @@ public sealed class PlatformApiClient(
             null,
             ct);
 
+    public Task<ApiCallResult<PagedResult<CatalogImportJobDto>>> GetCatalogImportsAsync(
+        int page = 1,
+        int pageSize = 20,
+        string? status = null,
+        CancellationToken ct = default) =>
+        GetAsync<PagedResult<CatalogImportJobDto>>(
+            $"/api/v1/platform/global-catalog/products/imports?{Query(("page", page), ("pageSize", pageSize), ("status", status))}",
+            ct);
+
+    public Task<ApiCallResult<CatalogImportJobDto>> GetCatalogImportAsync(Guid jobId, CancellationToken ct = default) =>
+        GetAsync<CatalogImportJobDto>($"/api/v1/platform/global-catalog/products/imports/{jobId}", ct);
+
+    public async Task<ApiCallResult<CatalogImportJobDto>> UploadCatalogImportAsync(
+        Stream content,
+        string fileName,
+        string? contentType,
+        string? idempotencyKey = null,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/platform/global-catalog/products/imports");
+            var form = new MultipartFormDataContent();
+            var streamContent = new StreamContent(content);
+            if (!string.IsNullOrWhiteSpace(contentType))
+            {
+                streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+            }
+
+            form.Add(streamContent, "file", fileName);
+            if (!string.IsNullOrWhiteSpace(idempotencyKey))
+            {
+                form.Add(new StringContent(idempotencyKey), "idempotencyKey");
+                request.Headers.TryAddWithoutValidation("Idempotency-Key", idempotencyKey);
+            }
+
+            request.Content = form;
+
+            var sessionToken = await ResolveSessionTokenAsync();
+            if (!string.IsNullOrWhiteSpace(sessionToken)
+                && !request.Headers.Contains(SessionTokenHeader))
+            {
+                request.Headers.TryAddWithoutValidation(SessionTokenHeader, sessionToken);
+            }
+
+            using var response = await httpClient.SendAsync(request, ct);
+            if (response.IsSuccessStatusCode)
+            {
+                var data = await response.Content.ReadFromJsonAsync<CatalogImportJobDto>(JsonOptions, ct);
+                return data is null
+                    ? ApiCallResult<CatalogImportJobDto>.Failed(new PlatformApiException(response.StatusCode, "Invalid API response", "The API returned no content."))
+                    : ApiCallResult<CatalogImportJobDto>.Success(data);
+            }
+
+            var error = await ToExceptionAsync(response, ct);
+            return response.StatusCode switch
+            {
+                HttpStatusCode.NotFound => ApiCallResult<CatalogImportJobDto>.NotFound(error),
+                HttpStatusCode.BadRequest or HttpStatusCode.UnprocessableEntity => ApiCallResult<CatalogImportJobDto>.Validation(error),
+                HttpStatusCode.Conflict => ApiCallResult<CatalogImportJobDto>.Failed(error),
+                _ => ApiCallResult<CatalogImportJobDto>.Failed(error)
+            };
+        }
+        catch (HttpRequestException ex)
+        {
+            return ApiCallResult<CatalogImportJobDto>.Unavailable(new PlatformApiException(null, "Platform API unavailable", ex.Message, innerException: ex));
+        }
+        catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            return ApiCallResult<CatalogImportJobDto>.Unavailable(new PlatformApiException(null, "Platform API timed out", ex.Message, innerException: ex));
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+    }
+
+    public Task<ApiCallResult<CatalogImportJobDto>> ConfirmCatalogImportAsync(Guid jobId, CancellationToken ct = default) =>
+        SendAsync<CatalogImportJobDto>(HttpMethod.Post, $"/api/v1/platform/global-catalog/products/imports/{jobId}/confirm", new { }, ct);
+
+    public Task<ApiCallResult<PagedResult<CatalogImportErrorDto>>> GetCatalogImportErrorsAsync(
+        Guid jobId,
+        int page = 1,
+        int pageSize = 100,
+        CancellationToken ct = default) =>
+        GetAsync<PagedResult<CatalogImportErrorDto>>(
+            $"/api/v1/platform/global-catalog/products/imports/{jobId}/errors?{Query(("page", page), ("pageSize", pageSize))}",
+            ct);
+
     private static MembershipLifecycleRequest WithActor(MembershipLifecycleRequest request) =>
         request with { ActorReference = string.IsNullOrWhiteSpace(request.ActorReference) ? DevActor : request.ActorReference };
 

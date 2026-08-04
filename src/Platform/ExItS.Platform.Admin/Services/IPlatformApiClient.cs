@@ -270,4 +270,23 @@ public interface IPlatformApiClient
     Task<ApiCallResult<CatalogTemplateDto>> ReorderCatalogTemplateProductsAsync(Guid id, ReorderCatalogTemplateProductsRequest request, CancellationToken ct = default);
     Task<ApiCallResult<CatalogTemplateDto>> UpdateCatalogTemplateProductFlagsAsync(Guid id, Guid productId, UpdateCatalogTemplateProductFlagsRequest request, CancellationToken ct = default);
     Task<ApiCallResult<CatalogTemplateDto>> RemoveCatalogTemplateProductAsync(Guid id, Guid productId, DateTimeOffset? expectedUpdatedAtUtc = null, CancellationToken ct = default);
+
+    Task<ApiCallResult<PagedResult<CatalogImportJobDto>>> GetCatalogImportsAsync(
+        int page = 1,
+        int pageSize = 20,
+        string? status = null,
+        CancellationToken ct = default);
+    Task<ApiCallResult<CatalogImportJobDto>> GetCatalogImportAsync(Guid jobId, CancellationToken ct = default);
+    Task<ApiCallResult<CatalogImportJobDto>> UploadCatalogImportAsync(
+        Stream content,
+        string fileName,
+        string? contentType,
+        string? idempotencyKey = null,
+        CancellationToken ct = default);
+    Task<ApiCallResult<CatalogImportJobDto>> ConfirmCatalogImportAsync(Guid jobId, CancellationToken ct = default);
+    Task<ApiCallResult<PagedResult<CatalogImportErrorDto>>> GetCatalogImportErrorsAsync(
+        Guid jobId,
+        int page = 1,
+        int pageSize = 100,
+        CancellationToken ct = default);
 }

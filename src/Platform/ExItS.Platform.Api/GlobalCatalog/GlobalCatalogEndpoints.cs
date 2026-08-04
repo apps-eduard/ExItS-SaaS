@@ -14,6 +14,7 @@ internal static class GlobalCatalogEndpoints
         var root = app.MapGroup("/api/v1/platform/global-catalog");
         MapCategoryEndpoints(root);
         MapProductEndpoints(root);
+        MapImportEndpoints(root);
         MapTemplateEndpoints(root);
         return app;
     }
@@ -329,6 +330,181 @@ internal static class GlobalCatalogEndpoints
             }
 
             return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+    }
+
+    private static void MapImportEndpoints(RouteGroupBuilder root)
+    {
+        var imports = root.MapGroup("/products/imports");
+
+        imports.MapGet("/", async (
+            CatalogImportQueryService queries,
+            PlatformAuthz authz,
+            CatalogImportJobStatus? status,
+            int? page,
+            int? pageSize,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ImportGlobalProducts,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(CatalogImportJob),
+                "list",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await queries.ListAsync(status, page, pageSize, ct).ConfigureAwait(false);
+            return Results.Ok(result);
+        });
+
+        imports.MapPost("/", async (
+            HttpRequest request,
+            CreateCatalogImport useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ImportGlobalProducts,
+                PlatformAuditActions.CatalogImportCreated,
+                nameof(CatalogImportJob),
+                "upload",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            if (!request.HasFormContentType)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.CatalogImportUnsupportedType,
+                    "multipart/form-data upload is required.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            var form = await request.ReadFormAsync(ct).ConfigureAwait(false);
+            var file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
+            if (file is null || file.Length <= 0)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.CatalogImportEmpty,
+                    "A non-empty file field named 'file' is required.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            var idempotencyKey = form["idempotencyKey"].FirstOrDefault()
+                ?? request.Headers["Idempotency-Key"].FirstOrDefault();
+
+            await using var stream = file.OpenReadStream();
+            var result = await useCase
+                .ExecuteAsync(stream, file.FileName, file.ContentType, file.Length, idempotencyKey, ct)
+                .ConfigureAwait(false);
+
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogImportCreated,
+                    nameof(CatalogImportJob),
+                    result.Value!.Id.ToString("D"),
+                    summary: $"Uploaded catalog import {result.Value.FileName} ({result.Value.TotalCount} rows).",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(
+                result,
+                job => Results.Created($"/api/v1/platform/global-catalog/products/imports/{job.Id}", job));
+        }).DisableAntiforgery();
+
+        imports.MapGet("/{jobId:guid}", async (
+            Guid jobId,
+            CatalogImportQueryService queries,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ImportGlobalProducts,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(CatalogImportJob),
+                jobId.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var job = await queries.GetByIdAsync(jobId, includePreview: true, ct).ConfigureAwait(false);
+            return job is null
+                ? PlatformApiResults.Problem(
+                    ApplicationErrorCodes.CatalogImportJobNotFound,
+                    "Import job was not found.",
+                    StatusCodes.Status404NotFound)
+                : Results.Ok(job);
+        });
+
+        imports.MapPost("/{jobId:guid}/confirm", async (
+            Guid jobId,
+            ConfirmCatalogImport useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ImportGlobalProducts,
+                PlatformAuditActions.CatalogImportConfirmed,
+                nameof(CatalogImportJob),
+                jobId.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(jobId, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogImportConfirmed,
+                    nameof(CatalogImportJob),
+                    result.Value!.Id.ToString("D"),
+                    summary: $"Confirmed catalog import {result.Value.Id:D}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        imports.MapGet("/{jobId:guid}/errors", async (
+            Guid jobId,
+            CatalogImportQueryService queries,
+            PlatformAuthz authz,
+            int? page,
+            int? pageSize,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ImportGlobalProducts,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(CatalogImportJob),
+                jobId.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var job = await queries.GetByIdAsync(jobId, includePreview: false, ct).ConfigureAwait(false);
+            if (job is null)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.CatalogImportJobNotFound,
+                    "Import job was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            var errors = await queries.ListErrorsAsync(jobId, page, pageSize, ct).ConfigureAwait(false);
+            return Results.Ok(errors);
         });
     }
 

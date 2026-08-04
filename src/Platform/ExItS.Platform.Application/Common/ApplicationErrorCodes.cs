@@ -164,4 +164,12 @@ public static class ApplicationErrorCodes
     public const string CatalogTemplateNotFound = "application.global_catalog.template.not_found";
     public const string CatalogTemplateNotPublished = "application.global_catalog.template.not_published";
     public const string DuplicateCatalogTemplateSlug = "application.global_catalog.template.slug_conflict";
+    public const string CatalogImportJobNotFound = "application.global_catalog.import.not_found";
+    public const string CatalogImportNotConfirmable = "application.global_catalog.import.not_confirmable";
+    public const string CatalogImportIdempotencyConflict =
+        "application.global_catalog.import.idempotency_conflict";
+    public const string CatalogImportFileTooLarge = "application.global_catalog.import.file_too_large";
+    public const string CatalogImportUnsupportedType = "application.global_catalog.import.unsupported_type";
+    public const string CatalogImportEmpty = "application.global_catalog.import.empty";
+    public const string CatalogImportTooManyRows = "application.global_catalog.import.too_many_rows";
 }

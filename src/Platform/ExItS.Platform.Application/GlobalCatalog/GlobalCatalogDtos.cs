@@ -158,6 +158,70 @@ public sealed record UpdateCatalogTemplateProductFlagsRequest(
 public sealed record CatalogTemplateLifecycleRequest(
     DateTimeOffset? ExpectedUpdatedAtUtc = null);
 
+public sealed record CatalogImportJobDto(
+    Guid Id,
+    string FileName,
+    string FileFormat,
+    string? ContentType,
+    long FileSizeBytes,
+    string FileSha256,
+    string? IdempotencyKey,
+    string RequestedBy,
+    string Status,
+    int TotalCount,
+    int ProcessedCount,
+    int ImportedCount,
+    int SkippedCount,
+    int FailedCount,
+    int PendingCount,
+    string? CurrentStage,
+    string? ErrorSummary,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    DateTimeOffset? StartedAtUtc,
+    DateTimeOffset? CompletedAtUtc,
+    DateTimeOffset? LastHeartbeatAtUtc,
+    IReadOnlyList<CatalogImportItemDto>? PreviewItems);
+
+public sealed record CatalogImportItemDto(
+    Guid Id,
+    int RowNumber,
+    string Name,
+    string? Description,
+    string? Sku,
+    string? Barcode,
+    Guid? GlobalCategoryId,
+    string? CategoryName,
+    string Unit,
+    decimal? SuggestedPrice,
+    decimal? SuggestedCost,
+    string? ImageReference,
+    string? SearchTagsRaw,
+    string? BusinessTypesRaw,
+    string Status,
+    string? ErrorCode,
+    string? ErrorMessage,
+    Guid? CreatedGlobalProductId,
+    int AttemptCount,
+    DateTimeOffset? ProcessedAtUtc);
+
+public sealed record CatalogImportErrorDto(
+    Guid Id,
+    int RowNumber,
+    string Name,
+    string? Sku,
+    string? Barcode,
+    string Status,
+    string? ErrorCode,
+    string? ErrorMessage);
+
+public sealed record ConfirmCatalogImportRequest(
+    string? IdempotencyKey = null);
+
+public sealed record CatalogImportRawRow(
+    int RowNumber,
+    IReadOnlyDictionary<string, string> Cells);
+
 internal static class GlobalCatalogDtoMaps
 {
     public static GlobalCategoryDto Map(GlobalCategory category) =>
@@ -232,4 +296,75 @@ internal static class GlobalCatalogDtoMaps
             template.FirstBatchCount,
             template.CreatedAtUtc,
             template.UpdatedAtUtc);
+
+    public static CatalogImportJobDto Map(CatalogImportJob job, bool includePreviewItems)
+    {
+        IReadOnlyList<CatalogImportItemDto>? preview = null;
+        if (includePreviewItems)
+        {
+            preview = job.Items
+                .Take(CatalogImportRules.MaxPreviewRows)
+                .Select(Map)
+                .ToList();
+        }
+
+        return new CatalogImportJobDto(
+            job.Id.Value,
+            job.FileName,
+            job.FileFormat.ToString(),
+            job.ContentType,
+            job.FileSizeBytes,
+            job.FileSha256,
+            job.IdempotencyKey,
+            job.RequestedBy,
+            job.Status.ToString(),
+            job.TotalCount,
+            job.ProcessedCount,
+            job.ImportedCount,
+            job.SkippedCount,
+            job.FailedCount,
+            job.PendingCount,
+            job.CurrentStage,
+            job.ErrorSummary,
+            job.CreatedAtUtc,
+            job.UpdatedAtUtc,
+            job.StartedAtUtc,
+            job.CompletedAtUtc,
+            job.LastHeartbeatAtUtc,
+            preview);
+    }
+
+    public static CatalogImportItemDto Map(CatalogImportItem item) =>
+        new(
+            item.Id.Value,
+            item.RowNumber,
+            item.Name,
+            item.Description,
+            item.Sku,
+            item.Barcode,
+            item.GlobalCategoryId,
+            item.CategoryName,
+            item.Unit,
+            item.SuggestedPrice,
+            item.SuggestedCost,
+            item.ImageReference,
+            item.SearchTagsRaw,
+            item.BusinessTypesRaw,
+            item.Status.ToString(),
+            item.ErrorCode,
+            item.ErrorMessage,
+            item.CreatedGlobalProductId,
+            item.AttemptCount,
+            item.ProcessedAtUtc);
+
+    public static CatalogImportErrorDto MapError(CatalogImportItem item) =>
+        new(
+            item.Id.Value,
+            item.RowNumber,
+            item.Name,
+            item.Sku,
+            item.Barcode,
+            item.Status.ToString(),
+            item.ErrorCode,
+            item.ErrorMessage);
 }

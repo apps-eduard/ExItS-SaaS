@@ -1160,3 +1160,61 @@ public sealed record UpdateCatalogTemplateProductFlagsRequest(
 
 public sealed record CatalogTemplateLifecycleRequest(
     DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record CatalogImportJobDto(
+    Guid Id,
+    string FileName,
+    string FileFormat,
+    string? ContentType,
+    long FileSizeBytes,
+    string FileSha256,
+    string? IdempotencyKey,
+    string RequestedBy,
+    string Status,
+    int TotalCount,
+    int ProcessedCount,
+    int ImportedCount,
+    int SkippedCount,
+    int FailedCount,
+    int PendingCount,
+    string? CurrentStage,
+    string? ErrorSummary,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    DateTimeOffset? StartedAtUtc,
+    DateTimeOffset? CompletedAtUtc,
+    DateTimeOffset? LastHeartbeatAtUtc,
+    IReadOnlyList<CatalogImportItemDto>? PreviewItems);
+
+public sealed record CatalogImportItemDto(
+    Guid Id,
+    int RowNumber,
+    string Name,
+    string? Description,
+    string? Sku,
+    string? Barcode,
+    Guid? GlobalCategoryId,
+    string? CategoryName,
+    string Unit,
+    decimal? SuggestedPrice,
+    decimal? SuggestedCost,
+    string? ImageReference,
+    string? SearchTagsRaw,
+    string? BusinessTypesRaw,
+    string Status,
+    string? ErrorCode,
+    string? ErrorMessage,
+    Guid? CreatedGlobalProductId,
+    int AttemptCount,
+    DateTimeOffset? ProcessedAtUtc);
+
+public sealed record CatalogImportErrorDto(
+    Guid Id,
+    int RowNumber,
+    string Name,
+    string? Sku,
+    string? Barcode,
+    string Status,
+    string? ErrorCode,
+    string? ErrorMessage);
+

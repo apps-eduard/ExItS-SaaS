@@ -202,4 +202,156 @@ internal static class GlobalCatalogEntityMapper
             });
         }
     }
+
+    public static CatalogImportJob ToDomain(CatalogImportJobRecord record) =>
+        CatalogImportJob.Rehydrate(
+            CatalogImportJobId.From(record.Id),
+            record.FileName,
+            Enum.Parse<CatalogImportFileFormat>(record.FileFormat),
+            record.ContentType,
+            record.FileSizeBytes,
+            record.FileSha256,
+            record.IdempotencyKey,
+            record.RequestedBy,
+            Enum.Parse<CatalogImportJobStatus>(record.Status),
+            record.TotalCount,
+            record.ProcessedCount,
+            record.ImportedCount,
+            record.SkippedCount,
+            record.FailedCount,
+            record.CurrentStage,
+            record.ErrorSummary,
+            record.CreatedAtUtc,
+            record.UpdatedAtUtc,
+            record.StartedAtUtc,
+            record.CompletedAtUtc,
+            record.LastHeartbeatAtUtc,
+            (record.Items ?? []).Select(ToDomain));
+
+    public static CatalogImportItem ToDomain(CatalogImportItemRecord record) =>
+        CatalogImportItem.Rehydrate(
+            CatalogImportItemId.From(record.Id),
+            record.RowNumber,
+            record.Name,
+            record.Description,
+            record.Sku,
+            record.Barcode,
+            record.GlobalCategoryId,
+            record.CategoryName,
+            record.Unit,
+            record.SuggestedPrice,
+            record.SuggestedCost,
+            record.ImageReference,
+            record.SearchTagsRaw,
+            record.BusinessTypesRaw,
+            Enum.Parse<CatalogImportItemStatus>(record.Status),
+            record.ErrorCode,
+            record.ErrorMessage,
+            record.CreatedGlobalProductId,
+            record.AttemptCount,
+            record.ProcessedAtUtc);
+
+    public static CatalogImportJobRecord ToRecord(CatalogImportJob job) =>
+        new()
+        {
+            Id = job.Id.Value,
+            FileName = job.FileName,
+            FileFormat = job.FileFormat.ToString(),
+            ContentType = job.ContentType,
+            FileSizeBytes = job.FileSizeBytes,
+            FileSha256 = job.FileSha256,
+            IdempotencyKey = job.IdempotencyKey,
+            RequestedBy = job.RequestedBy,
+            Status = job.Status.ToString(),
+            TotalCount = job.TotalCount,
+            ProcessedCount = job.ProcessedCount,
+            ImportedCount = job.ImportedCount,
+            SkippedCount = job.SkippedCount,
+            FailedCount = job.FailedCount,
+            CurrentStage = job.CurrentStage,
+            ErrorSummary = job.ErrorSummary,
+            CreatedAtUtc = job.CreatedAtUtc,
+            UpdatedAtUtc = job.UpdatedAtUtc,
+            StartedAtUtc = job.StartedAtUtc,
+            CompletedAtUtc = job.CompletedAtUtc,
+            LastHeartbeatAtUtc = job.LastHeartbeatAtUtc,
+            Items = job.Items.Select(i => ToItemRecord(job.Id.Value, i)).ToList()
+        };
+
+    public static void ApplyToRecord(CatalogImportJob job, CatalogImportJobRecord record)
+    {
+        record.Status = job.Status.ToString();
+        record.TotalCount = job.TotalCount;
+        record.ProcessedCount = job.ProcessedCount;
+        record.ImportedCount = job.ImportedCount;
+        record.SkippedCount = job.SkippedCount;
+        record.FailedCount = job.FailedCount;
+        record.CurrentStage = job.CurrentStage;
+        record.ErrorSummary = job.ErrorSummary;
+        record.UpdatedAtUtc = job.UpdatedAtUtc;
+        record.StartedAtUtc = job.StartedAtUtc;
+        record.CompletedAtUtc = job.CompletedAtUtc;
+        record.LastHeartbeatAtUtc = job.LastHeartbeatAtUtc;
+
+        var byId = record.Items.ToDictionary(i => i.Id);
+        foreach (var item in job.Items)
+        {
+            if (byId.TryGetValue(item.Id.Value, out var existing))
+            {
+                ApplyItemToRecord(item, existing);
+            }
+            else
+            {
+                record.Items.Add(ToItemRecord(job.Id.Value, item));
+            }
+        }
+    }
+
+    private static CatalogImportItemRecord ToItemRecord(Guid jobId, CatalogImportItem item) =>
+        new()
+        {
+            Id = item.Id.Value,
+            CatalogImportJobId = jobId,
+            RowNumber = item.RowNumber,
+            Name = item.Name,
+            Description = item.Description,
+            Sku = item.Sku,
+            Barcode = item.Barcode,
+            GlobalCategoryId = item.GlobalCategoryId,
+            CategoryName = item.CategoryName,
+            Unit = item.Unit,
+            SuggestedPrice = item.SuggestedPrice,
+            SuggestedCost = item.SuggestedCost,
+            ImageReference = item.ImageReference,
+            SearchTagsRaw = item.SearchTagsRaw,
+            BusinessTypesRaw = item.BusinessTypesRaw,
+            Status = item.Status.ToString(),
+            ErrorCode = item.ErrorCode,
+            ErrorMessage = item.ErrorMessage,
+            CreatedGlobalProductId = item.CreatedGlobalProductId,
+            AttemptCount = item.AttemptCount,
+            ProcessedAtUtc = item.ProcessedAtUtc
+        };
+
+    private static void ApplyItemToRecord(CatalogImportItem item, CatalogImportItemRecord record)
+    {
+        record.Name = item.Name;
+        record.Description = item.Description;
+        record.Sku = item.Sku;
+        record.Barcode = item.Barcode;
+        record.GlobalCategoryId = item.GlobalCategoryId;
+        record.CategoryName = item.CategoryName;
+        record.Unit = item.Unit;
+        record.SuggestedPrice = item.SuggestedPrice;
+        record.SuggestedCost = item.SuggestedCost;
+        record.ImageReference = item.ImageReference;
+        record.SearchTagsRaw = item.SearchTagsRaw;
+        record.BusinessTypesRaw = item.BusinessTypesRaw;
+        record.Status = item.Status.ToString();
+        record.ErrorCode = item.ErrorCode;
+        record.ErrorMessage = item.ErrorMessage;
+        record.CreatedGlobalProductId = item.CreatedGlobalProductId;
+        record.AttemptCount = item.AttemptCount;
+        record.ProcessedAtUtc = item.ProcessedAtUtc;
+    }
 }

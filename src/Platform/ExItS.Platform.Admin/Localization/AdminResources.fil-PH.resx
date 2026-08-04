@@ -79,6 +79,7 @@
   <data name="Nav_GlobalCategories" xml:space="preserve"><value>Mga Kategorya</value></data>
   <data name="Nav_GlobalProducts" xml:space="preserve"><value>Mga Produktong Catalog</value></data>
   <data name="Nav_GlobalTemplates" xml:space="preserve"><value>Mga Template</value></data>
+  <data name="Nav_GlobalImports" xml:space="preserve"><value>Mga Import</value></data>
   <data name="Nav_ProductEntry" xml:space="preserve"><value>Product entry</value></data>
   <data name="Nav_Organizations" xml:space="preserve"><value>Mga Organisasyon</value></data>
   <data name="Nav_Subscriptions" xml:space="preserve"><value>Mga Subscription</value></data>
@@ -969,4 +970,29 @@
   <data name="GlobalTemplates_ProductAssigned" xml:space="preserve"><value>Na-assign ang produkto.</value></data>
   <data name="GlobalTemplates_ProductRemoved" xml:space="preserve"><value>Inalis ang produkto.</value></data>
   <data name="GlobalTemplates_PosIsolationNote" xml:space="preserve"><value>Ang pag-publish o pag-edit ng template ay hindi nagbabago ng mga produktong na-import na sa POS. Lokal na snapshot/ref lang ang tinatago ng POS.</value></data>
+  <data name="GlobalImports_Title" xml:space="preserve"><value>Mga catalog import</value></data>
+  <data name="GlobalImports_Description" xml:space="preserve"><value>Mag-upload ng CSV o XLSX, i-validate at i-preview, pagkatapos i-confirm ang background import sa global product catalog.</value></data>
+  <data name="GlobalImports_DetailSubtitle" xml:space="preserve"><value>Preview, confirm, at subaybayan ang progreso.</value></data>
+  <data name="GlobalImports_UploadSection" xml:space="preserve"><value>Mag-upload ng file</value></data>
+  <data name="GlobalImports_Upload" xml:space="preserve"><value>I-upload at i-validate</value></data>
+  <data name="GlobalImports_UploadFailed" xml:space="preserve"><value>Nabigo ang upload</value></data>
+  <data name="GlobalImports_UploadSucceeded" xml:space="preserve"><value>Na-validate ang import. Suriin ang preview, tapos i-confirm.</value></data>
+  <data name="GlobalImports_TemplateHint" xml:space="preserve"><value>CSV/XLSX columns: Name, Unit, Description, Sku, Barcode, CategoryId, CategoryName, SuggestedPrice, SuggestedCost, ImageReference, SearchTags, BusinessTypes. Max 5 MB / 5000 rows.</value></data>
+  <data name="GlobalImports_FileName" xml:space="preserve"><value>File</value></data>
+  <data name="GlobalImports_Total" xml:space="preserve"><value>Kabuuan</value></data>
+  <data name="GlobalImports_Processed" xml:space="preserve"><value>Naproseso</value></data>
+  <data name="GlobalImports_Imported" xml:space="preserve"><value>Na-import</value></data>
+  <data name="GlobalImports_Skipped" xml:space="preserve"><value>Nilaktawan</value></data>
+  <data name="GlobalImports_Failed" xml:space="preserve"><value>Nabigo</value></data>
+  <data name="GlobalImports_Pending" xml:space="preserve"><value>Nakabinbin</value></data>
+  <data name="GlobalImports_Stage" xml:space="preserve"><value>Yugto</value></data>
+  <data name="GlobalImports_Confirm" xml:space="preserve"><value>I-confirm ang import</value></data>
+  <data name="GlobalImports_ConfirmFailed" xml:space="preserve"><value>Nabigo ang confirm</value></data>
+  <data name="GlobalImports_ConfirmSucceeded" xml:space="preserve"><value>Na-queue ang import para sa background processing.</value></data>
+  <data name="GlobalImports_Preview" xml:space="preserve"><value>Preview rows</value></data>
+  <data name="GlobalImports_Errors" xml:space="preserve"><value>Skipped / failed rows</value></data>
+  <data name="GlobalImports_LoadErrors" xml:space="preserve"><value>I-load ang error report</value></data>
+  <data name="GlobalImports_Error" xml:space="preserve"><value>Error</value></data>
+  <data name="GlobalImports_ErrorCode" xml:space="preserve"><value>Code</value></data>
+  <data name="GlobalImports_Polling" xml:space="preserve"><value>Nagpo-proseso sa background… awtomatikong nire-refresh ang page na ito.</value></data>
 </root>

@@ -106,6 +106,12 @@
                 <MenuItem Key="global-templates" RouterLink="/admin/global-catalog/templates" Icon="appstore-add">
                     @L["Nav_GlobalTemplates"]
                 </MenuItem>
+                @if (CanView(PlatformPermissionCodes.ImportGlobalProducts))
+                {
+                    <MenuItem Key="global-imports" RouterLink="/admin/global-catalog/imports" Icon="upload">
+                        @L["Nav_GlobalImports"]
+                    </MenuItem>
+                }
             </SubMenu>
         }
 
@@ -420,6 +426,7 @@
             var p when p.StartsWith("/admin/organizations", StringComparison.Ordinal) =>
                 Shell.IsOrganizationShell ? ["org-settings"] : ["organizations"],
             var p when p.StartsWith("/admin/global-catalog/categories", StringComparison.Ordinal) => ["global-categories"],
+            var p when p.StartsWith("/admin/global-catalog/imports", StringComparison.Ordinal) => ["global-imports"],
             var p when p.StartsWith("/admin/global-catalog/products", StringComparison.Ordinal) => ["global-products"],
             var p when p.StartsWith("/admin/global-catalog/templates", StringComparison.Ordinal) => ["global-templates"],
             var p when p.StartsWith("/admin/products", StringComparison.Ordinal) => ["products"],

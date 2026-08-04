@@ -1,0 +1,354 @@
+@page "/admin/global-catalog/imports"
+@page "/admin/global-catalog/imports/{Id:guid}"
+@using AntDesign
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@attribute [Authorize]
+@implements IDisposable
+@inject IPlatformApiClient Api
+@inject IMessageService Message
+@inject IStringLocalizer<AdminResources> L
+@inject NavigationManager Nav
+@inject PlatformPermissionState Permissions
+
+@if (!Permissions.Loaded)
+{
+    <Spin />
+}
+else if (!CanImport)
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ImportGlobalProducts" />
+}
+else if (Id is null)
+{
+    <PageHeader Class="exits-page-header" Title="@L["GlobalImports_Title"]" SubTitle="@L["GlobalImports_Description"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_ProductCatalog"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_GlobalImports"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+    </PageHeader>
+
+    <Card Size="@CardSize.Small" Title="@L["GlobalImports_UploadSection"]" Style="margin-bottom:12px;">
+        <FormValidationSummary Title="@L["GlobalImports_UploadFailed"]" Message="@_uploadError" IsConflict="false" />
+        <Space Direction="SpaceDirection.Vertical" Style="width:100%; max-width:640px;">
+            <Alert Type="@AlertType.Info" ShowIcon="true" Message="@L["GlobalImports_TemplateHint"]" />
+            <InputFile OnChange="OnFileSelected" accept=".csv,.xlsx" disabled="@_busy" />
+            @if (!string.IsNullOrWhiteSpace(_selectedFileName))
+            {
+                <span>@_selectedFileName</span>
+            }
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" Loading="_busy" Disabled="@(_selectedFile is null)" OnClick="UploadAsync">
+                @L["GlobalImports_Upload"]
+            </Button>
+        </Space>
+    </Card>
+
+    <Table TItem="CatalogImportJobDto"
+           DataSource="_jobs"
+           Loading="_loading"
+           Size="@TableSize.Small"
+           HidePagination="true">
+        <PropertyColumn Property="c => c.FileName" Title="@L["GlobalImports_FileName"]">
+            <a href="/admin/global-catalog/imports/@context.Id">@context.FileName</a>
+        </PropertyColumn>
+        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" />
+        <PropertyColumn Property="c => c.TotalCount" Title="@L["GlobalImports_Total"]" />
+        <PropertyColumn Property="c => c.ImportedCount" Title="@L["GlobalImports_Imported"]" />
+        <PropertyColumn Property="c => c.SkippedCount" Title="@L["GlobalImports_Skipped"]" />
+        <PropertyColumn Property="c => c.FailedCount" Title="@L["GlobalImports_Failed"]" />
+        <PropertyColumn Property="c => c.CreatedAtUtc" Title="@L["Common_CreatedUtc"]" Format="u" />
+        <ActionColumn Title="@L["Common_Actions"]">
+            <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/global-catalog/imports/{context.Id}")">@L["Common_Open"]</a>
+        </ActionColumn>
+    </Table>
+}
+else
+{
+    <PageHeader Class="exits-page-header" Title="@(_job?.FileName ?? L["GlobalImports_Title"])" SubTitle="@L["GlobalImports_DetailSubtitle"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_ProductCatalog"]</BreadcrumbItem>
+                <BreadcrumbItem Href="/admin/global-catalog/imports">@L["Nav_GlobalImports"]</BreadcrumbItem>
+                <BreadcrumbItem>@(_job?.FileName ?? Id?.ToString("D"))</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+        <PageHeaderExtra>
+            <Button Size="@ButtonSize.Small" OnClick="RefreshDetailAsync" Loading="_busy">@L["Common_Retry"]</Button>
+            @if (_job?.Status == "Validated")
+            {
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="ConfirmAsync">
+                    @L["GlobalImports_Confirm"]
+                </Button>
+            }
+        </PageHeaderExtra>
+    </PageHeader>
+
+    @if (_job is null)
+    {
+        <Spin />
+    }
+    else
+    {
+        <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+            <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2">
+                <DescriptionsItem Title="@L["Common_Status"]">@_job.Status</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalImports_Stage"]">@(_job.CurrentStage ?? "—")</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalImports_Total"]">@_job.TotalCount</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalImports_Processed"]">@_job.ProcessedCount</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalImports_Imported"]">@_job.ImportedCount</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalImports_Skipped"]">@_job.SkippedCount</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalImports_Failed"]">@_job.FailedCount</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalImports_Pending"]">@_job.PendingCount</DescriptionsItem>
+            </Descriptions>
+
+            @if (_job.Status is "Queued" or "Processing")
+            {
+                <Progress Percent="@ProgressPercent" />
+                <div>@L["GlobalImports_Polling"]</div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(_job.ErrorSummary))
+            {
+                <Alert Type="@AlertType.Warning" ShowIcon="true" Message="@_job.ErrorSummary" />
+            }
+
+            <Card Size="@CardSize.Small" Title="@L["GlobalImports_Preview"]">
+                <Table TItem="CatalogImportItemDto"
+                       DataSource="@(_job.PreviewItems ?? Array.Empty<CatalogImportItemDto>())"
+                       Size="@TableSize.Small"
+                       HidePagination="true">
+                    <PropertyColumn Property="c => c.RowNumber" Title="#" />
+                    <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]" />
+                    <PropertyColumn Property="c => c.Sku" Title="@L["GlobalProducts_Sku"]" />
+                    <PropertyColumn Property="c => c.Barcode" Title="@L["GlobalProducts_Barcode"]" />
+                    <PropertyColumn Property="c => c.Unit" Title="@L["GlobalProducts_Unit"]" />
+                    <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" />
+                    <PropertyColumn Property="c => c.ErrorMessage" Title="@L["GlobalImports_Error"]" />
+                </Table>
+            </Card>
+
+            @if (_job.FailedCount + _job.SkippedCount > 0)
+            {
+                <Card Size="@CardSize.Small" Title="@L["GlobalImports_Errors"]">
+                    <Button Size="@ButtonSize.Small" OnClick="LoadErrorsAsync" Loading="_busy" Style="margin-bottom:8px;">
+                        @L["GlobalImports_LoadErrors"]
+                    </Button>
+                    <Table TItem="CatalogImportErrorDto"
+                           DataSource="_errors"
+                           Size="@TableSize.Small"
+                           HidePagination="true">
+                        <PropertyColumn Property="c => c.RowNumber" Title="#" />
+                        <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]" />
+                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" />
+                        <PropertyColumn Property="c => c.ErrorCode" Title="@L["GlobalImports_ErrorCode"]" />
+                        <PropertyColumn Property="c => c.ErrorMessage" Title="@L["GlobalImports_Error"]" />
+                    </Table>
+                </Card>
+            }
+        </Space>
+    }
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private bool CanImport => Permissions.HasPermission(PlatformPermissionCodes.ImportGlobalProducts);
+    private bool _loading;
+    private bool _busy;
+    private string? _uploadError;
+    private string? _selectedFileName;
+    private IBrowserFile? _selectedFile;
+    private IReadOnlyList<CatalogImportJobDto> _jobs = [];
+    private CatalogImportJobDto? _job;
+    private IReadOnlyList<CatalogImportErrorDto> _errors = [];
+    private CancellationTokenSource? _pollCts;
+
+    private int ProgressPercent =>
+        _job is null || _job.TotalCount <= 0
+            ? 0
+            : Math.Clamp((int)Math.Round(100.0 * _job.ProcessedCount / _job.TotalCount), 0, 100);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        StopPolling();
+        if (!Permissions.Loaded || !CanImport)
+        {
+            return;
+        }
+
+        if (Id is null)
+        {
+            await LoadListAsync();
+        }
+        else
+        {
+            await RefreshDetailAsync();
+            MaybeStartPolling();
+        }
+    }
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        _selectedFile = e.FileCount > 0 ? e.File : null;
+        _selectedFileName = _selectedFile?.Name;
+        _uploadError = null;
+    }
+
+    private async Task UploadAsync()
+    {
+        if (_selectedFile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        _uploadError = null;
+        try
+        {
+            await using var stream = _selectedFile.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+            var idempotencyKey = Guid.NewGuid().ToString("N");
+            var result = await Api.UploadCatalogImportAsync(
+                stream,
+                _selectedFile.Name,
+                _selectedFile.ContentType,
+                idempotencyKey);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _uploadError = result.Error?.Message ?? L["GlobalImports_UploadFailed"];
+                return;
+            }
+
+            await Message.SuccessAsync(L["GlobalImports_UploadSucceeded"].Value);
+            Nav.NavigateTo($"/admin/global-catalog/imports/{result.Data.Id}");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task LoadListAsync()
+    {
+        _loading = true;
+        try
+        {
+            var result = await Api.GetCatalogImportsAsync();
+            _jobs = result.Data?.Items ?? [];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task RefreshDetailAsync()
+    {
+        if (Id is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Api.GetCatalogImportAsync(Id.Value);
+            _job = result.Data;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ConfirmAsync()
+    {
+        if (Id is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Api.ConfirmCatalogImportAsync(Id.Value);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                await Message.ErrorAsync(result.Error?.Message ?? L["GlobalImports_ConfirmFailed"].Value);
+                return;
+            }
+
+            _job = result.Data;
+            await Message.SuccessAsync(L["GlobalImports_ConfirmSucceeded"].Value);
+            MaybeStartPolling();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task LoadErrorsAsync()
+    {
+        if (Id is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Api.GetCatalogImportErrorsAsync(Id.Value);
+            _errors = result.Data?.Items ?? [];
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void MaybeStartPolling()
+    {
+        if (_job?.Status is not ("Queued" or "Processing"))
+        {
+            return;
+        }
+
+        StopPolling();
+        _pollCts = new CancellationTokenSource();
+        _ = PollProgressAsync(_pollCts.Token);
+    }
+
+    private async Task PollProgressAsync(CancellationToken ct)
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                await Task.Delay(2000, ct);
+                await RefreshDetailAsync();
+                await InvokeAsync(StateHasChanged);
+                if (_job?.Status is not ("Queued" or "Processing"))
+                {
+                    break;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // expected on dispose / navigation
+        }
+    }
+
+    private void StopPolling()
+    {
+        _pollCts?.Cancel();
+        _pollCts?.Dispose();
+        _pollCts = null;
+    }
+
+    public void Dispose() => StopPolling();
+}

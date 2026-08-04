@@ -221,4 +221,17 @@ public static class DomainErrorCodes
         "platform.global_catalog.template.publish.requires_products";
     public const string CatalogTemplateCompositionOrderInvalid =
         "platform.global_catalog.template.composition.order_invalid";
+
+    public const string InvalidCatalogImportJobId = "platform.global_catalog.import.job_id.invalid";
+    public const string InvalidCatalogImportItemId = "platform.global_catalog.import.item_id.invalid";
+    public const string InvalidCatalogImportStatusTransition =
+        "platform.global_catalog.import.status.invalid_transition";
+    public const string CatalogImportFileInvalid = "platform.global_catalog.import.file.invalid";
+    public const string CatalogImportFormulaInjection =
+        "platform.global_catalog.import.formula_injection";
+    public const string CatalogImportRowInvalid = "platform.global_catalog.import.row.invalid";
+    public const string CatalogImportDuplicateInFile =
+        "platform.global_catalog.import.duplicate_in_file";
+    public const string CatalogImportNoConfirmableRows =
+        "platform.global_catalog.import.no_confirmable_rows";
 }

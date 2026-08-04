@@ -88,6 +88,21 @@ internal sealed class GlobalCategoryRepository : IGlobalCategoryRepository
         return (records.Select(GlobalCatalogEntityMapper.ToDomain).ToList(), totalCount);
     }
 
+    public async Task<IReadOnlyList<GlobalCategory>> FindByNormalizedNameAsync(
+        string normalizedName,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await _db.GlobalCategories
+            .AsNoTracking()
+            .Include(c => c.BusinessTypes)
+            .Where(c => c.NormalizedName == normalizedName)
+            .OrderBy(c => c.SortOrder)
+            .ThenBy(c => c.Name)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(GlobalCatalogEntityMapper.ToDomain).ToList();
+    }
+
     public Task AddAsync(GlobalCategory category, CancellationToken cancellationToken = default)
     {
         _db.GlobalCategories.Add(GlobalCatalogEntityMapper.ToRecord(category));
@@ -332,5 +347,134 @@ internal sealed class CatalogTemplateRepository : ICatalogTemplateRepository
         }
 
         GlobalCatalogEntityMapper.ApplyToRecord(template, record);
+    }
+}
+
+internal sealed class CatalogImportJobRepository : ICatalogImportJobRepository
+{
+    private readonly PlatformDbContext _db;
+
+    public CatalogImportJobRepository(PlatformDbContext db) => _db = db;
+
+    public async Task<CatalogImportJob?> GetByIdAsync(
+        CatalogImportJobId id,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await _db.CatalogImportJobs
+            .AsNoTracking()
+            .Include(j => j.Items)
+            .FirstOrDefaultAsync(j => j.Id == id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : GlobalCatalogEntityMapper.ToDomain(record);
+    }
+
+    public async Task<CatalogImportJob?> GetByIdempotencyKeyAsync(
+        string idempotencyKey,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await _db.CatalogImportJobs
+            .AsNoTracking()
+            .Include(j => j.Items)
+            .FirstOrDefaultAsync(j => j.IdempotencyKey == idempotencyKey, cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : GlobalCatalogEntityMapper.ToDomain(record);
+    }
+
+    public async Task<(IReadOnlyList<CatalogImportJob> Items, int TotalCount)> ListAsync(
+        CatalogImportJobStatus? status,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _db.CatalogImportJobs.AsNoTracking().AsQueryable();
+        if (status is not null)
+        {
+            var statusText = status.Value.ToString();
+            query = query.Where(j => j.Status == statusText);
+        }
+
+        query = query.OrderByDescending(j => j.CreatedAtUtc).ThenBy(j => j.Id);
+        var totalCount = await query.CountAsync(cancellationToken).ConfigureAwait(false);
+        var records = await query
+            .Include(j => j.Items)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return (records.Select(GlobalCatalogEntityMapper.ToDomain).ToList(), totalCount);
+    }
+
+    public async Task<IReadOnlyList<CatalogImportErrorDto>> ListErrorsAsync(
+        CatalogImportJobId id,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var failed = CatalogImportItemStatus.Failed.ToString();
+        var skipped = CatalogImportItemStatus.Skipped.ToString();
+        var records = await _db.CatalogImportItems
+            .AsNoTracking()
+            .Where(i => i.CatalogImportJobId == id.Value
+                        && (i.Status == failed || i.Status == skipped))
+            .OrderBy(i => i.RowNumber)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return records.Select(r => new CatalogImportErrorDto(
+                r.Id,
+                r.RowNumber,
+                r.Name,
+                r.Sku,
+                r.Barcode,
+                r.Status,
+                r.ErrorCode,
+                r.ErrorMessage))
+            .ToList();
+    }
+
+    public async Task<CatalogImportJob?> ClaimNextAsync(
+        DateTimeOffset utcNow,
+        TimeSpan staleAfter,
+        CancellationToken cancellationToken = default)
+    {
+        var queued = CatalogImportJobStatus.Queued.ToString();
+        var processing = CatalogImportJobStatus.Processing.ToString();
+        var staleBefore = utcNow - staleAfter;
+
+        var record = await _db.CatalogImportJobs
+            .Include(j => j.Items)
+            .Where(j => j.Status == queued
+                        || (j.Status == processing
+                            && (j.LastHeartbeatAtUtc == null || j.LastHeartbeatAtUtc < staleBefore)))
+            .OrderBy(j => j.CreatedAtUtc)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return record is null ? null : GlobalCatalogEntityMapper.ToDomain(record);
+    }
+
+    public Task AddAsync(CatalogImportJob job, CancellationToken cancellationToken = default)
+    {
+        _db.CatalogImportJobs.Add(GlobalCatalogEntityMapper.ToRecord(job));
+        return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(CatalogImportJob job, CancellationToken cancellationToken = default)
+    {
+        var record = await _db.CatalogImportJobs
+            .Include(j => j.Items)
+            .FirstOrDefaultAsync(j => j.Id == job.Id.Value, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (record is null)
+        {
+            throw new PersistenceConflictException(
+                ApplicationErrorCodes.CatalogImportJobNotFound,
+                "Import job was not found.");
+        }
+
+        GlobalCatalogEntityMapper.ApplyToRecord(job, record);
     }
 }

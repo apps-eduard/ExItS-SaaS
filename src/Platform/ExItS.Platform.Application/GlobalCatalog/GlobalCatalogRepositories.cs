@@ -21,6 +21,10 @@ public interface IGlobalCategoryRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<GlobalCategory>> FindByNormalizedNameAsync(
+        string normalizedName,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(GlobalCategory category, CancellationToken cancellationToken = default);
     Task UpdateAsync(GlobalCategory category, CancellationToken cancellationToken = default);
 }
@@ -73,4 +77,42 @@ public interface ICatalogTemplateRepository
 
     Task AddAsync(CatalogTemplate template, CancellationToken cancellationToken = default);
     Task UpdateAsync(CatalogTemplate template, CancellationToken cancellationToken = default);
+}
+
+public interface ICatalogImportJobRepository
+{
+    Task<CatalogImportJob?> GetByIdAsync(CatalogImportJobId id, CancellationToken cancellationToken = default);
+
+    Task<CatalogImportJob?> GetByIdempotencyKeyAsync(
+        string idempotencyKey,
+        CancellationToken cancellationToken = default);
+
+    Task<(IReadOnlyList<CatalogImportJob> Items, int TotalCount)> ListAsync(
+        CatalogImportJobStatus? status,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<CatalogImportErrorDto>> ListErrorsAsync(
+        CatalogImportJobId id,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Claims the next Queued job, or a stale Processing job past the heartbeat threshold.</summary>
+    Task<CatalogImportJob?> ClaimNextAsync(
+        DateTimeOffset utcNow,
+        TimeSpan staleAfter,
+        CancellationToken cancellationToken = default);
+
+    Task AddAsync(CatalogImportJob job, CancellationToken cancellationToken = default);
+    Task UpdateAsync(CatalogImportJob job, CancellationToken cancellationToken = default);
+}
+
+public interface ICatalogImportFileParser
+{
+    Task<IReadOnlyList<CatalogImportRawRow>> ParseAsync(
+        Stream content,
+        CatalogImportFileFormat format,
+        CancellationToken cancellationToken = default);
 }

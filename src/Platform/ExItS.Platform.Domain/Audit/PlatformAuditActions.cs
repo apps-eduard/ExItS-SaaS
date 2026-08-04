@@ -128,6 +128,9 @@ public static class PlatformAuditActions
     public const string CatalogTemplateUnpublished = "platform.global_catalog.template.unpublished";
     public const string CatalogTemplateArchived = "platform.global_catalog.template.archived";
     public const string CatalogTemplateCompositionChanged = "platform.global_catalog.template.composition_changed";
+    public const string CatalogImportCreated = "platform.global_catalog.import.created";
+    public const string CatalogImportConfirmed = "platform.global_catalog.import.confirmed";
+    public const string CatalogImportCompleted = "platform.global_catalog.import.completed";
 
     public const string ProductAccessGranted = "platform.product_access.granted";
     public const string ProductAccessRevoked = "platform.product_access.revoked";

@@ -77,3 +77,56 @@ internal sealed class CatalogTemplateProductRecord
     public bool IsFeatured { get; set; }
     public bool IsFirstBatch { get; set; }
 }
+
+internal sealed class CatalogImportJobRecord
+{
+    public Guid Id { get; set; }
+    public string FileName { get; set; } = string.Empty;
+    public string FileFormat { get; set; } = string.Empty;
+    public string? ContentType { get; set; }
+    public long FileSizeBytes { get; set; }
+    public string FileSha256 { get; set; } = string.Empty;
+    public string? IdempotencyKey { get; set; }
+    public string RequestedBy { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public int TotalCount { get; set; }
+    public int ProcessedCount { get; set; }
+    public int ImportedCount { get; set; }
+    public int SkippedCount { get; set; }
+    public int FailedCount { get; set; }
+    public string? CurrentStage { get; set; }
+    public string? ErrorSummary { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+    public DateTimeOffset? StartedAtUtc { get; set; }
+    public DateTimeOffset? CompletedAtUtc { get; set; }
+    public DateTimeOffset? LastHeartbeatAtUtc { get; set; }
+    public uint Xmin { get; set; }
+
+    public List<CatalogImportItemRecord> Items { get; set; } = [];
+}
+
+internal sealed class CatalogImportItemRecord
+{
+    public Guid Id { get; set; }
+    public Guid CatalogImportJobId { get; set; }
+    public int RowNumber { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string? Sku { get; set; }
+    public string? Barcode { get; set; }
+    public Guid? GlobalCategoryId { get; set; }
+    public string? CategoryName { get; set; }
+    public string Unit { get; set; } = string.Empty;
+    public decimal? SuggestedPrice { get; set; }
+    public decimal? SuggestedCost { get; set; }
+    public string? ImageReference { get; set; }
+    public string? SearchTagsRaw { get; set; }
+    public string? BusinessTypesRaw { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string? ErrorCode { get; set; }
+    public string? ErrorMessage { get; set; }
+    public Guid? CreatedGlobalProductId { get; set; }
+    public int AttemptCount { get; set; }
+    public DateTimeOffset? ProcessedAtUtc { get; set; }
+}

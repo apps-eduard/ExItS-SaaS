@@ -79,6 +79,7 @@
   <data name="Nav_GlobalCategories" xml:space="preserve"><value>Categories</value></data>
   <data name="Nav_GlobalProducts" xml:space="preserve"><value>Catalog Products</value></data>
   <data name="Nav_GlobalTemplates" xml:space="preserve"><value>Templates</value></data>
+  <data name="Nav_GlobalImports" xml:space="preserve"><value>Imports</value></data>
   <data name="Nav_ProductEntry" xml:space="preserve"><value>Product entry</value></data>
   <data name="Nav_Organizations" xml:space="preserve"><value>Organizations</value></data>
   <data name="Nav_Subscriptions" xml:space="preserve"><value>Subscriptions</value></data>
@@ -970,4 +971,29 @@
   <data name="GlobalTemplates_ProductAssigned" xml:space="preserve"><value>Product assigned.</value></data>
   <data name="GlobalTemplates_ProductRemoved" xml:space="preserve"><value>Product removed.</value></data>
   <data name="GlobalTemplates_PosIsolationNote" xml:space="preserve"><value>Publishing or editing a template does not change products already imported into POS organizations. POS keeps local snapshots and refs only.</value></data>
+  <data name="GlobalImports_Title" xml:space="preserve"><value>Catalog imports</value></data>
+  <data name="GlobalImports_Description" xml:space="preserve"><value>Upload CSV or XLSX, validate and preview, then confirm background import into the global product catalog.</value></data>
+  <data name="GlobalImports_DetailSubtitle" xml:space="preserve"><value>Preview, confirm, and monitor import progress.</value></data>
+  <data name="GlobalImports_UploadSection" xml:space="preserve"><value>Upload file</value></data>
+  <data name="GlobalImports_Upload" xml:space="preserve"><value>Upload and validate</value></data>
+  <data name="GlobalImports_UploadFailed" xml:space="preserve"><value>Import upload failed</value></data>
+  <data name="GlobalImports_UploadSucceeded" xml:space="preserve"><value>Import validated. Review the preview, then confirm.</value></data>
+  <data name="GlobalImports_TemplateHint" xml:space="preserve"><value>CSV/XLSX columns: Name, Unit, Description, Sku, Barcode, CategoryId, CategoryName, SuggestedPrice, SuggestedCost, ImageReference, SearchTags, BusinessTypes. Max 5 MB / 5000 rows.</value></data>
+  <data name="GlobalImports_FileName" xml:space="preserve"><value>File</value></data>
+  <data name="GlobalImports_Total" xml:space="preserve"><value>Total</value></data>
+  <data name="GlobalImports_Processed" xml:space="preserve"><value>Processed</value></data>
+  <data name="GlobalImports_Imported" xml:space="preserve"><value>Imported</value></data>
+  <data name="GlobalImports_Skipped" xml:space="preserve"><value>Skipped</value></data>
+  <data name="GlobalImports_Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="GlobalImports_Pending" xml:space="preserve"><value>Pending</value></data>
+  <data name="GlobalImports_Stage" xml:space="preserve"><value>Stage</value></data>
+  <data name="GlobalImports_Confirm" xml:space="preserve"><value>Confirm import</value></data>
+  <data name="GlobalImports_ConfirmFailed" xml:space="preserve"><value>Confirm failed</value></data>
+  <data name="GlobalImports_ConfirmSucceeded" xml:space="preserve"><value>Import queued for background processing.</value></data>
+  <data name="GlobalImports_Preview" xml:space="preserve"><value>Preview rows</value></data>
+  <data name="GlobalImports_Errors" xml:space="preserve"><value>Skipped / failed rows</value></data>
+  <data name="GlobalImports_LoadErrors" xml:space="preserve"><value>Load error report</value></data>
+  <data name="GlobalImports_Error" xml:space="preserve"><value>Error</value></data>
+  <data name="GlobalImports_ErrorCode" xml:space="preserve"><value>Code</value></data>
+  <data name="GlobalImports_Polling" xml:space="preserve"><value>Processing in the background… this page refreshes automatically.</value></data>
 </root>
