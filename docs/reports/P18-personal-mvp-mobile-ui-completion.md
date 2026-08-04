@@ -4,7 +4,7 @@
 |---|---|
 | Status | **Code Complete** (awaiting phone Retest) |
 | Phase | Phase 18 follow-up + Phase 19 Open |
-| Commit | *(pending push)* |
+| Commit | `b6585eb` |
 | Date | 2026-08-04 |
 | Device Verified | **No** |
 | Phase 19 | Remains **Open** — phone scenarios **Retest** |
