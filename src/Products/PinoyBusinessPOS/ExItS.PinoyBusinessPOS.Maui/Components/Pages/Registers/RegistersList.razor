@@ -91,6 +91,14 @@ else
                 builder.AddAttribute(2, "href", $"/registers/{context.Item.RegisterId:D}");
                 builder.AddContent(3, context.Item.Name);
                 builder.CloseElement();
+                if (IsMainRegister(context.Item))
+                {
+                    builder.OpenElement(4, "span");
+                    builder.AddAttribute(5, "class", "pos-muted");
+                    builder.AddContent(6, " · ");
+                    builder.AddContent(7, L["Registers_MainBadge"].Value);
+                    builder.CloseElement();
+                }
                 break;
             case "code":
                 builder.AddContent(0, context.Item.RegisterCode);
@@ -178,4 +186,8 @@ else
     }
 
     private void GoNew() => Nav.NavigateTo("/registers/new");
+
+    private static bool IsMainRegister(PosRegisterDto register) =>
+        string.Equals(register.Name, "Main Register", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(register.RegisterCode, "REG-000001", StringComparison.OrdinalIgnoreCase);
 }

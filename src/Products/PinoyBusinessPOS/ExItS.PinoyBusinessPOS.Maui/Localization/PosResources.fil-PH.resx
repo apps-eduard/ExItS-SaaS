@@ -845,6 +845,10 @@
   <data name="Sales_Checkout_CustomerRequired" xml:space="preserve"><value>Pumili muna ng active customer bago magtala ng Utang.</value></data>
   <data name="Sales_Checkout_ZeroTotalUtang" xml:space="preserve"><value>Hindi pwedeng magtala ng Utang kung zero ang kabuuan. Magdagdag muna ng produkto.</value></data>
   <data name="Sales_Checkout_OfflineMessage" xml:space="preserve"><value>Kailangan ng koneksyon ang checkout. Mag-reconnect bago magtala ng benta.</value></data>
+  <data name="Sales_Checkout_CategoryFilter" xml:space="preserve"><value>Kategorya</value></data>
+  <data name="Sales_Checkout_BrowseSection" xml:space="preserve"><value>Mag-browse ng produkto</value></data>
+  <data name="Sales_Checkout_AllCategories" xml:space="preserve"><value>Lahat ng kategorya</value></data>
+  <data name="Sales_Checkout_OptionalCustomer" xml:space="preserve"><value>Customer (opsyonal)</value></data>
   <data name="Credit_LinkedSale" xml:space="preserve"><value>Naka-link na benta</value></data>
   <data name="Credit_ReverseViaSaleVoid" xml:space="preserve"><value>Galing ang credit na ito sa product sale. Kanselahin ang benta para i-reverse. Hindi pinapayagan ang standalone reverse.</value></data>
   <data name="Inventory_Title" xml:space="preserve"><value>Imbentaryo</value></data>
@@ -1230,6 +1234,19 @@
   <data name="Shifts_CancelConfirm" xml:space="preserve"><value>Kanselahin ang shift</value></data>
   <data name="Shifts_NotFoundTitle" xml:space="preserve"><value>Hindi natagpuan ang shift</value></data>
   <data name="Shifts_NotFoundMessage" xml:space="preserve"><value>Hindi ma-load ang shift na ito.</value></data>
+  <data name="Shifts_CurrentSection" xml:space="preserve"><value>Kasalukuyang bukas na shift</value></data>
+  <data name="Shifts_OpenCurrent" xml:space="preserve"><value>Buksan ang kasalukuyang shift</value></data>
+  <data name="Shifts_Refresh" xml:space="preserve"><value>I-refresh</value></data>
+  <data name="Shifts_Loading" xml:space="preserve"><value>Naglo-load ng mga shift...</value></data>
+  <data name="Shifts_SearchPlaceholder" xml:space="preserve"><value>Maghanap sa shift number</value></data>
+  <data name="Shifts_FiltersTitle" xml:space="preserve"><value>Mga filter</value></data>
+  <data name="Shifts_Filter_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Shifts_Filter_All" xml:space="preserve"><value>Lahat</value></data>
+  <data name="Shifts_Status_Open" xml:space="preserve"><value>Bukas</value></data>
+  <data name="Shifts_Status_Closed" xml:space="preserve"><value>Sarado</value></data>
+  <data name="Shifts_Status_Cancelled" xml:space="preserve"><value>Kinansela</value></data>
+  <data name="Shifts_Col_Number" xml:space="preserve"><value>Shift</value></data>
+  <data name="Shifts_Col_Opened" xml:space="preserve"><value>Binuksan</value></data>
   <data name="Nav_SkipToContent" xml:space="preserve">
     <value>Lumaktaw papunta sa pangunahing nilalaman</value>
   </data>
@@ -1294,6 +1311,8 @@
   <data name="Registers_Description" xml:space="preserve"><value>Description</value></data>
   <data name="Registers_DetailSection" xml:space="preserve"><value>Details</value></data>
   <data name="Registers_LifecycleSection" xml:space="preserve"><value>Lifecycle</value></data>
+  <data name="Registers_ActivitySection" xml:space="preserve"><value>Buod ng aktibidad</value></data>
+  <data name="Registers_MainBadge" xml:space="preserve"><value>Pangunahing Rehistro</value></data>
   <data name="Registers_Activate" xml:space="preserve"><value>Activate</value></data>
   <data name="Registers_Deactivate" xml:space="preserve"><value>Deactivate</value></data>
   <data name="Registers_Edit" xml:space="preserve"><value>Edit</value></data>

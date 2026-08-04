@@ -845,6 +845,10 @@
   <data name="Sales_Checkout_CustomerRequired" xml:space="preserve"><value>Select an active customer before recording Utang.</value></data>
   <data name="Sales_Checkout_ZeroTotalUtang" xml:space="preserve"><value>Utang cannot be recorded for a zero total. Add products first.</value></data>
   <data name="Sales_Checkout_OfflineMessage" xml:space="preserve"><value>Checkout needs a connection. Reconnect before recording a sale.</value></data>
+  <data name="Sales_Checkout_CategoryFilter" xml:space="preserve"><value>Category</value></data>
+  <data name="Sales_Checkout_BrowseSection" xml:space="preserve"><value>Browse products</value></data>
+  <data name="Sales_Checkout_AllCategories" xml:space="preserve"><value>All categories</value></data>
+  <data name="Sales_Checkout_OptionalCustomer" xml:space="preserve"><value>Customer (optional)</value></data>
   <data name="Credit_LinkedSale" xml:space="preserve"><value>Linked sale</value></data>
   <data name="Credit_ReverseViaSaleVoid" xml:space="preserve"><value>This credit came from a product sale. Void the sale to reverse it. Standalone reverse is not allowed.</value></data>
   <data name="Inventory_Title" xml:space="preserve"><value>Inventory</value></data>
@@ -1230,6 +1234,19 @@
   <data name="Shifts_CancelConfirm" xml:space="preserve"><value>Cancel shift</value></data>
   <data name="Shifts_NotFoundTitle" xml:space="preserve"><value>Shift not found</value></data>
   <data name="Shifts_NotFoundMessage" xml:space="preserve"><value>This shift could not be loaded.</value></data>
+  <data name="Shifts_CurrentSection" xml:space="preserve"><value>Current open shift</value></data>
+  <data name="Shifts_OpenCurrent" xml:space="preserve"><value>Open current shift</value></data>
+  <data name="Shifts_Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Shifts_Loading" xml:space="preserve"><value>Loading shifts...</value></data>
+  <data name="Shifts_SearchPlaceholder" xml:space="preserve"><value>Search by shift number</value></data>
+  <data name="Shifts_FiltersTitle" xml:space="preserve"><value>Filters</value></data>
+  <data name="Shifts_Filter_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Shifts_Filter_All" xml:space="preserve"><value>All</value></data>
+  <data name="Shifts_Status_Open" xml:space="preserve"><value>Open</value></data>
+  <data name="Shifts_Status_Closed" xml:space="preserve"><value>Closed</value></data>
+  <data name="Shifts_Status_Cancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="Shifts_Col_Number" xml:space="preserve"><value>Shift</value></data>
+  <data name="Shifts_Col_Opened" xml:space="preserve"><value>Opened</value></data>
   <data name="Nav_SkipToContent" xml:space="preserve">
     <value>Skip to main content</value>
   </data>
@@ -1294,6 +1311,8 @@
   <data name="Registers_Description" xml:space="preserve"><value>Description</value></data>
   <data name="Registers_DetailSection" xml:space="preserve"><value>Details</value></data>
   <data name="Registers_LifecycleSection" xml:space="preserve"><value>Lifecycle</value></data>
+  <data name="Registers_ActivitySection" xml:space="preserve"><value>Activity summary</value></data>
+  <data name="Registers_MainBadge" xml:space="preserve"><value>Main Register</value></data>
   <data name="Registers_Activate" xml:space="preserve"><value>Activate</value></data>
   <data name="Registers_Deactivate" xml:space="preserve"><value>Deactivate</value></data>
   <data name="Registers_Edit" xml:space="preserve"><value>Edit</value></data>

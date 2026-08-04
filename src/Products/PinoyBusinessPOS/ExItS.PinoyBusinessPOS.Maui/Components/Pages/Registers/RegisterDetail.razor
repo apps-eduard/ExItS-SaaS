@@ -46,6 +46,12 @@ else
 
     <Section Title="@L["Registers_DetailSection"]">
         <Stack Gap="3">
+            @if (IsMainRegister(_register))
+            {
+                <div>
+                    <Badge Tone="BadgeTone.Success">@L["Registers_MainBadge"]</Badge>
+                </div>
+            }
             <div>
                 <span class="pos-muted">@L["Registers_Col_Code"]</span>
                 <div class="pos-value-md">@_register.RegisterCode</div>
@@ -80,6 +86,30 @@ else
             </FormActions>
         </Section>
     }
+
+    <Section Title="@L["Registers_ActivitySection"]">
+        @if (_activityLoading)
+        {
+            <Spinner />
+        }
+        else if (!string.IsNullOrEmpty(_activityError))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@L["Registers_ErrorTitle"]" Message="@_activityError" />
+        }
+        else if (_activity is null)
+        {
+            <div class="pos-muted">—</div>
+        }
+        else
+        {
+            <Stack Gap="2">
+                <div>@L["Registers_Col_OpenShift"]: <strong>@_activity.OpenShiftCount</strong></div>
+                <div>@L["Shifts_Title"]: <strong>@_activity.ClosedShiftCount</strong></div>
+                <div>@L["Nav_Sales"]: <strong>@_activity.CompletedSaleCount</strong></div>
+                <div>@L["Reports_Title"]: <strong>@_activity.GrossSalesTotal.ToString("N2")</strong></div>
+            </Stack>
+        }
+    </Section>
 </Page>
 }
 
@@ -89,9 +119,12 @@ else
     private bool _ready;
     private bool _acting;
     private bool _isOffline;
+    private bool _activityLoading;
     private PosRegisterDto? _register;
+    private PosRegisterActivityDto? _activity;
     private string? _errorMessage;
     private string? _actionError;
+    private string? _activityError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -115,6 +148,8 @@ else
     private async Task LoadAsync()
     {
         _actionError = null;
+        _activityError = null;
+        _activity = null;
         if (_isOffline)
         {
             _errorMessage = L["Registers_OfflineMessage"];
@@ -125,12 +160,27 @@ else
         if (result.IsSuccess)
         {
             _register = result.Data;
+            await LoadActivityAsync();
             return;
         }
 
         var described = ApiLocalizer.Describe(result.Status, result.Error);
         _errorMessage = result.Error?.Detail ?? described.Message;
         _register = null;
+    }
+
+    private async Task LoadActivityAsync()
+    {
+        _activityLoading = true;
+        var activity = await Registers.GetActivityAsync(RegisterId);
+        _activityLoading = false;
+        if (activity.IsSuccess)
+        {
+            _activity = activity.Data;
+            return;
+        }
+
+        _activityError = activity.Error?.Detail ?? ApiLocalizer.Describe(activity.Status, activity.Error).Message;
     }
 
     private async Task ActivateAsync()
@@ -176,4 +226,8 @@ else
 
     private void GoList() => Nav.NavigateTo("/registers");
     private void GoEdit() => Nav.NavigateTo($"/registers/{RegisterId:D}/edit");
+
+    private static bool IsMainRegister(PosRegisterDto register) =>
+        string.Equals(register.Name, "Main Register", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(register.RegisterCode, "REG-000001", StringComparison.OrdinalIgnoreCase);
 }
