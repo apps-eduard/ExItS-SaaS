@@ -1370,7 +1370,7 @@
   <data name="Activate_PasswordMismatch" xml:space="preserve"><value>Passwords do not match.</value></data>
   <data name="Activate_Failed" xml:space="preserve"><value>Activation failed. Check the token and try again.</value></data>
   <data name="Personal_HomeTitle" xml:space="preserve"><value>Personal home</value></data>
-  <data name="Personal_HomeSubtitle" xml:space="preserve"><value>People, Utang, profile, and settings — personal-first.</value></data>
+  <data name="Personal_HomeSubtitle" xml:space="preserve"><value>Summary totals and recent Utang activity.</value></data>
   <data name="Personal_ProfileSection" xml:space="preserve"><value>Profile</value></data>
   <data name="Personal_ProfileLink" xml:space="preserve"><value>View profile</value></data>
   <data name="Personal_ProfileTitle" xml:space="preserve"><value>Personal profile</value></data>
@@ -1382,6 +1382,17 @@
   <data name="Personal_StartBusiness" xml:space="preserve"><value>Start a Business</value></data>
   <data name="Personal_StartAnotherBusiness" xml:space="preserve"><value>Magsimula ng bagong negosyo</value></data>
   <data name="Personal_BackHome" xml:space="preserve"><value>Back to personal home</value></data>
+  <data name="Personal_BackMore" xml:space="preserve"><value>Back to More</value></data>
+  <data name="Personal_ShellTagline" xml:space="preserve"><value>Personal</value></data>
+  <data name="Personal_NavPrimary" xml:space="preserve"><value>Personal primary</value></data>
+  <data name="Personal_MoreSubtitle" xml:space="preserve"><value>Invitations, account, and Pinoy Business POS.</value></data>
+  <data name="Personal_MoreUtangSection" xml:space="preserve"><value>Utang</value></data>
+  <data name="Personal_MoreAccountSection" xml:space="preserve"><value>Account</value></data>
+  <data name="Personal_RecentActivitySection" xml:space="preserve"><value>Recent activity</value></data>
+  <data name="Personal_RecentActivityEmptyTitle" xml:space="preserve"><value>No recent activity</value></data>
+  <data name="Personal_RecentActivityEmptyMessage" xml:space="preserve"><value>Lent and borrowed updates appear here after you create relationships.</value></data>
+  <data name="Personal_OpenRelationship" xml:space="preserve"><value>Open</value></data>
+  <data name="Personal_RelationshipBack" xml:space="preserve"><value>Back to list</value></data>
   <data name="Personal_AccountClass" xml:space="preserve"><value>Account class</value></data>
   <data name="Personal_AccountClassDefault" xml:space="preserve"><value>Personal</value></data>
   <data name="Personal_SettingsLink" xml:space="preserve"><value>Settings</value></data>

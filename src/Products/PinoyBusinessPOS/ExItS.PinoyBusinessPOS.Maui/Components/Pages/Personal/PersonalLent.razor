@@ -1,5 +1,5 @@
 @page "/personal/utang/lent"
-@layout Layout.AuthShell
+@layout Layout.PersonalShell
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
@@ -7,11 +7,7 @@
 @inject IStringLocalizer<PosResources> L
 
 <Page>
-    <PageHeader Title="@L["Personal_LentTitle"]" Subtitle="@L["Personal_LentSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoHome">@L["Personal_BackHome"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Personal_LentTitle"]" Subtitle="@L["Personal_LentSubtitle"]" />
 
     @if (_loading)
     {
@@ -200,6 +196,5 @@
     }
 
     private void GoDetail(Guid id) => Nav.NavigateTo($"/personal/utang/relationships/{id:D}");
-    private void GoHome() => Nav.NavigateTo("/personal");
     private void GoSignIn() => Nav.NavigateTo("/signin");
 }

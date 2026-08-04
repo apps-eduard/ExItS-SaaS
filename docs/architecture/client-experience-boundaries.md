@@ -502,13 +502,16 @@ Web Application
 
 ```text
 Mobile Application
-├── Personal Account
-│   ├── Register
-│   ├── Sign In
-│   ├── Home (People / Utang / Profile / Settings)
-│   ├── Explore Pinoy Business POS (catalog plans)
-│   ├── Confirm business details (creates org only on submit)
-│   └── Select Organization / Account context (outside Personal home)
+├── Personal Account (PersonalShell bottom tabs)
+│   ├── Home — summary + recent activity
+│   ├── People
+│   ├── I Lent
+│   ├── I Borrowed
+│   └── More (invitations, profile, settings, Explore POS, sign out)
+│
+├── Explore / Confirm business (AuthShell; org created only on confirm)
+│
+├── Select Organization / Account context (outside Personal home)
 │
 ├── Organization Owner Essentials
 │   ├── Basic Organization Profile

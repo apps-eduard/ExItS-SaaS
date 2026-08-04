@@ -1,0 +1,82 @@
+@page "/personal/more"
+@layout Layout.PersonalShell
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Nav_More"]" Subtitle="@L["Personal_MoreSubtitle"]" />
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else
+    {
+        <Section Title="@L["Personal_MoreUtangSection"]">
+            <Stack Gap="2">
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoUtangInvitations">@L["Personal_Nav_UtangInvitations"]</Button>
+            </Stack>
+        </Section>
+
+        <Section Title="@L["Personal_MoreAccountSection"]">
+            <Stack Gap="2">
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoProfile">@L["Personal_ProfileLink"]</Button>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoSettings">@L["Personal_SettingsLink"]</Button>
+            </Stack>
+        </Section>
+
+        <Section Title="@L["Personal_ExplorePosSection"]">
+            <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_ExplorePosHint"]</InlineMessage>
+            <FormActions>
+                <Button Variant="ButtonVariant.Primary" OnClick="GoExplorePos">@L["Personal_ExplorePos"]</Button>
+            </FormActions>
+        </Section>
+
+        <FormActions>
+            <Button Variant="ButtonVariant.Danger" OnClick="LogoutAsync">@L["Auth_Logout"]</Button>
+        </FormActions>
+    }
+</Page>
+
+@code {
+    private bool _loading = true;
+    private bool _authenticated;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!CurrentUser.IsAuthenticated)
+        {
+            var restore = await Auth.RestoreSessionAsync();
+            _authenticated = restore.Succeeded;
+        }
+        else
+        {
+            _authenticated = true;
+        }
+
+        if (_authenticated)
+        {
+            await Auth.EnsurePersonalAccountProfileAsync();
+        }
+
+        _loading = false;
+    }
+
+    private void GoUtangInvitations() => Nav.NavigateTo("/personal/utang/invitations");
+    private void GoProfile() => Nav.NavigateTo("/personal/profile");
+    private void GoSettings() => Nav.NavigateTo("/personal/settings");
+    private void GoExplorePos() => Nav.NavigateTo("/personal/explore-pos");
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+
+    private async Task LogoutAsync()
+    {
+        await Auth.LogoutAsync();
+        Nav.NavigateTo("/signin", replace: true);
+    }
+}

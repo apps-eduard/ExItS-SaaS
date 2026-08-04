@@ -1,5 +1,5 @@
 @page "/personal/utang/relationships/{RelationshipId:guid}"
-@layout Layout.AuthShell
+@layout Layout.PersonalShell
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
@@ -9,7 +9,7 @@
 <Page>
     <PageHeader Title="@L["Personal_RelationshipTitle"]" Subtitle="@L["Personal_RelationshipSubtitle"]">
         <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoHome">@L["Personal_BackHome"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBackList">@L["Personal_RelationshipBack"]</Button>
         </Actions>
     </PageHeader>
 
@@ -187,6 +187,13 @@
         }
     }
 
-    private void GoHome() => Nav.NavigateTo("/personal");
+    private void GoBackList()
+    {
+        var path = string.Equals(_relationship?.Perspective, "Borrowed", StringComparison.OrdinalIgnoreCase)
+            ? "/personal/utang/borrowed"
+            : "/personal/utang/lent";
+        Nav.NavigateTo(path);
+    }
+
     private void GoSignIn() => Nav.NavigateTo("/signin");
 }

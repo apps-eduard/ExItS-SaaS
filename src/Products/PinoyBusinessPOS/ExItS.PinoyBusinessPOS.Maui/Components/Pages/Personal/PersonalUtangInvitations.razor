@@ -1,5 +1,5 @@
 @page "/personal/utang/invitations"
-@layout Layout.AuthShell
+@layout Layout.PersonalShell
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
@@ -9,7 +9,7 @@
 <Page>
     <PageHeader Title="@L["Personal_UtangInvitationsTitle"]" Subtitle="@L["Personal_UtangInvitationsSubtitle"]">
         <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoHome">@L["Personal_BackHome"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoMore">@L["Personal_BackMore"]</Button>
         </Actions>
     </PageHeader>
 
@@ -173,6 +173,6 @@
         }
     }
 
-    private void GoHome() => Nav.NavigateTo("/personal");
+    private void GoMore() => Nav.NavigateTo("/personal/more");
     private void GoSignIn() => Nav.NavigateTo("/signin");
 }

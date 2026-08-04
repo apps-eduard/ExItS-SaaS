@@ -1,5 +1,5 @@
 @page "/personal/settings"
-@layout Layout.AuthShell
+@layout Layout.PersonalShell
 @implements IDisposable
 @inject ThemeController ThemeCtl
 @inject DensityController DensityCtl
@@ -15,7 +15,7 @@
 <Page>
     <PageHeader Title="@L["Personal_SettingsTitle"]" Subtitle="@L["Personal_SettingsSubtitle"]">
         <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoHome">@L["Personal_BackHome"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoMore">@L["Personal_BackMore"]</Button>
         </Actions>
     </PageHeader>
 
@@ -134,7 +134,7 @@
         _ready = true;
     }
 
-    private void GoHome() => Nav.NavigateTo("/personal");
+    private void GoMore() => Nav.NavigateTo("/personal/more");
     private void GoSignIn() => Nav.NavigateTo("/signin");
     private void GoOrganizationSelect() => Nav.NavigateTo("/organization-select");
 

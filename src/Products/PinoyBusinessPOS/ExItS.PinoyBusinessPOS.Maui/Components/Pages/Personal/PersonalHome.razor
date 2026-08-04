@@ -1,5 +1,5 @@
 @page "/personal"
-@layout Layout.AuthShell
+@layout Layout.PersonalShell
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
@@ -7,12 +7,7 @@
 @inject IStringLocalizer<PosResources> L
 
 <Page>
-    <PageHeader Title="@L["Personal_HomeTitle"]" Subtitle="@L["Personal_HomeSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Ghost" OnClick="GoSettings">@L["Settings_Title"]</Button>
-            <Button Variant="ButtonVariant.Ghost" OnClick="LogoutAsync">@L["Auth_Logout"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Personal_HomeTitle"]" Subtitle="@L["Personal_HomeSubtitle"]" />
 
     @if (_loading)
     {
@@ -56,35 +51,31 @@
             }
         </Section>
 
-        <Section Title="@L["Personal_UtangNavSection"]">
-            <Stack Gap="2">
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoPeople">@L["Personal_Nav_People"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoLent">@L["Personal_Nav_Lent"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoBorrowed">@L["Personal_Nav_Borrowed"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoUtangInvitations">@L["Personal_Nav_UtangInvitations"]</Button>
-                <Button Variant="ButtonVariant.Ghost" Disabled="true">@L["Personal_Nav_PaymentsSoon"]</Button>
-                <Button Variant="ButtonVariant.Ghost" Disabled="true">@L["Personal_Nav_RemindersSoon"]</Button>
-                <Button Variant="ButtonVariant.Ghost" Disabled="true">@L["Personal_Nav_HistorySoon"]</Button>
-            </Stack>
-        </Section>
-
-        <Section Title="@L["Personal_ProfileSection"]">
-            <Stack Gap="1">
-                <span class="pos-value-md">@_displayName</span>
-                <span class="pos-muted">@_email</span>
-                <span class="pos-muted">@_accountClass</span>
-            </Stack>
-            <FormActions>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoProfile">@L["Personal_ProfileLink"]</Button>
-                <Button Variant="ButtonVariant.Ghost" OnClick="GoSettings">@L["Personal_SettingsLink"]</Button>
-            </FormActions>
-        </Section>
-
-        <Section Title="@L["Personal_ExplorePosSection"]">
-            <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_ExplorePosHint"]</InlineMessage>
-            <FormActions>
-                <Button Variant="ButtonVariant.Primary" OnClick="GoExplorePos">@L["Personal_ExplorePos"]</Button>
-            </FormActions>
+        <Section Title="@L["Personal_RecentActivitySection"]">
+            @if (_recent.Count == 0)
+            {
+                <EmptyState Title="@L["Personal_RecentActivityEmptyTitle"]" Message="@L["Personal_RecentActivityEmptyMessage"]" />
+            }
+            else
+            {
+                <Stack Gap="3">
+                    @foreach (var item in _recent)
+                    {
+                        <div class="pos-personal-org">
+                            <Stack Gap="1">
+                                <span class="pos-value-md">@PerspectiveLabel(item.Perspective)</span>
+                                <span class="pos-muted">
+                                    @item.CurrentBalance.ToString("N2") @item.CurrencyCode
+                                    · @item.UpdatedAtUtc.LocalDateTime.ToString("g")
+                                </span>
+                            </Stack>
+                            <FormActions>
+                                <Button Variant="ButtonVariant.Secondary" OnClick="() => GoRelationship(item.Id)">@L["Personal_OpenRelationship"]</Button>
+                            </FormActions>
+                        </div>
+                    }
+                </Stack>
+            }
         </Section>
 
         @if (!string.IsNullOrEmpty(_error))
@@ -98,11 +89,9 @@
     private bool _loading = true;
     private bool _authenticated;
     private bool _loadFailed;
-    private string? _displayName;
-    private string? _email;
-    private string? _accountClass;
     private string? _error;
     private PersonalDashboardDto? _dashboard;
+    private IReadOnlyList<PersonalDebtRelationshipSummaryDto> _recent = [];
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -137,13 +126,26 @@
                 return;
             }
 
-            var session = CurrentUser.Session!;
-            _displayName = session.DisplayName;
-            _email = session.Email;
-            _accountClass = session.AccountClass ?? L["Personal_AccountClassDefault"];
-
             var dash = await Platform.GetPersonalDashboardAsync();
             _dashboard = dash.IsSuccess ? dash.Data : null;
+
+            var lent = await Platform.GetPersonalUtangLentAsync();
+            var borrowed = await Platform.GetPersonalUtangBorrowedAsync();
+            var combined = new List<PersonalDebtRelationshipSummaryDto>();
+            if (lent.IsSuccess && lent.Data is not null)
+            {
+                combined.AddRange(lent.Data);
+            }
+
+            if (borrowed.IsSuccess && borrowed.Data is not null)
+            {
+                combined.AddRange(borrowed.Data);
+            }
+
+            _recent = combined
+                .OrderByDescending(x => x.UpdatedAtUtc)
+                .Take(8)
+                .ToArray();
         }
         catch
         {
@@ -156,18 +158,13 @@
         }
     }
 
-    private void GoExplorePos() => Nav.NavigateTo("/personal/explore-pos");
-    private void GoProfile() => Nav.NavigateTo("/personal/profile");
-    private void GoSettings() => Nav.NavigateTo("/personal/settings");
-    private void GoPeople() => Nav.NavigateTo("/personal/utang/people");
-    private void GoLent() => Nav.NavigateTo("/personal/utang/lent");
-    private void GoBorrowed() => Nav.NavigateTo("/personal/utang/borrowed");
-    private void GoUtangInvitations() => Nav.NavigateTo("/personal/utang/invitations");
-    private void GoSignIn() => Nav.NavigateTo("/signin");
+    private string PerspectiveLabel(string perspective) =>
+        string.Equals(perspective, "Lent", StringComparison.OrdinalIgnoreCase)
+            ? L["Personal_Stat_Lent"]
+            : string.Equals(perspective, "Borrowed", StringComparison.OrdinalIgnoreCase)
+                ? L["Personal_Stat_Borrowed"]
+                : perspective;
 
-    private async Task LogoutAsync()
-    {
-        await Auth.LogoutAsync();
-        Nav.NavigateTo("/signin", replace: true);
-    }
+    private void GoRelationship(Guid id) => Nav.NavigateTo($"/personal/utang/relationships/{id:D}");
+    private void GoSignIn() => Nav.NavigateTo("/signin");
 }

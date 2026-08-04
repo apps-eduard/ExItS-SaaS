@@ -1,0 +1,171 @@
+@namespace ExItS.PinoyBusinessPOS.Maui.Components.Layout
+@inherits LayoutComponentBase
+@implements IDisposable
+@using ExItS.DesignSystem.Components.Internal
+@inject ThemeController ThemeCtl
+@inject DensityController DensityCtl
+@inject CultureController CultureCtl
+@inject IAppInfoService AppInfo
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<a class="skip-link" href="#pos-main">@L["Nav_SkipToContent"]</a>
+
+<div class="exds-root pos-shell pos-shell--personal" data-layout="phone" @key="_cultureEpoch">
+    <header class="pos-topbar">
+        <div class="pos-topbar__brand">
+            <span class="pos-topbar__logo" aria-hidden="true">ES</span>
+            <div class="pos-topbar__titles">
+                <span class="pos-topbar__title">@L["Brand_Name"]</span>
+                <span class="pos-topbar__subtitle pos-muted">@L["Personal_ShellTagline"]</span>
+            </div>
+        </div>
+        <div class="pos-topbar__status">
+            <Badge Tone="@(IsDevOrTesting ? BadgeTone.Warning : BadgeTone.Neutral)">@EnvironmentLabel</Badge>
+        </div>
+    </header>
+
+    <main class="pos-content" id="pos-main" tabindex="-1">
+        @Body
+    </main>
+
+    <nav class="pos-bottom-nav" aria-label="@L["Personal_NavPrimary"]">
+        <a class="pos-nav-item @(IsHomeActive ? "pos-nav-item--active" : null)"
+           href="/personal"
+           @onclick="GoHome"
+           @onclick:preventDefault>
+            <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("home")</span>
+            <span class="pos-nav-item__label">@L["Nav_Home"]</span>
+        </a>
+        <a class="pos-nav-item @(IsPeopleActive ? "pos-nav-item--active" : null)"
+           href="/personal/utang/people"
+           @onclick="GoPeople"
+           @onclick:preventDefault>
+            <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
+            <span class="pos-nav-item__label">@L["Personal_Nav_People"]</span>
+        </a>
+        <a class="pos-nav-item @(IsLentActive ? "pos-nav-item--active" : null)"
+           href="/personal/utang/lent"
+           @onclick="GoLent"
+           @onclick:preventDefault>
+            <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("lent")</span>
+            <span class="pos-nav-item__label">@L["Personal_Nav_Lent"]</span>
+        </a>
+        <a class="pos-nav-item @(IsBorrowedActive ? "pos-nav-item--active" : null)"
+           href="/personal/utang/borrowed"
+           @onclick="GoBorrowed"
+           @onclick:preventDefault>
+            <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("borrowed")</span>
+            <span class="pos-nav-item__label">@L["Personal_Nav_Borrowed"]</span>
+        </a>
+        <a class="pos-nav-item @(IsMoreActive ? "pos-nav-item--active" : null)"
+           href="/personal/more"
+           @onclick="GoMore"
+           @onclick:preventDefault>
+            <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("more")</span>
+            <span class="pos-nav-item__label">@L["Nav_More"]</span>
+        </a>
+    </nav>
+</div>
+
+@code {
+    private int _cultureEpoch;
+    private string _path = "/personal";
+
+    protected override void OnInitialized()
+    {
+        ThemeCtl.Changed += OnChangedAsync;
+        DensityCtl.Changed += OnChangedAsync;
+        CultureCtl.Changed += OnChangedAsync;
+        Nav.LocationChanged += OnLocationChanged;
+        RefreshPath();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await ThemeCtl.InitializeAsync();
+        await DensityCtl.InitializeAsync();
+        await CultureCtl.InitializeAsync();
+        _cultureEpoch = CultureCtl.Epoch;
+        StateHasChanged();
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        RefreshPath();
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void RefreshPath()
+    {
+        _path = Nav.ToBaseRelativePath(Nav.Uri);
+        if (_path.Contains('?', StringComparison.Ordinal))
+        {
+            _path = _path[.._path.IndexOf('?', StringComparison.Ordinal)];
+        }
+
+        _path = "/" + _path.Trim('/');
+        if (_path == "/")
+        {
+            _path = "/personal";
+        }
+    }
+
+    private bool IsHomeActive =>
+        string.Equals(_path, "/personal", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsPeopleActive =>
+        _path.StartsWith("/personal/utang/people", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsLentActive =>
+        _path.StartsWith("/personal/utang/lent", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsBorrowedActive =>
+        _path.StartsWith("/personal/utang/borrowed", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsMoreActive =>
+        _path.StartsWith("/personal/more", StringComparison.OrdinalIgnoreCase)
+        || _path.StartsWith("/personal/profile", StringComparison.OrdinalIgnoreCase)
+        || _path.StartsWith("/personal/settings", StringComparison.OrdinalIgnoreCase)
+        || _path.StartsWith("/personal/explore-pos", StringComparison.OrdinalIgnoreCase)
+        || _path.StartsWith("/personal/utang/invitations", StringComparison.OrdinalIgnoreCase);
+
+    private void GoHome() => NavigateTab("/personal");
+    private void GoPeople() => NavigateTab("/personal/utang/people");
+    private void GoLent() => NavigateTab("/personal/utang/lent");
+    private void GoBorrowed() => NavigateTab("/personal/utang/borrowed");
+    private void GoMore() => NavigateTab("/personal/more");
+
+    private void NavigateTab(string href)
+    {
+        // replace:true keeps Android back from walking every tab visit.
+        Nav.NavigateTo(href, replace: true);
+    }
+
+    private bool IsDevOrTesting =>
+        string.Equals(AppInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(AppInfo.EnvironmentName, "Testing", StringComparison.OrdinalIgnoreCase);
+
+    private string EnvironmentLabel => IsDevOrTesting
+        ? (string.Equals(AppInfo.EnvironmentName, "Testing", StringComparison.OrdinalIgnoreCase) ? L["Env_Testing"] : L["Env_Development"])
+        : L["Env_Production"];
+
+    private async Task OnChangedAsync()
+    {
+        _cultureEpoch = CultureCtl.Epoch;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ThemeCtl.Changed -= OnChangedAsync;
+        DensityCtl.Changed -= OnChangedAsync;
+        CultureCtl.Changed -= OnChangedAsync;
+        Nav.LocationChanged -= OnLocationChanged;
+    }
+}

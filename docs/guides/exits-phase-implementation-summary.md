@@ -290,7 +290,7 @@
 **What closed:**
 - Mobile foundation and authentication
 - Personal account and Explore POS → explicit Start Business (continue in Mobile)
-- Personal-first home (no orgs/switcher on `/personal`; switcher in Settings)
+- Personal-first bottom tabs (Home / People / I Lent / I Borrowed / More)
 - Personal settings, pending invitations accept, AuthShell phone layout polish (MVP follow-up)
 - Personal Utang Mobile parity (dashboard, People, I Lent, I Borrowed, invitations) — phone Retest
 - Organization selection and Owner essentials

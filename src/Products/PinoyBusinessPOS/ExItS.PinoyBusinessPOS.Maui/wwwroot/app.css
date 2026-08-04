@@ -322,10 +322,16 @@ button.pos-link {
     scroll-padding-bottom: calc(4.5rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
 }
 
-/* Auth / Personal shells have no bottom nav — reclaim space on phones (incl. Samsung). */
+/* Auth shell has no bottom nav — reclaim space on phones (incl. Samsung). */
 .pos-shell--auth .pos-content {
     padding-bottom: calc(1.25rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
     scroll-padding-bottom: calc(1.25rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
+}
+
+/* Personal shell keeps the same bottom-nav content inset as POS (tabs persist). */
+.pos-shell--personal .pos-content {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
+    scroll-padding-bottom: calc(4.5rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
 }
 
 .pos-personal-org {

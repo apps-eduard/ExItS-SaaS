@@ -465,22 +465,24 @@ The same person may be a lender in one relationship and borrower in another.
 ## 6.5 Personal Navigation
 
 ```text
-Personal
-├── Home (People / Utang summary — personal-first)
-├── People
-├── I Lent
-├── I Borrowed
-├── Utang invitations
-├── Profile
-├── Settings (includes Account context switcher when orgs exist)
-└── Explore Pinoy Business POS → plan catalog → confirm business details
+Personal (bottom tabs)
+├── Home — summary totals + recent activity
+├── People — contacts list / detail / create
+├── I Lent — lent relationships list / create / detail
+├── I Borrowed — borrowed relationships list / create / detail
+└── More
+    ├── Utang invitations
+    ├── Profile
+    ├── Settings (Account context switcher when orgs exist)
+    ├── Explore Pinoy Business POS → plan catalog → confirm business details
+    └── Sign out
 ```
 
-Personal home does **not** list organizations, show Account context, or expose a Start a Business button.
+Personal home does **not** list organizations, show Account context, or expose Start a Business / primary feature buttons (those live in tabs / More).
 Organization / product switching for existing members is available from Settings and Organization Select.
-POS operational routes stay outside Personal AuthShell and require organization + entitlement.
+POS operational routes stay outside PersonalShell and require organization + entitlement.
 
-Payments / Reminders / History remain Coming Soon on Mobile (same as Web nav).
+Payments / Reminders / History remain hidden from primary UI until implemented.
 
 Target Personal Utang navigation (deferred on Mobile):
 
