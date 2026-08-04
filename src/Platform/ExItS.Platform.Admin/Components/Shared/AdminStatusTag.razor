@@ -37,19 +37,21 @@ else
         "Failed" => L["Status_Failed"],
         "Inactive" => L["Status_Inactive"],
         "Retired" => L["Status_Retired"],
+        "Archived" => L["Status_Archived"],
         "Draft" => L["Status_Draft"],
+        "Published" => L["Status_Published"],
         "Pending" => L["Status_Pending"],
         _ => Value
     };
 
     private string AntColor => Value switch
     {
-        "Active" or "Confirmed" or "Succeeded" => "success",
+        "Active" or "Confirmed" or "Succeeded" or "Published" => "success",
         "Trialing" or "Pending" or "PendingConfirmation" or "PendingVerification" => "processing",
         "GracePeriod" => "gold",
         "PastDue" => "orange",
         "Suspended" or "Rejected" or "Denied" or "Failed" => "error",
-        "Cancelled" or "Expired" or "Voided" or "Removed" or "Deactivated" or "Revoked" or "Inactive" or "Retired" => "default",
+        "Cancelled" or "Expired" or "Voided" or "Removed" or "Deactivated" or "Revoked" or "Inactive" or "Retired" or "Archived" => "default",
         "Draft" => "default",
         _ => "default"
     };

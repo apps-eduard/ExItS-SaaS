@@ -1,0 +1,486 @@
+@page "/admin/global-catalog/categories"
+@page "/admin/global-catalog/categories/{Id:guid}"
+@using AntDesign
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IPlatformApiClient Api
+@inject IMessageService Message
+@inject IStringLocalizer<AdminResources> L
+@inject NavigationManager Nav
+@inject PlatformPermissionState Permissions
+
+@if (!Permissions.Loaded)
+{
+    <Spin />
+}
+else if (!CanView)
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ViewGlobalCatalog" />
+}
+else if (Id is null)
+{
+    <PageHeader Class="exits-page-header" Title="@L["GlobalCategories_Title"]" SubTitle="@L["GlobalCategories_Description"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_ProductCatalog"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_GlobalCategories"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+        <PageHeaderExtra>
+            @if (CanManage)
+            {
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ToggleCreate">
+                    @(_showCreate ? L["GlobalCategories_HideCreate"] : L["GlobalCategories_Create"])
+                </Button>
+            }
+        </PageHeaderExtra>
+    </PageHeader>
+
+    <Space Style="margin-bottom:12px; width:100%;" Wrap>
+        <Input @bind-Value="_search" Size="@InputSize.Small" Placeholder="@L["GlobalCategories_SearchPlaceholder"]" Style="width:220px;" OnPressEnter="ApplyFiltersAsync" />
+        <Select TItemValue="string" TItem="string" @bind-Value="_status" Size="@InputSize.Small" Placeholder="@L["Common_Status"]" Style="width:140px;" AllowClear>
+            <SelectOptions>
+                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Active")" Label="@L["Status_Active"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Inactive")" Label="@L["Status_Inactive"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Archived")" Label="@L["Status_Archived"]" />
+            </SelectOptions>
+        </Select>
+        <Select TItemValue="string" TItem="string" @bind-Value="_businessType" Size="@InputSize.Small" Placeholder="@L["GlobalCatalog_BusinessType"]" Style="width:160px;" AllowClear>
+            <SelectOptions>
+                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
+                @foreach (var bt in BusinessTypeOptions)
+                {
+                    <SelectOption TItemValue="string" TItem="string" Value="@bt" Label="@bt" />
+                }
+            </SelectOptions>
+        </Select>
+        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ApplyFiltersAsync">@L["Common_Apply"]</Button>
+        <Button Size="@ButtonSize.Small" OnClick="ClearFiltersAsync">@L["Common_Reset"]</Button>
+    </Space>
+
+    @if (_showCreate && CanManage)
+    {
+        <Card Size="@CardSize.Small" Title="@L["GlobalCategories_CreateSection"]" Style="margin-bottom:12px;">
+            <FormValidationSummary Title="@L["GlobalCategories_CreateFailed"]" Message="@_formError" IsConflict="_formConflict" />
+            <Space Direction="SpaceDirection.Vertical" Style="width:100%; max-width:560px;">
+                <div>
+                    <label class="ant-form-item-label" for="gc-cat-name">@L["Common_Name"]</label>
+                    <Input Id="gc-cat-name" @bind-Value="_newName" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label">@L["GlobalCategories_Parent"]</label>
+                    <Select TItemValue="string" TItem="string" @bind-Value="_newParentId" Size="@InputSize.Small" Style="width:100%;" AllowClear Disabled="_busy" Placeholder="@L["GlobalCategories_NoParent"]">
+                        <SelectOptions>
+                            <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["GlobalCategories_NoParent"]" />
+                            @foreach (var c in ParentOptions)
+                            {
+                                <SelectOption TItemValue="string" TItem="string" Value="@c.Id.ToString("D")" Label="@c.Name" />
+                            }
+                        </SelectOptions>
+                    </Select>
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="gc-cat-icon">@L["GlobalCategories_IconReference"]</label>
+                    <Input Id="gc-cat-icon" @bind-Value="_newIcon" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="gc-cat-sort">@L["GlobalCategories_SortOrder"]</label>
+                    <AntDesign.InputNumber Id="gc-cat-sort" TValue="int" @bind-Value="_newSortOrder" Min="0" Disabled="_busy" Style="width:120px;" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label">@L["GlobalCatalog_BusinessTypes"]</label>
+                    <CheckboxGroup @bind-Value="_newBusinessTypes" Options="@_businessTypeCheckboxOptions" Disabled="_busy" />
+                </div>
+                <Space>
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">@L["Common_Create"]</Button>
+                    <Button Size="@ButtonSize.Small" OnClick="HideCreate" Disabled="_busy">@L["Common_Cancel"]</Button>
+                </Space>
+            </Space>
+        </Card>
+    }
+
+    @if (_list is { IsSuccess: false })
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail" />
+    }
+    else if (_list is { IsSuccess: true, Data.Items.Count: 0 })
+    {
+        <Empty Description="@L["GlobalCategories_Empty"].Value" />
+    }
+    else
+    {
+        <Table TItem="GlobalCategoryDto"
+               Class="exits-table-fit"
+               DataSource="@OrderedRows"
+               Total="@(_list?.Data?.TotalCount ?? 0)"
+               @bind-PageIndex="_page"
+               PageSize="@(_list?.Data?.PageSize ?? 50)"
+               Loading="@(_list is null)"
+               Size="@TableSize.Small"
+               Bordered
+               ScrollX="960"
+               RemoteDataSource
+               OnPageIndexChange="OnPageChangedAsync">
+            <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]">
+                <a href="/admin/global-catalog/categories/@context.Id">@Indent(context)@context.Name</a>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.ParentId" Title="@L["GlobalCategories_Parent"]" Width="180">
+                @ParentName(context.ParentId)
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.SortOrder" Title="@L["GlobalCategories_SortOrder"]" Width="100" />
+            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="110">
+                <AdminStatusTag Value="@context.Status" />
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.BusinessTypes" Title="@L["GlobalCatalog_BusinessTypes"]" Width="200">
+                @string.Join(", ", context.BusinessTypes)
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Width="180">
+                <LocalTimestamp Value="@context.UpdatedAtUtc" />
+            </PropertyColumn>
+            <ActionColumn Title="@L["Common_Open"]" Width="80">
+                <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/global-catalog/categories/{context.Id}")">@L["Common_Open"]</a>
+            </ActionColumn>
+        </Table>
+    }
+}
+else
+{
+    <PageHeader Class="exits-page-header" Title="@(_category?.Data?.Name ?? L["GlobalCategories_DetailTitle"])" SubTitle="@L["GlobalCategories_DetailDescription"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem Href="/admin/global-catalog/categories">@L["Nav_GlobalCategories"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Common_Detail"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+        <PageHeaderExtra>
+            @if (_category?.IsSuccess == true && CanManage)
+            {
+                var c = _category.Data!;
+                <Space>
+                    @if (c.Status == "Inactive" || c.Status == "Archived")
+                    {
+                        <Popconfirm Title="@L["GlobalCategories_ConfirmActivate"]" OnConfirm="ActivateCategoryAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                            <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy">@L["GlobalCategories_Activate"]</Button>
+                        </Popconfirm>
+                    }
+                    @if (c.Status == "Active")
+                    {
+                        <Popconfirm Title="@L["GlobalCategories_ConfirmDeactivate"]" OnConfirm="DeactivateCategoryAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                            <Button Size="@ButtonSize.Small" Loading="_busy">@L["GlobalCategories_Deactivate"]</Button>
+                        </Popconfirm>
+                    }
+                    @if (c.Status is "Active" or "Inactive")
+                    {
+                        <Popconfirm Title="@L["GlobalCategories_ConfirmArchive"]" OnConfirm="ArchiveCategoryAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                            <Button Size="@ButtonSize.Small" Danger Loading="_busy">@L["GlobalCategories_Archive"]</Button>
+                        </Popconfirm>
+                    }
+                </Space>
+            }
+        </PageHeaderExtra>
+    </PageHeader>
+
+    @if (_category is null)
+    {
+        <div style="padding:2rem;text-align:center;"><Spin Tip="@L["GlobalCategories_DetailLoading"]" /></div>
+    }
+    else if (!_category.IsSuccess)
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_category.Error?.Title ?? L["Common_Error"])" SubTitle="@_category.Error?.Detail" />
+    }
+    else
+    {
+        var c = _category.Data!;
+        <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
+            <DescriptionsItem Title="@L["Common_Status"]"><AdminStatusTag Value="@c.Status" /></DescriptionsItem>
+            <DescriptionsItem Title="@L["GlobalCategories_Parent"]">@ParentName(c.ParentId)</DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_CreatedUtc"]"><UtcTimestamp Value="@c.CreatedAtUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@c.UpdatedAtUtc" /></DescriptionsItem>
+        </Descriptions>
+
+        @if (CanManage && c.Status != "Archived")
+        {
+            <Card Size="@CardSize.Small" Title="@L["GlobalCategories_EditSection"]">
+                <FormValidationSummary Title="@L["GlobalCategories_SaveFailed"]" Message="@_formError" IsConflict="_formConflict" />
+                <Space Direction="SpaceDirection.Vertical" Style="width:100%; max-width:560px;">
+                    <div>
+                        <label class="ant-form-item-label" for="gc-cat-edit-name">@L["Common_Name"]</label>
+                        <Input Id="gc-cat-edit-name" @bind-Value="_editName" Size="@InputSize.Small" Disabled="_busy" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label">@L["GlobalCategories_Parent"]</label>
+                        <Select TItemValue="string" TItem="string" @bind-Value="_editParentId" Size="@InputSize.Small" Style="width:100%;" AllowClear Disabled="_busy">
+                            <SelectOptions>
+                                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["GlobalCategories_NoParent"]" />
+                                @foreach (var opt in ParentOptions.Where(p => p.Id != c.Id))
+                                {
+                                    <SelectOption TItemValue="string" TItem="string" Value="@opt.Id.ToString("D")" Label="@opt.Name" />
+                                }
+                            </SelectOptions>
+                        </Select>
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label" for="gc-cat-edit-icon">@L["GlobalCategories_IconReference"]</label>
+                        <Input Id="gc-cat-edit-icon" @bind-Value="_editIcon" Size="@InputSize.Small" Disabled="_busy" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label" for="gc-cat-edit-sort">@L["GlobalCategories_SortOrder"]</label>
+                        <AntDesign.InputNumber Id="gc-cat-edit-sort" TValue="int" @bind-Value="_editSortOrder" Min="0" Disabled="_busy" Style="width:120px;" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label">@L["GlobalCatalog_BusinessTypes"]</label>
+                        <CheckboxGroup @bind-Value="_editBusinessTypes" Options="@_businessTypeCheckboxOptions" Disabled="_busy" />
+                    </div>
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveAsync">@L["Common_Save"]</Button>
+                </Space>
+            </Card>
+        }
+        else
+        {
+            <Descriptions Size="@DescriptionsSize.Small" Column="1">
+                <DescriptionsItem Title="@L["Common_Name"]">@c.Name</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalCategories_IconReference"]">@(c.IconReference ?? "—")</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalCategories_SortOrder"]">@c.SortOrder</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalCatalog_BusinessTypes"]">@string.Join(", ", c.BusinessTypes)</DescriptionsItem>
+            </Descriptions>
+        }
+    }
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private static readonly string[] BusinessTypeOptions =
+    [
+        "SariSari", "MiniGrocery", "Bakery", "Cafe", "Pharmacy", "GeneralRetail"
+    ];
+
+    private readonly CheckboxOption<string>[] _businessTypeCheckboxOptions =
+        BusinessTypeOptions.Select(v => new CheckboxOption<string> { Label = v, Value = v }).ToArray();
+
+    private ApiCallResult<PagedResult<GlobalCategoryDto>>? _list;
+    private ApiCallResult<GlobalCategoryDto>? _category;
+    private List<GlobalCategoryDto> _allForLookup = [];
+    private int _page = 1;
+    private string _search = "";
+    private string _status = "";
+    private string _businessType = "";
+    private bool _showCreate;
+    private string _newName = "";
+    private string _newParentId = "";
+    private string _newIcon = "";
+    private int _newSortOrder;
+    private string[] _newBusinessTypes = [];
+    private string _editName = "";
+    private string _editParentId = "";
+    private string _editIcon = "";
+    private int _editSortOrder;
+    private string[] _editBusinessTypes = [];
+    private DateTimeOffset? _expectedUpdatedAt;
+    private string? _formError;
+    private bool _formConflict;
+    private bool _busy;
+    private readonly AdminPageLoadGate _loadGate = new();
+
+    private bool CanView => Permissions.HasPermission(PlatformPermissionCodes.ViewGlobalCatalog);
+    private bool CanManage => Permissions.HasPermission(PlatformPermissionCodes.ManageGlobalCategories);
+
+    private IEnumerable<GlobalCategoryDto> ParentOptions =>
+        _allForLookup.Where(c => c.Status != "Archived").OrderBy(c => c.SortOrder).ThenBy(c => c.Name);
+
+    private IReadOnlyList<GlobalCategoryDto> OrderedRows
+    {
+        get
+        {
+            var items = _list?.Data?.Items ?? Array.Empty<GlobalCategoryDto>();
+            return items
+                .OrderBy(c => c.ParentId.HasValue ? 1 : 0)
+                .ThenBy(c => c.SortOrder)
+                .ThenBy(c => c.Name)
+                .ToList();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _formError = null;
+        _formConflict = false;
+        if (!CanView)
+        {
+            return;
+        }
+
+        await EnsureLookupAsync();
+
+        if (Id is null)
+        {
+            if (!_loadGate.ShouldLoad("list"))
+            {
+                return;
+            }
+
+            await LoadListAsync();
+        }
+        else if (_loadGate.ShouldLoad(Id))
+        {
+            await LoadDetailAsync();
+        }
+    }
+
+    private async Task EnsureLookupAsync()
+    {
+        if (_allForLookup.Count > 0)
+        {
+            return;
+        }
+
+        var result = await Api.GetGlobalCategoriesAsync(page: 1, pageSize: 200);
+        if (result is { IsSuccess: true, Data: not null })
+        {
+            _allForLookup = result.Data.Items.ToList();
+        }
+    }
+
+    private async Task LoadListAsync() =>
+        _list = await Api.GetGlobalCategoriesAsync(
+            page: _page,
+            pageSize: 50,
+            status: string.IsNullOrWhiteSpace(_status) ? null : _status,
+            businessType: string.IsNullOrWhiteSpace(_businessType) ? null : _businessType,
+            search: string.IsNullOrWhiteSpace(_search) ? null : _search.Trim());
+
+    private async Task OnPageChangedAsync(PaginationEventArgs _)
+    {
+        await LoadListAsync();
+    }
+
+    private async Task ApplyFiltersAsync()
+    {
+        _page = 1;
+        await LoadListAsync();
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        _search = "";
+        _status = "";
+        _businessType = "";
+        _page = 1;
+        await LoadListAsync();
+    }
+
+    private async Task LoadDetailAsync()
+    {
+        if (Id is null) return;
+        _category = await Api.GetGlobalCategoryAsync(Id.Value);
+        if (_category is { IsSuccess: true, Data: not null })
+        {
+            BindEdit(_category.Data);
+        }
+    }
+
+    private void BindEdit(GlobalCategoryDto c)
+    {
+        _editName = c.Name;
+        _editParentId = c.ParentId?.ToString("D") ?? "";
+        _editIcon = c.IconReference ?? "";
+        _editSortOrder = c.SortOrder;
+        _editBusinessTypes = c.BusinessTypes.ToArray();
+        _expectedUpdatedAt = c.UpdatedAtUtc;
+    }
+
+    private string Indent(GlobalCategoryDto c) => c.ParentId is null ? "" : "↳ ";
+
+    private string ParentName(Guid? parentId)
+    {
+        if (parentId is null) return L["GlobalCategories_NoParent"];
+        var match = _allForLookup.FirstOrDefault(x => x.Id == parentId)
+            ?? _list?.Data?.Items.FirstOrDefault(x => x.Id == parentId);
+        return match?.Name ?? parentId.Value.ToString("D")[..8];
+    }
+
+    private void ToggleCreate() => _showCreate = !_showCreate;
+
+    private void HideCreate()
+    {
+        _showCreate = false;
+        _formError = null;
+        _formConflict = false;
+    }
+
+    private async Task CreateAsync()
+    {
+        if (!CanManage || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        _formError = null;
+        _formConflict = false;
+        Guid? parentId = Guid.TryParse(_newParentId, out var pid) ? pid : null;
+        var result = await Api.CreateGlobalCategoryAsync(new CreateGlobalCategoryRequest(
+            _newName,
+            parentId,
+            string.IsNullOrWhiteSpace(_newIcon) ? null : _newIcon.Trim(),
+            _newSortOrder,
+            _newBusinessTypes));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        await Message.SuccessAsync(L["GlobalCategories_Created"].Value);
+        _allForLookup.Clear();
+        Nav.NavigateTo($"/admin/global-catalog/categories/{result.Data!.Id}");
+    }
+
+    private async Task SaveAsync()
+    {
+        if (Id is null || !CanManage || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        _formError = null;
+        _formConflict = false;
+        Guid? parentId = Guid.TryParse(_editParentId, out var pid) ? pid : null;
+        var result = await Api.UpdateGlobalCategoryAsync(Id.Value, new UpdateGlobalCategoryRequest(
+            _editName,
+            parentId,
+            string.IsNullOrWhiteSpace(_editIcon) ? null : _editIcon.Trim(),
+            _editSortOrder,
+            _editBusinessTypes,
+            _expectedUpdatedAt));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        await Message.SuccessAsync(L["GlobalCategories_Saved"].Value);
+        _category = result;
+        _allForLookup.Clear();
+        BindEdit(result.Data!);
+    }
+
+    private Task ActivateCategoryAsync() => SetStatusAsync("Active");
+    private Task DeactivateCategoryAsync() => SetStatusAsync("Inactive");
+    private Task ArchiveCategoryAsync() => SetStatusAsync("Archived");
+
+    private async Task SetStatusAsync(string status)
+    {
+        if (Id is null || _category?.Data is null || !CanManage || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.SetGlobalCategoryStatusAsync(
+            Id.Value,
+            new SetGlobalCategoryStatusRequest(status, _category.Data.UpdatedAtUtc));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            await Message.ErrorAsync(AdminFormErrorMapper.MapPageError(result) ?? L["Common_Error"].Value);
+            return;
+        }
+
+        await Message.SuccessAsync(L["GlobalCategories_StatusChanged"].Value);
+        _allForLookup.Clear();
+        await LoadDetailAsync();
+    }
+}

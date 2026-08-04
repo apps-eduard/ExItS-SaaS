@@ -246,6 +246,39 @@ public sealed class PlatformApiClientTests
     }
 
     [Fact]
+    public async Task Get_global_categories_uses_global_catalog_route()
+    {
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"items":[],"totalCount":0,"page":1,"pageSize":50}""", Encoding.UTF8, "application/json")
+        });
+        var client = CreateClient(handler);
+
+        var result = await client.GetGlobalCategoriesAsync(1, 50, "Active", search: "snacks");
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("/api/v1/platform/global-catalog/categories?page=1&pageSize=50&status=Active&search=snacks", handler.Request!.PathAndQuery);
+    }
+
+    [Fact]
+    public async Task Get_global_products_uses_global_catalog_route()
+    {
+        var categoryId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"items":[],"totalCount":0,"page":1,"pageSize":20}""", Encoding.UTF8, "application/json")
+        });
+        var client = CreateClient(handler);
+
+        var result = await client.GetGlobalProductsAsync(1, 20, "Active", categoryId, barcode: "480001");
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(
+            $"/api/v1/platform/global-catalog/products?page=1&pageSize=20&status=Active&categoryId={categoryId}&barcode=480001",
+            handler.Request!.PathAndQuery);
+    }
+
+    [Fact]
     public async Task Audit_endpoints_return_unavailable_when_api_not_yet_deployed()
     {
         var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)

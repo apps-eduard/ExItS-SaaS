@@ -489,6 +489,101 @@ public sealed class PlatformApiClient(
     public Task<ApiCallResult<AccessTokenIntrospectionDto>> IntrospectAccessTokenAsync(IntrospectAccessTokenRequest request, CancellationToken ct = default) =>
         SendAsync<AccessTokenIntrospectionDto>(HttpMethod.Post, "/api/v1/platform/auth/introspect", request, ct);
 
+    public Task<ApiCallResult<PagedResult<GlobalCategoryDto>>> GetGlobalCategoriesAsync(
+        int page = 1,
+        int pageSize = 50,
+        string? status = null,
+        Guid? parentId = null,
+        string? businessType = null,
+        string? search = null,
+        CancellationToken ct = default) =>
+        GetAsync<PagedResult<GlobalCategoryDto>>(
+            $"/api/v1/platform/global-catalog/categories?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("parentId", parentId), ("businessType", businessType), ("search", search))}",
+            ct);
+
+    public Task<ApiCallResult<GlobalCategoryDto>> GetGlobalCategoryAsync(Guid id, CancellationToken ct = default) =>
+        GetAsync<GlobalCategoryDto>($"/api/v1/platform/global-catalog/categories/{id}", ct);
+
+    public Task<ApiCallResult<GlobalCategoryDto>> CreateGlobalCategoryAsync(CreateGlobalCategoryRequest request, CancellationToken ct = default) =>
+        SendAsync<GlobalCategoryDto>(HttpMethod.Post, "/api/v1/platform/global-catalog/categories", request, ct);
+
+    public Task<ApiCallResult<GlobalCategoryDto>> UpdateGlobalCategoryAsync(Guid id, UpdateGlobalCategoryRequest request, CancellationToken ct = default) =>
+        SendAsync<GlobalCategoryDto>(HttpMethod.Put, $"/api/v1/platform/global-catalog/categories/{id}", request, ct);
+
+    public Task<ApiCallResult<GlobalCategoryDto>> SetGlobalCategoryStatusAsync(Guid id, SetGlobalCategoryStatusRequest request, CancellationToken ct = default) =>
+        SendAsync<GlobalCategoryDto>(HttpMethod.Patch, $"/api/v1/platform/global-catalog/categories/{id}/status", request, ct);
+
+    public Task<ApiCallResult<PagedResult<GlobalProductDto>>> GetGlobalProductsAsync(
+        int page = 1,
+        int pageSize = 20,
+        string? status = null,
+        Guid? categoryId = null,
+        string? businessType = null,
+        string? search = null,
+        string? barcode = null,
+        string? sku = null,
+        CancellationToken ct = default) =>
+        GetAsync<PagedResult<GlobalProductDto>>(
+            $"/api/v1/platform/global-catalog/products?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("categoryId", categoryId), ("businessType", businessType), ("search", search), ("barcode", barcode), ("sku", sku))}",
+            ct);
+
+    public Task<ApiCallResult<GlobalProductDto>> GetGlobalProductAsync(Guid id, CancellationToken ct = default) =>
+        GetAsync<GlobalProductDto>($"/api/v1/platform/global-catalog/products/{id}", ct);
+
+    public Task<ApiCallResult<GlobalProductDto>> CreateGlobalProductAsync(CreateGlobalProductRequest request, CancellationToken ct = default) =>
+        SendAsync<GlobalProductDto>(HttpMethod.Post, "/api/v1/platform/global-catalog/products", request, ct);
+
+    public Task<ApiCallResult<GlobalProductDto>> UpdateGlobalProductAsync(Guid id, UpdateGlobalProductRequest request, CancellationToken ct = default) =>
+        SendAsync<GlobalProductDto>(HttpMethod.Put, $"/api/v1/platform/global-catalog/products/{id}", request, ct);
+
+    public Task<ApiCallResult<GlobalProductDto>> SetGlobalProductStatusAsync(Guid id, SetGlobalProductStatusRequest request, CancellationToken ct = default) =>
+        SendAsync<GlobalProductDto>(HttpMethod.Patch, $"/api/v1/platform/global-catalog/products/{id}/status", request, ct);
+
+    public Task<ApiCallResult<PagedResult<CatalogTemplateSummaryDto>>> GetCatalogTemplatesAsync(
+        int page = 1,
+        int pageSize = 20,
+        string? status = null,
+        string? primaryBusinessType = null,
+        string? search = null,
+        CancellationToken ct = default) =>
+        GetAsync<PagedResult<CatalogTemplateSummaryDto>>(
+            $"/api/v1/platform/global-catalog/templates?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("primaryBusinessType", primaryBusinessType), ("search", search))}",
+            ct);
+
+    public Task<ApiCallResult<CatalogTemplateDto>> GetCatalogTemplateAsync(Guid id, CancellationToken ct = default) =>
+        GetAsync<CatalogTemplateDto>($"/api/v1/platform/global-catalog/templates/{id}", ct);
+
+    public Task<ApiCallResult<CatalogTemplateDto>> CreateCatalogTemplateAsync(CreateCatalogTemplateRequest request, CancellationToken ct = default) =>
+        SendAsync<CatalogTemplateDto>(HttpMethod.Post, "/api/v1/platform/global-catalog/templates", request, ct);
+
+    public Task<ApiCallResult<CatalogTemplateDto>> UpdateCatalogTemplateAsync(Guid id, UpdateCatalogTemplateRequest request, CancellationToken ct = default) =>
+        SendAsync<CatalogTemplateDto>(HttpMethod.Put, $"/api/v1/platform/global-catalog/templates/{id}", request, ct);
+
+    public Task<ApiCallResult<CatalogTemplateDto>> PublishCatalogTemplateAsync(Guid id, CatalogTemplateLifecycleRequest? request = null, CancellationToken ct = default) =>
+        SendAsync<CatalogTemplateDto>(HttpMethod.Post, $"/api/v1/platform/global-catalog/templates/{id}/publish", request ?? new CatalogTemplateLifecycleRequest(), ct);
+
+    public Task<ApiCallResult<CatalogTemplateDto>> UnpublishCatalogTemplateAsync(Guid id, CatalogTemplateLifecycleRequest? request = null, CancellationToken ct = default) =>
+        SendAsync<CatalogTemplateDto>(HttpMethod.Post, $"/api/v1/platform/global-catalog/templates/{id}/unpublish", request ?? new CatalogTemplateLifecycleRequest(), ct);
+
+    public Task<ApiCallResult<CatalogTemplateDto>> ArchiveCatalogTemplateAsync(Guid id, CatalogTemplateLifecycleRequest? request = null, CancellationToken ct = default) =>
+        SendAsync<CatalogTemplateDto>(HttpMethod.Post, $"/api/v1/platform/global-catalog/templates/{id}/archive", request ?? new CatalogTemplateLifecycleRequest(), ct);
+
+    public Task<ApiCallResult<CatalogTemplateDto>> AssignCatalogTemplateProductAsync(Guid id, AssignCatalogTemplateProductRequest request, CancellationToken ct = default) =>
+        SendAsync<CatalogTemplateDto>(HttpMethod.Post, $"/api/v1/platform/global-catalog/templates/{id}/products", request, ct);
+
+    public Task<ApiCallResult<CatalogTemplateDto>> ReorderCatalogTemplateProductsAsync(Guid id, ReorderCatalogTemplateProductsRequest request, CancellationToken ct = default) =>
+        SendAsync<CatalogTemplateDto>(HttpMethod.Put, $"/api/v1/platform/global-catalog/templates/{id}/products/order", request, ct);
+
+    public Task<ApiCallResult<CatalogTemplateDto>> UpdateCatalogTemplateProductFlagsAsync(Guid id, Guid productId, UpdateCatalogTemplateProductFlagsRequest request, CancellationToken ct = default) =>
+        SendAsync<CatalogTemplateDto>(HttpMethod.Patch, $"/api/v1/platform/global-catalog/templates/{id}/products/{productId}", request, ct);
+
+    public Task<ApiCallResult<CatalogTemplateDto>> RemoveCatalogTemplateProductAsync(Guid id, Guid productId, DateTimeOffset? expectedUpdatedAtUtc = null, CancellationToken ct = default) =>
+        SendAsync<CatalogTemplateDto>(
+            HttpMethod.Delete,
+            $"/api/v1/platform/global-catalog/templates/{id}/products/{productId}?{Query(("expectedUpdatedAtUtc", expectedUpdatedAtUtc))}",
+            null,
+            ct);
+
     private static MembershipLifecycleRequest WithActor(MembershipLifecycleRequest request) =>
         request with { ActorReference = string.IsNullOrWhiteSpace(request.ActorReference) ? DevActor : request.ActorReference };
 

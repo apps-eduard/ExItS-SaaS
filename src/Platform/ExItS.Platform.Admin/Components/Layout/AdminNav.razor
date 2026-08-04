@@ -94,6 +94,18 @@
             </SubMenu>
         }
 
+        @if (CanView(PlatformPermissionCodes.ViewGlobalCatalog))
+        {
+            <SubMenu Key="product-catalog" TitleTemplate="@ProductCatalogTitle">
+                <MenuItem Key="global-categories" RouterLink="/admin/global-catalog/categories" Icon="apartment">
+                    @L["Nav_GlobalCategories"]
+                </MenuItem>
+                <MenuItem Key="global-products" RouterLink="/admin/global-catalog/products" Icon="shopping">
+                    @L["Nav_GlobalProducts"]
+                </MenuItem>
+            </SubMenu>
+        }
+
         <SubMenu Key="operations" TitleTemplate="@OperationsTitle">
             @if (CanView(PlatformPermissionCodes.ManagePlatformUsers))
             {
@@ -301,10 +313,11 @@
 
     private bool _ready;
     private string[] _selected = ["dashboard"];
-    private string[] _openKeys = ["accounts", "commercial", "operations", "settings", "people", "org-products", "subscription", "security", "utang"];
+    private string[] _openKeys = ["accounts", "commercial", "product-catalog", "operations", "settings", "people", "org-products", "subscription", "security", "utang"];
 
     private RenderFragment AccountsTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_Accounts"]); b.CloseElement(); };
     private RenderFragment CommercialTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionCommercial"]); b.CloseElement(); };
+    private RenderFragment ProductCatalogTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_ProductCatalog"]); b.CloseElement(); };
     private RenderFragment OperationsTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionOperations"]); b.CloseElement(); };
     private RenderFragment SettingsTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionSettings"]); b.CloseElement(); };
     private RenderFragment PeopleTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_People"]); b.CloseElement(); };
@@ -403,6 +416,8 @@
             var p when p.EndsWith("/branding", StringComparison.Ordinal) => ["branding"],
             var p when p.StartsWith("/admin/organizations", StringComparison.Ordinal) =>
                 Shell.IsOrganizationShell ? ["org-settings"] : ["organizations"],
+            var p when p.StartsWith("/admin/global-catalog/categories", StringComparison.Ordinal) => ["global-categories"],
+            var p when p.StartsWith("/admin/global-catalog/products", StringComparison.Ordinal) => ["global-products"],
             var p when p.StartsWith("/admin/products", StringComparison.Ordinal) => ["products"],
             var p when p.StartsWith("/admin/plans", StringComparison.Ordinal) => ["plans"],
             var p when p.StartsWith("/admin/subscriptions", StringComparison.Ordinal) => ["subscriptions"],

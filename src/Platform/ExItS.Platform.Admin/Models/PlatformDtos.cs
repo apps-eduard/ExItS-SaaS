@@ -1002,3 +1002,161 @@ public sealed record PersonalInAppNotificationDto(
     bool IsRead,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset? ReadAtUtc);
+
+// --- Global merchandise catalog (Phase 20; distinct from commercial SaaS ProductDto/PlanDto) ---
+
+public sealed record GlobalCategoryDto(
+    Guid Id,
+    string Name,
+    Guid? ParentId,
+    string? IconReference,
+    int SortOrder,
+    string Status,
+    IReadOnlyList<string> BusinessTypes,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc);
+
+public sealed record GlobalProductDto(
+    Guid Id,
+    string Name,
+    string? Description,
+    string? Sku,
+    string? Barcode,
+    Guid? GlobalCategoryId,
+    string Unit,
+    decimal? SuggestedPrice,
+    decimal? SuggestedCost,
+    string? ImageReference,
+    string Status,
+    IReadOnlyList<string> SearchTags,
+    IReadOnlyList<string> BusinessTypes,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc);
+
+public sealed record CreateGlobalCategoryRequest(
+    string Name,
+    Guid? ParentId = null,
+    string? IconReference = null,
+    int SortOrder = 0,
+    IReadOnlyList<string>? BusinessTypes = null);
+
+public sealed record UpdateGlobalCategoryRequest(
+    string Name,
+    Guid? ParentId = null,
+    string? IconReference = null,
+    int SortOrder = 0,
+    IReadOnlyList<string>? BusinessTypes = null,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record SetGlobalCategoryStatusRequest(
+    string Status,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record CreateGlobalProductRequest(
+    string Name,
+    string Unit,
+    string? Description = null,
+    string? Sku = null,
+    string? Barcode = null,
+    Guid? GlobalCategoryId = null,
+    decimal? SuggestedPrice = null,
+    decimal? SuggestedCost = null,
+    string? ImageReference = null,
+    IReadOnlyList<string>? SearchTags = null,
+    IReadOnlyList<string>? BusinessTypes = null);
+
+public sealed record UpdateGlobalProductRequest(
+    string Name,
+    string Unit,
+    string? Description = null,
+    string? Sku = null,
+    string? Barcode = null,
+    Guid? GlobalCategoryId = null,
+    decimal? SuggestedPrice = null,
+    decimal? SuggestedCost = null,
+    string? ImageReference = null,
+    IReadOnlyList<string>? SearchTags = null,
+    IReadOnlyList<string>? BusinessTypes = null,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record SetGlobalProductStatusRequest(
+    string Status,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record CatalogTemplateProductDto(
+    Guid Id,
+    Guid GlobalProductId,
+    int SortOrder,
+    bool IsFeatured,
+    bool IsFirstBatch);
+
+public sealed record CatalogTemplateSummaryDto(
+    Guid Id,
+    string Name,
+    string Slug,
+    string? Description,
+    string? IconReference,
+    string PrimaryBusinessType,
+    string Status,
+    int DefaultBatchSize,
+    string SelectionMode,
+    DateTimeOffset? PublishedAtUtc,
+    int ProductCount,
+    int FirstBatchCount,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc);
+
+public sealed record CatalogTemplateDto(
+    Guid Id,
+    string Name,
+    string Slug,
+    string? Description,
+    string? IconReference,
+    string PrimaryBusinessType,
+    string Status,
+    int DefaultBatchSize,
+    string SelectionMode,
+    DateTimeOffset? PublishedAtUtc,
+    int ProductCount,
+    int FirstBatchCount,
+    IReadOnlyList<CatalogTemplateProductDto> Products,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc);
+
+public sealed record CreateCatalogTemplateRequest(
+    string Name,
+    string PrimaryBusinessType,
+    string? Slug = null,
+    string? Description = null,
+    string? IconReference = null,
+    int? DefaultBatchSize = null,
+    string? SelectionMode = null);
+
+public sealed record UpdateCatalogTemplateRequest(
+    string Name,
+    string PrimaryBusinessType,
+    string? Slug = null,
+    string? Description = null,
+    string? IconReference = null,
+    int? DefaultBatchSize = null,
+    string? SelectionMode = null,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record AssignCatalogTemplateProductRequest(
+    Guid GlobalProductId,
+    bool IsFeatured = false,
+    bool IsFirstBatch = false,
+    int? SortOrder = null,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record ReorderCatalogTemplateProductsRequest(
+    IReadOnlyList<Guid> OrderedGlobalProductIds,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record UpdateCatalogTemplateProductFlagsRequest(
+    bool? IsFeatured = null,
+    bool? IsFirstBatch = null,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record CatalogTemplateLifecycleRequest(
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);

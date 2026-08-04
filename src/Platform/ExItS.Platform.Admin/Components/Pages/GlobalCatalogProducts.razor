@@ -1,0 +1,601 @@
+@page "/admin/global-catalog/products"
+@page "/admin/global-catalog/products/{Id:guid}"
+@using AntDesign
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IPlatformApiClient Api
+@inject IMessageService Message
+@inject IStringLocalizer<AdminResources> L
+@inject NavigationManager Nav
+@inject PlatformPermissionState Permissions
+
+@if (!Permissions.Loaded)
+{
+    <Spin />
+}
+else if (!CanView)
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ViewGlobalCatalog" />
+}
+else if (Id is null)
+{
+    <PageHeader Class="exits-page-header" Title="@L["GlobalProducts_Title"]" SubTitle="@L["GlobalProducts_Description"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_ProductCatalog"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_GlobalProducts"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+        <PageHeaderExtra>
+            @if (CanManage)
+            {
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ToggleCreate">
+                    @(_showCreate ? L["GlobalProducts_HideCreate"] : L["GlobalProducts_Create"])
+                </Button>
+            }
+        </PageHeaderExtra>
+    </PageHeader>
+
+    <Space Style="margin-bottom:12px; width:100%;" Wrap>
+        <Input @bind-Value="_search" Size="@InputSize.Small" Placeholder="@L["GlobalProducts_SearchPlaceholder"]" Style="width:220px;" OnPressEnter="ApplyFiltersAsync" />
+        <Input @bind-Value="_barcode" Size="@InputSize.Small" Placeholder="@L["GlobalProducts_BarcodeFilter"]" Style="width:160px;" OnPressEnter="ApplyFiltersAsync" />
+        <Select TItemValue="string" TItem="string" @bind-Value="_status" Size="@InputSize.Small" Placeholder="@L["Common_Status"]" Style="width:140px;" AllowClear>
+            <SelectOptions>
+                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Draft")" Label="@L["Status_Draft"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Active")" Label="@L["Status_Active"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Archived")" Label="@L["Status_Archived"]" />
+            </SelectOptions>
+        </Select>
+        <Select TItemValue="string" TItem="string" @bind-Value="_categoryId" Size="@InputSize.Small" Placeholder="@L["GlobalProducts_Category"]" Style="width:200px;" AllowClear>
+            <SelectOptions>
+                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
+                @foreach (var c in _categoryOptions)
+                {
+                    <SelectOption TItemValue="string" TItem="string" Value="@c.Id.ToString("D")" Label="@c.Name" />
+                }
+            </SelectOptions>
+        </Select>
+        <Select TItemValue="string" TItem="string" @bind-Value="_businessType" Size="@InputSize.Small" Placeholder="@L["GlobalCatalog_BusinessType"]" Style="width:160px;" AllowClear>
+            <SelectOptions>
+                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
+                @foreach (var bt in BusinessTypeOptions)
+                {
+                    <SelectOption TItemValue="string" TItem="string" Value="@bt" Label="@bt" />
+                }
+            </SelectOptions>
+        </Select>
+        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ApplyFiltersAsync">@L["Common_Apply"]</Button>
+        <Button Size="@ButtonSize.Small" OnClick="ClearFiltersAsync">@L["Common_Reset"]</Button>
+    </Space>
+
+    @if (_showCreate && CanManage)
+    {
+        <Card Size="@CardSize.Small" Title="@L["GlobalProducts_CreateSection"]" Style="margin-bottom:12px;">
+            <FormValidationSummary Title="@L["GlobalProducts_CreateFailed"]" Message="@_formError" IsConflict="_formConflict" />
+            <Space Direction="SpaceDirection.Vertical" Style="width:100%; max-width:640px;">
+                <div>
+                    <label class="ant-form-item-label" for="gc-prod-name">@L["Common_Name"]</label>
+                    <Input Id="gc-prod-name" @bind-Value="_newName" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="gc-prod-desc">@L["GlobalProducts_FieldDescription"]</label>
+                    <TextArea Id="gc-prod-desc" @bind-Value="_newDescription" Rows="2" Disabled="_busy" />
+                </div>
+                <Space Wrap>
+                    <div>
+                        <label class="ant-form-item-label" for="gc-prod-sku">@L["GlobalProducts_Sku"]</label>
+                        <Input Id="gc-prod-sku" @bind-Value="_newSku" Size="@InputSize.Small" Disabled="_busy" Style="width:160px;" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label" for="gc-prod-barcode">@L["GlobalProducts_Barcode"]</label>
+                        <Input Id="gc-prod-barcode" @bind-Value="_newBarcode" Size="@InputSize.Small" Disabled="_busy" Style="width:180px;" />
+                    </div>
+                </Space>
+                <div>
+                    <label class="ant-form-item-label">@L["GlobalProducts_Category"]</label>
+                    <Select TItemValue="string" TItem="string" @bind-Value="_newCategoryId" Size="@InputSize.Small" Style="width:100%;" AllowClear Disabled="_busy">
+                        <SelectOptions>
+                            <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["GlobalProducts_Uncategorized"]" />
+                            @foreach (var c in _categoryOptions)
+                            {
+                                <SelectOption TItemValue="string" TItem="string" Value="@c.Id.ToString("D")" Label="@c.Name" />
+                            }
+                        </SelectOptions>
+                    </Select>
+                </div>
+                <div>
+                    <label class="ant-form-item-label">@L["GlobalProducts_Unit"]</label>
+                    <Select TItemValue="string" TItem="string" @bind-Value="_newUnit" Size="@InputSize.Small" Style="width:200px;" Disabled="_busy">
+                        <SelectOptions>
+                            @foreach (var u in UnitOptions)
+                            {
+                                <SelectOption TItemValue="string" TItem="string" Value="@u" Label="@u" />
+                            }
+                        </SelectOptions>
+                    </Select>
+                </div>
+                <Space Wrap>
+                    <div>
+                        <label class="ant-form-item-label">@L["GlobalProducts_SuggestedPrice"]</label>
+                        <AntDesign.InputNumber TValue="decimal?" @bind-Value="_newPrice" Min="0" Disabled="_busy" Style="width:140px;" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label">@L["GlobalProducts_SuggestedCost"]</label>
+                        <AntDesign.InputNumber TValue="decimal?" @bind-Value="_newCost" Min="0" Disabled="_busy" Style="width:140px;" />
+                    </div>
+                </Space>
+                <div>
+                    <label class="ant-form-item-label" for="gc-prod-image">@L["GlobalProducts_ImageReference"]</label>
+                    <Input Id="gc-prod-image" @bind-Value="_newImage" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="gc-prod-tags">@L["GlobalProducts_SearchTags"]</label>
+                    <Input Id="gc-prod-tags" @bind-Value="_newTags" Size="@InputSize.Small" Disabled="_busy" Placeholder="@L["GlobalProducts_TagsHint"]" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label">@L["GlobalCatalog_BusinessTypes"]</label>
+                    <CheckboxGroup @bind-Value="_newBusinessTypes" Options="@_businessTypeCheckboxOptions" Disabled="_busy" />
+                </div>
+                <Space>
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">@L["Common_Create"]</Button>
+                    <Button Size="@ButtonSize.Small" OnClick="HideCreate" Disabled="_busy">@L["Common_Cancel"]</Button>
+                </Space>
+            </Space>
+        </Card>
+    }
+
+    @if (_list is { IsSuccess: false })
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail" />
+    }
+    else if (_list is { IsSuccess: true, Data.Items.Count: 0 })
+    {
+        <Empty Description="@L["GlobalProducts_Empty"].Value" />
+    }
+    else
+    {
+        <Table TItem="GlobalProductDto"
+               Class="exits-table-fit"
+               DataSource="@(_list?.Data?.Items ?? Array.Empty<GlobalProductDto>())"
+               Total="@(_list?.Data?.TotalCount ?? 0)"
+               @bind-PageIndex="_page"
+               PageSize="@(_list?.Data?.PageSize ?? 20)"
+               Loading="@(_list is null)"
+               Size="@TableSize.Small"
+               Bordered
+               ScrollX="1280"
+               RemoteDataSource
+               OnPageIndexChange="OnPageChangedAsync">
+            <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]">
+                <a href="/admin/global-catalog/products/@context.Id">@context.Name</a>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.Barcode" Title="@L["GlobalProducts_Barcode"]" Width="140">
+                @(context.Barcode ?? "—")
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.Sku" Title="@L["GlobalProducts_Sku"]" Width="120">
+                @(context.Sku ?? "—")
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.GlobalCategoryId" Title="@L["GlobalProducts_Category"]" Width="160">
+                @CategoryName(context.GlobalCategoryId)
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.Unit" Title="@L["GlobalProducts_Unit"]" Width="100" />
+            <PropertyColumn Property="c => c.SuggestedPrice" Title="@L["GlobalProducts_SuggestedPrice"]" Width="120">
+                @(context.SuggestedPrice?.ToString("0.00") ?? "—")
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="110">
+                <AdminStatusTag Value="@context.Status" />
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.BusinessTypes" Title="@L["GlobalCatalog_BusinessTypes"]" Width="180">
+                @string.Join(", ", context.BusinessTypes)
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Width="180">
+                <LocalTimestamp Value="@context.UpdatedAtUtc" />
+            </PropertyColumn>
+            <ActionColumn Title="@L["Common_Open"]" Width="80">
+                <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/global-catalog/products/{context.Id}")">@L["Common_Open"]</a>
+            </ActionColumn>
+        </Table>
+    }
+}
+else
+{
+    <PageHeader Class="exits-page-header" Title="@(_product?.Data?.Name ?? L["GlobalProducts_DetailTitle"])" SubTitle="@L["GlobalProducts_DetailDescription"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem Href="/admin/global-catalog/products">@L["Nav_GlobalProducts"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Common_Detail"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+        <PageHeaderExtra>
+            @if (_product?.IsSuccess == true && CanManage)
+            {
+                var p = _product.Data!;
+                <Space>
+                    @if (p.Status == "Draft" || p.Status == "Archived")
+                    {
+                        <Popconfirm Title="@L["GlobalProducts_ConfirmActivate"]" OnConfirm="ActivateProductAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                            <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy">@L["GlobalProducts_Activate"]</Button>
+                        </Popconfirm>
+                    }
+                    @if (p.Status is "Draft" or "Active")
+                    {
+                        <Popconfirm Title="@L["GlobalProducts_ConfirmArchive"]" OnConfirm="ArchiveProductAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                            <Button Size="@ButtonSize.Small" Danger Loading="_busy">@L["GlobalProducts_Archive"]</Button>
+                        </Popconfirm>
+                    }
+                </Space>
+            }
+        </PageHeaderExtra>
+    </PageHeader>
+
+    @if (_product is null)
+    {
+        <div style="padding:2rem;text-align:center;"><Spin Tip="@L["GlobalProducts_DetailLoading"]" /></div>
+    }
+    else if (!_product.IsSuccess)
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_product.Error?.Title ?? L["Common_Error"])" SubTitle="@_product.Error?.Detail" />
+    }
+    else
+    {
+        var p = _product.Data!;
+        <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
+            <DescriptionsItem Title="@L["Common_Status"]"><AdminStatusTag Value="@p.Status" /></DescriptionsItem>
+            <DescriptionsItem Title="@L["GlobalProducts_Category"]">@CategoryName(p.GlobalCategoryId)</DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_CreatedUtc"]"><UtcTimestamp Value="@p.CreatedAtUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@p.UpdatedAtUtc" /></DescriptionsItem>
+        </Descriptions>
+
+        @if (CanManage && p.Status != "Archived")
+        {
+            <Card Size="@CardSize.Small" Title="@L["GlobalProducts_EditSection"]">
+                <FormValidationSummary Title="@L["GlobalProducts_SaveFailed"]" Message="@_formError" IsConflict="_formConflict" />
+                <Space Direction="SpaceDirection.Vertical" Style="width:100%; max-width:640px;">
+                    <div>
+                        <label class="ant-form-item-label" for="gc-prod-edit-name">@L["Common_Name"]</label>
+                        <Input Id="gc-prod-edit-name" @bind-Value="_editName" Size="@InputSize.Small" Disabled="_busy" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label" for="gc-prod-edit-desc">@L["GlobalProducts_FieldDescription"]</label>
+                        <TextArea Id="gc-prod-edit-desc" @bind-Value="_editDescription" Rows="2" Disabled="_busy" />
+                    </div>
+                    <Space Wrap>
+                        <div>
+                            <label class="ant-form-item-label" for="gc-prod-edit-sku">@L["GlobalProducts_Sku"]</label>
+                            <Input Id="gc-prod-edit-sku" @bind-Value="_editSku" Size="@InputSize.Small" Disabled="_busy" Style="width:160px;" />
+                        </div>
+                        <div>
+                            <label class="ant-form-item-label" for="gc-prod-edit-barcode">@L["GlobalProducts_Barcode"]</label>
+                            <Input Id="gc-prod-edit-barcode" @bind-Value="_editBarcode" Size="@InputSize.Small" Disabled="_busy" Style="width:180px;" />
+                        </div>
+                    </Space>
+                    <div>
+                        <label class="ant-form-item-label">@L["GlobalProducts_Category"]</label>
+                        <Select TItemValue="string" TItem="string" @bind-Value="_editCategoryId" Size="@InputSize.Small" Style="width:100%;" AllowClear Disabled="_busy">
+                            <SelectOptions>
+                                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["GlobalProducts_Uncategorized"]" />
+                                @foreach (var c in _categoryOptions)
+                                {
+                                    <SelectOption TItemValue="string" TItem="string" Value="@c.Id.ToString("D")" Label="@c.Name" />
+                                }
+                            </SelectOptions>
+                        </Select>
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label">@L["GlobalProducts_Unit"]</label>
+                        <Select TItemValue="string" TItem="string" @bind-Value="_editUnit" Size="@InputSize.Small" Style="width:200px;" Disabled="_busy">
+                            <SelectOptions>
+                                @foreach (var u in UnitOptions)
+                                {
+                                    <SelectOption TItemValue="string" TItem="string" Value="@u" Label="@u" />
+                                }
+                            </SelectOptions>
+                        </Select>
+                    </div>
+                    <Space Wrap>
+                        <div>
+                            <label class="ant-form-item-label">@L["GlobalProducts_SuggestedPrice"]</label>
+                            <AntDesign.InputNumber TValue="decimal?" @bind-Value="_editPrice" Min="0" Disabled="_busy" Style="width:140px;" />
+                        </div>
+                        <div>
+                            <label class="ant-form-item-label">@L["GlobalProducts_SuggestedCost"]</label>
+                            <AntDesign.InputNumber TValue="decimal?" @bind-Value="_editCost" Min="0" Disabled="_busy" Style="width:140px;" />
+                        </div>
+                    </Space>
+                    <div>
+                        <label class="ant-form-item-label" for="gc-prod-edit-image">@L["GlobalProducts_ImageReference"]</label>
+                        <Input Id="gc-prod-edit-image" @bind-Value="_editImage" Size="@InputSize.Small" Disabled="_busy" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label" for="gc-prod-edit-tags">@L["GlobalProducts_SearchTags"]</label>
+                        <Input Id="gc-prod-edit-tags" @bind-Value="_editTags" Size="@InputSize.Small" Disabled="_busy" Placeholder="@L["GlobalProducts_TagsHint"]" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label">@L["GlobalCatalog_BusinessTypes"]</label>
+                        <CheckboxGroup @bind-Value="_editBusinessTypes" Options="@_businessTypeCheckboxOptions" Disabled="_busy" />
+                    </div>
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveAsync">@L["Common_Save"]</Button>
+                </Space>
+            </Card>
+        }
+        else
+        {
+            <Descriptions Size="@DescriptionsSize.Small" Column="2">
+                <DescriptionsItem Title="@L["Common_Name"]">@p.Name</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalProducts_Unit"]">@p.Unit</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalProducts_Sku"]">@(p.Sku ?? "—")</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalProducts_Barcode"]">@(p.Barcode ?? "—")</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalProducts_SuggestedPrice"]">@(p.SuggestedPrice?.ToString("0.00") ?? "—")</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalProducts_SuggestedCost"]">@(p.SuggestedCost?.ToString("0.00") ?? "—")</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalProducts_FieldDescription"]">@(p.Description ?? "—")</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalProducts_ImageReference"]">@(p.ImageReference ?? "—")</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalProducts_SearchTags"]">@(p.SearchTags.Count == 0 ? "—" : string.Join(", ", p.SearchTags))</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalCatalog_BusinessTypes"]">@string.Join(", ", p.BusinessTypes)</DescriptionsItem>
+            </Descriptions>
+        }
+    }
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private static readonly string[] BusinessTypeOptions =
+    [
+        "SariSari", "MiniGrocery", "Bakery", "Cafe", "Pharmacy", "GeneralRetail"
+    ];
+
+    private static readonly string[] UnitOptions =
+    [
+        "Piece", "Pack", "Box", "Bottle", "Can", "Sachet", "Kilogram", "Gram", "Liter", "Milliliter"
+    ];
+
+    private readonly CheckboxOption<string>[] _businessTypeCheckboxOptions =
+        BusinessTypeOptions.Select(v => new CheckboxOption<string> { Label = v, Value = v }).ToArray();
+
+    private ApiCallResult<PagedResult<GlobalProductDto>>? _list;
+    private ApiCallResult<GlobalProductDto>? _product;
+    private List<GlobalCategoryDto> _categoryOptions = [];
+    private int _page = 1;
+    private string _search = "";
+    private string _barcode = "";
+    private string _status = "";
+    private string _categoryId = "";
+    private string _businessType = "";
+    private bool _showCreate;
+    private string _newName = "";
+    private string _newDescription = "";
+    private string _newSku = "";
+    private string _newBarcode = "";
+    private string _newCategoryId = "";
+    private string _newUnit = "Piece";
+    private decimal? _newPrice;
+    private decimal? _newCost;
+    private string _newImage = "";
+    private string _newTags = "";
+    private string[] _newBusinessTypes = [];
+    private string _editName = "";
+    private string _editDescription = "";
+    private string _editSku = "";
+    private string _editBarcode = "";
+    private string _editCategoryId = "";
+    private string _editUnit = "Piece";
+    private decimal? _editPrice;
+    private decimal? _editCost;
+    private string _editImage = "";
+    private string _editTags = "";
+    private string[] _editBusinessTypes = [];
+    private DateTimeOffset? _expectedUpdatedAt;
+    private string? _formError;
+    private bool _formConflict;
+    private bool _busy;
+    private readonly AdminPageLoadGate _loadGate = new();
+
+    private bool CanView => Permissions.HasPermission(PlatformPermissionCodes.ViewGlobalCatalog);
+    private bool CanManage => Permissions.HasPermission(PlatformPermissionCodes.ManageGlobalProducts);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _formError = null;
+        _formConflict = false;
+        if (!CanView)
+        {
+            return;
+        }
+
+        await EnsureCategoriesAsync();
+
+        if (Id is null)
+        {
+            if (!_loadGate.ShouldLoad("list"))
+            {
+                return;
+            }
+
+            await LoadListAsync();
+        }
+        else if (_loadGate.ShouldLoad(Id))
+        {
+            await LoadDetailAsync();
+        }
+    }
+
+    private async Task EnsureCategoriesAsync()
+    {
+        if (_categoryOptions.Count > 0)
+        {
+            return;
+        }
+
+        var result = await Api.GetGlobalCategoriesAsync(page: 1, pageSize: 200, status: "Active");
+        if (result is { IsSuccess: true, Data: not null })
+        {
+            _categoryOptions = result.Data.Items.OrderBy(c => c.SortOrder).ThenBy(c => c.Name).ToList();
+        }
+    }
+
+    private async Task LoadListAsync()
+    {
+        Guid? categoryId = Guid.TryParse(_categoryId, out var cid) ? cid : null;
+        _list = await Api.GetGlobalProductsAsync(
+            page: _page,
+            pageSize: 20,
+            status: string.IsNullOrWhiteSpace(_status) ? null : _status,
+            categoryId: categoryId,
+            businessType: string.IsNullOrWhiteSpace(_businessType) ? null : _businessType,
+            search: string.IsNullOrWhiteSpace(_search) ? null : _search.Trim(),
+            barcode: string.IsNullOrWhiteSpace(_barcode) ? null : _barcode.Trim());
+    }
+
+    private async Task OnPageChangedAsync(PaginationEventArgs _) => await LoadListAsync();
+
+    private async Task ApplyFiltersAsync()
+    {
+        _page = 1;
+        await LoadListAsync();
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        _search = "";
+        _barcode = "";
+        _status = "";
+        _categoryId = "";
+        _businessType = "";
+        _page = 1;
+        await LoadListAsync();
+    }
+
+    private async Task LoadDetailAsync()
+    {
+        if (Id is null) return;
+        _product = await Api.GetGlobalProductAsync(Id.Value);
+        if (_product is { IsSuccess: true, Data: not null })
+        {
+            BindEdit(_product.Data);
+        }
+    }
+
+    private void BindEdit(GlobalProductDto p)
+    {
+        _editName = p.Name;
+        _editDescription = p.Description ?? "";
+        _editSku = p.Sku ?? "";
+        _editBarcode = p.Barcode ?? "";
+        _editCategoryId = p.GlobalCategoryId?.ToString("D") ?? "";
+        _editUnit = p.Unit;
+        _editPrice = p.SuggestedPrice;
+        _editCost = p.SuggestedCost;
+        _editImage = p.ImageReference ?? "";
+        _editTags = string.Join(", ", p.SearchTags);
+        _editBusinessTypes = p.BusinessTypes.ToArray();
+        _expectedUpdatedAt = p.UpdatedAtUtc;
+    }
+
+    private string CategoryName(Guid? categoryId)
+    {
+        if (categoryId is null) return L["GlobalProducts_Uncategorized"];
+        return _categoryOptions.FirstOrDefault(c => c.Id == categoryId)?.Name
+            ?? categoryId.Value.ToString("D")[..8];
+    }
+
+    private static IReadOnlyList<string>? ParseTags(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        return raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(t => t.Length > 0)
+            .ToList();
+    }
+
+    private void ToggleCreate() => _showCreate = !_showCreate;
+
+    private void HideCreate()
+    {
+        _showCreate = false;
+        _formError = null;
+        _formConflict = false;
+    }
+
+    private async Task CreateAsync()
+    {
+        if (!CanManage || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        _formError = null;
+        _formConflict = false;
+        Guid? categoryId = Guid.TryParse(_newCategoryId, out var cid) ? cid : null;
+        var result = await Api.CreateGlobalProductAsync(new CreateGlobalProductRequest(
+            _newName,
+            string.IsNullOrWhiteSpace(_newUnit) ? "Piece" : _newUnit,
+            string.IsNullOrWhiteSpace(_newDescription) ? null : _newDescription.Trim(),
+            string.IsNullOrWhiteSpace(_newSku) ? null : _newSku.Trim(),
+            string.IsNullOrWhiteSpace(_newBarcode) ? null : _newBarcode.Trim(),
+            categoryId,
+            _newPrice,
+            _newCost,
+            string.IsNullOrWhiteSpace(_newImage) ? null : _newImage.Trim(),
+            ParseTags(_newTags),
+            _newBusinessTypes));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        await Message.SuccessAsync(L["GlobalProducts_Created"].Value);
+        Nav.NavigateTo($"/admin/global-catalog/products/{result.Data!.Id}");
+    }
+
+    private async Task SaveAsync()
+    {
+        if (Id is null || !CanManage || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        _formError = null;
+        _formConflict = false;
+        Guid? categoryId = Guid.TryParse(_editCategoryId, out var cid) ? cid : null;
+        var result = await Api.UpdateGlobalProductAsync(Id.Value, new UpdateGlobalProductRequest(
+            _editName,
+            string.IsNullOrWhiteSpace(_editUnit) ? "Piece" : _editUnit,
+            string.IsNullOrWhiteSpace(_editDescription) ? null : _editDescription.Trim(),
+            string.IsNullOrWhiteSpace(_editSku) ? null : _editSku.Trim(),
+            string.IsNullOrWhiteSpace(_editBarcode) ? null : _editBarcode.Trim(),
+            categoryId,
+            _editPrice,
+            _editCost,
+            string.IsNullOrWhiteSpace(_editImage) ? null : _editImage.Trim(),
+            ParseTags(_editTags),
+            _editBusinessTypes,
+            _expectedUpdatedAt));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        await Message.SuccessAsync(L["GlobalProducts_Saved"].Value);
+        _product = result;
+        BindEdit(result.Data!);
+    }
+
+    private Task ActivateProductAsync() => SetStatusAsync("Active");
+    private Task ArchiveProductAsync() => SetStatusAsync("Archived");
+
+    private async Task SetStatusAsync(string status)
+    {
+        if (Id is null || _product?.Data is null || !CanManage || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.SetGlobalProductStatusAsync(
+            Id.Value,
+            new SetGlobalProductStatusRequest(status, _product.Data.UpdatedAtUtc));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            await Message.ErrorAsync(AdminFormErrorMapper.MapPageError(result) ?? L["Common_Error"].Value);
+            return;
+        }
+
+        await Message.SuccessAsync(L["GlobalProducts_StatusChanged"].Value);
+        await LoadDetailAsync();
+    }
+}

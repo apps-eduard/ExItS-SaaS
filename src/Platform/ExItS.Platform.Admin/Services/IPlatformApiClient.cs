@@ -223,4 +223,51 @@ public interface IPlatformApiClient
 
     Task<ApiCallResult<AccessTokenIssueDto>> IssueAccessTokenAsync(IssueAccessTokenRequest request, CancellationToken ct = default);
     Task<ApiCallResult<AccessTokenIntrospectionDto>> IntrospectAccessTokenAsync(IntrospectAccessTokenRequest request, CancellationToken ct = default);
+
+    // Global merchandise catalog (Phase 20) — not commercial SaaS /api/v1/platform/catalog/*
+    Task<ApiCallResult<PagedResult<GlobalCategoryDto>>> GetGlobalCategoriesAsync(
+        int page = 1,
+        int pageSize = 50,
+        string? status = null,
+        Guid? parentId = null,
+        string? businessType = null,
+        string? search = null,
+        CancellationToken ct = default);
+    Task<ApiCallResult<GlobalCategoryDto>> GetGlobalCategoryAsync(Guid id, CancellationToken ct = default);
+    Task<ApiCallResult<GlobalCategoryDto>> CreateGlobalCategoryAsync(CreateGlobalCategoryRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<GlobalCategoryDto>> UpdateGlobalCategoryAsync(Guid id, UpdateGlobalCategoryRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<GlobalCategoryDto>> SetGlobalCategoryStatusAsync(Guid id, SetGlobalCategoryStatusRequest request, CancellationToken ct = default);
+
+    Task<ApiCallResult<PagedResult<GlobalProductDto>>> GetGlobalProductsAsync(
+        int page = 1,
+        int pageSize = 20,
+        string? status = null,
+        Guid? categoryId = null,
+        string? businessType = null,
+        string? search = null,
+        string? barcode = null,
+        string? sku = null,
+        CancellationToken ct = default);
+    Task<ApiCallResult<GlobalProductDto>> GetGlobalProductAsync(Guid id, CancellationToken ct = default);
+    Task<ApiCallResult<GlobalProductDto>> CreateGlobalProductAsync(CreateGlobalProductRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<GlobalProductDto>> UpdateGlobalProductAsync(Guid id, UpdateGlobalProductRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<GlobalProductDto>> SetGlobalProductStatusAsync(Guid id, SetGlobalProductStatusRequest request, CancellationToken ct = default);
+
+    Task<ApiCallResult<PagedResult<CatalogTemplateSummaryDto>>> GetCatalogTemplatesAsync(
+        int page = 1,
+        int pageSize = 20,
+        string? status = null,
+        string? primaryBusinessType = null,
+        string? search = null,
+        CancellationToken ct = default);
+    Task<ApiCallResult<CatalogTemplateDto>> GetCatalogTemplateAsync(Guid id, CancellationToken ct = default);
+    Task<ApiCallResult<CatalogTemplateDto>> CreateCatalogTemplateAsync(CreateCatalogTemplateRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<CatalogTemplateDto>> UpdateCatalogTemplateAsync(Guid id, UpdateCatalogTemplateRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<CatalogTemplateDto>> PublishCatalogTemplateAsync(Guid id, CatalogTemplateLifecycleRequest? request = null, CancellationToken ct = default);
+    Task<ApiCallResult<CatalogTemplateDto>> UnpublishCatalogTemplateAsync(Guid id, CatalogTemplateLifecycleRequest? request = null, CancellationToken ct = default);
+    Task<ApiCallResult<CatalogTemplateDto>> ArchiveCatalogTemplateAsync(Guid id, CatalogTemplateLifecycleRequest? request = null, CancellationToken ct = default);
+    Task<ApiCallResult<CatalogTemplateDto>> AssignCatalogTemplateProductAsync(Guid id, AssignCatalogTemplateProductRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<CatalogTemplateDto>> ReorderCatalogTemplateProductsAsync(Guid id, ReorderCatalogTemplateProductsRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<CatalogTemplateDto>> UpdateCatalogTemplateProductFlagsAsync(Guid id, Guid productId, UpdateCatalogTemplateProductFlagsRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<CatalogTemplateDto>> RemoveCatalogTemplateProductAsync(Guid id, Guid productId, DateTimeOffset? expectedUpdatedAtUtc = null, CancellationToken ct = default);
 }

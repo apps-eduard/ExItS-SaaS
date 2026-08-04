@@ -75,6 +75,10 @@
   <data name="Nav_SectionSecurity" xml:space="preserve"><value>Security</value></data>
   <data name="Nav_Dashboard" xml:space="preserve"><value>Dashboard</value></data>
   <data name="Nav_Products" xml:space="preserve"><value>Products</value></data>
+  <data name="Nav_ProductCatalog" xml:space="preserve"><value>Product Catalog</value></data>
+  <data name="Nav_GlobalCategories" xml:space="preserve"><value>Categories</value></data>
+  <data name="Nav_GlobalProducts" xml:space="preserve"><value>Catalog Products</value></data>
+  <data name="Nav_GlobalTemplates" xml:space="preserve"><value>Templates</value></data>
   <data name="Nav_ProductEntry" xml:space="preserve"><value>Product entry</value></data>
   <data name="Nav_Organizations" xml:space="preserve"><value>Organizations</value></data>
   <data name="Nav_Subscriptions" xml:space="preserve"><value>Subscriptions</value></data>
@@ -303,7 +307,9 @@
   <data name="Status_Active" xml:space="preserve"><value>Active</value></data>
   <data name="Status_Inactive" xml:space="preserve"><value>Inactive</value></data>
   <data name="Status_Draft" xml:space="preserve"><value>Draft</value></data>
+  <data name="Status_Published" xml:space="preserve"><value>Published</value></data>
   <data name="Status_Retired" xml:space="preserve"><value>Retired</value></data>
+  <data name="Status_Archived" xml:space="preserve"><value>Archived</value></data>
   <data name="Status_Suspended" xml:space="preserve"><value>Suspended</value></data>
   <data name="Status_Deactivated" xml:space="preserve"><value>Deactivated</value></data>
   <data name="Status_Removed" xml:space="preserve"><value>Removed</value></data>
@@ -859,4 +865,109 @@
   <data name="OrgSwitcher_NoMembershipTitle" xml:space="preserve"><value>No active organization membership</value></data>
   <data name="OrgSwitcher_SelectPlaceholder" xml:space="preserve"><value>Select organization…</value></data>
   <data name="OrgSwitcher_ChangeFailed" xml:space="preserve"><value>Unable to change organization context.</value></data>
+
+  <data name="GlobalCatalog_BusinessType" xml:space="preserve"><value>Business type</value></data>
+  <data name="GlobalCatalog_BusinessTypes" xml:space="preserve"><value>Business types</value></data>
+
+  <data name="GlobalCategories_Title" xml:space="preserve"><value>Global categories</value></data>
+  <data name="GlobalCategories_Description" xml:space="preserve"><value>Platform-owned merchandise category hierarchy for POS onboarding.</value></data>
+  <data name="GlobalCategories_Empty" xml:space="preserve"><value>No categories match the current filters.</value></data>
+  <data name="GlobalCategories_SearchPlaceholder" xml:space="preserve"><value>Search category name</value></data>
+  <data name="GlobalCategories_Create" xml:space="preserve"><value>Create category</value></data>
+  <data name="GlobalCategories_HideCreate" xml:space="preserve"><value>Hide create</value></data>
+  <data name="GlobalCategories_CreateSection" xml:space="preserve"><value>Create global category</value></data>
+  <data name="GlobalCategories_CreateFailed" xml:space="preserve"><value>Category create failed</value></data>
+  <data name="GlobalCategories_Created" xml:space="preserve"><value>Category created.</value></data>
+  <data name="GlobalCategories_DetailTitle" xml:space="preserve"><value>Category detail</value></data>
+  <data name="GlobalCategories_DetailDescription" xml:space="preserve"><value>Edit category metadata and lifecycle status.</value></data>
+  <data name="GlobalCategories_DetailLoading" xml:space="preserve"><value>Loading category…</value></data>
+  <data name="GlobalCategories_EditSection" xml:space="preserve"><value>Edit category</value></data>
+  <data name="GlobalCategories_SaveFailed" xml:space="preserve"><value>Category save failed</value></data>
+  <data name="GlobalCategories_Saved" xml:space="preserve"><value>Category saved.</value></data>
+  <data name="GlobalCategories_Parent" xml:space="preserve"><value>Parent</value></data>
+  <data name="GlobalCategories_NoParent" xml:space="preserve"><value>Root (no parent)</value></data>
+  <data name="GlobalCategories_IconReference" xml:space="preserve"><value>Icon reference</value></data>
+  <data name="GlobalCategories_SortOrder" xml:space="preserve"><value>Sort order</value></data>
+  <data name="GlobalCategories_Activate" xml:space="preserve"><value>Activate</value></data>
+  <data name="GlobalCategories_Deactivate" xml:space="preserve"><value>Deactivate</value></data>
+  <data name="GlobalCategories_Archive" xml:space="preserve"><value>Archive</value></data>
+  <data name="GlobalCategories_ConfirmActivate" xml:space="preserve"><value>Activate this category?</value></data>
+  <data name="GlobalCategories_ConfirmDeactivate" xml:space="preserve"><value>Deactivate this category?</value></data>
+  <data name="GlobalCategories_ConfirmArchive" xml:space="preserve"><value>Archive this category? It will no longer be available for new product assignment.</value></data>
+  <data name="GlobalCategories_StatusChanged" xml:space="preserve"><value>Category status updated.</value></data>
+
+  <data name="GlobalProducts_Title" xml:space="preserve"><value>Global products</value></data>
+  <data name="GlobalProducts_Description" xml:space="preserve"><value>Platform-owned merchandise products for merchant catalog onboarding.</value></data>
+  <data name="GlobalProducts_Empty" xml:space="preserve"><value>No products match the current filters.</value></data>
+  <data name="GlobalProducts_SearchPlaceholder" xml:space="preserve"><value>Search name, SKU, or barcode</value></data>
+  <data name="GlobalProducts_BarcodeFilter" xml:space="preserve"><value>Barcode</value></data>
+  <data name="GlobalProducts_Create" xml:space="preserve"><value>Create product</value></data>
+  <data name="GlobalProducts_HideCreate" xml:space="preserve"><value>Hide create</value></data>
+  <data name="GlobalProducts_CreateSection" xml:space="preserve"><value>Create global product</value></data>
+  <data name="GlobalProducts_CreateFailed" xml:space="preserve"><value>Product create failed</value></data>
+  <data name="GlobalProducts_Created" xml:space="preserve"><value>Product created.</value></data>
+  <data name="GlobalProducts_DetailTitle" xml:space="preserve"><value>Product detail</value></data>
+  <data name="GlobalProducts_DetailDescription" xml:space="preserve"><value>Edit product metadata and archive or reactivate.</value></data>
+  <data name="GlobalProducts_DetailLoading" xml:space="preserve"><value>Loading product…</value></data>
+  <data name="GlobalProducts_EditSection" xml:space="preserve"><value>Edit product</value></data>
+  <data name="GlobalProducts_SaveFailed" xml:space="preserve"><value>Product save failed</value></data>
+  <data name="GlobalProducts_Saved" xml:space="preserve"><value>Product saved.</value></data>
+  <data name="GlobalProducts_FieldDescription" xml:space="preserve"><value>Description</value></data>
+  <data name="GlobalProducts_Sku" xml:space="preserve"><value>SKU</value></data>
+  <data name="GlobalProducts_Barcode" xml:space="preserve"><value>Barcode</value></data>
+  <data name="GlobalProducts_Category" xml:space="preserve"><value>Category</value></data>
+  <data name="GlobalProducts_Uncategorized" xml:space="preserve"><value>Uncategorized</value></data>
+  <data name="GlobalProducts_Unit" xml:space="preserve"><value>Unit</value></data>
+  <data name="GlobalProducts_SuggestedPrice" xml:space="preserve"><value>Suggested price</value></data>
+  <data name="GlobalProducts_SuggestedCost" xml:space="preserve"><value>Suggested cost</value></data>
+  <data name="GlobalProducts_ImageReference" xml:space="preserve"><value>Image reference</value></data>
+  <data name="GlobalProducts_SearchTags" xml:space="preserve"><value>Search tags</value></data>
+  <data name="GlobalProducts_TagsHint" xml:space="preserve"><value>Comma-separated aliases</value></data>
+  <data name="GlobalProducts_Activate" xml:space="preserve"><value>Activate</value></data>
+  <data name="GlobalProducts_Archive" xml:space="preserve"><value>Archive</value></data>
+  <data name="GlobalProducts_ConfirmActivate" xml:space="preserve"><value>Activate (reactivate) this product?</value></data>
+  <data name="GlobalProducts_ConfirmArchive" xml:space="preserve"><value>Archive this product?</value></data>
+  <data name="GlobalProducts_StatusChanged" xml:space="preserve"><value>Product status updated.</value></data>
+  <data name="Common_Description" xml:space="preserve"><value>Description</value></data>
+  <data name="Common_Remove" xml:space="preserve"><value>Remove</value></data>
+  <data name="GlobalTemplates_Title" xml:space="preserve"><value>Business templates</value></data>
+  <data name="GlobalTemplates_Description" xml:space="preserve"><value>Curated product packs for merchant onboarding. Composition changes never mutate existing POS products.</value></data>
+  <data name="GlobalTemplates_Empty" xml:space="preserve"><value>No templates match the current filters.</value></data>
+  <data name="GlobalTemplates_SearchPlaceholder" xml:space="preserve"><value>Search template name or slug</value></data>
+  <data name="GlobalTemplates_Create" xml:space="preserve"><value>Create template</value></data>
+  <data name="GlobalTemplates_HideCreate" xml:space="preserve"><value>Hide create</value></data>
+  <data name="GlobalTemplates_CreateSection" xml:space="preserve"><value>Create business template</value></data>
+  <data name="GlobalTemplates_CreateFailed" xml:space="preserve"><value>Template create failed</value></data>
+  <data name="GlobalTemplates_Created" xml:space="preserve"><value>Template created.</value></data>
+  <data name="GlobalTemplates_DetailTitle" xml:space="preserve"><value>Template builder</value></data>
+  <data name="GlobalTemplates_DetailDescription" xml:space="preserve"><value>Edit metadata, composition, and publication lifecycle.</value></data>
+  <data name="GlobalTemplates_DetailLoading" xml:space="preserve"><value>Loading template…</value></data>
+  <data name="GlobalTemplates_EditSection" xml:space="preserve"><value>Template details</value></data>
+  <data name="GlobalTemplates_SaveFailed" xml:space="preserve"><value>Template save failed</value></data>
+  <data name="GlobalTemplates_Saved" xml:space="preserve"><value>Template saved.</value></data>
+  <data name="GlobalTemplates_Slug" xml:space="preserve"><value>Slug</value></data>
+  <data name="GlobalTemplates_DefaultBatchSize" xml:space="preserve"><value>Default batch size</value></data>
+  <data name="GlobalTemplates_SelectionMode" xml:space="preserve"><value>Selection mode</value></data>
+  <data name="GlobalTemplates_ProductCount" xml:space="preserve"><value>Products</value></data>
+  <data name="GlobalTemplates_FirstBatchCount" xml:space="preserve"><value>First batch</value></data>
+  <data name="GlobalTemplates_PublishedAt" xml:space="preserve"><value>Published</value></data>
+  <data name="GlobalTemplates_Publish" xml:space="preserve"><value>Publish</value></data>
+  <data name="GlobalTemplates_Unpublish" xml:space="preserve"><value>Unpublish</value></data>
+  <data name="GlobalTemplates_Archive" xml:space="preserve"><value>Archive</value></data>
+  <data name="GlobalTemplates_ConfirmPublish" xml:space="preserve"><value>Publish this template for merchant discovery?</value></data>
+  <data name="GlobalTemplates_ConfirmUnpublish" xml:space="preserve"><value>Unpublish this template? Merchants will no longer see it.</value></data>
+  <data name="GlobalTemplates_ConfirmArchive" xml:space="preserve"><value>Archive this template? It cannot be edited afterward.</value></data>
+  <data name="GlobalTemplates_StatusChanged" xml:space="preserve"><value>Template status updated.</value></data>
+  <data name="GlobalTemplates_CompositionSection" xml:space="preserve"><value>Composition</value></data>
+  <data name="GlobalTemplates_CompositionEmpty" xml:space="preserve"><value>No products assigned yet. Assign at least one before publishing.</value></data>
+  <data name="GlobalTemplates_AssignProduct" xml:space="preserve"><value>Select global product</value></data>
+  <data name="GlobalTemplates_Assign" xml:space="preserve"><value>Assign</value></data>
+  <data name="GlobalTemplates_Featured" xml:space="preserve"><value>Featured</value></data>
+  <data name="GlobalTemplates_FirstBatch" xml:space="preserve"><value>First batch</value></data>
+  <data name="GlobalTemplates_SortOrder" xml:space="preserve"><value>Order</value></data>
+  <data name="GlobalTemplates_ProductId" xml:space="preserve"><value>Product</value></data>
+  <data name="GlobalTemplates_ConfirmRemoveProduct" xml:space="preserve"><value>Remove this product from the template?</value></data>
+  <data name="GlobalTemplates_ProductAssigned" xml:space="preserve"><value>Product assigned.</value></data>
+  <data name="GlobalTemplates_ProductRemoved" xml:space="preserve"><value>Product removed.</value></data>
+  <data name="GlobalTemplates_PosIsolationNote" xml:space="preserve"><value>Publishing or editing a template does not change products already imported into POS organizations. POS keeps local snapshots and refs only.</value></data>
 </root>

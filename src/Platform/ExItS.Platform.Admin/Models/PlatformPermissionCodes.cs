@@ -19,6 +19,13 @@ public static class PlatformPermissionCodes
     public const string ManageEntitlementOverrides = "platform.permission.manage_entitlement_overrides";
     public const string ViewAuditRecords = "platform.permission.view_audit_records";
 
+    public const string ViewGlobalCatalog = "platform.permission.view_global_catalog";
+    public const string ManageGlobalCategories = "platform.permission.manage_global_categories";
+    public const string ManageGlobalProducts = "platform.permission.manage_global_products";
+    public const string ImportGlobalProducts = "platform.permission.import_global_products";
+    public const string ManageCatalogTemplates = "platform.permission.manage_catalog_templates";
+    public const string PublishCatalogTemplates = "platform.permission.publish_catalog_templates";
+
     public static readonly IReadOnlyList<string> All =
     [
         ViewPortfolio,
@@ -30,6 +37,12 @@ public static class PlatformPermissionCodes
         ManageSubscriptions,
         ManageManualPayments,
         ManageEntitlementOverrides,
-        ViewAuditRecords
+        ViewAuditRecords,
+        ViewGlobalCatalog,
+        ManageGlobalCategories,
+        ManageGlobalProducts,
+        ImportGlobalProducts,
+        ManageCatalogTemplates,
+        PublishCatalogTemplates
     ];
 }

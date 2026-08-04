@@ -75,6 +75,10 @@
   <data name="Nav_SectionSecurity" xml:space="preserve"><value>Seguridad</value></data>
   <data name="Nav_Dashboard" xml:space="preserve"><value>Dashboard</value></data>
   <data name="Nav_Products" xml:space="preserve"><value>Mga Produkto</value></data>
+  <data name="Nav_ProductCatalog" xml:space="preserve"><value>Catalog ng Produkto</value></data>
+  <data name="Nav_GlobalCategories" xml:space="preserve"><value>Mga Kategorya</value></data>
+  <data name="Nav_GlobalProducts" xml:space="preserve"><value>Mga Produktong Catalog</value></data>
+  <data name="Nav_GlobalTemplates" xml:space="preserve"><value>Mga Template</value></data>
   <data name="Nav_ProductEntry" xml:space="preserve"><value>Product entry</value></data>
   <data name="Nav_Organizations" xml:space="preserve"><value>Mga Organisasyon</value></data>
   <data name="Nav_Subscriptions" xml:space="preserve"><value>Mga Subscription</value></data>
@@ -302,6 +306,7 @@
   <data name="Status_Inactive" xml:space="preserve"><value>Inactive</value></data>
   <data name="Status_Draft" xml:space="preserve"><value>Draft</value></data>
   <data name="Status_Retired" xml:space="preserve"><value>Retired</value></data>
+  <data name="Status_Archived" xml:space="preserve"><value>Archived</value></data>
   <data name="Status_Suspended" xml:space="preserve"><value>Suspended</value></data>
   <data name="Status_Deactivated" xml:space="preserve"><value>Deactivated</value></data>
   <data name="Status_Removed" xml:space="preserve"><value>Removed</value></data>
@@ -858,4 +863,67 @@
   <data name="OrgSwitcher_NoMembershipTitle" xml:space="preserve"><value>Walang aktibong organization membership</value></data>
   <data name="OrgSwitcher_SelectPlaceholder" xml:space="preserve"><value>Pumili ng organization…</value></data>
   <data name="OrgSwitcher_ChangeFailed" xml:space="preserve"><value>Hindi mabago ang organization context.</value></data>
+
+  <data name="GlobalCatalog_BusinessType" xml:space="preserve"><value>Uri ng negosyo</value></data>
+  <data name="GlobalCatalog_BusinessTypes" xml:space="preserve"><value>Mga uri ng negosyo</value></data>
+
+  <data name="GlobalCategories_Title" xml:space="preserve"><value>Mga global na kategorya</value></data>
+  <data name="GlobalCategories_Description" xml:space="preserve"><value>Hierarchy ng kategorya ng merchandise na pagmamay-ari ng Platform para sa POS onboarding.</value></data>
+  <data name="GlobalCategories_Empty" xml:space="preserve"><value>Walang kategoryang tumutugma sa kasalukuyang filter.</value></data>
+  <data name="GlobalCategories_SearchPlaceholder" xml:space="preserve"><value>Maghanap ng pangalan ng kategorya</value></data>
+  <data name="GlobalCategories_Create" xml:space="preserve"><value>Gumawa ng kategorya</value></data>
+  <data name="GlobalCategories_HideCreate" xml:space="preserve"><value>Itago ang create</value></data>
+  <data name="GlobalCategories_CreateSection" xml:space="preserve"><value>Gumawa ng global category</value></data>
+  <data name="GlobalCategories_CreateFailed" xml:space="preserve"><value>Hindi nagawa ang kategorya</value></data>
+  <data name="GlobalCategories_Created" xml:space="preserve"><value>Nagawa ang kategorya.</value></data>
+  <data name="GlobalCategories_DetailTitle" xml:space="preserve"><value>Detalye ng kategorya</value></data>
+  <data name="GlobalCategories_DetailDescription" xml:space="preserve"><value>I-edit ang metadata at status ng kategorya.</value></data>
+  <data name="GlobalCategories_DetailLoading" xml:space="preserve"><value>Naglo-load ang kategorya…</value></data>
+  <data name="GlobalCategories_EditSection" xml:space="preserve"><value>I-edit ang kategorya</value></data>
+  <data name="GlobalCategories_SaveFailed" xml:space="preserve"><value>Hindi na-save ang kategorya</value></data>
+  <data name="GlobalCategories_Saved" xml:space="preserve"><value>Na-save ang kategorya.</value></data>
+  <data name="GlobalCategories_Parent" xml:space="preserve"><value>Magulang</value></data>
+  <data name="GlobalCategories_NoParent" xml:space="preserve"><value>Root (walang magulang)</value></data>
+  <data name="GlobalCategories_IconReference" xml:space="preserve"><value>Icon reference</value></data>
+  <data name="GlobalCategories_SortOrder" xml:space="preserve"><value>Sort order</value></data>
+  <data name="GlobalCategories_Activate" xml:space="preserve"><value>I-activate</value></data>
+  <data name="GlobalCategories_Deactivate" xml:space="preserve"><value>I-deactivate</value></data>
+  <data name="GlobalCategories_Archive" xml:space="preserve"><value>I-archive</value></data>
+  <data name="GlobalCategories_ConfirmActivate" xml:space="preserve"><value>I-activate ang kategoryang ito?</value></data>
+  <data name="GlobalCategories_ConfirmDeactivate" xml:space="preserve"><value>I-deactivate ang kategoryang ito?</value></data>
+  <data name="GlobalCategories_ConfirmArchive" xml:space="preserve"><value>I-archive ang kategoryang ito? Hindi na ito magagamit para sa bagong product assignment.</value></data>
+  <data name="GlobalCategories_StatusChanged" xml:space="preserve"><value>Na-update ang status ng kategorya.</value></data>
+
+  <data name="GlobalProducts_Title" xml:space="preserve"><value>Mga global na produkto</value></data>
+  <data name="GlobalProducts_Description" xml:space="preserve"><value>Mga produktong merchandise na pagmamay-ari ng Platform para sa merchant catalog onboarding.</value></data>
+  <data name="GlobalProducts_Empty" xml:space="preserve"><value>Walang produktong tumutugma sa kasalukuyang filter.</value></data>
+  <data name="GlobalProducts_SearchPlaceholder" xml:space="preserve"><value>Maghanap ng pangalan, SKU, o barcode</value></data>
+  <data name="GlobalProducts_BarcodeFilter" xml:space="preserve"><value>Barcode</value></data>
+  <data name="GlobalProducts_Create" xml:space="preserve"><value>Gumawa ng produkto</value></data>
+  <data name="GlobalProducts_HideCreate" xml:space="preserve"><value>Itago ang create</value></data>
+  <data name="GlobalProducts_CreateSection" xml:space="preserve"><value>Gumawa ng global product</value></data>
+  <data name="GlobalProducts_CreateFailed" xml:space="preserve"><value>Hindi nagawa ang produkto</value></data>
+  <data name="GlobalProducts_Created" xml:space="preserve"><value>Nagawa ang produkto.</value></data>
+  <data name="GlobalProducts_DetailTitle" xml:space="preserve"><value>Detalye ng produkto</value></data>
+  <data name="GlobalProducts_DetailDescription" xml:space="preserve"><value>I-edit ang metadata at i-archive o i-reactivate.</value></data>
+  <data name="GlobalProducts_DetailLoading" xml:space="preserve"><value>Naglo-load ang produkto…</value></data>
+  <data name="GlobalProducts_EditSection" xml:space="preserve"><value>I-edit ang produkto</value></data>
+  <data name="GlobalProducts_SaveFailed" xml:space="preserve"><value>Hindi na-save ang produkto</value></data>
+  <data name="GlobalProducts_Saved" xml:space="preserve"><value>Na-save ang produkto.</value></data>
+  <data name="GlobalProducts_FieldDescription" xml:space="preserve"><value>Paglalarawan</value></data>
+  <data name="GlobalProducts_Sku" xml:space="preserve"><value>SKU</value></data>
+  <data name="GlobalProducts_Barcode" xml:space="preserve"><value>Barcode</value></data>
+  <data name="GlobalProducts_Category" xml:space="preserve"><value>Kategorya</value></data>
+  <data name="GlobalProducts_Uncategorized" xml:space="preserve"><value>Walang kategorya</value></data>
+  <data name="GlobalProducts_Unit" xml:space="preserve"><value>Yunit</value></data>
+  <data name="GlobalProducts_SuggestedPrice" xml:space="preserve"><value>Iminumungkahing presyo</value></data>
+  <data name="GlobalProducts_SuggestedCost" xml:space="preserve"><value>Iminumungkahing gastos</value></data>
+  <data name="GlobalProducts_ImageReference" xml:space="preserve"><value>Image reference</value></data>
+  <data name="GlobalProducts_SearchTags" xml:space="preserve"><value>Mga search tag</value></data>
+  <data name="GlobalProducts_TagsHint" xml:space="preserve"><value>Mga alias na pinaghihiwalay ng kuwit</value></data>
+  <data name="GlobalProducts_Activate" xml:space="preserve"><value>I-activate</value></data>
+  <data name="GlobalProducts_Archive" xml:space="preserve"><value>I-archive</value></data>
+  <data name="GlobalProducts_ConfirmActivate" xml:space="preserve"><value>I-activate (i-reactivate) ang produktong ito?</value></data>
+  <data name="GlobalProducts_ConfirmArchive" xml:space="preserve"><value>I-archive ang produktong ito?</value></data>
+  <data name="GlobalProducts_StatusChanged" xml:space="preserve"><value>Na-update ang status ng produkto.</value></data>
 </root>
