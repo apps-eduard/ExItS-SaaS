@@ -136,8 +136,10 @@ button.pos-link {
     align-items: center;
     justify-content: space-between;
     gap: var(--exits-space-3);
-    min-height: calc(var(--exits-density-row-height, 2.75rem) + env(safe-area-inset-top));
-    padding: calc(var(--exits-space-2) + env(safe-area-inset-top)) calc(var(--exits-space-3) + env(safe-area-inset-right)) var(--exits-space-2) calc(var(--exits-space-3) + env(safe-area-inset-left));
+    /* Top system inset is applied once by MAUI SafeAreaEdges=Container on MainPage.
+       Do not also pad the topbar for the status bar (avoids double spacing). */
+    min-height: var(--exits-density-row-height, 2.75rem);
+    padding: var(--exits-space-2) var(--exits-space-3);
     background: var(--exits-surface-elevated);
     border-bottom: 1px solid var(--exits-border);
     box-shadow: var(--exits-shadow-sm);
@@ -318,20 +320,20 @@ button.pos-link {
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
-    scroll-padding-bottom: calc(4.5rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px) + var(--pos-keyboard-inset, 0px));
+    scroll-padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px) + var(--pos-keyboard-inset, 0px));
 }
 
 /* Auth shell has no bottom nav — reclaim space on phones (incl. Samsung). */
 .pos-shell--auth .pos-content {
-    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
-    scroll-padding-bottom: calc(1.25rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px) + var(--pos-keyboard-inset, 0px));
+    scroll-padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px) + var(--pos-keyboard-inset, 0px));
 }
 
 /* Personal shell keeps the same bottom-nav content inset as POS (tabs persist). */
 .pos-shell--personal .pos-content {
-    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
-    scroll-padding-bottom: calc(4.5rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px) + var(--pos-keyboard-inset, 0px));
+    scroll-padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px) + var(--pos-keyboard-inset, 0px));
 }
 
 .pos-personal-org {
@@ -349,8 +351,8 @@ html.pos-keyboard-open .pos-bottom-nav {
 }
 
 html.pos-keyboard-open .pos-content {
-    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
-    scroll-padding-bottom: calc(1.25rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px) + var(--pos-keyboard-inset, 0px));
+    scroll-padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px) + var(--pos-keyboard-inset, 0px));
 }
 
 .pos-bottom-nav {
@@ -363,7 +365,10 @@ html.pos-keyboard-open .pos-content {
     background: var(--exits-surface-elevated);
     border-top: 1px solid var(--exits-border);
     box-shadow: 0 -1px 0 color-mix(in srgb, var(--exits-border) 60%, transparent);
-    padding: 0 calc(env(safe-area-inset-left)) env(safe-area-inset-bottom) calc(env(safe-area-inset-right));
+    /* System bottom inset is normally applied by MAUI SafeAreaEdges=Container.
+       Keep env(..., 0px) so leftover WebView insets (if any) still clear gesture bars without
+       double-counting when the host already inset the BlazorWebView. */
+    padding: 0 env(safe-area-inset-left, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-right, 0px);
 }
 
 .pos-nav-item {
@@ -498,7 +503,7 @@ html.pos-keyboard-open .pos-content {
     }
 
     .pos-content {
-        padding-bottom: calc(3.25rem + env(safe-area-inset-bottom));
+        padding-bottom: calc(3.25rem + env(safe-area-inset-bottom, 0px));
     }
 }
 
@@ -513,7 +518,7 @@ html.pos-keyboard-open .pos-content {
     box-sizing: border-box;
     display: none;
     left: 0;
-    padding: 0.6rem 1.25rem calc(0.7rem + env(safe-area-inset-bottom)) 1.25rem;
+    padding: 0.6rem 1.25rem calc(0.7rem + env(safe-area-inset-bottom, 0px)) 1.25rem;
     position: fixed;
     width: 100%;
     z-index: var(--exits-z-toast, 1400);
@@ -536,20 +541,4 @@ html.pos-keyboard-open .pos-content {
 
 .blazor-error-boundary::after {
     content: "An error has occurred.";
-}
-
-.status-bar-safe-area {
-    display: none;
-}
-
-@supports (-webkit-touch-callout: none) {
-    .status-bar-safe-area {
-        display: flex;
-        position: sticky;
-        top: 0;
-        height: env(safe-area-inset-top);
-        background-color: var(--exits-surface-elevated, #f7f7f7);
-        width: 100%;
-        z-index: 1;
-    }
 }

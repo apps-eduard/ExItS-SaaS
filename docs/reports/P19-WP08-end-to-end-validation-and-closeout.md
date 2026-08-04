@@ -61,6 +61,7 @@ See [P18-personal-mvp-mobile-ui-completion](P18-personal-mvp-mobile-ui-completio
 - [ ] Android back stays correct; app restart restores Personal when no org bound
 - [ ] Direct POS route while Personal is denied / redirected
 - [ ] Samsung layout: PersonalShell bottom tabs without clipping
+- [ ] Global safe-area: status bar / cutout clear on Sign-in, Personal, Owner/Manager/Cashier, Products, Sales, Shifts, Reports, Settings (no double top gap; bottom nav still inset)
 
 Phase 19 remains **Open** until the user confirms phone validation.
 

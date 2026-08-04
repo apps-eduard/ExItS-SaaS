@@ -24,7 +24,9 @@ public class MainActivity : MauiAppCompatActivity
         Android.Webkit.WebView.SetWebContentsDebuggingEnabled(true);
 #endif
         base.OnCreate(savedInstanceState);
-        // Keep content resizable when the soft keyboard opens so focused fields stay visible.
+        // Soft keyboard: resize the window so focused fields stay visible.
+        // System bar / cutout insets are applied once via ContentPage SafeAreaEdges=Container
+        // (MainPage / App.xaml) — do not also pad Blazor chrome for the status bar.
         Window?.SetSoftInputMode(SoftInput.AdjustResize);
     }
 }

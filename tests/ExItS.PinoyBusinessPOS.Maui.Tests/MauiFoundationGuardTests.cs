@@ -248,6 +248,32 @@ public sealed class MauiFoundationGuardTests
         Assert.Contains("orientation: landscape", css, StringComparison.Ordinal);
         Assert.Contains("safe-area-inset", css, StringComparison.Ordinal);
         Assert.Contains("pos-status-grid", css, StringComparison.Ordinal);
+        Assert.DoesNotContain("status-bar-safe-area", css, StringComparison.Ordinal);
+        Assert.DoesNotContain("+ env(safe-area-inset-top)", css, StringComparison.Ordinal);
+        Assert.DoesNotContain("safe-area-inset-top))", css, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MainPage_applies_safe_area_edges_container_once_at_host()
+    {
+        var root = FindRepoRoot();
+        var maui = Path.Combine(root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Maui");
+
+        var mainPage = File.ReadAllText(Path.Combine(maui, "MainPage.xaml"));
+        Assert.Contains("SafeAreaEdges=\"Container\"", mainPage, StringComparison.Ordinal);
+        Assert.Contains("BlazorWebView", mainPage, StringComparison.Ordinal);
+
+        var appXaml = File.ReadAllText(Path.Combine(maui, "App.xaml"));
+        Assert.Contains("SafeAreaEdges", appXaml, StringComparison.Ordinal);
+        Assert.Contains("Container", appXaml, StringComparison.Ordinal);
+        Assert.Contains("ContentPage", appXaml, StringComparison.Ordinal);
+
+        var index = File.ReadAllText(Path.Combine(maui, "wwwroot", "index.html"));
+        Assert.DoesNotContain("status-bar-safe-area", index, StringComparison.Ordinal);
+
+        var activity = File.ReadAllText(Path.Combine(maui, "Platforms", "Android", "MainActivity.cs"));
+        Assert.Contains("SoftInput.AdjustResize", activity, StringComparison.Ordinal);
+        Assert.Contains("SafeAreaEdges", activity, StringComparison.Ordinal);
     }
 
     [Fact]

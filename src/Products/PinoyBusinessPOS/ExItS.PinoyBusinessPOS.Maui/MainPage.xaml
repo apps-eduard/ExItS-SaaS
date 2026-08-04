@@ -3,8 +3,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:ExItS.PinoyBusinessPOS.Maui"
              xmlns:components="clr-namespace:ExItS.PinoyBusinessPOS.Maui.Components"
-             x:Class="ExItS.PinoyBusinessPOS.Maui.MainPage">
+             x:Class="ExItS.PinoyBusinessPOS.Maui.MainPage"
+             SafeAreaEdges="Container">
 
+    <!--
+      .NET 10 Android defaults ContentPage SafeAreaEdges to None (edge-to-edge).
+      Container applies system-bar / cutout / navigation-bar insets once at the host
+      so Blazor shells must not add a second top status-bar spacer.
+    -->
     <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
         <BlazorWebView.RootComponents>
             <RootComponent Selector="#app" ComponentType="{x:Type components:Routes}" />

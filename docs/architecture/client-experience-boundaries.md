@@ -500,6 +500,8 @@ Web Application
 
 ### Mobile
 
+Personal and POS shells share one BlazorWebView host. Android system-bar / cutout / navigation-bar insets are applied **once** via `ContentPage.SafeAreaEdges=Container` on `MainPage` (required under .NET 10 edge-to-edge defaults). Shell CSS must not add a second status-bar top spacer.
+
 ```text
 Mobile Application
 ├── Personal Account (PersonalShell bottom tabs)
