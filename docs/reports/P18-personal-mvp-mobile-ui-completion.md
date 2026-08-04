@@ -4,9 +4,11 @@
 |---|---|
 | Status | **Code Complete** (awaiting phone Retest) |
 | Phase | Phase 18 follow-up + Phase 19 Open |
+| Commit | `994905b` |
 | Date | 2026-07-29 |
 | Device Verified | **No** |
 | Phase 19 | Remains **Open** — phone scenarios **Retest** |
+| PhysicalDevice APK | `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/bin/Debug/net10.0-android/com.exits.pinoybusinesspos-Signed.apk` |
 
 ## 1. Audit matrix
 
