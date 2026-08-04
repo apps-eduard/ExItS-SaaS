@@ -4,7 +4,7 @@
 |---|---|
 | Status | **Retest** (awaiting user phone confirmation) |
 | Phase | [Phase 19](../phases/phase-19-mobile-pos-operations-and-cashier-experience.md) — **Open** |
-| Commit | *(pending — register/shift commercial grant fix)* |
+| Commit | 2c63530 |
 | Production-ready | **No** |
 | Device Verified | **No** |
 | Date | 2026-08-04 |
