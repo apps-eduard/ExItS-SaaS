@@ -55,16 +55,15 @@ public static class MauiProgram
 
     private static void ConfigureAppConfiguration(ConfigurationManager configuration)
     {
-        // Emulator Local Validation default (preserved): 127.0.0.1 + adb reverse.
+        // Emulator Local Validation default: 10.0.2.2 (emulator → host loopback).
+        // adb reverse to 127.0.0.1 is unreliable on some Windows/ADB setups; 10.0.2.2 works without reverse.
         // PhysicalDevice Debug builds overlay wwwroot/appsettings.LocalValidation.PhysicalDevice.json.
         configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             // Local Validation stack (Start-LocalValidation.ps1): Platform :8091, POS :8092.
-            // Prefer 127.0.0.1 + `adb reverse` so Host matches AllowedHosts (localhost/127.0.0.1).
-            // 10.0.2.2 also works once AllowedHosts includes that emulator alias.
-            ["PosApi:BaseUrl"] = "http://127.0.0.1:8091",
+            ["PosApi:BaseUrl"] = "http://10.0.2.2:8091",
             ["PosApi:TimeoutSeconds"] = "15",
-            ["PosBusinessApi:BaseUrl"] = "http://127.0.0.1:8092",
+            ["PosBusinessApi:BaseUrl"] = "http://10.0.2.2:8092",
             ["PosBusinessApi:TimeoutSeconds"] = "15",
 #if DEBUG
             // Matches deploy/docker/.env.local-validation LOCAL_VALIDATION_SHARED_PASSWORD (local only).
