@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Release network policy: no cleartext HTTP. Production API base URLs must be HTTPS
+  (Security:RequireHttpsApiUrls / MAUI-HTTPS validation in ApiClient DI).
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

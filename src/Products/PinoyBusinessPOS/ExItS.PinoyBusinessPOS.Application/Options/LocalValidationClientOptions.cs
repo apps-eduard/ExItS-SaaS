@@ -12,6 +12,12 @@ public sealed class LocalValidationClientOptions
     /// <summary>Must match Platform LocalValidation:SharedPassword (min 12 chars).</summary>
     public string SharedPassword { get; init; } = string.Empty;
 
+    /// <summary>
+    /// Optional Tailscale/LAN PublicHost for PhysicalDevice Local Validation builds (informational).
+    /// Not used in Production.
+    /// </summary>
+    public string? PublicHost { get; init; }
+
     public bool IsQuickLoginAvailable =>
         Enabled
         && !string.IsNullOrWhiteSpace(SharedPassword)

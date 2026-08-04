@@ -55,6 +55,8 @@ public static class MauiProgram
 
     private static void ConfigureAppConfiguration(ConfigurationManager configuration)
     {
+        // Emulator Local Validation default (preserved): 127.0.0.1 + adb reverse.
+        // PhysicalDevice Debug builds overlay wwwroot/appsettings.LocalValidation.PhysicalDevice.json.
         configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             // Local Validation stack (Start-LocalValidation.ps1): Platform :8091, POS :8092.
@@ -68,14 +70,31 @@ public static class MauiProgram
             // Matches deploy/docker/.env.local-validation LOCAL_VALIDATION_SHARED_PASSWORD (local only).
             ["LocalValidation:Enabled"] = "true",
             ["LocalValidation:SharedPassword"] = "LivePreviewLocal1!",
+#else
+            // Production/Release: API base URLs must be HTTPS (ApiClient MAUI-HTTPS validation).
+            ["Security:RequireHttpsApiUrls"] = "true",
 #endif
         });
 
-        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("appsettings.json");
-        if (stream is not null)
+        using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("appsettings.json"))
         {
-            configuration.AddJsonStream(stream);
+            if (stream is not null)
+            {
+                configuration.AddJsonStream(stream);
+            }
         }
+
+#if DEBUG && POS_LOCAL_VALIDATION_PHYSICAL_DEVICE
+        // Separate PhysicalDevice Local Validation profile (Tailscale/LAN). Never embedded in Release.
+        using (var physical = Assembly.GetExecutingAssembly()
+                   .GetManifestResourceStream("appsettings.LocalValidation.PhysicalDevice.json"))
+        {
+            if (physical is not null)
+            {
+                configuration.AddJsonStream(physical);
+            }
+        }
+#endif
     }
 
     private static void RegisterApplicationServices(IServiceCollection services, IConfiguration configuration)

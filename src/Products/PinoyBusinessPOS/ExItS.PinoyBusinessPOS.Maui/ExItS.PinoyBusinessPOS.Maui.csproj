@@ -33,6 +33,14 @@
     <!-- Sideloaded Debug APKs (adb install without Fast Deployment) need assemblies embedded;
          otherwise monodroid aborts with "No assemblies found ... Assuming this is part of Fast Deployment". -->
     <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+    <!-- Emulator (default): 127.0.0.1 + adb reverse. PhysicalDevice: Tailscale/LAN PublicHost URLs. -->
+    <PosLocalValidationTarget Condition="'$(PosLocalValidationTarget)' == ''">Emulator</PosLocalValidationTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' AND '$(PosLocalValidationTarget)' == 'PhysicalDevice'">
+    <DefineConstants>$(DefineConstants);POS_LOCAL_VALIDATION_PHYSICAL_DEVICE</DefineConstants>
+    <!-- Optional override: -p:PosLocalValidationPublicHost=100.x.y.z (must match appsettings + cleartext domain). -->
+    <PosLocalValidationPublicHost Condition="'$(PosLocalValidationPublicHost)' == ''">100.120.79.81</PosLocalValidationPublicHost>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
@@ -82,8 +90,29 @@
       <DependentUpon>PosResources.resx</DependentUpon>
     </EmbeddedResource>
     <!-- Bundled default configuration, embedded so it can be read synchronously during
-         CreateMauiApp (Raw MauiAsset content is only accessible via the async FileSystem API). -->
-    <EmbeddedResource Include="wwwroot\appsettings.json" LogicalName="appsettings.json" />
+         CreateMauiApp (Raw MauiAsset content is only accessible via the async FileSystem API).
+         Debug keeps Local Validation HTTP loopback; Release embeds HTTPS-only placeholders
+         (real production endpoints are supplied by the release pipeline — never Tailscale HTTP). -->
+    <EmbeddedResource Include="wwwroot\appsettings.json" LogicalName="appsettings.json" Condition="'$(Configuration)' == 'Debug'" />
+    <EmbeddedResource Include="wwwroot\appsettings.Release.json" LogicalName="appsettings.json" Condition="'$(Configuration)' == 'Release'" />
+  </ItemGroup>
+
+  <!-- PhysicalDevice Debug only: Tailscale/LAN Local Validation endpoints (never Release). -->
+  <ItemGroup Condition="'$(Configuration)' == 'Debug' AND '$(PosLocalValidationTarget)' == 'PhysicalDevice'">
+    <EmbeddedResource Include="wwwroot\appsettings.LocalValidation.PhysicalDevice.json"
+                      LogicalName="appsettings.LocalValidation.PhysicalDevice.json" />
+  </ItemGroup>
+
+  <!-- Release: HTTPS-only cleartext policy (do not package the Release XML as an extra resource in Debug). -->
+  <ItemGroup>
+    <AndroidResource Remove="Platforms\Android\Resources\xml\network_security_config.Release.xml" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <AndroidResource Remove="Platforms\Android\Resources\xml\network_security_config.xml" />
+    <AndroidResource Include="Platforms\Android\Resources\xml\network_security_config.Release.xml">
+      <LogicalName>Resources\xml\network_security_config.xml</LogicalName>
+      <Link>Platforms\Android\Resources\xml\network_security_config.xml</Link>
+    </AndroidResource>
   </ItemGroup>
 
 </Project>
