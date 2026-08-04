@@ -5,7 +5,7 @@
 | Status | **Code Complete** |
 | Phase | [Phase 20](../phases/phase-20-global-product-catalog-and-business-template-onboarding.md) — **Open** |
 | Specs | [07-mobile-and-cashier-experience](../specs/product-catalog/07-mobile-and-cashier-experience.md), [05-merchant-onboarding](../specs/product-catalog/05-merchant-onboarding-and-import.md) |
-| Commit | _(recorded after push)_ |
+| Commit | `3ea856c` |
 | Date | 2026-08-05 |
 | Device Verified | **No** |
 | Production Ready | **No** |
@@ -48,7 +48,11 @@ Deliver ManageCatalog-gated MAUI onboarding and global catalog discovery/import 
 
 ## 5. Build / test evidence
 
-Recorded after Release build and targeted MAUI/unit tests in the commit push step.
+| Check | Result |
+|---|---|
+| ApiClient Release build | Succeeded |
+| MAUI Android Release build | Succeeded (0 errors; existing NU1903 SQLite warnings) |
+| CatalogPageGuardTests + SalesCashierPageGuardTests + PersonalPageGuardTests | **21 passed**, 0 failed |
 
 ## 6. Security limitations
 
