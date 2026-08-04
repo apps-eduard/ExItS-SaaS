@@ -45,6 +45,8 @@ public sealed class PosDbContext : DbContext
     internal DbSet<PosIdempotencyRecord> IdempotencyRecords => Set<PosIdempotencyRecord>();
     internal DbSet<ProductCategoryRecord> ProductCategories => Set<ProductCategoryRecord>();
     internal DbSet<CatalogProductRecord> CatalogProducts => Set<CatalogProductRecord>();
+    internal DbSet<CatalogImportJobRecord> CatalogImportJobs => Set<CatalogImportJobRecord>();
+    internal DbSet<CatalogImportItemResultRecord> CatalogImportItems => Set<CatalogImportItemResultRecord>();
     internal DbSet<SaleRecord> Sales => Set<SaleRecord>();
     internal DbSet<SaleLineRecord> SaleLines => Set<SaleLineRecord>();
     internal DbSet<SaleNumberSequenceRecord> SaleNumberSequences => Set<SaleNumberSequenceRecord>();
@@ -333,6 +335,7 @@ public sealed class PosDbContext : DbContext
                 .HasMaxLength(ProductCategory.NameMaxLength)
                 .IsRequired();
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.SourceGlobalCategoryId).HasColumnName("source_global_category_id");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.Xmin)
@@ -349,6 +352,10 @@ public sealed class PosDbContext : DbContext
 
             entity.HasIndex(e => new { e.OrganizationId, e.Name })
                 .HasDatabaseName("ix_product_categories_org_name");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.SourceGlobalCategoryId })
+                .HasDatabaseName("ix_product_categories_org_source_global")
+                .HasFilter("source_global_category_id IS NOT NULL");
         });
 
         modelBuilder.Entity<CatalogProductRecord>(entity =>
@@ -367,6 +374,9 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_products_barcode_digits",
                     "barcode IS NULL OR barcode ~ '^[0-9]{8,14}$'");
+                tb.HasCheckConstraint(
+                    "ck_products_catalog_source",
+                    "catalog_source IN ('Manual', 'Template', 'GlobalSearch', 'BulkImport')");
             });
 
             entity.HasKey(e => e.Id);
@@ -396,6 +406,16 @@ public sealed class PosDbContext : DbContext
                 .HasPrecision(18, 2)
                 .IsRequired();
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.PlatformGlobalProductId).HasColumnName("platform_global_product_id");
+            entity.Property(e => e.PlatformTemplateId).HasColumnName("platform_template_id");
+            entity.Property(e => e.CatalogSource)
+                .HasColumnName("catalog_source")
+                .HasMaxLength(32)
+                .IsRequired()
+                .HasDefaultValue("Manual");
+            entity.Property(e => e.CatalogImportedAt).HasColumnName("catalog_imported_at");
+            entity.Property(e => e.CatalogSnapshotVersion).HasColumnName("catalog_snapshot_version");
+            entity.Property(e => e.SourceGlobalCategoryId).HasColumnName("source_global_category_id");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.Xmin)
@@ -424,12 +444,118 @@ public sealed class PosDbContext : DbContext
             entity.HasIndex(e => new { e.OrganizationId, e.Status })
                 .HasDatabaseName("ix_products_org_status");
 
+            entity.HasIndex(e => new { e.OrganizationId, e.PlatformGlobalProductId })
+                .IsUnique()
+                .HasDatabaseName("ux_products_org_platform_global_product")
+                .HasFilter("platform_global_product_id IS NOT NULL");
+
             // Restrict: deactivating or removing a category must never cascade into products.
             entity.HasOne<ProductCategoryRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_products_product_categories");
+        });
+
+        modelBuilder.Entity<CatalogImportJobRecord>(entity =>
+        {
+            entity.ToTable("catalog_import_jobs", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_catalog_import_jobs_status",
+                    "status IN ('Queued', 'Processing', 'Completed', 'CompletedWithWarnings', 'Failed', 'Cancelled')");
+                tb.HasCheckConstraint(
+                    "ck_catalog_import_jobs_kind",
+                    "job_kind IN ('TemplateBatch', 'SelectedProducts')");
+                tb.HasCheckConstraint(
+                    "ck_catalog_import_jobs_source",
+                    "catalog_source IN ('Manual', 'Template', 'GlobalSearch', 'BulkImport')");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.JobKind).HasColumnName("job_kind").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.PlatformTemplateId).HasColumnName("platform_template_id");
+            entity.Property(e => e.BatchNumber).HasColumnName("batch_number");
+            entity.Property(e => e.CatalogSource).HasColumnName("catalog_source").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.RequestedBy).HasColumnName("requested_by").HasMaxLength(128).IsRequired();
+            entity.Property(e => e.IdempotencyKey)
+                .HasColumnName("idempotency_key")
+                .HasMaxLength(CatalogImportRules.IdempotencyKeyMaxLength);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.TotalCount).HasColumnName("total_count");
+            entity.Property(e => e.ProcessedCount).HasColumnName("processed_count");
+            entity.Property(e => e.ImportedCount).HasColumnName("imported_count");
+            entity.Property(e => e.SkippedCount).HasColumnName("skipped_count");
+            entity.Property(e => e.FailedCount).HasColumnName("failed_count");
+            entity.Property(e => e.CurrentStage).HasColumnName("current_stage").HasMaxLength(64);
+            entity.Property(e => e.ErrorSummary)
+                .HasColumnName("error_summary")
+                .HasMaxLength(CatalogImportRules.ErrorMessageMaxLength);
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.StartedAtUtc).HasColumnName("started_at_utc");
+            entity.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
+            entity.Property(e => e.LastHeartbeatAtUtc).HasColumnName("last_heartbeat_at_utc");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.CreatedAtUtc })
+                .HasDatabaseName("ix_catalog_import_jobs_org_created");
+            entity.HasIndex(e => new { e.Status, e.LastHeartbeatAtUtc })
+                .HasDatabaseName("ix_catalog_import_jobs_status_heartbeat");
+            entity.HasIndex(e => new { e.OrganizationId, e.IdempotencyKey })
+                .IsUnique()
+                .HasDatabaseName("ux_catalog_import_jobs_org_idempotency")
+                .HasFilter("idempotency_key IS NOT NULL");
+
+            entity.HasMany(e => e.Items)
+                .WithOne(e => e.Job!)
+                .HasForeignKey(e => e.CatalogImportJobId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_catalog_import_items_jobs");
+        });
+
+        modelBuilder.Entity<CatalogImportItemResultRecord>(entity =>
+        {
+            entity.ToTable("catalog_import_items", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_catalog_import_items_status",
+                    "status IN ('Pending', 'Imported', 'Skipped', 'Failed')");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CatalogImportJobId).HasColumnName("catalog_import_job_id").IsRequired();
+            entity.Property(e => e.PlatformGlobalProductId).HasColumnName("platform_global_product_id").IsRequired();
+            entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+            entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(CatalogProduct.NameMaxLength).IsRequired();
+            entity.Property(e => e.Description)
+                .HasColumnName("description")
+                .HasMaxLength(CatalogProduct.DescriptionMaxLength);
+            entity.Property(e => e.Sku).HasColumnName("sku").HasMaxLength(CatalogProduct.SkuMaxLength);
+            entity.Property(e => e.Barcode).HasColumnName("barcode").HasMaxLength(CatalogProduct.BarcodeMaxLength);
+            entity.Property(e => e.UnitOfMeasure)
+                .HasColumnName("unit_of_measure")
+                .HasMaxLength(UnitOfMeasures.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.SuggestedPrice).HasColumnName("suggested_price").HasPrecision(18, 2);
+            entity.Property(e => e.SourceGlobalCategoryId).HasColumnName("source_global_category_id");
+            entity.Property(e => e.SourceCategoryName)
+                .HasColumnName("source_category_name")
+                .HasMaxLength(ProductCategory.NameMaxLength);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.LocalProductId).HasColumnName("local_product_id");
+            entity.Property(e => e.ErrorCode).HasColumnName("error_code").HasMaxLength(128);
+            entity.Property(e => e.ErrorMessage)
+                .HasColumnName("error_message")
+                .HasMaxLength(CatalogImportRules.ErrorMessageMaxLength);
+            entity.Property(e => e.ProcessedAtUtc).HasColumnName("processed_at_utc");
+
+            entity.HasIndex(e => new { e.CatalogImportJobId, e.SortOrder })
+                .HasDatabaseName("ix_catalog_import_items_job_sort");
+            entity.HasIndex(e => new { e.CatalogImportJobId, e.Status })
+                .HasDatabaseName("ix_catalog_import_items_job_status");
         });
 
         modelBuilder.Entity<SaleRecord>(entity =>

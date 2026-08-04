@@ -13,6 +13,12 @@ internal sealed class CatalogProductRecord
     public string UnitOfMeasure { get; set; } = string.Empty;
     public decimal SellingPrice { get; set; }
     public string Status { get; set; } = string.Empty;
+    public Guid? PlatformGlobalProductId { get; set; }
+    public Guid? PlatformTemplateId { get; set; }
+    public string CatalogSource { get; set; } = "Manual";
+    public DateTimeOffset? CatalogImportedAt { get; set; }
+    public int? CatalogSnapshotVersion { get; set; }
+    public Guid? SourceGlobalCategoryId { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public uint Xmin { get; set; }

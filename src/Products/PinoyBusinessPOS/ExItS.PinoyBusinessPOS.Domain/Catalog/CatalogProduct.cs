@@ -5,7 +5,8 @@ namespace ExItS.PinoyBusinessPOS.Domain.Catalog;
 
 /// <summary>
 /// Organization-owned POS catalog product. Identification, unit of measure, selling price and
-/// lifecycle only — no stock, sales, tax, discount, supplier, or multi-price state.
+/// lifecycle — plus optional Platform external refs for imported snapshots. No stock authority;
+/// Platform never overwrites local price/stock/tax/name/category/active after import.
 /// </summary>
 public sealed class CatalogProduct
 {
@@ -27,6 +28,12 @@ public sealed class CatalogProduct
     public UnitOfMeasure UnitOfMeasure { get; private set; }
     public decimal SellingPrice { get; private set; }
     public CatalogProductStatus Status { get; private set; }
+    public Guid? PlatformGlobalProductId { get; private set; }
+    public Guid? PlatformTemplateId { get; private set; }
+    public CatalogSource CatalogSource { get; private set; }
+    public DateTimeOffset? CatalogImportedAt { get; private set; }
+    public int? CatalogSnapshotVersion { get; private set; }
+    public Guid? SourceGlobalCategoryId { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -42,6 +49,12 @@ public sealed class CatalogProduct
         UnitOfMeasure unitOfMeasure,
         decimal sellingPrice,
         CatalogProductStatus status,
+        Guid? platformGlobalProductId,
+        Guid? platformTemplateId,
+        CatalogSource catalogSource,
+        DateTimeOffset? catalogImportedAt,
+        int? catalogSnapshotVersion,
+        Guid? sourceGlobalCategoryId,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc)
     {
@@ -56,6 +69,12 @@ public sealed class CatalogProduct
         UnitOfMeasure = unitOfMeasure;
         SellingPrice = sellingPrice;
         Status = status;
+        PlatformGlobalProductId = platformGlobalProductId;
+        PlatformTemplateId = platformTemplateId;
+        CatalogSource = catalogSource;
+        CatalogImportedAt = catalogImportedAt;
+        CatalogSnapshotVersion = catalogSnapshotVersion;
+        SourceGlobalCategoryId = sourceGlobalCategoryId;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
     }
@@ -87,6 +106,72 @@ public sealed class CatalogProduct
             unitOfMeasure,
             NormalizeSellingPrice(sellingPrice),
             CatalogProductStatus.Active,
+            platformGlobalProductId: null,
+            platformTemplateId: null,
+            CatalogSource.Manual,
+            catalogImportedAt: null,
+            catalogSnapshotVersion: null,
+            sourceGlobalCategoryId: null,
+            utcNow,
+            utcNow);
+    }
+
+    /// <summary>
+    /// Creates an editable local snapshot from a Platform global product. Stock is not set —
+    /// opening stock must go through <c>StockMovement.OpeningStock</c>.
+    /// </summary>
+    public static CatalogProduct CreateImportedSnapshot(
+        PosOrganizationId organizationId,
+        string name,
+        UnitOfMeasure unitOfMeasure,
+        decimal sellingPrice,
+        Guid platformGlobalProductId,
+        CatalogSource catalogSource,
+        DateTimeOffset utcNow,
+        string? description = null,
+        string? sku = null,
+        string? barcode = null,
+        ProductCategoryId? categoryId = null,
+        Guid? platformTemplateId = null,
+        Guid? sourceGlobalCategoryId = null,
+        int snapshotVersion = CatalogImportRules.SnapshotVersion,
+        CatalogProductId? id = null)
+    {
+        CatalogGuards.EnsureUtc(utcNow);
+        if (platformGlobalProductId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCatalogImportItem,
+                "PlatformGlobalProductId is required for imported products.");
+        }
+
+        if (catalogSource is CatalogSource.Manual)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCatalogSource,
+                "Imported snapshots cannot use CatalogSource.Manual.");
+        }
+
+        var (displaySku, normalizedSku) = NormalizeOptionalSku(sku);
+
+        return new CatalogProduct(
+            id ?? CatalogProductId.New(),
+            organizationId,
+            NormalizeName(name),
+            NormalizeOptionalDescription(description),
+            displaySku,
+            normalizedSku,
+            NormalizeOptionalBarcode(barcode),
+            categoryId,
+            unitOfMeasure,
+            NormalizeSellingPrice(sellingPrice),
+            CatalogProductStatus.Active,
+            platformGlobalProductId,
+            platformTemplateId == Guid.Empty ? null : platformTemplateId,
+            catalogSource,
+            utcNow,
+            snapshotVersion,
+            sourceGlobalCategoryId == Guid.Empty ? null : sourceGlobalCategoryId,
             utcNow,
             utcNow);
     }
@@ -104,7 +189,13 @@ public sealed class CatalogProduct
         decimal sellingPrice,
         CatalogProductStatus status,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc) =>
+        DateTimeOffset updatedAtUtc,
+        Guid? platformGlobalProductId = null,
+        Guid? platformTemplateId = null,
+        CatalogSource catalogSource = CatalogSource.Manual,
+        DateTimeOffset? catalogImportedAt = null,
+        int? catalogSnapshotVersion = null,
+        Guid? sourceGlobalCategoryId = null) =>
         new(
             id,
             organizationId,
@@ -117,10 +208,16 @@ public sealed class CatalogProduct
             unitOfMeasure,
             sellingPrice,
             status,
+            platformGlobalProductId,
+            platformTemplateId,
+            catalogSource,
+            catalogImportedAt,
+            catalogSnapshotVersion,
+            sourceGlobalCategoryId,
             createdAtUtc,
             updatedAtUtc);
 
-    /// <summary>Updates permitted catalog fields. OrganizationId cannot change.</summary>
+    /// <summary>Updates permitted catalog fields. OrganizationId and Platform provenance cannot change.</summary>
     public void UpdateDetails(
         string name,
         string? description,

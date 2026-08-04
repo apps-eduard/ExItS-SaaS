@@ -47,6 +47,7 @@ if (builder.Configuration.GetValue<bool>("LocalValidation:Enabled") && builder.E
 }
 
 builder.Services.AddProblemDetails();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddPosHealthChecks();
 builder.AddPosSecurity();
 builder.AddPosForwardedHeaders();
@@ -62,7 +63,8 @@ builder.Services.AddHttpClient<IPlatformTokenIntrospectionClient, PlatformTokenI
         client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
     }
 
-    client.Timeout = TimeSpan.FromSeconds(15);
+    // Keep short: a wrong PlatformAuth:BaseUrl must fail fast (not hang catalog detail ~15s → 401).
+    client.Timeout = TimeSpan.FromSeconds(3);
 });
 builder.Services.AddScoped<POSCustomerQueryService>();
 builder.Services.AddScoped<CreatePOSCustomer>();
@@ -91,6 +93,21 @@ builder.Services.AddScoped<CreateCatalogProduct>();
 builder.Services.AddScoped<UpdateCatalogProduct>();
 builder.Services.AddScoped<DeactivateCatalogProduct>();
 builder.Services.AddScoped<ReactivateCatalogProduct>();
+builder.Services.AddScoped<CatalogImportQueryService>();
+builder.Services.AddScoped<ImportTemplateBatch>();
+builder.Services.AddScoped<ImportSelectedProducts>();
+builder.Services.AddScoped<ProcessPosCatalogImportChunk>();
+builder.Services.AddHttpClient<IPlatformMerchantCatalogClient, PlatformMerchantCatalogClient>((provider, client) =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+    {
+        client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+    }
+
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+builder.Services.AddHostedService<ExItS.PinoyBusinessPOS.Infrastructure.Catalog.PosCatalogImportBackgroundService>();
 builder.Services.AddScoped<SaleQueryService>();
 builder.Services.AddScoped<CheckoutSale>();
 builder.Services.AddScoped<VoidSale>();
@@ -183,6 +200,7 @@ app.MapDueDateEndpoints();
 app.MapRepaymentEndpoints();
 app.MapStatementEndpoints();
 app.MapCatalogEndpoints();
+app.MapCatalogImportEndpoints();
 app.MapSaleEndpoints();
 app.MapSaleReturnEndpoints();
 app.MapInventoryEndpoints();

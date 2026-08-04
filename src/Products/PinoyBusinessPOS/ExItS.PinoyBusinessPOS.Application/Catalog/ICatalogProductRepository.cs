@@ -48,6 +48,18 @@ public interface ICatalogProductRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Finds a product by Platform global product id regardless of status.</summary>
+    Task<CatalogProduct?> FindByPlatformGlobalProductIdAsync(
+        PosOrganizationId organizationId,
+        Guid platformGlobalProductId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Returns which of the given Platform global product ids already exist locally.</summary>
+    Task<IReadOnlySet<Guid>> ListPlatformGlobalProductIdsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> platformGlobalProductIds,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(CatalogProduct product, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(CatalogProduct product, CancellationToken cancellationToken = default);

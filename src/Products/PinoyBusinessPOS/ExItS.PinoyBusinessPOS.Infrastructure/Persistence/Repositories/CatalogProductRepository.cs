@@ -51,6 +51,41 @@ internal sealed class CatalogProductRepository : ICatalogProductRepository
         return record is null ? null : CatalogEntityMapper.ToDomain(record);
     }
 
+    public async Task<CatalogProduct?> FindByPlatformGlobalProductIdAsync(
+        PosOrganizationId organizationId,
+        Guid platformGlobalProductId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await _db.CatalogProducts.AsNoTracking()
+            .FirstOrDefaultAsync(
+                p => p.OrganizationId == organizationId.Value
+                     && p.PlatformGlobalProductId == platformGlobalProductId,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : CatalogEntityMapper.ToDomain(record);
+    }
+
+    public async Task<IReadOnlySet<Guid>> ListPlatformGlobalProductIdsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> platformGlobalProductIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (platformGlobalProductIds.Count == 0)
+        {
+            return new HashSet<Guid>();
+        }
+
+        var ids = platformGlobalProductIds.Where(id => id != Guid.Empty).Distinct().ToList();
+        var found = await _db.CatalogProducts.AsNoTracking()
+            .Where(p => p.OrganizationId == organizationId.Value
+                        && p.PlatformGlobalProductId != null
+                        && ids.Contains(p.PlatformGlobalProductId.Value))
+            .Select(p => p.PlatformGlobalProductId!.Value)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return found.ToHashSet();
+    }
+
     public async Task<IReadOnlyList<CatalogProduct>> ListByIdsAsync(
         PosOrganizationId organizationId,
         IReadOnlyCollection<CatalogProductId> productIds,

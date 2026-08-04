@@ -41,6 +41,22 @@ internal sealed class ProductCategoryRepository : IProductCategoryRepository
         return record is null ? null : CatalogEntityMapper.ToDomain(record);
     }
 
+    public async Task<ProductCategory?> FindActiveBySourceGlobalCategoryIdAsync(
+        PosOrganizationId organizationId,
+        Guid sourceGlobalCategoryId,
+        CancellationToken cancellationToken = default)
+    {
+        var active = ProductCategoryStatus.Active.ToString();
+        var record = await _db.ProductCategories.AsNoTracking()
+            .FirstOrDefaultAsync(
+                c => c.OrganizationId == organizationId.Value
+                     && c.SourceGlobalCategoryId == sourceGlobalCategoryId
+                     && c.Status == active,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : CatalogEntityMapper.ToDomain(record);
+    }
+
     public async Task<(IReadOnlyList<ProductCategory> Items, int TotalCount)> ListAsync(
         PosOrganizationId organizationId,
         ProductCategoryStatus? status,

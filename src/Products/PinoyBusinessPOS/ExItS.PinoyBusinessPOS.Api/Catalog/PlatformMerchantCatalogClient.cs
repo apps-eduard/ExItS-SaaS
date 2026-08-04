@@ -1,0 +1,219 @@
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using ExItS.PinoyBusinessPOS.Application.Catalog;
+using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Api.Common;
+using Microsoft.Extensions.Options;
+
+namespace ExItS.PinoyBusinessPOS.Api.Catalog;
+
+public sealed class PlatformMerchantCatalogClient(
+    HttpClient httpClient,
+    IHttpContextAccessor httpContextAccessor,
+    IOptions<PlatformAuthOptions> options) : IPlatformMerchantCatalogClient
+{
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
+    public async Task<PlatformMerchantCatalogTemplateDto?> GetPublishedTemplateAsync(
+        Guid templateId,
+        string? accessToken,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureBaseAddress();
+        using var request = CreateRequest(HttpMethod.Get, $"api/v1/catalog/templates/{templateId:D}", accessToken);
+        using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content
+            .ReadFromJsonAsync<PlatformMerchantCatalogTemplateDto>(JsonOptions, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<PlatformMerchantGlobalProductDto?> GetActiveProductAsync(
+        Guid productId,
+        string? accessToken,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureBaseAddress();
+        using var request = CreateRequest(HttpMethod.Get, $"api/v1/catalog/products/{productId:D}", accessToken);
+        using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content
+            .ReadFromJsonAsync<PlatformMerchantGlobalProductDto>(JsonOptions, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlyList<PlatformMerchantGlobalProductDto>> GetActiveProductsAsync(
+        IReadOnlyList<Guid> productIds,
+        string? accessToken,
+        CancellationToken cancellationToken = default)
+    {
+        var results = new List<PlatformMerchantGlobalProductDto>();
+        foreach (var id in productIds.Distinct())
+        {
+            var product = await GetActiveProductAsync(id, accessToken, cancellationToken).ConfigureAwait(false);
+            if (product is not null)
+            {
+                results.Add(product);
+            }
+        }
+
+        return results;
+    }
+
+    public async Task<PagedResult<PlatformMerchantGlobalProductDto>> SearchActiveProductsAsync(
+        string? search,
+        Guid? categoryId,
+        string? businessType,
+        string? barcode,
+        string? sku,
+        int? page,
+        int? pageSize,
+        string? accessToken,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureBaseAddress();
+        var query = new List<string>();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query.Add($"q={Uri.EscapeDataString(search.Trim())}");
+        }
+
+        if (categoryId is Guid cid)
+        {
+            query.Add($"categoryId={cid:D}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(businessType))
+        {
+            query.Add($"businessType={Uri.EscapeDataString(businessType.Trim())}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(barcode))
+        {
+            query.Add($"barcode={Uri.EscapeDataString(barcode.Trim())}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(sku))
+        {
+            query.Add($"sku={Uri.EscapeDataString(sku.Trim())}");
+        }
+
+        if (page is int p)
+        {
+            query.Add($"page={p}");
+        }
+
+        if (pageSize is int ps)
+        {
+            query.Add($"pageSize={ps}");
+        }
+
+        var path = "api/v1/catalog/products/search" + (query.Count == 0 ? string.Empty : "?" + string.Join("&", query));
+        using var request = CreateRequest(HttpMethod.Get, path, accessToken);
+        using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content
+            .ReadFromJsonAsync<PagedResult<PlatformMerchantGlobalProductDto>>(JsonOptions, cancellationToken)
+            .ConfigureAwait(false);
+        return result ?? new PagedResult<PlatformMerchantGlobalProductDto>([], 0, page ?? 1, pageSize ?? 20);
+    }
+
+    public async Task<PagedResult<PlatformMerchantGlobalCategoryDto>> ListActiveCategoriesAsync(
+        string? search,
+        string? businessType,
+        Guid? parentId,
+        int? page,
+        int? pageSize,
+        string? accessToken,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureBaseAddress();
+        var query = new List<string>();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query.Add($"search={Uri.EscapeDataString(search.Trim())}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(businessType))
+        {
+            query.Add($"businessType={Uri.EscapeDataString(businessType.Trim())}");
+        }
+
+        if (parentId is Guid pid)
+        {
+            query.Add($"parentId={pid:D}");
+        }
+
+        if (page is int p)
+        {
+            query.Add($"page={p}");
+        }
+
+        if (pageSize is int ps)
+        {
+            query.Add($"pageSize={ps}");
+        }
+
+        var path = "api/v1/catalog/categories" + (query.Count == 0 ? string.Empty : "?" + string.Join("&", query));
+        using var request = CreateRequest(HttpMethod.Get, path, accessToken);
+        using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content
+            .ReadFromJsonAsync<PagedResult<PlatformMerchantGlobalCategoryDto>>(JsonOptions, cancellationToken)
+            .ConfigureAwait(false);
+        return result ?? new PagedResult<PlatformMerchantGlobalCategoryDto>([], 0, page ?? 1, pageSize ?? 20);
+    }
+
+    private void EnsureBaseAddress()
+    {
+        if (httpClient.BaseAddress is not null)
+        {
+            return;
+        }
+
+        var baseUrl = options.Value.BaseUrl;
+        if (string.IsNullOrWhiteSpace(baseUrl))
+        {
+            throw new InvalidOperationException("PlatformAuth:BaseUrl is required for merchant catalog discovery.");
+        }
+
+        httpClient.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+    }
+
+    private HttpRequestMessage CreateRequest(HttpMethod method, string relativePath, string? accessToken)
+    {
+        var request = new HttpRequestMessage(method, relativePath);
+        var token = accessToken;
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            var header = httpContextAccessor.HttpContext?.Request.Headers.Authorization.FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(header)
+                && header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            {
+                token = header["Bearer ".Length..].Trim();
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+
+        return request;
+    }
+}

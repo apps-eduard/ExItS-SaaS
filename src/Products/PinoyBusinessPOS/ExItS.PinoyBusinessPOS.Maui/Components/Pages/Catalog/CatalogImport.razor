@@ -1,0 +1,54 @@
+@page "/catalog/import"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (!_canManage)
+{
+    <Page>
+        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Catalog_Title"]</Button>
+    </Page>
+}
+else
+{
+    <Page>
+        <PageHeader Title="Import from template" Subtitle="Queue a Platform business-template catalog import. Full onboarding polish is Phase 20 WP07.">
+            <Actions>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Catalog_Title"]</Button>
+            </Actions>
+        </PageHeader>
+
+        <Alert Tone="AlertTone.Info"
+               Title="API-ready import"
+               Message="Use POST /api/v1/pos/catalog-imports/template with ManageCatalog. Imported products are editable local snapshots with stock 0; opening stock uses the existing inventory workflow. Cashiers cannot start imports." />
+
+        <Section Title="Next steps">
+            <Stack Gap="2">
+                <p>1. Confirm a published Platform template.</p>
+                <p>2. Call the POS catalog-imports API (or wait for WP07 MAUI wizard).</p>
+                <p>3. Review prices, then enter opening stock via Inventory.</p>
+            </Stack>
+        </Section>
+    </Page>
+}
+
+@code {
+    private bool _ready;
+    private bool _canManage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Gate.EnsureSignedInAsync().ConfigureAwait(false);
+        _canManage = Capabilities.IsAllowed(UtangCapability.ManageCatalog);
+        _ready = true;
+    }
+
+    private void GoCatalog() => Nav.NavigateTo("/catalog");
+}

@@ -223,4 +223,13 @@ public static class DomainErrorCodes
     public const string InvalidOperationalSetupContactPhone = "pos.operational_setup.contact_phone.invalid";
     public const string OperationalSetupIncomplete = "pos.operational_setup.incomplete";
     public const string OperationalSetupDefaultRegisterRequired = "pos.operational_setup.default_register.required";
+
+    public const string InvalidCatalogImportJobId = "pos.catalog_import.job.id.invalid";
+    public const string InvalidCatalogImportItemId = "pos.catalog_import.item.id.invalid";
+    public const string InvalidCatalogImportJob = "pos.catalog_import.job.invalid";
+    public const string InvalidCatalogImportItem = "pos.catalog_import.item.invalid";
+    public const string CatalogImportEmpty = "pos.catalog_import.empty";
+    public const string CatalogImportTooLarge = "pos.catalog_import.too_large";
+    public const string InvalidCatalogImportStatusTransition = "pos.catalog_import.status.invalid_transition";
+    public const string InvalidCatalogSource = "pos.catalog.source.invalid";
 }

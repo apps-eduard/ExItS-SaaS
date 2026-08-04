@@ -16,6 +16,12 @@ public interface IProductCategoryRepository
         string normalizedName,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Finds an Active category by Platform global category id.</summary>
+    Task<ProductCategory?> FindActiveBySourceGlobalCategoryIdAsync(
+        PosOrganizationId organizationId,
+        Guid sourceGlobalCategoryId,
+        CancellationToken cancellationToken = default);
+
     Task<(IReadOnlyList<ProductCategory> Items, int TotalCount)> ListAsync(
         PosOrganizationId organizationId,
         ProductCategoryStatus? status,

@@ -81,6 +81,93 @@ internal static class MerchantCatalogDiscoveryEndpoints
             return Results.Ok(template.Products);
         });
 
+        root.MapGet("/products/search", async (
+            HttpContext http,
+            GlobalProductQueryService queries,
+            string? q,
+            BusinessType? businessType,
+            Guid? categoryId,
+            string? barcode,
+            string? sku,
+            int? page,
+            int? pageSize,
+            CancellationToken ct) =>
+        {
+            var denied = EnsureAuthenticated(http);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await queries
+                .ListAsync(
+                    GlobalProductStatus.Active,
+                    categoryId,
+                    businessType,
+                    q,
+                    barcode,
+                    sku,
+                    page,
+                    pageSize,
+                    ct)
+                .ConfigureAwait(false);
+            return Results.Ok(result);
+        });
+
+        root.MapGet("/products/{id:guid}", async (
+            Guid id,
+            HttpContext http,
+            GlobalProductQueryService queries,
+            CancellationToken ct) =>
+        {
+            var denied = EnsureAuthenticated(http);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var product = await queries.GetByIdAsync(id, ct).ConfigureAwait(false);
+            if (product is null
+                || !string.Equals(product.Status, nameof(GlobalProductStatus.Active), StringComparison.OrdinalIgnoreCase))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.GlobalProductNotFound,
+                    "Active global product was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            return Results.Ok(product);
+        });
+
+        root.MapGet("/categories", async (
+            HttpContext http,
+            GlobalCategoryQueryService queries,
+            BusinessType? businessType,
+            Guid? parentId,
+            string? search,
+            int? page,
+            int? pageSize,
+            CancellationToken ct) =>
+        {
+            var denied = EnsureAuthenticated(http);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await queries
+                .ListAsync(
+                    GlobalCategoryStatus.Active,
+                    parentId,
+                    businessType,
+                    search,
+                    page,
+                    pageSize,
+                    ct)
+                .ConfigureAwait(false);
+            return Results.Ok(result);
+        });
+
         return app;
     }
 

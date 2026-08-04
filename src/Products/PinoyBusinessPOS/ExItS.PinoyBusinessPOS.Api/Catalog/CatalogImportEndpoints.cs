@@ -1,0 +1,216 @@
+using ExItS.PinoyBusinessPOS.Api.Common;
+using ExItS.PinoyBusinessPOS.Application.Abstractions;
+using ExItS.PinoyBusinessPOS.Application.Catalog;
+using ExItS.PinoyBusinessPOS.Application.Commercial;
+using ExItS.PinoyBusinessPOS.Application.Common;
+
+namespace ExItS.PinoyBusinessPOS.Api.Catalog;
+
+internal static class CatalogImportEndpoints
+{
+    public static IEndpointRouteBuilder MapCatalogImportEndpoints(this IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/api/v1/pos/catalog-imports");
+
+        group.MapPost("/template", async (
+            HttpRequest request,
+            ImportTemplateBatchRequest body,
+            ImportTemplateBatch useCase,
+            IPosCommercialAccessAccessor access,
+            IPosIdempotencyService idempotency,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManageCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            var accessToken = ExtractBearer(request);
+            return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                    request,
+                    organizationId,
+                    "catalog-import-template",
+                    idempotency,
+                    ct2 => useCase.ExecuteAsync(
+                        organizationId,
+                        body.PlatformTemplateId,
+                        body.BatchNumber <= 0 ? 1 : body.BatchNumber,
+                        actorId.ToString("D"),
+                        accessToken,
+                        body.IdempotencyKey,
+                        ct2),
+                    dto => dto,
+                    dto => Results.Accepted($"/api/v1/pos/catalog-imports/{dto.JobId:D}", dto),
+                    ct)
+                .ConfigureAwait(false);
+        });
+
+        group.MapPost("/products", async (
+            HttpRequest request,
+            ImportSelectedProductsRequest body,
+            ImportSelectedProducts useCase,
+            IPosCommercialAccessAccessor access,
+            IPosIdempotencyService idempotency,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManageCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            var accessToken = ExtractBearer(request);
+            return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                    request,
+                    organizationId,
+                    "catalog-import-products",
+                    idempotency,
+                    ct2 => useCase.ExecuteAsync(
+                        organizationId,
+                        body.PlatformGlobalProductIds ?? [],
+                        actorId.ToString("D"),
+                        accessToken,
+                        body.IdempotencyKey,
+                        ct2),
+                    dto => dto,
+                    dto => Results.Accepted($"/api/v1/pos/catalog-imports/{dto.JobId:D}", dto),
+                    ct)
+                .ConfigureAwait(false);
+        });
+
+        group.MapPost("/template/{templateId:guid}/next-batch", async (
+            HttpRequest request,
+            Guid templateId,
+            ImportTemplateBatchRequest? body,
+            ImportTemplateBatch useCase,
+            IPosCommercialAccessAccessor access,
+            IPosIdempotencyService idempotency,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManageCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            var batchNumber = body?.BatchNumber is > 1 ? body.BatchNumber : 2;
+            var accessToken = ExtractBearer(request);
+            return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                    request,
+                    organizationId,
+                    "catalog-import-template-next-batch",
+                    idempotency,
+                    ct2 => useCase.ExecuteAsync(
+                        organizationId,
+                        templateId,
+                        batchNumber,
+                        actorId.ToString("D"),
+                        accessToken,
+                        body?.IdempotencyKey,
+                        ct2),
+                    dto => dto,
+                    dto => Results.Accepted($"/api/v1/pos/catalog-imports/{dto.JobId:D}", dto),
+                    ct)
+                .ConfigureAwait(false);
+        });
+
+        group.MapGet("/{jobId:guid}", async (
+            HttpRequest request,
+            Guid jobId,
+            CatalogImportQueryService queries,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ViewCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            var job = await queries.GetJobAsync(organizationId, jobId, ct).ConfigureAwait(false);
+            return job is null
+                ? PosApiResults.Problem(
+                    ApplicationErrorCodes.CatalogImportJobNotFound,
+                    "Import job was not found.",
+                    StatusCodes.Status404NotFound)
+                : Results.Ok(job);
+        });
+
+        group.MapGet("/{jobId:guid}/items", async (
+            HttpRequest request,
+            Guid jobId,
+            string? status,
+            int? page,
+            int? pageSize,
+            CatalogImportQueryService queries,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ViewCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            var job = await queries.GetJobAsync(organizationId, jobId, ct).ConfigureAwait(false);
+            if (job is null)
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.CatalogImportJobNotFound,
+                    "Import job was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            var items = await queries
+                .GetItemsAsync(organizationId, jobId, status, page, pageSize, ct)
+                .ConfigureAwait(false);
+            return Results.Ok(items);
+        });
+
+        return app;
+    }
+
+    private static bool TryAuthorize(
+        HttpRequest request,
+        IPosCommercialAccessAccessor access,
+        UtangCapability capability,
+        out Guid organizationId,
+        out IResult? problem)
+    {
+        if (!PosOrganizationScope.TryGetOrganizationId(request, out organizationId, out problem))
+        {
+            return false;
+        }
+
+        return PosCommercialScope.TryAuthorize(access, capability, out problem);
+    }
+
+    private static string? ExtractBearer(HttpRequest request)
+    {
+        if (!request.Headers.TryGetValue("Authorization", out var values))
+        {
+            return null;
+        }
+
+        var header = values.FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(header)
+            || !header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var token = header["Bearer ".Length..].Trim();
+        return string.IsNullOrWhiteSpace(token) ? null : token;
+    }
+}

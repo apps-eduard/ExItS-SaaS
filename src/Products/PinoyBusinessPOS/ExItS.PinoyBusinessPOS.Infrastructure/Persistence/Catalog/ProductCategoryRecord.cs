@@ -7,6 +7,7 @@ internal sealed class ProductCategoryRecord
     public string Name { get; set; } = string.Empty;
     public string NormalizedName { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
+    public Guid? SourceGlobalCategoryId { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public uint Xmin { get; set; }

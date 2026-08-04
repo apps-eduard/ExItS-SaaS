@@ -16,6 +16,8 @@ public sealed class ProductCategory
     public string Name { get; private set; }
     public string NormalizedName { get; private set; }
     public ProductCategoryStatus Status { get; private set; }
+    /// <summary>External Platform global category id only — never a cross-database FK.</summary>
+    public Guid? SourceGlobalCategoryId { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -25,6 +27,7 @@ public sealed class ProductCategory
         string name,
         string normalizedName,
         ProductCategoryStatus status,
+        Guid? sourceGlobalCategoryId,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc)
     {
@@ -33,6 +36,7 @@ public sealed class ProductCategory
         Name = name;
         NormalizedName = normalizedName;
         Status = status;
+        SourceGlobalCategoryId = sourceGlobalCategoryId;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
     }
@@ -41,7 +45,8 @@ public sealed class ProductCategory
         PosOrganizationId organizationId,
         string name,
         DateTimeOffset utcNow,
-        ProductCategoryId? id = null)
+        ProductCategoryId? id = null,
+        Guid? sourceGlobalCategoryId = null)
     {
         CatalogGuards.EnsureUtc(utcNow);
         var display = NormalizeName(name);
@@ -52,6 +57,7 @@ public sealed class ProductCategory
             display,
             Normalize(display),
             ProductCategoryStatus.Active,
+            sourceGlobalCategoryId == Guid.Empty ? null : sourceGlobalCategoryId,
             utcNow,
             utcNow);
     }
@@ -63,8 +69,9 @@ public sealed class ProductCategory
         string normalizedName,
         ProductCategoryStatus status,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc) =>
-        new(id, organizationId, name, normalizedName, status, createdAtUtc, updatedAtUtc);
+        DateTimeOffset updatedAtUtc,
+        Guid? sourceGlobalCategoryId = null) =>
+        new(id, organizationId, name, normalizedName, status, sourceGlobalCategoryId, createdAtUtc, updatedAtUtc);
 
     public void Rename(string name, DateTimeOffset utcNow)
     {

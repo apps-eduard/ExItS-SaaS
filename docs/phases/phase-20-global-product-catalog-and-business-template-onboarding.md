@@ -50,3 +50,4 @@ Merchant discovery remains `/api/v1/catalog/...`. POS imports remain `/api/v1/po
 | P20-WP03 | [P20-WP03](../reports/P20-WP03-platform-admin-catalog-management.md) | Admin Ant Design Categories + Products UI; Imports/Templates nav deferred (`7a8c1b8`) |
 | P20-WP04 | [P20-WP04](../reports/P20-WP04-business-templates.md) | Business templates domain + API + Admin builder; migration `AddCatalogTemplates` (`aea02e3`) |
 | P20-WP05 | [P20-WP05](../reports/P20-WP05-bulk-catalog-import.md) | CSV/XLSX bulk import + PostgreSQL worker; migration `AddGlobalCatalogImportJobs` (`5f68258`) |
+| P20-WP06 | [P20-WP06](../reports/P20-WP06-merchant-onboarding-and-import.md) | POS catalog import APIs + worker + merchant discovery products/categories |

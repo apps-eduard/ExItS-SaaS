@@ -20,7 +20,13 @@ public sealed record PosCatalogProductDto(
     decimal SellingPrice,
     string Status,
     DateTimeOffset CreatedAtUtc,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    Guid? PlatformGlobalProductId = null,
+    Guid? PlatformTemplateId = null,
+    string CatalogSource = "Manual",
+    DateTimeOffset? CatalogImportedAt = null,
+    int? CatalogSnapshotVersion = null,
+    Guid? SourceGlobalCategoryId = null);
 
 public sealed record CreatePosProductCategoryRequest(string Name, Guid? CategoryId = null);
 

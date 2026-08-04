@@ -134,7 +134,13 @@ public sealed class CatalogProductQueryService
             product.SellingPrice,
             product.Status.ToString(),
             product.CreatedAtUtc,
-            product.UpdatedAtUtc);
+            product.UpdatedAtUtc,
+            product.PlatformGlobalProductId,
+            product.PlatformTemplateId,
+            product.CatalogSource.ToString(),
+            product.CatalogImportedAt,
+            product.CatalogSnapshotVersion,
+            product.SourceGlobalCategoryId);
 }
 
 public sealed class CreateCatalogProduct
