@@ -24,3 +24,4 @@
 | 17 | POS MVP Operational Onboarding and First Sale | **Complete** (with documented residuals; Phase 14 unchanged) | [Open](phase-17-pos-mvp-operational-onboarding-and-first-sale.md) |
 | 18 | Mobile Personal, Organization, and POS Experience | **Complete (implementation/scope)** — partial phone validation; Not Device Verified (Phase 14 unchanged) | [Open](phase-18-mobile-personal-organization-and-pos-experience.md) |
 | 19 | Mobile POS Operations and Cashier Experience Completion | **Open** (Phase 14 unchanged; not Device Verified) | [Open](phase-19-mobile-pos-operations-and-cashier-experience.md) |
+| 20 | Global Product Catalog and Business Template Onboarding | **Open** (Implementation → Validation Pending; not Device Verified) | [Open](phase-20-global-product-catalog-and-business-template-onboarding.md) |

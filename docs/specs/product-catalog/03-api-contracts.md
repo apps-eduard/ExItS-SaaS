@@ -28,42 +28,44 @@ Define versioned Platform and POS API contracts for catalog administration, temp
 
 ## 2. Platform Admin Endpoints
 
+> **Reconciliation (P20-WP01):** Commercial SaaS catalog already owns `/api/v1/platform/catalog/products` and `/plans`. Global merchandise admin APIs use the `/api/v1/platform/global-catalog` prefix below. Merchant discovery (`/api/v1/catalog/...`) and POS imports (`/api/v1/pos/catalog-imports/...`) are unchanged.
+
 ### Global categories
 
 ```text
-GET    /api/v1/platform/catalog/categories
-POST   /api/v1/platform/catalog/categories
-GET    /api/v1/platform/catalog/categories/{id}
-PUT    /api/v1/platform/catalog/categories/{id}
-PATCH  /api/v1/platform/catalog/categories/{id}/status
+GET    /api/v1/platform/global-catalog/categories
+POST   /api/v1/platform/global-catalog/categories
+GET    /api/v1/platform/global-catalog/categories/{id}
+PUT    /api/v1/platform/global-catalog/categories/{id}
+PATCH  /api/v1/platform/global-catalog/categories/{id}/status
 ```
 
 ### Global products
 
 ```text
-GET    /api/v1/platform/catalog/products
-POST   /api/v1/platform/catalog/products
-GET    /api/v1/platform/catalog/products/{id}
-PUT    /api/v1/platform/catalog/products/{id}
-PATCH  /api/v1/platform/catalog/products/{id}/status
-POST   /api/v1/platform/catalog/products/imports
-GET    /api/v1/platform/catalog/products/imports/{jobId}
-GET    /api/v1/platform/catalog/products/imports/{jobId}/errors
+GET    /api/v1/platform/global-catalog/products
+POST   /api/v1/platform/global-catalog/products
+GET    /api/v1/platform/global-catalog/products/{id}
+PUT    /api/v1/platform/global-catalog/products/{id}
+PATCH  /api/v1/platform/global-catalog/products/{id}/status
+POST   /api/v1/platform/global-catalog/products/imports
+GET    /api/v1/platform/global-catalog/products/imports/{jobId}
+GET    /api/v1/platform/global-catalog/products/imports/{jobId}/errors
 ```
 
 ### Templates
 
 ```text
-GET    /api/v1/platform/catalog/templates
-POST   /api/v1/platform/catalog/templates
-GET    /api/v1/platform/catalog/templates/{id}
-PUT    /api/v1/platform/catalog/templates/{id}
-POST   /api/v1/platform/catalog/templates/{id}/publish
-POST   /api/v1/platform/catalog/templates/{id}/unpublish
-POST   /api/v1/platform/catalog/templates/{id}/archive
-POST   /api/v1/platform/catalog/templates/{id}/products
-PUT    /api/v1/platform/catalog/templates/{id}/products/order
-DELETE /api/v1/platform/catalog/templates/{id}/products/{productId}
+GET    /api/v1/platform/global-catalog/templates
+POST   /api/v1/platform/global-catalog/templates
+GET    /api/v1/platform/global-catalog/templates/{id}
+PUT    /api/v1/platform/global-catalog/templates/{id}
+POST   /api/v1/platform/global-catalog/templates/{id}/publish
+POST   /api/v1/platform/global-catalog/templates/{id}/unpublish
+POST   /api/v1/platform/global-catalog/templates/{id}/archive
+POST   /api/v1/platform/global-catalog/templates/{id}/products
+PUT    /api/v1/platform/global-catalog/templates/{id}/products/order
+DELETE /api/v1/platform/global-catalog/templates/{id}/products/{productId}
 ```
 
 `DELETE` is acceptable only for removing a product association from a template. It must not delete the global product.
