@@ -6,7 +6,7 @@
 | Phase | [Phase 18](../phases/phase-18-mobile-personal-organization-and-pos-experience.md) — **Open** |
 | Implementation commit | `4b8b7270417d0f9e612855ed746d7fd80819adee` |
 | Validation-fix commit (commercial grants / preferred home) | `3e4314cc35a4428cdaf258df54ed005cbd7080c0` |
-| Validation-fix commit (Quick Login / Access Denied follow-up) | *(see §14 — filled after push)* |
+| Validation-fix commit (Quick Login / Access Denied follow-up) | `86b99cc13d9d7865d268fe009d2f5919cfba28a8` |
 | PhysicalDevice Tailscale profile | `9022d95` |
 | Production-ready | **No** |
 | User mobile validation | **Pending User Validation** — Phase 18 must not be marked Complete until the user explicitly confirms |
@@ -149,7 +149,7 @@ Multi-branch; gateway payments; split tender; advanced analytics; custom roles; 
 | Implementation commit | `4b8b727` |
 | Validation-fix commit (grants / preferred home baseline) | `3e4314c` |
 | PhysicalDevice Tailscale profile | `9022d95` |
-| Validation-fix commit (Quick Login / Access Denied follow-up) | *(filled after push)* |
+| Validation-fix commit (Quick Login / Access Denied follow-up) | `86b99cc13d9d7865d268fe009d2f5919cfba28a8` |
 | Phase 18 Complete closeout commit | **Not created** — blocked until user confirmation |
 
 ### Remaining user retest items (after this fix commit)
