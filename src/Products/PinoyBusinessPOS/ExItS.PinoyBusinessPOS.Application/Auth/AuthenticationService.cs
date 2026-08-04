@@ -133,6 +133,39 @@ public sealed class AuthenticationService(
                 ct)
             .ConfigureAwait(false);
 
+        // Local Validation / profile login may succeed while password grant fails (hash vs shared
+        // password). Fall back to session grant so Mobile still receives a bearer access token.
+        if ((!tokenResult.IsSuccess || tokenResult.Data is null)
+            && !string.IsNullOrWhiteSpace(platformSessionToken))
+        {
+            currentUser.Set(new AuthSession(
+                loginResult.Data!.UserId,
+                loginResult.Data.DisplayName,
+                loginResult.Data.Username,
+                loginResult.Data.Email,
+                OrganizationId: loginResult.Data.SelectedOrganizationId,
+                OrganizationDisplayName: loginResult.Data.SelectedOrganizationDisplayName,
+                IssuedAtUtc: _clock.GetUtcNow(),
+                ExpiresAtUtc: loginResult.Data.ExpiresAtUtc,
+                HasPosAccess: false,
+                AccessReasonCode: null,
+                AccessToken: null,
+                PlatformSessionToken: platformSessionToken,
+                AccountClass: accountClass,
+                AccountProfileId: accountProfileId));
+
+            tokenResult = await accessClient
+                .IssueTokenAsync(
+                    new IssuePlatformAccessTokenRequest(
+                        GrantType: "session",
+                        UsernameOrEmail: null,
+                        Password: null,
+                        OrganizationId: null,
+                        ProductCode: null),
+                    ct)
+                .ConfigureAwait(false);
+        }
+
         if (!tokenResult.IsSuccess || tokenResult.Data is null)
         {
             // Prefer Platform session login when bearer issue fails (personal-only accounts).
@@ -338,7 +371,7 @@ public sealed class AuthenticationService(
                     subscriptionStatus = string.IsNullOrWhiteSpace(subscriptionStatus)
                         ? PosSubscriptionStatuses.Active
                         : subscriptionStatus;
-                    enabledFeatureCodes = MergeDevelopmentGrants(enabledFeatureCodes);
+                    enabledFeatureCodes = UtangCapabilityPolicy.MergeWithDevelopmentDefaults(enabledFeatureCodes);
                 }
 
                 var restored = new AuthSession(
@@ -580,7 +613,7 @@ public sealed class AuthenticationService(
             subscriptionStatus = string.IsNullOrWhiteSpace(subscriptionStatus)
                 ? PosSubscriptionStatuses.Active
                 : subscriptionStatus;
-            enabledFeatureCodes = MergeDevelopmentGrants(enabledFeatureCodes);
+            enabledFeatureCodes = UtangCapabilityPolicy.MergeWithDevelopmentDefaults(enabledFeatureCodes);
         }
 
         var updated = session with
@@ -736,26 +769,10 @@ public sealed class AuthenticationService(
             subscriptionStatus = string.IsNullOrWhiteSpace(subscriptionStatus)
                 ? PosSubscriptionStatuses.Active
                 : subscriptionStatus;
-            enabledFeatureCodes = MergeDevelopmentGrants(enabledFeatureCodes);
+            enabledFeatureCodes = UtangCapabilityPolicy.MergeWithDevelopmentDefaults(enabledFeatureCodes);
         }
 
         return (subscriptionStatus, enabledFeatureCodes);
-    }
-
-    private static IReadOnlyList<string> MergeDevelopmentGrants(IReadOnlyList<string>? existing)
-    {
-        if (existing is not { Count: > 0 })
-        {
-            return UtangCapabilityPolicy.DefaultDevelopmentGrants;
-        }
-
-        var merged = new HashSet<string>(existing, StringComparer.OrdinalIgnoreCase);
-        foreach (var code in UtangCapabilityPolicy.DefaultDevelopmentGrants)
-        {
-            merged.Add(code);
-        }
-
-        return merged.OrderBy(c => c, StringComparer.OrdinalIgnoreCase).ToArray();
     }
 
     private async Task<AuthResult> SelectOrganizationWithoutPosOperateAsync(
@@ -823,6 +840,11 @@ public sealed class AuthenticationService(
         if (error?.Detail?.Contains("Product-local role", StringComparison.OrdinalIgnoreCase) == true)
         {
             return "product_local_role_missing";
+        }
+
+        if (error?.Detail?.Contains("stale", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            return "entitlement_stale";
         }
 
         return "product_assignment_missing";
@@ -926,7 +948,7 @@ public sealed class AuthenticationService(
                     subscriptionStatus = string.IsNullOrWhiteSpace(subscriptionStatus)
                         ? PosSubscriptionStatuses.Active
                         : subscriptionStatus;
-                    enabledFeatureCodes = MergeDevelopmentGrants(enabledFeatureCodes);
+                    enabledFeatureCodes = UtangCapabilityPolicy.MergeWithDevelopmentDefaults(enabledFeatureCodes);
                 }
 
                 var org = await accessClient.GetOrganizationAsync(orgId, ct).ConfigureAwait(false);

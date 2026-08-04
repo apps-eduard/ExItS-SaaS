@@ -11,7 +11,9 @@ internal sealed class PosPlatformBearerMiddleware(RequestDelegate next)
     public async Task InvokeAsync(
         HttpContext context,
         IPlatformTokenIntrospectionClient introspection,
-        IPosCommercialAccessAccessor commercialAccess)
+        IPosCommercialAccessAccessor commercialAccess,
+        IHostEnvironment environment,
+        IConfiguration configuration)
     {
         var bearer = ExtractBearer(context.Request);
         if (string.IsNullOrWhiteSpace(bearer))
@@ -70,14 +72,34 @@ internal sealed class PosPlatformBearerMiddleware(RequestDelegate next)
         if (productAllowed && result.OrganizationId is Guid boundOrg && boundOrg != Guid.Empty)
         {
             var grants = result.EnabledFeatureCodes ?? Array.Empty<string>();
-            commercialAccess.Current = new PosCommercialAccess(
-                result.SubscriptionStatus,
-                grants,
-                IsKnown: true);
+            // Local Validation / Dev: Platform Start-Business snapshots historically omitted
+            // Registers/Shifts (and other Full POS) features. Merge the approved Dev grant set so
+            // Open Shift / Registers do not 403 while role remains Owner.
+            if (ShouldMergeDevelopmentGrants(environment, configuration))
+            {
+                grants = UtangCapabilityPolicy.MergeWithDevelopmentDefaults(grants);
+            }
+
+            var status = string.IsNullOrWhiteSpace(result.SubscriptionStatus)
+                ? PosSubscriptionStatuses.Active
+                : result.SubscriptionStatus;
+            commercialAccess.Current = new PosCommercialAccess(status, grants, IsKnown: true);
             context.Items[PosAuthItems.CommercialBound] = true;
+            context.Items[PosAuthItems.EnabledFeatureCodes] = grants;
         }
 
         await next(context).ConfigureAwait(false);
+    }
+
+    private static bool ShouldMergeDevelopmentGrants(IHostEnvironment environment, IConfiguration configuration)
+    {
+        if (PosDevelopmentEnvironment.IsApprovedDevelopmentEnvironment(environment))
+        {
+            return true;
+        }
+
+        // Staging Local Validation (Start-LocalValidation.ps1) is non-Production and needs the same aid.
+        return configuration.GetValue("LocalValidation:Enabled", false) && !environment.IsProduction();
     }
 
     private static string? ExtractBearer(HttpRequest request)

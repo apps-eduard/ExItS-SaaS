@@ -35,7 +35,20 @@ public sealed class EnsureMvpPosPlans
         (FeatureCode.StoreDashboardView, FeatureValueType.Boolean),
         (FeatureCode.StoreReportsView, FeatureValueType.Boolean),
         (FeatureCode.StorePermissionsView, FeatureValueType.Boolean),
-        (FeatureCode.StorePermissionsManage, FeatureValueType.Boolean)
+        (FeatureCode.StorePermissionsManage, FeatureValueType.Boolean),
+        (FeatureCode.StoreSalesVoid, FeatureValueType.Boolean),
+        (FeatureCode.StoreInventoryView, FeatureValueType.Boolean),
+        (FeatureCode.StoreInventoryManage, FeatureValueType.Boolean),
+        (FeatureCode.StoreExpensesView, FeatureValueType.Boolean),
+        (FeatureCode.StoreExpensesManage, FeatureValueType.Boolean),
+        (FeatureCode.StoreSuppliersView, FeatureValueType.Boolean),
+        (FeatureCode.StoreSuppliersManage, FeatureValueType.Boolean),
+        (FeatureCode.StoreShiftsView, FeatureValueType.Boolean),
+        (FeatureCode.StoreShiftsManage, FeatureValueType.Boolean),
+        (FeatureCode.StoreReturnsView, FeatureValueType.Boolean),
+        (FeatureCode.StoreReturnsManage, FeatureValueType.Boolean),
+        (FeatureCode.StoreRegistersView, FeatureValueType.Boolean),
+        (FeatureCode.StoreRegistersManage, FeatureValueType.Boolean)
     ];
 
     private static readonly string[] BasicStoreFeatureCodes =
@@ -44,10 +57,23 @@ public sealed class EnsureMvpPosPlans
         FeatureCode.StoreCatalogManage,
         FeatureCode.StoreSalesView,
         FeatureCode.StoreSalesCreate,
+        FeatureCode.StoreSalesVoid,
         FeatureCode.StoreDashboardView,
         FeatureCode.StoreReportsView,
         FeatureCode.StorePermissionsView,
-        FeatureCode.StorePermissionsManage
+        FeatureCode.StorePermissionsManage,
+        FeatureCode.StoreInventoryView,
+        FeatureCode.StoreInventoryManage,
+        FeatureCode.StoreExpensesView,
+        FeatureCode.StoreExpensesManage,
+        FeatureCode.StoreSuppliersView,
+        FeatureCode.StoreSuppliersManage,
+        FeatureCode.StoreShiftsView,
+        FeatureCode.StoreShiftsManage,
+        FeatureCode.StoreReturnsView,
+        FeatureCode.StoreReturnsManage,
+        FeatureCode.StoreRegistersView,
+        FeatureCode.StoreRegistersManage
     ];
 
     private readonly IProductRepository _products;

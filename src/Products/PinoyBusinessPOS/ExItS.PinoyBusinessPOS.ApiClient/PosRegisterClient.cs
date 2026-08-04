@@ -47,9 +47,29 @@ public sealed class PosRegisterClient(HttpClient httpClient, IConnectivityServic
         return SendAsync<PagedResult<PosRegisterDto>>(HttpMethod.Get, query.ToString(), null, ct);
     }
 
-    public Task<ApiResult<IReadOnlyList<PosRegisterSummaryDto>>> ListAvailableForShiftAsync(
-        CancellationToken ct = default) =>
-        SendAsync<IReadOnlyList<PosRegisterSummaryDto>>(HttpMethod.Get, $"{Path}/available-for-shift", null, ct);
+    public async Task<ApiResult<IReadOnlyList<PosRegisterSummaryDto>>> ListAvailableForShiftAsync(
+        CancellationToken ct = default)
+    {
+        // Deserialize to List<> (not IReadOnlyList<>) — STJ is reliable with concrete collections.
+        var result = await SendAsync<List<PosRegisterSummaryDto>>(
+                HttpMethod.Get,
+                $"{Path}/available-for-shift",
+                null,
+                ct)
+            .ConfigureAwait(false);
+
+        if (!result.IsSuccess)
+        {
+            return new ApiResult<IReadOnlyList<PosRegisterSummaryDto>>
+            {
+                Status = result.Status,
+                Error = result.Error
+            };
+        }
+
+        IReadOnlyList<PosRegisterSummaryDto> items = result.Data ?? [];
+        return ApiResult<IReadOnlyList<PosRegisterSummaryDto>>.Success(items);
+    }
 
     public Task<ApiResult<PosRegisterDto>> GetAsync(Guid registerId, CancellationToken ct = default) =>
         SendAsync<PosRegisterDto>(HttpMethod.Get, $"{Path}/{registerId:D}", null, ct);

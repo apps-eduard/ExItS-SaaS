@@ -64,10 +64,23 @@ public sealed class StartBusinessForPersonalUser
         FeatureCode.StoreCatalogManage,
         FeatureCode.StoreSalesView,
         FeatureCode.StoreSalesCreate,
+        FeatureCode.StoreSalesVoid,
         FeatureCode.StoreDashboardView,
         FeatureCode.StoreReportsView,
         FeatureCode.StorePermissionsView,
-        FeatureCode.StorePermissionsManage
+        FeatureCode.StorePermissionsManage,
+        FeatureCode.StoreInventoryView,
+        FeatureCode.StoreInventoryManage,
+        FeatureCode.StoreExpensesView,
+        FeatureCode.StoreExpensesManage,
+        FeatureCode.StoreSuppliersView,
+        FeatureCode.StoreSuppliersManage,
+        FeatureCode.StoreShiftsView,
+        FeatureCode.StoreShiftsManage,
+        FeatureCode.StoreReturnsView,
+        FeatureCode.StoreReturnsManage,
+        FeatureCode.StoreRegistersView,
+        FeatureCode.StoreRegistersManage
     ];
 
     private const string ProvisionalPlanCode = "start-business-pos";

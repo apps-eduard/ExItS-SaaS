@@ -2,9 +2,9 @@
 
 | Field | Value |
 |---|---|
-| Status | **Code Complete** |
+| Status | **Code Complete** (phone scenario **Retest**) |
 | Phase | [Phase 19](../phases/phase-19-mobile-pos-operations-and-cashier-experience.md) — **Open** |
-| Commit | 1dad55a |
+| Commit | *(pending — register/shift commercial grant fix)* |
 | Production-ready | **No** |
 | Device Verified | **No** |
 | Date | 2026-08-04 |
@@ -23,10 +23,11 @@ Capability-gate Reports hub/menus and MoreHub operational navigation so unfinish
 - ReportsHub: full menu for ViewReports; Cashier-like ViewShifts-only sees shift summary + cash variance; inventory/purchasing/expenses subsets; empty sections hidden
 - OperationalReportPage: per-kind CanAccessKind redirects to `/reports` when denied
 
-## 4. Residuals
+## 4. Residuals / Retest notes
 
 - Client approximates role report matrix via capabilities (session does not expose PosRole enum directly)
 - Export remains deferred (existing banner)
+- **Retest (phone):** Selling Mode must not change POS role; capability gates for Registers/Shifts must remain consistent with merged Local Validation commercial grants so Open Shift is reachable for Owner.
 
 ## 5. Tests
 
@@ -34,8 +35,8 @@ Capability-gate Reports hub/menus and MoreHub operational navigation so unfinish
 
 ## 6. Authorization
 
-Server remains authoritative; client hides unauthorized nav and report kinds.
+Server remains authoritative; client hides unauthorized nav and report kinds. Local Validation merges Dev commercial defaults onto partial Platform entitlement snapshots.
 
 ## 7. Status
 
-**Code Complete.** Phase 19 remains **Open**. Not Device Verified.
+**Code Complete.** Phase 19 remains **Open**. Related Owner Selling Mode / Open Shift phone scenario marked **Retest**. Not Device Verified.

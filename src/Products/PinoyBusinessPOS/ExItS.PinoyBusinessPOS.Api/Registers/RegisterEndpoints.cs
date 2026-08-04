@@ -26,7 +26,15 @@ internal static class RegisterEndpoints
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
-            if (!TryAuthorize(request, access, UtangCapability.ViewRegisters, out var organizationId, out var problem))
+            // Open Shift needs the eligible-register list; allow ViewRegisters or ManageShifts so
+            // cashiers/owners are not stranded when commercial ViewRegisters was omitted from a
+            // partial plan snapshot but shift manage is granted (or merged in Local Validation).
+            if (!TryAuthorizeAny(
+                    request,
+                    access,
+                    [UtangCapability.ViewRegisters, UtangCapability.ManageShifts],
+                    out var organizationId,
+                    out var problem))
             {
                 return problem!;
             }
@@ -242,6 +250,30 @@ internal static class RegisterEndpoints
         }
 
         return PosCommercialScope.TryAuthorize(access, capability, out problem);
+    }
+
+    private static bool TryAuthorizeAny(
+        HttpRequest request,
+        IPosCommercialAccessAccessor access,
+        IReadOnlyList<UtangCapability> capabilities,
+        out Guid organizationId,
+        out IResult? problem)
+    {
+        if (!PosOrganizationScope.TryGetOrganizationId(request, out organizationId, out problem))
+        {
+            return false;
+        }
+
+        problem = null;
+        foreach (var capability in capabilities)
+        {
+            if (PosCommercialScope.TryAuthorize(access, capability, out problem))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool TryParseStatus(string? status, out RegisterStatus? parsed, out IResult? problem)

@@ -314,6 +314,26 @@ public static class UtangCapabilityPolicy
         PosFeatureCodes.StoreRegistersManage
     ];
 
+    /// <summary>
+    /// Unions existing Platform grants with the Local Validation / Development full ops set so
+    /// partial entitlement snapshots (catalog-only Start-Business plans) do not strand Registers/Shifts.
+    /// </summary>
+    public static IReadOnlyList<string> MergeWithDevelopmentDefaults(IReadOnlyList<string>? existing)
+    {
+        if (existing is not { Count: > 0 })
+        {
+            return DefaultDevelopmentGrants;
+        }
+
+        var merged = new HashSet<string>(existing, StringComparer.OrdinalIgnoreCase);
+        foreach (var code in DefaultDevelopmentGrants)
+        {
+            merged.Add(code);
+        }
+
+        return merged.OrderBy(c => c, StringComparer.OrdinalIgnoreCase).ToArray();
+    }
+
     private static string Normalize(string? subscriptionStatus) =>
         string.IsNullOrWhiteSpace(subscriptionStatus) ? string.Empty : subscriptionStatus.Trim();
 }

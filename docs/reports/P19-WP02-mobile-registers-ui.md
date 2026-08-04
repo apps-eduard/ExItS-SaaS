@@ -2,9 +2,9 @@
 
 | Field | Value |
 |---|---|
-| Status | **Code Complete** |
+| Status | **Code Complete** (phone scenario **Retest**) |
 | Phase | [Phase 19](../phases/phase-19-mobile-pos-operations-and-cashier-experience.md) — **Open** |
-| Commit | ee2ffb6 |
+| Commit | *(pending — register/shift commercial grant fix)* |
 | Production-ready | **No** |
 | Device Verified | **No** |
 | Date | 2026-08-04 |
@@ -25,10 +25,11 @@ Phase 10 register APIs (`IPosRegisterClient`), activate/deactivate, available-fo
 - Create/edit gated to ManageRegisters; Cashier ViewRegisters can browse/select eligible registers without admin actions
 - MoreHub Registers nav gated by ViewRegisters (with WP07 nav hardening)
 
-## 4. Residuals
+## 4. Residuals / Retest notes
 
 - No drawer hardware / advanced till management (out of scope)
 - Main Register identity inferred from operational-setup default name/code (no dedicated IsMain flag on DTO)
+- **Retest (phone):** Owner Selling Mode → Open Shift must load eligible registers (including Main Register). Do not accept a false `No available register` when the API failed or commercial grants omitted `store-registers-view`.
 
 ## 5. Tests
 
@@ -36,8 +37,8 @@ Phase 10 register APIs (`IPosRegisterClient`), activate/deactivate, available-fo
 
 ## 6. Authorization
 
-API + commercial grants authoritative. Client mirrors ViewRegisters vs ManageRegisters.
+API + commercial grants authoritative. Client mirrors ViewRegisters vs ManageRegisters. Local Validation / Development merges full Dev grant defaults onto partial Platform snapshots so Registers are not stranded.
 
 ## 7. Status
 
-**Code Complete.** Phase 19 remains **Open**. Not Device Verified.
+**Code Complete.** Phase 19 remains **Open**. Phone Open Shift / registers scenario marked **Retest**. Not Device Verified.

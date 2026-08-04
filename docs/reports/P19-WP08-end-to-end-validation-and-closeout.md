@@ -4,7 +4,7 @@
 |---|---|
 | Status | **Retest** (awaiting user phone confirmation) |
 | Phase | [Phase 19](../phases/phase-19-mobile-pos-operations-and-cashier-experience.md) — **Open** |
-| Commit | 817e72c |
+| Commit | *(pending — register/shift commercial grant fix)* |
 | Production-ready | **No** |
 | Device Verified | **No** |
 | Date | 2026-08-04 |
@@ -18,12 +18,12 @@ Provide the end-to-end Mobile POS ops validation checklist for physical-phone co
 | WP | Status |
 |---|---|
 | P19-WP01 Inventory | Code Complete |
-| P19-WP02 Registers | Code Complete |
-| P19-WP03 Shifts | Code Complete |
+| P19-WP02 Registers | Code Complete (**Retest** — Open Shift registers) |
+| P19-WP03 Shifts | Code Complete (**Retest** — Open Shift / Start Shift) |
 | P19-WP04 Cashier selling | Code Complete |
 | P19-WP05 Sales/receipt | Code Complete |
 | P19-WP06 Customers | Code Complete |
-| P19-WP07 Reports/nav/UX | Code Complete |
+| P19-WP07 Reports/nav/UX | Code Complete (**Retest** — Selling Mode / grants) |
 
 ## 3. User phone checklist (Retest)
 
@@ -31,12 +31,20 @@ Provide the end-to-end Mobile POS ops validation checklist for physical-phone co
 - [ ] Products / Categories still healthy (Phase 18 phone-validated baseline)
 - [ ] Inventory list/low-stock/detail; adjust only with ManageInventory
 - [ ] Registers list + Main Register; Cashier cannot administer without ManageRegisters
-- [ ] Open shift → sell → close shift with variance
+- [ ] **Owner Selling Mode (role stays Owner) → Open Shift loads eligible registers → Start Shift enabled → sell → close shift with variance**
 - [ ] Cashier sell: search/category/tile → cart → cash tender/change → receipt → next sale
 - [ ] Sales history + receipt reopen
 - [ ] Customers list for ViewCustomersAndHistory roles; credit create gated
 - [ ] Reports hub shows only allowed report kinds for Cashier vs Owner/Manager
 - [ ] MoreHub hides unauthorized modules
+
+### Observed defect under retest (fixed in code; confirm on phone)
+
+| Observation | Expected after fix |
+|---|---|
+| Owner enters Selling Mode; role stays Owner | Unchanged (UI mode only) |
+| Open Shift cannot load registers / shows `No available register` | Eligible Active register(s) listed (e.g. Main Register) |
+| Start Shift disabled | Enabled once a register is selected |
 
 ## 4. Explicit non-claims
 
@@ -69,6 +77,12 @@ dotnet build "src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ExItS.Pi
 
 Do **not** use historical HealthCare AVD names. Untracked `tools/p18-*.mjs` remain local.
 
+Restart Local Validation APIs after this fix so POS bearer commercial merge is live:
+
+```powershell
+.\tools\Start-LocalValidation.ps1
+```
+
 ## 6. Status
 
-**Retest.** Phase 19 remains **Open** until explicit user phone confirmation.
+**Retest.** Phase 19 remains **Open** until explicit user phone confirmation of the Owner Selling Mode → Open Shift registers scenario.

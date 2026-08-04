@@ -75,6 +75,9 @@ public sealed partial class FeatureCode : IEquatable<FeatureCode>
     /// <summary>POS Full POS: view organization registers (logical sales stations).</summary>
     public const string StoreRegistersView = "store-registers-view";
 
+    /// <summary>POS Full POS: create, edit, activate, and deactivate organization registers.</summary>
+    public const string StoreRegistersManage = "store-registers-manage";
+
     /// <summary>POS plan commercial limit: maximum branches (QuantityLimit).</summary>
     public const string PlanMaxBranches = "plan-max-branches";
 

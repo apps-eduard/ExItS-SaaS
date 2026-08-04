@@ -30,19 +30,26 @@ else
     @if (!string.IsNullOrEmpty(_errorMessage))
     {
         <Alert Tone="AlertTone.Danger" Title="@L["Shifts_ErrorTitle"]" Message="@_errorMessage" />
+        <FormActions>
+            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loadingRegisters" OnClick="ReloadRegistersAsync">@L["Api_Retry"]</Button>
+        </FormActions>
     }
 
     <Section Title="@L["Shifts_RegisterSection"]">
-        @if (_available.Count == 0 && !_loadingRegisters)
+        @if (_loadingRegisters)
+        {
+            <Spinner />
+        }
+        else if (_available.Count == 0 && string.IsNullOrEmpty(_errorMessage))
         {
             <Alert Tone="AlertTone.Warning" Title="@L["Shifts_NoRegisterTitle"]" Message="@L["Shifts_NoRegisterMessage"]" />
         }
-        else
+        else if (_available.Count > 0)
         {
             <Select Label="@L["Shifts_RegisterLabel"]"
                     Value="@_selectedRegisterId"
                     ValueChanged="OnRegisterChanged"
-                    Options="@RegisterOptions"
+                    Options="@_registerOptions"
                     Disabled="@(blocked || _loadingRegisters)" />
         }
     </Section>
@@ -56,7 +63,7 @@ else
         <FormActions>
             <Button Variant="ButtonVariant.Primary"
                     IsLoading="@_saving"
-                    Disabled="@(blocked || _selectedRegisterGuid == Guid.Empty || _available.Count == 0)"
+                    Disabled="@(blocked || _selectedRegisterGuid == Guid.Empty || _available.Count == 0 || !string.IsNullOrEmpty(_errorMessage))"
                     OnClick="OpenAsync">@L["Shifts_OpenConfirm"]</Button>
         </FormActions>
     </Section>
@@ -73,11 +80,7 @@ else
     private string? _selectedRegisterId;
     private Guid _selectedRegisterGuid;
     private IReadOnlyList<PosRegisterSummaryDto> _available = Array.Empty<PosRegisterSummaryDto>();
-
-    private IReadOnlyList<SelectOption> RegisterOptions =>
-        _available
-            .Select(r => new SelectOption(r.RegisterId.ToString("D"), $"{r.RegisterCode} — {r.Name}"))
-            .ToList();
+    private IReadOnlyList<SelectOption> _registerOptions = Array.Empty<SelectOption>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -103,29 +106,96 @@ else
         _ready = true;
     }
 
+    private Task ReloadRegistersAsync() => LoadAvailableRegistersAsync();
+
     private async Task LoadAvailableRegistersAsync()
     {
         _loadingRegisters = true;
-        var result = await Registers.ListAvailableForShiftAsync();
-        _loadingRegisters = false;
-        if (result.IsSuccess && result.Data is not null)
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
         {
-            _available = result.Data;
-            if (_available.Count == 1)
+            var result = await Registers.ListAvailableForShiftAsync();
+            if (result.IsSuccess && result.Data is { Count: > 0 })
             {
-                _selectedRegisterGuid = _available[0].RegisterId;
-                _selectedRegisterId = _selectedRegisterGuid.ToString("D");
+                ApplyAvailable(result.Data);
+                return;
+            }
+
+            // Fallback: list Active registers without an open shift (covers empty available payload
+            // after a commercial/auth mismatch was cleared, or deserialize edge cases).
+            var listed = await Registers.ListAsync(
+                status: PosCatalogOptions.ActiveStatus,
+                hasOpenShift: false,
+                page: 1,
+                pageSize: 50);
+            if (listed.IsSuccess && listed.Data is { Items.Count: > 0 })
+            {
+                ApplyAvailable(listed.Data.Items
+                    .Select(r => new PosRegisterSummaryDto(r.RegisterId, r.RegisterCode, r.Name, r.Status))
+                    .ToList());
+                return;
+            }
+
+            _available = Array.Empty<PosRegisterSummaryDto>();
+            _registerOptions = Array.Empty<SelectOption>();
+            _selectedRegisterGuid = Guid.Empty;
+            _selectedRegisterId = null;
+
+            if (!result.IsSuccess)
+            {
+                var described = ApiLocalizer.Describe(result.Status, result.Error);
+                _errorMessage = result.Error?.Detail ?? described.Message;
+            }
+            else if (!listed.IsSuccess)
+            {
+                var described = ApiLocalizer.Describe(listed.Status, listed.Error);
+                _errorMessage = listed.Error?.Detail ?? described.Message;
             }
         }
-        else
+        catch (Exception ex)
         {
-            var described = ApiLocalizer.Describe(result.Status, result.Error);
-            _errorMessage = result.Error?.Detail ?? described.Message;
+            _available = Array.Empty<PosRegisterSummaryDto>();
+            _registerOptions = Array.Empty<SelectOption>();
+            _selectedRegisterGuid = Guid.Empty;
+            _selectedRegisterId = null;
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _loadingRegisters = false;
+        }
+    }
+
+    private void ApplyAvailable(IReadOnlyList<PosRegisterSummaryDto> items)
+    {
+        _available = items;
+        _registerOptions = items
+            .Select(r => new SelectOption(r.RegisterId.ToString("D"), $"{r.RegisterCode} — {r.Name}"))
+            .ToList();
+        _errorMessage = null;
+
+        if (_available.Count == 1)
+        {
+            _selectedRegisterGuid = _available[0].RegisterId;
+            _selectedRegisterId = _selectedRegisterGuid.ToString("D");
+        }
+        else if (_selectedRegisterGuid != Guid.Empty
+                 && _available.All(r => r.RegisterId != _selectedRegisterGuid))
+        {
+            _selectedRegisterGuid = Guid.Empty;
+            _selectedRegisterId = null;
         }
     }
 
     private void OnRegisterChanged(string? value)
     {
+        if (string.Equals(value, _selectedRegisterId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
         _selectedRegisterId = value;
         _selectedRegisterGuid = Guid.TryParse(value, out var id) ? id : Guid.Empty;
     }
