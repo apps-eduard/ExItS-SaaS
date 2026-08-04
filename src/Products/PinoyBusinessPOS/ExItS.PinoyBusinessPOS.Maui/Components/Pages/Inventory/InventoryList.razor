@@ -1,6 +1,7 @@
 @page "/inventory"
 @inject NavigationManager Nav
 @inject NavigationGate Gate
+@inject ICurrentUserContext CurrentUser
 @inject IPosInventoryClient Inventory
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
@@ -104,6 +105,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        if (CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(RoleHomeResolver.PersonalHome, replace: true);
+            return;
+        }
+
         if (!Gate.CanEnterProtectedShell)
         {
             Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
@@ -112,7 +119,7 @@ else
 
         if (!Capabilities.IsAllowed(UtangCapability.ViewInventory))
         {
-            Nav.NavigateTo("/home", replace: true);
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
             return;
         }
 

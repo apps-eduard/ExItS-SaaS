@@ -705,17 +705,35 @@ public sealed class AuthenticationService(
             }
         }
 
-        if (enabledFeatureCodes is not { Count: > 0 } && IsDevelopmentAuthenticationEnabled)
+        if (IsDevelopmentAuthenticationEnabled)
         {
-            // Local Validation / emulator: product bind succeeded but entitlement snapshot
-            // sometimes omits feature codes — keep Mobile operable for Owner validation.
+            // Local Validation / PhysicalDevice: introspect/evaluate may return a partial
+            // grant snapshot (e.g. catalog only). After Personal → org re-bind that strands
+            // Inventory/Registers/Shifts behind capability checks that bounce to Owner home.
+            // Always merge the full Dev grant set so ops UIs stay reachable for validation.
             subscriptionStatus = string.IsNullOrWhiteSpace(subscriptionStatus)
                 ? PosSubscriptionStatuses.Active
                 : subscriptionStatus;
-            enabledFeatureCodes = UtangCapabilityPolicy.DefaultDevelopmentGrants;
+            enabledFeatureCodes = MergeDevelopmentGrants(enabledFeatureCodes);
         }
 
         return (subscriptionStatus, enabledFeatureCodes);
+    }
+
+    private static IReadOnlyList<string> MergeDevelopmentGrants(IReadOnlyList<string>? existing)
+    {
+        if (existing is not { Count: > 0 })
+        {
+            return UtangCapabilityPolicy.DefaultDevelopmentGrants;
+        }
+
+        var merged = new HashSet<string>(existing, StringComparer.OrdinalIgnoreCase);
+        foreach (var code in UtangCapabilityPolicy.DefaultDevelopmentGrants)
+        {
+            merged.Add(code);
+        }
+
+        return merged.OrderBy(c => c, StringComparer.OrdinalIgnoreCase).ToArray();
     }
 
     private async Task<AuthResult> SelectOrganizationWithoutPosOperateAsync(

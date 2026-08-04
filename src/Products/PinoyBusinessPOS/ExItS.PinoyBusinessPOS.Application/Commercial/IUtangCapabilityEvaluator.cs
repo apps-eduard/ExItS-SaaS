@@ -14,8 +14,9 @@ public sealed class UtangCapabilityEvaluator(ICurrentUserContext currentUser) : 
     public bool IsAllowed(UtangCapability capability)
     {
         var session = currentUser.Session;
-        if (session is null)
+        if (session is null || session.OrganizationId is null)
         {
+            // Personal context has no organization-scoped POS commercial grants.
             return false;
         }
 

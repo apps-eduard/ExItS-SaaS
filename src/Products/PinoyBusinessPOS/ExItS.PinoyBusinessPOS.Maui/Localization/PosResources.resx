@@ -1378,6 +1378,7 @@
   <data name="Personal_NoOrgsMessage" xml:space="preserve"><value>Start a business to create your first organization.</value></data>
   <data name="Personal_ContinueOrg" xml:space="preserve"><value>Continue</value></data>
   <data name="Personal_StartBusiness" xml:space="preserve"><value>Start a Business</value></data>
+  <data name="Personal_StartAnotherBusiness" xml:space="preserve"><value>Start another business</value></data>
   <data name="Personal_BackHome" xml:space="preserve"><value>Back to personal home</value></data>
   <data name="Personal_AccountClass" xml:space="preserve"><value>Account class</value></data>
   <data name="Personal_AccountClassDefault" xml:space="preserve"><value>Personal</value></data>

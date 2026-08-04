@@ -73,6 +73,7 @@ public sealed class CustomersReportsNavPageGuardTests
             "MoreHub.razor"));
         Assert.Contains("UtangCapability.ViewReports", more, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ViewDashboard", more, StringComparison.Ordinal);
+        Assert.Contains("OrganizationId", more, StringComparison.Ordinal);
         Assert.Contains("GoReports", more, StringComparison.Ordinal);
     }
 

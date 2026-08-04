@@ -63,6 +63,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        if (CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(RoleHomeResolver.PersonalHome, replace: true);
+            return;
+        }
+
         // Owner working-as from org select — trust preferred home even if effective-role API lags.
         if (string.Equals(SellingMode.PreferredHomeRoute, RoleHomeResolver.OwnerHome, StringComparison.Ordinal))
         {

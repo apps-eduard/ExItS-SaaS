@@ -16,14 +16,23 @@ public sealed class RoleHomeResolverTests
     public async Task ResolvePosHome_maps_effective_role(string role, string expected)
     {
         var client = new FakePermissions(string.IsNullOrEmpty(role) ? null : role, status: string.IsNullOrEmpty(role) ? "None" : "Active");
-        var sut = new RoleHomeResolver(client, new SellingModeService());
+        var sut = new RoleHomeResolver(client, new SellingModeService(), FakeUser.WithOrg());
         Assert.Equal(expected, await sut.ResolvePosHomeAsync());
+    }
+
+    [Fact]
+    public async Task ResolvePosHome_returns_personal_when_no_organization_bound()
+    {
+        var mode = new SellingModeService();
+        mode.EnterWorkingAs(RoleHomeResolver.OwnerHome);
+        var sut = new RoleHomeResolver(new FakePermissions("Owner", status: "Active"), mode, FakeUser.Personal());
+        Assert.Equal(RoleHomeResolver.PersonalHome, await sut.ResolvePosHomeAsync());
     }
 
     [Fact]
     public async Task ResolvePosHome_denies_inactive_assignment()
     {
-        var sut = new RoleHomeResolver(new FakePermissions("Owner", status: "Revoked"), new SellingModeService());
+        var sut = new RoleHomeResolver(new FakePermissions("Owner", status: "Revoked"), new SellingModeService(), FakeUser.WithOrg());
         Assert.Equal(RoleHomeResolver.AccessDenied, await sut.ResolvePosHomeAsync());
     }
 
@@ -32,7 +41,7 @@ public sealed class RoleHomeResolverTests
     {
         var mode = new SellingModeService();
         mode.EnterWorkingAs(RoleHomeResolver.ManagerHome);
-        var sut = new RoleHomeResolver(new FakePermissions("Owner", status: "Active"), mode);
+        var sut = new RoleHomeResolver(new FakePermissions("Owner", status: "Active"), mode, FakeUser.WithOrg());
         Assert.Equal(RoleHomeResolver.ManagerHome, await sut.ResolvePosHomeAsync());
 
         mode.EnterWorkingAs(RoleHomeResolver.CashierHome);
@@ -44,7 +53,7 @@ public sealed class RoleHomeResolverTests
     {
         var mode = new SellingModeService();
         mode.EnterWorkingAs(RoleHomeResolver.OwnerHome);
-        var sut = new RoleHomeResolver(FakePermissions.Unavailable(), mode);
+        var sut = new RoleHomeResolver(FakePermissions.Unavailable(), mode, FakeUser.WithOrg());
         Assert.Equal(RoleHomeResolver.OwnerHome, await sut.ResolvePosHomeAsync());
     }
 
@@ -53,14 +62,14 @@ public sealed class RoleHomeResolverTests
     {
         var mode = new SellingModeService();
         mode.EnterWorkingAs(RoleHomeResolver.ManagerHome);
-        var sut = new RoleHomeResolver(new FakePermissions(role: null, status: "None"), mode);
+        var sut = new RoleHomeResolver(new FakePermissions(role: null, status: "None"), mode, FakeUser.WithOrg());
         Assert.Equal(RoleHomeResolver.ManagerHome, await sut.ResolvePosHomeAsync());
     }
 
     [Fact]
     public async Task ResolvePosHome_without_preferred_still_denies_when_effective_missing()
     {
-        var sut = new RoleHomeResolver(FakePermissions.Unavailable(), new SellingModeService());
+        var sut = new RoleHomeResolver(FakePermissions.Unavailable(), new SellingModeService(), FakeUser.WithOrg());
         Assert.Equal(RoleHomeResolver.AccessDenied, await sut.ResolvePosHomeAsync());
     }
 
@@ -69,7 +78,7 @@ public sealed class RoleHomeResolverTests
     {
         var mode = new SellingModeService();
         mode.EnterWorkingAs(RoleHomeResolver.OwnerHome);
-        var sut = new RoleHomeResolver(new FakePermissions("NotARealRole", status: "Active"), mode);
+        var sut = new RoleHomeResolver(new FakePermissions("NotARealRole", status: "Active"), mode, FakeUser.WithOrg());
         Assert.Equal(RoleHomeResolver.OwnerHome, await sut.ResolvePosHomeAsync());
     }
 
@@ -78,7 +87,7 @@ public sealed class RoleHomeResolverTests
     {
         var mode = new SellingModeService();
         mode.EnterWorkingAs(RoleHomeResolver.ManagerHome);
-        var sut = new RoleHomeResolver(new FakePermissions("InventoryStaff", status: "Active"), mode);
+        var sut = new RoleHomeResolver(new FakePermissions("InventoryStaff", status: "Active"), mode, FakeUser.WithOrg());
         Assert.Equal(RoleHomeResolver.ManagerHome, await sut.ResolvePosHomeAsync());
     }
 
@@ -87,7 +96,7 @@ public sealed class RoleHomeResolverTests
     {
         var mode = new SellingModeService();
         mode.EnterWorkingAs(RoleHomeResolver.OwnerHome);
-        var sut = new RoleHomeResolver(new FakePermissions("Cashier", status: "Active"), mode);
+        var sut = new RoleHomeResolver(new FakePermissions("Cashier", status: "Active"), mode, FakeUser.WithOrg());
         Assert.Equal(RoleHomeResolver.CashierHome, await sut.ResolvePosHomeAsync());
     }
 
@@ -112,6 +121,42 @@ public sealed class RoleHomeResolverTests
         Assert.Equal(RoleHomeResolver.CashierHome, mode.PreferredHomeRoute);
         mode.Clear();
         Assert.Null(mode.PreferredHomeRoute);
+    }
+
+    private sealed class FakeUser : ICurrentUserContext
+    {
+        private FakeUser(AuthSession? session) => Session = session;
+
+        public static FakeUser WithOrg() => new(new AuthSession(
+            UserId: Guid.NewGuid(),
+            DisplayName: "Test",
+            Username: "test",
+            Email: "test@example.com",
+            OrganizationId: Guid.NewGuid(),
+            OrganizationDisplayName: "Org",
+            IssuedAtUtc: DateTimeOffset.UtcNow,
+            ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(1),
+            HasPosAccess: true,
+            AccessReasonCode: "allowed"));
+
+        public static FakeUser Personal() => new(new AuthSession(
+            UserId: Guid.NewGuid(),
+            DisplayName: "Test",
+            Username: "test",
+            Email: "test@example.com",
+            OrganizationId: null,
+            OrganizationDisplayName: null,
+            IssuedAtUtc: DateTimeOffset.UtcNow,
+            ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(1),
+            HasPosAccess: false,
+            AccessReasonCode: null));
+
+        public AuthSession? Session { get; private set; }
+        public bool IsAuthenticated => Session is not null;
+        public bool HasPosAccess => Session?.HasPosAccess == true;
+        public event Func<Task>? Changed;
+        public void Set(AuthSession? session) => Session = session;
+        public void Clear() => Session = null;
     }
 
     private sealed class FakePermissions(string? role, string status, bool unavailable = false) : IPosPermissionClient

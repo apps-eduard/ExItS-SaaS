@@ -56,7 +56,14 @@
                 </Stack>
             }
             <FormActions>
-                <Button Variant="ButtonVariant.Primary" OnClick="GoStartBusiness">@L["Personal_StartBusiness"]</Button>
+                @if (_organizations.Count == 0)
+                {
+                    <Button Variant="ButtonVariant.Primary" OnClick="GoStartBusiness">@L["Personal_StartBusiness"]</Button>
+                }
+                else
+                {
+                    <Button Variant="ButtonVariant.Secondary" OnClick="GoStartBusiness">@L["Personal_StartAnotherBusiness"]</Button>
+                }
             </FormActions>
         </Section>
 

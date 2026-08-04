@@ -75,7 +75,10 @@ public sealed class SellingModeService
 }
 
 /// <summary>Resolves the Mobile home route from the effective POS role (and Owner working-as preference).</summary>
-public sealed class RoleHomeResolver(IPosPermissionClient permissions, SellingModeService sellingMode)
+public sealed class RoleHomeResolver(
+    IPosPermissionClient permissions,
+    SellingModeService sellingMode,
+    ICurrentUserContext currentUser)
 {
     public const string OwnerHome = "/owner";
     public const string ManagerHome = "/manager";
@@ -86,6 +89,12 @@ public sealed class RoleHomeResolver(IPosPermissionClient permissions, SellingMo
 
     public async Task<string> ResolvePosHomeAsync(CancellationToken ct = default)
     {
+        // Personal Mobile area — never resolve Owner/Manager/Cashier homes without an org bind.
+        if (currentUser.Session?.OrganizationId is null)
+        {
+            return PersonalHome;
+        }
+
         var effective = await permissions.GetEffectiveAsync(ct).ConfigureAwait(false);
         var preferred = sellingMode.PreferredHomeRoute;
 
