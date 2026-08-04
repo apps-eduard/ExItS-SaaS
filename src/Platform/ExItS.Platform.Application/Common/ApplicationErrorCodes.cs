@@ -161,4 +161,7 @@ public static class ApplicationErrorCodes
     public const string DuplicateGlobalCategoryName = "application.global_catalog.category.name_conflict";
     public const string DuplicateGlobalProductBarcode = "application.global_catalog.product.barcode_conflict";
     public const string DuplicateGlobalProductSku = "application.global_catalog.product.sku_conflict";
+    public const string CatalogTemplateNotFound = "application.global_catalog.template.not_found";
+    public const string CatalogTemplateNotPublished = "application.global_catalog.template.not_published";
+    public const string DuplicateCatalogTemplateSlug = "application.global_catalog.template.slug_conflict";
 }

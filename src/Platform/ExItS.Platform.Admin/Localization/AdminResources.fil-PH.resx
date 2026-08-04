@@ -305,6 +305,7 @@
   <data name="Status_Active" xml:space="preserve"><value>Active</value></data>
   <data name="Status_Inactive" xml:space="preserve"><value>Inactive</value></data>
   <data name="Status_Draft" xml:space="preserve"><value>Draft</value></data>
+  <data name="Status_Published" xml:space="preserve"><value>Published</value></data>
   <data name="Status_Retired" xml:space="preserve"><value>Retired</value></data>
   <data name="Status_Archived" xml:space="preserve"><value>Archived</value></data>
   <data name="Status_Suspended" xml:space="preserve"><value>Suspended</value></data>
@@ -926,4 +927,46 @@
   <data name="GlobalProducts_ConfirmActivate" xml:space="preserve"><value>I-activate (i-reactivate) ang produktong ito?</value></data>
   <data name="GlobalProducts_ConfirmArchive" xml:space="preserve"><value>I-archive ang produktong ito?</value></data>
   <data name="GlobalProducts_StatusChanged" xml:space="preserve"><value>Na-update ang status ng produkto.</value></data>
+  <data name="Common_Description" xml:space="preserve"><value>Paglalarawan</value></data>
+  <data name="Common_Remove" xml:space="preserve"><value>Alisin</value></data>
+  <data name="GlobalTemplates_Title" xml:space="preserve"><value>Mga business template</value></data>
+  <data name="GlobalTemplates_Description" xml:space="preserve"><value>Mga curated na product pack para sa merchant onboarding. Hindi binabago ng composition ang umiiral na POS products.</value></data>
+  <data name="GlobalTemplates_Empty" xml:space="preserve"><value>Walang template na tumutugma sa filter.</value></data>
+  <data name="GlobalTemplates_SearchPlaceholder" xml:space="preserve"><value>Maghanap ng pangalan o slug</value></data>
+  <data name="GlobalTemplates_Create" xml:space="preserve"><value>Gumawa ng template</value></data>
+  <data name="GlobalTemplates_HideCreate" xml:space="preserve"><value>Itago ang create</value></data>
+  <data name="GlobalTemplates_CreateSection" xml:space="preserve"><value>Gumawa ng business template</value></data>
+  <data name="GlobalTemplates_CreateFailed" xml:space="preserve"><value>Nabigo ang paggawa ng template</value></data>
+  <data name="GlobalTemplates_Created" xml:space="preserve"><value>Nagawa ang template.</value></data>
+  <data name="GlobalTemplates_DetailTitle" xml:space="preserve"><value>Template builder</value></data>
+  <data name="GlobalTemplates_DetailDescription" xml:space="preserve"><value>I-edit ang metadata, composition, at publication lifecycle.</value></data>
+  <data name="GlobalTemplates_DetailLoading" xml:space="preserve"><value>Naglo-load ng template…</value></data>
+  <data name="GlobalTemplates_EditSection" xml:space="preserve"><value>Detalye ng template</value></data>
+  <data name="GlobalTemplates_SaveFailed" xml:space="preserve"><value>Nabigo ang pag-save ng template</value></data>
+  <data name="GlobalTemplates_Saved" xml:space="preserve"><value>Na-save ang template.</value></data>
+  <data name="GlobalTemplates_Slug" xml:space="preserve"><value>Slug</value></data>
+  <data name="GlobalTemplates_DefaultBatchSize" xml:space="preserve"><value>Default batch size</value></data>
+  <data name="GlobalTemplates_SelectionMode" xml:space="preserve"><value>Selection mode</value></data>
+  <data name="GlobalTemplates_ProductCount" xml:space="preserve"><value>Mga produkto</value></data>
+  <data name="GlobalTemplates_FirstBatchCount" xml:space="preserve"><value>Unang batch</value></data>
+  <data name="GlobalTemplates_PublishedAt" xml:space="preserve"><value>Published</value></data>
+  <data name="GlobalTemplates_Publish" xml:space="preserve"><value>I-publish</value></data>
+  <data name="GlobalTemplates_Unpublish" xml:space="preserve"><value>I-unpublish</value></data>
+  <data name="GlobalTemplates_Archive" xml:space="preserve"><value>I-archive</value></data>
+  <data name="GlobalTemplates_ConfirmPublish" xml:space="preserve"><value>I-publish ang template para sa merchant discovery?</value></data>
+  <data name="GlobalTemplates_ConfirmUnpublish" xml:space="preserve"><value>I-unpublish ang template? Hindi na ito makikita ng mga merchant.</value></data>
+  <data name="GlobalTemplates_ConfirmArchive" xml:space="preserve"><value>I-archive ang template? Hindi na ito mae-edit.</value></data>
+  <data name="GlobalTemplates_StatusChanged" xml:space="preserve"><value>Na-update ang status ng template.</value></data>
+  <data name="GlobalTemplates_CompositionSection" xml:space="preserve"><value>Composition</value></data>
+  <data name="GlobalTemplates_CompositionEmpty" xml:space="preserve"><value>Wala pang produkto. Mag-assign ng kahit isa bago mag-publish.</value></data>
+  <data name="GlobalTemplates_AssignProduct" xml:space="preserve"><value>Pumili ng global product</value></data>
+  <data name="GlobalTemplates_Assign" xml:space="preserve"><value>I-assign</value></data>
+  <data name="GlobalTemplates_Featured" xml:space="preserve"><value>Featured</value></data>
+  <data name="GlobalTemplates_FirstBatch" xml:space="preserve"><value>Unang batch</value></data>
+  <data name="GlobalTemplates_SortOrder" xml:space="preserve"><value>Order</value></data>
+  <data name="GlobalTemplates_ProductId" xml:space="preserve"><value>Produkto</value></data>
+  <data name="GlobalTemplates_ConfirmRemoveProduct" xml:space="preserve"><value>Alisin ang produktong ito mula sa template?</value></data>
+  <data name="GlobalTemplates_ProductAssigned" xml:space="preserve"><value>Na-assign ang produkto.</value></data>
+  <data name="GlobalTemplates_ProductRemoved" xml:space="preserve"><value>Inalis ang produkto.</value></data>
+  <data name="GlobalTemplates_PosIsolationNote" xml:space="preserve"><value>Ang pag-publish o pag-edit ng template ay hindi nagbabago ng mga produktong na-import na sa POS. Lokal na snapshot/ref lang ang tinatago ng POS.</value></data>
 </root>

@@ -43,6 +43,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<GlobalCategoryBusinessTypeRecord> GlobalCategoryBusinessTypes => Set<GlobalCategoryBusinessTypeRecord>();
     internal DbSet<GlobalProductRecord> GlobalProducts => Set<GlobalProductRecord>();
     internal DbSet<GlobalProductBusinessTypeRecord> GlobalProductBusinessTypes => Set<GlobalProductBusinessTypeRecord>();
+    internal DbSet<CatalogTemplateRecord> CatalogTemplates => Set<CatalogTemplateRecord>();
+    internal DbSet<CatalogTemplateProductRecord> CatalogTemplateProducts => Set<CatalogTemplateProductRecord>();
     internal DbSet<PlatformOrganizationRecord> Organizations => Set<PlatformOrganizationRecord>();
     internal DbSet<SubscriptionRecord> Subscriptions => Set<SubscriptionRecord>();
     internal DbSet<SaaSPaymentRecord> SaaSPayments => Set<SaaSPaymentRecord>();
@@ -1700,6 +1702,62 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.BusinessType).HasColumnName("business_type").HasMaxLength(64).IsRequired();
             entity.HasIndex(e => e.BusinessType).HasDatabaseName("ix_global_product_business_types_type");
+        });
+
+        modelBuilder.Entity<CatalogTemplateRecord>(entity =>
+        {
+            entity.ToTable("catalog_templates", CatalogSchemaName);
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Slug).HasColumnName("slug").HasMaxLength(120).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(2000);
+            entity.Property(e => e.IconReference).HasColumnName("icon_reference").HasMaxLength(512);
+            entity.Property(e => e.PrimaryBusinessType).HasColumnName("primary_business_type").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.DefaultBatchSize).HasColumnName("default_batch_size");
+            entity.Property(e => e.SelectionMode).HasColumnName("selection_mode").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.PublishedAtUtc).HasColumnName("published_at_utc");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => e.Slug).IsUnique().HasDatabaseName("ux_catalog_templates_slug");
+            entity.HasIndex(e => e.Status).HasDatabaseName("ix_catalog_templates_status");
+            entity.HasIndex(e => e.PrimaryBusinessType).HasDatabaseName("ix_catalog_templates_primary_business_type");
+
+            entity.HasMany(e => e.Products)
+                .WithOne()
+                .HasForeignKey(e => e.CatalogTemplateId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CatalogTemplateProductRecord>(entity =>
+        {
+            entity.ToTable("catalog_template_products", CatalogSchemaName);
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CatalogTemplateId).HasColumnName("catalog_template_id");
+            entity.Property(e => e.GlobalProductId).HasColumnName("global_product_id");
+            entity.Property(e => e.SortOrder).HasColumnName("sort_order");
+            entity.Property(e => e.IsFeatured).HasColumnName("is_featured");
+            entity.Property(e => e.IsFirstBatch).HasColumnName("is_first_batch");
+
+            entity.HasIndex(e => new { e.CatalogTemplateId, e.GlobalProductId })
+                .IsUnique()
+                .HasDatabaseName("ux_catalog_template_products_template_product");
+            entity.HasIndex(e => new { e.CatalogTemplateId, e.SortOrder })
+                .HasDatabaseName("ix_catalog_template_products_template_sort");
+            entity.HasIndex(e => e.GlobalProductId).HasDatabaseName("ix_catalog_template_products_product_id");
+
+            entity.HasOne<GlobalProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.GlobalProductId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

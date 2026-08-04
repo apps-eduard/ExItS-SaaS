@@ -80,6 +80,84 @@ public sealed record SetGlobalProductStatusRequest(
     string Status,
     DateTimeOffset? ExpectedUpdatedAtUtc = null);
 
+public sealed record CatalogTemplateProductDto(
+    Guid Id,
+    Guid GlobalProductId,
+    int SortOrder,
+    bool IsFeatured,
+    bool IsFirstBatch);
+
+public sealed record CatalogTemplateDto(
+    Guid Id,
+    string Name,
+    string Slug,
+    string? Description,
+    string? IconReference,
+    string PrimaryBusinessType,
+    string Status,
+    int DefaultBatchSize,
+    string SelectionMode,
+    DateTimeOffset? PublishedAtUtc,
+    int ProductCount,
+    int FirstBatchCount,
+    IReadOnlyList<CatalogTemplateProductDto> Products,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc);
+
+public sealed record CatalogTemplateSummaryDto(
+    Guid Id,
+    string Name,
+    string Slug,
+    string? Description,
+    string? IconReference,
+    string PrimaryBusinessType,
+    string Status,
+    int DefaultBatchSize,
+    string SelectionMode,
+    DateTimeOffset? PublishedAtUtc,
+    int ProductCount,
+    int FirstBatchCount,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc);
+
+public sealed record CreateCatalogTemplateRequest(
+    string Name,
+    string PrimaryBusinessType,
+    string? Slug = null,
+    string? Description = null,
+    string? IconReference = null,
+    int? DefaultBatchSize = null,
+    string? SelectionMode = null);
+
+public sealed record UpdateCatalogTemplateRequest(
+    string Name,
+    string PrimaryBusinessType,
+    string? Slug = null,
+    string? Description = null,
+    string? IconReference = null,
+    int? DefaultBatchSize = null,
+    string? SelectionMode = null,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record AssignCatalogTemplateProductRequest(
+    Guid GlobalProductId,
+    bool IsFeatured = false,
+    bool IsFirstBatch = false,
+    int? SortOrder = null,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record ReorderCatalogTemplateProductsRequest(
+    IReadOnlyList<Guid> OrderedGlobalProductIds,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record UpdateCatalogTemplateProductFlagsRequest(
+    bool? IsFeatured = null,
+    bool? IsFirstBatch = null,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record CatalogTemplateLifecycleRequest(
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
 internal static class GlobalCatalogDtoMaps
 {
     public static GlobalCategoryDto Map(GlobalCategory category) =>
@@ -111,4 +189,47 @@ internal static class GlobalCatalogDtoMaps
             product.BusinessTypes.Select(t => t.ToString()).ToList(),
             product.CreatedAtUtc,
             product.UpdatedAtUtc);
+
+    public static CatalogTemplateProductDto Map(CatalogTemplateProduct product) =>
+        new(
+            product.Id,
+            product.GlobalProductId.Value,
+            product.SortOrder,
+            product.IsFeatured,
+            product.IsFirstBatch);
+
+    public static CatalogTemplateDto Map(CatalogTemplate template) =>
+        new(
+            template.Id.Value,
+            template.Name,
+            template.Slug,
+            template.Description,
+            template.IconReference,
+            template.PrimaryBusinessType.ToString(),
+            template.Status.ToString(),
+            template.DefaultBatchSize,
+            template.SelectionMode.ToString(),
+            template.PublishedAtUtc,
+            template.ProductCount,
+            template.FirstBatchCount,
+            template.Products.Select(Map).ToList(),
+            template.CreatedAtUtc,
+            template.UpdatedAtUtc);
+
+    public static CatalogTemplateSummaryDto MapSummary(CatalogTemplate template) =>
+        new(
+            template.Id.Value,
+            template.Name,
+            template.Slug,
+            template.Description,
+            template.IconReference,
+            template.PrimaryBusinessType.ToString(),
+            template.Status.ToString(),
+            template.DefaultBatchSize,
+            template.SelectionMode.ToString(),
+            template.PublishedAtUtc,
+            template.ProductCount,
+            template.FirstBatchCount,
+            template.CreatedAtUtc,
+            template.UpdatedAtUtc);
 }

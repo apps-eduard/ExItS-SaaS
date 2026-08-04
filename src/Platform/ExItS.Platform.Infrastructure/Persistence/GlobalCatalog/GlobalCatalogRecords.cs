@@ -48,3 +48,32 @@ internal sealed class GlobalProductBusinessTypeRecord
     public Guid ProductId { get; set; }
     public string BusinessType { get; set; } = string.Empty;
 }
+
+internal sealed class CatalogTemplateRecord
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string? IconReference { get; set; }
+    public string PrimaryBusinessType { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public int DefaultBatchSize { get; set; }
+    public string SelectionMode { get; set; } = string.Empty;
+    public DateTimeOffset? PublishedAtUtc { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+    public uint Xmin { get; set; }
+
+    public List<CatalogTemplateProductRecord> Products { get; set; } = [];
+}
+
+internal sealed class CatalogTemplateProductRecord
+{
+    public Guid Id { get; set; }
+    public Guid CatalogTemplateId { get; set; }
+    public Guid GlobalProductId { get; set; }
+    public int SortOrder { get; set; }
+    public bool IsFeatured { get; set; }
+    public bool IsFirstBatch { get; set; }
+}

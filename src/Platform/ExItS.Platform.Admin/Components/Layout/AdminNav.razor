@@ -103,6 +103,9 @@
                 <MenuItem Key="global-products" RouterLink="/admin/global-catalog/products" Icon="shopping">
                     @L["Nav_GlobalProducts"]
                 </MenuItem>
+                <MenuItem Key="global-templates" RouterLink="/admin/global-catalog/templates" Icon="appstore-add">
+                    @L["Nav_GlobalTemplates"]
+                </MenuItem>
             </SubMenu>
         }
 
@@ -418,6 +421,7 @@
                 Shell.IsOrganizationShell ? ["org-settings"] : ["organizations"],
             var p when p.StartsWith("/admin/global-catalog/categories", StringComparison.Ordinal) => ["global-categories"],
             var p when p.StartsWith("/admin/global-catalog/products", StringComparison.Ordinal) => ["global-products"],
+            var p when p.StartsWith("/admin/global-catalog/templates", StringComparison.Ordinal) => ["global-templates"],
             var p when p.StartsWith("/admin/products", StringComparison.Ordinal) => ["products"],
             var p when p.StartsWith("/admin/plans", StringComparison.Ordinal) => ["plans"],
             var p when p.StartsWith("/admin/subscriptions", StringComparison.Ordinal) => ["subscriptions"],

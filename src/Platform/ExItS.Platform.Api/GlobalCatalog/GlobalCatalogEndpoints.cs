@@ -14,6 +14,7 @@ internal static class GlobalCatalogEndpoints
         var root = app.MapGroup("/api/v1/platform/global-catalog");
         MapCategoryEndpoints(root);
         MapProductEndpoints(root);
+        MapTemplateEndpoints(root);
         return app;
     }
 
@@ -324,6 +325,356 @@ internal static class GlobalCatalogEndpoints
                     nameof(GlobalProduct),
                     result.Value!.Id.ToString("D"),
                     summary: $"Changed global product status to {result.Value.Status}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+    }
+
+    private static void MapTemplateEndpoints(RouteGroupBuilder root)
+    {
+        var templates = root.MapGroup("/templates");
+
+        templates.MapGet("/", async (
+            CatalogTemplateQueryService queries,
+            PlatformAuthz authz,
+            CatalogTemplateStatus? status,
+            BusinessType? primaryBusinessType,
+            string? search,
+            int? page,
+            int? pageSize,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ViewGlobalCatalog,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(CatalogTemplate),
+                "list",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await queries
+                .ListAsync(status, primaryBusinessType, search, page, pageSize, ct)
+                .ConfigureAwait(false);
+            return Results.Ok(result);
+        });
+
+        templates.MapGet("/{id:guid}", async (
+            Guid id,
+            CatalogTemplateQueryService queries,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ViewGlobalCatalog,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(CatalogTemplate),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var template = await queries.GetByIdAsync(id, ct).ConfigureAwait(false);
+            return template is null
+                ? PlatformApiResults.Problem(
+                    ApplicationErrorCodes.CatalogTemplateNotFound,
+                    "Template was not found.",
+                    StatusCodes.Status404NotFound)
+                : Results.Ok(template);
+        });
+
+        templates.MapPost("/", async (
+            CreateCatalogTemplateRequest body,
+            CreateCatalogTemplate useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalogTemplates,
+                PlatformAuditActions.CatalogTemplateCreated,
+                nameof(CatalogTemplate),
+                body.Name,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(body, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogTemplateCreated,
+                    nameof(CatalogTemplate),
+                    result.Value!.Id.ToString("D"),
+                    summary: $"Created catalog template {result.Value.Name}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(
+                result,
+                t => Results.Created($"/api/v1/platform/global-catalog/templates/{t.Id}", t));
+        });
+
+        templates.MapPut("/{id:guid}", async (
+            Guid id,
+            UpdateCatalogTemplateRequest body,
+            UpdateCatalogTemplate useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalogTemplates,
+                PlatformAuditActions.CatalogTemplateUpdated,
+                nameof(CatalogTemplate),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(id, body, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogTemplateUpdated,
+                    nameof(CatalogTemplate),
+                    result.Value!.Id.ToString("D"),
+                    summary: $"Updated catalog template {result.Value.Name}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        templates.MapPost("/{id:guid}/publish", async (
+            Guid id,
+            CatalogTemplateLifecycleRequest? body,
+            PublishCatalogTemplate useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.PublishCatalogTemplates,
+                PlatformAuditActions.CatalogTemplatePublished,
+                nameof(CatalogTemplate),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(id, body, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogTemplatePublished,
+                    nameof(CatalogTemplate),
+                    result.Value!.Id.ToString("D"),
+                    summary: $"Published catalog template {result.Value.Name}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        templates.MapPost("/{id:guid}/unpublish", async (
+            Guid id,
+            CatalogTemplateLifecycleRequest? body,
+            UnpublishCatalogTemplate useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.PublishCatalogTemplates,
+                PlatformAuditActions.CatalogTemplateUnpublished,
+                nameof(CatalogTemplate),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(id, body, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogTemplateUnpublished,
+                    nameof(CatalogTemplate),
+                    result.Value!.Id.ToString("D"),
+                    summary: $"Unpublished catalog template {result.Value.Name}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        templates.MapPost("/{id:guid}/archive", async (
+            Guid id,
+            CatalogTemplateLifecycleRequest? body,
+            ArchiveCatalogTemplate useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.PublishCatalogTemplates,
+                PlatformAuditActions.CatalogTemplateArchived,
+                nameof(CatalogTemplate),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(id, body, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogTemplateArchived,
+                    nameof(CatalogTemplate),
+                    result.Value!.Id.ToString("D"),
+                    summary: $"Archived catalog template {result.Value.Name}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        templates.MapPost("/{id:guid}/products", async (
+            Guid id,
+            AssignCatalogTemplateProductRequest body,
+            AssignCatalogTemplateProduct useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalogTemplates,
+                PlatformAuditActions.CatalogTemplateCompositionChanged,
+                nameof(CatalogTemplate),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(id, body, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogTemplateCompositionChanged,
+                    nameof(CatalogTemplate),
+                    result.Value!.Id.ToString("D"),
+                    summary: $"Assigned product {body.GlobalProductId:D} to template.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        templates.MapPut("/{id:guid}/products/order", async (
+            Guid id,
+            ReorderCatalogTemplateProductsRequest body,
+            ReorderCatalogTemplateProducts useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalogTemplates,
+                PlatformAuditActions.CatalogTemplateCompositionChanged,
+                nameof(CatalogTemplate),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(id, body, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogTemplateCompositionChanged,
+                    nameof(CatalogTemplate),
+                    result.Value!.Id.ToString("D"),
+                    summary: "Reordered template products.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        templates.MapPatch("/{id:guid}/products/{productId:guid}", async (
+            Guid id,
+            Guid productId,
+            UpdateCatalogTemplateProductFlagsRequest body,
+            UpdateCatalogTemplateProductFlags useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalogTemplates,
+                PlatformAuditActions.CatalogTemplateCompositionChanged,
+                nameof(CatalogTemplate),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(id, productId, body, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogTemplateCompositionChanged,
+                    nameof(CatalogTemplate),
+                    result.Value!.Id.ToString("D"),
+                    summary: $"Updated flags for product {productId:D}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        templates.MapDelete("/{id:guid}/products/{productId:guid}", async (
+            Guid id,
+            Guid productId,
+            RemoveCatalogTemplateProduct useCase,
+            PlatformAuthz authz,
+            DateTimeOffset? expectedUpdatedAtUtc,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalogTemplates,
+                PlatformAuditActions.CatalogTemplateCompositionChanged,
+                nameof(CatalogTemplate),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(id, productId, expectedUpdatedAtUtc, ct)
+                .ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogTemplateCompositionChanged,
+                    nameof(CatalogTemplate),
+                    result.Value!.Id.ToString("D"),
+                    summary: $"Removed product {productId:D} from template.",
                     cancellationToken: ct).ConfigureAwait(false);
             }
 

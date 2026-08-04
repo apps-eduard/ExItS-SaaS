@@ -122,6 +122,12 @@ public static class PlatformAuditActions
     public const string GlobalProductCreated = "platform.global_catalog.product.created";
     public const string GlobalProductUpdated = "platform.global_catalog.product.updated";
     public const string GlobalProductStatusChanged = "platform.global_catalog.product.status_changed";
+    public const string CatalogTemplateCreated = "platform.global_catalog.template.created";
+    public const string CatalogTemplateUpdated = "platform.global_catalog.template.updated";
+    public const string CatalogTemplatePublished = "platform.global_catalog.template.published";
+    public const string CatalogTemplateUnpublished = "platform.global_catalog.template.unpublished";
+    public const string CatalogTemplateArchived = "platform.global_catalog.template.archived";
+    public const string CatalogTemplateCompositionChanged = "platform.global_catalog.template.composition_changed";
 
     public const string ProductAccessGranted = "platform.product_access.granted";
     public const string ProductAccessRevoked = "platform.product_access.revoked";

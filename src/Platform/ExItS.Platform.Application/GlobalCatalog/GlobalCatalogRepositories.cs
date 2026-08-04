@@ -53,3 +53,24 @@ public interface IGlobalProductRepository
     Task AddAsync(GlobalProduct product, CancellationToken cancellationToken = default);
     Task UpdateAsync(GlobalProduct product, CancellationToken cancellationToken = default);
 }
+
+public interface ICatalogTemplateRepository
+{
+    Task<CatalogTemplate?> GetByIdAsync(CatalogTemplateId id, CancellationToken cancellationToken = default);
+
+    Task<bool> ExistsWithSlugAsync(
+        string slug,
+        CatalogTemplateId? excludingId = null,
+        CancellationToken cancellationToken = default);
+
+    Task<(IReadOnlyList<CatalogTemplate> Items, int TotalCount)> ListAsync(
+        CatalogTemplateStatus? status,
+        BusinessType? primaryBusinessType,
+        string? search,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
+    Task AddAsync(CatalogTemplate template, CancellationToken cancellationToken = default);
+    Task UpdateAsync(CatalogTemplate template, CancellationToken cancellationToken = default);
+}

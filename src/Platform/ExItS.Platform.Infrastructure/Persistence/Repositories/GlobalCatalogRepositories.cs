@@ -240,3 +240,97 @@ internal sealed class GlobalProductRepository : IGlobalProductRepository
         GlobalCatalogEntityMapper.ApplyToRecord(product, record);
     }
 }
+
+internal sealed class CatalogTemplateRepository : ICatalogTemplateRepository
+{
+    private readonly PlatformDbContext _db;
+
+    public CatalogTemplateRepository(PlatformDbContext db) => _db = db;
+
+    public async Task<CatalogTemplate?> GetByIdAsync(
+        CatalogTemplateId id,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await _db.CatalogTemplates
+            .AsNoTracking()
+            .Include(t => t.Products)
+            .FirstOrDefaultAsync(t => t.Id == id.Value, cancellationToken)
+            .ConfigureAwait(false);
+
+        return record is null ? null : GlobalCatalogEntityMapper.ToDomain(record);
+    }
+
+    public async Task<bool> ExistsWithSlugAsync(
+        string slug,
+        CatalogTemplateId? excludingId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _db.CatalogTemplates.AsNoTracking().Where(t => t.Slug == slug);
+        if (excludingId is not null)
+        {
+            query = query.Where(t => t.Id != excludingId.Value);
+        }
+
+        return await query.AnyAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<(IReadOnlyList<CatalogTemplate> Items, int TotalCount)> ListAsync(
+        CatalogTemplateStatus? status,
+        BusinessType? primaryBusinessType,
+        string? search,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _db.CatalogTemplates.AsNoTracking().Include(t => t.Products).AsQueryable();
+
+        if (status is not null)
+        {
+            var statusText = status.Value.ToString();
+            query = query.Where(t => t.Status == statusText);
+        }
+
+        if (primaryBusinessType is not null)
+        {
+            var typeText = primaryBusinessType.Value.ToString();
+            query = query.Where(t => t.PrimaryBusinessType == typeText);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToLowerInvariant();
+            query = query.Where(t =>
+                t.Name.ToLower().Contains(term)
+                || t.Slug.ToLower().Contains(term));
+        }
+
+        query = query.OrderBy(t => t.Name).ThenBy(t => t.Id);
+
+        var totalCount = await query.CountAsync(cancellationToken).ConfigureAwait(false);
+        var records = await query.Skip(skip).Take(take).ToListAsync(cancellationToken).ConfigureAwait(false);
+        return (records.Select(GlobalCatalogEntityMapper.ToDomain).ToList(), totalCount);
+    }
+
+    public Task AddAsync(CatalogTemplate template, CancellationToken cancellationToken = default)
+    {
+        _db.CatalogTemplates.Add(GlobalCatalogEntityMapper.ToRecord(template));
+        return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(CatalogTemplate template, CancellationToken cancellationToken = default)
+    {
+        var record = await _db.CatalogTemplates
+            .Include(t => t.Products)
+            .FirstOrDefaultAsync(t => t.Id == template.Id.Value, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (record is null)
+        {
+            throw new PersistenceConflictException(
+                ApplicationErrorCodes.CatalogTemplateNotFound,
+                "Template was not found.");
+        }
+
+        GlobalCatalogEntityMapper.ApplyToRecord(template, record);
+    }
+}

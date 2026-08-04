@@ -14,6 +14,11 @@ public static class GlobalCatalogRules
     public const int ImageReferenceMaxLength = 512;
     public const int SearchTagMaxLength = 64;
     public const int SearchTagMaxCount = 32;
+    public const int SlugMinLength = 2;
+    public const int SlugMaxLength = 120;
+    public const int DefaultBatchSizeMin = 1;
+    public const int DefaultBatchSizeMax = 500;
+    public const int DefaultBatchSizeFallback = 50;
 
     public static string NormalizeName(string name)
     {
@@ -138,6 +143,87 @@ public static class GlobalCatalogRules
         }
 
         return set.ToList();
+    }
+
+    /// <summary>Lowercase kebab-case slug from name or explicit slug text.</summary>
+    public static string NormalizeSlug(string? slugOrName)
+    {
+        if (string.IsNullOrWhiteSpace(slugOrName))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCatalogTemplateSlug,
+                "Slug cannot be blank.");
+        }
+
+        var lowered = slugOrName.Trim().ToLowerInvariant();
+        var chars = new char[lowered.Length];
+        var len = 0;
+        var lastWasHyphen = false;
+        foreach (var c in lowered)
+        {
+            if (char.IsLetterOrDigit(c))
+            {
+                chars[len++] = c;
+                lastWasHyphen = false;
+            }
+            else if ((c is ' ' or '-' or '_') && len > 0 && !lastWasHyphen)
+            {
+                chars[len++] = '-';
+                lastWasHyphen = true;
+            }
+        }
+
+        while (len > 0 && chars[len - 1] == '-')
+        {
+            len--;
+        }
+
+        var slug = new string(chars, 0, len);
+        if (slug.Length is < SlugMinLength or > SlugMaxLength)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCatalogTemplateSlug,
+                $"Slug must be {SlugMinLength}–{SlugMaxLength} characters.");
+        }
+
+        return slug;
+    }
+
+    public static int NormalizeDefaultBatchSize(int? batchSize)
+    {
+        var value = batchSize ?? DefaultBatchSizeFallback;
+        if (value is < DefaultBatchSizeMin or > DefaultBatchSizeMax)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCatalogTemplateBatchSize,
+                $"DefaultBatchSize must be {DefaultBatchSizeMin}–{DefaultBatchSizeMax}.");
+        }
+
+        return value;
+    }
+
+    public static SelectionMode NormalizeSelectionMode(SelectionMode mode)
+    {
+        if (!Enum.IsDefined(mode))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCatalogTemplateSelectionMode,
+                $"Unrecognized selection mode '{mode}'.");
+        }
+
+        return mode;
+    }
+
+    public static BusinessType NormalizePrimaryBusinessType(BusinessType type)
+    {
+        if (!Enum.IsDefined(type))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGlobalCatalogBusinessType,
+                $"Unrecognized business type '{type}'.");
+        }
+
+        return type;
     }
 
     private static string? NormalizeOptionalCode(string? value, int maxLength, string errorCode)

@@ -126,4 +126,80 @@ internal static class GlobalCatalogEntityMapper
             });
         }
     }
+
+    public static CatalogTemplate ToDomain(CatalogTemplateRecord record) =>
+        CatalogTemplate.Rehydrate(
+            CatalogTemplateId.From(record.Id),
+            record.Name,
+            record.Slug,
+            record.Description,
+            record.IconReference,
+            Enum.Parse<BusinessType>(record.PrimaryBusinessType),
+            Enum.Parse<CatalogTemplateStatus>(record.Status),
+            record.DefaultBatchSize,
+            Enum.Parse<SelectionMode>(record.SelectionMode),
+            record.PublishedAtUtc,
+            (record.Products ?? []).Select(p => CatalogTemplateProduct.Rehydrate(
+                p.Id,
+                GlobalProductId.From(p.GlobalProductId),
+                p.SortOrder,
+                p.IsFeatured,
+                p.IsFirstBatch)),
+            record.CreatedAtUtc,
+            record.UpdatedAtUtc);
+
+    public static CatalogTemplateRecord ToRecord(CatalogTemplate template) =>
+        new()
+        {
+            Id = template.Id.Value,
+            Name = template.Name,
+            Slug = template.Slug,
+            Description = template.Description,
+            IconReference = template.IconReference,
+            PrimaryBusinessType = template.PrimaryBusinessType.ToString(),
+            Status = template.Status.ToString(),
+            DefaultBatchSize = template.DefaultBatchSize,
+            SelectionMode = template.SelectionMode.ToString(),
+            PublishedAtUtc = template.PublishedAtUtc,
+            CreatedAtUtc = template.CreatedAtUtc,
+            UpdatedAtUtc = template.UpdatedAtUtc,
+            Products = template.Products
+                .Select(p => new CatalogTemplateProductRecord
+                {
+                    Id = p.Id,
+                    CatalogTemplateId = template.Id.Value,
+                    GlobalProductId = p.GlobalProductId.Value,
+                    SortOrder = p.SortOrder,
+                    IsFeatured = p.IsFeatured,
+                    IsFirstBatch = p.IsFirstBatch
+                })
+                .ToList()
+        };
+
+    public static void ApplyToRecord(CatalogTemplate template, CatalogTemplateRecord record)
+    {
+        record.Name = template.Name;
+        record.Slug = template.Slug;
+        record.Description = template.Description;
+        record.IconReference = template.IconReference;
+        record.PrimaryBusinessType = template.PrimaryBusinessType.ToString();
+        record.Status = template.Status.ToString();
+        record.DefaultBatchSize = template.DefaultBatchSize;
+        record.SelectionMode = template.SelectionMode.ToString();
+        record.PublishedAtUtc = template.PublishedAtUtc;
+        record.UpdatedAtUtc = template.UpdatedAtUtc;
+        record.Products.Clear();
+        foreach (var product in template.Products)
+        {
+            record.Products.Add(new CatalogTemplateProductRecord
+            {
+                Id = product.Id,
+                CatalogTemplateId = template.Id.Value,
+                GlobalProductId = product.GlobalProductId.Value,
+                SortOrder = product.SortOrder,
+                IsFeatured = product.IsFeatured,
+                IsFirstBatch = product.IsFirstBatch
+            });
+        }
+    }
 }

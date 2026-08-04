@@ -204,4 +204,21 @@ public static class DomainErrorCodes
         "platform.global_catalog.business_type.invalid";
     public const string GlobalCatalogConcurrencyConflict =
         "platform.global_catalog.concurrency_conflict";
+
+    public const string InvalidCatalogTemplateId = "platform.global_catalog.template.id.invalid";
+    public const string InvalidCatalogTemplateSlug = "platform.global_catalog.template.slug.invalid";
+    public const string InvalidCatalogTemplateBatchSize =
+        "platform.global_catalog.template.batch_size.invalid";
+    public const string InvalidCatalogTemplateSelectionMode =
+        "platform.global_catalog.template.selection_mode.invalid";
+    public const string InvalidCatalogTemplateStatusTransition =
+        "platform.global_catalog.template.status.invalid_transition";
+    public const string CatalogTemplateProductDuplicate =
+        "platform.global_catalog.template.product.duplicate";
+    public const string CatalogTemplateProductNotFound =
+        "platform.global_catalog.template.product.not_found";
+    public const string CatalogTemplatePublishRequiresProducts =
+        "platform.global_catalog.template.publish.requires_products";
+    public const string CatalogTemplateCompositionOrderInvalid =
+        "platform.global_catalog.template.composition.order_invalid";
 }

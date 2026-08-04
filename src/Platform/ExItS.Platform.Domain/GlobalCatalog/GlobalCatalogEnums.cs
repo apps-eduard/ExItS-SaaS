@@ -37,3 +37,17 @@ public enum ProductUnit
     Liter = 8,
     Milliliter = 9
 }
+
+public enum CatalogTemplateStatus
+{
+    Draft = 0,
+    Published = 1,
+    Archived = 2
+}
+
+public enum SelectionMode
+{
+    Curated = 0,
+    Auto = 1,
+    Hybrid = 2
+}
