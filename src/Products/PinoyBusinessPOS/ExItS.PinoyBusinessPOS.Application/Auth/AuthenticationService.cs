@@ -329,6 +329,18 @@ public sealed class AuthenticationService(
             {
                 var orgId = active.OrganizationId ?? await preferences.GetSelectedOrganizationIdAsync(ct).ConfigureAwait(false);
                 var hasAccess = active.ProductAccessAllowed == true && orgId is not null;
+                var subscriptionStatus = active.SubscriptionStatus;
+                var enabledFeatureCodes = active.EnabledFeatureCodes;
+                // Mirror org-bind: Local Validation introspect often returns a partial grant
+                // snapshot; without merge, Inventory/Shifts stay denied until a fresh Owner login.
+                if (IsDevelopmentAuthenticationEnabled && hasAccess)
+                {
+                    subscriptionStatus = string.IsNullOrWhiteSpace(subscriptionStatus)
+                        ? PosSubscriptionStatuses.Active
+                        : subscriptionStatus;
+                    enabledFeatureCodes = MergeDevelopmentGrants(enabledFeatureCodes);
+                }
+
                 var restored = new AuthSession(
                     active.UserId ?? shell.UserId,
                     active.DisplayName ?? shell.DisplayName,
@@ -340,8 +352,8 @@ public sealed class AuthenticationService(
                     active.ExpiresAtUtc ?? shell.ExpiresAtUtc,
                     hasAccess,
                     active.ProductAccessReasonCode,
-                    active.SubscriptionStatus,
-                    active.EnabledFeatureCodes,
+                    subscriptionStatus,
+                    enabledFeatureCodes,
                     shell.AccessToken,
                     shell.PlatformSessionToken,
                     shell.AccountClass,
@@ -561,14 +573,24 @@ public sealed class AuthenticationService(
 
         await preferences.SetSelectedOrganizationIdAsync(organizationId, ct).ConfigureAwait(false);
 
+        var subscriptionStatus = accessResult.Data.SubscriptionStatus;
+        var enabledFeatureCodes = accessResult.Data.EnabledFeatureCodes;
+        if (IsDevelopmentAuthenticationEnabled)
+        {
+            subscriptionStatus = string.IsNullOrWhiteSpace(subscriptionStatus)
+                ? PosSubscriptionStatuses.Active
+                : subscriptionStatus;
+            enabledFeatureCodes = MergeDevelopmentGrants(enabledFeatureCodes);
+        }
+
         var updated = session with
         {
             OrganizationId = organizationId,
             OrganizationDisplayName = displayName,
             HasPosAccess = true,
             AccessReasonCode = accessResult.Data.ReasonCode ?? "allowed",
-            SubscriptionStatus = accessResult.Data.SubscriptionStatus,
-            EnabledFeatureCodes = accessResult.Data.EnabledFeatureCodes
+            SubscriptionStatus = subscriptionStatus,
+            EnabledFeatureCodes = enabledFeatureCodes
         };
 
         return await PersistOrganizationSelectionAsync(session, updated, organizationId, ct).ConfigureAwait(false);
@@ -899,6 +921,14 @@ public sealed class AuthenticationService(
                 reason = accessResult.Data.ReasonCode ?? "allowed";
                 subscriptionStatus = accessResult.Data.SubscriptionStatus;
                 enabledFeatureCodes = accessResult.Data.EnabledFeatureCodes;
+                if (IsDevelopmentAuthenticationEnabled)
+                {
+                    subscriptionStatus = string.IsNullOrWhiteSpace(subscriptionStatus)
+                        ? PosSubscriptionStatuses.Active
+                        : subscriptionStatus;
+                    enabledFeatureCodes = MergeDevelopmentGrants(enabledFeatureCodes);
+                }
+
                 var org = await accessClient.GetOrganizationAsync(orgId, ct).ConfigureAwait(false);
                 organizationName = org.IsSuccess && org.Data is not null ? org.Data.DisplayName : orgId.ToString("D");
             }
