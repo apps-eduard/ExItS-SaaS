@@ -4,7 +4,7 @@
 |---|---|
 | Status | **Code Complete** |
 | Phase | [Phase 19](../phases/phase-19-mobile-pos-operations-and-cashier-experience.md) — **Open** |
-| Commit | *(filled after push)* |
+| Commit | 01f7a87 |
 | Production-ready | **No** |
 | Device Verified | **No** |
 | Date | 2026-08-04 |
