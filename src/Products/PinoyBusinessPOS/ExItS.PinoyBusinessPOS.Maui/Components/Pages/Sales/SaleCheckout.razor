@@ -57,6 +57,11 @@ else
 
     <Section Title="@L["Sales_Checkout_LookupSection"]">
         <Stack Gap="3">
+            <Select Label="@L["Sales_Checkout_CategoryFilter"]"
+                    Value="@_categoryFilter"
+                    ValueChanged="OnCategoryFilterChanged"
+                    Options="@CatalogUiOptions.CheckoutCategoryFilters(L, _categories)"
+                    Disabled="@(blocked || _loadingBrowse)" />
             <TextInput Label="@L["Sales_Checkout_LookupLabel"]"
                        Value="@_lookupText"
                        ValueChanged="v => _lookupText = v"
@@ -88,6 +93,30 @@ else
                 </Stack>
             }
         </Stack>
+    </Section>
+
+    <Section Title="@L["Sales_Checkout_BrowseSection"]">
+        @if (_loadingBrowse)
+        {
+            <Spinner />
+        }
+        else if (_browseProducts.Count == 0)
+        {
+            <EmptyState IconName="inbox" Title="@L["Sales_Checkout_NoMatchTitle"]" Message="@L["Sales_Checkout_NoMatchMessage"]" />
+        }
+        else
+        {
+            <Stack Gap="2">
+                @foreach (var product in _browseProducts)
+                {
+                    <div class="pos-row" @onclick="() => OnBrowseProductTap(product)">
+                        <span class="pos-value-md">@product.Name</span>
+                        <span class="pos-muted">@SalesUiOptions.UnitOfMeasureLabel(L, product.UnitOfMeasure)</span>
+                        <MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" />
+                    </div>
+                }
+            </Stack>
+        }
     </Section>
 
     <Section Title="@L["Sales_Checkout_CartSection"]">
@@ -215,6 +244,52 @@ else
             }
             else
             {
+                <Section Title="@L["Sales_Checkout_OptionalCustomer"]">
+                    <Stack Gap="3">
+                        <TextInput Label="@L["Sales_Checkout_CustomerSearch"]"
+                                   Value="@_customerSearch"
+                                   ValueChanged="v => _customerSearch = v"
+                                   Hint="@L["Sales_Checkout_SelectCustomer"]"
+                                   Disabled="@(blocked || _searchingCustomers)" />
+                        <FormActions>
+                            <Button Variant="ButtonVariant.Secondary"
+                                    IsLoading="@_searchingCustomers"
+                                    Disabled="@blocked"
+                                    OnClick="SearchCustomersAsync">@L["Sales_Checkout_Search"]</Button>
+                            @if (_selectedCustomer is not null)
+                            {
+                                <Button Variant="ButtonVariant.Secondary"
+                                        Disabled="@blocked"
+                                        OnClick="ClearCustomerSelection">@L["Sales_Checkout_Remove"]</Button>
+                            }
+                        </FormActions>
+
+                        @if (_customerMatches.Count > 0)
+                        {
+                            <Stack Gap="2">
+                                @foreach (var match in _customerMatches)
+                                {
+                                    <div class="pos-row">
+                                        <span class="pos-value-md">@match.DisplayName</span>
+                                        <span class="pos-muted">@(string.IsNullOrWhiteSpace(match.MobileNumber) ? L["Customers_NoMobile"] : match.MobileNumber)</span>
+                                        <Button Variant="ButtonVariant.Secondary"
+                                                Disabled="@blocked"
+                                                OnClick="() => SelectCustomerAsync(match)">@L["Sales_Checkout_SelectCustomer"]</Button>
+                                    </div>
+                                }
+                            </Stack>
+                        }
+
+                        @if (_selectedCustomer is not null)
+                        {
+                            <div>
+                                <span class="pos-muted">@L["Sales_Checkout_SelectCustomer"]</span>
+                                <div class="pos-value-md">@_selectedCustomer.DisplayName</div>
+                            </div>
+                        }
+                    </Stack>
+                </Section>
+
                 <CurrencyInput Label="@L["Sales_Field_AmountTendered"]"
                                Value="@_amountTendered"
                                ValueChanged="v => _amountTendered = v"
@@ -254,12 +329,14 @@ else
     private bool _ready;
     private bool _isOffline;
     private bool _lookingUp;
+    private bool _loadingBrowse;
     private bool _searchingCustomers;
     private bool _saving;
     private bool _confirm;
     private bool _gcashConfirmed;
     private string? _lookupText;
     private string? _customerSearch;
+    private string? _categoryFilter;
     private string _paymentMethod = PosSaleOptions.CashPaymentMethod;
     private decimal? _amountTendered;
     private string? _gcashReference;
@@ -271,9 +348,13 @@ else
     private PosCustomerListItemDto? _selectedCustomer;
     private decimal? _selectedOutstanding;
     private IReadOnlyList<PosCatalogProductDto> _matches = Array.Empty<PosCatalogProductDto>();
+    private IReadOnlyList<PosCatalogProductDto> _browseProducts = Array.Empty<PosCatalogProductDto>();
+    private IReadOnlyList<PosProductCategoryDto> _categories = Array.Empty<PosProductCategoryDto>();
     private IReadOnlyList<PosCustomerListItemDto> _customerMatches = Array.Empty<PosCustomerListItemDto>();
     private PosCashierShiftDto? _openShift;
     private bool _shiftRequired = true;
+
+    private const int BrowsePageSize = 24;
 
     /// <summary>
     /// Stable per-attempt sale identifier. Re-sending the same identifier after a failed or unclear
@@ -327,6 +408,9 @@ else
             {
                 _openShift = shiftResult.Data;
             }
+
+            await LoadCategoriesAsync();
+            await LoadBrowseProductsAsync();
         }
     }
 
@@ -340,17 +424,20 @@ else
     private void OnPaymentMethodChanged(string? value)
     {
         var next = string.IsNullOrWhiteSpace(value) ? PosSaleOptions.CashPaymentMethod : value;
-        var leavingUtang = _paymentMethod == PosSaleOptions.UtangPaymentMethod
-            && next != PosSaleOptions.UtangPaymentMethod;
+        var wasUtang = _paymentMethod == PosSaleOptions.UtangPaymentMethod;
         _paymentMethod = next;
         _tenderError = null;
         _gcashError = null;
         _errorTitle = null;
         _errorMessage = null;
 
-        if (leavingUtang)
+        if (next == PosSaleOptions.ManualGCashPaymentMethod)
         {
             ClearCustomerSelection();
+        }
+        else if (wasUtang && next != PosSaleOptions.UtangPaymentMethod)
+        {
+            ClearUtangFields();
         }
 
         if (_paymentMethod == PosSaleOptions.ManualGCashPaymentMethod)
@@ -362,6 +449,10 @@ else
             _amountTendered = null;
             _gcashReference = null;
             _gcashConfirmed = false;
+            if (_selectedCustomer is not null)
+            {
+                _ = LoadSelectedCustomerOutstandingAsync();
+            }
         }
         else
         {
@@ -370,13 +461,78 @@ else
         }
     }
 
+    private void ClearUtangFields()
+    {
+        _selectedOutstanding = null;
+        _dueDate = null;
+    }
+
     private void ClearCustomerSelection()
     {
         _selectedCustomer = null;
-        _selectedOutstanding = null;
+        ClearUtangFields();
         _customerMatches = Array.Empty<PosCustomerListItemDto>();
         _customerSearch = null;
-        _dueDate = null;
+    }
+
+    private Guid? ParseCategoryFilter() =>
+        Guid.TryParse(_categoryFilter, out var parsedCategory) ? parsedCategory : null;
+
+    private async Task OnCategoryFilterChanged(string? value)
+    {
+        _categoryFilter = value;
+        await LoadBrowseProductsAsync();
+    }
+
+    private async Task LoadCategoriesAsync()
+    {
+        var result = await Catalog.ListCategoriesAsync(
+            status: PosCatalogOptions.ActiveStatus,
+            page: 1,
+            pageSize: 100);
+        _categories = result.IsSuccess && result.Data is not null
+            ? result.Data.Items
+            : Array.Empty<PosProductCategoryDto>();
+    }
+
+    private async Task LoadBrowseProductsAsync()
+    {
+        if (_isOffline)
+        {
+            _browseProducts = Array.Empty<PosCatalogProductDto>();
+            return;
+        }
+
+        _loadingBrowse = true;
+        StateHasChanged();
+
+        var result = await Catalog.ListProductsAsync(
+            search: null,
+            PosCatalogOptions.ActiveStatus,
+            ParseCategoryFilter(),
+            unitOfMeasure: null,
+            page: 1,
+            pageSize: BrowsePageSize);
+
+        _browseProducts = result.IsSuccess && result.Data is not null
+            ? result.Data.Items
+            : Array.Empty<PosCatalogProductDto>();
+
+        _loadingBrowse = false;
+    }
+
+    private void OnBrowseProductTap(PosCatalogProductDto product)
+    {
+        var isUtang = _paymentMethod == PosSaleOptions.UtangPaymentMethod;
+        var canCreateCash = Capabilities.IsAllowed(UtangCapability.CreateSale);
+        var canCreateUtang = canCreateCash && Capabilities.IsAllowed(UtangCapability.CreateCredit);
+        var blocked = _isOffline || (isUtang ? !canCreateUtang : !canCreateCash) || _openShift is null;
+        if (blocked)
+        {
+            return;
+        }
+
+        AddToCart(product);
     }
 
     private void AddToCart(PosCatalogProductDto product)
@@ -432,6 +588,8 @@ else
         var result = await Catalog.ListProductsAsync(
             _lookupText,
             PosCatalogOptions.ActiveStatus,
+            ParseCategoryFilter(),
+            unitOfMeasure: null,
             page: 1,
             pageSize: 20);
 
@@ -490,7 +648,25 @@ else
         _selectedOutstanding = null;
         StateHasChanged();
 
-        var summary = await Customers.GetCreditSummaryAsync(customer.CustomerId);
+        if (_paymentMethod != PosSaleOptions.UtangPaymentMethod)
+        {
+            return;
+        }
+
+        await LoadSelectedCustomerOutstandingAsync();
+    }
+
+    private async Task LoadSelectedCustomerOutstandingAsync()
+    {
+        if (_selectedCustomer is null)
+        {
+            return;
+        }
+
+        _selectedOutstanding = null;
+        StateHasChanged();
+
+        var summary = await Customers.GetCreditSummaryAsync(_selectedCustomer.CustomerId);
         if (summary.IsSuccess && summary.Data is not null)
         {
             _selectedOutstanding = summary.Data.OutstandingAmount;
@@ -602,7 +778,7 @@ else
             ClearCustomerSelection();
             _attemptSaleId = Guid.NewGuid();
             _attemptCreditEntryId = Guid.NewGuid();
-            Nav.NavigateTo($"/sales/{result.Data.SaleId:D}");
+            Nav.NavigateTo($"/sales/{result.Data.SaleId:D}/receipt");
             return;
         }
 

@@ -64,4 +64,16 @@ internal static class CatalogUiOptions
         options.AddRange(categories.Select(c => new SelectOption(c.CategoryId.ToString("D"), c.Name)));
         return options;
     }
+
+    public static IReadOnlyList<SelectOption> CheckoutCategoryFilters(
+        IStringLocalizer<PosResources> localizer,
+        IEnumerable<PosProductCategoryDto> categories)
+    {
+        var options = new List<SelectOption>
+        {
+            new(string.Empty, localizer["Sales_Checkout_AllCategories"].Value)
+        };
+        options.AddRange(categories.Select(c => new SelectOption(c.CategoryId.ToString("D"), c.Name)));
+        return options;
+    }
 }
