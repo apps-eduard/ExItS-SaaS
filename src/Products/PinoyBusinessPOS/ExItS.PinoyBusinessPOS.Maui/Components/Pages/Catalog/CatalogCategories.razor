@@ -203,12 +203,14 @@ else
 
     private async Task ReloadAsync(bool showLoading = true)
     {
+        // Do not await InvokeAsync(StateHasChanged) here — on MAUI Blazor that deadlocks
+        // when Reload runs from OnInitializedAsync (Refresh stays Loading forever).
         if (showLoading)
         {
             _loading = true;
             _errorTitle = null;
             _errorMessage = null;
-            await InvokeAsync(StateHasChanged);
+            StateHasChanged();
         }
 
         try
@@ -262,7 +264,6 @@ else
         finally
         {
             _loading = false;
-            await InvokeAsync(StateHasChanged);
         }
     }
 
@@ -303,7 +304,7 @@ else
         }
 
         _saving = true;
-        await InvokeAsync(StateHasChanged);
+        StateHasChanged();
 
         try
         {
@@ -321,7 +322,7 @@ else
                 UpsertLocalCategory(result.Data);
                 // Clear save spinner before refresh so the UI never looks stuck on Add.
                 _saving = false;
-                await InvokeAsync(StateHasChanged);
+                StateHasChanged();
                 // Quiet refresh: keep the new row visible (don't replace the list with a spinner).
                 await ReloadAsync(showLoading: false);
                 return;

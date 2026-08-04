@@ -200,12 +200,14 @@ else
 
     private async Task ReloadAsync(bool showLoading = true)
     {
+        // Do not await InvokeAsync(StateHasChanged) here — on MAUI Blazor that deadlocks
+        // when Reload runs from OnInitializedAsync (Refresh stays Loading forever).
         if (showLoading)
         {
             _loading = true;
             _errorTitle = null;
             _errorMessage = null;
-            await InvokeAsync(StateHasChanged);
+            StateHasChanged();
         }
 
         try
@@ -259,7 +261,6 @@ else
         finally
         {
             _loading = false;
-            await InvokeAsync(StateHasChanged);
         }
     }
 
@@ -300,7 +301,7 @@ else
         }
 
         _saving = true;
-        await InvokeAsync(StateHasChanged);
+        StateHasChanged();
 
         try
         {
@@ -317,7 +318,7 @@ else
                 CancelEdit();
                 UpsertLocalCategory(result.Data);
                 _saving = false;
-                await InvokeAsync(StateHasChanged);
+                StateHasChanged();
                 await ReloadAsync(showLoading: false);
                 return;
             }
