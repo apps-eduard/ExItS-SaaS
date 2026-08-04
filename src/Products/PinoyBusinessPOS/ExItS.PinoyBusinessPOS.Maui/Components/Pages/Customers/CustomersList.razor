@@ -32,10 +32,6 @@ else
         <Alert Tone="AlertTone.Info" Title="@L["SyncStatus_Offline"]" Message="@L["SyncStatus_OfflineDetail"]" />
     }
 
-    @if (!canCreate)
-    {
-        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
-    }
     <SearchToolbar SearchText="@_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Customers_SearchPlaceholder"]">
         <Actions>
             <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Customers_Refresh"]</Button>
@@ -131,6 +127,12 @@ else
         if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
         {
             Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewCustomersAndHistory))
+        {
+            Nav.NavigateTo("/home", replace: true);
             return;
         }
 

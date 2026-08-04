@@ -2,6 +2,7 @@
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
 @inject ICustomerCreditOfflineSyncService Sync
@@ -76,11 +77,23 @@ else
             return;
         }
 
+        if (!Capabilities.IsAllowed(UtangCapability.CreateCredit))
+        {
+            Nav.NavigateTo($"/customers/{CustomerId:D}", replace: true);
+            return;
+        }
+
         _ready = true;
     }
 
     private async Task SaveAsync()
     {
+        if (!Capabilities.IsAllowed(UtangCapability.CreateCredit))
+        {
+            Nav.NavigateTo($"/customers/{CustomerId:D}", replace: true);
+            return;
+        }
+
         _amountError = null;
         _remarksError = null;
         _errorTitle = null;
