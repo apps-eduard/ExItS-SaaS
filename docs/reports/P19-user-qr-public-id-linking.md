@@ -5,7 +5,7 @@
 | Status | **Code Complete** · Phone **Retest** |
 | Phase | [Phase 19](../phases/phase-19-mobile-pos-operations-and-cashier-experience.md) — **Open** |
 | Spec | [public-user-id-and-qr.md](../specs/identity/public-user-id-and-qr.md) |
-| Commits | `076512e` (Platform) · `7354fba` (MAUI) |
+| Commits | `076512e` (Platform) · `7354fba` (MAUI) · `9ef5a53` (docs) |
 | Production-ready | **No** |
 | Device Verified | **No** |
 | Date | 2026-08-04 |
