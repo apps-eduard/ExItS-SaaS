@@ -311,17 +311,17 @@
 ---
 
 ### Phase 19 — Mobile POS Operations and Cashier Experience Completion
-**Status: Open** — not Complete; not Device Verified
+**Status: Open** — WP01–WP07 Code Complete; WP08 Retest; not Complete; not Device Verified
 
-**Planned work packages:**
-- P19-WP01 Mobile Inventory UI
-- P19-WP02 Mobile Registers UI
-- P19-WP03 Mobile Shift Operations UI
-- P19-WP04 Mobile Cashier Selling Experience
-- P19-WP05 Mobile Sales and Receipt History UI
-- P19-WP06 Mobile Customers UI
-- P19-WP07 Mobile Reports, Authorization, Navigation, and UX Hardening
-- P19-WP08 End-to-End Validation and User Closeout Checklist
+**Work packages:**
+- P19-WP01 Mobile Inventory UI — **Code Complete**
+- P19-WP02 Mobile Registers UI — **Code Complete**
+- P19-WP03 Mobile Shift Operations UI — **Code Complete**
+- P19-WP04 Mobile Cashier Selling Experience — **Code Complete**
+- P19-WP05 Mobile Sales and Receipt History UI — **Code Complete**
+- P19-WP06 Mobile Customers UI — **Code Complete**
+- P19-WP07 Mobile Reports, Authorization, Navigation, and UX Hardening — **Code Complete**
+- P19-WP08 End-to-End Validation and User Closeout Checklist — **Retest** (awaiting phone confirmation)
 
 **Approach:** Reuse existing Phase 8–18 APIs/screens; complete MAUI ops UX. Remains Open until user phone confirmation after WP08.
 
@@ -359,10 +359,9 @@ Over the project you went through these UI approaches:
 
 ## Recommended Next Focus
 
-1. Execute **Phase 19** Mobile POS operations and Cashier experience WPs (start with P19-WP01 Inventory UI)
-2. Personally phone-validate Phase 19 after P19-WP08 (do not claim Device Verified early)
-3. Keep Phase 14 **In Progress**; do not start P14-WP03 unless explicitly authorized
-4. Continue Phase 16 validation residuals (P16-WP11/WP12) separately if needed
+1. Personally phone-validate Phase 19 using [P19-WP08 checklist](../reports/P19-WP08-end-to-end-validation-and-closeout.md) (do not claim Device Verified early)
+2. Keep Phase 14 **In Progress**; do not start P14-WP03 unless explicitly authorized
+3. Continue Phase 16 validation residuals (P16-WP11/WP12) separately if needed
 
 ---
 

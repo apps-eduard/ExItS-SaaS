@@ -37,14 +37,14 @@ Reuse existing Phase 8–18 Platform and POS APIs/screens wherever possible. Pre
 
 | WP | Focus | Documented status |
 |---|---|---|
-| P19-WP01 | Mobile Inventory UI | **Code Complete** | [report](../reports/P19-WP01-mobile-inventory-ui.md) |
-| P19-WP02 | Mobile Registers UI | **Open** |
-| P19-WP03 | Mobile Shift Operations UI | **Open** |
-| P19-WP04 | Mobile Cashier Selling Experience | **Open** |
-| P19-WP05 | Mobile Sales and Receipt History UI | **Open** |
-| P19-WP06 | Mobile Customers UI | **Open** |
-| P19-WP07 | Mobile Reports, Authorization, Navigation, and UX Hardening | **Open** |
-| P19-WP08 | End-to-End Validation and User Closeout Checklist | **Open** |
+| [P19-WP01](../reports/P19-WP01-mobile-inventory-ui.md) | Mobile Inventory UI | **Code Complete** |
+| [P19-WP02](../reports/P19-WP02-mobile-registers-ui.md) | Mobile Registers UI | **Code Complete** |
+| [P19-WP03](../reports/P19-WP03-mobile-shift-operations-ui.md) | Mobile Shift Operations UI | **Code Complete** |
+| [P19-WP04](../reports/P19-WP04-mobile-cashier-selling-experience.md) | Mobile Cashier Selling Experience | **Code Complete** |
+| [P19-WP05](../reports/P19-WP05-mobile-sales-and-receipt-history-ui.md) | Mobile Sales and Receipt History UI | **Code Complete** |
+| [P19-WP06](../reports/P19-WP06-mobile-customers-ui.md) | Mobile Customers UI | **Code Complete** |
+| [P19-WP07](../reports/P19-WP07-mobile-reports-authorization-navigation-and-ux-hardening.md) | Mobile Reports, Authorization, Navigation, and UX Hardening | **Code Complete** |
+| [P19-WP08](../reports/P19-WP08-end-to-end-validation-and-closeout.md) | End-to-End Validation and User Closeout Checklist | **Retest** (awaiting phone confirmation) |
 
 ## Scope notes
 

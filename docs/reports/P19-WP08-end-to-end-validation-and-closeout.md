@@ -1,0 +1,54 @@
+# P19-WP08 — End-to-End Validation and User Closeout Checklist
+
+| Field | Value |
+|---|---|
+| Status | **Retest** (awaiting user phone confirmation) |
+| Phase | [Phase 19](../phases/phase-19-mobile-pos-operations-and-cashier-experience.md) — **Open** |
+| Commit | _(filled after commit)_ |
+| Production-ready | **No** |
+| Device Verified | **No** |
+| Date | 2026-08-04 |
+
+## 1. Objective
+
+Provide the end-to-end Mobile POS ops validation checklist for physical-phone confirmation. Phase 19 stays **Open** until the user explicitly confirms phone validation.
+
+## 2. Implementation status entering WP08
+
+| WP | Status |
+|---|---|
+| P19-WP01 Inventory | Code Complete |
+| P19-WP02 Registers | Code Complete |
+| P19-WP03 Shifts | Code Complete |
+| P19-WP04 Cashier selling | Code Complete |
+| P19-WP05 Sales/receipt | Code Complete |
+| P19-WP06 Customers | Code Complete |
+| P19-WP07 Reports/nav/UX | Code Complete |
+
+## 3. User phone checklist (Retest)
+
+- [ ] Owner/Manager/Cashier Quick Login → correct home (final retest carry-forward from Phase 18)
+- [ ] Products / Categories still healthy (Phase 18 phone-validated baseline)
+- [ ] Inventory list/low-stock/detail; adjust only with ManageInventory
+- [ ] Registers list + Main Register; Cashier cannot administer without ManageRegisters
+- [ ] Open shift → sell → close shift with variance
+- [ ] Cashier sell: search/category/tile → cart → cash tender/change → receipt → next sale
+- [ ] Sales history + receipt reopen
+- [ ] Customers list for ViewCustomersAndHistory roles; credit create gated
+- [ ] Reports hub shows only allowed report kinds for Cashier vs Owner/Manager
+- [ ] MoreHub hides unauthorized modules
+
+## 4. Explicit non-claims
+
+- **Not Device Verified**
+- **Not Complete** for Phase 19
+- Production readiness **unchanged** / **not production-ready**
+- Do **not** start P14-WP03 under this phase
+
+## 5. PhysicalDevice / Tailscale
+
+Preserve existing PhysicalDevice Local Validation Tailscale APK process for phone retest. Untracked `tools/p18-*.mjs` remain local.
+
+## 6. Status
+
+**Retest.** Phase 19 remains **Open** until explicit user phone confirmation.
