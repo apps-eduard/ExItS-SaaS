@@ -1,0 +1,158 @@
+@page "/sales/{SaleId:guid}/receipt"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosSaleClient Sales
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (_loading)
+{
+    <Page><Spinner /><span>@L["Sales_Loading"]</span></Page>
+}
+else if (_sale is null)
+{
+    <Page>
+        <ErrorState Title="@(_errorTitle ?? L["Sales_NotFoundTitle"])"
+                    Message="@(_errorMessage ?? L["Sales_NotFoundMessage"])"
+                    RetryLabel="@L["Api_Retry"]"
+                    OnRetry="LoadAsync" />
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Sales_BackToList"]</Button>
+    </Page>
+}
+else
+{
+    var sale = _sale;
+<Page>
+    <PageHeader Title="@L["Sales_DetailSubtitle"]" Subtitle="@sale.SaleNumber">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Sales_DetailSubtitle"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick="GoNextSale">@L["Sales_New"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_isOffline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Sales_OfflineTitle"]" Message="@L["Sales_OfflineMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Sales_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    <Section Title="@L["Sales_Field_ReceiptHeader"]">
+        <Stack Gap="2">
+            @if (!string.IsNullOrWhiteSpace(sale.StoreDisplayName))
+            {
+                <div class="pos-value-md">@sale.StoreDisplayName</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(sale.ReceiptHeader))
+            {
+                <div class="pos-muted pos-wrap">@sale.ReceiptHeader</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(sale.BusinessAddress))
+            {
+                <div class="pos-muted pos-wrap">@sale.BusinessAddress</div>
+            }
+            <div>@sale.RecordedAtUtc.ToLocalTime().ToString("g")</div>
+            <div>@SalesUiOptions.PaymentMethodLabel(L, sale.PaymentMethod)</div>
+        </Stack>
+    </Section>
+
+    <Section Title="@L["Sales_LinesSection"]">
+        <Stack Gap="2">
+            @foreach (var line in sale.Lines.OrderBy(l => l.LineNumber))
+            {
+                <div>
+                    <strong>@line.Name</strong>
+                    <div class="pos-muted">@line.Quantity.ToString("0.###") × @line.UnitPrice.ToString("N2") = @line.LineTotal.ToString("N2")</div>
+                </div>
+            }
+        </Stack>
+    </Section>
+
+    <Section Title="@L["Sales_DetailSection"]">
+        <Stack Gap="2">
+            <div>@L["Sales_Field_Subtotal"]: <strong>@sale.Subtotal.ToString("N2")</strong></div>
+            <div>@L["Sales_Col_Total"]: <strong>@sale.Total.ToString("N2")</strong></div>
+            @if (sale.AmountTendered is decimal tendered)
+            {
+                <div>@L["Sales_Field_AmountTendered"]: <strong>@tendered.ToString("N2")</strong></div>
+            }
+            @if (sale.ChangeAmount is decimal change)
+            {
+                <div>@L["Sales_Field_ChangeAmount"]: <strong>@change.ToString("N2")</strong></div>
+            }
+            @if (!string.IsNullOrWhiteSpace(sale.ReceiptFooter))
+            {
+                <div class="pos-muted pos-wrap">@sale.ReceiptFooter</div>
+            }
+        </Stack>
+    </Section>
+
+    <FormActions>
+        <Button Variant="ButtonVariant.Primary" OnClick="GoNextSale">@L["Sales_New"]</Button>
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Sales_BackToList"]</Button>
+    </FormActions>
+</Page>
+}
+
+@code {
+    [Parameter] public Guid SaleId { get; set; }
+
+    private bool _ready;
+    private bool _loading;
+    private bool _isOffline;
+    private PosSaleDto? _sale;
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ViewSales))
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _sale = null;
+            _loading = false;
+            return;
+        }
+
+        var result = await Sales.GetAsync(SaleId);
+        _loading = false;
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _sale = result.Data;
+            return;
+        }
+
+        _sale = null;
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _errorTitle = described.Title;
+        _errorMessage = result.Error?.Detail ?? described.Message;
+    }
+
+    private void GoDetail() => Nav.NavigateTo($"/sales/{SaleId:D}");
+    private void GoList() => Nav.NavigateTo("/sales");
+    private void GoNextSale() => Nav.NavigateTo("/sales/new");
+}

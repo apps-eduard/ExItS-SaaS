@@ -40,6 +40,9 @@ else
         && Capabilities.IsAllowed(UtangCapability.ViewReturns)
         && isCompleted
         && !_isOffline;
+    var canReceipt = isCompleted
+        && (Capabilities.IsAllowed(UtangCapability.ViewGenerateReceipt)
+            || Capabilities.IsAllowed(UtangCapability.ViewSales));
 <Page>
     <PageHeader Title="@sale.SaleNumber" Subtitle="@L["Sales_DetailSubtitle"]">
         <Actions>
@@ -232,6 +235,10 @@ else
     @if (isCompleted)
     {
         <FormActions>
+            @if (canReceipt)
+            {
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoReceipt">@L["Receipt_Open"]</Button>
+            }
             @if (canReturn)
             {
                 <Button Variant="ButtonVariant.Primary" OnClick="GoReturn">@L["Returns_StartReturn"]</Button>
@@ -353,4 +360,6 @@ else
     private void GoList() => Nav.NavigateTo("/sales");
 
     private void GoReturn() => Nav.NavigateTo($"/sales/{SaleId:D}/return");
+
+    private void GoReceipt() => Nav.NavigateTo($"/sales/{SaleId:D}/receipt");
 }
