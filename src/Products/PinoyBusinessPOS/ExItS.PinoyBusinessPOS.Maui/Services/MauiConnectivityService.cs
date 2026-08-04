@@ -20,24 +20,39 @@ public sealed class MauiConnectivityService : IConnectivityService, IDisposable
 
     public Task<bool> IsConnectedAsync(CancellationToken ct = default)
     {
-        // Emulator / Local Validation often reports ConstrainedInternet or Local rather than
-        // Internet even when 10.0.2.2 / adb-reverse loopback is reachable. Treat those as
-        // connected so ApiClient does not short-circuit to Offline before attempting the call.
-        var access = Connectivity.Current.NetworkAccess;
-        var connected = access is NetworkAccess.Internet
-            or NetworkAccess.ConstrainedInternet
-            or NetworkAccess.Local;
-        return Task.FromResult(connected);
+        return Task.FromResult(IsUsablyConnected(Connectivity.Current.NetworkAccess));
     }
 
     private void OnPlatformConnectivityChanged(object? sender, ConnectivityChangedEventArgs e)
     {
-        var status = e.NetworkAccess is NetworkAccess.Internet
-            or NetworkAccess.ConstrainedInternet
-            or NetworkAccess.Local
+        var status = IsUsablyConnected(e.NetworkAccess)
             ? ConnectivityStatus.Online
             : ConnectivityStatus.Offline;
         ConnectivityChanged?.Invoke(this, status);
+    }
+
+    /// <summary>
+    /// Emulator Local Validation often reports <see cref="NetworkAccess.None"/> even when
+    /// <c>adb reverse</c> makes <c>127.0.0.1:8091/8092</c> reachable. Short-circuiting to
+    /// Offline then blocks every catalog/ops call while the host APIs are healthy.
+    /// </summary>
+    private static bool IsUsablyConnected(NetworkAccess access)
+    {
+        if (access is NetworkAccess.Internet
+            or NetworkAccess.ConstrainedInternet
+            or NetworkAccess.Local
+            or NetworkAccess.Unknown)
+        {
+            return true;
+        }
+
+#if DEBUG
+        // Debug APKs target Local Validation (emulator reverse or PhysicalDevice Tailscale).
+        // Prefer attempting the HTTP call over trusting Android's coarse NetworkAccess=None.
+        return access is NetworkAccess.None;
+#else
+        return false;
+#endif
     }
 
     public void Dispose()
