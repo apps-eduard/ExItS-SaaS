@@ -5,6 +5,7 @@
 | Status | **Code Complete** |
 | Phase | [Phase 20](../phases/phase-20-global-product-catalog-and-business-template-onboarding.md) — **Open** |
 | Specs | [product-catalog/](../specs/product-catalog/) |
+| Commit | `ad93c19` |
 | Date | 2026-08-05 |
 | Device Verified | **No** |
 | Production Ready | **No** |
