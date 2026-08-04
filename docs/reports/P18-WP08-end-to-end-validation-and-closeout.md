@@ -5,7 +5,7 @@
 | Status | **In Progress** |
 | Phase | [Phase 18](../phases/phase-18-mobile-personal-organization-and-pos-experience.md) — **Open** |
 | Implementation commit | `4b8b7270417d0f9e612855ed746d7fd80819adee` |
-| Validation-fix commit | Recorded in §14 after push (this closeout remains open) |
+| Validation-fix commit | `3e4314cc35a4428cdaf258df54ed005cbd7080c0` |
 | Production-ready | **No** |
 | User mobile validation | **Pending User Validation** — Phase 18 must not be marked Complete until the user explicitly confirms |
 | Date | 2026-08-04 |
@@ -131,7 +131,7 @@ Multi-branch; gateway payments; split tender; advanced analytics; custom roles; 
 | Item | Value |
 |---|---|
 | Implementation commit | `4b8b727` |
-| Validation-fix commit | *Filled after push* |
+| Validation-fix commit | `3e4314cc35a4428cdaf258df54ed005cbd7080c0` |
 | Phase 18 Complete closeout commit | **Not created** — blocked until user confirmation |
 
 ### Remaining user retest items (after this fix commit)
