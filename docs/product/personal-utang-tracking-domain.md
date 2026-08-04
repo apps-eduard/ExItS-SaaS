@@ -428,6 +428,7 @@ Personal Utang participation must never grant a POS role.
 - no cross-user debt visibility
 - no cross-organization debt visibility
 - invitations require explicit acceptance
+- ExItS public ID / QR may be used to find a person, but scanning never silently creates a contact, debt link, or acceptance — confirmation + existing invitation rules still apply ([public-user-id-and-qr](../specs/identity/public-user-id-and-qr.md))
 - contact matching must not silently reveal account existence
 - reminders require rate limiting
 - block/report controls should be supported

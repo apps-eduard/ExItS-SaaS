@@ -45,6 +45,8 @@ Cross-class calls are denied before domain execution.
 
 A session must never silently change Account Class.
 
+**Public identity resolve:** Authenticated sessions (Personal or Organization) may call `GET /api/v1/me/public-identity` and `POST /api/v1/users/resolve-public-id`. Resolve returns a minimal DTO only. Success does **not** grant membership, POS role, or Utang relationship — callers must use confirmation + existing invitation/create flows. Spec: [public-user-id-and-qr](../specs/identity/public-user-id-and-qr.md).
+
 ---
 
 ## 3. Platform roles

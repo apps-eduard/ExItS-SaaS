@@ -137,11 +137,14 @@ UserIdentity
 - DisplayName
 - Email
 - Phone
+- PublicUserId (immutable ExItS ID, e.g. EX-4827-1936)
 - VerificationStatus
 - SecurityStatus
 ```
 
 The User Identity is not itself a business, organization, or Platform role.
+
+**Public ExItS ID / QR:** Platform owns an immutable public identifier separate from UUID, email, phone, and username. QR payloads use only `exits://user/v1/{PublicUserId}`. Exact-match resolve is authorized and rate-limited; scanning never auto-creates memberships, customers, or roles. See [public-user-id-and-qr](../specs/identity/public-user-id-and-qr.md).
 
 ## 3.2 Account Classes
 

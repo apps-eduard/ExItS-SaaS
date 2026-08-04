@@ -52,7 +52,8 @@ See [P18-personal-mvp-mobile-ui-completion](P18-personal-mvp-mobile-ui-completio
 
 - [ ] Bottom tabs: Home / People / I Lent / I Borrowed / More with active highlight
 - [ ] Home = summary totals + recent activity only (no primary feature buttons)
-- [ ] More hosts Utang invitations, Profile, Settings, Explore POS, Sign out
+- [ ] More hosts My QR, Utang invitations, Profile, Settings, Explore POS, Sign out
+- [ ] My QR / ExItS ID resolve flows (People, Customers, Sale picker, Staff invite) — see [P19-user-qr-public-id-linking](P19-user-qr-public-id-linking.md); **Retest**
 - [ ] Explore Pinoy Business POS loads Platform catalog plans; Select starts explicit onboarding
 - [ ] Organization is **not** created until business details are confirmed
 - [ ] People / I Lent / I Borrowed empty → create → detail flows

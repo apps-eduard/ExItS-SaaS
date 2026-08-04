@@ -41,6 +41,8 @@ Platform User
 
 **Invariant:** Platform product access ≠ product operational permission (ADR-011; Product Foundation).
 
+**Public ExItS ID:** Each Platform User may display a public `EX-####-####` identifier and QR (`exits://user/v1/…`). It is safe to share, immutable after assignment, and resolved only via exact-match Platform APIs. It does not replace authentication and must never encode tokens or PII. Spec: [public-user-id-and-qr](../specs/identity/public-user-id-and-qr.md).
+
 ---
 
 ## 3. Current state (evidence — not production auth)

@@ -46,6 +46,7 @@
 - [Security](engineering/security.md)
 - [Authentication architecture](engineering/authentication-architecture.md)
 - [Authentication threat model](engineering/authentication-threat-model.md)
+- [Public User ID and QR](specs/identity/public-user-id-and-qr.md)
 - [Production deployment architecture](engineering/production-deployment-architecture.md)
 - [Production readiness audit](engineering/production-readiness-audit.md)
 - [Authorization](engineering/authorization-matrix.md)

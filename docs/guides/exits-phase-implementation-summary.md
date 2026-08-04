@@ -325,6 +325,7 @@
 - P19-WP06 Mobile Customers UI — **Code Complete**
 - P19-WP07 Mobile Reports, Authorization, Navigation, and UX Hardening — **Code Complete**
 - P19-WP08 End-to-End Validation and User Closeout Checklist — **Retest** (awaiting phone confirmation; includes Personal MVP phone scenarios)
+- Public User QR / ExItS ID linking — **Code Complete** · phone **Retest** ([spec](../specs/identity/public-user-id-and-qr.md), [report](../reports/P19-user-qr-public-id-linking.md))
 
 **Approach:** Reuse existing Phase 8–18 APIs/screens; complete MAUI ops UX. Remains Open until user phone confirmation after WP08.
 

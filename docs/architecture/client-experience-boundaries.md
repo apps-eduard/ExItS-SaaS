@@ -509,7 +509,7 @@ Mobile Application
 │   ├── People
 │   ├── I Lent
 │   ├── I Borrowed
-│   └── More (invitations, profile, settings, Explore POS, sign out)
+│   └── More (My QR, invitations, profile, settings, Explore POS, sign out)
 │
 ├── Explore / Confirm business (AuthShell; org created only on confirm)
 │
