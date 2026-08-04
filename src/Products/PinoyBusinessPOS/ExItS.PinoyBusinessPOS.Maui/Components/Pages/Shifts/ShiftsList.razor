@@ -3,6 +3,7 @@
 @inject NavigationGate Gate
 @inject IPosCashierShiftClient Shifts
 @inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
@@ -25,12 +26,50 @@ else
         <Alert Tone="AlertTone.Warning" Title="@L["Shifts_OfflineTitle"]" Message="@L["Shifts_OfflineMessage"]" />
     }
 
+    @if (_current is not null)
+    {
+        <Section Title="@L["Shifts_CurrentSection"]">
+            <Stack Gap="2">
+                <div class="pos-value-md">@_current.ShiftNumber</div>
+                <div class="pos-muted">@_current.Status · @(string.IsNullOrWhiteSpace(_current.RegisterName) ? (_current.RegisterCode ?? "—") : _current.RegisterName)</div>
+                <FormActions>
+                    <Button Variant="ButtonVariant.Primary" OnClick="GoCurrent">@L["Shifts_OpenCurrent"]</Button>
+                </FormActions>
+            </Stack>
+        </Section>
+    }
+
+    <SearchToolbar SearchText="@_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Shifts_SearchPlaceholder"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Shifts_Refresh"]</Button>
+        </Actions>
+    </SearchToolbar>
+
+    <Section Title="@L["Shifts_FiltersTitle"]">
+        <Select Label="@L["Shifts_Filter_Status"]"
+                Value="@_statusFilter"
+                ValueChanged="OnStatusFilterChanged"
+                Options="@ShiftStatusFilters" />
+    </Section>
+
     <ResponsiveDataList TItem="PosCashierShiftDto"
                         Items="@_items"
+                        Columns="@Columns"
+                        CellTemplate="@CellTemplate"
                         IsLoading="@_loading"
+                        LoadingLabel="@L["Shifts_Loading"]"
                         EmptyTitle="@L["Shifts_EmptyTitle"]"
                         EmptyMessage="@L["Shifts_EmptyMessage"]"
+                        ErrorTitle="@_errorTitle"
+                        ErrorMessage="@_errorMessage"
+                        RetryLabel="@L["Api_Retry"]"
+                        OnRetry="ReloadAsync"
                         AriaLabel="@L["Shifts_Title"]" />
+
+    @if (!_loading && _totalCount > 0)
+    {
+        <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
+    }
 </Page>
 }
 
@@ -38,7 +77,56 @@ else
     private bool _ready;
     private bool _loading;
     private bool _isOffline;
+    private string? _search;
+    private string? _statusFilter;
+    private int _page = 1;
+    private const int _pageSize = 20;
+    private int _totalCount;
+    private PosCashierShiftDto? _current;
     private IReadOnlyList<PosCashierShiftDto> _items = Array.Empty<PosCashierShiftDto>();
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    private IReadOnlyList<SelectOption> ShiftStatusFilters =>
+    [
+        new(string.Empty, L["Shifts_Filter_All"]),
+        new("Open", L["Shifts_Status_Open"]),
+        new("Closed", L["Shifts_Status_Closed"]),
+        new("Cancelled", L["Shifts_Status_Cancelled"]),
+    ];
+
+    private IReadOnlyList<DataColumnDefinition> Columns =>
+    [
+        new("number", L["Shifts_Col_Number"], Primary: true, Width: "28%"),
+        new("status", L["Shifts_Status"], Width: "18%"),
+        new("register", L["Shifts_RegisterLabel"], Width: "28%"),
+        new("opened", L["Shifts_Col_Opened"], Width: "26%"),
+    ];
+
+    private RenderFragment<(PosCashierShiftDto Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
+    {
+        switch (context.Column.Key)
+        {
+            case "number":
+                builder.OpenElement(0, "a");
+                builder.AddAttribute(1, "class", "pos-link");
+                builder.AddAttribute(2, "href", $"/shifts/{context.Item.ShiftId:D}");
+                builder.AddContent(3, context.Item.ShiftNumber);
+                builder.CloseElement();
+                break;
+            case "status":
+                builder.AddContent(0, context.Item.Status);
+                break;
+            case "register":
+                builder.AddContent(0, string.IsNullOrWhiteSpace(context.Item.RegisterName)
+                    ? (context.Item.RegisterCode ?? "—")
+                    : $"{context.Item.RegisterCode} — {context.Item.RegisterName}");
+                break;
+            case "opened":
+                builder.AddContent(0, context.Item.OpenedAtUtc.ToLocalTime().ToString("g"));
+                break;
+        }
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -61,20 +149,71 @@ else
 
     private async Task ReloadAsync()
     {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        _isOffline = !await Connectivity.IsConnectedAsync();
         if (_isOffline)
         {
+            _items = Array.Empty<PosCashierShiftDto>();
+            _totalCount = 0;
+            _current = null;
+            _loading = false;
             return;
         }
 
-        _loading = true;
-        var result = await Shifts.ListAsync();
+        var current = await Shifts.GetCurrentAsync();
+        if (current.IsSuccess
+            && current.Data is not null
+            && string.Equals(current.Data.Status, "Open", StringComparison.OrdinalIgnoreCase))
+        {
+            _current = current.Data;
+        }
+        else
+        {
+            _current = null;
+        }
+
+        var result = await Shifts.ListAsync(
+            status: string.IsNullOrWhiteSpace(_statusFilter) ? null : _statusFilter,
+            shiftNumber: string.IsNullOrWhiteSpace(_search) ? null : _search.Trim(),
+            page: _page,
+            pageSize: _pageSize);
+        _loading = false;
         if (result.IsSuccess && result.Data is not null)
         {
             _items = result.Data.Items;
+            _totalCount = result.Data.TotalCount;
+            return;
         }
 
-        _loading = false;
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _errorTitle = described.Title;
+        _errorMessage = result.Error?.Detail ?? described.Message;
+        _items = Array.Empty<PosCashierShiftDto>();
+        _totalCount = 0;
+    }
+
+    private async Task OnSearchChanged(string? value)
+    {
+        _search = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnStatusFilterChanged(string? value)
+    {
+        _statusFilter = value;
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _page = page;
+        await ReloadAsync();
     }
 
     private void GoOpen() => Nav.NavigateTo("/shifts/open");
+    private void GoCurrent() => Nav.NavigateTo(_current is null ? "/shifts" : $"/shifts/{_current.ShiftId:D}");
 }
