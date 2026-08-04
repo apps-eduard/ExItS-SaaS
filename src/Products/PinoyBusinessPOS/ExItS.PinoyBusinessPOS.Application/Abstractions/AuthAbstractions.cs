@@ -76,6 +76,12 @@ public interface IAuthenticationService
     Task<AuthResult> EnsureOrganizationAccountProfileAsync(CancellationToken ct = default);
 
     /// <summary>
+    /// Selects the Personal account profile so `/api/v1/personal/*` Utang APIs are in scope.
+    /// Clears organization/POS local context without signing out.
+    /// </summary>
+    Task<AuthResult> EnsurePersonalAccountProfileAsync(CancellationToken ct = default);
+
+    /// <summary>
     /// Applies a rotated Platform session after Start a Business and binds the new organization for POS when entitled.
     /// </summary>
     Task<AuthResult> ContinueAfterStartBusinessAsync(

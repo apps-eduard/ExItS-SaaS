@@ -1,63 +1,58 @@
-# Personal Mobile MVP — Audit and Completion
+# Personal Mobile MVP — Utang Parity Completion
 
 | Field | Value |
 |---|---|
 | Status | **Code Complete** (awaiting phone Retest) |
 | Phase | Phase 18 follow-up + Phase 19 Open |
-| Commit | `994905b` |
-| Date | 2026-07-29 |
+| Commit | *(tip after push)* |
+| Date | 2026-08-04 |
 | Device Verified | **No** |
 | Phase 19 | Remains **Open** — phone scenarios **Retest** |
 | PhysicalDevice APK | `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/bin/Debug/net10.0-android/com.exits.pinoybusinesspos-Signed.apk` |
 
-## 1. Audit matrix
+## 1. Web vs Mobile parity matrix
 
-| Feature / surface | Classification | Notes |
+| Capability | Web Admin | MAUI |
 |---|---|---|
-| `/personal` home | **working** | Profile summary, orgs, invitations, switcher, logout, empty/error/retry |
-| `/personal/profile` | **working** | Read-only account summary |
-| `/personal/settings` | **working** (new) | Theme/lang/density + logout under AuthShell |
-| `/personal/invitations/accept` | **working** (new) | Token accept + deep-link `?token=` |
-| Pending invitation list + accept-by-id | **working** (new) | `GET/POST …/auth/organization-invitations/*` |
-| Invitee decline (org staff) | **deferred** | Domain supports admin revoke only; UI explains |
-| `/start-business` | **working** | Create org + continue in Mobile |
-| Org list + continue / launch POS | **working** | Bind/entitlement on select; essentials when not entitled |
-| Personal ↔ Organization switch | **working** | `AccountContextSwitcher` + `SwitchToPersonalAsync` |
-| Session restore → `/personal` | **working** | `NavigationGate` when `OrganizationId` null |
-| POS pages while Personal | **working** (denied) | `CanEnterProtectedShell` requires org + POS |
-| `/settings` (POS shell) while Personal | **working** | Redirects to `/personal/settings` |
-| AuthShell phone layout | **working** | `.pos-shell--auth` no bottom-nav padding |
-| Personal Utang Mobile | **deferred** | Platform/Admin + `/api/v1/personal/utang/*`; not MVP Mobile nav |
-| Platform Admin Personal screens | **backend-only** / Web | Out of Mobile scope |
+| Dashboard totals (People / Active / Lent / Borrowed) | Working | **Working** |
+| People/Contacts list | Working (list) | **Working** (list + create) |
+| People detail | Limited | **Working** |
+| I Lent list | Working | **Working** |
+| I Lent create | API only on Web | **Working** |
+| I Borrowed list | Working | **Working** |
+| I Borrowed create | API only on Web | **Working** |
+| Relationship view + entries/history | API only on Web | **Working** |
+| Utang invitations list | Working | **Working** |
+| Utang accept/decline by token | API | **Working** |
+| Profile | Working | **Working** (API + session fallback) |
+| Settings | Appearance + prefs GET | **Working** (appearance/logout; Platform prefs GET available) |
+| Start a Business | Working | **Working** |
+| Organization invitations | N/A (separate) | **Working** |
+| Payments / Reminders / History nav | Coming soon | **Deferred** (disabled) |
 
-## 2. Implemented MVP scope
+## 2. Implemented / deferred
 
-- Personal dashboard/home with clear empty/loading/error/retry
-- Profile + Personal settings (appearance + logout)
-- Organization list + Start a Business
-- Pending invitations list; accept by id; accept by token page
-- Personal ↔ Organization switching; Ensure Organization profile after invite
-- Continue into org / POS when entitled (server authorization unchanged)
-- No POS operational pages under Personal AuthShell
-- Regression guards in `PersonalPageGuardTests`
+**Implemented:** Personal dashboard, People, I Lent, I Borrowed, relationship detail with record entry + history, Utang invitations accept/decline, profile, settings, Start Business, Personal account profile binding for `/api/v1/personal/*`, empty states for new users, POS denial while Personal.
 
-## 3. Deferred
+**Deferred:** Payments/Reminders/History dedicated nav (backend exists for entries/history/reminders; UI remains coming-soon per MVP), invite creation from relationship detail UI, push delivery.
 
-- Invitee decline for organization staff invitations
-- Personal Utang Mobile UI
-- Rich profile edit / security (password change) beyond existing Platform auth surfaces
+## 3. Authorization
 
-## 4. Authorization preserved
+- `EnsurePersonalAccountProfileAsync` binds Personal account class before Utang calls
+- No organization required for Personal Utang
+- POS shell still requires org + entitlement + product-local permission
+- No hard-coded grants / Release Development bypass added
 
-- Personal identity is not an organization role
-- Product access still requires selected organization + entitlement + product-local permission (bind/evaluate)
-- No new Release Development bypasses
+## 4. Tests
 
-## 5. Phone Retest checklist (Phase 19 Open)
+`PersonalPageGuardTests` — empty states, create/view routes, API client paths, session restore gate, direct POS denial.
 
-- [ ] New user, no org → Personal home, empty orgs, Start a Business
-- [ ] Multi-org user → list + switch Personal ↔ orgs
-- [ ] Pending invitation → accept from list; token page
-- [ ] App restart restores Personal when no org bound
-- [ ] Deep-link `/sales` (or other POS) while Personal → redirected away
-- [ ] Samsung phone: Personal screens usable (no phantom bottom padding)
+## 5. Phone retest checklist (Phase 19 Open)
+
+- [ ] New Personal user: dashboard zeros + empty People/Lent/Borrowed/Invitations (not errors)
+- [ ] Create person → create I Lent / I Borrowed → view relationship → record payment
+- [ ] Utang invitation accept/decline by token
+- [ ] Profile + Settings + Start a Business
+- [ ] App restart restores Personal
+- [ ] Direct `/sales` while Personal redirects away
+- [ ] Samsung layout usable

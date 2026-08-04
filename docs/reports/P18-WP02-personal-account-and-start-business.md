@@ -64,18 +64,18 @@ Start Business requires authenticated Platform session. Created organization is 
 
 ## 11. Known limitations
 
-- Personal Utang deep screens not expanded on Mobile (deferred; Platform/Admin + Personal APIs remain)
-- Organization staff invitee **decline** not supported (admin revoke only); accept list + token paths are on Mobile
+- Payments / Reminders / History remain Coming Soon on Mobile nav (entry history is available inside relationship detail)
+- Organization staff invitee **decline** not supported (admin revoke only)
 - Staff invitation delivery still depends on Platform email/outbound configuration
 
 ## 12. Deferred items
 
-Device E2E of register → Start Business; Personal Utang Mobile; invitee decline.
+Device E2E of full Personal Utang journey; Payments/Reminders dedicated screens; invite-from-relationship UI polish.
 
 ## 13. Current status
 
-Implemented · Tested · Build Verified · Personal MVP UI completion recorded in [P18-personal-mvp-mobile-ui-completion](P18-personal-mvp-mobile-ui-completion.md) · Pending User Validation (phase-level; see P18-WP08 / P19-WP08 Retest)
+Implemented · Tested · Build Verified · Personal Utang Mobile parity recorded in [P18-personal-mvp-mobile-ui-completion](P18-personal-mvp-mobile-ui-completion.md) · Pending User Validation (P19-WP08 Retest)
 
 ## 14. Commit reference
 
-Implementation: `4b8b727`. Personal MVP UI completion: see tip commit after Personal Mobile audit. Documentation reconciliation on `main`.
+Implementation: `4b8b727`. Personal MVP + Utang Mobile: see tip commits on `main`.

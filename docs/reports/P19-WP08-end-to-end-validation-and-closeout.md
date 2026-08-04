@@ -51,8 +51,12 @@ Provide the end-to-end Mobile POS ops validation checklist for physical-phone co
 See [P18-personal-mvp-mobile-ui-completion](P18-personal-mvp-mobile-ui-completion.md).
 
 - [ ] New user with no organization lands on Personal home (empty orgs + Start a Business)
+- [ ] Dashboard totals for People / Active / I Lent / I Borrowed
+- [ ] People empty → create → detail
+- [ ] I Lent / I Borrowed empty → create → relationship history + payment entry
+- [ ] Utang invitations empty + accept/decline by token
 - [ ] Multi-org user lists organizations and switches Personal ↔ Organization
-- [ ] Pending invitation accept (list and/or token)
+- [ ] Pending organization invitation accept (list and/or token)
 - [ ] App restart restores Personal when no organization is bound
 - [ ] Direct POS route while Personal is denied / redirected
 - [ ] Samsung layout: Personal AuthShell without excess bottom padding

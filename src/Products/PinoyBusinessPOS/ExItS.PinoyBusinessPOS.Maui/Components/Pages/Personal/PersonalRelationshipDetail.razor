@@ -1,0 +1,192 @@
+@page "/personal/utang/relationships/{RelationshipId:guid}"
+@layout Layout.AuthShell
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Personal_RelationshipTitle"]" Subtitle="@L["Personal_RelationshipSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoHome">@L["Personal_BackHome"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else if (_loadFailed || _relationship is null)
+    {
+        <ErrorState Title="@L["Personal_RelationshipErrorTitle"]" Message="@(_error ?? L["Personal_LoadErrorMessage"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    }
+    else
+    {
+        <Section Title="@L["Personal_BalanceSection"]">
+            <Stack Gap="2">
+                <div class="pos-value-md">@_relationship.CurrentBalance.ToString("N2") @_relationship.CurrencyCode</div>
+                <span class="pos-muted">@_relationship.Perspective · @_relationship.Status · v@_relationship.Version</span>
+            </Stack>
+        </Section>
+
+        <Section Title="@L["Personal_RecordEntryTitle"]">
+            <FormValidationSummary Messages="_errors" />
+            <FormGroup>
+                <Select Label="@L["Personal_EntryType"]" Value="@_entryType" ValueChanged="OnEntryTypeChanged" Options="_entryOptions" Disabled="_busy" />
+                <TextInput Label="@L["Personal_InitialAmount"]" @bind-Value="_amount" Disabled="_busy" />
+                <TextInput Label="@L["Personal_NotesLabel"]" @bind-Value="_notes" Disabled="_busy" />
+            </FormGroup>
+            <FormActions>
+                <Button IsLoading="_busy" Disabled="_busy" OnClick="RecordAsync">@L["Personal_RecordEntry"]</Button>
+            </FormActions>
+        </Section>
+
+        <Section Title="@L["Personal_HistorySection"]">
+            @if (_history.Count == 0)
+            {
+                <EmptyState Title="@L["Personal_HistoryEmptyTitle"]" Message="@L["Personal_HistoryEmptyMessage"]" />
+            }
+            else
+            {
+                <Stack Gap="2">
+                    @foreach (var e in _history)
+                    {
+                        <div class="pos-personal-org">
+                            <Stack Gap="1">
+                                <span class="pos-value-md">@e.EntryType · @e.Amount.ToString("N2")</span>
+                                <span class="pos-muted">@L["Personal_BalanceAfter"]: @e.BalanceAfter.ToString("N2") · @e.CreatedAtUtc.LocalDateTime.ToString("g")</span>
+                                @if (!string.IsNullOrWhiteSpace(e.Notes))
+                                {
+                                    <span class="pos-muted">@e.Notes</span>
+                                }
+                            </Stack>
+                        </div>
+                    }
+                </Stack>
+            }
+        </Section>
+    }
+</Page>
+
+@code {
+    [Parameter] public Guid RelationshipId { get; set; }
+
+    private bool _loading = true;
+    private bool _authenticated;
+    private bool _loadFailed;
+    private bool _busy;
+    private string? _error;
+    private string _entryType = "Payment";
+    private string? _amount;
+    private string? _notes;
+    private List<string> _errors = [];
+    private PersonalDebtRelationshipSummaryDto? _relationship;
+    private IReadOnlyList<PersonalUtangEntryDto> _history = [];
+
+    private IReadOnlyList<SelectOption> _entryOptions =>
+    [
+        new("Payment", L["Personal_Entry_Payment"]),
+        new("Loan", L["Personal_Entry_Loan"]),
+        new("Adjustment", L["Personal_Entry_Adjustment"]),
+    ];
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadFailed = false;
+        _error = null;
+        try
+        {
+            if (!CurrentUser.IsAuthenticated)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                _authenticated = restore.Succeeded;
+            }
+            else
+            {
+                _authenticated = true;
+            }
+
+            if (!_authenticated)
+            {
+                return;
+            }
+
+            var personal = await Auth.EnsurePersonalAccountProfileAsync();
+            if (!personal.Succeeded)
+            {
+                _loadFailed = true;
+                _error = L[personal.SafeMessageKey ?? "Access_Denied"];
+                return;
+            }
+
+            var rel = await Platform.GetPersonalDebtRelationshipAsync(RelationshipId);
+            if (!rel.IsSuccess || rel.Data is null)
+            {
+                _loadFailed = true;
+                _error = rel.Error?.Detail ?? L["Personal_RelationshipLoadFailed"];
+                return;
+            }
+
+            _relationship = rel.Data;
+            var history = await Platform.GetPersonalUtangHistoryAsync(RelationshipId);
+            _history = history.IsSuccess && history.Data is not null ? history.Data : [];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Task OnEntryTypeChanged(string? value)
+    {
+        _entryType = string.IsNullOrWhiteSpace(value) ? "Payment" : value;
+        return Task.CompletedTask;
+    }
+
+    private async Task RecordAsync()
+    {
+        _errors = [];
+        if (!decimal.TryParse(_amount, NumberStyles.Number, CultureInfo.InvariantCulture, out var amount) || amount <= 0)
+        {
+            _errors.Add(L["Personal_AmountInvalid"]);
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var recorded = await Platform.RecordPersonalUtangEntryAsync(
+                RelationshipId,
+                new RecordPersonalUtangEntryRequest(
+                    _entryType,
+                    amount,
+                    AdjustmentDelta: string.Equals(_entryType, "Adjustment", StringComparison.OrdinalIgnoreCase) ? amount : null,
+                    ExpectedVersion: _relationship?.Version,
+                    Notes: string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim(),
+                    DueDateUtc: null));
+            if (!recorded.IsSuccess)
+            {
+                _errors.Add(recorded.Error?.Detail ?? L["Personal_RecordEntryFailed"]);
+                return;
+            }
+
+            _amount = _notes = null;
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void GoHome() => Nav.NavigateTo("/personal");
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+}

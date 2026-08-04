@@ -62,6 +62,10 @@ Personal Account owns:
 - account security;
 - organization selection;
 - Start a Business;
+- Personal Utang dashboard totals;
+- People/Contacts;
+- I Lent / I Borrowed;
+- Personal Utang invitations;
 - viewing businesses associated with the user;
 - pending organization invitations (accept; decline deferred);
 - launching entitled products.

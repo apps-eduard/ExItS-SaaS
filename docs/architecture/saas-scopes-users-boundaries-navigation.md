@@ -478,6 +478,22 @@ Personal
 Personal Utang Mobile navigation remains deferred for MVP Mobile (APIs exist under `/api/v1/personal/utang`).
 POS operational routes stay outside Personal AuthShell and require organization + entitlement.
 
+Mobile Personal Utang MVP (implemented):
+
+```text
+Personal
+├── Home (dashboard totals)
+├── People
+├── I Lent
+├── I Borrowed
+├── Utang invitations
+├── Profile
+├── Settings
+└── Start a Business
+```
+
+Payments / Reminders / History remain Coming Soon on Mobile (same as Web nav).
+
 Target Personal Utang navigation (deferred on Mobile):
 
 ```text

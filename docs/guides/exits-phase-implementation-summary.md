@@ -291,6 +291,7 @@
 - Mobile foundation and authentication
 - Personal account and Start a Business (continue in Mobile)
 - Personal settings, pending invitations accept, AuthShell phone layout polish (MVP follow-up)
+- Personal Utang Mobile parity (dashboard, People, I Lent, I Borrowed, invitations) — phone Retest
 - Organization selection and Owner essentials
 - POS role routing and navigation
 - Owner / Manager Mobile experience surfaces

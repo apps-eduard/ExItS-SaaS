@@ -640,6 +640,57 @@ public sealed class AuthenticationServiceTests
         public Task<ApiResult<PlatformMembershipDto>> AcceptOrganizationInvitationByIdAsync(Guid invitationId, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<PlatformMembershipDto>.Unavailable());
 
+        public Task<ApiResult<PersonalDashboardDto>> GetPersonalDashboardAsync(CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PersonalDashboardDto>.Unavailable());
+
+        public Task<ApiResult<PersonalProfileDto>> GetPersonalProfileAsync(CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PersonalProfileDto>.Unavailable());
+
+        public Task<ApiResult<PersonalAccountSettingsDto>> GetPersonalSettingsAsync(CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PersonalAccountSettingsDto>.Unavailable());
+
+        public Task<ApiResult<PersonalAccountSettingsDto>> UpdatePersonalSettingsAsync(UpdatePersonalAccountSettingsRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PersonalAccountSettingsDto>.Unavailable());
+
+        public Task<ApiResult<IReadOnlyList<PersonalContactDto>>> GetPersonalContactsAsync(CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<IReadOnlyList<PersonalContactDto>>.Success(Array.Empty<PersonalContactDto>()));
+
+        public Task<ApiResult<PersonalContactDto>> CreatePersonalContactAsync(CreatePersonalContactRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PersonalContactDto>.Unavailable());
+
+        public Task<ApiResult<IReadOnlyList<PersonalDebtRelationshipSummaryDto>>> GetPersonalUtangLentAsync(CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<IReadOnlyList<PersonalDebtRelationshipSummaryDto>>.Success(Array.Empty<PersonalDebtRelationshipSummaryDto>()));
+
+        public Task<ApiResult<IReadOnlyList<PersonalDebtRelationshipSummaryDto>>> GetPersonalUtangBorrowedAsync(CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<IReadOnlyList<PersonalDebtRelationshipSummaryDto>>.Success(Array.Empty<PersonalDebtRelationshipSummaryDto>()));
+
+        public Task<ApiResult<PersonalDebtRelationshipSummaryDto>> CreatePersonalDebtRelationshipAsync(CreatePersonalDebtRelationshipRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PersonalDebtRelationshipSummaryDto>.Unavailable());
+
+        public Task<ApiResult<PersonalDebtRelationshipSummaryDto>> GetPersonalDebtRelationshipAsync(Guid relationshipId, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PersonalDebtRelationshipSummaryDto>.Unavailable());
+
+        public Task<ApiResult<PersonalUtangBalanceDto>> GetPersonalUtangBalanceAsync(Guid relationshipId, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PersonalUtangBalanceDto>.Unavailable());
+
+        public Task<ApiResult<IReadOnlyList<PersonalUtangEntryDto>>> GetPersonalUtangHistoryAsync(Guid relationshipId, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<IReadOnlyList<PersonalUtangEntryDto>>.Success(Array.Empty<PersonalUtangEntryDto>()));
+
+        public Task<ApiResult<PersonalUtangEntryDto>> RecordPersonalUtangEntryAsync(Guid relationshipId, RecordPersonalUtangEntryRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PersonalUtangEntryDto>.Unavailable());
+
+        public Task<ApiResult<IReadOnlyList<PersonalUtangInvitationDto>>> GetPersonalUtangInvitationsAsync(CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<IReadOnlyList<PersonalUtangInvitationDto>>.Success(Array.Empty<PersonalUtangInvitationDto>()));
+
+        public Task<ApiResult<PersonalUtangInvitationDto>> CreatePersonalUtangInvitationAsync(Guid relationshipId, CreatePersonalUtangInvitationRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PersonalUtangInvitationDto>.Unavailable());
+
+        public Task<ApiResult<PersonalUtangInvitationAcceptResultDto>> AcceptPersonalUtangInvitationAsync(string token, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PersonalUtangInvitationAcceptResultDto>.Unavailable());
+
+        public Task<ApiResult<PersonalUtangInvitationDto>> DeclinePersonalUtangInvitationAsync(string token, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PersonalUtangInvitationDto>.Unavailable());
+
         public Task<ApiResult<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>> GetLocalValidationQuickLoginIdentitiesAsync(
             CancellationToken ct = default) =>
             Task.FromResult(ApiResult<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>.Success(

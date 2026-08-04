@@ -1,0 +1,100 @@
+@page "/personal/utang/people/{ContactId:guid}"
+@layout Layout.AuthShell
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Personal_PeopleDetailTitle"]" Subtitle="@L["Personal_PeopleSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Personal_PeopleBack"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else if (_contact is null)
+    {
+        <ErrorState Title="@L["Personal_PeopleErrorTitle"]" Message="@(_error ?? L["Personal_PeopleNotFound"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    }
+    else
+    {
+        <Section Title="@_contact.DisplayName">
+            <Stack Gap="2">
+                <div><span class="pos-muted">@L["Register_Email"]</span><div class="pos-value-md">@(_contact.Email ?? "—")</div></div>
+                <div><span class="pos-muted">@L["Personal_PhoneLabel"]</span><div class="pos-value-md">@(_contact.Phone ?? "—")</div></div>
+                <div><span class="pos-muted">@L["Personal_StatusLabel"]</span><div class="pos-value-md">@_contact.Status</div></div>
+            </Stack>
+        </Section>
+        <FormActions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoLentCreate">@L["Personal_PeopleCreateLent"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBorrowedCreate">@L["Personal_PeopleCreateBorrowed"]</Button>
+        </FormActions>
+    }
+</Page>
+
+@code {
+    [Parameter] public Guid ContactId { get; set; }
+
+    private bool _loading = true;
+    private bool _authenticated;
+    private string? _error;
+    private PersonalContactDto? _contact;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        _contact = null;
+        try
+        {
+            if (!CurrentUser.IsAuthenticated)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                _authenticated = restore.Succeeded;
+            }
+            else
+            {
+                _authenticated = true;
+            }
+
+            if (!_authenticated)
+            {
+                return;
+            }
+
+            await Auth.EnsurePersonalAccountProfileAsync();
+            var result = await Platform.GetPersonalContactsAsync();
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = result.Error?.Detail ?? L["Personal_PeopleLoadFailed"];
+                return;
+            }
+
+            _contact = result.Data.FirstOrDefault(c => c.Id == ContactId);
+            if (_contact is null)
+            {
+                _error = L["Personal_PeopleNotFound"];
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void GoList() => Nav.NavigateTo("/personal/utang/people");
+    private void GoLentCreate() => Nav.NavigateTo($"/personal/utang/lent?contactId={ContactId:D}");
+    private void GoBorrowedCreate() => Nav.NavigateTo($"/personal/utang/borrowed?contactId={ContactId:D}");
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+}

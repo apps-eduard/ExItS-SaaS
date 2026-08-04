@@ -220,6 +220,112 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
             null,
             ct);
 
+    public Task<ApiResult<PersonalDashboardDto>> GetPersonalDashboardAsync(CancellationToken ct = default) =>
+        api.GetAsync<PersonalDashboardDto>("/api/v1/personal/dashboard", ct);
+
+    public Task<ApiResult<PersonalProfileDto>> GetPersonalProfileAsync(CancellationToken ct = default) =>
+        api.GetAsync<PersonalProfileDto>("/api/v1/personal/profile", ct);
+
+    public Task<ApiResult<PersonalAccountSettingsDto>> GetPersonalSettingsAsync(CancellationToken ct = default) =>
+        api.GetAsync<PersonalAccountSettingsDto>("/api/v1/personal/settings", ct);
+
+    public Task<ApiResult<PersonalAccountSettingsDto>> UpdatePersonalSettingsAsync(
+        UpdatePersonalAccountSettingsRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<PersonalAccountSettingsDto>(HttpMethod.Put, "/api/v1/personal/settings", request, ct);
+
+    public Task<ApiResult<IReadOnlyList<PersonalContactDto>>> GetPersonalContactsAsync(CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<PersonalContactDto>>("/api/v1/personal/utang/contacts", ct);
+
+    public Task<ApiResult<PersonalContactDto>> CreatePersonalContactAsync(
+        CreatePersonalContactRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<PersonalContactDto>(HttpMethod.Post, "/api/v1/personal/utang/contacts", request, ct);
+
+    public Task<ApiResult<IReadOnlyList<PersonalDebtRelationshipSummaryDto>>> GetPersonalUtangLentAsync(
+        CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<PersonalDebtRelationshipSummaryDto>>(
+            "/api/v1/personal/utang/relationships/lent",
+            ct);
+
+    public Task<ApiResult<IReadOnlyList<PersonalDebtRelationshipSummaryDto>>> GetPersonalUtangBorrowedAsync(
+        CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<PersonalDebtRelationshipSummaryDto>>(
+            "/api/v1/personal/utang/relationships/borrowed",
+            ct);
+
+    public Task<ApiResult<PersonalDebtRelationshipSummaryDto>> CreatePersonalDebtRelationshipAsync(
+        CreatePersonalDebtRelationshipRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<PersonalDebtRelationshipSummaryDto>(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/relationships",
+            request,
+            ct);
+
+    public Task<ApiResult<PersonalDebtRelationshipSummaryDto>> GetPersonalDebtRelationshipAsync(
+        Guid relationshipId,
+        CancellationToken ct = default) =>
+        api.GetAsync<PersonalDebtRelationshipSummaryDto>(
+            $"/api/v1/personal/utang/relationships/{relationshipId:D}",
+            ct);
+
+    public Task<ApiResult<PersonalUtangBalanceDto>> GetPersonalUtangBalanceAsync(
+        Guid relationshipId,
+        CancellationToken ct = default) =>
+        api.GetAsync<PersonalUtangBalanceDto>(
+            $"/api/v1/personal/utang/relationships/{relationshipId:D}/balance",
+            ct);
+
+    public Task<ApiResult<IReadOnlyList<PersonalUtangEntryDto>>> GetPersonalUtangHistoryAsync(
+        Guid relationshipId,
+        CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<PersonalUtangEntryDto>>(
+            $"/api/v1/personal/utang/relationships/{relationshipId:D}/history",
+            ct);
+
+    public Task<ApiResult<PersonalUtangEntryDto>> RecordPersonalUtangEntryAsync(
+        Guid relationshipId,
+        RecordPersonalUtangEntryRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<PersonalUtangEntryDto>(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/relationships/{relationshipId:D}/entries",
+            request,
+            ct);
+
+    public Task<ApiResult<IReadOnlyList<PersonalUtangInvitationDto>>> GetPersonalUtangInvitationsAsync(
+        CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<PersonalUtangInvitationDto>>("/api/v1/personal/utang/invitations", ct);
+
+    public Task<ApiResult<PersonalUtangInvitationDto>> CreatePersonalUtangInvitationAsync(
+        Guid relationshipId,
+        CreatePersonalUtangInvitationRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<PersonalUtangInvitationDto>(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/relationships/{relationshipId:D}/invitations",
+            request,
+            ct);
+
+    public Task<ApiResult<PersonalUtangInvitationAcceptResultDto>> AcceptPersonalUtangInvitationAsync(
+        string token,
+        CancellationToken ct = default) =>
+        api.SendAsync<PersonalUtangInvitationAcceptResultDto>(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/invitations/accept",
+            new AcceptPersonalUtangInvitationRequest(token),
+            ct);
+
+    public Task<ApiResult<PersonalUtangInvitationDto>> DeclinePersonalUtangInvitationAsync(
+        string token,
+        CancellationToken ct = default) =>
+        api.SendAsync<PersonalUtangInvitationDto>(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/invitations/decline",
+            new AcceptPersonalUtangInvitationRequest(token),
+            ct);
+
     public Task<ApiResult<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>> GetLocalValidationQuickLoginIdentitiesAsync(
         CancellationToken ct = default) =>
         api.GetAsync<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>(

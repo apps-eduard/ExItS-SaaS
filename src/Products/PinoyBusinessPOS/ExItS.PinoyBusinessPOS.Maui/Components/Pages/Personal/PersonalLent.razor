@@ -1,0 +1,205 @@
+@page "/personal/utang/lent"
+@layout Layout.AuthShell
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Personal_LentTitle"]" Subtitle="@L["Personal_LentSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoHome">@L["Personal_BackHome"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else if (_loadFailed)
+    {
+        <ErrorState Title="@L["Personal_LentErrorTitle"]" Message="@(_error ?? L["Personal_LoadErrorMessage"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    }
+    else
+    {
+        @if (_items.Count == 0)
+        {
+            <EmptyState Title="@L["Personal_LentEmptyTitle"]" Message="@L["Personal_LentEmptyMessage"]" />
+        }
+        else
+        {
+            <Stack Gap="3">
+                @foreach (var item in _items)
+                {
+                    <div class="pos-personal-org">
+                        <Stack Gap="1">
+                            <button type="button" class="pos-link" @onclick="() => GoDetail(item.Id)">
+                                @item.CurrentBalance.ToString("N2") @item.CurrencyCode
+                            </button>
+                            <span class="pos-muted">@item.Status · @item.UpdatedAtUtc.LocalDateTime.ToString("g")</span>
+                        </Stack>
+                    </div>
+                }
+            </Stack>
+        }
+
+        <Section Title="@L["Personal_LentCreateTitle"]">
+            <FormValidationSummary Messages="_errors" />
+            <FormGroup>
+                <Select Label="@L["Personal_ContactLabel"]" Value="@_contactId" ValueChanged="OnContactChanged" Options="_contactOptions" Disabled="_busy" />
+                <TextInput Label="@L["Personal_InitialAmount"]" @bind-Value="_amount" Disabled="_busy" />
+                <TextInput Label="@L["Personal_NotesLabel"]" @bind-Value="_notes" Disabled="_busy" />
+            </FormGroup>
+            <FormActions>
+                <Button IsLoading="_busy" Disabled="_busy || string.IsNullOrWhiteSpace(_contactId)" OnClick="CreateAsync">@L["Personal_LentCreate"]</Button>
+            </FormActions>
+        </Section>
+    }
+</Page>
+
+@code {
+    private bool _loading = true;
+    private bool _authenticated;
+    private bool _loadFailed;
+    private bool _busy;
+    private string? _error;
+    private string? _contactId;
+    private string? _amount;
+    private string? _notes;
+    private List<string> _errors = [];
+    private IReadOnlyList<PersonalDebtRelationshipSummaryDto> _items = [];
+    private IReadOnlyList<SelectOption> _contactOptions = [];
+    private Guid? _userId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        var query = uri.Query.TrimStart('?');
+        foreach (var part in query.Split('&', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var eq = part.IndexOf('=');
+            if (eq <= 0) continue;
+            if (string.Equals(Uri.UnescapeDataString(part[..eq]), "contactId", StringComparison.OrdinalIgnoreCase)
+                && Guid.TryParse(Uri.UnescapeDataString(part[(eq + 1)..]), out var cid))
+            {
+                _contactId = cid.ToString("D");
+            }
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadFailed = false;
+        _error = null;
+        try
+        {
+            if (!CurrentUser.IsAuthenticated)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                _authenticated = restore.Succeeded;
+            }
+            else
+            {
+                _authenticated = true;
+            }
+
+            if (!_authenticated)
+            {
+                return;
+            }
+
+            var personal = await Auth.EnsurePersonalAccountProfileAsync();
+            if (!personal.Succeeded)
+            {
+                _loadFailed = true;
+                _error = L[personal.SafeMessageKey ?? "Access_Denied"];
+                return;
+            }
+
+            _userId = CurrentUser.Session?.UserId;
+            var contacts = await Platform.GetPersonalContactsAsync();
+            _contactOptions = contacts.IsSuccess && contacts.Data is not null
+                ? contacts.Data.Select(c => new SelectOption(c.Id.ToString("D"), c.DisplayName)).ToArray()
+                : [];
+
+            var result = await Platform.GetPersonalUtangLentAsync();
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _loadFailed = true;
+                _error = result.Error?.Detail ?? L["Personal_LentLoadFailed"];
+                return;
+            }
+
+            _items = result.Data;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Task OnContactChanged(string? value)
+    {
+        _contactId = value;
+        return Task.CompletedTask;
+    }
+
+    private async Task CreateAsync()
+    {
+        _errors = [];
+        if (!Guid.TryParse(_contactId, out var contactId) || _userId is null)
+        {
+            _errors.Add(L["Personal_ContactRequired"]);
+            return;
+        }
+
+        decimal? amount = null;
+        if (!string.IsNullOrWhiteSpace(_amount))
+        {
+            if (!decimal.TryParse(_amount, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed) || parsed <= 0)
+            {
+                _errors.Add(L["Personal_AmountInvalid"]);
+                return;
+            }
+
+            amount = parsed;
+        }
+
+        _busy = true;
+        try
+        {
+            var created = await Platform.CreatePersonalDebtRelationshipAsync(new CreatePersonalDebtRelationshipRequest(
+                CreditorUserIdentityId: _userId,
+                CreditorContactId: null,
+                DebtorUserIdentityId: null,
+                DebtorContactId: contactId,
+                CurrencyCode: "PHP",
+                DueDateUtc: null,
+                InitialLoanAmount: amount,
+                InitialLoanNotes: string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim()));
+            if (!created.IsSuccess || created.Data is null)
+            {
+                _errors.Add(created.Error?.Detail ?? L["Personal_LentCreateFailed"]);
+                return;
+            }
+
+            Nav.NavigateTo($"/personal/utang/relationships/{created.Data.Id:D}");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void GoDetail(Guid id) => Nav.NavigateTo($"/personal/utang/relationships/{id:D}");
+    private void GoHome() => Nav.NavigateTo("/personal");
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+}

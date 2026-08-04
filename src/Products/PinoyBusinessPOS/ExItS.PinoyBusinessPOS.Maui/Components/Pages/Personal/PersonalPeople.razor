@@ -1,0 +1,157 @@
+@page "/personal/utang/people"
+@layout Layout.AuthShell
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Personal_PeopleTitle"]" Subtitle="@L["Personal_PeopleSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoHome">@L["Personal_BackHome"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else if (_loadFailed)
+    {
+        <ErrorState Title="@L["Personal_PeopleErrorTitle"]" Message="@(_error ?? L["Personal_LoadErrorMessage"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    }
+    else
+    {
+        @if (_contacts.Count == 0)
+        {
+            <EmptyState Title="@L["Personal_PeopleEmptyTitle"]" Message="@L["Personal_PeopleEmptyMessage"]" />
+        }
+        else
+        {
+            <Stack Gap="3">
+                @foreach (var c in _contacts)
+                {
+                    <div class="pos-personal-org">
+                        <Stack Gap="1">
+                            <button type="button" class="pos-link" @onclick="() => GoDetail(c.Id)">@c.DisplayName</button>
+                            <span class="pos-muted">@(c.Email ?? c.Phone ?? c.Status)</span>
+                        </Stack>
+                    </div>
+                }
+            </Stack>
+        }
+
+        <Section Title="@L["Personal_PeopleCreateTitle"]">
+            <FormValidationSummary Messages="_errors" />
+            <FormGroup>
+                <TextInput Label="@L["Register_DisplayName"]" @bind-Value="_name" Disabled="_busy" />
+                <TextInput Label="@L["Register_Email"]" @bind-Value="_email" Disabled="_busy" />
+                <TextInput Label="@L["Personal_PhoneLabel"]" @bind-Value="_phone" Disabled="_busy" />
+            </FormGroup>
+            <FormActions>
+                <Button IsLoading="_busy" Disabled="_busy" OnClick="CreateAsync">@L["Personal_PeopleCreate"]</Button>
+            </FormActions>
+        </Section>
+    }
+</Page>
+
+@code {
+    private bool _loading = true;
+    private bool _authenticated;
+    private bool _loadFailed;
+    private bool _busy;
+    private string? _error;
+    private string? _name;
+    private string? _email;
+    private string? _phone;
+    private List<string> _errors = [];
+    private IReadOnlyList<PersonalContactDto> _contacts = [];
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadFailed = false;
+        _error = null;
+        try
+        {
+            if (!CurrentUser.IsAuthenticated)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                _authenticated = restore.Succeeded;
+            }
+            else
+            {
+                _authenticated = true;
+            }
+
+            if (!_authenticated)
+            {
+                return;
+            }
+
+            var personal = await Auth.EnsurePersonalAccountProfileAsync();
+            if (!personal.Succeeded)
+            {
+                _loadFailed = true;
+                _error = L[personal.SafeMessageKey ?? "Access_Denied"];
+                return;
+            }
+
+            var result = await Platform.GetPersonalContactsAsync();
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _loadFailed = true;
+                _error = result.Error?.Detail ?? L["Personal_PeopleLoadFailed"];
+                return;
+            }
+
+            _contacts = result.Data;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        _errors = [];
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _errors.Add(L["Personal_PeopleNameRequired"]);
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var created = await Platform.CreatePersonalContactAsync(new CreatePersonalContactRequest(
+                _name.Trim(),
+                string.IsNullOrWhiteSpace(_phone) ? null : _phone.Trim(),
+                string.IsNullOrWhiteSpace(_email) ? null : _email.Trim()));
+            if (!created.IsSuccess)
+            {
+                _errors.Add(created.Error?.Detail ?? L["Personal_PeopleCreateFailed"]);
+                return;
+            }
+
+            _name = _email = _phone = null;
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void GoDetail(Guid id) => Nav.NavigateTo($"/personal/utang/people/{id:D}");
+    private void GoHome() => Nav.NavigateTo("/personal");
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+}

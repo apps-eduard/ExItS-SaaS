@@ -1408,6 +1408,87 @@
   <data name="Personal_PosReady" xml:space="preserve"><value>POS access available</value></data>
   <data name="Personal_OrgEssentialsOnly" xml:space="preserve"><value>Organization essentials (POS not entitled yet)</value></data>
   <data name="Personal_MembershipReady" xml:space="preserve"><value>Active membership — continue to open the organization or POS when entitled</value></data>
+  <data name="Personal_DashboardSection" xml:space="preserve"><value>Personal Utang summary</value></data>
+  <data name="Personal_DashboardUnavailable" xml:space="preserve"><value>Dashboard totals are temporarily unavailable.</value></data>
+  <data name="Personal_Stat_People" xml:space="preserve"><value>People</value></data>
+  <data name="Personal_Stat_ActiveRelationships" xml:space="preserve"><value>Active relationships</value></data>
+  <data name="Personal_Stat_Lent" xml:space="preserve"><value>I Lent</value></data>
+  <data name="Personal_Stat_Borrowed" xml:space="preserve"><value>I Borrowed</value></data>
+  <data name="Personal_UtangNavSection" xml:space="preserve"><value>Personal Utang</value></data>
+  <data name="Personal_Nav_People" xml:space="preserve"><value>People</value></data>
+  <data name="Personal_Nav_Lent" xml:space="preserve"><value>I Lent</value></data>
+  <data name="Personal_Nav_Borrowed" xml:space="preserve"><value>I Borrowed</value></data>
+  <data name="Personal_Nav_UtangInvitations" xml:space="preserve"><value>Utang invitations</value></data>
+  <data name="Personal_Nav_PaymentsSoon" xml:space="preserve"><value>Payments (coming soon)</value></data>
+  <data name="Personal_Nav_RemindersSoon" xml:space="preserve"><value>Reminders (coming soon)</value></data>
+  <data name="Personal_Nav_HistorySoon" xml:space="preserve"><value>History (coming soon)</value></data>
+  <data name="Personal_OrgInvitationsSection" xml:space="preserve"><value>Organization invitations</value></data>
+  <data name="Personal_PeopleTitle" xml:space="preserve"><value>People</value></data>
+  <data name="Personal_PeopleSubtitle" xml:space="preserve"><value>Contacts for your Personal Utang tracker.</value></data>
+  <data name="Personal_PeopleEmptyTitle" xml:space="preserve"><value>No people yet</value></data>
+  <data name="Personal_PeopleEmptyMessage" xml:space="preserve"><value>Add a contact to start tracking Personal Utang.</value></data>
+  <data name="Personal_PeopleErrorTitle" xml:space="preserve"><value>Could not load people</value></data>
+  <data name="Personal_PeopleLoadFailed" xml:space="preserve"><value>People could not be loaded.</value></data>
+  <data name="Personal_PeopleCreateTitle" xml:space="preserve"><value>Add person</value></data>
+  <data name="Personal_PeopleCreate" xml:space="preserve"><value>Add person</value></data>
+  <data name="Personal_PeopleCreateFailed" xml:space="preserve"><value>Could not create the contact.</value></data>
+  <data name="Personal_PeopleNameRequired" xml:space="preserve"><value>Display name is required.</value></data>
+  <data name="Personal_PeopleDetailTitle" xml:space="preserve"><value>Person</value></data>
+  <data name="Personal_PeopleBack" xml:space="preserve"><value>Back to people</value></data>
+  <data name="Personal_PeopleNotFound" xml:space="preserve"><value>Contact was not found.</value></data>
+  <data name="Personal_PeopleCreateLent" xml:space="preserve"><value>Create I Lent</value></data>
+  <data name="Personal_PeopleCreateBorrowed" xml:space="preserve"><value>Create I Borrowed</value></data>
+  <data name="Personal_PhoneLabel" xml:space="preserve"><value>Phone</value></data>
+  <data name="Personal_StatusLabel" xml:space="preserve"><value>Status</value></data>
+  <data name="Personal_LentTitle" xml:space="preserve"><value>I Lent</value></data>
+  <data name="Personal_LentSubtitle" xml:space="preserve"><value>Money you lent to people.</value></data>
+  <data name="Personal_LentEmptyTitle" xml:space="preserve"><value>No lent relationships</value></data>
+  <data name="Personal_LentEmptyMessage" xml:space="preserve"><value>Create a relationship when someone owes you.</value></data>
+  <data name="Personal_LentErrorTitle" xml:space="preserve"><value>Could not load I Lent</value></data>
+  <data name="Personal_LentLoadFailed" xml:space="preserve"><value>I Lent could not be loaded.</value></data>
+  <data name="Personal_LentCreateTitle" xml:space="preserve"><value>New I Lent</value></data>
+  <data name="Personal_LentCreate" xml:space="preserve"><value>Create I Lent</value></data>
+  <data name="Personal_LentCreateFailed" xml:space="preserve"><value>Could not create the relationship.</value></data>
+  <data name="Personal_BorrowedTitle" xml:space="preserve"><value>I Borrowed</value></data>
+  <data name="Personal_BorrowedSubtitle" xml:space="preserve"><value>Money you borrowed from people.</value></data>
+  <data name="Personal_BorrowedEmptyTitle" xml:space="preserve"><value>No borrowed relationships</value></data>
+  <data name="Personal_BorrowedEmptyMessage" xml:space="preserve"><value>Create a relationship when you owe someone.</value></data>
+  <data name="Personal_BorrowedErrorTitle" xml:space="preserve"><value>Could not load I Borrowed</value></data>
+  <data name="Personal_BorrowedLoadFailed" xml:space="preserve"><value>I Borrowed could not be loaded.</value></data>
+  <data name="Personal_BorrowedCreateTitle" xml:space="preserve"><value>New I Borrowed</value></data>
+  <data name="Personal_BorrowedCreate" xml:space="preserve"><value>Create I Borrowed</value></data>
+  <data name="Personal_BorrowedCreateFailed" xml:space="preserve"><value>Could not create the relationship.</value></data>
+  <data name="Personal_ContactLabel" xml:space="preserve"><value>Person</value></data>
+  <data name="Personal_ContactRequired" xml:space="preserve"><value>Select a person.</value></data>
+  <data name="Personal_InitialAmount" xml:space="preserve"><value>Initial amount</value></data>
+  <data name="Personal_NotesLabel" xml:space="preserve"><value>Notes</value></data>
+  <data name="Personal_AmountInvalid" xml:space="preserve"><value>Enter a valid amount greater than zero.</value></data>
+  <data name="Personal_RelationshipTitle" xml:space="preserve"><value>Relationship</value></data>
+  <data name="Personal_RelationshipSubtitle" xml:space="preserve"><value>Balance, history, and new entries.</value></data>
+  <data name="Personal_RelationshipErrorTitle" xml:space="preserve"><value>Could not load relationship</value></data>
+  <data name="Personal_RelationshipLoadFailed" xml:space="preserve"><value>Relationship could not be loaded.</value></data>
+  <data name="Personal_BalanceSection" xml:space="preserve"><value>Balance</value></data>
+  <data name="Personal_RecordEntryTitle" xml:space="preserve"><value>Record entry</value></data>
+  <data name="Personal_RecordEntry" xml:space="preserve"><value>Save entry</value></data>
+  <data name="Personal_RecordEntryFailed" xml:space="preserve"><value>Could not save the entry.</value></data>
+  <data name="Personal_EntryType" xml:space="preserve"><value>Entry type</value></data>
+  <data name="Personal_Entry_Payment" xml:space="preserve"><value>Payment</value></data>
+  <data name="Personal_Entry_Loan" xml:space="preserve"><value>Loan</value></data>
+  <data name="Personal_Entry_Adjustment" xml:space="preserve"><value>Adjustment</value></data>
+  <data name="Personal_HistorySection" xml:space="preserve"><value>History</value></data>
+  <data name="Personal_HistoryEmptyTitle" xml:space="preserve"><value>No history yet</value></data>
+  <data name="Personal_HistoryEmptyMessage" xml:space="preserve"><value>Entries appear here after you record loans or payments.</value></data>
+  <data name="Personal_BalanceAfter" xml:space="preserve"><value>Balance after</value></data>
+  <data name="Personal_UtangInvitationsTitle" xml:space="preserve"><value>Utang invitations</value></data>
+  <data name="Personal_UtangInvitationsSubtitle" xml:space="preserve"><value>Invitations for Personal Utang relationships.</value></data>
+  <data name="Personal_UtangInvitationsErrorTitle" xml:space="preserve"><value>Could not load invitations</value></data>
+  <data name="Personal_UtangInvitationsLoadFailed" xml:space="preserve"><value>Invitations could not be loaded.</value></data>
+  <data name="Personal_NoUtangInvitationsTitle" xml:space="preserve"><value>No pending invitations</value></data>
+  <data name="Personal_NoUtangInvitationsMessage" xml:space="preserve"><value>When someone invites you to a Personal Utang relationship, it appears here.</value></data>
+  <data name="Personal_UtangInvitationTokenSection" xml:space="preserve"><value>Accept or decline with token</value></data>
+  <data name="Personal_DeclineInvitation" xml:space="preserve"><value>Decline invitation</value></data>
+  <data name="Personal_DeclineInvitationFailed" xml:space="preserve"><value>Could not decline the invitation.</value></data>
+  <data name="Personal_ProfileErrorTitle" xml:space="preserve"><value>Could not load profile</value></data>
   <data name="StartBusiness_Title" xml:space="preserve"><value>Start a Business</value></data>
   <data name="StartBusiness_Subtitle" xml:space="preserve"><value>Create an organization and continue in Mobile.</value></data>
   <data name="StartBusiness_FormTitle" xml:space="preserve"><value>Business details</value></data>

@@ -555,6 +555,104 @@ public sealed class AuthenticationService(
 
         currentUser.Set(updated);
         events.Record("switched_to_personal", Dict(("userId", session.UserId.ToString("D"))));
+
+        // Bind Personal account class so Utang APIs under /api/v1/personal are allowed.
+        return await EnsurePersonalAccountProfileAsync(ct).ConfigureAwait(false);
+    }
+
+    public async Task<AuthResult> EnsurePersonalAccountProfileAsync(CancellationToken ct = default)
+    {
+        var session = currentUser.Session;
+        if (session is null)
+        {
+            return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
+        }
+
+        if (string.Equals(session.AccountClass, "Personal", StringComparison.OrdinalIgnoreCase)
+            && session.OrganizationId is null)
+        {
+            return new AuthResult(true, AuthFailureReason.None, session);
+        }
+
+        if (string.IsNullOrWhiteSpace(session.PlatformSessionToken))
+        {
+            var localOnly = session with
+            {
+                OrganizationId = null,
+                OrganizationDisplayName = null,
+                HasPosAccess = false,
+                AccessReasonCode = null,
+                SubscriptionStatus = null,
+                EnabledFeatureCodes = null,
+                AccountClass = "Personal"
+            };
+            currentUser.Set(localOnly);
+            return new AuthResult(true, AuthFailureReason.None, localOnly);
+        }
+
+        var profiles = await accessClient.GetAccountProfilesAsync(ct).ConfigureAwait(false);
+        if (!profiles.IsSuccess || profiles.Data is null)
+        {
+            return new AuthResult(true, AuthFailureReason.None, session with
+            {
+                OrganizationId = null,
+                OrganizationDisplayName = null,
+                HasPosAccess = false
+            });
+        }
+
+        var personalProfile = profiles.Data.FirstOrDefault(p =>
+            string.Equals(p.AccountClass, "Personal", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase));
+        if (personalProfile is null)
+        {
+            return new AuthResult(true, AuthFailureReason.None, session with
+            {
+                OrganizationId = null,
+                OrganizationDisplayName = null,
+                HasPosAccess = false
+            });
+        }
+
+        var selected = await accessClient
+            .SelectAccountProfileAsync(new SelectAccountProfileRequest(personalProfile.Id), ct)
+            .ConfigureAwait(false);
+        if (!selected.IsSuccess || selected.Data is null)
+        {
+            return new AuthResult(
+                false,
+                AuthFailureReason.AccessDenied,
+                SafeMessageKey: "Access_Denied");
+        }
+
+        var updated = session with
+        {
+            OrganizationId = null,
+            OrganizationDisplayName = null,
+            HasPosAccess = false,
+            AccessReasonCode = null,
+            SubscriptionStatus = null,
+            EnabledFeatureCodes = null,
+            PlatformSessionToken = selected.Data.SessionToken ?? session.PlatformSessionToken,
+            AccountClass = selected.Data.AccountClass ?? "Personal",
+            AccountProfileId = selected.Data.AccountProfileId ?? personalProfile.Id,
+            ExpiresAtUtc = selected.Data.ExpiresAtUtc == default ? session.ExpiresAtUtc : selected.Data.ExpiresAtUtc
+        };
+
+        try
+        {
+            var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
+            marker ??= Guid.NewGuid().ToString("N");
+            await sessionStore.SaveAsync(updated, marker, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            events.Record("secure_storage_failure", Dict(("operation", "ensure_personal_profile_save")));
+            return new AuthResult(false, AuthFailureReason.SecureStorageFailure, SafeMessageKey: "Auth_SecureStorageFailure");
+        }
+
+        currentUser.Set(updated);
+        events.Record("ensured_personal_profile", Dict(("userId", session.UserId.ToString("D"))));
         return new AuthResult(true, AuthFailureReason.None, updated);
     }
 

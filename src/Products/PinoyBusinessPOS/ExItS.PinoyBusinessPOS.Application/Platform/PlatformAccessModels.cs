@@ -256,6 +256,131 @@ public sealed record PendingOrganizationInvitationDto(
 
 public sealed record AcceptOrganizationInvitationRequest(string Token);
 
+public sealed record PersonalDashboardDto(
+    Guid UserIdentityId,
+    Guid AccountProfileId,
+    string AccountClass,
+    bool UtangAvailable,
+    int ContactCount,
+    int ActiveRelationshipCount,
+    decimal TotalLentBalance,
+    decimal TotalBorrowedBalance);
+
+public sealed record PersonalProfileDto(
+    Guid UserIdentityId,
+    Guid AccountProfileId,
+    string Username,
+    string DisplayName,
+    string Email,
+    string AccountClass,
+    string Status);
+
+public sealed record PersonalAccountSettingsDto(
+    Guid UserIdentityId,
+    bool EmailNotificationsEnabled,
+    bool PushNotificationsEnabled,
+    bool InAppNotificationsEnabled,
+    bool ReminderNotificationsEnabled,
+    int Version,
+    DateTimeOffset UpdatedAtUtc);
+
+public sealed record UpdatePersonalAccountSettingsRequest(
+    bool EmailNotificationsEnabled,
+    bool PushNotificationsEnabled,
+    bool InAppNotificationsEnabled,
+    bool ReminderNotificationsEnabled,
+    int? ExpectedVersion);
+
+public sealed record PersonalContactDto(
+    Guid Id,
+    string DisplayName,
+    string? Phone,
+    string? Email,
+    Guid? LinkedUserIdentityId,
+    string Status,
+    DateTimeOffset CreatedAtUtc);
+
+public sealed record CreatePersonalContactRequest(string DisplayName, string? Phone, string? Email);
+
+public sealed record PersonalDebtRelationshipSummaryDto(
+    Guid Id,
+    string Perspective,
+    Guid? CreditorUserIdentityId,
+    Guid? CreditorContactId,
+    Guid? DebtorUserIdentityId,
+    Guid? DebtorContactId,
+    string CurrencyCode,
+    decimal CurrentBalance,
+    DateTimeOffset? DueDateUtc,
+    string Status,
+    int Version,
+    DateTimeOffset UpdatedAtUtc);
+
+public sealed record CreatePersonalDebtRelationshipRequest(
+    Guid? CreditorUserIdentityId,
+    Guid? CreditorContactId,
+    Guid? DebtorUserIdentityId,
+    Guid? DebtorContactId,
+    string? CurrencyCode,
+    DateTimeOffset? DueDateUtc,
+    decimal? InitialLoanAmount,
+    string? InitialLoanNotes);
+
+public sealed record RecordPersonalUtangEntryRequest(
+    string EntryType,
+    decimal Amount,
+    decimal? AdjustmentDelta,
+    int? ExpectedVersion,
+    string? Notes,
+    DateTimeOffset? DueDateUtc);
+
+public sealed record PersonalUtangEntryDto(
+    Guid Id,
+    Guid RelationshipId,
+    string EntryType,
+    decimal Amount,
+    decimal SignedDelta,
+    decimal BalanceAfter,
+    string? Notes,
+    DateTimeOffset? DueDateUtc,
+    Guid CreatedByUserIdentityId,
+    DateTimeOffset CreatedAtUtc);
+
+public sealed record PersonalUtangBalanceDto(
+    Guid RelationshipId,
+    decimal CurrentBalance,
+    string CurrencyCode,
+    int Version,
+    DateTimeOffset UpdatedAtUtc);
+
+public sealed record PersonalUtangInvitationDto(
+    Guid Id,
+    Guid DebtRelationshipId,
+    Guid InviteeContactId,
+    Guid InvitedByUserIdentityId,
+    string? InviteTargetEmailMasked,
+    string Status,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    DateTimeOffset ExpiresAtUtc,
+    DateTimeOffset? AcceptedAtUtc,
+    DateTimeOffset? DeclinedAtUtc,
+    DateTimeOffset? RevokedAtUtc,
+    Guid? AcceptedByUserIdentityId,
+    string? AcceptToken);
+
+public sealed record CreatePersonalUtangInvitationRequest(Guid InviteeContactId);
+
+public sealed record AcceptPersonalUtangInvitationRequest(string Token);
+
+public sealed record PersonalUtangInvitationAcceptResultDto(
+    Guid InvitationId,
+    Guid DebtRelationshipId,
+    Guid LinkedContactId,
+    Guid LinkedUserIdentityId,
+    bool CreatedOrganizationMembership,
+    bool GrantedProductRole);
+
 /// <summary>Local Validation Quick Login identity (Platform API, non-Production).</summary>
 public sealed record LocalValidationQuickLoginIdentityDto(
     string Key,
@@ -383,6 +508,49 @@ public interface IPlatformAccessClient
 
     Task<ApiResult<PlatformMembershipDto>> AcceptOrganizationInvitationByIdAsync(
         Guid invitationId,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PersonalDashboardDto>> GetPersonalDashboardAsync(CancellationToken ct = default);
+    Task<ApiResult<PersonalProfileDto>> GetPersonalProfileAsync(CancellationToken ct = default);
+    Task<ApiResult<PersonalAccountSettingsDto>> GetPersonalSettingsAsync(CancellationToken ct = default);
+    Task<ApiResult<PersonalAccountSettingsDto>> UpdatePersonalSettingsAsync(
+        UpdatePersonalAccountSettingsRequest request,
+        CancellationToken ct = default);
+    Task<ApiResult<IReadOnlyList<PersonalContactDto>>> GetPersonalContactsAsync(CancellationToken ct = default);
+    Task<ApiResult<PersonalContactDto>> CreatePersonalContactAsync(
+        CreatePersonalContactRequest request,
+        CancellationToken ct = default);
+    Task<ApiResult<IReadOnlyList<PersonalDebtRelationshipSummaryDto>>> GetPersonalUtangLentAsync(
+        CancellationToken ct = default);
+    Task<ApiResult<IReadOnlyList<PersonalDebtRelationshipSummaryDto>>> GetPersonalUtangBorrowedAsync(
+        CancellationToken ct = default);
+    Task<ApiResult<PersonalDebtRelationshipSummaryDto>> CreatePersonalDebtRelationshipAsync(
+        CreatePersonalDebtRelationshipRequest request,
+        CancellationToken ct = default);
+    Task<ApiResult<PersonalDebtRelationshipSummaryDto>> GetPersonalDebtRelationshipAsync(
+        Guid relationshipId,
+        CancellationToken ct = default);
+    Task<ApiResult<PersonalUtangBalanceDto>> GetPersonalUtangBalanceAsync(
+        Guid relationshipId,
+        CancellationToken ct = default);
+    Task<ApiResult<IReadOnlyList<PersonalUtangEntryDto>>> GetPersonalUtangHistoryAsync(
+        Guid relationshipId,
+        CancellationToken ct = default);
+    Task<ApiResult<PersonalUtangEntryDto>> RecordPersonalUtangEntryAsync(
+        Guid relationshipId,
+        RecordPersonalUtangEntryRequest request,
+        CancellationToken ct = default);
+    Task<ApiResult<IReadOnlyList<PersonalUtangInvitationDto>>> GetPersonalUtangInvitationsAsync(
+        CancellationToken ct = default);
+    Task<ApiResult<PersonalUtangInvitationDto>> CreatePersonalUtangInvitationAsync(
+        Guid relationshipId,
+        CreatePersonalUtangInvitationRequest request,
+        CancellationToken ct = default);
+    Task<ApiResult<PersonalUtangInvitationAcceptResultDto>> AcceptPersonalUtangInvitationAsync(
+        string token,
+        CancellationToken ct = default);
+    Task<ApiResult<PersonalUtangInvitationDto>> DeclinePersonalUtangInvitationAsync(
+        string token,
         CancellationToken ct = default);
 
     /// <summary>

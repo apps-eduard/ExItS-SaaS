@@ -2,6 +2,7 @@
 @layout Layout.AuthShell
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
@@ -16,18 +17,23 @@
     {
         <Spinner />
     }
-    else if (CurrentUser.Session is null)
+    else if (!_authenticated)
     {
         <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else if (_loadFailed)
+    {
+        <ErrorState Title="@L["Personal_ProfileErrorTitle"]" Message="@(_error ?? L["Personal_LoadErrorMessage"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
     }
     else
     {
         <Section Title="@L["Personal_ProfileSection"]">
             <Stack Gap="2">
-                <div><span class="pos-muted">@L["Register_DisplayName"]</span><div class="pos-value-md">@CurrentUser.Session.DisplayName</div></div>
-                <div><span class="pos-muted">@L["SignIn_UsernameLabel"]</span><div class="pos-value-md">@CurrentUser.Session.Username</div></div>
-                <div><span class="pos-muted">@L["Register_Email"]</span><div class="pos-value-md">@CurrentUser.Session.Email</div></div>
-                <div><span class="pos-muted">@L["Personal_AccountClass"]</span><div class="pos-value-md">@(CurrentUser.Session.AccountClass ?? "—")</div></div>
+                <div><span class="pos-muted">@L["Register_DisplayName"]</span><div class="pos-value-md">@(_profile?.DisplayName ?? CurrentUser.Session?.DisplayName)</div></div>
+                <div><span class="pos-muted">@L["SignIn_UsernameLabel"]</span><div class="pos-value-md">@(_profile?.Username ?? CurrentUser.Session?.Username)</div></div>
+                <div><span class="pos-muted">@L["Register_Email"]</span><div class="pos-value-md">@(_profile?.Email ?? CurrentUser.Session?.Email)</div></div>
+                <div><span class="pos-muted">@L["Personal_AccountClass"]</span><div class="pos-value-md">@(_profile?.AccountClass ?? CurrentUser.Session?.AccountClass ?? "—")</div></div>
+                <div><span class="pos-muted">@L["Personal_StatusLabel"]</span><div class="pos-value-md">@(_profile?.Status ?? "—")</div></div>
             </Stack>
         </Section>
     }
@@ -35,15 +41,51 @@
 
 @code {
     private bool _ready;
+    private bool _authenticated;
+    private bool _loadFailed;
+    private string? _error;
+    private PersonalProfileDto? _profile;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
     {
-        if (!CurrentUser.IsAuthenticated)
+        _ready = false;
+        _loadFailed = false;
+        _error = null;
+        try
         {
-            await Auth.RestoreSessionAsync();
-        }
+            if (!CurrentUser.IsAuthenticated)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                _authenticated = restore.Succeeded;
+            }
+            else
+            {
+                _authenticated = true;
+            }
 
-        _ready = true;
+            if (!_authenticated)
+            {
+                return;
+            }
+
+            await Auth.EnsurePersonalAccountProfileAsync();
+            var result = await Platform.GetPersonalProfileAsync();
+            if (result.IsSuccess)
+            {
+                _profile = result.Data;
+            }
+            else
+            {
+                // Session fallback is still useful; do not hard-fail the page.
+                _error = result.Error?.Detail;
+            }
+        }
+        finally
+        {
+            _ready = true;
+        }
     }
 
     private void GoHome() => Nav.NavigateTo("/personal");
