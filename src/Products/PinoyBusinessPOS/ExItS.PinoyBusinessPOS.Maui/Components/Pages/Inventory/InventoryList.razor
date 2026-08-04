@@ -18,7 +18,10 @@ else
     <PageHeader Title="@L["Inventory_Title"]" Subtitle="@L["Inventory_Subtitle"]">
         <Actions>
             <Button Variant="ButtonVariant.Secondary" OnClick="GoLowStock">@L["Inventory_OpenLowStock"]</Button>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoCounts">@L["Inventory_OpenCounts"]</Button>
+            @if (canManage)
+            {
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoCounts">@L["Inventory_OpenCounts"]</Button>
+            }
             <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Inventory_Refresh"]</Button>
         </Actions>
     </PageHeader>
@@ -26,10 +29,6 @@ else
     @if (_isOffline)
     {
         <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
-    }
-    else if (!canManage)
-    {
-        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
     }
 
     <SearchToolbar SearchText="@_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Inventory_SearchPlaceholder"]" />

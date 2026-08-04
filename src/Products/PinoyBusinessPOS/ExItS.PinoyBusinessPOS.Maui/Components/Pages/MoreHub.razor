@@ -23,7 +23,10 @@
         <Button Variant="ButtonVariant.Primary" OnClick="GoOverdue">@L["Overdue_OpenOrg"]</Button>
     </Section>
     <Section Title="@L["Inventory_Title"]">
-        <Button Variant="ButtonVariant.Primary" OnClick="GoInventory">@L["Nav_Inventory"]</Button>
+        @if (Capabilities.IsAllowed(UtangCapability.ViewInventory))
+        {
+            <Button Variant="ButtonVariant.Primary" OnClick="GoInventory">@L["Nav_Inventory"]</Button>
+        }
     </Section>
     <Section Title="@L["Expenses_Title"]">
         <Button Variant="ButtonVariant.Primary" OnClick="GoExpenses">@L["Nav_Expenses"]</Button>

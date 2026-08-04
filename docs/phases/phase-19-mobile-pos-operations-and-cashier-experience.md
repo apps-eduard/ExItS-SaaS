@@ -37,7 +37,7 @@ Reuse existing Phase 8–18 Platform and POS APIs/screens wherever possible. Pre
 
 | WP | Focus | Documented status |
 |---|---|---|
-| P19-WP01 | Mobile Inventory UI | **Open** |
+| P19-WP01 | Mobile Inventory UI | **Code Complete** | [report](../reports/P19-WP01-mobile-inventory-ui.md) |
 | P19-WP02 | Mobile Registers UI | **Open** |
 | P19-WP03 | Mobile Shift Operations UI | **Open** |
 | P19-WP04 | Mobile Cashier Selling Experience | **Open** |

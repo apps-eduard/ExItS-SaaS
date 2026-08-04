@@ -98,7 +98,8 @@ else
         _errorTitle = null;
         _errorMessage = null;
 
-        if (!decimal.TryParse(_quantityText, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var qty))
+        if (!decimal.TryParse(_quantityText, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var qty)
+            || qty <= 0)
         {
             _errorTitle = L["Inventory_AdjustTitle"];
             _errorMessage = L["Sales_Checkout_QuantityPrecision"];
@@ -106,9 +107,17 @@ else
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(_reason))
+        {
+            _errorTitle = L["Inventory_AdjustTitle"];
+            _errorMessage = L["Inventory_Reason"];
+            _busy = false;
+            return;
+        }
+
         var result = await Inventory.AdjustAsync(
             ProductId,
-            new AdjustInventoryRequest(_direction, qty, _reason));
+            new AdjustInventoryRequest(_direction, qty, _reason.Trim()));
         _busy = false;
 
         if (result.Status == ApiCallStatus.Success)
