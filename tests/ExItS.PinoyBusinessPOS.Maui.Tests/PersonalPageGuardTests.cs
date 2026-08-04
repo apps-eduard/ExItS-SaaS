@@ -57,6 +57,8 @@ public sealed class PersonalPageGuardTests
         var more = File.ReadAllText(Path.Combine(PersonalPagesDirectory(), "PersonalMore.razor"));
         Assert.Contains("@page \"/personal/more\"", more, StringComparison.Ordinal);
         Assert.Contains("@layout Layout.PersonalShell", more, StringComparison.Ordinal);
+        Assert.Contains("Personal_MyQrLink", more, StringComparison.Ordinal);
+        Assert.Contains("/personal/my-qr", more, StringComparison.Ordinal);
         Assert.Contains("Personal_Nav_UtangInvitations", more, StringComparison.Ordinal);
         Assert.Contains("Personal_ProfileLink", more, StringComparison.Ordinal);
         Assert.Contains("Personal_SettingsLink", more, StringComparison.Ordinal);
@@ -64,6 +66,35 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("Auth_Logout", more, StringComparison.Ordinal);
         Assert.DoesNotContain("AccountContextSwitcher", more, StringComparison.Ordinal);
         Assert.DoesNotContain("/sales", more, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Public_user_qr_and_resolve_require_confirm_before_link()
+    {
+        var personal = PersonalPagesDirectory();
+        var myQr = File.ReadAllText(Path.Combine(personal, "PersonalMyQr.razor"));
+        Assert.Contains("@page \"/personal/my-qr\"", myQr, StringComparison.Ordinal);
+        Assert.Contains("GetMyPublicIdentityAsync", myQr, StringComparison.Ordinal);
+        Assert.Contains("LocalQrCodeRenderer", myQr, StringComparison.Ordinal);
+        Assert.DoesNotContain("api.qrserver.com", myQr, StringComparison.Ordinal);
+
+        var resolve = File.ReadAllText(Path.Combine(personal, "PublicUserResolve.razor"));
+        Assert.Contains("@page \"/personal/resolve-user\"", resolve, StringComparison.Ordinal);
+        Assert.Contains("ResolvePublicUserIdAsync", resolve, StringComparison.Ordinal);
+        Assert.Contains("Personal_ResolveConfirm", resolve, StringComparison.Ordinal);
+        Assert.Contains("IsSelf", resolve, StringComparison.Ordinal);
+        Assert.Contains("purpose=utang-people",
+            File.ReadAllText(Path.Combine(personal, "PersonalPeople.razor")), StringComparison.Ordinal);
+
+        var client = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.ApiClient",
+            "PlatformAccessClient.cs"));
+        Assert.Contains("/api/v1/me/public-identity", client, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/users/resolve-public-id", client, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -148,7 +179,7 @@ public sealed class PersonalPageGuardTests
                      "PersonalHome.razor", "PersonalMore.razor", "PersonalPeople.razor", "PersonalLent.razor",
                      "PersonalBorrowed.razor", "PersonalRelationshipDetail.razor", "PersonalUtangInvitations.razor",
                      "PersonalProfile.razor", "PersonalSettings.razor", "PersonalExplorePos.razor",
-                     "PersonalPeopleDetail.razor"
+                     "PersonalPeopleDetail.razor", "PersonalMyQr.razor"
                  })
         {
             var text = File.ReadAllText(Path.Combine(PersonalPagesDirectory(), name));

@@ -42,6 +42,13 @@
             </Stack>
         }
 
+        <Section Title="@L["Personal_PeopleAddByIdTitle"]">
+            <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_PeopleAddByIdHint"]</InlineMessage>
+            <FormActions>
+                <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="GoResolveExItsId">@L["Personal_AddByExItsId"]</Button>
+            </FormActions>
+        </Section>
+
         <Section Title="@L["Personal_PeopleCreateTitle"]">
             <FormValidationSummary Messages="_errors" />
             <FormGroup>
@@ -148,5 +155,7 @@
     }
 
     private void GoDetail(Guid id) => Nav.NavigateTo($"/personal/utang/people/{id:D}");
+    private void GoResolveExItsId() =>
+        Nav.NavigateTo("/personal/resolve-user?purpose=utang-people&return=/personal/utang/people");
     private void GoSignIn() => Nav.NavigateTo("/signin");
 }

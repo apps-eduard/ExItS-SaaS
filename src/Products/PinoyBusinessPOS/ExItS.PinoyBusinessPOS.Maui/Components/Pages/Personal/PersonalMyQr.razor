@@ -1,0 +1,131 @@
+@page "/personal/my-qr"
+@layout Layout.PersonalShell
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+@inject IJSRuntime Js
+
+<Page>
+    <PageHeader Title="@L["Personal_MyQrTitle"]" Subtitle="@L["Personal_MyQrSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoMore">@L["Personal_BackMore"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else if (_loadFailed || _identity is null)
+    {
+        <ErrorState Title="@L["Personal_MyQrErrorTitle"]" Message="@(_error ?? L["Personal_MyQrLoadFailed"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    }
+    else
+    {
+        <Section Title="@_identity.DisplayName">
+            <div class="pos-qr-panel">
+                <img class="pos-qr-image" src="@_qrDataUrl" alt="@L["Personal_MyQrTitle"]" width="220" height="220" />
+                <div class="pos-value-md">@_identity.PublicUserId</div>
+                <span class="pos-muted">@L["Personal_MyQrHint"]</span>
+            </div>
+            <FormActions>
+                <Button Variant="ButtonVariant.Secondary" OnClick="CopyIdAsync">@L["Personal_CopyExItsId"]</Button>
+                <Button Variant="ButtonVariant.Ghost" OnClick="RefreshVisualAsync">@L["Personal_RefreshQrVisual"]</Button>
+            </FormActions>
+            @if (!string.IsNullOrEmpty(_copyMessage))
+            {
+                <InlineMessage Tone="InlineMessageTone.Info">@_copyMessage</InlineMessage>
+            }
+        </Section>
+    }
+</Page>
+
+@code {
+    private bool _loading = true;
+    private bool _authenticated;
+    private bool _loadFailed;
+    private string? _error;
+    private string? _copyMessage;
+    private string _qrDataUrl = string.Empty;
+    private PublicIdentityDto? _identity;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadFailed = false;
+        _error = null;
+        try
+        {
+            if (!CurrentUser.IsAuthenticated)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                _authenticated = restore.Succeeded;
+            }
+            else
+            {
+                _authenticated = true;
+            }
+
+            if (!_authenticated)
+            {
+                return;
+            }
+
+            await Auth.EnsurePersonalAccountProfileAsync();
+            var result = await Platform.GetMyPublicIdentityAsync();
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _loadFailed = true;
+                _error = result.Error?.Detail ?? L["Personal_MyQrLoadFailed"];
+                return;
+            }
+
+            _identity = result.Data;
+            RefreshVisualAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void RefreshVisualAsync()
+    {
+        if (_identity is null)
+        {
+            return;
+        }
+
+        // Local QR only — payload is exits://user/v1/EX-####-#### (no PII/tokens).
+        _qrDataUrl = LocalQrCodeRenderer.ToPngDataUrl(_identity.QrPayload);
+    }
+
+    private async Task CopyIdAsync()
+    {
+        if (_identity is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await Js.InvokeVoidAsync("navigator.clipboard.writeText", _identity.PublicUserId);
+            _copyMessage = L["Personal_CopyExItsIdDone"];
+        }
+        catch
+        {
+            _copyMessage = _identity.PublicUserId;
+        }
+    }
+
+    private void GoMore() => Nav.NavigateTo("/personal/more");
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+}

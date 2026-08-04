@@ -78,22 +78,22 @@
   <data name="Connectivity_Label" xml:space="preserve"><value>Network</value></data>
   <data name="Connectivity_Online" xml:space="preserve"><value>Online</value></data>
   <data name="Connectivity_Offline" xml:space="preserve"><value>Offline</value></data>
-  <data name="Connectivity_Unknown" xml:space="preserve"><value>Checking…</value></data>
+  <data name="Connectivity_Unknown" xml:space="preserve"><value>Checkingâ€¦</value></data>
 
   <data name="Api_Label" xml:space="preserve"><value>API</value></data>
-  <data name="Api_Checking" xml:space="preserve"><value>Checking API availability…</value></data>
+  <data name="Api_Checking" xml:space="preserve"><value>Checking API availabilityâ€¦</value></data>
   <data name="Api_Available" xml:space="preserve"><value>Available</value></data>
   <data name="Api_Unavailable" xml:space="preserve"><value>Unavailable</value></data>
   <data name="Api_Offline" xml:space="preserve"><value>No network connectivity</value></data>
   <data name="Api_Retry" xml:space="preserve"><value>Retry</value></data>
   <data name="Api_TestConnection" xml:space="preserve"><value>Test connection</value></data>
-  <data name="Api_Testing" xml:space="preserve"><value>Testing…</value></data>
+  <data name="Api_Testing" xml:space="preserve"><value>Testingâ€¦</value></data>
   <data name="Api_Environment" xml:space="preserve"><value>API environment</value></data>
   <data name="Api_TestSuccess" xml:space="preserve"><value>Connected. API reported status: {0}</value></data>
   <data name="Api_TestFailure" xml:space="preserve"><value>Could not reach the API.</value></data>
 
   <data name="Home_Title" xml:space="preserve"><value>ExItS PinoyBusinessPOS</value></data>
-  <data name="Home_Subtitle" xml:space="preserve"><value>Point-of-sale foundation — connectivity and platform status.</value></data>
+  <data name="Home_Subtitle" xml:space="preserve"><value>Point-of-sale foundation â€” connectivity and platform status.</value></data>
   <data name="Home_AppSectionTitle" xml:space="preserve"><value>App</value></data>
   <data name="Home_StatusSectionTitle" xml:space="preserve"><value>System status</value></data>
   <data name="Home_VersionLabel" xml:space="preserve"><value>Version</value></data>
@@ -136,7 +136,7 @@
   <data name="Common_Confirm" xml:space="preserve"><value>Confirm</value></data>
   <data name="Common_Search" xml:space="preserve"><value>Search</value></data>
   <data name="Common_Connected" xml:space="preserve"><value>Connected</value></data>
-  <data name="Common_Loading" xml:space="preserve"><value>Loading…</value></data>
+  <data name="Common_Loading" xml:space="preserve"><value>Loadingâ€¦</value></data>
   <data name="Common_Success" xml:space="preserve"><value>Success</value></data>
   <data name="Common_Warning" xml:space="preserve"><value>Warning</value></data>
   <data name="Common_Error" xml:space="preserve"><value>Error</value></data>
@@ -156,7 +156,7 @@
   <data name="Format_LocalSuffix" xml:space="preserve"><value>Local</value></data>
 
   <data name="DevShowcase_Title" xml:space="preserve"><value>Component showcase</value></data>
-  <data name="DevShowcase_Subtitle" xml:space="preserve"><value>Development and Testing only — visual QA for shared UI components.</value></data>
+  <data name="DevShowcase_Subtitle" xml:space="preserve"><value>Development and Testing only â€” visual QA for shared UI components.</value></data>
   <data name="DevShowcase_UnavailableTitle" xml:space="preserve"><value>Showcase unavailable</value></data>
   <data name="DevShowcase_UnavailableMessage" xml:space="preserve"><value>The component showcase is available only in Development or Testing builds.</value></data>
   <data name="DevShowcase_SampleNoticeTitle" xml:space="preserve"><value>Sample values only</value></data>
@@ -194,7 +194,7 @@
   <data name="DevShowcase_AccordionBody" xml:space="preserve"><value>Secondary detail can live in an accordion without crowding the main view.</value></data>
 
   <data name="Env_Testing" xml:space="preserve"><value>Testing</value></data>
-  <data name="Boot_Loading" xml:space="preserve"><value>Starting…</value></data>
+  <data name="Boot_Loading" xml:space="preserve"><value>Startingâ€¦</value></data>
   <data name="Common_Continue" xml:space="preserve"><value>Continue</value></data>
   <data name="Common_Back" xml:space="preserve"><value>Back</value></data>
   <data name="Welcome_Title" xml:space="preserve"><value>Welcome</value></data>
@@ -230,7 +230,7 @@
   <data name="SignIn_QuickLoginTitle" xml:space="preserve"><value>Quick sign-in</value></data>
   <data name="SignIn_QuickLoginLabel" xml:space="preserve"><value>Local Validation identity</value></data>
   <data name="SignIn_QuickLoginHint" xml:space="preserve"><value>One entry per user. Uses Local Validation shared password (same as Admin Quick Login).</value></data>
-  <data name="SignIn_QuickLoginPlaceholder" xml:space="preserve"><value>Choose a user…</value></data>
+  <data name="SignIn_QuickLoginPlaceholder" xml:space="preserve"><value>Choose a userâ€¦</value></data>
   <data name="SignIn_QuickLoginUnavailable" xml:space="preserve"><value>No Quick Login identities available</value></data>
   <data name="SignIn_AccessTokenMissing" xml:space="preserve"><value>Signed in, but POS access token was not issued. Check Local Validation shared password and try again.</value></data>
   <data name="OrgSelect_Title" xml:space="preserve"><value>Select organization</value></data>
@@ -288,11 +288,11 @@
   <data name="Settings_SwitchOrganization" xml:space="preserve"><value>Switch organization</value></data>
 
   <data name="Customers_Title" xml:space="preserve"><value>Customers</value></data>
-  <data name="Customers_Subtitle" xml:space="preserve"><value>Organization customer profiles — no credit balances in this release.</value></data>
+  <data name="Customers_Subtitle" xml:space="preserve"><value>Organization customer profiles â€” no credit balances in this release.</value></data>
   <data name="Customers_Add" xml:space="preserve"><value>Add customer</value></data>
   <data name="Customers_Refresh" xml:space="preserve"><value>Refresh</value></data>
   <data name="Customers_SearchPlaceholder" xml:space="preserve"><value>Search by name or mobile</value></data>
-  <data name="Customers_Loading" xml:space="preserve"><value>Loading customers…</value></data>
+  <data name="Customers_Loading" xml:space="preserve"><value>Loading customersâ€¦</value></data>
   <data name="Customers_EmptyTitle" xml:space="preserve"><value>No customers yet</value></data>
   <data name="Customers_EmptyMessage" xml:space="preserve"><value>Create a customer profile for this store. Credit and repayments come later.</value></data>
   <data name="Customers_Col_Name" xml:space="preserve"><value>Name</value></data>
@@ -301,7 +301,7 @@
   <data name="Customers_Col_Actions" xml:space="preserve"><value>Actions</value></data>
   <data name="Customers_View" xml:space="preserve"><value>View</value></data>
   <data name="Customers_NoMobile" xml:space="preserve"><value>No mobile</value></data>
-  <data name="Customers_NoValue" xml:space="preserve"><value>—</value></data>
+  <data name="Customers_NoValue" xml:space="preserve"><value>â€”</value></data>
   <data name="Customers_CreateTitle" xml:space="preserve"><value>New customer</value></data>
   <data name="Customers_CreateSubtitle" xml:space="preserve"><value>Display name is required. Mobile is optional.</value></data>
   <data name="Customers_Create" xml:space="preserve"><value>Create customer</value></data>
@@ -318,7 +318,7 @@
   <data name="Customers_Field_Status" xml:space="preserve"><value>Status</value></data>
   <data name="Customers_MobileHint" xml:space="preserve"><value>Optional. Used to prevent duplicate active customers in this organization.</value></data>
   <data name="Customers_AddressHint" xml:space="preserve"><value>Optional short location description.</value></data>
-  <data name="Customers_NotesHint" xml:space="preserve"><value>General identification only — not a credit record.</value></data>
+  <data name="Customers_NotesHint" xml:space="preserve"><value>General identification only â€” not a credit record.</value></data>
   <data name="Customers_DisplayNameRequired" xml:space="preserve"><value>Display name is required.</value></data>
   <data name="Customers_CreditDeferredTitle" xml:space="preserve"><value>Later Utang features</value></data>
   <data name="Customers_CreditDeferredMessage" xml:space="preserve"><value>Interest and credit limits are not available yet. Statements and repayment receipts are available on customer detail.</value></data>
@@ -342,7 +342,7 @@
   <data name="Statement_PeriodEnd" xml:space="preserve"><value>Period end</value></data>
   <data name="Statement_Generate" xml:space="preserve"><value>Preview statement</value></data>
   <data name="Statement_Share" xml:space="preserve"><value>Share statement</value></data>
-  <data name="Statement_Loading" xml:space="preserve"><value>Loading statement…</value></data>
+  <data name="Statement_Loading" xml:space="preserve"><value>Loading statementâ€¦</value></data>
   <data name="Statement_ErrorTitle" xml:space="preserve"><value>Statement failed</value></data>
   <data name="Statement_PeriodRequired" xml:space="preserve"><value>Choose both period start and period end.</value></data>
   <data name="Statement_PeriodInvalid" xml:space="preserve"><value>Period end must be on or after period start.</value></data>
@@ -363,7 +363,7 @@
   <data name="Receipt_Subtitle" xml:space="preserve"><value>Preview for sharing</value></data>
   <data name="Receipt_Open" xml:space="preserve"><value>Receipt</value></data>
   <data name="Receipt_Share" xml:space="preserve"><value>Share receipt</value></data>
-  <data name="Receipt_Loading" xml:space="preserve"><value>Loading receipt…</value></data>
+  <data name="Receipt_Loading" xml:space="preserve"><value>Loading receiptâ€¦</value></data>
   <data name="Receipt_ErrorTitle" xml:space="preserve"><value>Receipt failed</value></data>
   <data name="Receipt_NotFoundTitle" xml:space="preserve"><value>Receipt not found</value></data>
   <data name="Receipt_NotFoundMessage" xml:space="preserve"><value>This repayment receipt is not available for the selected organization.</value></data>
@@ -393,7 +393,7 @@
   <data name="Payment_ConfirmTitle" xml:space="preserve"><value>Record this payment?</value></data>
   <data name="Payment_ConfirmMessage" xml:space="preserve"><value>The payment will be appended to the immutable Utang ledger and cannot be edited.</value></data>
   <data name="Payment_ErrorTitle" xml:space="preserve"><value>Payment action failed</value></data>
-  <data name="Payment_Loading" xml:space="preserve"><value>Loading payment…</value></data>
+  <data name="Payment_Loading" xml:space="preserve"><value>Loading paymentâ€¦</value></data>
   <data name="Payment_NotFoundTitle" xml:space="preserve"><value>Payment not found</value></data>
   <data name="Payment_NotFoundMessage" xml:space="preserve"><value>This repayment is not available for the selected organization.</value></data>
   <data name="Payment_DetailTitle" xml:space="preserve"><value>Payment detail</value></data>
@@ -410,7 +410,7 @@
   <data name="Ledger_Title" xml:space="preserve"><value>Utang ledger</value></data>
   <data name="Ledger_Subtitle" xml:space="preserve"><value>Chronological credit and payment history</value></data>
   <data name="Ledger_HistoryTitle" xml:space="preserve"><value>Ledger history</value></data>
-  <data name="Ledger_Loading" xml:space="preserve"><value>Loading ledger…</value></data>
+  <data name="Ledger_Loading" xml:space="preserve"><value>Loading ledgerâ€¦</value></data>
   <data name="Ledger_EmptyTitle" xml:space="preserve"><value>No ledger entries yet</value></data>
   <data name="Ledger_EmptyMessage" xml:space="preserve"><value>Credit and payment activity will appear here in chronological order.</value></data>
   <data name="Ledger_ErrorTitle" xml:space="preserve"><value>Could not load ledger</value></data>
@@ -435,7 +435,7 @@
   <data name="Credit_ReversalReasonRequired" xml:space="preserve"><value>Reversal reason is required.</value></data>
   <data name="Credit_Save" xml:space="preserve"><value>Record credit</value></data>
   <data name="Credit_HistoryTitle" xml:space="preserve"><value>Credit history</value></data>
-  <data name="Credit_HistoryLoading" xml:space="preserve"><value>Loading credit history…</value></data>
+  <data name="Credit_HistoryLoading" xml:space="preserve"><value>Loading credit historyâ€¦</value></data>
   <data name="Credit_HistoryEmptyTitle" xml:space="preserve"><value>No credit entries yet</value></data>
   <data name="Credit_HistoryEmptyMessage" xml:space="preserve"><value>Record credit to start this customer's append-only history.</value></data>
   <data name="Credit_Reverse" xml:space="preserve"><value>Reverse</value></data>
@@ -450,7 +450,7 @@
   <data name="Credit_NotFoundMessage" xml:space="preserve"><value>This credit entry is not available for the selected organization.</value></data>
   <data name="Credit_DetailTitle" xml:space="preserve"><value>Credit detail</value></data>
   <data name="Credit_DetailSubtitle" xml:space="preserve"><value>Due date and append-only credit history</value></data>
-  <data name="DueDate_Loading" xml:space="preserve"><value>Loading credit…</value></data>
+  <data name="DueDate_Loading" xml:space="preserve"><value>Loading creditâ€¦</value></data>
   <data name="DueDate_Status" xml:space="preserve"><value>Due status</value></data>
   <data name="DueDate_Current" xml:space="preserve"><value>Due date</value></data>
   <data name="DueDate_None" xml:space="preserve"><value>No due date</value></data>
@@ -466,7 +466,7 @@
   <data name="DueDate_ConfirmClearTitle" xml:space="preserve"><value>Clear due date?</value></data>
   <data name="DueDate_ConfirmClearMessage" xml:space="preserve"><value>The due date will be removed and the change will be recorded in history.</value></data>
   <data name="DueDate_HistoryTitle" xml:space="preserve"><value>Due-date history</value></data>
-  <data name="DueDate_HistoryLoading" xml:space="preserve"><value>Loading due-date history…</value></data>
+  <data name="DueDate_HistoryLoading" xml:space="preserve"><value>Loading due-date historyâ€¦</value></data>
   <data name="DueDate_HistoryEmptyTitle" xml:space="preserve"><value>No due-date changes yet</value></data>
   <data name="DueDate_HistoryEmptyMessage" xml:space="preserve"><value>Set or clear a due date to start the append-only history.</value></data>
   <data name="DueDate_ReasonRequired" xml:space="preserve"><value>A change reason is required.</value></data>
@@ -490,7 +490,7 @@
   <data name="Overdue_PolicyMessage" xml:space="preserve"><value>Overdue amounts are derived by applying active repayments to active credits oldest-first. Allocations are not stored.</value></data>
   <data name="Overdue_CustomersTitle" xml:space="preserve"><value>Customers with overdue</value></data>
   <data name="Overdue_CreditsTitle" xml:space="preserve"><value>Overdue credits</value></data>
-  <data name="Overdue_Loading" xml:space="preserve"><value>Loading overdue…</value></data>
+  <data name="Overdue_Loading" xml:space="preserve"><value>Loading overdueâ€¦</value></data>
   <data name="Overdue_ErrorTitle" xml:space="preserve"><value>Could not load overdue</value></data>
   <data name="Overdue_EmptyCustomersTitle" xml:space="preserve"><value>No overdue customers</value></data>
   <data name="Overdue_EmptyCustomersMessage" xml:space="preserve"><value>Customers appear here when unpaid active credits have a due date before today (UTC).</value></data>
@@ -588,7 +588,7 @@
   <data name="DevOffline_LastSynced" xml:space="preserve"><value>Last synced</value></data>
   <data name="DevOffline_FailureCode" xml:space="preserve"><value>Failure code</value></data>
   <data name="Settings_DevOfflineLink" xml:space="preserve"><value>Offline foundation diagnostics</value></data>
-  <data name="Offline_SavedPendingSync" xml:space="preserve"><value>Saved on this device — Pending Sync</value></data>
+  <data name="Offline_SavedPendingSync" xml:space="preserve"><value>Saved on this device â€” Pending Sync</value></data>
   <data name="Offline_ConfirmedOutstanding" xml:space="preserve"><value>Confirmed outstanding</value></data>
   <data name="Offline_PendingCredit" xml:space="preserve"><value>Pending credit</value></data>
   <data name="Offline_ProjectedOutstanding" xml:space="preserve"><value>Projected outstanding</value></data>
@@ -620,7 +620,7 @@
   <data name="Catalog_Categories" xml:space="preserve"><value>Categories</value></data>
   <data name="Catalog_BarcodeLookup" xml:space="preserve"><value>Barcode lookup</value></data>
   <data name="Catalog_Refresh" xml:space="preserve"><value>Refresh</value></data>
-  <data name="Catalog_Loading" xml:space="preserve"><value>Loading catalog…</value></data>
+  <data name="Catalog_Loading" xml:space="preserve"><value>Loading catalogâ€¦</value></data>
   <data name="Catalog_SearchPlaceholder" xml:space="preserve"><value>Search by name, SKU, or barcode</value></data>
   <data name="Catalog_EmptyTitle" xml:space="preserve"><value>No products yet</value></data>
   <data name="Catalog_EmptyMessage" xml:space="preserve"><value>Add your first product to start building the catalog.</value></data>
@@ -732,7 +732,7 @@
   <data name="Sales_Refresh" xml:space="preserve"><value>Refresh</value></data>
   <data name="Sales_Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Sales_BackToList" xml:space="preserve"><value>Back to sales</value></data>
-  <data name="Sales_Loading" xml:space="preserve"><value>Loading sales…</value></data>
+  <data name="Sales_Loading" xml:space="preserve"><value>Loading salesâ€¦</value></data>
   <data name="Sales_SearchPlaceholder" xml:space="preserve"><value>Search by sale number</value></data>
   <data name="Sales_FiltersTitle" xml:space="preserve"><value>Filters</value></data>
   <data name="Sales_Filter_Status" xml:space="preserve"><value>Status</value></data>
@@ -795,7 +795,7 @@
   <data name="Sales_VoidMessage" xml:space="preserve"><value>A voided sale stops counting toward your totals. It does not refund money or change stock. Give a reason.</value></data>
   <data name="Sales_VoidUtangMessage" xml:space="preserve"><value>Voiding this Utang sale also reverses the linked credit. No cash is reimbursed and stock is not changed. Give a reason.</value></data>
   <data name="Sales_VoidedSuccess" xml:space="preserve"><value>Sale voided.</value></data>
-  <data name="Returns_Loading" xml:space="preserve"><value>Loading return details…</value></data>
+  <data name="Returns_Loading" xml:space="preserve"><value>Loading return detailsâ€¦</value></data>
   <data name="Returns_NotFoundTitle" xml:space="preserve"><value>Sale not returnable</value></data>
   <data name="Returns_NotFoundMessage" xml:space="preserve"><value>This sale could not be loaded for returns.</value></data>
   <data name="Returns_BackToSale" xml:space="preserve"><value>Back to sale</value></data>
@@ -880,7 +880,7 @@
   <data name="Inventory_OfflineMessage" xml:space="preserve"><value>Inventory is online-only. Reconnect to view or change stock.</value></data>
   <data name="Inventory_EmptyTitle" xml:space="preserve"><value>No products yet</value></data>
   <data name="Inventory_EmptyMessage" xml:space="preserve"><value>Add catalog products first, then enable tracking here.</value></data>
-  <data name="Inventory_Loading" xml:space="preserve"><value>Loading inventory…</value></data>
+  <data name="Inventory_Loading" xml:space="preserve"><value>Loading inventoryâ€¦</value></data>
   <data name="Inventory_SearchPlaceholder" xml:space="preserve"><value>Search by name, SKU, or barcode</value></data>
   <data name="Inventory_InsufficientStockTitle" xml:space="preserve"><value>Insufficient stock</value></data>
   <data name="Inventory_InsufficientStockMessage" xml:space="preserve"><value>One or more tracked products do not have enough on-hand quantity for this sale.</value></data>
@@ -917,7 +917,7 @@
   <data name="Expenses_Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Expenses_Save" xml:space="preserve"><value>Save expense</value></data>
   <data name="Expenses_BackToList" xml:space="preserve"><value>Back to expenses</value></data>
-  <data name="Expenses_Loading" xml:space="preserve"><value>Loading expenses…</value></data>
+  <data name="Expenses_Loading" xml:space="preserve"><value>Loading expensesâ€¦</value></data>
   <data name="Expenses_SearchPlaceholder" xml:space="preserve"><value>Search by expense number</value></data>
   <data name="Expenses_FiltersTitle" xml:space="preserve"><value>Filters</value></data>
   <data name="Expenses_Filter_Status" xml:space="preserve"><value>Status</value></data>
@@ -1092,7 +1092,7 @@
   <data name="Suppliers_Subtitle" xml:space="preserve"><value>Manage supplier contact and reference data (online only).</value></data>
   <data name="Suppliers_Add" xml:space="preserve"><value>Add supplier</value></data>
   <data name="Suppliers_Refresh" xml:space="preserve"><value>Refresh</value></data>
-  <data name="Suppliers_Loading" xml:space="preserve"><value>Loading suppliers…</value></data>
+  <data name="Suppliers_Loading" xml:space="preserve"><value>Loading suppliersâ€¦</value></data>
   <data name="Suppliers_SearchPlaceholder" xml:space="preserve"><value>Search by name or supplier code</value></data>
   <data name="Suppliers_EmptyTitle" xml:space="preserve"><value>No suppliers yet</value></data>
   <data name="Suppliers_EmptyMessage" xml:space="preserve"><value>Add your first supplier to keep vendor contact details on file.</value></data>
@@ -1191,7 +1191,7 @@
   <data name="Purchasing_Field_Supplier" xml:space="preserve"><value>Supplier</value></data>
   <data name="Purchasing_Field_SupplierReference" xml:space="preserve"><value>Supplier reference</value></data>
   <data name="Purchasing_Field_Notes" xml:space="preserve"><value>Notes</value></data>
-  <data name="Purchasing_LineSummary" xml:space="preserve"><value>Ordered {0} · Received {1} · Outstanding {2} · Cost {3}</value></data>
+  <data name="Purchasing_LineSummary" xml:space="preserve"><value>Ordered {0} Â· Received {1} Â· Outstanding {2} Â· Cost {3}</value></data>
   <data name="Purchasing_Outstanding" xml:space="preserve"><value>Outstanding {0} {1}</value></data>
   <data name="Purchasing_ReceiveQty" xml:space="preserve"><value>Receive quantity</value></data>
   <data name="Purchasing_DeliveryReference" xml:space="preserve"><value>Delivery reference</value></data>
@@ -1418,7 +1418,7 @@
   <data name="Personal_LaunchPos" xml:space="preserve"><value>Open POS</value></data>
   <data name="Personal_PosReady" xml:space="preserve"><value>POS access available</value></data>
   <data name="Personal_OrgEssentialsOnly" xml:space="preserve"><value>Organization essentials (POS not entitled yet)</value></data>
-  <data name="Personal_MembershipReady" xml:space="preserve"><value>Active membership — continue to open the organization or POS when entitled</value></data>
+  <data name="Personal_MembershipReady" xml:space="preserve"><value>Active membership â€” continue to open the organization or POS when entitled</value></data>
   <data name="Personal_DashboardSection" xml:space="preserve"><value>Personal Utang summary</value></data>
   <data name="Personal_DashboardUnavailable" xml:space="preserve"><value>Dashboard totals are temporarily unavailable.</value></data>
   <data name="Personal_Stat_People" xml:space="preserve"><value>People</value></data>
@@ -1511,7 +1511,7 @@
   <data name="Personal_ExplorePosEmptyMessage" xml:space="preserve"><value>No active Pinoy Business POS plans are published right now.</value></data>
   <data name="Personal_ExplorePosSelectHint" xml:space="preserve"><value>Select a plan to continue. You will enter business details and confirm before an organization is created.</value></data>
   <data name="Personal_ExplorePosTrialDays" xml:space="preserve"><value>{0}-day free trial available</value></data>
-  <data name="Personal_ExplorePosNoTrial" xml:space="preserve"><value>No free trial — subscribe to start</value></data>
+  <data name="Personal_ExplorePosNoTrial" xml:space="preserve"><value>No free trial â€” subscribe to start</value></data>
   <data name="Personal_ExplorePosStartTrial" xml:space="preserve"><value>Select trial</value></data>
   <data name="Personal_ExplorePosSubscribe" xml:space="preserve"><value>Select / Subscribe</value></data>
   <data name="Personal_ExplorePosBack" xml:space="preserve"><value>Back to plans</value></data>
@@ -1634,9 +1634,39 @@
   <data name="Cashier_CloseShift" xml:space="preserve"><value>Close shift</value></data>
   <data name="Cashier_HistorySection" xml:space="preserve"><value>History</value></data>
   <data name="Cashier_OwnSales" xml:space="preserve"><value>My sales history</value></data>
-  <data name="SellingMode_Banner" xml:space="preserve"><value>Selling mode — role unchanged</value></data>
+  <data name="SellingMode_Banner" xml:space="preserve"><value>Selling mode â€” role unchanged</value></data>
   <data name="SellingMode_Exit" xml:space="preserve"><value>Return to dashboard</value></data>
   <data name="More_Subtitle" xml:space="preserve"><value>Additional tools and organization links.</value></data>
   <data name="More_WorkspaceSection" xml:space="preserve"><value>Workspace</value></data>
   <data name="More_RoleHome" xml:space="preserve"><value>Role home</value></data>
+  <data name="Personal_MyQrLink" xml:space="preserve"><value>My QR Code</value></data>
+  <data name="Personal_MyQrTitle" xml:space="preserve"><value>My QR Code</value></data>
+  <data name="Personal_MyQrSubtitle" xml:space="preserve"><value>Share your ExItS ID. Others confirm before any link is created.</value></data>
+  <data name="Personal_MyQrErrorTitle" xml:space="preserve"><value>Could not load QR</value></data>
+  <data name="Personal_MyQrLoadFailed" xml:space="preserve"><value>Your ExItS ID could not be loaded. Try again.</value></data>
+  <data name="Personal_MyQrHint" xml:space="preserve"><value>QR encodes only your public ExItS reference - never email, phone, or tokens.</value></data>
+  <data name="Personal_CopyExItsId" xml:space="preserve"><value>Copy ExItS ID</value></data>
+  <data name="Personal_CopyExItsIdDone" xml:space="preserve"><value>ExItS ID copied.</value></data>
+  <data name="Personal_RefreshQrVisual" xml:space="preserve"><value>Refresh QR visual</value></data>
+  <data name="Personal_ExItsIdLabel" xml:space="preserve"><value>ExItS ID</value></data>
+  <data name="Personal_ExItsIdHint" xml:space="preserve"><value>Format EX-4827-1936 (or paste a scanned exits://user/v1/... payload).</value></data>
+  <data name="Personal_ExItsIdRequired" xml:space="preserve"><value>Enter an ExItS ID.</value></data>
+  <data name="Personal_ResolveUserTitle" xml:space="preserve"><value>Find ExItS user</value></data>
+  <data name="Personal_ResolveUserSubtitle" xml:space="preserve"><value>Scan or enter an ExItS ID, then confirm before continuing.</value></data>
+  <data name="Personal_ResolveUserManualHint" xml:space="preserve"><value>Enter the ExItS ID exactly. Partial search is not supported.</value></data>
+  <data name="Personal_ResolveLookup" xml:space="preserve"><value>Look up</value></data>
+  <data name="Personal_ResolveCameraDeferred" xml:space="preserve"><value>Camera scan is not available in this build - use manual ExItS ID entry.</value></data>
+  <data name="Personal_ResolveConfirmTitle" xml:space="preserve"><value>Confirm identity</value></data>
+  <data name="Personal_ResolveConfirmHint" xml:space="preserve"><value>Nothing is linked until you confirm. Membership and roles are never granted from a scan alone.</value></data>
+  <data name="Personal_ResolveConfirm" xml:space="preserve"><value>Confirm</value></data>
+  <data name="Personal_ResolveSelf" xml:space="preserve"><value>That is your own ExItS ID.</value></data>
+  <data name="Personal_ResolveNotFound" xml:space="preserve"><value>No active user matched that ExItS ID.</value></data>
+  <data name="Personal_AddByExItsId" xml:space="preserve"><value>Add by ExItS ID</value></data>
+  <data name="Personal_PeopleAddByIdTitle" xml:space="preserve"><value>Add by ExItS ID / QR</value></data>
+  <data name="Personal_PeopleAddByIdHint" xml:space="preserve"><value>Resolve a user, confirm identity, then create a contact. Debt links still require acceptance when rules require it.</value></data>
+  <data name="Personal_LentAddPersonHint" xml:space="preserve"><value>Need someone new? Add them by ExItS ID first, then select them here.</value></data>
+  <data name="Customers_ResolveExItsIdHint" xml:space="preserve"><value>Resolve an ExItS user and confirm. Creates an organization-local customer only after you save - no membership or POS role.</value></data>
+  <data name="Customers_ResolveConfirmedHint" xml:space="preserve"><value>Identity confirmed. Review the form and save to create the local customer.</value></data>
+  <data name="Org_InviteResolveHint" xml:space="preserve"><value>Optionally resolve by ExItS ID to confirm display name. Invitation still requires email and acceptance.</value></data>
+  <data name="Org_InviteConfirmHint" xml:space="preserve"><value>Sending an invitation does not grant membership until the user accepts.</value></data>
 </root>

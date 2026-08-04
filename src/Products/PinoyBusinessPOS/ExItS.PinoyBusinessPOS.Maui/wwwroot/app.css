@@ -345,6 +345,23 @@ button.pos-link {
     border-bottom: 0;
 }
 
+.pos-qr-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--exits-space-3);
+    padding: var(--exits-space-4) 0;
+    text-align: center;
+}
+
+.pos-qr-image {
+    width: 220px;
+    height: 220px;
+    image-rendering: pixelated;
+    background: #fff;
+    border: 1px solid var(--exits-border);
+}
+
 /* Free vertical space while typing — bottom nav is not useful over the keyboard. */
 html.pos-keyboard-open .pos-bottom-nav {
     display: none;

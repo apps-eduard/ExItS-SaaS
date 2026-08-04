@@ -649,6 +649,12 @@ public sealed class AuthenticationServiceTests
         public Task<ApiResult<PersonalProfileDto>> GetPersonalProfileAsync(CancellationToken ct = default) =>
             Task.FromResult(ApiResult<PersonalProfileDto>.Unavailable());
 
+        public Task<ApiResult<PublicIdentityDto>> GetMyPublicIdentityAsync(CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PublicIdentityDto>.Unavailable());
+
+        public Task<ApiResult<ResolvedPublicUserDto>> ResolvePublicUserIdAsync(ResolvePublicUserIdRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<ResolvedPublicUserDto>.Unavailable());
+
         public Task<ApiResult<PersonalAccountSettingsDto>> GetPersonalSettingsAsync(CancellationToken ct = default) =>
             Task.FromResult(ApiResult<PersonalAccountSettingsDto>.Unavailable());
 

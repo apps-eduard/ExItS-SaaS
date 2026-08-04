@@ -45,6 +45,10 @@
         }
 
         <Section Title="@L["Personal_LentCreateTitle"]">
+            <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_LentAddPersonHint"]</InlineMessage>
+            <FormActions>
+                <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="GoResolveExItsId">@L["Personal_AddByExItsId"]</Button>
+            </FormActions>
             <FormValidationSummary Messages="_errors" />
             <FormGroup>
                 <Select Label="@L["Personal_ContactLabel"]" Value="@_contactId" ValueChanged="OnContactChanged" Options="_contactOptions" Disabled="_busy" />
@@ -196,5 +200,7 @@
     }
 
     private void GoDetail(Guid id) => Nav.NavigateTo($"/personal/utang/relationships/{id:D}");
+    private void GoResolveExItsId() =>
+        Nav.NavigateTo("/personal/resolve-user?purpose=utang-people&return=/personal/utang/people");
     private void GoSignIn() => Nav.NavigateTo("/signin");
 }

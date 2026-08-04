@@ -32,9 +32,16 @@
                 <div><span class="pos-muted">@L["Register_DisplayName"]</span><div class="pos-value-md">@(_profile?.DisplayName ?? CurrentUser.Session?.DisplayName)</div></div>
                 <div><span class="pos-muted">@L["SignIn_UsernameLabel"]</span><div class="pos-value-md">@(_profile?.Username ?? CurrentUser.Session?.Username)</div></div>
                 <div><span class="pos-muted">@L["Register_Email"]</span><div class="pos-value-md">@(_profile?.Email ?? CurrentUser.Session?.Email)</div></div>
+                @if (!string.IsNullOrWhiteSpace(_profile?.PublicUserId))
+                {
+                    <div><span class="pos-muted">@L["Personal_ExItsIdLabel"]</span><div class="pos-value-md">@_profile.PublicUserId</div></div>
+                }
                 <div><span class="pos-muted">@L["Personal_AccountClass"]</span><div class="pos-value-md">@(_profile?.AccountClass ?? CurrentUser.Session?.AccountClass ?? "—")</div></div>
                 <div><span class="pos-muted">@L["Personal_StatusLabel"]</span><div class="pos-value-md">@(_profile?.Status ?? "—")</div></div>
             </Stack>
+            <FormActions>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoMyQr">@L["Personal_MyQrLink"]</Button>
+            </FormActions>
         </Section>
     }
 </Page>
@@ -89,5 +96,6 @@
     }
 
     private void GoMore() => Nav.NavigateTo("/personal/more");
+    private void GoMyQr() => Nav.NavigateTo("/personal/my-qr");
     private void GoSignIn() => Nav.NavigateTo("/signin");
 }

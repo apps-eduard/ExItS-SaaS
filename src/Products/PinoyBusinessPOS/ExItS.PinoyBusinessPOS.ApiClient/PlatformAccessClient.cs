@@ -239,6 +239,14 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
     public Task<ApiResult<PersonalProfileDto>> GetPersonalProfileAsync(CancellationToken ct = default) =>
         api.GetAsync<PersonalProfileDto>("/api/v1/personal/profile", ct);
 
+    public Task<ApiResult<PublicIdentityDto>> GetMyPublicIdentityAsync(CancellationToken ct = default) =>
+        api.GetAsync<PublicIdentityDto>("/api/v1/me/public-identity", ct);
+
+    public Task<ApiResult<ResolvedPublicUserDto>> ResolvePublicUserIdAsync(
+        ResolvePublicUserIdRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<ResolvedPublicUserDto>(HttpMethod.Post, "/api/v1/users/resolve-public-id", request, ct);
+
     public Task<ApiResult<PersonalAccountSettingsDto>> GetPersonalSettingsAsync(CancellationToken ct = default) =>
         api.GetAsync<PersonalAccountSettingsDto>("/api/v1/personal/settings", ct);
 

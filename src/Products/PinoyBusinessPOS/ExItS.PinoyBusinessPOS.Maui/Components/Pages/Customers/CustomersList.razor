@@ -21,6 +21,7 @@ else
 <Page>
     <PageHeader Title="@L["Customers_Title"]" Subtitle="@L["Customers_Subtitle"]">
         <Actions>
+            <Button Variant="ButtonVariant.Secondary" Disabled="@(!canCreate)" OnClick="GoResolveExItsId">@L["Personal_AddByExItsId"]</Button>
             <Button Variant="ButtonVariant.Primary" Disabled="@(!canCreate)" OnClick="GoNew">@L["Customers_Add"]</Button>
         </Actions>
     </PageHeader>
@@ -228,5 +229,7 @@ else
     }
 
     private void GoNew() => Nav.NavigateTo("/customers/new");
+    private void GoResolveExItsId() =>
+        Nav.NavigateTo("/personal/resolve-user?purpose=customer&return=/customers/new");
     private void GoDetail(Guid id) => Nav.NavigateTo($"/customers/{id:D}");
 }

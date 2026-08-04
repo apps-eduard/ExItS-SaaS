@@ -38,6 +38,21 @@ else
         <Alert Tone="AlertTone.Success" Title="@L["Customers_SuccessTitle"]" Message="@_pendingMessage" />
     }
 
+    <Section Title="@L["Personal_PeopleAddByIdTitle"]">
+        <InlineMessage Tone="InlineMessageTone.Info">@L["Customers_ResolveExItsIdHint"]</InlineMessage>
+        @if (!string.IsNullOrWhiteSpace(_resolvedPublicUserId))
+        {
+            <Stack Gap="1">
+                <span class="pos-muted">@L["Personal_ExItsIdLabel"]</span>
+                <span class="pos-value-md">@_resolvedPublicUserId</span>
+            </Stack>
+            <InlineMessage Tone="InlineMessageTone.Info">@L["Customers_ResolveConfirmedHint"]</InlineMessage>
+        }
+        <FormActions>
+            <Button Variant="ButtonVariant.Secondary" Disabled="@(!canCreate || _saving)" OnClick="GoResolveExItsId">@L["Personal_AddByExItsId"]</Button>
+        </FormActions>
+    </Section>
+
     <CustomerForm DisplayName="@_displayName"
                   DisplayNameChanged="v => _displayName = v"
                   MobileNumber="@_mobile"
@@ -57,6 +72,15 @@ else
 }
 
 @code {
+    [SupplyParameterFromQuery(Name = "publicUserId")]
+    public string? PublicUserId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "displayName")]
+    public string? ResolvedDisplayName { get; set; }
+
+    [SupplyParameterFromQuery(Name = "userId")]
+    public string? ResolvedUserId { get; set; }
+
     private bool _ready;
     private bool _saving;
     private string? _displayName;
@@ -67,6 +91,7 @@ else
     private string? _mobileError;
     private string? _formError;
     private string? _pendingMessage;
+    private string? _resolvedPublicUserId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -75,6 +100,19 @@ else
             Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
             return;
         }
+
+        if (!string.IsNullOrWhiteSpace(PublicUserId))
+        {
+            _resolvedPublicUserId = PublicUserId;
+        }
+
+        if (!string.IsNullOrWhiteSpace(ResolvedDisplayName) && string.IsNullOrWhiteSpace(_displayName))
+        {
+            _displayName = ResolvedDisplayName;
+        }
+
+        // Platform user id is an external reference only — never grants membership/POS role.
+        _ = ResolvedUserId;
 
         _ready = true;
     }
@@ -99,11 +137,18 @@ else
         }
 
         _saving = true;
+        var notes = string.IsNullOrWhiteSpace(_notes) ? null : _notes;
+        if (!string.IsNullOrWhiteSpace(_resolvedPublicUserId))
+        {
+            var tag = $"exits-id:{_resolvedPublicUserId}";
+            notes = string.IsNullOrWhiteSpace(notes) ? tag : $"{notes}\n{tag}";
+        }
+
         var result = await Sync.CreateCustomerAsync(
             _displayName.Trim(),
             string.IsNullOrWhiteSpace(_mobile) ? null : _mobile,
             string.IsNullOrWhiteSpace(_address) ? null : _address,
-            string.IsNullOrWhiteSpace(_notes) ? null : _notes);
+            notes);
 
         if (result.Succeeded && result.Customer is not null)
         {
@@ -130,6 +175,9 @@ else
 
         _saving = false;
     }
+
+    private void GoResolveExItsId() =>
+        Nav.NavigateTo("/personal/resolve-user?purpose=customer&return=/customers/new");
 
     private void GoBack() => Nav.NavigateTo("/customers");
 }

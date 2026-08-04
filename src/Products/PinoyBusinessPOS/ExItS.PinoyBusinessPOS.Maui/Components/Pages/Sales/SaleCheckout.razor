@@ -1,3 +1,5 @@
+@using ExItS.PinoyBusinessPOS.Application.OperationalSetup
+@using ExItS.PinoyBusinessPOS.Domain.OperationalSetup
 @page "/sales/new"
 @implements IDisposable
 @inject NavigationManager Nav
@@ -6,6 +8,7 @@
 @inject IPosSaleClient Sales
 @inject IPosCatalogClient Catalog
 @inject IPosCustomerClient Customers
+@inject IPosOperationalSetupClient OperationalSetup
 @inject SaleCartService Cart
 @inject SellingModeService SellingMode
 @inject ICurrentUserContext CurrentUser
@@ -151,6 +154,17 @@ else
                     <span class="pos-muted">@L["Sales_Field_Subtotal"]</span>
                     <div class="pos-value-md"><MoneyDisplay Amount="@Cart.Subtotal" CurrencyCode="PHP" /></div>
                 </div>
+                @if (TaxPreview > 0m)
+                {
+                    <div>
+                        <span class="pos-muted">@L["Sales_Field_Tax"]</span>
+                        <div class="pos-value-md"><MoneyDisplay Amount="@TaxPreview" CurrencyCode="PHP" /></div>
+                    </div>
+                }
+                <div>
+                    <span class="pos-muted">@L["Sales_Field_Total"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@PayableTotal" CurrencyCode="PHP" /></div>
+                </div>
                 <div class="pos-muted">@L["Sales_Checkout_ServerAuthoritative"]</div>
                 <FormActions>
                     <Button Variant="ButtonVariant.Secondary" Disabled="@blocked" OnClick="() => Cart.Clear()">@L["Sales_Checkout_ClearCart"]</Button>
@@ -181,6 +195,9 @@ else
                             IsLoading="@_searchingCustomers"
                             Disabled="@blocked"
                             OnClick="SearchCustomersAsync">@L["Sales_Checkout_Search"]</Button>
+                    <Button Variant="ButtonVariant.Ghost"
+                            Disabled="@blocked"
+                            OnClick="GoResolveCustomerExItsId">@L["Personal_AddByExItsId"]</Button>
                 </FormActions>
 
                 @if (_customerMatches.Count > 0)
@@ -220,7 +237,7 @@ else
                     </div>
                     <div>
                         <span class="pos-muted">@L["Sales_Checkout_AmountToUtang"]</span>
-                        <div class="pos-value-md"><MoneyDisplay Amount="@Cart.Subtotal" CurrencyCode="PHP" /></div>
+                        <div class="pos-value-md"><MoneyDisplay Amount="@PayableTotal" CurrencyCode="PHP" /></div>
                     </div>
                     <DateInput Label="@L["Sales_Checkout_DueDateOptional"]"
                                Value="@_dueDate"
@@ -256,6 +273,9 @@ else
                                     IsLoading="@_searchingCustomers"
                                     Disabled="@blocked"
                                     OnClick="SearchCustomersAsync">@L["Sales_Checkout_Search"]</Button>
+                            <Button Variant="ButtonVariant.Ghost"
+                                    Disabled="@blocked"
+                                    OnClick="GoResolveCustomerExItsId">@L["Personal_AddByExItsId"]</Button>
                             @if (_selectedCustomer is not null)
                             {
                                 <Button Variant="ButtonVariant.Secondary"
@@ -326,6 +346,12 @@ else
 }
 
 @code {
+    [SupplyParameterFromQuery(Name = "displayName")]
+    public string? ResolvedDisplayName { get; set; }
+
+    [SupplyParameterFromQuery(Name = "publicUserId")]
+    public string? ResolvedPublicUserId { get; set; }
+
     private bool _ready;
     private bool _isOffline;
     private bool _lookingUp;
@@ -353,6 +379,8 @@ else
     private IReadOnlyList<PosCustomerListItemDto> _customerMatches = Array.Empty<PosCustomerListItemDto>();
     private PosCashierShiftDto? _openShift;
     private bool _shiftRequired = true;
+    private decimal _setupVatPercent;
+    private string _setupPricingMode = "TaxExclusive";
 
     private const int BrowsePageSize = 24;
 
@@ -365,10 +393,43 @@ else
     /// <summary>Stable per-attempt credit entry id for Product-Based Utang checkout idempotency.</summary>
     private Guid _attemptCreditEntryId = Guid.NewGuid();
 
+    /// <summary>Preview tax matching server OperationalSetupTaxCalculator (display only).</summary>
+    private decimal TaxPreview
+    {
+        get
+        {
+            if (_setupVatPercent <= 0m || Cart.Subtotal <= 0m)
+            {
+                return 0m;
+            }
+
+            var mode = ParsePricingMode(_setupPricingMode);
+            return OperationalSetupTaxCalculator.ComputeTaxAmount(Cart.Subtotal, _setupVatPercent, mode);
+        }
+    }
+
+    /// <summary>
+    /// Amount the customer must cover. Tax-exclusive adds tax on top; tax-inclusive keeps subtotal.
+    /// Must match Sale.Checkout total rules or tender validation rejects a valid-looking cash entry.
+    /// </summary>
+    private decimal PayableTotal
+    {
+        get
+        {
+            var tax = TaxPreview;
+            if (tax > 0m && ParsePricingMode(_setupPricingMode) == TaxPricingMode.TaxExclusive)
+            {
+                return PosSaleOptions.RoundMoney(Cart.Subtotal + tax);
+            }
+
+            return Cart.Subtotal;
+        }
+    }
+
     private decimal ChangePreview =>
-        _amountTendered is null || _amountTendered.Value < Cart.Subtotal
+        _amountTendered is null || _amountTendered.Value < PayableTotal
             ? 0m
-            : PosSaleOptions.RoundMoney(_amountTendered.Value - Cart.Subtotal);
+            : PosSaleOptions.RoundMoney(_amountTendered.Value - PayableTotal);
 
     private string ConfirmMessage
     {
@@ -379,14 +440,14 @@ else
                 return string.Format(
                     L["Sales_Checkout_ConfirmUtangMessage"],
                     Cart.LineCount,
-                    Cart.Subtotal.ToString("N2"),
+                    PayableTotal.ToString("N2"),
                     _selectedCustomer?.DisplayName ?? string.Empty);
             }
 
             return string.Format(
                 L["Sales_Checkout_ConfirmMessage"],
                 Cart.LineCount,
-                Cart.Subtotal.ToString("N2"));
+                PayableTotal.ToString("N2"));
         }
     }
 
@@ -401,6 +462,16 @@ else
         Cart.Changed += OnCartChanged;
         _ready = true;
         _isOffline = !await Connectivity.IsConnectedAsync();
+        if (!string.IsNullOrWhiteSpace(ResolvedDisplayName))
+        {
+            _customerSearch = ResolvedDisplayName;
+            if (!_isOffline)
+            {
+                await SearchCustomersAsync();
+            }
+        }
+
+        _ = ResolvedPublicUserId;
         if (!_isOffline)
         {
             var shiftResult = await ShiftClient.GetCurrentAsync();
@@ -409,10 +480,32 @@ else
                 _openShift = shiftResult.Data;
             }
 
+            await LoadOperationalSetupAsync();
             await LoadCategoriesAsync();
             await LoadBrowseProductsAsync();
         }
     }
+
+    private async Task LoadOperationalSetupAsync()
+    {
+        var result = await OperationalSetup.GetAsync();
+        if (!result.IsSuccess || result.Data is null || !result.Data.IsCompleted)
+        {
+            _setupVatPercent = 0m;
+            _setupPricingMode = "TaxExclusive";
+            return;
+        }
+
+        _setupVatPercent = result.Data.TaxRatePercent;
+        _setupPricingMode = string.IsNullOrWhiteSpace(result.Data.TaxPricingMode)
+            ? "TaxExclusive"
+            : result.Data.TaxPricingMode;
+    }
+
+    private static TaxPricingMode ParsePricingMode(string? mode) =>
+        Enum.TryParse<TaxPricingMode>(mode, ignoreCase: true, out var parsed)
+            ? parsed
+            : TaxPricingMode.TaxExclusive;
 
     private void OnCartChanged() => StateHasChanged();
 
@@ -640,6 +733,9 @@ else
         _searchingCustomers = false;
     }
 
+    private void GoResolveCustomerExItsId() =>
+        Nav.NavigateTo("/personal/resolve-user?purpose=sale-customer&return=/sales/new");
+
     private async Task SelectCustomerAsync(PosCustomerListItemDto customer)
     {
         _selectedCustomer = customer;
@@ -722,7 +818,7 @@ else
                 return;
             }
 
-            if (_amountTendered.Value < Cart.Subtotal)
+            if (_amountTendered.Value < PayableTotal)
             {
                 _tenderError = L["Sales_TenderBelowTotal"];
                 return;
@@ -752,7 +848,7 @@ else
             return;
         }
 
-        if (isUtang && (_selectedCustomer is null || Cart.Subtotal <= 0m))
+        if (isUtang && (_selectedCustomer is null || PayableTotal <= 0m))
         {
             return;
         }

@@ -298,7 +298,27 @@ public sealed record PersonalProfileDto(
     string DisplayName,
     string Email,
     string AccountClass,
+    string Status,
+    string? PublicUserId = null,
+    string? QrPayload = null);
+
+public sealed record PublicIdentityDto(
+    string PublicUserId,
+    string QrPayload,
+    string DisplayName,
     string Status);
+
+public sealed record ResolvePublicUserIdRequest(
+    string PublicUserIdOrQrPayload,
+    string? Purpose = null);
+
+public sealed record ResolvedPublicUserDto(
+    string PublicUserId,
+    Guid UserIdentityId,
+    string DisplayName,
+    string? MaskedEmail,
+    string Status,
+    bool IsSelf);
 
 public sealed record PersonalAccountSettingsDto(
     Guid UserIdentityId,
@@ -541,6 +561,10 @@ public interface IPlatformAccessClient
 
     Task<ApiResult<PersonalDashboardDto>> GetPersonalDashboardAsync(CancellationToken ct = default);
     Task<ApiResult<PersonalProfileDto>> GetPersonalProfileAsync(CancellationToken ct = default);
+    Task<ApiResult<PublicIdentityDto>> GetMyPublicIdentityAsync(CancellationToken ct = default);
+    Task<ApiResult<ResolvedPublicUserDto>> ResolvePublicUserIdAsync(
+        ResolvePublicUserIdRequest request,
+        CancellationToken ct = default);
     Task<ApiResult<PersonalAccountSettingsDto>> GetPersonalSettingsAsync(CancellationToken ct = default);
     Task<ApiResult<PersonalAccountSettingsDto>> UpdatePersonalSettingsAsync(
         UpdatePersonalAccountSettingsRequest request,

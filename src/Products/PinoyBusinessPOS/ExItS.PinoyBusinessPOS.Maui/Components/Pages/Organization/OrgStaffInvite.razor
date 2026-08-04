@@ -11,12 +11,27 @@
         </Actions>
     </PageHeader>
 
+    <Section Title="@L["Personal_PeopleAddByIdTitle"]">
+        <InlineMessage Tone="InlineMessageTone.Info">@L["Org_InviteResolveHint"]</InlineMessage>
+        @if (!string.IsNullOrWhiteSpace(_resolvedPublicUserId))
+        {
+            <Stack Gap="1">
+                <span class="pos-muted">@L["Personal_ExItsIdLabel"]</span>
+                <span class="pos-value-md">@_resolvedPublicUserId</span>
+            </Stack>
+        }
+        <FormActions>
+            <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="GoResolveExItsId">@L["Personal_AddByExItsId"]</Button>
+        </FormActions>
+    </Section>
+
     <FormValidationSummary Messages="_errors" />
     <FormGroup Title="@L["Org_InviteForm"]">
         <TextInput Label="@L["Register_Email"]" @bind-Value="_email" Type="email" Disabled="_busy" />
         <TextInput Label="@L["Register_DisplayName"]" @bind-Value="_displayName" Disabled="_busy" />
         <TextInput Label="@L["Org_InviteRole"]" Hint="@L["Org_InviteRoleHint"]" @bind-Value="_role" Disabled="_busy" />
     </FormGroup>
+    <InlineMessage Tone="InlineMessageTone.Info">@L["Org_InviteConfirmHint"]</InlineMessage>
     <FormActions>
         <Button IsLoading="_busy" Disabled="_busy" OnClick="InviteAsync">@L["Org_InviteSubmit"]</Button>
     </FormActions>
@@ -24,11 +39,37 @@
 </Page>
 
 @code {
+    [SupplyParameterFromQuery(Name = "publicUserId")]
+    public string? PublicUserId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "displayName")]
+    public string? ResolvedDisplayName { get; set; }
+
+    [SupplyParameterFromQuery(Name = "userId")]
+    public string? ResolvedUserId { get; set; }
+
     private bool _busy;
     private string? _email;
     private string? _displayName;
     private string _role = "Staff";
     private List<string> _errors = [];
+    private string? _resolvedPublicUserId;
+
+    protected override void OnInitialized()
+    {
+        if (!string.IsNullOrWhiteSpace(PublicUserId))
+        {
+            _resolvedPublicUserId = PublicUserId;
+        }
+
+        if (!string.IsNullOrWhiteSpace(ResolvedDisplayName) && string.IsNullOrWhiteSpace(_displayName))
+        {
+            _displayName = ResolvedDisplayName;
+        }
+
+        // Masked resolve email is never used to auto-fill invite email.
+        _ = ResolvedUserId;
+    }
 
     private async Task InviteAsync()
     {
@@ -62,6 +103,9 @@
             _busy = false;
         }
     }
+
+    private void GoResolveExItsId() =>
+        Nav.NavigateTo("/personal/resolve-user?purpose=staff-invite&return=/org/staff/invite");
 
     private void GoBack() => Nav.NavigateTo("/org/staff");
 }

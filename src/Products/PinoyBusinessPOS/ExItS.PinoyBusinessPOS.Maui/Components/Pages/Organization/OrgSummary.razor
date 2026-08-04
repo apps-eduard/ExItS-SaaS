@@ -2,8 +2,8 @@
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
+@inject IProductAccessResolver Access
 @inject NavigationGate Gate
-@inject RoleHomeResolver RoleHome
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
@@ -37,6 +37,10 @@ else
                 <div><span class="pos-muted">@L["Org_Subscription"]</span><div class="pos-value-md">@(_subscription?.Status ?? L["Org_SubscriptionUnknown"])</div></div>
                 <div><span class="pos-muted">@L["Org_Entitlement"]</span><div class="pos-value-md">@(_entitlement?.SubscriptionStatus ?? L["Org_EntitlementUnknown"])</div></div>
                 <div><span class="pos-muted">@L["Org_PosAccess"]</span><div class="pos-value-md">@(CurrentUser.HasPosAccess ? L["Org_PosAccessYes"] : L["Org_PosAccessNo"])</div></div>
+                @if (!CurrentUser.HasPosAccess && !string.IsNullOrWhiteSpace(_posAccessHint))
+                {
+                    <InlineMessage Tone="InlineMessageTone.Warning">@_posAccessHint</InlineMessage>
+                }
             </Stack>
         </Section>
 
@@ -52,9 +56,14 @@ else
                 {
                     <InlineMessage Tone="InlineMessageTone.Info">@L["Org_EssentialsOwnerOnly"]</InlineMessage>
                 }
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoMyQr">@L["Personal_MyQrLink"]</Button>
                 @if (CurrentUser.HasPosAccess)
                 {
                     <Button Variant="ButtonVariant.Primary" OnClick="EnterPosAsync">@L["Org_EnterPos"]</Button>
+                }
+                else if (_isOrganizationOwner)
+                {
+                    <Button Variant="ButtonVariant.Primary" IsLoading="_enablingPos" Disabled="_enablingPos" OnClick="EnablePosAsync">@L["Org_EnablePos"]</Button>
                 }
             </Stack>
         </Section>
@@ -67,7 +76,9 @@ else
 
 @code {
     private bool _ready;
+    private bool _enablingPos;
     private string? _error;
+    private string? _posAccessHint;
     private PlatformOrganizationDto? _org;
     private PlatformSubscriptionDto? _subscription;
     private PlatformEntitlementSnapshotDto? _entitlement;
@@ -115,6 +126,7 @@ else
         }
 
         _isOrganizationOwner = await ResolveIsOrganizationOwnerAsync(orgId.Value);
+        _posAccessHint = ResolvePosAccessHint();
 
         _ready = true;
     }
@@ -127,6 +139,14 @@ else
             return false;
         }
 
+        var eligible = await Access.ListEligibleOrganizationsAsync(userId.Value);
+        if (eligible.Any(o =>
+                o.OrganizationId == organizationId
+                && OrganizationMembershipRoles.IsOwnerRole(o.MembershipRole)))
+        {
+            return true;
+        }
+
         var memberships = await Platform.GetUserMembershipsAsync(userId.Value);
         if (!memberships.IsSuccess || memberships.Data is null)
         {
@@ -136,7 +156,18 @@ else
         return memberships.Data.Items.Any(m =>
             m.OrganizationId == organizationId
             && string.Equals(m.Status, "Active", StringComparison.OrdinalIgnoreCase)
-            && string.Equals(m.Role, "OrganizationOwner", StringComparison.OrdinalIgnoreCase));
+            && OrganizationMembershipRoles.IsOwnerRole(m.Role));
+    }
+
+    private string? ResolvePosAccessHint()
+    {
+        if (CurrentUser.HasPosAccess)
+        {
+            return null;
+        }
+
+        var key = ProductAccessResolver.MapReasonKey(CurrentUser.Session?.AccessReasonCode);
+        return L[key];
     }
 
     private async Task EnterPosAsync()
@@ -154,9 +185,46 @@ else
         Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
     }
 
+    private async Task EnablePosAsync()
+    {
+        if (CurrentUser.Session?.OrganizationId is not Guid oid)
+        {
+            return;
+        }
+
+        _enablingPos = true;
+        _error = null;
+        try
+        {
+            var selected = await Auth.SelectOrganizationAsync(oid);
+            if (!selected.Succeeded)
+            {
+                _error = L[selected.SafeMessageKey ?? "Access_Denied"];
+                _posAccessHint = ResolvePosAccessHint();
+                return;
+            }
+
+            if (!CurrentUser.HasPosAccess)
+            {
+                _posAccessHint = ResolvePosAccessHint();
+                _error = L[CurrentUser.Session?.AccessReasonCode is null
+                    ? "Access_Denied"
+                    : ProductAccessResolver.MapReasonKey(CurrentUser.Session.AccessReasonCode)];
+                return;
+            }
+
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+        }
+        finally
+        {
+            _enablingPos = false;
+        }
+    }
+
     private void GoProfile() => Nav.NavigateTo("/org/profile");
     private void GoStaff() => Nav.NavigateTo("/org/staff");
     private void GoSubscription() => Nav.NavigateTo("/org/subscription");
+    private void GoMyQr() => Nav.NavigateTo("/personal/my-qr");
     private void GoSelect() => Nav.NavigateTo("/organization-select");
 
     private async Task GoPersonal()

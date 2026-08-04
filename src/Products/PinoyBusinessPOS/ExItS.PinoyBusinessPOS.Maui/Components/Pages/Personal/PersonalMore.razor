@@ -18,14 +18,10 @@
     }
     else
     {
-        <Section Title="@L["Personal_MoreUtangSection"]">
-            <Stack Gap="2">
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoUtangInvitations">@L["Personal_Nav_UtangInvitations"]</Button>
-            </Stack>
-        </Section>
-
         <Section Title="@L["Personal_MoreAccountSection"]">
             <Stack Gap="2">
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoMyQr">@L["Personal_MyQrLink"]</Button>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoUtangInvitations">@L["Personal_Nav_UtangInvitations"]</Button>
                 <Button Variant="ButtonVariant.Secondary" OnClick="GoProfile">@L["Personal_ProfileLink"]</Button>
                 <Button Variant="ButtonVariant.Secondary" OnClick="GoSettings">@L["Personal_SettingsLink"]</Button>
             </Stack>
@@ -68,6 +64,7 @@
         _loading = false;
     }
 
+    private void GoMyQr() => Nav.NavigateTo("/personal/my-qr");
     private void GoUtangInvitations() => Nav.NavigateTo("/personal/utang/invitations");
     private void GoProfile() => Nav.NavigateTo("/personal/profile");
     private void GoSettings() => Nav.NavigateTo("/personal/settings");

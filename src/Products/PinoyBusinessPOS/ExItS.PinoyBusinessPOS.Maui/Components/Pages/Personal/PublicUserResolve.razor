@@ -1,0 +1,173 @@
+@page "/personal/resolve-user"
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Personal_ResolveUserTitle"]" Subtitle="@L["Personal_ResolveUserSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Common_Back"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_loadingSession)
+    {
+        <Spinner />
+    }
+    else if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else if (_resolved is null)
+    {
+        <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_ResolveUserManualHint"]</InlineMessage>
+        <FormValidationSummary Messages="_errors" />
+        <FormGroup>
+            <TextInput Label="@L["Personal_ExItsIdLabel"]" Hint="@L["Personal_ExItsIdHint"]" @bind-Value="_input" Disabled="_busy" />
+        </FormGroup>
+        <FormActions>
+            <Button IsLoading="_busy" Disabled="_busy" OnClick="ResolveAsync">@L["Personal_ResolveLookup"]</Button>
+        </FormActions>
+        <InlineMessage Tone="InlineMessageTone.Warning">@L["Personal_ResolveCameraDeferred"]</InlineMessage>
+    }
+    else
+    {
+        <Section Title="@L["Personal_ResolveConfirmTitle"]">
+            <Stack Gap="1">
+                <span class="pos-value-md">@_resolved.DisplayName</span>
+                <span class="pos-muted">@_resolved.PublicUserId</span>
+                @if (!string.IsNullOrWhiteSpace(_resolved.MaskedEmail))
+                {
+                    <span class="pos-muted">@_resolved.MaskedEmail</span>
+                }
+                @if (_resolved.IsSelf)
+                {
+                    <InlineMessage Tone="InlineMessageTone.Warning">@L["Personal_ResolveSelf"]</InlineMessage>
+                }
+            </Stack>
+            <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_ResolveConfirmHint"]</InlineMessage>
+            <FormActions>
+                <Button Variant="ButtonVariant.Primary" Disabled="@(_resolved.IsSelf || _busy)" IsLoading="_busy" OnClick="ConfirmAsync">@L["Personal_ResolveConfirm"]</Button>
+                <Button Variant="ButtonVariant.Ghost" Disabled="_busy" OnClick="ClearResolved">@L["Common_Cancel"]</Button>
+            </FormActions>
+            <FormValidationSummary Messages="_errors" />
+        </Section>
+    }
+</Page>
+
+@code {
+    [SupplyParameterFromQuery(Name = "purpose")]
+    public string? Purpose { get; set; }
+
+    [SupplyParameterFromQuery(Name = "return")]
+    public string? ReturnPath { get; set; }
+
+    private bool _loadingSession = true;
+    private bool _authenticated;
+    private bool _busy;
+    private string? _input;
+    private List<string> _errors = [];
+    private ResolvedPublicUserDto? _resolved;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!CurrentUser.IsAuthenticated)
+        {
+            var restore = await Auth.RestoreSessionAsync();
+            _authenticated = restore.Succeeded;
+        }
+        else
+        {
+            _authenticated = true;
+        }
+
+        _loadingSession = false;
+    }
+
+    private async Task ResolveAsync()
+    {
+        _errors = [];
+        if (string.IsNullOrWhiteSpace(_input))
+        {
+            _errors.Add(L["Personal_ExItsIdRequired"]);
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Platform.ResolvePublicUserIdAsync(new ResolvePublicUserIdRequest(
+                _input.Trim(),
+                Purpose ?? "manual"));
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _errors.Add(result.Error?.Detail ?? L["Personal_ResolveNotFound"]);
+                return;
+            }
+
+            _resolved = result.Data;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ConfirmAsync()
+    {
+        if (_resolved is null || _resolved.IsSelf)
+        {
+            return;
+        }
+
+        _errors = [];
+        _busy = true;
+        try
+        {
+            var purpose = (Purpose ?? "manual").Trim().ToLowerInvariant();
+            if (purpose is "utang-people" or "utang" or "people")
+            {
+                var created = await Platform.CreatePersonalContactAsync(new CreatePersonalContactRequest(
+                    DisplayName: _resolved.DisplayName,
+                    Phone: null,
+                    Email: null));
+                if (!created.IsSuccess)
+                {
+                    _errors.Add(created.Error?.Detail ?? L["Personal_PeopleCreateFailed"]);
+                    return;
+                }
+
+                Nav.NavigateTo("/personal/utang/people", replace: true);
+                return;
+            }
+
+            // Customer / staff / sale: return identity refs only — caller confirms final create/invite.
+            var ret = string.IsNullOrWhiteSpace(ReturnPath) ? "/personal/more" : ReturnPath!;
+            var sep = ret.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+            Nav.NavigateTo(
+                $"{ret}{sep}publicUserId={Uri.EscapeDataString(_resolved.PublicUserId)}&displayName={Uri.EscapeDataString(_resolved.DisplayName)}&userId={_resolved.UserIdentityId:D}",
+                replace: true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void ClearResolved() => _resolved = null;
+
+    private void GoBack()
+    {
+        if (!string.IsNullOrWhiteSpace(ReturnPath))
+        {
+            Nav.NavigateTo(ReturnPath!);
+            return;
+        }
+
+        Nav.NavigateTo("/personal/more");
+    }
+
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+}
