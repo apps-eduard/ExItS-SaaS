@@ -83,6 +83,12 @@ else
             return;
         }
 
+        if (!CanAccessKind(Kind))
+        {
+            Nav.NavigateTo("/reports", replace: true);
+            return;
+        }
+
         _title = Kind switch
         {
             "overview" => L["Reports_Overview"],
@@ -287,4 +293,25 @@ else
     }
 
     private void GoHub() => Nav.NavigateTo("/reports");
+
+    private bool CanAccessKind(string kind)
+    {
+        if (Capabilities.IsAllowed(UtangCapability.ViewReports))
+        {
+            return true;
+        }
+
+        return kind switch
+        {
+            "shifts" or "cash-variance" =>
+                Capabilities.IsAllowed(UtangCapability.ViewShifts),
+            "inventory-status" or "inventory-movements" or "stock-count-variance" =>
+                Capabilities.IsAllowed(UtangCapability.ViewInventory),
+            "purchasing-summary" or "purchase-outstanding" or "supplier-purchasing" =>
+                Capabilities.IsAllowed(UtangCapability.ViewPurchasing),
+            "expenses-summary" =>
+                Capabilities.IsAllowed(UtangCapability.ViewExpenses),
+            _ => false
+        };
+    }
 }

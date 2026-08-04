@@ -8,51 +8,109 @@
 <Page>
     <PageHeader Title="@L["Reports_Title"]" Subtitle="@L["Reports_Subtitle"]">
         <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoDashboard">@L["Nav_Dashboard"]</Button>
+            @if (_canViewDashboard)
+            {
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoDashboard">@L["Nav_Dashboard"]</Button>
+            }
         </Actions>
     </PageHeader>
 
-    <Section Title="@L["Reports_MenuTitle"]">
-        <Stack Gap="3">
-            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/overview")'>@L["Reports_Overview"]</Button>
-            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/sales-summary")'>@L["Reports_SalesSummary"]</Button>
-            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/sales-by-payment")'>@L["Reports_SalesByPayment"]</Button>
-            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/sales-by-product")'>@L["Reports_SalesByProduct"]</Button>
-            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/returns")'>@L["Reports_Returns"]</Button>
-            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/shifts")'>@L["Reports_ShiftSummary"]</Button>
-            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/cash-variance")'>@L["Reports_CashVariance"]</Button>
-            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/inventory-status")'>@L["Reports_InventoryStatus"]</Button>
-            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/inventory-movements")'>@L["Reports_InventoryMovements"]</Button>
-            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/stock-count-variance")'>@L["Reports_StockCountVariance"]</Button>
-            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/purchasing-summary")'>@L["Reports_PurchasingSummary"]</Button>
-            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/purchase-outstanding")'>@L["Reports_PurchaseOutstanding"]</Button>
-            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/supplier-purchasing")'>@L["Reports_SupplierPurchasing"]</Button>
-            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/expenses-summary")'>@L["Reports_ExpenseSummary"]</Button>
-            <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/utang-by-product")'>@L["Reports_UtangByProduct"]</Button>
-        </Stack>
-    </Section>
+    @if (_showOperationalMenu)
+    {
+        <Section Title="@L["Reports_MenuTitle"]">
+            <Stack Gap="3">
+                @if (_canViewReports)
+                {
+                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/overview")'>@L["Reports_Overview"]</Button>
+                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/sales-summary")'>@L["Reports_SalesSummary"]</Button>
+                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/sales-by-payment")'>@L["Reports_SalesByPayment"]</Button>
+                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/sales-by-product")'>@L["Reports_SalesByProduct"]</Button>
+                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/returns")'>@L["Reports_Returns"]</Button>
+                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/shifts")'>@L["Reports_ShiftSummary"]</Button>
+                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/cash-variance")'>@L["Reports_CashVariance"]</Button>
+                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/inventory-status")'>@L["Reports_InventoryStatus"]</Button>
+                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/inventory-movements")'>@L["Reports_InventoryMovements"]</Button>
+                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/stock-count-variance")'>@L["Reports_StockCountVariance"]</Button>
+                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/purchasing-summary")'>@L["Reports_PurchasingSummary"]</Button>
+                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/purchase-outstanding")'>@L["Reports_PurchaseOutstanding"]</Button>
+                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/supplier-purchasing")'>@L["Reports_SupplierPurchasing"]</Button>
+                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/expenses-summary")'>@L["Reports_ExpenseSummary"]</Button>
+                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/utang-by-product")'>@L["Reports_UtangByProduct"]</Button>
+                }
+                else
+                {
+                    @if (_canViewShifts)
+                    {
+                        <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/shifts")'>@L["Reports_ShiftSummary"]</Button>
+                        <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/cash-variance")'>@L["Reports_CashVariance"]</Button>
+                    }
+                    @if (_canViewInventory)
+                    {
+                        <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/inventory-status")'>@L["Reports_InventoryStatus"]</Button>
+                        <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/inventory-movements")'>@L["Reports_InventoryMovements"]</Button>
+                        <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/stock-count-variance")'>@L["Reports_StockCountVariance"]</Button>
+                    }
+                    @if (_canViewPurchasing)
+                    {
+                        <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/purchasing-summary")'>@L["Reports_PurchasingSummary"]</Button>
+                        <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/purchase-outstanding")'>@L["Reports_PurchaseOutstanding"]</Button>
+                        <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/supplier-purchasing")'>@L["Reports_SupplierPurchasing"]</Button>
+                    }
+                    @if (_canViewExpenses)
+                    {
+                        <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/expenses-summary")'>@L["Reports_ExpenseSummary"]</Button>
+                    }
+                }
+            </Stack>
+        </Section>
+    }
 
-    <Section Title="@L["Reports_LegacyMenuTitle"]">
-        <Stack Gap="3">
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoSales">@L["Reports_Sales"]</Button>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoUtang">@L["Reports_Utang"]</Button>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoInventory">@L["Reports_Inventory"]</Button>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoExpenses">@L["Reports_Expenses"]</Button>
-        </Stack>
-    </Section>
+    @if (_canViewReports)
+    {
+        <Section Title="@L["Reports_LegacyMenuTitle"]">
+            <Stack Gap="3">
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoSales">@L["Reports_Sales"]</Button>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoUtang">@L["Reports_Utang"]</Button>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoInventory">@L["Reports_Inventory"]</Button>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoExpenses">@L["Reports_Expenses"]</Button>
+            </Stack>
+        </Section>
+    }
 
     <Alert Tone="AlertTone.Info" Title="@L["Reports_ExportDeferredTitle"]" Message="@L["Reports_ExportDeferredMessage"]" />
 </Page>
 
 @code {
+    private bool _canViewReports;
+    private bool _canViewShifts;
+    private bool _canViewInventory;
+    private bool _canViewPurchasing;
+    private bool _canViewExpenses;
+    private bool _canViewDashboard;
+    private bool _showOperationalMenu;
+
     protected override void OnInitialized()
     {
+        _canViewReports = Capabilities.IsAllowed(UtangCapability.ViewReports);
+        _canViewShifts = Capabilities.IsAllowed(UtangCapability.ViewShifts);
+        _canViewInventory = Capabilities.IsAllowed(UtangCapability.ViewInventory);
+        _canViewPurchasing = Capabilities.IsAllowed(UtangCapability.ViewPurchasing);
+        _canViewExpenses = Capabilities.IsAllowed(UtangCapability.ViewExpenses);
+        _canViewDashboard = Capabilities.IsAllowed(UtangCapability.ViewDashboard);
+
+        _showOperationalMenu = _canViewReports
+            || _canViewShifts
+            || _canViewInventory
+            || _canViewPurchasing
+            || _canViewExpenses;
+
         if (!Gate.CanEnterProtectedShell
-            || !(Capabilities.IsAllowed(UtangCapability.ViewReports)
-                 || Capabilities.IsAllowed(UtangCapability.ViewShifts)
-                 || Capabilities.IsAllowed(UtangCapability.ViewInventory)
-                 || Capabilities.IsAllowed(UtangCapability.ViewPurchasing)
-                 || Capabilities.IsAllowed(UtangCapability.ViewExpenses)))
+            || !(_canViewReports
+                 || _canViewShifts
+                 || _canViewInventory
+                 || _canViewPurchasing
+                 || _canViewExpenses
+                 || _canViewDashboard))
         {
             Nav.NavigateTo("/home", replace: true);
         }

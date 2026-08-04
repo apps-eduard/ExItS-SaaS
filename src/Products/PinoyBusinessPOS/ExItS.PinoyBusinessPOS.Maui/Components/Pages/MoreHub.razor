@@ -22,39 +22,70 @@
     <Section Title="@L["Overdue_Title"]">
         <Button Variant="ButtonVariant.Primary" OnClick="GoOverdue">@L["Overdue_OpenOrg"]</Button>
     </Section>
-    <Section Title="@L["Inventory_Title"]">
-        @if (Capabilities.IsAllowed(UtangCapability.ViewInventory))
-        {
+
+    @if (Capabilities.IsAllowed(UtangCapability.ViewInventory))
+    {
+        <Section Title="@L["Inventory_Title"]">
             <Button Variant="ButtonVariant.Primary" OnClick="GoInventory">@L["Nav_Inventory"]</Button>
-        }
-    </Section>
-    <Section Title="@L["Expenses_Title"]">
-        <Button Variant="ButtonVariant.Primary" OnClick="GoExpenses">@L["Nav_Expenses"]</Button>
-    </Section>
-    <Section Title="@L["Suppliers_Title"]">
-        <Button Variant="ButtonVariant.Primary" OnClick="GoSuppliers">@L["Nav_Suppliers"]</Button>
-    </Section>
-    <Section Title="@L["Purchasing_Title"]">
-        <Button Variant="ButtonVariant.Primary" OnClick="GoPurchasing">@L["Nav_Purchasing"]</Button>
-    </Section>
-    <Section Title="@L["Registers_Title"]">
-        <Button Variant="ButtonVariant.Primary" OnClick="GoRegisters">@L["Nav_Registers"]</Button>
-    </Section>
+        </Section>
+    }
+
+    @if (Capabilities.IsAllowed(UtangCapability.ViewExpenses))
+    {
+        <Section Title="@L["Expenses_Title"]">
+            <Button Variant="ButtonVariant.Primary" OnClick="GoExpenses">@L["Nav_Expenses"]</Button>
+        </Section>
+    }
+
+    @if (Capabilities.IsAllowed(UtangCapability.ViewSuppliers))
+    {
+        <Section Title="@L["Suppliers_Title"]">
+            <Button Variant="ButtonVariant.Primary" OnClick="GoSuppliers">@L["Nav_Suppliers"]</Button>
+        </Section>
+    }
+
+    @if (Capabilities.IsAllowed(UtangCapability.ViewPurchasing))
+    {
+        <Section Title="@L["Purchasing_Title"]">
+            <Button Variant="ButtonVariant.Primary" OnClick="GoPurchasing">@L["Nav_Purchasing"]</Button>
+        </Section>
+    }
+
+    @if (Capabilities.IsAllowed(UtangCapability.ViewRegisters))
+    {
+        <Section Title="@L["Registers_Title"]">
+            <Button Variant="ButtonVariant.Primary" OnClick="GoRegisters">@L["Nav_Registers"]</Button>
+        </Section>
+    }
+
     @if (Capabilities.IsAllowed(UtangCapability.ManageOperationalSetup))
     {
         <Section Title="@L["Setup_Title"]">
             <Button Variant="ButtonVariant.Primary" OnClick="GoSetup">@L["Nav_Setup"]</Button>
         </Section>
     }
-    <Section Title="@L["Shifts_Title"]">
-        <Button Variant="ButtonVariant.Primary" OnClick="GoShifts">@L["Nav_Shifts"]</Button>
-    </Section>
-    <Section Title="@L["Permissions_Title"]">
-        <Button Variant="ButtonVariant.Primary" OnClick="GoPermissions">@L["Nav_Permissions"]</Button>
-    </Section>
-    <Section Title="@L["Reports_Title"]">
-        <Button Variant="ButtonVariant.Primary" OnClick="GoReports">@L["Nav_Reports"]</Button>
-    </Section>
+
+    @if (Capabilities.IsAllowed(UtangCapability.ViewShifts))
+    {
+        <Section Title="@L["Shifts_Title"]">
+            <Button Variant="ButtonVariant.Primary" OnClick="GoShifts">@L["Nav_Shifts"]</Button>
+        </Section>
+    }
+
+    @if (Capabilities.IsAllowed(UtangCapability.ViewPermissions))
+    {
+        <Section Title="@L["Permissions_Title"]">
+            <Button Variant="ButtonVariant.Primary" OnClick="GoPermissions">@L["Nav_Permissions"]</Button>
+        </Section>
+    }
+
+    @if (Capabilities.IsAllowed(UtangCapability.ViewReports)
+         || Capabilities.IsAllowed(UtangCapability.ViewDashboard))
+    {
+        <Section Title="@L["Reports_Title"]">
+            <Button Variant="ButtonVariant.Primary" OnClick="GoReports">@L["Nav_Reports"]</Button>
+        </Section>
+    }
 
     <FormActions>
         <Button Variant="ButtonVariant.Ghost" OnClick="LogoutAsync">@L["Auth_Logout"]</Button>
