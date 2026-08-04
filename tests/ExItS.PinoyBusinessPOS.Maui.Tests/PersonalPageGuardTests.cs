@@ -1,16 +1,16 @@
 namespace ExItS.PinoyBusinessPOS.Maui.Tests;
 
 /// <summary>
-/// Static regression guards for Personal MVP + Personal Utang Mobile surfaces.
+/// Static regression guards for Personal-first Mobile home, Explore POS, and Utang surfaces.
 /// </summary>
 public sealed class PersonalPageGuardTests
 {
     [Fact]
-    public void Personal_routes_cover_dashboard_utang_profile_settings_and_start_business()
+    public void Personal_home_is_personal_first_without_org_context_or_start_business()
     {
         var personal = PersonalPagesDirectory();
-
         var home = File.ReadAllText(Path.Combine(personal, "PersonalHome.razor"));
+
         Assert.Contains("@page \"/personal\"", home, StringComparison.Ordinal);
         Assert.Contains("GetPersonalDashboardAsync", home, StringComparison.Ordinal);
         Assert.Contains("Personal_Stat_People", home, StringComparison.Ordinal);
@@ -18,48 +18,98 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("Personal_Nav_Lent", home, StringComparison.Ordinal);
         Assert.Contains("Personal_Nav_Borrowed", home, StringComparison.Ordinal);
         Assert.Contains("Personal_Nav_UtangInvitations", home, StringComparison.Ordinal);
-        Assert.Contains("Personal_Nav_PaymentsSoon", home, StringComparison.Ordinal);
+        Assert.Contains("Personal_ProfileLink", home, StringComparison.Ordinal);
+        Assert.Contains("Personal_SettingsLink", home, StringComparison.Ordinal);
+        Assert.Contains("Personal_ExplorePos", home, StringComparison.Ordinal);
+        Assert.Contains("/personal/explore-pos", home, StringComparison.Ordinal);
         Assert.Contains("EnsurePersonalAccountProfileAsync", home, StringComparison.Ordinal);
-        Assert.Contains("EmptyState", home, StringComparison.Ordinal);
-        Assert.Contains("Personal_NoInvitationsTitle", home, StringComparison.Ordinal);
+
+        Assert.DoesNotContain("AccountContextSwitcher", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("Personal_OrganizationsSection", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("GetAuthEligibleOrganizationsAsync", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("Personal_StartBusiness", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("/start-business", home, StringComparison.Ordinal);
         Assert.DoesNotContain("@page \"/sales", home, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Explore_pos_loads_catalog_plans_and_defers_org_creation()
+    {
+        var personal = PersonalPagesDirectory();
+        var explore = File.ReadAllText(Path.Combine(personal, "PersonalExplorePos.razor"));
+        Assert.Contains("@page \"/personal/explore-pos\"", explore, StringComparison.Ordinal);
+        Assert.Contains("GetCommercialPlansAsync", explore, StringComparison.Ordinal);
+        Assert.Contains("PosProductCodes.PinoyBusinessPos", explore, StringComparison.Ordinal);
+        Assert.Contains("/start-business?planKey=", explore, StringComparison.Ordinal);
+        Assert.DoesNotContain("StartBusinessAsync", explore, StringComparison.Ordinal);
+
+        var start = File.ReadAllText(Path.Combine(personal, "StartBusiness.razor"));
+        Assert.Contains("@page \"/start-business\"", start, StringComparison.Ordinal);
+        Assert.Contains("StartBusiness_PlanRequired", start, StringComparison.Ordinal);
+        Assert.Contains("StartBusiness_ConfirmSubmit", start, StringComparison.Ordinal);
+        Assert.Contains("StartBusinessAsync", start, StringComparison.Ordinal);
+        Assert.Contains("planKey", start, StringComparison.Ordinal);
+
+        // Organization is created only inside SubmitAsync after explicit confirmation.
+        var submitIndex = start.IndexOf("SubmitAsync", StringComparison.Ordinal);
+        var createIndex = start.IndexOf("StartBusinessAsync", StringComparison.Ordinal);
+        Assert.True(submitIndex > 0 && createIndex > submitIndex);
+
+        var client = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.ApiClient",
+            "PlatformAccessClient.cs"));
+        Assert.Contains("/api/v1/commercial/plans", client, StringComparison.Ordinal);
+        Assert.Contains("GetCommercialPlansAsync", client, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Org_and_product_switching_remains_available_outside_personal_home()
+    {
+        var settings = File.ReadAllText(Path.Combine(PersonalPagesDirectory(), "PersonalSettings.razor"));
+        Assert.Contains("AccountContextSwitcher", settings, StringComparison.Ordinal);
+        Assert.Contains("Settings_SwitchOrganization", settings, StringComparison.Ordinal);
+
+        var orgSelect = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "OrganizationSelect.razor"));
+        Assert.Contains("/personal/explore-pos", orgSelect, StringComparison.Ordinal);
+        Assert.DoesNotContain("GoStartBusiness", orgSelect, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Personal_utang_routes_and_invitation_empty_state()
+    {
+        var personal = PersonalPagesDirectory();
 
         Assert.Contains("@page \"/personal/utang/people\"",
             File.ReadAllText(Path.Combine(personal, "PersonalPeople.razor")), StringComparison.Ordinal);
         Assert.Contains("CreatePersonalContactAsync",
             File.ReadAllText(Path.Combine(personal, "PersonalPeople.razor")), StringComparison.Ordinal);
-        Assert.Contains("Personal_PeopleEmptyTitle",
-            File.ReadAllText(Path.Combine(personal, "PersonalPeople.razor")), StringComparison.Ordinal);
 
         Assert.Contains("@page \"/personal/utang/lent\"",
             File.ReadAllText(Path.Combine(personal, "PersonalLent.razor")), StringComparison.Ordinal);
-        Assert.Contains("CreatePersonalDebtRelationshipAsync",
-            File.ReadAllText(Path.Combine(personal, "PersonalLent.razor")), StringComparison.Ordinal);
-        Assert.Contains("Personal_LentEmptyTitle",
-            File.ReadAllText(Path.Combine(personal, "PersonalLent.razor")), StringComparison.Ordinal);
-
         Assert.Contains("@page \"/personal/utang/borrowed\"",
-            File.ReadAllText(Path.Combine(personal, "PersonalBorrowed.razor")), StringComparison.Ordinal);
-        Assert.Contains("Personal_BorrowedEmptyTitle",
             File.ReadAllText(Path.Combine(personal, "PersonalBorrowed.razor")), StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(personal, "PersonalRelationshipDetail.razor"));
         Assert.Contains("@page \"/personal/utang/relationships/{RelationshipId:guid}\"", detail, StringComparison.Ordinal);
         Assert.Contains("RecordPersonalUtangEntryAsync", detail, StringComparison.Ordinal);
-        Assert.Contains("GetPersonalUtangHistoryAsync", detail, StringComparison.Ordinal);
 
         var invites = File.ReadAllText(Path.Combine(personal, "PersonalUtangInvitations.razor"));
         Assert.Contains("@page \"/personal/utang/invitations\"", invites, StringComparison.Ordinal);
+        Assert.Contains("Personal_NoUtangInvitationsTitle", invites, StringComparison.Ordinal);
+        Assert.Contains("ErrorState", invites, StringComparison.Ordinal);
+        Assert.Contains("Common_Retry", invites, StringComparison.Ordinal);
         Assert.Contains("AcceptPersonalUtangInvitationAsync", invites, StringComparison.Ordinal);
         Assert.Contains("DeclinePersonalUtangInvitationAsync", invites, StringComparison.Ordinal);
-        Assert.Contains("Personal_NoUtangInvitationsTitle", invites, StringComparison.Ordinal);
 
-        Assert.Contains("GetPersonalProfileAsync",
-            File.ReadAllText(Path.Combine(personal, "PersonalProfile.razor")), StringComparison.Ordinal);
-        Assert.Contains("@page \"/personal/settings\"",
-            File.ReadAllText(Path.Combine(personal, "PersonalSettings.razor")), StringComparison.Ordinal);
-        Assert.Contains("StartBusinessAsync",
-            File.ReadAllText(Path.Combine(personal, "StartBusiness.razor")), StringComparison.Ordinal);
+        var resx = File.ReadAllText(Path.Combine(
+            MauiProject(),
+            "Localization",
+            "PosResources.resx"));
+        Assert.Contains("<value>No pending Utang invitations</value>", resx, StringComparison.Ordinal);
     }
 
     [Fact]

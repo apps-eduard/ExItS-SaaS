@@ -1370,7 +1370,7 @@
   <data name="Activate_PasswordMismatch" xml:space="preserve"><value>Passwords do not match.</value></data>
   <data name="Activate_Failed" xml:space="preserve"><value>Activation failed. Check the token and try again.</value></data>
   <data name="Personal_HomeTitle" xml:space="preserve"><value>Personal home</value></data>
-  <data name="Personal_HomeSubtitle" xml:space="preserve"><value>Manage your personal profile and organizations.</value></data>
+  <data name="Personal_HomeSubtitle" xml:space="preserve"><value>People, Utang, profile, and settings — personal-first.</value></data>
   <data name="Personal_ProfileSection" xml:space="preserve"><value>Profile</value></data>
   <data name="Personal_ProfileLink" xml:space="preserve"><value>View profile</value></data>
   <data name="Personal_ProfileTitle" xml:space="preserve"><value>Personal profile</value></data>
@@ -1483,20 +1483,44 @@
   <data name="Personal_UtangInvitationsSubtitle" xml:space="preserve"><value>Invitations for Personal Utang relationships.</value></data>
   <data name="Personal_UtangInvitationsErrorTitle" xml:space="preserve"><value>Could not load invitations</value></data>
   <data name="Personal_UtangInvitationsLoadFailed" xml:space="preserve"><value>Invitations could not be loaded.</value></data>
-  <data name="Personal_NoUtangInvitationsTitle" xml:space="preserve"><value>No pending invitations</value></data>
+  <data name="Personal_NoUtangInvitationsTitle" xml:space="preserve"><value>No pending Utang invitations</value></data>
   <data name="Personal_NoUtangInvitationsMessage" xml:space="preserve"><value>When someone invites you to a Personal Utang relationship, it appears here.</value></data>
   <data name="Personal_UtangInvitationTokenSection" xml:space="preserve"><value>Accept or decline with token</value></data>
   <data name="Personal_DeclineInvitation" xml:space="preserve"><value>Decline invitation</value></data>
   <data name="Personal_DeclineInvitationFailed" xml:space="preserve"><value>Could not decline the invitation.</value></data>
   <data name="Personal_ProfileErrorTitle" xml:space="preserve"><value>Could not load profile</value></data>
-  <data name="StartBusiness_Title" xml:space="preserve"><value>Start a Business</value></data>
-  <data name="StartBusiness_Subtitle" xml:space="preserve"><value>Create an organization and continue in Mobile.</value></data>
+  <data name="Personal_ExplorePos" xml:space="preserve"><value>Explore Pinoy Business POS</value></data>
+  <data name="Personal_ExplorePosSection" xml:space="preserve"><value>Pinoy Business POS</value></data>
+  <data name="Personal_ExplorePosHint" xml:space="preserve"><value>See available plans when you are ready to run a business. No organization is created until you confirm.</value></data>
+  <data name="Personal_ExplorePosTitle" xml:space="preserve"><value>Explore Pinoy Business POS</value></data>
+  <data name="Personal_ExplorePosSubtitle" xml:space="preserve"><value>Plans from the Platform commercial catalog.</value></data>
+  <data name="Personal_ExplorePosErrorTitle" xml:space="preserve"><value>Could not load plans</value></data>
+  <data name="Personal_ExplorePosLoadFailed" xml:space="preserve"><value>Plans could not be loaded. Check your connection and try again.</value></data>
+  <data name="Personal_ExplorePosEmptyTitle" xml:space="preserve"><value>No plans available</value></data>
+  <data name="Personal_ExplorePosEmptyMessage" xml:space="preserve"><value>No active Pinoy Business POS plans are published right now.</value></data>
+  <data name="Personal_ExplorePosSelectHint" xml:space="preserve"><value>Select a plan to continue. You will enter business details and confirm before an organization is created.</value></data>
+  <data name="Personal_ExplorePosTrialDays" xml:space="preserve"><value>{0}-day free trial available</value></data>
+  <data name="Personal_ExplorePosNoTrial" xml:space="preserve"><value>No free trial — subscribe to start</value></data>
+  <data name="Personal_ExplorePosStartTrial" xml:space="preserve"><value>Select trial</value></data>
+  <data name="Personal_ExplorePosSubscribe" xml:space="preserve"><value>Select / Subscribe</value></data>
+  <data name="Personal_ExplorePosBack" xml:space="preserve"><value>Back to plans</value></data>
+  <data name="Personal_Billing_Month" xml:space="preserve"><value>month</value></data>
+  <data name="Personal_Billing_Year" xml:space="preserve"><value>year</value></data>
+  <data name="StartBusiness_Title" xml:space="preserve"><value>Confirm business details</value></data>
+  <data name="StartBusiness_Subtitle" xml:space="preserve"><value>Enter organization details and confirm. Nothing is created until you submit.</value></data>
   <data name="StartBusiness_FormTitle" xml:space="preserve"><value>Business details</value></data>
   <data name="StartBusiness_DisplayName" xml:space="preserve"><value>Business name</value></data>
   <data name="StartBusiness_Slug" xml:space="preserve"><value>URL slug</value></data>
   <data name="StartBusiness_SlugHint" xml:space="preserve"><value>Lowercase letters, numbers, and hyphens.</value></data>
   <data name="StartBusiness_TrialHint" xml:space="preserve"><value>Starts a POS trial and assigns you as Organization Owner and first POS Owner when entitlement activates.</value></data>
   <data name="StartBusiness_Submit" xml:space="preserve"><value>Create organization</value></data>
+  <data name="StartBusiness_ConfirmSubmit" xml:space="preserve"><value>Confirm and create organization</value></data>
+  <data name="StartBusiness_ConfirmHint" xml:space="preserve"><value>Review the selected plan and business details. An organization is created only when you confirm.</value></data>
+  <data name="StartBusiness_SelectedPlan" xml:space="preserve"><value>Selected plan</value></data>
+  <data name="StartBusiness_PlanRequired" xml:space="preserve"><value>Choose a plan from Explore Pinoy Business POS first.</value></data>
+  <data name="StartBusiness_ModeTrial" xml:space="preserve"><value>Trial</value></data>
+  <data name="StartBusiness_ModeSubscribe" xml:space="preserve"><value>Subscribe</value></data>
+  <data name="StartBusiness_BillingCycle" xml:space="preserve"><value>Billing cycle</value></data>
   <data name="StartBusiness_ValidationRequired" xml:space="preserve"><value>Business name and slug are required.</value></data>
   <data name="StartBusiness_SessionRequired" xml:space="preserve"><value>Sign in again so a Platform session is available.</value></data>
   <data name="StartBusiness_Failed" xml:space="preserve"><value>Could not start the business. Try again.</value></data>

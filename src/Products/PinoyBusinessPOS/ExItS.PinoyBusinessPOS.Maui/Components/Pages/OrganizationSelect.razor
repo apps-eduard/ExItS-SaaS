@@ -26,7 +26,7 @@
     {
         <EmptyState Title="@L["OrgSelect_NoneTitle"]" Message="@L["OrgSelect_NoneEligible"]" />
         <FormActions>
-            <Button Variant="ButtonVariant.Primary" OnClick="GoStartBusiness">@L["Personal_StartBusiness"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick="GoExplorePos">@L["Personal_ExplorePos"]</Button>
             <Button Variant="ButtonVariant.Secondary" OnClick="GoPersonalAsync">@L["Personal_HomeTitle"]</Button>
             <Button Variant="ButtonVariant.Ghost" OnClick="LogoutAsync">@L["Auth_Logout"]</Button>
         </FormActions>
@@ -170,7 +170,7 @@
     }
 
     private void GoSignIn() => Nav.NavigateTo("/signin");
-    private void GoStartBusiness() => Nav.NavigateTo("/start-business");
+    private void GoExplorePos() => Nav.NavigateTo("/personal/explore-pos");
 
     private async Task GoPersonalAsync()
     {

@@ -144,6 +144,31 @@ public sealed record StartBusinessRequest(
     bool ActivateProductAccess = true,
     bool AssignPosOwnerRole = true);
 
+/// <summary>Active commercial plan from GET /api/v1/commercial/plans (authoritative Platform catalog).</summary>
+public sealed record CommercialPlanDto(
+    Guid Id,
+    string ProductCode,
+    string Code,
+    string DisplayName,
+    string Status,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    Guid? ProductId = null,
+    string? ProductDisplayName = null,
+    string? PlanKey = null,
+    string? Description = null,
+    int MaxBranches = 1,
+    int MaxActiveStaff = 3,
+    bool CustomerCreditEnabled = false,
+    bool AdvancedReportsEnabled = false,
+    bool ExportEnabled = false,
+    bool TrialAllowed = true,
+    int DefaultTrialDays = 14,
+    int SortOrder = 100,
+    decimal MonthlyPrice = 0m,
+    decimal AnnualPrice = 0m,
+    string CurrencyCode = "PHP");
+
 public sealed record StartBusinessResultDto(
     Guid OrganizationId,
     Guid MembershipId,
@@ -459,6 +484,10 @@ public interface IPlatformAccessClient
 
     Task<ApiResult<StartBusinessResultDto>> StartBusinessAsync(
         StartBusinessRequest request,
+        CancellationToken ct = default);
+
+    Task<ApiResult<IReadOnlyList<CommercialPlanDto>>> GetCommercialPlansAsync(
+        string? productCode = null,
         CancellationToken ct = default);
 
     Task<ApiResult<OrganizationInvitationDto>> CreateOrganizationInvitationAsync(

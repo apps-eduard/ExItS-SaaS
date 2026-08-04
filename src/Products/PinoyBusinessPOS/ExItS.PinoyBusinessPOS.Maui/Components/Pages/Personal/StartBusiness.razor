@@ -10,34 +10,68 @@
 <Page>
     <PageHeader Title="@L["StartBusiness_Title"]" Subtitle="@L["StartBusiness_Subtitle"]">
         <Actions>
+            <Button Variant="ButtonVariant.Ghost" OnClick="GoExplore">@L["Personal_ExplorePosBack"]</Button>
             <Button Variant="ButtonVariant.Ghost" OnClick="GoPersonal">@L["Personal_BackHome"]</Button>
         </Actions>
     </PageHeader>
 
-    @if (!_authenticated)
+    @if (!_ready)
+    {
+        <Spinner />
+    }
+    else if (!_authenticated)
     {
         <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
     }
+    else if (string.IsNullOrWhiteSpace(_planKey))
+    {
+        <InlineMessage Tone="InlineMessageTone.Warning">@L["StartBusiness_PlanRequired"]</InlineMessage>
+        <FormActions>
+            <Button Variant="ButtonVariant.Primary" OnClick="GoExplore">@L["Personal_ExplorePos"]</Button>
+        </FormActions>
+    }
     else
     {
+        <Section Title="@L["StartBusiness_SelectedPlan"]">
+            <Stack Gap="1">
+                <span class="pos-value-md">@_planKey</span>
+                <span class="pos-muted">
+                    @(_startAsTrial ? L["StartBusiness_ModeTrial"] : L["StartBusiness_ModeSubscribe"])
+                    · @_billingCycle
+                </span>
+            </Stack>
+        </Section>
+
         <FormValidationSummary Messages="_errors" />
         <FormGroup Title="@L["StartBusiness_FormTitle"]">
             <TextInput Label="@L["StartBusiness_DisplayName"]" @bind-Value="_displayName" Disabled="_busy" />
             <TextInput Label="@L["StartBusiness_Slug"]" Hint="@L["StartBusiness_SlugHint"]" @bind-Value="_slug" Disabled="_busy" />
+            <Select Label="@L["StartBusiness_BillingCycle"]" Value="@_billingCycle" ValueChanged="OnBillingChanged" Options="_billingOptions" Disabled="_busy" />
         </FormGroup>
-        <InlineMessage Tone="InlineMessageTone.Info">@L["StartBusiness_TrialHint"]</InlineMessage>
+        <InlineMessage Tone="InlineMessageTone.Info">@L["StartBusiness_ConfirmHint"]</InlineMessage>
         <FormActions>
-            <Button IsLoading="_busy" Disabled="_busy" OnClick="SubmitAsync">@L["StartBusiness_Submit"]</Button>
+            <Button IsLoading="_busy" Disabled="_busy" OnClick="SubmitAsync">@L["StartBusiness_ConfirmSubmit"]</Button>
         </FormActions>
     }
 </Page>
 
 @code {
+    private bool _ready;
     private bool _authenticated;
     private bool _busy;
     private string? _displayName;
     private string? _slug;
+    private string _planKey = string.Empty;
+    private string _billingCycle = "Monthly";
+    private bool _startAsTrial = true;
+    private bool _payNow;
     private List<string> _errors = [];
+
+    private IReadOnlyList<SelectOption> _billingOptions =>
+    [
+        new("Monthly", L["Personal_Billing_Month"]),
+        new("Annual", L["Personal_Billing_Year"]),
+    ];
 
     protected override async Task OnInitializedAsync()
     {
@@ -50,6 +84,52 @@
         {
             _authenticated = true;
         }
+
+        ParseQuery();
+        _ready = true;
+    }
+
+    private void ParseQuery()
+    {
+        var query = Nav.ToAbsoluteUri(Nav.Uri).Query.TrimStart('?');
+        foreach (var part in query.Split('&', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var eq = part.IndexOf('=');
+            if (eq <= 0)
+            {
+                continue;
+            }
+
+            var key = Uri.UnescapeDataString(part[..eq]);
+            var value = Uri.UnescapeDataString(part[(eq + 1)..]);
+            if (string.Equals(key, "planKey", StringComparison.OrdinalIgnoreCase))
+            {
+                _planKey = value;
+            }
+            else if (string.Equals(key, "trial", StringComparison.OrdinalIgnoreCase))
+            {
+                _startAsTrial = value is "1" or "true" or "True";
+            }
+            else if (string.Equals(key, "payNow", StringComparison.OrdinalIgnoreCase))
+            {
+                _payNow = value is "1" or "true" or "True";
+            }
+            else if (string.Equals(key, "billing", StringComparison.OrdinalIgnoreCase)
+                     && (value is "Monthly" or "Annual"))
+            {
+                _billingCycle = value;
+            }
+        }
+    }
+
+    private Task OnBillingChanged(string? value)
+    {
+        if (value is "Monthly" or "Annual")
+        {
+            _billingCycle = value;
+        }
+
+        return Task.CompletedTask;
     }
 
     private async Task SubmitAsync()
@@ -58,6 +138,12 @@
         if (string.IsNullOrWhiteSpace(_displayName) || string.IsNullOrWhiteSpace(_slug))
         {
             _errors.Add(L["StartBusiness_ValidationRequired"]);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_planKey))
+        {
+            _errors.Add(L["StartBusiness_PlanRequired"]);
             return;
         }
 
@@ -70,18 +156,22 @@
         _busy = true;
         try
         {
+            await Auth.EnsurePersonalAccountProfileAsync();
             var created = await Platform.StartBusinessAsync(new StartBusinessRequest(
                 DisplayName: _displayName.Trim(),
                 Slug: _slug.Trim().ToLowerInvariant(),
                 ProductCode: PosProductCodes.PinoyBusinessPos,
-                StartAsTrial: true,
+                PlanKey: _planKey.Trim(),
+                BillingCycle: _billingCycle,
+                StartAsTrial: _startAsTrial,
+                PayNow: _payNow,
                 ActivatePosEntitlement: true,
                 ActivateProductAccess: true,
                 AssignPosOwnerRole: true));
 
             if (!created.IsSuccess || created.Data is null)
             {
-                _errors.Add(L["StartBusiness_Failed"]);
+                _errors.Add(created.Error?.Detail ?? L["StartBusiness_Failed"]);
                 return;
             }
 
@@ -94,7 +184,7 @@
 
             await Prefs.SetOnboardingCompletedAsync(true);
             await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.Complete));
-            Nav.NavigateTo(CurrentUser.HasPosAccess ? "/org" : "/org", replace: true);
+            Nav.NavigateTo("/org", replace: true);
         }
         finally
         {
@@ -102,6 +192,7 @@
         }
     }
 
+    private void GoExplore() => Nav.NavigateTo("/personal/explore-pos");
     private void GoPersonal() => Nav.NavigateTo("/personal");
     private void GoSignIn() => Nav.NavigateTo("/signin");
 }

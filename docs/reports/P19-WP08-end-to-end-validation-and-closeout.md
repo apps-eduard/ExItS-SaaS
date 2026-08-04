@@ -50,13 +50,14 @@ Provide the end-to-end Mobile POS ops validation checklist for physical-phone co
 
 See [P18-personal-mvp-mobile-ui-completion](P18-personal-mvp-mobile-ui-completion.md).
 
-- [ ] New user with no organization lands on Personal home (empty orgs + Start a Business)
+- [ ] New Personal user lands on personal-first home (People / Utang / Profile / Settings — **no** Organizations list, Account context, or Start a Business button)
+- [ ] Explore Pinoy Business POS loads Platform catalog plans; Select starts explicit onboarding
+- [ ] Organization is **not** created until business details are confirmed
 - [ ] Dashboard totals for People / Active / I Lent / I Borrowed
 - [ ] People empty → create → detail
 - [ ] I Lent / I Borrowed empty → create → relationship history + payment entry
-- [ ] Utang invitations empty + accept/decline by token
-- [ ] Multi-org user lists organizations and switches Personal ↔ Organization
-- [ ] Pending organization invitation accept (list and/or token)
+- [ ] Utang invitations empty → `No pending Utang invitations`; failure → error + Retry; accept/decline by token
+- [ ] Existing org member switches Personal ↔ Organization from Settings / Organization Select (not Personal home)
 - [ ] App restart restores Personal when no organization is bound
 - [ ] Direct POS route while Personal is denied / redirected
 - [ ] Samsung layout: Personal AuthShell without excess bottom padding

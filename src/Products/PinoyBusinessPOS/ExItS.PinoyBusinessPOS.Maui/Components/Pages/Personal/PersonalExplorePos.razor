@@ -1,0 +1,163 @@
+@page "/personal/explore-pos"
+@layout Layout.AuthShell
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Personal_ExplorePosTitle"]" Subtitle="@L["Personal_ExplorePosSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoHome">@L["Personal_BackHome"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else if (_loadFailed)
+    {
+        <ErrorState Title="@L["Personal_ExplorePosErrorTitle"]" Message="@(_error ?? L["Personal_ExplorePosLoadFailed"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    }
+    else if (_plans.Count == 0)
+    {
+        <EmptyState Title="@L["Personal_ExplorePosEmptyTitle"]" Message="@L["Personal_ExplorePosEmptyMessage"]" />
+    }
+    else
+    {
+        <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_ExplorePosSelectHint"]</InlineMessage>
+        <Stack Gap="4">
+            @foreach (var plan in _plans.OrderBy(p => p.SortOrder))
+            {
+                <div class="pos-personal-org">
+                    <Stack Gap="2">
+                        <span class="pos-value-md">@plan.DisplayName</span>
+                        <span class="pos-muted">
+                            @plan.MonthlyPrice.ToString("N2") @plan.CurrencyCode / @L["Personal_Billing_Month"]
+                            · @plan.AnnualPrice.ToString("N2") @plan.CurrencyCode / @L["Personal_Billing_Year"]
+                        </span>
+                        @if (plan.TrialAllowed && plan.DefaultTrialDays > 0)
+                        {
+                            <span class="pos-muted">@string.Format(L["Personal_ExplorePosTrialDays"].Value, plan.DefaultTrialDays)</span>
+                        }
+                        else
+                        {
+                            <span class="pos-muted">@L["Personal_ExplorePosNoTrial"]</span>
+                        }
+                        <Stack Gap="1">
+                            @foreach (var line in FeatureLines(plan))
+                            {
+                                <span class="pos-muted">· @line</span>
+                            }
+                        </Stack>
+                        <FormActions>
+                            @if (plan.TrialAllowed && plan.DefaultTrialDays > 0)
+                            {
+                                <Button OnClick="() => SelectPlan(plan, startAsTrial: true, payNow: false)">
+                                    @L["Personal_ExplorePosStartTrial"]
+                                </Button>
+                            }
+                            <Button Variant="@(plan.TrialAllowed ? ButtonVariant.Secondary : ButtonVariant.Primary)"
+                                    OnClick="() => SelectPlan(plan, startAsTrial: false, payNow: true)">
+                                @L["Personal_ExplorePosSubscribe"]
+                            </Button>
+                        </FormActions>
+                    </Stack>
+                </div>
+            }
+        </Stack>
+    }
+</Page>
+
+@code {
+    private bool _loading = true;
+    private bool _authenticated;
+    private bool _loadFailed;
+    private string? _error;
+    private IReadOnlyList<CommercialPlanDto> _plans = [];
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadFailed = false;
+        _error = null;
+        try
+        {
+            if (!CurrentUser.IsAuthenticated)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                _authenticated = restore.Succeeded;
+            }
+            else
+            {
+                _authenticated = true;
+            }
+
+            if (!_authenticated)
+            {
+                return;
+            }
+
+            await Auth.EnsurePersonalAccountProfileAsync();
+            var result = await Platform.GetCommercialPlansAsync(PosProductCodes.PinoyBusinessPos);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _loadFailed = true;
+                _error = result.Error?.Detail ?? L["Personal_ExplorePosLoadFailed"];
+                return;
+            }
+
+            _plans = result.Data
+                .Where(p => string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static IEnumerable<string> FeatureLines(CommercialPlanDto plan)
+    {
+        yield return $"Branches: {plan.MaxBranches}";
+        yield return $"Active staff: {plan.MaxActiveStaff}";
+        if (plan.CustomerCreditEnabled)
+        {
+            yield return "Customer credit";
+        }
+
+        if (plan.AdvancedReportsEnabled)
+        {
+            yield return "Advanced reports";
+        }
+
+        if (plan.ExportEnabled)
+        {
+            yield return "Export";
+        }
+
+        if (!string.IsNullOrWhiteSpace(plan.Description))
+        {
+            yield return plan.Description!;
+        }
+    }
+
+    private void SelectPlan(CommercialPlanDto plan, bool startAsTrial, bool payNow)
+    {
+        var planKey = Uri.EscapeDataString(plan.PlanKey ?? plan.Code);
+        var billing = "Monthly";
+        Nav.NavigateTo(
+            $"/start-business?planKey={planKey}&trial={(startAsTrial ? "1" : "0")}&payNow={(payNow ? "1" : "0")}&billing={billing}");
+    }
+
+    private void GoHome() => Nav.NavigateTo("/personal");
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+}

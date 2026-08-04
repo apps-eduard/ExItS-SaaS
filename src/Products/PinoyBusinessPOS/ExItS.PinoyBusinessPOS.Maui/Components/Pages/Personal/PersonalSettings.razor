@@ -51,6 +51,8 @@
                            OnCancel="() => _logoutOpen = false" />
         </Section>
 
+        <AccountContextSwitcher />
+
         @if (_preferenceError is not null)
         {
             <InlineMessage Tone="InlineMessageTone.Danger">@_preferenceError</InlineMessage>

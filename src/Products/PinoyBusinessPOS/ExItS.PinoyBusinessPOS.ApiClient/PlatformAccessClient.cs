@@ -124,6 +124,19 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
         CancellationToken ct = default) =>
         api.SendAsync<StartBusinessResultDto>(HttpMethod.Post, "/api/v1/personal/start-business", request, ct);
 
+    public Task<ApiResult<IReadOnlyList<CommercialPlanDto>>> GetCommercialPlansAsync(
+        string? productCode = null,
+        CancellationToken ct = default)
+    {
+        var path = "/api/v1/commercial/plans";
+        if (!string.IsNullOrWhiteSpace(productCode))
+        {
+            path += $"?productCode={Uri.EscapeDataString(productCode.Trim())}";
+        }
+
+        return api.GetAsync<IReadOnlyList<CommercialPlanDto>>(path, ct);
+    }
+
     public Task<ApiResult<OrganizationInvitationDto>> CreateOrganizationInvitationAsync(
         Guid organizationId,
         CreateInvitationRequest request,

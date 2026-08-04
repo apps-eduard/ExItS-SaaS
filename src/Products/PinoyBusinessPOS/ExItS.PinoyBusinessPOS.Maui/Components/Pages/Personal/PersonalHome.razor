@@ -2,9 +2,7 @@
 @layout Layout.AuthShell
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
-@inject IProductAccessResolver Access
 @inject IPlatformAccessClient Platform
-@inject SellingModeService SellingMode
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
@@ -82,74 +80,12 @@
             </FormActions>
         </Section>
 
-        <Section Title="@L["Personal_OrgInvitationsSection"]">
-            @if (_orgInvitationsLoadFailed)
-            {
-                <InlineMessage Tone="InlineMessageTone.Danger">@L["Personal_InvitationsLoadError"]</InlineMessage>
-                <FormActions>
-                    <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="ReloadOrgInvitationsAsync">@L["Common_Retry"]</Button>
-                </FormActions>
-            }
-            else if (_orgInvitations.Count == 0)
-            {
-                <EmptyState Title="@L["Personal_NoInvitationsTitle"]" Message="@L["Personal_NoInvitationsMessage"]" />
-            }
-            else
-            {
-                <Stack Gap="3">
-                    @foreach (var invite in _orgInvitations)
-                    {
-                        <div class="pos-personal-org">
-                            <Stack Gap="2">
-                                <span class="pos-value-md">@invite.OrganizationDisplayName</span>
-                                <span class="pos-muted">@RoleLabel(invite.Role)</span>
-                                <Button Disabled="_busy" OnClick="() => AcceptOrgInvitationAsync(invite.Id)">@L["Personal_AcceptInvitation"]</Button>
-                            </Stack>
-                        </div>
-                    }
-                </Stack>
-            }
+        <Section Title="@L["Personal_ExplorePosSection"]">
+            <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_ExplorePosHint"]</InlineMessage>
             <FormActions>
-                <Button Variant="ButtonVariant.Ghost" OnClick="GoAcceptOrgInvitation">@L["Personal_AcceptByToken"]</Button>
+                <Button Variant="ButtonVariant.Primary" OnClick="GoExplorePos">@L["Personal_ExplorePos"]</Button>
             </FormActions>
         </Section>
-
-        <Section Title="@L["Personal_OrganizationsSection"]">
-            @if (_organizations.Count == 0)
-            {
-                <EmptyState Title="@L["Personal_NoOrgsTitle"]" Message="@L["Personal_NoOrgsMessage"]" />
-            }
-            else
-            {
-                <Stack Gap="3">
-                    @foreach (var org in _organizations)
-                    {
-                        <div class="pos-personal-org">
-                            <Stack Gap="2">
-                                <span class="pos-value-md">@org.DisplayName</span>
-                                <span class="pos-muted">@RoleLabel(org.MembershipRole)</span>
-                                <span class="pos-muted">@L["Personal_MembershipReady"]</span>
-                                <Button Disabled="_busy" OnClick="() => ContinueOrgAsync(org.OrganizationId)">
-                                    @L["Personal_ContinueOrg"]
-                                </Button>
-                            </Stack>
-                        </div>
-                    }
-                </Stack>
-            }
-            <FormActions>
-                @if (_organizations.Count == 0)
-                {
-                    <Button Variant="ButtonVariant.Primary" OnClick="GoStartBusiness">@L["Personal_StartBusiness"]</Button>
-                }
-                else
-                {
-                    <Button Variant="ButtonVariant.Secondary" OnClick="GoStartBusiness">@L["Personal_StartAnotherBusiness"]</Button>
-                }
-            </FormActions>
-        </Section>
-
-        <AccountContextSwitcher />
 
         @if (!string.IsNullOrEmpty(_error))
         {
@@ -160,17 +96,13 @@
 
 @code {
     private bool _loading = true;
-    private bool _busy;
     private bool _authenticated;
     private bool _loadFailed;
-    private bool _orgInvitationsLoadFailed;
     private string? _displayName;
     private string? _email;
     private string? _accountClass;
     private string? _error;
     private PersonalDashboardDto? _dashboard;
-    private IReadOnlyList<EligibleOrganization> _organizations = [];
-    private IReadOnlyList<PendingOrganizationInvitationDto> _orgInvitations = [];
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -179,7 +111,6 @@
         _loading = true;
         _error = null;
         _loadFailed = false;
-        _orgInvitationsLoadFailed = false;
         try
         {
             if (!CurrentUser.IsAuthenticated)
@@ -213,10 +144,6 @@
 
             var dash = await Platform.GetPersonalDashboardAsync();
             _dashboard = dash.IsSuccess ? dash.Data : null;
-
-            // Personal sessions may list own memberships via auth/organizations.
-            _organizations = await Access.ListEligibleOrganizationsAsync(session.UserId);
-            await ReloadOrgInvitationsCoreAsync();
         }
         catch
         {
@@ -229,94 +156,13 @@
         }
     }
 
-    private async Task ReloadOrgInvitationsAsync()
-    {
-        _busy = true;
-        try { await ReloadOrgInvitationsCoreAsync(); }
-        finally { _busy = false; }
-    }
-
-    private async Task ReloadOrgInvitationsCoreAsync()
-    {
-        _orgInvitationsLoadFailed = false;
-        // Org invitations require auth session; available under both profiles when on auth routes.
-        var pending = await Platform.GetPendingOrganizationInvitationsAsync();
-        if (!pending.IsSuccess || pending.Data is null)
-        {
-            _orgInvitations = [];
-            _orgInvitationsLoadFailed = !string.IsNullOrWhiteSpace(CurrentUser.Session?.PlatformSessionToken);
-            return;
-        }
-
-        _orgInvitations = pending.Data;
-    }
-
-    private static string RoleLabel(string? role) =>
-        string.IsNullOrWhiteSpace(role) ? "Member" : role;
-
-    private async Task AcceptOrgInvitationAsync(Guid invitationId)
-    {
-        _busy = true;
-        _error = null;
-        try
-        {
-            var accepted = await Platform.AcceptOrganizationInvitationByIdAsync(invitationId);
-            if (!accepted.IsSuccess)
-            {
-                _error = accepted.Error?.Detail ?? L["Personal_AcceptInvitationFailed"];
-                return;
-            }
-
-            await Auth.EnsureOrganizationAccountProfileAsync();
-            await LoadAsync();
-        }
-        finally { _busy = false; }
-    }
-
-    private async Task ContinueOrgAsync(Guid organizationId)
-    {
-        _busy = true;
-        _error = null;
-        try
-        {
-            var membership = _organizations.FirstOrDefault(o => o.OrganizationId == organizationId);
-            if (OrganizationMembershipRoles.IsOwnerRole(membership?.MembershipRole))
-            {
-                SellingMode.EnterWorkingAs(RoleHomeResolver.OwnerHome);
-            }
-            else
-            {
-                SellingMode.Clear();
-            }
-
-            var result = await Auth.SelectOrganizationAsync(organizationId);
-            if (result.Succeeded && CurrentUser.HasPosAccess)
-            {
-                Nav.NavigateTo("/", replace: true);
-                return;
-            }
-
-            if (result.Succeeded)
-            {
-                SellingMode.Clear();
-                Nav.NavigateTo("/org");
-                return;
-            }
-
-            SellingMode.Clear();
-            _error = L[result.SafeMessageKey ?? "Access_Denied"];
-        }
-        finally { _busy = false; }
-    }
-
-    private void GoStartBusiness() => Nav.NavigateTo("/start-business");
+    private void GoExplorePos() => Nav.NavigateTo("/personal/explore-pos");
     private void GoProfile() => Nav.NavigateTo("/personal/profile");
     private void GoSettings() => Nav.NavigateTo("/personal/settings");
     private void GoPeople() => Nav.NavigateTo("/personal/utang/people");
     private void GoLent() => Nav.NavigateTo("/personal/utang/lent");
     private void GoBorrowed() => Nav.NavigateTo("/personal/utang/borrowed");
     private void GoUtangInvitations() => Nav.NavigateTo("/personal/utang/invitations");
-    private void GoAcceptOrgInvitation() => Nav.NavigateTo("/personal/invitations/accept");
     private void GoSignIn() => Nav.NavigateTo("/signin");
 
     private async Task LogoutAsync()

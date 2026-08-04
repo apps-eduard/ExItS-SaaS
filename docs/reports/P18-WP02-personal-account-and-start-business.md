@@ -10,7 +10,9 @@
 
 ## 1. Objective
 
-Personal Mobile area: home, profile, organization list, Start a Business, and continuation inside Mobile after organization creation.
+Personal Mobile area: personal-first home (Utang / profile / settings), Explore Pinoy Business POS (catalog plans), explicit Start a Business confirmation, and continuation inside Mobile after organization creation.
+
+Organization list and Account context switcher are **not** on Personal home; existing members switch via Settings / Organization Select.
 
 ## 2. Scope
 
@@ -19,20 +21,21 @@ Personal Account on Mobile only (MVP). Full Org Admin remains Web.
 ## 3. Existing functionality reused
 
 - Platform Personal `POST /api/v1/personal/start-business`
+- Platform commercial `GET /api/v1/commercial/plans`
 - Start a Business server behavior: Organization Owner grant; POS entitlement activation; first POS Owner when entitlement activates (`AssignPosOwnerRole`)
 - Existing membership and eligible-organization reads
 
 ## 4. Backend / API work completed
 
-- Maui client methods: `StartBusinessAsync`, memberships, organization get, account-profile select (client surface)
+- Maui client methods: `GetCommercialPlansAsync`, `StartBusinessAsync`, memberships, organization get, account-profile select (client surface)
 - `ContinueAfterStartBusinessAsync` applies rotated Platform session and binds POS organization when entitled
 - No duplicate Start Business API
 
 ## 5. MAUI screens and flows completed
 
-- `/personal`, `/personal/profile`, `/personal/settings`, `/personal/invitations/accept`, `/start-business`
-- Organization list on personal home with continue into org / POS when entitled
-- Pending organization invitations (list + accept-by-id + token accept)
+- `/personal` (personal-first; Explore POS CTA), `/personal/explore-pos`, `/personal/profile`, `/personal/settings`, `/personal/invitations/accept`, `/start-business?planKey=…`
+- Plan selection does not create an organization; confirmation on Start Business does
+- Account context switcher on Personal Settings; Organization Select empty path → Explore POS
 - Sign-in with no organization navigates to Personal home
 - Continuation after Start a Business stays in Mobile (`/org` and POS gate)
 - AuthShell layout without POS bottom-nav padding (phone-friendly)

@@ -505,9 +505,10 @@ Mobile Application
 ├── Personal Account
 │   ├── Register
 │   ├── Sign In
-│   ├── Profile
-│   ├── Start a Business
-│   └── Select Organization
+│   ├── Home (People / Utang / Profile / Settings)
+│   ├── Explore Pinoy Business POS (catalog plans)
+│   ├── Confirm business details (creates org only on submit)
+│   └── Select Organization / Account context (outside Personal home)
 │
 ├── Organization Owner Essentials
 │   ├── Basic Organization Profile
@@ -529,8 +530,9 @@ Mobile Application
 ```text
 User registers in Mobile
 → user signs in
-→ user starts a business
-→ organization is created
+→ Personal home (Utang-first; Explore POS when ready)
+→ user explores Pinoy Business POS plans from catalog
+→ user confirms business details (organization created only then)
 → user becomes Organization Owner
 → subscription or trial becomes active
 → POS entitlement is granted

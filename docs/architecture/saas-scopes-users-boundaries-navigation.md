@@ -466,31 +466,19 @@ The same person may be a lender in one relationship and borrower in another.
 
 ```text
 Personal
-├── Home
-├── Profile
-├── Settings
-├── Pending invitations
-├── Organizations (list / continue)
-├── Start a Business
-└── Account context switcher (Personal ↔ Organization)
-```
-
-Personal Utang Mobile navigation remains deferred for MVP Mobile (APIs exist under `/api/v1/personal/utang`).
-POS operational routes stay outside Personal AuthShell and require organization + entitlement.
-
-Mobile Personal Utang MVP (implemented):
-
-```text
-Personal
-├── Home (dashboard totals)
+├── Home (People / Utang summary — personal-first)
 ├── People
 ├── I Lent
 ├── I Borrowed
 ├── Utang invitations
 ├── Profile
-├── Settings
-└── Start a Business
+├── Settings (includes Account context switcher when orgs exist)
+└── Explore Pinoy Business POS → plan catalog → confirm business details
 ```
+
+Personal home does **not** list organizations, show Account context, or expose a Start a Business button.
+Organization / product switching for existing members is available from Settings and Organization Select.
+POS operational routes stay outside Personal AuthShell and require organization + entitlement.
 
 Payments / Reminders / History remain Coming Soon on Mobile (same as Web nav).
 

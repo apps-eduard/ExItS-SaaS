@@ -606,6 +606,9 @@ public sealed class AuthenticationServiceTests
         public Task<ApiResult<StartBusinessResultDto>> StartBusinessAsync(StartBusinessRequest request, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<StartBusinessResultDto>.Unavailable());
 
+        public Task<ApiResult<IReadOnlyList<CommercialPlanDto>>> GetCommercialPlansAsync(string? productCode = null, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<IReadOnlyList<CommercialPlanDto>>.Success(Array.Empty<CommercialPlanDto>()));
+
         public Task<ApiResult<OrganizationInvitationDto>> CreateOrganizationInvitationAsync(Guid organizationId, CreateInvitationRequest request, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<OrganizationInvitationDto>.Unavailable());
 
