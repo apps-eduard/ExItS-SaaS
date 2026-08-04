@@ -2,23 +2,26 @@
 
 | Field | Value |
 |---|---|
-| Status | **In Progress** |
-| Phase | [Phase 18](../phases/phase-18-mobile-personal-organization-and-pos-experience.md) — **Open** |
+| Status | **Complete** (closeout recorded; partial phone validation) |
+| Phase | [Phase 18](../phases/phase-18-mobile-personal-organization-and-pos-experience.md) — **Complete (implementation/scope)** |
+| Next phase | [Phase 19](../phases/phase-19-mobile-pos-operations-and-cashier-experience.md) — **Open** |
 | Implementation commit | `4b8b7270417d0f9e612855ed746d7fd80819adee` |
 | Validation-fix commit (commercial grants / preferred home) | `3e4314cc35a4428cdaf258df54ed005cbd7080c0` |
 | Validation-fix commit (Quick Login / Access Denied follow-up) | `86b99cc13d9d7865d268fe009d2f5919cfba28a8` |
 | PhysicalDevice Tailscale profile | `9022d95` |
+| Baseline / tip commit | `f86dcd2` |
 | Production-ready | **No** |
-| User mobile validation | **Pending User Validation** — Phase 18 must not be marked Complete until the user explicitly confirms |
+| Device Verified | **No** |
+| User mobile validation | **Partial** — Products and Categories phone-validated; Quick Login / access routing fixed pending final retest |
 | Date | 2026-08-04 |
 
 ## 1. Objective
 
-Hold Phase 18 open until the user personally validates the MAUI mobile application. Record automated test and build evidence now; record the final validation outcome only after explicit user confirmation.
+Record Phase 18 closeout as **implementation/scope complete** with **partial** physical-phone validation. Do **not** claim Device Verified or production readiness. Hand remaining operational POS UIs to Phase 19.
 
 ## 2. Scope
 
-In progress closeout work package. Does **not** close Phase 18. Does **not** claim device validation passed.
+Closeout work package for Phase 18. Marks Phase 18 **Complete (implementation/scope)** by owner request (2026-08-04). Does **not** claim full device validation passed. Does **not** claim production readiness.
 
 ## 3. Existing functionality reused
 
@@ -26,15 +29,15 @@ Phases 13–17 Platform auth/personal/start-business/product-local roles and POS
 
 ## 4. Backend / API completion status
 
-**Implemented** (code) via reuse and Maui client expansion. Awaiting user mobile validation of the end-to-end journey.
+**Implemented** (code) via reuse and Maui client expansion for Phase 18 scope.
 
 ## 5. MAUI frontend completion status
 
-**Implemented** (code) — screens and flows exist. **User Mobile Validation Pending.**
+**Implemented** (code) for Phase 18 scope — Personal/Org essentials, role routing, catalog. **Partial phone validation** recorded below. Full operational POS UX completion continues in Phase 19.
 
 ## 6. Files / components changed
 
-Implementation: `4b8b727`. Validation-pass fixes: auth bind commercial grants (reject Active+empty features; Development grant fallback), Local Validation Quick Login (dedupe per user; profile select; AccessToken required; denser fonts), Owner/Manager/Cashier preferred-home before bind, `NotifySessionAccessChanged` after org persist, dashboard preferred-home trust, PhysicalDevice Tailscale Debug profile. This WP remains open for user checklist results.
+Implementation: `4b8b727`. Validation-pass fixes: auth bind commercial grants (reject Active+empty features; Development grant fallback), Local Validation Quick Login (dedupe per user; profile select; AccessToken required; denser fonts), Owner/Manager/Cashier preferred-home before bind, `NotifySessionAccessChanged` after org persist, dashboard preferred-home trust, PhysicalDevice Tailscale Debug profile.
 
 ## 7. Authorization and organization-isolation behavior
 
@@ -61,7 +64,7 @@ Regression added/updated in this validation pass:
 
 ## 9. MAUI build result
 
-**Build Verified** (emulator + PhysicalDevice Debug APKs). Not a claim of Device Verified for the Phase 18 journey.
+**Build Verified** (emulator + PhysicalDevice Debug APKs). **Not Device Verified** for the full Phase 18 journey.
 
 | Build | Path / notes |
 |---|---|
@@ -70,9 +73,9 @@ Regression added/updated in this validation pass:
 
 ## 10. Emulator / device / user validation result
 
-**Pending User Validation.** Phase 18 remains **Open**. **Not Device Verified.**
+**Partial phone validation.** Phase 18 is **Complete (implementation/scope)**. **Not Device Verified.**
 
-Agent-assisted Local Validation evidence (AVD `HealthCare_Pixel_API34`, Platform `:8091` / POS `:8092`, Mailpit `:8025`):
+Agent-assisted Local Validation evidence (AVD `HealthCare_Pixel_API34`, Platform `:8091` / POS `:8092`, Mailpit `:8025`) plus owner phone results:
 
 | # | Scenario | Result |
 |---:|---|---|
@@ -86,13 +89,14 @@ Agent-assisted Local Validation evidence (AVD `HealthCare_Pixel_API34`, Platform
 | 8 | Multi-org enter / role home | **Retest** |
 | 9 | Sign out | **Retest** |
 | 10 | Sign-in again / restore | **Retest** |
-| 11 | Clear session → login → add category/product | **Retest** (fix shipped; user confirmation pending) |
-| 12 | Quick Login → Owner / Manager / Cashier (no Access Denied) | **Retest** (fix shipped; user confirmation pending) |
-| 13 | Physical phone Tailscale install + health reachability | **Retest** (APK prepared; user phone results not confirmed) |
-| 14 | Physical phone Quick Login → Owner/Manager/Cashier | **Retest** |
-| 15 | Physical phone add category/product after org entry | **Retest** |
+| 11 | Clear session → login → add category/product | **Pass (phone)** — Products and Categories phone-validated |
+| 12 | Quick Login → Owner / Manager / Cashier (no Access Denied) | **Retest** — fix shipped; pending final retest |
+| 13 | Physical phone Tailscale install + health reachability | **Pass (APK delivered)** — PhysicalDevice Tailscale APK delivered; full journey not Device Verified |
+| 14 | Physical phone Quick Login → Owner/Manager/Cashier | **Retest** — pending final retest |
+| 15 | Physical phone add category/product after org entry | **Pass (phone)** — Products and Categories |
+| 16 | Inventory / Registers / Shifts / Sales / Customers / Reports / full Cashier UI | **Deferred to Phase 19** |
 
-**Not Device Verified** for the full Phase 18 journey. Do not mark passed or Phase 18 Complete until the user confirms the checklist.
+**Not Device Verified** for the full Phase 18 journey. Operational UIs deferred to Phase 19 are not claimed phone-complete here.
 
 ### 10a. Confirmed issues fixed in this validation pass
 
@@ -104,7 +108,7 @@ Agent-assisted Local Validation evidence (AVD `HealthCare_Pixel_API34`, Platform
 | Observed | UI showed Access Restricted for Manage Catalog |
 | Root cause | Bind omitted commercial feature codes; Active+empty status was treated as sufficient |
 | Fix | Require non-empty feature codes; Development fallback to `DefaultDevelopmentGrants` when bind succeeded |
-| Validation result | Automated: `SelectOrganization_with_token_bind_fills_dev_grants_when_features_missing` **Pass**. User/phone **Retest** |
+| Validation result | Automated: `SelectOrganization_with_token_bind_fills_dev_grants_when_features_missing` **Pass**. Phone: Products / Categories **Pass** |
 | Commit | See §14 |
 
 #### Issue B — Quick Login → Owner / Manager / Cashier Access Denied
@@ -115,7 +119,7 @@ Agent-assisted Local Validation evidence (AVD `HealthCare_Pixel_API34`, Platform
 | Observed | Access Denied after Quick Login (normal password login worked) |
 | Root cause | Process shell validation not re-armed after bind; preferred home applied after bind; effective-role lag |
 | Fix | `NotifySessionAccessChanged` after org persist; `EnterWorkingAs` before bind; RoleHome/dashboard preferred-home trust; Quick Login dedupe + AccessToken gate + denser fonts |
-| Validation result | Automated preferred-home + NotifySessionAccessChanged tests **Pass**. User/phone **Retest** |
+| Validation result | Automated preferred-home + NotifySessionAccessChanged tests **Pass**. User/phone **Retest** (fix shipped; pending final retest) |
 | Commit | See §14 |
 
 Fixes also recorded earlier / adjacent in this pass:
@@ -128,8 +132,10 @@ Fixes also recorded earlier / adjacent in this pass:
 
 ## 11. Known limitations
 
-- User mobile validation not yet confirmed
+- Full Device Verified journey not claimed
+- Quick Login / access routing pending final retest
 - Quick Login uses Local Validation SharedPassword — custom passwords (e.g. kissy `123`) require SharedPassword alignment or manual credential form
+- Inventory, Registers, Shifts, Sales, Customers, Reports, and full Cashier UI completion moved to Phase 19
 - Offline-capable selling not claimed
 - Production TLS / MAUI-HTTPS / Phase 14 blockers unchanged
 - Formal accessibility certification not claimed
@@ -138,9 +144,20 @@ Fixes also recorded earlier / adjacent in this pass:
 
 Multi-branch; gateway payments; split tender; advanced analytics; custom roles; multi Organization Owner; full Org Admin on Mobile.
 
+Moved to [Phase 19](../phases/phase-19-mobile-pos-operations-and-cashier-experience.md):
+
+- Mobile Inventory UI
+- Mobile Registers UI
+- Mobile Shift Operations UI
+- Mobile Cashier Selling Experience completion
+- Mobile Sales and Receipt History UI
+- Mobile Customers UI
+- Mobile Reports, Authorization, Navigation, and UX Hardening
+- Phase 19 end-to-end validation and user closeout checklist
+
 ## 13. Current status
 
-**In Progress.** Phase 18 remains **Open**: Code Complete and Build Verified; User Mobile Validation Pending. Not production-ready. **Not Device Verified. Not Complete.**
+**Complete** (closeout recorded). Phase 18 is **Complete (implementation/scope)** with **partial** phone validation. **Not Device Verified.** Not production-ready. Phase 14 remains open. Remaining operational POS UIs continue under Phase 19.
 
 ## 14. Commit / push / git status
 
@@ -150,18 +167,17 @@ Multi-branch; gateway payments; split tender; advanced analytics; custom roles; 
 | Validation-fix commit (grants / preferred home baseline) | `3e4314c` |
 | PhysicalDevice Tailscale profile | `9022d95` |
 | Validation-fix commit (Quick Login / Access Denied follow-up) | `86b99cc13d9d7865d268fe009d2f5919cfba28a8` |
-| Phase 18 Complete closeout commit | **Not created** — blocked until user confirmation |
+| Baseline / tip at Phase 18 close | `f86dcd2` |
+| Phase 18 Complete closeout | **Recorded** — implementation/scope complete by owner request 2026-08-04; **not** Device Verified |
 
-### Remaining user retest items (after this fix commit)
+### Remaining retest / Phase 19 items
 
-1. Clear app → sign in → org Owner → add category and product (no Access Restricted) — **Retest**
-2. Quick Login → Owner home — **Retest**
-3. Quick Login → Manager home — **Retest**
-4. Quick Login → Cashier home — **Retest**
-5. Physical phone (Tailscale APK) — install + same flows — **Retest**
-6. Continue full checklist in § User mobile validation checklist
+1. Quick Login → Owner / Manager / Cashier homes — **Retest** (fix shipped)
+2. Physical phone Quick Login flows — **Retest**
+3. Inventory, Registers, Shifts, Sales, Customers, Reports, full Cashier UI — **Phase 19**
+4. Full Device Verified claim — **not made** for Phase 18; Phase 19 WP08 owns later user phone confirmation
 
-Mark Pass / Fail / Retest only from your results. Do not treat agent automation as Device Verified.
+Mark Pass / Fail / Retest only from user results. Do not treat agent automation as Device Verified.
 
 ---
 
@@ -174,23 +190,23 @@ Mark Pass / Fail / Retest only from your results. Do not treat agent automation 
 | P18-WP03 Organization selection and Owner essentials | Code Complete and Build Verified |
 | P18-WP04 POS role routing and navigation | Code Complete and Build Verified |
 | P18-WP05 POS Owner and Manager Mobile experience | Code Complete and Build Verified |
-| P18-WP06 Cashier selling experience | Code Complete and Build Verified |
+| P18-WP06 Cashier selling experience | Code Complete and Build Verified (full Cashier UI completion → Phase 19) |
 | P18-WP07 Mobile security, resilience, localization | Code Complete and Build Verified |
-| P18-WP08 End-to-end validation and closeout | **In Progress** |
+| P18-WP08 End-to-end validation and closeout | **Complete** (closeout recorded; partial phone validation) |
 
 ---
 
 ## User mobile validation checklist
 
-Phase 18 closes only after the user personally validates the MAUI app and explicitly confirms the outcome.
+Phase 18 closed as **Complete (implementation/scope)** with partial phone validation. Items below retain recorded outcomes; operational items deferred to Phase 19 are marked accordingly.
 
-Instructions: mark each item Pass / Fail / Blocked / Skipped with notes. Do not have an agent invent results.
+Instructions: mark each item Pass / Fail / Blocked / Skipped / Deferred with notes. Do not invent results.
 
 | # | Validation item | Result (user) | Notes |
 |---:|---|---|---|
-| 1 | Registration | Retest | |
+| 1 | Registration | Retest | Emulator evidence earlier; not full Device Verified |
 | 2 | Activation | Retest | |
-| 3 | Sign-in | Retest | Includes Quick Login |
+| 3 | Sign-in | Retest | Includes Quick Login — pending final retest |
 | 4 | Session restore | Retest | |
 | 5 | Start a Business | Retest | |
 | 6 | Organization creation | Retest | |
@@ -199,30 +215,33 @@ Instructions: mark each item Pass / Fail / Blocked / Skipped with notes. Do not 
 | 9 | Staff creation / invitation | Retest | |
 | 10 | POS role assignment | Retest | |
 | 11 | POS setup | Retest | |
-| 12 | Product creation | Retest | After Access Restricted fix |
-| 13 | Register and shift | Retest | |
-| 14 | Owner Start Selling | Retest | |
-| 15 | Manager Start Selling | Retest | |
-| 16 | Cashier selling | Retest | |
-| 17 | Cash checkout | Retest | |
-| 18 | Receipt | Retest | |
-| 19 | Stock reduction | Retest | |
-| 20 | Shift close | Retest | |
-| 21 | Reports | Retest | |
-| 22 | Entitlement denial | Retest | |
-| 23 | Membership suspension | Retest | |
-| 24 | Role revocation | Retest | |
-| 25 | Logout | Retest | |
+| 12 | Product creation | **Pass (phone)** | Products phone-validated |
+| 13 | Category creation | **Pass (phone)** | Categories phone-validated |
+| 14 | Register and shift | **Deferred — Phase 19** | |
+| 15 | Owner Start Selling | **Deferred — Phase 19** | |
+| 16 | Manager Start Selling | **Deferred — Phase 19** | |
+| 17 | Cashier selling | **Deferred — Phase 19** | |
+| 18 | Cash checkout | **Deferred — Phase 19** | |
+| 19 | Receipt | **Deferred — Phase 19** | |
+| 20 | Stock reduction / Inventory | **Deferred — Phase 19** | |
+| 21 | Shift close | **Deferred — Phase 19** | |
+| 22 | Reports | **Deferred — Phase 19** | |
+| 23 | Customers | **Deferred — Phase 19** | |
+| 24 | Entitlement denial | Retest | |
+| 25 | Membership suspension | Retest | |
+| 26 | Role revocation | Retest | |
+| 27 | Logout | Retest | |
 
-### User confirmation block (fill only after validation)
+### User confirmation block
 
 | Field | Value |
 |---|---|
-| Validator | |
-| Date / time | |
-| Device or emulator used | |
-| Overall outcome | Pending User Validation |
-| Explicit confirmation to close Phase 18 | **No** — required before Complete |
+| Validator | Owner |
+| Date / time | 2026-08-04 |
+| Device or emulator used | Physical phone (partial) + emulator evidence; PhysicalDevice Tailscale APK delivered |
+| Overall outcome | **Partial phone validation** — Products and Categories phone-validated; Quick Login / access routing fixed pending final retest; operational UIs deferred to Phase 19 |
+| Explicit confirmation to close Phase 18 | **Yes — scope closed by owner request 2026-08-04 without full Device Verified** |
+| Device Verified claimed | **No** |
 
 ---
 
@@ -236,27 +255,22 @@ User registers in Mobile
 → user becomes Organization Owner and first POS Owner
 → continues inside Mobile
 → completes POS setup
-→ creates a product
+→ creates a product / category          ← Phase 18 phone-validated
 → adds staff
 → assigns POS Cashier
-→ Cashier signs in
-→ starts shift
-→ completes cash sale
-→ receipt is displayed
-→ inventory is reduced
-→ shift is closed
-→ Owner or Manager views reports
+→ Cashier signs in / shift / cash sale / receipt / inventory / reports
 → Owner or Manager taps Start Selling without changing role
+   ↑ Phase 19 completion
 ```
 
 | Step group | Implemented in code | Covered by automated tests | Build verified | User validated |
 |---|---|---|---|---|
-| Register / sign-in / Start Business / Owner+POS Owner | Yes | Partial | Yes | Pending |
-| Org essentials / staff / POS role assign | Yes | Partial | Yes | Pending |
-| POS setup / product / shift / cash sale / receipt / inventory | Yes | Yes | Yes | Pending |
-| Reports / Start Selling mode | Yes | Partial | Yes | Pending |
-| Denial / suspension / revocation / logout | Yes | Partial | Yes | Pending |
+| Register / sign-in / Start Business / Owner+POS Owner | Yes | Partial | Yes | Partial |
+| Org essentials / staff / POS role assign | Yes | Partial | Yes | Partial |
+| Product / category catalog | Yes | Yes | Yes | **Pass (phone)** |
+| POS setup / shift / cash sale / receipt / inventory / reports / full Cashier | Partial / reused | Partial | Yes | **Deferred — Phase 19** |
+| Denial / suspension / revocation / logout | Yes | Partial | Yes | Partial |
 
 ## Production-readiness statement
 
-Phase 18 is **Open** and does **not** make the portfolio production-ready. Do not claim Phase 18 Complete, WP08 closed, device validation passed, or production readiness without the user’s explicit confirmation after mobile validation.
+Phase 18 is **Complete (implementation/scope)** and does **not** make the portfolio production-ready. **Not Device Verified.** Phase 14 remains in progress. Do not claim Device Verified or production readiness from this closeout. Remaining Mobile POS operations continue under Phase 19.

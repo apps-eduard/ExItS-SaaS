@@ -2,7 +2,7 @@
 
 **Purpose:** Human-readable overview of what was actually implemented in each phase.  
 **Audience:** You (project owner) and future planning with Grok / Cursor.  
-**Last updated from docs:** August 2026 (Phase 16 complete, under validation)
+**Last updated from docs:** August 2026 (Phase 18 Complete (implementation/scope); Phase 19 Open)
 
 ---
 
@@ -26,9 +26,12 @@
 | 13 | Production Authentication & Identity | Complete |
 | 14 | Production Deployment & Operations | **In Progress** |
 | 15 | Ant Design Platform Admin | Complete |
-| 16 | Account Profiles, Personal Utang, Business Upgrade | **Complete (Under Validation – WP11)** |
+| 16 | Account Profiles, Personal Utang, Business Upgrade | Complete (with validation residuals) |
+| 17 | POS MVP Operational Onboarding and First Sale | Complete |
+| 18 | Mobile Personal, Organization, and POS Experience | **Complete (implementation/scope)** — partial phone validation; Not Device Verified |
+| 19 | Mobile POS Operations and Cashier Experience Completion | **Open** |
 
-**Current focus:** Phase 16 WP11 (Validation & Stabilization)  
+**Current focus:** Phase 19 (Mobile POS Operations and Cashier Experience)  
 **Production status:** Not production-ready
 
 ---
@@ -264,6 +267,66 @@
 
 ---
 
+### Phase 17 — POS MVP Operational Onboarding and First Sale
+**Status: Complete** (with documented residuals)
+
+**What was done:**
+- POS access handoff from Platform
+- Initial POS setup
+- Product and inventory setup
+- POS staff and role access
+- Register and shift operations
+- Cash sale and receipt
+- Void, refund, and audit
+- Reports, hardening, and closeout
+
+**Result:** First-sale operational journey delivered; Mobile Org essentials / Start Selling completion continued in Phase 18.
+
+---
+
+### Phase 18 — Mobile Personal, Organization, and POS Experience
+**Status: Complete (implementation/scope)** — closed 2026-08-04 by owner request. Physical-phone validation was **partial**. **Not Device Verified.**
+
+**What closed:**
+- Mobile foundation and authentication
+- Personal account and Start a Business (continue in Mobile)
+- Organization selection and Owner essentials
+- POS role routing and navigation
+- Owner / Manager Mobile experience surfaces
+- Cashier selling experience (implementation; full Cashier UI completion → Phase 19)
+- Security, resilience, localization posture
+- End-to-end validation closeout recorded (P18-WP08)
+
+**Phone validation (partial):**
+- Products — phone-validated
+- Categories — phone-validated
+- Quick Login / access routing — fixed; pending final retest
+- PhysicalDevice Tailscale APK — delivered
+
+**Handoff to Phase 19:**
+- Inventory, Registers, Shifts, Sales, Customers, Reports, and full Cashier UI completion
+
+**Unchanged:** Not production-ready; Phase 14 remains In Progress; do not start P14-WP03 from this closeout.
+
+---
+
+### Phase 19 — Mobile POS Operations and Cashier Experience Completion
+**Status: Open** — not Complete; not Device Verified
+
+**Planned work packages:**
+- P19-WP01 Mobile Inventory UI
+- P19-WP02 Mobile Registers UI
+- P19-WP03 Mobile Shift Operations UI
+- P19-WP04 Mobile Cashier Selling Experience
+- P19-WP05 Mobile Sales and Receipt History UI
+- P19-WP06 Mobile Customers UI
+- P19-WP07 Mobile Reports, Authorization, Navigation, and UX Hardening
+- P19-WP08 End-to-End Validation and User Closeout Checklist
+
+**Approach:** Reuse existing Phase 8–18 APIs/screens; complete MAUI ops UX. Remains Open until user phone confirmation after WP08.
+
+---
+
 ## Key Themes Across All Phases
 
 | Theme | Progress |
@@ -296,10 +359,10 @@ Over the project you went through these UI approaches:
 
 ## Recommended Next Focus
 
-1. Finish **Phase 16 WP11** (validation and stabilization)
-2. Personally approve the running system
-3. Then allow **P16-WP12 — Final Closeout**
-4. After Phase 16 is fully closed, continue with remaining Phase 14 production work and future improvements
+1. Execute **Phase 19** Mobile POS operations and Cashier experience WPs (start with P19-WP01 Inventory UI)
+2. Personally phone-validate Phase 19 after P19-WP08 (do not claim Device Verified early)
+3. Keep Phase 14 **In Progress**; do not start P14-WP03 unless explicitly authorized
+4. Continue Phase 16 validation residuals (P16-WP11/WP12) separately if needed
 
 ---
 

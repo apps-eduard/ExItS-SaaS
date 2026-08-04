@@ -575,6 +575,25 @@ Phase 17 is responsible for actual POS operation through Mobile:
 
 Phase 17 may use Mobile organization context and role-assignment capabilities delivered by Phase 16, but it must preserve the boundary between organization administration and POS operational data.
 
+### Phase 18
+
+Phase 18 is **Complete (implementation/scope)** for Mobile Personal Account, Organization Owner essentials, role routing, and catalog (Products / Categories) experience. Physical-phone validation was **partial**. Phase 18 is **not** Device Verified and does **not** claim production readiness.
+
+### Phase 19
+
+Phase 19 is **Open** and owns remaining Mobile POS operations and Cashier experience completion:
+
+- Inventory;
+- Registers;
+- Shift operations;
+- Cashier selling experience completion;
+- Sales and receipt history;
+- Customers;
+- Reports, authorization, navigation, and UX hardening;
+- end-to-end validation and user closeout checklist.
+
+Phase 19 reuses existing Phase 8–18 APIs and screens. It remains Open until user phone confirmation after WP08. Not Device Verified. Not production-ready. Phase 14 remains separate and unfinished.
+
 ---
 
 ## 14. Mobile and Web Capability Rule

@@ -11,12 +11,12 @@
 | Portfolio | ExITS SaaS |
 | Existing product | HealthCare SaaS MVP (separate historical product; not in this workspace) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 18  -  **Open** — Code Complete and Build Verified; User Mobile Validation Pending; Phase 14 still open |
-| Current work package | **P18-WP08 In Progress** (user mobile validation checklist); WP01–WP07 code complete and build verified; Phase 17 remains complete; **P16-WP11** validation residuals may continue separately; P14-WP04 remains next Production WP after authorization |
-| Overall status | **Phase 18 Open** ([phase](phases/phase-18-mobile-personal-organization-and-pos-experience.md); [P18-WP08](reports/P18-WP08-end-to-end-validation-and-closeout.md)). Code complete and build verified; **user mobile validation pending**. Not Complete. Phase 17 complete. Phase 15 complete. Phase 16 feature WPs complete with validation residuals. **Phase 14 remains in progress**. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | Phase 18 implementation `4b8b727`; status docs tip on `main` |
-| Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; advanced tax/accounting deferred; formal WCAG cert not claimed; **Phase 18 user mobile validation pending** |
-| Last updated | 2026-08-03 |
+| Current phase | Phase 19 — **Open** — Mobile POS Operations and Cashier Experience; Phase 14 still open |
+| Current work package | **P19-WP01** next (Mobile Inventory UI); Phase 18 Complete (implementation/scope); Phase 17 remains complete; **P16-WP11** validation residuals may continue separately; P14-WP04 remains next Production WP after authorization; **do not start P14-WP03** under Phase 19 |
+| Overall status | **Phase 19 Open** ([phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md)). Phase 18 **Complete (implementation/scope)** ([phase](phases/phase-18-mobile-personal-organization-and-pos-experience.md); [P18-WP08](reports/P18-WP08-end-to-end-validation-and-closeout.md)) — partial phone validation; **Not Device Verified**. Phase 17 complete. Phase 15 complete. Phase 16 feature WPs complete with validation residuals. **Phase 14 remains in progress**. Production remains **Blocked**. **Not production-ready.** |
+| Latest verified commit | Phase 18 close baseline `f86dcd2`; implementation `4b8b727` |
+| Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; advanced tax/accounting deferred; formal WCAG cert not claimed; Phase 18 Quick Login final retest; Phase 19 Mobile POS ops UX incomplete |
+| Last updated | 2026-08-04 |
 
 ## Delivery sequence
 
@@ -173,7 +173,23 @@ P18-WP06 ? Cashier Selling Experience
         ?
 P18-WP07 ? Mobile Security, Resilience, and Localization
         ?
-P18-WP08 ? End-to-End Validation and Closeout (**In Progress** — user mobile validation pending; Phase 18 remains Open)
+P18-WP08 ? End-to-End Validation and Closeout (Complete — closeout recorded; partial phone validation; Phase 18 Complete (implementation/scope); Not Device Verified)
+        ?
+P19-WP01 ? Mobile Inventory UI (Open — Phase 19)
+        ?
+P19-WP02 ? Mobile Registers UI
+        ?
+P19-WP03 ? Mobile Shift Operations UI
+        ?
+P19-WP04 ? Mobile Cashier Selling Experience
+        ?
+P19-WP05 ? Mobile Sales and Receipt History UI
+        ?
+P19-WP06 ? Mobile Customers UI
+        ?
+P19-WP07 ? Mobile Reports, Authorization, Navigation, and UX Hardening
+        ?
+P19-WP08 ? End-to-End Validation and User Closeout Checklist
 ```
 
 ## Phase progress
@@ -198,7 +214,8 @@ P18-WP08 ? End-to-End Validation and Closeout (**In Progress** — user mobile v
 | 15 | Ant Design Platform Administration | **Complete** | 7 | 7 | 100% | [Open](phases/phase-15-ant-design-platform-admin.md) |
 | 16 | Isolated Account Profiles, Personal Utang, Business Upgrade | **Complete with documented residuals** | 10 | 10 | 100% | [Open](phases/phase-16-isolated-account-profiles-personal-utang-and-business-upgrade.md) |
 | 17 | POS MVP Operational Onboarding and First Sale | **Complete with documented residuals** | 8 | 8 | 100% | [Open](phases/phase-17-pos-mvp-operational-onboarding-and-first-sale.md) |
-| 18 | Mobile Personal, Organization, and POS Experience | **Open** — Code Complete and Build Verified; User Mobile Validation Pending | 7 | 8 |  -  | [Open](phases/phase-18-mobile-personal-organization-and-pos-experience.md) |
+| 18 | Mobile Personal, Organization, and POS Experience | **Complete (implementation/scope)** — partial phone validation; Not Device Verified | 8 | 8 | 100% | [Open](phases/phase-18-mobile-personal-organization-and-pos-experience.md) |
+| 19 | Mobile POS Operations and Cashier Experience Completion | **Open** | 0 | 8 |  -  | [Open](phases/phase-19-mobile-pos-operations-and-cashier-experience.md) |
 
 **MVP phases 0-9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
@@ -209,7 +226,21 @@ P18-WP08 ? End-to-End Validation and Closeout (**In Progress** — user mobile v
 **Phase 15 Ant Design Platform Admin:** 7 / 7 WPs complete (closeout [P15-WP07](reports/P15-WP07-phase-15-closeout.md); Fluent UI direction cancelled/superseded).
 **Phase 16 Account Profiles / Personal Utang:** 10 / 10 WPs complete (closeout [P16-WP10](reports/P16-WP10-phase-16-closeout.md); Phase 14 unchanged; not Production-ready).
 **Phase 17 POS MVP Operational Onboarding:** 8 / 8 WPs complete (closeout [P17-WP08](reports/P17-WP08-reports-hardening-and-closeout.md); Phase 14 unchanged; not Production-ready).
-**Phase 18 Mobile Personal / Org / POS Experience:** **Open** — WP01–WP07 code complete and build verified; **P18-WP08 In Progress** ([checklist](reports/P18-WP08-end-to-end-validation-and-closeout.md)); user mobile validation pending; Phase 14 unchanged; not Production-ready.
+**Phase 18 Mobile Personal / Org / POS Experience:** **Complete (implementation/scope)** — WP01–WP08 closed ([checklist](reports/P18-WP08-end-to-end-validation-and-closeout.md)); Products/Categories phone-validated; Quick Login pending final retest; PhysicalDevice Tailscale APK delivered; **Not Device Verified**; Inventory/Registers/Shifts/Sales/Customers/Reports/full Cashier UI → Phase 19; Phase 14 unchanged; not Production-ready.
+**Phase 19 Mobile POS Operations / Cashier Experience:** **Open** ([phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md)); Phase 14 unchanged; not Production-ready; not Device Verified.
+
+## Phase 19 work packages
+
+| WP | Status | Key commit |
+|---|---|---|
+| P19-WP01  -  Mobile Inventory UI | **Open** | [phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md) |
+| P19-WP02  -  Mobile Registers UI | **Open** | [phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md) |
+| P19-WP03  -  Mobile Shift Operations UI | **Open** | [phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md) |
+| P19-WP04  -  Mobile Cashier Selling Experience | **Open** | [phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md) |
+| P19-WP05  -  Mobile Sales and Receipt History UI | **Open** | [phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md) |
+| P19-WP06  -  Mobile Customers UI | **Open** | [phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md) |
+| P19-WP07  -  Mobile Reports, Authorization, Navigation, and UX Hardening | **Open** | [phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md) |
+| P19-WP08  -  End-to-End Validation and User Closeout Checklist | **Open** | [phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md) |
 
 ## Phase 18 work packages
 
@@ -222,7 +253,7 @@ P18-WP08 ? End-to-End Validation and Closeout (**In Progress** — user mobile v
 | P18-WP05  -  POS Owner and Manager Mobile Experience | Code Complete and Build Verified | `4b8b727`  -  [report](reports/P18-WP05-pos-owner-and-manager-mobile-experience.md) |
 | P18-WP06  -  Cashier Selling Experience | Code Complete and Build Verified | `4b8b727`  -  [report](reports/P18-WP06-cashier-selling-experience.md) |
 | P18-WP07  -  Mobile Security, Resilience, and Localization | Code Complete and Build Verified | `4b8b727`  -  [report](reports/P18-WP07-mobile-security-resilience-and-localization.md) |
-| P18-WP08  -  End-to-End Validation and Closeout | **In Progress** | user validation checklist  -  [report](reports/P18-WP08-end-to-end-validation-and-closeout.md) |
+| P18-WP08  -  End-to-End Validation and Closeout | **Complete** (closeout recorded; partial phone validation) | baseline `f86dcd2`  -  [report](reports/P18-WP08-end-to-end-validation-and-closeout.md) |
 
 ## Phase 17 work packages
 
@@ -345,4 +376,4 @@ P18-WP08 ? End-to-End Validation and Closeout (**In Progress** — user mobile v
 
 ## Permanent workflow rules
 
-Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P14-WP04** until explicitly authorized. Platform Admin UI direction is **Ant Design Blazor (ADR-015)**; Fluent UI Admin work is cancelled. Phase 15 is complete. Phase 17 is **complete**. Phase 18 is **Open** (code complete and build verified; **user mobile validation pending** — do not mark Complete without user confirmation). Phase 16 feature closeout is complete with validation residuals (P16-WP11/WP12). Phase 14 remains in progress; Production remains Blocked.
+Follow `.cursor/rules/exits-workflow.mdc`. Do not begin **P14-WP04** until explicitly authorized. Do not start **P14-WP03** under Phase 19. Platform Admin UI direction is **Ant Design Blazor (ADR-015)**; Fluent UI Admin work is cancelled. Phase 15 is complete. Phase 17 is **complete**. Phase 18 is **Complete (implementation/scope)** (partial phone validation; **Not Device Verified**). Phase 19 is **Open**. Phase 16 feature closeout is complete with validation residuals (P16-WP11/WP12). Phase 14 remains in progress; Production remains Blocked.

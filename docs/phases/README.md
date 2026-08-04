@@ -22,4 +22,5 @@
 | 15 | Ant Design Platform Administration | **Complete** | [Open](phase-15-ant-design-platform-admin.md) |
 | 16 | Isolated Account Profiles, Personal Utang, and Business Upgrade | **Complete** (with documented residuals; Phase 14 unchanged) | [Open](phase-16-isolated-account-profiles-personal-utang-and-business-upgrade.md) |
 | 17 | POS MVP Operational Onboarding and First Sale | **Complete** (with documented residuals; Phase 14 unchanged) | [Open](phase-17-pos-mvp-operational-onboarding-and-first-sale.md) |
-| 18 | Mobile Personal, Organization, and POS Experience | **Open** — Code Complete and Build Verified; User Mobile Validation Pending (Phase 14 unchanged) | [Open](phase-18-mobile-personal-organization-and-pos-experience.md) |
+| 18 | Mobile Personal, Organization, and POS Experience | **Complete (implementation/scope)** — partial phone validation; Not Device Verified (Phase 14 unchanged) | [Open](phase-18-mobile-personal-organization-and-pos-experience.md) |
+| 19 | Mobile POS Operations and Cashier Experience Completion | **Open** (Phase 14 unchanged; not Device Verified) | [Open](phase-19-mobile-pos-operations-and-cashier-experience.md) |
