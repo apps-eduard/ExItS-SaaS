@@ -97,6 +97,7 @@ else
 @code {
     private bool _ready;
     private bool _loading;
+    private bool _initialLoadStarted;
     private bool _saving;
     private bool _isOffline;
     private string? _search;
@@ -139,22 +140,28 @@ else
                 break;
             default:
                 var item = context.Item;
-                builder.OpenComponent<Button>(0);
-                builder.AddAttribute(1, "Variant", ButtonVariant.Ghost);
-                builder.AddAttribute(2, "Size", ButtonSize.Sm);
-                builder.AddAttribute(3, "OnClick", EventCallback.Factory.Create(this, () => BeginEdit(item)));
-                builder.AddAttribute(4, "ChildContent", (RenderFragment)(b => b.AddContent(0, L["Catalog_Category_Rename"].Value)));
+                var isActive = item.Status == PosCatalogOptions.ActiveStatus;
+                // Single parent element — sibling root components in a cell can stall MAUI Blazor diffs.
+                builder.OpenElement(0, "div");
+                builder.AddAttribute(1, "class", "pos-row-actions");
+
+                builder.OpenComponent<Button>(2);
+                builder.AddAttribute(3, "Variant", ButtonVariant.Ghost);
+                builder.AddAttribute(4, "Size", ButtonSize.Sm);
+                builder.AddAttribute(5, "OnClick", EventCallback.Factory.Create(this, () => BeginEdit(item)));
+                builder.AddAttribute(6, "ChildContent", (RenderFragment)(b => b.AddContent(0, L["Catalog_Category_Rename"].Value)));
                 builder.CloseComponent();
 
-                var isActive = item.Status == PosCatalogOptions.ActiveStatus;
-                builder.OpenComponent<Button>(5);
-                builder.AddAttribute(6, "Variant", isActive ? ButtonVariant.Danger : ButtonVariant.Secondary);
-                builder.AddAttribute(7, "Size", ButtonSize.Sm);
-                builder.AddAttribute(8, "OnClick", EventCallback.Factory.Create(this, () => ToggleStatusAsync(item)));
-                builder.AddAttribute(9, "ChildContent", (RenderFragment)(b => b.AddContent(
+                builder.OpenComponent<Button>(7);
+                builder.AddAttribute(8, "Variant", isActive ? ButtonVariant.Danger : ButtonVariant.Secondary);
+                builder.AddAttribute(9, "Size", ButtonSize.Sm);
+                builder.AddAttribute(10, "OnClick", EventCallback.Factory.Create(this, () => ToggleStatusAsync(item)));
+                builder.AddAttribute(11, "ChildContent", (RenderFragment)(b => b.AddContent(
                     0,
                     isActive ? L["Catalog_Deactivate"].Value : L["Catalog_Reactivate"].Value)));
                 builder.CloseComponent();
+
+                builder.CloseElement();
                 break;
         }
     };
@@ -169,14 +176,25 @@ else
 
         if (!Capabilities.IsAllowed(UtangCapability.ViewCatalog))
         {
-            _ready = true;
             _errorTitle = L["Access_RestrictedTitle"];
             _errorMessage = L["Access_RestrictedMessage"];
+        }
+
+        // Paint the page first; load after first render so MAUI Blazor does not stall
+        // inside OnInitializedAsync with IsLoading stuck on.
+        _ready = true;
+        _loading = Capabilities.IsAllowed(UtangCapability.ViewCatalog);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _initialLoadStarted || !_loading || !string.IsNullOrEmpty(_errorTitle))
+        {
             return;
         }
 
-        _ready = true;
-        await ReloadWithLoadingAsync();
+        _initialLoadStarted = true;
+        await ReloadAsync(showLoading: true);
     }
 
     private Task ReloadWithLoadingAsync() => ReloadAsync(showLoading: true);
@@ -203,14 +221,11 @@ else
 
     private async Task ReloadAsync(bool showLoading = true)
     {
-        // Do not await InvokeAsync(StateHasChanged) here — on MAUI Blazor that deadlocks
-        // when Reload runs from OnInitializedAsync (Refresh stays Loading forever).
         if (showLoading)
         {
             _loading = true;
             _errorTitle = null;
             _errorMessage = null;
-            StateHasChanged();
         }
 
         try
@@ -229,11 +244,13 @@ else
                 return;
             }
 
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(12));
             var result = await Catalog.ListCategoriesAsync(
                 _search,
                 string.IsNullOrWhiteSpace(_statusFilter) ? null : _statusFilter,
                 _page,
-                _pageSize);
+                _pageSize,
+                cts.Token);
 
             if (result.IsSuccess && result.Data is not null)
             {
@@ -246,9 +263,27 @@ else
             {
                 _items = Array.Empty<PosProductCategoryDto>();
                 _totalCount = 0;
-                var described = ApiLocalizer.Describe(result.Status, result.Error);
-                _errorTitle = described.Title;
-                _errorMessage = result.Error?.Detail ?? described.Message;
+                if (result.Status is ApiCallStatus.Timeout or ApiCallStatus.Cancelled)
+                {
+                    _errorTitle = L["Catalog_ErrorTitle"];
+                    _errorMessage = L["Status_Timeout"];
+                }
+                else
+                {
+                    var described = ApiLocalizer.Describe(result.Status, result.Error);
+                    _errorTitle = described.Title;
+                    _errorMessage = result.Error?.Detail ?? described.Message;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            if (showLoading || _items.Count == 0)
+            {
+                _items = Array.Empty<PosProductCategoryDto>();
+                _totalCount = 0;
+                _errorTitle = L["Catalog_ErrorTitle"];
+                _errorMessage = L["Status_Timeout"];
             }
         }
         catch (Exception ex)
@@ -264,6 +299,9 @@ else
         finally
         {
             _loading = false;
+            // Queue a follow-up render. Do not await InvokeAsync here — that deadlocks
+            // when Reload runs from OnAfterRenderAsync on MAUI Blazor.
+            StateHasChanged();
         }
     }
 
