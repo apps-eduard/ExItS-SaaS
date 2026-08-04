@@ -6,6 +6,7 @@ using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Offline;
+using ExItS.PinoyBusinessPOS.Application.Options;
 using ExItS.PinoyBusinessPOS.LocalStore;
 using ExItS.PinoyBusinessPOS.Maui.Services;
 using Microsoft.Extensions.Configuration;
@@ -62,7 +63,12 @@ public static class MauiProgram
             ["PosApi:BaseUrl"] = "http://127.0.0.1:8091",
             ["PosApi:TimeoutSeconds"] = "15",
             ["PosBusinessApi:BaseUrl"] = "http://127.0.0.1:8092",
-            ["PosBusinessApi:TimeoutSeconds"] = "15"
+            ["PosBusinessApi:TimeoutSeconds"] = "15",
+#if DEBUG
+            // Matches deploy/docker/.env.local-validation LOCAL_VALIDATION_SHARED_PASSWORD (local only).
+            ["LocalValidation:Enabled"] = "true",
+            ["LocalValidation:SharedPassword"] = "LivePreviewLocal1!",
+#endif
         });
 
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("appsettings.json");
@@ -103,6 +109,7 @@ public static class MauiProgram
                 sp.GetRequiredService<IOfflineOperationQueue>()));
         services.AddSingleton<IAuthenticationService, AuthenticationService>();
         services.AddSingleton<IUtangCapabilityEvaluator, UtangCapabilityEvaluator>();
+        services.Configure<LocalValidationClientOptions>(configuration.GetSection(LocalValidationClientOptions.SectionName));
         services.AddSingleton<IDocumentHandoffService, MauiDocumentHandoffService>();
         services.AddSingleton<SellingModeService>();
         services.AddSingleton<RoleHomeResolver>();

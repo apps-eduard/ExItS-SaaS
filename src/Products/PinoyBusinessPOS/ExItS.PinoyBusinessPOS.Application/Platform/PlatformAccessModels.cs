@@ -238,6 +238,21 @@ public sealed record PlatformEntitlementSnapshotDto(
 
 public sealed record SetOrganizationContextRequest(Guid? OrganizationId);
 
+/// <summary>Local Validation Quick Login identity (Platform API, non-Production).</summary>
+public sealed record LocalValidationQuickLoginIdentityDto(
+    string Key,
+    string Username,
+    string DisplayName,
+    string Email,
+    Guid UserId,
+    Guid AccountProfileId,
+    string AccountClass,
+    Guid? OrganizationId,
+    string? OrganizationName,
+    string? OrganizationRole,
+    string ListLabel,
+    string ScopeLabel);
+
 /// <summary>Typed Platform identity/access reads used by POS authentication and Mobile Org Owner essentials.</summary>
 public interface IPlatformAccessClient
 {
@@ -336,5 +351,11 @@ public interface IPlatformAccessClient
 
     Task<ApiResult<object>> SetOrganizationContextAsync(
         SetOrganizationContextRequest request,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Local Validation Quick Login directory (anonymous, non-Production). Empty/failure when unavailable.
+    /// </summary>
+    Task<ApiResult<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>> GetLocalValidationQuickLoginIdentitiesAsync(
         CancellationToken ct = default);
 }

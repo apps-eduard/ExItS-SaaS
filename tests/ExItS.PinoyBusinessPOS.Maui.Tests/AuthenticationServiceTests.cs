@@ -97,6 +97,158 @@ public sealed class AuthenticationServiceTests
     }
 
     [Fact]
+    public async Task SelectOrganization_with_token_bind_loads_commercial_grants()
+    {
+        var userId = Guid.NewGuid();
+        var orgId = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var prefs = new MemoryOnboardingStore();
+        var current = new CurrentUserContext();
+        var access = new FakeAccessClient
+        {
+            LoginResult = ApiResult<PlatformLoginResultDto>.Success(new PlatformLoginResultDto(
+                "platform-session",
+                Guid.NewGuid(),
+                userId,
+                "owner",
+                "Owner",
+                "o@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                DateTimeOffset.UtcNow.AddHours(24),
+                null,
+                null,
+                "none",
+                1,
+                AccountProfileId: Guid.NewGuid(),
+                AccountClass: "Organization",
+                AllowedScope: "Organization")),
+            IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
+                "opaque-token",
+                "Bearer",
+                Guid.NewGuid(),
+                userId,
+                "owner",
+                "Owner",
+                "o@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                null,
+                null,
+                null,
+                "none",
+                1,
+                null,
+                null)),
+            BindTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
+                "bound-token",
+                "Bearer",
+                Guid.NewGuid(),
+                userId,
+                "owner",
+                "Owner",
+                "o@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                orgId,
+                "Store One",
+                PosProductCodes.PinoyBusinessPos,
+                "bound",
+                1,
+                true,
+                "allowed")),
+            IntrospectResult = ApiResult<PlatformAccessTokenIntrospectionDto>.Success(
+                new PlatformAccessTokenIntrospectionDto(
+                    Active: true,
+                    TokenId: Guid.NewGuid(),
+                    UserId: userId,
+                    Username: "owner",
+                    DisplayName: "Owner",
+                    OrganizationId: orgId,
+                    OrganizationDisplayName: "Store One",
+                    ProductCode: PosProductCodes.PinoyBusinessPos,
+                    ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(8),
+                    ProductAccessAllowed: true,
+                    ProductAccessReasonCode: "allowed",
+                    SubscriptionStatus: "Active",
+                    EnabledFeatureCodes: ["store-catalog-manage", "customer-credit-view"]))
+        };
+        var sut = CreateSut("Development", access, tokens, prefs, current);
+        var signIn = await sut.SignInAsync(new SignInRequest("owner", "password"));
+        Assert.True(signIn.Succeeded);
+
+        var select = await sut.SelectOrganizationAsync(orgId);
+        Assert.True(select.Succeeded);
+        Assert.True(select.Session!.HasPosAccess);
+        Assert.Equal("Active", select.Session.SubscriptionStatus);
+        Assert.Contains("store-catalog-manage", select.Session.EnabledFeatureCodes!);
+        Assert.Equal("Active", await tokens.GetAsync(SecureTokenKeys.SubscriptionStatus));
+    }
+
+    [Fact]
+    public async Task SelectOrganization_with_token_falls_back_to_org_essentials_when_bind_forbidden()
+    {
+        var userId = Guid.NewGuid();
+        var orgId = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var prefs = new MemoryOnboardingStore();
+        var current = new CurrentUserContext();
+        var access = new FakeAccessClient
+        {
+            LoginResult = ApiResult<PlatformLoginResultDto>.Success(new PlatformLoginResultDto(
+                "platform-session",
+                Guid.NewGuid(),
+                userId,
+                "owner",
+                "Owner",
+                "o@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                DateTimeOffset.UtcNow.AddHours(24),
+                null,
+                null,
+                "none",
+                1,
+                AccountProfileId: Guid.NewGuid(),
+                AccountClass: "Organization",
+                AllowedScope: "Organization")),
+            IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
+                "opaque-token",
+                "Bearer",
+                Guid.NewGuid(),
+                userId,
+                "owner",
+                "Owner",
+                "o@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                null,
+                null,
+                null,
+                "none",
+                1,
+                null,
+                null)),
+            BindTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Forbidden(new ApiError(
+                "Forbidden",
+                "Product-local role is required to operate this product.",
+                "application.auth.product_entry_denied",
+                null,
+                403)),
+            OrganizationResult = ApiResult<PlatformOrganizationDto>.Success(Org(orgId)),
+            AuthEligibleOrganizationsResult = ApiResult<IReadOnlyList<PlatformAuthEligibleOrganizationDto>>.Success(
+            [
+                new PlatformAuthEligibleOrganizationDto(orgId, "Store One", "store-one", "OrganizationOwner", Guid.NewGuid())
+            ])
+        };
+        var sut = CreateSut("Development", access, tokens, prefs, current);
+        var signIn = await sut.SignInAsync(new SignInRequest("owner", "password"));
+        Assert.True(signIn.Succeeded);
+        Assert.False(string.IsNullOrWhiteSpace(signIn.Session!.AccessToken));
+
+        var select = await sut.SelectOrganizationAsync(orgId);
+        Assert.True(select.Succeeded);
+        Assert.Equal(orgId, select.Session!.OrganizationId);
+        Assert.False(select.Session.HasPosAccess);
+        Assert.Equal(orgId, await prefs.GetSelectedOrganizationIdAsync());
+    }
+
+    [Fact]
     public async Task SelectOrganization_requires_allowed_access()
     {
         var userId = Guid.NewGuid();
@@ -298,7 +450,11 @@ public sealed class AuthenticationServiceTests
         public ApiResult<EffectiveAccessDto> EvaluateResult { get; set; } = ApiResult<EffectiveAccessDto>.Unavailable();
         public ApiResult<PlatformAccessTokenIssueDto> IssueTokenResult { get; set; } = ApiResult<PlatformAccessTokenIssueDto>.Unavailable();
         public ApiResult<PlatformAccessTokenIssueDto> BindTokenResult { get; set; } = ApiResult<PlatformAccessTokenIssueDto>.Unavailable();
+        public ApiResult<PlatformAccessTokenIntrospectionDto> IntrospectResult { get; set; } =
+            ApiResult<PlatformAccessTokenIntrospectionDto>.Unavailable();
         public ApiResult<PlatformLoginResultDto> LoginResult { get; set; } = ApiResult<PlatformLoginResultDto>.Unavailable();
+        public ApiResult<IReadOnlyList<PlatformAuthEligibleOrganizationDto>> AuthEligibleOrganizationsResult { get; set; } =
+            ApiResult<IReadOnlyList<PlatformAuthEligibleOrganizationDto>>.Unavailable();
 
         public Task<ApiResult<PlatformUserDto>> GetUserAsync(Guid userId, CancellationToken ct = default) =>
             Task.FromResult(UserResult);
@@ -320,13 +476,13 @@ public sealed class AuthenticationServiceTests
             Task.FromResult(BindTokenResult);
 
         public Task<ApiResult<PlatformAccessTokenIntrospectionDto>> IntrospectTokenAsync(string? token = null, CancellationToken ct = default) =>
-            Task.FromResult(ApiResult<PlatformAccessTokenIntrospectionDto>.Unavailable());
+            Task.FromResult(IntrospectResult);
 
         public Task<ApiResult<object>> RevokeAccessTokenAsync(CancellationToken ct = default) =>
             Task.FromResult(ApiResult<object>.Success(new object()));
 
         public Task<ApiResult<IReadOnlyList<PlatformAuthEligibleOrganizationDto>>> GetAuthEligibleOrganizationsAsync(CancellationToken ct = default) =>
-            Task.FromResult(ApiResult<IReadOnlyList<PlatformAuthEligibleOrganizationDto>>.Unavailable());
+            Task.FromResult(AuthEligibleOrganizationsResult);
 
         public Task<ApiResult<PlatformOrganizationDto>> UpdateOrganizationAsync(Guid organizationId, UpdatePlatformOrganizationRequest request, CancellationToken ct = default) =>
             Task.FromResult(OrganizationResult);
@@ -378,6 +534,11 @@ public sealed class AuthenticationServiceTests
 
         public Task<ApiResult<object>> SetOrganizationContextAsync(SetOrganizationContextRequest request, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<object>.Success(new object()));
+
+        public Task<ApiResult<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>> GetLocalValidationQuickLoginIdentitiesAsync(
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>.Success(
+                Array.Empty<LocalValidationQuickLoginIdentityDto>()));
     }
 
     private sealed class MemorySecureTokenStore : ISecureTokenStore

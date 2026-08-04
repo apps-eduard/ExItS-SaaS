@@ -68,7 +68,7 @@ else
                     ValueChanged="OnStatusFilterChanged"
                     Options="@ExpensesUiOptions.CategoryStatusFilters(L)"
                     aria-label="@L["Expenses_Filter_Status"]" />
-            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Expenses_Refresh"]</Button>
+            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadWithLoadingAsync">@L["Expenses_Refresh"]</Button>
         </Actions>
     </SearchToolbar>
 
@@ -83,7 +83,7 @@ else
                         ErrorTitle="@_errorTitle"
                         ErrorMessage="@_errorMessage"
                         RetryLabel="@L["Api_Retry"]"
-                        OnRetry="ReloadAsync"
+                        OnRetry="ReloadWithLoadingAsync"
                         AriaLabel="@L["Expenses_CategoriesTitle"]" />
 
     @if (!_loading && _totalCount > 0)
@@ -173,8 +173,10 @@ else
         }
 
         _ready = true;
-        await ReloadAsync();
+        await ReloadWithLoadingAsync();
     }
+
+    private Task ReloadWithLoadingAsync() => ReloadAsync(showLoading: true);
 
     private async Task OnSearchChanged(string? value)
     {
@@ -196,45 +198,69 @@ else
         await ReloadAsync();
     }
 
-    private async Task ReloadAsync()
+    private async Task ReloadAsync(bool showLoading = true)
     {
-        _loading = true;
-        _errorTitle = null;
-        _errorMessage = null;
-        StateHasChanged();
-
-        _isOffline = !await Connectivity.IsConnectedAsync();
-        if (_isOffline)
+        if (showLoading)
         {
-            _items = Array.Empty<PosExpenseCategoryDto>();
-            _totalCount = 0;
-            _errorTitle = L["Expenses_OfflineTitle"];
-            _errorMessage = L["Expenses_OfflineMessage"];
+            _loading = true;
+            _errorTitle = null;
+            _errorMessage = null;
+            await InvokeAsync(StateHasChanged);
+        }
+
+        try
+        {
+            _isOffline = !await Connectivity.IsConnectedAsync();
+            if (_isOffline)
+            {
+                if (showLoading)
+                {
+                    _items = Array.Empty<PosExpenseCategoryDto>();
+                    _totalCount = 0;
+                }
+
+                _errorTitle = L["Expenses_OfflineTitle"];
+                _errorMessage = L["Expenses_OfflineMessage"];
+                return;
+            }
+
+            var result = await Expenses.ListCategoriesAsync(
+                string.IsNullOrWhiteSpace(_statusFilter) ? null : _statusFilter,
+                _search,
+                _page,
+                _pageSize);
+
+            if (result.IsSuccess && result.Data is not null)
+            {
+                _items = result.Data.Items;
+                _totalCount = result.Data.TotalCount;
+                _errorTitle = null;
+                _errorMessage = null;
+            }
+            else if (showLoading || _items.Count == 0)
+            {
+                _items = Array.Empty<PosExpenseCategoryDto>();
+                _totalCount = 0;
+                var described = ApiLocalizer.Describe(result.Status, result.Error);
+                _errorTitle = described.Title;
+                _errorMessage = result.Error?.Detail ?? described.Message;
+            }
+        }
+        catch (Exception ex)
+        {
+            if (showLoading || _items.Count == 0)
+            {
+                _items = Array.Empty<PosExpenseCategoryDto>();
+                _totalCount = 0;
+                _errorTitle = L["Expenses_ErrorTitle"];
+                _errorMessage = ex.Message;
+            }
+        }
+        finally
+        {
             _loading = false;
-            return;
+            await InvokeAsync(StateHasChanged);
         }
-
-        var result = await Expenses.ListCategoriesAsync(
-            string.IsNullOrWhiteSpace(_statusFilter) ? null : _statusFilter,
-            _search,
-            _page,
-            _pageSize);
-
-        if (result.IsSuccess && result.Data is not null)
-        {
-            _items = result.Data.Items;
-            _totalCount = result.Data.TotalCount;
-        }
-        else
-        {
-            _items = Array.Empty<PosExpenseCategoryDto>();
-            _totalCount = 0;
-            var described = ApiLocalizer.Describe(result.Status, result.Error);
-            _errorTitle = described.Title;
-            _errorMessage = result.Error?.Detail ?? described.Message;
-        }
-
-        _loading = false;
     }
 
     private void BeginEdit(PosExpenseCategoryDto category)
@@ -274,23 +300,69 @@ else
         }
 
         _saving = true;
-        var result = _editingId is { } editingId
-            ? await Expenses.UpdateCategoryAsync(editingId, new UpdatePosExpenseCategoryRequest(_name.Trim(), _editingUpdatedAtUtc))
-            : await Expenses.CreateCategoryAsync(new CreatePosExpenseCategoryRequest(_name.Trim()));
-        _saving = false;
+        await InvokeAsync(StateHasChanged);
 
-        if (result.IsSuccess)
+        try
         {
-            _banner = _editingId is null
-                ? L["Expenses_Category_CreatedSuccess"]
-                : L["Expenses_Category_UpdatedSuccess"];
-            CancelEdit();
-            await ReloadAsync();
-            return;
+            var editingId = _editingId;
+            var result = editingId is { } id
+                ? await Expenses.UpdateCategoryAsync(id, new UpdatePosExpenseCategoryRequest(_name.Trim(), _editingUpdatedAtUtc))
+                : await Expenses.CreateCategoryAsync(new CreatePosExpenseCategoryRequest(_name.Trim()));
+
+            if (result.IsSuccess && result.Data is not null)
+            {
+                _banner = editingId is null
+                    ? L["Expenses_Category_CreatedSuccess"]
+                    : L["Expenses_Category_UpdatedSuccess"];
+                CancelEdit();
+                UpsertLocalCategory(result.Data);
+                _saving = false;
+                await InvokeAsync(StateHasChanged);
+                await ReloadAsync(showLoading: false);
+                return;
+            }
+
+            _formError = result.Error?.Detail
+                ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        }
+        catch (Exception ex)
+        {
+            _formError = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void UpsertLocalCategory(PosExpenseCategoryDto category)
+    {
+        var list = _items.ToList();
+        var index = list.FindIndex(c => c.CategoryId == category.CategoryId);
+        var matchesFilter = string.IsNullOrWhiteSpace(_statusFilter)
+            || string.Equals(_statusFilter, category.Status, StringComparison.OrdinalIgnoreCase);
+
+        if (index >= 0)
+        {
+            if (matchesFilter)
+            {
+                list[index] = category;
+            }
+            else
+            {
+                list.RemoveAt(index);
+                _totalCount = Math.Max(0, _totalCount - 1);
+            }
+        }
+        else if (matchesFilter)
+        {
+            list.Insert(0, category);
+            _totalCount += 1;
         }
 
-        _formError = result.Error?.Detail
-            ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        _items = list;
+        _errorTitle = null;
+        _errorMessage = null;
     }
 
     private async Task ToggleStatusAsync(PosExpenseCategoryDto category)
@@ -313,7 +385,12 @@ else
             _banner = category.Status == ExpensesUiOptions.ActiveCategoryStatus
                 ? L["Expenses_Category_DeactivatedSuccess"]
                 : L["Expenses_Category_ReactivatedSuccess"];
-            await ReloadAsync();
+            if (result.Data is not null)
+            {
+                UpsertLocalCategory(result.Data);
+            }
+
+            await ReloadAsync(showLoading: false);
             return;
         }
 

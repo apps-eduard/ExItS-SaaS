@@ -93,10 +93,29 @@ public sealed record EligibleOrganization(
     string AccessReasonCode,
     string? MembershipRole = null);
 
+/// <summary>
+/// Platform membership roles used for Mobile post-login routing.
+/// Organization Owners keep Personal + Org choice; staff go straight into org/role UI.
+/// </summary>
+public static class OrganizationMembershipRoles
+{
+    public const string Owner = "OrganizationOwner";
+    public const string Administrator = "OrganizationAdministrator";
+    public const string Member = "OrganizationMember";
+
+    public static bool IsOwnerRole(string? role) =>
+        string.Equals(role, Owner, StringComparison.OrdinalIgnoreCase)
+        || string.Equals(role, Administrator, StringComparison.OrdinalIgnoreCase);
+
+    public static bool HasOrganizationOwner(IEnumerable<EligibleOrganization> organizations) =>
+        organizations.Any(o => IsOwnerRole(o.MembershipRole));
+}
+
 public sealed record SignInRequest(
     string? UsernameOrEmail,
     string? Password,
-    Guid? PlatformUserId = null);
+    Guid? PlatformUserId = null,
+    Guid? AccountProfileId = null);
 
 public sealed record AuthResult(
     bool Succeeded,

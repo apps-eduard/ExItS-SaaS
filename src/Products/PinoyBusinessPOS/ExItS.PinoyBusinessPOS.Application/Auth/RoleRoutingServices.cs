@@ -4,28 +4,60 @@ using ExItS.PinoyBusinessPOS.Domain.Permissions;
 
 namespace ExItS.PinoyBusinessPOS.Application.Auth;
 
-/// <summary>Tracks Owner/Manager temporary selling mode without changing the real POS role.</summary>
+/// <summary>
+/// Owner working-as / temporary selling mode without changing the real Platform POS role.
+/// Preferred home is chosen at organization entry (Owner / Manager / Cashier UI).
+/// </summary>
 public sealed class SellingModeService
 {
     public bool IsSellingMode { get; private set; }
 
     public string? ReturnRoute { get; private set; }
 
+    /// <summary>Owner-selected Mobile home route while still holding the real Owner POS role.</summary>
+    public string? PreferredHomeRoute { get; private set; }
+
     public event Func<Task>? Changed;
+
+    public void EnterWorkingAs(string homeRoute)
+    {
+        PreferredHomeRoute = NormalizeHome(homeRoute);
+        IsSellingMode = false;
+        ReturnRoute = RoleHomeResolver.OwnerHome;
+        _ = NotifyAsync();
+    }
 
     public void Enter(string returnRoute)
     {
         IsSellingMode = true;
         ReturnRoute = string.IsNullOrWhiteSpace(returnRoute) ? RoleHomeResolver.OwnerHome : returnRoute;
+        PreferredHomeRoute ??= ReturnRoute;
         _ = NotifyAsync();
     }
 
     public void Exit()
     {
         IsSellingMode = false;
-        ReturnRoute = null;
+        // Keep PreferredHomeRoute so Owner stays in the chosen working home after a sale.
+        ReturnRoute = PreferredHomeRoute ?? RoleHomeResolver.OwnerHome;
         _ = NotifyAsync();
     }
+
+    public void Clear()
+    {
+        IsSellingMode = false;
+        ReturnRoute = null;
+        PreferredHomeRoute = null;
+        _ = NotifyAsync();
+    }
+
+    private static string NormalizeHome(string homeRoute) =>
+        homeRoute switch
+        {
+            RoleHomeResolver.ManagerHome => RoleHomeResolver.ManagerHome,
+            RoleHomeResolver.CashierHome => RoleHomeResolver.CashierHome,
+            _ => RoleHomeResolver.OwnerHome
+        };
 
     private async Task NotifyAsync()
     {
@@ -42,8 +74,8 @@ public sealed class SellingModeService
     }
 }
 
-/// <summary>Resolves the Mobile home route from the effective POS role.</summary>
-public sealed class RoleHomeResolver(IPosPermissionClient permissions)
+/// <summary>Resolves the Mobile home route from the effective POS role (and Owner working-as preference).</summary>
+public sealed class RoleHomeResolver(IPosPermissionClient permissions, SellingModeService sellingMode)
 {
     public const string OwnerHome = "/owner";
     public const string ManagerHome = "/manager";
@@ -55,21 +87,32 @@ public sealed class RoleHomeResolver(IPosPermissionClient permissions)
     public async Task<string> ResolvePosHomeAsync(CancellationToken ct = default)
     {
         var effective = await permissions.GetEffectiveAsync(ct).ConfigureAwait(false);
+        var preferred = sellingMode.PreferredHomeRoute;
+
         if (!effective.IsSuccess || effective.Data is null)
         {
-            return AccessDenied;
+            // Owner already chose working-as after a successful org bind; don't strand on Access Denied
+            // when effective role is briefly unavailable (Dev in-memory Owner / sync lag).
+            return !string.IsNullOrWhiteSpace(preferred) ? preferred! : AccessDenied;
         }
 
         var data = effective.Data;
         if (!string.Equals(data.Status, "Active", StringComparison.OrdinalIgnoreCase)
             || string.IsNullOrWhiteSpace(data.Role))
         {
-            return AccessDenied;
+            return !string.IsNullOrWhiteSpace(preferred) ? preferred! : AccessDenied;
         }
 
         if (!PosRoleCodes.TryParse(data.Role, out var role))
         {
             return AccessDenied;
+        }
+
+        // Organization Owners may work as Owner, Manager, or Cashier UI without changing the POS grant.
+        if (role is PosRole.Owner or PosRole.Admin
+            && !string.IsNullOrWhiteSpace(preferred))
+        {
+            return preferred!;
         }
 
         return role switch

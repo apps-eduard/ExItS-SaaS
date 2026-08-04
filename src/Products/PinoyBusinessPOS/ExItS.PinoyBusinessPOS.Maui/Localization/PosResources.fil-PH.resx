@@ -227,9 +227,22 @@
   <data name="SignIn_UserIdHint" xml:space="preserve"><value>GUID mula sa Platform Admin users directory</value></data>
   <data name="SignIn_Submit" xml:space="preserve"><value>Mag-sign in</value></data>
   <data name="SignIn_DevSubmit" xml:space="preserve"><value>Mag-sign in gamit ang User Id</value></data>
+  <data name="SignIn_QuickLoginTitle" xml:space="preserve"><value>Mabilis na sign-in</value></data>
+  <data name="SignIn_QuickLoginLabel" xml:space="preserve"><value>Local Validation identity</value></data>
+  <data name="SignIn_QuickLoginHint" xml:space="preserve"><value>Pumili ng user para mag-sign in gamit ang Local Validation shared password</value></data>
+  <data name="SignIn_QuickLoginPlaceholder" xml:space="preserve"><value>Pumili ng user…</value></data>
+  <data name="SignIn_QuickLoginUnavailable" xml:space="preserve"><value>Walang available na Quick Login identities</value></data>
   <data name="OrgSelect_Title" xml:space="preserve"><value>Pumili ng organization</value></data>
   <data name="OrgSelect_Subtitle" xml:space="preserve"><value>Mga organization lang na may active PinoyBusinessPOS commercial access ang ipinapakita.</value></data>
+  <data name="OrgSelect_SubtitleOwner" xml:space="preserve"><value>Pumili ng Personal o buksan ang organisasyon na pagmamay-ari mo.</value></data>
+  <data name="OrgSelect_SubtitleStaff" xml:space="preserve"><value>Piliin ang organisasyon na pagtatrabahuhan.</value></data>
   <data name="OrgSelect_Hint" xml:space="preserve"><value>Preference ang pagpili ng organization. Muli-validate ng Platform ang access.</value></data>
+  <data name="OrgSelect_HintOwner" xml:space="preserve"><value>Buksan ang organisasyon, o magpatuloy sa Personal. Muli-validate ng Platform ang access.</value></data>
+  <data name="OrgSelect_HintOwnerRoles" xml:space="preserve"><value>Piliin kung paano magtatrabaho: Owner, Manager, o Cashier. O magpatuloy sa Personal.</value></data>
+  <data name="OrgSelect_HintStaff" xml:space="preserve"><value>Diretso ang staff account sa trabaho sa organisasyon. Muli-validate ng Platform ang access.</value></data>
+  <data name="OrgSelect_EnterOwner" xml:space="preserve"><value>Owner</value></data>
+  <data name="OrgSelect_EnterManager" xml:space="preserve"><value>Manager</value></data>
+  <data name="OrgSelect_EnterCashier" xml:space="preserve"><value>Cashier</value></data>
   <data name="OrgSelect_Choose" xml:space="preserve"><value>Gamitin ang organization na ito</value></data>
   <data name="OrgSelect_NoneEligible" xml:space="preserve"><value>Walang eligible organization para sa PinoyBusinessPOS commercial access.</value></data>
   <data name="AccessConfirm_Title" xml:space="preserve"><value>Nakumpirma ang commercial access</value></data>
@@ -1363,6 +1376,7 @@
   <data name="OrgSelect_NoneTitle" xml:space="preserve"><value>No organizations</value></data>
   <data name="Context_SwitcherTitle" xml:space="preserve"><value>Account context</value></data>
   <data name="Context_SwitcherHint" xml:space="preserve"><value>Lumipat sa Personal o sa iyong mga organisasyon nang hindi nag-sign out. Mulíng sine-check ang access sa bawat paglipat.</value></data>
+  <data name="Context_SwitcherHintStaff" xml:space="preserve"><value>Lumipat sa mga organisasyon nang hindi nag-sign out. Mulíng sine-check ang access sa bawat paglipat.</value></data>
   <data name="Context_Personal" xml:space="preserve"><value>Personal</value></data>
   <data name="Context_Active" xml:space="preserve"><value>aktibo</value></data>
   <data name="Org_EssentialsOwnerOnly" xml:space="preserve"><value>Ang Organization Owner essentials ay para sa Organization Owners lamang. Kailangan pa rin ng aktibong POS role at entitlement para sa POS.</value></data>

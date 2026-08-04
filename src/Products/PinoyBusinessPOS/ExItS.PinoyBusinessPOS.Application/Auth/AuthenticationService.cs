@@ -35,7 +35,11 @@ public sealed class AuthenticationService(
                           && !string.IsNullOrWhiteSpace(request.Password);
         if (hasPassword)
         {
-            return await SignInWithPasswordAsync(request.UsernameOrEmail!, request.Password!, ct)
+            return await SignInWithPasswordAsync(
+                    request.UsernameOrEmail!,
+                    request.Password!,
+                    request.AccountProfileId,
+                    ct)
                 .ConfigureAwait(false);
         }
 
@@ -51,6 +55,7 @@ public sealed class AuthenticationService(
     private async Task<AuthResult> SignInWithPasswordAsync(
         string usernameOrEmail,
         string password,
+        Guid? preferredAccountProfileId,
         CancellationToken ct)
     {
         // Dual auth: Platform session (Personal/Org Owner APIs) + POS bearer access token.
@@ -66,6 +71,54 @@ public sealed class AuthenticationService(
             platformSessionToken = loginResult.Data.SessionToken;
             accountProfileId = loginResult.Data.AccountProfileId;
             accountClass = loginResult.Data.AccountClass;
+
+            if (preferredAccountProfileId is Guid profileId
+                && profileId != Guid.Empty
+                && !string.IsNullOrWhiteSpace(platformSessionToken)
+                && accountProfileId != profileId)
+            {
+                // Seed session header for profile select (Quick Login identity).
+                currentUser.Set(new AuthSession(
+                    loginResult.Data.UserId,
+                    loginResult.Data.DisplayName,
+                    loginResult.Data.Username,
+                    loginResult.Data.Email,
+                    OrganizationId: null,
+                    OrganizationDisplayName: null,
+                    IssuedAtUtc: _clock.GetUtcNow(),
+                    ExpiresAtUtc: loginResult.Data.ExpiresAtUtc,
+                    HasPosAccess: false,
+                    AccessReasonCode: null,
+                    PlatformSessionToken: platformSessionToken,
+                    AccountClass: accountClass,
+                    AccountProfileId: accountProfileId));
+
+                var selected = await accessClient
+                    .SelectAccountProfileAsync(new SelectAccountProfileRequest(profileId), ct)
+                    .ConfigureAwait(false);
+                if (selected.IsSuccess && selected.Data is not null)
+                {
+                    platformSessionToken = selected.Data.SessionToken;
+                    accountProfileId = selected.Data.AccountProfileId ?? profileId;
+                    accountClass = selected.Data.AccountClass ?? accountClass;
+
+                    // Keep Platform session org context aligned with Organization profile selection.
+                    if (string.Equals(accountClass, "Organization", StringComparison.OrdinalIgnoreCase)
+                        && selected.Data.SelectedOrganizationId is Guid selectedOrg
+                        && selectedOrg != Guid.Empty)
+                    {
+                        currentUser.Set(currentUser.Session! with
+                        {
+                            PlatformSessionToken = platformSessionToken,
+                            AccountClass = accountClass,
+                            AccountProfileId = accountProfileId
+                        });
+                        _ = await accessClient
+                            .SetOrganizationContextAsync(new SetOrganizationContextRequest(selectedOrg), ct)
+                            .ConfigureAwait(false);
+                    }
+                }
+            }
         }
 
         var tokenResult = await accessClient
@@ -536,6 +589,19 @@ public sealed class AuthenticationService(
 
         if (!bindResult.IsSuccess || bindResult.Data is null)
         {
+            // Web Admin can select an organization with membership alone. Mobile bind also requires
+            // POS operate (entitlement + product-local role). Fall back to org essentials when bind
+            // is denied for product entry so Organization Owners are not stranded on Access Denied.
+            if (IsProductEntryDenied(bindResult))
+            {
+                return await SelectOrganizationWithoutPosOperateAsync(
+                        session,
+                        organizationId,
+                        InferDeniedReasonCode(bindResult.Error),
+                        ct)
+                    .ConfigureAwait(false);
+            }
+
             var transport = MapTransport(bindResult.Status);
             events.Record("access_denial", Dict(
                 ("userId", session.UserId.ToString("D")),
@@ -545,12 +611,120 @@ public sealed class AuthenticationService(
         }
 
         var issued = bindResult.Data;
+        await preferences.SetSelectedOrganizationIdAsync(organizationId, ct).ConfigureAwait(false);
+
+        var accessToken = issued.AccessToken ?? session.AccessToken;
+        string? subscriptionStatus = null;
+        IReadOnlyList<string>? enabledFeatureCodes = null;
+        if (issued.ProductAccessAllowed == true && !string.IsNullOrWhiteSpace(accessToken))
+        {
+            // Bind response omits commercial grants; catalog ManageCatalog and POS commercial
+            // headers require SubscriptionStatus + EnabledFeatureCodes on the session.
+            (subscriptionStatus, enabledFeatureCodes) = await ResolveCommercialGrantsAsync(
+                    session,
+                    accessToken,
+                    issued.OrganizationId ?? organizationId,
+                    ct)
+                .ConfigureAwait(false);
+        }
+
+        var updated = session with
+        {
+            AccessToken = accessToken,
+            OrganizationId = issued.OrganizationId ?? organizationId,
+            OrganizationDisplayName = issued.OrganizationDisplayName,
+            ExpiresAtUtc = issued.ExpiresAtUtc,
+            HasPosAccess = issued.ProductAccessAllowed == true,
+            AccessReasonCode = issued.ProductAccessReasonCode
+                ?? (issued.ProductAccessAllowed == true ? "allowed" : "product_local_role_missing"),
+            DisplayName = issued.DisplayName ?? session.DisplayName,
+            Username = issued.Username ?? session.Username,
+            Email = issued.Email ?? session.Email,
+            SubscriptionStatus = subscriptionStatus,
+            EnabledFeatureCodes = enabledFeatureCodes
+        };
+
         if (issued.ProductAccessAllowed == false)
+        {
+            events.Record("organization_selected_without_pos", Dict(
+                ("userId", session.UserId.ToString("D")),
+                ("organizationId", organizationId.ToString("D")),
+                ("reason", updated.AccessReasonCode)));
+        }
+
+        return await PersistOrganizationSelectionAsync(session, updated, organizationId, ct).ConfigureAwait(false);
+    }
+
+    private async Task<(string? SubscriptionStatus, IReadOnlyList<string>? EnabledFeatureCodes)> ResolveCommercialGrantsAsync(
+        AuthSession session,
+        string accessToken,
+        Guid organizationId,
+        CancellationToken ct)
+    {
+        // Seed bearer so Introspect/Evaluate handlers can attach the bound token.
+        currentUser.Set(session with { AccessToken = accessToken, OrganizationId = organizationId });
+
+        try
+        {
+            var introspect = await accessClient.IntrospectTokenAsync(accessToken, ct).ConfigureAwait(false);
+            if (introspect.IsSuccess
+                && introspect.Data is { Active: true } active
+                && (!string.IsNullOrWhiteSpace(active.SubscriptionStatus)
+                    || active.EnabledFeatureCodes is { Count: > 0 }))
+            {
+                return (active.SubscriptionStatus, active.EnabledFeatureCodes);
+            }
+        }
+        catch
+        {
+            // Fall through to evaluate.
+        }
+
+        try
+        {
+            var accessResult = await accessClient
+                .EvaluateAccessAsync(session.UserId, organizationId, PosProductCodes.PinoyBusinessPos, ct)
+                .ConfigureAwait(false);
+            if (accessResult.IsSuccess && accessResult.Data is not null)
+            {
+                return (accessResult.Data.SubscriptionStatus, accessResult.Data.EnabledFeatureCodes);
+            }
+        }
+        catch
+        {
+            // Leave grants empty; capability gates will deny until restore/refresh.
+        }
+
+        return (null, null);
+    }
+
+    private async Task<AuthResult> SelectOrganizationWithoutPosOperateAsync(
+        AuthSession session,
+        Guid organizationId,
+        string? reasonCode,
+        CancellationToken ct)
+    {
+        var eligible = await accessClient.GetAuthEligibleOrganizationsAsync(ct).ConfigureAwait(false);
+        var membershipOk = eligible.IsSuccess
+            && eligible.Data is not null
+            && eligible.Data.Any(o => o.OrganizationId == organizationId);
+
+        if (!membershipOk)
+        {
+            var memberships = await accessClient.GetUserMembershipsAsync(session.UserId, ct).ConfigureAwait(false);
+            membershipOk = memberships.IsSuccess
+                && memberships.Data is not null
+                && memberships.Data.Items.Any(m =>
+                    m.OrganizationId == organizationId
+                    && string.Equals(m.Status, "Active", StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!membershipOk)
         {
             var denial = new AuthResult(
                 false,
                 AuthFailureReason.AccessDenied,
-                SafeMessageKey: ProductAccessResolver.MapReasonKey(issued.ProductAccessReasonCode));
+                SafeMessageKey: ProductAccessResolver.MapReasonKey(reasonCode));
             events.Record("access_denial", Dict(
                 ("userId", session.UserId.ToString("D")),
                 ("organizationId", organizationId.ToString("D")),
@@ -558,22 +732,40 @@ public sealed class AuthenticationService(
             return denial;
         }
 
+        var org = await accessClient.GetOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+        var displayName = org.IsSuccess && org.Data is not null
+            ? org.Data.DisplayName
+            : organizationId.ToString("D");
+
         await preferences.SetSelectedOrganizationIdAsync(organizationId, ct).ConfigureAwait(false);
 
         var updated = session with
         {
-            AccessToken = issued.AccessToken,
-            OrganizationId = issued.OrganizationId ?? organizationId,
-            OrganizationDisplayName = issued.OrganizationDisplayName,
-            ExpiresAtUtc = issued.ExpiresAtUtc,
-            HasPosAccess = issued.ProductAccessAllowed == true,
-            AccessReasonCode = issued.ProductAccessReasonCode ?? "allowed",
-            DisplayName = issued.DisplayName,
-            Username = issued.Username,
-            Email = issued.Email
+            OrganizationId = organizationId,
+            OrganizationDisplayName = displayName,
+            HasPosAccess = false,
+            AccessReasonCode = reasonCode ?? "product_local_role_missing"
         };
 
+        events.Record("organization_selected_without_pos", Dict(
+            ("userId", session.UserId.ToString("D")),
+            ("organizationId", organizationId.ToString("D")),
+            ("reason", updated.AccessReasonCode)));
+
         return await PersistOrganizationSelectionAsync(session, updated, organizationId, ct).ConfigureAwait(false);
+    }
+
+    private static bool IsProductEntryDenied(ApiResult<PlatformAccessTokenIssueDto> result) =>
+        result.Status == ApiCallStatus.Forbidden;
+
+    private static string InferDeniedReasonCode(ApiError? error)
+    {
+        if (error?.Detail?.Contains("Product-local role", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            return "product_local_role_missing";
+        }
+
+        return "product_assignment_missing";
     }
 
     private async Task<AuthResult> PersistOrganizationSelectionAsync(

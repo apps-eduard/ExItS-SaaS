@@ -8,6 +8,7 @@ using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Products;
 using Microsoft.Extensions.Options;
 
 namespace ExItS.Platform.Application.Identity;
@@ -378,6 +379,7 @@ public sealed class BindPlatformAccessTokenProductContext
     private readonly IPlatformUserCredentialRepository _credentials;
     private readonly IOrganizationMembershipRepository _memberships;
     private readonly IPlatformOrganizationRepository _organizations;
+    private readonly IProductLocalRoleGrantRepository _roleGrants;
     private readonly EvaluateProductAuthorization _authorize;
     private readonly IPlatformSessionTokenService _tokenService;
     private readonly IAuditWriter _auditWriter;
@@ -392,6 +394,7 @@ public sealed class BindPlatformAccessTokenProductContext
         IPlatformUserCredentialRepository credentials,
         IOrganizationMembershipRepository memberships,
         IPlatformOrganizationRepository organizations,
+        IProductLocalRoleGrantRepository roleGrants,
         EvaluateProductAuthorization authorize,
         IPlatformSessionTokenService tokenService,
         IAuditWriter auditWriter,
@@ -405,6 +408,7 @@ public sealed class BindPlatformAccessTokenProductContext
         _credentials = credentials;
         _memberships = memberships;
         _organizations = organizations;
+        _roleGrants = roleGrants;
         _authorize = authorize;
         _tokenService = tokenService;
         _auditWriter = auditWriter;
@@ -458,6 +462,48 @@ public sealed class BindPlatformAccessTokenProductContext
         var access = await _authorize
             .ExecuteAsync(user.Id, orgId, productCode, cancellationToken)
             .ConfigureAwait(false);
+
+        // Organization Owner + active POS entitlement without a product-local role is a provisioning gap
+        // (Start a Business normally grants first POS Owner). Bootstrap once on bind so Mobile matches Web.
+        if (!access.CanOperate
+            && access.EntitlementAllowed
+            && access.ReasonCode == EffectiveAccessReasonCodes.ProductLocalRoleMissing
+            && membership.Role is OrganizationRole.OrganizationOwner)
+        {
+            var existingGrant = await _roleGrants
+                .FindActiveByUserOrganizationProductAsync(orgId, user.Id, access.ProductCode, cancellationToken)
+                .ConfigureAwait(false);
+            if (existingGrant is null)
+            {
+                var grant = ProductLocalRoleGrant.Create(
+                    orgId,
+                    user.Id,
+                    access.ProductCode,
+                    ProductLocalRoleGrant.PosOwnerRoleCode,
+                    user.Id,
+                    _clock.UtcNow,
+                    source: "OrganizationOwnerBindBootstrap");
+                await _roleGrants.AddAsync(grant, cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+                await _auditWriter.WriteAsync(
+                    $"platform-user:{user.Id.Value:D}",
+                    AuditActorType.PlatformUser,
+                    PlatformAuditActions.ProductLocalRoleGranted,
+                    nameof(ProductLocalRoleGrant),
+                    grant.Id.Value.ToString("D"),
+                    AuditOutcome.Succeeded,
+                    organizationId: orgId,
+                    productCode: ProductCode.Create(access.ProductCode),
+                    summary: "POS Owner product-local role granted on bind for Organization Owner.",
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
+            }
+
+            access = await _authorize
+                .ExecuteAsync(user.Id, orgId, productCode, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         if (!access.CanOperate)
         {
             return ApplicationResult<PlatformAccessTokenIssueDto>.Failure(

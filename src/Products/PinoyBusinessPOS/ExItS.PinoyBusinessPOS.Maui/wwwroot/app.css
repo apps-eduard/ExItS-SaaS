@@ -273,7 +273,19 @@ html, body {
     min-width: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
+    scroll-padding-bottom: calc(4.5rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
+}
+
+/* Free vertical space while typing — bottom nav is not useful over the keyboard. */
+html.pos-keyboard-open .pos-bottom-nav {
+    display: none;
+}
+
+html.pos-keyboard-open .pos-content {
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
+    scroll-padding-bottom: calc(1.25rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
 }
 
 .pos-bottom-nav {

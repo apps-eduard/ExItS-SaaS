@@ -189,4 +189,10 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
         SetOrganizationContextRequest request,
         CancellationToken ct = default) =>
         api.SendAsync<object>(HttpMethod.Put, "/api/v1/platform/auth/organization-context", request, ct);
+
+    public Task<ApiResult<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>> GetLocalValidationQuickLoginIdentitiesAsync(
+        CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>(
+            "/api/v1/platform/local-validation/quick-login-identities",
+            ct);
 }

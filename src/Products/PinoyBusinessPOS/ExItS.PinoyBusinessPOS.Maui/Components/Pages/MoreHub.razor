@@ -82,7 +82,7 @@
 
     private async Task LogoutAsync()
     {
-        SellingMode.Exit();
+        SellingMode.Clear();
         await Auth.LogoutAsync();
         Nav.NavigateTo("/signin");
     }

@@ -4,11 +4,12 @@
 @inject ICurrentUserContext CurrentUser
 @inject IProductAccessResolver Access
 @inject IOnboardingPreferenceStore Prefs
+@inject SellingModeService SellingMode
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
 <Page>
-    <PageHeader Title="@L["OrgSelect_Title"]" Subtitle="@L["OrgSelect_Subtitle"]" />
+    <PageHeader Title="@L["OrgSelect_Title"]" Subtitle="@(_isOwner ? L["OrgSelect_SubtitleOwner"] : L["OrgSelect_SubtitleStaff"])" />
 
     @if (_loading)
     {
@@ -32,7 +33,7 @@
     }
     else
     {
-        <InlineMessage Tone="InlineMessageTone.Info">@L["OrgSelect_Hint"]</InlineMessage>
+        <InlineMessage Tone="InlineMessageTone.Info">@(_isOwner ? L["OrgSelect_HintOwnerRoles"] : L["OrgSelect_HintStaff"])</InlineMessage>
         <Stack Gap="3">
             @foreach (var org in _organizations)
             {
@@ -40,16 +41,34 @@
                     <Stack Gap="2">
                         <span class="pos-value-md">@org.DisplayName</span>
                         <span class="pos-muted">@(string.IsNullOrWhiteSpace(org.MembershipRole) ? org.MembershipStatus : org.MembershipRole)</span>
-                        <Button Disabled="_busy" OnClick="() => SelectAsync(org.OrganizationId)">@L["OrgSelect_Choose"]</Button>
+                        @if (OrganizationMembershipRoles.IsOwnerRole(org.MembershipRole))
+                        {
+                            <Stack Gap="2">
+                                <Button Disabled="_busy" OnClick="() => SelectAsAsync(org.OrganizationId, RoleHomeResolver.OwnerHome)">@L["OrgSelect_EnterOwner"]</Button>
+                                <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="() => SelectAsAsync(org.OrganizationId, RoleHomeResolver.ManagerHome)">@L["OrgSelect_EnterManager"]</Button>
+                                <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="() => SelectAsAsync(org.OrganizationId, RoleHomeResolver.CashierHome)">@L["OrgSelect_EnterCashier"]</Button>
+                            </Stack>
+                        }
+                        else
+                        {
+                            <Button Disabled="_busy" OnClick="() => SelectAsAsync(org.OrganizationId, preferredHome: null)">@L["OrgSelect_Choose"]</Button>
+                        }
                     </Stack>
                 </Card>
             }
         </Stack>
-        <AccountContextSwitcher />
-        <FormActions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoStartBusiness">@L["Personal_StartBusiness"]</Button>
-            <Button Variant="ButtonVariant.Ghost" OnClick="GoPersonalAsync">@L["Personal_HomeTitle"]</Button>
-        </FormActions>
+        @if (_isOwner)
+        {
+            <FormActions>
+                <Button Variant="ButtonVariant.Ghost" OnClick="GoPersonalAsync">@L["Personal_HomeTitle"]</Button>
+            </FormActions>
+        }
+        else
+        {
+            <FormActions>
+                <Button Variant="ButtonVariant.Ghost" OnClick="LogoutAsync">@L["Auth_Logout"]</Button>
+            </FormActions>
+        }
         @if (!string.IsNullOrEmpty(_error))
         {
             <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
@@ -61,6 +80,7 @@
     private bool _loading = true;
     private bool _busy;
     private bool _authenticated;
+    private bool _isOwner;
     private string? _error;
     private IReadOnlyList<EligibleOrganization> _organizations = [];
 
@@ -89,11 +109,14 @@
             }
 
             _organizations = await Access.ListEligibleOrganizationsAsync(CurrentUser.Session.UserId);
-            // Auto-bind only when already unbound (fresh chooser) and exactly one eligible org.
-            // Skip auto-bind when Personal is active so the user can stay / choose deliberately via switcher.
-            if (_organizations.Count == 1 && CurrentUser.Session.OrganizationId is null)
+            _isOwner = OrganizationMembershipRoles.HasOrganizationOwner(_organizations);
+
+            // Staff with exactly one org: enter assigned role UI immediately (no Personal / role chooser).
+            if (!_isOwner
+                && _organizations.Count == 1
+                && CurrentUser.Session.OrganizationId is null)
             {
-                await SelectAsync(_organizations[0].OrganizationId);
+                await SelectAsAsync(_organizations[0].OrganizationId, preferredHome: null);
             }
         }
         finally
@@ -102,7 +125,7 @@
         }
     }
 
-    private async Task SelectAsync(Guid organizationId)
+    private async Task SelectAsAsync(Guid organizationId, string? preferredHome)
     {
         _busy = true;
         _error = null;
@@ -115,9 +138,28 @@
                 return;
             }
 
+            // Role homes require POS operate. Membership-only org entry stays on Org essentials.
+            if (result.Session is not { HasPosAccess: true })
+            {
+                SellingMode.Clear();
+                await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.AccessConfirm));
+                await Prefs.SetOnboardingCompletedAsync(true);
+                Nav.NavigateTo(RoleHomeResolver.OrgEssentials, replace: true);
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(preferredHome))
+            {
+                SellingMode.EnterWorkingAs(preferredHome);
+            }
+            else
+            {
+                SellingMode.Clear();
+            }
+
             await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.AccessConfirm));
             await Prefs.SetOnboardingCompletedAsync(true);
-            Nav.NavigateTo("/", replace: true);
+            Nav.NavigateTo(string.IsNullOrWhiteSpace(preferredHome) ? "/" : preferredHome, replace: true);
         }
         finally
         {
@@ -130,6 +172,7 @@
 
     private async Task GoPersonalAsync()
     {
+        SellingMode.Clear();
         var result = await Auth.SwitchToPersonalAsync();
         if (result.Succeeded)
         {
@@ -139,6 +182,7 @@
 
     private async Task LogoutAsync()
     {
+        SellingMode.Clear();
         await Auth.LogoutAsync();
         Nav.NavigateTo("/signin");
     }

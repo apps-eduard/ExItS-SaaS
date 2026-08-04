@@ -227,9 +227,22 @@
   <data name="SignIn_UserIdHint" xml:space="preserve"><value>GUID from Platform Admin users directory</value></data>
   <data name="SignIn_Submit" xml:space="preserve"><value>Sign in</value></data>
   <data name="SignIn_DevSubmit" xml:space="preserve"><value>Sign in with User Id</value></data>
+  <data name="SignIn_QuickLoginTitle" xml:space="preserve"><value>Quick sign-in</value></data>
+  <data name="SignIn_QuickLoginLabel" xml:space="preserve"><value>Local Validation identity</value></data>
+  <data name="SignIn_QuickLoginHint" xml:space="preserve"><value>Select a user to sign in with the Local Validation shared password</value></data>
+  <data name="SignIn_QuickLoginPlaceholder" xml:space="preserve"><value>Choose a user…</value></data>
+  <data name="SignIn_QuickLoginUnavailable" xml:space="preserve"><value>No Quick Login identities available</value></data>
   <data name="OrgSelect_Title" xml:space="preserve"><value>Select organization</value></data>
   <data name="OrgSelect_Subtitle" xml:space="preserve"><value>Only organizations with active PinoyBusinessPOS commercial access are listed.</value></data>
+  <data name="OrgSelect_SubtitleOwner" xml:space="preserve"><value>Choose Personal, or open your organization as Owner, Manager, or Cashier.</value></data>
+  <data name="OrgSelect_SubtitleStaff" xml:space="preserve"><value>Choose the organization to work in.</value></data>
   <data name="OrgSelect_Hint" xml:space="preserve"><value>Organization selection is a preference. Access is revalidated by the Platform.</value></data>
+  <data name="OrgSelect_HintOwner" xml:space="preserve"><value>Open an organization, or continue in Personal. Access is revalidated by the Platform.</value></data>
+  <data name="OrgSelect_HintOwnerRoles" xml:space="preserve"><value>Choose how to work in your organization: Owner, Manager, or Cashier. Or continue in Personal.</value></data>
+  <data name="OrgSelect_HintStaff" xml:space="preserve"><value>Staff accounts open directly into organization work. Access is revalidated by the Platform.</value></data>
+  <data name="OrgSelect_EnterOwner" xml:space="preserve"><value>Owner</value></data>
+  <data name="OrgSelect_EnterManager" xml:space="preserve"><value>Manager</value></data>
+  <data name="OrgSelect_EnterCashier" xml:space="preserve"><value>Cashier</value></data>
   <data name="OrgSelect_Choose" xml:space="preserve"><value>Use this organization</value></data>
   <data name="OrgSelect_NoneEligible" xml:space="preserve"><value>No eligible organization was found for PinoyBusinessPOS commercial access.</value></data>
   <data name="AccessConfirm_Title" xml:space="preserve"><value>Commercial access confirmed</value></data>
@@ -1363,6 +1376,7 @@
   <data name="OrgSelect_NoneTitle" xml:space="preserve"><value>No organizations</value></data>
   <data name="Context_SwitcherTitle" xml:space="preserve"><value>Account context</value></data>
   <data name="Context_SwitcherHint" xml:space="preserve"><value>Switch between Personal and your organizations without signing out. Access is revalidated on each switch.</value></data>
+  <data name="Context_SwitcherHintStaff" xml:space="preserve"><value>Switch between organizations without signing out. Access is revalidated on each switch.</value></data>
   <data name="Context_Personal" xml:space="preserve"><value>Personal</value></data>
   <data name="Context_Active" xml:space="preserve"><value>active</value></data>
   <data name="Org_EssentialsOwnerOnly" xml:space="preserve"><value>Organization Owner essentials are available only to Organization Owners. POS entry still requires an active POS role and entitlement.</value></data>

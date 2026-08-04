@@ -3,21 +3,25 @@
 @inject ICurrentUserContext CurrentUser
 @inject IProductAccessResolver Access
 @inject IPlatformAccessClient Platform
+@inject SellingModeService SellingMode
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
-@if (_ready && _authenticated)
+@if (_ready && _authenticated && (_canUsePersonal || _organizations.Count > 0))
 {
     <Section Title="@L["Context_SwitcherTitle"]">
-        <InlineMessage Tone="InlineMessageTone.Info">@L["Context_SwitcherHint"]</InlineMessage>
+        <InlineMessage Tone="InlineMessageTone.Info">@(_canUsePersonal ? L["Context_SwitcherHint"] : L["Context_SwitcherHintStaff"])</InlineMessage>
         <Stack Gap="2">
-            <Button Variant="@PersonalVariant" Disabled="_busy" OnClick="SwitchPersonalAsync">
-                @L["Context_Personal"]
-                @if (IsPersonalActive)
-                {
-                    <span class="pos-muted"> — @L["Context_Active"]</span>
-                }
-            </Button>
+            @if (_canUsePersonal)
+            {
+                <Button Variant="@PersonalVariant" Disabled="_busy" OnClick="SwitchPersonalAsync">
+                    @L["Context_Personal"]
+                    @if (IsPersonalActive)
+                    {
+                        <span class="pos-muted"> — @L["Context_Active"]</span>
+                    }
+                </Button>
+            }
             @foreach (var org in _organizations)
             {
                 var active = CurrentUser.Session?.OrganizationId == org.OrganizationId;
@@ -43,6 +47,7 @@
     private bool _ready;
     private bool _authenticated;
     private bool _busy;
+    private bool _canUsePersonal;
     private string? _error;
     private IReadOnlyList<EligibleOrganization> _organizations = [];
 
@@ -86,6 +91,9 @@
             }
         }
 
+        // Personal context is for owners / personal-only accounts — not staff-only memberships.
+        _canUsePersonal = _organizations.Count == 0
+            || OrganizationMembershipRoles.HasOrganizationOwner(_organizations);
         _ready = true;
     }
 
@@ -104,6 +112,7 @@
         _error = null;
         try
         {
+            SellingMode.Clear();
             var result = await Auth.SwitchToPersonalAsync();
             if (!result.Succeeded)
             {
@@ -131,6 +140,7 @@
         _error = null;
         try
         {
+            SellingMode.Clear();
             var result = await Auth.SelectOrganizationAsync(organizationId);
             if (!result.Succeeded)
             {

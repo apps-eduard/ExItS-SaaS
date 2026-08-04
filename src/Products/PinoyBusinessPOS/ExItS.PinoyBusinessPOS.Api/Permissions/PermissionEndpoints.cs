@@ -3,6 +3,7 @@ using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.Permissions;
+using ExItS.PinoyBusinessPOS.Domain.Permissions;
 
 namespace ExItS.PinoyBusinessPOS.Api.Permissions;
 
@@ -150,7 +151,7 @@ internal static class PermissionEndpoints
             }
 
             var result = await queries.GetEffectiveAsync(organizationId, actorId, ct).ConfigureAwait(false);
-            return Results.Ok(result);
+            return Results.Ok(ApplyRequestRoleFallback(result, actorId));
         });
 
         group.MapGet("/actors/{actorId:guid}/effective", async (
@@ -166,10 +167,47 @@ internal static class PermissionEndpoints
             }
 
             var result = await queries.GetEffectiveAsync(organizationId, actorId, ct).ConfigureAwait(false);
+            // Only apply Dev/request role fallback for the caller's own effective view.
+            if (PosOrganizationScope.TryGetActorId(request, out var callerId, out _) && callerId == actorId)
+            {
+                result = ApplyRequestRoleFallback(result, actorId);
+            }
+
             return Results.Ok(result);
         });
 
         return app;
+    }
+
+    /// <summary>
+    /// Role resolution middleware may set an in-memory Dev Owner (or just-synced mapped role)
+    /// without a DB row yet. Effective permissions must reflect that role so Mobile home routing works.
+    /// </summary>
+    private static PosEffectivePermissionsDto ApplyRequestRoleFallback(
+        PosEffectivePermissionsDto result,
+        Guid actorId)
+    {
+        if (!string.IsNullOrWhiteSpace(result.Role)
+            && string.Equals(result.Status, "Active", StringComparison.OrdinalIgnoreCase))
+        {
+            return result;
+        }
+
+        if (PosRoleRequestContext.CurrentRole is not { } role)
+        {
+            return result;
+        }
+
+        return new PosEffectivePermissionsDto(
+            result.OrganizationId,
+            actorId,
+            PosRoleCodes.ToCode(role),
+            PosRoleCodes.ToDisplayName(role),
+            "Active",
+            PosRoleMatrix.CapabilitiesFor(role).Select(c => c.ToString()).ToArray(),
+            PosRoleAssignmentMapping.FeatureCodesForRole(role),
+            PosRoleMatrix.CanManageAssignments(role) || result.IsBootstrapEligible,
+            result.IsBootstrapEligible);
     }
 
     private static bool TryAuthorize(

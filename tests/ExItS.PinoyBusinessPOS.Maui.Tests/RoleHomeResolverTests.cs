@@ -16,15 +16,61 @@ public sealed class RoleHomeResolverTests
     public async Task ResolvePosHome_maps_effective_role(string role, string expected)
     {
         var client = new FakePermissions(string.IsNullOrEmpty(role) ? null : role, status: string.IsNullOrEmpty(role) ? "None" : "Active");
-        var sut = new RoleHomeResolver(client);
+        var sut = new RoleHomeResolver(client, new SellingModeService());
         Assert.Equal(expected, await sut.ResolvePosHomeAsync());
     }
 
     [Fact]
     public async Task ResolvePosHome_denies_inactive_assignment()
     {
-        var sut = new RoleHomeResolver(new FakePermissions("Owner", status: "Revoked"));
+        var sut = new RoleHomeResolver(new FakePermissions("Owner", status: "Revoked"), new SellingModeService());
         Assert.Equal(RoleHomeResolver.AccessDenied, await sut.ResolvePosHomeAsync());
+    }
+
+    [Fact]
+    public async Task ResolvePosHome_owner_can_work_as_manager_or_cashier_ui()
+    {
+        var mode = new SellingModeService();
+        mode.EnterWorkingAs(RoleHomeResolver.ManagerHome);
+        var sut = new RoleHomeResolver(new FakePermissions("Owner", status: "Active"), mode);
+        Assert.Equal(RoleHomeResolver.ManagerHome, await sut.ResolvePosHomeAsync());
+
+        mode.EnterWorkingAs(RoleHomeResolver.CashierHome);
+        Assert.Equal(RoleHomeResolver.CashierHome, await sut.ResolvePosHomeAsync());
+    }
+
+    [Fact]
+    public async Task ResolvePosHome_uses_preferred_home_when_effective_role_unavailable()
+    {
+        var mode = new SellingModeService();
+        mode.EnterWorkingAs(RoleHomeResolver.OwnerHome);
+        var sut = new RoleHomeResolver(FakePermissions.Unavailable(), mode);
+        Assert.Equal(RoleHomeResolver.OwnerHome, await sut.ResolvePosHomeAsync());
+    }
+
+    [Fact]
+    public async Task ResolvePosHome_uses_preferred_home_when_effective_status_none()
+    {
+        var mode = new SellingModeService();
+        mode.EnterWorkingAs(RoleHomeResolver.ManagerHome);
+        var sut = new RoleHomeResolver(new FakePermissions(role: null, status: "None"), mode);
+        Assert.Equal(RoleHomeResolver.ManagerHome, await sut.ResolvePosHomeAsync());
+    }
+
+    [Fact]
+    public async Task ResolvePosHome_without_preferred_still_denies_when_effective_missing()
+    {
+        var sut = new RoleHomeResolver(FakePermissions.Unavailable(), new SellingModeService());
+        Assert.Equal(RoleHomeResolver.AccessDenied, await sut.ResolvePosHomeAsync());
+    }
+
+    [Fact]
+    public async Task ResolvePosHome_staff_cannot_override_with_working_as()
+    {
+        var mode = new SellingModeService();
+        mode.EnterWorkingAs(RoleHomeResolver.OwnerHome);
+        var sut = new RoleHomeResolver(new FakePermissions("Cashier", status: "Active"), mode);
+        Assert.Equal(RoleHomeResolver.CashierHome, await sut.ResolvePosHomeAsync());
     }
 
     [Fact]
@@ -36,11 +82,24 @@ public sealed class RoleHomeResolverTests
         Assert.Equal(RoleHomeResolver.OwnerHome, mode.ReturnRoute);
         mode.Exit();
         Assert.False(mode.IsSellingMode);
-        Assert.Null(mode.ReturnRoute);
+        Assert.Equal(RoleHomeResolver.OwnerHome, mode.ReturnRoute);
     }
 
-    private sealed class FakePermissions(string? role, string status) : IPosPermissionClient
+    [Fact]
+    public void SellingMode_enter_working_as_sets_preferred_home()
     {
+        var mode = new SellingModeService();
+        mode.EnterWorkingAs(RoleHomeResolver.CashierHome);
+        Assert.False(mode.IsSellingMode);
+        Assert.Equal(RoleHomeResolver.CashierHome, mode.PreferredHomeRoute);
+        mode.Clear();
+        Assert.Null(mode.PreferredHomeRoute);
+    }
+
+    private sealed class FakePermissions(string? role, string status, bool unavailable = false) : IPosPermissionClient
+    {
+        public static FakePermissions Unavailable() => new(null, "None", unavailable: true);
+
         public Task<ApiResult<IReadOnlyList<PosRoleDto>>> ListRolesAsync(CancellationToken ct = default) =>
             Task.FromResult(ApiResult<IReadOnlyList<PosRoleDto>>.Success(Array.Empty<PosRoleDto>()));
 
@@ -56,8 +115,14 @@ public sealed class RoleHomeResolverTests
         public Task<ApiResult<PosRoleAssignmentDto>> RevokeAsync(Guid assignmentId, RevokePosRoleRequest? request = null, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<PosRoleAssignmentDto>.Unavailable());
 
-        public Task<ApiResult<PosEffectivePermissionsDto>> GetEffectiveAsync(CancellationToken ct = default) =>
-            Task.FromResult(ApiResult<PosEffectivePermissionsDto>.Success(new PosEffectivePermissionsDto(
+        public Task<ApiResult<PosEffectivePermissionsDto>> GetEffectiveAsync(CancellationToken ct = default)
+        {
+            if (unavailable)
+            {
+                return Task.FromResult(ApiResult<PosEffectivePermissionsDto>.Unavailable());
+            }
+
+            return Task.FromResult(ApiResult<PosEffectivePermissionsDto>.Success(new PosEffectivePermissionsDto(
                 Guid.NewGuid(),
                 Guid.NewGuid(),
                 role,
@@ -67,6 +132,7 @@ public sealed class RoleHomeResolverTests
                 Array.Empty<string>(),
                 false,
                 false)));
+        }
 
         public Task<ApiResult<PosEffectivePermissionsDto>> GetActorEffectiveAsync(Guid actorId, CancellationToken ct = default) =>
             GetEffectiveAsync(ct);

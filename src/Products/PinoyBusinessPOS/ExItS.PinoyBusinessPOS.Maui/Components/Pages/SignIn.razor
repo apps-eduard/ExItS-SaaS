@@ -1,8 +1,14 @@
 @page "/signin"
 @layout Layout.AuthShell
+@using ExItS.DesignSystem.Components.Primitives
+@using ExItS.PinoyBusinessPOS.Application.Options
+@using ExItS.PinoyBusinessPOS.Application.Platform
+@using Microsoft.Extensions.Options
 @inject IAuthenticationService Auth
 @inject IProductAccessResolver Access
 @inject IOnboardingPreferenceStore Prefs
+@inject IPlatformAccessClient Platform
+@inject IOptions<LocalValidationClientOptions> LocalValidationOptions
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
@@ -10,6 +16,19 @@
     <PageHeader Title="@L["SignIn_Title"]" Subtitle="@L["SignIn_Subtitle"]" />
 
     <FormValidationSummary Messages="_errors" />
+
+    @if (_quickLoginAvailable)
+    {
+        <FormGroup Title="@L["SignIn_QuickLoginTitle"]">
+            <Select Label="@L["SignIn_QuickLoginLabel"]"
+                    Hint="@(_quickLoginHint ?? L["SignIn_QuickLoginHint"].Value)"
+                    Value="@_selectedQuickKey"
+                    ValueChanged="OnQuickLoginSelectedAsync"
+                    Options="_quickLoginOptions"
+                    Disabled="_busy || _quickLoginLoading || _quickLoginOptions.Count == 0" />
+        </FormGroup>
+    }
+
     <FormGroup Title="@L["SignIn_PasswordFormTitle"]">
         <TextInput Label="@L["SignIn_UsernameLabel"]"
                    Hint="@L["SignIn_UsernameHint"]"
@@ -28,74 +47,120 @@
         <Button IsLoading="_busy" Disabled="_busy" OnClick="SignInPasswordAsync">@L["SignIn_Submit"]</Button>
         <Button Variant="ButtonVariant.Ghost" Disabled="_busy" OnClick="GoRegister">@L["Register_Title"]</Button>
     </FormActions>
-
-    @if (Auth.IsDevelopmentAuthenticationEnabled)
-    {
-        <Alert Tone="AlertTone.Warning" Title="@L["SignIn_DevTitle"]" Message="@L["SignIn_DevMessage"]" />
-        <FormGroup Title="@L["SignIn_FormTitle"]">
-            <TextInput Label="@L["SignIn_UserIdLabel"]"
-                       Hint="@L["SignIn_UserIdHint"]"
-                       @bind-Value="_userIdText"
-                       Disabled="_busy" />
-        </FormGroup>
-        <FormActions>
-            <Button IsLoading="_busy" Disabled="_busy" OnClick="SignInDevAsync" Variant="ButtonVariant.Secondary">@L["SignIn_DevSubmit"]</Button>
-        </FormActions>
-    }
 </Page>
 
 @code {
     private string? _username;
     private string? _password;
-    private string? _userIdText;
     private bool _busy;
     private bool _invalid;
     private List<string> _errors = [];
 
-    private async Task SignInPasswordAsync()
+    private bool _quickLoginAvailable;
+    private bool _quickLoginLoading;
+    private string? _selectedQuickKey;
+    private string? _quickLoginHint;
+    private List<SelectOption> _quickLoginOptions = [];
+    private Dictionary<string, LocalValidationQuickLoginIdentityDto> _quickLoginByKey = new(StringComparer.Ordinal);
+
+    protected override async Task OnInitializedAsync()
     {
-        _errors = [];
-        _invalid = false;
-        if (string.IsNullOrWhiteSpace(_username) || string.IsNullOrWhiteSpace(_password))
+        var options = LocalValidationOptions.Value;
+        _quickLoginAvailable = Auth.IsDevelopmentAuthenticationEnabled && options.IsQuickLoginAvailable;
+        if (!_quickLoginAvailable)
         {
-            _invalid = true;
-            _errors.Add(L["Auth_InvalidCredentials"]);
             return;
         }
 
-        _busy = true;
+        await LoadQuickLoginIdentitiesAsync();
+    }
+
+    private async Task LoadQuickLoginIdentitiesAsync()
+    {
+        _quickLoginLoading = true;
+        _quickLoginHint = null;
         try
         {
-            var result = await Auth.SignInAsync(new SignInRequest(_username.Trim(), _password));
-            if (!result.Succeeded || result.Session is null)
+            var result = await Platform.GetLocalValidationQuickLoginIdentitiesAsync();
+            if (!result.IsSuccess || result.Data is null)
             {
-                _invalid = true;
-                _errors.Add(L[result.SafeMessageKey ?? "Auth_InvalidCredentials"]);
+                _quickLoginOptions = [];
+                _quickLoginByKey = new(StringComparer.Ordinal);
+                _quickLoginHint = L["SignIn_QuickLoginUnavailable"];
                 return;
             }
 
-            await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.OrganizationSelect));
-            await Prefs.SetOnboardingCompletedAsync(true);
-            try
+            // Exclude platform administration identities; keep Personal + Organization.
+            var identities = result.Data
+                .Where(i => !string.Equals(i.AccountClass, "Platform", StringComparison.OrdinalIgnoreCase))
+                .Where(i => !string.IsNullOrWhiteSpace(i.Key)
+                            && (!string.IsNullOrWhiteSpace(i.Email) || !string.IsNullOrWhiteSpace(i.Username)))
+                .GroupBy(i => i.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .OrderBy(i => i.ListLabel, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            _quickLoginByKey = identities.ToDictionary(i => i.Key, StringComparer.OrdinalIgnoreCase);
+            _quickLoginOptions =
+            [
+                new SelectOption(string.Empty, L["SignIn_QuickLoginPlaceholder"]),
+                .. identities.Select(i => new SelectOption(
+                    i.Key,
+                    string.IsNullOrWhiteSpace(i.ListLabel) ? i.DisplayName : i.ListLabel))
+            ];
+
+            if (identities.Count == 0)
             {
-                await NavigateAfterSignInAsync(result.Session);
-            }
-            catch
-            {
-                Nav.NavigateTo("/personal", replace: true);
+                _quickLoginHint = L["SignIn_QuickLoginUnavailable"];
             }
         }
         finally
         {
-            _busy = false;
+            _quickLoginLoading = false;
         }
     }
 
-    private async Task SignInDevAsync()
+    private async Task OnQuickLoginSelectedAsync(string? key)
+    {
+        _selectedQuickKey = key;
+        if (string.IsNullOrWhiteSpace(key) || _busy)
+        {
+            return;
+        }
+
+        if (!_quickLoginByKey.TryGetValue(key, out var identity))
+        {
+            return;
+        }
+
+        var sharedPassword = LocalValidationOptions.Value.SharedPassword;
+        var loginId = !string.IsNullOrWhiteSpace(identity.Email)
+            ? identity.Email
+            : identity.Username;
+
+        _username = loginId;
+        _password = sharedPassword;
+        await SignInWithCredentialsAsync(
+            loginId,
+            sharedPassword,
+            identity.AccountProfileId == Guid.Empty ? null : identity.AccountProfileId,
+            identity.OrganizationId);
+    }
+
+    private async Task SignInPasswordAsync()
+    {
+        await SignInWithCredentialsAsync(_username, _password, accountProfileId: null, organizationId: null);
+    }
+
+    private async Task SignInWithCredentialsAsync(
+        string? username,
+        string? password,
+        Guid? accountProfileId,
+        Guid? organizationId)
     {
         _errors = [];
         _invalid = false;
-        if (!Guid.TryParse(_userIdText?.Trim(), out var userId))
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
         {
             _invalid = true;
             _errors.Add(L["Auth_InvalidCredentials"]);
@@ -105,12 +170,24 @@
         _busy = true;
         try
         {
-            var result = await Auth.SignInAsync(new SignInRequest(null, null, userId));
+            var result = await Auth.SignInAsync(new SignInRequest(
+                username.Trim(),
+                password,
+                AccountProfileId: accountProfileId));
             if (!result.Succeeded || result.Session is null)
             {
                 _invalid = true;
                 _errors.Add(L[result.SafeMessageKey ?? "Auth_InvalidCredentials"]);
                 return;
+            }
+
+            // Match Admin Quick Login: Organization identities establish Platform org context.
+            if (organizationId is Guid orgId
+                && orgId != Guid.Empty
+                && string.Equals(result.Session.AccountClass, "Organization", StringComparison.OrdinalIgnoreCase))
+            {
+                _ = await Platform.SetOrganizationContextAsync(new SetOrganizationContextRequest(orgId));
+                await Prefs.SetSelectedOrganizationIdAsync(orgId);
             }
 
             await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.OrganizationSelect));
@@ -131,23 +208,13 @@
     }
 
     /// <summary>
-    /// Preferred post-login routing: restore last valid org when safe; otherwise Personal (0),
-    /// auto-bind single org, or multi-org chooser. Never blocks with Personal-vs-Org every time.
+    /// Owners: show org + Personal chooser (no forced bind).
+    /// Staff: bind org and enter role UI directly (no Personal option).
+    /// Personal-only (0 orgs): Personal home.
     /// </summary>
     private async Task NavigateAfterSignInAsync(AuthSession session)
     {
         var orgs = await Access.ListEligibleOrganizationsAsync(session.UserId);
-        var last = await Prefs.GetSelectedOrganizationIdAsync();
-
-        if (last is Guid lastId && orgs.Any(o => o.OrganizationId == lastId))
-        {
-            var restored = await Auth.SelectOrganizationAsync(lastId);
-            if (restored.Succeeded)
-            {
-                Nav.NavigateTo("/", replace: true);
-                return;
-            }
-        }
 
         if (orgs.Count == 0)
         {
@@ -155,12 +222,27 @@
             return;
         }
 
-        if (orgs.Count == 1)
+        if (OrganizationMembershipRoles.HasOrganizationOwner(orgs))
+        {
+            // Owner chooses Personal or organization deliberately.
+            Nav.NavigateTo("/organization-select", replace: true);
+            return;
+        }
+
+        // Staff: enter organization/role UI with no Personal chooser.
+        var last = await Prefs.GetSelectedOrganizationIdAsync();
+        var targetOrgId = last is Guid lastId && orgs.Any(o => o.OrganizationId == lastId)
+            ? lastId
+            : orgs.Count == 1
+                ? orgs[0].OrganizationId
+                : (Guid?)null;
+
+        if (targetOrgId is Guid orgId)
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
             try
             {
-                var selected = await Auth.SelectOrganizationAsync(orgs[0].OrganizationId, cts.Token);
+                var selected = await Auth.SelectOrganizationAsync(orgId, cts.Token);
                 if (selected.Succeeded)
                 {
                     Nav.NavigateTo("/", replace: true);
@@ -169,7 +251,7 @@
             }
             catch (OperationCanceledException)
             {
-                // Fall through to organization chooser rather than leaving Sign in stuck Loading.
+                // Fall through to org list (still staff-only, no Personal).
             }
         }
 

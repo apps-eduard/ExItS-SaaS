@@ -203,6 +203,14 @@ public sealed class PosCatalogClient(HttpClient httpClient, IConnectivityService
                 }
                 : ApiResult<TResponse>.Success(data);
         }
+        catch (JsonException ex)
+        {
+            return new ApiResult<TResponse>
+            {
+                Status = ApiCallStatus.Failed,
+                Error = new ApiError("Invalid response", ex.Message, null, null, null)
+            };
+        }
         catch (HttpRequestException ex)
         {
             return new ApiResult<TResponse>
@@ -221,6 +229,14 @@ public sealed class PosCatalogClient(HttpClient httpClient, IConnectivityService
             {
                 Status = ApiCallStatus.Timeout,
                 Error = new ApiError("Request timed out", ex.Message, null, null, null)
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResult<TResponse>
+            {
+                Status = ApiCallStatus.Failed,
+                Error = new ApiError("Request failed", ex.Message, null, null, null)
             };
         }
     }
