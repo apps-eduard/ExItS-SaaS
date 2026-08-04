@@ -12,6 +12,15 @@
 {
     <Page><Spinner /></Page>
 }
+else if (!_allowed)
+{
+    <Page>
+        <ErrorState Title="@L["Access_RestrictedTitle"]"
+                    Message="@L["Access_RestrictedMessage"]"
+                    RetryLabel="@L["Nav_Home"]"
+                    OnRetry="GoHomeAsync" />
+    </Page>
+}
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageInventory);
@@ -62,6 +71,7 @@ else
 
 @code {
     private bool _ready;
+    private bool _allowed;
     private bool _loading;
     private bool _isOffline;
     private string _search = string.Empty;
@@ -117,15 +127,15 @@ else
             return;
         }
 
-        if (!Capabilities.IsAllowed(UtangCapability.ViewInventory))
-        {
-            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
-            return;
-        }
-
+        _allowed = Capabilities.IsAllowed(UtangCapability.ViewInventory);
         _ready = true;
-        await ReloadAsync();
+        if (_allowed)
+        {
+            await ReloadAsync();
+        }
     }
+
+    private async Task GoHomeAsync() => Nav.NavigateTo(await Gate.ResolveStartRouteAsync());
 
     private async Task ReloadAsync()
     {

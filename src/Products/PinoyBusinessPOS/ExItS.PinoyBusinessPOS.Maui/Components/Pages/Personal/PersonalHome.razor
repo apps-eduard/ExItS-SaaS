@@ -4,6 +4,7 @@
 @inject ICurrentUserContext CurrentUser
 @inject IProductAccessResolver Access
 @inject IPlatformAccessClient Platform
+@inject SellingModeService SellingMode
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
@@ -156,6 +157,18 @@
         _error = null;
         try
         {
+            var membership = _organizations.FirstOrDefault(o => o.OrganizationId == organizationId);
+            // Mirror OrganizationSelect: Owner membership enters Owner working-as so role home
+            // does not strand on Access Denied when effective-role briefly lags after bind.
+            if (OrganizationMembershipRoles.IsOwnerRole(membership?.MembershipRole))
+            {
+                SellingMode.EnterWorkingAs(RoleHomeResolver.OwnerHome);
+            }
+            else
+            {
+                SellingMode.Clear();
+            }
+
             var result = await Auth.SelectOrganizationAsync(organizationId);
             if (result.Succeeded && CurrentUser.HasPosAccess)
             {
@@ -165,10 +178,12 @@
 
             if (result.Succeeded)
             {
+                SellingMode.Clear();
                 Nav.NavigateTo("/org");
                 return;
             }
 
+            SellingMode.Clear();
             _error = L[result.SafeMessageKey ?? "Access_Denied"];
         }
         finally

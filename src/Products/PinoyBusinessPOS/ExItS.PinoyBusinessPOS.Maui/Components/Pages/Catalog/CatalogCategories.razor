@@ -167,6 +167,14 @@ else
             return;
         }
 
+        if (!Capabilities.IsAllowed(UtangCapability.ViewCatalog))
+        {
+            _ready = true;
+            _errorTitle = L["Access_RestrictedTitle"];
+            _errorMessage = L["Access_RestrictedMessage"];
+            return;
+        }
+
         _ready = true;
         await ReloadWithLoadingAsync();
     }

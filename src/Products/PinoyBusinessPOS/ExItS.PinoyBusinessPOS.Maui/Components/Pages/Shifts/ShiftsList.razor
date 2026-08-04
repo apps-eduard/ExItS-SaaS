@@ -12,6 +12,15 @@
 {
     <Page><Spinner /></Page>
 }
+else if (!_allowed)
+{
+    <Page>
+        <ErrorState Title="@L["Access_RestrictedTitle"]"
+                    Message="@L["Access_RestrictedMessage"]"
+                    RetryLabel="@L["Nav_Home"]"
+                    OnRetry="GoHomeAsync" />
+    </Page>
+}
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageShifts);
@@ -76,6 +85,7 @@ else
 
 @code {
     private bool _ready;
+    private bool _allowed;
     private bool _loading;
     private bool _isOffline;
     private string? _search;
@@ -143,16 +153,16 @@ else
             return;
         }
 
-        if (!Capabilities.IsAllowed(UtangCapability.ViewShifts))
-        {
-            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
-            return;
-        }
-
+        _allowed = Capabilities.IsAllowed(UtangCapability.ViewShifts);
         _isOffline = !await Connectivity.IsConnectedAsync();
         _ready = true;
-        await ReloadAsync();
+        if (_allowed)
+        {
+            await ReloadAsync();
+        }
     }
+
+    private async Task GoHomeAsync() => Nav.NavigateTo(await Gate.ResolveStartRouteAsync());
 
     private async Task ReloadAsync()
     {

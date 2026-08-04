@@ -140,15 +140,25 @@
         _error = null;
         try
         {
-            SellingMode.Clear();
+            var membership = _organizations.FirstOrDefault(o => o.OrganizationId == organizationId);
+            if (OrganizationMembershipRoles.IsOwnerRole(membership?.MembershipRole))
+            {
+                SellingMode.EnterWorkingAs(RoleHomeResolver.OwnerHome);
+            }
+            else
+            {
+                SellingMode.Clear();
+            }
+
             var result = await Auth.SelectOrganizationAsync(organizationId);
             if (!result.Succeeded)
             {
+                SellingMode.Clear();
                 _error = L[result.SafeMessageKey ?? "Access_Denied"];
                 return;
             }
 
-            Nav.NavigateTo("/", replace: true);
+            Nav.NavigateTo(CurrentUser.HasPosAccess ? "/" : "/org", replace: true);
         }
         finally
         {
