@@ -165,6 +165,13 @@
         Status.Changed += OnChangedAsync;
         if (!Gate.CanEnterProtectedShell)
         {
+            // Personal sessions use AuthShell settings, not the POS protected shell.
+            if (CurrentUser.IsAuthenticated && CurrentUser.Session?.OrganizationId is null)
+            {
+                Nav.NavigateTo("/personal/settings", replace: true);
+                return;
+            }
+
             var route = await Gate.ResolveStartRouteAsync();
             if (!string.Equals(route, "/settings", StringComparison.OrdinalIgnoreCase))
             {

@@ -13,20 +13,48 @@ html, body {
     background: var(--exits-bg, #f3f6f4);
 }
 
-/* Local Validation Quick Login — denser type for long identity labels on phone. */
+/* Local Validation Quick Login — compact control (Android native picker ignores option CSS). */
 .pos-quick-login .exds-form-group__title,
 .pos-quick-login .exds-label,
 .pos-quick-login .exds-field__hint,
 .pos-quick-login .exds-field__control,
-.pos-quick-login .exds-field__control option {
-    font-size: 0.75rem;
+.pos-quick-login select.exds-field__control {
+    font-size: 0.6875rem !important;
+    line-height: 1.25 !important;
 }
 .pos-quick-login .exds-form-group__title {
-    font-size: 0.8125rem;
+    font-size: 0.75rem !important;
 }
-.pos-quick-login .exds-field__control {
-    min-height: 2.25rem;
-    padding-block: 0.35rem;
+.pos-quick-login .exds-field__control,
+.pos-quick-login select.exds-field__control {
+    min-height: 2rem !important;
+    height: 2rem !important;
+    padding-block: 0.2rem !important;
+    padding-inline: 0.5rem 1.75rem !important;
+}
+
+/* Catalog / list filter selects — same denser control height. */
+.pos-filter-select .exds-field__control,
+.pos-filter-select select.exds-field__control,
+.exds-search-toolbar select.exds-field__control {
+    font-size: 0.75rem !important;
+    min-height: 2.15rem !important;
+    height: 2.15rem !important;
+    padding-block: 0.25rem !important;
+}
+
+/* Row name as action (button styled as link — avoids DesignSystem Button in cell templates). */
+button.pos-link {
+    appearance: none;
+    background: none;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: var(--exits-color-primary, #0b6e4f);
+    text-align: start;
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 .skip-link {
@@ -292,6 +320,21 @@ html, body {
     -webkit-overflow-scrolling: touch;
     padding-bottom: calc(4.5rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
     scroll-padding-bottom: calc(4.5rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
+}
+
+/* Auth / Personal shells have no bottom nav — reclaim space on phones (incl. Samsung). */
+.pos-shell--auth .pos-content {
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
+    scroll-padding-bottom: calc(1.25rem + env(safe-area-inset-bottom) + var(--pos-keyboard-inset, 0px));
+}
+
+.pos-personal-org {
+    padding: var(--exits-space-3) 0;
+    border-bottom: 1px solid var(--exits-border);
+}
+
+.pos-personal-org:last-child {
+    border-bottom: 0;
 }
 
 /* Free vertical space while typing — bottom nav is not useful over the keyboard. */

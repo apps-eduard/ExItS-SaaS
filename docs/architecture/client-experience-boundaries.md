@@ -58,13 +58,17 @@ Personal Account owns:
 - user registration;
 - sign-in;
 - personal profile;
+- personal settings (appearance + logout);
 - account security;
 - organization selection;
 - Start a Business;
 - viewing businesses associated with the user;
+- pending organization invitations (accept; decline deferred);
 - launching entitled products.
 
 A personal user may exist without belonging to an organization.
+
+Personal Mobile must not expose POS operational pages until an organization is selected and product access is granted.
 
 Starting a business creates an organization and makes the initiating user its Organization Owner.
 

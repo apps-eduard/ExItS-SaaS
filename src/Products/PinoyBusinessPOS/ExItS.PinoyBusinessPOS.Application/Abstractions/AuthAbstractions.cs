@@ -70,6 +70,12 @@ public interface IAuthenticationService
     Task<AuthResult> SwitchToPersonalAsync(CancellationToken ct = default);
 
     /// <summary>
+    /// When the session is still Personal after membership exists (invite accept / Start Business),
+    /// selects the Organization account profile so org-bound APIs and POS bind can proceed.
+    /// </summary>
+    Task<AuthResult> EnsureOrganizationAccountProfileAsync(CancellationToken ct = default);
+
+    /// <summary>
     /// Applies a rotated Platform session after Start a Business and binds the new organization for POS when entitled.
     /// </summary>
     Task<AuthResult> ContinueAfterStartBusinessAsync(

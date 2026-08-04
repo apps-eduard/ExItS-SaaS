@@ -558,8 +558,82 @@ public sealed class AuthenticationService(
         return new AuthResult(true, AuthFailureReason.None, updated);
     }
 
+    public async Task<AuthResult> EnsureOrganizationAccountProfileAsync(CancellationToken ct = default)
+    {
+        var session = currentUser.Session;
+        if (session is null)
+        {
+            return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
+        }
+
+        if (string.Equals(session.AccountClass, "Organization", StringComparison.OrdinalIgnoreCase))
+        {
+            return new AuthResult(true, AuthFailureReason.None, session);
+        }
+
+        if (string.IsNullOrWhiteSpace(session.PlatformSessionToken))
+        {
+            return new AuthResult(true, AuthFailureReason.None, session);
+        }
+
+        var profiles = await accessClient.GetAccountProfilesAsync(ct).ConfigureAwait(false);
+        if (!profiles.IsSuccess || profiles.Data is null)
+        {
+            return new AuthResult(true, AuthFailureReason.None, session);
+        }
+
+        var orgProfile = profiles.Data.FirstOrDefault(p =>
+            string.Equals(p.AccountClass, "Organization", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase));
+        if (orgProfile is null)
+        {
+            return new AuthResult(true, AuthFailureReason.None, session);
+        }
+
+        var selected = await accessClient
+            .SelectAccountProfileAsync(new SelectAccountProfileRequest(orgProfile.Id), ct)
+            .ConfigureAwait(false);
+        if (!selected.IsSuccess || selected.Data is null)
+        {
+            return new AuthResult(
+                false,
+                AuthFailureReason.AccessDenied,
+                SafeMessageKey: "Access_Denied");
+        }
+
+        var updated = session with
+        {
+            PlatformSessionToken = selected.Data.SessionToken ?? session.PlatformSessionToken,
+            AccountClass = selected.Data.AccountClass ?? "Organization",
+            AccountProfileId = selected.Data.AccountProfileId ?? orgProfile.Id,
+            ExpiresAtUtc = selected.Data.ExpiresAtUtc == default ? session.ExpiresAtUtc : selected.Data.ExpiresAtUtc
+        };
+
+        try
+        {
+            var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
+            marker ??= Guid.NewGuid().ToString("N");
+            await sessionStore.SaveAsync(updated, marker, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            events.Record("secure_storage_failure", Dict(("operation", "ensure_org_profile_save")));
+            return new AuthResult(false, AuthFailureReason.SecureStorageFailure, SafeMessageKey: "Auth_SecureStorageFailure");
+        }
+
+        currentUser.Set(updated);
+        events.Record("ensured_organization_profile", Dict(("userId", session.UserId.ToString("D"))));
+        return new AuthResult(true, AuthFailureReason.None, updated);
+    }
+
     public async Task<AuthResult> SelectOrganizationAsync(Guid organizationId, CancellationToken ct = default)
     {
+        var profileReady = await EnsureOrganizationAccountProfileAsync(ct).ConfigureAwait(false);
+        if (!profileReady.Succeeded)
+        {
+            return profileReady;
+        }
+
         var session = currentUser.Session;
         if (session is null)
         {

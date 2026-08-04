@@ -285,11 +285,12 @@
 ---
 
 ### Phase 18 — Mobile Personal, Organization, and POS Experience
-**Status: Complete (implementation/scope)** — closed 2026-08-04 by owner request. Physical-phone validation was **partial**. **Not Device Verified.**
+**Status: Complete (implementation/scope)** — closed 2026-08-04 by owner request. Physical-phone validation was **partial**. **Not Device Verified.** Personal MVP Mobile UI completion recorded ([P18-personal-mvp-mobile-ui-completion](../reports/P18-personal-mvp-mobile-ui-completion.md)); phone scenarios remain **Retest** under Phase 19.
 
 **What closed:**
 - Mobile foundation and authentication
 - Personal account and Start a Business (continue in Mobile)
+- Personal settings, pending invitations accept, AuthShell phone layout polish (MVP follow-up)
 - Organization selection and Owner essentials
 - POS role routing and navigation
 - Owner / Manager Mobile experience surfaces
@@ -321,7 +322,7 @@
 - P19-WP05 Mobile Sales and Receipt History UI — **Code Complete**
 - P19-WP06 Mobile Customers UI — **Code Complete**
 - P19-WP07 Mobile Reports, Authorization, Navigation, and UX Hardening — **Code Complete**
-- P19-WP08 End-to-End Validation and User Closeout Checklist — **Retest** (awaiting phone confirmation)
+- P19-WP08 End-to-End Validation and User Closeout Checklist — **Retest** (awaiting phone confirmation; includes Personal MVP phone scenarios)
 
 **Approach:** Reuse existing Phase 8–18 APIs/screens; complete MAUI ops UX. Remains Open until user phone confirmation after WP08.
 

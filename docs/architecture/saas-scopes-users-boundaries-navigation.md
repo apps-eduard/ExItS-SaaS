@@ -466,9 +466,21 @@ The same person may be a lender in one relationship and borrower in another.
 
 ```text
 Personal
+├── Home
+├── Profile
+├── Settings
+├── Pending invitations
+├── Organizations (list / continue)
+├── Start a Business
+└── Account context switcher (Personal ↔ Organization)
+```
 
-Home
+Personal Utang Mobile navigation remains deferred for MVP Mobile (APIs exist under `/api/v1/personal/utang`).
+POS operational routes stay outside Personal AuthShell and require organization + entitlement.
 
+Target Personal Utang navigation (deferred on Mobile):
+
+```text
 Utang Tracker
 ├── People
 ├── I Lent
@@ -477,11 +489,6 @@ Utang Tracker
 ├── Payments
 ├── Reminders
 └── History
-
-Notifications
-Profile
-Settings
-Help
 ```
 
 ---

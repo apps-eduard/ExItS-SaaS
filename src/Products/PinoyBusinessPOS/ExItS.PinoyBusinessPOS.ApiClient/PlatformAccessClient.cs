@@ -190,6 +190,36 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
         CancellationToken ct = default) =>
         api.SendAsync<object>(HttpMethod.Put, "/api/v1/platform/auth/organization-context", request, ct);
 
+    public Task<ApiResult<IReadOnlyList<PlatformAccountProfileDto>>> GetAccountProfilesAsync(
+        CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<PlatformAccountProfileDto>>(
+            "/api/v1/platform/auth/account-profiles",
+            ct);
+
+    public Task<ApiResult<IReadOnlyList<PendingOrganizationInvitationDto>>> GetPendingOrganizationInvitationsAsync(
+        CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<PendingOrganizationInvitationDto>>(
+            "/api/v1/platform/auth/organization-invitations/pending",
+            ct);
+
+    public Task<ApiResult<PlatformMembershipDto>> AcceptOrganizationInvitationAsync(
+        string token,
+        CancellationToken ct = default) =>
+        api.SendAsync<PlatformMembershipDto>(
+            HttpMethod.Post,
+            "/api/v1/platform/auth/organization-invitations/accept",
+            new AcceptOrganizationInvitationRequest(token),
+            ct);
+
+    public Task<ApiResult<PlatformMembershipDto>> AcceptOrganizationInvitationByIdAsync(
+        Guid invitationId,
+        CancellationToken ct = default) =>
+        api.SendAsync<PlatformMembershipDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/auth/organization-invitations/{invitationId:D}/accept",
+            null,
+            ct);
+
     public Task<ApiResult<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>> GetLocalValidationQuickLoginIdentitiesAsync(
         CancellationToken ct = default) =>
         api.GetAsync<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>(

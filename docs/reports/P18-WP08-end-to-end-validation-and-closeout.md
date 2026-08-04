@@ -12,7 +12,7 @@
 | Baseline / tip commit | `f86dcd2` |
 | Production-ready | **No** |
 | Device Verified | **No** |
-| User mobile validation | **Partial** — Products and Categories phone-validated; Quick Login / access routing fixed pending final retest |
+| User mobile validation | **Partial** — Products and Categories phone-validated; Quick Login / access routing fixed pending final retest; Personal MVP UI Code Complete pending phone Retest ([completion report](P18-personal-mvp-mobile-ui-completion.md)) |
 | Date | 2026-08-04 |
 
 ## 1. Objective

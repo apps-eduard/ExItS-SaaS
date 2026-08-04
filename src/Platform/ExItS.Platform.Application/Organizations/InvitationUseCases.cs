@@ -805,3 +805,185 @@ public sealed class AcceptPendingOrganizationInvitationsForUser
         }
     }
 }
+
+/// <summary>Pending Organization Staff invitations for the signed-in invitee (Personal or Organization session).</summary>
+public sealed record PendingOrganizationInvitationForUserDto(
+    Guid Id,
+    Guid OrganizationId,
+    string OrganizationDisplayName,
+    string Role,
+    string? ProductRole,
+    DateTimeOffset ExpiresAtUtc,
+    string Status);
+
+public sealed class ListPendingOrganizationInvitationsForUser
+{
+    private readonly IOrganizationInvitationRepository _invitations;
+    private readonly IPlatformUserRepository _users;
+    private readonly IPlatformOrganizationRepository _organizations;
+    private readonly IClock _clock;
+
+    public ListPendingOrganizationInvitationsForUser(
+        IOrganizationInvitationRepository invitations,
+        IPlatformUserRepository users,
+        IPlatformOrganizationRepository organizations,
+        IClock clock)
+    {
+        _invitations = invitations;
+        _users = users;
+        _organizations = organizations;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<IReadOnlyList<PendingOrganizationInvitationForUserDto>>> ExecuteAsync(
+        PlatformUserId userId,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await _users.GetByIdAsync(userId, cancellationToken).ConfigureAwait(false);
+        if (user is null || user.Status != AccountStatus.Active)
+        {
+            return ApplicationResult<IReadOnlyList<PendingOrganizationInvitationForUserDto>>.Failure(
+                DomainErrorCodes.UserNotActive,
+                "Listing invitations requires an active Platform User.");
+        }
+
+        var pending = await _invitations
+            .ListPendingByNormalizedEmailAsync(user.NormalizedEmail, cancellationToken)
+            .ConfigureAwait(false);
+        var now = _clock.UtcNow;
+        var list = new List<PendingOrganizationInvitationForUserDto>();
+        foreach (var invitation in pending)
+        {
+            if (invitation.IsExpired(now))
+            {
+                invitation.MarkExpired(now);
+                await _invitations.UpdateAsync(invitation, cancellationToken).ConfigureAwait(false);
+                continue;
+            }
+
+            var org = await _organizations
+                .GetByIdAsync(invitation.OrganizationId, cancellationToken)
+                .ConfigureAwait(false);
+            list.Add(new PendingOrganizationInvitationForUserDto(
+                invitation.Id.Value,
+                invitation.OrganizationId.Value,
+                org?.DisplayName ?? invitation.OrganizationId.Value.ToString("D"),
+                invitation.Role.ToString(),
+                invitation.ProductRole,
+                invitation.ExpiresAtUtc,
+                nameof(InvitationStatus.Pending)));
+        }
+
+        return ApplicationResult<IReadOnlyList<PendingOrganizationInvitationForUserDto>>.Success(list);
+    }
+}
+
+/// <summary>
+/// Accept a pending invitation by id when the authenticated user is the invitee.
+/// Used by Mobile Personal home where the invitee does not paste the email token.
+/// </summary>
+public sealed class AcceptOrganizationInvitationByIdForInvitee
+{
+    private readonly IOrganizationInvitationRepository _invitations;
+    private readonly IPlatformUserRepository _users;
+    private readonly AddOrganizationMembership _addMembership;
+    private readonly AssignProductLocalRole _assignProductLocalRole;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public AcceptOrganizationInvitationByIdForInvitee(
+        IOrganizationInvitationRepository invitations,
+        IPlatformUserRepository users,
+        AddOrganizationMembership addMembership,
+        AssignProductLocalRole assignProductLocalRole,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _invitations = invitations;
+        _users = users;
+        _addMembership = addMembership;
+        _assignProductLocalRole = assignProductLocalRole;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<OrganizationMembership>> ExecuteAsync(
+        Guid invitationId,
+        PlatformUserId acceptingUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await _users.GetByIdAsync(acceptingUserId, cancellationToken).ConfigureAwait(false);
+        if (user is null || user.Status != AccountStatus.Active)
+        {
+            return ApplicationResult<OrganizationMembership>.Failure(
+                DomainErrorCodes.UserNotActive,
+                "Accepting invitations requires an active Platform User.");
+        }
+
+        var invitation = await _invitations
+            .GetByIdAsync(OrganizationInvitationId.From(invitationId), cancellationToken)
+            .ConfigureAwait(false);
+        if (invitation is null || invitation.Status != InvitationStatus.Pending)
+        {
+            return ApplicationResult<OrganizationMembership>.Failure(
+                ApplicationErrorCodes.InvitationNotFound,
+                "Invitation was not found or is no longer pending.");
+        }
+
+        try
+        {
+            if (invitation.IsExpired(_clock.UtcNow))
+            {
+                invitation.MarkExpired(_clock.UtcNow);
+                await _invitations.UpdateAsync(invitation, cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                return ApplicationResult<OrganizationMembership>.Failure(
+                    DomainErrorCodes.InvitationExpired,
+                    "Invitation has expired.");
+            }
+
+            if (!string.Equals(user.NormalizedEmail, invitation.NormalizedEmail, StringComparison.Ordinal))
+            {
+                return ApplicationResult<OrganizationMembership>.Failure(
+                    DomainErrorCodes.InvitationEmailMismatch,
+                    "Invitation email does not match the accepting user.");
+            }
+
+            var membershipResult = await _addMembership
+                .ExecuteAsync(
+                    invitation.OrganizationId,
+                    acceptingUserId,
+                    invitation.Role,
+                    exclusiveOrganizationProfile: false,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            if (!membershipResult.IsSuccess)
+            {
+                return membershipResult;
+            }
+
+            if (!string.IsNullOrWhiteSpace(invitation.ProductRole))
+            {
+                await _assignProductLocalRole
+                    .ExecuteAsync(
+                        invitation.OrganizationId,
+                        acceptingUserId,
+                        ProductCode.PinoyBusinessPos,
+                        invitation.ProductRole,
+                        invitation.InvitedByUserId ?? acceptingUserId,
+                        reason: "organization staff invitation product role",
+                        cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            invitation.Accept(acceptingUserId, user.NormalizedEmail, _clock.UtcNow);
+            await _invitations.UpdateAsync(invitation, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return membershipResult;
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<OrganizationMembership>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}

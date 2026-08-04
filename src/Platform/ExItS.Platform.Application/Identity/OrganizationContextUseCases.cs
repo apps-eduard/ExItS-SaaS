@@ -42,11 +42,13 @@ public sealed class ListEligibleOrganizationsForSession
                 "Session is invalid.");
         }
 
-        if (session.AccountClass is not AccountClass.Organization)
+        // Personal sessions may list their own memberships (invite accept / Start Business handoff).
+        // Platform sessions must not use this identity-bound listing.
+        if (session.AccountClass is not (AccountClass.Organization or AccountClass.Personal))
         {
             return ApplicationResult<IReadOnlyList<EligibleOrganizationDto>>.Failure(
                 ApplicationErrorCodes.AccountScopeDenied,
-                "Organization listing requires an Organization account session.");
+                "Organization listing requires a Personal or Organization account session.");
         }
 
         var eligible = await LoadEligibleAsync(session.UserId, cancellationToken).ConfigureAwait(false);

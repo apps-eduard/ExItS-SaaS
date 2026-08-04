@@ -26,7 +26,7 @@ The application remains **not production-ready**. Phase 14 remains **In Progress
 | WP | Focus | Documented status |
 |---|---|---|
 | [P18-WP01](../reports/P18-WP01-mobile-foundation-and-authentication.md) | Mobile foundation and authentication | Code Complete and Build Verified |
-| [P18-WP02](../reports/P18-WP02-personal-account-and-start-business.md) | Personal account and Start a Business | Code Complete and Build Verified |
+| [P18-WP02](../reports/P18-WP02-personal-account-and-start-business.md) | Personal account and Start a Business | Code Complete and Build Verified (+ Personal MVP UI follow-up) |
 | [P18-WP03](../reports/P18-WP03-organization-selection-and-owner-essentials.md) | Organization selection and Owner essentials | Code Complete and Build Verified |
 | [P18-WP04](../reports/P18-WP04-pos-role-routing-and-navigation.md) | POS role routing and navigation | Code Complete and Build Verified |
 | [P18-WP05](../reports/P18-WP05-pos-owner-and-manager-mobile-experience.md) | POS Owner and Manager Mobile experience | Code Complete and Build Verified |

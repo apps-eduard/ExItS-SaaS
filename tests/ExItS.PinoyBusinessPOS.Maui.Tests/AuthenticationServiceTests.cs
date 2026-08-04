@@ -385,7 +385,9 @@ public sealed class AuthenticationServiceTests
         Assert.Equal(orgId, await prefs.GetSelectedOrganizationIdAsync());
         Assert.True(select.Session!.HasPosAccess);
         Assert.Equal("Active", select.Session.SubscriptionStatus);
-        Assert.Equal(3, select.Session.EnabledFeatureCodes!.Count);
+        Assert.Contains("customer-credit-view", select.Session.EnabledFeatureCodes!);
+        Assert.Contains("customer-credit-repay", select.Session.EnabledFeatureCodes!);
+        Assert.Contains("customer-credit-create", select.Session.EnabledFeatureCodes!);
         Assert.Equal("Active", await tokens.GetAsync(SecureTokenKeys.SubscriptionStatus));
         Assert.Contains("customer-credit-view", await tokens.GetAsync(SecureTokenKeys.FeatureGrants) ?? string.Empty);
     }
@@ -624,6 +626,19 @@ public sealed class AuthenticationServiceTests
 
         public Task<ApiResult<object>> SetOrganizationContextAsync(SetOrganizationContextRequest request, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<object>.Success(new object()));
+
+        public Task<ApiResult<IReadOnlyList<PlatformAccountProfileDto>>> GetAccountProfilesAsync(CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<IReadOnlyList<PlatformAccountProfileDto>>.Success(Array.Empty<PlatformAccountProfileDto>()));
+
+        public Task<ApiResult<IReadOnlyList<PendingOrganizationInvitationDto>>> GetPendingOrganizationInvitationsAsync(CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<IReadOnlyList<PendingOrganizationInvitationDto>>.Success(
+                Array.Empty<PendingOrganizationInvitationDto>()));
+
+        public Task<ApiResult<PlatformMembershipDto>> AcceptOrganizationInvitationAsync(string token, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PlatformMembershipDto>.Unavailable());
+
+        public Task<ApiResult<PlatformMembershipDto>> AcceptOrganizationInvitationByIdAsync(Guid invitationId, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PlatformMembershipDto>.Unavailable());
 
         public Task<ApiResult<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>> GetLocalValidationQuickLoginIdentitiesAsync(
             CancellationToken ct = default) =>

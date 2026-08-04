@@ -46,6 +46,19 @@ Provide the end-to-end Mobile POS ops validation checklist for physical-phone co
 | Open Shift cannot load registers / shows `No available register` | Eligible Active register(s) listed (e.g. Main Register) |
 | Start Shift disabled | Enabled once a register is selected |
 
+### Personal MVP Mobile (Phase 18 follow-up) — Retest on phone
+
+See [P18-personal-mvp-mobile-ui-completion](P18-personal-mvp-mobile-ui-completion.md).
+
+- [ ] New user with no organization lands on Personal home (empty orgs + Start a Business)
+- [ ] Multi-org user lists organizations and switches Personal ↔ Organization
+- [ ] Pending invitation accept (list and/or token)
+- [ ] App restart restores Personal when no organization is bound
+- [ ] Direct POS route while Personal is denied / redirected
+- [ ] Samsung layout: Personal AuthShell without excess bottom padding
+
+Phase 19 remains **Open** until the user confirms phone validation.
+
 ## 4. Explicit non-claims
 
 - **Not Device Verified**

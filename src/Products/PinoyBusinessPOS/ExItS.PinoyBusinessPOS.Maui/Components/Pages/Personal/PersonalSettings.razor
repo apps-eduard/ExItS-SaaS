@@ -1,0 +1,216 @@
+@page "/personal/settings"
+@layout Layout.AuthShell
+@implements IDisposable
+@inject ThemeController ThemeCtl
+@inject DensityController DensityCtl
+@inject CultureController CultureCtl
+@inject IAppInfoService AppInfo
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IOfflineOperationQueue OfflineQueue
+@inject ApiStatusLocalizer ApiLocalizer
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Personal_SettingsTitle"]" Subtitle="@L["Personal_SettingsSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoHome">@L["Personal_BackHome"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (!_ready)
+    {
+        <Spinner />
+    }
+    else if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else
+    {
+        <Section Title="@L["Settings_SessionSectionTitle"]">
+            <Stack Gap="3">
+                <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="2">
+                    <span>@L["AccessConfirm_UserLabel"]</span>
+                    <span class="pos-muted pos-wrap">@(CurrentUser.Session?.DisplayName)</span>
+                </Stack>
+                <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="2">
+                    <span>@L["Personal_AccountClass"]</span>
+                    <span class="pos-muted pos-wrap">@(CurrentUser.Session?.AccountClass ?? L["Personal_AccountClassDefault"])</span>
+                </Stack>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoOrganizationSelect">@L["Settings_SwitchOrganization"]</Button>
+                <Button Variant="ButtonVariant.Danger" OnClick="OpenLogoutAsync">@L["Auth_Logout"]</Button>
+            </Stack>
+            <ConfirmDialog @bind-Visible="_logoutOpen"
+                           Title="@L["Auth_LogoutConfirmTitle"]"
+                           Message="@_logoutMessage"
+                           Danger="true"
+                           IsLoading="_logoutBusy"
+                           OnConfirm="LogoutAsync"
+                           OnCancel="() => _logoutOpen = false" />
+        </Section>
+
+        @if (_preferenceError is not null)
+        {
+            <InlineMessage Tone="InlineMessageTone.Danger">@_preferenceError</InlineMessage>
+        }
+
+        <Section Title="@L["Settings_AppearanceSectionTitle"]">
+            <Stack Gap="5">
+                <Select Label="@L["Settings_ThemeLabel"]" Value="@ThemeCtl.Current.ToString()" ValueChanged="OnThemeChangedAsync" Options="ThemeOptions" />
+                <Select Label="@L["Settings_DensityLabel"]" Value="@DensityCtl.Current.ToString()" ValueChanged="OnDensityChangedAsync" Options="DensityOptions" />
+                <Select Label="@L["Settings_LanguageLabel"]" Value="@CultureCtl.Current" ValueChanged="OnCultureChangedAsync" Options="CultureOptions" />
+            </Stack>
+        </Section>
+
+        <Section Title="@L["Settings_AboutSectionTitle"]">
+            <Stack Gap="3">
+                <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="2">
+                    <span>@L["Settings_AppVersionLabel"]</span>
+                    <span class="pos-muted">@AppInfo.Version</span>
+                </Stack>
+                <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="2">
+                    <span>@L["Home_EnvironmentLabel"]</span>
+                    <span class="pos-muted">@EnvironmentLabel</span>
+                </Stack>
+            </Stack>
+        </Section>
+    }
+</Page>
+
+@code {
+    private bool _ready;
+    private bool _authenticated;
+    private bool _logoutOpen;
+    private bool _logoutBusy;
+    private string _logoutMessage = string.Empty;
+    private string? _preferenceError;
+
+    private IReadOnlyList<SelectOption> ThemeOptions =>
+    [
+        new(nameof(ThemePreference.System), L["Settings_Theme_System"]),
+        new(nameof(ThemePreference.Light), L["Settings_Theme_Light"]),
+        new(nameof(ThemePreference.Dark), L["Settings_Theme_Dark"]),
+    ];
+
+    private IReadOnlyList<SelectOption> DensityOptions =>
+    [
+        new(nameof(DensityMode.Compact), L["Settings_Density_Compact"]),
+        new(nameof(DensityMode.Comfortable), L["Settings_Density_Comfortable"]),
+    ];
+
+    private IReadOnlyList<SelectOption> CultureOptions =>
+    [
+        new(MauiCulturePreferenceStore.English, L["Settings_Language_English"]),
+        new(MauiCulturePreferenceStore.Filipino, L["Settings_Language_Filipino"]),
+    ];
+
+    private string EnvironmentLabel =>
+        string.Equals(AppInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase)
+            ? L["Env_Development"]
+            : string.Equals(AppInfo.EnvironmentName, "Testing", StringComparison.OrdinalIgnoreCase)
+                ? L["Env_Testing"]
+                : L["Env_Production"];
+
+    protected override async Task OnInitializedAsync()
+    {
+        ThemeCtl.Changed += OnChangedAsync;
+        DensityCtl.Changed += OnChangedAsync;
+        CultureCtl.Changed += OnChangedAsync;
+
+        if (!CurrentUser.IsAuthenticated)
+        {
+            var restore = await Auth.RestoreSessionAsync();
+            _authenticated = restore.Succeeded;
+        }
+        else
+        {
+            _authenticated = true;
+        }
+
+        _ready = true;
+    }
+
+    private void GoHome() => Nav.NavigateTo("/personal");
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+    private void GoOrganizationSelect() => Nav.NavigateTo("/organization-select");
+
+    private async Task OpenLogoutAsync()
+    {
+        _logoutMessage = L["Auth_LogoutConfirmMessage"];
+        try
+        {
+            if (await OfflineQueue.HasUnsyncedWorkAsync())
+            {
+                _logoutMessage = $"{L["Auth_LogoutConfirmMessage"]} {L["Offline_LogoutUnsyncedWarning"]}";
+            }
+        }
+        catch
+        {
+            // Keep default logout message when queue is unavailable.
+        }
+
+        _logoutOpen = true;
+    }
+
+    private async Task LogoutAsync()
+    {
+        _logoutBusy = true;
+        try
+        {
+            await Auth.LogoutAsync();
+            Nav.NavigateTo("/signin", replace: true);
+        }
+        finally
+        {
+            _logoutBusy = false;
+            _logoutOpen = false;
+        }
+    }
+
+    private async Task OnThemeChangedAsync(string? value)
+    {
+        _preferenceError = null;
+        if (Enum.TryParse<ThemePreference>(value, out var preference))
+        {
+            if (!await ThemeCtl.SetThemeAsync(preference))
+            {
+                _preferenceError = ApiLocalizer.PreferenceSaveFailed;
+            }
+        }
+    }
+
+    private async Task OnDensityChangedAsync(string? value)
+    {
+        _preferenceError = null;
+        if (Enum.TryParse<DensityMode>(value, out var density))
+        {
+            if (!await DensityCtl.SetDensityAsync(density))
+            {
+                _preferenceError = ApiLocalizer.PreferenceSaveFailed;
+            }
+        }
+    }
+
+    private async Task OnCultureChangedAsync(string? value)
+    {
+        _preferenceError = null;
+        if (!string.IsNullOrEmpty(value))
+        {
+            if (!await CultureCtl.SetCultureAsync(value))
+            {
+                _preferenceError = ApiLocalizer.PreferenceSaveFailed;
+            }
+        }
+    }
+
+    private async Task OnChangedAsync() => await InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        ThemeCtl.Changed -= OnChangedAsync;
+        DensityCtl.Changed -= OnChangedAsync;
+        CultureCtl.Changed -= OnChangedAsync;
+    }
+}

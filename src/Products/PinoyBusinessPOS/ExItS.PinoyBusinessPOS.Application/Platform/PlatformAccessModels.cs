@@ -238,6 +238,24 @@ public sealed record PlatformEntitlementSnapshotDto(
 
 public sealed record SetOrganizationContextRequest(Guid? OrganizationId);
 
+public sealed record PlatformAccountProfileDto(
+    Guid Id,
+    Guid UserIdentityId,
+    string AccountClass,
+    string AllowedScope,
+    string Status);
+
+public sealed record PendingOrganizationInvitationDto(
+    Guid Id,
+    Guid OrganizationId,
+    string OrganizationDisplayName,
+    string Role,
+    string? ProductRole,
+    DateTimeOffset ExpiresAtUtc,
+    string Status);
+
+public sealed record AcceptOrganizationInvitationRequest(string Token);
+
 /// <summary>Local Validation Quick Login identity (Platform API, non-Production).</summary>
 public sealed record LocalValidationQuickLoginIdentityDto(
     string Key,
@@ -351,6 +369,20 @@ public interface IPlatformAccessClient
 
     Task<ApiResult<object>> SetOrganizationContextAsync(
         SetOrganizationContextRequest request,
+        CancellationToken ct = default);
+
+    Task<ApiResult<IReadOnlyList<PlatformAccountProfileDto>>> GetAccountProfilesAsync(
+        CancellationToken ct = default);
+
+    Task<ApiResult<IReadOnlyList<PendingOrganizationInvitationDto>>> GetPendingOrganizationInvitationsAsync(
+        CancellationToken ct = default);
+
+    Task<ApiResult<PlatformMembershipDto>> AcceptOrganizationInvitationAsync(
+        string token,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PlatformMembershipDto>> AcceptOrganizationInvitationByIdAsync(
+        Guid invitationId,
         CancellationToken ct = default);
 
     /// <summary>

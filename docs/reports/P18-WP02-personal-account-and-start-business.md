@@ -30,10 +30,12 @@ Personal Account on Mobile only (MVP). Full Org Admin remains Web.
 
 ## 5. MAUI screens and flows completed
 
-- `/personal`, `/personal/profile`, `/start-business`
+- `/personal`, `/personal/profile`, `/personal/settings`, `/personal/invitations/accept`, `/start-business`
 - Organization list on personal home with continue into org / POS when entitled
+- Pending organization invitations (list + accept-by-id + token accept)
 - Sign-in with no organization navigates to Personal home
 - Continuation after Start a Business stays in Mobile (`/org` and POS gate)
+- AuthShell layout without POS bottom-nav padding (phone-friendly)
 
 ## 6. Files / components changed (representative)
 
@@ -62,17 +64,18 @@ Start Business requires authenticated Platform session. Created organization is 
 
 ## 11. Known limitations
 
-- Personal Utang deep screens not expanded in Phase 18 (out of Phase 18 POS journey focus)
+- Personal Utang deep screens not expanded on Mobile (deferred; Platform/Admin + Personal APIs remain)
+- Organization staff invitee **decline** not supported (admin revoke only); accept list + token paths are on Mobile
 - Staff invitation delivery still depends on Platform email/outbound configuration
 
 ## 12. Deferred items
 
-Device E2E of register → Start Business; richer personal settings beyond profile display.
+Device E2E of register → Start Business; Personal Utang Mobile; invitee decline.
 
 ## 13. Current status
 
-Implemented · Tested · Build Verified · Pending User Validation (phase-level; see P18-WP08)
+Implemented · Tested · Build Verified · Personal MVP UI completion recorded in [P18-personal-mvp-mobile-ui-completion](P18-personal-mvp-mobile-ui-completion.md) · Pending User Validation (phase-level; see P18-WP08 / P19-WP08 Retest)
 
 ## 14. Commit reference
 
-Implementation: `4b8b727`. Documentation reconciliation: Phase 18 docs tip on `main`.
+Implementation: `4b8b727`. Personal MVP UI completion: see tip commit after Personal Mobile audit. Documentation reconciliation on `main`.

@@ -5,7 +5,9 @@ namespace ExItS.PinoyBusinessPOS.ApiClient;
 
 /// <summary>
 /// Attaches Platform session auth for Personal/Org Owner Platform routes.
-/// Bearer POS token routes under /api/v1/platform/auth/token* remain Bearer-first.
+/// Bearer POS token routes under introspect remain Bearer-first.
+/// <c>/auth/token</c> attaches PlatformSession when a session exists so GrantType=session works
+/// (password grant ignores the session header).
 /// </summary>
 public sealed class PlatformSessionHeaderHandler(ICurrentUserContext currentUser) : DelegatingHandler
 {
@@ -45,11 +47,16 @@ public sealed class PlatformSessionHeaderHandler(ICurrentUserContext currentUser
             return false;
         }
 
-        // POS bearer-token endpoints must keep Authorization: Bearer.
-        if (path.StartsWith("/api/v1/platform/auth/token", StringComparison.OrdinalIgnoreCase)
-            || path.Equals("/api/v1/platform/auth/introspect", StringComparison.OrdinalIgnoreCase))
+        // Introspect must keep Authorization: Bearer.
+        if (path.Equals("/api/v1/platform/auth/introspect", StringComparison.OrdinalIgnoreCase))
         {
             return false;
+        }
+
+        // Token issue: attach session when present (needed for GrantType=session).
+        if (path.StartsWith("/api/v1/platform/auth/token", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
         }
 
         // Session-scoped auth helpers (eligible orgs + org context) require Platform session.

@@ -3,7 +3,11 @@ using ExItS.Platform.Api.Authentication;
 using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Domain.Audit;
+using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
+using ExItS.Platform.Domain.Organizations;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 
@@ -408,10 +412,96 @@ internal static class AuthEndpoints
             return Results.Ok(result.Value);
         });
 
+        // Identity-bound organization staff invitation surfaces for Personal Mobile MVP.
+        app.MapGet("/api/v1/platform/auth/organization-invitations/pending", async (
+            HttpContext http,
+            ListPendingOrganizationInvitationsForUser useCase,
+            CancellationToken ct) =>
+        {
+            if (!TryGetAuthenticatedUserId(http, out var userId))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authentication is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var result = await useCase
+                .ExecuteAsync(PlatformUserId.From(userId), ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        app.MapPost("/api/v1/platform/auth/organization-invitations/accept", async (
+            AcceptInvitationTokenRequest body,
+            AcceptOrganizationInvitation useCase,
+            PlatformMembershipAuthz membershipAuthz,
+            CancellationToken ct) =>
+        {
+            var actor = membershipAuthz.Inner.CurrentActor;
+            if (actor.PlatformUserId is null)
+            {
+                return PlatformApiResults.Problem(
+                    DomainErrorCodes.AuthorizationDenied,
+                    "Accepting an invitation requires an authenticated Platform User.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var result = await useCase
+                .ExecuteAsync(body.Token ?? string.Empty, actor.PlatformUserId, ct)
+                .ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await membershipAuthz.Inner.AuditSucceededAsync(
+                    PlatformAuditActions.InvitationAccepted,
+                    nameof(OrganizationInvitation),
+                    result.Value!.Id.Value.ToString("D"),
+                    result.Value.OrganizationId.Value,
+                    summary: "Accepted organization invitation (auth).",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, m => Results.Ok(MembershipQueryService.Map(m)));
+        });
+
+        app.MapPost("/api/v1/platform/auth/organization-invitations/{invitationId:guid}/accept", async (
+            Guid invitationId,
+            AcceptOrganizationInvitationByIdForInvitee useCase,
+            PlatformMembershipAuthz membershipAuthz,
+            CancellationToken ct) =>
+        {
+            var actor = membershipAuthz.Inner.CurrentActor;
+            if (actor.PlatformUserId is null)
+            {
+                return PlatformApiResults.Problem(
+                    DomainErrorCodes.AuthorizationDenied,
+                    "Accepting an invitation requires an authenticated Platform User.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var result = await useCase
+                .ExecuteAsync(invitationId, actor.PlatformUserId, ct)
+                .ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await membershipAuthz.Inner.AuditSucceededAsync(
+                    PlatformAuditActions.InvitationAccepted,
+                    nameof(OrganizationInvitation),
+                    invitationId.ToString("D"),
+                    result.Value!.OrganizationId.Value,
+                    summary: "Accepted organization invitation by id (auth).",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, m => Results.Ok(MembershipQueryService.Map(m)));
+        });
+
         return app;
     }
 
     private sealed record SelectAccountProfileRequest(Guid AccountProfileId);
+
+    private sealed record AcceptInvitationTokenRequest(string? Token);
 
     private static string? ExtractBearerToken(HttpContext http)
     {

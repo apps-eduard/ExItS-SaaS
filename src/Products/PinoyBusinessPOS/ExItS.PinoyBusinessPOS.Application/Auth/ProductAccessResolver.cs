@@ -31,6 +31,7 @@ public sealed class ProductAccessResolver(IPlatformAccessClient accessClient) : 
         var authOrgs = await accessClient.GetAuthEligibleOrganizationsAsync(ct).ConfigureAwait(false);
         if (authOrgs.IsSuccess && authOrgs.Data is not null && authOrgs.Data.Count > 0)
         {
+            // Membership eligibility only. POS entitlement is confirmed on SelectOrganization/bind.
             return authOrgs.Data
                 .Select(o => new EligibleOrganization(
                     o.OrganizationId,
@@ -38,7 +39,7 @@ public sealed class ProductAccessResolver(IPlatformAccessClient accessClient) : 
                     o.MembershipId,
                     "Active",
                     AccessAllowed: true,
-                    AccessReasonCode: "allowed",
+                    AccessReasonCode: "membership_eligible",
                     MembershipRole: o.MembershipRole))
                 .ToArray();
         }
@@ -65,18 +66,12 @@ public sealed class ProductAccessResolver(IPlatformAccessClient accessClient) : 
             var allowed = evaluation.IsSuccess && evaluation.Data?.Allowed == true;
             var reason = evaluation.Data?.ReasonCode ?? "unknown";
 
-            // Show only orgs that pass commercial POS access (fail closed for others).
-            if (!allowed)
-            {
-                continue;
-            }
-
             list.Add(new EligibleOrganization(
                 membership.OrganizationId,
                 displayName,
                 membership.Id,
                 membership.Status,
-                true,
+                allowed,
                 reason,
                 membership.Role));
         }

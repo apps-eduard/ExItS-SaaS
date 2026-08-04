@@ -1,0 +1,117 @@
+@page "/personal/invitations/accept"
+@layout Layout.AuthShell
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    <PageHeader Title="@L["Personal_AcceptInvitationTitle"]" Subtitle="@L["Personal_AcceptInvitationSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoHome">@L["Personal_BackHome"]</Button>
+        </Actions>
+    </PageHeader>
+
+    @if (!_ready)
+    {
+        <Spinner />
+    }
+    else if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else if (_done)
+    {
+        <InlineMessage Tone="InlineMessageTone.Success">@L["Personal_AcceptInvitationSuccess"]</InlineMessage>
+        <FormActions>
+            <Button Variant="ButtonVariant.Primary" OnClick="GoHome">@L["Personal_BackHome"]</Button>
+        </FormActions>
+    }
+    else
+    {
+        <FormValidationSummary Messages="_errors" />
+        <FormGroup Title="@L["Personal_InvitationTokenLabel"]">
+            <TextInput Label="@L["Personal_InvitationTokenLabel"]" Hint="@L["Personal_InvitationTokenHint"]" @bind-Value="_token" Disabled="_busy" />
+        </FormGroup>
+        <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_DeclineDeferredHint"]</InlineMessage>
+        <FormActions>
+            <Button IsLoading="_busy" Disabled="_busy || string.IsNullOrWhiteSpace(_token)" OnClick="AcceptAsync">@L["Personal_AcceptInvitation"]</Button>
+        </FormActions>
+    }
+</Page>
+
+@code {
+    private bool _ready;
+    private bool _authenticated;
+    private bool _busy;
+    private bool _done;
+    private string _token = string.Empty;
+    private List<string> _errors = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!CurrentUser.IsAuthenticated)
+        {
+            var restore = await Auth.RestoreSessionAsync();
+            _authenticated = restore.Succeeded;
+        }
+        else
+        {
+            _authenticated = true;
+        }
+
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        var query = uri.Query.TrimStart('?');
+        foreach (var part in query.Split('&', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var eq = part.IndexOf('=');
+            if (eq <= 0)
+            {
+                continue;
+            }
+
+            var key = Uri.UnescapeDataString(part[..eq]);
+            if (!string.Equals(key, "token", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            _token = Uri.UnescapeDataString(part[(eq + 1)..]);
+            break;
+        }
+
+        _ready = true;
+    }
+
+    private async Task AcceptAsync()
+    {
+        _errors = [];
+        if (string.IsNullOrWhiteSpace(_token))
+        {
+            _errors.Add(L["Personal_InvitationTokenRequired"]);
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Platform.AcceptOrganizationInvitationAsync(_token.Trim());
+            if (!result.IsSuccess)
+            {
+                _errors.Add(result.Error?.Detail ?? L["Personal_AcceptInvitationFailed"]);
+                return;
+            }
+
+            await Auth.EnsureOrganizationAccountProfileAsync();
+            _done = true;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void GoHome() => Nav.NavigateTo("/personal");
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+}

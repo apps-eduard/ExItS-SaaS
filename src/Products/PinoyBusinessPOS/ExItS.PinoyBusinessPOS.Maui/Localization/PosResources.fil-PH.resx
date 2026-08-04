@@ -232,6 +232,7 @@
   <data name="SignIn_QuickLoginHint" xml:space="preserve"><value>Isang entry bawat user. Gumagamit ng Local Validation shared password (tulad ng Admin Quick Login).</value></data>
   <data name="SignIn_QuickLoginPlaceholder" xml:space="preserve"><value>Pumili ng user…</value></data>
   <data name="SignIn_QuickLoginUnavailable" xml:space="preserve"><value>Walang available na Quick Login identities</value></data>
+  <data name="SignIn_AccessTokenMissing" xml:space="preserve"><value>Nakapag-sign in, pero walang na-issue na POS access token. Tingnan ang Local Validation shared password at subukan ulit.</value></data>
   <data name="OrgSelect_Title" xml:space="preserve"><value>Pumili ng organization</value></data>
   <data name="OrgSelect_Subtitle" xml:space="preserve"><value>Mga organization lang na may active PinoyBusinessPOS commercial access ang ipinapakita.</value></data>
   <data name="OrgSelect_SubtitleOwner" xml:space="preserve"><value>Pumili ng Personal o buksan ang organisasyon na pagmamay-ari mo.</value></data>
@@ -280,7 +281,7 @@
   <data name="Access_ProductInactive" xml:space="preserve"><value>Hindi active ang product.</value></data>
   <data name="Access_SubscriptionIneligible" xml:space="preserve"><value>Hindi Trialing o Active ang subscription.</value></data>
   <data name="Access_EntitlementMissing" xml:space="preserve"><value>Nawawala ang required entitlement.</value></data>
-  <data name="Access_EntitlementStale" xml:space="preserve"><value>Luma ang entitlement snapshot.</value></data>
+  <data name="Access_EntitlementStale" xml:space="preserve"><value>Nag-expire ang refresh window ng store access. Pindutin ang Enable POS access para mag-refresh at magpatuloy.</value></data>
   <data name="Access_EntitlementDenied" xml:space="preserve"><value>Tinatanggihan ng entitlement state ang access.</value></data>
   <data name="Home_SessionTitle" xml:space="preserve"><value>Naka-sign in</value></data>
   <data name="Settings_SessionSectionTitle" xml:space="preserve"><value>Session</value></data>
@@ -768,6 +769,7 @@
   <data name="Sales_Field_PaymentMethod" xml:space="preserve"><value>Paraan ng bayad</value></data>
   <data name="Sales_Field_Subtotal" xml:space="preserve"><value>Subtotal</value></data>
   <data name="Sales_Field_Tax" xml:space="preserve"><value>Buwis</value></data>
+  <data name="Sales_Field_Total" xml:space="preserve"><value>Kabuuang babayaran</value></data>
   <data name="Sales_Field_ReceiptHeader" xml:space="preserve"><value>Header ng resibo</value></data>
   <data name="Sales_Field_BusinessAddress" xml:space="preserve"><value>Address</value></data>
   <data name="Sales_Field_ContactPhone" xml:space="preserve"><value>Telepono</value></data>
@@ -1382,6 +1384,30 @@
   <data name="Personal_BackHome" xml:space="preserve"><value>Back to personal home</value></data>
   <data name="Personal_AccountClass" xml:space="preserve"><value>Account class</value></data>
   <data name="Personal_AccountClassDefault" xml:space="preserve"><value>Personal</value></data>
+  <data name="Personal_SettingsLink" xml:space="preserve"><value>Settings</value></data>
+  <data name="Personal_SettingsTitle" xml:space="preserve"><value>Personal settings</value></data>
+  <data name="Personal_SettingsSubtitle" xml:space="preserve"><value>Appearance and session controls for Personal mode.</value></data>
+  <data name="Personal_LoadErrorTitle" xml:space="preserve"><value>Could not load Personal home</value></data>
+  <data name="Personal_LoadErrorMessage" xml:space="preserve"><value>Check your connection and try again.</value></data>
+  <data name="Personal_InvitationsSection" xml:space="preserve"><value>Pending invitations</value></data>
+  <data name="Personal_NoInvitationsTitle" xml:space="preserve"><value>No pending invitations</value></data>
+  <data name="Personal_NoInvitationsMessage" xml:space="preserve"><value>When a business invites you, it appears here. You can also accept with an invitation token.</value></data>
+  <data name="Personal_InvitationsLoadError" xml:space="preserve"><value>Could not load invitations.</value></data>
+  <data name="Personal_AcceptInvitation" xml:space="preserve"><value>Accept invitation</value></data>
+  <data name="Personal_AcceptByToken" xml:space="preserve"><value>Accept with token</value></data>
+  <data name="Personal_AcceptInvitationTitle" xml:space="preserve"><value>Accept invitation</value></data>
+  <data name="Personal_AcceptInvitationSubtitle" xml:space="preserve"><value>Paste the invitation token from your email to join an organization.</value></data>
+  <data name="Personal_AcceptInvitationSuccess" xml:space="preserve"><value>Invitation accepted. Return to Personal home to open the organization.</value></data>
+  <data name="Personal_AcceptInvitationFailed" xml:space="preserve"><value>Could not accept the invitation.</value></data>
+  <data name="Personal_InvitationTokenLabel" xml:space="preserve"><value>Invitation token</value></data>
+  <data name="Personal_InvitationTokenHint" xml:space="preserve"><value>Use the token from the invitation email or deep link.</value></data>
+  <data name="Personal_InvitationTokenRequired" xml:space="preserve"><value>Invitation token is required.</value></data>
+  <data name="Personal_InvitationExpires" xml:space="preserve"><value>Expires</value></data>
+  <data name="Personal_DeclineDeferredHint" xml:space="preserve"><value>Invitee decline is not supported yet. Ask the organization to revoke unused invitations.</value></data>
+  <data name="Personal_LaunchPos" xml:space="preserve"><value>Open POS</value></data>
+  <data name="Personal_PosReady" xml:space="preserve"><value>POS access available</value></data>
+  <data name="Personal_OrgEssentialsOnly" xml:space="preserve"><value>Organization essentials (POS not entitled yet)</value></data>
+  <data name="Personal_MembershipReady" xml:space="preserve"><value>Active membership — continue to open the organization or POS when entitled</value></data>
   <data name="StartBusiness_Title" xml:space="preserve"><value>Start a Business</value></data>
   <data name="StartBusiness_Subtitle" xml:space="preserve"><value>Create an organization and continue in Mobile.</value></data>
   <data name="StartBusiness_FormTitle" xml:space="preserve"><value>Business details</value></data>
@@ -1418,6 +1444,7 @@
   <data name="Org_StaffLink" xml:space="preserve"><value>Staff</value></data>
   <data name="Org_SubscriptionLink" xml:space="preserve"><value>Subscription and entitlement</value></data>
   <data name="Org_EnterPos" xml:space="preserve"><value>Continue to POS</value></data>
+  <data name="Org_EnablePos" xml:space="preserve"><value>I-enable ang POS access</value></data>
   <data name="Org_WebAdminReminder" xml:space="preserve"><value>For full organization administration, use the Web application.</value></data>
   <data name="Org_LoadFailed" xml:space="preserve"><value>Could not load organization details.</value></data>
   <data name="Org_ProfileTitle" xml:space="preserve"><value>Organization profile</value></data>
