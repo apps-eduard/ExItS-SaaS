@@ -173,4 +173,6 @@ public static class ApplicationErrorCodes
     public const string CatalogImportEmpty = "application.global_catalog.import.empty";
     public const string CatalogImportTooManyRows = "application.global_catalog.import.too_many_rows";
     public const string CatalogImportHeadersInvalid = "application.global_catalog.import.headers.invalid";
+    public const string CatalogImportCategoryWillCreate =
+        "application.global_catalog.import.category.will_create";
 }

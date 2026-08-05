@@ -173,7 +173,8 @@ public static class CatalogImportRowMapper
             }
 
             Guid? categoryId = null;
-            var categoryName = NullIfEmpty(CatalogImportRules.SanitizeCell(rawCategoryName));
+            string? categoryName = null;
+            var rawCategoryNameSanitized = NullIfEmpty(CatalogImportRules.SanitizeCell(rawCategoryName));
             var categoryIdText = CatalogImportRules.SanitizeCell(rawCategoryId);
             if (!string.IsNullOrWhiteSpace(categoryIdText))
             {
@@ -188,7 +189,7 @@ public static class CatalogImportRowMapper
                         description,
                         sku,
                         barcode,
-                        categoryName: categoryName,
+                        categoryName: rawCategoryNameSanitized,
                         suggestedPrice: price,
                         suggestedCost: cost,
                         imageReference: image,
@@ -210,7 +211,7 @@ public static class CatalogImportRowMapper
                         description,
                         sku,
                         barcode,
-                        categoryName: categoryName,
+                        categoryName: rawCategoryNameSanitized,
                         suggestedPrice: price,
                         suggestedCost: cost,
                         imageReference: image,
@@ -219,53 +220,71 @@ public static class CatalogImportRowMapper
                 }
 
                 categoryId = category.Id.Value;
-                categoryName ??= category.Name;
+                categoryName = category.Name;
             }
-            else if (!string.IsNullOrWhiteSpace(categoryName))
+            else if (!string.IsNullOrWhiteSpace(rawCategoryNameSanitized))
             {
+                string normalizedCategoryName;
+                try
+                {
+                    normalizedCategoryName = GlobalCatalogRules.NormalizeName(rawCategoryNameSanitized);
+                }
+                catch (DomainException ex)
+                {
+                    return CatalogImportItem.CreateFailed(
+                        row.RowNumber,
+                        name,
+                        unit.ToString(),
+                        ex.ErrorCode,
+                        ex.Message,
+                        description,
+                        sku,
+                        barcode,
+                        categoryName: rawCategoryNameSanitized,
+                        suggestedPrice: price,
+                        suggestedCost: cost,
+                        imageReference: image,
+                        searchTagsRaw: NullIfEmpty(CatalogImportRules.SanitizeCell(rawTags)),
+                        businessTypesRaw: NullIfEmpty(CatalogImportRules.SanitizeCell(rawBusinessTypes)));
+                }
+
                 var matches = await categories
-                    .FindByNormalizedNameAsync(categoryName.ToUpperInvariant(), cancellationToken)
+                    .FindByNormalizedNameAsync(normalizedCategoryName.ToUpperInvariant(), cancellationToken)
                     .ConfigureAwait(false);
+
                 if (matches.Count == 0)
                 {
-                    return CatalogImportItem.CreateFailed(
-                        row.RowNumber,
-                        name,
-                        unit.ToString(),
-                        ApplicationErrorCodes.GlobalCategoryNotFound,
-                        $"Unknown category '{categoryName}'.",
-                        description,
-                        sku,
-                        barcode,
-                        categoryName: categoryName,
-                        suggestedPrice: price,
-                        suggestedCost: cost,
-                        imageReference: image,
-                        searchTagsRaw: NullIfEmpty(CatalogImportRules.SanitizeCell(rawTags)),
-                        businessTypesRaw: NullIfEmpty(CatalogImportRules.SanitizeCell(rawBusinessTypes)));
+                    // Unknown category: keep Pending — Confirm will create a root Active category.
+                    categoryId = null;
+                    categoryName = normalizedCategoryName;
                 }
-
-                if (matches.Count > 1)
+                else
                 {
-                    return CatalogImportItem.CreateFailed(
-                        row.RowNumber,
-                        name,
-                        unit.ToString(),
-                        DomainErrorCodes.CatalogImportRowInvalid,
-                        $"Category name '{categoryName}' is ambiguous; use CategoryId.",
-                        description,
-                        sku,
-                        barcode,
-                        categoryName: categoryName,
-                        suggestedPrice: price,
-                        suggestedCost: cost,
-                        imageReference: image,
-                        searchTagsRaw: NullIfEmpty(CatalogImportRules.SanitizeCell(rawTags)),
-                        businessTypesRaw: NullIfEmpty(CatalogImportRules.SanitizeCell(rawBusinessTypes)));
-                }
+                    var resolved = ResolveUniqueCategoryMatch(matches, normalizedCategoryName);
+                    if (resolved is null)
+                    {
+                        return CatalogImportItem.CreateFailed(
+                            row.RowNumber,
+                            name,
+                            unit.ToString(),
+                            DomainErrorCodes.CatalogImportRowInvalid,
+                            $"Category name '{normalizedCategoryName}' is ambiguous; use CategoryId or resolve duplicates.",
+                            description,
+                            sku,
+                            barcode,
+                            categoryName: normalizedCategoryName,
+                            suggestedPrice: price,
+                            suggestedCost: cost,
+                            imageReference: image,
+                            searchTagsRaw: NullIfEmpty(CatalogImportRules.SanitizeCell(rawTags)),
+                            businessTypesRaw: NullIfEmpty(CatalogImportRules.SanitizeCell(rawBusinessTypes)));
+                    }
 
-                categoryId = matches[0].Id.Value;
+                    categoryId = resolved.Id.Value;
+                    categoryName = resolved.Name;
+                }
             }
+            // else: blank category is allowed (product without category)
 
             var tagsRaw = ComposeTagsRaw(
                 NullIfEmpty(CatalogImportRules.SanitizeCell(rawTags)),
@@ -445,6 +464,88 @@ public static class CatalogImportRowMapper
         }
 
         return (tags, status);
+    }
+
+    /// <summary>
+    /// Prefers a single exact match; when multiple rows share a normalized name, prefers a single root.
+    /// Returns null when still ambiguous.
+    /// </summary>
+    public static GlobalCategory? ResolveUniqueCategoryMatch(
+        IReadOnlyList<GlobalCategory> matches,
+        string normalizedName)
+    {
+        if (matches.Count == 0)
+        {
+            return null;
+        }
+
+        if (matches.Count == 1)
+        {
+            return matches[0];
+        }
+
+        var roots = matches.Where(m => m.ParentId is null).ToList();
+        if (roots.Count == 1)
+        {
+            return roots[0];
+        }
+
+        var exactRoots = roots
+            .Where(m => string.Equals(m.Name, normalizedName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        return exactRoots.Count == 1 ? exactRoots[0] : null;
+    }
+
+    public static bool WillCreateCategory(CatalogImportItem item) =>
+        item.Status == CatalogImportItemStatus.Pending
+        && item.GlobalCategoryId is null
+        && !string.IsNullOrWhiteSpace(item.CategoryName);
+
+    public static CatalogImportPreviewSummary BuildPreviewSummary(IReadOnlyList<CatalogImportItem> items)
+    {
+        var valid = items.Count(i => i.Status == CatalogImportItemStatus.Pending);
+        var failed = items.Count(i => i.Status == CatalogImportItemStatus.Failed);
+        var skipped = items.Count(i => i.Status == CatalogImportItemStatus.Skipped);
+        var existing = items
+            .Where(i => i.Status == CatalogImportItemStatus.Pending && i.GlobalCategoryId is not null)
+            .Select(i => i.GlobalCategoryId!.Value)
+            .Distinct()
+            .Count();
+        var newCategories = items
+            .Where(WillCreateCategory)
+            .Select(i => i.CategoryName!.Trim().ToUpperInvariant())
+            .Distinct(StringComparer.Ordinal)
+            .Count();
+        var warnings = items.Count(WillCreateCategory);
+
+        var parts = new List<string>
+        {
+            $"{valid} product{(valid == 1 ? "" : "s")} valid"
+        };
+        if (newCategories > 0)
+        {
+            parts.Add($"{newCategories} new categor{(newCategories == 1 ? "y" : "ies")} will be created");
+        }
+
+        if (failed > 0)
+        {
+            parts.Add($"{failed} failed");
+        }
+
+        if (skipped > 0)
+        {
+            parts.Add($"{skipped} skipped");
+        }
+
+        return new CatalogImportPreviewSummary(
+            items.Count,
+            valid,
+            existing,
+            newCategories,
+            warnings,
+            failed,
+            skipped,
+            string.Join(" · ", parts));
     }
 
     public static IReadOnlyList<BusinessType> ParseBusinessTypes(string? raw)

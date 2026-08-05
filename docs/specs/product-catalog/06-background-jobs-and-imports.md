@@ -169,7 +169,7 @@ Authoritative column schema lives in `CatalogImportCsvSchema` (Domain). Template
 | Multi-value separator | `\|` for Tags and BusinessTypes |
 | Template contents | header + 2–3 SAMPLE rows; invariant decimals; valid enum samples; no formulas/macros |
 
-Upload header validation fails closed on missing, unknown, duplicate, or out-of-order columns (`platform.global_catalog.import.headers.invalid`). Row validation covers Unit, Status, BusinessTypes, invariant decimals, and formula-injection prefixes. Preview-before-confirm, partial success, and idempotency rules are unchanged.
+Upload header validation fails closed on missing, unknown, duplicate, or out-of-order columns (`platform.global_catalog.import.headers.invalid`). Row validation covers Unit, Status, BusinessTypes, invariant decimals, and formula-injection prefixes. Unknown **category names** are not row failures: they preview as `ValidWithNewCategory` and are created as Active root categories on Confirm (normalized-name uniqueness; concurrent conflicts reuse the winner). Preview-before-confirm, partial success, and idempotency rules are unchanged.
 
 ---
 

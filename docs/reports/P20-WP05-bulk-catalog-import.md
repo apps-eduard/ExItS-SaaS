@@ -21,6 +21,7 @@ Deliver Platform-owned CSV/XLSX bulk import for the global merchandise catalog: 
 - Downloadable template: `GET .../products/imports/template.csv` (alias `.../imports/template.csv`) → `exits-global-product-import-template.csv`
 - Exact columns: ProductName, Category, Description, Brand, Unit, Barcode, SuggestedSku, SuggestedSellingPrice, SuggestedCostPrice, TaxHint, Tags, BusinessTypes, Status
 - Multi-value separator `|`; invariant decimals; SAMPLE rows; UTF-8
+- **Category resolve-or-create:** unknown category names preview as `ValidWithNewCategory`; Confirm creates Active root categories once (normalized uniqueness + conflict reuse)
 - Formula-injection protection: cells starting with `=`, `+`, `-`, `@` are detected and rejected (sanitized for storage)
 - Header failures: missing / unknown / duplicate / out-of-order
 - Safe CSV parser (quoted fields); XLSX via ClosedXML without formula evaluation / macro execution
@@ -52,10 +53,10 @@ Deliver Platform-owned CSV/XLSX bulk import for the global merchandise catalog: 
 
 | Check | Result |
 |---|---|
-| GlobalCatalog unit tests (incl. import/template) | **59 passed**, 0 failed (Release) |
-| Admin P20 unit tests | **6 passed**, 0 failed (Release) |
-| Platform.Api Release build | Succeeded (0 warnings/errors) |
-| Platform.Admin Release build | Succeeded (pre-existing Checkbox obsolete warnings) |
+| GlobalCatalog unit tests (incl. import/template/category create) | **41+ CatalogImport passed** (Release); full GlobalCatalog suite re-run on commit |
+| Admin P20 unit tests | Run on commit |
+| Platform.Api Release build | Succeeded |
+| Platform.Admin Release build | Succeeded |
 
 ## 6. Security limitations
 

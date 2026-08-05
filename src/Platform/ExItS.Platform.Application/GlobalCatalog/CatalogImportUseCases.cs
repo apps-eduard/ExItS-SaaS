@@ -1,7 +1,9 @@
+using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Authorization;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Domain.Abstractions;
+using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.GlobalCatalog;
 
@@ -293,19 +295,24 @@ public sealed class ProcessCatalogImportChunk
     private readonly IGlobalCategoryRepository _categories;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IAuditWriter _auditWriter;
+    private readonly Dictionary<string, GlobalCategoryId> _categoryCache =
+        new(StringComparer.Ordinal);
 
     public ProcessCatalogImportChunk(
         ICatalogImportJobRepository imports,
         IGlobalProductRepository products,
         IGlobalCategoryRepository categories,
         IPlatformUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IAuditWriter auditWriter)
     {
         _imports = imports;
         _products = products;
         _categories = categories;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _auditWriter = auditWriter;
     }
 
     public async Task<bool> ExecuteOnceAsync(CancellationToken cancellationToken = default)
@@ -318,6 +325,8 @@ public sealed class ProcessCatalogImportChunk
         {
             return false;
         }
+
+        _categoryCache.Clear();
 
         try
         {
@@ -388,22 +397,16 @@ public sealed class ProcessCatalogImportChunk
                 return;
             }
 
-            GlobalCategoryId? categoryId = null;
-            if (item.GlobalCategoryId is Guid cid)
+            GlobalCategoryId? categoryId;
+            try
             {
-                var category = await _categories
-                    .GetByIdAsync(GlobalCategoryId.From(cid), cancellationToken)
+                categoryId = await ResolveOrCreateCategoryAsync(job, item, now, cancellationToken)
                     .ConfigureAwait(false);
-                if (category is null)
-                {
-                    item.MarkFailed(
-                        ApplicationErrorCodes.GlobalCategoryNotFound,
-                        "Category was not found.",
-                        now);
-                    return;
-                }
-
-                categoryId = category.Id;
+            }
+            catch (DomainException ex)
+            {
+                item.MarkFailed(ex.ErrorCode, ex.Message, now);
+                return;
             }
 
             if (item.Barcode is not null
@@ -478,8 +481,107 @@ public sealed class ProcessCatalogImportChunk
         }
     }
 
+    private async Task<GlobalCategoryId?> ResolveOrCreateCategoryAsync(
+        CatalogImportJob job,
+        CatalogImportItem item,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        if (item.GlobalCategoryId is Guid cid)
+        {
+            var category = await _categories
+                .GetByIdAsync(GlobalCategoryId.From(cid), cancellationToken)
+                .ConfigureAwait(false);
+            if (category is null)
+            {
+                throw new DomainException(
+                    ApplicationErrorCodes.GlobalCategoryNotFound,
+                    "Category was not found.");
+            }
+
+            return category.Id;
+        }
+
+        if (string.IsNullOrWhiteSpace(item.CategoryName))
+        {
+            return null;
+        }
+
+        var name = GlobalCatalogRules.NormalizeName(item.CategoryName);
+        var cacheKey = name.ToUpperInvariant();
+        if (_categoryCache.TryGetValue(cacheKey, out var cached))
+        {
+            return cached;
+        }
+
+        var resolved = await FindCategoryByNormalizedNameAsync(name, cancellationToken)
+            .ConfigureAwait(false);
+        if (resolved is not null)
+        {
+            _categoryCache[cacheKey] = resolved.Id;
+            return resolved.Id;
+        }
+
+        try
+        {
+            var created = GlobalCategory.Create(name, now);
+            await _categories.AddAsync(created, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            await _auditWriter.WriteAsync(
+                job.RequestedBy,
+                AuditActorType.PlatformUser,
+                PlatformAuditActions.GlobalCategoryCreated,
+                nameof(GlobalCategory),
+                created.Id.Value.ToString("D"),
+                AuditOutcome.Succeeded,
+                summary: $"Created global category '{created.Name}' during catalog import {job.Id.Value:D}.",
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            _categoryCache[cacheKey] = created.Id;
+            return created.Id;
+        }
+        catch (PersistenceConflictException)
+        {
+            // Concurrent import created the same root name — reuse the winner.
+            var afterConflict = await FindCategoryByNormalizedNameAsync(name, cancellationToken)
+                .ConfigureAwait(false);
+            if (afterConflict is null)
+            {
+                throw;
+            }
+
+            _categoryCache[cacheKey] = afterConflict.Id;
+            return afterConflict.Id;
+        }
+    }
+
+    private async Task<GlobalCategory?> FindCategoryByNormalizedNameAsync(
+        string normalizedName,
+        CancellationToken cancellationToken)
+    {
+        var matches = await _categories
+            .FindByNormalizedNameAsync(normalizedName.ToUpperInvariant(), cancellationToken)
+            .ConfigureAwait(false);
+        if (matches.Count == 0)
+        {
+            return null;
+        }
+
+        var resolved = CatalogImportRowMapper.ResolveUniqueCategoryMatch(matches, normalizedName);
+        if (resolved is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.CatalogImportRowInvalid,
+                $"Category name '{normalizedName}' is ambiguous; resolve duplicates before import.");
+        }
+
+        return resolved;
+    }
+
     private static bool IsTransient(Exception ex) =>
         ex is TimeoutException
-            or IOException
-            || (ex.InnerException is TimeoutException or IOException);
+            or OperationCanceledException
+            || ex.GetType().Name.Contains("Timeout", StringComparison.OrdinalIgnoreCase)
+            || ex.InnerException is not null && IsTransient(ex.InnerException);
 }

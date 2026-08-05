@@ -1,8 +1,14 @@
 using System.Text;
+using ExItS.Platform.Application.Audit;
+using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.GlobalCatalog;
+using ExItS.Platform.Domain.Abstractions;
+using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.GlobalCatalog;
+using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Products;
 
 namespace ExItS.Platform.UnitTests.GlobalCatalog;
 
@@ -365,6 +371,168 @@ public sealed class CatalogImportRowMapperTests
         Assert.Equal(DomainErrorCodes.InvalidGlobalCatalogBusinessType, items[2].ErrorCode);
         Assert.Equal(DomainErrorCodes.InvalidGlobalProductMoney, items[3].ErrorCode);
     }
+
+    [Fact]
+    public async Task MapRows_unknown_category_stays_pending_with_will_create_preview()
+    {
+        var rows = new List<CatalogImportRawRow>
+        {
+            new(2, new Dictionary<string, string>
+            {
+                ["ProductName"] = "Sinandomeng 25kg",
+                ["Category"] = "  Rice and Staples  ",
+                ["Unit"] = "Kilogram"
+            })
+        };
+
+        var items = await CatalogImportRowMapper.MapRowsAsync(
+            rows,
+            new FakeCategoryRepository(),
+            new FakeProductRepository(),
+            T0);
+
+        Assert.Single(items);
+        Assert.Equal(CatalogImportItemStatus.Pending, items[0].Status);
+        Assert.Null(items[0].GlobalCategoryId);
+        Assert.Equal("Rice and Staples", items[0].CategoryName);
+        Assert.True(CatalogImportRowMapper.WillCreateCategory(items[0]));
+        var summary = CatalogImportRowMapper.BuildPreviewSummary(items);
+        Assert.Equal(1, summary.NewCategoriesToCreateCount);
+        Assert.Contains("1 new category will be created", summary.SummaryText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task MapRows_matches_existing_category_case_insensitively()
+    {
+        var existing = GlobalCategory.Create("Rice and Staples", T0);
+        var categories = new FakeCategoryRepository();
+        categories.Seed(existing);
+
+        var rows = new List<CatalogImportRawRow>
+        {
+            new(2, new Dictionary<string, string>
+            {
+                ["ProductName"] = "Jasmine Rice",
+                ["Category"] = "rice and staples",
+                ["Unit"] = "Kilogram"
+            })
+        };
+
+        var items = await CatalogImportRowMapper.MapRowsAsync(
+            rows,
+            categories,
+            new FakeProductRepository(),
+            T0);
+
+        Assert.Equal(CatalogImportItemStatus.Pending, items[0].Status);
+        Assert.Equal(existing.Id.Value, items[0].GlobalCategoryId);
+        Assert.False(CatalogImportRowMapper.WillCreateCategory(items[0]));
+    }
+
+    [Fact]
+    public async Task MapRows_eight_new_categories_shared_across_eighty_products()
+    {
+        var categoryNames = new[]
+        {
+            "Rice and Staples",
+            "Canned Goods",
+            "Noodles and Pasta",
+            "Beverages",
+            "Snacks",
+            "Condiments",
+            "Personal Care",
+            "Household"
+        };
+
+        var rows = new List<CatalogImportRawRow>();
+        for (var i = 0; i < 80; i++)
+        {
+            var category = categoryNames[i % 8];
+            rows.Add(new CatalogImportRawRow(
+                i + 2,
+                new Dictionary<string, string>
+                {
+                    ["ProductName"] = $"Product {i + 1:000}",
+                    ["Category"] = category,
+                    ["Unit"] = "Piece",
+                    ["Barcode"] = $"48000{i + 1:000000}",
+                    ["SuggestedSku"] = $"SKU-{i + 1:000}"
+                }));
+        }
+
+        var items = await CatalogImportRowMapper.MapRowsAsync(
+            rows,
+            new FakeCategoryRepository(),
+            new FakeProductRepository(),
+            T0);
+
+        Assert.Equal(80, items.Count);
+        Assert.All(items, i => Assert.Equal(CatalogImportItemStatus.Pending, i.Status));
+        var summary = CatalogImportRowMapper.BuildPreviewSummary(items);
+        Assert.Equal(80, summary.ValidProductCount);
+        Assert.Equal(8, summary.NewCategoriesToCreateCount);
+        Assert.Equal(0, summary.ExistingCategoriesReferencedCount);
+        Assert.Contains("80 products valid", summary.SummaryText, StringComparison.Ordinal);
+        Assert.Contains("8 new categories will be created", summary.SummaryText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task MapRows_rejects_invalid_category_name_length()
+    {
+        var rows = new List<CatalogImportRawRow>
+        {
+            new(2, new Dictionary<string, string>
+            {
+                ["ProductName"] = "X",
+                ["Category"] = new string('x', GlobalCatalogRules.NameMaxLength + 1),
+                ["Unit"] = "Piece"
+            })
+        };
+
+        var items = await CatalogImportRowMapper.MapRowsAsync(
+            rows,
+            new FakeCategoryRepository(),
+            new FakeProductRepository(),
+            T0);
+
+        Assert.Equal(CatalogImportItemStatus.Failed, items[0].Status);
+        Assert.Equal(DomainErrorCodes.InvalidGlobalCatalogName, items[0].ErrorCode);
+    }
+
+    [Fact]
+    public async Task MapRows_mixed_existing_and_new_categories()
+    {
+        var existing = GlobalCategory.Create("Beverages", T0);
+        var categories = new FakeCategoryRepository();
+        categories.Seed(existing);
+
+        var rows = new List<CatalogImportRawRow>
+        {
+            new(2, new Dictionary<string, string>
+            {
+                ["ProductName"] = "Coke",
+                ["Category"] = "Beverages",
+                ["Unit"] = "Can"
+            }),
+            new(3, new Dictionary<string, string>
+            {
+                ["ProductName"] = "Rice",
+                ["Category"] = "Rice and Staples",
+                ["Unit"] = "Kilogram"
+            })
+        };
+
+        var items = await CatalogImportRowMapper.MapRowsAsync(
+            rows,
+            categories,
+            new FakeProductRepository(),
+            T0);
+
+        var summary = CatalogImportRowMapper.BuildPreviewSummary(items);
+        Assert.Equal(2, summary.ValidProductCount);
+        Assert.Equal(1, summary.ExistingCategoriesReferencedCount);
+        Assert.Equal(1, summary.NewCategoriesToCreateCount);
+    }
 }
 
 public sealed class CatalogImportJobLifecycleTests
@@ -430,25 +598,233 @@ public sealed class CatalogImportJobLifecycleTests
     }
 }
 
+public sealed class CatalogImportCategoryCreateTests
+{
+    private static readonly DateTimeOffset T0 = new(2026, 8, 5, 12, 0, 0, TimeSpan.Zero);
+
+    [Fact]
+    public async Task Process_creates_one_category_for_many_products_sharing_name()
+    {
+        var items = Enumerable.Range(0, 5)
+            .Select(i => CatalogImportItem.CreatePending(
+                i + 2,
+                $"Product {i}",
+                "Piece",
+                barcode: $"B{i}",
+                categoryName: "Rice and Staples"))
+            .ToList();
+
+        var job = CatalogImportJob.CreateValidated(
+            "ph.csv",
+            CatalogImportFileFormat.Csv,
+            128,
+            new string('d', 64),
+            "platform-user:admin",
+            items,
+            T0);
+        job.Confirm(T0.AddMinutes(1));
+
+        var categories = new FakeCategoryRepository();
+        var products = new FakeProductRepository { CaptureAdds = true };
+        var imports = new FakeImportRepository(job);
+        var uow = new FakeUnitOfWork();
+        var audit = new FakeAuditWriter();
+        var clock = new FakeClock(T0.AddMinutes(2));
+
+        var processor = new ProcessCatalogImportChunk(imports, products, categories, uow, clock, audit);
+        Assert.True(await processor.ExecuteOnceAsync());
+
+        Assert.Single(categories.Items);
+        Assert.Equal("Rice and Staples", categories.Items[0].Name);
+        Assert.Equal(GlobalCategoryStatus.Active, categories.Items[0].Status);
+        Assert.Null(categories.Items[0].ParentId);
+        Assert.Equal(5, products.Added.Count);
+        Assert.All(products.Added, p => Assert.Equal(categories.Items[0].Id, p.GlobalCategoryId));
+        Assert.Equal(CatalogImportJobStatus.Completed, imports.Job!.Status);
+        Assert.Equal(5, imports.Job.ImportedCount);
+        Assert.Single(audit.Writes);
+    }
+
+    [Fact]
+    public async Task Process_reuses_existing_category_and_is_idempotent_on_retry()
+    {
+        var existing = GlobalCategory.Create("Snacks", T0);
+        var categories = new FakeCategoryRepository();
+        categories.Seed(existing);
+
+        var item = CatalogImportItem.CreatePending(
+            2,
+            "Chips",
+            "Pack",
+            barcode: "480099",
+            categoryName: "snacks");
+        var job = CatalogImportJob.CreateValidated(
+            "snacks.csv",
+            CatalogImportFileFormat.Csv,
+            64,
+            new string('e', 64),
+            "actor",
+            [item],
+            T0);
+        job.Confirm(T0.AddMinutes(1));
+
+        var products = new FakeProductRepository { CaptureAdds = true };
+        var imports = new FakeImportRepository(job);
+        var processor = new ProcessCatalogImportChunk(
+            imports,
+            products,
+            categories,
+            new FakeUnitOfWork(),
+            new FakeClock(T0.AddMinutes(2)),
+            new FakeAuditWriter());
+
+        Assert.True(await processor.ExecuteOnceAsync());
+        Assert.Single(categories.Items);
+        Assert.Equal(existing.Id, products.Added[0].GlobalCategoryId);
+        Assert.Empty(new FakeAuditWriter().Writes);
+
+        // Retry after complete: ClaimNext returns null / no pending.
+        Assert.False(await processor.ExecuteOnceAsync());
+        Assert.Single(categories.Items);
+        Assert.Single(products.Added);
+    }
+
+    [Fact]
+    public async Task Process_handles_concurrent_category_conflict_by_reusing_winner()
+    {
+        var categories = new FakeCategoryRepository { ThrowConflictOnFirstAdd = true };
+        var item = CatalogImportItem.CreatePending(
+            2,
+            "Soap",
+            "Piece",
+            barcode: "1",
+            categoryName: "Personal Care");
+        var job = CatalogImportJob.CreateValidated(
+            "care.csv",
+            CatalogImportFileFormat.Csv,
+            32,
+            new string('f', 64),
+            "actor",
+            [item],
+            T0);
+        job.Confirm(T0.AddMinutes(1));
+
+        var products = new FakeProductRepository { CaptureAdds = true };
+        var processor = new ProcessCatalogImportChunk(
+            new FakeImportRepository(job),
+            products,
+            categories,
+            new FakeUnitOfWork(),
+            new FakeClock(T0.AddMinutes(2)),
+            new FakeAuditWriter());
+
+        Assert.True(await processor.ExecuteOnceAsync());
+        Assert.Single(categories.Items);
+        Assert.Equal(CatalogImportItemStatus.Imported, item.Status);
+        Assert.Equal(categories.Items[0].Id, products.Added[0].GlobalCategoryId);
+    }
+
+    [Fact]
+    public async Task Process_partial_product_failure_after_category_creation()
+    {
+        var categories = new FakeCategoryRepository();
+        var good = CatalogImportItem.CreatePending(
+            2,
+            "Good",
+            "Piece",
+            barcode: "GOOD",
+            categoryName: "Household");
+        var bad = CatalogImportItem.CreatePending(
+            3,
+            "Bad",
+            "NotAUnit",
+            barcode: "BAD",
+            categoryName: "Household");
+        var job = CatalogImportJob.CreateValidated(
+            "mixed.csv",
+            CatalogImportFileFormat.Csv,
+            48,
+            new string('g', 64),
+            "actor",
+            [good, bad],
+            T0);
+        job.Confirm(T0.AddMinutes(1));
+
+        var products = new FakeProductRepository { CaptureAdds = true };
+        var processor = new ProcessCatalogImportChunk(
+            new FakeImportRepository(job),
+            products,
+            categories,
+            new FakeUnitOfWork(),
+            new FakeClock(T0.AddMinutes(2)),
+            new FakeAuditWriter());
+
+        Assert.True(await processor.ExecuteOnceAsync());
+        Assert.Single(categories.Items);
+        Assert.Equal(CatalogImportItemStatus.Imported, good.Status);
+        Assert.Equal(CatalogImportItemStatus.Failed, bad.Status);
+        Assert.Equal(CatalogImportJobStatus.CompletedWithWarnings, job.Status);
+        Assert.Equal(1, job.ImportedCount);
+        Assert.Equal(1, job.FailedCount);
+    }
+}
+
 file sealed class FakeCategoryRepository : IGlobalCategoryRepository
 {
-    public Task AddAsync(GlobalCategory category, CancellationToken cancellationToken = default) =>
-        Task.CompletedTask;
+    public List<GlobalCategory> Items { get; } = [];
+    public bool ThrowConflictOnFirstAdd { get; set; }
+    private bool _conflictThrown;
+
+    public void Seed(GlobalCategory category) => Items.Add(category);
+
+    public Task AddAsync(GlobalCategory category, CancellationToken cancellationToken = default)
+    {
+        if (ThrowConflictOnFirstAdd && !_conflictThrown)
+        {
+            _conflictThrown = true;
+            // Simulate a concurrent writer winning the unique index: seed then conflict.
+            if (Items.All(c => !string.Equals(c.Name, category.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                Items.Add(GlobalCategory.Create(category.Name, category.CreatedAtUtc));
+            }
+
+            throw new PersistenceConflictException(
+                ApplicationErrorCodes.DuplicateGlobalCategoryName,
+                "A category with this name already exists under the same parent.");
+        }
+
+        if (Items.Any(c =>
+                c.ParentId is null
+                && string.Equals(c.Name, category.Name, StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new PersistenceConflictException(
+                ApplicationErrorCodes.DuplicateGlobalCategoryName,
+                "A category with this name already exists under the same parent.");
+        }
+
+        Items.Add(category);
+        return Task.CompletedTask;
+    }
 
     public Task<bool> ExistsWithNameUnderParentAsync(
         string name,
         GlobalCategoryId? parentId,
         GlobalCategoryId? excludingId = null,
         CancellationToken cancellationToken = default) =>
-        Task.FromResult(false);
+        Task.FromResult(Items.Any(c =>
+            c.ParentId?.Value == parentId?.Value
+            && string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)
+            && (excludingId is null || c.Id != excludingId)));
 
     public Task<IReadOnlyList<GlobalCategory>> FindByNormalizedNameAsync(
         string normalizedName,
         CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlyList<GlobalCategory>>([]);
+        Task.FromResult<IReadOnlyList<GlobalCategory>>(
+            Items.Where(c => string.Equals(c.Name.ToUpperInvariant(), normalizedName, StringComparison.Ordinal))
+                .ToList());
 
     public Task<GlobalCategory?> GetByIdAsync(GlobalCategoryId id, CancellationToken cancellationToken = default) =>
-        Task.FromResult<GlobalCategory?>(null);
+        Task.FromResult(Items.FirstOrDefault(c => c.Id == id));
 
     public Task<(IReadOnlyList<GlobalCategory> Items, int TotalCount)> ListAsync(
         GlobalCategoryStatus? status,
@@ -458,7 +834,7 @@ file sealed class FakeCategoryRepository : IGlobalCategoryRepository
         int skip,
         int take,
         CancellationToken cancellationToken = default) =>
-        Task.FromResult<(IReadOnlyList<GlobalCategory>, int)>(([], 0));
+        Task.FromResult<(IReadOnlyList<GlobalCategory>, int)>((Items, Items.Count));
 
     public Task UpdateAsync(GlobalCategory category, CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
@@ -468,9 +844,28 @@ file sealed class FakeProductRepository : IGlobalProductRepository
 {
     public HashSet<string> ExistingBarcodes { get; } = new(StringComparer.OrdinalIgnoreCase);
     public HashSet<string> ExistingSkus { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public bool CaptureAdds { get; set; }
+    public List<GlobalProduct> Added { get; } = [];
 
-    public Task AddAsync(GlobalProduct product, CancellationToken cancellationToken = default) =>
-        Task.CompletedTask;
+    public Task AddAsync(GlobalProduct product, CancellationToken cancellationToken = default)
+    {
+        if (CaptureAdds)
+        {
+            Added.Add(product);
+        }
+
+        if (product.Barcode is not null)
+        {
+            ExistingBarcodes.Add(product.Barcode);
+        }
+
+        if (product.Sku is not null)
+        {
+            ExistingSkus.Add(product.Sku);
+        }
+
+        return Task.CompletedTask;
+    }
 
     public Task<bool> ExistsWithBarcodeAsync(
         string barcode,
@@ -501,4 +896,114 @@ file sealed class FakeProductRepository : IGlobalProductRepository
 
     public Task UpdateAsync(GlobalProduct product, CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
+}
+
+file sealed class FakeImportRepository : ICatalogImportJobRepository
+{
+    public CatalogImportJob? Job { get; private set; }
+    private bool _claimed;
+
+    public FakeImportRepository(CatalogImportJob job) => Job = job;
+
+    public Task AddAsync(CatalogImportJob job, CancellationToken cancellationToken = default)
+    {
+        Job = job;
+        return Task.CompletedTask;
+    }
+
+    public Task<CatalogImportJob?> ClaimNextAsync(
+        DateTimeOffset utcNow,
+        TimeSpan staleAfter,
+        CancellationToken cancellationToken = default)
+    {
+        if (_claimed || Job is null)
+        {
+            return Task.FromResult<CatalogImportJob?>(null);
+        }
+
+        if (Job.Status is CatalogImportJobStatus.Queued
+            or CatalogImportJobStatus.Processing)
+        {
+            _claimed = true;
+            return Task.FromResult<CatalogImportJob?>(Job);
+        }
+
+        return Task.FromResult<CatalogImportJob?>(null);
+    }
+
+    public Task<CatalogImportJob?> GetByIdAsync(CatalogImportJobId id, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Job is not null && Job.Id == id ? Job : null);
+
+    public Task<CatalogImportJob?> GetByIdempotencyKeyAsync(
+        string idempotencyKey,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<CatalogImportJob?>(null);
+
+    public Task<(IReadOnlyList<CatalogImportJob> Items, int TotalCount)> ListAsync(
+        CatalogImportJobStatus? status,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<(IReadOnlyList<CatalogImportJob>, int)>(([], 0));
+
+    public Task<IReadOnlyList<CatalogImportErrorDto>> ListErrorsAsync(
+        CatalogImportJobId id,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<CatalogImportErrorDto>>([]);
+
+    public Task UpdateAsync(CatalogImportJob job, CancellationToken cancellationToken = default)
+    {
+        Job = job;
+        return Task.CompletedTask;
+    }
+}
+
+file sealed class FakeUnitOfWork : IPlatformUnitOfWork
+{
+    public bool ThrowConflictOnce { get; set; }
+    private bool _thrown;
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        if (ThrowConflictOnce && !_thrown)
+        {
+            _thrown = true;
+            throw new PersistenceConflictException(
+                ApplicationErrorCodes.DuplicateGlobalCategoryName,
+                "A category with this name already exists under the same parent.");
+        }
+
+        return Task.CompletedTask;
+    }
+}
+
+file sealed class FakeClock : IClock
+{
+    public FakeClock(DateTimeOffset utcNow) => UtcNow = utcNow;
+    public DateTimeOffset UtcNow { get; }
+}
+
+file sealed class FakeAuditWriter : IAuditWriter
+{
+    public List<(string Action, string TargetId, string? Summary)> Writes { get; } = [];
+
+    public Task WriteAsync(
+        string actorIdentifier,
+        AuditActorType actorType,
+        string actionCode,
+        string targetType,
+        string targetId,
+        AuditOutcome outcome,
+        PlatformOrganizationId? organizationId = null,
+        ProductCode? productCode = null,
+        string? correlationId = null,
+        string? reason = null,
+        string? summary = null,
+        CancellationToken cancellationToken = default)
+    {
+        Writes.Add((actionCode, targetId, summary));
+        return Task.CompletedTask;
+    }
 }

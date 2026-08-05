@@ -990,6 +990,10 @@
   <data name="GlobalImports_Skipped" xml:space="preserve"><value>Skipped</value></data>
   <data name="GlobalImports_Failed" xml:space="preserve"><value>Failed</value></data>
   <data name="GlobalImports_Pending" xml:space="preserve"><value>Pending</value></data>
+  <data name="GlobalImports_ValidProducts" xml:space="preserve"><value>Valid products</value></data>
+  <data name="GlobalImports_ExistingCategories" xml:space="preserve"><value>Existing categories</value></data>
+  <data name="GlobalImports_NewCategories" xml:space="preserve"><value>New categories</value></data>
+  <data name="GlobalImports_Notes" xml:space="preserve"><value>Notes</value></data>
   <data name="GlobalImports_Stage" xml:space="preserve"><value>Stage</value></data>
   <data name="GlobalImports_Confirm" xml:space="preserve"><value>Confirm import</value></data>
   <data name="GlobalImports_ConfirmFailed" xml:space="preserve"><value>Confirm failed</value></data>

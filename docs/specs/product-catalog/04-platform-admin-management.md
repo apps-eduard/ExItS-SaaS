@@ -206,14 +206,19 @@ Validation must include:
 - required fields
 - duplicate barcode/SKU within file
 - duplicate barcode/SKU in global catalog
-- unknown category
+- invalid category name (blank when policy requires, length/normalization failures)
+- unknown category names are **warnings**, not failures: preview shows `Valid with new category` / `New category will be created: {name}`
+- on Confirm, missing root categories are created once (Active), then products associate by id
 - invalid unit
 - invalid status
 - invalid money (invariant decimal)
 - invalid business type
 - formula-injection prefixes (`=`, `+`, `-`, `@`)
 
-Partial success is allowed only after clear preview and confirmation.
+Preview summary must show totals such as:
+`80 products valid · 8 new categories will be created`
+
+Partial success is allowed only after clear preview and confirmation. Plain category names create **root** categories only — hierarchy is not invented from free text.
 
 ---
 

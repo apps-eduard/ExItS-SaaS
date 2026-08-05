@@ -99,6 +99,13 @@ public static class PersistenceExceptionMapper
             return true;
         }
 
+        if (detail.Contains("ux_global_categories_normalized_name", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.DuplicateGlobalCategoryName;
+            message = "A category with this name already exists under the same parent.";
+            return true;
+        }
+
         if (detail.Contains("ux_platform_role_assignments", StringComparison.OrdinalIgnoreCase)
             || detail.Contains("platform_role_assignments", StringComparison.OrdinalIgnoreCase))
         {

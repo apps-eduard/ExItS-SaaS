@@ -1,3 +1,4 @@
+using ExItS.Platform.Application.Common;
 using ExItS.Platform.Domain.GlobalCatalog;
 
 namespace ExItS.Platform.Application.GlobalCatalog;
@@ -174,6 +175,11 @@ public sealed record CatalogImportJobDto(
     int SkippedCount,
     int FailedCount,
     int PendingCount,
+    int ValidProductCount,
+    int ExistingCategoriesReferencedCount,
+    int NewCategoriesToCreateCount,
+    int WarningCount,
+    string? PreviewSummary,
     string? CurrentStage,
     string? ErrorSummary,
     DateTimeOffset CreatedAtUtc,
@@ -201,9 +207,20 @@ public sealed record CatalogImportItemDto(
     string Status,
     string? ErrorCode,
     string? ErrorMessage,
+    bool WillCreateCategory,
     Guid? CreatedGlobalProductId,
     int AttemptCount,
     DateTimeOffset? ProcessedAtUtc);
+
+public sealed record CatalogImportPreviewSummary(
+    int TotalRows,
+    int ValidProductCount,
+    int ExistingCategoriesReferencedCount,
+    int NewCategoriesToCreateCount,
+    int WarningCount,
+    int FailedCount,
+    int SkippedCount,
+    string SummaryText);
 
 public sealed record CatalogImportErrorDto(
     Guid Id,
@@ -308,6 +325,8 @@ internal static class GlobalCatalogDtoMaps
                 .ToList();
         }
 
+        var summary = CatalogImportRowMapper.BuildPreviewSummary(job.Items);
+
         return new CatalogImportJobDto(
             job.Id.Value,
             job.FileName,
@@ -324,6 +343,11 @@ internal static class GlobalCatalogDtoMaps
             job.SkippedCount,
             job.FailedCount,
             job.PendingCount,
+            summary.ValidProductCount,
+            summary.ExistingCategoriesReferencedCount,
+            summary.NewCategoriesToCreateCount,
+            summary.WarningCount,
+            job.Status == CatalogImportJobStatus.Validated ? summary.SummaryText : null,
             job.CurrentStage,
             job.ErrorSummary,
             job.CreatedAtUtc,
@@ -334,8 +358,24 @@ internal static class GlobalCatalogDtoMaps
             preview);
     }
 
-    public static CatalogImportItemDto Map(CatalogImportItem item) =>
-        new(
+    public static CatalogImportItemDto Map(CatalogImportItem item)
+    {
+        var willCreate = CatalogImportRowMapper.WillCreateCategory(item);
+        var status = item.Status.ToString();
+        string? errorCode = item.ErrorCode;
+        string? errorMessage = item.ErrorMessage;
+        if (willCreate)
+        {
+            status = "ValidWithNewCategory";
+            errorCode ??= ApplicationErrorCodes.CatalogImportCategoryWillCreate;
+            errorMessage ??= $"New category will be created: {item.CategoryName}";
+        }
+        else if (item.Status == CatalogImportItemStatus.Pending)
+        {
+            status = "Valid";
+        }
+
+        return new CatalogImportItemDto(
             item.Id.Value,
             item.RowNumber,
             item.Name,
@@ -350,12 +390,14 @@ internal static class GlobalCatalogDtoMaps
             item.ImageReference,
             item.SearchTagsRaw,
             item.BusinessTypesRaw,
-            item.Status.ToString(),
-            item.ErrorCode,
-            item.ErrorMessage,
+            status,
+            errorCode,
+            errorMessage,
+            willCreate,
             item.CreatedGlobalProductId,
             item.AttemptCount,
             item.ProcessedAtUtc);
+    }
 
     public static CatalogImportErrorDto MapError(CatalogImportItem item) =>
         new(

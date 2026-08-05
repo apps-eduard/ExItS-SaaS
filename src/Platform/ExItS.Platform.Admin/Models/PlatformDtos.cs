@@ -1177,14 +1177,19 @@ public sealed record CatalogImportJobDto(
     int SkippedCount,
     int FailedCount,
     int PendingCount,
-    string? CurrentStage,
-    string? ErrorSummary,
-    DateTimeOffset CreatedAtUtc,
-    DateTimeOffset UpdatedAtUtc,
-    DateTimeOffset? StartedAtUtc,
-    DateTimeOffset? CompletedAtUtc,
-    DateTimeOffset? LastHeartbeatAtUtc,
-    IReadOnlyList<CatalogImportItemDto>? PreviewItems);
+    int ValidProductCount = 0,
+    int ExistingCategoriesReferencedCount = 0,
+    int NewCategoriesToCreateCount = 0,
+    int WarningCount = 0,
+    string? PreviewSummary = null,
+    string? CurrentStage = null,
+    string? ErrorSummary = null,
+    DateTimeOffset CreatedAtUtc = default,
+    DateTimeOffset UpdatedAtUtc = default,
+    DateTimeOffset? StartedAtUtc = null,
+    DateTimeOffset? CompletedAtUtc = null,
+    DateTimeOffset? LastHeartbeatAtUtc = null,
+    IReadOnlyList<CatalogImportItemDto>? PreviewItems = null);
 
 public sealed record CatalogImportItemDto(
     Guid Id,
@@ -1204,9 +1209,10 @@ public sealed record CatalogImportItemDto(
     string Status,
     string? ErrorCode,
     string? ErrorMessage,
-    Guid? CreatedGlobalProductId,
-    int AttemptCount,
-    DateTimeOffset? ProcessedAtUtc);
+    bool WillCreateCategory = false,
+    Guid? CreatedGlobalProductId = null,
+    int AttemptCount = 0,
+    DateTimeOffset? ProcessedAtUtc = null);
 
 public sealed record CatalogImportErrorDto(
     Guid Id,

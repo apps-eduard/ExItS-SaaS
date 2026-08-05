@@ -48,7 +48,7 @@
 
 ## Imports / jobs
 
-- Platform CSV/XLSX: downloadable UTF-8 template (`CatalogImportCsvSchema`) → validate headers/rows → preview → confirm → `CatalogImportBackgroundService`
+- Platform CSV/XLSX: downloadable UTF-8 template (`CatalogImportCsvSchema`) → validate headers/rows → preview (unknown categories as creatable warnings) → confirm → create missing Active root categories → `CatalogImportBackgroundService`
 - Template filename `exits-global-product-import-template.csv`; endpoints under `/products/imports/template.csv` (+ `/imports/template.csv` alias)
 - POS template/selected import: PostgreSQL jobs + `PosCatalogImportBackgroundService`
 - Idempotent keys; partial success; stock remains 0 until OpeningStock

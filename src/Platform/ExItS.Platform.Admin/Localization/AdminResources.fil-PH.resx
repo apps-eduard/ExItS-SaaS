@@ -989,6 +989,10 @@
   <data name="GlobalImports_Skipped" xml:space="preserve"><value>Nilaktawan</value></data>
   <data name="GlobalImports_Failed" xml:space="preserve"><value>Nabigo</value></data>
   <data name="GlobalImports_Pending" xml:space="preserve"><value>Nakabinbin</value></data>
+  <data name="GlobalImports_ValidProducts" xml:space="preserve"><value>Valid na products</value></data>
+  <data name="GlobalImports_ExistingCategories" xml:space="preserve"><value>Umiiral na categories</value></data>
+  <data name="GlobalImports_NewCategories" xml:space="preserve"><value>Bagong categories</value></data>
+  <data name="GlobalImports_Notes" xml:space="preserve"><value>Mga tala</value></data>
   <data name="GlobalImports_Stage" xml:space="preserve"><value>Yugto</value></data>
   <data name="GlobalImports_Confirm" xml:space="preserve"><value>I-confirm ang import</value></data>
   <data name="GlobalImports_ConfirmFailed" xml:space="preserve"><value>Nabigo ang confirm</value></data>

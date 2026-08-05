@@ -107,12 +107,20 @@ else
                 <DescriptionsItem Title="@L["Common_Status"]">@_job.Status</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalImports_Stage"]">@(_job.CurrentStage ?? "—")</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalImports_Total"]">@_job.TotalCount</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalImports_ValidProducts"]">@_job.ValidProductCount</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalImports_ExistingCategories"]">@_job.ExistingCategoriesReferencedCount</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalImports_NewCategories"]">@_job.NewCategoriesToCreateCount</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalImports_Processed"]">@_job.ProcessedCount</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalImports_Imported"]">@_job.ImportedCount</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalImports_Skipped"]">@_job.SkippedCount</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalImports_Failed"]">@_job.FailedCount</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalImports_Pending"]">@_job.PendingCount</DescriptionsItem>
             </Descriptions>
+
+            @if (!string.IsNullOrWhiteSpace(_job.PreviewSummary))
+            {
+                <Alert Type="@AlertType.Info" ShowIcon="true" Message="@_job.PreviewSummary" />
+            }
 
             @if (_job.Status is "Queued" or "Processing")
             {
@@ -132,11 +140,12 @@ else
                        HidePagination="true">
                     <PropertyColumn Property="c => c.RowNumber" Title="#" />
                     <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]" />
+                    <PropertyColumn Property="c => c.CategoryName" Title="@L["GlobalProducts_Category"]" />
                     <PropertyColumn Property="c => c.Sku" Title="@L["GlobalProducts_Sku"]" />
                     <PropertyColumn Property="c => c.Barcode" Title="@L["GlobalProducts_Barcode"]" />
                     <PropertyColumn Property="c => c.Unit" Title="@L["GlobalProducts_Unit"]" />
                     <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" />
-                    <PropertyColumn Property="c => c.ErrorMessage" Title="@L["GlobalImports_Error"]" />
+                    <PropertyColumn Property="c => c.ErrorMessage" Title="@L["GlobalImports_Notes"]" />
                 </Table>
             </Card>
 
