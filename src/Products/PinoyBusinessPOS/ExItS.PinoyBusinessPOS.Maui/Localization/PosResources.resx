@@ -1369,7 +1369,7 @@
   <data name="Purchasing_ReceiveRequiresLines" xml:space="preserve"><value>Enter at least one positive receive quantity.</value></data>
   <data name="Nav_Shifts" xml:space="preserve"><value>Shifts</value></data>
   <data name="Shifts_Title" xml:space="preserve"><value>Cashier shifts</value></data>
-  <data name="Shifts_Subtitle" xml:space="preserve"><value>Open, close, and reconcile cashier shifts (online only).</value></data>
+  <data name="Shifts_Subtitle" xml:space="preserve"><value>Online only — open, close, and review shifts.</value></data>
   <data name="Shifts_Open" xml:space="preserve"><value>Open shift</value></data>
   <data name="Shifts_OpenTitle" xml:space="preserve"><value>Open cashier shift</value></data>
   <data name="Shifts_OpenSubtitle" xml:space="preserve"><value>Record the opening cash float before sales.</value></data>
@@ -1406,9 +1406,14 @@
   <data name="Shifts_NotFoundMessage" xml:space="preserve"><value>This shift could not be loaded.</value></data>
   <data name="Shifts_CurrentSection" xml:space="preserve"><value>Current open shift</value></data>
   <data name="Shifts_OpenCurrent" xml:space="preserve"><value>Open current shift</value></data>
+  <data name="Shifts_AlreadyOpen" xml:space="preserve"><value>Shift already open</value></data>
+  <data name="Shifts_HistorySection" xml:space="preserve"><value>Shift history</value></data>
+  <data name="Shifts_OpenedFormat" xml:space="preserve"><value>Opened {0}</value></data>
+  <data name="Shifts_ClosedFormat" xml:space="preserve"><value>Closed {0}</value></data>
+  <data name="Shifts_ClearSearch" xml:space="preserve"><value>Clear search</value></data>
   <data name="Shifts_Refresh" xml:space="preserve"><value>Refresh</value></data>
   <data name="Shifts_Loading" xml:space="preserve"><value>Loading shifts...</value></data>
-  <data name="Shifts_SearchPlaceholder" xml:space="preserve"><value>Search by shift number</value></data>
+  <data name="Shifts_SearchPlaceholder" xml:space="preserve"><value>Search shift number</value></data>
   <data name="Shifts_FiltersTitle" xml:space="preserve"><value>Filters</value></data>
   <data name="Shifts_Filter_Status" xml:space="preserve"><value>Status</value></data>
   <data name="Shifts_Filter_All" xml:space="preserve"><value>All</value></data>

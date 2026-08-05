@@ -1,4 +1,6 @@
 @page "/shifts"
+@implements IDisposable
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject ICurrentUserContext CurrentUser
@@ -24,69 +26,176 @@ else if (!_allowed)
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageShifts);
-<Page>
-    <PageHeader Title="@L["Shifts_Title"]" Subtitle="@L["Shifts_Subtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="GoOpen">@L["Shifts_Open"]</Button>
-        </Actions>
-    </PageHeader>
+    var hasOpenShift = _current is not null;
+    var onlineActionsEnabled = !_isOffline && !_loading;
+<div class="pos-shifts">
+    <Page>
+        <header class="pos-shifts__header">
+            <div class="pos-shifts__heading">
+                <h1 class="pos-shifts__title">@L["Shifts_Title"]</h1>
+                <p class="pos-shifts__subtitle">@L["Shifts_Subtitle"]</p>
+            </div>
+        </header>
 
-    @if (_isOffline)
-    {
-        <Alert Tone="AlertTone.Warning" Title="@L["Shifts_OfflineTitle"]" Message="@L["Shifts_OfflineMessage"]" />
-    }
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Shifts_OfflineTitle"]" Message="@L["Shifts_OfflineMessage"]" />
+        }
 
-    @if (_current is not null)
-    {
-        <Section Title="@L["Shifts_CurrentSection"]">
-            <Stack Gap="2">
-                <div class="pos-value-md">@_current.ShiftNumber</div>
-                <div class="pos-muted">@_current.Status · @(string.IsNullOrWhiteSpace(_current.RegisterName) ? (_current.RegisterCode ?? "—") : _current.RegisterName)</div>
-                <FormActions>
-                    <Button Variant="ButtonVariant.Primary" OnClick="GoCurrent">@L["Shifts_OpenCurrent"]</Button>
-                </FormActions>
-            </Stack>
-        </Section>
-    }
+        @if (canManage)
+        {
+            <div class="pos-shifts__open-action">
+                @if (hasOpenShift)
+                {
+                    <Button Variant="ButtonVariant.Secondary"
+                            Disabled="true"
+                            aria-label="@L["Shifts_AlreadyOpen"]">
+                        @L["Shifts_AlreadyOpen"]
+                    </Button>
+                }
+                else
+                {
+                    <Button Variant="ButtonVariant.Primary"
+                            Disabled="@(_isOffline || _openingNav)"
+                            IsLoading="@_openingNav"
+                            OnClick="GoOpenAsync">
+                        @L["Shifts_Open"]
+                    </Button>
+                }
+            </div>
+        }
 
-    <SearchToolbar SearchText="@_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Shifts_SearchPlaceholder"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Shifts_Refresh"]</Button>
-        </Actions>
-    </SearchToolbar>
+        @if (_current is not null)
+        {
+            <section class="pos-shifts__current" aria-labelledby="shifts-current-heading">
+                <h2 id="shifts-current-heading" class="pos-shifts__current-label">@L["Shifts_CurrentSection"]</h2>
+                <p class="pos-shifts__current-number">@_current.ShiftNumber</p>
+                <p class="pos-shifts__current-meta">
+                    <span class="pos-shifts__badge pos-shifts__badge--open" aria-label="@($"{L["Shifts_Status"]}: {StatusLabel(_current.Status)}")">
+                        @StatusLabel(_current.Status)
+                    </span>
+                    <span aria-hidden="true">·</span>
+                    <span>@RegisterLabel(_current)</span>
+                </p>
+                <p class="pos-shifts__current-opened pos-muted">
+                    @string.Format(L["Shifts_OpenedFormat"].Value, FormatOpened(_current.OpenedAtUtc))
+                </p>
+                <div class="pos-shifts__current-action">
+                    <Button Variant="ButtonVariant.Primary"
+                            Disabled="@_isOffline"
+                            OnClick="GoCurrent">
+                        @L["Shifts_OpenCurrent"]
+                    </Button>
+                </div>
+            </section>
+        }
 
-    <Section Title="@L["Shifts_FiltersTitle"]">
-        <Select Label="@L["Shifts_Filter_Status"]"
-                Value="@_statusFilter"
-                ValueChanged="OnStatusFilterChanged"
-                Options="@ShiftStatusFilters" />
-    </Section>
+        <div class="pos-shifts__toolbar" role="search">
+            <div class="pos-shifts__search">
+                <span class="pos-shifts__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                <input class="pos-shifts__search-input"
+                       type="search"
+                       value="@_search"
+                       placeholder="@L["Shifts_SearchPlaceholder"]"
+                       aria-label="@L["Shifts_SearchPlaceholder"]"
+                       disabled="@(_loading && string.IsNullOrWhiteSpace(_search))"
+                       @oninput="OnSearchInputAsync" />
+                @if (!string.IsNullOrWhiteSpace(_search))
+                {
+                    <button type="button"
+                            class="pos-shifts__search-clear"
+                            aria-label="@L["Shifts_ClearSearch"]"
+                            disabled="@_isOffline"
+                            @onclick="ClearSearchAsync">
+                        <span aria-hidden="true">@IconGlyphs.Get("close")</span>
+                    </button>
+                }
+            </div>
+            <Select Value="@_statusFilter"
+                    ValueChanged="OnStatusFilterChanged"
+                    Options="@ShiftStatusFilters"
+                    Disabled="@_isOffline"
+                    aria-label="@L["Shifts_Filter_Status"]" />
+            <button type="button"
+                    class="pos-shifts__refresh"
+                    title="@L["Shifts_Refresh"]"
+                    aria-label="@L["Shifts_Refresh"]"
+                    disabled="@(!onlineActionsEnabled)"
+                    @onclick="ReloadAsync">
+                @if (_loading)
+                {
+                    <Spinner Size="SpinnerSize.Sm" />
+                }
+                else
+                {
+                    <span aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                }
+            </button>
+        </div>
 
-    <ResponsiveDataList TItem="PosCashierShiftDto"
-                        Items="@_items"
-                        Columns="@Columns"
-                        CellTemplate="@CellTemplate"
-                        IsLoading="@_loading"
-                        LoadingLabel="@L["Shifts_Loading"]"
-                        EmptyTitle="@L["Shifts_EmptyTitle"]"
-                        EmptyMessage="@L["Shifts_EmptyMessage"]"
-                        ErrorTitle="@_errorTitle"
-                        ErrorMessage="@_errorMessage"
-                        RetryLabel="@L["Api_Retry"]"
-                        OnRetry="ReloadAsync"
-                        AriaLabel="@L["Shifts_Title"]" />
+        <section class="pos-shifts__history" aria-labelledby="shifts-history-heading" aria-busy="@_loading">
+            <h2 id="shifts-history-heading" class="pos-shifts__section-title">@L["Shifts_HistorySection"]</h2>
 
-    @if (!_loading && _totalCount > 0)
-    {
-        <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
-    }
-</Page>
+            @if (_loading && _items.Count == 0 && string.IsNullOrEmpty(_errorTitle))
+            {
+                <div class="pos-shifts__loading" role="status" aria-live="polite">
+                    <Spinner />
+                    <span class="pos-muted">@L["Shifts_Loading"]</span>
+                </div>
+            }
+            else if (!string.IsNullOrEmpty(_errorTitle))
+            {
+                <ErrorState Title="@_errorTitle"
+                            Message="@(_errorMessage ?? L["Shifts_EmptyMessage"])"
+                            RetryLabel="@L["Api_Retry"]"
+                            OnRetry="ReloadAsync" />
+            }
+            else if (_items.Count == 0)
+            {
+                <EmptyState Title="@L["Shifts_EmptyTitle"]" Message="@L["Shifts_EmptyMessage"]" />
+            }
+            else
+            {
+                <div class="pos-shifts__list" role="list" aria-label="@L["Shifts_HistorySection"]">
+                    @foreach (var item in _items)
+                    {
+                        <button type="button"
+                                class="pos-shifts__row"
+                                role="listitem"
+                                disabled="@_isOffline"
+                                aria-label="@RowAriaLabel(item)"
+                                @onclick="() => GoDetail(item.ShiftId)">
+                            <span class="pos-shifts__row-body">
+                                <span class="pos-shifts__row-top">
+                                    <span class="pos-shifts__row-number">@item.ShiftNumber</span>
+                                    <span class="pos-shifts__badge pos-shifts__badge--@StatusTone(item.Status)"
+                                          aria-label="@($"{L["Shifts_Status"]}: {StatusLabel(item.Status)}")">
+                                        @StatusLabel(item.Status)
+                                    </span>
+                                </span>
+                                <span class="pos-shifts__row-register">@RegisterLabel(item)</span>
+                                <span class="pos-shifts__row-time pos-muted">@RowTimeLine(item)</span>
+                            </span>
+                            <span class="pos-shifts__chevron" aria-hidden="true">›</span>
+                        </button>
+                    }
+                </div>
+            }
+        </section>
+
+        @if (!_loading && _totalCount > 0)
+        {
+            <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
+        }
+    </Page>
+</div>
 }
 
 @code {
     private bool _ready;
     private bool _allowed;
     private bool _loading;
+    private bool _openingNav;
     private bool _isOffline;
     private string? _search;
     private string? _statusFilter;
@@ -97,6 +206,7 @@ else
     private IReadOnlyList<PosCashierShiftDto> _items = Array.Empty<PosCashierShiftDto>();
     private string? _errorTitle;
     private string? _errorMessage;
+    private CancellationTokenSource? _searchCts;
 
     private IReadOnlyList<SelectOption> ShiftStatusFilters =>
     [
@@ -106,41 +216,10 @@ else
         new("Cancelled", L["Shifts_Status_Cancelled"]),
     ];
 
-    private IReadOnlyList<DataColumnDefinition> Columns =>
-    [
-        new("number", L["Shifts_Col_Number"], Primary: true, Width: "28%"),
-        new("status", L["Shifts_Status"], Width: "18%"),
-        new("register", L["Shifts_RegisterLabel"], Width: "28%"),
-        new("opened", L["Shifts_Col_Opened"], Width: "26%"),
-    ];
-
-    private RenderFragment<(PosCashierShiftDto Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
-    {
-        switch (context.Column.Key)
-        {
-            case "number":
-                builder.OpenElement(0, "a");
-                builder.AddAttribute(1, "class", "pos-link");
-                builder.AddAttribute(2, "href", $"/shifts/{context.Item.ShiftId:D}");
-                builder.AddContent(3, context.Item.ShiftNumber);
-                builder.CloseElement();
-                break;
-            case "status":
-                builder.AddContent(0, context.Item.Status);
-                break;
-            case "register":
-                builder.AddContent(0, string.IsNullOrWhiteSpace(context.Item.RegisterName)
-                    ? (context.Item.RegisterCode ?? "—")
-                    : $"{context.Item.RegisterCode} — {context.Item.RegisterName}");
-                break;
-            case "opened":
-                builder.AddContent(0, context.Item.OpenedAtUtc.ToLocalTime().ToString("g"));
-                break;
-        }
-    };
-
     protected override async Task OnInitializedAsync()
     {
+        Connectivity.ConnectivityChanged += OnConnectivityChanged;
+
         if (CurrentUser.Session?.OrganizationId is null)
         {
             Nav.NavigateTo(RoleHomeResolver.PersonalHome, replace: true);
@@ -162,6 +241,17 @@ else
         }
     }
 
+    private async void OnConnectivityChanged(object? sender, ConnectivityStatus status)
+    {
+        var wasOffline = _isOffline;
+        _isOffline = status == ConnectivityStatus.Offline;
+        await InvokeAsync(StateHasChanged);
+        if (wasOffline && !_isOffline && _allowed)
+        {
+            await InvokeAsync(ReloadAsync);
+        }
+    }
+
     private async Task GoHomeAsync() => Nav.NavigateTo(await Gate.ResolveStartRouteAsync());
 
     private async Task ReloadAsync()
@@ -169,57 +259,92 @@ else
         _loading = true;
         _errorTitle = null;
         _errorMessage = null;
-        _isOffline = !await Connectivity.IsConnectedAsync();
-        if (_isOffline)
+        try
         {
+            _isOffline = !await Connectivity.IsConnectedAsync();
+            if (_isOffline)
+            {
+                _items = Array.Empty<PosCashierShiftDto>();
+                _totalCount = 0;
+                _current = null;
+                return;
+            }
+
+            var current = await Shifts.GetCurrentAsync();
+            if (current.IsSuccess
+                && current.Data is not null
+                && string.Equals(current.Data.Status, "Open", StringComparison.OrdinalIgnoreCase))
+            {
+                _current = current.Data;
+            }
+            else
+            {
+                _current = null;
+            }
+
+            var result = await Shifts.ListAsync(
+                status: string.IsNullOrWhiteSpace(_statusFilter) ? null : _statusFilter,
+                shiftNumber: string.IsNullOrWhiteSpace(_search) ? null : _search.Trim(),
+                page: _page,
+                pageSize: _pageSize);
+
+            if (result.IsSuccess && result.Data is not null)
+            {
+                _items = result.Data.Items;
+                _totalCount = result.Data.TotalCount;
+                return;
+            }
+
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
             _items = Array.Empty<PosCashierShiftDto>();
             _totalCount = 0;
-            _current = null;
+        }
+        finally
+        {
             _loading = false;
-            return;
         }
-
-        var current = await Shifts.GetCurrentAsync();
-        if (current.IsSuccess
-            && current.Data is not null
-            && string.Equals(current.Data.Status, "Open", StringComparison.OrdinalIgnoreCase))
-        {
-            _current = current.Data;
-        }
-        else
-        {
-            _current = null;
-        }
-
-        var result = await Shifts.ListAsync(
-            status: string.IsNullOrWhiteSpace(_statusFilter) ? null : _statusFilter,
-            shiftNumber: string.IsNullOrWhiteSpace(_search) ? null : _search.Trim(),
-            page: _page,
-            pageSize: _pageSize);
-        _loading = false;
-        if (result.IsSuccess && result.Data is not null)
-        {
-            _items = result.Data.Items;
-            _totalCount = result.Data.TotalCount;
-            return;
-        }
-
-        var described = ApiLocalizer.Describe(result.Status, result.Error);
-        _errorTitle = described.Title;
-        _errorMessage = result.Error?.Detail ?? described.Message;
-        _items = Array.Empty<PosCashierShiftDto>();
-        _totalCount = 0;
     }
 
-    private async Task OnSearchChanged(string? value)
+    private async Task OnSearchInputAsync(ChangeEventArgs args)
     {
-        _search = value;
+        _search = args.Value?.ToString();
+        _page = 1;
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+        try
+        {
+            await Task.Delay(250, token);
+            await ReloadAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            // superseded by newer keystrokes
+        }
+    }
+
+    private async Task ClearSearchAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_search))
+        {
+            return;
+        }
+
+        _search = null;
         _page = 1;
         await ReloadAsync();
     }
 
     private async Task OnStatusFilterChanged(string? value)
     {
+        if (string.Equals(value, _statusFilter, StringComparison.Ordinal))
+        {
+            return;
+        }
+
         _statusFilter = value;
         _page = 1;
         await ReloadAsync();
@@ -231,6 +356,113 @@ else
         await ReloadAsync();
     }
 
-    private void GoOpen() => Nav.NavigateTo("/shifts/open");
-    private void GoCurrent() => Nav.NavigateTo(_current is null ? "/shifts" : $"/shifts/{_current.ShiftId:D}");
+    private async Task GoOpenAsync()
+    {
+        if (_openingNav || _isOffline || _current is not null
+            || !Capabilities.IsAllowed(UtangCapability.ManageShifts))
+        {
+            return;
+        }
+
+        _openingNav = true;
+        try
+        {
+            // Re-check before navigating to block duplicate open attempts.
+            _isOffline = !await Connectivity.IsConnectedAsync();
+            if (_isOffline)
+            {
+                return;
+            }
+
+            var current = await Shifts.GetCurrentAsync();
+            if (current.IsSuccess
+                && current.Data is not null
+                && string.Equals(current.Data.Status, "Open", StringComparison.OrdinalIgnoreCase))
+            {
+                _current = current.Data;
+                return;
+            }
+
+            Nav.NavigateTo("/shifts/open");
+        }
+        finally
+        {
+            _openingNav = false;
+        }
+    }
+
+    private void GoCurrent()
+    {
+        if (_current is null || _isOffline)
+        {
+            return;
+        }
+
+        Nav.NavigateTo($"/shifts/{_current.ShiftId:D}");
+    }
+
+    private void GoDetail(Guid shiftId)
+    {
+        if (_isOffline || shiftId == Guid.Empty)
+        {
+            return;
+        }
+
+        Nav.NavigateTo($"/shifts/{shiftId:D}");
+    }
+
+    private string StatusLabel(string? status) => status switch
+    {
+        "Open" => L["Shifts_Status_Open"],
+        "Closed" => L["Shifts_Status_Closed"],
+        "Cancelled" => L["Shifts_Status_Cancelled"],
+        _ => status ?? L["Shifts_Filter_All"]
+    };
+
+    private static string StatusTone(string? status) => status switch
+    {
+        "Open" => "open",
+        "Closed" => "closed",
+        "Cancelled" => "cancelled",
+        _ => "neutral"
+    };
+
+    private static string RegisterLabel(PosCashierShiftDto item)
+    {
+        if (!string.IsNullOrWhiteSpace(item.RegisterName))
+        {
+            return item.RegisterName;
+        }
+
+        if (!string.IsNullOrWhiteSpace(item.RegisterCode))
+        {
+            return item.RegisterCode;
+        }
+
+        return "—";
+    }
+
+    private static string FormatOpened(DateTimeOffset openedAtUtc) =>
+        openedAtUtc.ToLocalTime().ToString("g");
+
+    private string RowTimeLine(PosCashierShiftDto item)
+    {
+        if (string.Equals(item.Status, "Closed", StringComparison.OrdinalIgnoreCase)
+            && item.ClosedAtUtc is { } closed)
+        {
+            return string.Format(L["Shifts_ClosedFormat"].Value, closed.ToLocalTime().ToString("g"));
+        }
+
+        return string.Format(L["Shifts_OpenedFormat"].Value, FormatOpened(item.OpenedAtUtc));
+    }
+
+    private string RowAriaLabel(PosCashierShiftDto item) =>
+        $"{item.ShiftNumber}, {StatusLabel(item.Status)}, {RegisterLabel(item)}, {RowTimeLine(item)}";
+
+    public void Dispose()
+    {
+        Connectivity.ConnectivityChanged -= OnConnectivityChanged;
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+    }
 }

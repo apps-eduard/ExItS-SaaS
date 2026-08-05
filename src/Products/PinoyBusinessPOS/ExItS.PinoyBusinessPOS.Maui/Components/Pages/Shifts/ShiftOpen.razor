@@ -100,6 +100,15 @@ else
         _isOffline = !await Connectivity.IsConnectedAsync();
         if (!_isOffline)
         {
+            var current = await Shifts.GetCurrentAsync();
+            if (current.IsSuccess
+                && current.Data is not null
+                && string.Equals(current.Data.Status, "Open", StringComparison.OrdinalIgnoreCase))
+            {
+                Nav.NavigateTo($"/shifts/{current.Data.ShiftId:D}", replace: true);
+                return;
+            }
+
             await LoadAvailableRegistersAsync();
         }
 
@@ -202,27 +211,43 @@ else
 
     private async Task OpenAsync()
     {
-        if (_saving || _isOffline || _selectedRegisterGuid == Guid.Empty)
+        if (_saving || _isOffline || _selectedRegisterGuid == Guid.Empty
+            || !Capabilities.IsAllowed(UtangCapability.ManageShifts))
         {
             return;
         }
 
         _saving = true;
         _errorMessage = null;
-        var result = await Shifts.OpenAsync(new OpenCashierShiftRequest(_selectedRegisterGuid, _openingCash));
-        _saving = false;
-
-        if (result.IsSuccess && result.Data is not null)
+        try
         {
-            Nav.NavigateTo($"/shifts/{result.Data.ShiftId:D}");
-            return;
+            // Block duplicate open when an open shift already exists for this cashier.
+            var current = await Shifts.GetCurrentAsync();
+            if (current.IsSuccess
+                && current.Data is not null
+                && string.Equals(current.Data.Status, "Open", StringComparison.OrdinalIgnoreCase))
+            {
+                Nav.NavigateTo($"/shifts/{current.Data.ShiftId:D}");
+                return;
+            }
+
+            var result = await Shifts.OpenAsync(new OpenCashierShiftRequest(_selectedRegisterGuid, _openingCash));
+            if (result.IsSuccess && result.Data is not null)
+            {
+                Nav.NavigateTo($"/shifts/{result.Data.ShiftId:D}");
+                return;
+            }
+
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorMessage = result.Error?.Detail ?? described.Message;
+            if (!_isOffline)
+            {
+                await LoadAvailableRegistersAsync();
+            }
         }
-
-        var described = ApiLocalizer.Describe(result.Status, result.Error);
-        _errorMessage = result.Error?.Detail ?? described.Message;
-        if (!_isOffline)
+        finally
         {
-            await LoadAvailableRegistersAsync();
+            _saving = false;
         }
     }
 
