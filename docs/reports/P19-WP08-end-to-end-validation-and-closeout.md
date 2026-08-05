@@ -34,6 +34,7 @@ Provide the end-to-end Mobile POS ops validation checklist for physical-phone co
 - [ ] Registers list + Main Register; Cashier cannot administer without ManageRegisters
 - [ ] **Owner Selling Mode (role stays Owner) → Open Shift loads eligible registers → Start Shift enabled → sell → close shift with variance**
 - [ ] Cashier sell: search/category/tile → cart → cash tender/change → receipt → next sale
+- [ ] Cashier sell-floor visual system: portrait sheet + landscape three-pane; category does not clear cart; 48dp steppers (**Retest** — [mobile-production-ui-redesign](mobile-production-ui-redesign.md))
 - [ ] Card / GCash simulated checkout: awaiting payment → Dev simulate success/decline → receipt (**Retest** — [checklist](P19-card-gcash-payment-ui-and-simulation.md#9-phone-validation-checklist-retest--do-not-mark-device-verified))
 - [ ] Manual GCash operator-confirm path still completes immediately (legacy; unverified)
 - [ ] Sales history + receipt reopen

@@ -29,6 +29,8 @@ Deliver provider-ready POS Card and GCash checkout UX on Mobile (`SaleCheckout`)
 
 Phase 19 and Phase 20 remain **Open** until explicit user phone confirmation per [P19-WP08](P19-WP08-end-to-end-validation-and-closeout.md) and [P20-WP08](P20-WP08-end-to-end-validation-and-user-closeout.md).
 
+Payment chrome on `SaleCheckout` follows the production mobile visual system ([spec](../specs/mobile/production-mobile-design-system.md), [redesign report](mobile-production-ui-redesign.md)) — payment method tiles + electronic panel remain the commit path; UI scenarios **Retest**.
+
 ## 3. Architecture
 
 ### 3.1 Layering

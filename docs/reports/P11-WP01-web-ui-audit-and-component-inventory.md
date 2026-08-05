@@ -143,6 +143,8 @@ Thin `--exits-*` aliases (incomplete vs DesignSystem). Dark via `[data-theme="da
 
 Full `--exits-*` color/surface, shadow, radius, motion, spacing scale, type scale, breakpoints, z-index, density/touch tokens. Different palette (green-leaning) from Admin teal.
 
+**Later (2026-08):** POS production mobile visual system extends Design System authority with semantic typography roles, 48dp touch minimum, `QuantityStepper`, and `--pos-*` aliases — see [production-mobile-design-system](../specs/mobile/production-mobile-design-system.md) and [mobile-production-ui-redesign](mobile-production-ui-redesign.md). Admin remains on its own `--color-*` stack (no Inter/IBM Plex convergence forced here).
+
 ### Recommendation (later WPs)
 
 Keep Admin `--color-*` + typography stack authoritative for Platform Admin through shell work. Decide token convergence in P11-WP02/WP05 **without** replacing the working theme mechanism or Inter adoption.

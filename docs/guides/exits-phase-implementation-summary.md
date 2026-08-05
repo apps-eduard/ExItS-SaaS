@@ -327,6 +327,7 @@
 - P19-WP08 End-to-End Validation and User Closeout Checklist — **Retest** (awaiting phone confirmation; includes Personal MVP phone scenarios)
 - Public User QR / ExItS ID linking — **Code Complete** · phone **Retest** ([spec](../specs/identity/public-user-id-and-qr.md), [report](../reports/P19-user-qr-public-id-linking.md))
 - Card / GCash simulated payment UI — **Code Complete** · phone **Retest** ([report](../reports/P19-card-gcash-payment-ui-and-simulation.md)); `FakePaymentGateway` only; **not** production-ready; **not** Device Verified
+- Production mobile visual system (tokens + cashier sell-floor reference) — **In progress** · phone **Retest** ([spec](../specs/mobile/production-mobile-design-system.md), [report](../reports/mobile-production-ui-redesign.md)); **not** Device Verified; **not** production-ready
 
 **Approach:** Reuse existing Phase 8–18 APIs/screens; complete MAUI ops UX. Remains Open until user phone confirmation after WP08.
 

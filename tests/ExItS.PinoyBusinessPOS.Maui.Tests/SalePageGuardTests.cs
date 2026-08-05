@@ -21,7 +21,9 @@ public sealed class SalePageGuardTests
         Assert.Contains("LookupBySkuAsync", checkout, StringComparison.Ordinal);
         Assert.Contains("SaleCartService", checkout, StringComparison.Ordinal);
         Assert.Contains("Cart.SetQuantity", checkout, StringComparison.Ordinal);
-        Assert.Contains("Cart.Remove", checkout, StringComparison.Ordinal);
+        Assert.Contains("SaleCartPanel", checkout, StringComparison.Ordinal);
+        Assert.Contains("QuantityStepper", checkout, StringComparison.Ordinal);
+        Assert.Contains("pos-sell-floor", checkout, StringComparison.Ordinal);
         Assert.Contains("IPosCustomerClient", checkout, StringComparison.Ordinal);
         Assert.Contains("PosSaleOptions.UtangPaymentMethod", checkout, StringComparison.Ordinal);
         Assert.Contains("Sales_GCash_ManualWarning", checkout, StringComparison.Ordinal);
@@ -31,6 +33,12 @@ public sealed class SalePageGuardTests
         Assert.Contains("OperationalSetupTaxCalculator", checkout, StringComparison.Ordinal);
         Assert.Contains("ConfirmDialog", checkout, StringComparison.Ordinal);
         Assert.Contains("GetCreditSummaryAsync", checkout, StringComparison.Ordinal);
+
+        var cartPanel = File.ReadAllText(Path.Combine(
+            MauiProject(), "Components", "Sales", "SaleCartPanel.razor"));
+        Assert.Contains("Cart.Remove", cartPanel, StringComparison.Ordinal);
+        Assert.Contains("QuantityStepper", cartPanel, StringComparison.Ordinal);
+        Assert.Contains("Cart.SetQuantity", cartPanel, StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(sales, "SaleDetail.razor"));
         Assert.Contains("@page \"/sales/{SaleId:guid}\"", detail, StringComparison.Ordinal);
@@ -208,6 +216,12 @@ public sealed class SalePageGuardTests
                      "Sales_Checkout_ZeroTotalUtang",
                      "Sales_Checkout_QuantityWhole",
                      "Sales_Checkout_OfflineMessage",
+                     "Sales_Checkout_ViewCart",
+                     "Sales_Checkout_CartLineCount",
+                     "Sales_Checkout_DecreaseQty",
+                     "Sales_Checkout_IncreaseQty",
+                     "Sales_Checkout_ProductInCartAria",
+                     "Sales_Checkout_ProductAddAria",
                      "Sales_Detail_LinkedCustomer",
                      "Sales_Detail_LinkedCredit",
                      "Sales_Detail_LinkedDueDate",
