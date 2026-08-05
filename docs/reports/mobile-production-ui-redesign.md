@@ -10,6 +10,7 @@
 | UI scenarios | **Retest** until physical-phone approval |
 | Date | 2026-08-05 |
 | Feature commits | `ba1db38` (design-system tokens/stepper), `9b77de5` (sell-floor reference) |
+| Docs/tests commit | `572a3c5` |
 
 ## 1. Summary
 
