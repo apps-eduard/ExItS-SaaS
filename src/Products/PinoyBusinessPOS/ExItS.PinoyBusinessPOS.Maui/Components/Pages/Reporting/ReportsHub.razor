@@ -1,86 +1,124 @@
 @page "/reports"
+@using ExItS.DesignSystem.Components.Internal
 @using ExItS.PinoyBusinessPOS.Application.Commercial
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IUtangCapabilityEvaluator Capabilities
 @inject IStringLocalizer<PosResources> L
 
-<Page>
-    <PageHeader Title="@L["Reports_Title"]" Subtitle="@L["Reports_Subtitle"]">
-        <Actions>
+<div class="pos-reports">
+    <Page>
+        <header class="pos-reports__header">
+            <div class="pos-reports__heading">
+                <h1 class="pos-reports__title">@L["Reports_Title"]</h1>
+                <p class="pos-reports__subtitle">@L["Reports_Subtitle"]</p>
+            </div>
             @if (_canViewDashboard)
             {
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoDashboard">@L["Nav_Dashboard"]</Button>
+                <button type="button" class="pos-reports__dashboard" @onclick="GoDashboard">
+                    @L["Nav_Dashboard"]
+                    <span aria-hidden="true">›</span>
+                </button>
             }
-        </Actions>
-    </PageHeader>
+        </header>
 
-    @if (_showOperationalMenu)
-    {
-        <Section Title="@L["Reports_MenuTitle"]">
-            <Stack Gap="3">
-                @if (_canViewReports)
+        @if (_showOperationalMenu || _canViewReports)
+        {
+            <div class="pos-reports__search">
+                <span class="pos-reports__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                <input class="pos-reports__search-input"
+                       type="search"
+                       value="@_query"
+                       placeholder="@L["Reports_SearchPlaceholder"]"
+                       @oninput="OnSearchInput" />
+            </div>
+        }
+
+        @if (_showOperationalMenu)
+        {
+            <section class="pos-reports__section" aria-labelledby="reports-operational-heading">
+                <h2 id="reports-operational-heading" class="pos-reports__section-title">@L["Reports_OperationalSection"]</h2>
+                <p class="pos-reports__section-hint pos-muted">@L["Reports_OperationalSubtitle"]</p>
+
+                @{
+                    var operationalGroups = FilteredOperationalGroups.ToList();
+                }
+                @if (operationalGroups.Count == 0)
                 {
-                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/overview")'>@L["Reports_Overview"]</Button>
-                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/sales-summary")'>@L["Reports_SalesSummary"]</Button>
-                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/sales-by-payment")'>@L["Reports_SalesByPayment"]</Button>
-                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/sales-by-product")'>@L["Reports_SalesByProduct"]</Button>
-                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/returns")'>@L["Reports_Returns"]</Button>
-                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/shifts")'>@L["Reports_ShiftSummary"]</Button>
-                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/cash-variance")'>@L["Reports_CashVariance"]</Button>
-                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/inventory-status")'>@L["Reports_InventoryStatus"]</Button>
-                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/inventory-movements")'>@L["Reports_InventoryMovements"]</Button>
-                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/stock-count-variance")'>@L["Reports_StockCountVariance"]</Button>
-                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/purchasing-summary")'>@L["Reports_PurchasingSummary"]</Button>
-                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/purchase-outstanding")'>@L["Reports_PurchaseOutstanding"]</Button>
-                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/supplier-purchasing")'>@L["Reports_SupplierPurchasing"]</Button>
-                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/expenses-summary")'>@L["Reports_ExpenseSummary"]</Button>
-                    <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/utang-by-product")'>@L["Reports_UtangByProduct"]</Button>
+                    <p class="pos-reports__empty pos-muted">@L["Reports_NoMatches"]</p>
                 }
                 else
                 {
-                    @if (_canViewShifts)
+                    @foreach (var group in operationalGroups)
                     {
-                        <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/shifts")'>@L["Reports_ShiftSummary"]</Button>
-                        <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/cash-variance")'>@L["Reports_CashVariance"]</Button>
-                    }
-                    @if (_canViewInventory)
-                    {
-                        <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/inventory-status")'>@L["Reports_InventoryStatus"]</Button>
-                        <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/inventory-movements")'>@L["Reports_InventoryMovements"]</Button>
-                        <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/stock-count-variance")'>@L["Reports_StockCountVariance"]</Button>
-                    }
-                    @if (_canViewPurchasing)
-                    {
-                        <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/purchasing-summary")'>@L["Reports_PurchasingSummary"]</Button>
-                        <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/purchase-outstanding")'>@L["Reports_PurchaseOutstanding"]</Button>
-                        <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/supplier-purchasing")'>@L["Reports_SupplierPurchasing"]</Button>
-                    }
-                    @if (_canViewExpenses)
-                    {
-                        <Button Variant="ButtonVariant.Primary" OnClick='() => Go("/reports/operational/expenses-summary")'>@L["Reports_ExpenseSummary"]</Button>
+                        <div class="pos-reports__group">
+                            <h3 class="pos-reports__group-title">@group.Title</h3>
+                            <div class="pos-reports__list">
+                                @foreach (var item in group.Items)
+                                {
+                                    <button type="button"
+                                            class="pos-reports__row"
+                                            @onclick="() => Go(item.Path)">
+                                        <span class="pos-reports__row-body">
+                                            <span class="pos-reports__row-title">@item.Title</span>
+                                        </span>
+                                        <span class="pos-reports__chevron" aria-hidden="true">›</span>
+                                    </button>
+                                }
+                            </div>
+                        </div>
                     }
                 }
-            </Stack>
-        </Section>
-    }
+            </section>
+        }
 
-    @if (_canViewReports)
-    {
-        <Section Title="@L["Reports_LegacyMenuTitle"]">
-            <Stack Gap="3">
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoSales">@L["Reports_Sales"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoUtang">@L["Reports_Utang"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoInventory">@L["Reports_Inventory"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoExpenses">@L["Reports_Expenses"]</Button>
-            </Stack>
-        </Section>
-    }
+        @if (_canViewReports)
+        {
+            <section class="pos-reports__section" aria-labelledby="reports-classic-heading">
+                <h2 id="reports-classic-heading" class="pos-reports__section-title">@L["Reports_LegacyMenuTitle"]</h2>
+                <p class="pos-reports__section-hint pos-muted">@L["Reports_ClassicHint"]</p>
 
-    <Alert Tone="AlertTone.Info" Title="@L["Reports_ExportDeferredTitle"]" Message="@L["Reports_ExportDeferredMessage"]" />
-</Page>
+                @{
+                    var classicItems = FilteredClassicItems.ToList();
+                }
+                @if (classicItems.Count == 0)
+                {
+                    <p class="pos-reports__empty pos-muted">@L["Reports_NoMatches"]</p>
+                }
+                else
+                {
+                    <div class="pos-reports__list">
+                        @foreach (var item in classicItems)
+                        {
+                            <button type="button"
+                                    class="pos-reports__row"
+                                    @onclick="() => Go(item.Path)">
+                                <span class="pos-reports__row-body">
+                                    <span class="pos-reports__row-title">@item.Title</span>
+                                    @if (!string.IsNullOrWhiteSpace(item.Subtitle))
+                                    {
+                                        <span class="pos-reports__row-meta pos-muted">@item.Subtitle</span>
+                                    }
+                                </span>
+                                <span class="pos-reports__chevron" aria-hidden="true">›</span>
+                            </button>
+                        }
+                    </div>
+                }
+            </section>
+        }
+
+        <p class="pos-reports__footnote pos-muted">
+            <span class="pos-reports__footnote-title">@L["Reports_ExportDeferredTitle"].</span>
+            @L["Reports_ExportDeferredMessage"]
+        </p>
+    </Page>
+</div>
 
 @code {
+    private sealed record ReportLink(string Title, string Path, string? Subtitle = null);
+    private sealed record ReportGroup(string Title, IReadOnlyList<ReportLink> Items);
+
     private bool _canViewReports;
     private bool _canViewShifts;
     private bool _canViewInventory;
@@ -88,6 +126,15 @@
     private bool _canViewExpenses;
     private bool _canViewDashboard;
     private bool _showOperationalMenu;
+    private string _query = string.Empty;
+
+    private IEnumerable<ReportGroup> FilteredOperationalGroups =>
+        BuildOperationalGroups()
+            .Select(g => new ReportGroup(g.Title, g.Items.Where(MatchesQuery).ToList()))
+            .Where(g => g.Items.Count > 0);
+
+    private IEnumerable<ReportLink> FilteredClassicItems =>
+        BuildClassicItems().Where(MatchesQuery);
 
     protected override void OnInitialized()
     {
@@ -116,10 +163,92 @@
         }
     }
 
+    private void OnSearchInput(ChangeEventArgs args)
+    {
+        _query = args.Value?.ToString() ?? string.Empty;
+    }
+
+    private bool MatchesQuery(ReportLink item)
+    {
+        if (string.IsNullOrWhiteSpace(_query))
+        {
+            return true;
+        }
+
+        var q = _query.Trim();
+        return item.Title.Contains(q, StringComparison.OrdinalIgnoreCase)
+               || (!string.IsNullOrWhiteSpace(item.Subtitle)
+                   && item.Subtitle.Contains(q, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private IEnumerable<ReportGroup> BuildOperationalGroups()
+    {
+        if (_canViewReports)
+        {
+            yield return new ReportGroup(L["Reports_GroupSales"],
+            [
+                new ReportLink(L["Reports_Overview"], "/reports/operational/overview"),
+                new ReportLink(L["Reports_SalesSummary"], "/reports/operational/sales-summary"),
+                new ReportLink(L["Reports_SalesByPayment"], "/reports/operational/sales-by-payment"),
+                new ReportLink(L["Reports_SalesByProduct"], "/reports/operational/sales-by-product"),
+                new ReportLink(L["Reports_Returns"], "/reports/operational/returns")
+            ]);
+        }
+
+        if (_canViewReports || _canViewShifts)
+        {
+            yield return new ReportGroup(L["Reports_GroupShifts"],
+            [
+                new ReportLink(L["Reports_ShiftSummary"], "/reports/operational/shifts"),
+                new ReportLink(L["Reports_CashVariance"], "/reports/operational/cash-variance")
+            ]);
+        }
+
+        if (_canViewReports || _canViewInventory)
+        {
+            yield return new ReportGroup(L["Reports_GroupInventory"],
+            [
+                new ReportLink(L["Reports_InventoryStatus"], "/reports/operational/inventory-status"),
+                new ReportLink(L["Reports_InventoryMovements"], "/reports/operational/inventory-movements"),
+                new ReportLink(L["Reports_StockCountVariance"], "/reports/operational/stock-count-variance")
+            ]);
+        }
+
+        if (_canViewReports || _canViewPurchasing)
+        {
+            yield return new ReportGroup(L["Reports_GroupPurchasing"],
+            [
+                new ReportLink(L["Reports_PurchasingSummary"], "/reports/operational/purchasing-summary"),
+                new ReportLink(L["Reports_PurchaseOutstanding"], "/reports/operational/purchase-outstanding"),
+                new ReportLink(L["Reports_SupplierPurchasing"], "/reports/operational/supplier-purchasing")
+            ]);
+        }
+
+        if (_canViewReports || _canViewExpenses)
+        {
+            yield return new ReportGroup(L["Reports_GroupExpenses"],
+            [
+                new ReportLink(L["Reports_ExpenseSummary"], "/reports/operational/expenses-summary")
+            ]);
+        }
+
+        if (_canViewReports)
+        {
+            yield return new ReportGroup(L["Reports_GroupUtang"],
+            [
+                new ReportLink(L["Reports_UtangByProduct"], "/reports/operational/utang-by-product")
+            ]);
+        }
+    }
+
+    private IEnumerable<ReportLink> BuildClassicItems() =>
+    [
+        new ReportLink(L["Reports_Sales"], "/reports/sales", L["Reports_SalesSubtitle"]),
+        new ReportLink(L["Reports_Utang"], "/reports/utang", L["Reports_UtangSubtitle"]),
+        new ReportLink(L["Reports_Inventory"], "/reports/inventory", L["Reports_InventorySubtitle"]),
+        new ReportLink(L["Reports_Expenses"], "/reports/expenses", L["Reports_ExpensesSubtitle"])
+    ];
+
     private void GoDashboard() => Nav.NavigateTo("/dashboard");
     private void Go(string path) => Nav.NavigateTo(path);
-    private void GoSales() => Nav.NavigateTo("/reports/sales");
-    private void GoUtang() => Nav.NavigateTo("/reports/utang");
-    private void GoInventory() => Nav.NavigateTo("/reports/inventory");
-    private void GoExpenses() => Nav.NavigateTo("/reports/expenses");
 }

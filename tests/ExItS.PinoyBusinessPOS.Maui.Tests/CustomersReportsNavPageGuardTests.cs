@@ -48,6 +48,8 @@ public sealed class CustomersReportsNavPageGuardTests
         Assert.Contains("UtangCapability.ViewReports", hub, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ViewShifts", hub, StringComparison.Ordinal);
         Assert.Contains("cash-variance", hub, StringComparison.Ordinal);
+        Assert.Contains("pos-reports", hub, StringComparison.Ordinal);
+        Assert.Contains("Reports_SearchPlaceholder", hub, StringComparison.Ordinal);
 
         var operational = File.ReadAllText(Path.Combine(
             FindRepoRoot(),

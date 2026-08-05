@@ -15,7 +15,7 @@ public sealed class LocalizationAndFormattingTests
         "Common_Retry", "Common_Connected", "Api_TestConnection",
         "DevShowcase_Title", "DevShowcase_UnavailableTitle",
         "SignIn_Title", "SignIn_ContinueGoogle", "SignIn_WelcomeTitle", "Auth_Logout", "Access_DeniedTitle", "Welcome_Title",
-        "Nav_SkipToContent", "Org_StaffTitle", "Org_MembershipStaff"
+        "Nav_SkipToContent", "Reports_Title", "Reports_SearchPlaceholder", "Org_StaffTitle", "Org_MembershipStaff"
     ];
 
     [Fact]

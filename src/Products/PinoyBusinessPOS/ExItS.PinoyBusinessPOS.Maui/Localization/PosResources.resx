@@ -1199,6 +1199,16 @@
   <data name="Reports_Title" xml:space="preserve"><value>Reports</value></data>
   <data name="Reports_Subtitle" xml:space="preserve"><value>Read-only operational reports</value></data>
   <data name="Reports_MenuTitle" xml:space="preserve"><value>Choose a report</value></data>
+  <data name="Reports_SearchPlaceholder" xml:space="preserve"><value>Search reports</value></data>
+  <data name="Reports_OperationalSection" xml:space="preserve"><value>Operational</value></data>
+  <data name="Reports_ClassicHint" xml:space="preserve"><value>Snapshot summaries for Sales, Utang, Inventory, and Expenses.</value></data>
+  <data name="Reports_NoMatches" xml:space="preserve"><value>No reports match your search.</value></data>
+  <data name="Reports_GroupSales" xml:space="preserve"><value>Sales</value></data>
+  <data name="Reports_GroupShifts" xml:space="preserve"><value>Shifts &amp; cash</value></data>
+  <data name="Reports_GroupInventory" xml:space="preserve"><value>Inventory</value></data>
+  <data name="Reports_GroupPurchasing" xml:space="preserve"><value>Purchasing</value></data>
+  <data name="Reports_GroupExpenses" xml:space="preserve"><value>Expenses</value></data>
+  <data name="Reports_GroupUtang" xml:space="preserve"><value>Utang</value></data>
   <data name="Reports_Sales" xml:space="preserve"><value>Sales</value></data>
   <data name="Reports_Utang" xml:space="preserve"><value>Utang</value></data>
   <data name="Reports_Inventory" xml:space="preserve"><value>Inventory</value></data>
@@ -1225,9 +1235,9 @@
   <data name="Reports_VoidedExpenses" xml:space="preserve"><value>Voided expenses</value></data>
   <data name="Reports_ExpenseDetails" xml:space="preserve"><value>Expense details</value></data>
   <data name="Reports_ExportDeferredTitle" xml:space="preserve"><value>File export deferred</value></data>
-  <data name="Reports_ExportDeferredMessage" xml:space="preserve"><value>Report contracts are export-ready. CSV/PDF/Excel file generation is not included in this work package.</value></data>
+  <data name="Reports_ExportDeferredMessage" xml:space="preserve"><value>CSV/PDF/Excel file generation is not included yet.</value></data>
   <data name="Reports_LegacyMenuTitle" xml:space="preserve"><value>Classic reports</value></data>
-  <data name="Reports_OperationalSubtitle" xml:space="preserve"><value>Role-aware operational projection (online only)</value></data>
+  <data name="Reports_OperationalSubtitle" xml:space="preserve"><value>Role-aware projections (online only).</value></data>
   <data name="Reports_ResultsTitle" xml:space="preserve"><value>Results</value></data>
   <data name="Reports_UnknownKind" xml:space="preserve"><value>Unknown report.</value></data>
   <data name="Reports_Overview" xml:space="preserve"><value>Operational overview</value></data>
