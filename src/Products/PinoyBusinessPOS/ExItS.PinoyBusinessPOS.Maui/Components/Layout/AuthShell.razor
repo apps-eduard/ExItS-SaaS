@@ -9,28 +9,20 @@
 @inject IStringLocalizer<PosResources> L
 
 <div class="exds-root pos-shell pos-shell--auth" data-layout="phone" @key="_cultureEpoch">
-    <header class="pos-topbar">
-        @if (CurrentUser.IsAuthenticated)
-        {
-            <ShellOrganizationIdentity OrganizationIdOverride="@EffectiveOrgId"
-                                       OrganizationNameOverride="@EffectiveOrgName" />
-            <div class="pos-topbar__status">
-                <ShellAccountMenu ShowPersonalHome="true" />
-            </div>
-        }
-        else
-        {
-            <div class="pos-topbar__brand">
-                <span class="pos-topbar__logo" aria-hidden="true">ES</span>
-                <div class="pos-topbar__titles">
-                    <span class="pos-topbar__title">@L["Brand_Name"]</span>
-                </div>
-            </div>
-            <div class="pos-topbar__status">
-                @* Unauthenticated chrome keeps product brand; environment is not shown in the top bar. *@
-            </div>
-        }
-    </header>
+    @if (CurrentUser.IsAuthenticated)
+    {
+        <StoreHeader Identity="StoreHeaderIdentity.Organization"
+                     ShowSync="true"
+                     ShowPersonalHome="true"
+                     OrganizationIdOverride="@EffectiveOrgId"
+                     OrganizationNameOverride="@EffectiveOrgName" />
+    }
+    else
+    {
+        <StoreHeader Identity="StoreHeaderIdentity.Brand"
+                     ShowSync="false"
+                     ShowAccountMenu="false" />
+    }
     <main class="pos-content" id="pos-main">
         @Body
     </main>

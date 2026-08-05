@@ -52,7 +52,7 @@ public sealed class OrgSummaryUiGuardTests
 
         // Top-bar / shared switcher remain the context-switching surfaces.
         Assert.Contains("OrganizationDisplayName", topBar, StringComparison.Ordinal);
-        Assert.Contains("ShellAccountMenu", File.ReadAllText(Path.Combine(MauiProject(), "Components", "Layout", "PosShell.razor")), StringComparison.Ordinal);
+        Assert.Contains("ShellAccountMenu", File.ReadAllText(Path.Combine(MauiProject(), "Components", "Shared", "StoreHeader.razor")), StringComparison.Ordinal);
         Assert.Contains("IconName=\"more\"", accountMenu, StringComparison.Ordinal);
         Assert.Contains("SwitchToPersonalAsync", switcher, StringComparison.Ordinal);
         Assert.Contains("SelectOrganizationAsync", switcher, StringComparison.Ordinal);

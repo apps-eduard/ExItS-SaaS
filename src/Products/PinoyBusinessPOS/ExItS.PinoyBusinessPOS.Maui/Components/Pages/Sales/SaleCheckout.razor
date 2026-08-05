@@ -1,4 +1,4 @@
-@using ExItS.PinoyBusinessPOS.Application.OperationalSetup
+﻿@using ExItS.PinoyBusinessPOS.Application.OperationalSetup
 @using ExItS.PinoyBusinessPOS.Application.Payments
 @using ExItS.PinoyBusinessPOS.Domain.OperationalSetup
 @using ExItS.PinoyBusinessPOS.Domain.Payments
@@ -22,6 +22,7 @@
 @inject IConnectivityService Connectivity
 @inject IAppInfoService AppInfo
 @inject MauiPendingPaymentStore PendingPayment
+@inject StoreHeaderState HeaderState
 @inject IStringLocalizer<PosResources> L
 
 @if (!_ready)
@@ -40,13 +41,7 @@ else
     var paymentSelectBlocked = _isOffline || !canCreateCash || _electronicPaymentOpen;
     var blocked = _isOffline || (isUtang ? !canCreateUtang : !canCreateCash) || _openShift is null || _electronicPaymentOpen;
     var checkoutBlocked = blocked || !Cart.IsCheckoutReady;
-<Page>
-    <PageHeader Title="@L["Sales_Checkout_Title"]" Subtitle="@L["Sales_Checkout_Subtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Sales_BackToList"]</Button>
-        </Actions>
-    </PageHeader>
-
+<Page class="pos-sell-page">
     @if (_shiftRequired && _openShift is null && !_isOffline && canCreateCash)
     {
         <Alert Tone="AlertTone.Warning" Title="@L["Shifts_RequiredTitle"]" Message="@L["Shifts_RequiredMessage"]" />
@@ -167,133 +162,145 @@ else
         </Section>
     }
 
-    @if (!_electronicPaymentOpen)
+    @if (!_electronicPaymentOpen && !_showPayment)
     {
-    <div class="pos-sell-floor">
-        <aside class="pos-sell-categories" aria-label="@L["Sales_Checkout_CategoryFilter"]">
-            @foreach (var opt in CatalogUiOptions.CheckoutCategoryFilters(L, _categories))
-            {
-                var selected = string.Equals(_categoryFilter ?? string.Empty, opt.Value ?? string.Empty, StringComparison.Ordinal);
-                <button type="button"
-                        class="@($"pos-category-chip{(selected ? " pos-category-chip--selected" : string.Empty)}")"
-                        disabled="@(blocked || _loadingBrowse)"
-                        aria-pressed="@selected"
-                        @onclick="() => OnCategoryFilterChanged(opt.Value)">@opt.Text</button>
-            }
-        </aside>
-
+    <div class="pos-sell-floor pos-sell-floor--compact">
         <section class="pos-sell-products" aria-label="@L["Sales_Checkout_BrowseSection"]">
-            <Stack Gap="3">
+            <div class="pos-sell-search">
                 <TextInput Label="@L["Sales_Checkout_LookupLabel"]"
                            Value="@_lookupText"
                            ValueChanged="OnLookupTextChanged"
                            Hint="@L["Sales_Checkout_LookupHint"]"
                            Disabled="@(blocked || _lookingUp)" />
-                <FormActions>
-                    <Button Variant="ButtonVariant.Secondary"
-                            IsLoading="@_lookingUp"
-                            Disabled="@blocked"
-                            OnClick="LookupExactAsync">@L["Sales_Checkout_LookupExact"]</Button>
-                    <Button Variant="ButtonVariant.Secondary"
-                            IsLoading="@_lookingUp"
-                            Disabled="@blocked"
-                            OnClick="SearchAsync">@L["Sales_Checkout_Search"]</Button>
-                </FormActions>
+            </div>
 
-                @if (_matches.Count > 0)
+            <aside class="pos-sell-categories" aria-label="@L["Sales_Checkout_CategoryFilter"]">
+                @foreach (var opt in CatalogUiOptions.CheckoutCategoryFilters(L, _categories))
                 {
-                    <Stack Gap="2">
-                        @foreach (var match in _matches)
-                        {
-                            <div class="pos-row">
-                                <div>
-                                    <div class="pos-cart-line__name">@match.Name</div>
-                                    <div class="pos-cart-line__meta">@SalesUiOptions.UnitOfMeasureLabel(L, match.UnitOfMeasure)</div>
-                                </div>
-                                <div class="pos-cart-line__actions">
-                                    <MoneyDisplay Amount="@match.SellingPrice" CurrencyCode="PHP" />
-                                    <Button Variant="ButtonVariant.Secondary" Disabled="@blocked" OnClick="() => AddToCart(match)">@L["Sales_Checkout_AddToCart"]</Button>
-                                </div>
+                    var selected = string.Equals(_categoryFilter ?? string.Empty, opt.Value ?? string.Empty, StringComparison.Ordinal);
+                    <button type="button"
+                            class="@($"pos-category-chip{(selected ? " pos-category-chip--selected" : string.Empty)}")"
+                            disabled="@(blocked || _loadingBrowse)"
+                            aria-pressed="@selected"
+                            @onclick="() => OnCategoryFilterChanged(opt.Value)">@opt.Text</button>
+                }
+            </aside>
+
+            @if (_matches.Count > 0)
+            {
+                <div class="pos-product-row-list" role="list">
+                    @foreach (var match in _matches)
+                    {
+                        <button type="button"
+                                class="pos-product-row"
+                                disabled="@blocked"
+                                role="listitem"
+                                @onclick="() => AddToCart(match)">
+                            <div class="pos-product-row__line1">
+                                <span class="pos-product-row__name">@match.Name</span>
+                                <span class="pos-product-row__price"><MoneyDisplay Amount="@match.SellingPrice" CurrencyCode="PHP" /></span>
                             </div>
-                        }
-                    </Stack>
-                }
+                            <div class="pos-product-row__line2">@ProductRowMeta(match)</div>
+                        </button>
+                    }
+                </div>
+            }
 
-                <h2 class="pos-type-section">@L["Sales_Checkout_BrowseSection"]</h2>
-                @if (_loadingBrowse)
-                {
-                    <Skeleton />
-                    <Skeleton />
-                    <Skeleton />
-                }
-                else if (_browseProducts.Count == 0)
-                {
-                    <EmptyState IconName="inbox" Title="@L["Sales_Checkout_NoMatchTitle"]" Message="@L["Sales_Checkout_NoMatchMessage"]" />
-                }
-                else
-                {
-                    <div class="pos-product-tile-grid">
-                        @foreach (var product in _browseProducts)
-                        {
-                            var qty = Cart.GetQuantity(product.ProductId);
-                            var inCart = qty > 0m;
+            @if (_loadingBrowse)
+            {
+                <Skeleton />
+                <Skeleton />
+                <Skeleton />
+            }
+            else if (_browseProducts.Count == 0 && _matches.Count == 0)
+            {
+                <EmptyState IconName="inbox" Title="@L["Sales_Checkout_NoMatchTitle"]" Message="@L["Sales_Checkout_NoMatchMessage"]" />
+            }
+            else if (_browseProducts.Count > 0)
+            {
+                <div class="pos-product-row-list" role="list">
+                    @foreach (var product in _browseProducts)
+                    {
+                        var qty = Cart.GetQuantity(product.ProductId);
+                        var inCart = qty > 0m;
+                        <div @key="product.ProductId"
+                             class="@($"pos-product-row{(inCart ? " pos-product-row--in-cart" : string.Empty)}")"
+                             role="listitem">
                             <button type="button"
-                                    @key="product.ProductId"
-                                    class="@($"pos-product-tile{(inCart ? " pos-product-tile--in-cart" : string.Empty)}")"
+                                    class="pos-product-row__hit"
                                     disabled="@blocked"
                                     aria-label="@ProductTileAria(product, qty)"
                                     @onclick="() => OnBrowseProductTap(product)">
-                                <div class="pos-product-tile__placeholder" aria-hidden="true"></div>
-                                <span class="pos-product-tile__name">@product.Name</span>
-                                <span class="pos-product-tile__meta">@SalesUiOptions.UnitOfMeasureLabel(L, product.UnitOfMeasure)</span>
-                                <span class="pos-product-tile__price"><MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" /></span>
-                                @if (inCart)
-                                {
-                                    <div class="pos-product-tile__qty" @onclick:stopPropagation="true">
-                                        <QuantityStepper Value="@qty"
-                                                         ValueChanged="v => SetQuantity(product.ProductId, v)"
-                                                         Step="@(PosSaleOptions.RequiresWholeQuantity(product.UnitOfMeasure) ? 1m : 0.001m)"
-                                                         DecimalPlaces="@PosSaleOptions.MaxQuantityDecimals(product.UnitOfMeasure)"
-                                                         Disabled="@blocked"
-                                                         AriaLabel="@L["Sales_Checkout_Quantity"]"
-                                                         DecreaseLabel="@L["Sales_Checkout_DecreaseQty"]"
-                                                         IncreaseLabel="@L["Sales_Checkout_IncreaseQty"]" />
-                                    </div>
-                                }
+                                <div class="pos-product-row__line1">
+                                    <span class="pos-product-row__name">@product.Name</span>
+                                    <span class="pos-product-row__price"><MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" /></span>
+                                </div>
+                                <div class="pos-product-row__line2">@ProductRowMeta(product)</div>
                             </button>
-                        }
-                    </div>
-                }
-            </Stack>
+                            @if (inCart)
+                            {
+                                <div class="pos-product-row__qty">
+                                    <QuantityStepper Value="@qty"
+                                                     ValueChanged="v => SetQuantity(product.ProductId, v)"
+                                                     Step="@(PosSaleOptions.RequiresWholeQuantity(product.UnitOfMeasure) ? 1m : 0.001m)"
+                                                     DecimalPlaces="@PosSaleOptions.MaxQuantityDecimals(product.UnitOfMeasure)"
+                                                     Disabled="@blocked"
+                                                     AriaLabel="@L["Sales_Checkout_Quantity"]"
+                                                     DecreaseLabel="@L["Sales_Checkout_DecreaseQty"]"
+                                                     IncreaseLabel="@L["Sales_Checkout_IncreaseQty"]" />
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
         </section>
 
         <aside class="pos-sell-cart pos-sell-cart--landscape-only" aria-label="@L["Sales_Checkout_CartSection"]">
             <SaleCartPanel Disabled="@blocked" TaxPreview="@TaxPreview" PayableTotal="@PayableTotal" />
+            @if (!Cart.IsEmpty)
+            {
+                <FormActions>
+                    <Button Variant="ButtonVariant.Primary" Disabled="@blocked" OnClick="EnterPaymentStep">@L["Sales_Checkout_PaymentSection"]</Button>
+                </FormActions>
+            }
         </aside>
     </div>
 
     @if (!Cart.IsEmpty)
     {
-        <div class="pos-sell-sticky-bar" role="region" aria-label="@L["Sales_Checkout_CartSection"]">
-            <div class="pos-sell-sticky-bar__meta">
-                <span class="pos-sell-sticky-bar__count">@string.Format(L["Sales_Checkout_CartLineCount"], Cart.LineCount)</span>
-                <MoneyDisplay Amount="@PayableTotal" CurrencyCode="PHP" Emphasized="true" />
-            </div>
-            <Button Variant="ButtonVariant.Primary" OnClick="OpenCartSheet">@L["Sales_Checkout_ViewCart"]</Button>
-        </div>
+        <button type="button"
+                class="pos-sell-cart-fab"
+                disabled="@blocked"
+                aria-label="@string.Format(L["Sales_Checkout_CartFab"], Cart.LineCount)"
+                @onclick="EnterPaymentStep">
+            @string.Format(L["Sales_Checkout_CartFab"], Cart.LineCount)
+        </button>
+    }
     }
 
-    <div class="pos-sell-cart pos-sell-cart--portrait-sheet" hidden="@(!_cartSheetOpen)" role="dialog" aria-modal="true" aria-label="@L["Sales_Checkout_CartSection"]">
-        <FormActions>
-            <Button Variant="ButtonVariant.Ghost" OnClick="CloseCartSheet">@L["Common_Close"]</Button>
-        </FormActions>
-        <SaleCartPanel Disabled="@blocked" TaxPreview="@TaxPreview" PayableTotal="@PayableTotal" />
-    </div>
+    @if (!_electronicPaymentOpen && _showPayment)
+    {
+    <div class="pos-sell-payment">
+        <section class="pos-sell-payment__summary" aria-label="@L["Sales_Checkout_CartSection"]">
+            @foreach (var item in Cart.Items)
+            {
+                <div class="pos-sell-payment__line">
+                    <span class="pos-sell-payment__line-name">@item.Name</span>
+                    <span class="pos-sell-payment__line-qty pos-tabular">Ã—@item.Quantity</span>
+                    <span class="pos-sell-payment__line-total"><MoneyDisplay Amount="@item.LineTotal" CurrencyCode="PHP" /></span>
+                </div>
+            }
+            <div class="pos-sell-payment__total">
+                <span>@L["Sales_Field_Total"]</span>
+                <MoneyDisplay Amount="@PayableTotal" CurrencyCode="PHP" Emphasized="true" />
+            </div>
+        </section>
 
-    <Section Title="@L["Sales_Checkout_PaymentSection"]">
-        <Stack Gap="3">
+        <div class="pos-sell-payment__methods">
+        <Stack Gap="2">
             <span class="pos-muted">@L["Sales_Field_PaymentMethod"]</span>
-            <div class="pos-payment-method-grid">
+            <div class="pos-payment-method-grid pos-payment-method-grid--checkout">
                 @foreach (var methodCode in SalesUiOptions.CheckoutPaymentMethodCodes)
                 {
                     var selected = string.Equals(_paymentMethod, methodCode, StringComparison.Ordinal);
@@ -307,70 +314,84 @@ else
                 }
             </div>
 
-            @if (isUtang)
-            {
-                <Alert Tone="AlertTone.Warning" Title="@L["Sales_Checkout_UtangSection"]" Message="@L["Sales_Checkout_UtangWarning"]" />
-                <TextInput Label="@L["Sales_Checkout_CustomerSearch"]"
-                           Value="@_customerSearch"
-                           ValueChanged="v => _customerSearch = v"
-                           Hint="@L["Sales_Checkout_SelectCustomer"]"
-                           Disabled="@(blocked || _searchingCustomers)" />
-                <FormActions>
-                    <Button Variant="ButtonVariant.Secondary"
-                            IsLoading="@_searchingCustomers"
-                            Disabled="@blocked"
-                            OnClick="SearchCustomersAsync">@L["Sales_Checkout_Search"]</Button>
-                    <Button Variant="ButtonVariant.Ghost"
-                            Disabled="@blocked"
-                            OnClick="GoResolveCustomerExItsId">@L["Personal_AddByExItsId"]</Button>
-                </FormActions>
-
-                @if (_customerMatches.Count > 0)
+            <div class="pos-sell-customer">
+                <button type="button"
+                        class="pos-sell-customer__toggle"
+                        disabled="@blocked"
+                        aria-expanded="@_customerExpanded"
+                        @onclick="() => _customerExpanded = !_customerExpanded">
+                    <span>@L["Sales_Checkout_OptionalCustomer"]</span>
+                    <span aria-hidden="true">@(_customerExpanded ? "âˆ’" : "+")</span>
+                </button>
+                @if (_customerExpanded)
                 {
+                    @if (isUtang)
+                    {
+                        <Alert Tone="AlertTone.Warning" Title="@L["Sales_Checkout_UtangSection"]" Message="@L["Sales_Checkout_UtangWarning"]" />
+                    }
                     <Stack Gap="2">
-                        @foreach (var match in _customerMatches)
-                        {
-                            <div class="pos-row">
-                                <span class="pos-value-md">@match.DisplayName</span>
-                                <span class="pos-muted">@(string.IsNullOrWhiteSpace(match.MobileNumber) ? L["Customers_NoMobile"] : match.MobileNumber)</span>
+                        <TextInput Label="@L["Sales_Checkout_CustomerSearch"]"
+                                   Value="@_customerSearch"
+                                   ValueChanged="v => _customerSearch = v"
+                                   Hint="@L["Sales_Checkout_SelectCustomer"]"
+                                   Disabled="@(blocked || _searchingCustomers)" />
+                        <FormActions>
+                            <Button Variant="ButtonVariant.Secondary"
+                                    IsLoading="@_searchingCustomers"
+                                    Disabled="@blocked"
+                                    OnClick="SearchCustomersAsync">@L["Sales_Checkout_Search"]</Button>
+                            <Button Variant="ButtonVariant.Ghost"
+                                    Disabled="@blocked"
+                                    OnClick="GoResolveCustomerExItsId">@L["Personal_AddByExItsId"]</Button>
+                            @if (_selectedCustomer is not null)
+                            {
                                 <Button Variant="ButtonVariant.Secondary"
                                         Disabled="@blocked"
-                                        OnClick="() => SelectCustomerAsync(match)">@L["Sales_Checkout_SelectCustomer"]</Button>
+                                        OnClick="ClearCustomerSelection">@L["Sales_Checkout_Remove"]</Button>
+                            }
+                        </FormActions>
+                        @if (_customerMatches.Count > 0)
+                        {
+                            <Stack Gap="1">
+                                @foreach (var match in _customerMatches)
+                                {
+                                    <div class="pos-row">
+                                        <span class="pos-value-md">@match.DisplayName</span>
+                                        <span class="pos-muted">@(string.IsNullOrWhiteSpace(match.MobileNumber) ? L["Customers_NoMobile"] : match.MobileNumber)</span>
+                                        <Button Variant="ButtonVariant.Secondary"
+                                                Disabled="@blocked"
+                                                OnClick="() => SelectCustomerAsync(match)">@L["Sales_Checkout_SelectCustomer"]</Button>
+                                    </div>
+                                }
+                            </Stack>
+                        }
+                        @if (_selectedCustomer is not null)
+                        {
+                            <div>
+                                <span class="pos-muted">@L["Sales_Checkout_SelectCustomer"]</span>
+                                <div class="pos-value-md">@_selectedCustomer.DisplayName</div>
+                                @if (isUtang && _selectedOutstanding is not null)
+                                {
+                                    <div class="pos-muted">@L["Sales_Checkout_Outstanding"]: <MoneyDisplay Amount="@_selectedOutstanding.Value" CurrencyCode="PHP" /></div>
+                                }
                             </div>
+                        }
+                        @if (isUtang)
+                        {
+                            <DateInput Label="@L["Sales_Checkout_DueDateOptional"]"
+                                       Value="@_dueDate"
+                                       ValueChanged="v => _dueDate = v"
+                                       Disabled="@blocked" />
                         }
                     </Stack>
                 }
-
-                @if (_selectedCustomer is not null)
+                else if (_selectedCustomer is not null)
                 {
-                    <div>
-                        <span class="pos-muted">@L["Sales_Checkout_SelectCustomer"]</span>
-                        <div class="pos-value-md">@_selectedCustomer.DisplayName</div>
-                    </div>
-                    <div>
-                        <span class="pos-muted">@L["Sales_Checkout_Outstanding"]</span>
-                        <div class="pos-value-md">
-                            @if (_selectedOutstanding is null)
-                            {
-                                <Spinner />
-                            }
-                            else
-                            {
-                                <MoneyDisplay Amount="@_selectedOutstanding.Value" CurrencyCode="PHP" />
-                            }
-                        </div>
-                    </div>
-                    <div>
-                        <span class="pos-muted">@L["Sales_Checkout_AmountToUtang"]</span>
-                        <div class="pos-value-md"><MoneyDisplay Amount="@PayableTotal" CurrencyCode="PHP" /></div>
-                    </div>
-                    <DateInput Label="@L["Sales_Checkout_DueDateOptional"]"
-                               Value="@_dueDate"
-                               ValueChanged="v => _dueDate = v"
-                               Disabled="@blocked" />
+                    <div class="pos-sell-customer__summary">@_selectedCustomer.DisplayName</div>
                 }
-            }
-            else if (isManualGCash)
+            </div>
+
+            @if (isManualGCash)
             {
                 <Alert Tone="AlertTone.Warning" Title="@L["Sales_GCash_ManualTitle"]" Message="@L["Sales_GCash_ManualWarning"]" />
                 <TextInput Label="@L["Sales_Field_GCashReference"]"
@@ -386,111 +407,14 @@ else
             }
             else if (isElectronic)
             {
-                <Section Title="@L["Sales_Checkout_OptionalCustomer"]">
-                    <Stack Gap="3">
-                        <TextInput Label="@L["Sales_Checkout_CustomerSearch"]"
-                                   Value="@_customerSearch"
-                                   ValueChanged="v => _customerSearch = v"
-                                   Hint="@L["Sales_Checkout_SelectCustomer"]"
-                                   Disabled="@(blocked || _searchingCustomers)" />
-                        <FormActions>
-                            <Button Variant="ButtonVariant.Secondary"
-                                    IsLoading="@_searchingCustomers"
-                                    Disabled="@blocked"
-                                    OnClick="SearchCustomersAsync">@L["Sales_Checkout_Search"]</Button>
-                            <Button Variant="ButtonVariant.Ghost"
-                                    Disabled="@blocked"
-                                    OnClick="GoResolveCustomerExItsId">@L["Personal_AddByExItsId"]</Button>
-                            @if (_selectedCustomer is not null)
-                            {
-                                <Button Variant="ButtonVariant.Secondary"
-                                        Disabled="@blocked"
-                                        OnClick="ClearCustomerSelection">@L["Sales_Checkout_Remove"]</Button>
-                            }
-                        </FormActions>
-
-                        @if (_customerMatches.Count > 0)
-                        {
-                            <Stack Gap="2">
-                                @foreach (var match in _customerMatches)
-                                {
-                                    <div class="pos-row">
-                                        <span class="pos-value-md">@match.DisplayName</span>
-                                        <span class="pos-muted">@(string.IsNullOrWhiteSpace(match.MobileNumber) ? L["Customers_NoMobile"] : match.MobileNumber)</span>
-                                        <Button Variant="ButtonVariant.Secondary"
-                                                Disabled="@blocked"
-                                                OnClick="() => SelectCustomerAsync(match)">@L["Sales_Checkout_SelectCustomer"]</Button>
-                                    </div>
-                                }
-                            </Stack>
-                        }
-
-                        @if (_selectedCustomer is not null)
-                        {
-                            <div>
-                                <span class="pos-muted">@L["Sales_Checkout_SelectCustomer"]</span>
-                                <div class="pos-value-md">@_selectedCustomer.DisplayName</div>
-                            </div>
-                        }
-                    </Stack>
-                </Section>
                 <div>
                     <span class="pos-muted">@L["Sales_Field_Total"]</span>
                     <div class="pos-value-md"><MoneyDisplay Amount="@PayableTotal" CurrencyCode="PHP" /></div>
                 </div>
                 <div class="pos-muted">@(isCard ? L["Sales_EPayment_SecureCheckout"] : L["Sales_EPayment_QrLabel"])</div>
             }
-            else
+            else if (!isUtang)
             {
-                <Section Title="@L["Sales_Checkout_OptionalCustomer"]">
-                    <Stack Gap="3">
-                        <TextInput Label="@L["Sales_Checkout_CustomerSearch"]"
-                                   Value="@_customerSearch"
-                                   ValueChanged="v => _customerSearch = v"
-                                   Hint="@L["Sales_Checkout_SelectCustomer"]"
-                                   Disabled="@(blocked || _searchingCustomers)" />
-                        <FormActions>
-                            <Button Variant="ButtonVariant.Secondary"
-                                    IsLoading="@_searchingCustomers"
-                                    Disabled="@blocked"
-                                    OnClick="SearchCustomersAsync">@L["Sales_Checkout_Search"]</Button>
-                            <Button Variant="ButtonVariant.Ghost"
-                                    Disabled="@blocked"
-                                    OnClick="GoResolveCustomerExItsId">@L["Personal_AddByExItsId"]</Button>
-                            @if (_selectedCustomer is not null)
-                            {
-                                <Button Variant="ButtonVariant.Secondary"
-                                        Disabled="@blocked"
-                                        OnClick="ClearCustomerSelection">@L["Sales_Checkout_Remove"]</Button>
-                            }
-                        </FormActions>
-
-                        @if (_customerMatches.Count > 0)
-                        {
-                            <Stack Gap="2">
-                                @foreach (var match in _customerMatches)
-                                {
-                                    <div class="pos-row">
-                                        <span class="pos-value-md">@match.DisplayName</span>
-                                        <span class="pos-muted">@(string.IsNullOrWhiteSpace(match.MobileNumber) ? L["Customers_NoMobile"] : match.MobileNumber)</span>
-                                        <Button Variant="ButtonVariant.Secondary"
-                                                Disabled="@blocked"
-                                                OnClick="() => SelectCustomerAsync(match)">@L["Sales_Checkout_SelectCustomer"]</Button>
-                                    </div>
-                                }
-                            </Stack>
-                        }
-
-                        @if (_selectedCustomer is not null)
-                        {
-                            <div>
-                                <span class="pos-muted">@L["Sales_Checkout_SelectCustomer"]</span>
-                                <div class="pos-value-md">@_selectedCustomer.DisplayName</div>
-                            </div>
-                        }
-                    </Stack>
-                </Section>
-
                 <CurrencyInput Label="@L["Sales_Field_AmountTendered"]"
                                Value="@_amountTendered"
                                ValueChanged="v => _amountTendered = v"
@@ -500,23 +424,46 @@ else
                                IsInvalid="@(!string.IsNullOrEmpty(_tenderError))"
                                ErrorText="@_tenderError"
                                Disabled="@blocked" />
-                <div>
-                    <span class="pos-muted">@L["Sales_Field_ChangeAmount"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@ChangePreview" CurrencyCode="PHP" /></div>
+                <div class="pos-sell-tender-quick" role="group" aria-label="@L["Sales_Field_AmountTendered"]">
+                    <button type="button" class="pos-sell-tender-quick__btn" disabled="@blocked" @onclick="SetTenderExact">@L["Sales_TenderExact"]</button>
+                    <button type="button" class="pos-sell-tender-quick__btn" disabled="@blocked" @onclick="() => SetTenderQuick(50m)">@L["Sales_TenderQuick50"]</button>
+                    <button type="button" class="pos-sell-tender-quick__btn" disabled="@blocked" @onclick="() => SetTenderQuick(100m)">@L["Sales_TenderQuick100"]</button>
+                    <button type="button" class="pos-sell-tender-quick__btn" disabled="@blocked" @onclick="() => SetTenderQuick(200m)">@L["Sales_TenderQuick200"]</button>
+                    <button type="button" class="pos-sell-tender-quick__btn" disabled="@blocked" @onclick="() => SetTenderQuick(500m)">@L["Sales_TenderQuick500"]</button>
+                </div>
+                <div class="pos-sell-change">
+                    <span class="pos-sell-change__label">@L["Sales_Field_ChangeAmount"]</span>
+                    <span class="pos-sell-change__value"><MoneyDisplay Amount="@ChangePreview" CurrencyCode="PHP" Emphasized="true" /></span>
                 </div>
             }
+            else if (isUtang && !_customerExpanded)
+            {
+                <Alert Tone="AlertTone.Warning" Title="@L["Sales_Checkout_UtangSection"]" Message="@L["Sales_Checkout_UtangWarning"]" />
+            }
         </Stack>
-    </Section>
-    }
+        </div>
 
     @if (!_electronicPaymentOpen)
     {
+    <div class="pos-sell-payment__actions">
+    <FormActions>
+        <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="ExitPaymentStep">@L["Sales_Cancel"]</Button>
+        <div class="pos-sell-record-sale">
+            <Button Variant="ButtonVariant.Primary"
+                    IsLoading="@_saving"
+                    Disabled="@checkoutBlocked"
+                    OnClick="OpenConfirm">@L["Sales_Checkout_Confirm"]</Button>
+        </div>
+    </FormActions>
+    </div>
+    }
+    </div>
+    }
+
+    @if (_electronicPaymentOpen)
+    {
     <FormActions>
         <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="GoList">@L["Sales_Cancel"]</Button>
-        <Button Variant="ButtonVariant.Primary"
-                IsLoading="@_saving"
-                Disabled="@checkoutBlocked"
-                OnClick="OpenConfirm">@L["Sales_Checkout_Confirm"]</Button>
     </FormActions>
     }
 
@@ -529,7 +476,6 @@ else
                    OnConfirm="CheckoutAsync" />
 </Page>
 }
-
 @code {
     [SupplyParameterFromQuery(Name = "displayName")]
     public string? ResolvedDisplayName { get; set; }
@@ -567,7 +513,7 @@ else
     private decimal _setupVatPercent;
     private string _setupPricingMode = "TaxExclusive";
 
-    private const int BrowsePageSize = 24;
+    private const int BrowsePageSize = 40;
 
     /// <summary>
     /// Stable per-attempt sale identifier. Re-sending the same identifier after a failed or unclear
@@ -582,7 +528,9 @@ else
     private string _attemptPaymentIdempotencyKey = Guid.NewGuid().ToString("N");
 
     private bool _electronicPaymentOpen;
-    private bool _cartSheetOpen;
+    private bool _showPayment;
+    private bool _customerExpanded;
+    private bool _paymentHeaderActive;
     private CancellationTokenSource? _lookupDebounceCts;
     private int _searchGeneration;
     private bool _paymentActing;
@@ -768,7 +716,67 @@ else
             ? parsed
             : TaxPricingMode.TaxExclusive;
 
-    private void OnCartChanged() => StateHasChanged();
+    private void OnCartChanged()
+    {
+        if (_showPayment && Cart.IsEmpty)
+        {
+            ExitPaymentStep();
+            return;
+        }
+
+        StateHasChanged();
+    }
+
+    private void EnterPaymentStep()
+    {
+        if (Cart.IsEmpty)
+        {
+            return;
+        }
+
+        _showPayment = true;
+        if (!_paymentHeaderActive)
+        {
+            HeaderState.EnterInner(backHandler: () =>
+            {
+                ExitPaymentStep();
+                return Task.CompletedTask;
+            });
+            _paymentHeaderActive = true;
+        }
+
+        StateHasChanged();
+    }
+
+    private void ExitPaymentStep()
+    {
+        _showPayment = false;
+        if (_paymentHeaderActive)
+        {
+            HeaderState.ExitInner();
+            _paymentHeaderActive = false;
+        }
+
+        StateHasChanged();
+    }
+
+    private void SetTenderExact()
+    {
+        _amountTendered = PayableTotal;
+        _tenderError = null;
+    }
+
+    private void SetTenderQuick(decimal amount)
+    {
+        _amountTendered = amount;
+        _tenderError = null;
+    }
+
+    private string ProductRowMeta(PosCatalogProductDto product)
+    {
+        var unit = SalesUiOptions.UnitOfMeasureLabel(L, product.UnitOfMeasure);
+        return string.Format(L["Sales_Checkout_UnitStock"].Value, unit, L["Sales_Checkout_InStock"].Value);
+    }
 
     private string QuantityError(string unitOfMeasure) =>
         PosSaleOptions.RequiresWholeQuantity(unitOfMeasure)
@@ -808,6 +816,7 @@ else
             _amountTendered = null;
             _gcashReference = null;
             _gcashConfirmed = false;
+            _customerExpanded = true;
             if (_selectedCustomer is not null)
             {
                 _ = LoadSelectedCustomerOutstandingAsync();
@@ -913,9 +922,9 @@ else
     private void SetQuantity(Guid productId, decimal? quantity) =>
         Cart.SetQuantity(productId, quantity ?? 0m);
 
-    private void OpenCartSheet() => _cartSheetOpen = true;
+    private void OpenCartSheet() => EnterPaymentStep();
 
-    private void CloseCartSheet() => _cartSheetOpen = false;
+    private void CloseCartSheet() => ExitPaymentStep();
 
     private void OnLookupTextChanged(string? value)
     {
@@ -1472,6 +1481,12 @@ else
 
     public void Dispose()
     {
+        if (_paymentHeaderActive)
+        {
+            HeaderState.ExitInner();
+            _paymentHeaderActive = false;
+        }
+
         Cart.Changed -= OnCartChanged;
         _lookupDebounceCts?.Cancel();
         _lookupDebounceCts?.Dispose();

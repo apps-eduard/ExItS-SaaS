@@ -1,0 +1,404 @@
+@implements IDisposable
+@using ExItS.DesignSystem.Components.Internal
+@inject IPosSyncStatusService SyncStatus
+@inject IOfflineQueueProcessor QueueProcessor
+@inject ICustomerCreditOfflineSyncService CustomerCreditSync
+@inject IOfflineOperationQueue OfflineQueue
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-sync-anchor">
+    <button type="button"
+            class="pos-sync-status pos-sync-status--chip pos-sync-status--@SyncToneClass @(IsQuietStatus ? "pos-sync-status--quiet" : "pos-sync-status--attention")"
+            title="@SyncTitle"
+            aria-label="@SyncAccessibleLabel"
+            aria-expanded="@_syncPanelOpen"
+            aria-haspopup="dialog"
+            @onclick="ToggleSyncPanelAsync">
+        <span class="pos-sync-status__marker" aria-hidden="true"></span>
+        <span class="pos-sync-status__icon" aria-hidden="true">@IconGlyphs.Get(SyncIconName)</span>
+        @if (ShowPendingBadge)
+        {
+            <span class="pos-sync-status__badge" aria-hidden="true">@PendingBadgeText</span>
+        }
+        @if (ShowChipLabel)
+        {
+            <span class="pos-sync-status__label">@SyncChipLabel</span>
+        }
+    </button>
+
+    @if (_syncPanelOpen)
+    {
+        <div class="pos-sync-popover"
+             role="dialog"
+             aria-label="@L["SyncStatus_Label"]"
+             aria-modal="false">
+            <section class="pos-sync-popover__section" aria-labelledby="pos-sync-connection-heading">
+                <h2 id="pos-sync-connection-heading" class="pos-sync-popover__section-label">
+                    @L["SyncStatus_ConnectionLabel"]
+                </h2>
+                <div class="pos-sync-popover__row">
+                    <span class="pos-sync-status__marker pos-sync-status__marker--@ConnectionToneClass"
+                          aria-hidden="true"></span>
+                    <div class="pos-sync-popover__copy">
+                        <p class="pos-sync-popover__value pos-sync-popover__value--@ConnectionToneClass">
+                            @ConnectionTitle
+                        </p>
+                        @if (!string.IsNullOrEmpty(ConnectionSubtitle))
+                        {
+                            <p class="pos-sync-popover__subtitle pos-muted">@ConnectionSubtitle</p>
+                        }
+                    </div>
+                </div>
+            </section>
+
+            <section class="pos-sync-popover__section" aria-labelledby="pos-sync-sync-heading">
+                <h2 id="pos-sync-sync-heading" class="pos-sync-popover__section-label">
+                    @L["SyncStatus_SyncLabel"]
+                </h2>
+                <div class="pos-sync-popover__row">
+                    @if (SyncKind is PosSyncStatusKind.Syncing)
+                    {
+                        <span class="pos-sync-popover__spinner" aria-hidden="true">
+                            <Spinner Size="SpinnerSize.Sm" />
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="pos-sync-status__marker pos-sync-status__marker--@SyncSectionToneClass"
+                              aria-hidden="true"></span>
+                    }
+                    <div class="pos-sync-popover__copy">
+                        <p class="pos-sync-popover__value pos-sync-popover__value--@SyncSectionToneClass">
+                            @SyncSectionTitle
+                        </p>
+                        @if (!string.IsNullOrEmpty(SyncSectionSubtitle))
+                        {
+                            <p class="pos-sync-popover__subtitle pos-muted">@SyncSectionSubtitle</p>
+                        }
+                    </div>
+                </div>
+            </section>
+
+            @if (_recoveryRequired)
+            {
+                <p class="pos-sync-popover__recovery"><strong>@L["Offline_RecoveryRequired"]</strong></p>
+            }
+
+            <div class="pos-sync-popover__actions">
+                @if (ShowRetryAction)
+                {
+                    <button type="button"
+                            class="pos-sync-popover__action pos-sync-popover__action--primary"
+                            disabled="@(_retryBusy || _refreshBusy)"
+                            @onclick="RetrySyncAsync">
+                        @(_retryBusy ? L["Common_Loading"] : RetryActionLabel)
+                    </button>
+                }
+                @if (_canRefreshFromServer)
+                {
+                    <button type="button"
+                            class="pos-sync-popover__action"
+                            disabled="@(_retryBusy || _refreshBusy)"
+                            @onclick="RefreshFromServerAsync">
+                        @(_refreshBusy ? L["Common_Loading"] : L["Offline_RefreshFromServer"])
+                    </button>
+                }
+                <button type="button"
+                        class="pos-sync-popover__action"
+                        @onclick="Close">
+                    @L["Common_Close"]
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public EventCallback OnPanelOpened { get; set; }
+
+    private bool _syncPanelOpen;
+    private bool _retryBusy;
+    private bool _refreshBusy;
+    private bool _recoveryRequired;
+    private bool _canRefreshFromServer;
+    private bool _isConnected;
+    private int _queuePending;
+    private int _queueSyncing;
+    private int _failedCount;
+
+    protected override void OnInitialized()
+    {
+        SyncStatus.Changed += OnSyncChangedAsync;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await SyncStatus.InitializeAsync();
+        await RefreshQueueIndicatorsAsync();
+        StateHasChanged();
+    }
+
+    public void Close() => _syncPanelOpen = false;
+
+    public bool IsOpen => _syncPanelOpen;
+
+    private async Task ToggleSyncPanelAsync()
+    {
+        _syncPanelOpen = !_syncPanelOpen;
+        if (_syncPanelOpen)
+        {
+            await RefreshQueueIndicatorsAsync();
+            if (OnPanelOpened.HasDelegate)
+            {
+                await OnPanelOpened.InvokeAsync();
+            }
+        }
+    }
+
+    private async Task RefreshQueueIndicatorsAsync()
+    {
+        try
+        {
+            _isConnected = await Connectivity.IsConnectedAsync();
+            _canRefreshFromServer = _isConnected;
+            var counts = await OfflineQueue.GetCountsAsync();
+            _queuePending = counts.Pending;
+            _queueSyncing = counts.Syncing;
+            _failedCount = counts.RetryableFailure + counts.PermanentFailure + counts.Conflict + counts.BlockedByAccess;
+            _recoveryRequired = counts.Conflict > 0 || counts.PermanentFailure > 0 || counts.BlockedByAccess > 0;
+        }
+        catch
+        {
+            _recoveryRequired = false;
+            _canRefreshFromServer = false;
+            _queuePending = 0;
+            _queueSyncing = 0;
+            _failedCount = 0;
+        }
+    }
+
+    private PosSyncStatusKind SyncKind => SyncStatus.Current.Kind;
+
+    private bool IsQuietStatus =>
+        SyncKind is PosSyncStatusKind.Online or PosSyncStatusKind.LastSynced;
+
+    private int PendingDisplayCount =>
+        SyncStatus.Current.PendingCount
+        ?? (_queuePending + _queueSyncing + Math.Max(0, _failedCount));
+
+    private int SyncingQueueTotal => Math.Max(1, _queuePending + _queueSyncing);
+
+    private bool ShowPendingBadge =>
+        SyncKind is PosSyncStatusKind.PendingSync or PosSyncStatusKind.Syncing
+        && PendingDisplayCount > 0;
+
+    private string PendingBadgeText => PendingDisplayCount.ToString();
+
+    private bool ShowChipLabel =>
+        SyncKind is not PosSyncStatusKind.Online
+        and not PosSyncStatusKind.LastSynced
+        and not PosSyncStatusKind.PendingSync;
+
+    private string SyncToneClass => SyncKind switch
+    {
+        PosSyncStatusKind.Online => "online",
+        PosSyncStatusKind.Offline => "offline",
+        PosSyncStatusKind.ReconnectRequired => "reconnect",
+        PosSyncStatusKind.PendingSync => "pending",
+        PosSyncStatusKind.Syncing => "syncing",
+        PosSyncStatusKind.SyncFailed => "failed",
+        PosSyncStatusKind.LastSynced => "synced",
+        PosSyncStatusKind.RecoveryRequired => "recovery",
+        _ => "offline",
+    };
+
+    private string SyncIconName => SyncKind switch
+    {
+        PosSyncStatusKind.Online => "check",
+        PosSyncStatusKind.Offline => "cloud-off",
+        PosSyncStatusKind.ReconnectRequired => "warning",
+        PosSyncStatusKind.PendingSync => "inbox",
+        PosSyncStatusKind.Syncing => "refresh",
+        PosSyncStatusKind.SyncFailed => "error",
+        PosSyncStatusKind.LastSynced => "check",
+        PosSyncStatusKind.RecoveryRequired => "warning",
+        _ => "info",
+    };
+
+    private string SyncChipLabel => SyncKind switch
+    {
+        PosSyncStatusKind.Offline => L["SyncStatus_OfflineShort"],
+        PosSyncStatusKind.ReconnectRequired => L["SyncStatus_ReconnectShort"],
+        PosSyncStatusKind.Syncing => L["SyncStatus_SyncingEllipsis"],
+        PosSyncStatusKind.SyncFailed => L["SyncStatus_FailedShort"],
+        PosSyncStatusKind.RecoveryRequired => L["SyncStatus_RecoveryRequiredShort"],
+        _ => string.Empty,
+    };
+
+    private string SyncTitle => SyncSectionTitle;
+
+    private string SyncAccessibleLabel =>
+        $"{L["SyncStatus_ConnectionLabel"]}: {ConnectionTitle}. {L["SyncStatus_SyncLabel"]}: {SyncSectionTitle}";
+
+    private string ConnectionToneClass => SyncKind switch
+    {
+        PosSyncStatusKind.Offline => "offline",
+        PosSyncStatusKind.ReconnectRequired => "reconnect",
+        _ => _isConnected ? "online" : "offline",
+    };
+
+    private string ConnectionTitle => SyncKind switch
+    {
+        PosSyncStatusKind.ReconnectRequired => L["SyncStatus_Connecting"],
+        PosSyncStatusKind.Offline => L["SyncStatus_Offline"],
+        _ => _isConnected ? L["SyncStatus_Online"] : L["SyncStatus_Offline"],
+    };
+
+    private string ConnectionSubtitle => SyncKind switch
+    {
+        PosSyncStatusKind.ReconnectRequired => L["SyncStatus_ConnectionReconnecting"],
+        PosSyncStatusKind.Offline => L["SyncStatus_ConnectionOfflineDetail"],
+        _ when _isConnected => L["SyncStatus_ConnectionOnlineDetail"],
+        _ => L["SyncStatus_ConnectionOfflineDetail"],
+    };
+
+    private string SyncSectionToneClass => SyncKind switch
+    {
+        PosSyncStatusKind.Online or PosSyncStatusKind.LastSynced => "synced",
+        PosSyncStatusKind.PendingSync => "pending",
+        PosSyncStatusKind.Syncing => "syncing",
+        PosSyncStatusKind.SyncFailed or PosSyncStatusKind.RecoveryRequired => "failed",
+        PosSyncStatusKind.Offline or PosSyncStatusKind.ReconnectRequired => "offline",
+        _ => "offline",
+    };
+
+    private string SyncSectionTitle
+    {
+        get
+        {
+            var pending = PendingDisplayCount;
+            return SyncKind switch
+            {
+                PosSyncStatusKind.Online or PosSyncStatusKind.LastSynced => L["SyncStatus_LastSyncedShort"],
+                PosSyncStatusKind.PendingSync => string.Format(L["SyncStatus_PendingItems"].Value, pending),
+                PosSyncStatusKind.Syncing when _queueSyncing > 0 && SyncingQueueTotal > 0 =>
+                    string.Format(L["SyncStatus_SyncingProgress"].Value, _queueSyncing, SyncingQueueTotal),
+                PosSyncStatusKind.Syncing => L["SyncStatus_SyncingEllipsis"],
+                PosSyncStatusKind.SyncFailed => L["SyncStatus_Failed"],
+                PosSyncStatusKind.RecoveryRequired => L["SyncStatus_RecoveryRequired"],
+                PosSyncStatusKind.Offline or PosSyncStatusKind.ReconnectRequired => L["SyncStatus_WaitingForConnection"],
+                _ => L["SyncStatus_WaitingForConnection"],
+            };
+        }
+    }
+
+    private string SyncSectionSubtitle
+    {
+        get
+        {
+            if (SyncKind is PosSyncStatusKind.LastSynced or PosSyncStatusKind.Online
+                && SyncStatus.Current.LastSyncedAtUtc is { } at)
+            {
+                return string.Format(L["SyncStatus_LastSyncedAt"].Value, at.ToLocalTime().ToString("g"));
+            }
+
+            return SyncKind switch
+            {
+                PosSyncStatusKind.PendingSync => L["SyncStatus_PendingDetail"],
+                PosSyncStatusKind.Syncing => L["SyncStatus_SyncingDetail"],
+                PosSyncStatusKind.SyncFailed => _failedCount > 0
+                    ? string.Format(L["SyncStatus_FailedItemsDetail"].Value, _failedCount)
+                    : L["SyncStatus_FailedDetail"],
+                PosSyncStatusKind.RecoveryRequired => SyncStatus.Current.SafeDetailKey is "SyncStatus_KeyUnavailable"
+                    ? L["SyncStatus_KeyUnavailable"]
+                    : L["SyncStatus_RecoveryRequiredDetail"],
+                PosSyncStatusKind.Offline or PosSyncStatusKind.ReconnectRequired
+                    when PendingWaitingCount > 0 =>
+                    string.Format(L["SyncStatus_WaitingWithPending"].Value, PendingWaitingCount),
+                _ => string.Empty,
+            };
+        }
+    }
+
+    private int PendingWaitingCount => _queuePending + _queueSyncing + _failedCount;
+
+    private bool ShowRetryAction =>
+        SyncKind is PosSyncStatusKind.PendingSync
+            or PosSyncStatusKind.SyncFailed
+            or PosSyncStatusKind.RecoveryRequired
+            or PosSyncStatusKind.Syncing;
+
+    private string RetryActionLabel =>
+        SyncKind is PosSyncStatusKind.SyncFailed or PosSyncStatusKind.RecoveryRequired
+            ? L["SyncStatus_RetryNow"]
+            : L["SyncStatus_SyncNow"];
+
+    private async Task RefreshFromServerAsync()
+    {
+        if (_refreshBusy)
+        {
+            return;
+        }
+
+        _refreshBusy = true;
+        try
+        {
+            if (await Connectivity.IsConnectedAsync())
+            {
+                await CustomerCreditSync.ReconcileOnReconnectAsync();
+            }
+
+            SyncStatus.Refresh();
+            await RefreshQueueIndicatorsAsync();
+        }
+        finally
+        {
+            _refreshBusy = false;
+        }
+    }
+
+    private async Task RetrySyncAsync()
+    {
+        if (_retryBusy)
+        {
+            return;
+        }
+
+        _retryBusy = true;
+        try
+        {
+            if (await Connectivity.IsConnectedAsync())
+            {
+                await CustomerCreditSync.ReconcileOnReconnectAsync();
+            }
+            else
+            {
+                await QueueProcessor.ProcessAvailableAsync();
+            }
+
+            SyncStatus.Refresh();
+            await RefreshQueueIndicatorsAsync();
+        }
+        finally
+        {
+            _retryBusy = false;
+        }
+    }
+
+    private async Task OnSyncChangedAsync()
+    {
+        await RefreshQueueIndicatorsAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        SyncStatus.Changed -= OnSyncChangedAsync;
+    }
+}

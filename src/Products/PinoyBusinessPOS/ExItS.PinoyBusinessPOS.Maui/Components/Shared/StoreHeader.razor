@@ -1,0 +1,156 @@
+@implements IDisposable
+@using ExItS.DesignSystem.Components.Internal
+@inject StoreHeaderState HeaderState
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<header class="pos-topbar">
+    @if (EffectiveShowBack)
+    {
+        <button type="button"
+                class="pos-topbar__back"
+                aria-label="@L["Common_Back"]"
+                @onclick="HandleBackAsync">
+            <span class="pos-topbar__back-icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
+        </button>
+    }
+
+    @if (Identity == StoreHeaderIdentity.Organization)
+    {
+        <ShellOrganizationIdentity OrganizationIdOverride="@OrganizationIdOverride"
+                                   OrganizationNameOverride="@OrganizationNameOverride" />
+    }
+    else if (Identity == StoreHeaderIdentity.Personal)
+    {
+        <ShellContextIdentity UseOrganizationContext="false" />
+    }
+    else
+    {
+        <div class="pos-topbar__brand">
+            <span class="pos-topbar__logo" aria-hidden="true">ES</span>
+            <div class="pos-topbar__titles">
+                <span class="pos-topbar__title">@L["Brand_Name"]</span>
+            </div>
+        </div>
+    }
+
+    <div class="pos-topbar__status" @onclick:stopPropagation="true">
+        @if (ShowSync)
+        {
+            <ShellSyncStatus @ref="_syncStatus" OnPanelOpened="OnSyncPanelOpenedAsync" />
+        }
+        @if (ShowAccountMenu)
+        {
+            <ShellAccountMenu @ref="_accountMenu"
+                             ShowSettings="@ShowSettings"
+                             ShowSwitchOrganization="@ShowSwitchOrganization"
+                             ShowPersonalHome="@ShowPersonalHome"
+                             ShowSignOut="@ShowSignOut"
+                             OnOpened="OnAccountMenuOpenedAsync" />
+        }
+    </div>
+</header>
+
+@code {
+    [Parameter] public StoreHeaderIdentity Identity { get; set; } = StoreHeaderIdentity.Organization;
+    [Parameter] public bool ShowSync { get; set; } = true;
+    [Parameter] public bool ShowAccountMenu { get; set; } = true;
+    [Parameter] public bool ShowSettings { get; set; } = true;
+    [Parameter] public bool ShowSwitchOrganization { get; set; } = true;
+    [Parameter] public bool ShowPersonalHome { get; set; }
+    [Parameter] public bool ShowSignOut { get; set; } = true;
+    [Parameter] public bool ShowBack { get; set; }
+    [Parameter] public string? BackHref { get; set; }
+    [Parameter] public EventCallback OnBack { get; set; }
+    [Parameter] public Guid? OrganizationIdOverride { get; set; }
+    [Parameter] public string? OrganizationNameOverride { get; set; }
+
+    private ShellSyncStatus? _syncStatus;
+    private ShellAccountMenu? _accountMenu;
+
+    private bool EffectiveShowBack =>
+        ShowBack || HeaderState.ShowBack;
+
+    protected override void OnInitialized()
+    {
+        HeaderState.Changed += OnHeaderStateChangedAsync;
+        Nav.LocationChanged += OnLocationChanged;
+    }
+
+    public void CloseOverlays()
+    {
+        _syncStatus?.Close();
+    }
+
+    private async Task OnSyncPanelOpenedAsync()
+    {
+        if (_accountMenu is not null)
+        {
+            await _accountMenu.CloseAsync();
+        }
+    }
+
+    private async Task OnAccountMenuOpenedAsync()
+    {
+        _syncStatus?.Close();
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleBackAsync()
+    {
+        if (OnBack.HasDelegate)
+        {
+            await OnBack.InvokeAsync();
+            return;
+        }
+
+        if (HeaderState.BackHandler is not null)
+        {
+            await HeaderState.BackHandler();
+            return;
+        }
+
+        var href = BackHref ?? HeaderState.BackHref;
+        if (!string.IsNullOrWhiteSpace(href))
+        {
+            Nav.NavigateTo(href);
+            return;
+        }
+
+        NavigateParentRoute();
+    }
+
+    private void NavigateParentRoute()
+    {
+        var relative = Nav.ToBaseRelativePath(Nav.Uri);
+        var path = relative.Split('?', '#')[0].Trim('/');
+        if (string.IsNullOrEmpty(path))
+        {
+            Nav.NavigateTo("/");
+            return;
+        }
+
+        var parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length <= 1)
+        {
+            Nav.NavigateTo(Identity == StoreHeaderIdentity.Personal ? "/personal" : "/home");
+            return;
+        }
+
+        Nav.NavigateTo("/" + string.Join('/', parts.Take(parts.Length - 1)));
+    }
+
+    private Task OnHeaderStateChangedAsync() => InvokeAsync(StateHasChanged);
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        CloseOverlays();
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        HeaderState.Changed -= OnHeaderStateChangedAsync;
+        Nav.LocationChanged -= OnLocationChanged;
+    }
+}

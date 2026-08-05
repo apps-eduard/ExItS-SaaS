@@ -991,7 +991,7 @@
   <data name="Sales_Checkout_Title" xml:space="preserve"><value>Bagong benta</value></data>
   <data name="Sales_Checkout_Subtitle" xml:space="preserve"><value>I-scan o hanapin ang produkto, pagkatapos tanggapin ang bayad.</value></data>
   <data name="Sales_Checkout_LookupSection" xml:space="preserve"><value>Magdagdag ng produkto</value></data>
-  <data name="Sales_Checkout_LookupLabel" xml:space="preserve"><value>Barcode, SKU, o pangalan</value></data>
+  <data name="Sales_Checkout_LookupLabel" xml:space="preserve"><value>Barcode, SKU o pangalan</value></data>
   <data name="Sales_Checkout_LookupHint" xml:space="preserve"><value>I-scan ang barcode o i-type ang SKU para sa eksaktong tugma.</value></data>
   <data name="Sales_Checkout_LookupExact" xml:space="preserve"><value>Idagdag ang eksaktong tugma</value></data>
   <data name="Sales_Checkout_Search" xml:space="preserve"><value>Maghanap</value></data>
@@ -1030,8 +1030,16 @@
   <data name="Sales_Checkout_IncreaseQty" xml:space="preserve"><value>Dagdagan ang dami</value></data>
   <data name="Sales_Checkout_ProductInCartAria" xml:space="preserve"><value>{0}, {1} sa cart, {2}</value></data>
   <data name="Sales_Checkout_ProductAddAria" xml:space="preserve"><value>Idagdag ang {0}, {1}</value></data>
-  <data name="Sales_Checkout_AllCategories" xml:space="preserve"><value>Lahat ng kategorya</value></data>
+  <data name="Sales_Checkout_AllCategories" xml:space="preserve"><value>Lahat</value></data>
   <data name="Sales_Checkout_OptionalCustomer" xml:space="preserve"><value>Customer (opsyonal)</value></data>
+  <data name="Sales_Checkout_CartFab" xml:space="preserve"><value>Cart ({0})</value></data>
+  <data name="Sales_Checkout_InStock" xml:space="preserve"><value>May stock</value></data>
+  <data name="Sales_Checkout_UnitStock" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="Sales_TenderExact" xml:space="preserve"><value>Exact</value></data>
+  <data name="Sales_TenderQuick50" xml:space="preserve"><value>₱50</value></data>
+  <data name="Sales_TenderQuick100" xml:space="preserve"><value>₱100</value></data>
+  <data name="Sales_TenderQuick200" xml:space="preserve"><value>₱200</value></data>
+  <data name="Sales_TenderQuick500" xml:space="preserve"><value>₱500</value></data>
   <data name="Credit_LinkedSale" xml:space="preserve"><value>Naka-link na benta</value></data>
   <data name="Credit_ReverseViaSaleVoid" xml:space="preserve"><value>Galing ang credit na ito sa product sale. Kanselahin ang benta para i-reverse. Hindi pinapayagan ang standalone reverse.</value></data>
   <data name="Inventory_Title" xml:space="preserve"><value>Imbentaryo</value></data>

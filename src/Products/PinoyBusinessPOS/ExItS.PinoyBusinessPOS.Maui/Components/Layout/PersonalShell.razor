@@ -6,17 +6,16 @@
 @inject DensityController DensityCtl
 @inject CultureController CultureCtl
 @inject NavigationManager Nav
+@inject StoreHeaderState HeaderState
 @inject IStringLocalizer<PosResources> L
 
 <a class="skip-link" href="#pos-main">@L["Nav_SkipToContent"]</a>
 
 <div class="exds-root pos-shell pos-shell--personal" data-layout="phone" @key="_cultureEpoch">
-    <header class="pos-topbar">
-        <ShellContextIdentity UseOrganizationContext="false" />
-        <div class="pos-topbar__status">
-            <ShellAccountMenu ShowPersonalHome="false" />
-        </div>
-    </header>
+    <StoreHeader Identity="StoreHeaderIdentity.Personal"
+                 ShowSync="true"
+                 ShowPersonalHome="false"
+                 ShowSwitchOrganization="true" />
 
     <main class="pos-content" id="pos-main" tabindex="-1">
         @Body
@@ -90,6 +89,7 @@
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
+        HeaderState.Reset();
         RefreshPath();
         _ = InvokeAsync(StateHasChanged);
     }

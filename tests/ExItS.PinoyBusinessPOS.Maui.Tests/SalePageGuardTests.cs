@@ -29,6 +29,12 @@ public sealed class SalePageGuardTests
         Assert.Contains("SaleCartPanel", checkout, StringComparison.Ordinal);
         Assert.Contains("QuantityStepper", checkout, StringComparison.Ordinal);
         Assert.Contains("pos-sell-floor", checkout, StringComparison.Ordinal);
+        Assert.Contains("pos-product-row", checkout, StringComparison.Ordinal);
+        Assert.Contains("pos-sell-cart-fab", checkout, StringComparison.Ordinal);
+        Assert.Contains("pos-sell-payment", checkout, StringComparison.Ordinal);
+        Assert.Contains("Sales_TenderExact", checkout, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderState", checkout, StringComparison.Ordinal);
+        Assert.DoesNotContain("pos-product-tile__placeholder", checkout, StringComparison.Ordinal);
         Assert.Contains("IPosCustomerClient", checkout, StringComparison.Ordinal);
         Assert.Contains("PosSaleOptions.UtangPaymentMethod", checkout, StringComparison.Ordinal);
         Assert.Contains("Sales_GCash_ManualWarning", checkout, StringComparison.Ordinal);
@@ -224,7 +230,15 @@ public sealed class SalePageGuardTests
                      "Sales_Checkout_QuantityWhole",
                      "Sales_Checkout_OfflineMessage",
                      "Sales_Checkout_ViewCart",
+                     "Sales_Checkout_CartFab",
                      "Sales_Checkout_CartLineCount",
+                     "Sales_Checkout_InStock",
+                     "Sales_Checkout_UnitStock",
+                     "Sales_TenderExact",
+                     "Sales_TenderQuick50",
+                     "Sales_TenderQuick100",
+                     "Sales_TenderQuick200",
+                     "Sales_TenderQuick500",
                      "Sales_Checkout_DecreaseQty",
                      "Sales_Checkout_IncreaseQty",
                      "Sales_Checkout_ProductInCartAria",

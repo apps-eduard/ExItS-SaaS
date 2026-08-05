@@ -7,47 +7,53 @@ public sealed class OfflineFoundationGuardTests
     {
         var shell = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Products", "PinoyBusinessPOS",
             "ExItS.PinoyBusinessPOS.Maui", "Components", "Layout", "PosShell.razor"));
+        var sync = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui", "Components", "Shared", "ShellSyncStatus.razor"));
+        var header = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui", "Components", "Shared", "StoreHeader.razor"));
 
-        Assert.Contains("IPosSyncStatusService", shell, StringComparison.Ordinal);
-        Assert.Contains("pos-sync-status", shell, StringComparison.Ordinal);
-        Assert.Contains("pos-sync-status--chip", shell, StringComparison.Ordinal);
-        Assert.Contains("pos-topbar__status", shell, StringComparison.Ordinal);
-        Assert.Contains("pos-sync-popover", shell, StringComparison.Ordinal);
-        Assert.Contains("ShellAccountMenu", shell, StringComparison.Ordinal);
-        Assert.Contains("SyncStatus_Online", shell, StringComparison.Ordinal);
-        Assert.Contains("SyncStatus_Offline", shell, StringComparison.Ordinal);
-        Assert.Contains("SyncStatus_Pending", shell, StringComparison.Ordinal);
-        Assert.Contains("SyncStatus_Syncing", shell, StringComparison.Ordinal);
-        Assert.Contains("SyncStatus_Failed", shell, StringComparison.Ordinal);
-        Assert.Contains("LastSyncedAtUtc", shell, StringComparison.Ordinal);
-        Assert.Contains("OfflineQueue.GetCountsAsync", shell, StringComparison.Ordinal);
-        Assert.Contains("aria-label", shell, StringComparison.Ordinal);
-        Assert.Contains("SyncStatus_ConnectionLabel", shell, StringComparison.Ordinal);
-        Assert.Contains("SyncStatus_SyncLabel", shell, StringComparison.Ordinal);
-        Assert.Contains("SyncStatus_PendingItems", shell, StringComparison.Ordinal);
-        Assert.Contains("SyncStatus_WaitingForConnection", shell, StringComparison.Ordinal);
-        Assert.Contains("SyncStatus_SyncNow", shell, StringComparison.Ordinal);
-        Assert.Contains("ConnectionTitle", shell, StringComparison.Ordinal);
-        Assert.Contains("SyncSectionTitle", shell, StringComparison.Ordinal);
-        Assert.Contains("pos-sync-popover__section", shell, StringComparison.Ordinal);
-        Assert.DoesNotContain("ExtraItems", shell, StringComparison.Ordinal);
-        Assert.DoesNotContain("pos-sync-status--menu", shell, StringComparison.Ordinal);
-        Assert.DoesNotContain("SyncQueue", shell, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("emoji", shell, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("StoreHeader", shell, StringComparison.Ordinal);
+        Assert.Contains("ShellSyncStatus", header, StringComparison.Ordinal);
+        Assert.Contains("IPosSyncStatusService", sync, StringComparison.Ordinal);
+        Assert.Contains("pos-sync-status", sync, StringComparison.Ordinal);
+        Assert.Contains("pos-sync-status--chip", sync, StringComparison.Ordinal);
+        Assert.Contains("pos-topbar__status", header, StringComparison.Ordinal);
+        Assert.Contains("pos-sync-popover", sync, StringComparison.Ordinal);
+        Assert.Contains("ShellAccountMenu", header, StringComparison.Ordinal);
+        Assert.Contains("SyncStatus_Online", sync, StringComparison.Ordinal);
+        Assert.Contains("SyncStatus_Offline", sync, StringComparison.Ordinal);
+        Assert.Contains("SyncStatus_Pending", sync, StringComparison.Ordinal);
+        Assert.Contains("SyncStatus_Syncing", sync, StringComparison.Ordinal);
+        Assert.Contains("SyncStatus_Failed", sync, StringComparison.Ordinal);
+        Assert.Contains("LastSyncedAtUtc", sync, StringComparison.Ordinal);
+        Assert.Contains("OfflineQueue.GetCountsAsync", sync, StringComparison.Ordinal);
+        Assert.Contains("aria-label", sync, StringComparison.Ordinal);
+        Assert.Contains("SyncStatus_ConnectionLabel", sync, StringComparison.Ordinal);
+        Assert.Contains("SyncStatus_SyncLabel", sync, StringComparison.Ordinal);
+        Assert.Contains("SyncStatus_PendingItems", sync, StringComparison.Ordinal);
+        Assert.Contains("SyncStatus_WaitingForConnection", sync, StringComparison.Ordinal);
+        Assert.Contains("SyncStatus_SyncNow", sync, StringComparison.Ordinal);
+        Assert.Contains("ConnectionTitle", sync, StringComparison.Ordinal);
+        Assert.Contains("SyncSectionTitle", sync, StringComparison.Ordinal);
+        Assert.Contains("pos-sync-popover__section", sync, StringComparison.Ordinal);
+        Assert.DoesNotContain("ExtraItems", sync, StringComparison.Ordinal);
+        Assert.DoesNotContain("pos-sync-status--menu", sync, StringComparison.Ordinal);
+        Assert.DoesNotContain("SyncQueue", sync, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("emoji", sync, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
     public void PosShell_sync_chip_distinguishes_quiet_and_attention_states()
     {
-        var shell = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Products", "PinoyBusinessPOS",
-            "ExItS.PinoyBusinessPOS.Maui", "Components", "Layout", "PosShell.razor"));
+        var sync = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui", "Components", "Shared", "ShellSyncStatus.razor"));
         var css = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Products", "PinoyBusinessPOS",
             "ExItS.PinoyBusinessPOS.Maui", "wwwroot", "app.css"));
 
-        Assert.Contains("pos-sync-status--quiet", shell, StringComparison.Ordinal);
-        Assert.Contains("pos-sync-status--attention", shell, StringComparison.Ordinal);
-        Assert.Contains("pos-sync-status__badge", shell, StringComparison.Ordinal);
-        Assert.Contains("PosSyncStatusKind.LastSynced => \"synced\"", shell, StringComparison.Ordinal);
+        Assert.Contains("pos-sync-status--quiet", sync, StringComparison.Ordinal);
+        Assert.Contains("pos-sync-status--attention", sync, StringComparison.Ordinal);
+        Assert.Contains("pos-sync-status__badge", sync, StringComparison.Ordinal);
+        Assert.Contains("PosSyncStatusKind.LastSynced => \"synced\"", sync, StringComparison.Ordinal);
         Assert.Contains(".pos-sync-status--quiet", css, StringComparison.Ordinal);
         Assert.Contains(".pos-sync-status--synced", css, StringComparison.Ordinal);
         Assert.Contains(".pos-sync-popover__section", css, StringComparison.Ordinal);

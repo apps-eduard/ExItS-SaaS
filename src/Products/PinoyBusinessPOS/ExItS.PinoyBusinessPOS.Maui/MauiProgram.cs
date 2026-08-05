@@ -130,6 +130,7 @@ public static class MauiProgram
         services.Configure<LocalValidationClientOptions>(configuration.GetSection(LocalValidationClientOptions.SectionName));
         services.AddSingleton<IDocumentHandoffService, MauiDocumentHandoffService>();
         services.AddSingleton<SellingModeService>();
+        services.AddSingleton<StoreHeaderState>();
         services.AddSingleton<AuthShellIdentityState>();
         services.AddSingleton<RoleHomeResolver>();
         services.AddSingleton<NavigationGate>();

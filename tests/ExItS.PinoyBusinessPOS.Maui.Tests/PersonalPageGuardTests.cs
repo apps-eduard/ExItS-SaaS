@@ -22,11 +22,12 @@ public sealed class PersonalPageGuardTests
         Assert.DoesNotContain("/catalog", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("/catalog/global", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("/catalog/import", shell, StringComparison.Ordinal);
-        Assert.DoesNotContain("SyncStatus", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("SellingMode", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("Brand_Name", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("Env_Development", shell, StringComparison.Ordinal);
-        Assert.Contains("ShellContextIdentity", shell, StringComparison.Ordinal);
+        Assert.Contains("StoreHeader", shell, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderIdentity.Personal", shell, StringComparison.Ordinal);
+        Assert.Contains("ShowSync=\"true\"", shell, StringComparison.Ordinal);
     }
 
     [Fact]

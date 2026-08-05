@@ -26,8 +26,11 @@ public sealed class MobileProductionUiGuardTests
         Assert.Contains(".pos-sell-products", css, StringComparison.Ordinal);
         Assert.Contains(".pos-sell-cart", css, StringComparison.Ordinal);
         Assert.Contains(".pos-sell-sticky-bar", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-sell-cart-fab", css, StringComparison.Ordinal);
         Assert.Contains(".pos-category-chip", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-product-row", css, StringComparison.Ordinal);
         Assert.Contains(".pos-product-tile", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-sell-payment", css, StringComparison.Ordinal);
         Assert.Contains(".pos-cart-line", css, StringComparison.Ordinal);
         Assert.Contains("min-width: 900px", css, StringComparison.Ordinal);
         Assert.Contains("orientation: landscape", css, StringComparison.Ordinal);
@@ -73,13 +76,14 @@ public sealed class MobileProductionUiGuardTests
         var checkout = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "Sales", "SaleCheckout.razor"));
         Assert.Contains("aria-pressed", checkout, StringComparison.Ordinal);
         Assert.Contains("aria-label", checkout, StringComparison.Ordinal);
-        Assert.Contains("aria-modal", checkout, StringComparison.Ordinal);
+        Assert.Contains("aria-expanded", checkout, StringComparison.Ordinal);
         Assert.Contains("Sales_Checkout_DecreaseQty", checkout, StringComparison.Ordinal);
         Assert.Contains("Sales_Checkout_IncreaseQty", checkout, StringComparison.Ordinal);
         Assert.Contains("Sales_Checkout_ProductInCartAria", checkout, StringComparison.Ordinal);
         Assert.Contains("<Skeleton", checkout, StringComparison.Ordinal);
         Assert.Contains("EmptyState", checkout, StringComparison.Ordinal);
-        Assert.Contains("pos-product-tile--in-cart", checkout, StringComparison.Ordinal);
+        Assert.Contains("pos-product-row--in-cart", checkout, StringComparison.Ordinal);
+        Assert.Contains("pos-sell-cart-fab", checkout, StringComparison.Ordinal);
     }
 
     [Fact]
