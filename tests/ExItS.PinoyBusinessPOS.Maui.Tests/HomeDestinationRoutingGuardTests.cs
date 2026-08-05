@@ -173,6 +173,20 @@ public sealed class HomeDestinationRoutingGuardTests
         }
     }
 
+    [Fact]
+    public void Bind_denial_inference_maps_embedded_entitlement_stale_not_assignment_missing()
+    {
+        var auth = File.ReadAllText(Path.Combine(ApplicationProject(), "Auth", "AuthenticationService.cs"));
+
+        Assert.Contains("KnownProductEntryReasonCodes", auth, StringComparison.Ordinal);
+        Assert.Contains("\"entitlement_stale\"", auth, StringComparison.Ordinal);
+
+        var infer = auth.IndexOf("InferDeniedReasonCode", StringComparison.Ordinal);
+        var stale = auth.IndexOf("\"entitlement_stale\"", infer, StringComparison.Ordinal);
+        var fallback = auth.IndexOf("return \"product_assignment_missing\"", infer, StringComparison.Ordinal);
+        Assert.InRange(stale, 0, fallback);
+    }
+
     private static string MauiProject() => Path.Combine(
         FindRepoRoot(), "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Maui");
 

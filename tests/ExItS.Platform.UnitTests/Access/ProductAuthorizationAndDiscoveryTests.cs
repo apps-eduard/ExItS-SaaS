@@ -1,5 +1,6 @@
 using ExItS.Platform.Application.Access;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Catalog;
@@ -387,6 +388,14 @@ public sealed class ProductAuthorizationAndDiscoveryTests
             var subscription = Subscription.StartTrial(org.Id, plan, version, trial, T0);
             await subscriptions.AddAsync(subscription);
 
+            var plans = new InMemoryPlanRepository();
+            await plans.AddAsync(plan);
+            await plans.AddVersionAsync(version);
+            var trials = new InMemoryTrialDefinitionRepository();
+            await trials.AddAsync(trial);
+            var overrides = new InMemoryFeatureOverrideRepository();
+            var refreshPolicy = new ProvisionalEntitlementRefreshPolicy();
+
             var snapshot = EntitlementSnapshot.Create(
                 org.Id,
                 product.Code,
@@ -412,8 +421,10 @@ public sealed class ProductAuthorizationAndDiscoveryTests
 
             var grantAccess = new GrantProductAccess(
                 users, orgs, memberships, products, subscriptions, snapshots, assignments, uow, clock);
+            var generateSnapshot = new GenerateEntitlementSnapshot(
+                subscriptions, plans, trials, overrides, snapshots, refreshPolicy, uow, clock);
             var commercial = new EvaluateEffectiveProductAccess(
-                users, orgs, memberships, products, assignments, subscriptions, snapshots, clock);
+                users, orgs, memberships, products, assignments, subscriptions, snapshots, generateSnapshot, clock);
             var authorize = new EvaluateProductAuthorization(commercial, roleGrants, clock);
             var discover = new DiscoverEnabledProducts(memberships, subscriptions, products, authorize);
             var assignRole = new AssignProductLocalRole(users, orgs, memberships, products, roleGrants, uow, clock);

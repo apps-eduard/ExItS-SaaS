@@ -30,9 +30,9 @@ No state automatically deletes Product data, Product roles, or Product Instance 
 
 | Projection state | Trusted? | Reads | Writes | Refresh behavior | Audit |
 |---|---:|---|---|---|---|
-| Current | Yes | According to grants | According to grants | Background refresh before `RefreshByUtc` | Normal Product audit |
-| Refresh due | Yes | According to grants | According to grants, subject to risk policy | Refresh promptly | Log refresh attempt |
-| Temporarily stale | Conditional | Existing data may continue under policy | Fail closed for risky or newly paid operations unless explicitly permitted | Retry when Platform reachable | Log stale use and reason |
+| Current | Yes | According to grants | According to grants | Lazy refresh on Platform evaluate when past `RefreshByUtc` (new snapshot version); Admin/Support reconcile remains available | Normal Product audit |
+| Refresh due | Yes | According to grants | According to grants, subject to risk policy | Refresh promptly via evaluate or Admin reconcile | Log refresh attempt |
+| Temporarily stale | Conditional | Existing data may continue under policy | Fail closed for risky or newly paid operations unless explicitly permitted | Evaluate attempts regenerate from live subscription; deny only if refresh fails | Log stale use and reason |
 | Grace | Yes | Allow | According to grace grants | Surface billing recovery | Log grace enforcement |
 | Suspended | Status trusted | Limited or deny | Deny protected writes | Refresh and expose recovery path | Audit blocked attempts |
 | Expired | Status trusted | Historical/continuity according to Product policy | Deny new paid writes | Refresh and expose subscribe path | Audit blocked attempts |

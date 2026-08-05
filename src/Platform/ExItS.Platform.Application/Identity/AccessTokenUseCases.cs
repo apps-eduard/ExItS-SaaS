@@ -284,9 +284,7 @@ public sealed class IssuePlatformAccessToken
                 {
                     return ApplicationResult<PlatformAccessTokenIssueDto>.Failure(
                         ApplicationErrorCodes.ProductEntryDenied,
-                        access.ReasonCode == EffectiveAccessReasonCodes.ProductLocalRoleMissing
-                            ? "Product-local role is required to operate this product."
-                            : "Product access is not allowed for this organization.");
+                        ProductEntryDenialMessages.Format(access.ReasonCode));
                 }
             }
         }
@@ -310,9 +308,7 @@ public sealed class IssuePlatformAccessToken
             {
                 return ApplicationResult<PlatformAccessTokenIssueDto>.Failure(
                     ApplicationErrorCodes.ProductEntryDenied,
-                    access.ReasonCode == EffectiveAccessReasonCodes.ProductLocalRoleMissing
-                        ? "Product-local role is required to operate this product."
-                        : "Product access is not allowed for this organization.");
+                    ProductEntryDenialMessages.Format(access.ReasonCode));
             }
         }
         else if (normalizedProduct is not null)
@@ -508,9 +504,7 @@ public sealed class BindPlatformAccessTokenProductContext
         {
             return ApplicationResult<PlatformAccessTokenIssueDto>.Failure(
                 ApplicationErrorCodes.ProductEntryDenied,
-                access.ReasonCode == EffectiveAccessReasonCodes.ProductLocalRoleMissing
-                    ? "Product-local role is required to operate this product."
-                    : "Product access is not allowed for this organization.");
+                ProductEntryDenialMessages.Format(access.ReasonCode));
         }
 
         try
@@ -802,4 +796,12 @@ public sealed class RevokePlatformAccessToken
 
         return ApplicationResult<bool>.Success(true);
     }
+}
+
+internal static class ProductEntryDenialMessages
+{
+    public static string Format(string reasonCode) =>
+        reasonCode == EffectiveAccessReasonCodes.ProductLocalRoleMissing
+            ? "Product-local role is required to operate this product."
+            : $"Product access is not allowed for this organization ({reasonCode}).";
 }

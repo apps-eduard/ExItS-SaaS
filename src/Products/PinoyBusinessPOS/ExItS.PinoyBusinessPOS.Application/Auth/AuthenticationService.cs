@@ -1155,18 +1155,44 @@ public sealed class AuthenticationService(
 
     private static string InferDeniedReasonCode(ApiError? error)
     {
-        if (error?.Detail?.Contains("Product-local role", StringComparison.OrdinalIgnoreCase) == true)
+        var detail = error?.Detail ?? string.Empty;
+        if (detail.Contains("Product-local role", StringComparison.OrdinalIgnoreCase))
         {
             return "product_local_role_missing";
         }
 
-        if (error?.Detail?.Contains("stale", StringComparison.OrdinalIgnoreCase) == true)
+        // Platform bind/issue embeds the effective reason as "(reason_code)".
+        foreach (var code in KnownProductEntryReasonCodes)
+        {
+            if (detail.Contains(code, StringComparison.OrdinalIgnoreCase))
+            {
+                return code;
+            }
+        }
+
+        if (detail.Contains("stale", StringComparison.OrdinalIgnoreCase))
         {
             return "entitlement_stale";
         }
 
         return "product_assignment_missing";
     }
+
+    private static readonly string[] KnownProductEntryReasonCodes =
+    [
+        "entitlement_stale",
+        "entitlement_missing",
+        "entitlement_denied",
+        "subscription_ineligible",
+        "product_assignment_inactive",
+        "product_assignment_missing",
+        "product_inactive",
+        "membership_inactive",
+        "membership_missing",
+        "organization_inactive",
+        "user_inactive",
+        "product_local_role_missing"
+    ];
 
     private async Task<AuthResult> PersistOrganizationSelectionAsync(
         AuthSession previous,

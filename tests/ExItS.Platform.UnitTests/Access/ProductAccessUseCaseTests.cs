@@ -1,5 +1,6 @@
 using ExItS.Platform.Application.Access;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Catalog;
@@ -301,6 +302,41 @@ public sealed class ProductAccessUseCaseTests
     }
 
     [Fact]
+    public async Task Evaluate_refreshes_stale_entitlement_snapshot_without_creating_assignment()
+    {
+        var harness = await AccessHarness.CreateAsync();
+        Assert.True((await harness.Grant.ExecuteAsync(
+            harness.Organization.Id,
+            harness.User.Id,
+            harness.Product.Code.Value,
+            "dev-admin")).IsSuccess);
+
+        var beforeCount = (await harness.Snapshots.ListHistoryAsync(
+            harness.Organization.Id, harness.Product.Code, 0, 50)).Items.Count;
+        var assignmentCountBefore = (await harness.Assignments.ListByOrganizationAsync(
+            harness.Organization.Id, null, 0, 50)).Items.Count;
+
+        harness.Clock.UtcNow = T0.AddDays(8); // past RefreshByUtc (T0+7d)
+        var allowed = await harness.Evaluate.ExecuteAsync(
+            harness.User.Id,
+            harness.Organization.Id,
+            harness.Product.Code.Value);
+
+        Assert.True(allowed.Allowed);
+        Assert.Equal(EffectiveAccessReasonCodes.Allowed, allowed.ReasonCode);
+
+        var afterSnapshots = (await harness.Snapshots.ListHistoryAsync(
+            harness.Organization.Id, harness.Product.Code, 0, 50)).Items;
+        Assert.True(afterSnapshots.Count > beforeCount);
+        var latest = afterSnapshots.OrderByDescending(s => s.SnapshotVersion).First();
+        Assert.True(latest.RefreshByUtc > harness.Clock.UtcNow);
+
+        var assignmentCountAfter = (await harness.Assignments.ListByOrganizationAsync(
+            harness.Organization.Id, null, 0, 50)).Items.Count;
+        Assert.Equal(assignmentCountBefore, assignmentCountAfter);
+    }
+
+    [Fact]
     public async Task Grant_fails_closed_for_grace_period_subscription()
     {
         var harness = await AccessHarness.CreateAsync(activateThenGrace: true);
@@ -393,6 +429,14 @@ public sealed class ProductAccessUseCaseTests
 
             await subscriptions.AddAsync(subscription);
 
+            var plans = new InMemoryPlanRepository();
+            await plans.AddAsync(plan);
+            await plans.AddVersionAsync(version);
+            var trials = new InMemoryTrialDefinitionRepository();
+            await trials.AddAsync(trial);
+            var overrides = new InMemoryFeatureOverrideRepository();
+            var refreshPolicy = new ProvisionalEntitlementRefreshPolicy();
+
             var snapshot = EntitlementSnapshot.Create(
                 org.Id,
                 product.Code,
@@ -416,8 +460,10 @@ public sealed class ProductAccessUseCaseTests
             var grant = new GrantProductAccess(
                 users, orgs, memberships, products, subscriptions, snapshots, assignments, uow, clock);
             var revoke = new RevokeProductAccess(assignments, uow, clock);
+            var generateSnapshot = new GenerateEntitlementSnapshot(
+                subscriptions, plans, trials, overrides, snapshots, refreshPolicy, uow, clock);
             var evaluate = new EvaluateEffectiveProductAccess(
-                users, orgs, memberships, products, assignments, subscriptions, snapshots, clock);
+                users, orgs, memberships, products, assignments, subscriptions, snapshots, generateSnapshot, clock);
 
             return new AccessHarness
             {

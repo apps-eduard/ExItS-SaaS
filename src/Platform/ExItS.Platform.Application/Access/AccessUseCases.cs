@@ -394,6 +394,7 @@ public sealed class EvaluateEffectiveProductAccess
     private readonly IProductAccessAssignmentRepository _assignments;
     private readonly ISubscriptionRepository _subscriptions;
     private readonly IEntitlementSnapshotRepository _snapshots;
+    private readonly GenerateEntitlementSnapshot _generateSnapshot;
     private readonly IClock _clock;
 
     public EvaluateEffectiveProductAccess(
@@ -404,6 +405,7 @@ public sealed class EvaluateEffectiveProductAccess
         IProductAccessAssignmentRepository assignments,
         ISubscriptionRepository subscriptions,
         IEntitlementSnapshotRepository snapshots,
+        GenerateEntitlementSnapshot generateSnapshot,
         IClock clock)
     {
         _users = users;
@@ -413,6 +415,7 @@ public sealed class EvaluateEffectiveProductAccess
         _assignments = assignments;
         _subscriptions = subscriptions;
         _snapshots = snapshots;
+        _generateSnapshot = generateSnapshot;
         _clock = clock;
     }
 
@@ -499,12 +502,32 @@ public sealed class EvaluateEffectiveProductAccess
 
         if (snapshot.RefreshByUtc < utcNow)
         {
-            return Denied(
-                EffectiveAccessReasonCodes.EntitlementStale,
-                membership.Id.Value,
-                assignment.Id.Value,
-                subscription.Id.Value,
-                snapshot.Id.Value);
+            // Safe reconciliation: refresh commercial entitlement from the live subscription.
+            // Does not create ProductAccessAssignment or product-local roles.
+            var refreshed = await _generateSnapshot
+                .ExecuteAsync(organizationId, code, expectedNextVersion: null, cancellationToken)
+                .ConfigureAwait(false);
+            if (refreshed.IsSuccess && refreshed.Value is not null)
+            {
+                snapshot = refreshed.Value;
+            }
+            else
+            {
+                // Concurrent refresh may already have written a newer version.
+                snapshot = await _snapshots
+                    .GetLatestForOrganizationProductAsync(organizationId, code, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            if (snapshot is null || snapshot.RefreshByUtc < utcNow)
+            {
+                return Denied(
+                    EffectiveAccessReasonCodes.EntitlementStale,
+                    membership.Id.Value,
+                    assignment.Id.Value,
+                    subscription.Id.Value,
+                    snapshot?.Id.Value);
+            }
         }
 
         if (snapshot.ExpiresAtUtc is { } expires && expires <= utcNow)
