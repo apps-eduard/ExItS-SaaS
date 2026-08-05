@@ -1,0 +1,166 @@
+@implements IDisposable
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-topbar__brand" title="@DisplayName">
+    <Avatar Name="@DisplayName"
+            ImageUrl="@EffectiveImageUrl"
+            Size="AvatarSize.Sm"
+            AriaLabel="@AriaLabel" />
+    <div class="pos-topbar__titles">
+        <span class="pos-topbar__title">@DisplayName</span>
+    </div>
+</div>
+
+@code {
+    /// <summary>
+    /// Personal: signed-in user. Organization: active organization from session.
+    /// </summary>
+    [Parameter] public bool UseOrganizationContext { get; set; }
+
+    private Guid? _logoOrgId;
+    private string? _organizationLogoUrl;
+    private bool _logoResolved;
+    private CancellationTokenSource? _logoCts;
+
+    private AuthSession? Session => CurrentUser.Session;
+
+    private string DisplayName
+    {
+        get
+        {
+            if (UseOrganizationContext)
+            {
+                var orgName = Session?.OrganizationDisplayName;
+                if (!string.IsNullOrWhiteSpace(orgName))
+                {
+                    return orgName.Trim();
+                }
+
+                return L["Shell_OrganizationFallback"].Value;
+            }
+
+            var userName = Session?.DisplayName;
+            if (!string.IsNullOrWhiteSpace(userName))
+            {
+                return userName.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(Session?.Username))
+            {
+                return Session!.Username.Trim();
+            }
+
+            return L["Shell_UserFallback"].Value;
+        }
+    }
+
+    private string? EffectiveImageUrl =>
+        UseOrganizationContext ? _organizationLogoUrl : null;
+
+    private string AriaLabel =>
+        UseOrganizationContext
+            ? string.Format(L["Shell_OrganizationAria"].Value, DisplayName)
+            : string.Format(L["Shell_UserAria"].Value, DisplayName);
+
+    protected override void OnInitialized()
+    {
+        CurrentUser.Changed += OnSessionChangedAsync;
+        _ = RefreshOrganizationLogoAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        _ = RefreshOrganizationLogoAsync();
+    }
+
+    private Task OnSessionChangedAsync()
+    {
+        _ = RefreshOrganizationLogoAsync();
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RefreshOrganizationLogoAsync()
+    {
+        if (!UseOrganizationContext)
+        {
+            ClearLogoState();
+            return;
+        }
+
+        var orgId = Session?.OrganizationId;
+        if (orgId is null)
+        {
+            ClearLogoState();
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        if (_logoOrgId == orgId && _logoResolved)
+        {
+            return;
+        }
+
+        // Clear immediately on org switch so the previous logo never sticks.
+        if (_logoOrgId != orgId)
+        {
+            _organizationLogoUrl = null;
+            _logoResolved = false;
+            _logoOrgId = orgId;
+        }
+
+        _logoCts?.Cancel();
+        _logoCts?.Dispose();
+        _logoCts = new CancellationTokenSource();
+        var ct = _logoCts.Token;
+
+        try
+        {
+            var result = await Platform.GetOrganizationAsync(orgId.Value, ct);
+            if (ct.IsCancellationRequested || Session?.OrganizationId != orgId)
+            {
+                return;
+            }
+
+            if (result.IsSuccess && result.Data is not null)
+            {
+                var logo = result.Data.Branding?.LogoUrl;
+                _organizationLogoUrl = string.IsNullOrWhiteSpace(logo) ? null : logo.Trim();
+            }
+            else
+            {
+                _organizationLogoUrl = null;
+            }
+
+            _logoResolved = true;
+        }
+        catch (OperationCanceledException)
+        {
+            // superseded
+        }
+        catch
+        {
+            _organizationLogoUrl = null;
+            _logoResolved = true;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ClearLogoState()
+    {
+        _logoOrgId = null;
+        _organizationLogoUrl = null;
+        _logoResolved = false;
+        _logoCts?.Cancel();
+        _logoCts?.Dispose();
+        _logoCts = null;
+    }
+
+    public void Dispose()
+    {
+        CurrentUser.Changed -= OnSessionChangedAsync;
+        ClearLogoState();
+    }
+}

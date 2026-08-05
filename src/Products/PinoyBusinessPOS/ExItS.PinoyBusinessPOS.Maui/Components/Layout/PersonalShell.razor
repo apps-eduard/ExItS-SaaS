@@ -5,7 +5,6 @@
 @inject ThemeController ThemeCtl
 @inject DensityController DensityCtl
 @inject CultureController CultureCtl
-@inject IAppInfoService AppInfo
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
@@ -13,16 +12,7 @@
 
 <div class="exds-root pos-shell pos-shell--personal" data-layout="phone" @key="_cultureEpoch">
     <header class="pos-topbar">
-        <div class="pos-topbar__brand">
-            <span class="pos-topbar__logo" aria-hidden="true">ES</span>
-            <div class="pos-topbar__titles">
-                <span class="pos-topbar__title">@L["Brand_Name"]</span>
-                <span class="pos-topbar__subtitle pos-muted">@L["Personal_ShellTagline"]</span>
-            </div>
-        </div>
-        <div class="pos-topbar__status">
-            <Badge Tone="@(IsDevOrTesting ? BadgeTone.Warning : BadgeTone.Neutral)">@EnvironmentLabel</Badge>
-        </div>
+        <ShellContextIdentity UseOrganizationContext="false" />
     </header>
 
     <main class="pos-content" id="pos-main" tabindex="-1">
@@ -146,14 +136,6 @@
         // replace:true keeps Android back from walking every tab visit.
         Nav.NavigateTo(href, replace: true);
     }
-
-    private bool IsDevOrTesting =>
-        string.Equals(AppInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(AppInfo.EnvironmentName, "Testing", StringComparison.OrdinalIgnoreCase);
-
-    private string EnvironmentLabel => IsDevOrTesting
-        ? (string.Equals(AppInfo.EnvironmentName, "Testing", StringComparison.OrdinalIgnoreCase) ? L["Env_Testing"] : L["Env_Development"])
-        : L["Env_Production"];
 
     private async Task OnChangedAsync()
     {

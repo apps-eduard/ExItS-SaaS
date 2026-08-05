@@ -24,6 +24,9 @@ public sealed class PersonalPageGuardTests
         Assert.DoesNotContain("/catalog/import", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("SyncStatus", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("SellingMode", shell, StringComparison.Ordinal);
+        Assert.DoesNotContain("Brand_Name", shell, StringComparison.Ordinal);
+        Assert.DoesNotContain("Env_Development", shell, StringComparison.Ordinal);
+        Assert.Contains("ShellContextIdentity", shell, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -38,6 +41,9 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("Personal_Stat_People", home, StringComparison.Ordinal);
         Assert.Contains("Personal_RecentActivitySection", home, StringComparison.Ordinal);
         Assert.Contains("EnsurePersonalAccountProfileAsync", home, StringComparison.Ordinal);
+        Assert.Contains("Personal_DashboardSection", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("Personal_HomeTitle", home, StringComparison.Ordinal);
 
         Assert.DoesNotContain("Personal_Nav_People", home, StringComparison.Ordinal);
         Assert.DoesNotContain("Personal_Nav_Lent", home, StringComparison.Ordinal);

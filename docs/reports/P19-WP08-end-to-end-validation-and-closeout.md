@@ -55,7 +55,8 @@ Provide the end-to-end Mobile POS ops validation checklist for physical-phone co
 See [P18-personal-mvp-mobile-ui-completion](P18-personal-mvp-mobile-ui-completion.md).
 
 - [ ] Bottom tabs: Home / People / I Lent / I Borrowed / More with active highlight
-- [ ] Home = summary totals + recent activity only (no primary feature buttons)
+- [ ] Home = Personal Utang summary + recent activity only (no PageHeader “Personal home”; no primary feature buttons)
+- [ ] Top bar contextual identity: Personal = user name/avatar; Org/POS = organization name/logo or initials; no `Development` badge; no static `ExItS POS` in authenticated shells (**Retest**)
 - [ ] More hosts My QR, Utang invitations, Profile, Settings, Explore POS, Sign out
 - [ ] My QR / ExItS ID resolve flows (People, Customers, Sale picker, Staff invite) — see [P19-user-qr-public-id-linking](P19-user-qr-public-id-linking.md); **Retest**
 - [ ] Explore Pinoy Business POS loads Platform catalog plans; Select starts explicit onboarding

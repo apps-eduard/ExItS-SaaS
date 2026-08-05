@@ -31,9 +31,9 @@
 
 ## 2. Implemented / deferred
 
-**Implemented:** `PersonalShell` bottom tabs with active highlight and tab `replace` navigation (Android back stays sane), Home summary + recent activity only, People / I Lent / I Borrowed tabs, More hub (invitations, profile, settings, Explore POS, sign out), Explore POS catalog → explicit Start Business confirmation, POS isolation preserved.
+**Implemented:** `PersonalShell` bottom tabs with active highlight and tab `replace` navigation (Android back stays sane), Home summary + recent activity only (no `Personal home` page header — starts at **Personal Utang summary**), People / I Lent / I Borrowed tabs, More hub (invitations, profile, settings, Explore POS, sign out), Explore POS catalog → explicit Start Business confirmation, POS isolation preserved. Top bar shows the signed-in **user name + avatar/initials** (not `ExItS POS` / not environment badge).
 
-**Deferred:** Payments/Reminders/History primary UI, invite creation from relationship detail UI, push delivery.
+**Deferred:** Payments/Reminders/History primary UI, invite creation from relationship detail UI, push delivery. User avatar image URL not yet on Platform profile (initials fallback).
 
 ## 3. Authorization
 
@@ -50,7 +50,8 @@
 ## 5. Phone retest checklist (Phase 19 Open)
 
 - [ ] Bottom tabs persist on Personal routes with active-tab highlight
-- [ ] Home shows totals + recent activity only (no large People/Lent/Borrowed/Invitations/Settings/Sign out/coming-soon buttons)
+- [ ] Home starts with **Personal Utang summary** + values + **Recent activity** (no `Personal home` / verbose subtitle PageHeader)
+- [ ] Top bar shows user display name + avatar/initials (no `ExItS POS`, no `Development` badge)
 - [ ] People / I Lent / I Borrowed tabs open list/create/detail flows
 - [ ] More → invitations, profile, settings, Explore POS, sign out
 - [ ] Explore POS plans → confirm business details before org create

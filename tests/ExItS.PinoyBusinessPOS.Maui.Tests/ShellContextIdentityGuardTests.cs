@@ -1,0 +1,114 @@
+namespace ExItS.PinoyBusinessPOS.Maui.Tests;
+
+/// <summary>
+/// Guards for contextual top-bar identity (no env badge / static brand in authenticated shells).
+/// </summary>
+public sealed class ShellContextIdentityGuardTests
+{
+    [Fact]
+    public void Authenticated_shells_use_session_identity_without_env_badge_or_static_brand()
+    {
+        var layout = Path.Combine(MauiProject(), "Components", "Layout");
+        var personal = File.ReadAllText(Path.Combine(layout, "PersonalShell.razor"));
+        var pos = File.ReadAllText(Path.Combine(layout, "PosShell.razor"));
+        var identity = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Shared", "ShellContextIdentity.razor"));
+
+        Assert.Contains("ShellContextIdentity", personal, StringComparison.Ordinal);
+        Assert.Contains("UseOrganizationContext=\"false\"", personal, StringComparison.Ordinal);
+        Assert.DoesNotContain("Brand_Name", personal, StringComparison.Ordinal);
+        Assert.DoesNotContain("Env_Development", personal, StringComparison.Ordinal);
+        Assert.DoesNotContain("Badge", personal, StringComparison.Ordinal);
+        Assert.DoesNotContain("IAppInfoService", personal, StringComparison.Ordinal);
+
+        Assert.Contains("ShellContextIdentity", pos, StringComparison.Ordinal);
+        Assert.Contains("UseOrganizationContext=\"true\"", pos, StringComparison.Ordinal);
+        Assert.DoesNotContain("Brand_Name", pos, StringComparison.Ordinal);
+        Assert.DoesNotContain("Env_Development", pos, StringComparison.Ordinal);
+        Assert.DoesNotContain("Badge Tone", pos, StringComparison.Ordinal);
+        Assert.DoesNotContain("IAppInfoService", pos, StringComparison.Ordinal);
+
+        Assert.Contains("CurrentUser.Changed", identity, StringComparison.Ordinal);
+        Assert.Contains("Session?.DisplayName", identity, StringComparison.Ordinal);
+        Assert.Contains("OrganizationDisplayName", identity, StringComparison.Ordinal);
+        Assert.Contains("Avatar", identity, StringComparison.Ordinal);
+        Assert.Contains("GetOrganizationAsync", identity, StringComparison.Ordinal);
+        Assert.Contains("Branding?.LogoUrl", identity, StringComparison.Ordinal);
+        Assert.Contains("Shell_UserFallback", identity, StringComparison.Ordinal);
+        Assert.Contains("Shell_OrganizationFallback", identity, StringComparison.Ordinal);
+        Assert.Contains("text-overflow", File.ReadAllText(Path.Combine(MauiProject(), "wwwroot", "app.css")), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Auth_shell_keeps_product_brand_but_hides_environment_badge()
+    {
+        var auth = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Layout", "AuthShell.razor"));
+        Assert.Contains("Brand_Name", auth, StringComparison.Ordinal);
+        Assert.DoesNotContain("Env_Development", auth, StringComparison.Ordinal);
+        Assert.DoesNotContain("Badge Tone", auth, StringComparison.Ordinal);
+        Assert.DoesNotContain("IAppInfoService", auth, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Personal_home_starts_with_utang_summary_not_page_header()
+    {
+        var home = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "Personal", "PersonalHome.razor"));
+        Assert.Contains("Personal_DashboardSection", home, StringComparison.Ordinal);
+        Assert.Contains("Personal_RecentActivitySection", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("Personal_HomeTitle", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("Personal_HomeSubtitle", home, StringComparison.Ordinal);
+
+        var en = File.ReadAllText(Path.Combine(MauiProject(), "Localization", "PosResources.resx"));
+        Assert.Contains("Personal Utang summary", en, StringComparison.Ordinal);
+        Assert.Contains("name=\"Shell_UserAria\"", en, StringComparison.Ordinal);
+        Assert.Contains("name=\"Shell_OrganizationAria\"", en, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Role_homes_and_org_summary_do_not_duplicate_organization_name_under_top_bar()
+    {
+        var dashboards = Path.Combine(MauiProject(), "Components", "Pages", "Dashboards");
+        foreach (var file in new[] { "OwnerDashboard.razor", "ManagerDashboard.razor", "CashierHome.razor" })
+        {
+            var text = File.ReadAllText(Path.Combine(dashboards, file));
+            Assert.DoesNotContain("OrganizationDisplayName", text, StringComparison.Ordinal);
+        }
+
+        var org = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "Organization", "OrgSummary.razor"));
+        Assert.Contains("Org_SummaryTitle", org, StringComparison.Ordinal);
+        Assert.DoesNotContain("Subtitle=\"@(_org?.DisplayName", org, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Avatar_falls_back_safely_when_image_fails()
+    {
+        var avatar = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Shared", "ExItS.DesignSystem",
+            "Components", "Primitives", "Avatar.razor"));
+        Assert.Contains("onerror", avatar, StringComparison.Ordinal);
+        Assert.Contains("_imageFailed", avatar, StringComparison.Ordinal);
+        Assert.Contains("Initials", avatar, StringComparison.Ordinal);
+    }
+
+    private static string MauiProject() => Path.Combine(
+        FindRepoRoot(),
+        "src",
+        "Products",
+        "PinoyBusinessPOS",
+        "ExItS.PinoyBusinessPOS.Maui");
+
+    private static string FindRepoRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "ExItS.slnx")))
+            {
+                return dir.FullName;
+            }
+
+            dir = dir.Parent;
+        }
+
+        throw new InvalidOperationException("Repository root not found.");
+    }
+}

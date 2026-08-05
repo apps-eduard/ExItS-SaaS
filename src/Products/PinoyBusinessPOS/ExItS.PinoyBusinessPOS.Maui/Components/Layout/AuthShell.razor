@@ -4,7 +4,6 @@
 @inject ThemeController ThemeCtl
 @inject DensityController DensityCtl
 @inject CultureController CultureCtl
-@inject IAppInfoService AppInfo
 @inject IStringLocalizer<PosResources> L
 
 <div class="exds-root pos-shell pos-shell--auth" data-layout="phone" @key="_cultureEpoch">
@@ -17,7 +16,7 @@
             </div>
         </div>
         <div class="pos-topbar__status">
-            <Badge Tone="@(IsDevOrTesting ? BadgeTone.Warning : BadgeTone.Neutral)">@EnvironmentLabel</Badge>
+            @* Unauthenticated chrome keeps product brand; environment is not shown in the top bar. *@
         </div>
     </header>
     <main class="pos-content" id="pos-main">
@@ -44,14 +43,6 @@
         _cultureEpoch = CultureCtl.Epoch;
         StateHasChanged();
     }
-
-    private bool IsDevOrTesting =>
-        string.Equals(AppInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(AppInfo.EnvironmentName, "Testing", StringComparison.OrdinalIgnoreCase);
-
-    private string EnvironmentLabel => IsDevOrTesting
-        ? (string.Equals(AppInfo.EnvironmentName, "Testing", StringComparison.OrdinalIgnoreCase) ? L["Env_Testing"] : L["Env_Development"])
-        : L["Env_Production"];
 
     private async Task OnChangedAsync()
     {

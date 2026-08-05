@@ -13,13 +13,20 @@ public sealed record PlatformUserDto(
     DateTimeOffset? SuspendedAtUtc,
     string? SuspensionReason);
 
+public sealed record PlatformOrganizationBrandingDto(
+    string? BrandDisplayName = null,
+    string? LogoUrl = null,
+    string? PrimaryColor = null,
+    string? AccentColor = null);
+
 public sealed record PlatformOrganizationDto(
     Guid Id,
     string DisplayName,
     string Slug,
     string Status,
     DateTimeOffset CreatedAtUtc,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    PlatformOrganizationBrandingDto? Branding = null);
 
 public sealed record UpdatePlatformOrganizationRequest(string DisplayName, string? Slug = null);
 

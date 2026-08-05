@@ -1,9 +1,9 @@
 @namespace ExItS.DesignSystem.Components.Primitives
 
 <span class="exds-avatar @SizeClass" aria-hidden="@(string.IsNullOrEmpty(AriaLabel) ? "true" : null)" aria-label="@AriaLabel">
-    @if (!string.IsNullOrEmpty(ImageUrl))
+    @if (ShowImage)
     {
-        <img src="@ImageUrl" alt="" />
+        <img src="@ImageUrl" alt="" @onerror="OnImageError" />
     }
     else
     {
@@ -16,6 +16,12 @@
     [Parameter] public string? ImageUrl { get; set; }
     [Parameter] public string? AriaLabel { get; set; }
     [Parameter] public AvatarSize Size { get; set; } = AvatarSize.Md;
+
+    private bool _imageFailed;
+    private string? _trackedImageUrl;
+
+    private bool ShowImage =>
+        !_imageFailed && !string.IsNullOrWhiteSpace(ImageUrl);
 
     private string SizeClass => Size switch
     {
@@ -42,4 +48,15 @@
             };
         }
     }
+
+    protected override void OnParametersSet()
+    {
+        if (!string.Equals(_trackedImageUrl, ImageUrl, StringComparison.Ordinal))
+        {
+            _trackedImageUrl = ImageUrl;
+            _imageFailed = false;
+        }
+    }
+
+    private void OnImageError() => _imageFailed = true;
 }

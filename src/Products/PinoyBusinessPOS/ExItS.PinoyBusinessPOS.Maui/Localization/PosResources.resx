@@ -60,6 +60,10 @@
   </resheader>
 
   <data name="Brand_Name" xml:space="preserve"><value>ExItS POS</value></data>
+  <data name="Shell_UserFallback" xml:space="preserve"><value>Account</value></data>
+  <data name="Shell_OrganizationFallback" xml:space="preserve"><value>Organization</value></data>
+  <data name="Shell_UserAria" xml:space="preserve"><value>Signed in as {0}</value></data>
+  <data name="Shell_OrganizationAria" xml:space="preserve"><value>Organization {0}</value></data>
   <data name="Brand_Tagline" xml:space="preserve"><value>Point-of-sale foundation for Filipino small businesses</value></data>
 
   <data name="Nav_Home" xml:space="preserve"><value>Home</value></data>

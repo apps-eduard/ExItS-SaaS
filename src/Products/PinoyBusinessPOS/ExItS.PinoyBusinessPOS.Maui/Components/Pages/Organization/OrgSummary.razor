@@ -20,7 +20,7 @@ else if (CurrentUser.Session?.OrganizationId is null)
 else
 {
     <Page>
-        <PageHeader Title="@L["Org_SummaryTitle"]" Subtitle="@(_org?.DisplayName ?? CurrentUser.Session.OrganizationDisplayName)">
+        <PageHeader Title="@L["Org_SummaryTitle"]">
             <Actions>
                 <Button Variant="ButtonVariant.Ghost" OnClick="GoPersonal">@L["Personal_BackHome"]</Button>
             </Actions>

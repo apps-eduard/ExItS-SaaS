@@ -505,13 +505,14 @@ Personal and POS shells share one BlazorWebView host. Android system-bar / cutou
 ```text
 Mobile Application
 ├── Personal Account (PersonalShell bottom tabs)
-│   ├── Home — summary + recent activity
+│   ├── Top bar — user display name + avatar/initials (session-derived; no env badge)
+│   ├── Home — Personal Utang summary + recent activity (no verbose PageHeader)
 │   ├── People
 │   ├── I Lent
 │   ├── I Borrowed
 │   └── More (My QR, invitations, profile, settings, Explore POS, sign out)
 │
-├── Explore / Confirm business (AuthShell; org created only on confirm)
+├── Explore / Confirm business (AuthShell product brand only; no env badge; org created only on confirm)
 │
 ├── Select Organization / Account context (outside Personal home)
 │
@@ -523,7 +524,8 @@ Mobile Application
 │   ├── POS Role Assignment
 │   └── Open Web for Full Control
 │
-└── POS Product
+└── POS Product (PosShell)
+    ├── Top bar — active organization name + logo/initials (session-derived; updates on org switch)
     ├── POS Owner (may enter Start Selling mode)
     ├── POS Manager (may enter Start Selling mode)
     └── POS Cashier

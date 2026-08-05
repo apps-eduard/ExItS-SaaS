@@ -150,6 +150,11 @@ button.pos-link {
     align-items: center;
     gap: var(--exits-space-2);
     min-width: 0;
+    flex: 1 1 auto;
+}
+
+.pos-topbar__brand .exds-avatar {
+    flex-shrink: 0;
 }
 
 .pos-topbar__logo {
@@ -159,7 +164,7 @@ button.pos-link {
     flex-shrink: 0;
     width: 2rem;
     height: 2rem;
-    border-radius: var(--exits-density-radius, var(--exits-radius-sm));
+    border-radius: 50%;
     background: var(--exits-primary);
     color: var(--exits-primary-contrast);
     font-weight: 800;
@@ -170,16 +175,18 @@ button.pos-link {
     display: flex;
     flex-direction: column;
     min-width: 0;
+    flex: 1 1 auto;
     gap: 0.05rem;
 }
 
 .pos-topbar__title {
-    font-weight: 700;
-    font-size: var(--exits-text-md);
+    font-weight: var(--exits-font-weight-semibold, 600);
+    font-size: var(--exits-type-body, var(--exits-text-md));
     color: var(--exits-text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    max-width: 100%;
 }
 
 .pos-topbar__subtitle {

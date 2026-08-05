@@ -14,7 +14,7 @@
 
 ## 1. Summary
 
-Established a production-oriented mobile visual language on the existing ExItS Design System (no second system). Raised touch targets to **48dp**, added semantic typography tokens and `QuantityStepper`, introduced `--pos-*` aliases, and rebuilt the cashier sell floor (`/sales/new`) as the reference layout (portrait sheet + landscape three-pane).
+Established a production-oriented mobile visual language on the existing ExItS Design System (no second system). Raised touch targets to **48dp**, added semantic typography tokens and `QuantityStepper`, introduced `--pos-*` aliases, and rebuilt the cashier sell floor (`/sales/new`) as the reference layout (portrait sheet + landscape three-pane). Authenticated shells now show **contextual identity** (user/org) instead of static `ExItS POS` / environment badges; Personal Home starts at **Personal Utang summary**.
 
 ## 2. Audit findings (pre-change)
 
@@ -69,6 +69,8 @@ Established a production-oriented mobile visual language on the existing ExItS D
 - [ ] Dark / light, large system font, Filipino strings do not clip
 - [ ] Focus rings / TalkBack labels on chips, tiles, steppers
 - [ ] Card / GCash / cash payment section still primary commit path
+- [ ] Top bar: Personal user name/initials; Org name/logo; no Development badge; no static ExItS POS when signed in
+- [ ] Personal Home opens on Personal Utang summary (no Personal home PageHeader)
 
 ## 6. Screenshot capture plan
 
