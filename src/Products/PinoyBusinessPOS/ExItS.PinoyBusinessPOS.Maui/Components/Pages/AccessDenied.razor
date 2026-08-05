@@ -1,13 +1,18 @@
 @page "/access-denied"
 @layout Layout.AuthShell
 @inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
 <Page>
     <ErrorState Title="@L["Access_DeniedTitle"]" Message="@(_message ?? L["Access_Denied"].Value)" RetryLabel="@L["Auth_Logout"]" OnRetry="LogoutAsync" />
     <FormActions>
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoOrg">@L["OrgSelect_Title"]</Button>
+        @if (HasOrganizationContext)
+        {
+            <Button Variant="ButtonVariant.Primary" OnClick="GoOrgOverview">@L["Org_OverviewLink"]</Button>
+        }
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoOrgSelect">@L["OrgSelect_Title"]</Button>
     </FormActions>
 </Page>
 
@@ -15,12 +20,17 @@
     [SupplyParameterFromQuery] public string? reason { get; set; }
     private string? _message;
 
+    /// <summary>Safe return destination: the bound organization is still valid, only POS access is not.</summary>
+    private bool HasOrganizationContext => CurrentUser.Session?.OrganizationId is not null;
+
     protected override void OnParametersSet()
     {
         _message = string.IsNullOrWhiteSpace(reason) ? null : L[reason].Value;
     }
 
-    private void GoOrg() => Nav.NavigateTo("/organization-select");
+    private void GoOrgOverview() => Nav.NavigateTo(RoleHomeResolver.OrgEssentials, replace: true);
+
+    private void GoOrgSelect() => Nav.NavigateTo("/organization-select");
 
     private async Task LogoutAsync()
     {

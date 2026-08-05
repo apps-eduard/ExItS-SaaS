@@ -71,6 +71,19 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        if (CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(RoleHomeResolver.PersonalHome, replace: true);
+            return;
+        }
+
+        // Organization Owner membership alone never authorizes a POS dashboard.
+        if (!CurrentUser.HasPosAccess)
+        {
+            Nav.NavigateTo(RoleHomeResolver.OrgEssentials, replace: true);
+            return;
+        }
+
         if (string.Equals(SellingMode.PreferredHomeRoute, RoleHomeResolver.CashierHome, StringComparison.Ordinal))
         {
             _authorized = true;

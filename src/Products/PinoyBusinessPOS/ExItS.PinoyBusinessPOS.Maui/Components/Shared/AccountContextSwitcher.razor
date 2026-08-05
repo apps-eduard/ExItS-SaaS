@@ -204,7 +204,15 @@
                 return;
             }
 
-            Nav.NavigateTo(CurrentUser.HasPosAccess ? "/" : "/org", replace: true);
+            // Role homes require confirmed POS access; membership-only entry stays on Org essentials.
+            if (result.Session is not { HasPosAccess: true })
+            {
+                SellingMode.Clear();
+                Nav.NavigateTo(RoleHomeResolver.OrgEssentials, replace: true);
+                return;
+            }
+
+            Nav.NavigateTo("/", replace: true);
         }
         finally
         {

@@ -4,6 +4,7 @@
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
 @inject IProductAccessResolver Access
+@inject IPosPermissionClient Permissions
 @inject NavigationGate Gate
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
@@ -82,7 +83,11 @@ else
             </section>
 
             <div class="pos-org__primary">
-                @if (CurrentUser.HasPosAccess)
+                @if (CurrentUser.HasPosAccess && _posRoleMissing)
+                {
+                    <p class="pos-org__pos-blocked pos-muted" role="status">@L["Org_PosRoleRequired"]</p>
+                }
+                else if (CurrentUser.HasPosAccess)
                 {
                     <Button Variant="ButtonVariant.Primary"
                             IsLoading="_enteringPos"
@@ -247,6 +252,7 @@ else
     private bool _enteringPos;
     private string? _error;
     private string? _posAccessHint;
+    private bool _posRoleMissing;
     private PlatformOrganizationDto? _org;
     private PlatformSubscriptionDto? _subscription;
     private PlatformEntitlementSnapshotDto? _entitlement;
@@ -287,7 +293,16 @@ else
             return;
         }
 
-        var orgResult = await Platform.GetOrganizationAsync(orgId.Value);
+        await LoadAccessStateAsync(orgId.Value);
+        _isOrganizationOwner = await ResolveIsOrganizationOwnerAsync(orgId.Value);
+
+        _ready = true;
+    }
+
+    /// <summary>Reloads organization, subscription, entitlement, POS access and POS role state.</summary>
+    private async Task LoadAccessStateAsync(Guid organizationId)
+    {
+        var orgResult = await Platform.GetOrganizationAsync(organizationId);
         if (orgResult.IsSuccess)
         {
             _org = orgResult.Data;
@@ -297,22 +312,44 @@ else
             _error = L["Org_LoadFailed"];
         }
 
-        var sub = await Platform.GetCurrentSubscriptionAsync(orgId.Value, PosProductCodes.PinoyBusinessPos);
+        var sub = await Platform.GetCurrentSubscriptionAsync(organizationId, PosProductCodes.PinoyBusinessPos);
         if (sub.IsSuccess)
         {
             _subscription = sub.Data;
         }
 
-        var ent = await Platform.GetLatestEntitlementAsync(orgId.Value, PosProductCodes.PinoyBusinessPos);
+        var ent = await Platform.GetLatestEntitlementAsync(organizationId, PosProductCodes.PinoyBusinessPos);
         if (ent.IsSuccess)
         {
             _entitlement = ent.Data;
         }
 
-        _isOrganizationOwner = await ResolveIsOrganizationOwnerAsync(orgId.Value);
         _posAccessHint = ResolvePosAccessHint();
+        await RefreshPosRoleStateAsync();
+    }
 
-        _ready = true;
+    /// <summary>
+    /// POS access assignment and POS product role are separate concepts. With access but no active
+    /// role, no dashboard is authorized, so this page explains it instead of offering Continue to POS.
+    /// </summary>
+    private async Task RefreshPosRoleStateAsync()
+    {
+        if (!CurrentUser.HasPosAccess)
+        {
+            _posRoleMissing = false;
+            return;
+        }
+
+        var effective = await Permissions.GetEffectiveAsync();
+        if (!effective.IsSuccess || effective.Data is null)
+        {
+            // Transport failures must not be reported as a missing role assignment.
+            _posRoleMissing = false;
+            return;
+        }
+
+        _posRoleMissing = !string.Equals(effective.Data.Status, "Active", StringComparison.OrdinalIgnoreCase)
+            || string.IsNullOrWhiteSpace(effective.Data.Role);
     }
 
     private async Task<bool> ResolveIsOrganizationOwnerAsync(Guid organizationId)
@@ -363,7 +400,7 @@ else
 
     private async Task EnterPosAsync()
     {
-        if (_enteringPos || _enablingPos || !CurrentUser.HasPosAccess)
+        if (_enteringPos || _enablingPos || !CurrentUser.HasPosAccess || _posRoleMissing)
         {
             return;
         }
@@ -418,6 +455,9 @@ else
                 return;
             }
 
+            // Server confirmed POS access: refresh entitlement/access/role state, then let the
+            // gate decide the destination. Stay here when no POS role is assigned yet.
+            await LoadAccessStateAsync(oid);
             Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
         }
         finally

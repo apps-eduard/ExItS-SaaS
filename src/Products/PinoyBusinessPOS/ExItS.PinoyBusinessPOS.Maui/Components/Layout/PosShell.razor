@@ -9,6 +9,7 @@
 @inject NavigationManager Nav
 @inject SellingModeService SellingMode
 @inject RoleHomeResolver RoleHome
+@inject ICurrentUserContext CurrentUser
 @inject StoreHeaderState HeaderState
 @inject IStringLocalizer<PosResources> L
 
@@ -26,18 +27,30 @@
             <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("home")</span>
             <span class="pos-nav-item__label">@L["Nav_Home"]</span>
         </NavLink>
-        <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/catalog">
-            <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
-            <span class="pos-nav-item__label">@L["Nav_Products"]</span>
-        </NavLink>
-        <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/sales">
-            <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
-            <span class="pos-nav-item__label">@L["Nav_Sales"]</span>
-        </NavLink>
-        <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/customers">
-            <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
-            <span class="pos-nav-item__label">@L["Nav_Customers"]</span>
-        </NavLink>
+        @if (_hasPosAccess)
+        {
+            <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/catalog">
+                <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                <span class="pos-nav-item__label">@L["Nav_Products"]</span>
+            </NavLink>
+            <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/sales">
+                <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
+                <span class="pos-nav-item__label">@L["Nav_Sales"]</span>
+            </NavLink>
+            <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/customers">
+                <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
+                <span class="pos-nav-item__label">@L["Nav_Customers"]</span>
+            </NavLink>
+        }
+        else
+        {
+            @* POS access not active: only organization-scoped destinations that existing
+               authorization already allows for every member of the bound organization. *@
+            <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/org">
+                <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("settings")</span>
+                <span class="pos-nav-item__label">@L["Org_SummaryTitle"]</span>
+            </NavLink>
+        }
         <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/more">
             <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("more")</span>
             <span class="pos-nav-item__label">@L["Nav_More"]</span>
@@ -48,6 +61,7 @@
 @code {
     private int _cultureEpoch;
     private string _homeHref = "/home";
+    private bool _hasPosAccess = true;
     private StoreHeader? _storeHeader;
 
     protected override void OnInitialized()
@@ -57,8 +71,10 @@
         CultureCtl.Changed += OnChangedAsync;
         Status.Changed += OnChangedAsync;
         SyncStatus.Changed += OnChangedAsync;
-        SellingMode.Changed += OnChangedAsync;
+        SellingMode.Changed += OnAccessChangedAsync;
+        CurrentUser.Changed += OnAccessChangedAsync;
         Nav.LocationChanged += OnLocationChanged;
+        _hasPosAccess = CurrentUser.HasPosAccess;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -74,22 +90,40 @@
         _cultureEpoch = CultureCtl.Epoch;
         await Status.InitializeAsync();
         await SyncStatus.InitializeAsync();
+        await RefreshHomeDestinationAsync();
+    }
+
+    /// <summary>
+    /// Single context-aware Home destination for the bottom tab. Re-evaluated whenever the session,
+    /// organization context, POS access, or working-as preference changes.
+    /// </summary>
+    private async Task RefreshHomeDestinationAsync()
+    {
+        _hasPosAccess = CurrentUser.HasPosAccess;
         try
         {
             _homeHref = await RoleHome.ResolvePosHomeAsync();
         }
         catch
         {
-            _homeHref = "/home";
+            _homeHref = _hasPosAccess ? "/home" : RoleHomeResolver.OrgEssentials;
         }
 
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
     }
+
+    private async Task OnAccessChangedAsync() => await RefreshHomeDestinationAsync();
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         HeaderState.Reset();
         TryExitSellingModeOnReturn(e.Location);
+
+        // Cheap guard: only re-resolve when effective POS access actually flipped.
+        if (_hasPosAccess != CurrentUser.HasPosAccess)
+        {
+            _ = RefreshHomeDestinationAsync();
+        }
     }
 
     private void TryExitSellingModeOnReturn(string uri)
@@ -130,7 +164,8 @@
         CultureCtl.Changed -= OnChangedAsync;
         Status.Changed -= OnChangedAsync;
         SyncStatus.Changed -= OnChangedAsync;
-        SellingMode.Changed -= OnChangedAsync;
+        SellingMode.Changed -= OnAccessChangedAsync;
+        CurrentUser.Changed -= OnAccessChangedAsync;
         Nav.LocationChanged -= OnLocationChanged;
     }
 }

@@ -81,6 +81,13 @@ else
             return;
         }
 
+        // Organization Owner membership alone never authorizes a POS dashboard.
+        if (!CurrentUser.HasPosAccess)
+        {
+            Nav.NavigateTo(RoleHomeResolver.OrgEssentials, replace: true);
+            return;
+        }
+
         if (string.Equals(SellingMode.PreferredHomeRoute, RoleHomeResolver.ManagerHome, StringComparison.Ordinal))
         {
             _authorized = true;

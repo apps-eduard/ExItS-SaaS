@@ -12,7 +12,7 @@ public sealed class RoleHomeResolverTests
     [InlineData("Admin", RoleHomeResolver.OwnerHome)]
     [InlineData("StoreManager", RoleHomeResolver.ManagerHome)]
     [InlineData("Cashier", RoleHomeResolver.CashierHome)]
-    [InlineData("", RoleHomeResolver.AccessDenied)]
+    [InlineData("", RoleHomeResolver.OrgEssentials)]
     public async Task ResolvePosHome_maps_effective_role(string role, string expected)
     {
         var client = new FakePermissions(string.IsNullOrEmpty(role) ? null : role, status: string.IsNullOrEmpty(role) ? "None" : "Active");
@@ -58,12 +58,81 @@ public sealed class RoleHomeResolverTests
     }
 
     [Fact]
-    public async Task ResolvePosHome_uses_preferred_home_when_effective_status_none()
+    public async Task ResolvePosHome_routes_to_org_when_effective_status_none_even_with_working_as()
     {
         var mode = new SellingModeService();
         mode.EnterWorkingAs(RoleHomeResolver.ManagerHome);
         var sut = new RoleHomeResolver(new FakePermissions(role: null, status: "None"), mode, FakeUser.WithOrg());
+        Assert.Equal(RoleHomeResolver.OrgEssentials, await sut.ResolvePosHomeAsync());
+    }
+
+    [Fact]
+    public async Task ResolvePosHome_routes_organization_owner_without_pos_access_to_org_overview()
+    {
+        var mode = new SellingModeService();
+        mode.EnterWorkingAs(RoleHomeResolver.OwnerHome);
+        var sut = new RoleHomeResolver(new FakePermissions("Owner", status: "Active"), mode, FakeUser.WithOrgNoPosAccess());
+        Assert.Equal(RoleHomeResolver.OrgEssentials, await sut.ResolvePosHomeAsync());
+    }
+
+    [Fact]
+    public async Task ResolvePosHome_entitlement_without_pos_access_never_reaches_a_dashboard_or_access_denied()
+    {
+        var sut = new RoleHomeResolver(FakePermissions.Unavailable(), new SellingModeService(), FakeUser.WithOrgNoPosAccess());
+        var home = await sut.ResolvePosHomeAsync();
+
+        Assert.Equal(RoleHomeResolver.OrgEssentials, home);
+        Assert.NotEqual(RoleHomeResolver.AccessDenied, home);
+    }
+
+    [Fact]
+    public async Task ResolvePosHome_pos_access_without_pos_role_does_not_authorize_role_dashboard()
+    {
+        var sut = new RoleHomeResolver(new FakePermissions(role: "", status: "Active"), new SellingModeService(), FakeUser.WithOrg());
+        Assert.Equal(RoleHomeResolver.OrgEssentials, await sut.ResolvePosHomeAsync());
+    }
+
+    [Fact]
+    public async Task ResolvePosHome_denies_when_role_lookup_is_server_rejected()
+    {
+        var mode = new SellingModeService();
+        mode.EnterWorkingAs(RoleHomeResolver.OwnerHome);
+        var sut = new RoleHomeResolver(FakePermissions.Forbidden(), mode, FakeUser.WithOrg());
+        Assert.Equal(RoleHomeResolver.AccessDenied, await sut.ResolvePosHomeAsync());
+    }
+
+    [Fact]
+    public async Task ResolvePosHome_revoked_assignment_denies_even_with_working_as()
+    {
+        var mode = new SellingModeService();
+        mode.EnterWorkingAs(RoleHomeResolver.OwnerHome);
+        var sut = new RoleHomeResolver(new FakePermissions("Owner", status: "Revoked"), mode, FakeUser.WithOrg());
+        Assert.Equal(RoleHomeResolver.AccessDenied, await sut.ResolvePosHomeAsync());
+    }
+
+    [Fact]
+    public async Task ResolvePosHome_recalculates_when_organization_context_changes()
+    {
+        var user = FakeUser.WithOrg();
+        var sut = new RoleHomeResolver(new FakePermissions("StoreManager", status: "Active"), new SellingModeService(), user);
         Assert.Equal(RoleHomeResolver.ManagerHome, await sut.ResolvePosHomeAsync());
+
+        user.SwitchToOrganizationWithoutPosAccess();
+        Assert.Equal(RoleHomeResolver.OrgEssentials, await sut.ResolvePosHomeAsync());
+
+        user.SwitchToPersonal();
+        Assert.Equal(RoleHomeResolver.PersonalHome, await sut.ResolvePosHomeAsync());
+    }
+
+    [Fact]
+    public async Task ResolvePosHome_returns_role_home_after_pos_access_is_enabled()
+    {
+        var user = FakeUser.WithOrgNoPosAccess();
+        var sut = new RoleHomeResolver(new FakePermissions("Cashier", status: "Active"), new SellingModeService(), user);
+        Assert.Equal(RoleHomeResolver.OrgEssentials, await sut.ResolvePosHomeAsync());
+
+        user.GrantPosAccess();
+        Assert.Equal(RoleHomeResolver.CashierHome, await sut.ResolvePosHomeAsync());
     }
 
     [Fact]
@@ -139,6 +208,34 @@ public sealed class RoleHomeResolverTests
             HasPosAccess: true,
             AccessReasonCode: "allowed"));
 
+        public static FakeUser WithOrgNoPosAccess()
+        {
+            var user = WithOrg();
+            user.Session = user.Session! with { HasPosAccess = false, AccessReasonCode = "assignment_missing" };
+            return user;
+        }
+
+        public void GrantPosAccess() =>
+            Session = Session! with { HasPosAccess = true, AccessReasonCode = "allowed" };
+
+        public void SwitchToOrganizationWithoutPosAccess() =>
+            Session = Session! with
+            {
+                OrganizationId = Guid.NewGuid(),
+                OrganizationDisplayName = "Other org",
+                HasPosAccess = false,
+                AccessReasonCode = "assignment_missing"
+            };
+
+        public void SwitchToPersonal() =>
+            Session = Session! with
+            {
+                OrganizationId = null,
+                OrganizationDisplayName = null,
+                HasPosAccess = false,
+                AccessReasonCode = null
+            };
+
         public static FakeUser Personal() => new(new AuthSession(
             UserId: Guid.NewGuid(),
             DisplayName: "Test",
@@ -159,9 +256,15 @@ public sealed class RoleHomeResolverTests
         public void Clear() => Session = null;
     }
 
-    private sealed class FakePermissions(string? role, string status, bool unavailable = false) : IPosPermissionClient
+    private sealed class FakePermissions(
+        string? role,
+        string status,
+        bool unavailable = false,
+        bool forbidden = false) : IPosPermissionClient
     {
         public static FakePermissions Unavailable() => new(null, "None", unavailable: true);
+
+        public static FakePermissions Forbidden() => new(null, "None", forbidden: true);
 
         public Task<ApiResult<IReadOnlyList<PosRoleDto>>> ListRolesAsync(CancellationToken ct = default) =>
             Task.FromResult(ApiResult<IReadOnlyList<PosRoleDto>>.Success(Array.Empty<PosRoleDto>()));
@@ -183,6 +286,11 @@ public sealed class RoleHomeResolverTests
             if (unavailable)
             {
                 return Task.FromResult(ApiResult<PosEffectivePermissionsDto>.Unavailable());
+            }
+
+            if (forbidden)
+            {
+                return Task.FromResult(ApiResult<PosEffectivePermissionsDto>.Failure(ApiCallStatus.Forbidden));
             }
 
             return Task.FromResult(ApiResult<PosEffectivePermissionsDto>.Success(new PosEffectivePermissionsDto(

@@ -96,33 +96,49 @@ public sealed class RoleHomeResolver(
             return PersonalHome;
         }
 
+        // Organization Owner membership, subscription and entitlement are separate concepts from
+        // POS access assignment. Without confirmed POS access the Home destination is Org essentials.
+        if (!currentUser.HasPosAccess)
+        {
+            return OrgEssentials;
+        }
+
         var effective = await permissions.GetEffectiveAsync(ct).ConfigureAwait(false);
         var preferred = sellingMode.PreferredHomeRoute;
 
         if (!effective.IsSuccess || effective.Data is null)
         {
-            // Owner already chose working-as after a successful org bind; don't strand on Access Denied
-            // when effective role is briefly unavailable (Dev in-memory Owner / sync lag).
-            if (!string.IsNullOrWhiteSpace(preferred))
+            // Transport / POS API failures must not present as "commercial access denied".
+            if (IsTransientRoleLookupFailure(effective.Status))
             {
-                return preferred!;
+                // Owner already chose working-as after a successful org bind; don't strand them
+                // when effective role is briefly unavailable (Dev in-memory Owner / sync lag).
+                return !string.IsNullOrWhiteSpace(preferred) ? preferred! : OrgEssentials;
             }
 
-            // Transport / POS API failures must not present as "commercial access denied".
-            // Send the user back to org essentials so they can retry Enable POS / check Settings.
-            return IsTransientRoleLookupFailure(effective.Status) ? OrgEssentials : AccessDenied;
+            // Server-side authorization failure on the role lookup stays a denial.
+            return AccessDenied;
         }
 
         var data = effective.Data;
+
+        // Revoked / suspended assignments are real denials; working-as must not override them.
+        if (IsRevokedAssignmentStatus(data.Status))
+        {
+            return AccessDenied;
+        }
+
         if (!string.Equals(data.Status, "Active", StringComparison.OrdinalIgnoreCase)
             || string.IsNullOrWhiteSpace(data.Role))
         {
-            return !string.IsNullOrWhiteSpace(preferred) ? preferred! : AccessDenied;
+            // POS access without an active POS role: no dashboard is authorized, and this is not
+            // a commercial denial — Org essentials explains that role assignment is required.
+            return OrgEssentials;
         }
 
         if (!PosRoleCodes.TryParse(data.Role, out var role))
         {
-            return !string.IsNullOrWhiteSpace(preferred) ? preferred! : AccessDenied;
+            return !string.IsNullOrWhiteSpace(preferred) ? preferred! : OrgEssentials;
         }
 
         // Organization Owners may work as Owner, Manager, or Cashier UI without changing the POS grant.
@@ -138,9 +154,16 @@ public sealed class RoleHomeResolver(
             PosRole.StoreManager => ManagerHome,
             PosRole.Cashier => CashierHome,
             // Unknown POS roles (InventoryStaff, etc.): keep Owner working-as when already chosen.
-            _ => !string.IsNullOrWhiteSpace(preferred) ? preferred! : AccessDenied
+            _ => !string.IsNullOrWhiteSpace(preferred) ? preferred! : OrgEssentials
         };
     }
+
+    private static bool IsRevokedAssignmentStatus(string? status) =>
+        string.Equals(status, "Revoked", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(status, "Suspended", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(status, "Denied", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(status, "Blocked", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(status, "Expired", StringComparison.OrdinalIgnoreCase);
 
     private static bool IsTransientRoleLookupFailure(ApiCallStatus status) =>
         status is ApiCallStatus.Offline

@@ -1796,6 +1796,8 @@
   <data name="Org_SubscriptionLink" xml:space="preserve"><value>Subscription and entitlement</value></data>
   <data name="Org_EnterPos" xml:space="preserve"><value>Continue to POS</value></data>
   <data name="Org_EnablePos" xml:space="preserve"><value>Enable POS access</value></data>
+  <data name="Org_OverviewLink" xml:space="preserve"><value>Organization overview</value></data>
+  <data name="Org_PosRoleRequired" xml:space="preserve"><value>POS access is active, but no POS role is assigned yet. Assign a POS role to open a dashboard.</value></data>
   <data name="Org_WebAdminReminder" xml:space="preserve"><value>For full organization administration, use the Web application.</value></data>
   <data name="Org_LoadFailed" xml:space="preserve"><value>Could not load organization details.</value></data>
   <data name="Org_ProfileTitle" xml:space="preserve"><value>Organization profile</value></data>
