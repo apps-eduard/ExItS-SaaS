@@ -59,23 +59,187 @@ public sealed class CatalogImportRulesTests
     }
 }
 
+public sealed class CatalogImportCsvSchemaTests
+{
+    [Fact]
+    public void Required_columns_match_authoritative_order()
+    {
+        Assert.Equal(
+            [
+                "ProductName",
+                "Category",
+                "Description",
+                "Brand",
+                "Unit",
+                "Barcode",
+                "SuggestedSku",
+                "SuggestedSellingPrice",
+                "SuggestedCostPrice",
+                "TaxHint",
+                "Tags",
+                "BusinessTypes",
+                "Status"
+            ],
+            CatalogImportCsvSchema.RequiredColumns);
+    }
+
+    [Fact]
+    public void Template_includes_every_required_importer_column_in_order()
+    {
+        var csv = CatalogImportCsvSchema.GenerateTemplateCsv();
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        var headerLine = reader.ReadLine();
+        Assert.NotNull(headerLine);
+        var headers = CatalogImportCsvParser.SplitCsvLine(headerLine!);
+        Assert.Equal(CatalogImportCsvSchema.RequiredColumns.Count, headers.Count);
+        for (var i = 0; i < CatalogImportCsvSchema.RequiredColumns.Count; i++)
+        {
+            Assert.Equal(CatalogImportCsvSchema.RequiredColumns[i], headers[i]);
+        }
+    }
+
+    [Fact]
+    public void Template_utf8_bytes_have_bom_and_parse_sample_rows()
+    {
+        var bytes = CatalogImportCsvSchema.GenerateTemplateUtf8Bytes();
+        Assert.True(bytes.Length >= 3);
+        Assert.Equal(0xEF, bytes[0]);
+        Assert.Equal(0xBB, bytes[1]);
+        Assert.Equal(0xBF, bytes[2]);
+        Assert.Equal(CatalogImportCsvSchema.DownloadFileName, "exits-global-product-import-template.csv");
+        Assert.Equal("text/csv; charset=utf-8", CatalogImportCsvSchema.ContentType);
+
+        using var stream = new MemoryStream(bytes);
+        var rows = CatalogImportCsvParser.Parse(stream);
+        Assert.Equal(3, rows.Count);
+        Assert.All(rows, r => Assert.StartsWith("SAMPLE", r.Cells[CatalogImportCsvSchema.ProductName], StringComparison.Ordinal));
+        Assert.Equal("25.50", rows[0].Cells[CatalogImportCsvSchema.SuggestedSellingPrice]);
+        Assert.Contains('|', rows[0].Cells[CatalogImportCsvSchema.Tags]);
+        Assert.Contains('|', rows[0].Cells[CatalogImportCsvSchema.BusinessTypes]);
+    }
+
+    [Fact]
+    public async Task Downloaded_template_maps_successfully_unchanged()
+    {
+        using var stream = new MemoryStream(CatalogImportCsvSchema.GenerateTemplateUtf8Bytes());
+        var rows = CatalogImportCsvParser.Parse(stream);
+        var items = await CatalogImportRowMapper.MapRowsAsync(
+            rows,
+            new FakeCategoryRepository(),
+            new FakeProductRepository(),
+            new DateTimeOffset(2026, 8, 5, 12, 0, 0, TimeSpan.Zero));
+
+        Assert.Equal(3, items.Count);
+        // Category names in samples may not exist — still a successful validate path (Failed/Pending, not throw).
+        Assert.DoesNotContain(items, i => i.ErrorCode == DomainErrorCodes.CatalogImportHeadersInvalid);
+        Assert.Contains(items, i => i.Status is CatalogImportItemStatus.Pending or CatalogImportItemStatus.Failed);
+    }
+
+    [Theory]
+    [InlineData("ProductName,Unit")] // missing many
+    public void ValidateHeaders_rejects_missing_columns(string headerLine)
+    {
+        var headers = CatalogImportCsvParser.SplitCsvLine(headerLine);
+        var ex = Assert.Throws<DomainException>(() => CatalogImportCsvSchema.ValidateHeaders(headers));
+        Assert.Equal(DomainErrorCodes.CatalogImportHeadersInvalid, ex.ErrorCode);
+        Assert.Contains("Missing", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ValidateHeaders_rejects_unknown_and_renamed_columns()
+    {
+        var headers = CatalogImportCsvSchema.RequiredColumns
+            .Select(c => c == "ProductName" ? "Name" : c)
+            .ToList();
+        var ex = Assert.Throws<DomainException>(() => CatalogImportCsvSchema.ValidateHeaders(headers));
+        Assert.Equal(DomainErrorCodes.CatalogImportHeadersInvalid, ex.ErrorCode);
+        Assert.Contains("Missing", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Unknown", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ValidateHeaders_rejects_duplicate_headers()
+    {
+        var headers = CatalogImportCsvSchema.RequiredColumns.ToList();
+        headers[1] = "ProductName";
+        var ex = Assert.Throws<DomainException>(() => CatalogImportCsvSchema.ValidateHeaders(headers));
+        Assert.Equal(DomainErrorCodes.CatalogImportHeadersInvalid, ex.ErrorCode);
+        Assert.Contains("Duplicate", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ValidateHeaders_rejects_out_of_order_headers()
+    {
+        var headers = CatalogImportCsvSchema.RequiredColumns.ToList();
+        (headers[0], headers[1]) = (headers[1], headers[0]);
+        var ex = Assert.Throws<DomainException>(() => CatalogImportCsvSchema.ValidateHeaders(headers));
+        Assert.Equal(DomainErrorCodes.CatalogImportHeadersInvalid, ex.ErrorCode);
+        Assert.Contains("order", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Endpoint_source_requires_import_permission_and_csv_filename()
+    {
+        var root = FindRepositoryRoot();
+        var endpoints = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Api", "GlobalCatalog", "GlobalCatalogEndpoints.cs"));
+        Assert.Contains("/template.csv", endpoints, StringComparison.Ordinal);
+        Assert.Contains("/imports/template.csv", endpoints, StringComparison.Ordinal);
+        Assert.Contains("ImportGlobalProducts", endpoints, StringComparison.Ordinal);
+        Assert.Contains("CatalogImportCsvSchema.DownloadFileName", endpoints, StringComparison.Ordinal);
+        Assert.Contains("CatalogImportCsvSchema.ContentType", endpoints, StringComparison.Ordinal);
+        Assert.Contains("DownloadImportTemplateAsync", endpoints, StringComparison.Ordinal);
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "ExItS.slnx"))
+                || Directory.Exists(Path.Combine(dir.FullName, "src", "Platform")))
+            {
+                return dir.FullName;
+            }
+
+            dir = dir.Parent;
+        }
+
+        throw new InvalidOperationException("Repository root not found.");
+    }
+}
 public sealed class CatalogImportCsvParserTests
 {
+    private static string SchemaHeaderLine => string.Join(',', CatalogImportCsvSchema.RequiredColumns);
+
     [Fact]
     public void Parse_reads_quoted_commas_and_row_numbers()
     {
-        var csv = """
-            Name,Unit,Sku,Barcode
-            "Soft, Drink",Bottle,SKU-1,480001
-            Chips,Pack,SKU-2,480002
+        var csv = SchemaHeaderLine + """
+
+            "Soft, Drink",Beverages,Desc,BrandX,Bottle,480001,SKU-1,25.50,18.00,VAT,tag1|tag2,SariSari,Draft
+            Chips,Snacks,Desc2,BrandY,Pack,480002,SKU-2,12.00,8.50,VAT,snack,SariSari,Active
             """;
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
         var rows = CatalogImportCsvParser.Parse(stream);
         Assert.Equal(2, rows.Count);
         Assert.Equal(2, rows[0].RowNumber);
-        Assert.Equal("Soft, Drink", rows[0].Cells["Name"]);
-        Assert.Equal("Bottle", rows[0].Cells["Unit"]);
+        Assert.Equal("Soft, Drink", rows[0].Cells[CatalogImportCsvSchema.ProductName]);
+        Assert.Equal("Bottle", rows[0].Cells[CatalogImportCsvSchema.Unit]);
         Assert.Equal(3, rows[1].RowNumber);
+    }
+
+    [Fact]
+    public void Parse_rejects_legacy_renamed_headers()
+    {
+        var csv = """
+            Name,Unit,Sku,Barcode
+            Coke,Bottle,SKU-1,480001
+            """;
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
+        var ex = Assert.Throws<DomainException>(() => CatalogImportCsvParser.Parse(stream));
+        Assert.Equal(DomainErrorCodes.CatalogImportHeadersInvalid, ex.ErrorCode);
     }
 }
 
@@ -90,7 +254,7 @@ public sealed class CatalogImportRowMapperTests
         {
             new(2, new Dictionary<string, string>
             {
-                ["Name"] = "=CMD|'/C calc'!A0",
+                ["ProductName"] = "=CMD|'/C calc'!A0",
                 ["Unit"] = "Piece"
             })
         };
@@ -113,13 +277,13 @@ public sealed class CatalogImportRowMapperTests
         {
             new(2, new Dictionary<string, string>
             {
-                ["Name"] = "A",
+                ["ProductName"] = "A",
                 ["Unit"] = "Piece",
                 ["Barcode"] = "480001"
             }),
             new(3, new Dictionary<string, string>
             {
-                ["Name"] = "B",
+                ["ProductName"] = "B",
                 ["Unit"] = "Piece",
                 ["Barcode"] = "480001"
             })
@@ -144,7 +308,7 @@ public sealed class CatalogImportRowMapperTests
         {
             new(2, new Dictionary<string, string>
             {
-                ["Name"] = "Existing",
+                ["ProductName"] = "Existing",
                 ["Unit"] = "Piece",
                 ["Barcode"] = "480099"
             })
@@ -158,6 +322,48 @@ public sealed class CatalogImportRowMapperTests
 
         Assert.Equal(CatalogImportItemStatus.Skipped, items[0].Status);
         Assert.Equal(ApplicationErrorCodes.DuplicateGlobalProductBarcode, items[0].ErrorCode);
+    }
+
+    [Fact]
+    public async Task MapRows_rejects_invalid_unit_status_business_types_and_decimal()
+    {
+        var rows = new List<CatalogImportRawRow>
+        {
+            new(2, new Dictionary<string, string>
+            {
+                ["ProductName"] = "BadUnit",
+                ["Unit"] = "NotAUnit"
+            }),
+            new(3, new Dictionary<string, string>
+            {
+                ["ProductName"] = "BadStatus",
+                ["Unit"] = "Piece",
+                ["Status"] = "Published"
+            }),
+            new(4, new Dictionary<string, string>
+            {
+                ["ProductName"] = "BadBiz",
+                ["Unit"] = "Piece",
+                ["BusinessTypes"] = "NotAType"
+            }),
+            new(5, new Dictionary<string, string>
+            {
+                ["ProductName"] = "BadPrice",
+                ["Unit"] = "Piece",
+                ["SuggestedSellingPrice"] = "not-a-number"
+            })
+        };
+
+        var items = await CatalogImportRowMapper.MapRowsAsync(
+            rows,
+            new FakeCategoryRepository(),
+            new FakeProductRepository(),
+            T0);
+
+        Assert.Equal(DomainErrorCodes.InvalidGlobalProductUnit, items[0].ErrorCode);
+        Assert.Equal(DomainErrorCodes.InvalidGlobalProductStatus, items[1].ErrorCode);
+        Assert.Equal(DomainErrorCodes.InvalidGlobalCatalogBusinessType, items[2].ErrorCode);
+        Assert.Equal(DomainErrorCodes.InvalidGlobalProductMoney, items[3].ErrorCode);
     }
 }
 

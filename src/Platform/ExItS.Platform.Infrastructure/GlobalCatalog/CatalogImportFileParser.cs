@@ -63,6 +63,8 @@ internal sealed class CatalogImportFileParser : ICatalogImportFileParser
                     "XLSX header row is empty.");
             }
 
+            CatalogImportCsvSchema.ValidateHeaders(headers);
+
             var rows = new List<CatalogImportRawRow>();
             for (var row = firstRow + 1; row <= lastRow; row++)
             {
@@ -70,19 +72,21 @@ internal sealed class CatalogImportFileParser : ICatalogImportFileParser
                 var anyValue = false;
                 for (var i = 0; i < headers.Count; i++)
                 {
-                    var header = headers[i];
+                    var header = headers[i].Trim();
                     if (string.IsNullOrWhiteSpace(header))
                     {
                         continue;
                     }
 
+                    var canonical = CatalogImportCsvSchema.RequiredColumns.FirstOrDefault(c =>
+                        string.Equals(c, header, StringComparison.OrdinalIgnoreCase)) ?? header;
                     var text = ReadCellText(worksheet.Cell(row, firstCol + i));
                     if (!string.IsNullOrWhiteSpace(text))
                     {
                         anyValue = true;
                     }
 
-                    cells[header] = text;
+                    cells[canonical] = text;
                 }
 
                 if (!anyValue)

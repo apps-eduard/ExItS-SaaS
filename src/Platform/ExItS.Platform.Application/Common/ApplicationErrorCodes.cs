@@ -172,4 +172,5 @@ public static class ApplicationErrorCodes
     public const string CatalogImportUnsupportedType = "application.global_catalog.import.unsupported_type";
     public const string CatalogImportEmpty = "application.global_catalog.import.empty";
     public const string CatalogImportTooManyRows = "application.global_catalog.import.too_many_rows";
+    public const string CatalogImportHeadersInvalid = "application.global_catalog.import.headers.invalid";
 }

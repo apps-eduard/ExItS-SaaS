@@ -155,6 +155,24 @@ Progress must never exceed total count.
 
 ---
 
+## 8.1 Platform Global Catalog CSV Contract
+
+Authoritative column schema lives in `CatalogImportCsvSchema` (Domain). Template download and file parsers share it.
+
+| Item | Value |
+|---|---|
+| Download | `GET /api/v1/platform/global-catalog/products/imports/template.csv` (alias: `/api/v1/platform/global-catalog/imports/template.csv`) |
+| Permission | `import_global_products` |
+| Filename | `exits-global-product-import-template.csv` |
+| Content-Type | `text/csv; charset=utf-8` |
+| Delimiter | comma |
+| Multi-value separator | `\|` for Tags and BusinessTypes |
+| Template contents | header + 2–3 SAMPLE rows; invariant decimals; valid enum samples; no formulas/macros |
+
+Upload header validation fails closed on missing, unknown, duplicate, or out-of-order columns (`platform.global_catalog.import.headers.invalid`). Row validation covers Unit, Status, BusinessTypes, invariant decimals, and formula-injection prefixes. Preview-before-confirm, partial success, and idempotency rules are unchanged.
+
+---
+
 ## 9. Security
 
 - Worker revalidates organization scope and permissions where required.

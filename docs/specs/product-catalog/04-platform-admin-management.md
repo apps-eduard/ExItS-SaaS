@@ -166,29 +166,52 @@ Publishing requires explicit confirmation.
 
 ## 7. Bulk Import Screen
 
+Route: `/admin/global-catalog/imports`
+
 Flow:
 
 ```text
-Download template
+Download CSV Template
+→ Fill / replace SAMPLE rows (keep headers unchanged; save as CSV UTF-8)
 → Upload CSV/XLSX
-→ Validate
+→ Validate (headers + row rules)
 → Preview mapping and issues
-→ Confirm
+→ Explicit Confirm
 → Background processing
 → Result summary
-→ Download error report
+→ Download / view error report
 ```
+
+The **Download CSV Template** control must be available on the upload screen and on the import preview/detail screen. Short on-screen instructions must tell operators to:
+
+1. download the template
+2. keep header names unchanged
+3. remove or replace SAMPLE rows
+4. save as CSV UTF-8
+5. upload for validation and preview
+6. understand that import does not begin until Confirm
+
+Authoritative CSV columns (exact order; shared by template generator and importer via `CatalogImportCsvSchema`):
+
+`ProductName, Category, Description, Brand, Unit, Barcode, SuggestedSku, SuggestedSellingPrice, SuggestedCostPrice, TaxHint, Tags, BusinessTypes, Status`
+
+- Multi-value `Tags` and `BusinessTypes` use `|`
+- Decimals use invariant culture (example: `25.50`)
+- Valid enums: `Unit` (`ProductUnit`), `Status` (`Draft|Active|Archived`), `BusinessTypes` (`BusinessType`)
+- No formulas, macros, or executable content
 
 Validation must include:
 
+- missing / unknown / duplicate / out-of-order headers
 - required fields
 - duplicate barcode/SKU within file
 - duplicate barcode/SKU in global catalog
 - unknown category
 - invalid unit
-- invalid money
+- invalid status
+- invalid money (invariant decimal)
 - invalid business type
-- invalid image URL/reference
+- formula-injection prefixes (`=`, `+`, `-`, `@`)
 
 Partial success is allowed only after clear preview and confirmation.
 

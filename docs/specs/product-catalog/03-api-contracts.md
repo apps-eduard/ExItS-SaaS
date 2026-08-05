@@ -49,10 +49,14 @@ GET    /api/v1/platform/global-catalog/products/{id}
 PUT    /api/v1/platform/global-catalog/products/{id}
 PATCH  /api/v1/platform/global-catalog/products/{id}/status
 POST   /api/v1/platform/global-catalog/products/imports
+GET    /api/v1/platform/global-catalog/products/imports/template.csv
+GET    /api/v1/platform/global-catalog/imports/template.csv
 GET    /api/v1/platform/global-catalog/products/imports/{jobId}
+POST   /api/v1/platform/global-catalog/products/imports/{jobId}/confirm
 GET    /api/v1/platform/global-catalog/products/imports/{jobId}/errors
 ```
 
+`GET .../template.csv` requires `import_global_products`, returns `text/csv; charset=utf-8` with download filename `exits-global-product-import-template.csv`. The `/imports/template.csv` path is an alias of the products-scoped template URL.
 ### Templates
 
 ```text

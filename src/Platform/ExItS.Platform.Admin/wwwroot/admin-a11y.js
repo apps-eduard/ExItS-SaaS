@@ -64,4 +64,25 @@
     dialogOpen: dialogOpen,
     dialogClose: dialogClose
   };
+
+  window.exitsDownloadBase64 = function (fileName, base64, contentType) {
+    try {
+      var binary = atob(base64);
+      var bytes = new Uint8Array(binary.length);
+      for (var i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      var blob = new Blob([bytes], { type: contentType || "application/octet-stream" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = fileName || "download";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("exitsDownloadBase64 failed", e);
+    }
+  };
 })();

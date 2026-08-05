@@ -10,18 +10,30 @@ namespace ExItS.Platform.Application.GlobalCatalog;
 /// <summary>Maps sanitized file rows into domain import items with duplicate detection.</summary>
 public static class CatalogImportRowMapper
 {
-    private static readonly string[] NameKeys = ["name", "productname", "product_name"];
+    /// <summary>Reserved tag prefix storing intended <see cref="GlobalProductStatus"/> until apply.</summary>
+    public const string ImportStatusTagPrefix = "import.status:";
+
+    public const string BrandTagPrefix = "brand:";
+    public const string TaxHintTagPrefix = "tax:";
+
+    // Authoritative schema names first; legacy aliases retained for programmatic/unit-test rows.
+    private static readonly string[] NameKeys = ["productname", "name", "product_name"];
     private static readonly string[] UnitKeys = ["unit", "productunit", "product_unit"];
     private static readonly string[] DescriptionKeys = ["description", "desc"];
-    private static readonly string[] SkuKeys = ["sku"];
+    private static readonly string[] BrandKeys = ["brand"];
+    private static readonly string[] SkuKeys = ["suggestedsku", "sku"];
     private static readonly string[] BarcodeKeys = ["barcode", "ean", "upc"];
     private static readonly string[] CategoryIdKeys = ["categoryid", "globalcategoryid", "category_id"];
     private static readonly string[] CategoryNameKeys = ["category", "categoryname", "category_name"];
-    private static readonly string[] PriceKeys = ["suggestedprice", "price", "suggested_price"];
-    private static readonly string[] CostKeys = ["suggestedcost", "cost", "suggested_cost"];
+    private static readonly string[] PriceKeys =
+        ["suggestedsellingprice", "suggestedprice", "price", "suggested_price"];
+    private static readonly string[] CostKeys =
+        ["suggestedcostprice", "suggestedcost", "cost", "suggested_cost"];
     private static readonly string[] ImageKeys = ["imagereference", "image", "image_reference", "imageurl"];
-    private static readonly string[] TagsKeys = ["searchtags", "tags", "search_tags"];
+    private static readonly string[] TaxHintKeys = ["taxhint", "tax_hint"];
+    private static readonly string[] TagsKeys = ["tags", "searchtags", "search_tags"];
     private static readonly string[] BusinessTypeKeys = ["businesstypes", "businesstype", "business_types"];
+    private static readonly string[] StatusKeys = ["status"];
 
     public static async Task<IReadOnlyList<CatalogImportItem>> MapRowsAsync(
         IReadOnlyList<CatalogImportRawRow> rows,
@@ -63,6 +75,7 @@ public static class CatalogImportRowMapper
         var rawName = Get(cells, NameKeys);
         var rawUnit = Get(cells, UnitKeys);
         var rawDescription = Get(cells, DescriptionKeys);
+        var rawBrand = Get(cells, BrandKeys);
         var rawSku = Get(cells, SkuKeys);
         var rawBarcode = Get(cells, BarcodeKeys);
         var rawCategoryId = Get(cells, CategoryIdKeys);
@@ -70,8 +83,10 @@ public static class CatalogImportRowMapper
         var rawPrice = Get(cells, PriceKeys);
         var rawCost = Get(cells, CostKeys);
         var rawImage = Get(cells, ImageKeys);
+        var rawTaxHint = Get(cells, TaxHintKeys);
         var rawTags = Get(cells, TagsKeys);
         var rawBusinessTypes = Get(cells, BusinessTypeKeys);
+        var rawStatus = Get(cells, StatusKeys);
 
         try
         {
@@ -79,13 +94,16 @@ public static class CatalogImportRowMapper
                 || CatalogImportRules.LooksLikeFormulaInjection(rawSku)
                 || CatalogImportRules.LooksLikeFormulaInjection(rawBarcode)
                 || CatalogImportRules.LooksLikeFormulaInjection(rawDescription)
+                || CatalogImportRules.LooksLikeFormulaInjection(rawBrand)
                 || CatalogImportRules.LooksLikeFormulaInjection(rawCategoryName)
                 || CatalogImportRules.LooksLikeFormulaInjection(rawImage)
+                || CatalogImportRules.LooksLikeFormulaInjection(rawTaxHint)
                 || CatalogImportRules.LooksLikeFormulaInjection(rawTags)
                 || CatalogImportRules.LooksLikeFormulaInjection(rawBusinessTypes)
                 || CatalogImportRules.LooksLikeFormulaInjection(rawUnit)
                 || CatalogImportRules.LooksLikeFormulaInjection(rawPrice)
                 || CatalogImportRules.LooksLikeFormulaInjection(rawCost)
+                || CatalogImportRules.LooksLikeFormulaInjection(rawStatus)
                 || CatalogImportRules.LooksLikeFormulaInjection(rawCategoryId))
             {
                 // Sanitize for storage, but mark failed so formula payloads are never imported silently.
@@ -124,12 +142,35 @@ public static class CatalogImportRowMapper
                 CatalogImportRules.SanitizeCell(rawImage),
                 GlobalCatalogRules.ImageReferenceMaxLength,
                 DomainErrorCodes.InvalidGlobalProductImage);
-            var price = ParseMoney(CatalogImportRules.SanitizeCell(rawPrice), "SuggestedPrice");
-            var cost = ParseMoney(CatalogImportRules.SanitizeCell(rawCost), "SuggestedCost");
+            var price = ParseMoney(
+                CatalogImportRules.SanitizeCell(rawPrice),
+                CatalogImportCsvSchema.SuggestedSellingPrice);
+            var cost = ParseMoney(
+                CatalogImportRules.SanitizeCell(rawCost),
+                CatalogImportCsvSchema.SuggestedCostPrice);
             description = GlobalCatalogRules.NormalizeOptionalText(
                 description,
                 GlobalCatalogRules.DescriptionMaxLength,
                 DomainErrorCodes.InvalidGlobalProductDescription);
+
+            var brand = NullIfEmpty(CatalogImportRules.SanitizeCell(rawBrand));
+            var taxHint = NullIfEmpty(CatalogImportRules.SanitizeCell(rawTaxHint));
+
+            GlobalProductStatus productStatus = GlobalProductStatus.Draft;
+            var statusText = CatalogImportRules.SanitizeCell(rawStatus);
+            if (!string.IsNullOrWhiteSpace(statusText))
+            {
+                if (!Enum.TryParse(statusText, ignoreCase: true, out productStatus)
+                    || !Enum.IsDefined(productStatus))
+                {
+                    return CatalogImportItem.CreateFailed(
+                        row.RowNumber,
+                        name,
+                        unit.ToString(),
+                        DomainErrorCodes.InvalidGlobalProductStatus,
+                        $"Unrecognized product status '{statusText}'. Use Draft, Active, or Archived.");
+                }
+            }
 
             Guid? categoryId = null;
             var categoryName = NullIfEmpty(CatalogImportRules.SanitizeCell(rawCategoryName));
@@ -226,7 +267,11 @@ public static class CatalogImportRowMapper
                 categoryId = matches[0].Id.Value;
             }
 
-            var tagsRaw = NullIfEmpty(CatalogImportRules.SanitizeCell(rawTags));
+            var tagsRaw = ComposeTagsRaw(
+                NullIfEmpty(CatalogImportRules.SanitizeCell(rawTags)),
+                brand,
+                taxHint,
+                productStatus);
             var businessTypesRaw = NullIfEmpty(CatalogImportRules.SanitizeCell(rawBusinessTypes));
             _ = GlobalCatalogRules.NormalizeSearchTags(SplitList(tagsRaw));
             _ = ParseBusinessTypes(businessTypesRaw);
@@ -371,7 +416,35 @@ public static class CatalogImportRowMapper
             return Array.Empty<string>();
         }
 
-        return raw.Split(['|', ';', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        // Prefer '|' (documented template separator); also accept ';' for compatibility.
+        return raw.Split(
+            [CatalogImportCsvSchema.MultiValueSeparator, ';'],
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    }
+
+    public static (IReadOnlyList<string> Tags, GlobalProductStatus Status) SplitTagsAndStatus(string? searchTagsRaw)
+    {
+        var parts = SplitList(searchTagsRaw);
+        var status = GlobalProductStatus.Draft;
+        var tags = new List<string>(parts.Count);
+        foreach (var part in parts)
+        {
+            if (part.StartsWith(ImportStatusTagPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                var value = part[ImportStatusTagPrefix.Length..];
+                if (Enum.TryParse(value, ignoreCase: true, out GlobalProductStatus parsed)
+                    && Enum.IsDefined(parsed))
+                {
+                    status = parsed;
+                }
+
+                continue;
+            }
+
+            tags.Add(part);
+        }
+
+        return (tags, status);
     }
 
     public static IReadOnlyList<BusinessType> ParseBusinessTypes(string? raw)
@@ -385,7 +458,8 @@ public static class CatalogImportRowMapper
         var parsed = new List<BusinessType>(parts.Count);
         foreach (var part in parts)
         {
-            if (!Enum.TryParse<BusinessType>(part, ignoreCase: true, out var type))
+            if (!Enum.TryParse<BusinessType>(part, ignoreCase: true, out var type)
+                || !Enum.IsDefined(type))
             {
                 throw new DomainException(
                     DomainErrorCodes.InvalidGlobalCatalogBusinessType,
@@ -396,6 +470,38 @@ public static class CatalogImportRowMapper
         }
 
         return GlobalCatalogRules.NormalizeBusinessTypes(parsed);
+    }
+
+    private static string? ComposeTagsRaw(
+        string? tags,
+        string? brand,
+        string? taxHint,
+        GlobalProductStatus status)
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(tags))
+        {
+            parts.AddRange(SplitList(tags));
+        }
+
+        if (!string.IsNullOrWhiteSpace(brand))
+        {
+            parts.Add(BrandTagPrefix + brand);
+        }
+
+        if (!string.IsNullOrWhiteSpace(taxHint))
+        {
+            parts.Add(TaxHintTagPrefix + taxHint);
+        }
+
+        if (status != GlobalProductStatus.Draft)
+        {
+            parts.Add(ImportStatusTagPrefix + status);
+        }
+
+        return parts.Count == 0
+            ? null
+            : string.Join(CatalogImportCsvSchema.MultiValueSeparator, parts);
     }
 
     private static decimal? ParseMoney(string? raw, string fieldName)
@@ -409,7 +515,7 @@ public static class CatalogImportRowMapper
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidGlobalProductMoney,
-                $"{fieldName} '{raw}' is not a valid decimal.");
+                $"{fieldName} '{raw}' is not a valid invariant decimal (example: 25.50).");
         }
 
         return GlobalCatalogRules.NormalizeMoney(amount, fieldName);
@@ -466,6 +572,8 @@ public static class CatalogImportCsvParser
                 "CSV header row is empty.");
         }
 
+        CatalogImportCsvSchema.ValidateHeaders(headers);
+
         var rows = new List<CatalogImportRawRow>();
         var rowNumber = 1; // header is row 1 in spreadsheet terms; data starts at 2
         string? line;
@@ -481,13 +589,16 @@ public static class CatalogImportCsvParser
             var cells = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             for (var i = 0; i < headers.Count; i++)
             {
-                var header = headers[i];
+                var header = headers[i].Trim();
                 if (string.IsNullOrWhiteSpace(header))
                 {
                     continue;
                 }
 
-                cells[header] = i < fields.Count ? fields[i] : string.Empty;
+                // Preserve authoritative casing from schema when matched.
+                var canonical = CatalogImportCsvSchema.RequiredColumns.FirstOrDefault(c =>
+                    string.Equals(c, header, StringComparison.OrdinalIgnoreCase)) ?? header;
+                cells[canonical] = i < fields.Count ? fields[i] : string.Empty;
             }
 
             rows.Add(new CatalogImportRawRow(rowNumber, cells));

@@ -428,6 +428,7 @@ public sealed class ProcessCatalogImportChunk
                 return;
             }
 
+            var (tags, targetStatus) = CatalogImportRowMapper.SplitTagsAndStatus(item.SearchTagsRaw);
             var product = GlobalProduct.Create(
                 item.Name,
                 unit,
@@ -439,8 +440,13 @@ public sealed class ProcessCatalogImportChunk
                 item.SuggestedPrice,
                 item.SuggestedCost,
                 item.ImageReference,
-                CatalogImportRowMapper.SplitList(item.SearchTagsRaw),
+                tags,
                 CatalogImportRowMapper.ParseBusinessTypes(item.BusinessTypesRaw));
+
+            if (targetStatus != GlobalProductStatus.Draft)
+            {
+                product.SetStatus(targetStatus, now);
+            }
 
             await _products.AddAsync(product, cancellationToken).ConfigureAwait(false);
             item.MarkImported(product.Id.Value, now);

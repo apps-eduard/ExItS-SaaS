@@ -33,7 +33,7 @@ Phase 19 remains **Open** (QR scenarios Retest; Not Device Verified).
 
 | Suite | Result |
 |---|---|
-| Platform Unit — GlobalCatalog | **48 passed**, 0 failed |
+| Platform Unit — GlobalCatalog | **59 passed**, 0 failed |
 | Platform Unit — full | **543 passed**, **2 failed** (pre-existing commercial/payment tests; unrelated to Phase 20) |
 | MAUI Tests | **109 passed**, **1 failed** (pre-existing InventoryPageGuard Access_RestrictedTitle assert; unrelated) |
 | Architecture Tests | **144 passed**, **4 failed** (pre-existing Admin title / SaaS payment naming / cleartext-doc asserts; unrelated to Phase 20) |
@@ -45,7 +45,7 @@ Phase 19 remains **Open** (QR scenarios Retest; Not Device Verified).
 ### Platform Admin
 - [ ] Create global category + product; archive/reactivate
 - [ ] Create Sari-Sari / Mini Grocery template; add first-batch products; publish
-- [ ] CSV bulk import: preview → confirm → progress → partial errors visible
+- [ ] CSV bulk import: download template → fill → preview → confirm → progress → partial errors visible
 
 ### Merchant (Owner / entitled Manager)
 - [ ] `/catalog/import` — choose published template → preview → confirm

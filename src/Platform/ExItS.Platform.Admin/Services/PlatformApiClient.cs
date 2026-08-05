@@ -673,6 +673,51 @@ public sealed class PlatformApiClient(
             $"/api/v1/platform/global-catalog/products/imports/{jobId}/errors?{Query(("page", page), ("pageSize", pageSize))}",
             ct);
 
+    public async Task<ApiCallResult<byte[]>> DownloadCatalogImportTemplateAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(
+                HttpMethod.Get,
+                "/api/v1/platform/global-catalog/products/imports/template.csv");
+
+            var sessionToken = await ResolveSessionTokenAsync();
+            if (!string.IsNullOrWhiteSpace(sessionToken)
+                && !request.Headers.Contains(SessionTokenHeader))
+            {
+                request.Headers.TryAddWithoutValidation(SessionTokenHeader, sessionToken);
+            }
+
+            using var response = await httpClient.SendAsync(request, ct);
+            if (response.IsSuccessStatusCode)
+            {
+                var bytes = await response.Content.ReadAsByteArrayAsync(ct);
+                return ApiCallResult<byte[]>.Success(bytes);
+            }
+
+            var error = await ToExceptionAsync(response, ct);
+            return response.StatusCode switch
+            {
+                HttpStatusCode.NotFound => ApiCallResult<byte[]>.NotFound(error),
+                HttpStatusCode.BadRequest or HttpStatusCode.UnprocessableEntity => ApiCallResult<byte[]>.Validation(error),
+                HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized => ApiCallResult<byte[]>.Failed(error),
+                _ => ApiCallResult<byte[]>.Failed(error)
+            };
+        }
+        catch (HttpRequestException ex)
+        {
+            return ApiCallResult<byte[]>.Unavailable(new PlatformApiException(null, "Platform API unavailable", ex.Message, innerException: ex));
+        }
+        catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            return ApiCallResult<byte[]>.Unavailable(new PlatformApiException(null, "Platform API timed out", ex.Message, innerException: ex));
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+    }
+
     private static MembershipLifecycleRequest WithActor(MembershipLifecycleRequest request) =>
         request with { ActorReference = string.IsNullOrWhiteSpace(request.ActorReference) ? DevActor : request.ActorReference };
 

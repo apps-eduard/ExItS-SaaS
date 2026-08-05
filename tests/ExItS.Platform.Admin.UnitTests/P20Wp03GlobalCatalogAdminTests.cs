@@ -41,7 +41,7 @@ public sealed class P20Wp03GlobalCatalogAdminTests
     }
 
     [Fact]
-    public void Admin_nav_exposes_product_catalog_submenu_without_imports_or_templates()
+    public void Admin_nav_exposes_product_catalog_submenu_including_imports_and_templates()
     {
         var root = FindRepositoryRoot();
         var nav = File.ReadAllText(Path.Combine(
@@ -51,8 +51,8 @@ public sealed class P20Wp03GlobalCatalogAdminTests
         Assert.Contains("/admin/global-catalog/categories", nav, StringComparison.Ordinal);
         Assert.Contains("/admin/global-catalog/products", nav, StringComparison.Ordinal);
         Assert.Contains("Nav_ProductCatalog", nav, StringComparison.Ordinal);
-        Assert.DoesNotContain("/admin/global-catalog/imports", nav, StringComparison.Ordinal);
-        Assert.DoesNotContain("/admin/global-catalog/templates", nav, StringComparison.Ordinal);
+        Assert.Contains("/admin/global-catalog/imports", nav, StringComparison.Ordinal);
+        Assert.Contains("/admin/global-catalog/templates", nav, StringComparison.Ordinal);
         Assert.Contains("/admin/products", nav, StringComparison.Ordinal);
         Assert.Contains("/admin/plans", nav, StringComparison.Ordinal);
     }

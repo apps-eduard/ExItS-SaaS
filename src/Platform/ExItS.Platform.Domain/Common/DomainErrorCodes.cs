@@ -227,6 +227,8 @@ public static class DomainErrorCodes
     public const string InvalidCatalogImportStatusTransition =
         "platform.global_catalog.import.status.invalid_transition";
     public const string CatalogImportFileInvalid = "platform.global_catalog.import.file.invalid";
+    public const string CatalogImportHeadersInvalid =
+        "platform.global_catalog.import.headers.invalid";
     public const string CatalogImportFormulaInjection =
         "platform.global_catalog.import.formula_injection";
     public const string CatalogImportRowInvalid = "platform.global_catalog.import.row.invalid";
@@ -234,4 +236,6 @@ public static class DomainErrorCodes
         "platform.global_catalog.import.duplicate_in_file";
     public const string CatalogImportNoConfirmableRows =
         "platform.global_catalog.import.no_confirmable_rows";
+    public const string InvalidGlobalProductStatus =
+        "platform.global_catalog.product.status.invalid";
 }

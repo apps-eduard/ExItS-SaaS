@@ -337,6 +337,10 @@ internal static class GlobalCatalogEndpoints
     {
         var imports = root.MapGroup("/products/imports");
 
+        imports.MapGet("/template.csv", DownloadImportTemplateAsync);
+        // Alias matching documented path without /products prefix.
+        root.MapGet("/imports/template.csv", DownloadImportTemplateAsync);
+
         imports.MapGet("/", async (
             CatalogImportQueryService queries,
             PlatformAuthz authz,
@@ -506,6 +510,28 @@ internal static class GlobalCatalogEndpoints
             var errors = await queries.ListErrorsAsync(jobId, page, pageSize, ct).ConfigureAwait(false);
             return Results.Ok(errors);
         });
+    }
+
+    private static async Task<IResult> DownloadImportTemplateAsync(
+        PlatformAuthz authz,
+        CancellationToken ct)
+    {
+        var denied = await authz.EnsureAsync(
+            PlatformPermission.ImportGlobalProducts,
+            PlatformAuditActions.PlatformAccessChecked,
+            nameof(CatalogImportJob),
+            "template",
+            cancellationToken: ct).ConfigureAwait(false);
+        if (denied is not null)
+        {
+            return denied;
+        }
+
+        var bytes = CatalogImportCsvSchema.GenerateTemplateUtf8Bytes();
+        return Results.File(
+            bytes,
+            contentType: CatalogImportCsvSchema.ContentType,
+            fileDownloadName: CatalogImportCsvSchema.DownloadFileName);
     }
 
     private static void MapTemplateEndpoints(RouteGroupBuilder root)

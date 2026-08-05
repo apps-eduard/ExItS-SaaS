@@ -289,4 +289,5 @@ public interface IPlatformApiClient
         int page = 1,
         int pageSize = 100,
         CancellationToken ct = default);
+    Task<ApiCallResult<byte[]>> DownloadCatalogImportTemplateAsync(CancellationToken ct = default);
 }
