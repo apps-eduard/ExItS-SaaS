@@ -11,12 +11,12 @@
 | Portfolio | ExITS SaaS |
 | Existing product | Historical HealthCare SaaS MVP (separate product; **not** in this workspace ? do not restore) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 19 ù **Open** ù Mobile POS Operations and Cashier Experience; Phase 14 still open |
-| Current work package | **P19-WP08** Retest (awaiting user phone confirmation); WP01ñWP07 Code Complete; Public User QR/ExItS ID Code Complete (phone Retest); Phase 18 Complete (implementation/scope) + Personal MVP Mobile UI Code Complete (phone Retest); Phase 17 remains complete; **P16-WP11** validation residuals may continue separately; P14-WP04 remains next Production WP after authorization; **do not start P14-WP03** under Phase 19 |
-| Overall status | **Phase 19 Open** ([phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md); [P19-WP08](reports/P19-WP08-end-to-end-validation-and-closeout.md)) ù implementation through WP07 Code Complete; WP08 Retest (includes Personal MVP phone scenarios); **Not Device Verified**; **Not Complete**. Phase 18 **Complete (implementation/scope)** ù Personal Mobile MVP UI completion recorded; partial phone validation. Phase 17 complete. Phase 15 complete. Phase 16 feature WPs complete with validation residuals. **Phase 14 remains in progress**. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | Personal Utang Mobile MVP `244febd` (Phase 19 remains Open; Not Device Verified) |
-| Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; D-P12-03; D-P12-04; EVAL-DRIFT; Manual GCash unverified; online-only limits; report export deferred; PITR deferred; local unsynced ops; advanced tax/accounting deferred; formal WCAG cert not claimed; Phase 18 Quick Login final retest; Phase 19 phone validation pending; Personal MVP phone Retest |
-| Last updated | 2026-08-04 |
+| Current phase | Phase 19 **Open** (phone Retest); Phase 20 **Open** (Implementation Complete ? Validation Pending); Phase 14 still open |
+| Current work package | **P20-WP08** In Progress ? User Physical-Device Validation Pending; P20-WP01?WP07 Code Complete; **P19-WP08** Retest (QR + Personal MVP phone scenarios); do not close Phase 19 or 20 without user approval; **do not start P14-WP03** under Phase 19/20 |
+| Overall status | **Phase 19 Open** + **Phase 20 Open** ([P20 phase](phases/phase-20-global-product-catalog-and-business-template-onboarding.md); [P20 final](reports/P20-final-implementation-report.md); [P19-WP08](reports/P19-WP08-end-to-end-validation-and-closeout.md)). Phase 20 overall: Implementation Complete ? Validation Pending. **Not Device Verified**. **Not Complete**. Production remains **Blocked**. **Not production-ready.** |
+| Latest verified commit | Phase 20 WP07 tip `f766ea2` (Phase 19 and 20 remain Open; Not Device Verified) |
+| Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; Phase 19 phone validation pending; Phase 20 phone validation pending; Personal MVP / QR phone Retest |
+| Last updated | 2026-08-05 |
 
 ## Delivery sequence
 

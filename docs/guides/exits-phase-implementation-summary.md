@@ -331,6 +331,25 @@
 
 ---
 
+### Phase 20 — Global Product Catalog and Business Template Onboarding
+**Status: Open** — Overall **Implementation Complete — Validation Pending**; WP01–WP07 Code Complete; WP08 In Progress — User Physical-Device Validation Pending; not Device Verified; not production-ready
+
+**Work packages:**
+- P20-WP01 Architecture and contracts — **Code Complete** (`e69dabb`)
+- P20-WP02 Global categories and products domain — **Code Complete** (`ad93c19`)
+- P20-WP03 Platform Admin catalog management — **Code Complete** (`7a8c1b8`)
+- P20-WP04 Business templates — **Code Complete** (`aea02e3`)
+- P20-WP05 Platform CSV/XLSX bulk import — **Code Complete** (`5f68258`)
+- P20-WP06 Merchant onboarding and POS import — **Code Complete** (`a849635`)
+- P20-WP07 MAUI catalog and cashier integration — **Code Complete** (`3ea856c`)
+- P20-WP08 End-to-end validation and user closeout — **In Progress — User Physical-Device Validation Pending**
+
+**Specs:** [docs/specs/product-catalog/](../specs/product-catalog/) · **Final report:** [P20-final-implementation-report](../reports/P20-final-implementation-report.md)
+
+**Unchanged:** Phase 19 remains Open; Phase 14 unchanged; not production-ready.
+
+---
+
 ## Key Themes Across All Phases
 
 | Theme | Progress |

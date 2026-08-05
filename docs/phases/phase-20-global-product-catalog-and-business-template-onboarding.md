@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Status | **Open** |
-| Overall | Implementation in progress → Validation Pending |
+| Overall | **Implementation Complete — Validation Pending** |
 | Device Verified | **No** |
 | Production Ready | **No** |
 | Phase 19 | Remains **Open** (unchanged) |
@@ -18,14 +18,14 @@ Platform-owned global merchandise catalog (categories, products, business templa
 
 | WP | Name | Target status |
 |---|---|---|
-| P20-WP01 | Architecture and contracts | Code Complete (docs + reconciliation) |
-| P20-WP02 | Global categories and products domain | Code Complete |
-| P20-WP03 | Platform Admin catalog management | Code Complete |
-| P20-WP04 | Business templates | Code Complete |
-| P20-WP05 | Platform CSV/XLSX bulk import | Code Complete |
-| P20-WP06 | Merchant onboarding and POS import | Code Complete |
-| P20-WP07 | MAUI catalog and cashier integration | Code Complete |
-| P20-WP08 | End-to-end validation and user closeout | In Progress — User Physical-Device Validation Pending |
+| P20-WP01 | Architecture and contracts | **Code Complete** |
+| P20-WP02 | Global categories and products domain | **Code Complete** |
+| P20-WP03 | Platform Admin catalog management | **Code Complete** |
+| P20-WP04 | Business templates | **Code Complete** |
+| P20-WP05 | Platform CSV/XLSX bulk import | **Code Complete** |
+| P20-WP06 | Merchant onboarding and POS import | **Code Complete** |
+| P20-WP07 | MAUI catalog and cashier integration | **Code Complete** |
+| P20-WP08 | End-to-end validation and user closeout | **In Progress — User Physical-Device Validation Pending** |
 
 ## Authoritative specs
 
