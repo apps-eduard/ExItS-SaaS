@@ -15,10 +15,13 @@
 
         <Section Title="@L["More_WorkspaceSection"]">
             <div class="pos-action-grid" role="group" aria-label="@L["More_WorkspaceSection"]">
-                <button type="button" class="pos-action-tile" @onclick="GoRoleHome">
-                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("home")</span>
-                    <span class="pos-action-tile__label">@L["More_RoleHome"]</span>
-                </button>
+                @if (CurrentUser.HasPosAccess)
+                {
+                    <button type="button" class="pos-action-tile" @onclick="GoRoleHome">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("home")</span>
+                        <span class="pos-action-tile__label">@L["More_RoleHome"]</span>
+                    </button>
+                }
                 <button type="button" class="pos-action-tile" @onclick="GoOrg">
                     <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
                     <span class="pos-action-tile__label">@L["Org_SummaryTitle"]</span>
@@ -28,7 +31,7 @@
 
         <AccountContextSwitcher />
 
-        @if (CurrentUser.Session?.OrganizationId is not null)
+        @if (CurrentUser.Session?.OrganizationId is not null && CurrentUser.HasPosAccess)
         {
             <Section Title="@L["More_ToolsSection"]">
                 <div class="pos-action-grid" role="group" aria-label="@L["More_ToolsSection"]">
@@ -125,6 +128,13 @@
         if (CurrentUser.Session?.OrganizationId is null)
         {
             Nav.NavigateTo(RoleHomeResolver.PersonalHome, replace: true);
+            return;
+        }
+
+        // Without POS access this hub stays reachable as the organization-context destination
+        // (organization overview, context switching, sign out) instead of bouncing to Home.
+        if (!CurrentUser.HasPosAccess)
+        {
             return;
         }
 

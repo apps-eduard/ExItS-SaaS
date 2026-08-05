@@ -42,15 +42,8 @@
                 <span class="pos-nav-item__label">@L["Nav_Customers"]</span>
             </NavLink>
         }
-        else
-        {
-            @* POS access not active: only organization-scoped destinations that existing
-               authorization already allows for every member of the bound organization. *@
-            <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/org">
-                <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("settings")</span>
-                <span class="pos-nav-item__label">@L["Org_SummaryTitle"]</span>
-            </NavLink>
-        }
+        @* POS access not active: Home already resolves to the Organization overview, so the bar
+           keeps only Home and More instead of repeating the same destination. *@
         <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/more">
             <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("more")</span>
             <span class="pos-nav-item__label">@L["Nav_More"]</span>

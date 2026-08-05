@@ -59,13 +59,34 @@ public sealed class HomeDestinationRoutingGuardTests
 
         Assert.Contains("@if (_hasPosAccess)", shell, StringComparison.Ordinal);
         Assert.Contains("_hasPosAccess = CurrentUser.HasPosAccess", shell, StringComparison.Ordinal);
-        Assert.Contains("href=\"/org\"", shell, StringComparison.Ordinal);
-        Assert.Contains("Org_SummaryTitle", shell, StringComparison.Ordinal);
 
-        var withoutAccess = shell[shell.IndexOf("else", shell.IndexOf("@if (_hasPosAccess)", StringComparison.Ordinal), StringComparison.Ordinal)..];
-        Assert.DoesNotContain("href=\"/catalog\"", withoutAccess, StringComparison.Ordinal);
-        Assert.DoesNotContain("href=\"/sales\"", withoutAccess, StringComparison.Ordinal);
-        Assert.DoesNotContain("href=\"/customers\"", withoutAccess, StringComparison.Ordinal);
+        // Products / Sales / Customers only exist inside the POS-access branch.
+        var posTabs = shell[shell.IndexOf("@if (_hasPosAccess)", StringComparison.Ordinal)..];
+        var afterBranch = posTabs[(posTabs.IndexOf("}", posTabs.IndexOf("href=\"/customers\"", StringComparison.Ordinal), StringComparison.Ordinal))..];
+        Assert.DoesNotContain("href=\"/catalog\"", afterBranch, StringComparison.Ordinal);
+        Assert.DoesNotContain("href=\"/sales\"", afterBranch, StringComparison.Ordinal);
+        Assert.DoesNotContain("href=\"/customers\"", afterBranch, StringComparison.Ordinal);
+
+        // Home already resolves to the organization overview, so no tab may repeat that destination.
+        Assert.DoesNotContain("href=\"/org\"", shell, StringComparison.Ordinal);
+        Assert.Contains("href=\"/more\"", shell, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void More_hub_stays_reachable_without_pos_access()
+    {
+        var more = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "MoreHub.razor"));
+
+        // The More tab must not bounce back to Home when only POS access is missing.
+        Assert.Contains("if (!CurrentUser.HasPosAccess)", more, StringComparison.Ordinal);
+        Assert.Contains("@if (CurrentUser.HasPosAccess)", more, StringComparison.Ordinal);
+        Assert.Contains("CurrentUser.Session?.OrganizationId is not null && CurrentUser.HasPosAccess", more, StringComparison.Ordinal);
+        Assert.Contains("AccountContextSwitcher", more, StringComparison.Ordinal);
+        Assert.Contains("Org_SummaryTitle", more, StringComparison.Ordinal);
+
+        var accessGate = more.IndexOf("if (!CurrentUser.HasPosAccess)", StringComparison.Ordinal);
+        var shellGate = more.IndexOf("if (!Gate.CanEnterProtectedShell)", StringComparison.Ordinal);
+        Assert.InRange(accessGate, 0, shellGate);
     }
 
     [Theory]
