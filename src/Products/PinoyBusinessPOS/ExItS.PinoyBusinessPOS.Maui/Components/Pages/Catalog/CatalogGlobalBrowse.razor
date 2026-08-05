@@ -1,4 +1,5 @@
 @page "/catalog/global"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IMerchantCatalogDiscoveryClient Discovery
@@ -16,105 +17,218 @@
 else if (!_canManage)
 {
     <Page>
-        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Catalog_Title"]</Button>
+        <div class="pos-global">
+            <header class="pos-global__header">
+                <h1 class="pos-global__title">@L["Catalog_Global_Title"]</h1>
+            </header>
+            <div class="pos-global__state" role="status">
+                <h2 class="pos-global__state-title">@L["Access_RestrictedTitle"]</h2>
+                <p class="pos-global__state-message">@L["Access_RestrictedMessage"]</p>
+            </div>
+        </div>
     </Page>
 }
 else
 {
     <Page>
-        <PageHeader Title="@L["Catalog_Global_Title"]" Subtitle="@L["Catalog_Global_Subtitle"]">
-            <Actions>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Catalog_Title"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoImport">@L["Catalog_Import_UseTemplate"]</Button>
-            </Actions>
-        </PageHeader>
-
-        @if (_isOffline)
-        {
-            <Alert Tone="AlertTone.Warning" Title="@L["Catalog_OfflineTitle"]" Message="@L["Catalog_Import_OfflineMessage"]" />
-        }
-
-        @if (!string.IsNullOrEmpty(_errorMessage))
-        {
-            <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Catalog_ErrorTitle"])" Message="@_errorMessage" />
-        }
-
-        <SearchToolbar SearchText="@_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Catalog_Global_SearchPlaceholder"]">
-            <Actions>
-                <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" Disabled="@_isOffline" OnClick="ReloadAsync">@L["Catalog_Refresh"]</Button>
-            </Actions>
-        </SearchToolbar>
-
-        <Section Title="@L["Catalog_FiltersTitle"]">
-            <Stack Gap="3">
-                <TextInput Label="@L["Catalog_Field_Barcode"]"
-                           Value="@_barcode"
-                           ValueChanged="OnBarcodeChanged"
-                           Hint="@L["Catalog_Global_BarcodeHint"]"
-                           Disabled="@_isOffline" />
-                <Select Label="@L["Catalog_Filter_Category"]"
-                        Value="@_categoryFilter"
-                        ValueChanged="OnCategoryFilterChanged"
-                        Options="@CategoryOptions"
-                        Disabled="@_isOffline" />
-            </Stack>
-        </Section>
-
-        <Section Title="@string.Format(L["Catalog_Global_SelectedCount"].Value, _selectedIds.Count)">
-            <FormActions>
-                <Button Variant="ButtonVariant.Primary"
-                        IsLoading="@_busy"
-                        Disabled="@(_isOffline || _busy || _selectedIds.Count == 0)"
-                        OnClick="ImportSelectedAsync">@L["Catalog_Global_ImportSelected"]</Button>
-                <Button Variant="ButtonVariant.Secondary"
-                        Disabled="@(_selectedIds.Count == 0 || _busy)"
-                        OnClick="ClearSelection">@L["Catalog_Global_ClearSelection"]</Button>
-            </FormActions>
-        </Section>
-
-        @if (_loading)
-        {
-            <Spinner />
-        }
-        else if (_items.Count == 0)
-        {
-            <EmptyState IconName="inbox" Title="@L["Catalog_Global_EmptyTitle"]" Message="@L["Catalog_Global_EmptyMessage"]" />
-        }
-        else
-        {
-            <Stack Gap="2">
-                @foreach (var product in _items)
+        <div class="pos-global @(_selectedIds.Count > 0 ? "pos-global--has-selection" : null)">
+            <header class="pos-global__header">
+                <h1 class="pos-global__title">@L["Catalog_Global_Title"]</h1>
+                <p class="pos-global__subtitle">@L["Catalog_Global_Subtitle"]</p>
+                @if (!_authBlocked && !_isOffline)
                 {
-                    var selected = _selectedIds.Contains(product.Id);
-                    <div class="pos-row">
-                        <div class="pos-product-tile__placeholder" aria-hidden="true"></div>
-                        <div>
-                            <div class="pos-value-md">@product.Name</div>
-                            <div class="pos-muted">
-                                @(string.IsNullOrWhiteSpace(product.Sku) ? L["Catalog_NoValue"] : product.Sku)
-                                ·
-                                @(string.IsNullOrWhiteSpace(product.Barcode) ? L["Catalog_NoValue"] : product.Barcode)
-                            </div>
-                            @if (product.SuggestedPrice is decimal price)
-                            {
-                                <MoneyDisplay Amount="@price" CurrencyCode="PHP" />
-                            }
-                        </div>
-                        <Button Variant="@(selected ? ButtonVariant.Primary : ButtonVariant.Secondary)"
-                                Disabled="@_busy"
-                                OnClick="() => ToggleSelect(product.Id)">
-                            @(selected ? L["Catalog_Global_Selected"] : L["Catalog_Global_Select"])
-                        </Button>
+                    <button type="button"
+                            class="pos-global__template"
+                            @onclick="GoImport">
+                        @L["Catalog_Import_UseTemplate"]
+                    </button>
+                }
+            </header>
+
+            @if (_authBlocked)
+            {
+                <div class="pos-global__state" role="alert">
+                    <h2 class="pos-global__state-title">@L["Catalog_Global_AuthTitle"]</h2>
+                    <p class="pos-global__state-message">@L["Catalog_Global_AuthMessage"]</p>
+                    <p class="pos-global__state-note">@L["Catalog_Global_AuthUnavailable"]</p>
+                </div>
+            }
+            else if (_accessDenied)
+            {
+                <div class="pos-global__state" role="alert">
+                    <h2 class="pos-global__state-title">@L["Access_DeniedTitle"]</h2>
+                    <p class="pos-global__state-message">@(_errorMessage ?? L["Access_Denied"])</p>
+                    <Button Variant="ButtonVariant.Secondary" OnClick="ReloadAsync">@L["Api_Retry"]</Button>
+                </div>
+            }
+            else if (_isOffline)
+            {
+                <div class="pos-global__state" role="status">
+                    <h2 class="pos-global__state-title">@L["Catalog_OfflineTitle"]</h2>
+                    <p class="pos-global__state-message">@L["Catalog_Import_OfflineMessage"]</p>
+                </div>
+            }
+            else
+            {
+                <div class="pos-global__toolbar">
+                    <div class="pos-global__search">
+                        <span class="pos-global__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                        <input class="pos-global__search-input"
+                               type="search"
+                               value="@_search"
+                               placeholder="@L["Catalog_Global_SearchPlaceholder"]"
+                               aria-label="@L["Catalog_Global_SearchPlaceholder"]"
+                               disabled="@(_loading || _busy)"
+                               @oninput="OnSearchInputAsync" />
+                        @if (!string.IsNullOrEmpty(_search))
+                        {
+                            <IconButton AriaLabel="@L["Catalog_Global_ClearSearch"]"
+                                        IconName="close"
+                                        Disabled="@(_loading || _busy)"
+                                        OnClick="ClearSearchAsync" />
+                        }
+                    </div>
+                    <IconButton AriaLabel="@L["Catalog_Refresh"]"
+                                IconName="refresh"
+                                Disabled="@(_loading || _busy || _isOffline)"
+                                OnClick="ReloadAsync" />
+                    <button type="button"
+                            class="pos-global__filter-toggle @(_filtersOpen ? "pos-global__filter-toggle--open" : null)"
+                            aria-expanded="@_filtersOpen"
+                            aria-controls="global-catalog-filters"
+                            aria-label="@FilterToggleLabel"
+                            title="@FilterToggleLabel"
+                            disabled="@(_busy)"
+                            @onclick="ToggleFilters">
+                        <span class="pos-global__filter-icon" aria-hidden="true">@IconGlyphs.Get("menu")</span>
+                        <span class="pos-global__filter-label">@FilterToggleLabel</span>
+                    </button>
+                </div>
+
+                @if (_filtersOpen)
+                {
+                    <section class="pos-global__filters" id="global-catalog-filters" aria-label="@L["Catalog_FiltersTitle"]">
+                        <TextInput Label="@L["Catalog_Field_Barcode"]"
+                                   Value="@_barcode"
+                                   ValueChanged="OnBarcodeChanged"
+                                   Hint="@L["Catalog_Global_BarcodeHint"]"
+                                   Disabled="@(_busy || _isOffline)" />
+                        <Select Label="@L["Catalog_Filter_Category"]"
+                                Value="@_categoryFilter"
+                                ValueChanged="OnCategoryFilterChanged"
+                                Options="@CategoryOptions"
+                                Disabled="@(_busy || _isOffline)" />
+                        @if (ActiveFilterCount > 0)
+                        {
+                            <Button Variant="ButtonVariant.Ghost"
+                                    Disabled="@_busy"
+                                    OnClick="ClearFiltersAsync">@L["Catalog_Global_ClearFilters"]</Button>
+                        }
+                    </section>
+                }
+
+                @if (!string.IsNullOrEmpty(_errorMessage) && !_authBlocked && !_accessDenied)
+                {
+                    <Alert Tone="AlertTone.Danger"
+                           Title="@(_errorTitle ?? L["Catalog_ErrorTitle"])"
+                           Message="@_errorMessage" />
+                    <div class="pos-global__retry">
+                        <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Api_Retry"]</Button>
                     </div>
                 }
-            </Stack>
+                else if (_loading)
+                {
+                    <div class="pos-global__state" role="status" aria-live="polite">
+                        <Spinner />
+                        <p class="pos-global__state-message">@L["Catalog_Global_Loading"]</p>
+                    </div>
+                }
+                else if (_items.Count == 0)
+                {
+                    <div class="pos-global__state" role="status">
+                        <h2 class="pos-global__state-title">
+                            @(HasQueryOrFilters ? L["Catalog_Global_NoMatchTitle"] : L["Catalog_Global_EmptyTitle"])
+                        </h2>
+                        <p class="pos-global__state-message">
+                            @(HasQueryOrFilters ? L["Catalog_Global_NoMatchMessage"] : L["Catalog_Global_EmptyMessage"])
+                        </p>
+                    </div>
+                }
+                else
+                {
+                    <div class="pos-global__list" role="list" aria-label="@L["Catalog_Global_Title"]">
+                        @foreach (var product in _items)
+                        {
+                            var selected = _selectedIds.Contains(product.Id);
+                            var meta = BuildMeta(product);
+                            var identity = BuildIdentity(product);
+                            <button type="button"
+                                    class="pos-global__row @(selected ? "pos-global__row--selected" : null)"
+                                    role="listitem"
+                                    aria-pressed="@selected"
+                                    aria-label="@RowAria(product, selected)"
+                                    disabled="@_busy"
+                                    @onclick="() => ToggleSelect(product.Id)">
+                                <span class="pos-global__check" aria-hidden="true">
+                                    @if (selected)
+                                    {
+                                        @IconGlyphs.Get("check")
+                                    }
+                                </span>
+                                <span class="pos-global__row-main">
+                                    <span class="pos-global__row-name">@product.Name</span>
+                                    @if (!string.IsNullOrEmpty(meta))
+                                    {
+                                        <span class="pos-global__row-meta">@meta</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(identity))
+                                    {
+                                        <span class="pos-global__row-id">@identity</span>
+                                    }
+                                </span>
+                                <span class="pos-global__row-side">
+                                    @if (product.SuggestedPrice is decimal price)
+                                    {
+                                        <span class="pos-global__row-price">
+                                            <MoneyDisplay Amount="@price" CurrencyCode="PHP" />
+                                        </span>
+                                    }
+                                    <span class="pos-global__row-action">
+                                        @(selected ? L["Catalog_Global_Selected"] : L["Catalog_Global_Select"])
+                                    </span>
+                                </span>
+                            </button>
+                        }
+                    </div>
 
-            @if (_totalCount > 0)
-            {
-                <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
+                    @if (_totalCount > _pageSize)
+                    {
+                        <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
+                    }
+                }
+
+                @if (_selectedIds.Count > 0)
+                {
+                    <div class="pos-global__selection"
+                         role="region"
+                         aria-live="polite"
+                         aria-label="@string.Format(L["Catalog_Global_SelectedCount"].Value, _selectedIds.Count)">
+                        <span class="pos-global__selection-count">
+                            @string.Format(L["Catalog_Global_SelectedCount"].Value, _selectedIds.Count)
+                        </span>
+                        <div class="pos-global__selection-actions">
+                            <Button Variant="ButtonVariant.Secondary"
+                                    Disabled="@_busy"
+                                    OnClick="ClearSelection">@L["Catalog_Global_ClearSelection"]</Button>
+                            <Button Variant="ButtonVariant.Primary"
+                                    IsLoading="@_busy"
+                                    Disabled="@(_busy || _isOffline)"
+                                    OnClick="ImportSelectedAsync">@L["Catalog_Global_ImportSelected"]</Button>
+                        </div>
+                    </div>
+                }
             }
-        }
+        </div>
     </Page>
 }
 
@@ -124,6 +238,9 @@ else
     private bool _loading;
     private bool _busy;
     private bool _isOffline;
+    private bool _authBlocked;
+    private bool _accessDenied;
+    private bool _filtersOpen;
     private string? _search;
     private string? _barcode;
     private string? _categoryFilter;
@@ -136,6 +253,33 @@ else
     private string? _errorTitle;
     private string? _errorMessage;
     private CancellationTokenSource? _searchCts;
+
+    private int ActiveFilterCount
+    {
+        get
+        {
+            var count = 0;
+            if (!string.IsNullOrWhiteSpace(_barcode))
+            {
+                count++;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_categoryFilter))
+            {
+                count++;
+            }
+
+            return count;
+        }
+    }
+
+    private bool HasQueryOrFilters =>
+        !string.IsNullOrWhiteSpace(_search) || ActiveFilterCount > 0;
+
+    private string FilterToggleLabel =>
+        ActiveFilterCount > 0
+            ? string.Format(L["Catalog_Global_FiltersCount"].Value, ActiveFilterCount)
+            : L["Catalog_FiltersTitle"];
 
     private IReadOnlyList<SelectOption> CategoryOptions
     {
@@ -174,18 +318,26 @@ else
         }
     }
 
-    private async Task OnSearchChanged(string? value)
+    private async Task OnSearchInputAsync(ChangeEventArgs args)
     {
-        _search = value;
+        _search = args.Value?.ToString();
         _page = 1;
         await DebouncedReloadAsync().ConfigureAwait(false);
+    }
+
+    private async Task ClearSearchAsync()
+    {
+        _search = null;
+        _page = 1;
+        await ReloadAsync().ConfigureAwait(false);
     }
 
     private async Task OnBarcodeChanged(string? value)
     {
         _barcode = value;
         _page = 1;
-        await DebouncedReloadAsync().ConfigureAwait(false);
+        // Barcode filter is treated as an exact/near-exact lookup — reload immediately.
+        await ReloadAsync().ConfigureAwait(false);
     }
 
     private async Task DebouncedReloadAsync()
@@ -210,6 +362,16 @@ else
         await ReloadAsync().ConfigureAwait(false);
     }
 
+    private void ToggleFilters() => _filtersOpen = !_filtersOpen;
+
+    private async Task ClearFiltersAsync()
+    {
+        _barcode = null;
+        _categoryFilter = null;
+        _page = 1;
+        await ReloadAsync().ConfigureAwait(false);
+    }
+
     private async Task OnPageChanged(int page)
     {
         _page = page;
@@ -219,6 +381,18 @@ else
     private async Task LoadCategoriesAsync()
     {
         var result = await Discovery.ListActiveCategoriesAsync(page: 1, pageSize: 100).ConfigureAwait(false);
+        if (result.Status == ApiCallStatus.Unauthorized)
+        {
+            ApplyAuthBlocked();
+            return;
+        }
+
+        if (result.Status == ApiCallStatus.Forbidden)
+        {
+            ApplyAccessDenied(result.Status, result.Error);
+            return;
+        }
+
         _categories = result.IsSuccess && result.Data is not null
             ? result.Data.Items
             : Array.Empty<PlatformMerchantGlobalCategoryDto>();
@@ -226,12 +400,21 @@ else
 
     private async Task ReloadAsync()
     {
+        if (_busy)
+        {
+            return;
+        }
+
         _loading = true;
         _errorTitle = null;
         _errorMessage = null;
+        _authBlocked = false;
+        _accessDenied = false;
         _isOffline = !await Connectivity.IsConnectedAsync().ConfigureAwait(false);
         if (_isOffline)
         {
+            _items = Array.Empty<PlatformMerchantGlobalProductDto>();
+            _totalCount = 0;
             _loading = false;
             return;
         }
@@ -248,6 +431,20 @@ else
             barcode: _barcode,
             page: _page,
             pageSize: _pageSize).ConfigureAwait(false);
+
+        if (result.Status == ApiCallStatus.Unauthorized)
+        {
+            ApplyAuthBlocked();
+            _loading = false;
+            return;
+        }
+
+        if (result.Status == ApiCallStatus.Forbidden)
+        {
+            ApplyAccessDenied(result.Status, result.Error);
+            _loading = false;
+            return;
+        }
 
         if (result.IsSuccess && result.Data is not null)
         {
@@ -266,19 +463,55 @@ else
         _loading = false;
     }
 
+    private void ApplyAuthBlocked()
+    {
+        _authBlocked = true;
+        _accessDenied = false;
+        _items = Array.Empty<PlatformMerchantGlobalProductDto>();
+        _totalCount = 0;
+        _selectedIds.Clear();
+        _errorTitle = null;
+        _errorMessage = null;
+    }
+
+    private void ApplyAccessDenied(ApiCallStatus status, ApiError? error)
+    {
+        _accessDenied = true;
+        _authBlocked = false;
+        _items = Array.Empty<PlatformMerchantGlobalProductDto>();
+        _totalCount = 0;
+        _selectedIds.Clear();
+        var described = ApiLocalizer.Describe(status, error);
+        _errorTitle = described.Title;
+        _errorMessage = described.Message;
+    }
+
     private void ToggleSelect(Guid productId)
     {
+        if (_busy)
+        {
+            return;
+        }
+
         if (!_selectedIds.Add(productId))
         {
             _selectedIds.Remove(productId);
         }
     }
 
-    private void ClearSelection() => _selectedIds.Clear();
+    private void ClearSelection()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _selectedIds.Clear();
+    }
 
     private async Task ImportSelectedAsync()
     {
-        if (_selectedIds.Count == 0 || _busy)
+        if (_selectedIds.Count == 0 || _busy || _isOffline || _authBlocked)
         {
             return;
         }
@@ -286,22 +519,93 @@ else
         _busy = true;
         _errorTitle = null;
         _errorMessage = null;
-        var request = new ImportSelectedProductsRequest(
-            _selectedIds.ToList(),
-            IdempotencyKey: Guid.NewGuid().ToString("N"));
-        var result = await Imports.ImportSelectedProductsAsync(request).ConfigureAwait(false);
-        if (!result.IsSuccess || result.Data is null)
+        try
         {
-            var described = ApiLocalizer.Describe(result.Status, result.Error);
-            _errorTitle = described.Title;
-            _errorMessage = described.Message;
-            _busy = false;
-            return;
-        }
+            var request = new ImportSelectedProductsRequest(
+                _selectedIds.ToList(),
+                IdempotencyKey: Guid.NewGuid().ToString("N"));
+            var result = await Imports.ImportSelectedProductsAsync(request).ConfigureAwait(false);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                if (result.Status == ApiCallStatus.Unauthorized)
+                {
+                    ApplyAuthBlocked();
+                    return;
+                }
 
-        Nav.NavigateTo($"/catalog/import/jobs/{result.Data.JobId:D}");
+                if (result.Status == ApiCallStatus.Forbidden)
+                {
+                    ApplyAccessDenied(result.Status, result.Error);
+                    return;
+                }
+
+                var described = ApiLocalizer.Describe(result.Status, result.Error);
+                _errorTitle = described.Title;
+                _errorMessage = described.Message;
+                return;
+            }
+
+            Nav.NavigateTo($"/catalog/import/jobs/{result.Data.JobId:D}");
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
-    private void GoCatalog() => Nav.NavigateTo("/catalog");
+    private string? BuildMeta(PlatformMerchantGlobalProductDto product)
+    {
+        var parts = new List<string>(2);
+        var category = ResolveCategoryName(product.GlobalCategoryId);
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            parts.Add(category);
+        }
+
+        var unit = CatalogUiOptions.UnitOfMeasureLabel(L, product.Unit);
+        if (string.IsNullOrWhiteSpace(unit) || unit.StartsWith("Catalog_Uom_", StringComparison.Ordinal))
+        {
+            unit = product.Unit;
+        }
+
+        if (!string.IsNullOrWhiteSpace(unit))
+        {
+            parts.Add(unit);
+        }
+
+        return parts.Count == 0 ? null : string.Join(" · ", parts);
+    }
+
+    private static string? BuildIdentity(PlatformMerchantGlobalProductDto product)
+    {
+        if (!string.IsNullOrWhiteSpace(product.Sku))
+        {
+            return $"SKU {product.Sku}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(product.Barcode))
+        {
+            return product.Barcode;
+        }
+
+        return null;
+    }
+
+    private string? ResolveCategoryName(Guid? categoryId)
+    {
+        if (categoryId is null)
+        {
+            return null;
+        }
+
+        return _categories.FirstOrDefault(c => c.Id == categoryId.Value)?.Name;
+    }
+
+    private string RowAria(PlatformMerchantGlobalProductDto product, bool selected)
+    {
+        var state = selected ? L["Catalog_Global_Selected"] : L["Catalog_Global_Select"];
+        return $"{product.Name}. {state}";
+    }
+
     private void GoImport() => Nav.NavigateTo("/catalog/import");
 }

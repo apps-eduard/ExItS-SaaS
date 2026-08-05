@@ -864,14 +864,23 @@
   <data name="Catalog_Import_Item_Pending" xml:space="preserve"><value>Pending</value></data>
   <data name="Catalog_Global_Browse" xml:space="preserve"><value>Browse global catalog</value></data>
   <data name="Catalog_Global_Title" xml:space="preserve"><value>Browse global catalog</value></data>
-  <data name="Catalog_Global_Subtitle" xml:space="preserve"><value>Search Platform products and import selected items into your local catalog.</value></data>
-  <data name="Catalog_Global_SearchPlaceholder" xml:space="preserve"><value>Search by name, SKU, or barcode</value></data>
-  <data name="Catalog_Global_BarcodeHint" xml:space="preserve"><value>Optional barcode filter for exact or partial match.</value></data>
+  <data name="Catalog_Global_Subtitle" xml:space="preserve"><value>Search Platform products and import selected items.</value></data>
+  <data name="Catalog_Global_SearchPlaceholder" xml:space="preserve"><value>Search name, SKU, or barcode</value></data>
+  <data name="Catalog_Global_BarcodeHint" xml:space="preserve"><value>Optional.</value></data>
   <data name="Catalog_Global_SelectedCount" xml:space="preserve"><value>{0} selected</value></data>
   <data name="Catalog_Global_ImportSelected" xml:space="preserve"><value>Import selected</value></data>
-  <data name="Catalog_Global_ClearSelection" xml:space="preserve"><value>Clear selection</value></data>
-  <data name="Catalog_Global_EmptyTitle" xml:space="preserve"><value>No global products</value></data>
-  <data name="Catalog_Global_EmptyMessage" xml:space="preserve"><value>Try another search, barcode, or category. Platform may be unavailable while local selling continues.</value></data>
+  <data name="Catalog_Global_ClearSelection" xml:space="preserve"><value>Clear</value></data>
+  <data name="Catalog_Global_EmptyTitle" xml:space="preserve"><value>No global products available</value></data>
+  <data name="Catalog_Global_EmptyMessage" xml:space="preserve"><value>Platform catalog may be unavailable while your local catalog continues to work.</value></data>
+  <data name="Catalog_Global_NoMatchTitle" xml:space="preserve"><value>No matching products</value></data>
+  <data name="Catalog_Global_NoMatchMessage" xml:space="preserve"><value>Try another name, SKU, barcode, or category.</value></data>
+  <data name="Catalog_Global_Loading" xml:space="preserve"><value>Loading catalog…</value></data>
+  <data name="Catalog_Global_AuthTitle" xml:space="preserve"><value>Sign-in required</value></data>
+  <data name="Catalog_Global_AuthMessage" xml:space="preserve"><value>Global catalog access requires authentication.</value></data>
+  <data name="Catalog_Global_AuthUnavailable" xml:space="preserve"><value>Sign-in is not available in this build.</value></data>
+  <data name="Catalog_Global_ClearSearch" xml:space="preserve"><value>Clear search</value></data>
+  <data name="Catalog_Global_ClearFilters" xml:space="preserve"><value>Clear filters</value></data>
+  <data name="Catalog_Global_FiltersCount" xml:space="preserve"><value>Filters ({0})</value></data>
   <data name="Catalog_Global_Select" xml:space="preserve"><value>Select</value></data>
   <data name="Catalog_Global_Selected" xml:space="preserve"><value>Selected</value></data>
   <data name="Sales_Title" xml:space="preserve"><value>Sales</value></data>

@@ -214,7 +214,9 @@ public sealed class CatalogPageGuardTests
                      "Catalog_Import_OpeningStockAction",
                      "Catalog_Global_Browse",
                      "Catalog_Global_ImportSelected",
-                     "Catalog_Global_SearchPlaceholder"
+                     "Catalog_Global_SearchPlaceholder",
+                     "Catalog_Global_AuthTitle",
+                     "Catalog_Global_NoMatchTitle"
                  })
         {
             Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);

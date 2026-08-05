@@ -864,14 +864,23 @@
   <data name="Catalog_Import_Item_Pending" xml:space="preserve"><value>Nakabinbin</value></data>
   <data name="Catalog_Global_Browse" xml:space="preserve"><value>I-browse ang global catalog</value></data>
   <data name="Catalog_Global_Title" xml:space="preserve"><value>I-browse ang global catalog</value></data>
-  <data name="Catalog_Global_Subtitle" xml:space="preserve"><value>Maghanap sa Platform products at i-import ang napili sa lokal na catalog.</value></data>
-  <data name="Catalog_Global_SearchPlaceholder" xml:space="preserve"><value>Maghanap ayon sa pangalan, SKU, o barcode</value></data>
-  <data name="Catalog_Global_BarcodeHint" xml:space="preserve"><value>Opsyonal na barcode filter.</value></data>
+  <data name="Catalog_Global_Subtitle" xml:space="preserve"><value>Maghanap sa Platform products at i-import ang napili.</value></data>
+  <data name="Catalog_Global_SearchPlaceholder" xml:space="preserve"><value>Hanapin ang pangalan, SKU, o barcode</value></data>
+  <data name="Catalog_Global_BarcodeHint" xml:space="preserve"><value>Opsyonal.</value></data>
   <data name="Catalog_Global_SelectedCount" xml:space="preserve"><value>{0} ang napili</value></data>
   <data name="Catalog_Global_ImportSelected" xml:space="preserve"><value>I-import ang napili</value></data>
-  <data name="Catalog_Global_ClearSelection" xml:space="preserve"><value>Burahin ang pagpili</value></data>
-  <data name="Catalog_Global_EmptyTitle" xml:space="preserve"><value>Walang global na produkto</value></data>
-  <data name="Catalog_Global_EmptyMessage" xml:space="preserve"><value>Subukan ang ibang search, barcode, o kategorya. Maaaring hindi available ang Platform habang patuloy ang lokal na pagbebenta.</value></data>
+  <data name="Catalog_Global_ClearSelection" xml:space="preserve"><value>Burahin</value></data>
+  <data name="Catalog_Global_EmptyTitle" xml:space="preserve"><value>Walang available na global na produkto</value></data>
+  <data name="Catalog_Global_EmptyMessage" xml:space="preserve"><value>Maaaring hindi available ang Platform catalog habang patuloy ang lokal na catalog.</value></data>
+  <data name="Catalog_Global_NoMatchTitle" xml:space="preserve"><value>Walang tumugmang produkto</value></data>
+  <data name="Catalog_Global_NoMatchMessage" xml:space="preserve"><value>Subukan ang ibang pangalan, SKU, barcode, o kategorya.</value></data>
+  <data name="Catalog_Global_Loading" xml:space="preserve"><value>Kinukuha ang catalog…</value></data>
+  <data name="Catalog_Global_AuthTitle" xml:space="preserve"><value>Kailangan mag-sign in</value></data>
+  <data name="Catalog_Global_AuthMessage" xml:space="preserve"><value>Kailangan ng authentication para sa global catalog.</value></data>
+  <data name="Catalog_Global_AuthUnavailable" xml:space="preserve"><value>Hindi available ang sign-in sa build na ito.</value></data>
+  <data name="Catalog_Global_ClearSearch" xml:space="preserve"><value>Burahin ang search</value></data>
+  <data name="Catalog_Global_ClearFilters" xml:space="preserve"><value>Burahin ang mga filter</value></data>
+  <data name="Catalog_Global_FiltersCount" xml:space="preserve"><value>Mga filter ({0})</value></data>
   <data name="Catalog_Global_Select" xml:space="preserve"><value>Piliin</value></data>
   <data name="Catalog_Global_Selected" xml:space="preserve"><value>Napili</value></data>
   <data name="Sales_Title" xml:space="preserve"><value>Benta</value></data>
