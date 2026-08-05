@@ -2047,3 +2047,203 @@ html.pos-keyboard-open .pos-content {
     flex: 1;
 }
 
+
+.pos-staff {
+    width: 100%;
+}
+
+.pos-staff__header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exits-space-2);
+    margin-bottom: var(--exits-space-3);
+}
+
+.pos-staff__back {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    margin: 0;
+    padding: 0.15rem 0;
+    border: 0;
+    background: transparent;
+    color: var(--exits-accent, #1f6b4a);
+    font-size: var(--exits-text-sm, 0.875rem);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.pos-staff__heading {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.pos-staff__title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--exits-text, #15201a);
+}
+
+.pos-staff__subtitle {
+    margin: 0;
+    font-size: var(--exits-text-sm, 0.875rem);
+    line-height: 1.35;
+    color: var(--exits-text-muted, #5b6b62);
+}
+
+.pos-staff__invite .exds-btn {
+    width: 100%;
+}
+
+.pos-staff__list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border-top: 1px solid var(--exits-border, #c9d4cd);
+}
+
+.pos-staff__row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--exits-border, #c9d4cd);
+}
+
+.pos-staff__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.pos-staff__name-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.pos-staff__name {
+    font-size: 0.9375rem;
+    font-weight: 650;
+    line-height: 1.25;
+    color: var(--exits-text, #15201a);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pos-staff__status {
+    flex-shrink: 0;
+    font-size: var(--exits-text-xs, 0.75rem);
+    font-weight: 600;
+}
+
+.pos-staff__status--ok {
+    color: var(--exits-success, #1f6b4a);
+}
+
+.pos-staff__status--warn {
+    color: var(--exits-warning, #9a6b12);
+}
+
+.pos-staff__status--muted {
+    color: var(--exits-text-muted, #5b6b62);
+}
+
+.pos-staff__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: var(--exits-text-xs, 0.75rem);
+    color: var(--exits-text, #15201a);
+    line-height: 1.3;
+}
+
+.pos-staff__roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    min-height: 1.35rem;
+}
+
+.pos-staff__roles-empty {
+    font-size: var(--exits-text-xs, 0.75rem);
+}
+
+.pos-staff__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    max-width: 100%;
+    padding: 0.15rem 0.25rem 0.15rem 0.45rem;
+    border: 1px solid var(--exits-border, #c9d4cd);
+    border-radius: 999px;
+    background: var(--exits-surface, #fff);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--exits-text, #15201a);
+}
+
+.pos-staff__chip-revoke {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15rem;
+    height: 1.15rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--exits-text-muted, #5b6b62);
+    font-size: 0.85rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.pos-staff__chip-revoke:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.pos-staff__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin-top: 0.1rem;
+}
+
+.pos-staff__action {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--exits-accent, #1f6b4a);
+    font-size: var(--exits-text-xs, 0.75rem);
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.pos-staff__action:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.pos-staff__action--danger {
+    color: var(--exits-danger, #b42318);
+}
+
+.pos-staff__footnote {
+    margin: var(--exits-space-3) 0 0;
+    font-size: var(--exits-text-xs, 0.75rem);
+    line-height: 1.35;
+}
