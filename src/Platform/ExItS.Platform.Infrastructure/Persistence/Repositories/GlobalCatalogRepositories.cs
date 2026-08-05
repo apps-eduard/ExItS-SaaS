@@ -347,6 +347,35 @@ internal sealed class CatalogTemplateRepository : ICatalogTemplateRepository
         }
 
         GlobalCatalogEntityMapper.ApplyToRecord(template, record);
+        SyncProducts(template, record);
+    }
+
+    /// <summary>
+    /// Reconciles composition rows against the tracked collection, matching on
+    /// <c>GlobalProductId</c> (the unique pair within a template). Rows are added and removed
+    /// through the set so their tracked state is explicit: a composition row carries a
+    /// domain-assigned key, which EF would otherwise read as an existing row and update.
+    /// </summary>
+    private void SyncProducts(CatalogTemplate template, CatalogTemplateRecord record)
+    {
+        var desired = template.Products.ToDictionary(p => p.GlobalProductId.Value);
+
+        foreach (var existing in record.Products.ToList())
+        {
+            if (desired.Remove(existing.GlobalProductId, out var assigned))
+            {
+                GlobalCatalogEntityMapper.ApplyToRecord(assigned, existing);
+            }
+            else
+            {
+                _db.CatalogTemplateProducts.Remove(existing);
+            }
+        }
+
+        foreach (var assigned in desired.Values)
+        {
+            _db.CatalogTemplateProducts.Add(GlobalCatalogEntityMapper.ToRecord(record.Id, assigned));
+        }
     }
 }
 

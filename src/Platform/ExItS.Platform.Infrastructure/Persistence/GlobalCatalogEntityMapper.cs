@@ -164,18 +164,15 @@ internal static class GlobalCatalogEntityMapper
             CreatedAtUtc = template.CreatedAtUtc,
             UpdatedAtUtc = template.UpdatedAtUtc,
             Products = template.Products
-                .Select(p => new CatalogTemplateProductRecord
-                {
-                    Id = p.Id,
-                    CatalogTemplateId = template.Id.Value,
-                    GlobalProductId = p.GlobalProductId.Value,
-                    SortOrder = p.SortOrder,
-                    IsFeatured = p.IsFeatured,
-                    IsFirstBatch = p.IsFirstBatch
-                })
+                .Select(p => ToRecord(template.Id.Value, p))
                 .ToList()
         };
 
+    /// <summary>
+    /// Applies scalar template state only. Composition rows are reconciled by the repository:
+    /// their <c>Id</c> is domain-assigned, so replacing a tracked collection would make EF treat
+    /// new rows as pre-existing ones and update rows that do not exist yet.
+    /// </summary>
     public static void ApplyToRecord(CatalogTemplate template, CatalogTemplateRecord record)
     {
         record.Name = template.Name;
@@ -188,19 +185,24 @@ internal static class GlobalCatalogEntityMapper
         record.SelectionMode = template.SelectionMode.ToString();
         record.PublishedAtUtc = template.PublishedAtUtc;
         record.UpdatedAtUtc = template.UpdatedAtUtc;
-        record.Products.Clear();
-        foreach (var product in template.Products)
+    }
+
+    public static CatalogTemplateProductRecord ToRecord(Guid templateId, CatalogTemplateProduct product) =>
+        new()
         {
-            record.Products.Add(new CatalogTemplateProductRecord
-            {
-                Id = product.Id,
-                CatalogTemplateId = template.Id.Value,
-                GlobalProductId = product.GlobalProductId.Value,
-                SortOrder = product.SortOrder,
-                IsFeatured = product.IsFeatured,
-                IsFirstBatch = product.IsFirstBatch
-            });
-        }
+            Id = product.Id,
+            CatalogTemplateId = templateId,
+            GlobalProductId = product.GlobalProductId.Value,
+            SortOrder = product.SortOrder,
+            IsFeatured = product.IsFeatured,
+            IsFirstBatch = product.IsFirstBatch
+        };
+
+    public static void ApplyToRecord(CatalogTemplateProduct product, CatalogTemplateProductRecord record)
+    {
+        record.SortOrder = product.SortOrder;
+        record.IsFeatured = product.IsFeatured;
+        record.IsFirstBatch = product.IsFirstBatch;
     }
 
     public static CatalogImportJob ToDomain(CatalogImportJobRecord record) =>
