@@ -1443,12 +1443,20 @@
   <data name="Permissions_AssignmentsSection" xml:space="preserve"><value>Mga assignment</value></data>
   <data name="Permissions_EffectiveSection" xml:space="preserve"><value>Epektibong permiso</value></data>
   <data name="Permissions_AssignmentDetail" xml:space="preserve"><value>Assignment</value></data>
+  <data name="Permissions_AssignmentIdLabel" xml:space="preserve"><value>Assignment id</value></data>
   <data name="Permissions_Back" xml:space="preserve"><value>Bumalik</value></data>
+  <data name="Permissions_Cancel" xml:space="preserve"><value>Kanselahin</value></data>
   <data name="Permissions_Open" xml:space="preserve"><value>Buksan</value></data>
   <data name="Permissions_Revoke" xml:space="preserve"><value>I-revoke</value></data>
+  <data name="Permissions_RevokeConfirmTitle" xml:space="preserve"><value>I-revoke ang role?</value></data>
+  <data name="Permissions_RevokeConfirmMessage" xml:space="preserve"><value>I-revoke ang {0} mula kay {1}?</value></data>
   <data name="Permissions_ActorId" xml:space="preserve"><value>Actor id</value></data>
+  <data name="Permissions_ActorUserId" xml:space="preserve"><value>User ID</value></data>
+  <data name="Permissions_AssignedToFormat" xml:space="preserve"><value>Naka-assign kay: {0}</value></data>
   <data name="Permissions_Role" xml:space="preserve"><value>Role</value></data>
   <data name="Permissions_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Permissions_Status_Active" xml:space="preserve"><value>Active</value></data>
+  <data name="Permissions_Status_Revoked" xml:space="preserve"><value>Revoked</value></data>
   <data name="Permissions_NoRole" xml:space="preserve"><value>Walang aktibong role</value></data>
   <data name="Permissions_DeniedTitle" xml:space="preserve"><value>Hindi pinapayagan</value></data>
   <data name="Permissions_DeniedMessage" xml:space="preserve"><value>Hindi maaaring i-manage ng role mo ang mga permiso.</value></data>
@@ -1458,7 +1466,7 @@
   <data name="Permissions_EmptyTitle" xml:space="preserve"><value>Walang assignment</value></data>
   <data name="Permissions_EmptyMessage" xml:space="preserve"><value>Wala pang role assignment sa organisasyong ito.</value></data>
   <data name="Permissions_LoadFailed" xml:space="preserve"><value>Hindi ma-load ang mga permiso.</value></data>
-  <data name="Permissions_InvalidActor" xml:space="preserve"><value>Maglagay ng wastong actor GUID.</value></data>
+  <data name="Permissions_InvalidActor" xml:space="preserve"><value>Maglagay ng wastong user ID (GUID).</value></data>
   <data name="Permissions_AssignFailed" xml:space="preserve"><value>Hindi ma-assign ang role.</value></data>
   <data name="Permissions_RevokeFailed" xml:space="preserve"><value>Hindi ma-revoke ang assignment.</value></data>
   <data name="Nav_Registers" xml:space="preserve"><value>Mga Rehistro</value></data>

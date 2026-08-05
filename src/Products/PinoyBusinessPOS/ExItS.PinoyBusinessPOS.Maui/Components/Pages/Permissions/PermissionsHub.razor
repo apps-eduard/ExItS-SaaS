@@ -1,4 +1,5 @@
 @page "/permissions"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosPermissionClient Permissions
@@ -19,52 +20,103 @@ else if (!Capabilities.IsAllowed(UtangCapability.ViewPermissions))
 }
 else
 {
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManagePermissions);
+<div class="pos-permissions">
     <Page>
-        <PageHeader Title="@L["Permissions_Title"]" Subtitle="@L["Permissions_Subtitle"]">
-            <Actions>
-                @if (Capabilities.IsAllowed(UtangCapability.ManagePermissions))
-                {
-                    <Button Variant="ButtonVariant.Primary" OnClick="GoNew">@L["Permissions_Assign"]</Button>
-                }
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoMyAccess">@L["Permissions_MyAccess"]</Button>
-            </Actions>
-        </PageHeader>
+        <header class="pos-permissions__header">
+            <div class="pos-permissions__heading">
+                <h1 class="pos-permissions__title">@L["Permissions_Title"]</h1>
+                <p class="pos-permissions__subtitle">@L["Permissions_Subtitle"]</p>
+            </div>
+        </header>
+
+        <div class="pos-permissions__actions" role="group" aria-label="@L["Permissions_Title"]">
+            @if (canManage)
+            {
+                <Button Variant="ButtonVariant.Primary"
+                        Disabled="@_isOffline"
+                        OnClick="GoNew">@L["Permissions_Assign"]</Button>
+            }
+            <button type="button"
+                    class="pos-permissions__secondary"
+                    disabled="@_isOffline"
+                    @onclick="GoMyAccess">
+                @L["Permissions_MyAccess"]
+            </button>
+        </div>
 
         @if (_isOffline)
         {
             <Alert Tone="AlertTone.Warning" Title="@L["Permissions_OfflineTitle"]" Message="@L["Permissions_OfflineMessage"]" />
         }
 
-        @if (_errorMessage is not null)
-        {
-            <Alert Tone="AlertTone.Danger" Title="@L["Permissions_ErrorTitle"]" Message="@_errorMessage" />
-        }
+        <section class="pos-permissions__list-section"
+                 aria-labelledby="permissions-assignments-heading"
+                 aria-busy="@_loading">
+            <h2 id="permissions-assignments-heading" class="pos-permissions__section-title">
+                @L["Permissions_AssignmentsSection"]
+            </h2>
 
-        <Section Title="@L["Permissions_AssignmentsSection"]">
             @if (_loading)
             {
-                <Spinner />
+                <div class="pos-permissions__loading" role="status" aria-live="polite">
+                    <Spinner />
+                    <span class="pos-muted">@L["Common_Loading"]</span>
+                </div>
+            }
+            else if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <ErrorState Title="@L["Permissions_ErrorTitle"]"
+                            Message="@_errorMessage"
+                            RetryLabel="@L["Api_Retry"]"
+                            OnRetry="LoadAsync" />
             }
             else if (_items.Count == 0)
             {
-                <EmptyState Title="@L["Permissions_EmptyTitle"]" Message="@L["Permissions_EmptyMessage"]" />
+                <EmptyState Title="@L["Permissions_EmptyTitle"]" Message="@L["Permissions_EmptyMessage"]">
+                    <Actions>
+                        @if (canManage && !_isOffline)
+                        {
+                            <Button Variant="ButtonVariant.Primary" Size="ButtonSize.Sm" OnClick="GoNew">
+                                @L["Permissions_Assign"]
+                            </Button>
+                        }
+                    </Actions>
+                </EmptyState>
             }
             else
             {
-                <Stack Gap="2">
+                <div class="pos-permissions__list" role="list" aria-label="@L["Permissions_AssignmentsSection"]">
                     @foreach (var item in _items)
                     {
-                        <div class="pos-row">
-                            <span class="pos-value-md">@item.RoleDisplayName</span>
-                            <span class="pos-muted">@item.Status</span>
-                            <span class="pos-muted">@item.ActorId.ToString("D")[..8]</span>
-                            <Button Variant="ButtonVariant.Secondary" OnClick="() => GoDetail(item.AssignmentId)">@L["Permissions_Open"]</Button>
-                        </div>
+                        <button type="button"
+                                class="pos-permissions__row"
+                                role="listitem"
+                                aria-label="@RowAriaLabel(item)"
+                                @onclick="() => GoDetail(item.AssignmentId)">
+                            <span class="pos-permissions__row-body">
+                                <span class="pos-permissions__row-top">
+                                    <span class="pos-permissions__row-role">@item.RoleDisplayName</span>
+                                    <span class="pos-permissions__badge pos-permissions__badge--@StatusTone(item.Status)"
+                                          aria-label="@($"{L["Permissions_Status"]}: {StatusLabel(item.Status)}")">
+                                        @StatusLabel(item.Status)
+                                    </span>
+                                </span>
+                                <span class="pos-permissions__row-meta pos-muted">
+                                    @string.Format(L["Permissions_AssignedToFormat"].Value, ShortActorId(item.ActorId))
+                                </span>
+                            </span>
+                            <span class="pos-permissions__open">
+                                <span class="visually-hidden">@L["Permissions_Open"]</span>
+                                <span class="pos-permissions__chevron" aria-hidden="true">›</span>
+                            </span>
+                        </button>
                     }
-                </Stack>
+                </div>
             }
-        </Section>
+        </section>
     </Page>
+</div>
 }
 
 @code {
@@ -94,25 +146,53 @@ else
     {
         _loading = true;
         _errorMessage = null;
-        _isOffline = !await Connectivity.IsConnectedAsync();
-        if (_isOffline)
+        try
         {
+            _isOffline = !await Connectivity.IsConnectedAsync();
+            if (_isOffline)
+            {
+                _items = [];
+                return;
+            }
+
+            var result = await Permissions.ListAssignmentsAsync();
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _errorMessage = result.Error?.Detail ?? L["Permissions_LoadFailed"];
+                _items = [];
+            }
+            else
+            {
+                _items = result.Data.Items;
+            }
+        }
+        catch
+        {
+            _errorMessage = L["Permissions_LoadFailed"];
             _items = [];
+        }
+        finally
+        {
             _loading = false;
-            return;
         }
-
-        var result = await Permissions.ListAssignmentsAsync();
-        if (!result.IsSuccess || result.Data is null)
-        {
-            _errorMessage = result.Error?.Detail ?? L["Permissions_LoadFailed"];
-            _items = [];
-        }
-        else
-        {
-            _items = result.Data.Items;
-        }
-
-        _loading = false;
     }
+
+    private static string ShortActorId(Guid id)
+    {
+        var text = id.ToString("D");
+        return $"{text[..8]}…{text[^4..]}";
+    }
+
+    private string StatusLabel(string? status) =>
+        string.Equals(status, "Active", StringComparison.OrdinalIgnoreCase) ? L["Permissions_Status_Active"]
+        : string.Equals(status, "Revoked", StringComparison.OrdinalIgnoreCase) ? L["Permissions_Status_Revoked"]
+        : string.IsNullOrWhiteSpace(status) ? L["Permissions_NoRole"] : status;
+
+    private static string StatusTone(string? status) =>
+        string.Equals(status, "Active", StringComparison.OrdinalIgnoreCase) ? "active"
+        : string.Equals(status, "Revoked", StringComparison.OrdinalIgnoreCase) ? "revoked"
+        : "neutral";
+
+    private string RowAriaLabel(PosRoleAssignmentDto item) =>
+        $"{item.RoleDisplayName}, {StatusLabel(item.Status)}, {string.Format(L["Permissions_AssignedToFormat"].Value, ShortActorId(item.ActorId))}";
 }

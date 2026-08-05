@@ -6,71 +6,182 @@
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
-<Page>
-    <PageHeader Title="@L["Permissions_AssignmentDetail"]" Subtitle="@AssignmentId.ToString("D")">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Permissions_Back"]</Button>
-        </Actions>
-    </PageHeader>
+@if (!_bootstrapped)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+<div class="pos-permissions">
+    <Page>
+        @if (_loading)
+        {
+            <div class="pos-permissions__loading" role="status" aria-live="polite">
+                <Spinner />
+                <span class="pos-muted">@L["Common_Loading"]</span>
+            </div>
+        }
+        else if (_item is null)
+        {
+            <ErrorState Title="@L["Permissions_ErrorTitle"]"
+                        Message="@(_error ?? L["Permissions_LoadFailed"])"
+                        RetryLabel="@L["Api_Retry"]"
+                        OnRetry="ReloadAsync" />
+        }
+        else
+        {
+            <header class="pos-permissions__header">
+                <div class="pos-permissions__heading">
+                    <h1 class="pos-permissions__title">@_item.RoleDisplayName</h1>
+                    <p class="pos-permissions__subtitle">@L["Permissions_AssignmentDetail"]</p>
+                    <p class="pos-permissions__id pos-muted" aria-label="@L["Permissions_AssignmentIdLabel"]">
+                        @ShortId(AssignmentId)
+                    </p>
+                </div>
+            </header>
 
-    @if (_loading)
-    {
-        <Spinner />
-    }
-    else if (_item is null)
-    {
-        <ErrorState Title="@L["Permissions_ErrorTitle"]" Message="@(_error ?? L["Permissions_LoadFailed"])" />
-    }
-    else
-    {
-        <Section Title="@_item.RoleDisplayName">
-            <div class="pos-row"><span>@L["Permissions_Status"]</span><span>@_item.Status</span></div>
-            <div class="pos-row"><span>@L["Permissions_ActorId"]</span><span>@_item.ActorId</span></div>
-        </Section>
-        @if (_item.Status == "Active" && Capabilities.IsAllowed(UtangCapability.ManagePermissions))
-        {
-            <FormActions>
-                <Button Variant="ButtonVariant.Danger" Disabled="@_acting" IsLoading="@_acting" OnClick="RevokeAsync">@L["Permissions_Revoke"]</Button>
-            </FormActions>
+            <dl class="pos-permissions__facts">
+                <div class="pos-permissions__fact">
+                    <dt>@L["Permissions_Status"]</dt>
+                    <dd>
+                        <span class="pos-permissions__badge pos-permissions__badge--@StatusTone(_item.Status)"
+                              aria-label="@($"{L["Permissions_Status"]}: {StatusLabel(_item.Status)}")">
+                            @StatusLabel(_item.Status)
+                        </span>
+                    </dd>
+                </div>
+                <div class="pos-permissions__fact">
+                    <dt>@L["Permissions_ActorUserId"]</dt>
+                    <dd class="pos-permissions__mono">@ShortActorId(_item.ActorId)</dd>
+                </div>
+            </dl>
+
+            @if (_error is not null)
+            {
+                <Alert Tone="AlertTone.Danger" Title="@L["Permissions_ErrorTitle"]" Message="@_error" />
+            }
+
+            @if (_item.Status == "Active" && Capabilities.IsAllowed(UtangCapability.ManagePermissions))
+            {
+                <div class="pos-permissions__revoke">
+                    <Button Variant="ButtonVariant.Danger"
+                            Disabled="@_acting"
+                            IsLoading="@_acting"
+                            OnClick="OpenRevokeConfirm">@L["Permissions_Revoke"]</Button>
+                </div>
+            }
         }
-        @if (_error is not null)
-        {
-            <Alert Tone="AlertTone.Danger" Title="@L["Permissions_ErrorTitle"]" Message="@_error" />
-        }
-    }
-</Page>
+    </Page>
+</div>
+
+    <ConfirmDialog @bind-Visible="_revokeOpen"
+                   Title="@L["Permissions_RevokeConfirmTitle"]"
+                   Message="@_revokeMessage"
+                   Danger="true"
+                   ConfirmLabel="@L["Permissions_Revoke"]"
+                   CancelLabel="@L["Permissions_Cancel"]"
+                   IsLoading="@_acting"
+                   OnConfirm="ConfirmRevokeAsync"
+                   OnCancel="CancelRevoke" />
+}
 
 @code {
     [Parameter] public Guid AssignmentId { get; set; }
 
+    private bool _bootstrapped;
     private bool _loading = true;
     private bool _acting;
+    private bool _revokeOpen;
     private string? _error;
+    private string? _revokeMessage;
     private PosRoleAssignmentDto? _item;
 
     protected override async Task OnInitializedAsync()
     {
         if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ViewPermissions))
         {
-            Nav.NavigateTo("/permissions");
+            Nav.NavigateTo("/permissions", replace: true);
             return;
         }
 
-        var result = await Permissions.GetAssignmentAsync(AssignmentId);
-        if (!result.IsSuccess || result.Data is null)
+        _bootstrapped = true;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
         {
-            _error = result.Error?.Detail ?? L["Permissions_LoadFailed"];
+            if (!await Connectivity.IsConnectedAsync())
+            {
+                _item = null;
+                _error = L["Permissions_OfflineMessage"];
+                return;
+            }
+
+            var result = await Permissions.GetAssignmentAsync(AssignmentId);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _item = null;
+                _error = result.Error?.Detail ?? L["Permissions_LoadFailed"];
+            }
+            else
+            {
+                _item = result.Data;
+            }
         }
-        else
+        catch
         {
-            _item = result.Data;
+            _item = null;
+            _error = L["Permissions_LoadFailed"];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void OpenRevokeConfirm()
+    {
+        if (_item is null || _acting)
+        {
+            return;
         }
 
-        _loading = false;
+        _revokeMessage = string.Format(
+            L["Permissions_RevokeConfirmMessage"].Value,
+            _item.RoleDisplayName,
+            ShortActorId(_item.ActorId));
+        _revokeOpen = true;
+    }
+
+    private void CancelRevoke()
+    {
+        _revokeOpen = false;
+        _revokeMessage = null;
+    }
+
+    private async Task ConfirmRevokeAsync()
+    {
+        _revokeOpen = false;
+        await RevokeAsync();
     }
 
     private async Task RevokeAsync()
     {
+        if (_acting)
+        {
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ManagePermissions))
+        {
+            _error = L["Permissions_DeniedMessage"];
+            return;
+        }
+
         if (!await Connectivity.IsConnectedAsync())
         {
             _error = L["Permissions_OfflineMessage"];
@@ -78,16 +189,45 @@
         }
 
         _acting = true;
-        var result = await Permissions.RevokeAsync(AssignmentId);
-        _acting = false;
-        if (!result.IsSuccess || result.Data is null)
-        {
-            _error = result.Error?.Detail ?? L["Permissions_RevokeFailed"];
-            return;
-        }
+        _error = null;
+        StateHasChanged();
 
-        _item = result.Data;
+        try
+        {
+            var result = await Permissions.RevokeAsync(AssignmentId);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = result.Error?.Detail ?? L["Permissions_RevokeFailed"];
+                return;
+            }
+
+            _item = result.Data;
+        }
+        catch
+        {
+            _error = L["Permissions_RevokeFailed"];
+        }
+        finally
+        {
+            _acting = false;
+        }
     }
 
-    private void GoBack() => Nav.NavigateTo("/permissions");
+    private static string ShortId(Guid id)
+    {
+        var text = id.ToString("D");
+        return $"{text[..8]}…{text[^4..]}";
+    }
+
+    private static string ShortActorId(Guid id) => ShortId(id);
+
+    private string StatusLabel(string? status) =>
+        string.Equals(status, "Active", StringComparison.OrdinalIgnoreCase) ? L["Permissions_Status_Active"]
+        : string.Equals(status, "Revoked", StringComparison.OrdinalIgnoreCase) ? L["Permissions_Status_Revoked"]
+        : string.IsNullOrWhiteSpace(status) ? L["Permissions_NoRole"] : status;
+
+    private static string StatusTone(string? status) =>
+        string.Equals(status, "Active", StringComparison.OrdinalIgnoreCase) ? "active"
+        : string.Equals(status, "Revoked", StringComparison.OrdinalIgnoreCase) ? "revoked"
+        : "neutral";
 }

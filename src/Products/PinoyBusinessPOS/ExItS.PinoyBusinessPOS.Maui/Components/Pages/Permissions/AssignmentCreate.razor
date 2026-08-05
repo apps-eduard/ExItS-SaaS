@@ -7,65 +7,128 @@
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
-<Page>
-    <PageHeader Title="@L["Permissions_Assign"]" Subtitle="@L["Permissions_AssignSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Permissions_Back"]</Button>
-        </Actions>
-    </PageHeader>
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+<div class="pos-permissions">
+    <Page>
+        <header class="pos-permissions__header">
+            <div class="pos-permissions__heading">
+                <h1 class="pos-permissions__title">@L["Permissions_Assign"]</h1>
+                <p class="pos-permissions__subtitle">@L["Permissions_AssignSubtitle"]</p>
+            </div>
+        </header>
 
-    @if (!Capabilities.IsAllowed(UtangCapability.ManagePermissions))
-    {
-        <ErrorState Title="@L["Permissions_DeniedTitle"]" Message="@L["Permissions_DeniedMessage"]" />
-    }
-    else
-    {
-        <TextInput Label="@L["Permissions_ActorId"]" @bind-Value="_actorIdText" Required="true" />
-        <select class="pos-input" @bind="_role">
-            @foreach (var role in _roles)
-            {
-                <option value="@role.Role">@role.DisplayName</option>
-            }
-        </select>
-        @if (_error is not null)
+        @if (!Capabilities.IsAllowed(UtangCapability.ManagePermissions))
         {
-            <Alert Tone="AlertTone.Danger" Title="@L["Permissions_ErrorTitle"]" Message="@_error" />
+            <ErrorState Title="@L["Permissions_DeniedTitle"]" Message="@L["Permissions_DeniedMessage"]" />
         }
-        <FormActions>
-            <Button Variant="ButtonVariant.Primary" Disabled="@_acting" IsLoading="@_acting" OnClick="SubmitAsync">@L["Permissions_Assign"]</Button>
-        </FormActions>
-    }
-</Page>
+        else
+        {
+            <Stack Gap="3">
+                <TextInput Label="@L["Permissions_ActorUserId"]"
+                           Value="@_actorIdText"
+                           ValueChanged="OnActorChanged"
+                           Required="true"
+                           IsInvalid="@(!string.IsNullOrEmpty(_actorError))"
+                           ErrorText="@_actorError"
+                           Disabled="@_acting" />
+
+                <Select Label="@L["Permissions_Role"]"
+                        Value="@_role"
+                        ValueChanged="OnRoleChanged"
+                        Options="@RoleOptions"
+                        Disabled="@(_acting || _roles.Count == 0)" />
+
+                @if (_error is not null)
+                {
+                    <Alert Tone="AlertTone.Danger" Title="@L["Permissions_ErrorTitle"]" Message="@_error" />
+                }
+
+                <FormActions>
+                    <Button Variant="ButtonVariant.Primary"
+                            Disabled="@_acting"
+                            IsLoading="@_acting"
+                            OnClick="SubmitAsync">@L["Permissions_Assign"]</Button>
+                </FormActions>
+            </Stack>
+        }
+    </Page>
+</div>
+}
 
 @code {
+    private bool _ready;
     private string _actorIdText = string.Empty;
     private string _role = "Cashier";
     private bool _acting;
     private string? _error;
+    private string? _actorError;
     private IReadOnlyList<PosRoleDto> _roles = [];
+
+    private IReadOnlyList<SelectOption> RoleOptions =>
+        _roles.Select(r => new SelectOption(r.Role, r.DisplayName)).ToList();
 
     protected override async Task OnInitializedAsync()
     {
-        if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ManagePermissions))
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
         {
-            Nav.NavigateTo("/permissions");
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ManagePermissions))
+        {
+            _ready = true;
             return;
         }
 
         var roles = await Permissions.ListRolesAsync();
-        if (roles.IsSuccess && roles.Data is not null)
+        if (roles.IsSuccess && roles.Data is { Count: > 0 })
         {
             _roles = roles.Data;
             _role = _roles[0].Role;
+        }
+
+        _ready = true;
+    }
+
+    private void OnActorChanged(string? value)
+    {
+        _actorIdText = value ?? string.Empty;
+        _actorError = null;
+    }
+
+    private void OnRoleChanged(string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            _role = value;
         }
     }
 
     private async Task SubmitAsync()
     {
+        if (_acting)
+        {
+            return;
+        }
+
         _error = null;
+        _actorError = null;
+
+        if (!Capabilities.IsAllowed(UtangCapability.ManagePermissions))
+        {
+            _error = L["Permissions_DeniedMessage"];
+            return;
+        }
+
         if (!Guid.TryParse(_actorIdText.Trim(), out var actorId))
         {
-            _error = L["Permissions_InvalidActor"];
+            _actorError = L["Permissions_InvalidActor"];
             return;
         }
 
@@ -76,16 +139,27 @@
         }
 
         _acting = true;
-        var result = await Permissions.AssignAsync(new AssignPosRoleRequest(actorId, _role));
-        _acting = false;
-        if (!result.IsSuccess || result.Data is null)
+        StateHasChanged();
+
+        try
         {
-            _error = result.Error?.Detail ?? L["Permissions_AssignFailed"];
-            return;
+            var result = await Permissions.AssignAsync(new AssignPosRoleRequest(actorId, _role));
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = result.Error?.Detail ?? L["Permissions_AssignFailed"];
+                return;
+            }
+
+            // Return to list so the new assignment appears without a full GUID title flash.
+            Nav.NavigateTo("/permissions", replace: true);
         }
-
-        Nav.NavigateTo($"/permissions/assignments/{result.Data.AssignmentId:D}");
+        catch
+        {
+            _error = L["Permissions_AssignFailed"];
+        }
+        finally
+        {
+            _acting = false;
+        }
     }
-
-    private void GoBack() => Nav.NavigateTo("/permissions");
 }
