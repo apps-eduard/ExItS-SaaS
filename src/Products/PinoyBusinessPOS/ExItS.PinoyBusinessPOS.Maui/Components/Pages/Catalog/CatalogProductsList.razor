@@ -1,4 +1,5 @@
 @page "/catalog"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosCatalogClient Catalog
@@ -15,77 +16,167 @@
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageCatalog);
-<Page>
-    <PageHeader Title="@L["Catalog_Title"]" Subtitle="@L["Catalog_Subtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoCategories">@L["Catalog_Categories"]</Button>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBarcodeLookup">@L["Catalog_BarcodeLookup"]</Button>
-            @if (canManage)
+<div class="pos-dash pos-catalog">
+    <Page>
+        <PageHeader Title="@L["Catalog_Title"]" Subtitle="@L["Catalog_Subtitle"]" />
+
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Catalog_OfflineTitle"]" Message="@L["Catalog_OfflineMessage"]" />
+        }
+        else if (!canManage)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+        }
+
+        <Section Title="@L["Catalog_QuickActionsSection"]">
+            <div class="pos-action-grid" role="group" aria-label="@L["Catalog_QuickActionsSection"]">
+                <button type="button" class="pos-action-tile" @onclick="GoCategories">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("menu")</span>
+                    <span class="pos-action-tile__label">@L["Catalog_Categories"]</span>
+                </button>
+                <button type="button" class="pos-action-tile" @onclick="GoBarcodeLookup">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                    <span class="pos-action-tile__label">@L["Catalog_Quick_Barcode"]</span>
+                </button>
+                @if (canManage)
+                {
+                    <button type="button" class="pos-action-tile" disabled="@_isOffline" @onclick="GoGlobal">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
+                        <span class="pos-action-tile__label">@L["Catalog_Quick_Global"]</span>
+                    </button>
+                    <button type="button" class="pos-action-tile" disabled="@_isOffline" @onclick="GoImport">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                        <span class="pos-action-tile__label">@L["Catalog_Quick_Template"]</span>
+                    </button>
+                }
+            </div>
+        </Section>
+
+        <div class="pos-catalog__add">
+            <Button Variant="ButtonVariant.Primary"
+                    Disabled="@(!canManage || _isOffline)"
+                    OnClick="GoNew">@L["Catalog_Product_Add"]</Button>
+        </div>
+
+        <div class="pos-catalog__toolbar">
+            <div class="pos-catalog__search">
+                <span class="pos-catalog__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                <input class="pos-catalog__search-input"
+                       type="search"
+                       value="@_search"
+                       placeholder="@L["Catalog_SearchShort"]"
+                       disabled="@_loading"
+                       @oninput="OnSearchInputAsync" />
+            </div>
+            <button type="button"
+                    class="pos-catalog__filter-toggle @(_filtersOpen ? "pos-catalog__filter-toggle--open" : null)"
+                    aria-expanded="@_filtersOpen"
+                    aria-controls="catalog-filters"
+                    title="@L["Catalog_FiltersTitle"]"
+                    @onclick="ToggleFilters">
+                <span class="pos-catalog__filter-icon" aria-hidden="true">@IconGlyphs.Get("menu")</span>
+                <span class="pos-catalog__filter-label">@L["Catalog_FiltersTitle"]</span>
+            </button>
+        </div>
+
+        @if (HasAppliedFilters)
+        {
+            <div class="pos-catalog__chips" aria-label="@L["Catalog_AppliedFilters"]">
+                @foreach (var chip in AppliedFilterChips)
+                {
+                    <span class="pos-catalog__chip">@chip</span>
+                }
+            </div>
+        }
+
+        @if (_filtersOpen)
+        {
+            <Section Title="@L["Catalog_FiltersTitle"]" id="catalog-filters">
+                <Stack Gap="2">
+                    <Select Label="@L["Catalog_Filter_Status"]"
+                            Value="@_statusFilter"
+                            ValueChanged="OnStatusFilterChanged"
+                            Options="@CatalogUiOptions.StatusFilters(L)" />
+                    <Select Label="@L["Catalog_Filter_Category"]"
+                            Value="@_categoryFilter"
+                            ValueChanged="OnCategoryFilterChanged"
+                            Options="@CatalogUiOptions.CategoryFilters(L, _categories)" />
+                    <Select Label="@L["Catalog_Filter_Unit"]"
+                            Value="@_unitFilter"
+                            ValueChanged="OnUnitFilterChanged"
+                            Options="@CatalogUiOptions.UnitOfMeasureFilters(L)" />
+                    <FormActions>
+                        <Button Variant="ButtonVariant.Ghost" IsLoading="@_loading" OnClick="ReloadAsync">@L["Catalog_Refresh"]</Button>
+                    </FormActions>
+                </Stack>
+            </Section>
+        }
+
+        <Section Title="@L["Catalog_ProductListSection"]">
+            @if (_loading)
             {
-                <Button Variant="ButtonVariant.Secondary" Disabled="@_isOffline" OnClick="GoGlobal">@L["Catalog_Global_Browse"]</Button>
-                <Button Variant="ButtonVariant.Secondary" Disabled="@_isOffline" OnClick="GoImport">@L["Catalog_Import_UseTemplate"]</Button>
+                <Stack Align="StackAlign.Center" Gap="2">
+                    <Spinner />
+                    <span class="pos-muted">@L["Catalog_Loading"]</span>
+                </Stack>
             }
-            <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="GoNew">@L["Catalog_Product_Add"]</Button>
-        </Actions>
-    </PageHeader>
+            else if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <ErrorState Title="@(_errorTitle ?? L["Catalog_OfflineTitle"])"
+                            Message="@_errorMessage"
+                            RetryLabel="@L["Api_Retry"]"
+                            OnRetry="ReloadAsync" />
+            }
+            else if (_items.Count == 0)
+            {
+                <EmptyState Title="@L["Catalog_EmptyTitle"]" Message="@L["Catalog_EmptyMessage"]" />
+            }
+            else
+            {
+                <div class="pos-catalog__list" role="list" aria-label="@L["Catalog_Title"]">
+                    @foreach (var item in _items)
+                    {
+                        <a class="pos-catalog__row"
+                           role="listitem"
+                           href="@($"/catalog/products/{item.ProductId:D}")">
+                            <div class="pos-catalog__row-main">
+                                <span class="pos-catalog__row-name">@item.Name</span>
+                                <span class="pos-catalog__row-meta">
+                                    @(string.IsNullOrWhiteSpace(item.Sku) ? L["Catalog_NoValue"] : item.Sku)
+                                    ·
+                                    @CatalogUiOptions.UnitOfMeasureLabel(L, item.UnitOfMeasure)
+                                    @if (!string.IsNullOrWhiteSpace(CategoryName(item.CategoryId)))
+                                    {
+                                        <text> · @CategoryName(item.CategoryId)</text>
+                                    }
+                                </span>
+                            </div>
+                            <div class="pos-catalog__row-side">
+                                <MoneyDisplay Amount="@item.SellingPrice" CurrencyCode="PHP" />
+                                <Badge Tone="@(item.Status == PosCatalogOptions.ActiveStatus ? BadgeTone.Success : BadgeTone.Neutral)">
+                                    @CatalogUiOptions.StatusLabel(L, item.Status)
+                                </Badge>
+                            </div>
+                        </a>
+                    }
+                </div>
+            }
+        </Section>
 
-    @if (_isOffline)
-    {
-        <Alert Tone="AlertTone.Warning" Title="@L["Catalog_OfflineTitle"]" Message="@L["Catalog_OfflineMessage"]" />
-    }
-    else if (!canManage)
-    {
-        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
-    }
-
-    <SearchToolbar SearchText="@_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Catalog_SearchPlaceholder"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Catalog_Refresh"]</Button>
-        </Actions>
-    </SearchToolbar>
-
-    <Section Title="@L["Catalog_FiltersTitle"]">
-        <Stack Gap="3">
-            <Select Label="@L["Catalog_Filter_Status"]"
-                    Value="@_statusFilter"
-                    ValueChanged="OnStatusFilterChanged"
-                    Options="@CatalogUiOptions.StatusFilters(L)" />
-            <Select Label="@L["Catalog_Filter_Category"]"
-                    Value="@_categoryFilter"
-                    ValueChanged="OnCategoryFilterChanged"
-                    Options="@CatalogUiOptions.CategoryFilters(L, _categories)" />
-            <Select Label="@L["Catalog_Filter_Unit"]"
-                    Value="@_unitFilter"
-                    ValueChanged="OnUnitFilterChanged"
-                    Options="@CatalogUiOptions.UnitOfMeasureFilters(L)" />
-        </Stack>
-    </Section>
-
-    <ResponsiveDataList TItem="PosCatalogProductDto"
-                        Items="@_items"
-                        Columns="@Columns"
-                        CellTemplate="@CellTemplate"
-                        IsLoading="@_loading"
-                        LoadingLabel="@L["Catalog_Loading"]"
-                        EmptyTitle="@L["Catalog_EmptyTitle"]"
-                        EmptyMessage="@L["Catalog_EmptyMessage"]"
-                        ErrorTitle="@_errorTitle"
-                        ErrorMessage="@_errorMessage"
-                        RetryLabel="@L["Api_Retry"]"
-                        OnRetry="ReloadAsync"
-                        AriaLabel="@L["Catalog_Title"]" />
-
-    @if (!_loading && _totalCount > 0)
-    {
-        <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
-    }
-</Page>
+        @if (!_loading && _totalCount > 0)
+        {
+            <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
+        }
+    </Page>
+</div>
 }
 
 @code {
     private bool _ready;
     private bool _loading;
     private bool _isOffline;
+    private bool _filtersOpen;
     private string? _search;
     private string? _statusFilter = PosCatalogOptions.ActiveStatus;
     private string? _categoryFilter;
@@ -97,58 +188,56 @@ else
     private IReadOnlyList<PosProductCategoryDto> _categories = Array.Empty<PosProductCategoryDto>();
     private string? _errorTitle;
     private string? _errorMessage;
+    private CancellationTokenSource? _searchCts;
 
-    private IReadOnlyList<DataColumnDefinition> Columns =>
-    [
-        new("name", L["Catalog_Col_Name"], Primary: true, Width: "28%"),
-        new("sku", L["Catalog_Col_Sku"], Width: "16%"),
-        new("barcode", L["Catalog_Col_Barcode"], Width: "16%"),
-        new("price", L["Catalog_Col_Price"], Width: "14%"),
-        new("unit", L["Catalog_Col_Unit"], Width: "12%"),
-        new("status", L["Catalog_Col_Status"], Width: "14%"),
-    ];
+    private bool HasAppliedFilters =>
+        !string.IsNullOrWhiteSpace(_search)
+        || (!string.IsNullOrWhiteSpace(_statusFilter) && _statusFilter != PosCatalogOptions.ActiveStatus)
+        || !string.IsNullOrWhiteSpace(_categoryFilter)
+        || !string.IsNullOrWhiteSpace(_unitFilter)
+        || string.IsNullOrWhiteSpace(_statusFilter);
 
-    private RenderFragment<(PosCatalogProductDto Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
+    private IEnumerable<string> AppliedFilterChips
     {
-        switch (context.Column.Key)
+        get
         {
-            case "name":
-                builder.OpenElement(0, "a");
-                builder.AddAttribute(1, "class", "pos-link");
-                builder.AddAttribute(2, "href", $"/catalog/products/{context.Item.ProductId:D}");
-                builder.AddContent(3, context.Item.Name);
-                builder.CloseElement();
-                break;
-            case "sku":
-                builder.AddContent(0, string.IsNullOrWhiteSpace(context.Item.Sku)
-                    ? L["Catalog_NoValue"].Value
-                    : context.Item.Sku);
-                break;
-            case "barcode":
-                builder.AddContent(0, string.IsNullOrWhiteSpace(context.Item.Barcode)
-                    ? L["Catalog_NoValue"].Value
-                    : context.Item.Barcode);
-                break;
-            case "price":
-                builder.OpenComponent<MoneyDisplay>(0);
-                builder.AddAttribute(1, "Amount", context.Item.SellingPrice);
-                builder.AddAttribute(2, "CurrencyCode", "PHP");
-                builder.CloseComponent();
-                break;
-            case "unit":
-                builder.AddContent(0, CatalogUiOptions.UnitOfMeasureLabel(L, context.Item.UnitOfMeasure));
-                break;
-            default:
-                builder.OpenComponent<Badge>(0);
-                builder.AddAttribute(1, "Tone", context.Item.Status == PosCatalogOptions.ActiveStatus
-                    ? BadgeTone.Success
-                    : BadgeTone.Neutral);
-                builder.AddAttribute(2, "ChildContent", (RenderFragment)(b =>
-                    b.AddContent(0, CatalogUiOptions.StatusLabel(L, context.Item.Status))));
-                builder.CloseComponent();
-                break;
+            if (!string.IsNullOrWhiteSpace(_search))
+            {
+                yield return $"{L["Catalog_SearchShort"]}: {_search}";
+            }
+
+            if (string.IsNullOrWhiteSpace(_statusFilter))
+            {
+                yield return L["Catalog_Filter_AllStatuses"];
+            }
+            else if (_statusFilter != PosCatalogOptions.ActiveStatus)
+            {
+                yield return CatalogUiOptions.StatusLabel(L, _statusFilter);
+            }
+
+            if (!string.IsNullOrWhiteSpace(_categoryFilter)
+                && Guid.TryParse(_categoryFilter, out var categoryId))
+            {
+                var name = CategoryName(categoryId);
+                yield return string.IsNullOrWhiteSpace(name) ? L["Catalog_Filter_Category"] : name!;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_unitFilter))
+            {
+                yield return CatalogUiOptions.UnitOfMeasureLabel(L, _unitFilter);
+            }
         }
-    };
+    }
+
+    private string? CategoryName(Guid? categoryId)
+    {
+        if (categoryId is null)
+        {
+            return null;
+        }
+
+        return _categories.FirstOrDefault(c => c.CategoryId == categoryId)?.Name;
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -162,11 +251,25 @@ else
         await ReloadAsync();
     }
 
-    private async Task OnSearchChanged(string? value)
+    private void ToggleFilters() => _filtersOpen = !_filtersOpen;
+
+    private async Task OnSearchInputAsync(ChangeEventArgs args)
     {
-        _search = value;
+        _search = args.Value?.ToString();
         _page = 1;
-        await ReloadAsync();
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+        try
+        {
+            await Task.Delay(250, token);
+            await ReloadAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            // superseded by newer keystrokes
+        }
     }
 
     private async Task OnStatusFilterChanged(string? value)

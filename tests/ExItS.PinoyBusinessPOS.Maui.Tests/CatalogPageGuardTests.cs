@@ -9,12 +9,16 @@ public sealed class CatalogPageGuardTests
 
         var list = File.ReadAllText(Path.Combine(catalog, "CatalogProductsList.razor"));
         Assert.Contains("@page \"/catalog\"", list, StringComparison.Ordinal);
-        Assert.Contains("ResponsiveDataList", list, StringComparison.Ordinal);
+        Assert.Contains("pos-catalog__row", list, StringComparison.Ordinal);
+        Assert.Contains("pos-action-grid", list, StringComparison.Ordinal);
         Assert.Contains("IPosCatalogClient", list, StringComparison.Ordinal);
         Assert.Contains("/catalog/global", list, StringComparison.Ordinal);
         Assert.Contains("/catalog/import", list, StringComparison.Ordinal);
-        Assert.Contains("Catalog_Global_Browse", list, StringComparison.Ordinal);
-        Assert.Contains("Catalog_Import_UseTemplate", list, StringComparison.Ordinal);
+        Assert.Contains("Catalog_Quick_Global", list, StringComparison.Ordinal);
+        Assert.Contains("Catalog_Quick_Template", list, StringComparison.Ordinal);
+        Assert.Contains("Catalog_FiltersTitle", list, StringComparison.Ordinal);
+        Assert.Contains("ListProductsAsync", list, StringComparison.Ordinal);
+        Assert.Contains("Pagination", list, StringComparison.Ordinal);
 
         var create = File.ReadAllText(Path.Combine(catalog, "CatalogProductCreate.razor"));
         Assert.Contains("@page \"/catalog/products/new\"", create, StringComparison.Ordinal);
