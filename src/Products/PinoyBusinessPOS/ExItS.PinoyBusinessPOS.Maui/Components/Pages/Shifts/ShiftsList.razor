@@ -28,6 +28,7 @@ else
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageShifts);
     var hasOpenShift = _current is not null;
     var onlineActionsEnabled = !_isOffline && !_loading;
+    var cashierName = CurrentCashierName;
 <div class="pos-shifts">
     <Page>
         <header class="pos-shifts__header">
@@ -42,26 +43,15 @@ else
             <Alert Tone="AlertTone.Warning" Title="@L["Shifts_OfflineTitle"]" Message="@L["Shifts_OfflineMessage"]" />
         }
 
-        @if (canManage)
+        @if (canManage && !hasOpenShift)
         {
             <div class="pos-shifts__open-action">
-                @if (hasOpenShift)
-                {
-                    <Button Variant="ButtonVariant.Secondary"
-                            Disabled="true"
-                            aria-label="@L["Shifts_AlreadyOpen"]">
-                        @L["Shifts_AlreadyOpen"]
-                    </Button>
-                }
-                else
-                {
-                    <Button Variant="ButtonVariant.Primary"
-                            Disabled="@(_isOffline || _openingNav)"
-                            IsLoading="@_openingNav"
-                            OnClick="GoOpenAsync">
-                        @L["Shifts_Open"]
-                    </Button>
-                }
+                <Button Variant="ButtonVariant.Primary"
+                        Disabled="@(_isOffline || _openingNav)"
+                        IsLoading="@_openingNav"
+                        OnClick="GoOpenAsync">
+                    @L["Shifts_Open"]
+                </Button>
             </div>
         }
 
@@ -69,17 +59,20 @@ else
         {
             <section class="pos-shifts__current" aria-labelledby="shifts-current-heading">
                 <h2 id="shifts-current-heading" class="pos-shifts__current-label">@L["Shifts_CurrentSection"]</h2>
-                <p class="pos-shifts__current-number">@_current.ShiftNumber</p>
-                <p class="pos-shifts__current-meta">
+                <div class="pos-shifts__current-top">
+                    <p class="pos-shifts__current-number">@_current.ShiftNumber</p>
                     <span class="pos-shifts__badge pos-shifts__badge--open" aria-label="@($"{L["Shifts_Status"]}: {StatusLabel(_current.Status)}")">
                         @StatusLabel(_current.Status)
                     </span>
-                    <span aria-hidden="true">·</span>
-                    <span>@RegisterLabel(_current)</span>
-                </p>
+                </div>
+                <p class="pos-shifts__current-register">@RegisterLabel(_current)</p>
                 <p class="pos-shifts__current-opened pos-muted">
-                    @string.Format(L["Shifts_OpenedFormat"].Value, FormatOpened(_current.OpenedAtUtc))
+                    @string.Format(L["Shifts_OpenedFormat"].Value, FormatOpenedDisplay(_current.OpenedAtUtc))
                 </p>
+                @if (!string.IsNullOrWhiteSpace(cashierName))
+                {
+                    <p class="pos-shifts__current-cashier pos-muted">@cashierName</p>
+                }
                 <div class="pos-shifts__current-action">
                     <Button Variant="ButtonVariant.Primary"
                             Disabled="@_isOffline"
@@ -427,6 +420,31 @@ else
         _ => "neutral"
     };
 
+    private string? CurrentCashierName
+    {
+        get
+        {
+            if (_current is null)
+            {
+                return null;
+            }
+
+            var session = CurrentUser.Session;
+            if (session is null || string.IsNullOrWhiteSpace(session.DisplayName))
+            {
+                return null;
+            }
+
+            // GetCurrent returns this actor's open shift; show name only when it matches.
+            if (session.UserId != _current.ActorId && session.UserId != _current.OpenedBy)
+            {
+                return null;
+            }
+
+            return session.DisplayName.Trim();
+        }
+    }
+
     private static string RegisterLabel(PosCashierShiftDto item)
     {
         if (!string.IsNullOrWhiteSpace(item.RegisterName))
@@ -444,6 +462,9 @@ else
 
     private static string FormatOpened(DateTimeOffset openedAtUtc) =>
         openedAtUtc.ToLocalTime().ToString("g");
+
+    private static string FormatOpenedDisplay(DateTimeOffset openedAtUtc) =>
+        openedAtUtc.ToLocalTime().ToString("MMM d, yyyy · h:mm tt");
 
     private string RowTimeLine(PosCashierShiftDto item)
     {

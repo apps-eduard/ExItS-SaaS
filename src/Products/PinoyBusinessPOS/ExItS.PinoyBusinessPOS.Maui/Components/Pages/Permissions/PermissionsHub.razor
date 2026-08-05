@@ -3,6 +3,7 @@
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosPermissionClient Permissions
+@inject IPlatformAccessClient Platform
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ICurrentUserContext CurrentUser
 @inject IConnectivityService Connectivity
@@ -89,22 +90,25 @@ else
                 <div class="pos-permissions__list" role="list" aria-label="@L["Permissions_AssignmentsSection"]">
                     @foreach (var item in _items)
                     {
+                        var identity = ResolveCachedIdentity(item.ActorId);
                         <button type="button"
                                 class="pos-permissions__row"
                                 role="listitem"
-                                aria-label="@RowAriaLabel(item)"
+                                aria-label="@RowAriaLabel(item, identity)"
                                 @onclick="() => GoDetail(item.AssignmentId)">
                             <span class="pos-permissions__row-body">
                                 <span class="pos-permissions__row-top">
-                                    <span class="pos-permissions__row-role">@item.RoleDisplayName</span>
+                                    <span class="pos-permissions__row-name">@identity.Primary</span>
                                     <span class="pos-permissions__badge pos-permissions__badge--@StatusTone(item.Status)"
                                           aria-label="@($"{L["Permissions_Status"]}: {StatusLabel(item.Status)}")">
                                         @StatusLabel(item.Status)
                                     </span>
                                 </span>
-                                <span class="pos-permissions__row-meta pos-muted">
-                                    @string.Format(L["Permissions_AssignedToFormat"].Value, ShortActorId(item.ActorId))
-                                </span>
+                                @if (!string.IsNullOrWhiteSpace(identity.Secondary))
+                                {
+                                    <span class="pos-permissions__row-meta pos-muted">@identity.Secondary</span>
+                                }
+                                <span class="pos-permissions__row-role">@item.RoleDisplayName</span>
                             </span>
                             <span class="pos-permissions__open">
                                 <span class="visually-hidden">@L["Permissions_Open"]</span>
@@ -120,11 +124,14 @@ else
 }
 
 @code {
+    private sealed record ActorIdentity(string Primary, string? Secondary);
+
     private bool _ready;
     private bool _loading = true;
     private bool _isOffline;
     private string? _errorMessage;
     private IReadOnlyList<PosRoleAssignmentDto> _items = [];
+    private readonly Dictionary<Guid, ActorIdentity> _identities = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -152,6 +159,7 @@ else
             if (_isOffline)
             {
                 _items = [];
+                _identities.Clear();
                 return;
             }
 
@@ -160,16 +168,19 @@ else
             {
                 _errorMessage = result.Error?.Detail ?? L["Permissions_LoadFailed"];
                 _items = [];
+                _identities.Clear();
             }
             else
             {
                 _items = result.Data.Items;
+                await ResolveIdentitiesAsync(_items.Select(i => i.ActorId).Distinct());
             }
         }
         catch
         {
             _errorMessage = L["Permissions_LoadFailed"];
             _items = [];
+            _identities.Clear();
         }
         finally
         {
@@ -177,10 +188,149 @@ else
         }
     }
 
-    private static string ShortActorId(Guid id)
+    private async Task ResolveIdentitiesAsync(IEnumerable<Guid> actorIds)
     {
-        var text = id.ToString("D");
-        return $"{text[..8]}…{text[^4..]}";
+        _identities.Clear();
+        var orgId = CurrentUser.Session?.OrganizationId;
+        Dictionary<Guid, string?> grantNames = new();
+
+        if (orgId is Guid organizationId)
+        {
+            try
+            {
+                var grantsResult = await Platform.GetProductLocalRolesAsync(organizationId, status: "Active");
+                if (grantsResult.IsSuccess && grantsResult.Data is not null)
+                {
+                    foreach (var grant in grantsResult.Data)
+                    {
+                        if (!string.IsNullOrWhiteSpace(grant.UserDisplayName)
+                            && !LooksLikeTechnicalId(grant.UserDisplayName))
+                        {
+                            grantNames[grant.UserIdentityId] = grant.UserDisplayName.Trim();
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Grant names are optional enrichment.
+            }
+        }
+
+        string? selfPublicUserId = null;
+        var selfId = CurrentUser.Session?.UserId;
+        if (selfId is Guid sid && actorIds.Contains(sid))
+        {
+            try
+            {
+                var profile = await Platform.GetPersonalProfileAsync();
+                if (profile.IsSuccess
+                    && profile.Data is not null
+                    && !string.IsNullOrWhiteSpace(profile.Data.PublicUserId)
+                    && !LooksLikeTechnicalId(profile.Data.PublicUserId))
+                {
+                    selfPublicUserId = profile.Data.PublicUserId.Trim();
+                }
+            }
+            catch
+            {
+                // Optional ExItS ID for the signed-in user only.
+            }
+        }
+
+        foreach (var actorId in actorIds)
+        {
+            string? displayName = null;
+            string? email = null;
+            string? exitsId = selfId == actorId ? selfPublicUserId : null;
+
+            try
+            {
+                var userResult = await Platform.GetUserAsync(actorId);
+                if (userResult.IsSuccess && userResult.Data is not null)
+                {
+                    displayName = FirstMeaningful(
+                        userResult.Data.DisplayName,
+                        userResult.Data.Username);
+                    email = FirstMeaningful(userResult.Data.Email);
+                }
+            }
+            catch
+            {
+                // Fall through to grant / unknown.
+            }
+
+            if (string.IsNullOrWhiteSpace(displayName)
+                && grantNames.TryGetValue(actorId, out var grantName))
+            {
+                displayName = grantName;
+            }
+
+            _identities[actorId] = BuildIdentity(displayName, email, exitsId);
+        }
+    }
+
+    private ActorIdentity ResolveCachedIdentity(Guid actorId) =>
+        _identities.TryGetValue(actorId, out var identity)
+            ? identity
+            : BuildIdentity(null, null, null);
+
+    private ActorIdentity BuildIdentity(string? displayName, string? email, string? exitsId)
+    {
+        var primary = FirstMeaningful(displayName)
+                      ?? FirstMeaningful(email)
+                      ?? FirstMeaningful(exitsId)
+                      ?? L["Permissions_UnknownUser"].Value;
+
+        string? secondary = null;
+        if (!string.IsNullOrWhiteSpace(displayName))
+        {
+            secondary = FirstMeaningful(email) ?? FirstMeaningful(exitsId);
+        }
+        else if (!string.IsNullOrWhiteSpace(email))
+        {
+            secondary = FirstMeaningful(exitsId);
+        }
+
+        return new ActorIdentity(primary, secondary);
+    }
+
+    private static string? FirstMeaningful(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                continue;
+            }
+
+            var trimmed = value.Trim();
+            if (LooksLikeTechnicalId(trimmed))
+            {
+                continue;
+            }
+
+            return trimmed;
+        }
+
+        return null;
+    }
+
+    private static bool LooksLikeTechnicalId(string value)
+    {
+        if (Guid.TryParse(value, out _))
+        {
+            return true;
+        }
+
+        // Truncated GUID display like "f3e820d5…2412"
+        if (value.Contains('…', StringComparison.Ordinal)
+            || value.Contains("...", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private string StatusLabel(string? status) =>
@@ -193,6 +343,15 @@ else
         : string.Equals(status, "Revoked", StringComparison.OrdinalIgnoreCase) ? "revoked"
         : "neutral";
 
-    private string RowAriaLabel(PosRoleAssignmentDto item) =>
-        $"{item.RoleDisplayName}, {StatusLabel(item.Status)}, {string.Format(L["Permissions_AssignedToFormat"].Value, ShortActorId(item.ActorId))}";
+    private string RowAriaLabel(PosRoleAssignmentDto item, ActorIdentity identity)
+    {
+        var parts = new List<string> { identity.Primary, StatusLabel(item.Status) };
+        if (!string.IsNullOrWhiteSpace(identity.Secondary))
+        {
+            parts.Add(identity.Secondary);
+        }
+
+        parts.Add(item.RoleDisplayName);
+        return string.Join(", ", parts);
+    }
 }

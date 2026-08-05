@@ -14,9 +14,12 @@ public sealed class PermissionsPageGuardTests
         Assert.Contains("pos-permissions__secondary", page, StringComparison.Ordinal);
         Assert.Contains("Permissions_MyAccess", page, StringComparison.Ordinal);
         Assert.Contains("pos-permissions__row", page, StringComparison.Ordinal);
+        Assert.Contains("pos-permissions__row-name", page, StringComparison.Ordinal);
         Assert.Contains("RoleDisplayName", page, StringComparison.Ordinal);
-        Assert.Contains("Permissions_AssignedToFormat", page, StringComparison.Ordinal);
-        Assert.Contains("ShortActorId", page, StringComparison.Ordinal);
+        Assert.Contains("GetUserAsync", page, StringComparison.Ordinal);
+        Assert.Contains("ResolveIdentitiesAsync", page, StringComparison.Ordinal);
+        Assert.Contains("Permissions_UnknownUser", page, StringComparison.Ordinal);
+        Assert.Contains("LooksLikeTechnicalId", page, StringComparison.Ordinal);
         Assert.Contains("Permissions_Status_Active", page, StringComparison.Ordinal);
         Assert.Contains("EmptyState", page, StringComparison.Ordinal);
         Assert.Contains("ErrorState", page, StringComparison.Ordinal);
@@ -27,6 +30,8 @@ public sealed class PermissionsPageGuardTests
         Assert.DoesNotContain("class=\"pos-link\"", page, StringComparison.Ordinal);
         Assert.DoesNotContain("ActorId.ToString", page, StringComparison.Ordinal);
         Assert.DoesNotContain("AssignmentId.ToString", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("ShortActorId", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("Permissions_AssignedToFormat", page, StringComparison.Ordinal);
         Assert.DoesNotContain("Permissions_Back", page, StringComparison.Ordinal);
     }
 
@@ -53,13 +58,17 @@ public sealed class PermissionsPageGuardTests
     }
 
     [Fact]
-    public void Assignment_detail_uses_role_title_truncated_ids_and_revoke_confirm()
+    public void Assignment_detail_uses_role_title_human_identity_and_revoke_confirm()
     {
         var page = Read("AssignmentDetail.razor");
         Assert.Contains("@page \"/permissions/assignments/{AssignmentId:guid}\"", page, StringComparison.Ordinal);
         Assert.Contains("_item.RoleDisplayName", page, StringComparison.Ordinal);
-        Assert.Contains("ShortId(AssignmentId)", page, StringComparison.Ordinal);
-        Assert.Contains("ShortActorId", page, StringComparison.Ordinal);
+        Assert.Contains("Permissions_AssignedUser", page, StringComparison.Ordinal);
+        Assert.Contains("_actorPrimary", page, StringComparison.Ordinal);
+        Assert.Contains("GetUserAsync", page, StringComparison.Ordinal);
+        Assert.Contains("Permissions_UnknownUser", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("ShortId(AssignmentId)", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("ShortActorId", page, StringComparison.Ordinal);
         Assert.DoesNotContain("Permissions_Back", page, StringComparison.Ordinal);
         Assert.DoesNotContain("GoBack", page, StringComparison.Ordinal);
         Assert.DoesNotContain("AssignmentId.ToString", page, StringComparison.Ordinal);
@@ -100,6 +109,7 @@ public sealed class PermissionsPageGuardTests
             "app.css"));
         Assert.Contains(".pos-permissions", css, StringComparison.Ordinal);
         Assert.Contains(".pos-permissions__row", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-permissions__row-name", css, StringComparison.Ordinal);
         Assert.Contains(".pos-permissions__badge--active", css, StringComparison.Ordinal);
         Assert.Contains(".pos-permissions__secondary", css, StringComparison.Ordinal);
         Assert.Contains(".pos-permissions__facts", css, StringComparison.Ordinal);
@@ -111,6 +121,8 @@ public sealed class PermissionsPageGuardTests
         foreach (var key in new[]
                  {
                      "Permissions_ActorUserId",
+                     "Permissions_AssignedUser",
+                     "Permissions_UnknownUser",
                      "Permissions_AssignedToFormat",
                      "Permissions_Status_Active",
                      "Permissions_Status_Revoked",

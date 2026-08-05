@@ -15,8 +15,9 @@ public sealed class ShiftsPageGuardTests
         Assert.Contains("Shifts_CurrentSection", list, StringComparison.Ordinal);
         Assert.Contains("Shifts_HistorySection", list, StringComparison.Ordinal);
         Assert.Contains("Shifts_OpenCurrent", list, StringComparison.Ordinal);
-        Assert.Contains("Shifts_AlreadyOpen", list, StringComparison.Ordinal);
         Assert.Contains("GoOpenAsync", list, StringComparison.Ordinal);
+        Assert.Contains("canManage && !hasOpenShift", list, StringComparison.Ordinal);
+        Assert.DoesNotContain("Shifts_AlreadyOpen", list, StringComparison.Ordinal);
         Assert.Contains("pos-shifts__row", list, StringComparison.Ordinal);
         Assert.Contains("pos-shifts__chevron", list, StringComparison.Ordinal);
         Assert.DoesNotContain("class=\"pos-link\"", list, StringComparison.Ordinal);
@@ -39,7 +40,8 @@ public sealed class ShiftsPageGuardTests
     {
         var list = File.ReadAllText(Path.Combine(ShiftsPagesDirectory(), "ShiftsList.razor"));
         Assert.Contains("hasOpenShift", list, StringComparison.Ordinal);
-        Assert.Contains("Shifts_AlreadyOpen", list, StringComparison.Ordinal);
+        Assert.Contains("canManage && !hasOpenShift", list, StringComparison.Ordinal);
+        Assert.DoesNotContain("Shifts_AlreadyOpen", list, StringComparison.Ordinal);
         Assert.Contains("_current is not null", list, StringComparison.Ordinal);
         Assert.Contains("GetCurrentAsync", list, StringComparison.Ordinal);
         // Duplicate open blocked before navigate.
@@ -54,6 +56,10 @@ public sealed class ShiftsPageGuardTests
         Assert.Contains("_current.ShiftNumber", list, StringComparison.Ordinal);
         Assert.Contains("RegisterLabel(_current)", list, StringComparison.Ordinal);
         Assert.Contains("StatusLabel(_current.Status)", list, StringComparison.Ordinal);
+        Assert.Contains("pos-shifts__current-top", list, StringComparison.Ordinal);
+        Assert.Contains("pos-shifts__current-register", list, StringComparison.Ordinal);
+        Assert.Contains("FormatOpenedDisplay", list, StringComparison.Ordinal);
+        Assert.Contains("CurrentCashierName", list, StringComparison.Ordinal);
         Assert.Contains("Shifts_OpenedFormat", list, StringComparison.Ordinal);
         Assert.Contains("GoCurrent", list, StringComparison.Ordinal);
         Assert.Contains("$\"/shifts/{_current.ShiftId:D}\"", list, StringComparison.Ordinal);
@@ -149,6 +155,8 @@ public sealed class ShiftsPageGuardTests
             "app.css"));
         Assert.Contains(".pos-shifts", css, StringComparison.Ordinal);
         Assert.Contains(".pos-shifts__current", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-shifts__current-top", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-shifts__current-register", css, StringComparison.Ordinal);
         Assert.Contains(".pos-shifts__row", css, StringComparison.Ordinal);
         Assert.Contains(".pos-shifts__badge--open", css, StringComparison.Ordinal);
     }

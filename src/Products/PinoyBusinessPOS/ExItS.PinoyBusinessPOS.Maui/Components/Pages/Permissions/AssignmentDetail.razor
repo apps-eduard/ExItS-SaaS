@@ -2,7 +2,9 @@
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosPermissionClient Permissions
+@inject IPlatformAccessClient Platform
 @inject IUtangCapabilityEvaluator Capabilities
+@inject ICurrentUserContext CurrentUser
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
@@ -34,9 +36,6 @@ else
                 <div class="pos-permissions__heading">
                     <h1 class="pos-permissions__title">@_item.RoleDisplayName</h1>
                     <p class="pos-permissions__subtitle">@L["Permissions_AssignmentDetail"]</p>
-                    <p class="pos-permissions__id pos-muted" aria-label="@L["Permissions_AssignmentIdLabel"]">
-                        @ShortId(AssignmentId)
-                    </p>
                 </div>
             </header>
 
@@ -51,8 +50,14 @@ else
                     </dd>
                 </div>
                 <div class="pos-permissions__fact">
-                    <dt>@L["Permissions_ActorUserId"]</dt>
-                    <dd class="pos-permissions__mono">@ShortActorId(_item.ActorId)</dd>
+                    <dt>@L["Permissions_AssignedUser"]</dt>
+                    <dd>
+                        <span class="pos-permissions__fact-primary">@_actorPrimary</span>
+                        @if (!string.IsNullOrWhiteSpace(_actorSecondary))
+                        {
+                            <span class="pos-permissions__fact-secondary pos-muted">@_actorSecondary</span>
+                        }
+                    </dd>
                 </div>
             </dl>
 
@@ -95,6 +100,8 @@ else
     private string? _error;
     private string? _revokeMessage;
     private PosRoleAssignmentDto? _item;
+    private string _actorPrimary = string.Empty;
+    private string? _actorSecondary;
 
     protected override async Task OnInitializedAsync()
     {
@@ -130,6 +137,7 @@ else
             else
             {
                 _item = result.Data;
+                await ResolveActorAsync(_item.ActorId);
             }
         }
         catch
@@ -143,6 +151,80 @@ else
         }
     }
 
+    private async Task ResolveActorAsync(Guid actorId)
+    {
+        string? displayName = null;
+        string? email = null;
+        string? exitsId = null;
+
+        try
+        {
+            var userResult = await Platform.GetUserAsync(actorId);
+            if (userResult.IsSuccess && userResult.Data is not null)
+            {
+                displayName = FirstMeaningful(userResult.Data.DisplayName, userResult.Data.Username);
+                email = FirstMeaningful(userResult.Data.Email);
+            }
+        }
+        catch
+        {
+            // Fall through.
+        }
+
+        if (string.IsNullOrWhiteSpace(displayName)
+            && CurrentUser.Session?.OrganizationId is Guid orgId)
+        {
+            try
+            {
+                var grantsResult = await Platform.GetProductLocalRolesAsync(orgId, status: "Active");
+                var grantName = grantsResult.IsSuccess && grantsResult.Data is not null
+                    ? grantsResult.Data.FirstOrDefault(g => g.UserIdentityId == actorId)?.UserDisplayName
+                    : null;
+                displayName = FirstMeaningful(grantName);
+            }
+            catch
+            {
+                // Optional.
+            }
+        }
+
+        if (CurrentUser.Session?.UserId == actorId)
+        {
+            try
+            {
+                var profile = await Platform.GetPersonalProfileAsync();
+                if (profile.IsSuccess && profile.Data is not null)
+                {
+                    exitsId = FirstMeaningful(profile.Data.PublicUserId);
+                    displayName ??= FirstMeaningful(profile.Data.DisplayName);
+                    email ??= FirstMeaningful(profile.Data.Email);
+                }
+            }
+            catch
+            {
+                // Optional.
+            }
+        }
+
+        _actorPrimary = FirstMeaningful(displayName)
+                        ?? FirstMeaningful(email)
+                        ?? FirstMeaningful(exitsId)
+                        ?? L["Permissions_UnknownUser"].Value;
+
+        if (!string.IsNullOrWhiteSpace(displayName))
+        {
+            _actorSecondary = FirstMeaningful(email) ?? FirstMeaningful(exitsId);
+        }
+        else if (!string.IsNullOrWhiteSpace(email))
+        {
+            _actorSecondary = FirstMeaningful(exitsId);
+        }
+        else
+        {
+            _actorSecondary = null;
+        }
+    }
+
     private void OpenRevokeConfirm()
     {
         if (_item is null || _acting)
@@ -153,7 +235,7 @@ else
         _revokeMessage = string.Format(
             L["Permissions_RevokeConfirmMessage"].Value,
             _item.RoleDisplayName,
-            ShortActorId(_item.ActorId));
+            _actorPrimary);
         _revokeOpen = true;
     }
 
@@ -213,13 +295,28 @@ else
         }
     }
 
-    private static string ShortId(Guid id)
+    private static string? FirstMeaningful(params string?[] values)
     {
-        var text = id.ToString("D");
-        return $"{text[..8]}…{text[^4..]}";
-    }
+        foreach (var value in values)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                continue;
+            }
 
-    private static string ShortActorId(Guid id) => ShortId(id);
+            var trimmed = value.Trim();
+            if (Guid.TryParse(trimmed, out _)
+                || trimmed.Contains('…', StringComparison.Ordinal)
+                || trimmed.Contains("...", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            return trimmed;
+        }
+
+        return null;
+    }
 
     private string StatusLabel(string? status) =>
         string.Equals(status, "Active", StringComparison.OrdinalIgnoreCase) ? L["Permissions_Status_Active"]
