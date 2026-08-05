@@ -742,15 +742,22 @@
   <data name="Catalog_Product_DeactivatedSuccess" xml:space="preserve"><value>Na-deactivate ang produkto.</value></data>
   <data name="Catalog_Product_ReactivatedSuccess" xml:space="preserve"><value>Na-reactivate ang produkto.</value></data>
   <data name="Catalog_Category_Title" xml:space="preserve"><value>Mga Kategorya</value></data>
-  <data name="Catalog_Category_Subtitle" xml:space="preserve"><value>Pagpangkat-pangkatin ang mga produkto para madaling hanapin.</value></data>
+  <data name="Catalog_Category_Subtitle" xml:space="preserve"><value>Pangkatin ang produkto para madaling hanapin.</value></data>
   <data name="Catalog_Category_AddTitle" xml:space="preserve"><value>Bagong kategorya</value></data>
   <data name="Catalog_Category_EditTitle" xml:space="preserve"><value>Palitan ang pangalan ng kategorya</value></data>
   <data name="Catalog_Category_Field_Name" xml:space="preserve"><value>Pangalan ng kategorya</value></data>
   <data name="Catalog_Category_Add" xml:space="preserve"><value>Magdagdag ng kategorya</value></data>
   <data name="Catalog_Category_Rename" xml:space="preserve"><value>Palitan ang pangalan</value></data>
   <data name="Catalog_Category_SearchPlaceholder" xml:space="preserve"><value>Maghanap ng kategorya</value></data>
+  <data name="Catalog_Category_ClearSearch" xml:space="preserve"><value>I-clear ang paghahanap</value></data>
+  <data name="Catalog_Category_Filter_All" xml:space="preserve"><value>Lahat</value></data>
+  <data name="Catalog_Category_MoreActions" xml:space="preserve"><value>Mga aksyon sa kategorya</value></data>
   <data name="Catalog_Category_EmptyTitle" xml:space="preserve"><value>Wala pang kategorya</value></data>
   <data name="Catalog_Category_EmptyMessage" xml:space="preserve"><value>Magdagdag ng kategorya para pangkatin ang mga produkto.</value></data>
+  <data name="Catalog_Category_NoMatchTitle" xml:space="preserve"><value>Walang tumutugmang kategorya</value></data>
+  <data name="Catalog_Category_NoMatchMessage" xml:space="preserve"><value>Subukan ang ibang paghahanap o filter ng status.</value></data>
+  <data name="Catalog_Category_ConfirmDeactivateTitle" xml:space="preserve"><value>I-deactivate ang kategorya?</value></data>
+  <data name="Catalog_Category_ConfirmDeactivateMessage" xml:space="preserve"><value>I-deactivate ang “{0}”? Mananatili ang kategorya sa mga produkto hanggang palitan mo sila.</value></data>
   <data name="Catalog_Category_NameRequired" xml:space="preserve"><value>Kailangan ang pangalan ng kategorya.</value></data>
   <data name="Catalog_Category_NameConflict" xml:space="preserve"><value>May aktibong kategorya nang gumagamit ng pangalang ito.</value></data>
   <data name="Catalog_Category_CreatedSuccess" xml:space="preserve"><value>Nagawa ang kategorya.</value></data>

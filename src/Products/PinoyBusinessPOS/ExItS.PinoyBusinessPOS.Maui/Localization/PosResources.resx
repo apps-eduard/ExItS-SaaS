@@ -742,15 +742,22 @@
   <data name="Catalog_Product_DeactivatedSuccess" xml:space="preserve"><value>Product deactivated.</value></data>
   <data name="Catalog_Product_ReactivatedSuccess" xml:space="preserve"><value>Product reactivated.</value></data>
   <data name="Catalog_Category_Title" xml:space="preserve"><value>Categories</value></data>
-  <data name="Catalog_Category_Subtitle" xml:space="preserve"><value>Group products for easier searching.</value></data>
+  <data name="Catalog_Category_Subtitle" xml:space="preserve"><value>Group products for easier search.</value></data>
   <data name="Catalog_Category_AddTitle" xml:space="preserve"><value>New category</value></data>
   <data name="Catalog_Category_EditTitle" xml:space="preserve"><value>Rename category</value></data>
   <data name="Catalog_Category_Field_Name" xml:space="preserve"><value>Category name</value></data>
   <data name="Catalog_Category_Add" xml:space="preserve"><value>Add category</value></data>
   <data name="Catalog_Category_Rename" xml:space="preserve"><value>Rename</value></data>
   <data name="Catalog_Category_SearchPlaceholder" xml:space="preserve"><value>Search categories</value></data>
+  <data name="Catalog_Category_ClearSearch" xml:space="preserve"><value>Clear search</value></data>
+  <data name="Catalog_Category_Filter_All" xml:space="preserve"><value>All</value></data>
+  <data name="Catalog_Category_MoreActions" xml:space="preserve"><value>Category actions</value></data>
   <data name="Catalog_Category_EmptyTitle" xml:space="preserve"><value>No categories yet</value></data>
   <data name="Catalog_Category_EmptyMessage" xml:space="preserve"><value>Add a category to group your products.</value></data>
+  <data name="Catalog_Category_NoMatchTitle" xml:space="preserve"><value>No matching categories</value></data>
+  <data name="Catalog_Category_NoMatchMessage" xml:space="preserve"><value>Try a different search or status filter.</value></data>
+  <data name="Catalog_Category_ConfirmDeactivateTitle" xml:space="preserve"><value>Deactivate category?</value></data>
+  <data name="Catalog_Category_ConfirmDeactivateMessage" xml:space="preserve"><value>Deactivate “{0}”? Products keep this category until you change them.</value></data>
   <data name="Catalog_Category_NameRequired" xml:space="preserve"><value>Category name is required.</value></data>
   <data name="Catalog_Category_NameConflict" xml:space="preserve"><value>An active category already uses this name.</value></data>
   <data name="Catalog_Category_CreatedSuccess" xml:space="preserve"><value>Category created.</value></data>
