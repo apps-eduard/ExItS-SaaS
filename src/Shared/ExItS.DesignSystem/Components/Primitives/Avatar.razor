@@ -1,6 +1,6 @@
 @namespace ExItS.DesignSystem.Components.Primitives
 
-<span class="exds-avatar @SizeClass" aria-hidden="@(string.IsNullOrEmpty(AriaLabel) ? "true" : null)" aria-label="@AriaLabel">
+<span class="exds-avatar @SizeClass @ShapeClass" aria-hidden="@(string.IsNullOrEmpty(AriaLabel) ? "true" : null)" aria-label="@AriaLabel">
     @if (ShowImage)
     {
         <img src="@ImageUrl" alt="" @onerror="OnImageError" />
@@ -16,6 +16,7 @@
     [Parameter] public string? ImageUrl { get; set; }
     [Parameter] public string? AriaLabel { get; set; }
     [Parameter] public AvatarSize Size { get; set; } = AvatarSize.Md;
+    [Parameter] public AvatarShape Shape { get; set; } = AvatarShape.Circle;
 
     private bool _imageFailed;
     private string? _trackedImageUrl;
@@ -29,6 +30,10 @@
         AvatarSize.Lg => "exds-avatar--lg",
         _ => "",
     };
+
+    private string ShapeClass => Shape == AvatarShape.SoftSquare
+        ? "exds-avatar--soft-square"
+        : "exds-avatar--circle";
 
     private string Initials
     {

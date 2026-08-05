@@ -20,8 +20,8 @@ public sealed class ShellContextIdentityGuardTests
         Assert.DoesNotContain("Badge", personal, StringComparison.Ordinal);
         Assert.DoesNotContain("IAppInfoService", personal, StringComparison.Ordinal);
 
-        Assert.Contains("ShellContextIdentity", pos, StringComparison.Ordinal);
-        Assert.Contains("UseOrganizationContext=\"true\"", pos, StringComparison.Ordinal);
+        Assert.Contains("ShellOrganizationIdentity", pos, StringComparison.Ordinal);
+        Assert.Contains("ShellUserIdentity", pos, StringComparison.Ordinal);
         Assert.DoesNotContain("Brand_Name", pos, StringComparison.Ordinal);
         Assert.DoesNotContain("Env_Development", pos, StringComparison.Ordinal);
         Assert.DoesNotContain("Badge Tone", pos, StringComparison.Ordinal);
@@ -35,17 +35,45 @@ public sealed class ShellContextIdentityGuardTests
         Assert.Contains("Branding?.LogoUrl", identity, StringComparison.Ordinal);
         Assert.Contains("Shell_UserFallback", identity, StringComparison.Ordinal);
         Assert.Contains("Shell_OrganizationFallback", identity, StringComparison.Ordinal);
-        Assert.Contains("text-overflow", File.ReadAllText(Path.Combine(MauiProject(), "wwwroot", "app.css")), StringComparison.Ordinal);
+        Assert.Contains("AvatarShape", identity, StringComparison.Ordinal);
+        var css = File.ReadAllText(Path.Combine(MauiProject(), "wwwroot", "app.css"));
+        Assert.Contains("text-overflow", css, StringComparison.Ordinal);
+        Assert.Contains("pos-topbar__user", css, StringComparison.Ordinal);
+        Assert.Contains("pos-topbar__subtitle--visible", css, StringComparison.Ordinal);
+
+        var orgIdentity = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Shared", "ShellOrganizationIdentity.razor"));
+        var userIdentity = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Shared", "ShellUserIdentity.razor"));
+        Assert.Contains("AvatarShape.SoftSquare", orgIdentity, StringComparison.Ordinal);
+        Assert.Contains("AvatarShape.Circle", userIdentity, StringComparison.Ordinal);
+        Assert.Contains("OrgSelect_EnterOwner", userIdentity, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void Auth_shell_keeps_product_brand_but_hides_environment_badge()
+    public void Auth_shell_keeps_product_brand_when_anonymous_and_dual_identity_when_signed_in()
     {
         var auth = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Layout", "AuthShell.razor"));
         Assert.Contains("Brand_Name", auth, StringComparison.Ordinal);
+        Assert.Contains("IsAuthenticated", auth, StringComparison.Ordinal);
+        Assert.Contains("ShellOrganizationIdentity", auth, StringComparison.Ordinal);
+        Assert.Contains("ShellUserIdentity", auth, StringComparison.Ordinal);
+        Assert.Contains("AuthShellIdentityState", auth, StringComparison.Ordinal);
         Assert.DoesNotContain("Env_Development", auth, StringComparison.Ordinal);
         Assert.DoesNotContain("Badge Tone", auth, StringComparison.Ordinal);
         Assert.DoesNotContain("IAppInfoService", auth, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Organization_select_uses_dual_top_bar_preview_without_page_header()
+    {
+        var orgSelect = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "OrganizationSelect.razor"));
+        Assert.DoesNotContain("PageHeader", orgSelect, StringComparison.Ordinal);
+        Assert.DoesNotContain("OrgSelect_Title", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("AuthShellIdentityState", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("SetOrganizationPreview", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("AvatarShape.SoftSquare", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("FriendlyMembershipRole", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("OrgSelect_EnterOwner", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("SelectOrganizationAsync", orgSelect, StringComparison.Ordinal);
     }
 
     [Fact]

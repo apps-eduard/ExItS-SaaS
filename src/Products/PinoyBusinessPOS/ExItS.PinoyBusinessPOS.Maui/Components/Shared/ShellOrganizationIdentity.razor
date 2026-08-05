@@ -3,23 +3,28 @@
 @inject IPlatformAccessClient Platform
 @inject IStringLocalizer<PosResources> L
 
-<div class="pos-topbar__brand" title="@DisplayName">
-    <Avatar Name="@DisplayName"
-            ImageUrl="@EffectiveImageUrl"
-            Size="AvatarSize.Sm"
-            Shape="@AvatarShape"
-            AriaLabel="@AriaLabel" />
-    <div class="pos-topbar__titles">
-        <span class="pos-topbar__title">@DisplayName</span>
+@if (ShowOrganization)
+{
+    <div class="pos-topbar__brand" title="@OrgDisplayName">
+        <Avatar Name="@OrgDisplayName"
+                ImageUrl="@_organizationLogoUrl"
+                Size="AvatarSize.Sm"
+                Shape="AvatarShape.SoftSquare"
+                AriaLabel="@OrgAriaLabel" />
+        <div class="pos-topbar__titles">
+            <span class="pos-topbar__title">@OrgDisplayName</span>
+        </div>
     </div>
-</div>
+}
 
 @code {
     /// <summary>
-    /// Personal: signed-in user (circular). Organization: active organization (soft square).
-    /// Prefer <see cref="ShellOrganizationIdentity"/> / <see cref="ShellUserIdentity"/> for dual bars.
+    /// When set, use this organization instead of the session's active organization
+    /// (e.g. preview on organization-select before bind).
     /// </summary>
-    [Parameter] public bool UseOrganizationContext { get; set; }
+    [Parameter] public Guid? OrganizationIdOverride { get; set; }
+
+    [Parameter] public string? OrganizationNameOverride { get; set; }
 
     private Guid? _logoOrgId;
     private string? _organizationLogoUrl;
@@ -28,46 +33,35 @@
 
     private AuthSession? Session => CurrentUser.Session;
 
-    private AvatarShape AvatarShape =>
-        UseOrganizationContext ? AvatarShape.SoftSquare : AvatarShape.Circle;
+    private bool ShowOrganization =>
+        EffectiveOrganizationId is not null
+        || !string.IsNullOrWhiteSpace(OrganizationNameOverride)
+        || !string.IsNullOrWhiteSpace(Session?.OrganizationDisplayName);
 
-    private string DisplayName
+    private Guid? EffectiveOrganizationId =>
+        OrganizationIdOverride ?? Session?.OrganizationId;
+
+    private string OrgDisplayName
     {
         get
         {
-            if (UseOrganizationContext)
+            if (!string.IsNullOrWhiteSpace(OrganizationNameOverride))
             {
-                var orgName = Session?.OrganizationDisplayName;
-                if (!string.IsNullOrWhiteSpace(orgName))
-                {
-                    return orgName.Trim();
-                }
-
-                return L["Shell_OrganizationFallback"].Value;
+                return OrganizationNameOverride.Trim();
             }
 
-            var userName = Session?.DisplayName;
-            if (!string.IsNullOrWhiteSpace(userName))
+            var orgName = Session?.OrganizationDisplayName;
+            if (!string.IsNullOrWhiteSpace(orgName))
             {
-                return userName.Trim();
+                return orgName.Trim();
             }
 
-            if (!string.IsNullOrWhiteSpace(Session?.Username))
-            {
-                return Session!.Username.Trim();
-            }
-
-            return L["Shell_UserFallback"].Value;
+            return L["Shell_OrganizationFallback"].Value;
         }
     }
 
-    private string? EffectiveImageUrl =>
-        UseOrganizationContext ? _organizationLogoUrl : null;
-
-    private string AriaLabel =>
-        UseOrganizationContext
-            ? string.Format(L["Shell_OrganizationAria"].Value, DisplayName)
-            : string.Format(L["Shell_UserAria"].Value, DisplayName);
+    private string OrgAriaLabel =>
+        string.Format(L["Shell_OrganizationAria"].Value, OrgDisplayName);
 
     protected override void OnInitialized()
     {
@@ -88,13 +82,7 @@
 
     private async Task RefreshOrganizationLogoAsync()
     {
-        if (!UseOrganizationContext)
-        {
-            ClearLogoState();
-            return;
-        }
-
-        var orgId = Session?.OrganizationId;
+        var orgId = EffectiveOrganizationId;
         if (orgId is null)
         {
             ClearLogoState();
@@ -107,7 +95,6 @@
             return;
         }
 
-        // Clear immediately on org switch so the previous logo never sticks.
         if (_logoOrgId != orgId)
         {
             _organizationLogoUrl = null;
@@ -123,7 +110,7 @@
         try
         {
             var result = await Platform.GetOrganizationAsync(orgId.Value, ct);
-            if (ct.IsCancellationRequested || Session?.OrganizationId != orgId)
+            if (ct.IsCancellationRequested || EffectiveOrganizationId != orgId)
             {
                 return;
             }

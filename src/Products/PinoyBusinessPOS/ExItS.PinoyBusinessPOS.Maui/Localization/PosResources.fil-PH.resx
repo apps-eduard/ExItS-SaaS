@@ -621,6 +621,13 @@
   <data name="Offline_DueDateConflictMessage" xml:space="preserve"><value>Magkaiba ang due date sa server at local change mo. I-refresh mula sa server o i-discard ang local request.</value></data>
   <data name="Catalog_Title" xml:space="preserve"><value>Mga Produkto</value></data>
   <data name="Catalog_Subtitle" xml:space="preserve"><value>Pamahalaan ang catalog ng produkto, SKU, at barcode.</value></data>
+  <data name="Catalog_QuickActionsSection" xml:space="preserve"><value>Mabilisang aksyon</value></data>
+  <data name="Catalog_ProductListSection" xml:space="preserve"><value>Listahan ng produkto</value></data>
+  <data name="Catalog_Quick_Barcode" xml:space="preserve"><value>Barcode lookup</value></data>
+  <data name="Catalog_Quick_Global" xml:space="preserve"><value>Global catalog</value></data>
+  <data name="Catalog_Quick_Template" xml:space="preserve"><value>Business template</value></data>
+  <data name="Catalog_SearchShort" xml:space="preserve"><value>Maghanap ng produkto…</value></data>
+  <data name="Catalog_AppliedFilters" xml:space="preserve"><value>Mga filter na aktibo</value></data>
   <data name="Catalog_Categories" xml:space="preserve"><value>Mga Kategorya</value></data>
   <data name="Catalog_BarcodeLookup" xml:space="preserve"><value>Hanapin sa barcode</value></data>
   <data name="Catalog_Refresh" xml:space="preserve"><value>I-refresh</value></data>
@@ -1653,10 +1660,13 @@
   <data name="StartBusiness_Failed" xml:space="preserve"><value>Could not start the business. Try again.</value></data>
   <data name="OrgSelect_NoneTitle" xml:space="preserve"><value>No organizations</value></data>
   <data name="Context_SwitcherTitle" xml:space="preserve"><value>Account context</value></data>
-  <data name="Context_SwitcherHint" xml:space="preserve"><value>Lumipat sa Personal o sa iyong mga organisasyon nang hindi nag-sign out. MulÃ­ng sine-check ang access sa bawat paglipat.</value></data>
-  <data name="Context_SwitcherHintStaff" xml:space="preserve"><value>Lumipat sa mga organisasyon nang hindi nag-sign out. MulÃ­ng sine-check ang access sa bawat paglipat.</value></data>
+  <data name="Context_SwitcherHint" xml:space="preserve"><value>Lumipat sa Personal o organisasyon. Muling sine-validate ang access.</value></data>
+  <data name="Context_SwitcherHintStaff" xml:space="preserve"><value>Lumipat ng organisasyon. Muling sine-validate ang access.</value></data>
   <data name="Context_Personal" xml:space="preserve"><value>Personal</value></data>
-  <data name="Context_Active" xml:space="preserve"><value>aktibo</value></data>
+  <data name="Context_Active" xml:space="preserve"><value>Aktibo</value></data>
+  <data name="Context_RoleOwner" xml:space="preserve"><value>Owner</value></data>
+  <data name="Context_RoleAdministrator" xml:space="preserve"><value>Administrator</value></data>
+  <data name="Context_RoleMember" xml:space="preserve"><value>Member</value></data>
   <data name="Org_EssentialsOwnerOnly" xml:space="preserve"><value>Ang Organization Owner essentials ay para sa Organization Owners lamang. Kailangan pa rin ng aktibong POS role at entitlement para sa POS.</value></data>
   <data name="Org_SummaryTitle" xml:space="preserve"><value>Organization</value></data>
   <data name="Org_MissingTitle" xml:space="preserve"><value>Organization required</value></data>
@@ -1725,14 +1735,20 @@
   <data name="Org_AssignValidation" xml:space="preserve"><value>A valid user ID is required.</value></data>
   <data name="Org_AssignFailed" xml:space="preserve"><value>Could not assign the POS role.</value></data>
   <data name="Owner_Title" xml:space="preserve"><value>Owner dashboard</value></data>
+  <data name="Owner_Subtitle" xml:space="preserve"><value>Mabilisang aksyon at mga tool ng tindahan</value></data>
   <data name="Owner_DeniedMessage" xml:space="preserve"><value>POS Owner access is required for this dashboard.</value></data>
+  <data name="Owner_QuickActionsSection" xml:space="preserve"><value>Quick actions</value></data>
   <data name="Owner_SetupSection" xml:space="preserve"><value>Setup</value></data>
   <data name="Owner_SetupComplete" xml:space="preserve"><value>Operational setup is complete.</value></data>
   <data name="Owner_SetupIncomplete" xml:space="preserve"><value>Complete operational setup before daily selling.</value></data>
+  <data name="Owner_SetupStatusLabel" xml:space="preserve"><value>Status:</value></data>
+  <data name="Owner_SetupStatusComplete" xml:space="preserve"><value>Complete</value></data>
+  <data name="Owner_SetupStatusIncomplete" xml:space="preserve"><value>Incomplete</value></data>
   <data name="Owner_SellingSection" xml:space="preserve"><value>Selling</value></data>
   <data name="Owner_StartSelling" xml:space="preserve"><value>Start Selling</value></data>
-  <data name="Owner_StartSellingHint" xml:space="preserve"><value>Opens the cashier selling interface. Your Owner role does not change.</value></data>
+  <data name="Owner_StartSellingHint" xml:space="preserve"><value>Bubuksan ang cashier selling. Hindi magbabago ang Owner role.</value></data>
   <data name="Owner_OperationsSection" xml:space="preserve"><value>Operations</value></data>
+  <data name="Owner_InsightsSection" xml:space="preserve"><value>Insights</value></data>
   <data name="Manager_Title" xml:space="preserve"><value>Manager dashboard</value></data>
   <data name="Manager_DeniedMessage" xml:space="preserve"><value>POS Manager access is required for this dashboard.</value></data>
   <data name="Manager_StartSellingHint" xml:space="preserve"><value>Opens the selling interface. Your Manager role does not change.</value></data>
@@ -1752,8 +1768,9 @@
   <data name="Cashier_OwnSales" xml:space="preserve"><value>My sales history</value></data>
   <data name="SellingMode_Banner" xml:space="preserve"><value>Selling mode â€” role unchanged</value></data>
   <data name="SellingMode_Exit" xml:space="preserve"><value>Return to dashboard</value></data>
-  <data name="More_Subtitle" xml:space="preserve"><value>Additional tools and organization links.</value></data>
+  <data name="More_Subtitle" xml:space="preserve"><value>Mga tool at organisasyon</value></data>
   <data name="More_WorkspaceSection" xml:space="preserve"><value>Workspace</value></data>
+  <data name="More_ToolsSection" xml:space="preserve"><value>Mga tool</value></data>
   <data name="More_RoleHome" xml:space="preserve"><value>Role home</value></data>
   <data name="Personal_MyQrLink" xml:space="preserve"><value>My QR Code</value></data>
   <data name="Personal_MyQrTitle" xml:space="preserve"><value>My QR Code</value></data>

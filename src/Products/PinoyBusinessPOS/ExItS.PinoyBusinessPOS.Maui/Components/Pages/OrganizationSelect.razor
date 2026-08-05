@@ -1,16 +1,17 @@
 @page "/organization-select"
 @layout Layout.AuthShell
+@implements IDisposable
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IProductAccessResolver Access
+@inject IPlatformAccessClient Platform
 @inject IOnboardingPreferenceStore Prefs
 @inject SellingModeService SellingMode
+@inject AuthShellIdentityState IdentityState
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
 <Page>
-    <PageHeader Title="@L["OrgSelect_Title"]" Subtitle="@(_isOwner ? L["OrgSelect_SubtitleOwner"] : L["OrgSelect_SubtitleStaff"])" />
-
     @if (_loading)
     {
         <Stack Align="StackAlign.Center" Gap="3">
@@ -38,29 +39,36 @@
             @foreach (var org in _organizations)
             {
                 <Card>
-                    <Stack Gap="2">
-                        <span class="pos-value-md">@org.DisplayName</span>
-                        <span class="pos-muted">@(string.IsNullOrWhiteSpace(org.MembershipRole) ? org.MembershipStatus : org.MembershipRole)</span>
-                        @if (OrganizationMembershipRoles.IsOwnerRole(org.MembershipRole))
-                        {
-                            <Stack Gap="2">
-                                <Button Disabled="_busy" OnClick="() => SelectAsAsync(org.OrganizationId, RoleHomeResolver.OwnerHome)">@L["OrgSelect_EnterOwner"]</Button>
-                                <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="() => SelectAsAsync(org.OrganizationId, RoleHomeResolver.ManagerHome)">@L["OrgSelect_EnterManager"]</Button>
-                                <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="() => SelectAsAsync(org.OrganizationId, RoleHomeResolver.CashierHome)">@L["OrgSelect_EnterCashier"]</Button>
-                            </Stack>
-                        }
-                        else
-                        {
-                            <Button Disabled="_busy" OnClick="() => SelectAsAsync(org.OrganizationId, preferredHome: null)">@L["OrgSelect_Choose"]</Button>
-                        }
-                    </Stack>
+                    <div class="pos-org-select-row">
+                        <Avatar Name="@org.DisplayName"
+                                ImageUrl="@OrgLogo(org.OrganizationId)"
+                                Size="AvatarSize.Lg"
+                                Shape="AvatarShape.SoftSquare"
+                                AriaLabel="@org.DisplayName" />
+                        <div class="pos-org-select-row__body">
+                            <span class="pos-value-md">@org.DisplayName</span>
+                            <span class="pos-muted">@FriendlyMembershipRole(org.MembershipRole, org.MembershipStatus)</span>
+                            @if (OrganizationMembershipRoles.IsOwnerRole(org.MembershipRole))
+                            {
+                                <Stack Gap="2">
+                                    <Button Disabled="_busy" OnClick="() => SelectAsAsync(org.OrganizationId, RoleHomeResolver.OwnerHome)">@L["OrgSelect_EnterOwner"]</Button>
+                                    <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="() => SelectAsAsync(org.OrganizationId, RoleHomeResolver.ManagerHome)">@L["OrgSelect_EnterManager"]</Button>
+                                    <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="() => SelectAsAsync(org.OrganizationId, RoleHomeResolver.CashierHome)">@L["OrgSelect_EnterCashier"]</Button>
+                                </Stack>
+                            }
+                            else
+                            {
+                                <Button Disabled="_busy" OnClick="() => SelectAsAsync(org.OrganizationId, preferredHome: null)">@L["OrgSelect_Choose"]</Button>
+                            }
+                        </div>
+                    </div>
                 </Card>
             }
         </Stack>
         @if (_isOwner)
         {
             <FormActions>
-                <Button Variant="ButtonVariant.Ghost" OnClick="GoPersonalAsync">@L["Personal_HomeTitle"]</Button>
+                <Button Variant="ButtonVariant.Primary" OnClick="GoPersonalAsync">@L["Personal_HomeTitle"]</Button>
             </FormActions>
         }
         else
@@ -83,8 +91,42 @@
     private bool _isOwner;
     private string? _error;
     private IReadOnlyList<EligibleOrganization> _organizations = [];
+    private readonly Dictionary<Guid, string?> _orgLogos = new();
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    public void Dispose() => IdentityState.Clear();
+
+    private string? OrgLogo(Guid organizationId) =>
+        _orgLogos.TryGetValue(organizationId, out var url) ? url : null;
+
+    private string FriendlyMembershipRole(string? role, string status)
+    {
+        if (OrganizationMembershipRoles.IsOwnerRole(role))
+        {
+            return L["OrgSelect_EnterOwner"];
+        }
+
+        if (string.Equals(role, "StoreManager", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(role, "Manager", StringComparison.OrdinalIgnoreCase))
+        {
+            return L["OrgSelect_EnterManager"];
+        }
+
+        if (string.Equals(role, "Cashier", StringComparison.OrdinalIgnoreCase))
+        {
+            return L["OrgSelect_EnterCashier"];
+        }
+
+        if (!string.IsNullOrWhiteSpace(role)
+            && role.StartsWith("Organization", StringComparison.OrdinalIgnoreCase)
+            && role.Length > "Organization".Length)
+        {
+            return role["Organization".Length..];
+        }
+
+        return string.IsNullOrWhiteSpace(role) ? status : role;
+    }
 
     private async Task LoadAsync()
     {
@@ -98,6 +140,7 @@
                 if (!restore.Succeeded)
                 {
                     _authenticated = false;
+                    IdentityState.Clear();
                     return;
                 }
             }
@@ -105,11 +148,14 @@
             _authenticated = CurrentUser.IsAuthenticated;
             if (!_authenticated || CurrentUser.Session is null)
             {
+                IdentityState.Clear();
                 return;
             }
 
             _organizations = await Access.ListEligibleOrganizationsAsync(CurrentUser.Session.UserId);
             _isOwner = OrganizationMembershipRoles.HasOrganizationOwner(_organizations);
+            await LoadOrganizationLogosAsync();
+            PublishTopBarPreview();
 
             // Staff with exactly one org: enter assigned role UI immediately (no Personal / role chooser).
             if (!_isOwner
@@ -125,12 +171,60 @@
         }
     }
 
+    private void PublishTopBarPreview()
+    {
+        var session = CurrentUser.Session;
+        EligibleOrganization? preview = null;
+        if (session?.OrganizationId is Guid activeId)
+        {
+            preview = _organizations.FirstOrDefault(o => o.OrganizationId == activeId);
+        }
+
+        preview ??= _organizations.FirstOrDefault(o => OrganizationMembershipRoles.IsOwnerRole(o.MembershipRole))
+                    ?? _organizations.FirstOrDefault();
+
+        if (preview is null)
+        {
+            IdentityState.Clear();
+            return;
+        }
+
+        IdentityState.SetOrganizationPreview(
+            preview.OrganizationId,
+            preview.DisplayName,
+            preview.MembershipRole);
+    }
+
+    private async Task LoadOrganizationLogosAsync()
+    {
+        _orgLogos.Clear();
+        foreach (var org in _organizations)
+        {
+            try
+            {
+                var result = await Platform.GetOrganizationAsync(org.OrganizationId);
+                var logo = result.IsSuccess ? result.Data?.Branding?.LogoUrl : null;
+                _orgLogos[org.OrganizationId] = string.IsNullOrWhiteSpace(logo) ? null : logo.Trim();
+            }
+            catch
+            {
+                _orgLogos[org.OrganizationId] = null;
+            }
+        }
+    }
+
     private async Task SelectAsAsync(Guid organizationId, string? preferredHome)
     {
         _busy = true;
         _error = null;
         try
         {
+            var org = _organizations.FirstOrDefault(o => o.OrganizationId == organizationId);
+            if (org is not null)
+            {
+                IdentityState.SetOrganizationPreview(org.OrganizationId, org.DisplayName, org.MembershipRole);
+            }
+
             // Set working-as before bind so RoleHome never resolves Access Denied during navigation.
             if (!string.IsNullOrWhiteSpace(preferredHome))
             {
@@ -175,6 +269,7 @@
     private async Task GoPersonalAsync()
     {
         SellingMode.Clear();
+        IdentityState.Clear();
         var result = await Auth.SwitchToPersonalAsync();
         if (result.Succeeded)
         {
@@ -185,6 +280,7 @@
     private async Task LogoutAsync()
     {
         SellingMode.Clear();
+        IdentityState.Clear();
         await Auth.LogoutAsync();
         Nav.NavigateTo("/signin");
     }

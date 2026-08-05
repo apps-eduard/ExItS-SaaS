@@ -1,0 +1,216 @@
+@implements IDisposable
+@inject ICurrentUserContext CurrentUser
+@inject SellingModeService SellingMode
+@inject RoleHomeResolver RoleHome
+@inject IProductAccessResolver Access
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-topbar__user" title="@UserDisplayName">
+    <Avatar Name="@UserDisplayName"
+            Size="AvatarSize.Sm"
+            Shape="AvatarShape.Circle"
+            AriaLabel="@UserAriaLabel" />
+    <div class="pos-topbar__titles">
+        <span class="pos-topbar__title">@UserDisplayName</span>
+        @if (!string.IsNullOrWhiteSpace(_roleLabel))
+        {
+            <span class="pos-topbar__subtitle pos-topbar__subtitle--visible pos-muted">@_roleLabel</span>
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>Optional membership role hint (e.g. from organization-select).</summary>
+    [Parameter] public string? MembershipRoleHint { get; set; }
+
+    private string? _roleLabel;
+    private CancellationTokenSource? _roleCts;
+
+    private AuthSession? Session => CurrentUser.Session;
+
+    private string UserDisplayName
+    {
+        get
+        {
+            var userName = Session?.DisplayName;
+            if (!string.IsNullOrWhiteSpace(userName))
+            {
+                return userName.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(Session?.Username))
+            {
+                return Session!.Username.Trim();
+            }
+
+            return L["Shell_UserFallback"].Value;
+        }
+    }
+
+    private string UserAriaLabel =>
+        string.Format(L["Shell_UserAria"].Value, UserDisplayName);
+
+    protected override void OnInitialized()
+    {
+        CurrentUser.Changed += OnChangedAsync;
+        SellingMode.Changed += OnChangedAsync;
+        _ = RefreshRoleLabelAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        _ = RefreshRoleLabelAsync();
+    }
+
+    private Task OnChangedAsync()
+    {
+        _ = RefreshRoleLabelAsync();
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RefreshRoleLabelAsync()
+    {
+        _roleCts?.Cancel();
+        _roleCts?.Dispose();
+        _roleCts = new CancellationTokenSource();
+        var ct = _roleCts.Token;
+
+        try
+        {
+            _roleLabel = await ResolveFriendlyRoleAsync(ct);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch
+        {
+            _roleLabel = FriendlyFromMembership(MembershipRoleHint);
+        }
+
+        if (!ct.IsCancellationRequested)
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task<string?> ResolveFriendlyRoleAsync(CancellationToken ct)
+    {
+        var preferred = SellingMode.PreferredHomeRoute;
+        var fromPreferred = FriendlyFromHomeRoute(preferred);
+        if (!string.IsNullOrWhiteSpace(fromPreferred))
+        {
+            return fromPreferred;
+        }
+
+        var fromHint = FriendlyFromMembership(MembershipRoleHint);
+        if (!string.IsNullOrWhiteSpace(fromHint))
+        {
+            return fromHint;
+        }
+
+        if (Session?.OrganizationId is null || Session.UserId == Guid.Empty)
+        {
+            return null;
+        }
+
+        try
+        {
+            var home = await RoleHome.ResolvePosHomeAsync(ct);
+            var fromHome = FriendlyFromHomeRoute(home);
+            if (!string.IsNullOrWhiteSpace(fromHome))
+            {
+                return fromHome;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            // fall through to membership
+        }
+
+        try
+        {
+            var orgs = await Access.ListEligibleOrganizationsAsync(Session.UserId, ct);
+            var match = orgs.FirstOrDefault(o => o.OrganizationId == Session.OrganizationId)
+                        ?? orgs.FirstOrDefault(o => OrganizationMembershipRoles.IsOwnerRole(o.MembershipRole));
+            return FriendlyFromMembership(match?.MembershipRole);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private string? FriendlyFromHomeRoute(string? route)
+    {
+        if (string.Equals(route, RoleHomeResolver.OwnerHome, StringComparison.Ordinal))
+        {
+            return L["OrgSelect_EnterOwner"].Value;
+        }
+
+        if (string.Equals(route, RoleHomeResolver.ManagerHome, StringComparison.Ordinal))
+        {
+            return L["OrgSelect_EnterManager"].Value;
+        }
+
+        if (string.Equals(route, RoleHomeResolver.CashierHome, StringComparison.Ordinal))
+        {
+            return L["OrgSelect_EnterCashier"].Value;
+        }
+
+        return null;
+    }
+
+    private string? FriendlyFromMembership(string? role)
+    {
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            return null;
+        }
+
+        if (OrganizationMembershipRoles.IsOwnerRole(role))
+        {
+            return L["OrgSelect_EnterOwner"].Value;
+        }
+
+        if (string.Equals(role, "StoreManager", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(role, "Manager", StringComparison.OrdinalIgnoreCase))
+        {
+            return L["OrgSelect_EnterManager"].Value;
+        }
+
+        if (string.Equals(role, "Cashier", StringComparison.OrdinalIgnoreCase))
+        {
+            return L["OrgSelect_EnterCashier"].Value;
+        }
+
+        if (string.Equals(role, OrganizationMembershipRoles.Member, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        if (role.StartsWith("Organization", StringComparison.OrdinalIgnoreCase)
+            && role.Length > "Organization".Length)
+        {
+            return role["Organization".Length..];
+        }
+
+        return role;
+    }
+
+    public void Dispose()
+    {
+        CurrentUser.Changed -= OnChangedAsync;
+        SellingMode.Changed -= OnChangedAsync;
+        _roleCts?.Cancel();
+        _roleCts?.Dispose();
+    }
+}

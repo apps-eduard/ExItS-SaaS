@@ -19,8 +19,9 @@
 
 <div class="exds-root pos-shell" data-layout="phone" @key="_cultureEpoch">
     <header class="pos-topbar">
-        <ShellContextIdentity UseOrganizationContext="true" />
+        <ShellOrganizationIdentity />
         <div class="pos-topbar__status">
+            <ShellUserIdentity />
             <button type="button"
                     class="pos-sync-status pos-sync-status--@SyncToneClass"
                     title="@SyncTitle"

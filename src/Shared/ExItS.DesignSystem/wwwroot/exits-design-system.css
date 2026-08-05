@@ -503,6 +503,8 @@ select.exds-field__control { appearance: none; padding-right: var(--exits-space-
 }
 .exds-avatar--sm { width: 1.75rem; height: 1.75rem; font-size: var(--exits-text-xs); }
 .exds-avatar--lg { width: 3rem; height: 3rem; font-size: var(--exits-text-md); }
+.exds-avatar--circle { border-radius: 50%; }
+.exds-avatar--soft-square { border-radius: var(--exits-radius-md, 0.45rem); }
 .exds-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 /* Spinner */
