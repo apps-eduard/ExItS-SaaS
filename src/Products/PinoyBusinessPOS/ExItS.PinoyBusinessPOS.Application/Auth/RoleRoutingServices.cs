@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
+using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Permissions;
 using ExItS.PinoyBusinessPOS.Domain.Permissions;
 
@@ -102,7 +103,14 @@ public sealed class RoleHomeResolver(
         {
             // Owner already chose working-as after a successful org bind; don't strand on Access Denied
             // when effective role is briefly unavailable (Dev in-memory Owner / sync lag).
-            return !string.IsNullOrWhiteSpace(preferred) ? preferred! : AccessDenied;
+            if (!string.IsNullOrWhiteSpace(preferred))
+            {
+                return preferred!;
+            }
+
+            // Transport / POS API failures must not present as "commercial access denied".
+            // Send the user back to org essentials so they can retry Enable POS / check Settings.
+            return IsTransientRoleLookupFailure(effective.Status) ? OrgEssentials : AccessDenied;
         }
 
         var data = effective.Data;
@@ -133,4 +141,11 @@ public sealed class RoleHomeResolver(
             _ => !string.IsNullOrWhiteSpace(preferred) ? preferred! : AccessDenied
         };
     }
+
+    private static bool IsTransientRoleLookupFailure(ApiCallStatus status) =>
+        status is ApiCallStatus.Offline
+            or ApiCallStatus.Unavailable
+            or ApiCallStatus.Timeout
+            or ApiCallStatus.Failed
+            or ApiCallStatus.Cancelled;
 }

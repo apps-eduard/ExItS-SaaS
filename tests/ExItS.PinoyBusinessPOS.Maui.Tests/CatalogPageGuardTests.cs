@@ -35,6 +35,9 @@ public sealed class CatalogPageGuardTests
 
         var categories = File.ReadAllText(Path.Combine(catalog, "CatalogCategories.razor"));
         Assert.Contains("@page \"/catalog/categories\"", categories, StringComparison.Ordinal);
+        // Button.OnClick is EventCallback<MouseEventArgs>; non-generic Create() crashes the page render.
+        Assert.Contains("EventCallback.Factory.Create<MouseEventArgs>", categories, StringComparison.Ordinal);
+        Assert.DoesNotContain("AddAttribute(5, \"OnClick\", EventCallback.Factory.Create(this,", categories, StringComparison.Ordinal);
 
         var lookup = File.ReadAllText(Path.Combine(catalog, "CatalogBarcodeLookup.razor"));
         Assert.Contains("@page \"/catalog/barcode-lookup\"", lookup, StringComparison.Ordinal);

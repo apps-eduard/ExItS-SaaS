@@ -116,7 +116,7 @@ else
                 builder.OpenComponent<Button>(0);
                 builder.AddAttribute(1, "Variant", ButtonVariant.Ghost);
                 builder.AddAttribute(2, "Size", ButtonSize.Sm);
-                builder.AddAttribute(3, "OnClick", EventCallback.Factory.Create(this, () => GoDetail(context.Item.CustomerId)));
+                builder.AddAttribute(3, "OnClick", EventCallback.Factory.Create<MouseEventArgs>(this, _ => GoDetail(context.Item.CustomerId)));
                 builder.AddAttribute(4, "ChildContent", (RenderFragment)(b => b.AddContent(0, L["Customers_View"].Value)));
                 builder.CloseComponent();
                 break;

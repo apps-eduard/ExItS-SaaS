@@ -67,10 +67,10 @@ public sealed class RoleHomeResolverTests
     }
 
     [Fact]
-    public async Task ResolvePosHome_without_preferred_still_denies_when_effective_missing()
+    public async Task ResolvePosHome_without_preferred_routes_to_org_when_effective_api_unavailable()
     {
         var sut = new RoleHomeResolver(FakePermissions.Unavailable(), new SellingModeService(), FakeUser.WithOrg());
-        Assert.Equal(RoleHomeResolver.AccessDenied, await sut.ResolvePosHomeAsync());
+        Assert.Equal(RoleHomeResolver.OrgEssentials, await sut.ResolvePosHomeAsync());
     }
 
     [Fact]

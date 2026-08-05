@@ -141,7 +141,7 @@ else
                 builder.OpenComponent<Button>(0);
                 builder.AddAttribute(1, "Variant", ButtonVariant.Ghost);
                 builder.AddAttribute(2, "Size", ButtonSize.Sm);
-                builder.AddAttribute(3, "OnClick", EventCallback.Factory.Create(this, () => BeginEdit(item)));
+                builder.AddAttribute(3, "OnClick", EventCallback.Factory.Create<MouseEventArgs>(this, _ => BeginEdit(item)));
                 builder.AddAttribute(4, "ChildContent", (RenderFragment)(b => b.AddContent(0, L["Expenses_Category_Rename"].Value)));
                 builder.CloseComponent();
 
@@ -149,7 +149,7 @@ else
                 builder.OpenComponent<Button>(5);
                 builder.AddAttribute(6, "Variant", isActive ? ButtonVariant.Danger : ButtonVariant.Secondary);
                 builder.AddAttribute(7, "Size", ButtonSize.Sm);
-                builder.AddAttribute(8, "OnClick", EventCallback.Factory.Create(this, () => ToggleStatusAsync(item)));
+                builder.AddAttribute(8, "OnClick", EventCallback.Factory.Create<MouseEventArgs>(this, _ => ToggleStatusAsync(item)));
                 builder.AddAttribute(9, "ChildContent", (RenderFragment)(b => b.AddContent(
                     0,
                     isActive ? L["Expenses_Category_Deactivate"].Value : L["Expenses_Category_Reactivate"].Value)));

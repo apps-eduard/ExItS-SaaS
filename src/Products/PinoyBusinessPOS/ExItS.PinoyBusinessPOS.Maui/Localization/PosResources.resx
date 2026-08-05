@@ -664,7 +664,7 @@
   <data name="Catalog_Categories" xml:space="preserve"><value>Categories</value></data>
   <data name="Catalog_BarcodeLookup" xml:space="preserve"><value>Barcode lookup</value></data>
   <data name="Catalog_Refresh" xml:space="preserve"><value>Refresh</value></data>
-  <data name="Catalog_Loading" xml:space="preserve"><value>Loading catalogâ€¦</value></data>
+  <data name="Catalog_Loading" xml:space="preserve"><value>Loading catalog...</value></data>
   <data name="Catalog_SearchPlaceholder" xml:space="preserve"><value>Search by name, SKU, or barcode</value></data>
   <data name="Catalog_EmptyTitle" xml:space="preserve"><value>No products yet</value></data>
   <data name="Catalog_EmptyMessage" xml:space="preserve"><value>Add your first product to start building the catalog.</value></data>

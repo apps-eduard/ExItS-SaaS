@@ -350,8 +350,15 @@ else
             return null;
         }
 
-        var key = ProductAccessResolver.MapReasonKey(CurrentUser.Session?.AccessReasonCode);
-        return L[key];
+        // Null/unknown reason usually means bind never completed or role lookup failed —
+        // prefer the actionable POS-role message over a generic "access denied".
+        var code = CurrentUser.Session?.AccessReasonCode;
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            return L["Access_RoleMissing"];
+        }
+
+        return L[ProductAccessResolver.MapReasonKey(code)];
     }
 
     private async Task EnterPosAsync()

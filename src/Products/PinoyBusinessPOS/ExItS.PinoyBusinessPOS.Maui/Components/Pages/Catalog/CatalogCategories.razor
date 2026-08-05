@@ -148,14 +148,15 @@ else
                 builder.OpenComponent<Button>(2);
                 builder.AddAttribute(3, "Variant", ButtonVariant.Ghost);
                 builder.AddAttribute(4, "Size", ButtonSize.Sm);
-                builder.AddAttribute(5, "OnClick", EventCallback.Factory.Create(this, () => BeginEdit(item)));
+                // Button.OnClick is EventCallback<MouseEventArgs> — non-generic Create() throws Specified cast is not valid.
+                builder.AddAttribute(5, "OnClick", EventCallback.Factory.Create<MouseEventArgs>(this, _ => BeginEdit(item)));
                 builder.AddAttribute(6, "ChildContent", (RenderFragment)(b => b.AddContent(0, L["Catalog_Category_Rename"].Value)));
                 builder.CloseComponent();
 
                 builder.OpenComponent<Button>(7);
                 builder.AddAttribute(8, "Variant", isActive ? ButtonVariant.Danger : ButtonVariant.Secondary);
                 builder.AddAttribute(9, "Size", ButtonSize.Sm);
-                builder.AddAttribute(10, "OnClick", EventCallback.Factory.Create(this, () => ToggleStatusAsync(item)));
+                builder.AddAttribute(10, "OnClick", EventCallback.Factory.Create<MouseEventArgs>(this, _ => ToggleStatusAsync(item)));
                 builder.AddAttribute(11, "ChildContent", (RenderFragment)(b => b.AddContent(
                     0,
                     isActive ? L["Catalog_Deactivate"].Value : L["Catalog_Reactivate"].Value)));
