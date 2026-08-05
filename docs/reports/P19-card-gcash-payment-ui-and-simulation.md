@@ -9,6 +9,7 @@
 | Production Ready | **No** |
 | Processing | **Simulated only** — `FakePaymentGateway`; no live payment provider connected |
 | Date | 2026-08-05 |
+| Commit | `4818e31` |
 
 ## 1. Objective
 
