@@ -1,4 +1,6 @@
 @page "/registers"
+@implements IDisposable
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject ICurrentUserContext CurrentUser
@@ -15,50 +17,163 @@
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageRegisters);
-<Page>
-    <PageHeader Title="@L["Registers_Title"]" Subtitle="@L["Registers_Subtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="GoNew">@L["Registers_Add"]</Button>
-        </Actions>
-    </PageHeader>
+    var onlineActionsEnabled = !_isOffline && !_loading;
+    var showEmptyAdd = canManage && !_isOffline && !HasListQuery;
+<div class="pos-registers">
+    <Page>
+        <header class="pos-registers__header">
+            <div class="pos-registers__heading">
+                <h1 class="pos-registers__title">@L["Registers_Title"]</h1>
+                <p class="pos-registers__subtitle">@L["Registers_Subtitle"]</p>
+            </div>
+            @if (canManage)
+            {
+                <div class="pos-registers__add">
+                    <Button Variant="ButtonVariant.Primary"
+                            Size="ButtonSize.Sm"
+                            Disabled="@_isOffline"
+                            OnClick="GoNew">
+                        @L["Registers_Add"]
+                    </Button>
+                </div>
+            }
+        </header>
 
-    @if (_isOffline)
-    {
-        <Alert Tone="AlertTone.Warning" Title="@L["Registers_OfflineTitle"]" Message="@L["Registers_OfflineMessage"]" />
-    }
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Registers_OfflineTitle"]" Message="@L["Registers_OfflineMessage"]" />
+        }
 
-    <SearchToolbar SearchText="@_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Registers_SearchPlaceholder"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Registers_Refresh"]</Button>
-        </Actions>
-    </SearchToolbar>
+        <div class="pos-registers__toolbar" role="search">
+            <div class="pos-registers__search">
+                <span class="pos-registers__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                <input class="pos-registers__search-input"
+                       type="search"
+                       value="@_search"
+                       placeholder="@L["Registers_SearchPlaceholder"]"
+                       aria-label="@L["Registers_SearchPlaceholder"]"
+                       disabled="@(_loading && string.IsNullOrWhiteSpace(_search))"
+                       @oninput="OnSearchInputAsync" />
+                @if (!string.IsNullOrWhiteSpace(_search))
+                {
+                    <button type="button"
+                            class="pos-registers__search-clear"
+                            aria-label="@L["Registers_ClearSearch"]"
+                            disabled="@_isOffline"
+                            @onclick="ClearSearchAsync">
+                        <span aria-hidden="true">@IconGlyphs.Get("close")</span>
+                    </button>
+                }
+            </div>
+            <button type="button"
+                    class="pos-registers__refresh"
+                    title="@L["Registers_Refresh"]"
+                    aria-label="@L["Registers_Refresh"]"
+                    disabled="@(!onlineActionsEnabled)"
+                    @onclick="ReloadWithLoadingAsync">
+                @if (_loading)
+                {
+                    <Spinner Size="SpinnerSize.Sm" />
+                }
+                else
+                {
+                    <span aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                }
+            </button>
+        </div>
 
-    <Section Title="@L["Registers_FiltersTitle"]">
-        <Select Label="@L["Registers_Filter_Status"]"
-                Value="@_statusFilter"
-                ValueChanged="OnStatusFilterChanged"
-                Options="@RegisterUiOptions.StatusFilters(L)" />
-    </Section>
+        <div class="pos-registers__segments"
+             role="radiogroup"
+             aria-label="@L["Registers_Filter_Status"]">
+            @foreach (var option in StatusSegmentOptions)
+            {
+                var selected = string.Equals(option.Value, _statusFilter ?? string.Empty, StringComparison.Ordinal);
+                <button type="button"
+                        class="pos-registers__segment @(selected ? "pos-registers__segment--selected" : null)"
+                        role="radio"
+                        aria-checked="@selected"
+                        disabled="@_isOffline"
+                        @onclick="() => OnStatusFilterChanged(option.Value)">
+                    @option.Label
+                </button>
+            }
+        </div>
 
-    <ResponsiveDataList TItem="PosRegisterDto"
-                        Items="@_items"
-                        Columns="@Columns"
-                        CellTemplate="@CellTemplate"
-                        IsLoading="@_loading"
-                        LoadingLabel="@L["Registers_Loading"]"
-                        EmptyTitle="@L["Registers_EmptyTitle"]"
-                        EmptyMessage="@L["Registers_EmptyMessage"]"
-                        ErrorTitle="@_errorTitle"
-                        ErrorMessage="@_errorMessage"
-                        RetryLabel="@L["Api_Retry"]"
-                        OnRetry="ReloadAsync"
-                        AriaLabel="@L["Registers_Title"]" />
+        <section class="pos-registers__list-section"
+                 aria-labelledby="registers-list-heading"
+                 aria-busy="@_loading">
+            <h2 id="registers-list-heading" class="visually-hidden">@L["Registers_Title"]</h2>
 
-    @if (!_loading && _totalCount > 0)
-    {
-        <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
-    }
-</Page>
+            @if (_loading && _items.Count == 0 && string.IsNullOrEmpty(_errorTitle))
+            {
+                <div class="pos-registers__loading" role="status" aria-live="polite">
+                    <Spinner />
+                    <span class="pos-muted">@L["Registers_Loading"]</span>
+                </div>
+            }
+            else if (!string.IsNullOrEmpty(_errorTitle))
+            {
+                <ErrorState Title="@_errorTitle"
+                            Message="@(_errorMessage ?? L["Registers_EmptyMessage"])"
+                            RetryLabel="@L["Api_Retry"]"
+                            OnRetry="ReloadWithLoadingAsync" />
+            }
+            else if (_items.Count == 0)
+            {
+                <EmptyState Title="@(HasListQuery ? L["Registers_NoMatchTitle"] : L["Registers_EmptyTitle"])"
+                            Message="@(HasListQuery ? L["Registers_NoMatchMessage"] : L["Registers_EmptyMessage"])">
+                    <Actions>
+                        @if (showEmptyAdd)
+                        {
+                            <Button Variant="ButtonVariant.Primary"
+                                    Size="ButtonSize.Sm"
+                                    OnClick="GoNew">
+                                @L["Registers_Add"]
+                            </Button>
+                        }
+                    </Actions>
+                </EmptyState>
+            }
+            else
+            {
+                <div class="pos-registers__list" role="list" aria-label="@L["Registers_Title"]">
+                    @foreach (var item in _items)
+                    {
+                        <button type="button"
+                                class="pos-registers__row"
+                                role="listitem"
+                                disabled="@_isOffline"
+                                aria-label="@RowAriaLabel(item)"
+                                @onclick="() => GoDetail(item.RegisterId)">
+                            <span class="pos-registers__row-body">
+                                <span class="pos-registers__row-top">
+                                    <span class="pos-registers__row-name">@item.Name</span>
+                                    <span class="pos-registers__badge pos-registers__badge--@StatusTone(item.Status)"
+                                          aria-label="@($"{L["Registers_Col_Status"]}: {StatusLabel(item.Status)}")">
+                                        @StatusLabel(item.Status)
+                                    </span>
+                                </span>
+                                <span class="pos-registers__row-meta pos-muted">@RowMeta(item)</span>
+                            </span>
+                            <span class="pos-registers__chevron" aria-hidden="true">›</span>
+                        </button>
+                    }
+                </div>
+            }
+        </section>
+
+        @if (!_loading && TotalPages > 1)
+        {
+            <div class="pos-registers__pager">
+                <Pagination Page="@_page"
+                            PageSize="@_pageSize"
+                            TotalCount="@_totalCount"
+                            Disabled="@_isOffline"
+                            PageChanged="OnPageChanged" />
+            </div>
+        }
+    </Page>
+</div>
 }
 
 @code {
@@ -73,48 +188,25 @@ else
     private IReadOnlyList<PosRegisterDto> _items = Array.Empty<PosRegisterDto>();
     private string? _errorTitle;
     private string? _errorMessage;
+    private CancellationTokenSource? _searchCts;
 
-    private IReadOnlyList<DataColumnDefinition> Columns =>
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(_totalCount / (double)_pageSize));
+
+    private bool HasListQuery =>
+        !string.IsNullOrWhiteSpace(_search)
+        || !string.IsNullOrWhiteSpace(_statusFilter);
+
+    private IReadOnlyList<(string Value, string Label)> StatusSegmentOptions =>
     [
-        new("name", L["Registers_Col_Name"], Primary: true, Width: "34%"),
-        new("code", L["Registers_Col_Code"], Width: "22%"),
-        new("status", L["Registers_Col_Status"], Width: "22%"),
-        new("open", L["Registers_Col_OpenShift"], Width: "22%"),
+        (string.Empty, L["Registers_Filter_All"].Value),
+        (RegisterUiOptions.ActiveStatus, L["Registers_Status_Active"].Value),
+        (RegisterUiOptions.InactiveStatus, L["Registers_Status_Inactive"].Value),
     ];
-
-    private RenderFragment<(PosRegisterDto Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
-    {
-        switch (context.Column.Key)
-        {
-            case "name":
-                builder.OpenElement(0, "a");
-                builder.AddAttribute(1, "class", "pos-link");
-                builder.AddAttribute(2, "href", $"/registers/{context.Item.RegisterId:D}");
-                builder.AddContent(3, context.Item.Name);
-                builder.CloseElement();
-                if (IsMainRegister(context.Item))
-                {
-                    builder.OpenElement(4, "span");
-                    builder.AddAttribute(5, "class", "pos-muted");
-                    builder.AddContent(6, " · ");
-                    builder.AddContent(7, L["Registers_MainBadge"].Value);
-                    builder.CloseElement();
-                }
-                break;
-            case "code":
-                builder.AddContent(0, context.Item.RegisterCode);
-                break;
-            case "status":
-                builder.AddContent(0, context.Item.Status);
-                break;
-            case "open":
-                builder.AddContent(0, context.Item.HasOpenShift ? L["Registers_Yes"] : L["Registers_No"]);
-                break;
-        }
-    };
 
     protected override async Task OnInitializedAsync()
     {
+        Connectivity.ConnectivityChanged += OnConnectivityChanged;
+
         if (CurrentUser.Session?.OrganizationId is null)
         {
             Nav.NavigateTo(RoleHomeResolver.PersonalHome, replace: true);
@@ -135,66 +227,179 @@ else
 
         _isOffline = !await Connectivity.IsConnectedAsync();
         _ready = true;
-        await ReloadAsync();
+        await ReloadAsync(showLoading: true);
     }
 
-    private async Task ReloadAsync()
+    public void Dispose()
     {
-        _loading = true;
-        _errorTitle = null;
-        _errorMessage = null;
-        _isOffline = !await Connectivity.IsConnectedAsync();
-        if (_isOffline)
-        {
-            _items = Array.Empty<PosRegisterDto>();
-            _totalCount = 0;
-            _loading = false;
-            return;
-        }
-
-        var result = await Registers.ListAsync(
-            name: _search,
-            status: string.IsNullOrWhiteSpace(_statusFilter) ? null : _statusFilter,
-            page: _page,
-            pageSize: _pageSize);
-        _loading = false;
-        if (result.IsSuccess && result.Data is not null)
-        {
-            _items = result.Data.Items;
-            _totalCount = result.Data.TotalCount;
-            return;
-        }
-
-        var described = ApiLocalizer.Describe(result.Status, result.Error);
-        _errorTitle = described.Title;
-        _errorMessage = result.Error?.Detail ?? described.Message;
-        _items = Array.Empty<PosRegisterDto>();
-        _totalCount = 0;
+        Connectivity.ConnectivityChanged -= OnConnectivityChanged;
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
     }
 
-    private async Task OnSearchChanged(string? value)
+    private async void OnConnectivityChanged(object? sender, ConnectivityStatus status)
     {
-        _search = value;
+        var wasOffline = _isOffline;
+        _isOffline = status == ConnectivityStatus.Offline;
+        await InvokeAsync(StateHasChanged);
+        if (wasOffline && !_isOffline && Capabilities.IsAllowed(UtangCapability.ViewRegisters))
+        {
+            await InvokeAsync(() => ReloadAsync(showLoading: true));
+        }
+    }
+
+    private Task ReloadWithLoadingAsync() => ReloadAsync(showLoading: true);
+
+    private async Task OnSearchInputAsync(ChangeEventArgs args)
+    {
+        _search = args.Value?.ToString();
         _page = 1;
-        await ReloadAsync();
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+        try
+        {
+            await Task.Delay(250, token);
+            await ReloadAsync(showLoading: true);
+        }
+        catch (OperationCanceledException)
+        {
+            // superseded by newer keystrokes
+        }
+    }
+
+    private async Task ClearSearchAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_search))
+        {
+            return;
+        }
+
+        _search = null;
+        _page = 1;
+        await ReloadAsync(showLoading: true);
     }
 
     private async Task OnStatusFilterChanged(string? value)
     {
-        _statusFilter = value;
+        var next = value ?? string.Empty;
+        if (string.Equals(next, _statusFilter ?? string.Empty, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _statusFilter = next;
         _page = 1;
-        await ReloadAsync();
+        await ReloadAsync(showLoading: true);
     }
 
     private async Task OnPageChanged(int page)
     {
         _page = page;
-        await ReloadAsync();
+        await ReloadAsync(showLoading: true);
+    }
+
+    private async Task ReloadAsync(bool showLoading = true)
+    {
+        if (showLoading)
+        {
+            _loading = true;
+            _errorTitle = null;
+            _errorMessage = null;
+        }
+
+        try
+        {
+            _isOffline = !await Connectivity.IsConnectedAsync();
+            if (_isOffline)
+            {
+                if (showLoading)
+                {
+                    _items = Array.Empty<PosRegisterDto>();
+                    _totalCount = 0;
+                }
+
+                return;
+            }
+
+            var result = await Registers.ListAsync(
+                name: _search,
+                status: string.IsNullOrWhiteSpace(_statusFilter) ? null : _statusFilter,
+                page: _page,
+                pageSize: _pageSize);
+
+            if (result.IsSuccess && result.Data is not null)
+            {
+                _items = result.Data.Items;
+                _totalCount = result.Data.TotalCount;
+                if (_page > TotalPages)
+                {
+                    _page = TotalPages;
+                }
+
+                _errorTitle = null;
+                _errorMessage = null;
+                return;
+            }
+
+            if (showLoading || _items.Count == 0)
+            {
+                var described = ApiLocalizer.Describe(result.Status, result.Error);
+                _errorTitle = described.Title;
+                _errorMessage = result.Error?.Detail ?? described.Message;
+                _items = Array.Empty<PosRegisterDto>();
+                _totalCount = 0;
+            }
+        }
+        catch
+        {
+            if (showLoading || _items.Count == 0)
+            {
+                _errorTitle = L["Registers_ErrorTitle"];
+                _errorMessage = L["Registers_EmptyMessage"];
+                _items = Array.Empty<PosRegisterDto>();
+                _totalCount = 0;
+            }
+        }
+        finally
+        {
+            if (showLoading)
+            {
+                _loading = false;
+            }
+        }
     }
 
     private void GoNew() => Nav.NavigateTo("/registers/new");
 
-    private static bool IsMainRegister(PosRegisterDto register) =>
-        string.Equals(register.Name, "Main Register", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(register.RegisterCode, "REG-000001", StringComparison.OrdinalIgnoreCase);
+    private void GoDetail(Guid id) => Nav.NavigateTo($"/registers/{id:D}");
+
+    private string StatusLabel(string? status) =>
+        string.Equals(status, RegisterUiOptions.ActiveStatus, StringComparison.OrdinalIgnoreCase)
+            ? L["Registers_Status_Active"]
+            : string.Equals(status, RegisterUiOptions.InactiveStatus, StringComparison.OrdinalIgnoreCase)
+                ? L["Registers_Status_Inactive"]
+                : string.IsNullOrWhiteSpace(status) ? L["Registers_Status_Inactive"] : status;
+
+    private static string StatusTone(string? status) =>
+        string.Equals(status, RegisterUiOptions.ActiveStatus, StringComparison.OrdinalIgnoreCase) ? "active"
+        : string.Equals(status, RegisterUiOptions.InactiveStatus, StringComparison.OrdinalIgnoreCase) ? "inactive"
+        : "neutral";
+
+    private string RowMeta(PosRegisterDto item)
+    {
+        if (item.HasOpenShift)
+        {
+            return $"{item.RegisterCode} · {L["Registers_OpenShiftHint"].Value}";
+        }
+
+        return item.RegisterCode;
+    }
+
+    private string RowAriaLabel(PosRegisterDto item)
+    {
+        var open = item.HasOpenShift ? L["Registers_OpenShiftHint"].Value : L["Registers_No"].Value;
+        return $"{item.Name}, {StatusLabel(item.Status)}, {item.RegisterCode}, {L["Registers_Col_OpenShift"]}: {open}";
+    }
 }

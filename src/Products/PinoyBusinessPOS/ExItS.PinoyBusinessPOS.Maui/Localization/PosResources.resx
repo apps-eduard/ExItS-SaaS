@@ -1471,10 +1471,11 @@
   <data name="Permissions_RevokeFailed" xml:space="preserve"><value>Unable to revoke the assignment.</value></data>
   <data name="Nav_Registers" xml:space="preserve"><value>Registers</value></data>
   <data name="Registers_Title" xml:space="preserve"><value>Registers</value></data>
-  <data name="Registers_Subtitle" xml:space="preserve"><value>Logical POS sales stations for shifts and sales (online only).</value></data>
+  <data name="Registers_Subtitle" xml:space="preserve"><value>POS sales stations for shifts and sales (online only)</value></data>
   <data name="Registers_Add" xml:space="preserve"><value>Add register</value></data>
   <data name="Registers_Refresh" xml:space="preserve"><value>Refresh</value></data>
   <data name="Registers_SearchPlaceholder" xml:space="preserve"><value>Search by name</value></data>
+  <data name="Registers_ClearSearch" xml:space="preserve"><value>Clear search</value></data>
   <data name="Registers_FiltersTitle" xml:space="preserve"><value>Filters</value></data>
   <data name="Registers_Filter_Status" xml:space="preserve"><value>Status</value></data>
   <data name="Registers_Filter_All" xml:space="preserve"><value>All</value></data>
@@ -1483,6 +1484,9 @@
   <data name="Registers_Loading" xml:space="preserve"><value>Loading registers...</value></data>
   <data name="Registers_EmptyTitle" xml:space="preserve"><value>No registers yet</value></data>
   <data name="Registers_EmptyMessage" xml:space="preserve"><value>Create a register before opening a cashier shift.</value></data>
+  <data name="Registers_NoMatchTitle" xml:space="preserve"><value>No matching registers</value></data>
+  <data name="Registers_NoMatchMessage" xml:space="preserve"><value>Try a different search or status filter.</value></data>
+  <data name="Registers_OpenShiftHint" xml:space="preserve"><value>Open shift</value></data>
   <data name="Registers_OfflineTitle" xml:space="preserve"><value>Offline</value></data>
   <data name="Registers_OfflineMessage" xml:space="preserve"><value>Register management requires an online connection.</value></data>
   <data name="Registers_ErrorTitle" xml:space="preserve"><value>Register error</value></data>
