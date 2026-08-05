@@ -15,7 +15,7 @@
             <ShellOrganizationIdentity OrganizationIdOverride="@EffectiveOrgId"
                                        OrganizationNameOverride="@EffectiveOrgName" />
             <div class="pos-topbar__status">
-                <ShellUserIdentity MembershipRoleHint="@EffectiveRoleHint" />
+                <ShellAccountMenu ShowPersonalHome="true" />
             </div>
         }
         else
@@ -45,9 +45,6 @@
 
     private string? EffectiveOrgName =>
         IdentityState.OrganizationName ?? CurrentUser.Session?.OrganizationDisplayName;
-
-    private string? EffectiveRoleHint =>
-        IdentityState.MembershipRoleHint;
 
     protected override void OnInitialized()
     {

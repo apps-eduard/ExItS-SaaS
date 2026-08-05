@@ -53,6 +53,9 @@ public sealed class MauiFoundationGuardTests
         Assert.Contains("Theme", settings, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Density", settings, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Language", settings, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("pos-settings", settings, StringComparison.Ordinal);
+        Assert.Contains("Settings_DevNoticeTitle", settings, StringComparison.Ordinal);
+        Assert.Contains("Auth_Logout", settings, StringComparison.Ordinal);
         Assert.DoesNotContain("password", settings, StringComparison.OrdinalIgnoreCase);
     }
 

@@ -1,6 +1,7 @@
 @page "/organization-select"
 @layout Layout.AuthShell
 @implements IDisposable
+@using ExItS.DesignSystem.Components.Internal
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IProductAccessResolver Access
@@ -32,51 +33,152 @@
             <Button Variant="ButtonVariant.Ghost" OnClick="LogoutAsync">@L["Auth_Logout"]</Button>
         </FormActions>
     }
+    else if (_focusOrg is not null && OrganizationMembershipRoles.IsOwnerRole(_focusOrg.MembershipRole))
+    {
+        <div class="pos-org-role">
+            <PageHeader Title="@L["OrgSelect_RoleTitle"]" Subtitle="@RoleSubtitle" />
+
+            @if (_organizations.Count > 1)
+            {
+                <Section Title="@L["OrgSelect_OtherOrgsSection"]">
+                    <Stack Gap="2">
+                        @foreach (var org in _organizations.Where(o => o.OrganizationId != _focusOrg.OrganizationId))
+                        {
+                            <button type="button"
+                                    class="pos-org-role__card pos-org-role__card--button"
+                                    disabled="@_busy"
+                                    @onclick="() => FocusOrganizationAsync(org)">
+                                <Avatar Name="@org.DisplayName"
+                                        ImageUrl="@OrgLogo(org.OrganizationId)"
+                                        Size="AvatarSize.Md"
+                                        Shape="AvatarShape.SoftSquare"
+                                        AriaLabel="@org.DisplayName" />
+                                <div class="pos-org-role__card-body">
+                                    <span class="pos-org-role__card-title">@org.DisplayName</span>
+                                    <span class="pos-org-role__card-meta pos-muted">@FriendlyMembershipRole(org.MembershipRole, org.MembershipStatus)</span>
+                                </div>
+                                <span class="pos-org-role__chevron" aria-hidden="true">›</span>
+                            </button>
+                        }
+                    </Stack>
+                </Section>
+            }
+
+            <div class="pos-org-role__card" aria-label="@L["OrgSelect_WorkspaceLabel"]">
+                <Avatar Name="@_focusOrg.DisplayName"
+                        ImageUrl="@OrgLogo(_focusOrg.OrganizationId)"
+                        Size="AvatarSize.Lg"
+                        Shape="AvatarShape.SoftSquare"
+                        AriaLabel="@_focusOrg.DisplayName" />
+                <div class="pos-org-role__card-body">
+                    <span class="pos-org-role__card-title">@_focusOrg.DisplayName</span>
+                    <span class="pos-org-role__card-meta pos-muted">@L["OrgSelect_WorkspaceLabel"]</span>
+                </div>
+            </div>
+
+            <Section Title="@L["OrgSelect_AvailableRoles"]">
+                <Stack Gap="2">
+                    <button type="button" class="pos-org-role__row" disabled="@_busy" @onclick="() => SelectAsAsync(_focusOrg.OrganizationId, RoleHomeResolver.OwnerHome)">
+                        <span class="pos-org-role__row-icon" aria-hidden="true">@IconGlyphs.Get("settings")</span>
+                        <span class="pos-org-role__row-body">
+                            <span class="pos-org-role__row-title">@L["OrgSelect_EnterOwner"]</span>
+                            <span class="pos-org-role__row-desc pos-muted">@L["OrgSelect_OwnerDesc"]</span>
+                        </span>
+                        <span class="pos-org-role__chevron" aria-hidden="true">›</span>
+                    </button>
+                    <button type="button" class="pos-org-role__row" disabled="@_busy" @onclick="() => SelectAsAsync(_focusOrg.OrganizationId, RoleHomeResolver.ManagerHome)">
+                        <span class="pos-org-role__row-icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
+                        <span class="pos-org-role__row-body">
+                            <span class="pos-org-role__row-title">@L["OrgSelect_EnterManager"]</span>
+                            <span class="pos-org-role__row-desc pos-muted">@L["OrgSelect_ManagerDesc"]</span>
+                        </span>
+                        <span class="pos-org-role__chevron" aria-hidden="true">›</span>
+                    </button>
+                    <button type="button" class="pos-org-role__row" disabled="@_busy" @onclick="() => SelectAsAsync(_focusOrg.OrganizationId, RoleHomeResolver.CashierHome)">
+                        <span class="pos-org-role__row-icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                        <span class="pos-org-role__row-body">
+                            <span class="pos-org-role__row-title">@L["OrgSelect_EnterCashier"]</span>
+                            <span class="pos-org-role__row-desc pos-muted">@L["OrgSelect_CashierDesc"]</span>
+                        </span>
+                        <span class="pos-org-role__chevron" aria-hidden="true">›</span>
+                    </button>
+                </Stack>
+            </Section>
+
+            <Section Title="@L["OrgSelect_TeamSection"]">
+                @if (_teamLoading)
+                {
+                    <Stack Align="StackAlign.Center" Gap="2">
+                        <Spinner />
+                    </Stack>
+                }
+                else if (_team.Count == 0)
+                {
+                    <EmptyState Title="@L["Org_StaffEmptyTitle"]" Message="@L["Org_StaffEmptyMessage"]" />
+                }
+                else
+                {
+                    <Stack Gap="2">
+                        @foreach (var member in _team)
+                        {
+                            <div class="pos-org-role__team">
+                                <Avatar Name="@member.DisplayName"
+                                        Size="AvatarSize.Md"
+                                        Shape="AvatarShape.Circle"
+                                        AriaLabel="@member.DisplayName" />
+                                <div class="pos-org-role__card-body">
+                                    <span class="pos-org-role__row-title">@member.RoleLabel</span>
+                                    <span class="pos-org-role__card-meta">@member.DisplayName</span>
+                                    <span class="pos-org-role__card-meta pos-muted">@member.Email</span>
+                                </div>
+                            </div>
+                        }
+                    </Stack>
+                }
+            </Section>
+
+            <button type="button" class="pos-org-role__row pos-org-role__row--personal" disabled="@_busy" @onclick="GoPersonalAsync">
+                <span class="pos-org-role__row-icon" aria-hidden="true">@IconGlyphs.Get("home")</span>
+                <span class="pos-org-role__row-body">
+                    <span class="pos-org-role__row-title">@L["OrgSelect_PersonalLabel"]</span>
+                    <span class="pos-org-role__row-desc pos-muted">@L["OrgSelect_PersonalDesc"]</span>
+                </span>
+                <span class="pos-org-role__chevron" aria-hidden="true">›</span>
+            </button>
+
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
+            }
+        </div>
+    }
     else
     {
-        <InlineMessage Tone="InlineMessageTone.Info">@(_isOwner ? L["OrgSelect_HintOwnerRoles"] : L["OrgSelect_HintStaff"])</InlineMessage>
+        <PageHeader Title="@L["OrgSelect_Title"]" Subtitle="@L["OrgSelect_SubtitleStaff"]" />
         <Stack Gap="3">
             @foreach (var org in _organizations)
             {
-                <Card>
-                    <div class="pos-org-select-row">
-                        <Avatar Name="@org.DisplayName"
-                                ImageUrl="@OrgLogo(org.OrganizationId)"
-                                Size="AvatarSize.Lg"
-                                Shape="AvatarShape.SoftSquare"
-                                AriaLabel="@org.DisplayName" />
-                        <div class="pos-org-select-row__body">
-                            <span class="pos-value-md">@org.DisplayName</span>
-                            <span class="pos-muted">@FriendlyMembershipRole(org.MembershipRole, org.MembershipStatus)</span>
-                            @if (OrganizationMembershipRoles.IsOwnerRole(org.MembershipRole))
-                            {
-                                <Stack Gap="2">
-                                    <Button Disabled="_busy" OnClick="() => SelectAsAsync(org.OrganizationId, RoleHomeResolver.OwnerHome)">@L["OrgSelect_EnterOwner"]</Button>
-                                    <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="() => SelectAsAsync(org.OrganizationId, RoleHomeResolver.ManagerHome)">@L["OrgSelect_EnterManager"]</Button>
-                                    <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="() => SelectAsAsync(org.OrganizationId, RoleHomeResolver.CashierHome)">@L["OrgSelect_EnterCashier"]</Button>
-                                </Stack>
-                            }
-                            else
-                            {
-                                <Button Disabled="_busy" OnClick="() => SelectAsAsync(org.OrganizationId, preferredHome: null)">@L["OrgSelect_Choose"]</Button>
-                            }
-                        </div>
+                <button type="button"
+                        class="pos-org-role__card pos-org-role__card--button"
+                        disabled="@_busy"
+                        @onclick="() => SelectAsAsync(org.OrganizationId, preferredHome: null)">
+                    <Avatar Name="@org.DisplayName"
+                            ImageUrl="@OrgLogo(org.OrganizationId)"
+                            Size="AvatarSize.Lg"
+                            Shape="AvatarShape.SoftSquare"
+                            AriaLabel="@org.DisplayName" />
+                    <div class="pos-org-role__card-body">
+                        <span class="pos-org-role__card-title">@org.DisplayName</span>
+                        <span class="pos-org-role__card-meta pos-muted">@FriendlyMembershipRole(org.MembershipRole, org.MembershipStatus)</span>
+                        <span class="pos-org-role__card-meta pos-muted">@L["OrgSelect_Choose"]</span>
                     </div>
-                </Card>
+                    <span class="pos-org-role__chevron" aria-hidden="true">›</span>
+                </button>
             }
         </Stack>
-        @if (_isOwner)
-        {
-            <FormActions>
-                <Button Variant="ButtonVariant.Primary" OnClick="GoPersonalAsync">@L["Personal_HomeTitle"]</Button>
-            </FormActions>
-        }
-        else
-        {
-            <FormActions>
-                <Button Variant="ButtonVariant.Ghost" OnClick="LogoutAsync">@L["Auth_Logout"]</Button>
-            </FormActions>
-        }
+        <FormActions>
+            <Button Variant="ButtonVariant.Ghost" OnClick="LogoutAsync">@L["Auth_Logout"]</Button>
+        </FormActions>
         @if (!string.IsNullOrEmpty(_error))
         {
             <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
@@ -85,13 +187,21 @@
 </Page>
 
 @code {
+    private sealed record TeamMemberRow(string RoleLabel, string DisplayName, string Email);
+
     private bool _loading = true;
     private bool _busy;
     private bool _authenticated;
     private bool _isOwner;
+    private bool _teamLoading;
     private string? _error;
     private IReadOnlyList<EligibleOrganization> _organizations = [];
+    private EligibleOrganization? _focusOrg;
+    private IReadOnlyList<TeamMemberRow> _team = [];
     private readonly Dictionary<Guid, string?> _orgLogos = new();
+
+    private string RoleSubtitle =>
+        string.Format(L["OrgSelect_RoleSubtitle"].Value, _focusOrg?.DisplayName ?? L["Shell_OrganizationFallback"].Value);
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -155,6 +265,7 @@
             _organizations = await Access.ListEligibleOrganizationsAsync(CurrentUser.Session.UserId);
             _isOwner = OrganizationMembershipRoles.HasOrganizationOwner(_organizations);
             await LoadOrganizationLogosAsync();
+            ResolveFocusOrganization();
             PublishTopBarPreview();
 
             // Staff with exactly one org: enter assigned role UI immediately (no Personal / role chooser).
@@ -163,6 +274,12 @@
                 && CurrentUser.Session.OrganizationId is null)
             {
                 await SelectAsAsync(_organizations[0].OrganizationId, preferredHome: null);
+                return;
+            }
+
+            if (_focusOrg is not null && OrganizationMembershipRoles.IsOwnerRole(_focusOrg.MembershipRole))
+            {
+                await LoadTeamAsync(_focusOrg.OrganizationId);
             }
         }
         finally
@@ -171,7 +288,7 @@
         }
     }
 
-    private void PublishTopBarPreview()
+    private void ResolveFocusOrganization()
     {
         var session = CurrentUser.Session;
         EligibleOrganization? preview = null;
@@ -183,16 +300,29 @@
         preview ??= _organizations.FirstOrDefault(o => OrganizationMembershipRoles.IsOwnerRole(o.MembershipRole))
                     ?? _organizations.FirstOrDefault();
 
-        if (preview is null)
+        _focusOrg = preview;
+    }
+
+    private async Task FocusOrganizationAsync(EligibleOrganization org)
+    {
+        _focusOrg = org;
+        PublishTopBarPreview();
+        await LoadTeamAsync(org.OrganizationId);
+    }
+
+    private void PublishTopBarPreview()
+    {
+        if (_focusOrg is null)
         {
             IdentityState.Clear();
             return;
         }
 
         IdentityState.SetOrganizationPreview(
-            preview.OrganizationId,
-            preview.DisplayName,
-            preview.MembershipRole);
+            _focusOrg.OrganizationId,
+            _focusOrg.DisplayName,
+            _focusOrg.MembershipRole,
+            orgSelectChrome: true);
     }
 
     private async Task LoadOrganizationLogosAsync()
@@ -213,6 +343,114 @@
         }
     }
 
+    private async Task LoadTeamAsync(Guid organizationId)
+    {
+        _teamLoading = true;
+        _team = [];
+        try
+        {
+            var membersResult = await Platform.GetOrganizationMembersAsync(organizationId, status: "Active");
+            if (!membersResult.IsSuccess || membersResult.Data is null)
+            {
+                return;
+            }
+
+            var grantsResult = await Platform.GetProductLocalRolesAsync(organizationId, status: "Active");
+            var grants = grantsResult.IsSuccess && grantsResult.Data is not null
+                ? grantsResult.Data
+                : [];
+
+            var rows = new List<TeamMemberRow>();
+            foreach (var member in membersResult.Data.Items
+                         .OrderBy(m => RoleSortKey(
+                             m.Role,
+                             grants.FirstOrDefault(g => g.UserIdentityId == m.UserId)?.MappedPosRoleCode
+                             ?? grants.FirstOrDefault(g => g.UserIdentityId == m.UserId)?.RoleCode)))
+            {
+                var grant = grants.FirstOrDefault(g => g.UserIdentityId == member.UserId);
+                string displayName = !string.IsNullOrWhiteSpace(grant?.UserDisplayName)
+                    ? grant!.UserDisplayName!
+                    : member.UserId.ToString("D")[..8];
+                string email = string.Empty;
+                try
+                {
+                    var userResult = await Platform.GetUserAsync(member.UserId);
+                    if (userResult.IsSuccess && userResult.Data is not null)
+                    {
+                        displayName = string.IsNullOrWhiteSpace(userResult.Data.DisplayName)
+                            ? userResult.Data.Username
+                            : userResult.Data.DisplayName;
+                        email = userResult.Data.Email ?? string.Empty;
+                    }
+                }
+                catch
+                {
+                    // Keep grant name or truncated id fallback.
+                }
+
+                var roleLabel = FriendlyPosOrMembershipRole(
+                    grant?.MappedPosRoleCode ?? grant?.RoleCode,
+                    member.Role,
+                    member.Status);
+
+                rows.Add(new TeamMemberRow(roleLabel, displayName, email));
+            }
+
+            _team = rows;
+        }
+        finally
+        {
+            _teamLoading = false;
+        }
+    }
+
+    private static int RoleSortKey(string membershipRole, string? posRole)
+    {
+        var key = posRole ?? membershipRole;
+        if (OrganizationMembershipRoles.IsOwnerRole(key) || string.Equals(key, "Owner", StringComparison.OrdinalIgnoreCase))
+        {
+            return 0;
+        }
+
+        if (string.Equals(key, "StoreManager", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(key, "Manager", StringComparison.OrdinalIgnoreCase))
+        {
+            return 1;
+        }
+
+        if (string.Equals(key, "Cashier", StringComparison.OrdinalIgnoreCase))
+        {
+            return 2;
+        }
+
+        return 3;
+    }
+
+    private string FriendlyPosOrMembershipRole(string? posRole, string? membershipRole, string status)
+    {
+        if (!string.IsNullOrWhiteSpace(posRole))
+        {
+            if (string.Equals(posRole, "Owner", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(posRole, "OrganizationOwner", StringComparison.OrdinalIgnoreCase))
+            {
+                return L["OrgSelect_EnterOwner"];
+            }
+
+            if (string.Equals(posRole, "StoreManager", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(posRole, "Manager", StringComparison.OrdinalIgnoreCase))
+            {
+                return L["OrgSelect_EnterManager"];
+            }
+
+            if (string.Equals(posRole, "Cashier", StringComparison.OrdinalIgnoreCase))
+            {
+                return L["OrgSelect_EnterCashier"];
+            }
+        }
+
+        return FriendlyMembershipRole(membershipRole, status);
+    }
+
     private async Task SelectAsAsync(Guid organizationId, string? preferredHome)
     {
         _busy = true;
@@ -222,7 +460,12 @@
             var org = _organizations.FirstOrDefault(o => o.OrganizationId == organizationId);
             if (org is not null)
             {
-                IdentityState.SetOrganizationPreview(org.OrganizationId, org.DisplayName, org.MembershipRole);
+                _focusOrg = org;
+                IdentityState.SetOrganizationPreview(
+                    org.OrganizationId,
+                    org.DisplayName,
+                    org.MembershipRole,
+                    orgSelectChrome: true);
             }
 
             // Set working-as before bind so RoleHome never resolves Access Denied during navigation.

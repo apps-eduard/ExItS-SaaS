@@ -21,17 +21,20 @@
     <header class="pos-topbar">
         <ShellOrganizationIdentity />
         <div class="pos-topbar__status">
-            <ShellUserIdentity />
-            <button type="button"
-                    class="pos-sync-status pos-sync-status--@SyncToneClass"
-                    title="@SyncTitle"
-                    aria-label="@SyncAccessibleLabel"
-                    @onclick="ToggleSyncPanel">
-                <span class="pos-sync-status__marker" aria-hidden="true"></span>
-                <span class="pos-sync-status__icon" aria-hidden="true">@IconGlyphs.Get(SyncIconName)</span>
-                <span class="pos-sync-status__label">@SyncShortLabel</span>
-            </button>
-            <IconButton IconName="settings" AriaLabel="@L["Nav_Settings"]" OnClick="GoToSettings" />
+            <ShellAccountMenu @ref="_accountMenu" OnOpened="OnAccountMenuOpened">
+                <ExtraItems>
+                    <button type="button"
+                            class="pos-topbar__overflow-item pos-sync-status pos-sync-status--menu pos-sync-status--@SyncToneClass"
+                            role="menuitem"
+                            title="@SyncTitle"
+                            aria-label="@SyncAccessibleLabel"
+                            @onclick="ToggleSyncFromMenuAsync">
+                        <span class="pos-sync-status__marker" aria-hidden="true"></span>
+                        <span class="pos-sync-status__icon" aria-hidden="true">@IconGlyphs.Get(SyncIconName)</span>
+                        <span class="pos-sync-status__label">@SyncShortLabel</span>
+                    </button>
+                </ExtraItems>
+            </ShellAccountMenu>
         </div>
     </header>
 
@@ -59,7 +62,7 @@
         </div>
     }
 
-    <main class="pos-content" id="pos-main" tabindex="-1">
+    <main class="pos-content" id="pos-main" tabindex="-1" @onclick="CloseAccountMenus">
         @if (SellingMode.IsSellingMode)
         {
             <div class="pos-sync-panel" role="status">
@@ -102,6 +105,7 @@
     private bool _recoveryRequired;
     private bool _canRefreshFromServer;
     private string _homeHref = "/home";
+    private ShellAccountMenu? _accountMenu;
 
     protected override void OnInitialized()
     {
@@ -168,6 +172,16 @@
         {
             _ = RefreshQueueIndicatorsAsync();
         }
+    }
+
+    private async Task ToggleSyncFromMenuAsync()
+    {
+        if (_accountMenu is not null)
+        {
+            await _accountMenu.CloseAsync();
+        }
+
+        ToggleSyncPanel();
     }
 
     private PosSyncStatusKind SyncKind => SyncStatus.Current.Kind;
@@ -304,7 +318,20 @@
         }
     }
 
-    private void GoToSettings() => Nav.NavigateTo("/settings");
+    private Task OnAccountMenuOpened()
+    {
+        _syncPanelOpen = false;
+        return RefreshQueueIndicatorsAsync();
+    }
+
+    private void CloseAccountMenus()
+    {
+        // Account menu closes itself on navigation; sync panel closes when body is tapped.
+        if (_syncPanelOpen)
+        {
+            _syncPanelOpen = false;
+        }
+    }
 
     private async Task OnChangedAsync()
     {

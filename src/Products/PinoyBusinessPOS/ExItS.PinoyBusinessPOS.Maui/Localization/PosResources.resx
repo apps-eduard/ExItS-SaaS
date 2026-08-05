@@ -64,6 +64,7 @@
   <data name="Shell_OrganizationFallback" xml:space="preserve"><value>Organization</value></data>
   <data name="Shell_UserAria" xml:space="preserve"><value>Signed in as {0}</value></data>
   <data name="Shell_OrganizationAria" xml:space="preserve"><value>Organization {0}</value></data>
+  <data name="Shell_AccountMenuAria" xml:space="preserve"><value>Account menu</value></data>
   <data name="Brand_Tagline" xml:space="preserve"><value>Point-of-sale foundation for Filipino small businesses</value></data>
 
   <data name="Nav_Home" xml:space="preserve"><value>Home</value></data>
@@ -109,7 +110,7 @@
   <data name="Home_NoFeaturesMessage" xml:space="preserve"><value>Sales and product catalog features ship in a later work package. Customer profiles are available now; credit and repayments come later.</value></data>
 
   <data name="Settings_Title" xml:space="preserve"><value>Settings</value></data>
-  <data name="Settings_Subtitle" xml:space="preserve"><value>Appearance, density, language, and connection diagnostics.</value></data>
+  <data name="Settings_Subtitle" xml:space="preserve"><value>Appearance, language, connection, and account.</value></data>
   <data name="Settings_AppearanceSectionTitle" xml:space="preserve"><value>Appearance</value></data>
   <data name="Settings_ThemeLabel" xml:space="preserve"><value>Theme</value></data>
   <data name="Settings_Theme_System" xml:space="preserve"><value>System</value></data>
@@ -250,6 +251,18 @@
   <data name="OrgSelect_EnterCashier" xml:space="preserve"><value>Cashier</value></data>
   <data name="OrgSelect_Choose" xml:space="preserve"><value>Use this organization</value></data>
   <data name="OrgSelect_NoneEligible" xml:space="preserve"><value>No eligible organization was found for PinoyBusinessPOS commercial access.</value></data>
+  <data name="OrgSelect_RoleTitle" xml:space="preserve"><value>Choose organization role</value></data>
+  <data name="OrgSelect_RoleSubtitle" xml:space="preserve"><value>Select how you want to work in {0}.</value></data>
+  <data name="OrgSelect_WorkspaceLabel" xml:space="preserve"><value>Organization workspace</value></data>
+  <data name="OrgSelect_AvailableRoles" xml:space="preserve"><value>Available roles</value></data>
+  <data name="OrgSelect_OwnerDesc" xml:space="preserve"><value>Full organization control</value></data>
+  <data name="OrgSelect_ManagerDesc" xml:space="preserve"><value>Manage daily operations and reports</value></data>
+  <data name="OrgSelect_CashierDesc" xml:space="preserve"><value>Process sales and manage register</value></data>
+  <data name="OrgSelect_TeamSection" xml:space="preserve"><value>Organization team</value></data>
+  <data name="OrgSelect_PersonalLabel" xml:space="preserve"><value>Personal</value></data>
+  <data name="OrgSelect_PersonalDesc" xml:space="preserve"><value>Return to your personal workspace</value></data>
+  <data name="OrgSelect_MenuAria" xml:space="preserve"><value>More options</value></data>
+  <data name="OrgSelect_OtherOrgsSection" xml:space="preserve"><value>Other organizations</value></data>
   <data name="AccessConfirm_Title" xml:space="preserve"><value>Commercial access confirmed</value></data>
   <data name="AccessConfirm_Subtitle" xml:space="preserve"><value>PinoyBusinessPOS entry is allowed for the selected organization.</value></data>
   <data name="AccessConfirm_UserLabel" xml:space="preserve"><value>User</value></data>
@@ -818,6 +831,8 @@
   <data name="Sales_Loading" xml:space="preserve"><value>Loading salesâ€¦</value></data>
   <data name="Sales_SearchPlaceholder" xml:space="preserve"><value>Search by sale number</value></data>
   <data name="Sales_FiltersTitle" xml:space="preserve"><value>Filters</value></data>
+  <data name="Sales_ListSection" xml:space="preserve"><value>Sales</value></data>
+  <data name="Sales_AppliedFilters" xml:space="preserve"><value>Applied filters</value></data>
   <data name="Sales_Filter_Status" xml:space="preserve"><value>Status</value></data>
   <data name="Sales_Filter_Payment" xml:space="preserve"><value>Payment method</value></data>
   <data name="Sales_Filter_FromDate" xml:space="preserve"><value>From date</value></data>
@@ -1750,8 +1765,10 @@
   <data name="Owner_OperationsSection" xml:space="preserve"><value>Operations</value></data>
   <data name="Owner_InsightsSection" xml:space="preserve"><value>Insights</value></data>
   <data name="Manager_Title" xml:space="preserve"><value>Manager dashboard</value></data>
+  <data name="Manager_Subtitle" xml:space="preserve"><value>Daily operations and selling tools</value></data>
   <data name="Manager_DeniedMessage" xml:space="preserve"><value>POS Manager access is required for this dashboard.</value></data>
   <data name="Manager_StartSellingHint" xml:space="preserve"><value>Opens the selling interface. Your Manager role does not change.</value></data>
+  <data name="Manager_QuickActionsSection" xml:space="preserve"><value>Quick actions</value></data>
   <data name="Manager_OperationsSection" xml:space="preserve"><value>Operations</value></data>
   <data name="Cashier_Title" xml:space="preserve"><value>Cashier home</value></data>
   <data name="Cashier_DeniedMessage" xml:space="preserve"><value>POS Cashier access is required for this home.</value></data>

@@ -21,7 +21,9 @@ public sealed class ShellContextIdentityGuardTests
         Assert.DoesNotContain("IAppInfoService", personal, StringComparison.Ordinal);
 
         Assert.Contains("ShellOrganizationIdentity", pos, StringComparison.Ordinal);
-        Assert.Contains("ShellUserIdentity", pos, StringComparison.Ordinal);
+        Assert.Contains("ShellAccountMenu", pos, StringComparison.Ordinal);
+        Assert.DoesNotContain("ShellUserIdentity", pos, StringComparison.Ordinal);
+        Assert.Contains("IconName=\"more\"", File.ReadAllText(Path.Combine(MauiProject(), "Components", "Shared", "ShellAccountMenu.razor")), StringComparison.Ordinal);
         Assert.DoesNotContain("Brand_Name", pos, StringComparison.Ordinal);
         Assert.DoesNotContain("Env_Development", pos, StringComparison.Ordinal);
         Assert.DoesNotContain("Badge Tone", pos, StringComparison.Ordinal);
@@ -40,6 +42,7 @@ public sealed class ShellContextIdentityGuardTests
         Assert.Contains("text-overflow", css, StringComparison.Ordinal);
         Assert.Contains("pos-topbar__user", css, StringComparison.Ordinal);
         Assert.Contains("pos-topbar__subtitle--visible", css, StringComparison.Ordinal);
+        Assert.Contains("pos-topbar__overflow", css, StringComparison.Ordinal);
 
         var orgIdentity = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Shared", "ShellOrganizationIdentity.razor"));
         var userIdentity = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Shared", "ShellUserIdentity.razor"));
@@ -49,17 +52,22 @@ public sealed class ShellContextIdentityGuardTests
     }
 
     [Fact]
-    public void Auth_shell_keeps_product_brand_when_anonymous_and_dual_identity_when_signed_in()
+    public void Auth_and_personal_shells_use_account_menu_overflow()
     {
         var auth = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Layout", "AuthShell.razor"));
         Assert.Contains("Brand_Name", auth, StringComparison.Ordinal);
         Assert.Contains("IsAuthenticated", auth, StringComparison.Ordinal);
         Assert.Contains("ShellOrganizationIdentity", auth, StringComparison.Ordinal);
-        Assert.Contains("ShellUserIdentity", auth, StringComparison.Ordinal);
+        Assert.Contains("ShellAccountMenu", auth, StringComparison.Ordinal);
+        Assert.DoesNotContain("ShellUserIdentity", auth, StringComparison.Ordinal);
         Assert.Contains("AuthShellIdentityState", auth, StringComparison.Ordinal);
         Assert.DoesNotContain("Env_Development", auth, StringComparison.Ordinal);
         Assert.DoesNotContain("Badge Tone", auth, StringComparison.Ordinal);
         Assert.DoesNotContain("IAppInfoService", auth, StringComparison.Ordinal);
+
+        var personal = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Layout", "PersonalShell.razor"));
+        Assert.Contains("ShellAccountMenu", personal, StringComparison.Ordinal);
+        Assert.Contains("ShellContextIdentity", personal, StringComparison.Ordinal);
     }
 
     [Fact]

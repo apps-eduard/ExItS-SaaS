@@ -1,4 +1,5 @@
 @page "/sales"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosSaleClient Sales
@@ -16,72 +17,141 @@ else
 {
     var canView = Capabilities.IsAllowed(UtangCapability.ViewSales);
     var canCreate = Capabilities.IsAllowed(UtangCapability.CreateSale);
-<Page>
-    <PageHeader Title="@L["Sales_Title"]" Subtitle="@L["Sales_Subtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Primary" Disabled="@(!canCreate || _isOffline)" OnClick="GoNew">@L["Sales_New"]</Button>
-        </Actions>
-    </PageHeader>
+<div class="pos-dash pos-sales">
+    <Page>
+        <PageHeader Title="@L["Sales_Title"]" Subtitle="@L["Sales_Subtitle"]" />
 
-    @if (_isOffline)
-    {
-        <Alert Tone="AlertTone.Warning" Title="@L["Sales_OfflineTitle"]" Message="@L["Sales_OfflineMessage"]" />
-    }
-    else if (!canView)
-    {
-        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
-    }
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Sales_OfflineTitle"]" Message="@L["Sales_OfflineMessage"]" />
+        }
+        else if (!canView)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+        }
 
-    <SearchToolbar SearchText="@_saleNumber" SearchTextChanged="OnSaleNumberChanged" Placeholder="@L["Sales_SearchPlaceholder"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Sales_Refresh"]</Button>
-        </Actions>
-    </SearchToolbar>
+        <div class="pos-sales__add">
+            <Button Variant="ButtonVariant.Primary"
+                    Disabled="@(!canCreate || _isOffline)"
+                    OnClick="GoNew">@L["Sales_New"]</Button>
+        </div>
 
-    <Section Title="@L["Sales_FiltersTitle"]">
-        <Stack Gap="3">
-            <Select Label="@L["Sales_Filter_Status"]"
-                    Value="@_statusFilter"
-                    ValueChanged="OnStatusFilterChanged"
-                    Options="@SalesUiOptions.StatusFilters(L)" />
-            <Select Label="@L["Sales_Filter_Payment"]"
-                    Value="@_paymentFilter"
-                    ValueChanged="OnPaymentFilterChanged"
-                    Options="@SalesUiOptions.PaymentMethodFilters(L)" />
-            <DateInput Label="@L["Sales_Filter_FromDate"]"
-                       Value="@_fromDate"
-                       ValueChanged="OnFromDateChanged" />
-            <DateInput Label="@L["Sales_Filter_ToDate"]"
-                       Value="@_toDate"
-                       ValueChanged="OnToDateChanged" />
-        </Stack>
-    </Section>
+        <div class="pos-sales__toolbar">
+            <div class="pos-sales__search">
+                <span class="pos-sales__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                <input class="pos-sales__search-input"
+                       type="search"
+                       value="@_saleNumber"
+                       placeholder="@L["Sales_SearchPlaceholder"]"
+                       disabled="@_loading"
+                       @oninput="OnSearchInputAsync" />
+            </div>
+            <button type="button"
+                    class="pos-sales__filter-toggle @(_filtersOpen ? "pos-sales__filter-toggle--open" : null)"
+                    aria-expanded="@_filtersOpen"
+                    aria-controls="sales-filters"
+                    title="@L["Sales_FiltersTitle"]"
+                    @onclick="ToggleFilters">
+                <span class="pos-sales__filter-icon" aria-hidden="true">@IconGlyphs.Get("menu")</span>
+                <span class="pos-sales__filter-label">@L["Sales_FiltersTitle"]</span>
+            </button>
+        </div>
 
-    <ResponsiveDataList TItem="PosSaleDto"
-                        Items="@_items"
-                        Columns="@Columns"
-                        CellTemplate="@CellTemplate"
-                        IsLoading="@_loading"
-                        LoadingLabel="@L["Sales_Loading"]"
-                        EmptyTitle="@L["Sales_EmptyTitle"]"
-                        EmptyMessage="@L["Sales_EmptyMessage"]"
-                        ErrorTitle="@_errorTitle"
-                        ErrorMessage="@_errorMessage"
-                        RetryLabel="@L["Api_Retry"]"
-                        OnRetry="ReloadAsync"
-                        AriaLabel="@L["Sales_Title"]" />
+        @if (HasAppliedFilters)
+        {
+            <div class="pos-sales__chips" aria-label="@L["Sales_AppliedFilters"]">
+                @foreach (var chip in AppliedFilterChips)
+                {
+                    <span class="pos-sales__chip">@chip</span>
+                }
+            </div>
+        }
 
-    @if (!_loading && _totalCount > 0)
-    {
-        <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
-    }
-</Page>
+        @if (_filtersOpen)
+        {
+            <Section Title="@L["Sales_FiltersTitle"]" id="sales-filters">
+                <Stack Gap="2">
+                    <Select Label="@L["Sales_Filter_Status"]"
+                            Value="@_statusFilter"
+                            ValueChanged="OnStatusFilterChanged"
+                            Options="@SalesUiOptions.StatusFilters(L)" />
+                    <Select Label="@L["Sales_Filter_Payment"]"
+                            Value="@_paymentFilter"
+                            ValueChanged="OnPaymentFilterChanged"
+                            Options="@SalesUiOptions.PaymentMethodFilters(L)" />
+                    <DateInput Label="@L["Sales_Filter_FromDate"]"
+                               Value="@_fromDate"
+                               ValueChanged="OnFromDateChanged" />
+                    <DateInput Label="@L["Sales_Filter_ToDate"]"
+                               Value="@_toDate"
+                               ValueChanged="OnToDateChanged" />
+                    <FormActions>
+                        <Button Variant="ButtonVariant.Ghost" IsLoading="@_loading" OnClick="ReloadAsync">@L["Sales_Refresh"]</Button>
+                    </FormActions>
+                </Stack>
+            </Section>
+        }
+
+        <Section Title="@L["Sales_ListSection"]">
+            @if (_loading)
+            {
+                <Stack Align="StackAlign.Center" Gap="2">
+                    <Spinner />
+                    <span class="pos-muted">@L["Sales_Loading"]</span>
+                </Stack>
+            }
+            else if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <ErrorState Title="@(_errorTitle ?? L["Sales_OfflineTitle"])"
+                            Message="@_errorMessage"
+                            RetryLabel="@L["Api_Retry"]"
+                            OnRetry="ReloadAsync" />
+            }
+            else if (_items.Count == 0)
+            {
+                <EmptyState Title="@L["Sales_EmptyTitle"]" Message="@L["Sales_EmptyMessage"]" />
+            }
+            else
+            {
+                <div class="pos-sales__list" role="list" aria-label="@L["Sales_Title"]">
+                    @foreach (var item in _items)
+                    {
+                        <a class="pos-sales__row"
+                           role="listitem"
+                           href="@($"/sales/{item.SaleId:D}")">
+                            <div class="pos-sales__row-main">
+                                <span class="pos-sales__row-name">@item.SaleNumber</span>
+                                <span class="pos-sales__row-meta">
+                                    @SalesUiOptions.PaymentMethodLabel(L, item.PaymentMethod)
+                                    ·
+                                    @item.RecordedAtUtc.ToLocalTime().ToString("g")
+                                </span>
+                            </div>
+                            <div class="pos-sales__row-side">
+                                <MoneyDisplay Amount="@item.Total" CurrencyCode="PHP" />
+                                <Badge Tone="@(item.Status == PosSaleOptions.CompletedStatus ? BadgeTone.Success : BadgeTone.Neutral)">
+                                    @SalesUiOptions.StatusLabel(L, item.Status)
+                                </Badge>
+                            </div>
+                        </a>
+                    }
+                </div>
+            }
+        </Section>
+
+        @if (!_loading && _totalCount > 0)
+        {
+            <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
+        }
+    </Page>
+</div>
 }
 
 @code {
     private bool _ready;
     private bool _loading;
     private bool _isOffline;
+    private bool _filtersOpen;
     private string? _saleNumber;
     private string? _statusFilter;
     private string? _paymentFilter;
@@ -93,50 +163,45 @@ else
     private IReadOnlyList<PosSaleDto> _items = Array.Empty<PosSaleDto>();
     private string? _errorTitle;
     private string? _errorMessage;
+    private CancellationTokenSource? _searchCts;
 
-    private IReadOnlyList<DataColumnDefinition> Columns =>
-    [
-        new("saleNumber", L["Sales_Col_SaleNumber"], Primary: true, Width: "26%"),
-        new("recordedAt", L["Sales_Col_RecordedAt"], Width: "22%"),
-        new("payment", L["Sales_Col_Payment"], Width: "18%"),
-        new("total", L["Sales_Col_Total"], Width: "18%"),
-        new("status", L["Sales_Col_Status"], Width: "16%"),
-    ];
+    private bool HasAppliedFilters =>
+        !string.IsNullOrWhiteSpace(_saleNumber)
+        || !string.IsNullOrWhiteSpace(_statusFilter)
+        || !string.IsNullOrWhiteSpace(_paymentFilter)
+        || _fromDate is not null
+        || _toDate is not null;
 
-    private RenderFragment<(PosSaleDto Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
+    private IEnumerable<string> AppliedFilterChips
     {
-        switch (context.Column.Key)
+        get
         {
-            case "saleNumber":
-                builder.OpenElement(0, "a");
-                builder.AddAttribute(1, "class", "pos-link");
-                builder.AddAttribute(2, "href", $"/sales/{context.Item.SaleId:D}");
-                builder.AddContent(3, context.Item.SaleNumber);
-                builder.CloseElement();
-                break;
-            case "recordedAt":
-                builder.AddContent(0, context.Item.RecordedAtUtc.ToLocalTime().ToString("g"));
-                break;
-            case "payment":
-                builder.AddContent(0, SalesUiOptions.PaymentMethodLabel(L, context.Item.PaymentMethod));
-                break;
-            case "total":
-                builder.OpenComponent<MoneyDisplay>(0);
-                builder.AddAttribute(1, "Amount", context.Item.Total);
-                builder.AddAttribute(2, "CurrencyCode", "PHP");
-                builder.CloseComponent();
-                break;
-            default:
-                builder.OpenComponent<Badge>(0);
-                builder.AddAttribute(1, "Tone", context.Item.Status == PosSaleOptions.CompletedStatus
-                    ? BadgeTone.Success
-                    : BadgeTone.Neutral);
-                builder.AddAttribute(2, "ChildContent", (RenderFragment)(b =>
-                    b.AddContent(0, SalesUiOptions.StatusLabel(L, context.Item.Status))));
-                builder.CloseComponent();
-                break;
+            if (!string.IsNullOrWhiteSpace(_saleNumber))
+            {
+                yield return $"{L["Sales_SearchPlaceholder"]}: {_saleNumber}";
+            }
+
+            if (!string.IsNullOrWhiteSpace(_statusFilter))
+            {
+                yield return SalesUiOptions.StatusLabel(L, _statusFilter);
+            }
+
+            if (!string.IsNullOrWhiteSpace(_paymentFilter))
+            {
+                yield return SalesUiOptions.PaymentMethodLabel(L, _paymentFilter);
+            }
+
+            if (_fromDate is not null)
+            {
+                yield return $"{L["Sales_Filter_FromDate"]}: {_fromDate:d}";
+            }
+
+            if (_toDate is not null)
+            {
+                yield return $"{L["Sales_Filter_ToDate"]}: {_toDate:d}";
+            }
         }
-    };
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -150,11 +215,25 @@ else
         await ReloadAsync();
     }
 
-    private async Task OnSaleNumberChanged(string? value)
+    private void ToggleFilters() => _filtersOpen = !_filtersOpen;
+
+    private async Task OnSearchInputAsync(ChangeEventArgs args)
     {
-        _saleNumber = value;
+        _saleNumber = args.Value?.ToString();
         _page = 1;
-        await ReloadAsync();
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+        try
+        {
+            await Task.Delay(250, token);
+            await ReloadAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            // superseded by newer keystrokes
+        }
     }
 
     private async Task OnStatusFilterChanged(string? value)

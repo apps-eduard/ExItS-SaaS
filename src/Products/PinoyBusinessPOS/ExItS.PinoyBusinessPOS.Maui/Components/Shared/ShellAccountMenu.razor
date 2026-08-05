@@ -1,0 +1,166 @@
+@implements IDisposable
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IOfflineOperationQueue OfflineQueue
+@inject SellingModeService SellingMode
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-topbar__overflow" @onclick:stopPropagation="true">
+    <IconButton IconName="more"
+                AriaLabel="@L["Shell_AccountMenuAria"]"
+                OnClick="ToggleAsync" />
+    @if (_open)
+    {
+        <div class="pos-topbar__overflow-menu" role="menu">
+            @if (ExtraItems is not null)
+            {
+                @ExtraItems
+            }
+            @if (ShowSettings)
+            {
+                <button type="button" class="pos-topbar__overflow-item" role="menuitem" @onclick="GoSettingsAsync">
+                    @L["Nav_Settings"]
+                </button>
+            }
+            @if (ShowSwitchOrganization)
+            {
+                <button type="button" class="pos-topbar__overflow-item" role="menuitem" @onclick="GoSwitchOrgAsync">
+                    @L["Settings_SwitchOrganization"]
+                </button>
+            }
+            @if (ShowPersonalHome)
+            {
+                <button type="button" class="pos-topbar__overflow-item" role="menuitem" @onclick="GoPersonalAsync">
+                    @L["Personal_HomeTitle"]
+                </button>
+            }
+            @if (ShowSignOut)
+            {
+                <button type="button" class="pos-topbar__overflow-item pos-topbar__overflow-item--danger" role="menuitem" @onclick="OpenLogoutAsync">
+                    @L["Auth_Logout"]
+                </button>
+            }
+        </div>
+    }
+</div>
+
+<ConfirmDialog @bind-Visible="_logoutOpen"
+               Title="@L["Auth_LogoutConfirmTitle"]"
+               Message="@_logoutMessage"
+               Danger="true"
+               IsLoading="_logoutBusy"
+               OnConfirm="LogoutAsync"
+               OnCancel="() => _logoutOpen = false" />
+
+@code {
+    /// <summary>Optional leading menu rows (e.g. sync status) rendered above standard actions.</summary>
+    [Parameter] public RenderFragment? ExtraItems { get; set; }
+
+    [Parameter] public bool ShowSettings { get; set; } = true;
+    [Parameter] public bool ShowSwitchOrganization { get; set; } = true;
+    [Parameter] public bool ShowPersonalHome { get; set; }
+    [Parameter] public bool ShowSignOut { get; set; } = true;
+    [Parameter] public EventCallback OnOpened { get; set; }
+    [Parameter] public EventCallback OnClosed { get; set; }
+
+    private bool _open;
+    private bool _logoutOpen;
+    private bool _logoutBusy;
+    private string _logoutMessage = string.Empty;
+
+    protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => _ = CloseAsync();
+
+    private async Task ToggleAsync()
+    {
+        _open = !_open;
+        if (_open && OnOpened.HasDelegate)
+        {
+            await OnOpened.InvokeAsync();
+        }
+        else if (!_open && OnClosed.HasDelegate)
+        {
+            await OnClosed.InvokeAsync();
+        }
+    }
+
+    public async Task CloseAsync()
+    {
+        if (!_open)
+        {
+            return;
+        }
+
+        _open = false;
+        if (OnClosed.HasDelegate)
+        {
+            await OnClosed.InvokeAsync();
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task GoSettingsAsync()
+    {
+        await CloseAsync();
+        var personal = CurrentUser.Session?.OrganizationId is null;
+        Nav.NavigateTo(personal ? "/personal/settings" : "/settings");
+    }
+
+    private async Task GoSwitchOrgAsync()
+    {
+        await CloseAsync();
+        SellingMode.Clear();
+        Nav.NavigateTo("/organization-select");
+    }
+
+    private async Task GoPersonalAsync()
+    {
+        await CloseAsync();
+        SellingMode.Clear();
+        var result = await Auth.SwitchToPersonalAsync();
+        if (result.Succeeded)
+        {
+            Nav.NavigateTo("/personal", replace: true);
+        }
+    }
+
+    private async Task OpenLogoutAsync()
+    {
+        await CloseAsync();
+        _logoutMessage = L["Auth_LogoutConfirmMessage"];
+        try
+        {
+            if (await OfflineQueue.HasUnsyncedWorkAsync())
+            {
+                _logoutMessage = $"{L["Auth_LogoutConfirmMessage"]} {L["Offline_LogoutUnsyncedWarning"]}";
+            }
+        }
+        catch
+        {
+            // Keep default logout message when queue is unavailable.
+        }
+
+        _logoutOpen = true;
+    }
+
+    private async Task LogoutAsync()
+    {
+        _logoutBusy = true;
+        try
+        {
+            SellingMode.Clear();
+            await Auth.LogoutAsync();
+            _logoutOpen = false;
+            Nav.NavigateTo("/signin", replace: true);
+        }
+        finally
+        {
+            _logoutBusy = false;
+        }
+    }
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+}

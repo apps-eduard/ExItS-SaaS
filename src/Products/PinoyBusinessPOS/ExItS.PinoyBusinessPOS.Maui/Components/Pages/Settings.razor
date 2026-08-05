@@ -1,5 +1,6 @@
 @page "/settings"
 @implements IDisposable
+@using ExItS.DesignSystem.Components.Internal
 @inject ThemeController ThemeCtl
 @inject DensityController DensityCtl
 @inject CultureController CultureCtl
@@ -15,106 +16,119 @@
 @inject IUtangCapabilityEvaluator Capabilities
 @inject IStringLocalizer<PosResources> L
 
-<Page>
-    <PageHeader Title="@L["Settings_Title"]" Subtitle="@L["Settings_Subtitle"]" />
+<div class="pos-dash pos-settings">
+    <Page>
+        <PageHeader Title="@L["Settings_Title"]" Subtitle="@L["Settings_Subtitle"]" />
 
-    <Alert Tone="AlertTone.Warning" Title="@L["Settings_DevNoticeTitle"]" Message="@L["Settings_DevNoticeMessage"]" />
+        <div class="pos-settings__notice" role="note">
+            <span class="pos-settings__notice-title">@L["Settings_DevNoticeTitle"]</span>
+            <span class="pos-settings__notice-body">@L["Settings_DevNoticeMessage"]</span>
+        </div>
 
-    @if (CurrentUser.Session is not null)
-    {
-        <Section Title="@L["Settings_SessionSectionTitle"]">
-            <Card>
-                <Stack Gap="3">
-                    <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="2">
-                        <span>@L["AccessConfirm_UserLabel"]</span>
-                        <span class="pos-muted pos-wrap">@CurrentUser.Session.DisplayName</span>
-                    </Stack>
-                    <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="2">
-                        <span>@L["AccessConfirm_OrgLabel"]</span>
-                        <span class="pos-muted pos-wrap">@CurrentUser.Session.OrganizationDisplayName</span>
-                    </Stack>
-                    <Button Variant="ButtonVariant.Secondary" OnClick="GoSwitchOrg">@L["Settings_SwitchOrganization"]</Button>
-                    <Button Variant="ButtonVariant.Danger" OnClick="OpenLogoutAsync">@L["Auth_Logout"]</Button>
+        @if (CurrentUser.Session is not null)
+        {
+            <Section Title="@L["Settings_SessionSectionTitle"]">
+                <div class="pos-settings__panel">
+                    <div class="pos-settings__kv">
+                        <span class="pos-settings__kv-label">@L["AccessConfirm_UserLabel"]</span>
+                        <span class="pos-settings__kv-value">@CurrentUser.Session.DisplayName</span>
+                    </div>
+                    <div class="pos-settings__kv">
+                        <span class="pos-settings__kv-label">@L["AccessConfirm_OrgLabel"]</span>
+                        <span class="pos-settings__kv-value">@CurrentUser.Session.OrganizationDisplayName</span>
+                    </div>
+                    <button type="button" class="pos-settings__nav" @onclick="GoSwitchOrg">
+                        <span class="pos-settings__nav-icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
+                        <span class="pos-settings__nav-label">@L["Settings_SwitchOrganization"]</span>
+                        <span class="pos-settings__chevron" aria-hidden="true">›</span>
+                    </button>
+                    <div class="pos-settings__danger">
+                        <Button Variant="ButtonVariant.Danger" OnClick="OpenLogoutAsync">@L["Auth_Logout"]</Button>
+                    </div>
+                </div>
+            </Section>
+            <ConfirmDialog @bind-Visible="_logoutOpen"
+                           Title="@L["Auth_LogoutConfirmTitle"]"
+                           Message="@_logoutMessage"
+                           Danger="true"
+                           IsLoading="_logoutBusy"
+                           OnConfirm="LogoutAsync"
+                           OnCancel="() => _logoutOpen = false" />
+        }
+
+        @if (_preferenceError is not null)
+        {
+            <Alert Tone="AlertTone.Danger" Message="@_preferenceError" />
+        }
+
+        <Section Title="@L["Settings_AppearanceSectionTitle"]">
+            <div class="pos-settings__panel">
+                <Stack Gap="2">
+                    <Select Label="@L["Settings_ThemeLabel"]" Value="@ThemeCtl.Current.ToString()" ValueChanged="OnThemeChangedAsync" Options="ThemeOptions" />
+                    <Select Label="@L["Settings_DensityLabel"]" Value="@DensityCtl.Current.ToString()" ValueChanged="OnDensityChangedAsync" Options="DensityOptions" />
+                    <Select Label="@L["Settings_LanguageLabel"]" Value="@CultureCtl.Current" ValueChanged="OnCultureChangedAsync" Options="CultureOptions" />
                 </Stack>
-            </Card>
+            </div>
         </Section>
-        <ConfirmDialog @bind-Visible="_logoutOpen"
-                       Title="@L["Auth_LogoutConfirmTitle"]"
-                       Message="@_logoutMessage"
-                       Danger="true"
-                       IsLoading="_logoutBusy"
-                       OnConfirm="LogoutAsync"
-                       OnCancel="() => _logoutOpen = false" />
-    }
 
-    @if (_preferenceError is not null)
-    {
-        <Alert Tone="AlertTone.Danger" Message="@_preferenceError" />
-    }
-
-    <Section Title="@L["Settings_AppearanceSectionTitle"]">
-        <Card>
-            <Stack Gap="5">
-                <Select Label="@L["Settings_ThemeLabel"]" Value="@ThemeCtl.Current.ToString()" ValueChanged="OnThemeChangedAsync" Options="ThemeOptions" />
-                <Select Label="@L["Settings_DensityLabel"]" Value="@DensityCtl.Current.ToString()" ValueChanged="OnDensityChangedAsync" Options="DensityOptions" />
-                <Select Label="@L["Settings_LanguageLabel"]" Value="@CultureCtl.Current" ValueChanged="OnCultureChangedAsync" Options="CultureOptions" />
-            </Stack>
-        </Card>
-    </Section>
-
-    <Section Title="@L["Settings_ApiSectionTitle"]">
-        <Card>
-            <Stack Gap="3">
-                <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="2">
-                    <span>@L["Settings_ApiHostLabel"]</span>
-                    <span class="pos-muted pos-wrap">@ApiHost</span>
-                </Stack>
-                <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="2">
-                    <span>@L["Api_Environment"]</span>
+        <Section Title="@L["Settings_ApiSectionTitle"]">
+            <div class="pos-settings__panel">
+                <div class="pos-settings__kv">
+                    <span class="pos-settings__kv-label">@L["Settings_ApiHostLabel"]</span>
+                    <span class="pos-settings__kv-value">@ApiHost</span>
+                </div>
+                <div class="pos-settings__kv">
+                    <span class="pos-settings__kv-label">@L["Api_Environment"]</span>
                     <Badge Tone="@(IsDevelopment ? BadgeTone.Warning : BadgeTone.Neutral)">@EnvironmentLabel</Badge>
-                </Stack>
-                <Button Variant="ButtonVariant.Secondary" IsLoading="Status.IsCheckingApi" OnClick="TestConnectionAsync">
-                    @L["Api_TestConnection"]
-                </Button>
+                </div>
+                <div class="pos-settings__actions">
+                    <Button Variant="ButtonVariant.Secondary" IsLoading="Status.IsCheckingApi" OnClick="TestConnectionAsync">
+                        @L["Api_TestConnection"]
+                    </Button>
+                </div>
                 @if (_testResultMessage is not null)
                 {
                     <Alert Tone="@(_testSucceeded ? AlertTone.Success : AlertTone.Danger)" Message="@_testResultMessage" />
                 }
-            </Stack>
-        </Card>
-    </Section>
-
-    @if (Capabilities.IsAllowed(UtangCapability.ManageOperationalSetup))
-    {
-        <Section Title="@L["Setup_Title"]">
-            <Card>
-                <Stack Gap="3">
-                    <div class="pos-muted">@L["Setup_Subtitle"]</div>
-                    <Button Variant="ButtonVariant.Secondary" OnClick="GoSetup">@L["Nav_Setup"]</Button>
-                </Stack>
-            </Card>
+            </div>
         </Section>
-    }
 
-    <Section Title="@L["Settings_AboutSectionTitle"]">
-        <Card>
-            <Stack Gap="3">
-                <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="2">
-                    <span>@L["Settings_AppVersionLabel"]</span>
-                    <span class="pos-muted">@AppInfo.Version</span>
-                </Stack>
-                <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="2">
-                    <span>@L["Home_EnvironmentLabel"]</span>
-                    <span class="pos-muted">@EnvironmentLabel</span>
-                </Stack>
+        @if (Capabilities.IsAllowed(UtangCapability.ManageOperationalSetup))
+        {
+            <Section Title="@L["Setup_Title"]">
+                <button type="button" class="pos-settings__nav pos-settings__nav--block" @onclick="GoSetup">
+                    <span class="pos-settings__nav-icon" aria-hidden="true">@IconGlyphs.Get("settings")</span>
+                    <span class="pos-settings__nav-body">
+                        <span class="pos-settings__nav-label">@L["Nav_Setup"]</span>
+                        <span class="pos-settings__nav-meta">@L["Setup_Subtitle"]</span>
+                    </span>
+                    <span class="pos-settings__chevron" aria-hidden="true">›</span>
+                </button>
+            </Section>
+        }
+
+        <Section Title="@L["Settings_AboutSectionTitle"]">
+            <div class="pos-settings__panel">
+                <div class="pos-settings__kv">
+                    <span class="pos-settings__kv-label">@L["Settings_AppVersionLabel"]</span>
+                    <span class="pos-settings__kv-value">@AppInfo.Version</span>
+                </div>
+                <div class="pos-settings__kv">
+                    <span class="pos-settings__kv-label">@L["Home_EnvironmentLabel"]</span>
+                    <span class="pos-settings__kv-value">@EnvironmentLabel</span>
+                </div>
                 @if (IsDevOrTesting)
                 {
-                    <Button Variant="ButtonVariant.Secondary" OnClick="GoDevOffline">@L["Settings_DevOfflineLink"]</Button>
+                    <button type="button" class="pos-settings__nav" @onclick="GoDevOffline">
+                        <span class="pos-settings__nav-icon" aria-hidden="true">@IconGlyphs.Get("warning")</span>
+                        <span class="pos-settings__nav-label">@L["Settings_DevOfflineLink"]</span>
+                        <span class="pos-settings__chevron" aria-hidden="true">›</span>
+                    </button>
                 }
-            </Stack>
-        </Card>
-    </Section>
-</Page>
+            </div>
+        </Section>
+    </Page>
+</div>
 
 @code {
     private bool _testSucceeded;

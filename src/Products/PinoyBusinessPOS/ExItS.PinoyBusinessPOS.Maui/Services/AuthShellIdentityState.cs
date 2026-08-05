@@ -1,7 +1,7 @@
 namespace ExItS.PinoyBusinessPOS.Maui.Services;
 
 /// <summary>
-/// Lets organization-select (and similar AuthShell pages) drive the dual top-bar identity
+/// Lets organization-select (and similar AuthShell pages) drive top-bar identity
 /// without cascading upward from page body into the layout.
 /// </summary>
 public sealed class AuthShellIdentityState
@@ -10,13 +10,23 @@ public sealed class AuthShellIdentityState
     public string? OrganizationName { get; private set; }
     public string? MembershipRoleHint { get; private set; }
 
+    /// <summary>
+    /// Organization-select chrome: org identity left, overflow menu right (no visible user chip).
+    /// </summary>
+    public bool UseOrgSelectChrome { get; private set; }
+
     public event Func<Task>? Changed;
 
-    public void SetOrganizationPreview(Guid? organizationId, string? displayName, string? membershipRole)
+    public void SetOrganizationPreview(
+        Guid? organizationId,
+        string? displayName,
+        string? membershipRole,
+        bool orgSelectChrome = false)
     {
         OrganizationId = organizationId;
         OrganizationName = string.IsNullOrWhiteSpace(displayName) ? null : displayName.Trim();
         MembershipRoleHint = string.IsNullOrWhiteSpace(membershipRole) ? null : membershipRole.Trim();
+        UseOrgSelectChrome = orgSelectChrome;
         _ = NotifyAsync();
     }
 
@@ -25,6 +35,7 @@ public sealed class AuthShellIdentityState
         OrganizationId = null;
         OrganizationName = null;
         MembershipRoleHint = null;
+        UseOrgSelectChrome = false;
         _ = NotifyAsync();
     }
 

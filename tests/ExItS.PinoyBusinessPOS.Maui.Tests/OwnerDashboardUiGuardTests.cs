@@ -47,6 +47,34 @@ public sealed class OwnerDashboardUiGuardTests
         Assert.Contains("name=\"More_ToolsSection\"", en, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Manager_dashboard_uses_compact_action_grids_and_preserves_routes()
+    {
+        var manager = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "Dashboards", "ManagerDashboard.razor"));
+        var en = File.ReadAllText(Path.Combine(MauiProject(), "Localization", "PosResources.resx"));
+
+        Assert.Contains("@page \"/manager\"", manager, StringComparison.Ordinal);
+        Assert.Contains("pos-action-grid", manager, StringComparison.Ordinal);
+        Assert.Contains("pos-action-tile--primary", manager, StringComparison.Ordinal);
+        Assert.Contains("Manager_QuickActionsSection", manager, StringComparison.Ordinal);
+        Assert.Contains("Manager_OperationsSection", manager, StringComparison.Ordinal);
+        Assert.Contains("Manager_Subtitle", manager, StringComparison.Ordinal);
+        Assert.Contains("StartSelling", manager, StringComparison.Ordinal);
+        Assert.Contains("/sales/new", manager, StringComparison.Ordinal);
+        Assert.Contains("GoCatalog", manager, StringComparison.Ordinal);
+        Assert.Contains("GoInventory", manager, StringComparison.Ordinal);
+        Assert.Contains("GoRegisters", manager, StringComparison.Ordinal);
+        Assert.Contains("GoShifts", manager, StringComparison.Ordinal);
+        Assert.Contains("GoSales", manager, StringComparison.Ordinal);
+        Assert.Contains("GoReports", manager, StringComparison.Ordinal);
+        Assert.DoesNotContain("InlineMessage", manager, StringComparison.Ordinal);
+        Assert.DoesNotContain("OrganizationDisplayName", manager, StringComparison.Ordinal);
+        Assert.DoesNotContain("GoReturns", manager, StringComparison.Ordinal);
+
+        Assert.Contains("name=\"Manager_Subtitle\"", en, StringComparison.Ordinal);
+        Assert.Contains("name=\"Manager_QuickActionsSection\"", en, StringComparison.Ordinal);
+    }
+
     private static string MauiProject() => Path.Combine(
         FindRepoRoot(),
         "src",

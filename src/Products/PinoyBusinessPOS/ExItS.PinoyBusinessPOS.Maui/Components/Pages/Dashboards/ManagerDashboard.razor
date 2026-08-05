@@ -1,4 +1,5 @@
 @page "/manager"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject RoleHomeResolver RoleHome
@@ -18,26 +19,54 @@ else if (!_authorized)
 }
 else
 {
-    <Page>
-        <PageHeader Title="@L["Manager_Title"]" />
+    <div class="pos-dash">
+        <Page>
+            <PageHeader Title="@L["Manager_Title"]" Subtitle="@L["Manager_Subtitle"]" />
 
-        <Section Title="@L["Owner_SellingSection"]">
-            <Button Variant="ButtonVariant.Primary" OnClick="StartSelling">@L["Owner_StartSelling"]</Button>
-            <InlineMessage Tone="InlineMessageTone.Info">@L["Manager_StartSellingHint"]</InlineMessage>
-        </Section>
+            <Section Title="@L["Manager_QuickActionsSection"]">
+                <div class="pos-action-grid" role="group" aria-label="@L["Manager_QuickActionsSection"]">
+                    <button type="button" class="pos-action-tile pos-action-tile--primary" @onclick="StartSelling">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
+                        <span class="pos-action-tile__label">@L["Owner_StartSelling"]</span>
+                    </button>
+                    <button type="button" class="pos-action-tile" @onclick="GoSales">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
+                        <span class="pos-action-tile__label">@L["Nav_Sales"]</span>
+                    </button>
+                </div>
+                <p class="pos-dash__hint pos-muted">@L["Manager_StartSellingHint"]</p>
+            </Section>
 
-        <Section Title="@L["Manager_OperationsSection"]">
-            <Stack Gap="2">
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Nav_Products"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoInventory">@L["Nav_Inventory"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoRegisters">@L["Nav_Registers"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoShifts">@L["Nav_Shifts"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoSales">@L["Nav_Sales"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoReturns">@L["Nav_Sales"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoReports">@L["Nav_Reports"]</Button>
-            </Stack>
-        </Section>
-    </Page>
+            <Section Title="@L["Manager_OperationsSection"]">
+                <div class="pos-action-grid" role="group" aria-label="@L["Manager_OperationsSection"]">
+                    <button type="button" class="pos-action-tile" @onclick="GoCatalog">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                        <span class="pos-action-tile__label">@L["Nav_Products"]</span>
+                    </button>
+                    <button type="button" class="pos-action-tile" @onclick="GoInventory">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
+                        <span class="pos-action-tile__label">@L["Nav_Inventory"]</span>
+                    </button>
+                    <button type="button" class="pos-action-tile" @onclick="GoRegisters">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
+                        <span class="pos-action-tile__label">@L["Nav_Registers"]</span>
+                    </button>
+                    <button type="button" class="pos-action-tile" @onclick="GoShifts">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                        <span class="pos-action-tile__label">@L["Nav_Shifts"]</span>
+                    </button>
+                    <button type="button" class="pos-action-tile" @onclick="GoSales">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
+                        <span class="pos-action-tile__label">@L["Nav_Sales"]</span>
+                    </button>
+                    <button type="button" class="pos-action-tile" @onclick="GoReports">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("info")</span>
+                        <span class="pos-action-tile__label">@L["Nav_Reports"]</span>
+                    </button>
+                </div>
+            </Section>
+        </Page>
+    </div>
 }
 
 @code {
@@ -93,6 +122,5 @@ else
     private void GoRegisters() => Nav.NavigateTo("/registers");
     private void GoShifts() => Nav.NavigateTo("/shifts");
     private void GoSales() => Nav.NavigateTo("/sales");
-    private void GoReturns() => Nav.NavigateTo("/sales");
     private void GoReports() => Nav.NavigateTo("/reports");
 }

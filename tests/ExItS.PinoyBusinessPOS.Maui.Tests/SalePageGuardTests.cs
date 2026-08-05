@@ -10,10 +10,15 @@ public sealed class SalePageGuardTests
         var list = File.ReadAllText(Path.Combine(sales, "SalesList.razor"));
         Assert.Contains("@page \"/sales\"", list, StringComparison.Ordinal);
         Assert.Contains("IPosSaleClient", list, StringComparison.Ordinal);
-        Assert.Contains("ResponsiveDataList", list, StringComparison.Ordinal);
+        Assert.Contains("pos-sales__row", list, StringComparison.Ordinal);
+        Assert.Contains("pos-sales__toolbar", list, StringComparison.Ordinal);
+        Assert.Contains("Sales_ListSection", list, StringComparison.Ordinal);
         Assert.Contains("Sales_Filter_Status", list, StringComparison.Ordinal);
         Assert.Contains("Sales_Filter_Payment", list, StringComparison.Ordinal);
         Assert.Contains("Sales_Filter_FromDate", list, StringComparison.Ordinal);
+        Assert.Contains("ListSalesAsync", list, StringComparison.Ordinal);
+        Assert.Contains("Pagination", list, StringComparison.Ordinal);
+        Assert.DoesNotContain("ResponsiveDataList", list, StringComparison.Ordinal);
 
         var checkout = File.ReadAllText(Path.Combine(sales, "SaleCheckout.razor"));
         Assert.Contains("@page \"/sales/new\"", checkout, StringComparison.Ordinal);
@@ -183,6 +188,8 @@ public sealed class SalePageGuardTests
                  {
                      "Sales_Title",
                      "Sales_Subtitle",
+                     "Sales_ListSection",
+                     "Sales_AppliedFilters",
                      "Sales_OfflineMessage",
                      "Sales_Status_Completed",
                      "Sales_Status_Voided",

@@ -64,6 +64,7 @@
   <data name="Shell_OrganizationFallback" xml:space="preserve"><value>Organisasyon</value></data>
   <data name="Shell_UserAria" xml:space="preserve"><value>Naka-sign in bilang {0}</value></data>
   <data name="Shell_OrganizationAria" xml:space="preserve"><value>Organisasyon {0}</value></data>
+  <data name="Shell_AccountMenuAria" xml:space="preserve"><value>Menu ng account</value></data>
   <data name="Brand_Tagline" xml:space="preserve"><value>Pundasyong point-of-sale para sa maliliit na negosyong Pilipino</value></data>
 
   <data name="Nav_Home" xml:space="preserve"><value>Home</value></data>
@@ -109,7 +110,7 @@
   <data name="Home_NoFeaturesMessage" xml:space="preserve"><value>Darating pa ang sales at product catalog. Available na ang customer profiles; darating pa ang credit at repayment.</value></data>
 
   <data name="Settings_Title" xml:space="preserve"><value>Mga Setting</value></data>
-  <data name="Settings_Subtitle" xml:space="preserve"><value>Itsura, densidad, wika, at pagsusuri ng koneksyon.</value></data>
+  <data name="Settings_Subtitle" xml:space="preserve"><value>Itsura, wika, koneksyon, at account.</value></data>
   <data name="Settings_AppearanceSectionTitle" xml:space="preserve"><value>Itsura</value></data>
   <data name="Settings_ThemeLabel" xml:space="preserve"><value>Tema</value></data>
   <data name="Settings_Theme_System" xml:space="preserve"><value>System</value></data>
@@ -250,6 +251,18 @@
   <data name="OrgSelect_EnterCashier" xml:space="preserve"><value>Cashier</value></data>
   <data name="OrgSelect_Choose" xml:space="preserve"><value>Gamitin ang organization na ito</value></data>
   <data name="OrgSelect_NoneEligible" xml:space="preserve"><value>Walang eligible organization para sa PinoyBusinessPOS commercial access.</value></data>
+  <data name="OrgSelect_RoleTitle" xml:space="preserve"><value>Pumili ng role sa organisasyon</value></data>
+  <data name="OrgSelect_RoleSubtitle" xml:space="preserve"><value>Piliin kung paano ka magtatrabaho sa {0}.</value></data>
+  <data name="OrgSelect_WorkspaceLabel" xml:space="preserve"><value>Organization workspace</value></data>
+  <data name="OrgSelect_AvailableRoles" xml:space="preserve"><value>Mga available na role</value></data>
+  <data name="OrgSelect_OwnerDesc" xml:space="preserve"><value>Buong kontrol sa organisasyon</value></data>
+  <data name="OrgSelect_ManagerDesc" xml:space="preserve"><value>Pamahalaan ang araw-araw na operasyon at ulat</value></data>
+  <data name="OrgSelect_CashierDesc" xml:space="preserve"><value>Magproseso ng benta at pamahalaan ang register</value></data>
+  <data name="OrgSelect_TeamSection" xml:space="preserve"><value>Team ng organisasyon</value></data>
+  <data name="OrgSelect_PersonalLabel" xml:space="preserve"><value>Personal</value></data>
+  <data name="OrgSelect_PersonalDesc" xml:space="preserve"><value>Bumalik sa personal workspace</value></data>
+  <data name="OrgSelect_MenuAria" xml:space="preserve"><value>Higit pang opsyon</value></data>
+  <data name="OrgSelect_OtherOrgsSection" xml:space="preserve"><value>Iba pang organisasyon</value></data>
   <data name="AccessConfirm_Title" xml:space="preserve"><value>Nakumpirma ang commercial access</value></data>
   <data name="AccessConfirm_Subtitle" xml:space="preserve"><value>Pinapayagan ang PinoyBusinessPOS entry para sa napiling organization.</value></data>
   <data name="AccessConfirm_UserLabel" xml:space="preserve"><value>User</value></data>
@@ -818,6 +831,8 @@
   <data name="Sales_Loading" xml:space="preserve"><value>Kinukuha ang bentaâ€¦</value></data>
   <data name="Sales_SearchPlaceholder" xml:space="preserve"><value>Hanapin sa numero ng benta</value></data>
   <data name="Sales_FiltersTitle" xml:space="preserve"><value>Mga filter</value></data>
+  <data name="Sales_ListSection" xml:space="preserve"><value>Mga benta</value></data>
+  <data name="Sales_AppliedFilters" xml:space="preserve"><value>Mga filter na aktibo</value></data>
   <data name="Sales_Filter_Status" xml:space="preserve"><value>Katayuan</value></data>
   <data name="Sales_Filter_Payment" xml:space="preserve"><value>Paraan ng bayad</value></data>
   <data name="Sales_Filter_FromDate" xml:space="preserve"><value>Mula sa petsa</value></data>
@@ -1750,8 +1765,10 @@
   <data name="Owner_OperationsSection" xml:space="preserve"><value>Operations</value></data>
   <data name="Owner_InsightsSection" xml:space="preserve"><value>Insights</value></data>
   <data name="Manager_Title" xml:space="preserve"><value>Manager dashboard</value></data>
+  <data name="Manager_Subtitle" xml:space="preserve"><value>Araw-araw na operasyon at selling tools</value></data>
   <data name="Manager_DeniedMessage" xml:space="preserve"><value>POS Manager access is required for this dashboard.</value></data>
   <data name="Manager_StartSellingHint" xml:space="preserve"><value>Opens the selling interface. Your Manager role does not change.</value></data>
+  <data name="Manager_QuickActionsSection" xml:space="preserve"><value>Mabilisang aksyon</value></data>
   <data name="Manager_OperationsSection" xml:space="preserve"><value>Operations</value></data>
   <data name="Cashier_Title" xml:space="preserve"><value>Cashier home</value></data>
   <data name="Cashier_DeniedMessage" xml:space="preserve"><value>POS Cashier access is required for this home.</value></data>
