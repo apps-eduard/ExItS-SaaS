@@ -49,6 +49,12 @@ public sealed class SaleCartService : IDisposable
 
     public decimal Subtotal => PosSaleOptions.RoundMoney(_items.Sum(i => i.LineTotal));
 
+    public decimal GetQuantity(Guid productId)
+    {
+        var index = _items.FindIndex(i => i.ProductId == productId);
+        return index >= 0 ? _items[index].Quantity : 0m;
+    }
+
     /// <summary>
     /// Adds a product, folding a repeat scan into the existing line by summing the quantity. The
     /// snapshot fields are refreshed from the product so a price edited between scans is reflected in

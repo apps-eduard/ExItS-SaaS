@@ -169,121 +169,126 @@ else
 
     @if (!_electronicPaymentOpen)
     {
-    <Section Title="@L["Sales_Checkout_LookupSection"]">
-        <Stack Gap="3">
-            <Select Label="@L["Sales_Checkout_CategoryFilter"]"
-                    Value="@_categoryFilter"
-                    ValueChanged="OnCategoryFilterChanged"
-                    Options="@CatalogUiOptions.CheckoutCategoryFilters(L, _categories)"
-                    Disabled="@(blocked || _loadingBrowse)" />
-            <TextInput Label="@L["Sales_Checkout_LookupLabel"]"
-                       Value="@_lookupText"
-                       ValueChanged="v => _lookupText = v"
-                       Hint="@L["Sales_Checkout_LookupHint"]"
-                       Disabled="@(blocked || _lookingUp)" />
-            <FormActions>
-                <Button Variant="ButtonVariant.Secondary"
-                        IsLoading="@_lookingUp"
-                        Disabled="@blocked"
-                        OnClick="LookupExactAsync">@L["Sales_Checkout_LookupExact"]</Button>
-                <Button Variant="ButtonVariant.Secondary"
-                        IsLoading="@_lookingUp"
-                        Disabled="@blocked"
-                        OnClick="SearchAsync">@L["Sales_Checkout_Search"]</Button>
-            </FormActions>
-
-            @if (_matches.Count > 0)
+    <div class="pos-sell-floor">
+        <aside class="pos-sell-categories" aria-label="@L["Sales_Checkout_CategoryFilter"]">
+            @foreach (var opt in CatalogUiOptions.CheckoutCategoryFilters(L, _categories))
             {
-                <Stack Gap="2">
-                    @foreach (var match in _matches)
-                    {
-                        <div class="pos-row">
-                            <span class="pos-value-md">@match.Name</span>
-                            <span class="pos-muted">@SalesUiOptions.UnitOfMeasureLabel(L, match.UnitOfMeasure)</span>
-                            <MoneyDisplay Amount="@match.SellingPrice" CurrencyCode="PHP" />
-                            <Button Variant="ButtonVariant.Secondary" Disabled="@blocked" OnClick="() => AddToCart(match)">@L["Sales_Checkout_AddToCart"]</Button>
-                        </div>
-                    }
-                </Stack>
+                var selected = string.Equals(_categoryFilter ?? string.Empty, opt.Value ?? string.Empty, StringComparison.Ordinal);
+                <button type="button"
+                        class="@($"pos-category-chip{(selected ? " pos-category-chip--selected" : string.Empty)}")"
+                        disabled="@(blocked || _loadingBrowse)"
+                        aria-pressed="@selected"
+                        @onclick="() => OnCategoryFilterChanged(opt.Value)">@opt.Text</button>
             }
-        </Stack>
-    </Section>
+        </aside>
 
-    <Section Title="@L["Sales_Checkout_BrowseSection"]">
-        @if (_loadingBrowse)
-        {
-            <Spinner />
-        }
-        else if (_browseProducts.Count == 0)
-        {
-            <EmptyState IconName="inbox" Title="@L["Sales_Checkout_NoMatchTitle"]" Message="@L["Sales_Checkout_NoMatchMessage"]" />
-        }
-        else
-        {
-            <Stack Gap="2" class="pos-product-tile-grid">
-                @foreach (var product in _browseProducts)
-                {
-                    <div class="pos-product-tile" @onclick="() => OnBrowseProductTap(product)">
-                        <div class="pos-product-tile__placeholder" aria-hidden="true"></div>
-                        <span class="pos-value-md">@product.Name</span>
-                        <span class="pos-muted">@SalesUiOptions.UnitOfMeasureLabel(L, product.UnitOfMeasure)</span>
-                        <MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" />
-                    </div>
-                }
-            </Stack>
-        }
-    </Section>
-
-    <Section Title="@L["Sales_Checkout_CartSection"]">
-        @if (Cart.IsEmpty)
-        {
-            <EmptyState IconName="sales" Title="@L["Sales_Checkout_CartEmptyTitle"]" Message="@L["Sales_Checkout_CartEmptyMessage"]" />
-        }
-        else
-        {
+        <section class="pos-sell-products" aria-label="@L["Sales_Checkout_BrowseSection"]">
             <Stack Gap="3">
-                @foreach (var item in Cart.Items)
-                {
-                    <div class="pos-row">
-                        <span class="pos-value-md">@item.Name</span>
-                        <span class="pos-muted">@SalesUiOptions.UnitOfMeasureLabel(L, item.UnitOfMeasure)</span>
-                        <MoneyDisplay Amount="@item.UnitPrice" CurrencyCode="PHP" />
-                        <NumberInput Label="@L["Sales_Checkout_Quantity"]"
-                                     Value="@item.Quantity"
-                                     ValueChanged="v => SetQuantity(item.ProductId, v)"
-                                     DecimalPlaces="@PosSaleOptions.MaxQuantityDecimals(item.UnitOfMeasure)"
-                                     IsInvalid="@(!PosSaleOptions.IsValidQuantity(item.Quantity, item.UnitOfMeasure))"
-                                     ErrorText="@QuantityError(item.UnitOfMeasure)"
-                                     Disabled="@blocked" />
-                        <MoneyDisplay Amount="@item.LineTotal" CurrencyCode="PHP" />
-                        <Button Variant="ButtonVariant.Danger" Disabled="@blocked" OnClick="() => Cart.Remove(item.ProductId)">@L["Sales_Checkout_Remove"]</Button>
-                    </div>
-                }
-
-                <Divider />
-
-                <div>
-                    <span class="pos-muted">@L["Sales_Field_Subtotal"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@Cart.Subtotal" CurrencyCode="PHP" /></div>
-                </div>
-                @if (TaxPreview > 0m)
-                {
-                    <div>
-                        <span class="pos-muted">@L["Sales_Field_Tax"]</span>
-                        <div class="pos-value-md"><MoneyDisplay Amount="@TaxPreview" CurrencyCode="PHP" /></div>
-                    </div>
-                }
-                <div>
-                    <span class="pos-muted">@L["Sales_Field_Total"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@PayableTotal" CurrencyCode="PHP" /></div>
-                </div>
-                <div class="pos-muted">@L["Sales_Checkout_ServerAuthoritative"]</div>
+                <TextInput Label="@L["Sales_Checkout_LookupLabel"]"
+                           Value="@_lookupText"
+                           ValueChanged="OnLookupTextChanged"
+                           Hint="@L["Sales_Checkout_LookupHint"]"
+                           Disabled="@(blocked || _lookingUp)" />
                 <FormActions>
-                    <Button Variant="ButtonVariant.Secondary" Disabled="@blocked" OnClick="() => Cart.Clear()">@L["Sales_Checkout_ClearCart"]</Button>
+                    <Button Variant="ButtonVariant.Secondary"
+                            IsLoading="@_lookingUp"
+                            Disabled="@blocked"
+                            OnClick="LookupExactAsync">@L["Sales_Checkout_LookupExact"]</Button>
+                    <Button Variant="ButtonVariant.Secondary"
+                            IsLoading="@_lookingUp"
+                            Disabled="@blocked"
+                            OnClick="SearchAsync">@L["Sales_Checkout_Search"]</Button>
                 </FormActions>
+
+                @if (_matches.Count > 0)
+                {
+                    <Stack Gap="2">
+                        @foreach (var match in _matches)
+                        {
+                            <div class="pos-row">
+                                <div>
+                                    <div class="pos-cart-line__name">@match.Name</div>
+                                    <div class="pos-cart-line__meta">@SalesUiOptions.UnitOfMeasureLabel(L, match.UnitOfMeasure)</div>
+                                </div>
+                                <div class="pos-cart-line__actions">
+                                    <MoneyDisplay Amount="@match.SellingPrice" CurrencyCode="PHP" />
+                                    <Button Variant="ButtonVariant.Secondary" Disabled="@blocked" OnClick="() => AddToCart(match)">@L["Sales_Checkout_AddToCart"]</Button>
+                                </div>
+                            </div>
+                        }
+                    </Stack>
+                }
+
+                <h2 class="pos-type-section">@L["Sales_Checkout_BrowseSection"]</h2>
+                @if (_loadingBrowse)
+                {
+                    <Skeleton />
+                    <Skeleton />
+                    <Skeleton />
+                }
+                else if (_browseProducts.Count == 0)
+                {
+                    <EmptyState IconName="inbox" Title="@L["Sales_Checkout_NoMatchTitle"]" Message="@L["Sales_Checkout_NoMatchMessage"]" />
+                }
+                else
+                {
+                    <div class="pos-product-tile-grid">
+                        @foreach (var product in _browseProducts)
+                        {
+                            var qty = Cart.GetQuantity(product.ProductId);
+                            var inCart = qty > 0m;
+                            <button type="button"
+                                    @key="product.ProductId"
+                                    class="@($"pos-product-tile{(inCart ? " pos-product-tile--in-cart" : string.Empty)}")"
+                                    disabled="@blocked"
+                                    aria-label="@ProductTileAria(product, qty)"
+                                    @onclick="() => OnBrowseProductTap(product)">
+                                <div class="pos-product-tile__placeholder" aria-hidden="true"></div>
+                                <span class="pos-product-tile__name">@product.Name</span>
+                                <span class="pos-product-tile__meta">@SalesUiOptions.UnitOfMeasureLabel(L, product.UnitOfMeasure)</span>
+                                <span class="pos-product-tile__price"><MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" /></span>
+                                @if (inCart)
+                                {
+                                    <div class="pos-product-tile__qty" @onclick:stopPropagation="true">
+                                        <QuantityStepper Value="@qty"
+                                                         ValueChanged="v => SetQuantity(product.ProductId, v)"
+                                                         Step="@(PosSaleOptions.RequiresWholeQuantity(product.UnitOfMeasure) ? 1m : 0.001m)"
+                                                         DecimalPlaces="@PosSaleOptions.MaxQuantityDecimals(product.UnitOfMeasure)"
+                                                         Disabled="@blocked"
+                                                         AriaLabel="@L["Sales_Checkout_Quantity"]"
+                                                         DecreaseLabel="@L["Sales_Checkout_DecreaseQty"]"
+                                                         IncreaseLabel="@L["Sales_Checkout_IncreaseQty"]" />
+                                    </div>
+                                }
+                            </button>
+                        }
+                    </div>
+                }
             </Stack>
-        }
-    </Section>
+        </section>
+
+        <aside class="pos-sell-cart pos-sell-cart--landscape-only" aria-label="@L["Sales_Checkout_CartSection"]">
+            <SaleCartPanel Disabled="@blocked" TaxPreview="@TaxPreview" PayableTotal="@PayableTotal" />
+        </aside>
+    </div>
+
+    @if (!Cart.IsEmpty)
+    {
+        <div class="pos-sell-sticky-bar" role="region" aria-label="@L["Sales_Checkout_CartSection"]">
+            <div class="pos-sell-sticky-bar__meta">
+                <span class="pos-sell-sticky-bar__count">@string.Format(L["Sales_Checkout_CartLineCount"], Cart.LineCount)</span>
+                <MoneyDisplay Amount="@PayableTotal" CurrencyCode="PHP" Emphasized="true" />
+            </div>
+            <Button Variant="ButtonVariant.Primary" OnClick="OpenCartSheet">@L["Sales_Checkout_ViewCart"]</Button>
+        </div>
+    }
+
+    <div class="pos-sell-cart pos-sell-cart--portrait-sheet" hidden="@(!_cartSheetOpen)" role="dialog" aria-modal="true" aria-label="@L["Sales_Checkout_CartSection"]">
+        <FormActions>
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseCartSheet">@L["Common_Close"]</Button>
+        </FormActions>
+        <SaleCartPanel Disabled="@blocked" TaxPreview="@TaxPreview" PayableTotal="@PayableTotal" />
+    </div>
 
     <Section Title="@L["Sales_Checkout_PaymentSection"]">
         <Stack Gap="3">
@@ -295,6 +300,7 @@ else
                     <button type="button"
                             class="@($"pos-payment-method-tile{(selected ? " pos-payment-method-tile--selected" : string.Empty)}")"
                             disabled="@paymentSelectBlocked"
+                            aria-pressed="@selected"
                             @onclick="() => OnPaymentMethodChanged(methodCode)">
                         @SalesUiOptions.PaymentMethodLabel(L, methodCode)
                     </button>
@@ -576,6 +582,9 @@ else
     private string _attemptPaymentIdempotencyKey = Guid.NewGuid().ToString("N");
 
     private bool _electronicPaymentOpen;
+    private bool _cartSheetOpen;
+    private CancellationTokenSource? _lookupDebounceCts;
+    private int _searchGeneration;
     private bool _paymentActing;
     private PaymentAttemptDto? _activeAttempt;
     private Guid? _awaitingPaymentSaleId;
@@ -898,8 +907,51 @@ else
         _lookupText = null;
     }
 
+    private void SetQuantity(Guid productId, decimal quantity) =>
+        Cart.SetQuantity(productId, quantity);
+
     private void SetQuantity(Guid productId, decimal? quantity) =>
         Cart.SetQuantity(productId, quantity ?? 0m);
+
+    private void OpenCartSheet() => _cartSheetOpen = true;
+
+    private void CloseCartSheet() => _cartSheetOpen = false;
+
+    private void OnLookupTextChanged(string? value)
+    {
+        _lookupText = value;
+        _lookupDebounceCts?.Cancel();
+        _lookupDebounceCts?.Dispose();
+        _lookupDebounceCts = new CancellationTokenSource();
+        _ = DebouncedSearchAsync(_lookupDebounceCts.Token);
+    }
+
+    private async Task DebouncedSearchAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(320, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        if (cancellationToken.IsCancellationRequested || string.IsNullOrWhiteSpace(_lookupText))
+        {
+            return;
+        }
+
+        await SearchAsync();
+    }
+
+    private string ProductTileAria(PosCatalogProductDto product, decimal qty)
+    {
+        var price = $"{product.SellingPrice:0.00} PHP";
+        return qty > 0m
+            ? string.Format(L["Sales_Checkout_ProductInCartAria"], product.Name, qty, price)
+            : string.Format(L["Sales_Checkout_ProductAddAria"], product.Name, price);
+    }
 
     private async Task LookupExactAsync()
     {
@@ -937,6 +989,7 @@ else
 
     private async Task SearchAsync()
     {
+        var generation = Interlocked.Increment(ref _searchGeneration);
         _lookingUp = true;
         _errorTitle = null;
         _errorMessage = null;
@@ -948,6 +1001,11 @@ else
             unitOfMeasure: null,
             page: 1,
             pageSize: 20);
+
+        if (generation != _searchGeneration)
+        {
+            return;
+        }
 
         if (result.IsSuccess && result.Data is not null)
         {
@@ -1415,6 +1473,8 @@ else
     public void Dispose()
     {
         Cart.Changed -= OnCartChanged;
+        _lookupDebounceCts?.Cancel();
+        _lookupDebounceCts?.Dispose();
         StopCountdownTimer();
     }
 }

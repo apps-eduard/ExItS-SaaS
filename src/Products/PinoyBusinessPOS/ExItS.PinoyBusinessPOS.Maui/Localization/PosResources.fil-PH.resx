@@ -955,6 +955,12 @@
   <data name="Sales_Checkout_OfflineMessage" xml:space="preserve"><value>Kailangan ng koneksyon ang checkout. Mag-reconnect bago magtala ng benta.</value></data>
   <data name="Sales_Checkout_CategoryFilter" xml:space="preserve"><value>Kategorya</value></data>
   <data name="Sales_Checkout_BrowseSection" xml:space="preserve"><value>Mag-browse ng produkto</value></data>
+  <data name="Sales_Checkout_ViewCart" xml:space="preserve"><value>Tingnan ang cart</value></data>
+  <data name="Sales_Checkout_CartLineCount" xml:space="preserve"><value>{0} item</value></data>
+  <data name="Sales_Checkout_DecreaseQty" xml:space="preserve"><value>Bawasan ang dami</value></data>
+  <data name="Sales_Checkout_IncreaseQty" xml:space="preserve"><value>Dagdagan ang dami</value></data>
+  <data name="Sales_Checkout_ProductInCartAria" xml:space="preserve"><value>{0}, {1} sa cart, {2}</value></data>
+  <data name="Sales_Checkout_ProductAddAria" xml:space="preserve"><value>Idagdag ang {0}, {1}</value></data>
   <data name="Sales_Checkout_AllCategories" xml:space="preserve"><value>Lahat ng kategorya</value></data>
   <data name="Sales_Checkout_OptionalCustomer" xml:space="preserve"><value>Customer (opsyonal)</value></data>
   <data name="Credit_LinkedSale" xml:space="preserve"><value>Naka-link na benta</value></data>

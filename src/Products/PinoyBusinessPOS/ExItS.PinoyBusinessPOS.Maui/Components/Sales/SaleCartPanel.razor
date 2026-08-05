@@ -1,0 +1,79 @@
+@using ExItS.PinoyBusinessPOS.Application.Sales
+@using ExItS.PinoyBusinessPOS.Maui.Services
+@inject SaleCartService Cart
+@inject IStringLocalizer<PosResources> L
+
+@if (Cart.IsEmpty)
+{
+    <EmptyState IconName="sales" Title="@L["Sales_Checkout_CartEmptyTitle"]" Message="@L["Sales_Checkout_CartEmptyMessage"]" />
+}
+else
+{
+    <Stack Gap="3">
+        @foreach (var item in Cart.Items)
+        {
+            <div class="pos-cart-line">
+                <div>
+                    <div class="pos-cart-line__name">@item.Name</div>
+                    <div class="pos-cart-line__meta">
+                        <MoneyDisplay Amount="@item.UnitPrice" CurrencyCode="PHP" />
+                        <span> × </span>
+                        <span class="pos-tabular">@item.Quantity</span>
+                        <span> · </span>
+                        <MoneyDisplay Amount="@item.LineTotal" CurrencyCode="PHP" />
+                    </div>
+                </div>
+                <div class="pos-cart-line__actions">
+                    <QuantityStepper Value="@item.Quantity"
+                                     ValueChanged="v => OnQuantityChanged(item.ProductId, v)"
+                                     Step="@(PosSaleOptions.RequiresWholeQuantity(item.UnitOfMeasure) ? 1m : 0.001m)"
+                                     DecimalPlaces="@PosSaleOptions.MaxQuantityDecimals(item.UnitOfMeasure)"
+                                     Disabled="@Disabled"
+                                     AriaLabel="@L["Sales_Checkout_Quantity"]"
+                                     DecreaseLabel="@L["Sales_Checkout_DecreaseQty"]"
+                                     IncreaseLabel="@L["Sales_Checkout_IncreaseQty"]" />
+                    <Button Variant="ButtonVariant.Ghost"
+                            Disabled="@Disabled"
+                            OnClick="() => Cart.Remove(item.ProductId)">@L["Sales_Checkout_Remove"]</Button>
+                </div>
+            </div>
+        }
+
+        <Divider />
+
+        <div>
+            <span class="pos-type-helper">@L["Sales_Field_Subtotal"]</span>
+            <div><MoneyDisplay Amount="@Cart.Subtotal" CurrencyCode="PHP" /></div>
+        </div>
+        @if (TaxPreview > 0m)
+        {
+            <div>
+                <span class="pos-type-helper">@L["Sales_Field_Tax"]</span>
+                <div><MoneyDisplay Amount="@TaxPreview" CurrencyCode="PHP" /></div>
+            </div>
+        }
+        <div class="pos-sell-cart__total">
+            <span class="pos-sell-cart__total-label">@L["Sales_Field_Total"]</span>
+            <MoneyDisplay Amount="@PayableTotal" CurrencyCode="PHP" Emphasized="true" />
+        </div>
+        <div class="pos-type-helper">@L["Sales_Checkout_ServerAuthoritative"]</div>
+        <FormActions>
+            <Button Variant="ButtonVariant.Secondary" Disabled="@Disabled" OnClick="() => Cart.Clear()">@L["Sales_Checkout_ClearCart"]</Button>
+        </FormActions>
+    </Stack>
+}
+
+@code {
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public decimal TaxPreview { get; set; }
+    [Parameter] public decimal PayableTotal { get; set; }
+    [Parameter] public EventCallback<Guid> QuantityChanged { get; set; }
+
+    private Task OnQuantityChanged(Guid productId, decimal quantity)
+    {
+        Cart.SetQuantity(productId, quantity);
+        return QuantityChanged.HasDelegate
+            ? QuantityChanged.InvokeAsync(productId)
+            : Task.CompletedTask;
+    }
+}

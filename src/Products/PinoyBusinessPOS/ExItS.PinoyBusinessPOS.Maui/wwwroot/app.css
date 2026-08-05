@@ -563,28 +563,79 @@ html.pos-keyboard-open .pos-content {
 /* Cashier / catalog product tiles — stable placeholder, no image required to sell. */
 .pos-product-tile-grid {
     display: grid;
-    gap: 0.75rem;
-    grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+    gap: var(--exits-space-3);
+    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
 }
 
 .pos-product-tile {
-    background: var(--exits-surface, #fff);
-    border: 1px solid var(--exits-border, #e5e7eb);
-    border-radius: var(--exits-radius-md, 0.5rem);
+    background: var(--pos-surface-raised, var(--exits-surface));
+    border: 1px solid var(--pos-border-subtle, var(--exits-border));
+    border-radius: var(--exits-radius-md);
     cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-    padding: 0.65rem;
+    display: grid;
+    grid-template-columns: 3.5rem 1fr;
+    gap: var(--exits-space-2) var(--exits-space-3);
+    align-items: start;
+    min-height: var(--exits-touch-target-min);
+    padding: var(--exits-space-2);
+    text-align: start;
+    transition: border-color var(--exits-motion-fast) var(--exits-ease), background var(--exits-motion-fast) var(--exits-ease);
+}
+
+.pos-product-tile:focus-visible {
+    outline: 3px solid var(--exits-focus);
+    outline-offset: 2px;
+}
+
+.pos-product-tile--in-cart {
+    border-color: var(--pos-accent, var(--exits-primary));
+    background: var(--exits-primary-soft);
 }
 
 .pos-product-tile__placeholder {
+    grid-row: 1 / span 3;
     aspect-ratio: 1 / 1;
-    background: linear-gradient(135deg, var(--exits-surface-muted, #f3f4f6), var(--exits-border, #e5e7eb));
-    border-radius: var(--exits-radius-sm, 0.35rem);
+    background: linear-gradient(135deg, var(--exits-surface-muted), var(--exits-border));
+    border-radius: var(--exits-radius-sm);
     flex-shrink: 0;
-    min-height: 3.5rem;
-    width: 3.5rem;
+    min-height: 3.25rem;
+    width: 3.25rem;
+}
+
+.pos-product-tile__name {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: var(--exits-type-body);
+    font-weight: var(--exits-font-weight-semibold);
+    color: var(--pos-text-primary, var(--exits-text));
+    line-height: 1.3;
+}
+
+.pos-product-tile__meta {
+    font-size: var(--exits-type-helper);
+    color: var(--pos-text-secondary, var(--exits-text-muted));
+}
+
+.pos-product-tile__price {
+    font-family: var(--exits-font-tabular);
+    font-variant-numeric: tabular-nums;
+}
+
+.pos-product-tile__qty {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.pos-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--exits-space-2) var(--exits-space-3);
+    align-items: center;
+    padding: var(--exits-space-2) 0;
+    border-bottom: 1px solid var(--pos-border-subtle, var(--exits-border));
 }
 
 .pos-row .pos-product-tile__placeholder {
@@ -594,33 +645,75 @@ html.pos-keyboard-open .pos-content {
     width: 2.75rem;
 }
 
+.pos-cart-line {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--exits-space-2);
+    align-items: start;
+    padding: var(--exits-space-3) 0;
+    border-bottom: 1px solid var(--pos-border-subtle, var(--exits-border));
+}
+
+.pos-cart-line__name {
+    font-size: var(--exits-type-body);
+    font-weight: var(--exits-font-weight-semibold);
+    color: var(--pos-text-primary, var(--exits-text));
+}
+
+.pos-cart-line__meta {
+    font-size: var(--exits-type-helper);
+    color: var(--pos-text-secondary, var(--exits-text-muted));
+    font-variant-numeric: tabular-nums;
+    font-family: var(--exits-font-tabular);
+}
+
+.pos-cart-line__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--exits-space-2);
+}
+
+.pos-cart-line__remove {
+    margin-inline-start: var(--exits-space-2);
+}
+
 /* Checkout payment method tiles */
 .pos-payment-method-grid {
     display: grid;
-    gap: 0.5rem;
-    grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+    gap: var(--exits-space-2);
+    grid-template-columns: repeat(auto-fill, minmax(5.75rem, 1fr));
 }
 
 .pos-payment-method-tile {
     appearance: none;
-    background: var(--exits-surface, #fff);
-    border: 2px solid var(--exits-border, #e5e7eb);
-    border-radius: var(--exits-radius-md, 0.5rem);
+    background: var(--pos-surface-raised, var(--exits-surface));
+    border: 2px solid var(--pos-border-subtle, var(--exits-border));
+    border-radius: var(--exits-radius-md);
     color: inherit;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     font: inherit;
-    gap: 0.25rem;
-    min-height: 3.25rem;
-    padding: 0.55rem 0.45rem;
+    font-size: var(--exits-type-compact);
+    font-weight: var(--exits-font-weight-semibold);
+    gap: var(--exits-space-1);
+    min-height: var(--exits-touch-target-min);
+    padding: var(--exits-space-2);
     text-align: center;
+    transition: border-color var(--exits-motion-fast) var(--exits-ease);
 }
 
 .pos-payment-method-tile--selected {
-    border-color: var(--exits-primary, #166534);
-    box-shadow: 0 0 0 1px var(--exits-primary, #166534);
-    font-weight: 600;
+    border-color: var(--pos-accent, var(--exits-primary));
+    box-shadow: 0 0 0 1px var(--pos-accent, var(--exits-primary));
+    background: var(--exits-primary-soft);
+}
+
+.pos-payment-method-tile:focus-visible {
+    outline: 3px solid var(--exits-focus);
+    outline-offset: 2px;
 }
 
 .pos-payment-method-tile:disabled {
@@ -630,15 +723,224 @@ html.pos-keyboard-open .pos-content {
 
 /* Simulated GCash QR payload block — readable on phone-width screens */
 .pos-epayment-qr {
-    background: var(--exits-surface, #fff);
-    border: 1px dashed var(--exits-border, #d1d5db);
-    border-radius: var(--exits-radius-md, 0.5rem);
+    background: var(--pos-surface-raised, var(--exits-surface));
+    border: 1px dashed var(--pos-border-subtle, var(--exits-border));
+    border-radius: var(--exits-radius-md);
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.7rem;
+    font-size: var(--exits-type-helper);
     line-height: 1.35;
     max-width: 22rem;
     min-height: 12rem;
     overflow-wrap: anywhere;
-    padding: 0.85rem;
+    padding: var(--exits-space-3);
     word-break: break-all;
+}
+
+/* ============================== Cashier sell floor ============================== */
+
+.exds-root {
+    --pos-surface-page: var(--exits-bg);
+    --pos-surface-panel: var(--exits-surface);
+    --pos-surface-raised: var(--exits-surface-elevated);
+    --pos-border-subtle: var(--exits-border);
+    --pos-text-primary: var(--exits-text);
+    --pos-text-secondary: var(--exits-text-muted);
+    --pos-accent: var(--exits-primary);
+    --pos-danger: var(--exits-danger);
+    --pos-success: var(--exits-success);
+    --pos-total-font: var(--exits-type-display);
+    --pos-touch-target: var(--exits-touch-target-min);
+    --pos-category-width: 20%;
+    --pos-cart-width: 25%;
+}
+
+.pos-sell-floor {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exits-space-3);
+    min-height: 0;
+}
+
+.pos-sell-categories {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: var(--exits-space-2);
+    overflow-x: auto;
+    padding-bottom: var(--exits-space-1);
+    -webkit-overflow-scrolling: touch;
+}
+
+.pos-category-chip {
+    appearance: none;
+    flex: 0 0 auto;
+    min-height: var(--exits-touch-target-min);
+    padding: 0 var(--exits-space-3);
+    border: 1px solid var(--pos-border-subtle);
+    border-radius: var(--exits-radius-full);
+    background: var(--pos-surface-panel);
+    color: var(--pos-text-primary);
+    font: inherit;
+    font-size: var(--exits-type-compact);
+    font-weight: var(--exits-font-weight-semibold);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.pos-category-chip--selected {
+    background: var(--exits-primary-soft);
+    border-color: var(--pos-accent);
+    color: var(--pos-accent);
+}
+
+.pos-category-chip:focus-visible {
+    outline: 3px solid var(--exits-focus);
+    outline-offset: 2px;
+}
+
+.pos-sell-products {
+    min-width: 0;
+}
+
+.pos-sell-cart {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exits-space-3);
+    background: var(--pos-surface-panel);
+    border: 1px solid var(--pos-border-subtle);
+    border-radius: var(--exits-radius-md);
+    padding: var(--exits-space-3);
+}
+
+.pos-sell-cart__total {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--exits-space-3);
+    padding-top: var(--exits-space-2);
+    border-top: 1px solid var(--pos-border-subtle);
+}
+
+.pos-sell-cart__total-label {
+    font-size: var(--exits-type-section);
+    font-weight: var(--exits-font-weight-semibold);
+}
+
+.pos-sell-sticky-bar {
+    position: sticky;
+    bottom: calc(3.75rem + env(safe-area-inset-bottom, 0px));
+    z-index: var(--exits-z-sticky);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--exits-space-3);
+    margin-top: var(--exits-space-3);
+    padding: var(--exits-space-3);
+    background: var(--pos-surface-raised);
+    border: 1px solid var(--pos-border-subtle);
+    border-radius: var(--exits-radius-md);
+    box-shadow: var(--exits-shadow-md);
+}
+
+.pos-sell-sticky-bar__meta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 0.1rem;
+}
+
+.pos-sell-sticky-bar__count {
+    font-size: var(--exits-type-helper);
+    color: var(--pos-text-secondary);
+}
+
+.pos-type-page-title {
+    font-size: var(--exits-type-page-title);
+    font-weight: var(--exits-font-weight-semibold);
+    line-height: 1.25;
+}
+
+.pos-type-section {
+    font-size: var(--exits-type-section);
+    font-weight: var(--exits-font-weight-semibold);
+}
+
+.pos-type-helper {
+    font-size: var(--exits-type-helper);
+    color: var(--pos-text-secondary);
+}
+
+.pos-tabular {
+    font-family: var(--exits-font-tabular);
+    font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 900px) and (orientation: landscape) {
+    .pos-sell-floor {
+        display: grid;
+        grid-template-columns: var(--pos-category-width) minmax(0, 1fr) var(--pos-cart-width);
+        gap: var(--exits-space-3);
+        align-items: stretch;
+        min-height: calc(100dvh - 9rem);
+    }
+
+    .pos-sell-categories {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        overflow-x: hidden;
+        overflow-y: auto;
+        max-height: calc(100dvh - 10rem);
+        padding-bottom: 0;
+    }
+
+    .pos-category-chip {
+        width: 100%;
+        border-radius: var(--exits-radius-md);
+        text-align: start;
+        justify-content: flex-start;
+    }
+
+    .pos-sell-products {
+        overflow-y: auto;
+        max-height: calc(100dvh - 10rem);
+        padding-inline-end: var(--exits-space-1);
+    }
+
+    .pos-sell-cart {
+        overflow-y: auto;
+        max-height: calc(100dvh - 10rem);
+    }
+
+    .pos-sell-sticky-bar {
+        display: none;
+    }
+
+    .pos-sell-cart--landscape-only {
+        display: flex;
+    }
+
+    .pos-sell-cart--portrait-sheet {
+        display: none !important;
+    }
+}
+
+@media (max-width: 899px), (orientation: portrait) {
+    .pos-sell-cart--landscape-only {
+        display: none;
+    }
+
+    .pos-sell-cart--portrait-sheet[hidden] {
+        display: none !important;
+    }
+
+    .pos-sell-cart--portrait-sheet:not([hidden]) {
+        display: flex;
+        position: fixed;
+        left: var(--exits-space-3);
+        right: var(--exits-space-3);
+        bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+        z-index: var(--exits-z-drawer);
+        max-height: min(70dvh, 32rem);
+        overflow-y: auto;
+        box-shadow: var(--exits-shadow-lg);
+    }
 }
