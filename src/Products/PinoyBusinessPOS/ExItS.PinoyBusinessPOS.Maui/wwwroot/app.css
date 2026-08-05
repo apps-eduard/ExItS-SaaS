@@ -2994,6 +2994,17 @@ html.pos-keyboard-open .pos-content {
     flex-shrink: 0;
 }
 
+.pos-categories__menu--open {
+    z-index: calc(var(--exits-z-dropdown, 40) + 1);
+}
+
+.pos-categories__menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: var(--exits-z-dropdown, 40);
+    background: transparent;
+}
+
 .pos-categories__menu-trigger {
     display: inline-flex;
     align-items: center;
@@ -3023,7 +3034,7 @@ html.pos-keyboard-open .pos-content {
     position: absolute;
     top: calc(100% - 0.25rem);
     right: 0;
-    z-index: 5;
+    z-index: 1;
     min-width: 10.5rem;
     padding: 0.35rem;
     border: 1px solid var(--exits-border);
@@ -3055,6 +3066,14 @@ html.pos-keyboard-open .pos-content {
 .pos-categories__menu-item--danger {
     color: var(--exits-danger, #b42318);
     font-weight: 650;
+}
+
+.pos-categories__menu-item--cancel {
+    margin-top: 0.2rem;
+    border-top: 1px solid var(--exits-border);
+    border-radius: 0 0 var(--exits-radius-sm, 0.35rem) var(--exits-radius-sm, 0.35rem);
+    color: var(--exits-text-muted);
+    font-weight: 600;
 }
 
 

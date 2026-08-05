@@ -68,6 +68,12 @@ public sealed class CatalogCategoriesUiGuardTests
         Assert.Contains("ConfirmDialog", page, StringComparison.Ordinal);
         Assert.Contains("pos-categories__menu-item--danger", page, StringComparison.Ordinal);
         Assert.Contains("RequestDeactivate", page, StringComparison.Ordinal);
+        Assert.Contains("CloseMenu", page, StringComparison.Ordinal);
+        Assert.Contains("pos-categories__menu-backdrop", page, StringComparison.Ordinal);
+        Assert.Contains("pos-categories__menu-item--cancel", page, StringComparison.Ordinal);
+        Assert.Contains("Catalog_Cancel", page, StringComparison.Ordinal);
+        Assert.Contains("NavigationLock", page, StringComparison.Ordinal);
+        Assert.Contains("OnMenuBackNavigation", page, StringComparison.Ordinal);
         Assert.DoesNotContain("ResponsiveDataList", page, StringComparison.Ordinal);
         Assert.DoesNotContain("class=\"pos-link\"", page, StringComparison.Ordinal);
         Assert.DoesNotContain("CategoryId.ToString", page, StringComparison.Ordinal);
@@ -106,6 +112,8 @@ public sealed class CatalogCategoriesUiGuardTests
         Assert.Contains(".pos-categories__row", css, StringComparison.Ordinal);
         Assert.Contains(".pos-categories__segments", css, StringComparison.Ordinal);
         Assert.Contains(".pos-categories__menu-item--danger", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-categories__menu-backdrop", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-categories__menu-item--cancel", css, StringComparison.Ordinal);
 
         var loc = Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
             "ExItS.PinoyBusinessPOS.Maui", "Localization");

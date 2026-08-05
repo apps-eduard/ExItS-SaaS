@@ -183,6 +183,15 @@ else
             }
             else
             {
+                @if (_menuCategoryId is not null)
+                {
+                    <NavigationLock OnBeforeInternalNavigation="OnMenuBackNavigation" />
+                    <div class="pos-categories__menu-backdrop"
+                         role="presentation"
+                         aria-hidden="true"
+                         @onclick="CloseMenu"
+                         @onkeydown="OnMenuKeyDown"></div>
+                }
                 <div class="pos-categories__list" role="list" aria-label="@L["Catalog_Category_Title"]">
                     @foreach (var item in _items)
                     {
@@ -201,7 +210,8 @@ else
                             </div>
                             @if (canManage)
                             {
-                                <div class="pos-categories__menu" @onclick:stopPropagation="true">
+                                <div class="pos-categories__menu @(menuOpen ? "pos-categories__menu--open" : null)"
+                                     @onclick:stopPropagation="true">
                                     <button type="button"
                                             class="pos-categories__menu-trigger"
                                             aria-label="@L["Catalog_Category_MoreActions"]"
@@ -248,6 +258,12 @@ else
                                                     @L["Catalog_Reactivate"]
                                                 </button>
                                             }
+                                            <button type="button"
+                                                    class="pos-categories__menu-item pos-categories__menu-item--cancel"
+                                                    role="menuitem"
+                                                    @onclick="CloseMenu">
+                                                @L["Catalog_Cancel"]
+                                            </button>
                                         </div>
                                     }
                                 </div>
@@ -569,6 +585,27 @@ else
     private void ToggleMenu(Guid categoryId)
     {
         _menuCategoryId = _menuCategoryId == categoryId ? null : categoryId;
+    }
+
+    private void CloseMenu() => _menuCategoryId = null;
+
+    private void OnMenuKeyDown(KeyboardEventArgs args)
+    {
+        if (string.Equals(args.Key, "Escape", StringComparison.OrdinalIgnoreCase))
+        {
+            CloseMenu();
+        }
+    }
+
+    private void OnMenuBackNavigation(LocationChangingContext context)
+    {
+        if (_menuCategoryId is null)
+        {
+            return;
+        }
+
+        context.PreventNavigation();
+        CloseMenu();
     }
 
     private void RequestDeactivate(PosProductCategoryDto category)
