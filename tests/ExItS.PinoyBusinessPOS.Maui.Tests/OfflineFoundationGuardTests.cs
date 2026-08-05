@@ -23,7 +23,13 @@ public sealed class OfflineFoundationGuardTests
         Assert.Contains("OfflineQueue.GetCountsAsync", shell, StringComparison.Ordinal);
         Assert.Contains("aria-label", shell, StringComparison.Ordinal);
         Assert.Contains("SyncStatus_ConnectionLabel", shell, StringComparison.Ordinal);
+        Assert.Contains("SyncStatus_SyncLabel", shell, StringComparison.Ordinal);
+        Assert.Contains("SyncStatus_PendingItems", shell, StringComparison.Ordinal);
+        Assert.Contains("SyncStatus_WaitingForConnection", shell, StringComparison.Ordinal);
         Assert.Contains("SyncStatus_SyncNow", shell, StringComparison.Ordinal);
+        Assert.Contains("ConnectionTitle", shell, StringComparison.Ordinal);
+        Assert.Contains("SyncSectionTitle", shell, StringComparison.Ordinal);
+        Assert.Contains("pos-sync-popover__section", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("ExtraItems", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("pos-sync-status--menu", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("SyncQueue", shell, StringComparison.OrdinalIgnoreCase);
@@ -44,7 +50,8 @@ public sealed class OfflineFoundationGuardTests
         Assert.Contains("PosSyncStatusKind.LastSynced => \"synced\"", shell, StringComparison.Ordinal);
         Assert.Contains(".pos-sync-status--quiet", css, StringComparison.Ordinal);
         Assert.Contains(".pos-sync-status--synced", css, StringComparison.Ordinal);
-        Assert.Contains(".pos-sync-popover", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-sync-popover__section", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-sync-popover__value--synced", css, StringComparison.Ordinal);
         Assert.Contains(".pos-sync-status__badge", css, StringComparison.Ordinal);
     }
 
@@ -80,6 +87,8 @@ public sealed class OfflineFoundationGuardTests
                      "SyncStatus_Online", "SyncStatus_Offline", "SyncStatus_Reconnect",
                      "SyncStatus_ReconnectMessage", "SyncStatus_SyncNow", "SyncStatus_ConnectionLabel",
                      "SyncStatus_PendingCountLabel", "SyncStatus_FailedCountLabel",
+                     "SyncStatus_PendingItems", "SyncStatus_WaitingForConnection",
+                     "SyncStatus_SyncingProgress", "SyncStatus_ConnectionOnlineDetail",
                      "DevOffline_Title", "Settings_DevOfflineLink"
                  })
         {

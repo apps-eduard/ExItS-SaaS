@@ -570,29 +570,39 @@
   <data name="SyncStatus_Label" xml:space="preserve"><value>Katayuan ng sync</value></data>
   <data name="SyncStatus_Online" xml:space="preserve"><value>Online</value></data>
   <data name="SyncStatus_OnlineShort" xml:space="preserve"><value>Online</value></data>
-  <data name="SyncStatus_OnlineDetail" xml:space="preserve"><value>May koneksyon. Na-verify ang access online.</value></data>
+  <data name="SyncStatus_OnlineDetail" xml:space="preserve"><value>May koneksyon. Na-verify ang access</value></data>
   <data name="SyncStatus_Offline" xml:space="preserve"><value>Offline</value></data>
   <data name="SyncStatus_OfflineShort" xml:space="preserve"><value>Offline</value></data>
-  <data name="SyncStatus_OfflineDetail" xml:space="preserve"><value>Walang network. Kailangan ng online check bago pumasok sa protektadong POS.</value></data>
+  <data name="SyncStatus_OfflineDetail" xml:space="preserve"><value>Walang internet connection</value></data>
+  <data name="SyncStatus_ConnectionOnlineDetail" xml:space="preserve"><value>May koneksyon. Na-verify ang access</value></data>
+  <data name="SyncStatus_ConnectionOfflineDetail" xml:space="preserve"><value>Walang internet connection</value></data>
+  <data name="SyncStatus_ConnectionReconnecting" xml:space="preserve"><value>Reconnecting…</value></data>
+  <data name="SyncStatus_Connecting" xml:space="preserve"><value>Connecting…</value></data>
   <data name="SyncStatus_Reconnect" xml:space="preserve"><value>Mag-reconnect para i-verify ang access</value></data>
   <data name="SyncStatus_ReconnectShort" xml:space="preserve"><value>Reconnect</value></data>
   <data name="SyncStatus_ReconnectTitle" xml:space="preserve"><value>Kailangan mag-reconnect</value></data>
   <data name="SyncStatus_ReconnectMessage" xml:space="preserve"><value>Mag-reconnect para i-verify ang access bago magpatuloy. Hindi sapat ang local data para i-unlock ang POS.</value></data>
-  <data name="SyncStatus_Pending" xml:space="preserve"><value>Pending Sync ({0})</value></data>
+  <data name="SyncStatus_Pending" xml:space="preserve"><value>Pending sync ({0})</value></data>
   <data name="SyncStatus_PendingShort" xml:space="preserve"><value>Pending ({0})</value></data>
+  <data name="SyncStatus_PendingItems" xml:space="preserve"><value>Pending sync ({0} items)</value></data>
   <data name="SyncStatus_PendingDetail" xml:space="preserve"><value>Naka-save sa device na ito. Naghihintay mag-sync.</value></data>
   <data name="SyncStatus_Syncing" xml:space="preserve"><value>Sini-sync</value></data>
   <data name="SyncStatus_SyncingShort" xml:space="preserve"><value>Sini-sync</value></data>
+  <data name="SyncStatus_SyncingEllipsis" xml:space="preserve"><value>Sini-sync…</value></data>
+  <data name="SyncStatus_SyncingProgress" xml:space="preserve"><value>Sini-sync… ({0} of {1})</value></data>
   <data name="SyncStatus_SyncingDetail" xml:space="preserve"><value>Pinapadala ang pending work sa server.</value></data>
-  <data name="SyncStatus_Failed" xml:space="preserve"><value>Nabigo ang Sync</value></data>
+  <data name="SyncStatus_Failed" xml:space="preserve"><value>Nabigo ang sync</value></data>
   <data name="SyncStatus_FailedShort" xml:space="preserve"><value>Nabigo</value></data>
   <data name="SyncStatus_FailedDetail" xml:space="preserve"><value>May operation na kailangan i-review. Napanatili ang pending work.</value></data>
+  <data name="SyncStatus_FailedItemsDetail" xml:space="preserve"><value>{0} items ang kailangan ng atensyon. Napanatili ang pending work.</value></data>
+  <data name="SyncStatus_WaitingForConnection" xml:space="preserve"><value>Naghihintay ng connection</value></data>
+  <data name="SyncStatus_WaitingWithPending" xml:space="preserve"><value>{0} items ang mag-sync kapag online</value></data>
   <data name="SyncStatus_RecoveryRequired" xml:space="preserve"><value>Kailangan ng recovery</value></data>
   <data name="SyncStatus_RecoveryRequiredShort" xml:space="preserve"><value>Recovery</value></data>
   <data name="SyncStatus_RecoveryRequiredDetail" xml:space="preserve"><value>May operation na kailangan ng recovery. Napanatili ang pending work at hindi ito tinanggal.</value></data>
-  <data name="SyncStatus_LastSynced" xml:space="preserve"><value>Huling Sync</value></data>
+  <data name="SyncStatus_LastSynced" xml:space="preserve"><value>Huling sync</value></data>
   <data name="SyncStatus_LastSyncedShort" xml:space="preserve"><value>Na-sync</value></data>
-  <data name="SyncStatus_LastSyncedAt" xml:space="preserve"><value>Huling Sync {0}</value></data>
+  <data name="SyncStatus_LastSyncedAt" xml:space="preserve"><value>Huling sync {0}</value></data>
   <data name="SyncStatus_KeyUnavailable" xml:space="preserve"><value>Hindi available ang local encryption key. Napanatili ang pending work at hindi mapoproseso.</value></data>
   <data name="SyncStatus_RetryNow" xml:space="preserve"><value>I-retry ang sync</value></data>
   <data name="SyncStatus_SyncNow" xml:space="preserve"><value>I-sync ngayon</value></data>

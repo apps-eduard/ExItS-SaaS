@@ -570,29 +570,39 @@
   <data name="SyncStatus_Label" xml:space="preserve"><value>Sync status</value></data>
   <data name="SyncStatus_Online" xml:space="preserve"><value>Online</value></data>
   <data name="SyncStatus_OnlineShort" xml:space="preserve"><value>Online</value></data>
-  <data name="SyncStatus_OnlineDetail" xml:space="preserve"><value>Connected. Access was verified online.</value></data>
+  <data name="SyncStatus_OnlineDetail" xml:space="preserve"><value>Connected. Access verified</value></data>
   <data name="SyncStatus_Offline" xml:space="preserve"><value>Offline</value></data>
   <data name="SyncStatus_OfflineShort" xml:space="preserve"><value>Offline</value></data>
-  <data name="SyncStatus_OfflineDetail" xml:space="preserve"><value>No network connection. Protected POS access requires an online check.</value></data>
+  <data name="SyncStatus_OfflineDetail" xml:space="preserve"><value>No internet connection</value></data>
+  <data name="SyncStatus_ConnectionOnlineDetail" xml:space="preserve"><value>Connected. Access verified</value></data>
+  <data name="SyncStatus_ConnectionOfflineDetail" xml:space="preserve"><value>No internet connection</value></data>
+  <data name="SyncStatus_ConnectionReconnecting" xml:space="preserve"><value>Reconnecting…</value></data>
+  <data name="SyncStatus_Connecting" xml:space="preserve"><value>Connecting…</value></data>
   <data name="SyncStatus_Reconnect" xml:space="preserve"><value>Reconnect to verify access</value></data>
   <data name="SyncStatus_ReconnectShort" xml:space="preserve"><value>Reconnect</value></data>
   <data name="SyncStatus_ReconnectTitle" xml:space="preserve"><value>Reconnect required</value></data>
   <data name="SyncStatus_ReconnectMessage" xml:space="preserve"><value>Reconnect to verify access before continuing. Local data alone cannot unlock the POS.</value></data>
-  <data name="SyncStatus_Pending" xml:space="preserve"><value>Pending Sync ({0})</value></data>
+  <data name="SyncStatus_Pending" xml:space="preserve"><value>Pending sync ({0})</value></data>
   <data name="SyncStatus_PendingShort" xml:space="preserve"><value>Pending ({0})</value></data>
+  <data name="SyncStatus_PendingItems" xml:space="preserve"><value>Pending sync ({0} items)</value></data>
   <data name="SyncStatus_PendingDetail" xml:space="preserve"><value>Saved on this device. Waiting to sync.</value></data>
   <data name="SyncStatus_Syncing" xml:space="preserve"><value>Syncing</value></data>
   <data name="SyncStatus_SyncingShort" xml:space="preserve"><value>Syncing</value></data>
+  <data name="SyncStatus_SyncingEllipsis" xml:space="preserve"><value>Syncing…</value></data>
+  <data name="SyncStatus_SyncingProgress" xml:space="preserve"><value>Syncing… ({0} of {1})</value></data>
   <data name="SyncStatus_SyncingDetail" xml:space="preserve"><value>Sending pending work to the server.</value></data>
-  <data name="SyncStatus_Failed" xml:space="preserve"><value>Sync Failed</value></data>
+  <data name="SyncStatus_Failed" xml:space="preserve"><value>Sync failed</value></data>
   <data name="SyncStatus_FailedShort" xml:space="preserve"><value>Failed</value></data>
   <data name="SyncStatus_FailedDetail" xml:space="preserve"><value>Some operations need review. Pending work was retained.</value></data>
+  <data name="SyncStatus_FailedItemsDetail" xml:space="preserve"><value>{0} items need attention. Pending work was retained.</value></data>
+  <data name="SyncStatus_WaitingForConnection" xml:space="preserve"><value>Waiting for connection</value></data>
+  <data name="SyncStatus_WaitingWithPending" xml:space="preserve"><value>{0} items will sync when online</value></data>
   <data name="SyncStatus_RecoveryRequired" xml:space="preserve"><value>Recovery required</value></data>
   <data name="SyncStatus_RecoveryRequiredShort" xml:space="preserve"><value>Recovery</value></data>
   <data name="SyncStatus_RecoveryRequiredDetail" xml:space="preserve"><value>Some operations need recovery. Pending work was retained and was not discarded.</value></data>
-  <data name="SyncStatus_LastSynced" xml:space="preserve"><value>Last Synced</value></data>
+  <data name="SyncStatus_LastSynced" xml:space="preserve"><value>Last synced</value></data>
   <data name="SyncStatus_LastSyncedShort" xml:space="preserve"><value>Synced</value></data>
-  <data name="SyncStatus_LastSyncedAt" xml:space="preserve"><value>Last Synced {0}</value></data>
+  <data name="SyncStatus_LastSyncedAt" xml:space="preserve"><value>Last synced {0}</value></data>
   <data name="SyncStatus_KeyUnavailable" xml:space="preserve"><value>Local encryption key unavailable. Pending work was preserved and cannot be processed.</value></data>
   <data name="SyncStatus_RetryNow" xml:space="preserve"><value>Retry sync</value></data>
   <data name="SyncStatus_SyncNow" xml:space="preserve"><value>Sync now</value></data>
