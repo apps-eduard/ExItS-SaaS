@@ -4,8 +4,9 @@ using ExItS.PinoyBusinessPOS.Application.Abstractions;
 namespace ExItS.PinoyBusinessPOS.ApiClient;
 
 /// <summary>
-/// Attaches Platform session auth for Personal/Org Owner Platform routes.
-/// Bearer POS token routes under introspect remain Bearer-first.
+/// Attaches Platform session auth for Personal/Org Owner Platform routes, authenticated
+/// cross-scope discovery routes (<c>/api/v1/commercial</c>, <c>/api/v1/catalog</c>), and
+/// public-identity lookups. Bearer POS token routes under introspect remain Bearer-first.
 /// <c>/auth/token</c> attaches PlatformSession when a session exists so GrantType=session works
 /// (password grant ignores the session header).
 /// </summary>
@@ -38,6 +39,7 @@ public sealed class PlatformSessionHeaderHandler(ICurrentUserContext currentUser
         if (path.StartsWith("/api/v1/personal", StringComparison.OrdinalIgnoreCase)
             || path.StartsWith("/api/v1/organizations", StringComparison.OrdinalIgnoreCase)
             || path.StartsWith("/api/v1/commercial", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("/api/v1/catalog", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/api/v1/me/public-identity", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/api/v1/users/resolve-public-id", StringComparison.OrdinalIgnoreCase))
         {

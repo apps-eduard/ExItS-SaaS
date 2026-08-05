@@ -878,6 +878,8 @@
   <data name="Catalog_Global_AuthTitle" xml:space="preserve"><value>Sign-in required</value></data>
   <data name="Catalog_Global_AuthMessage" xml:space="preserve"><value>Global catalog access requires authentication.</value></data>
   <data name="Catalog_Global_AuthUnavailable" xml:space="preserve"><value>Sign-in is not available in this build.</value></data>
+  <data name="Catalog_Global_SessionExpiredTitle" xml:space="preserve"><value>Session expired</value></data>
+  <data name="Catalog_Global_SessionExpiredMessage" xml:space="preserve"><value>Your session could not be verified. Sign in again to browse the global catalog.</value></data>
   <data name="Catalog_Global_ClearSearch" xml:space="preserve"><value>Clear search</value></data>
   <data name="Catalog_Global_ClearFilters" xml:space="preserve"><value>Clear filters</value></data>
   <data name="Catalog_Global_FiltersCount" xml:space="preserve"><value>Filters ({0})</value></data>

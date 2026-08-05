@@ -86,6 +86,15 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
             return true;
         }
 
+        // Authenticated merchant discovery (global catalog templates/products/categories) —
+        // cross-scope, any authenticated account class. Endpoint enforces session auth
+        // (RequireAuthorization + EnsureAuthenticated) and returns published/Active data only;
+        // entitlement-aware filtering is deferred to POS import (WP06). Mirrors /api/v1/commercial.
+        if (path.StartsWith("/api/v1/catalog", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
         // Public ExItS ID — any authenticated account class (Personal/Organization/Platform).
         if (path.Equals("/api/v1/me/public-identity", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/api/v1/users/resolve-public-id", StringComparison.OrdinalIgnoreCase))

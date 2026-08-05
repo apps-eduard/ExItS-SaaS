@@ -40,6 +40,24 @@ public sealed class CatalogGlobalBrowseUiTests
     }
 
     [Fact]
+    public void Auth_blocked_state_only_claims_signin_unavailable_when_no_session()
+    {
+        var page = Page();
+
+        // A 401 while the app still holds a session renders the session-expired copy plus a retry,
+        // never the misleading "sign-in is not available in this build" note.
+        Assert.Contains("_sessionExpired", page, StringComparison.Ordinal);
+        Assert.Contains("_sessionExpired = CurrentUser.IsAuthenticated;", page, StringComparison.Ordinal);
+        Assert.Contains("Catalog_Global_SessionExpiredTitle", page, StringComparison.Ordinal);
+        Assert.Contains("Catalog_Global_SessionExpiredMessage", page, StringComparison.Ordinal);
+
+        // The "unavailable" note is only reachable in the no-session (else) branch.
+        var sessionBranch = page.IndexOf("if (_sessionExpired)", StringComparison.Ordinal);
+        var unavailable = page.IndexOf("Catalog_Global_AuthUnavailable", StringComparison.Ordinal);
+        Assert.True(sessionBranch >= 0 && unavailable > sessionBranch);
+    }
+
+    [Fact]
     public void Sign_in_required_and_empty_states_are_mutually_exclusive()
     {
         var page = Page();
@@ -141,6 +159,8 @@ public sealed class CatalogGlobalBrowseUiTests
                      "Catalog_Global_AuthTitle",
                      "Catalog_Global_AuthMessage",
                      "Catalog_Global_AuthUnavailable",
+                     "Catalog_Global_SessionExpiredTitle",
+                     "Catalog_Global_SessionExpiredMessage",
                      "Catalog_Global_NoMatchTitle",
                      "Catalog_Global_NoMatchMessage",
                      "Catalog_Global_Loading",

@@ -48,9 +48,18 @@ else
             @if (_authBlocked)
             {
                 <div class="pos-global__state" role="alert">
-                    <h2 class="pos-global__state-title">@L["Catalog_Global_AuthTitle"]</h2>
-                    <p class="pos-global__state-message">@L["Catalog_Global_AuthMessage"]</p>
-                    <p class="pos-global__state-note">@L["Catalog_Global_AuthUnavailable"]</p>
+                    @if (_sessionExpired)
+                    {
+                        <h2 class="pos-global__state-title">@L["Catalog_Global_SessionExpiredTitle"]</h2>
+                        <p class="pos-global__state-message">@L["Catalog_Global_SessionExpiredMessage"]</p>
+                        <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Api_Retry"]</Button>
+                    }
+                    else
+                    {
+                        <h2 class="pos-global__state-title">@L["Catalog_Global_AuthTitle"]</h2>
+                        <p class="pos-global__state-message">@L["Catalog_Global_AuthMessage"]</p>
+                        <p class="pos-global__state-note">@L["Catalog_Global_AuthUnavailable"]</p>
+                    }
                 </div>
             }
             else if (_accessDenied)
@@ -239,6 +248,7 @@ else
     private bool _busy;
     private bool _isOffline;
     private bool _authBlocked;
+    private bool _sessionExpired;
     private bool _accessDenied;
     private bool _filtersOpen;
     private string? _search;
@@ -409,6 +419,7 @@ else
         _errorTitle = null;
         _errorMessage = null;
         _authBlocked = false;
+        _sessionExpired = false;
         _accessDenied = false;
         _isOffline = !await Connectivity.IsConnectedAsync().ConfigureAwait(false);
         if (_isOffline)
@@ -466,6 +477,9 @@ else
     private void ApplyAuthBlocked()
     {
         _authBlocked = true;
+        // A 401 while the app still holds a session means the session was rejected (expired/invalid),
+        // not that interactive sign-in is unavailable in this build.
+        _sessionExpired = CurrentUser.IsAuthenticated;
         _accessDenied = false;
         _items = Array.Empty<PlatformMerchantGlobalProductDto>();
         _totalCount = 0;

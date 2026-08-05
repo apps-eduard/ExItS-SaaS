@@ -126,6 +126,57 @@ public sealed class ApiAccountScopeIsolationTests(PostgreSqlFixture fixture) : I
     }
 
     [Fact]
+    public async Task Authenticated_sessions_of_every_class_can_reach_merchant_catalog_discovery()
+    {
+        // Merchant discovery (/api/v1/catalog/*) is an authenticated cross-scope surface,
+        // mirroring /api/v1/commercial. Personal, Organization, and Platform sessions may browse;
+        // the endpoint enforces its own session auth and returns only published/Active data.
+        var (_, personalEmail, personalPassword) = await SeedPersonalUserAsync("catpers");
+        var personalToken = (await LoginAsync(personalEmail, personalPassword))
+            .GetProperty("sessionToken").GetString()!;
+
+        var (_, orgEmail, orgPassword, _) = await SeedOrgMemberAsync("catorg");
+        var orgToken = (await LoginAsync(orgEmail, orgPassword))
+            .GetProperty("sessionToken").GetString()!;
+
+        var (platformUserId, platformUsername, platformPassword) = await SeedUserAsync("catplat");
+        var assign = await _admin.PostAsJsonAsync(
+            "/api/v1/platform/authorization/assignments",
+            new
+            {
+                platformUserId,
+                role = nameof(PlatformSystemRole.PlatformAdministrator)
+            });
+        Assert.Equal(HttpStatusCode.Created, assign.StatusCode);
+        var platformToken = (await LoginAsync(platformUsername, platformPassword))
+            .GetProperty("sessionToken").GetString()!;
+
+        foreach (var token in new[] { personalToken, orgToken, platformToken })
+        {
+            using var req = Authed(
+                HttpMethod.Get,
+                "/api/v1/catalog/products/search?page=1&pageSize=5",
+                token);
+            var res = await _client.SendAsync(req);
+
+            Assert.NotEqual(HttpStatusCode.Forbidden, res.StatusCode);
+            Assert.NotEqual(HttpStatusCode.Unauthorized, res.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        }
+    }
+
+    [Fact]
+    public async Task Unauthenticated_merchant_catalog_discovery_is_unauthorized()
+    {
+        using var req = new HttpRequestMessage(
+            HttpMethod.Get,
+            "/api/v1/catalog/products/search?page=1&pageSize=5");
+        var res = await _client.SendAsync(req);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
+    }
+
+    [Fact]
     public async Task Client_cannot_forge_account_class_via_profile_select_of_other_user()
     {
         var (userAId, emailA, passwordA) = await SeedPersonalUserAsync("fora");

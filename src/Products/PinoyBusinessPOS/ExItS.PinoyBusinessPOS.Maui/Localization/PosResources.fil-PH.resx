@@ -878,6 +878,8 @@
   <data name="Catalog_Global_AuthTitle" xml:space="preserve"><value>Kailangan mag-sign in</value></data>
   <data name="Catalog_Global_AuthMessage" xml:space="preserve"><value>Kailangan ng authentication para sa global catalog.</value></data>
   <data name="Catalog_Global_AuthUnavailable" xml:space="preserve"><value>Hindi available ang sign-in sa build na ito.</value></data>
+  <data name="Catalog_Global_SessionExpiredTitle" xml:space="preserve"><value>Nag-expire ang session</value></data>
+  <data name="Catalog_Global_SessionExpiredMessage" xml:space="preserve"><value>Hindi ma-verify ang iyong session. Mag-sign in ulit para mag-browse ng global catalog.</value></data>
   <data name="Catalog_Global_ClearSearch" xml:space="preserve"><value>Burahin ang search</value></data>
   <data name="Catalog_Global_ClearFilters" xml:space="preserve"><value>Burahin ang mga filter</value></data>
   <data name="Catalog_Global_FiltersCount" xml:space="preserve"><value>Mga filter ({0})</value></data>
