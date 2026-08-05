@@ -11,7 +11,9 @@ public sealed class InventoryPageGuardTests
         Assert.Contains("@page \"/inventory\"", list, StringComparison.Ordinal);
         Assert.Contains("IPosInventoryClient", list, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ViewInventory", list, StringComparison.Ordinal);
-        Assert.DoesNotContain("Access_RestrictedTitle", list, StringComparison.Ordinal);
+        Assert.Contains("!_allowed", list, StringComparison.Ordinal);
+        Assert.Contains("Access_RestrictedTitle", list, StringComparison.Ordinal);
+        Assert.Contains("Access_RestrictedMessage", list, StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(pages, "InventoryDetail.razor"));
         Assert.Contains("@page \"/inventory/{ProductId:guid}\"", detail, StringComparison.Ordinal);

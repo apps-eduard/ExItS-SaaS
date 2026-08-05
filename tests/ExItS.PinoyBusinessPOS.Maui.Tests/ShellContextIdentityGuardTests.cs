@@ -71,17 +71,23 @@ public sealed class ShellContextIdentityGuardTests
     }
 
     [Fact]
-    public void Organization_select_uses_dual_top_bar_preview_without_page_header()
+    public void Organization_select_uses_dual_top_bar_preview_with_role_and_staff_headers()
     {
         var orgSelect = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "OrganizationSelect.razor"));
-        Assert.DoesNotContain("PageHeader", orgSelect, StringComparison.Ordinal);
-        Assert.DoesNotContain("OrgSelect_Title", orgSelect, StringComparison.Ordinal);
+
+        // Dual top-bar preview remains the org identity surface.
         Assert.Contains("AuthShellIdentityState", orgSelect, StringComparison.Ordinal);
         Assert.Contains("SetOrganizationPreview", orgSelect, StringComparison.Ordinal);
         Assert.Contains("AvatarShape.SoftSquare", orgSelect, StringComparison.Ordinal);
         Assert.Contains("FriendlyMembershipRole", orgSelect, StringComparison.Ordinal);
         Assert.Contains("OrgSelect_EnterOwner", orgSelect, StringComparison.Ordinal);
         Assert.Contains("SelectOrganizationAsync", orgSelect, StringComparison.Ordinal);
+
+        // Accepted org-select polish keeps section headers for owner role bind and staff list.
+        Assert.Contains("PageHeader", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("OrgSelect_RoleTitle", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("OrgSelect_Title", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("OrgSelect_SubtitleStaff", orgSelect, StringComparison.Ordinal);
     }
 
     [Fact]
