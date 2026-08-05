@@ -1,4 +1,5 @@
 @page "/org"
+@using ExItS.DesignSystem.Components.Internal
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
@@ -14,75 +15,258 @@
 else if (CurrentUser.Session?.OrganizationId is null)
 {
     <Page>
-        <ErrorState Title="@L["Org_MissingTitle"]" Message="@L["Org_MissingMessage"]" RetryLabel="@L["OrgSelect_Title"]" OnRetry="GoSelect" />
+        <ErrorState Title="@L["Org_MissingTitle"]"
+                    Message="@L["Org_MissingMessage"]"
+                    RetryLabel="@L["OrgSelect_Title"]"
+                    OnRetry="GoSelect" />
     </Page>
 }
 else
 {
-    <Page>
-        <PageHeader Title="@L["Org_SummaryTitle"]">
-            <Actions>
-                <Button Variant="ButtonVariant.Ghost" OnClick="GoPersonal">@L["Personal_BackHome"]</Button>
-            </Actions>
-        </PageHeader>
+    <div class="pos-org">
+        <Page>
+            <header class="pos-org__header">
+                <h1 class="pos-org__title">@L["Org_SummaryTitle"]</h1>
+            </header>
 
-        @if (!string.IsNullOrEmpty(_error))
-        {
-            <Alert Tone="AlertTone.Danger" Title="@L["Org_ErrorTitle"]" Message="@_error" />
-        }
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <Alert Tone="AlertTone.Danger" Title="@L["Org_ErrorTitle"]" Message="@_error" />
+            }
 
-        <Section Title="@L["Org_StatusSection"]">
-            <Stack Gap="2">
-                <div><span class="pos-muted">@L["Org_Status"]</span><div class="pos-value-md">@(_org?.Status ?? "—")</div></div>
-                <div><span class="pos-muted">@L["Org_Subscription"]</span><div class="pos-value-md">@(_subscription?.Status ?? L["Org_SubscriptionUnknown"])</div></div>
-                <div><span class="pos-muted">@L["Org_Entitlement"]</span><div class="pos-value-md">@(_entitlement?.SubscriptionStatus ?? L["Org_EntitlementUnknown"])</div></div>
-                <div><span class="pos-muted">@L["Org_PosAccess"]</span><div class="pos-value-md">@(CurrentUser.HasPosAccess ? L["Org_PosAccessYes"] : L["Org_PosAccessNo"])</div></div>
+            <section class="pos-org__summary" aria-labelledby="org-access-heading">
+                <h2 id="org-access-heading" class="pos-org__section-title">@L["Org_AccessSection"]</h2>
+                <dl class="pos-org__status-list">
+                    <div class="pos-org__status-row">
+                        <dt>@L["Org_OrganizationLabel"]</dt>
+                        <dd>
+                            <span class="pos-org__chip pos-org__chip--@StatusTone(_org?.Status)"
+                                  aria-label="@($"{L["Org_OrganizationLabel"]}: {OrganizationStatusText}")">
+                                @OrganizationStatusText
+                            </span>
+                        </dd>
+                    </div>
+                    <div class="pos-org__status-row">
+                        <dt>@L["Org_Subscription"]</dt>
+                        <dd>
+                            <span class="pos-org__chip pos-org__chip--@StatusTone(_subscription?.Status)"
+                                  aria-label="@($"{L["Org_Subscription"]}: {SubscriptionStatusText}")">
+                                @SubscriptionStatusText
+                            </span>
+                        </dd>
+                    </div>
+                    <div class="pos-org__status-row">
+                        <dt>@L["Org_Entitlement"]</dt>
+                        <dd>
+                            <span class="pos-org__chip pos-org__chip--@StatusTone(_entitlement?.SubscriptionStatus)"
+                                  aria-label="@($"{L["Org_Entitlement"]}: {EntitlementStatusText}")">
+                                @EntitlementStatusText
+                            </span>
+                        </dd>
+                    </div>
+                    <div class="pos-org__status-row">
+                        <dt>@L["Org_PosAccess"]</dt>
+                        <dd>
+                            <span class="pos-org__chip pos-org__chip--@(CurrentUser.HasPosAccess ? "ok" : "warn")"
+                                  aria-label="@($"{L["Org_PosAccess"]}: {PosAccessStatusText}")">
+                                @PosAccessStatusText
+                            </span>
+                        </dd>
+                    </div>
+                </dl>
+
                 @if (!CurrentUser.HasPosAccess && !string.IsNullOrWhiteSpace(_posAccessHint))
                 {
-                    <InlineMessage Tone="InlineMessageTone.Warning">@_posAccessHint</InlineMessage>
+                    <p class="pos-org__hint pos-muted" role="status">@_posAccessHint</p>
                 }
-            </Stack>
-        </Section>
+            </section>
 
-        <Section Title="@L["Org_EssentialsSection"]">
-            <Stack Gap="2">
-                @if (_isOrganizationOwner)
-                {
-                    <Button Variant="ButtonVariant.Secondary" OnClick="GoProfile">@L["Org_ProfileLink"]</Button>
-                    <Button Variant="ButtonVariant.Secondary" OnClick="GoStaff">@L["Org_StaffLink"]</Button>
-                    <Button Variant="ButtonVariant.Secondary" OnClick="GoSubscription">@L["Org_SubscriptionLink"]</Button>
-                }
-                else
-                {
-                    <InlineMessage Tone="InlineMessageTone.Info">@L["Org_EssentialsOwnerOnly"]</InlineMessage>
-                }
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoMyQr">@L["Personal_MyQrLink"]</Button>
+            <div class="pos-org__primary">
                 @if (CurrentUser.HasPosAccess)
                 {
-                    <Button Variant="ButtonVariant.Primary" OnClick="EnterPosAsync">@L["Org_EnterPos"]</Button>
+                    <Button Variant="ButtonVariant.Primary"
+                            IsLoading="_enteringPos"
+                            Disabled="_enteringPos || _enablingPos"
+                            OnClick="EnterPosAsync">
+                        @L["Org_EnterPos"]
+                    </Button>
                 }
                 else if (_isOrganizationOwner)
                 {
-                    <Button Variant="ButtonVariant.Primary" IsLoading="_enablingPos" Disabled="_enablingPos" OnClick="EnablePosAsync">@L["Org_EnablePos"]</Button>
+                    <Button Variant="ButtonVariant.Primary"
+                            IsLoading="_enablingPos"
+                            Disabled="_enablingPos || _enteringPos"
+                            OnClick="EnablePosAsync">
+                        @L["Org_EnablePos"]
+                    </Button>
                 }
-            </Stack>
-        </Section>
+                else
+                {
+                    <p class="pos-org__pos-blocked pos-muted" role="status">
+                        @(_posAccessHint ?? L["Org_PosAccessNo"].Value)
+                    </p>
+                }
+            </div>
 
-        <AccountContextSwitcher />
+            <section class="pos-org__essentials" aria-labelledby="org-essentials-heading">
+                <h2 id="org-essentials-heading" class="pos-org__section-title">@L["Org_EssentialsSection"]</h2>
 
-        <InlineMessage Tone="InlineMessageTone.Info">@L["Org_WebAdminReminder"]</InlineMessage>
-    </Page>
+                @if (_isOrganizationOwner)
+                {
+                    <div class="pos-org__nav" role="list">
+                        <button type="button" class="pos-org__nav-row" role="listitem" @onclick="GoProfile">
+                            <span class="pos-org__nav-icon" aria-hidden="true">@IconGlyphs.Get("settings")</span>
+                            <span class="pos-org__nav-label">@L["Org_ProfileLink"]</span>
+                            <span class="pos-org__nav-chevron" aria-hidden="true">›</span>
+                        </button>
+                        <button type="button" class="pos-org__nav-row" role="listitem" @onclick="GoStaff">
+                            <span class="pos-org__nav-icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
+                            <span class="pos-org__nav-label">@L["Org_StaffLink"]</span>
+                            <span class="pos-org__nav-chevron" aria-hidden="true">›</span>
+                        </button>
+                        <button type="button" class="pos-org__nav-row" role="listitem" @onclick="GoSubscription">
+                            <span class="pos-org__nav-icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
+                            <span class="pos-org__nav-label">@L["Org_SubscriptionLink"]</span>
+                            <span class="pos-org__nav-chevron" aria-hidden="true">›</span>
+                        </button>
+                        <button type="button" class="pos-org__nav-row" role="listitem" @onclick="GoMyQr">
+                            <span class="pos-org__nav-icon" aria-hidden="true">@IconGlyphs.Get("info")</span>
+                            <span class="pos-org__nav-label">@L["Personal_MyQrLink"]</span>
+                            <span class="pos-org__nav-chevron" aria-hidden="true">›</span>
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <p class="pos-org__hint pos-muted">@L["Org_EssentialsOwnerOnly"]</p>
+                    <div class="pos-org__nav" role="list">
+                        <button type="button" class="pos-org__nav-row" role="listitem" @onclick="GoMyQr">
+                            <span class="pos-org__nav-icon" aria-hidden="true">@IconGlyphs.Get("info")</span>
+                            <span class="pos-org__nav-label">@L["Personal_MyQrLink"]</span>
+                            <span class="pos-org__nav-chevron" aria-hidden="true">›</span>
+                        </button>
+                    </div>
+                }
+            </section>
+
+            <p class="pos-org__footnote pos-muted">@L["Org_WebAdminReminder"]</p>
+        </Page>
+    </div>
 }
+
+<style>
+    .pos-org { width: 100%; }
+    .pos-org__header { margin-bottom: var(--exits-space-3, 0.75rem); }
+    .pos-org__title {
+        margin: 0; font-size: 1.25rem; font-weight: 700; line-height: 1.25;
+        color: var(--exits-text, #15201a);
+    }
+    .pos-org__subtitle {
+        margin: 0.3rem 0 0; font-size: 0.875rem; line-height: 1.35;
+    }
+    .pos-org__section-title {
+        margin: 0 0 0.5rem; font-size: 0.8125rem; font-weight: 700;
+        letter-spacing: 0.02em; text-transform: uppercase;
+        color: var(--exits-text-muted, #5b6b62);
+    }
+    .pos-org__summary { margin-bottom: var(--exits-space-3, 0.75rem); }
+    .pos-org__status-list {
+        margin: 0; padding: 0.35rem 0.65rem;
+        border: 1px solid var(--exits-border, #c9d4cd);
+        border-radius: var(--exits-radius-md, 0.5rem);
+        background: var(--exits-surface, #fff);
+    }
+    .pos-org__status-row {
+        display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+        min-height: 2.5rem; padding: 0.35rem 0;
+        border-top: 1px solid var(--exits-border, #c9d4cd);
+    }
+    .pos-org__status-row:first-child { border-top: 0; }
+    .pos-org__status-row dt {
+        margin: 0; font-size: 0.875rem; font-weight: 600; color: var(--exits-text, #15201a);
+    }
+    .pos-org__status-row dd { margin: 0; }
+    .pos-org__chip {
+        display: inline-flex; align-items: center; max-width: 100%;
+        padding: 0.15rem 0.5rem; border-radius: 999px;
+        border: 1px solid var(--exits-border, #c9d4cd);
+        font-size: 0.75rem; font-weight: 650; line-height: 1.3;
+        color: var(--exits-text, #15201a); background: var(--exits-bg, #f3f6f4);
+    }
+    .pos-org__chip--ok {
+        border-color: #9cc9b0; background: #e8f5ee; color: #145a3a;
+    }
+    .pos-org__chip--warn {
+        border-color: #e0c48a; background: #fff7e8; color: #7a5410;
+    }
+    .pos-org__chip--danger {
+        border-color: #e3a8a2; background: #fdeeee; color: #8f1f18;
+    }
+    .pos-org__chip--muted {
+        border-color: var(--exits-border, #c9d4cd); background: var(--exits-bg, #f3f6f4);
+        color: var(--exits-text-muted, #5b6b62);
+    }
+    .pos-org__hint { margin: 0.55rem 0 0; font-size: 0.75rem; line-height: 1.4; }
+    .pos-org__primary { margin: 0 0 var(--exits-space-3, 0.75rem); }
+    .pos-org__primary .exds-btn { width: 100%; min-height: 2.75rem; }
+    .pos-org__pos-blocked {
+        margin: 0; padding: 0.65rem 0.7rem;
+        border: 1px dashed var(--exits-border, #c9d4cd);
+        border-radius: var(--exits-radius-md, 0.5rem);
+        font-size: 0.8125rem; line-height: 1.4;
+    }
+    .pos-org__essentials { margin-bottom: var(--exits-space-3, 0.75rem); }
+    .pos-org__nav { display: flex; flex-direction: column; gap: 0.4rem; }
+    .pos-org__nav-row {
+        display: flex; align-items: center; gap: 0.65rem; width: 100%;
+        min-height: 2.75rem; padding: 0.55rem 0.65rem; text-align: start;
+        border: 1px solid var(--exits-border, #c9d4cd);
+        border-radius: var(--exits-radius-md, 0.5rem);
+        background: var(--exits-surface, #fff);
+        color: var(--exits-text, #15201a); cursor: pointer;
+    }
+    .pos-org__nav-icon {
+        flex: 0 0 1.25rem; width: 1.25rem; height: 1.25rem;
+        color: var(--exits-accent, #1f6b4a);
+    }
+    .pos-org__nav-icon :deep(svg) { width: 100%; height: 100%; display: block; }
+    .pos-org__nav-label { flex: 1 1 auto; font-size: 0.9375rem; font-weight: 600; line-height: 1.3; }
+    .pos-org__nav-chevron {
+        flex: 0 0 auto; color: var(--exits-text-muted, #5b6b62);
+        font-size: 1.1rem; line-height: 1;
+    }
+    .pos-org__footnote {
+        margin: 0.25rem 0 calc(0.5rem + env(safe-area-inset-bottom, 0px));
+        font-size: 0.75rem; line-height: 1.4;
+    }
+</style>
 
 @code {
     private bool _ready;
     private bool _enablingPos;
+    private bool _enteringPos;
     private string? _error;
     private string? _posAccessHint;
     private PlatformOrganizationDto? _org;
     private PlatformSubscriptionDto? _subscription;
     private PlatformEntitlementSnapshotDto? _entitlement;
     private bool _isOrganizationOwner;
+
+    private string OrganizationStatusText =>
+        string.IsNullOrWhiteSpace(_org?.Status) ? "—" : _org!.Status;
+
+    private string SubscriptionStatusText =>
+        string.IsNullOrWhiteSpace(_subscription?.Status)
+            ? L["Org_SubscriptionUnknown"]
+            : _subscription!.Status;
+
+    private string EntitlementStatusText =>
+        string.IsNullOrWhiteSpace(_entitlement?.SubscriptionStatus)
+            ? L["Org_EntitlementUnknown"]
+            : _entitlement!.SubscriptionStatus!;
+
+    private string PosAccessStatusText =>
+        CurrentUser.HasPosAccess ? L["Org_PosAccessYes"] : L["Org_PosAccessNo"];
 
     protected override async Task OnInitializedAsync()
     {
@@ -172,22 +356,36 @@ else
 
     private async Task EnterPosAsync()
     {
-        if (CurrentUser.Session?.OrganizationId is Guid oid && !CurrentUser.HasPosAccess)
+        if (_enteringPos || _enablingPos || !CurrentUser.HasPosAccess)
         {
-            var selected = await Auth.SelectOrganizationAsync(oid);
-            if (!selected.Succeeded)
-            {
-                _error = L[selected.SafeMessageKey ?? "Access_Denied"];
-                return;
-            }
+            return;
         }
 
-        Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+        _enteringPos = true;
+        _error = null;
+        try
+        {
+            if (CurrentUser.Session?.OrganizationId is Guid oid && !CurrentUser.HasPosAccess)
+            {
+                var selected = await Auth.SelectOrganizationAsync(oid);
+                if (!selected.Succeeded)
+                {
+                    _error = L[selected.SafeMessageKey ?? "Access_Denied"];
+                    return;
+                }
+            }
+
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+        }
+        finally
+        {
+            _enteringPos = false;
+        }
     }
 
     private async Task EnablePosAsync()
     {
-        if (CurrentUser.Session?.OrganizationId is not Guid oid)
+        if (CurrentUser.Session?.OrganizationId is not Guid oid || _enablingPos || _enteringPos)
         {
             return;
         }
@@ -221,18 +419,43 @@ else
         }
     }
 
+    private static string StatusTone(string? status)
+    {
+        if (string.IsNullOrWhiteSpace(status) || status == "—")
+        {
+            return "muted";
+        }
+
+        if (string.Equals(status, "Active", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(status, "Trialing", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(status, "Yes", StringComparison.OrdinalIgnoreCase))
+        {
+            return "ok";
+        }
+
+        if (string.Equals(status, "Pending", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(status, "PastDue", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(status, "Past Due", StringComparison.OrdinalIgnoreCase))
+        {
+            return "warn";
+        }
+
+        if (string.Equals(status, "Expired", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(status, "Suspended", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(status, "Cancelled", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(status, "Canceled", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(status, "Blocked", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(status, "Revoked", StringComparison.OrdinalIgnoreCase))
+        {
+            return "danger";
+        }
+
+        return "muted";
+    }
+
     private void GoProfile() => Nav.NavigateTo("/org/profile");
     private void GoStaff() => Nav.NavigateTo("/org/staff");
     private void GoSubscription() => Nav.NavigateTo("/org/subscription");
     private void GoMyQr() => Nav.NavigateTo("/personal/my-qr");
     private void GoSelect() => Nav.NavigateTo("/organization-select");
-
-    private async Task GoPersonal()
-    {
-        var result = await Auth.SwitchToPersonalAsync();
-        if (result.Succeeded)
-        {
-            Nav.NavigateTo("/personal", replace: true);
-        }
-    }
 }

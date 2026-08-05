@@ -1714,6 +1714,8 @@
   <data name="Context_RoleMember" xml:space="preserve"><value>Member</value></data>
   <data name="Org_EssentialsOwnerOnly" xml:space="preserve"><value>Ang Organization Owner essentials ay para sa Organization Owners lamang. Kailangan pa rin ng aktibong POS role at entitlement para sa POS.</value></data>
   <data name="Org_SummaryTitle" xml:space="preserve"><value>Organization</value></data>
+  <data name="Org_AccessSection" xml:space="preserve"><value>Access ng organization</value></data>
+  <data name="Org_OrganizationLabel" xml:space="preserve"><value>Organization</value></data>
   <data name="Org_MissingTitle" xml:space="preserve"><value>Organization required</value></data>
   <data name="Org_MissingMessage" xml:space="preserve"><value>Select or create an organization to continue.</value></data>
   <data name="Org_ErrorTitle" xml:space="preserve"><value>Organization error</value></data>

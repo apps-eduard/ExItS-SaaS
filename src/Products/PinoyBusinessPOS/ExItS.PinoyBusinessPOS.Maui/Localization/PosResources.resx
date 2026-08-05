@@ -1714,6 +1714,8 @@
   <data name="Context_RoleMember" xml:space="preserve"><value>Member</value></data>
   <data name="Org_EssentialsOwnerOnly" xml:space="preserve"><value>Organization Owner essentials are available only to Organization Owners. POS entry still requires an active POS role and entitlement.</value></data>
   <data name="Org_SummaryTitle" xml:space="preserve"><value>Organization</value></data>
+  <data name="Org_AccessSection" xml:space="preserve"><value>Organization access</value></data>
+  <data name="Org_OrganizationLabel" xml:space="preserve"><value>Organization</value></data>
   <data name="Org_MissingTitle" xml:space="preserve"><value>Organization required</value></data>
   <data name="Org_MissingMessage" xml:space="preserve"><value>Select or create an organization to continue.</value></data>
   <data name="Org_ErrorTitle" xml:space="preserve"><value>Organization error</value></data>
