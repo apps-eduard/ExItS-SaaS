@@ -146,6 +146,7 @@ public sealed class RoleHomeResolver(
         status is ApiCallStatus.Offline
             or ApiCallStatus.Unavailable
             or ApiCallStatus.Timeout
+            or ApiCallStatus.RateLimited
             or ApiCallStatus.Failed
             or ApiCallStatus.Cancelled;
 }

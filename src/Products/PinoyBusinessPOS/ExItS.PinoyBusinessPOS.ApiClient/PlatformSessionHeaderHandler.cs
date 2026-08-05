@@ -49,14 +49,17 @@ public sealed class PlatformSessionHeaderHandler(ICurrentUserContext currentUser
             return false;
         }
 
-        // Introspect must keep Authorization: Bearer.
-        if (path.Equals("/api/v1/platform/auth/introspect", StringComparison.OrdinalIgnoreCase))
+        // Introspect / bind / revoke must keep Authorization: Bearer (or body token).
+        // Only exact token issue attaches PlatformSession for GrantType=session.
+        if (path.Equals("/api/v1/platform/auth/introspect", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/api/v1/platform/auth/token/bind", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/api/v1/platform/auth/token/revoke", StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
 
         // Token issue: attach session when present (needed for GrantType=session).
-        if (path.StartsWith("/api/v1/platform/auth/token", StringComparison.OrdinalIgnoreCase))
+        if (path.Equals("/api/v1/platform/auth/token", StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }

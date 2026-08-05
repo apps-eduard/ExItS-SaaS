@@ -339,6 +339,65 @@ public sealed class AuthenticationServiceTests
     }
 
     [Fact]
+    public async Task SelectOrganization_maps_rate_limited_bind_to_retry_message()
+    {
+        var userId = Guid.NewGuid();
+        var orgId = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var prefs = new MemoryOnboardingStore();
+        var current = new CurrentUserContext();
+        var access = new FakeAccessClient
+        {
+            LoginResult = ApiResult<PlatformLoginResultDto>.Success(new PlatformLoginResultDto(
+                "platform-session",
+                Guid.NewGuid(),
+                userId,
+                "owner",
+                "Owner",
+                "o@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                DateTimeOffset.UtcNow.AddHours(24),
+                null,
+                null,
+                "none",
+                1,
+                AccountProfileId: Guid.NewGuid(),
+                AccountClass: "Organization",
+                AllowedScope: "Organization")),
+            IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
+                "opaque-token",
+                "Bearer",
+                Guid.NewGuid(),
+                userId,
+                "owner",
+                "Owner",
+                "o@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                null,
+                null,
+                null,
+                "none",
+                1,
+                null,
+                null)),
+            BindTokenResult = ApiResult<PlatformAccessTokenIssueDto>.RateLimited(new ApiError(
+                "Too Many Requests",
+                "Request rate limit exceeded. Retry later.",
+                "platform.rate_limit.exceeded",
+                null,
+                429))
+        };
+        var sut = CreateSut("Development", access, tokens, prefs, current);
+        var signIn = await sut.SignInAsync(new SignInRequest("owner", "password"));
+        Assert.True(signIn.Succeeded);
+
+        var select = await sut.SelectOrganizationAsync(orgId);
+        Assert.False(select.Succeeded);
+        Assert.Equal(AuthFailureReason.RateLimited, select.FailureReason);
+        Assert.Equal("Auth_RateLimited", select.SafeMessageKey);
+    }
+
+    [Fact]
     public async Task SelectOrganization_requires_allowed_access()
     {
         var userId = Guid.NewGuid();

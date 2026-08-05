@@ -303,6 +303,7 @@
   <data name="Auth_Offline" xml:space="preserve"><value>You appear to be offline. Sign-in requires connectivity.</value></data>
   <data name="Auth_Timeout" xml:space="preserve"><value>The sign-in request timed out.</value></data>
   <data name="Auth_ApiUnavailable" xml:space="preserve"><value>The Platform API is unavailable.</value></data>
+  <data name="Auth_RateLimited" xml:space="preserve"><value>Too many sign-in requests. Wait a moment, then try Owner again.</value></data>
   <data name="Auth_Cancelled" xml:space="preserve"><value>The request was cancelled.</value></data>
   <data name="Auth_SecureStorageFailure" xml:space="preserve"><value>Secure storage failed. Session data was not saved.</value></data>
   <data name="Auth_SessionExpired" xml:space="preserve"><value>Your session expired. Please sign in again.</value></data>

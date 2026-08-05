@@ -372,20 +372,24 @@
                     ? grant!.UserDisplayName!
                     : member.UserId.ToString("D")[..8];
                 string email = string.Empty;
-                try
+                // Avoid a GetUser storm on org-select (burns Platform rate limits before Owner bind).
+                if (string.IsNullOrWhiteSpace(grant?.UserDisplayName))
                 {
-                    var userResult = await Platform.GetUserAsync(member.UserId);
-                    if (userResult.IsSuccess && userResult.Data is not null)
+                    try
                     {
-                        displayName = string.IsNullOrWhiteSpace(userResult.Data.DisplayName)
-                            ? userResult.Data.Username
-                            : userResult.Data.DisplayName;
-                        email = userResult.Data.Email ?? string.Empty;
+                        var userResult = await Platform.GetUserAsync(member.UserId);
+                        if (userResult.IsSuccess && userResult.Data is not null)
+                        {
+                            displayName = string.IsNullOrWhiteSpace(userResult.Data.DisplayName)
+                                ? userResult.Data.Username
+                                : userResult.Data.DisplayName;
+                            email = userResult.Data.Email ?? string.Empty;
+                        }
                     }
-                }
-                catch
-                {
-                    // Keep grant name or truncated id fallback.
+                    catch
+                    {
+                        // Keep truncated id fallback.
+                    }
                 }
 
                 var roleLabel = FriendlyPosOrMembershipRole(

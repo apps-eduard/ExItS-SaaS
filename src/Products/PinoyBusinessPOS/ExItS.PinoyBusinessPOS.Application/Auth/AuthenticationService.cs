@@ -927,6 +927,38 @@ public sealed class AuthenticationService(
                 ct)
             .ConfigureAwait(false);
 
+        // After Personal → Organization profile switch, an older bearer can 401. Re-issue from
+        // Platform session and retry bind once before surfacing a transport failure.
+        if ((!bindResult.IsSuccess || bindResult.Data is null)
+            && bindResult.Status == ApiCallStatus.Unauthorized
+            && !string.IsNullOrWhiteSpace(session.PlatformSessionToken))
+        {
+            currentUser.Set(session);
+            var reissue = await accessClient
+                .IssueTokenAsync(
+                    new IssuePlatformAccessTokenRequest(
+                        GrantType: "session",
+                        UsernameOrEmail: null,
+                        Password: null,
+                        OrganizationId: null,
+                        ProductCode: null),
+                    ct)
+                .ConfigureAwait(false);
+            if (reissue.IsSuccess && reissue.Data is not null && !string.IsNullOrWhiteSpace(reissue.Data.AccessToken))
+            {
+                session = session with { AccessToken = reissue.Data.AccessToken, ExpiresAtUtc = reissue.Data.ExpiresAtUtc };
+                currentUser.Set(session);
+                bindResult = await accessClient
+                    .BindTokenAsync(
+                        new BindPlatformAccessTokenRequest(
+                            AccessToken: session.AccessToken,
+                            OrganizationId: organizationId,
+                            ProductCode: PosProductCodes.PinoyBusinessPos),
+                        ct)
+                    .ConfigureAwait(false);
+            }
+        }
+
         if (!bindResult.IsSuccess || bindResult.Data is null)
         {
             // Web Admin can select an organization with membership alone. Mobile bind also requires
@@ -946,7 +978,9 @@ public sealed class AuthenticationService(
             events.Record("access_denial", Dict(
                 ("userId", session.UserId.ToString("D")),
                 ("organizationId", organizationId.ToString("D")),
-                ("reason", transport.SafeMessageKey)));
+                ("reason", transport.SafeMessageKey),
+                ("status", bindResult.Status.ToString()),
+                ("errorCode", bindResult.Error?.ErrorCode)));
             return transport;
         }
 
@@ -1453,6 +1487,7 @@ public sealed class AuthenticationService(
     {
         ApiCallStatus.Offline => new AuthResult(false, AuthFailureReason.Offline, SafeMessageKey: "Auth_Offline"),
         ApiCallStatus.Timeout => new AuthResult(false, AuthFailureReason.Timeout, SafeMessageKey: "Auth_Timeout"),
+        ApiCallStatus.RateLimited => new AuthResult(false, AuthFailureReason.RateLimited, SafeMessageKey: "Auth_RateLimited"),
         ApiCallStatus.NotFound => new AuthResult(false, AuthFailureReason.InvalidCredentials, SafeMessageKey: "Auth_InvalidCredentials"),
         ApiCallStatus.Unauthorized => new AuthResult(false, AuthFailureReason.InvalidCredentials, SafeMessageKey: "Auth_InvalidCredentials"),
         ApiCallStatus.Forbidden => new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "Access_Denied"),

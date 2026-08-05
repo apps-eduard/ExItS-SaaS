@@ -186,13 +186,15 @@ internal static class PlatformSecurityPipeline
             {
                 var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
                 return RateLimitPartition.GetFixedWindowLimiter(
-                    "token-ops:" + ip,
+                    (localValidationEnabled ? "token-ops-local-validation:" : "token-ops:") + ip,
                     _ => new FixedWindowRateLimiterOptions
                     {
                         AutoReplenishment = true,
-                        PermitLimit = 60,
+                        // Mobile org-select (bind + introspect) and Local Validation retries burn
+                        // the Production 60/15m budget quickly and surface as "API unavailable".
+                        PermitLimit = localValidationEnabled ? 2_000 : 60,
                         Window = TimeSpan.FromMinutes(15),
-                        QueueLimit = 0
+                        QueueLimit = localValidationEnabled ? 40 : 0
                     });
             });
 

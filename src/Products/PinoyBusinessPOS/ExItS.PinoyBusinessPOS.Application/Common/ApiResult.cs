@@ -12,6 +12,7 @@ public enum ApiCallStatus
     Timeout,
     Offline,
     Unavailable,
+    RateLimited,
     Cancelled,
     Failed
 }
@@ -39,6 +40,7 @@ public sealed class ApiResult<T>
     public static ApiResult<T> Timeout(ApiError? error = null) => Failure(ApiCallStatus.Timeout, error);
     public static ApiResult<T> Offline(ApiError? error = null) => Failure(ApiCallStatus.Offline, error);
     public static ApiResult<T> Unavailable(ApiError? error = null) => Failure(ApiCallStatus.Unavailable, error);
+    public static ApiResult<T> RateLimited(ApiError? error = null) => Failure(ApiCallStatus.RateLimited, error);
     public static ApiResult<T> Cancelled(ApiError? error = null) => Failure(ApiCallStatus.Cancelled, error);
     public static ApiResult<T> Failed(ApiError? error = null) => Failure(ApiCallStatus.Failed, error);
 }

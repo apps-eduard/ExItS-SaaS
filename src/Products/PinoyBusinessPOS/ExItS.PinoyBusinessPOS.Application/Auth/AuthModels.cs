@@ -66,6 +66,7 @@ public enum AuthFailureReason
     Offline,
     ApiUnavailable,
     Timeout,
+    RateLimited,
     SecureStorageFailure,
     SessionExpired,
     RefreshFailed,

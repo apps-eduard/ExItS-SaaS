@@ -86,6 +86,43 @@ public sealed class PlatformSessionHeaderHandlerTests
         Assert.Equal("bearer-token", captured.Headers.Authorization?.Parameter);
     }
 
+    [Fact]
+    public async Task Token_bind_keeps_bearer_and_does_not_force_platform_session()
+    {
+        HttpRequestMessage? captured = null;
+        var inner = new CaptureHandler(request =>
+        {
+            captured = request;
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        });
+
+        var user = new StubUserContext(new AuthSession(
+            Guid.NewGuid(),
+            "Mica Uy",
+            "mica.uy",
+            "mica@example.com",
+            OrganizationId: null,
+            OrganizationDisplayName: null,
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow.AddHours(1),
+            HasPosAccess: false,
+            AccessReasonCode: null,
+            AccessToken: "bearer-token",
+            PlatformSessionToken: "session-token-abc"));
+
+        var sessionOuter = new PlatformSessionHeaderHandler(user)
+        {
+            InnerHandler = new PlatformBearerHandler(user) { InnerHandler = inner }
+        };
+        using var client = new HttpClient(sessionOuter) { BaseAddress = new Uri("http://platform.test") };
+
+        _ = await client.PostAsync("/api/v1/platform/auth/token/bind", null);
+
+        Assert.NotNull(captured);
+        Assert.Equal("Bearer", captured!.Headers.Authorization?.Scheme);
+        Assert.Equal("bearer-token", captured.Headers.Authorization?.Parameter);
+    }
+
     private sealed class StubUserContext(AuthSession? session) : ICurrentUserContext
     {
         public AuthSession? Session { get; private set; } = session;

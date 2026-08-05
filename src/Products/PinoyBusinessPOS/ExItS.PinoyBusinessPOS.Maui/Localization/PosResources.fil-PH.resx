@@ -303,6 +303,7 @@
   <data name="Auth_Offline" xml:space="preserve"><value>Offline ka. Kailangan ng connectivity para mag-sign in.</value></data>
   <data name="Auth_Timeout" xml:space="preserve"><value>Nag-timeout ang sign-in request.</value></data>
   <data name="Auth_ApiUnavailable" xml:space="preserve"><value>Hindi available ang Platform API.</value></data>
+  <data name="Auth_RateLimited" xml:space="preserve"><value>Masyadong maraming sign-in request. Maghintay sandali, tapos subukan ulit ang Owner.</value></data>
   <data name="Auth_Cancelled" xml:space="preserve"><value>Kinansela ang request.</value></data>
   <data name="Auth_SecureStorageFailure" xml:space="preserve"><value>Nabigo ang secure storage. Hindi na-save ang session data.</value></data>
   <data name="Auth_SessionExpired" xml:space="preserve"><value>Nag-expire ang session. Mag-sign in ulit.</value></data>
