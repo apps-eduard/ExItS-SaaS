@@ -192,9 +192,9 @@ Never force the full global catalog into the organization.
 | Product already imported | Do not duplicate |
 | Platform unavailable | Show retryable state; existing POS remains usable |
 | Platform Admin CSV unknown category | Not a merchant path; Platform import creates missing Active root categories on Confirm |
+| User switches organization | Import status remains organization-scoped |
 
 > Note: Merchant template/selected import copies **published** Platform catalog data. Platform Admin bulk CSV may create new global categories during Confirm when category names are new (see `04-platform-admin-management.md` / `06-background-jobs-and-imports.md`).
-| User switches organization | Import status remains organization-scoped |
 
 ---
 
