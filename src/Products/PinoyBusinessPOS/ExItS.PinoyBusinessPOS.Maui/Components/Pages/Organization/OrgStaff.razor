@@ -86,7 +86,7 @@
                                 <button type="button"
                                         class="pos-staff__action"
                                         disabled="@_busy"
-                                        @onclick="() => GoAssign(row.UserId)">
+                                        @onclick="() => GoAssign(row)">
                                     @L["Org_AssignPosRole"]
                                 </button>
                                 @if (string.Equals(row.MembershipStatus, "Active", StringComparison.OrdinalIgnoreCase))
@@ -394,6 +394,23 @@
     }
 
     private void GoInvite() => Nav.NavigateTo("/org/staff/invite");
-    private void GoAssign(Guid userId) => Nav.NavigateTo($"/org/staff/assign?userId={userId:D}");
+
+    private void GoAssign(StaffRow row)
+    {
+        var qs = $"userId={row.UserId:D}";
+        if (!string.IsNullOrWhiteSpace(row.DisplayName)
+            && !string.Equals(row.DisplayName, L["Org_StaffUnknownName"].Value, StringComparison.Ordinal))
+        {
+            qs += $"&displayName={Uri.EscapeDataString(row.DisplayName)}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(row.Email))
+        {
+            qs += $"&email={Uri.EscapeDataString(row.Email)}";
+        }
+
+        Nav.NavigateTo($"/org/staff/assign?{qs}");
+    }
+
     private void GoBack() => Nav.NavigateTo("/org");
 }

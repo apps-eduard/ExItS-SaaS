@@ -14,6 +14,10 @@ public sealed class OrgStaffAssignUiGuardTests
         Assert.Contains("Org_AssignTitle", page, StringComparison.Ordinal);
         Assert.Contains("Org_AssignUserSection", page, StringComparison.Ordinal);
         Assert.Contains("GetUserAsync", page, StringComparison.Ordinal);
+        Assert.Contains("DisplayNameQuery", page, StringComparison.Ordinal);
+        Assert.Contains("EmailQuery", page, StringComparison.Ordinal);
+        Assert.Contains("Org_StaffUnknownName", page, StringComparison.Ordinal);
+        Assert.Contains("GetProductLocalRolesAsync", page, StringComparison.Ordinal);
         Assert.Contains("Avatar", page, StringComparison.Ordinal);
         Assert.Contains("_displayName", page, StringComparison.Ordinal);
         Assert.Contains("_email", page, StringComparison.Ordinal);
@@ -46,7 +50,8 @@ public sealed class OrgStaffAssignUiGuardTests
         Assert.DoesNotContain("_roleCode = \"StoreManager\"", page, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", page, StringComparison.Ordinal);
         Assert.DoesNotContain("ToString(\"D\")", page, StringComparison.Ordinal);
-        Assert.DoesNotContain("SetOwner", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("Org_AssignUserLoadFailed", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("_userLoadError = L[\"Org_AssignUserLoadFailed\"]", page, StringComparison.Ordinal);
 
         foreach (var key in new[]
                  {

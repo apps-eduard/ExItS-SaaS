@@ -81,7 +81,7 @@
                             class="@(selected ? "pos-assign__role pos-assign__role--selected" : "pos-assign__role")"
                             role="radio"
                             aria-checked="@selected"
-                            disabled="@(_busy || _targetUserId is null || !string.IsNullOrEmpty(_userLoadError))"
+                            disabled="@(_busy || _targetUserId is null)"
                             @onclick="() => SelectRole(option.Code)">
                         <span class="pos-assign__role-check" aria-hidden="true">@(selected ? "✓" : "")</span>
                         <span class="pos-assign__role-copy">
@@ -207,6 +207,12 @@
 
     [SupplyParameterFromQuery] public Guid? userId { get; set; }
 
+    [SupplyParameterFromQuery(Name = "displayName")]
+    public string? DisplayNameQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "email")]
+    public string? EmailQuery { get; set; }
+
     private bool _busy;
     private bool _loadingUser;
     private Guid? _targetUserId;
@@ -253,24 +259,41 @@
     {
         _loadingUser = true;
         _userLoadError = null;
-        _displayName = string.Empty;
-        _email = null;
         _publicUserId = null;
         _existingRoleCode = null;
+
+        // Staff list may pass name/email. Prefer those first — GetUserAsync requires
+        // Platform ManagePlatformUsers and is unavailable to org owners on mobile.
+        _displayName = string.IsNullOrWhiteSpace(DisplayNameQuery)
+            ? string.Empty
+            : DisplayNameQuery.Trim();
+        _email = string.IsNullOrWhiteSpace(EmailQuery) ? null : EmailQuery.Trim();
+
         try
         {
-            var userResult = await Platform.GetUserAsync(id);
-            if (!userResult.IsSuccess || userResult.Data is null)
+            try
             {
-                _userLoadError = L["Org_AssignUserLoadFailed"];
-                return;
-            }
+                var userResult = await Platform.GetUserAsync(id);
+                if (userResult.IsSuccess && userResult.Data is not null)
+                {
+                    var user = userResult.Data;
+                    if (string.IsNullOrWhiteSpace(_displayName))
+                    {
+                        _displayName = string.IsNullOrWhiteSpace(user.DisplayName)
+                            ? (string.IsNullOrWhiteSpace(user.Username) ? string.Empty : user.Username)
+                            : user.DisplayName;
+                    }
 
-            var user = userResult.Data;
-            _displayName = string.IsNullOrWhiteSpace(user.DisplayName)
-                ? (string.IsNullOrWhiteSpace(user.Username) ? L["Org_StaffUnknownName"] : user.Username)
-                : user.DisplayName;
-            _email = user.Email;
+                    if (string.IsNullOrWhiteSpace(_email))
+                    {
+                        _email = user.Email;
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore — fall through to grant / unknown-name fallbacks.
+            }
 
             var orgId = CurrentUser.Session?.OrganizationId;
             if (orgId is Guid oid)
@@ -282,18 +305,26 @@
                     if (existing is not null)
                     {
                         _existingRoleCode = existing.RoleCode;
-                        if (!string.IsNullOrWhiteSpace(existing.UserDisplayName)
-                            && string.Equals(_displayName, L["Org_StaffUnknownName"].Value, StringComparison.Ordinal))
+                        if (string.IsNullOrWhiteSpace(_displayName)
+                            && !string.IsNullOrWhiteSpace(existing.UserDisplayName))
                         {
                             _displayName = existing.UserDisplayName!;
                         }
                     }
                 }
             }
+
+            if (string.IsNullOrWhiteSpace(_displayName))
+            {
+                _displayName = L["Org_StaffUnknownName"];
+            }
         }
         catch
         {
-            _userLoadError = L["Org_AssignUserLoadFailed"];
+            if (string.IsNullOrWhiteSpace(_displayName))
+            {
+                _displayName = L["Org_StaffUnknownName"];
+            }
         }
         finally
         {

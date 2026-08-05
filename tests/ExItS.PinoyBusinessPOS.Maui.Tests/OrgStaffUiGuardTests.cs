@@ -20,6 +20,8 @@ public sealed class OrgStaffUiGuardTests
         Assert.Contains("PosGrants", page, StringComparison.Ordinal);
         Assert.Contains("GoInvite", page, StringComparison.Ordinal);
         Assert.Contains("GoAssign", page, StringComparison.Ordinal);
+        Assert.Contains("displayName=", page, StringComparison.Ordinal);
+        Assert.Contains("email=", page, StringComparison.Ordinal);
         Assert.Contains("SuspendMembershipAsync", page, StringComparison.Ordinal);
         Assert.Contains("RevokeMembershipAsync", page, StringComparison.Ordinal);
         Assert.Contains("RevokeProductLocalRoleAsync", page, StringComparison.Ordinal);
