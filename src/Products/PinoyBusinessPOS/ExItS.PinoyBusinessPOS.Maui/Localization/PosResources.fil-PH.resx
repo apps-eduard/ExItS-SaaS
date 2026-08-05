@@ -1779,7 +1779,9 @@
   <data name="Org_InviteValidation" xml:space="preserve"><value>Email is required.</value></data>
   <data name="Org_InviteFailed" xml:space="preserve"><value>Invitation could not be sent.</value></data>
   <data name="Org_AssignTitle" xml:space="preserve"><value>Assign POS role</value></data>
-  <data name="Org_AssignSubtitle" xml:space="preserve"><value>Grant Owner, Manager, or Cashier access.</value></data>
+  <data name="Org_AssignSubtitle" xml:space="preserve"><value>Piliin ang Owner, Manager, o Cashier para sa taong ito.</value></data>
+  <data name="Org_AssignUserSection" xml:space="preserve"><value>User</value></data>
+  <data name="Org_AssignRoleSection" xml:space="preserve"><value>Piliin ang POS role</value></data>
   <data name="Org_AssignForm" xml:space="preserve"><value>Role assignment</value></data>
   <data name="Org_AssignUserId" xml:space="preserve"><value>User identity ID</value></data>
   <data name="Org_AssignRole" xml:space="preserve"><value>POS role code</value></data>
@@ -1787,8 +1789,17 @@
   <data name="Org_RoleOwner" xml:space="preserve"><value>POS Owner</value></data>
   <data name="Org_RoleManager" xml:space="preserve"><value>POS Manager</value></data>
   <data name="Org_RoleCashier" xml:space="preserve"><value>POS Cashier</value></data>
+  <data name="Org_RoleOwnerDesc" xml:space="preserve"><value>Buong POS administration at operational access.</value></data>
+  <data name="Org_RoleManagerDesc" xml:space="preserve"><value>Pamahalaan ang daily operations, staff, at reports.</value></data>
+  <data name="Org_RoleCashierDesc" xml:space="preserve"><value>Magproseso ng sales at normal cashier operations.</value></data>
   <data name="Org_AssignSubmit" xml:space="preserve"><value>Assign role</value></data>
   <data name="Org_AssignValidation" xml:space="preserve"><value>A valid user ID is required.</value></data>
+  <data name="Org_AssignSelectRole" xml:space="preserve"><value>Pumili ng POS role para magpatuloy.</value></data>
+  <data name="Org_AssignUserLoadFailed" xml:space="preserve"><value>Hindi ma-load ang team member na ito.</value></data>
+  <data name="Org_AssignReplaceHint" xml:space="preserve"><value>Papalitan nito ang kasalukuyang POS role nila ({0}).</value></data>
+  <data name="Org_AssignOwnerConfirmTitle" xml:space="preserve"><value>I-assign ang POS Owner?</value></data>
+  <data name="Org_AssignOwnerConfirmMessage" xml:space="preserve"><value>May buong administration access ang POS Owner. I-confirm lang kung dapat may ganitong control ang taong ito.</value></data>
+  <data name="Org_AssignOwnerConfirmAction" xml:space="preserve"><value>I-confirm ang assign Owner</value></data>
   <data name="Org_AssignFailed" xml:space="preserve"><value>Could not assign the POS role.</value></data>
   <data name="Owner_Title" xml:space="preserve"><value>Owner dashboard</value></data>
   <data name="Owner_Subtitle" xml:space="preserve"><value>Mabilisang aksyon at mga tool ng tindahan</value></data>
