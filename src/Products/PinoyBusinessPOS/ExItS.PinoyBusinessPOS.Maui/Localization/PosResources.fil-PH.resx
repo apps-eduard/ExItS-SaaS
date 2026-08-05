@@ -1427,26 +1427,65 @@
   <data name="Shifts_ErrorTitle" xml:space="preserve"><value>Error sa shift</value></data>
   <data name="Shifts_RequiredTitle" xml:space="preserve"><value>Kailangan ng bukas na shift</value></data>
   <data name="Shifts_RequiredMessage" xml:space="preserve"><value>Kailangan ng bukas na cashier shift bago mag-checkout.</value></data>
-  <data name="Shifts_DetailSubtitle" xml:space="preserve"><value>Buod, galaw ng pera, at pagsara.</value></data>
+  <data name="Shifts_DetailSubtitle" xml:space="preserve"><value>Buod ng cash at pagsasaayos.</value></data>
   <data name="Shifts_SummarySection" xml:space="preserve"><value>Buod</value></data>
+  <data name="Shifts_CashSummarySection" xml:space="preserve"><value>Buod ng cash</value></data>
   <data name="Shifts_Status" xml:space="preserve"><value>Status</value></data>
   <data name="Shifts_ExpectedCash" xml:space="preserve"><value>Inaasahang cash</value></data>
   <data name="Shifts_NetCashSales" xml:space="preserve"><value>Net cash sales</value></data>
   <data name="Shifts_Variance" xml:space="preserve"><value>Variance</value></data>
+  <data name="Shifts_Difference" xml:space="preserve"><value>Pagkakaiba</value></data>
+  <data name="Shifts_FinalDifference" xml:space="preserve"><value>Pinal na pagkakaiba</value></data>
+  <data name="Shifts_CountedCash" xml:space="preserve"><value>Binilang na cash</value></data>
+  <data name="Shifts_CountedCashRequired" xml:space="preserve"><value>Ilagay ang binilang na closing cash.</value></data>
+  <data name="Shifts_VarianceOverage" xml:space="preserve"><value>Sobra</value></data>
+  <data name="Shifts_VarianceShortage" xml:space="preserve"><value>Kulang</value></data>
+  <data name="Shifts_VarianceBalanced" xml:space="preserve"><value>Tugma</value></data>
+  <data name="Shifts_VarianceNotesHint" xml:space="preserve"><value>Magdagdag ng tala kapag hindi zero ang pagkakaiba.</value></data>
   <data name="Shifts_MovementSection" xml:space="preserve"><value>Galaw ng pera</value></data>
+  <data name="Shifts_RecordMovementSection" xml:space="preserve"><value>Itala ang galaw ng pera</value></data>
+  <data name="Shifts_MovementHistorySection" xml:space="preserve"><value>Mga galaw ng pera</value></data>
   <data name="Shifts_MovementType" xml:space="preserve"><value>Uri ng galaw</value></data>
+  <data name="Shifts_MovementTypeRequired" xml:space="preserve"><value>Pumili ng Cash in o Cash out.</value></data>
   <data name="Shifts_CashIn" xml:space="preserve"><value>Cash in</value></data>
   <data name="Shifts_CashOut" xml:space="preserve"><value>Cash out</value></data>
   <data name="Shifts_MovementAmount" xml:space="preserve"><value>Halaga</value></data>
+  <data name="Shifts_MovementAmountRequired" xml:space="preserve"><value>Dapat higit sa zero ang halaga.</value></data>
   <data name="Shifts_MovementReason" xml:space="preserve"><value>Dahilan</value></data>
-  <data name="Shifts_RecordMovement" xml:space="preserve"><value>Itala ang galaw</value></data>
+  <data name="Shifts_MovementReasonRequired" xml:space="preserve"><value>Kailangan ang dahilan.</value></data>
+  <data name="Shifts_RecordMovement" xml:space="preserve"><value>Itala ang galaw ng pera</value></data>
+  <data name="Shifts_MovementRecorded" xml:space="preserve"><value>Naitala ang galaw ng pera.</value></data>
+  <data name="Shifts_MovementCount" xml:space="preserve"><value>Mga galaw ng pera</value></data>
+  <data name="Shifts_NoMovementsTitle" xml:space="preserve"><value>Walang galaw ng pera</value></data>
+  <data name="Shifts_NoMovementsMessage" xml:space="preserve"><value>Lalabas dito ang cash in at cash out ng shift na ito.</value></data>
   <data name="Shifts_CloseSection" xml:space="preserve"><value>Isara ang shift</value></data>
   <data name="Shifts_ClosingCashLabel" xml:space="preserve"><value>Binibilang na closing cash</value></data>
   <data name="Shifts_ClosingNotes" xml:space="preserve"><value>Mga tala sa pagsara</value></data>
   <data name="Shifts_CloseConfirm" xml:space="preserve"><value>Isara ang shift</value></data>
+  <data name="Shifts_ReviewAndClose" xml:space="preserve"><value>Suriin at isara ang shift</value></data>
+  <data name="Shifts_ConfirmClose" xml:space="preserve"><value>Kumpirmahin ang pagsara</value></data>
+  <data name="Shifts_ContinueEditing" xml:space="preserve"><value>Magpatuloy sa pag-edit</value></data>
+  <data name="Shifts_CloseConfirmTitle" xml:space="preserve"><value>Kumpirmahin ang pagsara</value></data>
+  <data name="Shifts_CloseConfirmMessage" xml:space="preserve"><value>Pagkatapos isara, hindi na makakatanggap ng sales ang shift na ito. Mase-save ang inaasahang cash, binilang na cash, at pagkakaiba.</value></data>
+  <data name="Shifts_ClosedSuccess" xml:space="preserve"><value>Naisara ang shift.</value></data>
   <data name="Shifts_CancelConfirm" xml:space="preserve"><value>Kanselahin ang shift</value></data>
+  <data name="Shifts_CancelTitle" xml:space="preserve"><value>Kanselahin ang shift na ito?</value></data>
+  <data name="Shifts_CancelMessage" xml:space="preserve"><value>Pwede lang kanselahin kapag walang sales at walang galaw ng pera. Hindi na ito mababawi.</value></data>
+  <data name="Shifts_CancelledSuccess" xml:space="preserve"><value>Kinansela ang shift.</value></data>
+  <data name="Shifts_MoreActions" xml:space="preserve"><value>Iba pang aksyon</value></data>
   <data name="Shifts_NotFoundTitle" xml:space="preserve"><value>Hindi natagpuan ang shift</value></data>
   <data name="Shifts_NotFoundMessage" xml:space="preserve"><value>Hindi ma-load ang shift na ito.</value></data>
+  <data name="Shifts_DetailLoading" xml:space="preserve"><value>Naglo-load ng shift...</value></data>
+  <data name="Shifts_SuccessTitle" xml:space="preserve"><value>Tagumpay</value></data>
+  <data name="Shifts_ViewOnlyTitle" xml:space="preserve"><value>Tingnan lang</value></data>
+  <data name="Shifts_ViewOnlyMessage" xml:space="preserve"><value>Pwede mong tingnan ang shift, pero kailangan ng pahintulot sa pamamahala para sa cash o pagsara.</value></data>
+  <data name="Shifts_OfflineReadonlyMessage" xml:space="preserve"><value>Kailangan ng online connection para sa mga pagbabago. Nananatiling visible ang naka-cache na detalye kung available.</value></data>
+  <data name="Shifts_OfflineActionBlocked" xml:space="preserve"><value>Kumonekta ulit para mag-record, mag-close, o mag-cancel ng shift.</value></data>
+  <data name="Shifts_OpenedByFormat" xml:space="preserve"><value>Binuksan {0} ni {1}</value></data>
+  <data name="Shifts_ClosedByFormat" xml:space="preserve"><value>Isinara {0} ni {1}</value></data>
+  <data name="Shifts_CancelledByFormat" xml:space="preserve"><value>Kinansela {0} ni {1}</value></data>
+  <data name="Shifts_IdentityUnavailable" xml:space="preserve"><value>Hindi available</value></data>
+  <data name="Shifts_Register" xml:space="preserve"><value>Rehistro</value></data>
   <data name="Shifts_CurrentSection" xml:space="preserve"><value>Kasalukuyang shift</value></data>
   <data name="Shifts_OpenCurrent" xml:space="preserve"><value>Buksan ang kasalukuyang shift</value></data>
   <data name="Shifts_AlreadyOpen" xml:space="preserve"><value>May bukas nang shift</value></data>

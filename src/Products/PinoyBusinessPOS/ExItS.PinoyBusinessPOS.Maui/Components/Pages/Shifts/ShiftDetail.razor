@@ -1,117 +1,439 @@
 @page "/shifts/{ShiftId:guid}"
+@implements IDisposable
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Maui.Services
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosCashierShiftClient Shifts
+@inject IPlatformAccessClient Platform
 @inject IUtangCapabilityEvaluator Capabilities
 @inject IConnectivityService Connectivity
 @inject ApiStatusLocalizer ApiLocalizer
+@inject StoreHeaderState HeaderState
 @inject IStringLocalizer<PosResources> L
 
-@if (!_ready)
+@if (!_ready || (_loading && _shift is null))
 {
-    <Page><Spinner /></Page>
+    <Page><Spinner /><span class="pos-muted">@L["Shifts_DetailLoading"]</span></Page>
 }
 else if (_shift is null)
 {
-    <Page><EmptyState IconName="inbox" Title="@L["Shifts_NotFoundTitle"]" Message="@L["Shifts_NotFoundMessage"]" /></Page>
+    <Page>
+        <ErrorState Title="@(_errorTitle ?? L["Shifts_NotFoundTitle"])"
+                    Message="@(_errorMessage ?? L["Shifts_NotFoundMessage"])"
+                    RetryLabel="@L["Api_Retry"]"
+                    OnRetry="ReloadAsync" />
+    </Page>
 }
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageShifts);
     var isOpen = string.Equals(_shift.Status, "Open", StringComparison.Ordinal);
-    var blocked = _isOffline || !canManage;
+    var isClosed = string.Equals(_shift.Status, "Closed", StringComparison.Ordinal);
+    var isCancelled = string.Equals(_shift.Status, "Cancelled", StringComparison.Ordinal);
+    var onlineActionsEnabled = !_isOffline && canManage && isOpen;
+    var expectedCash = ExpectedCash;
+    var countedPreview = _closingCash;
+    var variancePreview = countedPreview - expectedCash;
+    var varianceKind = VarianceKind(variancePreview);
+    var movements = _summary?.Movements ?? Array.Empty<PosCashierShiftMovementDto>();
+    var canCancel = onlineActionsEnabled && CanOfferCancel;
+    var registerPrimary = RegisterPrimary(_shift);
+    var registerSecondary = RegisterSecondary(_shift);
+<div class="pos-shift-detail">
 <Page>
-    <PageHeader Title="@_shift.ShiftNumber" Subtitle="@L["Shifts_DetailSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Shifts_BackToList"]</Button>
-        </Actions>
-    </PageHeader>
+    <header class="pos-shift-detail__header">
+        <div class="pos-shift-detail__title-row">
+            <h1 class="pos-shift-detail__title">@_shift.ShiftNumber</h1>
+            <span class="pos-shifts__badge pos-shifts__badge--@StatusTone(_shift.Status)"
+                  role="status"
+                  aria-label="@($"{L["Shifts_Status"]}: {StatusLabel(_shift.Status)}")">
+                @StatusLabel(_shift.Status)
+            </span>
+        </div>
+        <p class="pos-shift-detail__subtitle">@L["Shifts_DetailSubtitle"]</p>
+        @if (!string.IsNullOrWhiteSpace(registerPrimary))
+        {
+            <p class="pos-shift-detail__register">@registerPrimary</p>
+        }
+        @if (!string.IsNullOrWhiteSpace(registerSecondary))
+        {
+            <p class="pos-shift-detail__register-code pos-muted">@registerSecondary</p>
+        }
+        <p class="pos-shift-detail__opened pos-muted">
+            @string.Format(L["Shifts_OpenedByFormat"].Value, FormatDateTime(_shift.OpenedAtUtc), OpenedByDisplay)
+        </p>
+        @if (isClosed && _shift.ClosedAtUtc is DateTimeOffset closedAt)
+        {
+            <p class="pos-shift-detail__closed pos-muted">
+                @string.Format(L["Shifts_ClosedByFormat"].Value, FormatDateTime(closedAt), ClosedByDisplay)
+            </p>
+        }
+        @if (isCancelled && _shift.CancelledAtUtc is DateTimeOffset cancelledAt)
+        {
+            <p class="pos-shift-detail__closed pos-muted">
+                @string.Format(L["Shifts_CancelledByFormat"].Value, FormatDateTime(cancelledAt), CancelledByDisplay)
+            </p>
+        }
+    </header>
 
     @if (_isOffline)
     {
-        <Alert Tone="AlertTone.Warning" Title="@L["Shifts_OfflineTitle"]" Message="@L["Shifts_OfflineMessage"]" />
+        <Alert Tone="AlertTone.Warning" Title="@L["Shifts_OfflineTitle"]" Message="@L["Shifts_OfflineReadonlyMessage"]" />
+    }
+    else if (!canManage && isOpen)
+    {
+        <Alert Tone="AlertTone.Info" Title="@L["Shifts_ViewOnlyTitle"]" Message="@L["Shifts_ViewOnlyMessage"]" />
+    }
+
+    @if (!string.IsNullOrEmpty(_banner))
+    {
+        <Alert Tone="AlertTone.Success" Title="@L["Shifts_SuccessTitle"]" Message="@_banner" />
     }
 
     @if (!string.IsNullOrEmpty(_errorMessage))
     {
-        <Alert Tone="AlertTone.Danger" Title="@L["Shifts_ErrorTitle"]" Message="@_errorMessage" />
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Shifts_ErrorTitle"])" Message="@_errorMessage" />
     }
 
-    <Section Title="@L["Shifts_SummarySection"]">
-        <Stack Gap="2">
-            <div class="pos-muted">@L["Shifts_Status"]</div>
-            <div class="pos-value-md">@_shift.Status</div>
-            <div class="pos-muted">@L["Shifts_RegisterLabel"]</div>
-            <div class="pos-value-md">@(string.IsNullOrWhiteSpace(_shift.RegisterCode) ? "—" : $"{_shift.RegisterCode} — {_shift.RegisterName}")</div>
-            <div class="pos-muted">@L["Shifts_OpeningCashLabel"]</div>
-            <MoneyDisplay Amount="@_shift.OpeningCashAmount" CurrencyCode="PHP" />
-            @if (_summary is not null)
+    <section class="pos-shift-detail__card" aria-labelledby="shift-cash-summary-heading">
+        <h2 id="shift-cash-summary-heading" class="pos-shift-detail__section-title">@L["Shifts_CashSummarySection"]</h2>
+        <dl class="pos-shift-detail__totals">
+            <div class="pos-shift-detail__total-row">
+                <dt>@L["Shifts_OpeningCashLabel"]</dt>
+                <dd><MoneyDisplay Amount="@_shift.OpeningCashAmount" CurrencyCode="PHP" /></dd>
+            </div>
+            <div class="pos-shift-detail__total-row">
+                <dt>@L["Shifts_NetCashSales"]</dt>
+                <dd><MoneyDisplay Amount="@(_summary?.NetCashSales ?? 0m)" CurrencyCode="PHP" /></dd>
+            </div>
+            <div class="pos-shift-detail__total-row">
+                <dt>@L["Shifts_CashIn"]</dt>
+                <dd><MoneyDisplay Amount="@(_summary?.TotalCashIn ?? 0m)" CurrencyCode="PHP" /></dd>
+            </div>
+            <div class="pos-shift-detail__total-row">
+                <dt>@L["Shifts_CashOut"]</dt>
+                <dd><MoneyDisplay Amount="@(_summary?.TotalCashOut ?? 0m)" CurrencyCode="PHP" /></dd>
+            </div>
+            <div class="pos-shift-detail__total-row pos-shift-detail__total-row--emphasis">
+                <dt>@L["Shifts_ExpectedCash"]</dt>
+                <dd><MoneyDisplay Amount="@expectedCash" CurrencyCode="PHP" Emphasized="true" /></dd>
+            </div>
+            @if (isClosed)
             {
-                <div class="pos-muted">@L["Shifts_ExpectedCash"]</div>
-                <MoneyDisplay Amount="@_summary.ExpectedCashAmount" CurrencyCode="PHP" />
-                <div class="pos-muted">@L["Shifts_NetCashSales"]</div>
-                <MoneyDisplay Amount="@_summary.NetCashSales" CurrencyCode="PHP" />
+                <div class="pos-shift-detail__total-row">
+                    <dt>@L["Shifts_CountedCash"]</dt>
+                    <dd><MoneyDisplay Amount="@(_shift.ClosingCashAmount ?? 0m)" CurrencyCode="PHP" /></dd>
+                </div>
+                <div class="pos-shift-detail__total-row pos-shift-detail__total-row--emphasis">
+                    <dt>@L["Shifts_FinalDifference"]</dt>
+                    <dd>
+                        <MoneyDisplay Amount="@(_shift.CashVarianceAmount ?? 0m)" CurrencyCode="PHP" Emphasized="true" />
+                        <span class="pos-shift-detail__variance-label pos-muted">@VarianceLabel(_shift.CashVarianceAmount ?? 0m)</span>
+                    </dd>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(_shift.ClosingNotes))
+                {
+                    <div class="pos-shift-detail__notes">
+                        <span class="pos-muted">@L["Shifts_ClosingNotes"]</span>
+                        <span>@_shift.ClosingNotes</span>
+                    </div>
+                }
             }
-            @if (_shift.CashVarianceAmount is not null)
-            {
-                <div class="pos-muted">@L["Shifts_Variance"]</div>
-                <MoneyDisplay Amount="@_shift.CashVarianceAmount.Value" CurrencyCode="PHP" />
-            }
-        </Stack>
-    </Section>
+        </dl>
+    </section>
 
     @if (isOpen && canManage)
     {
-        <Section Title="@L["Shifts_MovementSection"]">
-            <Stack Gap="3">
-                <Select Label="@L["Shifts_MovementType"]"
-                        Value="@_movementType"
-                        ValueChanged="v => _movementType = v ?? _movementType"
-                        Options="@_movementOptions"
-                        Disabled="@blocked" />
-                <NumberInput Label="@L["Shifts_MovementAmount"]" Value="@_movementAmount" ValueChanged="v => _movementAmount = v ?? 0m" DecimalPlaces="2" Disabled="@blocked" />
-                <TextInput Label="@L["Shifts_MovementReason"]" Value="@_movementReason" ValueChanged="v => _movementReason = v" Disabled="@blocked" />
-                <FormActions>
-                    <Button Variant="ButtonVariant.Secondary" Disabled="@blocked" IsLoading="@_recording" OnClick="RecordMovementAsync">@L["Shifts_RecordMovement"]</Button>
-                </FormActions>
-            </Stack>
-        </Section>
+        <section class="pos-shift-detail__card" aria-labelledby="shift-movement-heading">
+            <button type="button"
+                    id="shift-movement-heading"
+                    class="pos-shift-detail__disclose"
+                    aria-expanded="@_movementExpanded"
+                    @onclick="() => _movementExpanded = !_movementExpanded">
+                <span>@L["Shifts_RecordMovementSection"]</span>
+                <span class="pos-shift-detail__disclose-chevron" aria-hidden="true">@(_movementExpanded ? "▾" : "▸")</span>
+            </button>
 
-        <Section Title="@L["Shifts_CloseSection"]">
-            <Stack Gap="3">
-                <NumberInput Label="@L["Shifts_ClosingCashLabel"]" Value="@_closingCash" ValueChanged="v => _closingCash = v ?? 0m" DecimalPlaces="2" Disabled="@blocked" />
-                <TextInput Label="@L["Shifts_ClosingNotes"]" Value="@_closingNotes" ValueChanged="v => _closingNotes = v" Disabled="@blocked" />
-                <FormActions>
-                    <Button Variant="ButtonVariant.Primary" Disabled="@blocked" IsLoading="@_closing" OnClick="CloseAsync">@L["Shifts_CloseConfirm"]</Button>
-                    <Button Variant="ButtonVariant.Danger" Disabled="@blocked" IsLoading="@_cancelling" OnClick="CancelAsync">@L["Shifts_CancelConfirm"]</Button>
-                </FormActions>
-            </Stack>
-        </Section>
+            @if (_movementExpanded)
+            {
+                <Stack Gap="3">
+                    @if (_isOffline)
+                    {
+                        <p class="pos-muted" role="status">@L["Shifts_OfflineActionBlocked"]</p>
+                    }
+                    <Select Label="@L["Shifts_MovementType"]"
+                            Value="@_movementType"
+                            ValueChanged="v => _movementType = v ?? _movementType"
+                            Options="@MovementOptions"
+                            Disabled="@(!onlineActionsEnabled || _recording)"
+                            IsInvalid="@(!string.IsNullOrEmpty(_movementTypeError))"
+                            ErrorText="@_movementTypeError" />
+                    <NumberInput Label="@L["Shifts_MovementAmount"]"
+                                 Value="@_movementAmount"
+                                 ValueChanged="OnMovementAmountChanged"
+                                 DecimalPlaces="2"
+                                 Disabled="@(!onlineActionsEnabled || _recording)"
+                                 IsInvalid="@(!string.IsNullOrEmpty(_movementAmountError))"
+                                 ErrorText="@_movementAmountError" />
+                    <TextInput Label="@L["Shifts_MovementReason"]"
+                               Value="@_movementReason"
+                               ValueChanged="OnMovementReasonChanged"
+                               Disabled="@(!onlineActionsEnabled || _recording)"
+                               IsInvalid="@(!string.IsNullOrEmpty(_movementReasonError))"
+                               ErrorText="@_movementReasonError" />
+                    <Button Variant="ButtonVariant.Primary"
+                            Disabled="@(!onlineActionsEnabled)"
+                            IsLoading="@_recording"
+                            OnClick="RecordMovementAsync">@L["Shifts_RecordMovement"]</Button>
+                </Stack>
+            }
+        </section>
+    }
+
+    <section class="pos-shift-detail__card" aria-labelledby="shift-history-heading">
+        <h2 id="shift-history-heading" class="pos-shift-detail__section-title">@L["Shifts_MovementHistorySection"]</h2>
+        @if (movements.Count == 0)
+        {
+            <EmptyState IconName="inbox"
+                        Title="@L["Shifts_NoMovementsTitle"]"
+                        Message="@L["Shifts_NoMovementsMessage"]" />
+        }
+        else
+        {
+            <div class="pos-shift-detail__movements" role="list">
+                @foreach (var movement in movements)
+                {
+                    var isCashIn = string.Equals(movement.MovementType, "CashIn", StringComparison.OrdinalIgnoreCase);
+                    var typeLabel = isCashIn ? L["Shifts_CashIn"].Value : L["Shifts_CashOut"].Value;
+                    var iconName = isCashIn ? "lent" : "borrowed";
+                    var byName = ResolveName(movement.RecordedBy);
+                    <article class="pos-shift-detail__movement" role="listitem">
+                        <div class="pos-shift-detail__movement-main">
+                            <span class="pos-shift-detail__movement-type">
+                                <span class="pos-shift-detail__movement-icon" aria-hidden="true">@IconGlyphs.Get(iconName)</span>
+                                <span>@typeLabel</span>
+                            </span>
+                            <span class="pos-shift-detail__movement-amount">
+                                <MoneyDisplay Amount="@movement.Amount" CurrencyCode="PHP" />
+                            </span>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(movement.Reason))
+                        {
+                            <p class="pos-shift-detail__movement-reason">@movement.Reason</p>
+                        }
+                        <p class="pos-shift-detail__movement-meta pos-muted">
+                            @FormatDateTime(movement.RecordedAtUtc)
+                            @if (!string.IsNullOrWhiteSpace(byName))
+                            {
+                                <span aria-hidden="true"> · </span>
+                                <span>@byName</span>
+                            }
+                        </p>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+
+    @if (isOpen && canManage)
+    {
+        <section class="pos-shift-detail__card" aria-labelledby="shift-close-heading">
+            <h2 id="shift-close-heading" class="pos-shift-detail__section-title">@L["Shifts_CloseSection"]</h2>
+            @if (_isOffline)
+            {
+                <p class="pos-muted" role="status">@L["Shifts_OfflineActionBlocked"]</p>
+            }
+            else if (!_confirmClose)
+            {
+                <Stack Gap="3">
+                    <div class="pos-shift-detail__reconcile-row">
+                        <span class="pos-muted">@L["Shifts_ExpectedCash"]</span>
+                        <MoneyDisplay Amount="@expectedCash" CurrencyCode="PHP" Emphasized="true" />
+                    </div>
+                    <NumberInput Label="@L["Shifts_CountedCash"]"
+                                 Value="@_closingCash"
+                                 ValueChanged="OnClosingCashChanged"
+                                 DecimalPlaces="2"
+                                 Disabled="@(!onlineActionsEnabled || _closing)"
+                                 IsInvalid="@(!string.IsNullOrEmpty(_closingCashError))"
+                                 ErrorText="@_closingCashError" />
+                    <div class="pos-shift-detail__reconcile-row"
+                         role="status"
+                         aria-live="polite"
+                         aria-label="@($"{L["Shifts_Difference"]}: {variancePreview:0.00}, {VarianceLabel(variancePreview)}")">
+                        <span>
+                            @L["Shifts_Difference"]
+                            <span class="pos-shift-detail__variance-label pos-muted">@VarianceLabel(variancePreview)</span>
+                        </span>
+                        <MoneyDisplay Amount="@variancePreview" CurrencyCode="PHP" Emphasized="true" />
+                    </div>
+                    <TextInput Label="@L["Shifts_ClosingNotes"]"
+                               Value="@_closingNotes"
+                               ValueChanged="v => _closingNotes = v"
+                               Disabled="@(!onlineActionsEnabled || _closing)" />
+                    @if (varianceKind != "balanced")
+                    {
+                        <p class="pos-muted">@L["Shifts_VarianceNotesHint"]</p>
+                    }
+                    <Button Variant="ButtonVariant.Primary"
+                            Disabled="@(!onlineActionsEnabled)"
+                            OnClick="BeginCloseReview">@L["Shifts_ReviewAndClose"]</Button>
+                </Stack>
+            }
+            else
+            {
+                <div class="pos-shift-detail__confirm" role="region" aria-labelledby="shift-close-confirm-heading">
+                    <h3 id="shift-close-confirm-heading" class="pos-shift-detail__confirm-title">@L["Shifts_CloseConfirmTitle"]</h3>
+                    <p class="pos-shift-detail__confirm-message">@L["Shifts_CloseConfirmMessage"]</p>
+                    <dl class="pos-shift-detail__totals">
+                        <div class="pos-shift-detail__total-row">
+                            <dt>@L["Shifts_Register"]</dt>
+                            <dd>@registerPrimary</dd>
+                        </div>
+                        <div class="pos-shift-detail__total-row">
+                            <dt>@L["Shifts_OpeningCashLabel"]</dt>
+                            <dd><MoneyDisplay Amount="@_shift.OpeningCashAmount" CurrencyCode="PHP" /></dd>
+                        </div>
+                        <div class="pos-shift-detail__total-row">
+                            <dt>@L["Shifts_ExpectedCash"]</dt>
+                            <dd><MoneyDisplay Amount="@expectedCash" CurrencyCode="PHP" /></dd>
+                        </div>
+                        <div class="pos-shift-detail__total-row">
+                            <dt>@L["Shifts_CountedCash"]</dt>
+                            <dd><MoneyDisplay Amount="@_closingCash" CurrencyCode="PHP" /></dd>
+                        </div>
+                        <div class="pos-shift-detail__total-row pos-shift-detail__total-row--emphasis">
+                            <dt>@L["Shifts_Difference"]</dt>
+                            <dd>
+                                <MoneyDisplay Amount="@variancePreview" CurrencyCode="PHP" Emphasized="true" />
+                                <span class="pos-shift-detail__variance-label pos-muted">@VarianceLabel(variancePreview)</span>
+                            </dd>
+                        </div>
+                        @if (movements.Count > 0)
+                        {
+                            <div class="pos-shift-detail__total-row">
+                                <dt>@L["Shifts_MovementCount"]</dt>
+                                <dd>@movements.Count</dd>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_closingNotes))
+                        {
+                            <div class="pos-shift-detail__notes">
+                                <span class="pos-muted">@L["Shifts_ClosingNotes"]</span>
+                                <span>@_closingNotes</span>
+                            </div>
+                        }
+                    </dl>
+                    <FormActions>
+                        <Button Variant="ButtonVariant.Secondary"
+                                Disabled="@_closing"
+                                OnClick="() => _confirmClose = false">@L["Shifts_ContinueEditing"]</Button>
+                        <Button Variant="ButtonVariant.Primary"
+                                Disabled="@(!onlineActionsEnabled)"
+                                IsLoading="@_closing"
+                                OnClick="ConfirmCloseAsync">@L["Shifts_ConfirmClose"]</Button>
+                    </FormActions>
+                </div>
+            }
+        </section>
+
+        @if (canCancel)
+        {
+            <section class="pos-shift-detail__more" aria-labelledby="shift-more-heading">
+                <h2 id="shift-more-heading" class="pos-shift-detail__section-title">@L["Shifts_MoreActions"]</h2>
+                <Button Variant="ButtonVariant.Ghost"
+                        Disabled="@(!onlineActionsEnabled || _cancelling)"
+                        OnClick="() => _confirmCancel = true">@L["Shifts_CancelConfirm"]</Button>
+            </section>
+        }
     }
 </Page>
+
+    <ConfirmDialog Visible="@_confirmCancel"
+                   VisibleChanged="v => _confirmCancel = v"
+                   Title="@L["Shifts_CancelTitle"]"
+                   Message="@L["Shifts_CancelMessage"]"
+                   Danger="true"
+                   ConfirmLabel="@L["Shifts_CancelConfirm"]"
+                   CancelLabel="@L["Shifts_ContinueEditing"]"
+                   IsLoading="@_cancelling"
+                   OnConfirm="ConfirmCancelAsync" />
+</div>
 }
 
 @code {
     [Parameter] public Guid ShiftId { get; set; }
 
     private bool _ready;
+    private bool _loading;
     private bool _isOffline;
+    private bool _headerInner;
     private bool _recording;
     private bool _closing;
     private bool _cancelling;
+    private bool _movementExpanded = true;
+    private bool _confirmClose;
+    private bool _confirmCancel;
     private PosCashierShiftDto? _shift;
     private PosCashierShiftSummaryDto? _summary;
+    private string? _errorTitle;
     private string? _errorMessage;
+    private string? _banner;
     private string _movementType = "CashIn";
-    private readonly IReadOnlyList<SelectOption> _movementOptions =
-    [
-        new("CashIn", "Cash In"),
-        new("CashOut", "Cash Out")
-    ];
     private decimal _movementAmount;
     private string? _movementReason;
+    private string? _movementTypeError;
+    private string? _movementAmountError;
+    private string? _movementReasonError;
     private decimal _closingCash;
     private string? _closingNotes;
+    private string? _closingCashError;
+    private readonly Dictionary<Guid, string> _nameById = new();
+
+    private IReadOnlyList<SelectOption> MovementOptions =>
+    [
+        new("CashIn", L["Shifts_CashIn"]),
+        new("CashOut", L["Shifts_CashOut"])
+    ];
+
+    private decimal ExpectedCash =>
+        _summary?.ExpectedCashAmount
+        ?? _shift?.ExpectedCashAmountSnapshot
+        ?? _shift?.OpeningCashAmount
+        ?? 0m;
+
+    private string OpenedByDisplay =>
+        _shift is null ? L["Shifts_IdentityUnavailable"] : ResolveName(_shift.OpenedBy) ?? L["Shifts_IdentityUnavailable"];
+
+    private string ClosedByDisplay =>
+        _shift?.ClosedBy is Guid id
+            ? ResolveName(id) ?? L["Shifts_IdentityUnavailable"]
+            : L["Shifts_IdentityUnavailable"];
+
+    private string CancelledByDisplay =>
+        _shift?.CancelledBy is Guid id
+            ? ResolveName(id) ?? L["Shifts_IdentityUnavailable"]
+            : L["Shifts_IdentityUnavailable"];
+
+    private bool CanOfferCancel
+    {
+        get
+        {
+            if (_summary is null)
+            {
+                return true;
+            }
+
+            return _summary.Movements.Count == 0
+                && _summary.TotalCashIn == 0m
+                && _summary.TotalCashOut == 0m
+                && _summary.NetCashSales == 0m
+                && _summary.CompletedCashCount == 0
+                && _summary.CompletedGCashCount == 0
+                && _summary.CompletedUtangCount == 0;
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -127,100 +449,404 @@ else
             return;
         }
 
+        HeaderState.EnterInner("/shifts");
+        _headerInner = true;
+        Connectivity.ConnectivityChanged += OnConnectivityChanged;
         _isOffline = !await Connectivity.IsConnectedAsync();
-        await ReloadAsync();
         _ready = true;
+        await ReloadAsync();
+    }
+
+    private async void OnConnectivityChanged(object? sender, ConnectivityStatus status)
+    {
+        _isOffline = status == ConnectivityStatus.Offline;
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task ReloadAsync()
     {
-        if (_isOffline)
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            if (_isOffline)
+            {
+                if (_shift is null)
+                {
+                    _errorTitle = L["Shifts_OfflineTitle"];
+                    _errorMessage = L["Shifts_OfflineMessage"];
+                }
+
+                return;
+            }
+
+            var shiftResult = await Shifts.GetAsync(ShiftId);
+            if (!shiftResult.IsSuccess || shiftResult.Data is null)
+            {
+                var described = ApiLocalizer.Describe(shiftResult.Status, shiftResult.Error);
+                _errorTitle = described.Title;
+                _errorMessage = shiftResult.Error?.Detail ?? described.Message;
+                if (_shift is null)
+                {
+                    // Keep not-found only when we never loaded a shift.
+                }
+
+                return;
+            }
+
+            _shift = shiftResult.Data;
+
+            var summaryResult = await Shifts.GetSummaryAsync(ShiftId);
+            if (summaryResult.IsSuccess)
+            {
+                _summary = summaryResult.Data;
+            }
+            else
+            {
+                _summary = null;
+            }
+
+            await ResolveIdentitiesAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task ResolveIdentitiesAsync()
+    {
+        if (_shift is null)
         {
             return;
         }
 
-        var shiftResult = await Shifts.GetAsync(ShiftId);
-        if (shiftResult.IsSuccess)
+        var ids = new HashSet<Guid> { _shift.OpenedBy };
+        if (_shift.ClosedBy is Guid closedBy)
         {
-            _shift = shiftResult.Data;
+            ids.Add(closedBy);
         }
 
-        var summaryResult = await Shifts.GetSummaryAsync(ShiftId);
-        if (summaryResult.IsSuccess)
+        if (_shift.CancelledBy is Guid cancelledBy)
         {
-            _summary = summaryResult.Data;
+            ids.Add(cancelledBy);
         }
+
+        if (_summary is not null)
+        {
+            foreach (var movement in _summary.Movements)
+            {
+                ids.Add(movement.RecordedBy);
+            }
+        }
+
+        foreach (var id in ids)
+        {
+            if (_nameById.ContainsKey(id))
+            {
+                continue;
+            }
+
+            try
+            {
+                var userResult = await Platform.GetUserAsync(id);
+                if (userResult.IsSuccess && userResult.Data is not null)
+                {
+                    var name = FirstMeaningful(
+                        userResult.Data.DisplayName,
+                        userResult.Data.Username,
+                        userResult.Data.Email);
+                    if (!string.IsNullOrWhiteSpace(name))
+                    {
+                        _nameById[id] = name;
+                    }
+                }
+            }
+            catch
+            {
+                // Identity lookup is best-effort; never show the GUID.
+            }
+        }
+    }
+
+    private string? ResolveName(Guid userId) =>
+        _nameById.TryGetValue(userId, out var name) ? name : null;
+
+    private void OnMovementAmountChanged(decimal? value)
+    {
+        _movementAmount = value ?? 0m;
+        _movementAmountError = null;
+    }
+
+    private void OnMovementReasonChanged(string? value)
+    {
+        _movementReason = value;
+        _movementReasonError = null;
+    }
+
+    private void OnClosingCashChanged(decimal? value)
+    {
+        _closingCash = value ?? 0m;
+        _closingCashError = null;
+    }
+
+    private bool ValidateMovement()
+    {
+        _movementTypeError = null;
+        _movementAmountError = null;
+        _movementReasonError = null;
+        var ok = true;
+
+        if (_movementType is not ("CashIn" or "CashOut"))
+        {
+            _movementTypeError = L["Shifts_MovementTypeRequired"];
+            ok = false;
+        }
+
+        if (_movementAmount <= 0m)
+        {
+            _movementAmountError = L["Shifts_MovementAmountRequired"];
+            ok = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(_movementReason))
+        {
+            _movementReasonError = L["Shifts_MovementReasonRequired"];
+            ok = false;
+        }
+
+        return ok;
     }
 
     private async Task RecordMovementAsync()
     {
-        if (_recording || _isOffline || string.IsNullOrWhiteSpace(_movementReason))
+        if (_recording || !Capabilities.IsAllowed(UtangCapability.ManageShifts) || _isOffline)
+        {
+            return;
+        }
+
+        if (!ValidateMovement())
         {
             return;
         }
 
         _recording = true;
+        _errorTitle = null;
         _errorMessage = null;
-        var result = await Shifts.RecordMovementAsync(
-            ShiftId,
-            new RecordCashierShiftMovementRequest(_movementType, _movementAmount, _movementReason, MovementId: Guid.NewGuid()));
-        _recording = false;
+        _banner = null;
 
-        if (result.IsSuccess)
+        try
         {
-            _movementAmount = 0m;
-            _movementReason = null;
-            await ReloadAsync();
+            var result = await Shifts.RecordMovementAsync(
+                ShiftId,
+                new RecordCashierShiftMovementRequest(
+                    _movementType,
+                    _movementAmount,
+                    _movementReason!.Trim(),
+                    MovementId: Guid.NewGuid()));
+
+            if (result.IsSuccess)
+            {
+                _movementAmount = 0m;
+                _movementReason = null;
+                _banner = L["Shifts_MovementRecorded"];
+                await ReloadAsync();
+                return;
+            }
+
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+        finally
+        {
+            _recording = false;
+        }
+    }
+
+    private void BeginCloseReview()
+    {
+        _closingCashError = null;
+        _errorTitle = null;
+        _errorMessage = null;
+        _banner = null;
+
+        if (_closingCash < 0m)
+        {
+            _closingCashError = L["Shifts_CountedCashRequired"];
             return;
         }
 
-        var described = ApiLocalizer.Describe(result.Status, result.Error);
-        _errorMessage = result.Error?.Detail ?? described.Message;
+        _confirmClose = true;
     }
 
-    private async Task CloseAsync()
+    private async Task ConfirmCloseAsync()
     {
-        if (_closing || _isOffline)
+        if (_closing || _isOffline || !Capabilities.IsAllowed(UtangCapability.ManageShifts))
         {
+            return;
+        }
+
+        if (_closingCash < 0m)
+        {
+            _closingCashError = L["Shifts_CountedCashRequired"];
+            _confirmClose = false;
             return;
         }
 
         _closing = true;
+        _errorTitle = null;
         _errorMessage = null;
-        var result = await Shifts.CloseAsync(ShiftId, new CloseCashierShiftRequest(_closingCash, _closingNotes));
-        _closing = false;
+        _banner = null;
 
-        if (result.IsSuccess)
+        try
         {
-            await ReloadAsync();
-            return;
-        }
+            var result = await Shifts.CloseAsync(
+                ShiftId,
+                new CloseCashierShiftRequest(_closingCash, string.IsNullOrWhiteSpace(_closingNotes) ? null : _closingNotes.Trim()));
 
-        var described = ApiLocalizer.Describe(result.Status, result.Error);
-        _errorMessage = result.Error?.Detail ?? described.Message;
+            if (result.IsSuccess)
+            {
+                _confirmClose = false;
+                _banner = L["Shifts_ClosedSuccess"];
+                await ReloadAsync();
+                return;
+            }
+
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+        finally
+        {
+            _closing = false;
+        }
     }
 
-    private async Task CancelAsync()
+    private async Task ConfirmCancelAsync()
     {
-        if (_cancelling || _isOffline)
+        if (_cancelling || _isOffline || !Capabilities.IsAllowed(UtangCapability.ManageShifts))
         {
             return;
         }
 
         _cancelling = true;
+        _errorTitle = null;
         _errorMessage = null;
-        var result = await Shifts.CancelAsync(ShiftId);
-        _cancelling = false;
+        _banner = null;
 
-        if (result.IsSuccess)
+        try
         {
-            await ReloadAsync();
-            return;
-        }
+            var result = await Shifts.CancelAsync(ShiftId);
+            if (result.IsSuccess)
+            {
+                _confirmCancel = false;
+                _banner = L["Shifts_CancelledSuccess"];
+                await ReloadAsync();
+                return;
+            }
 
-        var described = ApiLocalizer.Describe(result.Status, result.Error);
-        _errorMessage = result.Error?.Detail ?? described.Message;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+        finally
+        {
+            _cancelling = false;
+        }
     }
 
-    private void GoList() => Nav.NavigateTo("/shifts");
+    private string StatusLabel(string? status) => status switch
+    {
+        "Open" => L["Shifts_Status_Open"],
+        "Closed" => L["Shifts_Status_Closed"],
+        "Cancelled" => L["Shifts_Status_Cancelled"],
+        _ => status ?? "—"
+    };
+
+    private static string StatusTone(string? status) => status switch
+    {
+        "Open" => "open",
+        "Closed" => "closed",
+        "Cancelled" => "cancelled",
+        _ => "neutral"
+    };
+
+    private static string RegisterPrimary(PosCashierShiftDto shift)
+    {
+        if (!string.IsNullOrWhiteSpace(shift.RegisterName))
+        {
+            return shift.RegisterName;
+        }
+
+        if (!string.IsNullOrWhiteSpace(shift.RegisterCode))
+        {
+            return shift.RegisterCode;
+        }
+
+        return "—";
+    }
+
+    private static string? RegisterSecondary(PosCashierShiftDto shift)
+    {
+        if (!string.IsNullOrWhiteSpace(shift.RegisterName)
+            && !string.IsNullOrWhiteSpace(shift.RegisterCode)
+            && !string.Equals(shift.RegisterName, shift.RegisterCode, StringComparison.OrdinalIgnoreCase))
+        {
+            return shift.RegisterCode;
+        }
+
+        return null;
+    }
+
+    private static string FormatDateTime(DateTimeOffset utc) =>
+        utc.ToLocalTime().ToString("MMM d, yyyy · h:mm tt");
+
+    private static string VarianceKind(decimal variance)
+    {
+        if (variance > 0m)
+        {
+            return "overage";
+        }
+
+        if (variance < 0m)
+        {
+            return "shortage";
+        }
+
+        return "balanced";
+    }
+
+    private string VarianceLabel(decimal variance) => VarianceKind(variance) switch
+    {
+        "overage" => L["Shifts_VarianceOverage"],
+        "shortage" => L["Shifts_VarianceShortage"],
+        _ => L["Shifts_VarianceBalanced"]
+    };
+
+    private static string? FirstMeaningful(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return null;
+    }
+
+    public void Dispose()
+    {
+        Connectivity.ConnectivityChanged -= OnConnectivityChanged;
+        if (_headerInner)
+        {
+            HeaderState.ExitInner();
+            _headerInner = false;
+        }
+    }
 }

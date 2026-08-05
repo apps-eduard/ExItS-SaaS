@@ -97,8 +97,27 @@ public sealed class ShiftsPageGuardTests
         var detail = File.ReadAllText(Path.Combine(ShiftsPagesDirectory(), "ShiftDetail.razor"));
         Assert.Contains("@page \"/shifts/{ShiftId:guid}\"", detail, StringComparison.Ordinal);
         Assert.Contains("CloseAsync", detail, StringComparison.Ordinal);
+        Assert.Contains("ConfirmCloseAsync", detail, StringComparison.Ordinal);
         Assert.Contains("GetSummaryAsync", detail, StringComparison.Ordinal);
         Assert.Contains("ExpectedCashAmount", detail, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderState", detail, StringComparison.Ordinal);
+        Assert.Contains("EnterInner(\"/shifts\")", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("Shifts_BackToList", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("Shifts_RegisterLabel", detail, StringComparison.Ordinal);
+        Assert.Contains("Shifts_Register", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-shift-detail", detail, StringComparison.Ordinal);
+        Assert.Contains("IPlatformAccessClient", detail, StringComparison.Ordinal);
+        Assert.Contains("GetUserAsync", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("OpenedBy.ToString", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("RecordedBy.ToString", detail, StringComparison.Ordinal);
+        Assert.Contains("_confirmClose", detail, StringComparison.Ordinal);
+        Assert.Contains("Shifts_MoreActions", detail, StringComparison.Ordinal);
+        Assert.Contains("ConfirmDialog", detail, StringComparison.Ordinal);
+        Assert.Contains("try", detail, StringComparison.Ordinal);
+        Assert.Contains("finally", detail, StringComparison.Ordinal);
+        Assert.Contains("_recording = false", detail, StringComparison.Ordinal);
+        Assert.Contains("_closing = false", detail, StringComparison.Ordinal);
+        Assert.Contains("_cancelling = false", detail, StringComparison.Ordinal);
     }
 
     [Fact]

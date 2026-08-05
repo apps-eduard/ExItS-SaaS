@@ -1427,26 +1427,65 @@
   <data name="Shifts_ErrorTitle" xml:space="preserve"><value>Shift error</value></data>
   <data name="Shifts_RequiredTitle" xml:space="preserve"><value>Open shift required</value></data>
   <data name="Shifts_RequiredMessage" xml:space="preserve"><value>Checkout requires an open cashier shift for this user.</value></data>
-  <data name="Shifts_DetailSubtitle" xml:space="preserve"><value>Shift summary, movements, and close.</value></data>
+  <data name="Shifts_DetailSubtitle" xml:space="preserve"><value>Cash summary and reconciliation.</value></data>
   <data name="Shifts_SummarySection" xml:space="preserve"><value>Summary</value></data>
+  <data name="Shifts_CashSummarySection" xml:space="preserve"><value>Cash summary</value></data>
   <data name="Shifts_Status" xml:space="preserve"><value>Status</value></data>
   <data name="Shifts_ExpectedCash" xml:space="preserve"><value>Expected cash</value></data>
   <data name="Shifts_NetCashSales" xml:space="preserve"><value>Net cash sales</value></data>
   <data name="Shifts_Variance" xml:space="preserve"><value>Variance</value></data>
+  <data name="Shifts_Difference" xml:space="preserve"><value>Difference</value></data>
+  <data name="Shifts_FinalDifference" xml:space="preserve"><value>Final difference</value></data>
+  <data name="Shifts_CountedCash" xml:space="preserve"><value>Counted cash</value></data>
+  <data name="Shifts_CountedCashRequired" xml:space="preserve"><value>Enter the counted closing cash amount.</value></data>
+  <data name="Shifts_VarianceOverage" xml:space="preserve"><value>Overage</value></data>
+  <data name="Shifts_VarianceShortage" xml:space="preserve"><value>Shortage</value></data>
+  <data name="Shifts_VarianceBalanced" xml:space="preserve"><value>Balanced</value></data>
+  <data name="Shifts_VarianceNotesHint" xml:space="preserve"><value>Consider adding a note when the difference is not zero.</value></data>
   <data name="Shifts_MovementSection" xml:space="preserve"><value>Cash movement</value></data>
+  <data name="Shifts_RecordMovementSection" xml:space="preserve"><value>Record cash movement</value></data>
+  <data name="Shifts_MovementHistorySection" xml:space="preserve"><value>Cash movements</value></data>
   <data name="Shifts_MovementType" xml:space="preserve"><value>Movement type</value></data>
+  <data name="Shifts_MovementTypeRequired" xml:space="preserve"><value>Choose Cash in or Cash out.</value></data>
   <data name="Shifts_CashIn" xml:space="preserve"><value>Cash in</value></data>
   <data name="Shifts_CashOut" xml:space="preserve"><value>Cash out</value></data>
   <data name="Shifts_MovementAmount" xml:space="preserve"><value>Amount</value></data>
+  <data name="Shifts_MovementAmountRequired" xml:space="preserve"><value>Amount must be greater than zero.</value></data>
   <data name="Shifts_MovementReason" xml:space="preserve"><value>Reason</value></data>
-  <data name="Shifts_RecordMovement" xml:space="preserve"><value>Record movement</value></data>
+  <data name="Shifts_MovementReasonRequired" xml:space="preserve"><value>Reason is required.</value></data>
+  <data name="Shifts_RecordMovement" xml:space="preserve"><value>Record cash movement</value></data>
+  <data name="Shifts_MovementRecorded" xml:space="preserve"><value>Cash movement recorded.</value></data>
+  <data name="Shifts_MovementCount" xml:space="preserve"><value>Cash movements</value></data>
+  <data name="Shifts_NoMovementsTitle" xml:space="preserve"><value>No cash movements</value></data>
+  <data name="Shifts_NoMovementsMessage" xml:space="preserve"><value>Cash in and cash out activity for this shift will appear here.</value></data>
   <data name="Shifts_CloseSection" xml:space="preserve"><value>Close shift</value></data>
   <data name="Shifts_ClosingCashLabel" xml:space="preserve"><value>Closing cash counted</value></data>
   <data name="Shifts_ClosingNotes" xml:space="preserve"><value>Closing notes</value></data>
   <data name="Shifts_CloseConfirm" xml:space="preserve"><value>Close shift</value></data>
+  <data name="Shifts_ReviewAndClose" xml:space="preserve"><value>Review and close shift</value></data>
+  <data name="Shifts_ConfirmClose" xml:space="preserve"><value>Confirm close shift</value></data>
+  <data name="Shifts_ContinueEditing" xml:space="preserve"><value>Continue editing</value></data>
+  <data name="Shifts_CloseConfirmTitle" xml:space="preserve"><value>Confirm close shift</value></data>
+  <data name="Shifts_CloseConfirmMessage" xml:space="preserve"><value>After closing, this shift can no longer accept sales. Expected cash, counted cash, and the difference will be saved.</value></data>
+  <data name="Shifts_ClosedSuccess" xml:space="preserve"><value>Shift closed.</value></data>
   <data name="Shifts_CancelConfirm" xml:space="preserve"><value>Cancel shift</value></data>
+  <data name="Shifts_CancelTitle" xml:space="preserve"><value>Cancel this shift?</value></data>
+  <data name="Shifts_CancelMessage" xml:space="preserve"><value>Cancellation is only allowed when the shift has no sales and no cash movements. This cannot be undone.</value></data>
+  <data name="Shifts_CancelledSuccess" xml:space="preserve"><value>Shift cancelled.</value></data>
+  <data name="Shifts_MoreActions" xml:space="preserve"><value>More actions</value></data>
   <data name="Shifts_NotFoundTitle" xml:space="preserve"><value>Shift not found</value></data>
   <data name="Shifts_NotFoundMessage" xml:space="preserve"><value>This shift could not be loaded.</value></data>
+  <data name="Shifts_DetailLoading" xml:space="preserve"><value>Loading shift...</value></data>
+  <data name="Shifts_SuccessTitle" xml:space="preserve"><value>Success</value></data>
+  <data name="Shifts_ViewOnlyTitle" xml:space="preserve"><value>View only</value></data>
+  <data name="Shifts_ViewOnlyMessage" xml:space="preserve"><value>You can review this shift, but managing cash or closing requires shift management permission.</value></data>
+  <data name="Shifts_OfflineReadonlyMessage" xml:space="preserve"><value>Shift changes require an online connection. Cached details stay visible when available.</value></data>
+  <data name="Shifts_OfflineActionBlocked" xml:space="preserve"><value>Reconnect to record movements, close, or cancel this shift.</value></data>
+  <data name="Shifts_OpenedByFormat" xml:space="preserve"><value>Opened {0} by {1}</value></data>
+  <data name="Shifts_ClosedByFormat" xml:space="preserve"><value>Closed {0} by {1}</value></data>
+  <data name="Shifts_CancelledByFormat" xml:space="preserve"><value>Cancelled {0} by {1}</value></data>
+  <data name="Shifts_IdentityUnavailable" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="Shifts_Register" xml:space="preserve"><value>Register</value></data>
   <data name="Shifts_CurrentSection" xml:space="preserve"><value>Current shift</value></data>
   <data name="Shifts_OpenCurrent" xml:space="preserve"><value>Open current shift</value></data>
   <data name="Shifts_AlreadyOpen" xml:space="preserve"><value>Shift already open</value></data>

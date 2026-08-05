@@ -2410,6 +2410,271 @@ html.pos-keyboard-open .pos-content {
     line-height: 1.3;
 }
 
+/* ============================== Shift detail ============================== */
+
+.pos-shift-detail {
+    width: 100%;
+}
+
+.pos-shift-detail__header {
+    margin-bottom: var(--exits-space-3);
+}
+
+.pos-shift-detail__title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--exits-space-2);
+}
+
+.pos-shift-detail__title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--exits-text, #15201a);
+    word-break: break-word;
+    min-width: 0;
+}
+
+.pos-shift-detail__subtitle {
+    margin: 0.2rem 0 0;
+    font-size: var(--exits-text-sm, 0.875rem);
+    line-height: 1.3;
+    color: var(--exits-text-muted, #5b6b62);
+}
+
+.pos-shift-detail__register {
+    margin: 0.45rem 0 0;
+    font-size: var(--exits-text-sm, 0.875rem);
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--exits-text, #15201a);
+}
+
+.pos-shift-detail__register-code,
+.pos-shift-detail__opened,
+.pos-shift-detail__closed {
+    margin: 0.15rem 0 0;
+    font-size: var(--exits-text-xs, 0.75rem);
+    line-height: 1.35;
+}
+
+.pos-shift-detail__card {
+    margin: 0 0 var(--exits-space-3);
+    padding: var(--exits-space-3);
+    border: 1px solid var(--exits-border, #c9d4cd);
+    border-radius: var(--exits-radius-md, 0.5rem);
+    background: var(--exits-surface, #fff);
+}
+
+.pos-shift-detail__section-title {
+    margin: 0 0 var(--exits-space-2);
+    font-size: var(--exits-text-xs, 0.75rem);
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--exits-text-muted, #5b6b62);
+}
+
+.pos-shift-detail__totals {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.pos-shift-detail__total-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--exits-space-3);
+    margin: 0;
+}
+
+.pos-shift-detail__total-row dt {
+    margin: 0;
+    font-size: var(--exits-text-sm, 0.875rem);
+    color: var(--exits-text-muted, #5b6b62);
+}
+
+.pos-shift-detail__total-row dd {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.1rem;
+    font-size: var(--exits-text-sm, 0.875rem);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    color: var(--exits-text, #15201a);
+}
+
+.pos-shift-detail__total-row--emphasis {
+    margin-top: 0.2rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid color-mix(in srgb, var(--exits-border, #c9d4cd) 70%, transparent);
+}
+
+.pos-shift-detail__total-row--emphasis dt,
+.pos-shift-detail__total-row--emphasis dd {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--exits-text, #15201a);
+}
+
+.pos-shift-detail__variance-label {
+    font-size: var(--exits-text-xs, 0.75rem);
+    font-weight: 500;
+}
+
+.pos-shift-detail__notes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    margin-top: 0.35rem;
+    font-size: var(--exits-text-sm, 0.875rem);
+}
+
+.pos-shift-detail__disclose {
+    appearance: none;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--exits-space-2);
+    margin: 0 0 var(--exits-space-2);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--exits-text-muted, #5b6b62);
+    font: inherit;
+    font-size: var(--exits-text-xs, 0.75rem);
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    text-align: start;
+    cursor: pointer;
+    min-height: var(--exits-touch-target-min, 3rem);
+}
+
+.pos-shift-detail__disclose:focus-visible {
+    outline: 3px solid var(--exits-focus);
+    outline-offset: 2px;
+}
+
+.pos-shift-detail__disclose-chevron {
+    font-size: 0.85rem;
+    color: var(--exits-text-muted, #5b6b62);
+}
+
+.pos-shift-detail__movements {
+    display: flex;
+    flex-direction: column;
+}
+
+.pos-shift-detail__movement {
+    padding: 0.65rem 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--exits-border, #c9d4cd) 65%, transparent);
+}
+
+.pos-shift-detail__movement:first-child {
+    padding-top: 0;
+}
+
+.pos-shift-detail__movement:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.pos-shift-detail__movement-main {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--exits-space-3);
+}
+
+.pos-shift-detail__movement-type {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+    font-size: var(--exits-text-sm, 0.875rem);
+    font-weight: 650;
+    color: var(--exits-text, #15201a);
+}
+
+.pos-shift-detail__movement-icon {
+    display: inline-flex;
+    width: 1rem;
+    height: 1rem;
+    color: var(--exits-text-muted, #5b6b62);
+}
+
+.pos-shift-detail__movement-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.pos-shift-detail__movement-amount {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.pos-shift-detail__movement-reason {
+    margin: 0.2rem 0 0;
+    font-size: var(--exits-text-sm, 0.875rem);
+    line-height: 1.35;
+    color: var(--exits-text, #15201a);
+    word-break: break-word;
+}
+
+.pos-shift-detail__movement-meta {
+    margin: 0.15rem 0 0;
+    font-size: var(--exits-text-xs, 0.75rem);
+    line-height: 1.35;
+}
+
+.pos-shift-detail__reconcile-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--exits-space-3);
+    font-size: var(--exits-text-sm, 0.875rem);
+}
+
+.pos-shift-detail__confirm {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exits-space-3);
+}
+
+.pos-shift-detail__confirm-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--exits-text, #15201a);
+}
+
+.pos-shift-detail__confirm-message {
+    margin: 0;
+    font-size: var(--exits-text-sm, 0.875rem);
+    line-height: 1.4;
+    color: var(--exits-text-muted, #5b6b62);
+}
+
+.pos-shift-detail__more {
+    margin: 0 0 calc(var(--exits-space-4) + env(safe-area-inset-bottom, 0px));
+    padding-top: var(--exits-space-2);
+}
+
+.pos-shift-detail__more .exds-btn {
+    width: 100%;
+    justify-content: center;
+    color: var(--exits-danger, #b42318);
+}
+
 /* ============================== Settings ============================== */
 
 .pos-settings .exds-page-header {
