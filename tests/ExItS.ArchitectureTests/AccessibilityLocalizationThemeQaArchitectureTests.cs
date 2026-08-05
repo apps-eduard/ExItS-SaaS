@@ -82,7 +82,7 @@ public sealed class AccessibilityLocalizationThemeQaArchitectureTests
         Assert.Contains("prefers-reduced-motion", ds, StringComparison.Ordinal);
         Assert.Contains("[data-theme=\"dark\"]", admin, StringComparison.Ordinal);
         Assert.Contains("prefers-reduced-motion", admin, StringComparison.Ordinal);
-        Assert.Contains("--exits-touch-target-min: 2.75rem", ds, StringComparison.Ordinal);
+        Assert.Contains("--exits-touch-target-min: 3rem", ds, StringComparison.Ordinal);
     }
 
     [Fact]

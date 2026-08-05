@@ -81,7 +81,8 @@ public sealed class DesignSystemArchitectureTests
             "Layout/Page.razor", "Layout/Section.razor", "Layout/Toolbar.razor", "Layout/PageHeader.razor",
             "Overlay/Tabs.razor", "Overlay/Drawer.razor", "Overlay/Dialog.razor", "Overlay/ToastHost.razor",
             "Overlay/Alert.razor", "Overlay/LoadingOverlay.razor",
-            "Feedback/EmptyState.razor", "Feedback/ErrorState.razor", "Feedback/SearchBox.razor"
+            "Feedback/EmptyState.razor", "Feedback/ErrorState.razor", "Feedback/SearchBox.razor",
+            "Forms/QuantityStepper.razor"
         };
 
         foreach (var relative in required)
@@ -160,11 +161,32 @@ public sealed class DesignSystemArchitectureTests
     public void Css_keeps_touch_targets_for_compact_density()
     {
         var css = ReadDesignSystemCss();
-        Assert.Contains("--exits-touch-target-min: 2.75rem", css, StringComparison.Ordinal);
+        Assert.Contains("--exits-touch-target-min: 3rem", css, StringComparison.Ordinal);
         var compactIndex = css.IndexOf("[data-density=\"compact\"]", StringComparison.Ordinal);
         Assert.True(compactIndex >= 0);
         var compactSlice = css.Substring(compactIndex, Math.Min(500, css.Length - compactIndex));
-        Assert.Contains("--exits-touch-target-min: 2.75rem", compactSlice, StringComparison.Ordinal);
+        Assert.Contains("--exits-touch-target-min: 3rem", compactSlice, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Css_defines_semantic_typography_and_approved_font_stack()
+    {
+        var css = ReadDesignSystemCss();
+        Assert.Contains("IBM Plex Sans", css, StringComparison.Ordinal);
+        Assert.Contains("Source Sans 3", css, StringComparison.Ordinal);
+        foreach (var token in new[]
+                 {
+                     "--exits-type-display", "--exits-type-page-title", "--exits-type-section",
+                     "--exits-type-body", "--exits-type-compact", "--exits-type-label",
+                     "--exits-type-helper", "--exits-type-button", "--exits-type-monetary",
+                     "--exits-font-tabular", "--exits-surface-muted"
+                 })
+        {
+            Assert.Contains(token, css, StringComparison.Ordinal);
+        }
+
+        Assert.Contains(".exds-qty-stepper", css, StringComparison.Ordinal);
+        Assert.Contains(".exds-money--display", css, StringComparison.Ordinal);
     }
 
     private static string ReadDesignSystemCss()

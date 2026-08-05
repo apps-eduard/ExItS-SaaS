@@ -6,7 +6,7 @@
  * Theme:   [data-theme="light|dark|system"] on <html> (or any ancestor). "system" and the
  *          no-attribute default follow prefers-color-scheme (Android system theme).
  * Density: [data-density="compact|comfortable"] on <html> or a container.
- *          Default for POS: compact (still touch-friendly; --exits-touch-target-min stays ≥44px).
+ *          Default for POS: compact (still touch-friendly; --exits-touch-target-min stays ≥48px / 3rem).
  *
  * All component class names are prefixed `exds-`.
  */
@@ -20,6 +20,7 @@
   --exits-bg: #f3f6f4;
   --exits-surface: #ffffff;
   --exits-surface-elevated: #ffffff;
+  --exits-surface-muted: #e8eeea;
   --exits-text: #14201a;
   --exits-text-muted: #5a6b62;
   --exits-border: #d5ddd8;
@@ -66,6 +67,7 @@
   --exits-bg: #0e1411;
   --exits-surface: #161e1a;
   --exits-surface-elevated: #1e2822;
+  --exits-surface-muted: #1a221e;
   --exits-text: #eef4f0;
   --exits-text-muted: #a3b3aa;
   --exits-border: #2c3a32;
@@ -115,6 +117,7 @@
     --exits-bg: #0e1411;
     --exits-surface: #161e1a;
     --exits-surface-elevated: #1e2822;
+    --exits-surface-muted: #1a221e;
     --exits-text: #eef4f0;
     --exits-text-muted: #a3b3aa;
     --exits-border: #2c3a32;
@@ -182,14 +185,32 @@
   --exits-space-8: 2rem;
   --exits-space-10: 2.5rem;
 
-  /* Typography scale */
-  --exits-font-sans: "Segoe UI", system-ui, -apple-system, "Segoe UI Emoji", Roboto, Helvetica, Arial, sans-serif;
-  --exits-text-xs: 0.75rem;
-  --exits-text-sm: 0.8125rem;
-  --exits-text-md: 0.9375rem;
-  --exits-text-lg: 1.0625rem;
-  --exits-text-xl: 1.25rem;
-  --exits-text-2xl: 1.5rem;
+  /* Typography scale — IBM Plex Sans primary; Source Sans 3 fallback (approved stack). */
+  --exits-font-sans: "IBM Plex Sans", "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --exits-text-xs: 0.8125rem;   /* 13px — helper/error */
+  --exits-text-sm: 0.875rem;    /* 14px — compact body / secondary */
+  --exits-text-md: 0.9375rem;   /* 15px — body / button */
+  --exits-text-lg: 1.0625rem;   /* 17px — section title */
+  --exits-text-xl: 1.375rem;    /* 22px — page title */
+  --exits-text-2xl: 1.75rem;    /* 28px — display total */
+
+  /* Semantic type roles (map to scale; pages should prefer these). */
+  --exits-type-display: var(--exits-text-2xl);
+  --exits-type-page-title: var(--exits-text-xl);
+  --exits-type-section: var(--exits-text-lg);
+  --exits-type-body: var(--exits-text-md);
+  --exits-type-compact: var(--exits-text-sm);
+  --exits-type-label: var(--exits-text-sm);
+  --exits-type-helper: var(--exits-text-xs);
+  --exits-type-button: var(--exits-text-md);
+  --exits-type-monetary: var(--exits-text-md);
+  --exits-font-weight-regular: 400;
+  --exits-font-weight-semibold: 600;
+  --exits-font-weight-bold: 700;
+  --exits-font-tabular: "IBM Plex Sans", "Source Sans 3", ui-monospace, system-ui, sans-serif;
+
+  /* Soft surface for placeholders / chips (light + dark override below). */
+  --exits-surface-muted: #e8eeea;
 
   /* Responsive breakpoints (reference tokens; used by media queries below) */
   --exits-bp-phone: 0px;
@@ -206,40 +227,40 @@
   --exits-z-dialog: 1200;
   --exits-z-toast: 1300;
 
-  /* Density — default compact (POS cashier). Touch targets stay ≥ 2.75rem (44px). */
-  --exits-control-height: 2.5rem;
-  --exits-density-font-size: var(--exits-text-sm);
+  /* Density — default compact (POS cashier). Touch targets stay ≥ 3rem (48px). */
+  --exits-control-height: 2.75rem;
+  --exits-density-font-size: var(--exits-text-md);
   --exits-density-space-unit: var(--exits-space-3);
   --exits-density-card-padding: 0.75rem;
-  --exits-density-row-height: 2.75rem;
+  --exits-density-row-height: 3rem;
   --exits-density-radius: var(--exits-radius-sm);
   --exits-density-icon-size: 1.125rem;
-  --exits-touch-target-min: 2.75rem;
+  --exits-touch-target-min: 3rem;
   --exits-page-padding: var(--exits-space-4);
   --exits-content-max: 42rem;
 }
 
 [data-density="compact"] {
-  --exits-control-height: 2.5rem;
-  --exits-density-font-size: var(--exits-text-sm);
+  --exits-control-height: 2.75rem;
+  --exits-density-font-size: var(--exits-text-md);
   --exits-density-space-unit: var(--exits-space-3);
   --exits-density-card-padding: 0.75rem;
-  --exits-density-row-height: 2.75rem;
+  --exits-density-row-height: 3rem;
   --exits-density-radius: var(--exits-radius-sm);
   --exits-density-icon-size: 1.125rem;
-  --exits-touch-target-min: 2.75rem;
+  --exits-touch-target-min: 3rem;
   --exits-page-padding: var(--exits-space-4);
 }
 
 [data-density="comfortable"] {
-  --exits-control-height: 2.75rem;
+  --exits-control-height: 3rem;
   --exits-density-font-size: var(--exits-text-md);
   --exits-density-space-unit: var(--exits-space-4);
   --exits-density-card-padding: 1.125rem;
-  --exits-density-row-height: 3rem;
+  --exits-density-row-height: 3.25rem;
   --exits-density-radius: var(--exits-radius-md);
   --exits-density-icon-size: 1.25rem;
-  --exits-touch-target-min: 2.75rem;
+  --exits-touch-target-min: 3rem;
   --exits-page-padding: var(--exits-space-6);
 }
 
@@ -864,10 +885,51 @@ select.exds-field__control { appearance: none; padding-right: var(--exits-space-
 .exds-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--exits-space-2); margin-top: var(--exits-space-3); }
 .exds-pagination-summary { margin: 0; color: var(--exits-text-muted); font-size: var(--exits-text-sm); }
 
-.exds-money { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--exits-text); white-space: nowrap; }
+.exds-money { font-family: var(--exits-font-tabular); font-variant-numeric: tabular-nums; font-weight: var(--exits-font-weight-semibold); font-size: var(--exits-type-monetary); color: var(--exits-text); white-space: nowrap; }
 .exds-money--negative { color: var(--exits-danger); }
-.exds-money--zero { color: var(--exits-text-muted); font-weight: 600; }
-.exds-money--unavailable { color: var(--exits-disabled-text); font-weight: 600; font-style: italic; white-space: normal; }
+.exds-money--zero { color: var(--exits-text-muted); font-weight: var(--exits-font-weight-semibold); }
+.exds-money--unavailable { color: var(--exits-disabled-text); font-weight: var(--exits-font-weight-semibold); font-style: italic; white-space: normal; }
+.exds-money--display { font-size: var(--exits-type-display); font-weight: var(--exits-font-weight-bold); }
+
+/* Quantity stepper — ± controls with tabular quantity (48dp targets). */
+.exds-qty-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--exits-space-1);
+}
+.exds-qty-stepper__btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--exits-touch-target-min);
+  min-height: var(--exits-touch-target-min);
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-sm);
+  background: var(--exits-surface);
+  color: var(--exits-text);
+  font: inherit;
+  font-size: var(--exits-type-section);
+  font-weight: var(--exits-font-weight-semibold);
+  cursor: pointer;
+  transition: background var(--exits-motion-fast) var(--exits-ease), border-color var(--exits-motion-fast) var(--exits-ease);
+}
+.exds-qty-stepper__btn:hover:not(:disabled) { background: var(--exits-primary-soft); border-color: var(--exits-primary); }
+.exds-qty-stepper__btn:focus-visible {
+  outline: 3px solid var(--exits-focus);
+  outline-offset: 2px;
+}
+.exds-qty-stepper__btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.exds-qty-stepper__value {
+  min-width: 2.5rem;
+  text-align: center;
+  font-family: var(--exits-font-tabular);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--exits-type-body);
+  font-weight: var(--exits-font-weight-semibold);
+}
 
 .exds-section-header { display: flex; justify-content: space-between; gap: var(--exits-space-3); align-items: flex-start; flex-wrap: wrap; margin-bottom: var(--exits-space-3); }
 .exds-section-header__title { margin: 0; font-size: var(--exits-text-lg); font-weight: 700; overflow-wrap: anywhere; }

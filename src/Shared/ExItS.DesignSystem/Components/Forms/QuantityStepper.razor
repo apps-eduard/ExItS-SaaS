@@ -1,0 +1,57 @@
+@namespace ExItS.DesignSystem.Components.Forms
+
+<div class="exds-qty-stepper" role="group" aria-label="@AriaLabel">
+    <button type="button"
+            class="exds-qty-stepper__btn"
+            aria-label="@DecreaseLabel"
+            disabled="@Disabled"
+            @onclick="OnDecrease">−</button>
+    <span class="exds-qty-stepper__value" aria-live="polite">@DisplayValue</span>
+    <button type="button"
+            class="exds-qty-stepper__btn"
+            aria-label="@IncreaseLabel"
+            disabled="@Disabled"
+            @onclick="OnIncrease">+</button>
+</div>
+
+@code {
+    [Parameter] public decimal Value { get; set; }
+    [Parameter] public EventCallback<decimal> ValueChanged { get; set; }
+    [Parameter] public decimal Step { get; set; } = 1m;
+    [Parameter] public decimal Min { get; set; } = 0m;
+    [Parameter] public int DecimalPlaces { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string AriaLabel { get; set; } = "Quantity";
+    [Parameter] public string DecreaseLabel { get; set; } = "Decrease quantity";
+    [Parameter] public string IncreaseLabel { get; set; } = "Increase quantity";
+
+    private string DisplayValue =>
+        DecimalPlaces <= 0
+            ? Value.ToString("0")
+            : Value.ToString($"0.{new string('0', DecimalPlaces)}");
+
+    private async Task OnDecrease()
+    {
+        var next = Math.Max(Min, Value - Step);
+        if (DecimalPlaces >= 0)
+        {
+            next = Math.Round(next, DecimalPlaces, MidpointRounding.AwayFromZero);
+        }
+
+        if (next != Value)
+        {
+            await ValueChanged.InvokeAsync(next);
+        }
+    }
+
+    private async Task OnIncrease()
+    {
+        var next = Value + Step;
+        if (DecimalPlaces >= 0)
+        {
+            next = Math.Round(next, DecimalPlaces, MidpointRounding.AwayFromZero);
+        }
+
+        await ValueChanged.InvokeAsync(next);
+    }
+}

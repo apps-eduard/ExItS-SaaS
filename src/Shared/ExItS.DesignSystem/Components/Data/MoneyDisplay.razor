@@ -12,15 +12,18 @@
     [Parameter] public decimal? Amount { get; set; }
     [Parameter] public string CurrencyCode { get; set; } = "PHP";
     [Parameter] public bool Unavailable { get; set; }
+    /// <summary>When true, uses display-total typography (cashier totals).</summary>
+    [Parameter] public bool Emphasized { get; set; }
 
     private string CssClass
     {
         get
         {
-            if (Unavailable || Amount is null) return "exds-money exds-money--unavailable";
-            if (Amount < 0) return "exds-money exds-money--negative";
-            if (Amount == 0) return "exds-money exds-money--zero";
-            return "exds-money";
+            var size = Emphasized ? " exds-money--display" : string.Empty;
+            if (Unavailable || Amount is null) return "exds-money exds-money--unavailable" + size;
+            if (Amount < 0) return "exds-money exds-money--negative" + size;
+            if (Amount == 0) return "exds-money exds-money--zero" + size;
+            return "exds-money" + size;
         }
     }
 
