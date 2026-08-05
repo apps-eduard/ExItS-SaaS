@@ -4,39 +4,163 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
-<Page>
-    <PageHeader Title="@L["Org_InviteTitle"]" Subtitle="@L["Org_InviteSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Common_Back"]</Button>
-        </Actions>
-    </PageHeader>
+<div class="pos-invite">
+    <Page>
+        <header class="pos-invite__header">
+            <button type="button"
+                    class="pos-invite__back"
+                    disabled="@_busy"
+                    @onclick="GoBack">
+                <span aria-hidden="true">‹</span>
+                <span>@L["Common_Back"]</span>
+            </button>
+            <h1 class="pos-invite__title">@L["Org_InviteTitle"]</h1>
+            <p class="pos-invite__subtitle">@L["Org_InviteSubtitle"]</p>
+            @if (!string.IsNullOrWhiteSpace(CurrentUser.Session?.OrganizationDisplayName))
+            {
+                <p class="pos-invite__org pos-muted">@CurrentUser.Session!.OrganizationDisplayName</p>
+            }
+        </header>
 
-    <Section Title="@L["Personal_PeopleAddByIdTitle"]">
-        <InlineMessage Tone="InlineMessageTone.Info">@L["Org_InviteResolveHint"]</InlineMessage>
-        @if (!string.IsNullOrWhiteSpace(_resolvedPublicUserId))
-        {
-            <Stack Gap="1">
-                <span class="pos-muted">@L["Personal_ExItsIdLabel"]</span>
-                <span class="pos-value-md">@_resolvedPublicUserId</span>
-            </Stack>
-        }
-        <FormActions>
-            <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="GoResolveExItsId">@L["Personal_AddByExItsId"]</Button>
-        </FormActions>
-    </Section>
+        <section class="pos-invite__section" aria-labelledby="invite-find-heading">
+            <h2 id="invite-find-heading" class="pos-invite__section-title">@L["Org_InviteFindHeading"]</h2>
+            <p class="pos-invite__hint pos-muted">@L["Org_InviteResolveHint"]</p>
 
-    <FormValidationSummary Messages="_errors" />
-    <FormGroup Title="@L["Org_InviteForm"]">
-        <TextInput Label="@L["Register_Email"]" @bind-Value="_email" Type="email" Disabled="_busy" />
-        <TextInput Label="@L["Register_DisplayName"]" @bind-Value="_displayName" Disabled="_busy" />
-        <TextInput Label="@L["Org_InviteRole"]" Hint="@L["Org_InviteRoleHint"]" @bind-Value="_role" Disabled="_busy" />
-    </FormGroup>
-    <InlineMessage Tone="InlineMessageTone.Info">@L["Org_InviteConfirmHint"]</InlineMessage>
-    <FormActions>
-        <Button IsLoading="_busy" Disabled="_busy" OnClick="InviteAsync">@L["Org_InviteSubmit"]</Button>
-    </FormActions>
-    <InlineMessage Tone="InlineMessageTone.Info">@L["Org_WebAdminReminder"]</InlineMessage>
-</Page>
+            @if (!string.IsNullOrWhiteSpace(_resolvedPublicUserId) || !string.IsNullOrWhiteSpace(_displayName))
+            {
+                <div class="pos-invite__resolved" aria-live="polite">
+                    @if (!string.IsNullOrWhiteSpace(_displayName))
+                    {
+                        <span class="pos-invite__resolved-name">@_displayName</span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(_resolvedPublicUserId))
+                    {
+                        <span class="pos-muted">
+                            <span class="pos-invite__resolved-label">@L["Personal_ExItsIdLabel"]</span>
+                            @_resolvedPublicUserId
+                        </span>
+                    }
+                </div>
+            }
+
+            <button type="button"
+                    class="pos-invite__secondary"
+                    disabled="@_busy"
+                    @onclick="GoResolveExItsId">
+                @L["Personal_AddByExItsId"]
+            </button>
+        </section>
+
+        <section class="pos-invite__section" aria-labelledby="invite-form-heading">
+            <h2 id="invite-form-heading" class="pos-invite__section-title">@L["Org_InviteForm"]</h2>
+
+            <FormValidationSummary Messages="_formErrors" />
+
+            <div class="pos-invite__fields">
+                <TextInput Label="@L["Register_Email"]"
+                           @bind-Value="_email"
+                           Type="email"
+                           Required="true"
+                           Disabled="_busy"
+                           IsInvalid="@_emailInvalid"
+                           ErrorText="@(_emailInvalid ? L["Org_InviteValidation"].Value : null)"
+                           autocomplete="email" />
+
+                <TextInput Label="@L["Register_DisplayName"]"
+                           Hint="@L["Org_InviteDisplayNameHint"]"
+                           @bind-Value="_displayName"
+                           Disabled="_busy"
+                           autocomplete="name" />
+
+                <div class="pos-invite__role">
+                    <span class="pos-invite__role-label">@L["Org_InviteRole"]</span>
+                    <span class="pos-invite__role-value">@L["Org_InviteRoleStaff"]</span>
+                    <span class="pos-invite__role-hint pos-muted">@L["Org_InviteRoleHint"]</span>
+                </div>
+            </div>
+        </section>
+
+        <div class="pos-invite__notes">
+            <p class="pos-invite__note pos-muted">@L["Org_InviteConfirmHint"]</p>
+            <p class="pos-invite__note pos-muted">@L["Org_WebAdminReminder"]</p>
+        </div>
+
+        <div class="pos-invite__actions">
+            <Button Variant="ButtonVariant.Primary"
+                    IsLoading="_busy"
+                    Disabled="_busy"
+                    OnClick="InviteAsync">
+                @L["Org_InviteSubmit"]
+            </Button>
+        </div>
+    </Page>
+</div>
+
+<style>
+    .pos-invite { width: 100%; }
+    .pos-invite__header { margin-bottom: var(--exits-space-3, 0.75rem); }
+    .pos-invite__back {
+        display: inline-flex; align-items: center; gap: 0.15rem;
+        margin: 0 0 0.35rem; padding: 0.15rem 0; border: 0; background: transparent;
+        color: var(--exits-accent, #1f6b4a); font-size: 0.875rem; font-weight: 600; cursor: pointer;
+    }
+    .pos-invite__back:disabled { opacity: 0.45; cursor: not-allowed; }
+    .pos-invite__title {
+        margin: 0; font-size: 1.25rem; font-weight: 700; line-height: 1.25;
+        color: var(--exits-text, #15201a);
+    }
+    .pos-invite__subtitle {
+        margin: 0.3rem 0 0; font-size: 0.875rem; line-height: 1.35;
+        color: var(--exits-text-muted, #5b6b62);
+    }
+    .pos-invite__org {
+        margin: 0.25rem 0 0; font-size: 0.75rem; line-height: 1.3;
+    }
+    .pos-invite__section { margin-bottom: var(--exits-space-3, 0.75rem); }
+    .pos-invite__section-title {
+        margin: 0 0 0.35rem; font-size: 0.8125rem; font-weight: 700;
+        letter-spacing: 0.02em; text-transform: uppercase;
+        color: var(--exits-text-muted, #5b6b62);
+    }
+    .pos-invite__hint {
+        margin: 0 0 0.65rem; font-size: 0.75rem; line-height: 1.4;
+    }
+    .pos-invite__resolved {
+        display: flex; flex-direction: column; gap: 0.2rem;
+        margin: 0 0 0.65rem; padding: 0.55rem 0.65rem;
+        border: 1px solid var(--exits-border, #c9d4cd);
+        border-radius: var(--exits-radius-md, 0.5rem);
+        background: var(--exits-surface, #fff);
+    }
+    .pos-invite__resolved-name { font-weight: 650; font-size: 0.9375rem; }
+    .pos-invite__resolved-label { font-weight: 600; margin-inline-end: 0.25rem; }
+    .pos-invite__secondary {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-height: 2.5rem; padding: 0.45rem 0.85rem;
+        border: 1px solid var(--exits-border, #c9d4cd);
+        border-radius: var(--exits-radius-md, 0.5rem);
+        background: var(--exits-surface, #fff);
+        color: var(--exits-text, #15201a); font-size: 0.875rem; font-weight: 600; cursor: pointer;
+    }
+    .pos-invite__secondary:disabled { opacity: 0.45; cursor: not-allowed; }
+    .pos-invite__fields { display: flex; flex-direction: column; gap: 0.85rem; }
+    .pos-invite__role { display: flex; flex-direction: column; gap: 0.2rem; }
+    .pos-invite__role-label {
+        font-size: 0.8125rem; font-weight: 600; color: var(--exits-text, #15201a);
+    }
+    .pos-invite__role-value {
+        font-size: 0.9375rem; font-weight: 650; color: var(--exits-text, #15201a);
+    }
+    .pos-invite__role-hint { font-size: 0.75rem; line-height: 1.35; }
+    .pos-invite__notes { display: flex; flex-direction: column; gap: 0.35rem; margin: 0.25rem 0 1rem; }
+    .pos-invite__note { margin: 0; font-size: 0.75rem; line-height: 1.4; }
+    .pos-invite__actions {
+        position: sticky; bottom: 0; z-index: 2;
+        padding: 0.65rem 0 calc(0.65rem + env(safe-area-inset-bottom, 0px));
+        background: linear-gradient(to top, var(--exits-bg, #f3f6f4) 70%, transparent);
+    }
+    .pos-invite__actions .exds-btn { width: 100%; min-height: 2.75rem; }
+</style>
 
 @code {
     [SupplyParameterFromQuery(Name = "publicUserId")]
@@ -51,8 +175,10 @@
     private bool _busy;
     private string? _email;
     private string? _displayName;
-    private string _role = "Staff";
-    private List<string> _errors = [];
+    /// <summary>API role code. UI shows the Staff label; MVP invitations are OrganizationMember only.</summary>
+    private const string InviteRoleCode = "OrganizationMember";
+    private bool _emailInvalid;
+    private List<string> _formErrors = [];
     private string? _resolvedPublicUserId;
 
     protected override void OnInitialized()
@@ -73,11 +199,19 @@
 
     private async Task InviteAsync()
     {
-        _errors = [];
+        if (_busy)
+        {
+            return;
+        }
+
+        _formErrors = [];
+        _emailInvalid = false;
+
         var orgId = CurrentUser.Session?.OrganizationId;
         if (orgId is null || string.IsNullOrWhiteSpace(_email))
         {
-            _errors.Add(L["Org_InviteValidation"]);
+            _emailInvalid = string.IsNullOrWhiteSpace(_email);
+            _formErrors.Add(L["Org_InviteValidation"]);
             return;
         }
 
@@ -88,11 +222,12 @@
                 orgId.Value,
                 new CreateInvitationRequest(
                     Email: _email.Trim(),
-                    Role: string.IsNullOrWhiteSpace(_role) ? "Staff" : _role.Trim(),
-                    DisplayName: _displayName));
+                    Role: InviteRoleCode,
+                    DisplayName: string.IsNullOrWhiteSpace(_displayName) ? null : _displayName.Trim()));
             if (!result.IsSuccess)
             {
-                _errors.Add(L["Org_InviteFailed"]);
+                var detail = result.Error?.Detail ?? result.Error?.Title;
+                _formErrors.Add(string.IsNullOrWhiteSpace(detail) ? L["Org_InviteFailed"] : detail);
                 return;
             }
 

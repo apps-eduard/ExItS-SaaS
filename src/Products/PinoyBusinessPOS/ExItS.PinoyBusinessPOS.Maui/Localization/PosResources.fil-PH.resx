@@ -1751,6 +1751,9 @@
   <data name="Org_RevokePosRole" xml:space="preserve"><value>Revoke</value></data>
   <data name="Org_InviteTitle" xml:space="preserve"><value>Invite staff</value></data>
   <data name="Org_InviteSubtitle" xml:space="preserve"><value>Send an invitation for organization staff access.</value></data>
+  <data name="Org_InviteFindHeading" xml:space="preserve"><value>Hanapin ang staff member</value></data>
+  <data name="Org_InviteDisplayNameHint" xml:space="preserve"><value>Opsyonal. Gagamitin sa invitation kung ibinigay.</value></data>
+  <data name="Org_InviteRoleStaff" xml:space="preserve"><value>Staff</value></data>
   <data name="Org_InviteForm" xml:space="preserve"><value>Invitation</value></data>
   <data name="Org_InviteRole" xml:space="preserve"><value>Organization role</value></data>
   <data name="Org_InviteRoleHint" xml:space="preserve"><value>Use Staff for MVP invitations. Organization Owner remains unique.</value></data>
@@ -1846,6 +1849,6 @@
   <data name="Personal_LentAddPersonHint" xml:space="preserve"><value>Need someone new? Add them by ExItS ID first, then select them here.</value></data>
   <data name="Customers_ResolveExItsIdHint" xml:space="preserve"><value>Resolve an ExItS user and confirm. Creates an organization-local customer only after you save - no membership or POS role.</value></data>
   <data name="Customers_ResolveConfirmedHint" xml:space="preserve"><value>Identity confirmed. Review the form and save to create the local customer.</value></data>
-  <data name="Org_InviteResolveHint" xml:space="preserve"><value>Optionally resolve by ExItS ID to confirm display name. Invitation still requires email and acceptance.</value></data>
+  <data name="Org_InviteResolveHint" xml:space="preserve"><value>Opsyonal: maghanap gamit ang ExItS ID para kumpirmahin ang tao. Kinakailangan pa rin ang email at pagtanggap.</value></data>
   <data name="Org_InviteConfirmHint" xml:space="preserve"><value>Sending an invitation does not grant membership until the user accepts.</value></data>
 </root>
