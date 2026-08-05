@@ -1,6 +1,6 @@
 @namespace ExItS.DesignSystem.Components.Forms
 
-<div class="exds-qty-stepper" role="group" aria-label="@AriaLabel">
+<div class="@CssClass" role="group" aria-label="@AriaLabel">
     <button type="button"
             class="exds-qty-stepper__btn"
             aria-label="@DecreaseLabel"
@@ -25,6 +25,13 @@
     [Parameter] public string AriaLabel { get; set; } = "Quantity";
     [Parameter] public string DecreaseLabel { get; set; } = "Decrease quantity";
     [Parameter] public string IncreaseLabel { get; set; } = "Increase quantity";
+
+    /// <summary>Dense inline variant for list rows; keeps a 44dp tap area behind a 34px control.</summary>
+    [Parameter] public bool Compact { get; set; }
+
+    private string CssClass => Compact
+        ? "exds-qty-stepper exds-qty-stepper--compact"
+        : "exds-qty-stepper";
 
     private bool CanIncrease => Max is null || Value < Max.Value;
 

@@ -761,106 +761,115 @@ html.pos-keyboard-open .pos-content {
 .pos-product-row-list {
     display: flex;
     flex-direction: column;
+    /* Bleed past the 16px page padding so dividers and press feedback run edge to edge
+       while each row keeps its own 16px inner padding. */
+    margin-inline: calc(var(--exits-page-padding, var(--exits-space-4)) * -1);
     min-width: 0;
 }
 
 .pos-product-row {
     border-bottom: 1px solid var(--pos-border-subtle, var(--exits-border));
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
     min-height: 0;
-    padding: 0.45rem 0;
+}
+
+.pos-product-row:last-child {
+    border-bottom: 0;
 }
 
 .pos-product-row--in-cart {
-    background: color-mix(in srgb, var(--exits-primary-soft) 55%, transparent);
-    margin-inline: calc(var(--exits-space-2) * -1);
-    padding-inline: var(--exits-space-2);
-}
-
-.pos-product-row--unavailable {
-    opacity: 1;
+    background: color-mix(in srgb, var(--exits-primary-soft) 45%, transparent);
 }
 
 .pos-product-row--unavailable .pos-product-row__name,
-.pos-product-row--unavailable .pos-product-row__line2 {
+.pos-product-row--unavailable .pos-product-row__meta,
+.pos-product-row--unavailable .pos-product-row__price {
     color: var(--pos-text-secondary, var(--exits-text-muted));
 }
 
-.pos-product-row--unavailable .pos-product-row__line2::after {
-    content: "";
+.pos-product-row--unavailable .pos-product-row__hit {
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 .pos-product-row__hit {
-    appearance: none;
+    align-items: center;
+    -webkit-tap-highlight-color: transparent;
     background: transparent;
-    border: 0;
     color: inherit;
-    cursor: default;
-    display: grid;
+    cursor: pointer;
+    display: flex;
     font: inherit;
-    gap: 0.1rem;
-    padding: 0;
+    gap: var(--exits-space-3);
+    justify-content: space-between;
+    min-height: 3rem;
+    padding: 0.75rem 1rem;
     text-align: start;
+    -webkit-user-select: none;
+    user-select: none;
     width: 100%;
 }
 
 .pos-product-row__hit:focus-visible {
     outline: 3px solid var(--exits-focus);
-    outline-offset: 2px;
+    outline-offset: -3px;
 }
 
-.pos-product-row__hit:disabled {
+.pos-product-row__hit[aria-disabled="true"] {
     cursor: not-allowed;
-    opacity: 0.55;
 }
 
-.pos-product-row__line1 {
-    align-items: baseline;
+.pos-product-row__hit:not([aria-disabled="true"]):active {
+    background: color-mix(in srgb, var(--exits-primary-soft) 60%, transparent);
+}
+
+.pos-product-row__info {
     display: flex;
-    gap: var(--exits-space-2);
-    justify-content: space-between;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0.1rem;
     min-width: 0;
 }
 
 .pos-product-row__name {
     color: var(--pos-text-primary, var(--exits-text));
-    flex: 1 1 auto;
-    font-size: var(--exits-type-compact);
-    font-weight: var(--exits-font-weight-semibold);
+    font-size: 0.9375rem;
+    font-weight: 500;
     line-height: 1.25;
     min-width: 0;
     overflow-wrap: anywhere;
     white-space: normal;
 }
 
-.pos-product-row__price {
-    flex: 0 0 auto;
-    font-family: var(--exits-font-tabular);
-    font-size: var(--exits-type-compact);
-    font-variant-numeric: tabular-nums;
-    font-weight: var(--exits-font-weight-bold, 700);
-}
-
-.pos-product-row__line2 {
+.pos-product-row__meta {
     color: var(--pos-text-secondary, var(--exits-text-muted));
-    font-size: var(--exits-type-helper);
+    font-size: 0.75rem;
     line-height: 1.2;
 }
 
-.pos-product-row__qty {
+.pos-product-row__side {
+    align-items: flex-end;
     display: flex;
-    justify-content: stretch;
-    padding-top: 0.35rem;
+    flex: 0 0 auto;
+    flex-direction: column;
+    gap: 0.35rem;
 }
 
-.pos-product-row__qty .exds-qty-stepper {
-    width: 100%;
+.pos-product-row__price,
+.pos-product-row__price .exds-money {
+    font-family: var(--exits-font-tabular);
+    font-size: 0.9375rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--exits-font-weight-semibold);
+    white-space: nowrap;
 }
 
-.pos-product-row__qty .exds-btn {
-    width: 100%;
+.pos-product-row--unavailable .pos-product-row__price .exds-money {
+    color: inherit;
+}
+
+.pos-product-row__stepper {
+    display: flex;
+    justify-content: flex-end;
 }
 
 /* Legacy tile styles retained for non-checkout surfaces that still reference them. */

@@ -1017,7 +1017,6 @@
   <data name="Sales_Checkout_LookupHint" xml:space="preserve"><value>Scan a barcode or type a SKU for an exact match.</value></data>
   <data name="Sales_Checkout_LookupExact" xml:space="preserve"><value>Add exact match</value></data>
   <data name="Sales_Checkout_Search" xml:space="preserve"><value>Search</value></data>
-  <data name="Sales_Checkout_AddToCart" xml:space="preserve"><value>Add</value></data>
   <data name="Sales_Checkout_NoMatchTitle" xml:space="preserve"><value>No match</value></data>
   <data name="Sales_Checkout_NoMatchMessage" xml:space="preserve"><value>No active product matches that barcode, SKU, or name.</value></data>
   <data name="Sales_Checkout_CartSection" xml:space="preserve"><value>Cart</value></data>

@@ -767,49 +767,72 @@ else
         var inCart = qty > 0m;
         var outOfStock = SalesUiOptions.IsOutOfStock(product.IsTracked, product.StockStatus, product.OnHandQuantity);
         var canAddMore = SalesUiOptions.CanAcceptQuantity(product.IsTracked, product.OnHandQuantity, qty + 1m);
-        var rowDisabled = blocked || (outOfStock && !inCart);
+        // Tapping the row adds one unit. The stepper stays live for cart lines so an item that
+        // ran out of stock after it was added can still be reduced or removed.
+        var tapDisabled = blocked || outOfStock || !canAddMore;
         var maxQty = product.IsTracked ? product.OnHandQuantity : (decimal?)null;
 
         return @<div @key="product.ProductId"
                      class="@($"pos-product-row{(inCart ? " pos-product-row--in-cart" : string.Empty)}{(outOfStock ? " pos-product-row--unavailable" : string.Empty)}")"
-                     role="listitem"
-                     aria-disabled="@outOfStock">
-            <div class="pos-product-row__hit">
-                <div class="pos-product-row__line1">
+                     role="listitem">
+            <div class="pos-product-row__hit"
+                 role="button"
+                 tabindex="@(tapDisabled ? -1 : 0)"
+                 aria-disabled="@tapDisabled"
+                 aria-label="@ProductTileAria(product, qty)"
+                 @onclick="() => OnRowTap(product, tapDisabled)"
+                 @onkeydown="e => OnRowKeyDown(e, product, tapDisabled)">
+                <div class="pos-product-row__info">
                     <span class="pos-product-row__name">@product.Name</span>
-                    <span class="pos-product-row__price"><MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" /></span>
+                    <span class="pos-product-row__meta">
+                        @SalesUiOptions.ProductRowMeta(L, product.UnitOfMeasure, product.IsTracked, product.StockStatus)
+                        @if (product.IsTracked && !outOfStock)
+                        {
+                            <span aria-hidden="true"> · </span>
+                            <span class="pos-tabular">@product.OnHandQuantity.ToString("0.###")</span>
+                        }
+                    </span>
                 </div>
-                <div class="pos-product-row__line2">
-                    @SalesUiOptions.ProductRowMeta(L, product.UnitOfMeasure, product.IsTracked, product.StockStatus)
-                    @if (product.IsTracked && !outOfStock)
+                <div class="pos-product-row__side">
+                    <span class="pos-product-row__price"><MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" /></span>
+                    @if (inCart)
                     {
-                        <span aria-hidden="true"> · </span>
-                        <span class="pos-tabular">@product.OnHandQuantity.ToString("0.###")</span>
+                        <div class="pos-product-row__stepper"
+                             @onclick:stopPropagation="true"
+                             @onkeydown:stopPropagation="true">
+                            <QuantityStepper Value="@qty"
+                                             ValueChanged="v => SetQuantity(product.ProductId, v)"
+                                             Step="@StepFor(product)"
+                                             Max="@maxQty"
+                                             DecimalPlaces="@PosSaleOptions.MaxQuantityDecimals(product.UnitOfMeasure)"
+                                             Disabled="@blocked"
+                                             Compact="true"
+                                             AriaLabel="@L["Sales_Checkout_Quantity"]"
+                                             DecreaseLabel="@L["Sales_Checkout_DecreaseQty"]"
+                                             IncreaseLabel="@L["Sales_Checkout_IncreaseQty"]" />
+                        </div>
                     }
                 </div>
             </div>
-            <div class="pos-product-row__qty">
-                @if (inCart)
-                {
-                    <QuantityStepper Value="@qty"
-                                     ValueChanged="v => SetQuantity(product.ProductId, v)"
-                                     Step="@StepFor(product)"
-                                     Max="@maxQty"
-                                     DecimalPlaces="@PosSaleOptions.MaxQuantityDecimals(product.UnitOfMeasure)"
-                                     Disabled="@blocked"
-                                     AriaLabel="@L["Sales_Checkout_Quantity"]"
-                                     DecreaseLabel="@L["Sales_Checkout_DecreaseQty"]"
-                                     IncreaseLabel="@L["Sales_Checkout_IncreaseQty"]" />
-                }
-                else
-                {
-                    <Button Variant="ButtonVariant.Secondary"
-                            Disabled="@(rowDisabled || !canAddMore)"
-                            aria-label="@ProductTileAria(product, qty)"
-                            OnClick="() => OnBrowseProductTap(product)">@L["Sales_Checkout_AddToCart"]</Button>
-                }
-            </div>
         </div>;
+    }
+
+    private void OnRowTap(PosCatalogProductDto product, bool tapDisabled)
+    {
+        if (tapDisabled)
+        {
+            return;
+        }
+
+        OnBrowseProductTap(product);
+    }
+
+    private void OnRowKeyDown(KeyboardEventArgs args, PosCatalogProductDto product, bool tapDisabled)
+    {
+        if (args.Key is "Enter" or " " or "Spacebar")
+        {
+            OnRowTap(product, tapDisabled);
+        }
     }
 
     private static decimal StepFor(PosCatalogProductDto product) =>

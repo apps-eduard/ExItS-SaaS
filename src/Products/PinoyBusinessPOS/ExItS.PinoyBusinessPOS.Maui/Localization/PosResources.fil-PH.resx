@@ -1017,7 +1017,6 @@
   <data name="Sales_Checkout_LookupHint" xml:space="preserve"><value>I-scan ang barcode o i-type ang SKU para sa eksaktong tugma.</value></data>
   <data name="Sales_Checkout_LookupExact" xml:space="preserve"><value>Idagdag ang eksaktong tugma</value></data>
   <data name="Sales_Checkout_Search" xml:space="preserve"><value>Maghanap</value></data>
-  <data name="Sales_Checkout_AddToCart" xml:space="preserve"><value>Idagdag</value></data>
   <data name="Sales_Checkout_NoMatchTitle" xml:space="preserve"><value>Walang tugma</value></data>
   <data name="Sales_Checkout_NoMatchMessage" xml:space="preserve"><value>Walang aktibong produktong tugma sa barcode, SKU, o pangalan.</value></data>
   <data name="Sales_Checkout_CartSection" xml:space="preserve"><value>Cart</value></data>

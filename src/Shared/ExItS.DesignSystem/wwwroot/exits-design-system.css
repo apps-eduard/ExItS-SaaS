@@ -933,6 +933,28 @@ select.exds-field__control { appearance: none; padding-right: var(--exits-space-
   font-weight: var(--exits-font-weight-semibold);
 }
 
+/* Compact variant for dense list rows: 34px control with a 44dp tap area overlay. */
+.exds-qty-stepper--compact { gap: 0.375rem; }
+.exds-qty-stepper--compact .exds-qty-stepper__btn {
+  position: relative;
+  min-width: 2.125rem;
+  min-height: 2.125rem;
+  width: 2.125rem;
+  height: 2.125rem;
+  border-radius: 0.5rem;
+  font-size: var(--exits-type-body);
+  line-height: 1;
+}
+.exds-qty-stepper--compact .exds-qty-stepper__btn::after {
+  content: "";
+  position: absolute;
+  inset: -0.3125rem;
+}
+.exds-qty-stepper--compact .exds-qty-stepper__value {
+  min-width: 1.75rem;
+  font-size: var(--exits-type-compact);
+}
+
 .exds-section-header { display: flex; justify-content: space-between; gap: var(--exits-space-3); align-items: flex-start; flex-wrap: wrap; margin-bottom: var(--exits-space-3); }
 .exds-section-header__title { margin: 0; font-size: var(--exits-text-lg); font-weight: 700; overflow-wrap: anywhere; }
 .exds-section-header__subtitle { margin: var(--exits-space-1) 0 0; color: var(--exits-text-muted); }
